@@ -86,6 +86,7 @@ static guint16 sri_vector128_methods [] = {
 	SN_GreaterThan,
 	SN_LessThan,
 	SN_LessThanOrEqual,
+	SN_MultiplyAddEstimate,
 	SN_Narrow,
 	SN_ShiftLeft,
 	SN_ShiftRightArithmetic,
@@ -601,6 +602,12 @@ emit_sri_vector128 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature 
 		case SN_ConditionalSelect:
 			simd_opcode = MINT_SIMD_INTRINS_P_PPP;
 			simd_intrins = INTERP_SIMD_INTRINSIC_V128_CONDITIONAL_SELECT;
+			break;
+		case SN_MultiplyAddEstimate:
+			if (atype == MONO_TYPE_R4) {
+				simd_opcode = MINT_SIMD_INTRINS_P_PPP;
+				simd_intrins = INTERP_SIMD_INTRINSIC_V128_R4_MULTIPLY_ADD_ESTIMATE;
+			}
 			break;
 		case SN_Create:
 			if (!is_element_type_primitive (csignature->ret))
