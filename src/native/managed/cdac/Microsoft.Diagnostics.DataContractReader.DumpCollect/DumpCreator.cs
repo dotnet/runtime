@@ -3,11 +3,10 @@
 
 using System;
 using System.Collections.Generic;
-using System.Reflection.Metadata;
-using System.Reflection.Metadata.Ecma335;
 using System.Text;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Contracts.Extensions;
+using Microsoft.Diagnostics.DataContractReader.Legacy;
 using ContractModuleHandle = Microsoft.Diagnostics.DataContractReader.Contracts.ModuleHandle;
 
 namespace Microsoft.Diagnostics.DataContractReader.DumpCollect;
@@ -28,6 +27,7 @@ internal sealed class DumpCreator(
 
     public void EnumerateMemoryRegions()
     {
+        TryEnumerate("statics", EnumerateStatics);
         TryEnumerate("modules", EnumerateModules);
         TryEnumerate("threads", EnumerateThreads);
 
@@ -60,6 +60,13 @@ internal sealed class DumpCreator(
         {
             _emitter.EndPhase();
         }
+    }
+
+    private void EnumerateStatics()
+    {
+        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+        rts.GetWellKnownMethodTable(WellKnownMethodTable.Object);
+        rts.GetWellKnownMethodTable(WellKnownMethodTable.String);
     }
 
     private void EnumerateModules()
@@ -184,7 +191,8 @@ internal sealed class DumpCreator(
             _emitter.Add(objectAddress.Value, size);
 
             TargetPointer methodTable = objectContract.GetMethodTableAddress(objectAddress);
-            EnumerateObjectDataDependencies(objectContract, objectAddress, methodTable);
+            EnumerateObjectDataDependencies(objectAddress, methodTable);
+            CacheMethodTableName(methodTable);
             TargetPointer exceptionMethodTable =
                 _target.Contracts.RuntimeTypeSystem.GetWellKnownMethodTable(WellKnownMethodTable.Exception);
             ITypeHandle typeHandle = _target.Contracts.RuntimeTypeSystem.GetTypeHandle(methodTable);
@@ -222,25 +230,25 @@ internal sealed class DumpCreator(
         _emitter.Add(exceptionObject.Value, objectSize);
         IRuntimeTypeSystem runtimeTypeSystem = _target.Contracts.RuntimeTypeSystem;
         TargetPointer methodTable = objectContract.GetMethodTableAddress(exceptionObject);
-        EnumerateObjectDataDependencies(objectContract, exceptionObject, methodTable);
+        EnumerateObjectDataDependencies(exceptionObject, methodTable);
         ITypeHandle typeHandle = runtimeTypeSystem.GetTypeHandle(methodTable);
         runtimeTypeSystem.GetBaseSize(typeHandle);
         runtimeTypeSystem.GetComponentSize(typeHandle);
         runtimeTypeSystem.IsFreeObjectMethodTable(typeHandle);
-        runtimeTypeSystem.GetWellKnownMethodTable(WellKnownMethodTable.String);
-        runtimeTypeSystem.GetWellKnownMethodTable(WellKnownMethodTable.Object);
         runtimeTypeSystem.IsArray(typeHandle, out _);
 
         ITypeHandle currentType = typeHandle;
         while (currentType.Address != TargetPointer.Null)
         {
-            EnumerateMethodTableDataDependencies(runtimeTypeSystem, currentType);
+            EnumerateMethodTableDataDependencies(currentType);
             TargetPointer parentMethodTable = runtimeTypeSystem.GetParentMethodTable(currentType);
             if (parentMethodTable == TargetPointer.Null)
                 break;
 
             currentType = runtimeTypeSystem.GetTypeHandle(parentMethodTable);
         }
+
+        CacheMethodTableName(methodTable);
 
         if (_target.Contracts.FeatureFlags.IsEnabled(RuntimeFeature.COMInterop))
             objectContract.GetBuiltInComData(exceptionObject, out _, out _, out _);
@@ -260,10 +268,9 @@ internal sealed class DumpCreator(
             EnumerateExceptionObject(exceptionData.InnerException);
     }
 
-    private static void EnumerateMethodTableDataDependencies(
-        IRuntimeTypeSystem runtimeTypeSystem,
-        ITypeHandle typeHandle)
+    private void EnumerateMethodTableDataDependencies(ITypeHandle typeHandle)
     {
+        IRuntimeTypeSystem runtimeTypeSystem = _target.Contracts.RuntimeTypeSystem;
         runtimeTypeSystem.GetBaseSize(typeHandle);
         runtimeTypeSystem.GetComponentSize(typeHandle);
         if (runtimeTypeSystem.IsFreeObjectMethodTable(typeHandle))
@@ -281,10 +288,10 @@ internal sealed class DumpCreator(
     }
 
     private void EnumerateObjectDataDependencies(
-        IObject objectContract,
         TargetPointer objectAddress,
         TargetPointer methodTable)
     {
+        IObject objectContract = _target.Contracts.Object;
         objectContract.GetSyncBlockAddress(objectAddress);
 
         IRuntimeTypeSystem runtimeTypeSystem = _target.Contracts.RuntimeTypeSystem;
@@ -301,7 +308,6 @@ internal sealed class DumpCreator(
             return;
         }
 
-        runtimeTypeSystem.GetWellKnownMethodTable(WellKnownMethodTable.Object);
         if (runtimeTypeSystem.IsArray(typeHandle, out _))
         {
             objectContract.GetArrayData(objectAddress, out _, out _, out _, out _, out _);
@@ -319,6 +325,38 @@ internal sealed class DumpCreator(
     {
         EnumerateMethodDependencies(methodDesc);
         CacheMethodName(methodDesc);
+    }
+
+    private void CacheMethodTableName(TargetPointer methodTable)
+    {
+        if (methodTable == TargetPointer.Null || _miniMetadataNames.ContainsKey(methodTable))
+            return;
+
+        try
+        {
+            using (_emitter.SuppressTargetReadEmission())
+            {
+                IRuntimeTypeSystem runtimeTypeSystem = _target.Contracts.RuntimeTypeSystem;
+                ITypeHandle typeHandle = runtimeTypeSystem.GetTypeHandle(methodTable);
+                if (runtimeTypeSystem.IsFreeObjectMethodTable(typeHandle))
+                    return;
+
+                StringBuilder name = new();
+                TypeNameBuilder.AppendType(
+                    _target,
+                    name,
+                    typeHandle,
+                    TypeNameFormat.FormatNamespace | TypeNameFormat.FormatFullInst);
+                if (name.Length != 0)
+                    _miniMetadataNames.Add(methodTable, name.ToString());
+            }
+        }
+        catch (System.Exception ex)
+        {
+            DumpCollectLogger.LogException(
+                $"method table name 0x{methodTable.Value:x} collection",
+                ex);
+        }
     }
 
     private void EnumerateMethodDependencies(TargetPointer methodDesc)
@@ -370,44 +408,14 @@ internal sealed class DumpCreator(
 
     private string? ResolveMethodName(MethodDescHandle methodDesc)
     {
-        IRuntimeTypeSystem runtimeTypeSystem = _target.Contracts.RuntimeTypeSystem;
-        uint token = runtimeTypeSystem.GetMethodToken(methodDesc);
-        TargetPointer methodTable = runtimeTypeSystem.GetMethodTable(methodDesc);
-        TargetPointer module = runtimeTypeSystem.GetModule(runtimeTypeSystem.GetTypeHandle(methodTable));
-        ContractModuleHandle moduleHandle = _target.Contracts.Loader.GetModuleHandleFromModulePtr(module);
-        MetadataReader? metadataReader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle);
-        if (metadataReader is null)
-            return null;
-
-        MethodDefinitionHandle methodDefinitionHandle =
-            MetadataTokens.MethodDefinitionHandle((int)(token & 0x00FFFFFF));
-        MethodDefinition methodDefinition = metadataReader.GetMethodDefinition(methodDefinitionHandle);
-        TypeDefinitionHandle typeDefinitionHandle = methodDefinition.GetDeclaringType();
-        Stack<string> declaringTypes = [];
-        string typeNamespace = string.Empty;
-
-        while (!typeDefinitionHandle.IsNil)
-        {
-            TypeDefinition typeDefinition = metadataReader.GetTypeDefinition(typeDefinitionHandle);
-            declaringTypes.Push(metadataReader.GetString(typeDefinition.Name));
-            if (typeDefinition.GetDeclaringType().IsNil)
-                typeNamespace = metadataReader.GetString(typeDefinition.Namespace);
-
-            typeDefinitionHandle = typeDefinition.GetDeclaringType();
-        }
-
         StringBuilder name = new();
-        if (!string.IsNullOrEmpty(typeNamespace))
-        {
-            name.Append(typeNamespace);
-            name.Append('.');
-        }
+        TypeNameBuilder.AppendMethodInternal(
+            _target,
+            name,
+            methodDesc,
+            TypeNameFormat.FormatSignature | TypeNameFormat.FormatNamespace | TypeNameFormat.FormatFullInst);
 
-        name.AppendJoin('+', declaringTypes);
-        name.Append('.');
-        name.Append(metadataReader.GetString(methodDefinition.Name));
-        name.Append("()");
-        return name.ToString();
+        return name.Length == 0 ? null : name.ToString();
     }
 
     private void EnumerateGC()

@@ -30,6 +30,8 @@
     <Compile Include="$(LibrariesProjectRoot)Common\src\System\HResults.cs" Link="Common\System\HResults.cs" />
     <Compile Include="..\Microsoft.Diagnostics.DataContractReader.Legacy\ICLRData.cs" Link="ICLRData.cs" />
     <Compile Include="..\Microsoft.Diagnostics.DataContractReader.Legacy\Marshalling\ClrDataAddress.cs" Link="Marshalling\ClrDataAddress.cs" />
+    <Compile Include="..\Microsoft.Diagnostics.DataContractReader.Legacy\SigFormat.cs" Link="SigFormat.cs" />
+    <Compile Include="..\Microsoft.Diagnostics.DataContractReader.Legacy\TypeNameBuilder.cs" Link="TypeNameBuilder.cs" />
   </ItemGroup>
 
   <ItemGroup>
