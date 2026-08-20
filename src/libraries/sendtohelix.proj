@@ -89,12 +89,7 @@
       <_TestUsingWorkloadsValues Include="false" />
       <_TestUsingWorkloadsValues Include="true" />
       <_TestUsingWebcilValues Include="true;false" Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'Mono'" />
-      <_TestUsingFingerprintingValues Include="true;false" Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'Mono'" />
-
-      <!-- CoreCLR only runs the two workload lanes (no-workload and workload); the webcil and
-           fingerprinting permutations stay Mono-only. Fingerprinting is pinned to its default so
-           the lane still selects the same Helix work items as the Mono workload lane. -->
-      <_TestUsingFingerprintingValues Include="true" Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'CoreCLR'" />
+      <_TestUsingFingerprintingValues Include="true;false" Condition="'$(TargetOS)' == 'browser'" />
 
       <!-- now make the cartesian product of true and false values for two categories -->
       <_TestUsingCrossProductValuesTemp Include="@(_TestUsingWorkloadsValues)">
@@ -112,7 +107,7 @@
       <_TestUsingCrossProductValues Remove="@(_TestUsingCrossProductValues)" Condition="'%(_TestUsingCrossProductValues.Workloads)' == 'false' and '%(_TestUsingCrossProductValues.Fingerprinting)' == 'false'" />
       
       <!-- Add combination for JavascriptBundler friendliness -->
-      <_TestUsingCrossProductValues Include="JavaScriptBundlerFriendly" Condition="'$(RuntimeFlavor)' == 'Mono'">
+      <_TestUsingCrossProductValues Include="JavaScriptBundlerFriendly" Condition="'$(TargetOS)' == 'browser'">
         <Workloads>true</Workloads>
         <Webcil>true</Webcil>
         <Fingerprinting>true</Fingerprinting>
