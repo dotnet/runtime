@@ -684,23 +684,6 @@ LocalsGenTreeList Statement::LocalsTreeList()
     return LocalsGenTreeList(this);
 }
 
-/*****************************************************************************
- *
- *  Walk all basic blocks and call the given function pointer for all tree
- *  nodes contained therein.
- */
-
-void Compiler::fgWalkAllTreesPre(fgWalkPreFn* visitor, void* pCallBackData)
-{
-    for (BasicBlock* const block : Blocks())
-    {
-        for (Statement* const stmt : block->Statements())
-        {
-            fgWalkTreePre(stmt->GetRootNodePointer(), visitor, pCallBackData);
-        }
-    }
-}
-
 //-----------------------------------------------------------
 // GetLayout: Get the struct layout for this node.
 //
@@ -14477,13 +14460,6 @@ void Compiler::gtDispTree(GenTree*                    tree,
         indentStack = new (this, CMK_DebugOnly) IndentStack(this);
     }
 
-    if (IsUninitialized(tree))
-    {
-        /* Value used to initialize nodes */
-        printf("Uninitialized tree node!\n");
-        return;
-    }
-
     if (tree->gtOper >= GT_COUNT)
     {
         gtDispNode(tree, indentStack, msg, isLIR);
@@ -16702,7 +16678,8 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
             // Clear colon flags only if the qmark itself is not conditionally executed
             if ((tree->gtFlags & GTF_COLON_COND) == 0)
             {
-                fgWalkTreePre(&op, gtClearColonCond);
+                ClearColonCondVisitor clearColonCond(this);
+                clearColonCond.WalkTree(&op, nullptr);
             }
             goto DONE_FOLD;
         }
@@ -19912,45 +19889,6 @@ void dispNodeList(GenTree* list, bool verbose)
 }
 #endif
 
-/*****************************************************************************
- * Callback to mark the nodes of a qmark-colon subtree that are conditionally
- * executed.
- */
-
-/* static */
-Compiler::fgWalkResult Compiler::gtMarkColonCond(GenTree** pTree, fgWalkData* data)
-{
-    assert(data->pCallbackData == nullptr);
-
-    (*pTree)->gtFlags |= GTF_COLON_COND;
-
-    return WALK_CONTINUE;
-}
-
-/*****************************************************************************
- * Callback to clear the conditionally executed flags of nodes that no longer
-   will be conditionally executed. Note that when we find another colon we must
-   stop, as the nodes below this one WILL be conditionally executed. This callback
-   is called when folding a qmark condition (ie the condition is constant).
- */
-
-/* static */
-Compiler::fgWalkResult Compiler::gtClearColonCond(GenTree** pTree, fgWalkData* data)
-{
-    GenTree* tree = *pTree;
-
-    assert(data->pCallbackData == nullptr);
-
-    if (tree->OperIs(GT_COLON))
-    {
-        // Nodes below this will be conditionally executed.
-        return WALK_SKIP_SUBTREES;
-    }
-
-    tree->gtFlags &= ~GTF_COLON_COND;
-    return WALK_CONTINUE;
-}
-
 Compiler::FindLinkData Compiler::gtFindLink(Statement* stmt, GenTree* node)
 {
     class FindLinkWalker : public GenTreeVisitor<FindLinkWalker>
@@ -19994,24 +19932,26 @@ Compiler::FindLinkData Compiler::gtFindLink(Statement* stmt, GenTree* node)
     return walker.GetResult();
 }
 
-/*****************************************************************************
- *
- *  Callback that checks if a tree node has oper type GT_CATCH_ARG
- */
-
-static Compiler::fgWalkResult gtFindCatchArg(GenTree** pTree, Compiler::fgWalkData* /* data */)
-{
-    return ((*pTree)->OperGet() == GT_CATCH_ARG) ? Compiler::WALK_ABORT : Compiler::WALK_CONTINUE;
-}
-
-/*****************************************************************************/
+//------------------------------------------------------------------------
+// gtHasCatchArg -- check if the tree contains a GT_CATCH_ARG.
+//
+// Arguments:
+//    tree - tree to examine
+//
+// Return Value:
+//    True if any subtree is a GT_CATCH_ARG; otherwise false.
+//
+// Notes:
+//    GT_CATCH_ARG sets GTF_ORDER_SIDEEFF on itself, and effect flags propagate
+//    to parents, so subtrees without the flag cannot contain one and are not
+//    descended into.
+//
 bool Compiler::gtHasCatchArg(GenTree* tree)
 {
-    if (((tree->gtFlags & GTF_ORDER_SIDEEFF) != 0) && (fgWalkTreePre(&tree, gtFindCatchArg) == WALK_ABORT))
-    {
-        return true;
-    }
-    return false;
+    auto isCatchArg = [](GenTree* tree) {
+        return tree->OperIs(GT_CATCH_ARG);
+    };
+    return gtFindNodeInTree<GTF_ORDER_SIDEEFF>(tree, isCatchArg) != nullptr;
 }
 
 //------------------------------------------------------------------------

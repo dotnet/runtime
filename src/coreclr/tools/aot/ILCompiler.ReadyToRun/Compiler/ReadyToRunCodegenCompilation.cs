@@ -370,12 +370,13 @@ namespace ILCompiler
             _customPESectionAlignment = customPESectionAlignment;
             _format = format;
             SymbolNodeFactory = new ReadyToRunSymbolNodeFactory(nodeFactory, verifyTypeAndFieldLayout);
+            _tokenManager = new ExternalReferenceTokenManager(_nodeFactory.ManifestMetadataTable._mutableModule, _nodeFactory.Resolver);
             if (nodeFactory.InstrumentationDataTable != null)
                 nodeFactory.InstrumentationDataTable.Initialize(SymbolNodeFactory);
             if (nodeFactory.CrossModuleInlningInfo != null)
                 nodeFactory.CrossModuleInlningInfo.Initialize(SymbolNodeFactory);
             if (nodeFactory.ImportReferenceProvider != null)
-                nodeFactory.ImportReferenceProvider.Initialize(SymbolNodeFactory);
+                nodeFactory.ImportReferenceProvider.Initialize(SymbolNodeFactory, _tokenManager);
             _inputFiles = inputFiles;
             _compositeRootPath = compositeRootPath;
             _printReproInstructions = printReproInstructions;
@@ -393,7 +394,6 @@ namespace ILCompiler
             _profileData = profileData;
 
             _fileLayoutOptimizer = new FileLayoutOptimizer(logger, methodLayoutAlgorithm, fileLayoutAlgorithm, profileData, _nodeFactory);
-            _tokenManager = new ExternalReferenceTokenManager(_nodeFactory.ManifestMetadataTable._mutableModule, _nodeFactory.Resolver);
         }
 
         private readonly static string s_folderUpPrefix = ".." + Path.DirectorySeparatorChar;

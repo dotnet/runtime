@@ -12,6 +12,7 @@
 
     <PackageFile Include="Sdk\AutoImport.props" TargetPath="Sdk" />
     <PackageFile Include="Sdk\Sdk.props" TargetPath="Sdk" />
+    <PackageFile Include="Sdk\Sdk.targets" TargetPath="Sdk" />
     <PackageFile Include="$(BrowserProjectRoot)build\ILLink.Substitutions.*.xml" TargetPath="Sdk" />
     <PackageFile Include="$(BrowserProjectRoot)build\ILLink.Descriptors.*.xml" TargetPath="Sdk" />
 
@@ -27,23 +28,7 @@
   </ItemGroup>
 
   <Target Name="_PrepareForPack" BeforeTargets="GetPackageFiles">
-    <PropertyGroup>
-      <SdkTargetsPath>$(IntermediateOutputPath)Sdk.targets</SdkTargetsPath>
-    </PropertyGroup>
-
     <ItemGroup>
-      <_ReplacementValue Include="NetCoreAppToolCurrent" Value="$(NetCoreAppToolCurrent)" />
-      <_ReplacementValue Include="NetFrameworkToolCurrent" Value="$(NetFrameworkToolCurrent)" />
-    </ItemGroup>
-
-    <GenerateFileFromTemplate
-      TemplateFile="Sdk/Sdk.targets.in"
-      Properties="@(_ReplacementValue->'%(Identity)=%(Value)')"
-      OutputPath="$(SdkTargetsPath)" />
-
-    <ItemGroup>
-      <PackageFile Include="$(SdkTargetsPath)" TargetPath="Sdk" />
-
       <_WasmAppHostFiles Include="$(WasmAppHostDir)\*" TargetPath="WasmAppHost" />
       <PackageFile Include="@(_WasmAppHostFiles)" />
     </ItemGroup>

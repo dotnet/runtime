@@ -959,12 +959,10 @@ static DWORD WINAPI DoFaultReportCreateThreadCallback(LPVOID pFaultReportInfoAsV
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_FORBID_FAULT;
 
 
     // We are allowed to ignore OOM's here as FaultReport() is merely a notification of
     // an unhandled exception. If we can't do the report, that's just too bad.
-    FAULT_NOT_FATAL();
 
     LOG((LF_EH, LL_INFO100, "DoFaultReport: at sp %p ...\n", GetCurrentSP()));
 
@@ -983,7 +981,6 @@ VOID WINAPI DoFaultReportDoFavorCallback(LPVOID pFaultReportInfoAsVoid)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_FORBID_FAULT;
 
 
     // Since the debugger thread doesn't allow ordinary New's which our stuff

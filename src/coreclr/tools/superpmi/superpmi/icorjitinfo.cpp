@@ -1086,15 +1086,47 @@ void MyICJI::reportMetadata(const char* key, const void* value, size_t length)
         return;
     }
 
-#define JITMETADATAINFO(name, type, flags)
-#define JITMETADATAMETRIC(name, type, flags) \
-    if ((strcmp(key, #name) == 0) && (length == sizeof(type)))   \
-    {                                                            \
-        memcpy(&jitInstance->mc->cr->name, value, sizeof(type)); \
-        return;                                                  \
-    }
+    struct MetricEntry
+    {
+        const char* Name;
+        void (*Store)(CompileResult* cr, const void* value, size_t length);
+    };
 
+    static const MetricEntry s_metrics[] = {
+#define JITMETADATAINFO(name, type, flags)
+#define JITMETADATAMETRIC(name, type, flags)                                                                           \
+    {#name, [](CompileResult* cr, const void* value, size_t length) {                                                  \
+         if (length == sizeof(type))                                                                                   \
+         {                                                                                                             \
+             cr->name = *static_cast<const type*>(value);                                                              \
+         }                                                                                                             \
+     }},
 #include "jitmetadatalist.h"
+    };
+
+    const size_t count = ArrLen(s_metrics);
+
+    // The JIT reports metrics in the order they are declared in jitmetadatalist.h,
+    // so resume the search where the previous one matched instead of always scanning
+    // from the start. In practice this matches on the first comparison.
+    size_t index = m_metricSearchStart;
+    for (size_t i = 0; i < count; i++)
+    {
+        const MetricEntry& entry = s_metrics[index];
+
+        index++;
+        if (index == count)
+        {
+            index = 0;
+        }
+
+        if (strcmp(key, entry.Name) == 0)
+        {
+            m_metricSearchStart = index;
+            entry.Store(jitInstance->mc->cr, value, length);
+            return;
+        }
+    }
 }
 
 /*-------------------------- Misc ---------------------------------------*/
