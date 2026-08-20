@@ -15,8 +15,4 @@
     <ProjectReference Include="..\..\..\..\nativeaot\Test.CoreLib\src\Test.CoreLib.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Compile Include="..\..\..\..\..\tests\JIT\CodeGenBringUpTests\Switch.cs" Link="Switch.cs" />
-  </ItemGroup>
-
 </Project>
