@@ -662,7 +662,7 @@ const bool dspGCtbls = true;
 #ifdef DEBUG
 
 // The byte that the JIT fills uninitialized memory with in DEBUG builds. Used by alloc.h.
-const unsigned char UninitializedFillByte = 0xdd;
+const unsigned char UninitializedFillByte = 0xcd;
 
 // Returns a word filled with UninitializedFillByte.
 template <typename T>
