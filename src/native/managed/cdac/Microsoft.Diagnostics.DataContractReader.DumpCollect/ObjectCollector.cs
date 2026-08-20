@@ -45,7 +45,6 @@ internal sealed class ObjectCollector(
             TargetPointer methodTable = objects.GetMethodTableAddress(objectAddress);
             ITypeHandle type = types.GetTypeHandle(methodTable);
             bool isException = EnumerateTypeHierarchy(type);
-            CacheMethodTableName(methodTable);
 
             if (methodTable == types.GetWellKnownMethodTable(WellKnownMethodTable.String))
             {
@@ -61,6 +60,8 @@ internal sealed class ObjectCollector(
 
             if (isException)
                 EnumerateExceptionData(objectAddress);
+
+            CacheMethodTableName(methodTable);
         }
         catch (System.Exception ex)
         {
