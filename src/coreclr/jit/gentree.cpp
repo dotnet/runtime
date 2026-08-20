@@ -14460,13 +14460,6 @@ void Compiler::gtDispTree(GenTree*                    tree,
         indentStack = new (this, CMK_DebugOnly) IndentStack(this);
     }
 
-    if (IsUninitialized(tree))
-    {
-        /* Value used to initialize nodes */
-        printf("Uninitialized tree node!\n");
-        return;
-    }
-
     if (tree->gtOper >= GT_COUNT)
     {
         gtDispNode(tree, indentStack, msg, isLIR);
