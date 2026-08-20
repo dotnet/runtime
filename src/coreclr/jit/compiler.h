@@ -7059,8 +7059,8 @@ public:
     void fgDebugCheckLoops();
     void fgDebugCheckSsa();
 
-    void fgDebugCheckTypes(GenTree* tree);
-    void fgDebugCheckFlags(GenTree* tree, BasicBlock* block);
+    void fgDebugCheckType(GenTree* node);
+    void fgDebugCheckFlagsAndTypes(GenTree* tree, BasicBlock* block);
     void fgDebugCheckDispFlags(GenTree* tree, GenTreeFlags dispFlags, GenTreeDebugFlags debugFlags);
     void fgDebugCheckFlagsHelper(GenTree* tree, GenTreeFlags actualFlags, GenTreeFlags expectedFlags);
     void fgDebugCheckTryFinallyExits();
