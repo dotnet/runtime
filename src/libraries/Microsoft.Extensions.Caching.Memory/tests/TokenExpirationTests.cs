@@ -14,16 +14,17 @@ namespace Microsoft.Extensions.Caching.Memory
 {
     public class TokenExpirationTests
     {
-        private IMemoryCache CreateCache()
+        private IMemoryCache CreateCache(bool trackLinkedCacheEntries = false)
         {
-            return CreateCache(new SystemClock());
+            return CreateCache(new SystemClock(), trackLinkedCacheEntries);
         }
 
-        private IMemoryCache CreateCache(ISystemClock clock)
+        private IMemoryCache CreateCache(ISystemClock clock, bool trackLinkedCacheEntries = false)
         {
             return new MemoryCache(new MemoryCacheOptions()
             {
                 Clock = clock,
+                TrackLinkedCacheEntries = trackLinkedCacheEntries,
             });
         }
 
@@ -260,12 +261,19 @@ namespace Microsoft.Extensions.Caching.Memory
             Assert.False(cache.TryGetValue(key, out _));
         }
 
-        [Fact]
-        public void ExpirationTokensBehaveLikeAList()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void ExpirationTokensBehaveLikeAList(bool published)
         {
-            var cache = CreateCache();
+            var cache = CreateCache(trackLinkedCacheEntries: published);
             using ICacheEntry entry = cache.CreateEntry("myKey");
             IList<IChangeToken> tokens = entry.ExpirationTokens;
+            entry.SetValue(new object());
+            if (published)
+            {
+                entry.Dispose();
+            }
 
             var first = new TestExpirationToken();
             var second = new TestExpirationToken();
@@ -303,14 +311,21 @@ namespace Microsoft.Extensions.Caching.Memory
 
             tokens.Clear();
             Assert.Empty(tokens);
+
+            tokens.Add(first);
+            Assert.Same(first, Assert.Single(tokens));
+            tokens.Clear();
+            Assert.Empty(tokens);
         }
 
         [Theory]
-        [InlineData(1)] // append into spare capacity
-        [InlineData(4)] // grow from the initial capacity
-        public void ExpirationTokensEnumeratorUsesSnapshotWhileAdding(int initialCount)
+        [InlineData(1, false)] // append into spare capacity while building
+        [InlineData(4, false)] // grow while building
+        [InlineData(1, true)] // publish into spare capacity
+        [InlineData(4, true)] // grow after publication
+        public void ExpirationTokensEnumeratorUsesSnapshotWhileAdding(int initialCount, bool published)
         {
-            var cache = CreateCache();
+            var cache = CreateCache(trackLinkedCacheEntries: published);
             using ICacheEntry entry = cache.CreateEntry("myKey");
             var expected = new List<IChangeToken>(initialCount);
 
@@ -319,6 +334,12 @@ namespace Microsoft.Extensions.Caching.Memory
                 var token = new TestExpirationToken();
                 expected.Add(token);
                 entry.AddExpirationToken(token);
+            }
+
+            entry.SetValue(new object());
+            if (published)
+            {
+                entry.Dispose();
             }
 
             using IEnumerator<IChangeToken> enumerator = entry.ExpirationTokens.GetEnumerator();

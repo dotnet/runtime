@@ -511,9 +511,11 @@ namespace Microsoft.Extensions.Caching.Memory
         }
 
         [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public async Task TokenPropagatedAfterParentIsCommittedIsPolledOnRead(bool activeChangeCallbacks)
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public async Task TokenPropagatedAfterParentIsCommittedIsPolledOnRead(bool activeChangeCallbacks, bool parentHasToken)
         {
             var cache = CreateCache(trackLinkedCacheEntries: true);
             string parentKey = "parent";
@@ -521,6 +523,10 @@ namespace Microsoft.Extensions.Caching.Memory
 
             var parent = (CacheEntry)cache.CreateEntry(parentKey);
             parent.SetValue(new object());
+            if (parentHasToken)
+            {
+                parent.AddExpirationToken(new TestExpirationToken());
+            }
 
             var childReleased = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
             Task child = Task.Run(async () =>
@@ -535,7 +541,8 @@ namespace Microsoft.Extensions.Caching.Memory
             childReleased.SetResult(true);
             await child;
 
-            Assert.Same(token, Assert.Single(parent.ExpirationTokens));
+            Assert.Equal(parentHasToken ? 2 : 1, parent.ExpirationTokens.Count);
+            Assert.Same(token, parent.ExpirationTokens[parent.ExpirationTokens.Count - 1]);
             Assert.Equal(EvictionReason.None, parent.EvictionReason);
 
             token.HasChangedWasCalled = false;

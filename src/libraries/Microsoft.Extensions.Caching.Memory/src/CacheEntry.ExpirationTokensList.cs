@@ -12,30 +12,29 @@ namespace Microsoft.Extensions.Caching.Memory
     internal sealed partial class CacheEntry
     {
         /// <summary>
-        /// The list behind <see cref="ICacheEntry.ExpirationTokens"/>. A reader takes the current
-        /// <see cref="State"/> and walks its visible prefix without synchronizing; a writer serializes on
-        /// the owning <see cref="CacheEntryTokens"/> and publishes additions through the visible count.
+        /// The list behind <see cref="ICacheEntry.ExpirationTokens"/>. Its state is mutated directly while
+        /// the entry is being built. After publication, writers serialize on the owning
+        /// <see cref="CacheEntryTokens"/> while readers walk a lock-free snapshot.
         /// </summary>
         private sealed class ExpirationTokensList : IList<IChangeToken>
         {
             private const int DefaultCapacity = 4;
 
-            // A zero-capacity state is never mutated: the first append always grows and publishes a
-            // per-list state. This makes it safe to share after Clear without another allocation.
-            private static readonly State s_empty = new State(Array.Empty<IChangeToken>(), 0);
+            // This shared state is never mutated: every append must grow and publish a new state.
+            private static readonly State s_emptyPublished = new State(Array.Empty<IChangeToken>(), 0, isPublished: true);
 
             private readonly object _gate;
-            private volatile State _state = s_empty;
+            private volatile State _state = new State(Array.Empty<IChangeToken>(), 0, isPublished: false);
 
-            public ExpirationTokensList(object gate)
+            internal ExpirationTokensList(object gate)
             {
                 _gate = gate;
             }
 
             /// <summary>
-            /// Gets the current contents, which are safe to walk without synchronizing.
+            /// Gets the current contents, which are safe to walk without synchronizing after publication.
             /// </summary>
-            public ReadOnlySpan<IChangeToken> Snapshot
+            internal ReadOnlySpan<IChangeToken> Snapshot
             {
                 get
                 {
@@ -75,25 +74,40 @@ namespace Microsoft.Extensions.Caching.Memory
                             throw new ArgumentOutOfRangeException(nameof(index));
                         }
 
+                        if (!state._isPublished)
+                        {
+                            state._items[index] = value;
+                            return;
+                        }
+
                         var items = new IChangeToken[count];
                         Array.Copy(state._items, items, count);
                         items[index] = value;
-                        _state = new State(items, count);
+                        _state = new State(items, count, isPublished: true);
                     }
                 }
             }
 
             public void Add(IChangeToken item)
             {
+                State state = _state;
+                if (!state._isPublished)
+                {
+                    if (state._count == state._items.Length)
+                    {
+                        GrowBuilder(state, state._count + 1);
+                    }
+
+                    state._items[state._count++] = item;
+                    return;
+                }
+
                 lock (_gate)
                 {
-                    State state = _state;
+                    state = _state;
                     int count = Volatile.Read(ref state._count);
-
                     if (count < state._items.Length)
                     {
-                        // Readers holding this state cannot observe the slot until the release write publishes
-                        // the larger count. The acquire read of Count or Snapshot then observes the item.
                         state._items[count] = item;
                         Volatile.Write(ref state._count, count + 1);
                         return;
@@ -102,7 +116,7 @@ namespace Microsoft.Extensions.Caching.Memory
                     var items = new IChangeToken[GetCapacity(state._items.Length, count + 1)];
                     Array.Copy(state._items, items, count);
                     items[count] = item;
-                    _state = new State(items, count + 1);
+                    _state = new State(items, count + 1, isPublished: true);
                 }
             }
 
@@ -119,6 +133,18 @@ namespace Microsoft.Extensions.Caching.Memory
                     int count = Volatile.Read(ref state._count);
                     int updatedCount = checked(count + source.Length);
 
+                    if (!state._isPublished)
+                    {
+                        if (updatedCount > state._items.Length)
+                        {
+                            GrowBuilder(state, updatedCount);
+                        }
+
+                        source.CopyTo(new Span<IChangeToken>(state._items, count, source.Length));
+                        state._count = updatedCount;
+                        return;
+                    }
+
                     if (updatedCount <= state._items.Length)
                     {
                         source.CopyTo(new Span<IChangeToken>(state._items, count, source.Length));
@@ -129,7 +155,7 @@ namespace Microsoft.Extensions.Caching.Memory
                     var items = new IChangeToken[GetCapacity(state._items.Length, updatedCount)];
                     Array.Copy(state._items, items, count);
                     source.CopyTo(new Span<IChangeToken>(items, count, source.Length));
-                    _state = new State(items, updatedCount);
+                    _state = new State(items, updatedCount, isPublished: true);
                 }
             }
 
@@ -145,11 +171,24 @@ namespace Microsoft.Extensions.Caching.Memory
                     }
 
                     int updatedCount = checked(count + 1);
+                    if (!state._isPublished)
+                    {
+                        if (updatedCount > state._items.Length)
+                        {
+                            GrowBuilder(state, updatedCount);
+                        }
+
+                        Array.Copy(state._items, index, state._items, index + 1, count - index);
+                        state._items[index] = item;
+                        state._count = updatedCount;
+                        return;
+                    }
+
                     var items = new IChangeToken[updatedCount];
                     Array.Copy(state._items, 0, items, 0, index);
                     items[index] = item;
                     Array.Copy(state._items, index, items, index + 1, count - index);
-                    _state = new State(items, updatedCount);
+                    _state = new State(items, updatedCount, isPublished: true);
                 }
             }
 
@@ -164,7 +203,14 @@ namespace Microsoft.Extensions.Caching.Memory
                         throw new ArgumentOutOfRangeException(nameof(index));
                     }
 
-                    RemoveAtCore(state, count, index);
+                    if (!state._isPublished)
+                    {
+                        RemoveAtBuilder(state, index);
+                    }
+                    else
+                    {
+                        RemoveAtPublished(state, count, index);
+                    }
                 }
             }
 
@@ -172,7 +218,16 @@ namespace Microsoft.Extensions.Caching.Memory
             {
                 lock (_gate)
                 {
-                    _state = s_empty;
+                    State state = _state;
+                    if (!state._isPublished)
+                    {
+                        Array.Clear(state._items, 0, state._count);
+                        state._count = 0;
+                    }
+                    else
+                    {
+                        _state = s_emptyPublished;
+                    }
                 }
             }
 
@@ -182,16 +237,20 @@ namespace Microsoft.Extensions.Caching.Memory
                 {
                     State state = _state;
                     int count = Volatile.Read(ref state._count);
-
-                    // Array.IndexOf runs IChangeToken.Equals, which is user code, under the gate. The
-                    // gate also coordinates token attachment and detachment, but never cache-hit readers.
                     int index = Array.IndexOf(state._items, item, 0, count);
                     if (index < 0)
                     {
                         return false;
                     }
 
-                    RemoveAtCore(state, count, index);
+                    if (!state._isPublished)
+                    {
+                        RemoveAtBuilder(state, index);
+                    }
+                    else
+                    {
+                        RemoveAtPublished(state, count, index);
+                    }
                     return true;
                 }
             }
@@ -212,22 +271,31 @@ namespace Microsoft.Extensions.Caching.Memory
 
             public IEnumerator<IChangeToken> GetEnumerator()
             {
-                // Walks a snapshot, so unlike List<T> a mutation from another thread does not invalidate
-                // an enumerator that is already running; it simply is not observed by it.
                 State state = _state;
+                IChangeToken[] items = state._items;
                 int count = Volatile.Read(ref state._count);
                 for (int i = 0; i < count; i++)
                 {
-                    yield return state._items[i];
+                    yield return items[i];
                 }
             }
 
             IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-            // Doubling keeps a run of appends amortized. A parent entry collects the tokens of every
-            // linked child that is committed - or merely read - while the parent is the ambient entry, so
-            // how far the list grows is up to the caller, and copying all of it on each append would make
-            // that quadratic.
+            internal void Publish()
+            {
+                State state = _state;
+                if (state._isPublished)
+                {
+                    return;
+                }
+
+                lock (_gate)
+                {
+                    _state._isPublished = true;
+                }
+            }
+
             private static int GetCapacity(int currentCapacity, int requiredCapacity)
             {
                 int newCapacity = currentCapacity switch
@@ -239,30 +307,47 @@ namespace Microsoft.Extensions.Caching.Memory
                 return Math.Max(newCapacity, requiredCapacity);
             }
 
-            private void RemoveAtCore(State state, int count, int index)
+            private static void GrowBuilder(State state, int requiredCapacity)
+            {
+                var items = new IChangeToken[GetCapacity(state._items.Length, requiredCapacity)];
+                Array.Copy(state._items, items, state._count);
+                state._items = items;
+            }
+
+            private static void RemoveAtBuilder(State state, int index)
+            {
+                int updatedCount = state._count - 1;
+                Array.Copy(state._items, index + 1, state._items, index, updatedCount - index);
+                state._count = updatedCount;
+                state._items[updatedCount] = null!;
+            }
+
+            private void RemoveAtPublished(State state, int count, int index)
             {
                 int updatedCount = count - 1;
                 if (updatedCount == 0)
                 {
-                    _state = s_empty;
+                    _state = s_emptyPublished;
                     return;
                 }
 
                 var items = new IChangeToken[updatedCount];
                 Array.Copy(state._items, 0, items, 0, index);
                 Array.Copy(state._items, index + 1, items, index, updatedCount - index);
-                _state = new State(items, updatedCount);
+                _state = new State(items, updatedCount, isPublished: true);
             }
 
             private sealed class State
             {
-                public readonly IChangeToken[] _items;
+                public IChangeToken[] _items;
                 public int _count;
+                public bool _isPublished;
 
-                public State(IChangeToken[] items, int count)
+                public State(IChangeToken[] items, int count, bool isPublished)
                 {
                     _items = items;
                     _count = count;
+                    _isPublished = isPublished;
                 }
             }
         }

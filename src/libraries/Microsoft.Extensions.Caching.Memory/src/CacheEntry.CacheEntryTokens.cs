@@ -83,12 +83,14 @@ namespace Microsoft.Extensions.Caching.Memory
 
             internal bool CanPropagateTokens() => _expirationTokens != null;
 
+            internal void PublishTokens() => _expirationTokens?.Publish();
+
             internal void PropagateTokens(CacheEntry parentEntry)
             {
                 ExpirationTokensList? expirationTokens = _expirationTokens;
                 if (expirationTokens is not null)
                 {
-                    parentEntry.GetOrCreateTokens().ExpirationTokens.AddRange(expirationTokens.Snapshot);
+                    parentEntry.GetOrCreateExpirationTokens().AddRange(expirationTokens.Snapshot);
                 }
             }
 

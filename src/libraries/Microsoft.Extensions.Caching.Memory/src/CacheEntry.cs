@@ -135,7 +135,7 @@ namespace Microsoft.Extensions.Caching.Memory
         /// Gets the <see cref="IChangeToken"/> instances which cause the cache entry to expire.
         /// </summary>
         [MemberNotNull(nameof(_tokens))]
-        public IList<IChangeToken> ExpirationTokens => GetOrCreateTokens().ExpirationTokens;
+        public IList<IChangeToken> ExpirationTokens => GetOrCreateExpirationTokens();
 
         /// <summary>
         /// Gets or sets the callbacks will be fired after the cache entry is evicted from the cache.
@@ -185,15 +185,21 @@ namespace Microsoft.Extensions.Caching.Memory
         {
             if (!_isDisposed)
             {
-                _isDisposed = true;
-
-                if (_cache.TrackLinkedCacheEntries)
+                bool trackLinkedCacheEntries = _cache.TrackLinkedCacheEntries;
+                if (trackLinkedCacheEntries)
                 {
+                    Volatile.Write(ref _isDisposed, true);
+                    Thread.MemoryBarrier();
+                    _tokens?.PublishTokens();
                     CommitWithTracking();
                 }
-                else if (_isValueSet)
+                else
                 {
-                    _cache.SetEntry(this);
+                    _isDisposed = true;
+                    if (_isValueSet)
+                    {
+                        _cache.SetEntry(this);
+                    }
                 }
             }
         }
@@ -316,6 +322,17 @@ namespace Microsoft.Extensions.Caching.Memory
 
             CacheEntryTokens result = new CacheEntryTokens();
             return Interlocked.CompareExchange(ref _tokens, result, null) ?? result;
+        }
+
+        [MemberNotNull(nameof(_tokens))]
+        private ExpirationTokensList GetOrCreateExpirationTokens()
+        {
+            ExpirationTokensList expirationTokens = GetOrCreateTokens().ExpirationTokens;
+            if (_cache.TrackLinkedCacheEntries && Volatile.Read(ref _isDisposed))
+            {
+                expirationTokens.Publish();
+            }
+            return expirationTokens;
         }
     }
 }
