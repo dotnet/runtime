@@ -3660,7 +3660,6 @@ Thread::ApartmentState Thread::SetApartment(ApartmentState state)
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -4871,7 +4870,6 @@ BOOL Thread::UniqueStack(void* stackStart)
         else
         {
             fUnique = TRUE;
-            FAULT_NOT_FATAL();
             UniqueStackHelper(stackTraceHash, stackTrace);
         }
 #ifdef _DEBUG

@@ -26,7 +26,6 @@ public class WasmTemplateTestsBase : BuildTestBase
     private readonly string _extraBuildArgsPublish = "-p:CompressionEnabled=false -p:WasmEnableHotReload=false";
     protected readonly PublishOptions _defaultPublishOptions;
     protected readonly BuildOptions _defaultBuildOptions;
-    protected const string DefaultRuntimeAssetsRelativePath = "./_framework/";
 
     private static bool s_wasmTemplatesInstalled;
     private static readonly object s_wasmTemplatesLock = new();
@@ -437,7 +436,7 @@ public class WasmTemplateTestsBase : BuildTestBase
         File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "minimal_main.js"), mainJsPath, overwrite: true);
     }
 
-    protected void UpdateBrowserMainJs(string? targetFramework = null, string runtimeAssetsRelativePath = DefaultRuntimeAssetsRelativePath, bool forwardConsole = false)
+    protected void UpdateBrowserMainJs(string? targetFramework = null, bool forwardConsole = false)
     {
         targetFramework ??= DefaultTargetFramework;
         string mainJsPath = Path.Combine(_projectDir, "wwwroot", "main.js");
@@ -462,9 +461,6 @@ public class WasmTemplateTestsBase : BuildTestBase
             // dotnet.run() is used instead of runMain() in net9.0+
             updatedMainJsContent = StringReplaceWithAssert(updatedMainJsContent, "runMain()", "dotnet.run()");
         }
-
-        updatedMainJsContent = StringReplaceWithAssert(updatedMainJsContent, "from './_framework/dotnet.js'", $"from '{runtimeAssetsRelativePath}dotnet.js'");
-
 
         File.WriteAllText(mainJsPath, updatedMainJsContent);
     }

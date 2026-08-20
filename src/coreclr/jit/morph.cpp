@@ -6798,8 +6798,6 @@ GenTree* Compiler::fgMorphConst(GenTree* tree)
         return fgMorphTree(gtNewStringLiteralNode(iat, pValue));
     }
 
-    assert(tree->AsStrCon()->gtScpHnd == info.compScopeHnd || !IsUninitialized(tree->AsStrCon()->gtScpHnd));
-
     LPVOID         pValue;
     InfoAccessType iat =
         info.compCompHnd->constructStringLiteral(tree->AsStrCon()->gtScpHnd, tree->AsStrCon()->gtSconCPX, &pValue);
@@ -8294,7 +8292,8 @@ DONE_MORPHING_CHILDREN:
             if (fgGlobalMorph)
             {
                 /* Mark the nodes that are conditionally executed */
-                fgWalkTreePre(&tree, gtMarkColonCond);
+                MarkColonCondVisitor markColonCond(this);
+                markColonCond.WalkTree(&tree, nullptr);
             }
             /* Since we're doing this postorder we clear this if it got set by a child */
             fgRemoveRestOfBlock = false;
