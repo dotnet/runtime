@@ -103,6 +103,7 @@ namespace System.IO.Packaging.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Desktop's built-in System.IO.Packaging implementation wraps the size-mismatch error in a FileFormatException instead of throwing InvalidDataException directly")]
         public void Open_ContentTypesEntryWithImplausibleDeclaredUncompressedSize_ThrowsInvalidDataException()
         {
             // Regression test: Package.Open's default ReadWrite access automatically parses the mandatory
