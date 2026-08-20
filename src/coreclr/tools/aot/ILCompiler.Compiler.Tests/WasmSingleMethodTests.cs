@@ -62,7 +62,7 @@ namespace ILCompiler.Compiler.Tests
                     if (!WebAssembly.validate(bytes)) {
                         throw new Error("NativeAOT produced an invalid WebAssembly module.");
                     }
-                    const webcil = {
+                    const env = {
                         __stack_pointer: new WebAssembly.Global({ value: "i32", mutable: true }, 65000),
                         __memory_base: new WebAssembly.Global({ value: "i32", mutable: false }, 0),
                         __table_base: new WebAssembly.Global({ value: "i32", mutable: false }, 0),
@@ -71,7 +71,7 @@ namespace ILCompiler.Compiler.Tests
                         rtlRestoreContextTag: new WebAssembly.Tag({ parameters: [] }),
                         memory: new WebAssembly.Memory({ initial: 32 }),
                     };
-                    WebAssembly.instantiate(bytes, { webcil }).then(({ instance }) => {
+                    WebAssembly.instantiate(bytes, { env }).then(({ instance }) => {
                         const result = instance.exports.{{ExportName}}(65000, 0);
                         if (result !== 100) {
                             throw new Error(`Expected 100, got ${result}.`);
