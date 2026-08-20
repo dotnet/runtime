@@ -2381,7 +2381,7 @@ inline unsigned Compiler::lvaGrabTemp(bool shortLifetime DEBUGARG(const char* re
 
 #ifdef DEBUG
         // Fill the old table with junks. So to detect the un-intended use.
-        memset(lvaTable, JitConfig.JitDefaultFill(), lvaCount * sizeof(*lvaTable));
+        memset(lvaTable, UninitializedFillByte, lvaCount * sizeof(*lvaTable));
 #endif
 
         lvaTableCnt = newLvaTableCnt;
@@ -2475,7 +2475,7 @@ inline unsigned Compiler::lvaGrabTemps(unsigned cnt DEBUGARG(const char* reason)
 
 #ifdef DEBUG
         // Fill the old table with junks. So to detect the un-intended use.
-        memset(lvaTable, JitConfig.JitDefaultFill(), lvaCount * sizeof(*lvaTable));
+        memset(lvaTable, UninitializedFillByte, lvaCount * sizeof(*lvaTable));
 #endif
 
         lvaTableCnt = newLvaTableCnt;
@@ -3152,163 +3152,6 @@ XX                                                                           XX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
-
-/*****************************************************************************
- *
- *  Call the given function pointer for all nodes in the tree. The 'visitor'
- *  fn should return one of the following values:
- *
- *  WALK_ABORT          stop walking and return immediately
- *  WALK_CONTINUE       continue walking
- *  WALK_SKIP_SUBTREES  don't walk any subtrees of the node just visited
- *
- *  computeStack - true if we want to make stack visible to callback function
- */
-
-inline Compiler::fgWalkResult Compiler::fgWalkTreePre(
-    GenTree** pTree, fgWalkPreFn* visitor, void* callBackData, bool lclVarsOnly, bool computeStack)
-
-{
-    fgWalkData walkData;
-
-    walkData.m_compiler    = this;
-    walkData.wtprVisitorFn = visitor;
-    walkData.pCallbackData = callBackData;
-    walkData.parent        = nullptr;
-    walkData.wtprLclsOnly  = lclVarsOnly;
-#ifdef DEBUG
-    walkData.printModified = false;
-#endif
-
-    fgWalkResult result;
-    if (lclVarsOnly && computeStack)
-    {
-        GenericTreeWalker<true, false, true, true> walker(&walkData);
-        result = walker.WalkTree(pTree, nullptr);
-    }
-    else if (lclVarsOnly)
-    {
-        GenericTreeWalker<true, false, true, true> walker(&walkData);
-        result = walker.WalkTree(pTree, nullptr);
-    }
-    else if (computeStack)
-    {
-        GenericTreeWalker<true, false, false, true> walker(&walkData);
-        result = walker.WalkTree(pTree, nullptr);
-    }
-    else
-    {
-        GenericTreeWalker<true, false, false, true> walker(&walkData);
-        result = walker.WalkTree(pTree, nullptr);
-    }
-
-#ifdef DEBUG
-    if (verbose && walkData.printModified)
-    {
-        gtDispTree(*pTree);
-    }
-#endif
-
-    return result;
-}
-
-/*****************************************************************************
- *
- *  Same as above, except the tree walk is performed in a depth-first fashion,
- *  The 'visitor' fn should return one of the following values:
- *
- *  WALK_ABORT          stop walking and return immediately
- *  WALK_CONTINUE       continue walking
- *
- *  computeStack - true if we want to make stack visible to callback function
- */
-
-inline Compiler::fgWalkResult Compiler::fgWalkTreePost(GenTree**     pTree,
-                                                       fgWalkPostFn* visitor,
-                                                       void*         callBackData,
-                                                       bool          computeStack)
-{
-    fgWalkData walkData;
-
-    walkData.m_compiler    = this;
-    walkData.wtpoVisitorFn = visitor;
-    walkData.pCallbackData = callBackData;
-    walkData.parent        = nullptr;
-
-    fgWalkResult result;
-    if (computeStack)
-    {
-        GenericTreeWalker<false, true, false, true> walker(&walkData);
-        result = walker.WalkTree(pTree, nullptr);
-    }
-    else
-    {
-        GenericTreeWalker<false, true, false, true> walker(&walkData);
-        result = walker.WalkTree(pTree, nullptr);
-    }
-
-    assert(result == WALK_CONTINUE || result == WALK_ABORT);
-
-    return result;
-}
-
-/*****************************************************************************
- *
- *  Call the given function pointer for all nodes in the tree. The 'visitor'
- *  fn should return one of the following values:
- *
- *  WALK_ABORT          stop walking and return immediately
- *  WALK_CONTINUE       continue walking
- *  WALK_SKIP_SUBTREES  don't walk any subtrees of the node just visited
- */
-
-inline Compiler::fgWalkResult Compiler::fgWalkTree(GenTree**    pTree,
-                                                   fgWalkPreFn* preVisitor,
-                                                   fgWalkPreFn* postVisitor,
-                                                   void*        callBackData)
-
-{
-    fgWalkData walkData;
-
-    walkData.m_compiler    = this;
-    walkData.wtprVisitorFn = preVisitor;
-    walkData.wtpoVisitorFn = postVisitor;
-    walkData.pCallbackData = callBackData;
-    walkData.parent        = nullptr;
-    walkData.wtprLclsOnly  = false;
-#ifdef DEBUG
-    walkData.printModified = false;
-#endif
-
-    fgWalkResult result;
-
-    assert(preVisitor || postVisitor);
-
-    if (preVisitor && postVisitor)
-    {
-        GenericTreeWalker<true, true, false, true> walker(&walkData);
-        result = walker.WalkTree(pTree, nullptr);
-    }
-    else if (preVisitor)
-    {
-        GenericTreeWalker<true, false, false, true> walker(&walkData);
-        result = walker.WalkTree(pTree, nullptr);
-    }
-    else
-    {
-        GenericTreeWalker<false, true, false, true> walker(&walkData);
-        result = walker.WalkTree(pTree, nullptr);
-    }
-
-#ifdef DEBUG
-    if (verbose && walkData.printModified)
-    {
-        gtDispTree(*pTree);
-    }
-#endif
-
-    return result;
-}
 
 /*****************************************************************************
  *

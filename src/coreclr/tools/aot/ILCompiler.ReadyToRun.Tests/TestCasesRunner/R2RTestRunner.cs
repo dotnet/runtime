@@ -167,6 +167,10 @@ internal sealed class R2RTestCase(string name, List<CrossgenCompilation> compila
     public void SetOutputDir(string outputDir)
     {
         Compilations.ForEach(c => c.SetOutputDir(outputDir));
+        foreach (CompiledAssembly assembly in GetAssemblies())
+        {
+            assembly.SetOutputDir(outputDir);
+        }
     }
 }
 

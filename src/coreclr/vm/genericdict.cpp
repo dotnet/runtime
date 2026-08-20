@@ -44,7 +44,6 @@ DictionaryLayout* DictionaryLayout::Allocate(WORD              numSlots,
     {
         THROWS;
         GC_NOTRIGGER;
-        INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(CheckPointer(pAllocator));
         PRECONDITION(numSlots > 0);
     }
@@ -268,7 +267,6 @@ DictionaryLayout* DictionaryLayout::ExpandDictionaryLayout(LoaderAllocator*     
     CONTRACTL
     {
         STANDARD_VM_CHECK;
-        INJECT_FAULT(ThrowOutOfMemory(););
         PRECONDITION(GetAppDomain()->GetGenericDictionaryExpansionLock()->OwnedByCurrentThread());
         PRECONDITION(CheckPointer(pResult) && CheckPointer(pSlotOut));
     }

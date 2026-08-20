@@ -1178,14 +1178,6 @@ void Compiler::fgCompactBlock(BasicBlock* block)
     }
 
     assert(block->KindIs(target->GetKind()));
-
-#if DEBUG
-    if (JitConfig.JitSlowDebugChecksEnabled() != 0)
-    {
-        // Make sure that the predecessor lists are accurate
-        fgDebugCheckBBlist();
-    }
-#endif // DEBUG
 }
 
 //-------------------------------------------------------------
@@ -5026,6 +5018,28 @@ unsigned Compiler::fgGetCodeEstimate(BasicBlock* block)
 
 #ifdef FEATURE_JIT_METHOD_PERF
 
+class NodeCountVisitor final : public GenTreeVisitor<NodeCountVisitor>
+{
+public:
+    enum
+    {
+        DoPreOrder = true,
+    };
+
+    unsigned m_nodeCount = 0;
+
+    NodeCountVisitor(Compiler* compiler)
+        : GenTreeVisitor<NodeCountVisitor>(compiler)
+    {
+    }
+
+    fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+    {
+        m_nodeCount++;
+        return fgWalkResult::WALK_CONTINUE;
+    }
+};
+
 //------------------------------------------------------------------------
 // fgMeasureIR: count and return the number of IR nodes in the function.
 //
@@ -5034,7 +5048,7 @@ unsigned Compiler::fgGetCodeEstimate(BasicBlock* block)
 //
 unsigned Compiler::fgMeasureIR()
 {
-    unsigned nodeCount = 0;
+    NodeCountVisitor visitor(this);
 
     for (BasicBlock* const block : Blocks())
     {
@@ -5042,25 +5056,19 @@ unsigned Compiler::fgMeasureIR()
         {
             for (Statement* const stmt : block->Statements())
             {
-                fgWalkTreePre(
-                    stmt->GetRootNodePointer(),
-                    [](GenTree** slot, fgWalkData* data) -> Compiler::fgWalkResult {
-                    (*reinterpret_cast<unsigned*>(data->pCallbackData))++;
-                    return Compiler::WALK_CONTINUE;
-                },
-                    &nodeCount);
+                visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
             }
         }
         else
         {
             for (GenTree* node : LIR::AsRange(block))
             {
-                nodeCount++;
+                visitor.m_nodeCount++;
             }
         }
     }
 
-    return nodeCount;
+    return visitor.m_nodeCount;
 }
 
 #endif // FEATURE_JIT_METHOD_PERF

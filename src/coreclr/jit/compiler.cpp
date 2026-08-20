@@ -759,7 +759,9 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
 #if defined(TARGET_WASM)
     CorInfoWasmType abiType = info.compCompHnd->getWasmLowering(clsHnd);
 
-    if (abiType == CORINFO_WASM_TYPE_VOID)
+    // A struct wider than the wasm value it lowers to is split across several of them when
+    // passed, but returned via a hidden buffer like any other aggregate.
+    if ((abiType == CORINFO_WASM_TYPE_VOID) || (structSize > genTypeSize(WasmClassifier::ToJitType(abiType))))
     {
         howToReturnStruct = SPK_ByReference;
         useType           = TYP_UNKNOWN;
@@ -1743,48 +1745,6 @@ void Compiler::compDoComponentUnitTestsOnce()
 }
 
 //------------------------------------------------------------------------
-// compGetJitDefaultFill:
-//
-// Return Value:
-//    An unsigned char value used to initialize memory allocated by the JIT.
-//    The default value is taken from DOTNET_JitDefaultFill. If it is not set
-//    the value will be 0xdd. When JitStress is active a random value based
-//    on the method hash is used.
-//
-// Notes:
-//    Note that we can't use small values like zero, because we have some
-//    asserts that can fire for such values.
-//
-// static
-unsigned char Compiler::compGetJitDefaultFill(Compiler* comp)
-{
-    unsigned char defaultFill = (unsigned char)JitConfig.JitDefaultFill();
-
-    if (comp != nullptr && comp->compStressCompile(STRESS_GENERIC_VARN, 50))
-    {
-        unsigned temp;
-        temp = comp->info.compMethodHash();
-        temp = (temp >> 16) ^ temp;
-        temp = (temp >> 8) ^ temp;
-        temp = temp & 0xff;
-        // asserts like this: assert(!IsUninitialized(stkLvl));
-        // mean that small values for defaultFill are problematic
-        // so we make the value larger in that case.
-        if (temp < 0x20)
-        {
-            temp |= 0x80;
-        }
-
-        // Make a misaligned pointer value to reduce probability of getting a valid value and firing
-        // assert(!IsUninitialized(pointer)).
-        temp |= 0x1;
-
-        defaultFill = (unsigned char)temp;
-    }
-
-    return defaultFill;
-}
-
 /*****************************************************************************/
 
 VarName Compiler::compVarName(regNumber reg, bool isFloatReg)
@@ -2696,7 +2656,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     {
         printf("****** START compiling %s (MethodHash=%08x)\n", info.compFullName, info.compMethodHash());
         printf("Generating code for %s %s\n", Target::g_tgtPlatformName(), Target::g_tgtCPUName);
-        printf(""); // in our logic this causes a flush
+        fflush(jitstdout());
     }
 
     if (JitConfig.JitBreak().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
@@ -6642,7 +6602,7 @@ void Compiler::compCompileFinish()
         printf(" %3d |", info.compTotalColdCodeSize);
 
         printf(" %s\n", eeGetMethodFullName(info.compMethodHnd));
-        printf(""); // in our logic this causes a flush
+        fflush(jitstdout());
     }
 
     JITDUMP("Final metrics:\n");
@@ -6655,7 +6615,7 @@ void Compiler::compCompileFinish()
     if (verbose)
     {
         printf("\n****** DONE compiling %s\n", info.compFullName);
-        printf(""); // in our logic this causes a flush
+        fflush(jitstdout());
     }
 
 #if TRACK_ENREG_STATS
@@ -8004,7 +7964,7 @@ const CORINFO_FPSTRUCT_LOWERING* Compiler::GetFpStructLowering(CORINFO_CLASS_HAN
 #ifdef DEBUG
         if (verbose)
         {
-            printf("**** getFpStructInRegistersInfo(0x%x (%s, %u bytes)) =>\n", dspPtr(structHandle),
+            printf("**** getFpStructInRegistersInfo(%p (%s, %u bytes)) =>\n", (void*)dspPtr(structHandle),
                    eeGetClassName(structHandle), info.compCompHnd->getClassSize(structHandle));
 
             if (lowering->byIntegerCallConv)
