@@ -131,7 +131,7 @@ void Compiler::lvaInitTypeRef()
         }
         else
         {
-            printf("Swift compilation returns %s as %d primitive(s) in registers\n",
+            printf("Swift compilation returns %s as %zu primitive(s) in registers\n",
                    typGetObjLayout(retTypeHnd)->GetClassName(), lowering->numLoweredElements);
             for (size_t i = 0; i < lowering->numLoweredElements; i++)
             {
@@ -1807,7 +1807,7 @@ bool Compiler::StructPromotionHelper::CanPromoteStructVar(unsigned lclNum)
     // (which would result in dependent promotion anyway).
     if ((m_compiler->info.compCallConv == CorInfoCallConvExtension::Swift) && varDsc->lvIsParam)
     {
-        JITDUMP("  struct promotion of V%02u is disabled because it is a parameter to a Swift function");
+        JITDUMP("  struct promotion of V%02u is disabled because it is a parameter to a Swift function", lclNum);
         return false;
     }
 #endif
@@ -5328,7 +5328,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
                 continue;
             }
 
-            if ((lclNum == lvaMonAcquired) || (lclNum == lvaAsyncThreadObjectVar) ||
+            if ((lclNum == lvaMonAcquired) || (lclNum == lvaResumedIndicator) || (lclNum == lvaAsyncThreadObjectVar) ||
                 (lclNum == lvaAsyncExecutionContextVar) || (lclNum == lvaAsyncSynchronizationContextVar))
             {
                 continue;
@@ -5857,6 +5857,18 @@ int Compiler::lvaAllocLocalAndSetVirtualOffset(unsigned lclNum, unsigned size, i
 //
 int Compiler::lvaAllocAsyncContexts(int stkOffs)
 {
+    if (lvaResumedIndicator != BAD_VAR_NUM)
+    {
+        stkOffs =
+            lvaAllocLocalAndSetVirtualOffset(lvaResumedIndicator, lvaLclStackHomeSize(lvaResumedIndicator), stkOffs);
+    }
+    else
+    {
+        // For x86 EnC the VM expects that we always allocate stack space
+        // for these locals when contexts were saved.
+        assert((info.compMethodInfo->options & CORINFO_ASYNC_SAVE_CONTEXTS) == 0);
+    }
+
     if (lvaAsyncThreadObjectVar != BAD_VAR_NUM)
     {
         stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaAsyncThreadObjectVar,
@@ -5864,8 +5876,6 @@ int Compiler::lvaAllocAsyncContexts(int stkOffs)
     }
     else
     {
-        // For x86 EnC the VM expects that we always allocate stack space
-        // for this local when contexts were saved.
         assert((info.compMethodInfo->options & CORINFO_ASYNC_SAVE_CONTEXTS) == 0);
     }
 
@@ -5876,8 +5886,6 @@ int Compiler::lvaAllocAsyncContexts(int stkOffs)
     }
     else
     {
-        // For x86 EnC the VM expects that we always allocate stack space
-        // for this local when contexts were saved.
         assert((info.compMethodInfo->options & CORINFO_ASYNC_SAVE_CONTEXTS) == 0);
     }
 
@@ -6675,7 +6683,7 @@ void Compiler::lvaTableDump(FrameLayoutState curState)
     assert(codeGen->regSet.tmpAllFree());
     for (TempDsc* temp = codeGen->regSet.tmpListBeg(); temp != nullptr; temp = codeGen->regSet.tmpListNxt(temp))
     {
-        printf(";  TEMP_%02u %26s%*s%7s  -> ", -temp->tdTempNum(), " ", refCntWtdWidth, " ",
+        printf(";  TEMP_%02u %26s%*s%7s  -> ", -temp->tdTempNum(), " ", static_cast<int>(refCntWtdWidth), " ",
                varTypeName(temp->tdTempType()));
         int offset = temp->tdTempOffs();
         printf(" [%2s%1s0x%02X]\n", isFramePointerUsed() ? STR_FPBASE : STR_SPBASE, (offset < 0 ? "-" : "+"),
@@ -6946,11 +6954,11 @@ unsigned Compiler::lvaStressLclFldPadding(unsigned lclNum)
 }
 
 //-----------------------------------------------------------------------------
-// lvaStressLclFldCB: Convert GT_LCL_VAR's to GT_LCL_FLD's
+// lvaStressLclFldNode: Convert GT_LCL_VAR's to GT_LCL_FLD's
 //
 // Arguments:
-//    pTree -- pointer to tree to possibly convert
-//    data  -- walker data
+//    pTree      -- pointer to tree to possibly convert
+//    bFirstPass -- whether this is the first of the two stress passes
 //
 // Notes:
 //    The stress mode does 2 passes.
@@ -6958,7 +6966,7 @@ unsigned Compiler::lvaStressLclFldPadding(unsigned lclNum)
 //    In the first pass we will mark the locals where we CAN't apply the stress mode.
 //    In the second pass we will do the appropriate morphing wherever we've not determined we can't do it.
 //
-Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* data)
+Compiler::fgWalkResult Compiler::lvaStressLclFldNode(GenTree** pTree, bool bFirstPass)
 {
     GenTree* const       tree = *pTree;
     GenTreeLclVarCommon* lcl  = tree->OperIsAnyLocal() ? tree->AsLclVarCommon() : nullptr;
@@ -6968,12 +6976,11 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
         return WALK_CONTINUE;
     }
 
-    Compiler* const  pComp      = ((lvaStressLclFldArgs*)data->pCallbackData)->m_compiler;
-    bool const       bFirstPass = ((lvaStressLclFldArgs*)data->pCallbackData)->m_bFirstPass;
-    unsigned const   lclNum     = lcl->GetLclNum();
-    LclVarDsc* const varDsc     = pComp->lvaGetDesc(lclNum);
-    var_types const  lclType    = lcl->TypeGet();
-    var_types const  varType    = varDsc->TypeGet();
+    Compiler* const  pComp   = this;
+    unsigned const   lclNum  = lcl->GetLclNum();
+    LclVarDsc* const varDsc  = pComp->lvaGetDesc(lclNum);
+    var_types const  lclType = lcl->TypeGet();
+    var_types const  varType = varDsc->TypeGet();
 
     if (varDsc->lvNoLclFldStress)
     {
@@ -7152,6 +7159,28 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
 
 /*****************************************************************************/
 
+class StressLclFldVisitor final : public GenTreeVisitor<StressLclFldVisitor>
+{
+    bool m_bFirstPass;
+
+public:
+    enum
+    {
+        DoPreOrder = true,
+    };
+
+    StressLclFldVisitor(Compiler* compiler, bool bFirstPass)
+        : GenTreeVisitor<StressLclFldVisitor>(compiler)
+        , m_bFirstPass(bFirstPass)
+    {
+    }
+
+    fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+    {
+        return m_compiler->lvaStressLclFldNode(use, m_bFirstPass);
+    }
+};
+
 void Compiler::lvaStressLclFld()
 {
     if (!compStressCompile(STRESS_LCL_FLDS, 5))
@@ -7159,16 +7188,19 @@ void Compiler::lvaStressLclFld()
         return;
     }
 
-    lvaStressLclFldArgs Args;
-    Args.m_compiler   = this;
-    Args.m_bFirstPass = true;
+    // The stress mode does 2 passes; see lvaStressLclFldNode.
+    for (bool bFirstPass : {true, false})
+    {
+        StressLclFldVisitor visitor(this, bFirstPass);
 
-    // Do First pass
-    fgWalkAllTreesPre(lvaStressLclFldCB, &Args);
-
-    // Second pass
-    Args.m_bFirstPass = false;
-    fgWalkAllTreesPre(lvaStressLclFldCB, &Args);
+        for (BasicBlock* const block : Blocks())
+        {
+            for (Statement* const stmt : block->Statements())
+            {
+                visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
+            }
+        }
+    }
 }
 
 #endif // DEBUG

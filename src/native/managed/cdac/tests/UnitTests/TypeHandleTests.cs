@@ -150,7 +150,7 @@ public unsafe class TypeHandleTests
         runtimeTypeSystem.TypeDescs.Add(typeHandle);
         runtimeTypeSystem.ElementTypes[typeHandle] = CorElementType.I4;
         TestPlaceholderTarget target = CreateTarget(architecture, runtimeTypeSystem);
-        IXCLRDataTypeInstance typeInstance = new ClrDataTypeInstance(target, typeHandle, null);
+        IXCLRDataTypeInstance typeInstance = new ClrDataTypeInstance(target, typeHandle, null, new());
 
         uint nameLen = 0;
         Assert.Equal(HResults.S_OK, typeInstance.GetName(0, 0, &nameLen, null));
@@ -178,7 +178,7 @@ public unsafe class TypeHandleTests
         runtimeTypeSystem.TypeDescs.Add(typeHandle);
         runtimeTypeSystem.ElementTypes[typeHandle] = CorElementType.I4;
         TestPlaceholderTarget target = CreateTarget(architecture, runtimeTypeSystem);
-        IXCLRDataTypeDefinition typeDefinition = new ClrDataTypeDefinition(target, ModuleAddress, 0x02000001, typeHandle, null);
+        IXCLRDataTypeDefinition typeDefinition = new ClrDataTypeDefinition(target, ModuleAddress, 0x02000001, typeHandle, null, new());
 
         uint nameLen = 0;
         Assert.Equal(HResults.S_OK, typeDefinition.GetName(0, 0, &nameLen, null));
@@ -215,7 +215,8 @@ public unsafe class TypeHandleTests
             ModuleAddress,
             (uint)MetadataTokens.GetToken(typeDef),
             null,
-            null);
+            null,
+            new());
 
         char[] nameBuffer = new char[32];
         uint nameLen = 0;
@@ -239,7 +240,7 @@ public unsafe class TypeHandleTests
         TestRuntimeTypeSystem runtimeTypeSystem = new();
         runtimeTypeSystem.ElementTypes[typeHandle] = CorElementType.I4;
         TestPlaceholderTarget target = CreateTarget(architecture, runtimeTypeSystem);
-        IXCLRDataTypeDefinition typeDefinition = new ClrDataTypeDefinition(target, ModuleAddress, 0x02000001, typeHandle, null);
+        IXCLRDataTypeDefinition typeDefinition = new ClrDataTypeDefinition(target, ModuleAddress, 0x02000001, typeHandle, null, new());
 
         uint elementType = 0;
         Assert.Equal(HResults.S_OK, typeDefinition.GetCorElementType(&elementType));
@@ -256,7 +257,7 @@ public unsafe class TypeHandleTests
         TargetTypeHandle typeHandle = new(0x2002);
         TestRuntimeTypeSystem runtimeTypeSystem = new();
         TestPlaceholderTarget target = CreateTarget(architecture, runtimeTypeSystem);
-        IXCLRDataTypeDefinition typeDefinition = new ClrDataTypeDefinition(target, ModuleAddress, Token, typeHandle, null);
+        IXCLRDataTypeDefinition typeDefinition = new ClrDataTypeDefinition(target, ModuleAddress, Token, typeHandle, null, new());
 
         uint token = 0;
         DacComNullableByRef<IXCLRDataModule> moduleOut = new(isNullRef: false);
@@ -274,7 +275,6 @@ public unsafe class TypeHandleTests
     public void ClrDataTypeInstance_GetDefinition(MockTarget.Architecture architecture)
     {
         const uint TypeDefToken = 0x02000001;
-        TargetPointer lookupMap = new(0x2000);
         TargetPointer definitionTypeAddress = new(0x3000);
         TargetTypeHandle typeHandle = new(0x4000);
         TargetTypeHandle definitionType = new(definitionTypeAddress);
@@ -287,26 +287,21 @@ public unsafe class TypeHandleTests
         runtimeTypeSystem.TypeDefTokens[definitionType] = TypeDefToken;
         runtimeTypeSystem.TypeHandles[definitionTypeAddress] = definitionType;
 
-        ModuleLookupTables lookupTables = new(
-            FieldDefToDesc: TargetPointer.Null,
-            ManifestModuleReferences: TargetPointer.Null,
-            MemberRefToDesc: TargetPointer.Null,
-            MethodDefToDesc: TargetPointer.Null,
-            TypeDefToMethodTable: lookupMap,
-            TypeRefToMethodTable: TargetPointer.Null,
-            MethodDefToILCodeVersioningState: TargetPointer.Null,
-            TableDataOffset: 0);
         Mock<ILoader> loader = new();
         loader.Setup(l => l.GetModuleHandleFromModulePtr(new TargetPointer(ModuleAddress))).Returns(moduleHandle);
-        loader.Setup(l => l.GetLookupTables(moduleHandle)).Returns(lookupTables);
         TargetNUInt lookupFlags = default;
-        loader.Setup(l => l.GetModuleLookupMapElement(lookupMap, TypeDefToken, out lookupFlags)).Returns(definitionTypeAddress);
+        loader.Setup(l => l.GetModuleLookupMapElement(
+                moduleHandle,
+                ModuleLookupMapKind.TypeDefToMethodTable,
+                TypeDefToken,
+                out lookupFlags))
+            .Returns(definitionTypeAddress);
 
         TestPlaceholderTarget target = new TestPlaceholderTarget.Builder(architecture)
             .AddMockContract<IRuntimeTypeSystem>(runtimeTypeSystem)
             .AddMockContract(loader)
             .Build();
-        IXCLRDataTypeInstance typeInstance = new ClrDataTypeInstance(target, typeHandle, null);
+        IXCLRDataTypeInstance typeInstance = new ClrDataTypeInstance(target, typeHandle, null, new());
         DacComNullableByRef<IXCLRDataTypeDefinition> typeDefinition = new(isNullRef: false);
 
         Assert.Equal(HResults.S_OK, typeInstance.GetDefinition(typeDefinition));
@@ -315,7 +310,12 @@ public unsafe class TypeHandleTests
         DacComNullableByRef<IXCLRDataTypeDefinition> nullTypeDefinition = new(isNullRef: true);
         Assert.Equal(HResults.E_POINTER, typeInstance.GetDefinition(nullTypeDefinition));
 
-        loader.Setup(l => l.GetModuleLookupMapElement(lookupMap, TypeDefToken, out lookupFlags)).Returns(TargetPointer.Null);
+        loader.Setup(l => l.GetModuleLookupMapElement(
+                moduleHandle,
+                ModuleLookupMapKind.TypeDefToMethodTable,
+                TypeDefToken,
+                out lookupFlags))
+            .Returns(TargetPointer.Null);
         DacComNullableByRef<IXCLRDataTypeDefinition> unloadedTypeDefinition = new(isNullRef: false);
         Assert.Equal(HResults.S_OK, typeInstance.GetDefinition(unloadedTypeDefinition));
         Assert.IsType<ClrDataTypeDefinition>(unloadedTypeDefinition.Interface);

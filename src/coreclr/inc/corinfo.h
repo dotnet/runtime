@@ -1836,6 +1836,14 @@ struct CORINFO_ASYNC_INFO
     CORINFO_METHOD_HANDLE restoreContextsMethHnd;
     // Method handle for AsyncHelpers.RestoreContextsOnSuspension, used before suspending in async methods
     CORINFO_METHOD_HANDLE restoreContextsOnSuspensionMethHnd;
+    // Method handle for AsyncHelpers.RestoreInlinedFrameContexts, used when an inlined
+    // async callee logically returns to its caller after having been resumed
+    CORINFO_METHOD_HANDLE restoreInlinedFrameContextsMethHnd;
+    // Method handles for AsyncHelpers.CaptureInlinedFrameTransition*, used on suspension to capture
+    // the contexts each inlined async frame hands to its caller
+    CORINFO_METHOD_HANDLE captureInlinedFrameTransitionWithContinuationContextMethHnd;
+    CORINFO_METHOD_HANDLE captureInlinedFrameTransitionNoContinuationContextMethHnd;
+    CORINFO_METHOD_HANDLE captureInlinedFrameTransitionContinueOnThreadPoolMethHnd;
     // Finish suspension without saving continuation context (i.e. custom awaiter or ConfigureAwait(false))
     CORINFO_METHOD_HANDLE finishSuspensionNoContinuationContextMethHnd;
     // Finish suspension with saving continuation context (i.e. normal task await)
@@ -3167,6 +3175,27 @@ public:
     // lookup). 'instArg' is filled with the (potentially runtime-looked-up)
     // instantiation argument that must be passed to the await call.
     virtual CORINFO_METHOD_HANDLE getAwaitReturnCall(CORINFO_METHOD_HANDLE callerHandle, CORINFO_CONTEXT_HANDLE* contextHandle, CORINFO_LOOKUP* instArg) = 0;
+
+    // Get the method to use to await a struct awaiter that is stored inside the
+    // continuation instead of being boxed. 'pResolvedToken' is the resolved
+    // token of the AsyncHelpers.AwaitAwaiter/UnsafeAwaitAwaiter call site that
+    // is being replaced, and 'isUnsafe' indicates whether the unsafe variant is
+    // being replaced.
+    //
+    // Returns the method handle of the call to insert, or NULL if the
+    // transformation cannot be performed. 'contextHandle' is set to the context
+    // to use when inlining the call, exactly as getCallInfo would report it for
+    // a direct call to it (it may be an approximate/shared instantiation when
+    // 'instArg' requires a runtime lookup). 'instArg' is filled with the
+    // (potentially runtime-looked-up) instantiation argument that must be
+    // passed to the call.
+    virtual CORINFO_METHOD_HANDLE getAwaitAwaiterInContinuationCall(
+        CORINFO_METHOD_HANDLE callerHandle,
+        CORINFO_RESOLVED_TOKEN* pResolvedToken,
+        bool isUnsafe,
+        CORINFO_CONTEXT_HANDLE* contextHandle,
+        CORINFO_LOOKUP* instArg
+    ) = 0;
 
     /*********************************************************************************/
     //

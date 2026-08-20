@@ -15,10 +15,13 @@
 #include "gcheapenumerationprofiler/gcheapenumerationprofiler.h"
 #include "gcprofiler/gcprofiler.h"
 #include "handlesprofiler/handlesprofiler.h"
+#include "ijw/ijwprofiler.h"
 #include "metadatagetdispenser/metadatagetdispenser.h"
 #include "nullprofiler/nullprofiler.h"
 #include "rejitprofiler/rejitprofiler.h"
 #include "releaseondetach/releaseondetach.h"
+#include "runtimeasyncapis/runtimeasyncapisprofiler.h"
+#include "runtimeasynctypes/runtimeasynctypesprofiler.h"
 #include "transitions/transitions.h"
 #include "multiple/multiple.h"
 #include "inlining/inlining.h"
@@ -126,6 +129,14 @@ HRESULT STDMETHODCALLTYPE ClassFactory::CreateInstance(IUnknown *pUnkOuter, REFI
     {
         profiler = new ReleaseOnDetach();
     }
+    else if (clsid == RuntimeAsyncApisProfiler::GetClsid())
+    {
+        profiler = new RuntimeAsyncApisProfiler();
+    }
+    else if (clsid == RuntimeAsyncTypesProfiler::GetClsid())
+    {
+        profiler = new RuntimeAsyncTypesProfiler();
+    }
     else if (clsid == Transitions::GetClsid())
     {
         profiler = new Transitions();
@@ -173,6 +184,10 @@ HRESULT STDMETHODCALLTYPE ClassFactory::CreateInstance(IUnknown *pUnkOuter, REFI
     else if (clsid == GCSkipObjectsAllocatedByClassCallbackProfiler::GetClsid())
     {
         profiler = new GCSkipObjectsAllocatedByClassCallbackProfiler();
+    }
+    else if (clsid == IjwProfiler::GetClsid())
+    {
+        profiler = new IjwProfiler();
     }
     else
     {

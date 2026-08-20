@@ -40,27 +40,34 @@ namespace System
         private struct DecCalc
         {
             // NOTE: Do not change the offsets of these fields. This structure must have the same layout as Decimal.
+            /// <safety>Non-reference uint that overlaps no other field; the explicit layout only mirrors Decimal's flags word.</safety>
             [FieldOffset(0)]
-            private uint uflags;
+            private safe uint uflags;
+            /// <safety>Non-reference uint holding the high 32 bits of the coefficient; it overlaps no other field.</safety>
             [FieldOffset(4)]
-            private uint uhi;
+            private safe uint uhi;
 #if BIGENDIAN
+            /// <safety>Non-reference uint overlapping only the low half of the ulomid integer view, so the union cannot forge a managed reference.</safety>
             [FieldOffset(8)]
             private uint umid;
+            /// <safety>Non-reference uint overlapping only the high half of the ulomid integer view, so the union cannot forge a managed reference.</safety>
             [FieldOffset(12)]
             private uint ulo;
 #else
+            /// <safety>Non-reference uint overlapping only the low half of the ulomid integer view, so the union cannot forge a managed reference.</safety>
             [FieldOffset(8)]
-            private uint ulo;
+            private safe uint ulo;
+            /// <safety>Non-reference uint overlapping only the high half of the ulomid integer view, so the union cannot forge a managed reference.</safety>
             [FieldOffset(12)]
-            private uint umid;
+            private safe uint umid;
 #endif
 
             /// <summary>
             /// The low and mid fields combined
             /// </summary>
+            /// <safety>64-bit integer view over the ulo and umid uints; every overlapping field is a non-reference integer, so the union cannot forge a managed reference.</safety>
             [FieldOffset(8)]
-            private ulong ulomid;
+            private safe ulong ulomid;
 
             private uint High
             {
@@ -2483,17 +2490,22 @@ done:
             [StructLayout(LayoutKind.Explicit, Pack = sizeof(uint))]
             private struct Buf12
             {
+                /// <safety>Non-reference uint overlapping the low half of the ulo64LE integer view; every field of this buffer is a non-reference integer, so the union cannot forge a managed reference.</safety>
                 [FieldOffset(0 * 4)]
-                public uint U0;
+                public safe uint U0;
+                /// <safety>Non-reference uint overlapping the ulo64LE and uhigh64LE integer views; every field of this buffer is a non-reference integer, so the union cannot forge a managed reference.</safety>
                 [FieldOffset(1 * 4)]
-                public uint U1;
+                public safe uint U1;
+                /// <safety>Non-reference uint overlapping the high half of the uhigh64LE integer view; every field of this buffer is a non-reference integer, so the union cannot forge a managed reference.</safety>
                 [FieldOffset(2 * 4)]
-                public uint U2;
+                public safe uint U2;
 
+                /// <safety>64-bit integer view over the U0/U1 uints; every overlapping field is a non-reference integer, so the union cannot forge a managed reference.</safety>
                 [FieldOffset(0)]
-                private ulong ulo64LE;
+                private safe ulong ulo64LE;
+                /// <safety>64-bit integer view over the U1/U2 uints; every overlapping field is a non-reference integer, so the union cannot forge a managed reference.</safety>
                 [FieldOffset(4)]
-                private ulong uhigh64LE;
+                private safe ulong uhigh64LE;
 
                 public ulong Low64
                 {
@@ -2524,19 +2536,25 @@ done:
             [StructLayout(LayoutKind.Explicit)]
             private struct Buf16
             {
+                /// <safety>Non-reference uint overlapping the all-integer Low96 buffer; every field of this buffer is a non-reference integer, so the union cannot forge a managed reference.</safety>
                 [FieldOffset(0 * 4)]
-                public uint U0;
+                public safe uint U0;
+                /// <safety>Non-reference uint overlapping the all-integer Low96 and High96 buffers; every field of this buffer is a non-reference integer, so the union cannot forge a managed reference.</safety>
                 [FieldOffset(1 * 4)]
-                public uint U1;
+                public safe uint U1;
+                /// <safety>Non-reference uint overlapping the all-integer Low96 and High96 buffers; every field of this buffer is a non-reference integer, so the union cannot forge a managed reference.</safety>
                 [FieldOffset(2 * 4)]
-                public uint U2;
+                public safe uint U2;
+                /// <safety>Non-reference uint overlapping the all-integer High96 buffer; every field of this buffer is a non-reference integer, so the union cannot forge a managed reference.</safety>
                 [FieldOffset(3 * 4)]
-                public uint U3;
+                public safe uint U3;
 
+                /// <safety>Overlaps the U0-U2 uints; Buf12 is itself an all-integer buffer, so the union cannot forge a managed reference.</safety>
                 [FieldOffset(0)]
-                public Buf12 Low96;
+                public safe Buf12 Low96;
+                /// <safety>Overlaps the U1-U3 uints; Buf12 is itself an all-integer buffer, so the union cannot forge a managed reference.</safety>
                 [FieldOffset(4)]
-                public Buf12 High96;
+                public safe Buf12 High96;
 
                 public ulong Low64
                 {
@@ -2554,25 +2572,34 @@ done:
             [StructLayout(LayoutKind.Explicit)]
             private struct Buf24
             {
+                /// <safety>Non-reference uint overlapping the low half of the ulo64LE integer view; every field of this buffer is a non-reference integer, so the union cannot forge a managed reference.</safety>
                 [FieldOffset(0 * 4)]
-                public uint U0;
+                public safe uint U0;
+                /// <safety>Non-reference uint overlapping the high half of the ulo64LE integer view; every field of this buffer is a non-reference integer, so the union cannot forge a managed reference.</safety>
                 [FieldOffset(1 * 4)]
-                public uint U1;
+                public safe uint U1;
+                /// <safety>Non-reference uint overlapping the low half of the umid64LE integer view; every field of this buffer is a non-reference integer, so the union cannot forge a managed reference.</safety>
                 [FieldOffset(2 * 4)]
-                public uint U2;
+                public safe uint U2;
+                /// <safety>Non-reference uint overlapping the high half of the umid64LE integer view; every field of this buffer is a non-reference integer, so the union cannot forge a managed reference.</safety>
                 [FieldOffset(3 * 4)]
-                public uint U3;
+                public safe uint U3;
+                /// <safety>Non-reference uint overlapping the low half of the uhigh64LE integer view; every field of this buffer is a non-reference integer, so the union cannot forge a managed reference.</safety>
                 [FieldOffset(4 * 4)]
-                public uint U4;
+                public safe uint U4;
+                /// <safety>Non-reference uint overlapping the high half of the uhigh64LE integer view; every field of this buffer is a non-reference integer, so the union cannot forge a managed reference.</safety>
                 [FieldOffset(5 * 4)]
-                public uint U5;
+                public safe uint U5;
 
+                /// <safety>64-bit integer view over the U0/U1 uints; every overlapping field is a non-reference integer, so the union cannot forge a managed reference.</safety>
                 [FieldOffset(0 * 8)]
-                private ulong ulo64LE;
+                private safe ulong ulo64LE;
+                /// <safety>64-bit integer view over the U2/U3 uints; every overlapping field is a non-reference integer, so the union cannot forge a managed reference.</safety>
                 [FieldOffset(1 * 8)]
-                private ulong umid64LE;
+                private safe ulong umid64LE;
+                /// <safety>64-bit integer view over the U4/U5 uints; every overlapping field is a non-reference integer, so the union cannot forge a managed reference.</safety>
                 [FieldOffset(2 * 8)]
-                private ulong uhigh64LE;
+                private safe ulong uhigh64LE;
 
                 public ulong Low64
                 {

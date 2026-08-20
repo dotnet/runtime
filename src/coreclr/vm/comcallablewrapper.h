@@ -256,12 +256,6 @@ public:
         return m_flags & enum_ImplementsIMarshal;
     }
 
-    BOOL SupportsIClassX()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_flags & enum_SupportsIClassX;
-    }
-
     TypeHandle GetClassType()
     {
         LIMITED_METHOD_CONTRACT;
@@ -312,7 +306,7 @@ private:
         enum_InvisibleParent                  = 0x20,
         enum_ImplementsICustomQueryInterface  = 0x40,
         // enum_Unused                        = 0x80,
-        enum_SupportsIClassX                  = 0x100,
+        // enum_Unused                        = 0x100,
 
         enum_RepresentsVariantInterface       = 0x400, // this is a template for an interface with variance
 

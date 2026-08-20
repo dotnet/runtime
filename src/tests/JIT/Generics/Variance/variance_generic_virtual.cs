@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+namespace JitTest_Generics_Variance_variance_generic_virtual;
+
 using Xunit;
 
 class Base
@@ -46,6 +48,7 @@ class ClassWithVariantGvms : IInVariant<object>, IInVariant<Base>, IOutVariant<D
 
 public class VarianceGenericVirtual
 {
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {
