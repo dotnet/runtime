@@ -1971,7 +1971,7 @@ public:
     {
     }
 
-    void operator()(Compiler* compiler, GenTreeCall* call, Compiler::GenTreeStack& ancestors)
+    void operator()(Compiler* compiler, GenTreeCall* call, Compiler::GenTreeStack&)
     {
         Compiler::GDVProbeType probeType = compiler->compClassifyGDVProbeType(call);
 
@@ -2034,7 +2034,7 @@ public:
     {
     }
 
-    void operator()(Compiler* compiler, GenTree* call, Compiler::GenTreeStack& ancestors)
+    void operator()(Compiler* compiler, GenTree* call, Compiler::GenTreeStack&)
     {
         ICorJitInfo::PgoInstrumentationSchema schemaElem = {};
         schemaElem.Count                                 = 1;
