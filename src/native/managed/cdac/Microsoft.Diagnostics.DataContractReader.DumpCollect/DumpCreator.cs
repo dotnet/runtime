@@ -3,27 +3,34 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Contracts.Extensions;
-using Microsoft.Diagnostics.DataContractReader.Legacy;
 using ContractModuleHandle = Microsoft.Diagnostics.DataContractReader.Contracts.ModuleHandle;
 
 namespace Microsoft.Diagnostics.DataContractReader.DumpCollect;
 
-internal sealed class DumpCreator(
-    Target target,
-    bool includeHeap,
-    MemoryRegionEmitter emitter)
+internal sealed class DumpCreator
 {
     private const int MaxThreads = 1_000_000;
 
-    private readonly Target _target = target;
-    private readonly bool _includeHeap = includeHeap;
-    private readonly MemoryRegionEmitter _emitter = emitter;
+    private readonly Target _target;
+    private readonly bool _includeHeap;
+    private readonly MemoryRegionEmitter _emitter;
     private readonly HashSet<TargetPointer> _loaderAllocators = [];
-    private readonly Dictionary<TargetPointer, string> _miniMetadataNames = [];
-    private readonly HashSet<TargetPointer> _visitedObjects = [];
+    private readonly MethodCollector _methods;
+    private readonly ObjectCollector _objects;
+
+    public DumpCreator(
+        Target target,
+        bool includeHeap,
+        MemoryRegionEmitter emitter)
+    {
+        _target = target;
+        _includeHeap = includeHeap;
+        _emitter = emitter;
+        _methods = new(target, emitter);
+        _objects = new(target, emitter, _methods);
+    }
 
     public void EnumerateMemoryRegions()
     {
@@ -39,7 +46,7 @@ internal sealed class DumpCreator(
             TryEnumerate("stress log", EnumerateStressLog);
         }
 
-        TryEnumerate("mini metadata", () => MiniMetadataWriter.Write(_target, _emitter, _miniMetadataNames));
+        TryEnumerate("mini metadata", WriteMiniMetadata);
     }
 
     private void TryEnumerate(string phase, Action enumerate)
@@ -128,7 +135,14 @@ internal sealed class DumpCreator(
             DumpCollectLogger.Log(
                 $"Thread: address=0x{threadAddress.Value:x}, id={threadData.Id}, osId=0x{threadData.OSId.Value:x}, next=0x{threadData.NextThread.Value:x}.");
             EnumerateStack(threadData);
-            EnumerateThreadException(threadData);
+            if (threadData.LastThrownObjectHandle != TargetPointer.Null)
+            {
+                TargetPointer exceptionObject =
+                    _target.ReadPointer(threadData.LastThrownObjectHandle.Value);
+                DumpCollectLogger.Log(
+                    $"Thread {threadData.Id} exception: handle=0x{threadData.LastThrownObjectHandle.Value:x}, object=0x{exceptionObject.Value:x}.");
+                _objects.EnumerateObject(exceptionObject);
+            }
 
             enumeratedThreadCount++;
             threadAddress = threadData.NextThread;
@@ -146,7 +160,7 @@ internal sealed class DumpCreator(
             frameCount++;
             TargetCodePointer instructionPointer = stackWalk.GetInstructionPointer(frame);
             TargetPointer methodDesc = stackWalk.GetMethodDescPtr(frame);
-            CaptureMethod(methodDesc);
+            _methods.CaptureMethod(methodDesc);
             DumpCollectLogger.Log(
                 $"Thread {threadData.Id} frame {frameCount}: ip=0x{instructionPointer.Value:x}, methodDesc=0x{methodDesc.Value:x}.");
         }
@@ -155,267 +169,13 @@ internal sealed class DumpCreator(
             $"Thread {threadData.Id} stack enumeration completed: frames={frameCount}.");
     }
 
-    private void EnumerateThreadException(ThreadData threadData)
+    private void WriteMiniMetadata()
     {
-        if (threadData.LastThrownObjectHandle == TargetPointer.Null)
-            return;
+        Dictionary<TargetPointer, string> names = new(_methods.Names);
+        foreach ((TargetPointer address, string name) in _objects.Names)
+            names.TryAdd(address, name);
 
-        try
-        {
-            TargetPointer exceptionObject = _target.ReadPointer(threadData.LastThrownObjectHandle.Value);
-            if (exceptionObject == TargetPointer.Null)
-                return;
-
-            DumpCollectLogger.Log(
-                $"Thread {threadData.Id} exception: handle=0x{threadData.LastThrownObjectHandle.Value:x}, object=0x{exceptionObject.Value:x}.");
-            EnumerateExceptionObject(exceptionObject);
-        }
-        catch (System.Exception ex)
-        {
-            DumpCollectLogger.LogException($"thread {threadData.Id} exception enumeration", ex);
-        }
-    }
-
-    private void EnumerateObject(TargetPointer objectAddress)
-    {
-        if (objectAddress == TargetPointer.Null || _visitedObjects.Contains(objectAddress))
-            return;
-
-        try
-        {
-            IObject objectContract = _target.Contracts.Object;
-            ulong size = objectContract.GetSize(objectAddress);
-            if (size == 0 || size > 64 * 1024 * 1024)
-                return;
-
-            _emitter.Add(objectAddress.Value, size);
-
-            TargetPointer methodTable = objectContract.GetMethodTableAddress(objectAddress);
-            EnumerateObjectDataDependencies(objectAddress, methodTable);
-            CacheMethodTableName(methodTable);
-            TargetPointer exceptionMethodTable =
-                _target.Contracts.RuntimeTypeSystem.GetWellKnownMethodTable(WellKnownMethodTable.Exception);
-            ITypeHandle typeHandle = _target.Contracts.RuntimeTypeSystem.GetTypeHandle(methodTable);
-            while (typeHandle.Address != TargetPointer.Null)
-            {
-                if (typeHandle.Address == exceptionMethodTable)
-                {
-                    EnumerateExceptionObject(objectAddress);
-                    return;
-                }
-
-                TargetPointer parentMethodTable =
-                    _target.Contracts.RuntimeTypeSystem.GetParentMethodTable(typeHandle);
-                if (parentMethodTable == TargetPointer.Null)
-                    break;
-
-                typeHandle = _target.Contracts.RuntimeTypeSystem.GetTypeHandle(parentMethodTable);
-            }
-
-            _visitedObjects.Add(objectAddress);
-        }
-        catch (System.Exception ex)
-        {
-            DumpCollectLogger.LogException($"object 0x{objectAddress.Value:x} enumeration", ex);
-        }
-    }
-
-    private void EnumerateExceptionObject(TargetPointer exceptionObject)
-    {
-        if (!_visitedObjects.Add(exceptionObject))
-            return;
-
-        IObject objectContract = _target.Contracts.Object;
-        ulong objectSize = objectContract.GetSize(exceptionObject);
-        _emitter.Add(exceptionObject.Value, objectSize);
-        IRuntimeTypeSystem runtimeTypeSystem = _target.Contracts.RuntimeTypeSystem;
-        TargetPointer methodTable = objectContract.GetMethodTableAddress(exceptionObject);
-        EnumerateObjectDataDependencies(exceptionObject, methodTable);
-        ITypeHandle typeHandle = runtimeTypeSystem.GetTypeHandle(methodTable);
-        runtimeTypeSystem.GetBaseSize(typeHandle);
-        runtimeTypeSystem.GetComponentSize(typeHandle);
-        runtimeTypeSystem.IsFreeObjectMethodTable(typeHandle);
-        runtimeTypeSystem.IsArray(typeHandle, out _);
-
-        ITypeHandle currentType = typeHandle;
-        while (currentType.Address != TargetPointer.Null)
-        {
-            EnumerateMethodTableDataDependencies(currentType);
-            TargetPointer parentMethodTable = runtimeTypeSystem.GetParentMethodTable(currentType);
-            if (parentMethodTable == TargetPointer.Null)
-                break;
-
-            currentType = runtimeTypeSystem.GetTypeHandle(parentMethodTable);
-        }
-
-        CacheMethodTableName(methodTable);
-
-        if (_target.Contracts.FeatureFlags.IsEnabled(RuntimeFeature.COMInterop))
-            objectContract.GetBuiltInComData(exceptionObject, out _, out _, out _);
-
-        IException exceptionContract = _target.Contracts.Exception;
-        ExceptionData exceptionData = exceptionContract.GetExceptionData(exceptionObject);
-        EnumerateObject(exceptionData.Message);
-        EnumerateObject(exceptionData.StackTrace);
-        EnumerateObject(exceptionData.WatsonBuckets);
-        EnumerateObject(exceptionData.StackTraceString);
-        EnumerateObject(exceptionData.RemoteStackTraceString);
-
-        foreach (ExceptionStackFrameInfo frame in exceptionContract.GetExceptionStackFrames(exceptionObject))
-            CaptureMethod(frame.MethodDesc);
-
-        if (exceptionData.InnerException != TargetPointer.Null)
-            EnumerateExceptionObject(exceptionData.InnerException);
-    }
-
-    private void EnumerateMethodTableDataDependencies(ITypeHandle typeHandle)
-    {
-        IRuntimeTypeSystem runtimeTypeSystem = _target.Contracts.RuntimeTypeSystem;
-        runtimeTypeSystem.GetBaseSize(typeHandle);
-        runtimeTypeSystem.GetComponentSize(typeHandle);
-        if (runtimeTypeSystem.IsFreeObjectMethodTable(typeHandle))
-            return;
-
-        runtimeTypeSystem.GetModule(typeHandle);
-        runtimeTypeSystem.GetCanonicalMethodTable(typeHandle);
-        runtimeTypeSystem.GetParentMethodTable(typeHandle);
-        runtimeTypeSystem.GetNumInterfaces(typeHandle);
-        runtimeTypeSystem.GetNumMethods(typeHandle);
-        runtimeTypeSystem.GetTypeDefToken(typeHandle);
-        runtimeTypeSystem.GetTypeDefTypeAttributes(typeHandle);
-        runtimeTypeSystem.ContainsGCPointers(typeHandle);
-        runtimeTypeSystem.IsDynamicStatics(typeHandle);
-    }
-
-    private void EnumerateObjectDataDependencies(
-        TargetPointer objectAddress,
-        TargetPointer methodTable)
-    {
-        IObject objectContract = _target.Contracts.Object;
-        objectContract.GetSyncBlockAddress(objectAddress);
-
-        IRuntimeTypeSystem runtimeTypeSystem = _target.Contracts.RuntimeTypeSystem;
-        ITypeHandle typeHandle = runtimeTypeSystem.GetTypeHandle(methodTable);
-        runtimeTypeSystem.GetBaseSize(typeHandle);
-        runtimeTypeSystem.GetComponentSize(typeHandle);
-
-        if (runtimeTypeSystem.IsFreeObjectMethodTable(typeHandle))
-            return;
-
-        if (methodTable == runtimeTypeSystem.GetWellKnownMethodTable(WellKnownMethodTable.String))
-        {
-            objectContract.GetStringValue(objectAddress);
-            return;
-        }
-
-        if (runtimeTypeSystem.IsArray(typeHandle, out _))
-        {
-            objectContract.GetArrayData(objectAddress, out _, out _, out _, out _, out _);
-            ITypeHandle elementType = runtimeTypeSystem.GetTypeParam(typeHandle);
-            runtimeTypeSystem.GetSignatureCorElementType(elementType);
-            while (runtimeTypeSystem.IsArray(elementType, out _))
-                elementType = runtimeTypeSystem.GetTypeParam(elementType);
-        }
-
-        if (_target.Contracts.FeatureFlags.IsEnabled(RuntimeFeature.COMInterop))
-            objectContract.GetBuiltInComData(objectAddress, out _, out _, out _);
-    }
-
-    private void CaptureMethod(TargetPointer methodDesc)
-    {
-        EnumerateMethodDependencies(methodDesc);
-        CacheMethodName(methodDesc);
-    }
-
-    private void CacheMethodTableName(TargetPointer methodTable)
-    {
-        if (methodTable == TargetPointer.Null || _miniMetadataNames.ContainsKey(methodTable))
-            return;
-
-        try
-        {
-            using (_emitter.SuppressTargetReadEmission())
-            {
-                IRuntimeTypeSystem runtimeTypeSystem = _target.Contracts.RuntimeTypeSystem;
-                ITypeHandle typeHandle = runtimeTypeSystem.GetTypeHandle(methodTable);
-                if (runtimeTypeSystem.IsFreeObjectMethodTable(typeHandle))
-                    return;
-
-                StringBuilder name = new();
-                TypeNameBuilder.AppendType(
-                    _target,
-                    name,
-                    typeHandle,
-                    TypeNameFormat.FormatNamespace | TypeNameFormat.FormatFullInst);
-                if (name.Length != 0)
-                    _miniMetadataNames.Add(methodTable, name.ToString());
-            }
-        }
-        catch (System.Exception ex)
-        {
-            DumpCollectLogger.LogException(
-                $"method table name 0x{methodTable.Value:x} collection",
-                ex);
-        }
-    }
-
-    private void EnumerateMethodDependencies(TargetPointer methodDesc)
-    {
-        if (methodDesc == TargetPointer.Null)
-            return;
-
-        IRuntimeTypeSystem runtimeTypeSystem = _target.Contracts.RuntimeTypeSystem;
-        MethodDescHandle methodDescHandle = runtimeTypeSystem.GetMethodDescHandle(methodDesc);
-        if (runtimeTypeSystem.IsNoMetadataMethod(methodDescHandle, out _))
-            return;
-
-        runtimeTypeSystem.GetMethodToken(methodDescHandle);
-        TargetPointer methodTable = runtimeTypeSystem.GetMethodTable(methodDescHandle);
-        TargetPointer module = runtimeTypeSystem.GetModule(runtimeTypeSystem.GetTypeHandle(methodTable));
-        ContractModuleHandle moduleHandle = _target.Contracts.Loader.GetModuleHandleFromModulePtr(module);
-        _target.Contracts.Loader.GetPath(moduleHandle);
-    }
-
-    private void CacheMethodName(TargetPointer methodDesc)
-    {
-        if (methodDesc == TargetPointer.Null || _miniMetadataNames.ContainsKey(methodDesc))
-            return;
-
-        IRuntimeTypeSystem runtimeTypeSystem = _target.Contracts.RuntimeTypeSystem;
-        MethodDescHandle methodDescHandle = runtimeTypeSystem.GetMethodDescHandle(methodDesc);
-        if (runtimeTypeSystem.IsNoMetadataMethod(methodDescHandle, out _)
-            && !runtimeTypeSystem.IsILStub(methodDescHandle))
-        {
-            return;
-        }
-
-        try
-        {
-            using (_emitter.SuppressTargetReadEmission())
-            {
-                string? name = ResolveMethodName(methodDescHandle);
-                if (name is not null)
-                    _miniMetadataNames.Add(methodDesc, name);
-            }
-        }
-        catch (System.Exception ex)
-        {
-            DumpCollectLogger.LogException(
-                $"method name 0x{methodDesc.Value:x} collection",
-                ex);
-        }
-    }
-
-    private string? ResolveMethodName(MethodDescHandle methodDesc)
-    {
-        StringBuilder name = new();
-        TypeNameBuilder.AppendMethodInternal(
-            _target,
-            name,
-            methodDesc,
-            TypeNameFormat.FormatSignature | TypeNameFormat.FormatNamespace | TypeNameFormat.FormatFullInst);
-
-        return name.Length == 0 ? null : name.ToString();
+        MiniMetadataWriter.Write(_target, _emitter, names);
     }
 
     private void EnumerateGC()
