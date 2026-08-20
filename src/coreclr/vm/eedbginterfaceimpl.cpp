@@ -811,11 +811,6 @@ TypeHandle EEDbgInterfaceImpl::FindLoadedInstantiation(Module *pModule,
     // Lookup operations run the class loader in non-load mode.
     ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
 
-
-    // scan violation:  asserts that this can be suppressed since there is currently
-    // work on dac-izing all this code and as a result the issue will become moot.
-    CONTRACT_VIOLATION(FaultViolation);
-
     return ClassLoader::LoadGenericInstantiationThrowing(pModule, typeDef, Instantiation(inst, ntypars),
                                                         ClassLoader::DontLoadTypes);
 }
@@ -1171,7 +1166,6 @@ bool EEDbgInterfaceImpl::TraceFrame(Thread *thread,
     if (fResult)
     {
         SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE;
-        FAULT_NOT_FATAL();
         SString buffer;
         StubManager::DbgWriteLog("  td=%s\n", trace->DbgToString(buffer));
     }
@@ -1217,7 +1211,6 @@ bool EEDbgInterfaceImpl::TraceManager(Thread *thread,
     if (fResult)
     {
         // Should never be on helper thread
-        FAULT_NOT_FATAL();
         SString buffer;
         StubManager::DbgWriteLog("  td=%s\n", trace->DbgToString(buffer));
     }

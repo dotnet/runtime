@@ -107,7 +107,6 @@ BOOL ShouldOurUEFDisplayUI(PEXCEPTION_POINTERS pExceptionInfo)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     // Test first for the canned SO EXCEPTION_POINTERS structure as it has a NULL context record and will break the code below.
     extern EXCEPTION_POINTERS g_SOExceptionPointers;
@@ -137,7 +136,6 @@ BOOL ExceptionIsOfRightType(TypeHandle clauseType, TypeHandle thrownType)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        FORBID_FAULT;
     }
     CONTRACTL_END;
 
@@ -172,7 +170,6 @@ ULONG GetExceptionMessage(OBJECTREF throwable,
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(ThrowOutOfMemory());
     }
     CONTRACTL_END;
 
@@ -212,7 +209,6 @@ void GetExceptionMessage(OBJECTREF throwable, SString &result)
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(ThrowOutOfMemory());
     }
     CONTRACTL_END;
 
@@ -230,7 +226,6 @@ STRINGREF GetExceptionMessage(OBJECTREF throwable)
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(ThrowOutOfMemory());
     }
     CONTRACTL_END;
 
@@ -370,7 +365,6 @@ void ExceptionPreserveStackTrace(   // No return.
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(ThrowOutOfMemory());
     }
     CONTRACTL_END;
 
@@ -596,7 +590,6 @@ DWORD ComputeEnclosingHandlerNestingLevel(IJitManager *pIJM,
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        FORBID_FAULT;
     }
     CONTRACTL_END;
 
@@ -1089,7 +1082,6 @@ HRESULT EHRangeTreeNode::AddNode(EHRangeTreeNode *pNode)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT(return E_OUTOFMEMORY;);
         PRECONDITION(pNode != NULL);
     }
     CONTRACTL_END;
@@ -1439,7 +1431,6 @@ TRY_CATCH_FINALLY GetTcf(EHRangeTreeNode *pNode,
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        FORBID_FAULT;
     }
     CONTRACTL_END;
 
@@ -1665,7 +1656,6 @@ HRESULT DestinationIsValid(void *pDjiToken,
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        FORBID_FAULT;
     }
     CONTRACTL_END;
 
@@ -1699,7 +1689,6 @@ HRESULT SetIPFromSrcToDst(Thread *pThread,
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(return E_OUTOFMEMORY;);
     }
     CONTRACTL_END;
 
@@ -1844,7 +1833,6 @@ BOOL IsInFirstFrameOfHandler(Thread *pThread, IJitManager *pJitManager, const ME
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        FORBID_FAULT;
     }
     CONTRACTL_END;
 
@@ -2749,7 +2737,6 @@ BOOL IsExceptionOfType(RuntimeExceptionKind reKind, Exception *pException)
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_MODE_ANY;
-    STATIC_CONTRACT_FORBID_FAULT;
 
       if (pException->IsType(reKind))
         return TRUE;
@@ -2774,7 +2761,6 @@ BOOL IsExceptionOfType(RuntimeExceptionKind reKind, OBJECTREF *pThrowable)
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_MODE_COOPERATIVE;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     _ASSERTE(pThrowable != NULL);
 
@@ -2792,7 +2778,6 @@ BOOL IsUncatchable(OBJECTREF *pThrowable)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
-        FORBID_FAULT;
     } CONTRACTL_END;
 
     _ASSERTE(pThrowable != NULL);
@@ -3587,7 +3572,6 @@ LONG UserBreakpointFilter(EXCEPTION_POINTERS* pEP)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        FORBID_FAULT;
     }
     CONTRACTL_END;
 
@@ -3596,7 +3580,7 @@ LONG UserBreakpointFilter(EXCEPTION_POINTERS* pEP)
     // user breakpoints as if they're unhandled exceptions right away.
     //
     // @todo: The InternalUnhandledExceptionFilter can trigger.
-    CONTRACT_VIOLATION(GCViolation | ThrowsViolation | ModeViolation | FaultViolation | FaultNotFatal);
+    CONTRACT_VIOLATION(GCViolation | ThrowsViolation | ModeViolation);
 
 #ifdef TARGET_UNIX
     int result = COMUnhandledExceptionFilter(pEP);
@@ -3660,7 +3644,6 @@ LONG DefaultCatchFilter(EXCEPTION_POINTERS *ep, PVOID pv)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        FORBID_FAULT;
     }
     CONTRACTL_END;
 
@@ -3753,7 +3736,6 @@ BOOL InstallUnhandledExceptionFilter() {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_MODE_ANY;
-    STATIC_CONTRACT_FORBID_FAULT;
 
 #ifndef TARGET_UNIX
     g_pOriginalUnhandledExceptionFilter = SetUnhandledExceptionFilter(COMUnhandledExceptionFilter);
@@ -4930,7 +4912,6 @@ BOOL IsThreadHijackedForThreadStop(Thread* pThread, EXCEPTION_RECORD* pException
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        FORBID_FAULT;
     }
     CONTRACTL_END;
 
@@ -4971,7 +4952,6 @@ void AdjustContextForThreadStop(Thread* pThread,
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        FORBID_FAULT;
     }
     CONTRACTL_END;
 
@@ -5004,7 +4984,6 @@ CreateCOMPlusExceptionObject(Thread *pThread, EXCEPTION_RECORD *pExceptionRecord
         NOTHROW;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        FORBID_FAULT;
     }
     CONTRACTL_END;
 
@@ -5034,7 +5013,6 @@ CreateCOMPlusExceptionObject(Thread *pThread, EXCEPTION_RECORD *pExceptionRecord
     {
         EX_TRY
         {
-            FAULT_NOT_FATAL();
 
             ThreadPreventAsyncHolder preventAsync;
             ResetProcessorStateHolder procState;
@@ -5761,8 +5739,6 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo
     Thread *pThread;
 
     {
-        MAYBE_FAULT_FORBID_NO_ALLOC((pExceptionInfo->ExceptionRecord->ExceptionCode == STATUS_NO_MEMORY));
-
         pThread = GetThreadNULLOk();
 
         //
@@ -5849,16 +5825,6 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo
         return VEH_CONTINUE_SEARCH;
     }
 
-    // We can't probe here, because we won't return from the CLRVectoredExceptionHandlerPhase2
-    // on WIN64
-    //
-
-    if (pThread)
-    {
-        FAULT_FORBID_NO_ALLOC();
-        CantAllocHolder caHolder;
-    }
-
     return CLRVectoredExceptionHandlerPhase2(pExceptionInfo);
 }
 
@@ -5890,7 +5856,6 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase2(PEXCEPTION_POINTERS pExcepti
     VEH_ACTION action;
 
     {
-        MAYBE_FAULT_FORBID_NO_ALLOC((pExceptionRecord->ExceptionCode == STATUS_NO_MEMORY));
         CantAllocHolder caHolder;
         action = CLRVectoredExceptionHandlerPhase3(pExceptionInfo);
     }
@@ -5909,7 +5874,6 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase2(PEXCEPTION_POINTERS pExcepti
     // In OOM situations, this call better not fault.
     //
     {
-        MAYBE_FAULT_FORBID_NO_ALLOC((pExceptionRecord->ExceptionCode == STATUS_NO_MEMORY));
         CantAllocHolder caHolder;
 
         // Give the debugger a chance. Note that its okay for this call to trigger a GC, since the debugger will take
@@ -5961,7 +5925,6 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase2(PEXCEPTION_POINTERS pExcepti
     BOOL fShouldHandleManagedFault;
 
     {
-        MAYBE_FAULT_FORBID_NO_ALLOC((pExceptionRecord->ExceptionCode == STATUS_NO_MEMORY));
         CantAllocHolder caHolder;
         fShouldHandleManagedFault = ShouldHandleManagedFault(pExceptionInfo->ExceptionRecord,
                                                              pExceptionInfo->ContextRecord,
@@ -6106,7 +6069,7 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase3(PEXCEPTION_POINTERS pExcepti
                 PCODE ip = (PCODE)GetIP(pContext);
                 if (IsIPInModule(GetClrModuleBase(), ip) || IsIPInModule(GCHeapUtilities::GetGCModuleBase(), ip))
                 {
-                    CONTRACT_VIOLATION(ThrowsViolation|FaultViolation);
+                    CONTRACT_VIOLATION(ThrowsViolation);
 
                     //
                     // If you're debugging, set the debugger to catch first-chance AV's, then simply hit F5 or
@@ -9435,7 +9398,6 @@ VOID ThrowBadFormatWorker(UINT resID, LPCWSTR imageName DEBUGARG(_In_z_ const ch
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         SUPPORTS_DAC;
     }
     CONTRACTL_END

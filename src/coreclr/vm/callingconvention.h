@@ -1166,7 +1166,6 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetParamTypeArgOffset()
         INSTANCE_CHECK;
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
         MODE_ANY;
     }
     CONTRACTL_END
@@ -1216,7 +1215,6 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetAsyncContinuationArgOffset()
         INSTANCE_CHECK;
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
         MODE_ANY;
     }
     CONTRACTL_END
@@ -1955,7 +1953,6 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ComputeReturnFlags()
         INSTANCE_CHECK;
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
         MODE_ANY;
     }
     CONTRACTL_END
@@ -2102,7 +2099,6 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ForceSigWalk()
         INSTANCE_CHECK;
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
         MODE_ANY;
     }
     CONTRACTL_END

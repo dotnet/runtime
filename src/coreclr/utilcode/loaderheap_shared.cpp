@@ -39,7 +39,6 @@ UnlockedLoaderHeapBase::~UnlockedLoaderHeapBase()
         DESTRUCTOR_CHECK;
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -178,14 +177,12 @@ BOOL LoaderHeapEvent::QuietValidate()
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;  //If we OOM in here, we just throw the event away.
     }
     CONTRACTL_END
 
     LoaderHeapEvent *pNewEvent;
     {
         {
-            FAULT_NOT_FATAL();
             pNewEvent = new (nothrow) LoaderHeapEvent;
         }
         if (!pNewEvent)
@@ -216,7 +213,6 @@ BOOL LoaderHeapEvent::QuietValidate()
 /*static*/ VOID LoaderHeapSniffer::ClearEvents(UnlockedLoaderHeapBase *pHeap)
 {
     STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     LoaderHeapEvent *pEvent = pHeap->m_pEventList;
     while (pEvent)
@@ -231,7 +227,6 @@ BOOL LoaderHeapEvent::QuietValidate()
 /*static*/ VOID LoaderHeapSniffer::CompactEvents(UnlockedLoaderHeapBase *pHeap)
 {
     STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     LoaderHeapEvent **ppEvent = &(pHeap->m_pEventList);
     while (*ppEvent)
@@ -280,7 +275,6 @@ BOOL LoaderHeapEvent::QuietValidate()
 /*static*/ VOID LoaderHeapSniffer::PrintEvents(UnlockedLoaderHeapBase *pHeap)
 {
     STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     printf("\n------------- LoaderHeapEvents (in reverse time order!) --------------------");
 

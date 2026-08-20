@@ -388,14 +388,10 @@ inline void* ALIGN_DOWN(void* ptr, size_t alignment)
 #define GC_NOTRIGGER
 #define CAN_TAKE_LOCK
 #define SUPPORTS_DAC
-#define FORBID_FAULT
 #define CONTRACTL_END
 #define TRIGGERSGC()
 #define WRAPPER(_contract)
 #define DISABLED(_contract)
-#define INJECT_FAULT(_expr)
-#define INJECTFAULT_GCHEAP 0x2
-#define FAULT_NOT_FATAL()
 #define BEGIN_DEBUG_ONLY_CODE
 #define END_DEBUG_ONLY_CODE
 #define BEGIN_GETTHREAD_ALLOWED

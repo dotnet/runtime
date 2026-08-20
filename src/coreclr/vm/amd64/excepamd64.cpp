@@ -417,13 +417,9 @@ RtlVirtualUnwind_Worker (
     {
         // InEpilogue && HasManagedBreakpoint, this means we have to make the fake code buffer
 
-        // We explicitly handle the case where the new below can't allocate, but we're still
-        // getting an assert from inside new b/c we can be called within a FAULT_FORBID scope.
-        //
         // If new does fail we will still end up crashing, but the debugger doesn't have to
         // be OOM hardened in Whidbey and this is a debugger only code path so we're ok in
         // that department.
-        FAULT_NOT_FATAL();
 
         LOG((LF_CORDB, LL_EVERYTHING, "RVU_CBSW: Function has >1 managed bp in the epilogue, and we are in the epilogue, need a code buffer for RtlVirtualUnwind\n"));
 

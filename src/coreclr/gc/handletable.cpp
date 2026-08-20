@@ -97,7 +97,6 @@ HHANDLETABLE HndCreateHandleTable(const uint32_t *pTypeFlags, uint32_t uTypeCoun
     {
         NOTHROW;
         GC_NOTRIGGER;
-        INJECT_FAULT(return NULL);
     }
     CONTRACTL_END;
 

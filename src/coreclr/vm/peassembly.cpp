@@ -174,7 +174,6 @@ void PEAssembly::GetPathOrCodeBase(SString &result)
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -284,7 +283,6 @@ void PEAssembly::OpenImporter()
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -309,7 +307,6 @@ void PEAssembly::ConvertMDInternalToReadWrite()
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT(EX_THROW(EEMessageException, (E_OUTOFMEMORY)););
     }
     CONTRACTL_END;
 
@@ -376,7 +373,6 @@ void PEAssembly::OpenMDImport()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -405,7 +401,6 @@ void PEAssembly::OpenEmitter()
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -447,7 +442,6 @@ void PEAssembly::GetEmbeddedResource(DWORD dwOffset, DWORD *cbResource, PBYTE *p
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(ThrowOutOfMemory(););
     }
     CONTRACTL_END;
 
@@ -475,7 +469,6 @@ PEAssembly* PEAssembly::LoadAssembly(mdAssemblyRef kAssemblyRef)
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -505,7 +498,6 @@ BOOL PEAssembly::GetResource(LPCSTR szName, DWORD *cbResource,
         INSTANCE_CHECK;
         THROWS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
         WRAPPER(GC_TRIGGERS);
     }
     CONTRACTL_END;
@@ -836,7 +828,6 @@ BOOL PEAssembly::GetCodeBase(SString &result)
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -866,7 +857,6 @@ void PEAssembly::PathToUrl(SString &string)
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -975,7 +965,6 @@ LPCWSTR PEAssembly::GetPathForErrorMessages()
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         SUPPORTS_DAC_HOST_ONLY;
     }
     CONTRACTL_END
