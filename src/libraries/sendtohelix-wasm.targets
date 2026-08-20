@@ -46,9 +46,10 @@
       <Output TaskParameter="Lines" ItemName="BuildWasmApps_PerJobList" />
     </ReadLinesFromFile>
 
-    <!-- The workload lane fans out per test class; the no-workload lane (and the webcil /
-         fingerprinting / bundler permutations) runs as a single work item. Identical for
-         every runtime flavor - only $(BuildWasmAppsJobsList) differs. -->
+    <!-- Lanes that run with the workload installed and with the default fingerprinting/bundler
+         settings fan out per test class (this includes the webcil permutations); every other
+         lane runs as a single work item. Identical for every runtime flavor - only
+         $(BuildWasmAppsJobsList) differs. -->
     <ItemGroup>
       <HelixWorkItem Include="@(BuildWasmApps_PerJobList->'$(WorkItemPrefix)%(Identity)')" Condition="'$(TestUsingWorkloads)' == 'true' and '$(WasmFingerprintAssets)' == 'true' and '$(WasmBundlerFriendlyBootConfig)' == 'false'">
         <PayloadArchive>$(_BuildWasmAppsPayloadArchive)</PayloadArchive>
