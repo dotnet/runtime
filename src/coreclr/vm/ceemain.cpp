@@ -223,6 +223,10 @@ HRESULT EEStartup();
 
 static void InitializeGarbageCollector();
 
+#if defined(TARGET_UNIX) && !defined(TARGET_WASM)
+static void InitThreadStateKey();
+#endif
+
 #ifdef DEBUGGING_SUPPORTED
 static void InitializeDebugger(void);
 static void TerminateDebugger(void);
@@ -704,6 +708,10 @@ void EEStartupHelper()
 
         InitThreadManager();
         STRESS_LOG0(LF_STARTUP, LL_ALWAYS, "Returned successfully from InitThreadManager");
+
+#if defined(TARGET_UNIX) && !defined(TARGET_WASM)
+        InitThreadStateKey();
+#endif
 
 #ifdef FEATURE_PERFTRACING
         // Initialize the event pipe.
@@ -1784,12 +1792,48 @@ void EnsureTlsDestructionMonitor()
 }
 
 #else
+#if defined(TARGET_UNIX) && !defined(TARGET_WASM)
+static pthread_key_t g_threadStateKey;
+static byte g_threadStateDestroyedMarker;
+
+static void SetThreadStateDestroyed()
+{
+    if (pthread_setspecific(g_threadStateKey, &g_threadStateDestroyedMarker) != 0)
+    {
+        EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
+    }
+}
+
+// POSIX clears a key before invoking its destructor, and key destructor order is unspecified.
+// Restore the marker so managed re-entry from later destructors can observe the destroyed state.
+static void ThreadStateKeyDestructor(void* state)
+{
+    if (state == &g_threadStateDestroyedMarker)
+    {
+        SetThreadStateDestroyed();
+    }
+}
+
+static void InitThreadStateKey()
+{
+    if (pthread_key_create(&g_threadStateKey, ThreadStateKeyDestructor) != 0)
+    {
+        COMPlusThrowOM();
+    }
+}
+
+static bool HasThreadStateBeenDestroyed()
+{
+    return pthread_getspecific(g_threadStateKey) == &g_threadStateDestroyedMarker;
+}
+#else
 static PLATFORM_THREAD_LOCAL bool t_threadStateDestroyed;
 
 static bool HasThreadStateBeenDestroyed()
 {
     return t_threadStateDestroyed;
 }
+#endif
 
 struct TlsDestructionMonitor
 {
@@ -1807,7 +1851,11 @@ struct TlsDestructionMonitor
             RuntimeThreadShutdown(GetThreadNULLOk());
         }
 
+#if defined(TARGET_UNIX) && !defined(TARGET_WASM)
+        SetThreadStateDestroyed();
+#else
         t_threadStateDestroyed = true;
+#endif
     }
 };
 
