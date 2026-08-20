@@ -12,10 +12,13 @@ namespace System.Globalization
 {
     public partial class CompareInfo
     {
-        // Characters which require special handling are those in [0x00, 0x1F] and [0x7F, 0xFFFF] except \t\v\f
-        // Matches HighCharTable below.
-        private static readonly SearchValues<char> s_nonSpecialAsciiChars =
-            SearchValues.Create("\t\v\f !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~");
+        private static class IcuSearchValues
+        {
+            // Characters which require special handling are those in [0x00, 0x1F] and [0x7F, 0xFFFF] except \t\v\f
+            // Matches HighCharTable below.
+            internal static readonly SearchValues<char> s_nonSpecialAsciiChars =
+                SearchValues.Create("\t\v\f !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~");
+        }
 
         [NonSerialized]
         private bool _isAsciiEqualityOrdinal;
@@ -114,14 +117,14 @@ namespace System.Globalization
                 char* a = ap;
                 char* b = bp;
 
-                if (target.ContainsAnyExcept(s_nonSpecialAsciiChars))
+                if (target.ContainsAnyExcept(IcuSearchValues.s_nonSpecialAsciiChars))
                 {
                     goto InteropCall;
                 }
 
                 if (target.Length > source.Length)
                 {
-                    if (source.ContainsAnyExcept(s_nonSpecialAsciiChars))
+                    if (source.ContainsAnyExcept(IcuSearchValues.s_nonSpecialAsciiChars))
                     {
                         goto InteropCall;
                     }
@@ -197,7 +200,7 @@ namespace System.Globalization
                     ? source.Slice(endIndex)
                     : source.Slice(0, startIndex);
 
-                if (remainingSource.ContainsAnyExcept(s_nonSpecialAsciiChars))
+                if (remainingSource.ContainsAnyExcept(IcuSearchValues.s_nonSpecialAsciiChars))
                 {
                     goto InteropCall;
                 }
@@ -229,14 +232,14 @@ namespace System.Globalization
                 char* a = ap;
                 char* b = bp;
 
-                if (target.ContainsAnyExcept(s_nonSpecialAsciiChars))
+                if (target.ContainsAnyExcept(IcuSearchValues.s_nonSpecialAsciiChars))
                 {
                     goto InteropCall;
                 }
 
                 if (target.Length > source.Length)
                 {
-                    if (source.ContainsAnyExcept(s_nonSpecialAsciiChars))
+                    if (source.ContainsAnyExcept(IcuSearchValues.s_nonSpecialAsciiChars))
                     {
                         goto InteropCall;
                     }
