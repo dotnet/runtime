@@ -206,7 +206,7 @@ namespace Wasm.Build.Tests
         [Theory]
         [InlineData("", true)] // Default case
         [InlineData("false", false)] // the other case
-        [TestCategory("native-mono"), TestCategory("workload")]
+        [TestCategory("native"), TestCategory("mono"), TestCategory("workload")]
         public async Task Test_WasmStripILAfterAOT(string stripILAfterAOT, bool expectILStripping)
         {
             Configuration config = Configuration.Release;

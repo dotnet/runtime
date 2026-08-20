@@ -180,7 +180,7 @@
     <_XUnitTraitArg Condition="'$(WasmFingerprintAssets)' == 'false'">$(_XUnitTraitArg) -trait category=no-fingerprinting</_XUnitTraitArg>
     <_XUnitTraitArg Condition="'$(WasmBundlerFriendlyBootConfig)' == 'true'">$(_XUnitTraitArg) -trait category=bundler-friendly</_XUnitTraitArg>
     <!-- Mono-specific tests never apply to CoreCLR; the workload/no-workload selection above still applies. -->
-    <_XUnitTraitArg Condition="'$(RuntimeFlavor)' == 'CoreCLR'">$(_XUnitTraitArg) -notrait category=native-mono -notrait category=mono</_XUnitTraitArg>
+    <_XUnitTraitArg Condition="'$(RuntimeFlavor)' == 'CoreCLR'">$(_XUnitTraitArg) -notrait category=native -notrait category=mono</_XUnitTraitArg>
   </PropertyGroup>
 
   <PropertyGroup>
