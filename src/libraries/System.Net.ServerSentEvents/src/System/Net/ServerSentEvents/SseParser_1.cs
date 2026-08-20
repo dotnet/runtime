@@ -333,8 +333,15 @@ namespace System.Net.ServerSentEvents
                     {
                         GrowBuffer(ref _lineBuffer, newLength);
                     }
+                    else
+                    {
+                        throw new InvalidDataException(SR.InvalidDataException_SseExceededMaxLength);
+                    }
                 }
             }
+
+            // Storage avalaible for at least one byte
+            Debug.Assert(_lineOffset + _lineLength < _lineBuffer.Length);
         }
 
         /// <summary>Processes a complete line from the SSE stream.</summary>
@@ -516,13 +523,6 @@ namespace System.Net.ServerSentEvents
             int count = _lineBuffer.Length - offset;
             if (count == 0)
             {
-                int probeBytesRead = _stream.Read(new byte[1], 0, 1);
-                if (probeBytesRead == 0)
-                {
-                    _eof = true;
-                    return 0;
-                }
-
                 throw new InvalidDataException(SR.InvalidDataException_SseExceededMaxLength);
             }
 
@@ -552,15 +552,9 @@ namespace System.Net.ServerSentEvents
             ShiftOrGrowLineBufferIfNecessary();
 
             int offset = _lineOffset + _lineLength;
-            if (offset == _lineBuffer.Length)
+            int count = _lineBuffer.Length - offset;
+            if (count == 0)
             {
-                int probeBytesRead = await _stream.ReadAsync(new byte[1].AsMemory(), cancellationToken).ConfigureAwait(false);
-                if (probeBytesRead == 0)
-                {
-                    _eof = true;
-                    return 0;
-                }
-
                 throw new InvalidDataException(SR.InvalidDataException_SseExceededMaxLength);
             }
 
@@ -595,8 +589,13 @@ namespace System.Net.ServerSentEvents
         }
 
         /// <summary>Grows the buffer, returning the existing one to the ArrayPool and renting an ArrayPool replacement.</summary>
-        private static void GrowBuffer([NotNull] ref byte[]? buffer, int minimumLength)
+        private void GrowBuffer([NotNull] ref byte[]? buffer, int minimumLength)
         {
+            if (minimumLength > _maxBufferSize)
+            {
+                throw new InvalidDataException(SR.InvalidDataException_SseExceededMaxLength);
+            }
+
             byte[]? toReturn = buffer;
             buffer = ArrayPool<byte>.Shared.Rent(Math.Max(minimumLength, DefaultArrayPoolRentSize));
             if (toReturn is not null)
