@@ -9,6 +9,7 @@ set(SOURCES
     getexepath.c
     memorybarrierprocesswide.c
     mutex.c
+    rwlock.c
     ospagesize.c
     guid.c
     random.c

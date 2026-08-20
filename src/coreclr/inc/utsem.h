@@ -13,6 +13,7 @@
 //              INCLUDES
 // -------------------------------------------------------------
 #include "utilcode.h"
+#include <minipal/rwlock.h>
 
 /* ----------------------------------------------------------------------------
 @class UTSemReadWrite
@@ -45,9 +46,12 @@ public:
 #endif //_DEBUG
 
 private:
-    Volatile<ULONG> m_dwFlag;               // internal state, see implementation
-    HANDLE          m_hReadWaiterSemaphore; // semaphore for awakening read waiters
-    HANDLE          m_hWriteWaiterEvent;    // event for awakening write waiters
+    minipal_rwlock m_lock;
+    bool m_initialized;
+#ifdef _DEBUG
+    Volatile<LONG> m_readers;
+    Volatile<LONG> m_writers;
+#endif // _DEBUG
 };  // class UTSemReadWrite
 
 #endif // __UTSEM_H__
