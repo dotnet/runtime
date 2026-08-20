@@ -3693,8 +3693,8 @@ public:
     RSSmartPtr<Cordb>     m_cordb;
 
 private:
-    // Process-exit waitable. On Windows this wraps an OS process handle. On Unix it is a minipal latch
-    // that is valid only with the minipal wait APIs and must not be exposed to clients.
+    // Process-exit waitable. On Windows this wraps an OS process handle. On Unix it is a debug-pal latch
+    // that is valid only with the debug-pal wait APIs and must not be exposed to clients.
     WaitHandle *m_handle;
 
     // Process descriptor - holds PID and App group ID for Mac debugging
