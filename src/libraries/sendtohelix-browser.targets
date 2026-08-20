@@ -179,8 +179,10 @@
     <_XUnitTraitArg Condition="'$(TestUsingWorkloads)' != 'true'">-trait category=no-workload</_XUnitTraitArg>
     <_XUnitTraitArg Condition="'$(WasmFingerprintAssets)' == 'false'">$(_XUnitTraitArg) -trait category=no-fingerprinting</_XUnitTraitArg>
     <_XUnitTraitArg Condition="'$(WasmBundlerFriendlyBootConfig)' == 'true'">$(_XUnitTraitArg) -trait category=bundler-friendly</_XUnitTraitArg>
-    <!-- Mono-specific tests never apply to CoreCLR; the workload/no-workload selection above still applies. -->
-    <_XUnitTraitArg Condition="'$(RuntimeFlavor)' == 'CoreCLR'">$(_XUnitTraitArg) -notrait category=native -notrait category=mono</_XUnitTraitArg>
+    <!-- Mono-specific tests never apply to CoreCLR. Tests that are both native and Mono-only carry
+         the `mono` category too, so excluding `mono` alone covers them; `native` on its own marks
+         relink/AOT coverage that CoreCLR does run. The workload/no-workload selection above still applies. -->
+    <_XUnitTraitArg Condition="'$(RuntimeFlavor)' == 'CoreCLR'">$(_XUnitTraitArg) -notrait category=mono</_XUnitTraitArg>
   </PropertyGroup>
 
   <PropertyGroup>
