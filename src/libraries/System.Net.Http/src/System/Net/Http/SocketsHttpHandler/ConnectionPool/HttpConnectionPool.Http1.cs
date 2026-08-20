@@ -18,8 +18,8 @@ namespace System.Net.Http
         private readonly ConcurrentStack<HttpConnection> _http11Connections = new();
         /// <summary>Controls whether we can use a fast path when returning connections to the pool and skip calling into <see cref="ProcessHttp11RequestQueue(HttpConnection?)"/>.</summary>
         private bool _http11RequestQueueIsEmptyAndNotDisposed;
-        /// <summary>The maximum number of HTTP/1.1 connections allowed to be associated with the pool.</summary>
-        private readonly int _maxHttp11Connections;
+        /// <summary>The maximum number of HTTP connections allowed to be associated with the pool (applies separately per version).</summary>
+        private readonly int _maxHttpConnections;
         /// <summary>The number of HTTP/1.1 connections associated with the pool, including in use, available, and pending.</summary>
         private int _associatedHttp11ConnectionCount;
         /// <summary>The number of HTTP/1.1 connections that are in the process of being established.</summary>
@@ -105,8 +105,8 @@ namespace System.Net.Http
                     Debug.Assert(_associatedHttp11ConnectionCount >= connectionCount + _pendingHttp11ConnectionCount,
                         $"Expected {_associatedHttp11ConnectionCount} >= {connectionCount} + {_pendingHttp11ConnectionCount}");
 #endif
-                    Debug.Assert(_associatedHttp11ConnectionCount <= _maxHttp11Connections,
-                        $"Expected {_associatedHttp11ConnectionCount} <= {_maxHttp11Connections}");
+                    Debug.Assert(_associatedHttp11ConnectionCount <= _maxHttpConnections,
+                        $"Expected {_associatedHttp11ConnectionCount} <= {_maxHttpConnections}");
                     Debug.Assert(_associatedHttp11ConnectionCount >= _pendingHttp11ConnectionCount,
                         $"Expected {_associatedHttp11ConnectionCount} >= {_pendingHttp11ConnectionCount}");
 
@@ -225,7 +225,7 @@ namespace System.Net.Http
             // Determine if we can and should add a new connection to the pool.
             bool willInject =
                 _http11RequestQueue.Count > _pendingHttp11ConnectionCount &&    // More requests queued than pending connections
-                _associatedHttp11ConnectionCount < _maxHttp11Connections &&     // Under the connection limit
+                _associatedHttp11ConnectionCount < _maxHttpConnections &&       // Under the connection limit
                 _http11RequestQueue.RequestsWithoutAConnectionAttempt > 0;      // There are requests we haven't issued a connection attempt for
 
             if (NetEventSource.Log.IsEnabled())
@@ -233,7 +233,7 @@ namespace System.Net.Http
                 Trace($"Available HTTP/1.1 connections: {_http11Connections.Count}, Requests in the queue: {_http11RequestQueue.Count}, " +
                     $"Requests without a connection attempt: {_http11RequestQueue.RequestsWithoutAConnectionAttempt}, " +
                     $"Pending HTTP/1.1 connections: {_pendingHttp11ConnectionCount}, Total associated HTTP/1.1 connections: {_associatedHttp11ConnectionCount}, " +
-                    $"Max HTTP/1.1 connection limit: {_maxHttp11Connections}, " +
+                    $"Max HTTP/1.1 connection limit: {_maxHttpConnections}, " +
                     $"Will inject connection: {willInject}.");
             }
 
