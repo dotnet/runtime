@@ -40,20 +40,8 @@
       <ReproResponseLines Include="$(OutputPath)$(AssemblyName)$(TargetExt)" />
       <ReproResponseLines Include="--targetarch:$(Platform)" />
       <ReproResponseLines Include="-o:$(OutputPath)$(AssemblyName).obj" />
-      <!-- <ReproResponseLines Include="-g" /> -->
       <ReproResponseLines Include="-O" Condition="'$(Optimize)' == 'true'" />
       <ReproResponseLines Include="--systemmodule:reproZero" />
-      <ReproResponseLines Include="--dehydrate" />
-      <ReproResponseLines Include="--stacktracedata:lines" />
-      <ReproResponseLines Include="--scanreflection" />
-      <ReproResponseLines Include="--feature:System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization=false" />
-      <ReproResponseLines Include="--feature:System.Diagnostics.Tracing.EventSource.IsSupported=false" />
-      <ReproResponseLines Include="--feature:System.Resources.ResourceManager.AllowCustomResourceTypes=false" />
-      <ReproResponseLines Include="--feature:System.Linq.Expressions.CanEmitObjectArrayDelegate=false" />
-      <ReproResponseLines Include="--feature:System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported=false" />
-      <ReproResponseLines Include="--feature:System.Globalization.Invariant=true" />
-      <ReproResponseLines Include="--feature:System.Diagnostics.Debugger.IsSupported=false" />
-      <ReproResponseLines Include="--feature:System.StartupHookProvider.IsSupported=false" />
     </ItemGroup>
 
     <WriteLinesToFile File="$(OutputPath)compile-with-$(LibrariesConfiguration)-libs.rsp"
