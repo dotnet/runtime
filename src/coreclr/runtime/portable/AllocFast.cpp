@@ -222,6 +222,36 @@ FCIMPL1(Object*, RhpNewFast, MethodTable* pMT)
 }
 FCIMPLEND
 
+// Same as RhpNewFast, except that the base size of the object is supplied by the caller. The JIT
+// knows the exact type it is allocating in the majority of cases and can pass a constant here,
+// which saves a dependent load from a potentially cold MethodTable.
+EXTERN_C FCDECL2(Object*, RhpNewFastSized, MethodTable* pMT, UINT_PTR baseSize);
+FCIMPL2(Object*, RhpNewFastSized, MethodTable* pMT, UINT_PTR baseSize)
+{
+    FCALL_CONTRACT;
+    _ASSERTE(pMT != NULL);
+    _ASSERTE(baseSize == (UINT_PTR)pMT->GetBaseSize());
+
+    Thread* thread = GetThread();
+    ee_alloc_context* cxt = thread->GetEEAllocContext();
+
+    size_t sizeInBytes = (size_t)baseSize;
+
+    uint8_t* alloc_ptr = cxt->getAllocPtr();
+    _ASSERTE(alloc_ptr <= cxt->getAllocLimit());
+    if ((size_t)(cxt->getAllocLimit() - alloc_ptr) >= sizeInBytes)
+    {
+        cxt->setAllocPtr(alloc_ptr + sizeInBytes);
+        PtrArray* pObject = (PtrArray*)alloc_ptr;
+        pObject->SetMethodTable(pMT);
+        return pObject;
+    }
+
+    PREPARE_TRANSITION_ARG();
+    return AllocateObject(pMT, 0, 0 TRANSITION_HELPER_ARG_PREPARED);
+}
+FCIMPLEND
+
 #if defined(FEATURE_64BIT_ALIGNMENT)
 EXTERN_C FCDECL1(Object*, RhpNewFastAlign8, MethodTable* pMT);
 FCIMPL1(Object*, RhpNewFastAlign8, MethodTable* pMT)

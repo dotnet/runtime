@@ -1653,6 +1653,13 @@ namespace Internal.JitInterface
             return CorInfoHelpFunc.CORINFO_HELP_NEWFAST;
         }
 
+        private uint getObjectAllocationSize(CORINFO_CLASS_STRUCT_* classHandle)
+        {
+            // Only CORINFO_HELP_NEWSFAST needs this and getNewHelper above never returns it.
+            Debug.Fail("getObjectAllocationSize is not supported in ReadyToRun compilation");
+            throw new NotSupportedException();
+        }
+
         private CorInfoHelpFunc getNewArrHelper(CORINFO_CLASS_STRUCT_* arrayCls)
         {
             return CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_DIRECT;

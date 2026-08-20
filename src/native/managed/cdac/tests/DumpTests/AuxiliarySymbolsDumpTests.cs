@@ -25,6 +25,7 @@ public class AuxiliarySymbolsDumpTests : DumpTestBase
             "CORINFO_HELP_NEWFAST",
             "CORINFO_HELP_NEWFAST_MAYBEFROZEN",
             "CORINFO_HELP_NEWSFAST",
+            "CORINFO_HELP_NEWSFAST_SIZE",
             "CORINFO_HELP_NEWSFAST_ALIGN8",
             "CORINFO_HELP_NEWSFAST_ALIGN8_VC",
             "CORINFO_HELP_NEWARR_1_DIRECT",

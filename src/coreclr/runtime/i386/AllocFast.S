@@ -29,6 +29,15 @@ LOCAL_LABEL(RhpNewFast_AllocFailed):
         jmp         RhpNewObject
 LEAF_END RhpNewFast, _TEXT
 
+// Allocate non-array, non-finalizable object whose size is already known by the caller.
+// This platform does not have a specialized implementation, so the size argument is ignored
+// and the base size is loaded from the MethodTable as usual.
+//  ECX == MethodTable
+//  EDX == base size (ignored)
+LEAF_ENTRY RhpNewFastSized, _TEXT
+        jmp         RhpNewFast
+LEAF_END RhpNewFastSized, _TEXT
+
 // Allocate non-array object with finalizer.
 //  ECX == MethodTable
 LEAF_ENTRY RhpNewFinalizable, _TEXT

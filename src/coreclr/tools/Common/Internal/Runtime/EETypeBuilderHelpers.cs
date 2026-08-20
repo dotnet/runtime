@@ -8,7 +8,7 @@ using Internal.TypeSystem;
 
 namespace Internal.Runtime
 {
-    internal static class EETypeBuilderHelpers
+    public static class EETypeBuilderHelpers
     {
         private static EETypeElementType ComputeEETypeElementType(TypeDesc type)
         {

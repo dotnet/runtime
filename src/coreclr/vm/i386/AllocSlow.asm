@@ -85,10 +85,22 @@ RhExceptionHandling_FailedAllocation ENDP
 ; Allocate non-array object, uniprocessor version
 ;
 FASTCALL_FUNC   RhpNewFast_UP, 4
+        mov         edx, [ecx + OFFSETOF__MethodTable__m_uBaseSize]
+        jmp         @RhpNewFastSized_UP@8
+FASTCALL_ENDFUNC
+
+;
+; void RhpNewFastSized_UP(MethodTable *pMT, size_t baseSize)
+;
+; Allocate non-array object, uniprocessor version
+;
+FASTCALL_FUNC   RhpNewFastSized_UP, 8
         inc         [g_global_alloc_lock]
         jnz         AllocFailed
 
-        mov         eax, [ecx + OFFSETOF__MethodTable__m_uBaseSize]
+        ; ECX == MethodTable
+        ; EDX == base size
+        mov         eax, edx
         add         eax, [g_global_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr]
         jc          AllocFailed_Unlock
         cmp         eax, [g_global_alloc_context + OFFSETOF__ee_alloc_context__combined_limit]
@@ -96,7 +108,7 @@ FASTCALL_FUNC   RhpNewFast_UP, 4
         mov         [g_global_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr], eax
 
         ; calc the new object pointer and initialize it
-        sub         eax, [ecx + OFFSETOF__MethodTable__m_uBaseSize]
+        sub         eax, edx
         mov         [eax + OFFSETOF__Object__m_pEEType], ecx
 
         mov         [g_global_alloc_lock], -1

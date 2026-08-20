@@ -583,6 +583,15 @@ unsigned interceptor_ICJI::getHeapClassSize(CORINFO_CLASS_HANDLE cls)
     return temp;
 }
 
+// return the exact number of bytes the GC reserves for an object of this type
+unsigned interceptor_ICJI::getObjectAllocationSize(CORINFO_CLASS_HANDLE cls)
+{
+    mc->cr->AddCall("getObjectAllocationSize");
+    unsigned temp = original_ICorJitInfo->getObjectAllocationSize(cls);
+    mc->recGetObjectAllocationSize(cls, temp);
+    return temp;
+}
+
 bool interceptor_ICJI::canAllocateOnStack(CORINFO_CLASS_HANDLE cls)
 {
     mc->cr->AddCall("canAllocateOnStack");

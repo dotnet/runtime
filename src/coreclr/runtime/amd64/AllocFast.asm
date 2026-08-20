@@ -9,42 +9,50 @@ include AsmMacros_Shared.inc
 ;;  RCX == MethodTable
 LEAF_ENTRY RhpNewFast, _TEXT
 
-        ;; rdx = ee_alloc_context pointer, TRASHES rax
-        INLINE_GET_ALLOC_CONTEXT_BASE rdx, rax
+        mov         edx, [rcx + OFFSETOF__MethodTable__m_uBaseSize]
+        jmp         RhpNewFastSized
+
+LEAF_END RhpNewFast, _TEXT
+
+
+;; Allocate non-array, non-finalizable object whose size is already known by the caller (the JIT knows
+;; the exact type it is allocating in the majority of cases and can pass the size as a constant, saving
+;; a dependent load from a potentially cold MethodTable).
+;;  RCX == MethodTable
+;;  RDX == base size (MethodTable::m_BaseSize)
+LEAF_ENTRY RhpNewFastSized, _TEXT
+
+        ;; r10 = ee_alloc_context pointer, TRASHES rax
+        INLINE_GET_ALLOC_CONTEXT_BASE r10, rax
 
         ;;
-        ;; rcx contains MethodTable pointer
-        ;;
-        mov         r8d, [rcx + OFFSETOF__MethodTable__m_uBaseSize]
-
-        ;;
-        ;; eax: base size
         ;; rcx: MethodTable pointer
-        ;; rdx: ee_alloc_context pointer
+        ;; rdx: base size
+        ;; r10: ee_alloc_context pointer
         ;;
 
-        mov         rax, [rdx + OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr]
-        mov         r9, [rdx + OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__combined_limit]
+        mov         rax, [r10 + OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr]
+        mov         r9, [r10 + OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__combined_limit]
         sub         r9, rax
-        cmp         r8, r9
-        ja          RhpNewFast_RarePath
+        cmp         rdx, r9
+        ja          RhpNewFastSized_RarePath
 
         ;; Calculate the new alloc pointer to account for the allocation.
-        add         r8, rax
+        add         rdx, rax
 
         ;; Set the new object's MethodTable pointer
         mov         [rax + OFFSETOF__Object__m_pEEType], rcx
 
         ;; Set the new alloc pointer
-        mov         [rdx + OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr], r8
+        mov         [r10 + OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr], rdx
 
         ret
 
-RhpNewFast_RarePath:
+RhpNewFastSized_RarePath:
         xor         edx, edx
         jmp         RhpNewObject
 
-LEAF_END RhpNewFast, _TEXT
+LEAF_END RhpNewFastSized, _TEXT
 
 
 ;; Allocate non-array object with finalizer

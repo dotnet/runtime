@@ -234,6 +234,9 @@ unsigned getClassSize(
 unsigned getHeapClassSize(
           CORINFO_CLASS_HANDLE cls) override;
 
+unsigned getObjectAllocationSize(
+          CORINFO_CLASS_HANDLE cls) override;
+
 bool canAllocateOnStack(
           CORINFO_CLASS_HANDLE cls) override;
 

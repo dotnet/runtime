@@ -116,6 +116,16 @@ LEAF_ENTRY RhpNewFast, _TEXT
 LEAF_END RhpNewFast, _TEXT
 
 
+// Allocate non-array, non-finalizable object whose size is already known by the caller.
+// This platform does not have a specialized implementation, so the size argument is ignored
+// and the base size is loaded from the MethodTable as usual.
+//  r0 == MethodTable
+//  r1 == base size (ignored)
+LEAF_ENTRY RhpNewFastSized, _TEXT
+        b           C_FUNC(RhpNewFast)
+LEAF_END RhpNewFastSized, _TEXT
+
+
 // Allocate simple object (not finalizable, array or value type) on an 8 byte boundary.
 //  r0 == MethodTable
 LEAF_ENTRY RhpNewFastAlign8, _TEXT

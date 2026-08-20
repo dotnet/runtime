@@ -1713,6 +1713,7 @@ GenTree* ObjectAllocator::MorphAllocObjNodeIntoHelperCall(GenTreeAllocObj* alloc
     assert(allocObj != nullptr);
 
     GenTree*     arg                  = allocObj->gtGetOp1();
+    GenTree*     arg2                 = nullptr;
     unsigned int helper               = allocObj->gtNewHelper;
     bool         helperHasSideEffects = allocObj->gtHelperHasSideEffects;
 
@@ -1724,8 +1725,20 @@ GenTree* ObjectAllocator::MorphAllocObjNodeIntoHelperCall(GenTreeAllocObj* alloc
     }
 #endif
 
+    if (helper == CORINFO_HELP_NEWSFAST)
+    {
+        // Switch to the variant of the helper that takes the size of the allocation as its second
+        // argument, so that it does not have to load it from the (potentially cold) MethodTable.
+        // Since we know the exact type being allocated here, we can pass it as a constant.
+        //
+        unsigned const allocSize = m_compiler->info.compCompHnd->getObjectAllocationSize(allocObj->gtAllocObjClsHnd);
+        assert(allocSize > 0);
+        arg2   = m_compiler->gtNewIconNode((ssize_t)allocSize, TYP_I_IMPL);
+        helper = CORINFO_HELP_NEWSFAST_SIZE;
+    }
+
     const bool morphArgs  = false;
-    GenTree*   helperCall = m_compiler->fgMorphIntoHelperCall(allocObj, allocObj->gtNewHelper, morphArgs, arg);
+    GenTree*   helperCall = m_compiler->fgMorphIntoHelperCall(allocObj, helper, morphArgs, arg, arg2);
     if (helperHasSideEffects)
     {
         helperCall->AsCall()->gtCallMoreFlags |= GTF_CALL_M_ALLOC_SIDE_EFFECTS;

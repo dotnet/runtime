@@ -33,6 +33,15 @@ AllocFailed:
         jmp         @RhpNewObject@8
 FASTCALL_ENDFUNC
 
+; Allocate non-array, non-finalizable object whose size is already known by the caller.
+; This platform does not have a specialized implementation, so the size argument is ignored
+; and the base size is loaded from the MethodTable as usual.
+;  ECX == MethodTable
+;  EDX == base size (ignored)
+FASTCALL_FUNC   RhpNewFastSized, 8
+        jmp         @RhpNewFast@4
+FASTCALL_ENDFUNC
+
 ; Allocate non-array object with finalizer.
 ;  ECX == MethodTable
 FASTCALL_FUNC   RhpNewFinalizable, 4

@@ -1859,6 +1859,37 @@ CEEInfo::getHeapClassSize(
 
 //---------------------------------------------------------------------------------------
 //
+// Get the exact number of bytes the GC reserves for an object of this type. This is
+// MethodTable::GetBaseSize(), i.e. it includes the object header and any padding applied to
+// meet the minimum object size. For value classes this is the size of the boxed representation.
+// This is the size the JIT passes to CORINFO_HELP_NEWSFAST.
+unsigned
+CEEInfo::getObjectAllocationSize(
+    CORINFO_CLASS_HANDLE clsHnd)
+{
+    CONTRACTL{
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    unsigned result = 0;
+
+    JIT_TO_EE_TRANSITION_LEAF();
+
+    TypeHandle VMClsHnd(clsHnd);
+    MethodTable* pMT = VMClsHnd.GetMethodTable();
+    _ASSERTE(pMT);
+    _ASSERTE(!pMT->HasComponentSize());
+
+    result = pMT->GetBaseSize();
+
+    EE_TO_JIT_TRANSITION_LEAF();
+    return result;
+}
+
+//---------------------------------------------------------------------------------------
+//
 // Return TRUE if an object of this type can be allocated on the stack.
 bool CEEInfo::canAllocateOnStack(CORINFO_CLASS_HANDLE clsHnd)
 {

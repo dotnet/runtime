@@ -505,6 +505,13 @@ unsigned MyICJI::getHeapClassSize(CORINFO_CLASS_HANDLE cls)
     return jitInstance->mc->repGetHeapClassSize(cls);
 }
 
+// return the exact number of bytes the GC reserves for an object of this type
+unsigned MyICJI::getObjectAllocationSize(CORINFO_CLASS_HANDLE cls)
+{
+    jitInstance->mc->cr->AddCall("getObjectAllocationSize");
+    return jitInstance->mc->repGetObjectAllocationSize(cls);
+}
+
 bool MyICJI::canAllocateOnStack(CORINFO_CLASS_HANDLE cls)
 {
     jitInstance->mc->cr->AddCall("canAllocateOnStack");

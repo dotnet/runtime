@@ -226,6 +226,10 @@ public:
     void dmpGetHeapClassSize(DWORDLONG key, DWORD val);
     unsigned repGetHeapClassSize(CORINFO_CLASS_HANDLE cls);
 
+    void recGetObjectAllocationSize(CORINFO_CLASS_HANDLE cls, unsigned result);
+    void dmpGetObjectAllocationSize(DWORDLONG key, DWORD val);
+    unsigned repGetObjectAllocationSize(CORINFO_CLASS_HANDLE cls);
+
     void recCanAllocateOnStack(CORINFO_CLASS_HANDLE cls, bool result);
     void dmpCanAllocateOnStack(DWORDLONG key, DWORD val);
     bool repCanAllocateOnStack(CORINFO_CLASS_HANDLE cls);
@@ -1244,6 +1248,7 @@ enum mcPackets
     Packet_GetWasmWellKnownGlobals = 240,
     Packet_CanValueClassInstancePointerEscape = 241,
     Packet_GetAwaitAwaiterInContinuationCall = 242,
+    Packet_GetObjectAllocationSize = 243,
 };
 
 void SetDebugDumpVariables();

@@ -78,24 +78,31 @@ NESTED_END RhExceptionHandling_FailedAllocation, _TEXT
 ;
 LEAF_ENTRY RhpNewFast_UP, _TEXT
 
+        mov         edx, [rcx + OFFSETOF__MethodTable__m_uBaseSize]
+        jmp         RhpNewFastSized_UP
+
+LEAF_END RhpNewFast_UP, _TEXT
+
+;
+; void RhpNewFastSized_UP(MethodTable *pMT, size_t baseSize)
+;
+; Allocate non-array object, uniprocessor version
+;
+LEAF_ENTRY RhpNewFastSized_UP, _TEXT
+
         inc         [g_global_alloc_lock]
-        jnz         RhpNewFast_UP_RarePath
+        jnz         RhpNewFastSized_UP_RarePath
 
         ;;
-        ;; rcx contains MethodTable pointer
-        ;;
-        mov         r8d, [rcx + OFFSETOF__MethodTable__m_uBaseSize]
-
-        ;;
-        ;; eax: base size
         ;; rcx: MethodTable pointer
-        ;; rdx: ee_alloc_context pointer
+        ;; rdx: base size
         ;;
 
         mov         rax, [g_global_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr]
+        mov         r8, rdx
         add         r8, rax
         cmp         r8, [g_global_alloc_context + OFFSETOF__ee_alloc_context__combined_limit]
-        ja          RhpNewFast_UP_RarePath_Unlock
+        ja          RhpNewFastSized_UP_RarePath_Unlock
 
         ;; set the new alloc pointer
         mov         [g_global_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr], r8
@@ -105,14 +112,14 @@ LEAF_ENTRY RhpNewFast_UP, _TEXT
         mov         [g_global_alloc_lock], -1
         ret
 
-RhpNewFast_UP_RarePath_Unlock:
+RhpNewFastSized_UP_RarePath_Unlock:
         mov         [g_global_alloc_lock], -1
 
-RhpNewFast_UP_RarePath:
+RhpNewFastSized_UP_RarePath:
         xor         edx, edx
         jmp         RhpNewObject
 
-LEAF_END RhpNewFast_UP, _TEXT
+LEAF_END RhpNewFastSized_UP, _TEXT
 
 ;
 ; Shared code for RhNewString_UP, RhpNewArrayFast_UP and RhpNewPtrArrayFast_UP

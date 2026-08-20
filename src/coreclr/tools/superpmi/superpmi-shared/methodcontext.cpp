@@ -1804,6 +1804,29 @@ unsigned MethodContext::repGetHeapClassSize(CORINFO_CLASS_HANDLE cls)
     return result;
 }
 
+void MethodContext::recGetObjectAllocationSize(CORINFO_CLASS_HANDLE cls, unsigned result)
+{
+    if (GetObjectAllocationSize == nullptr)
+        GetObjectAllocationSize = new LightWeightMap<DWORDLONG, DWORD>();
+
+    DWORDLONG key = CastHandle(cls);
+    DWORD value = (DWORD)result;
+    GetObjectAllocationSize->Add(key, value);
+    DEBUG_REC(dmpGetObjectAllocationSize(key, value));
+}
+void MethodContext::dmpGetObjectAllocationSize(DWORDLONG key, DWORD val)
+{
+    printf("GetObjectAllocationSize key %016" PRIX64 ", value %u", key, val);
+}
+unsigned MethodContext::repGetObjectAllocationSize(CORINFO_CLASS_HANDLE cls)
+{
+    DWORDLONG key = CastHandle(cls);
+    DWORD value = LookupByKeyOrMiss(GetObjectAllocationSize, key, ": key %016" PRIX64 "", key);
+    DEBUG_REP(dmpGetObjectAllocationSize(key, value));
+    unsigned result = (unsigned)value;
+    return result;
+}
+
 void MethodContext::recCanAllocateOnStack(CORINFO_CLASS_HANDLE cls, bool result)
 {
     if (CanAllocateOnStack == nullptr)

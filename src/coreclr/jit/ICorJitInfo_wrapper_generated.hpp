@@ -528,6 +528,15 @@ unsigned WrapICorJitInfo::getHeapClassSize(
     return temp;
 }
 
+unsigned WrapICorJitInfo::getObjectAllocationSize(
+          CORINFO_CLASS_HANDLE cls)
+{
+    API_ENTER(getObjectAllocationSize);
+    unsigned temp = wrapHnd->getObjectAllocationSize(cls);
+    API_LEAVE(getObjectAllocationSize);
+    return temp;
+}
+
 bool WrapICorJitInfo::canAllocateOnStack(
           CORINFO_CLASS_HANDLE cls)
 {

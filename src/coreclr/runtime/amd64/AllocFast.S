@@ -9,59 +9,75 @@
 //  RDI == MethodTable
 LEAF_ENTRY RhpNewFast, _TEXT
 
+        mov         esi, [rdi + OFFSETOF__MethodTable__m_uBaseSize]
+        jmp         C_FUNC(RhpNewFastSized)
+
+LEAF_END RhpNewFast, _TEXT
+
+
+// Allocate non-array, non-finalizable object whose size is already known by the caller (the JIT knows
+// the exact type it is allocating in the majority of cases and can pass the size as a constant, saving
+// a dependent load from a potentially cold MethodTable).
+//  RDI == MethodTable
+//  RSI == base size (MethodTable::m_BaseSize)
+LEAF_ENTRY RhpNewFastSized, _TEXT
+
         push_nonvol_reg rbx
-        mov         rbx, rdi
+        push_nonvol_reg r12
+        alloc_stack 8                   // keep the stack 16 byte aligned across the call below
+
+        mov         rbx, rdi            // MethodTable
+        mov         r12, rsi            // base size
 
         // rax = ee_alloc_context pointer; trashes volatile registers
         INLINE_GET_ALLOC_CONTEXT_BASE
 
         //
-        // rbx contains MethodTable pointer
-        //
-        mov         edx, [rbx + OFFSETOF__MethodTable__m_uBaseSize]
-
-        //
         // rax: ee_alloc_context pointer
         // rbx: MethodTable pointer
-        // rdx: base size
+        // r12: base size
         //
 
         // Load potential new object address into rsi.
         mov         rsi, [rax + OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr]
 
-        // Load and calculate the maximum size of object we can fit.ß
+        // Load and calculate the maximum size of object we can fit.
         mov         rdi, [rax + OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__combined_limit]
         sub         rdi, rsi
 
         // Determine whether the end of the object is too big for the current allocation context. If so,
         // we abandon the attempt to allocate the object directly and fall back to the slow helper.
-        cmp         rdx, rdi
-        ja          LOCAL_LABEL(RhpNewFast_RarePath)
+        cmp         r12, rdi
+        ja          LOCAL_LABEL(RhpNewFastSized_RarePath)
 
         // Calculate the new alloc pointer to account for the allocation.
-        add         rdx, rsi
+        add         r12, rsi
 
         // Set the new object's MethodTable pointer.
         mov         [rsi + OFFSETOF__Object__m_pEEType], rbx
 
         // Update the alloc pointer to the newly calculated one.
-        mov         [rax + OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr], rdx
+        mov         [rax + OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr], r12
 
         mov         rax, rsi
 
         .cfi_remember_state
+        free_stack  8
+        pop_nonvol_reg r12
         pop_nonvol_reg rbx
         ret
 
         .cfi_restore_state
-        .cfi_def_cfa_offset 16          // workaround cfi_restore_state bug
-LOCAL_LABEL(RhpNewFast_RarePath):
+        .cfi_def_cfa_offset 32          // workaround cfi_restore_state bug
+LOCAL_LABEL(RhpNewFastSized_RarePath):
         mov         rdi, rbx            // restore MethodTable
         xor         esi, esi
+        free_stack  8
+        pop_nonvol_reg r12
         pop_nonvol_reg rbx
         jmp         C_FUNC(RhpNewObject)
 
-LEAF_END RhpNewFast, _TEXT
+LEAF_END RhpNewFastSized, _TEXT
 
 
 // Allocate non-array object with finalizer

@@ -42,6 +42,7 @@ void InitJITAllocationHelpers()
         if (GCHeapUtilities::UseThreadAllocationContexts())
         {
             SetJitHelperFunction(CORINFO_HELP_NEWSFAST, RhpNewFast);
+            SetJitHelperFunction(CORINFO_HELP_NEWSFAST_SIZE, RhpNewFastSized);
             SetJitHelperFunction(CORINFO_HELP_NEWARR_1_VC, RhpNewArrayFast);
             SetJitHelperFunction(CORINFO_HELP_NEWARR_1_PTR, RhpNewPtrArrayFast);
 
@@ -61,6 +62,7 @@ void InitJITAllocationHelpers()
             // When we're running Workstation GC on a single proc box we don't have
             // InlineGetThread versions because there is no need to call GetThread
             SetJitHelperFunction(CORINFO_HELP_NEWSFAST, RhpNewFast_UP);
+            SetJitHelperFunction(CORINFO_HELP_NEWSFAST_SIZE, RhpNewFastSized_UP);
             SetJitHelperFunction(CORINFO_HELP_NEWARR_1_VC, RhpNewArrayFast_UP);
             SetJitHelperFunction(CORINFO_HELP_NEWARR_1_PTR, RhpNewPtrArrayFast_UP);
 
@@ -76,6 +78,7 @@ void InitJITAllocationHelpers()
     SET_NEW_HELPER_AUXILIARY_SYMBOL(CORINFO_HELP_NEWFAST)
     SET_NEW_HELPER_AUXILIARY_SYMBOL(CORINFO_HELP_NEWFAST_MAYBEFROZEN)
     SET_NEW_HELPER_AUXILIARY_SYMBOL(CORINFO_HELP_NEWSFAST)
+    SET_NEW_HELPER_AUXILIARY_SYMBOL(CORINFO_HELP_NEWSFAST_SIZE)
     SET_NEW_HELPER_AUXILIARY_SYMBOL(CORINFO_HELP_NEWSFAST_ALIGN8)
     SET_NEW_HELPER_AUXILIARY_SYMBOL(CORINFO_HELP_NEWSFAST_ALIGN8_VC)
     SET_NEW_HELPER_AUXILIARY_SYMBOL(CORINFO_HELP_NEWARR_1_DIRECT)

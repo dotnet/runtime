@@ -73,6 +73,7 @@ namespace Internal.JitInterface
                 s_callbacks.getStaticBaseAddress = &_getStaticBaseAddress;
                 s_callbacks.getClassSize = &_getClassSize;
                 s_callbacks.getHeapClassSize = &_getHeapClassSize;
+                s_callbacks.getObjectAllocationSize = &_getObjectAllocationSize;
                 s_callbacks.canAllocateOnStack = &_canAllocateOnStack;
                 s_callbacks.getClassAlignmentRequirement = &_getClassAlignmentRequirement;
                 s_callbacks.getClassGClayout = &_getClassGClayout;
@@ -259,6 +260,7 @@ namespace Internal.JitInterface
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, byte, CORINFO_CONST_LOOKUP*, byte> getStaticBaseAddress;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, uint> getClassSize;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, uint> getHeapClassSize;
+            public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, uint> getObjectAllocationSize;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, byte> canAllocateOnStack;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, byte, uint> getClassAlignmentRequirement;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, byte*, uint> getClassGClayout;
@@ -1169,6 +1171,21 @@ namespace Internal.JitInterface
             try
             {
                 return _this.getHeapClassSize(cls);
+            }
+            catch (Exception ex)
+            {
+                *ppException = _this.AllocException(ex);
+                return default;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static uint _getObjectAllocationSize(IntPtr thisHandle, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls)
+        {
+            var _this = GetThis(thisHandle);
+            try
+            {
+                return _this.getObjectAllocationSize(cls);
             }
             catch (Exception ex)
             {

@@ -629,6 +629,8 @@ namespace Internal.JitInterface
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_NEWSFAST:
                     return _compilation.NodeFactory.ExternFunctionSymbol(new Utf8String("RhpNewFast"u8));
+                case CorInfoHelpFunc.CORINFO_HELP_NEWSFAST_SIZE:
+                    return _compilation.NodeFactory.ExternFunctionSymbol(new Utf8String("RhpNewFastSized"u8));
                 case CorInfoHelpFunc.CORINFO_HELP_NEWSFAST_FINALIZE:
                     return _compilation.NodeFactory.ExternFunctionSymbol(new Utf8String("RhpNewFinalizable"u8));
                 case CorInfoHelpFunc.CORINFO_HELP_NEWSFAST_ALIGN8:
@@ -1157,6 +1159,15 @@ namespace Internal.JitInterface
                 return CorInfoHelpFunc.CORINFO_HELP_NEWSFAST_FINALIZE;
 
             return CorInfoHelpFunc.CORINFO_HELP_NEWSFAST;
+        }
+
+        private uint getObjectAllocationSize(CORINFO_CLASS_STRUCT_* classHandle)
+        {
+            TypeDesc type = HandleToObject(classHandle);
+
+            Debug.Assert(!type.IsString && !type.IsArray && !type.IsCanonicalDefinitionType(CanonicalFormKind.Any));
+
+            return (uint)Internal.Runtime.EETypeBuilderHelpers.ComputeBaseSize(type);
         }
 
         private CorInfoHelpFunc getNewArrHelper(CORINFO_CLASS_STRUCT_* arrayCls)

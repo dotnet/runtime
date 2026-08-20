@@ -348,6 +348,9 @@ enum CorInfoHelpFunc
     CORINFO_HELP_NEWFAST,
     CORINFO_HELP_NEWFAST_MAYBEFROZEN, // allocator for objects that *might* allocate them on a frozen segment
     CORINFO_HELP_NEWSFAST,          // allocator for small, non-finalizer, non-array object
+    CORINFO_HELP_NEWSFAST_SIZE,     // same as CORINFO_HELP_NEWSFAST, but the object's allocation size is
+                                    // passed as a second argument (see ICorStaticInfo::getObjectAllocationSize)
+                                    // so that the helper does not have to load it from the MethodTable
     CORINFO_HELP_NEWSFAST_FINALIZE, // allocator for small, finalizable, non-array object
     CORINFO_HELP_NEWSFAST_ALIGN8,   // allocator for small, non-finalizer, non-array object, 8 byte aligned
     CORINFO_HELP_NEWSFAST_ALIGN8_VC,// allocator for small, value class, 8 byte aligned
@@ -2563,6 +2566,15 @@ public:
 
     // return the number of bytes needed by an instance of the class allocated on the heap
     virtual unsigned getHeapClassSize(
+            CORINFO_CLASS_HANDLE     cls
+            ) = 0;
+
+    // Returns the exact number of bytes the GC reserves for an object of this type, including
+    // the object header and any padding (i.e. MethodTable::GetBaseSize()). This is the value the
+    // JIT passes to CORINFO_HELP_NEWSFAST_SIZE. Only valid for types for which getNewHelper returned
+    // CORINFO_HELP_NEWSFAST; 'cls' may be a value class, in which case the size of its boxed
+    // representation is returned.
+    virtual unsigned getObjectAllocationSize(
             CORINFO_CLASS_HANDLE     cls
             ) = 0;
 

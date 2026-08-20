@@ -150,6 +150,7 @@ EXTERN_C FCDECL1(void*, JIT_GetDynamicNonGCStaticBaseNoCtor, DynamicStaticsInfo*
 EXTERN_C FCDECL1(void*, JIT_GetDynamicNonGCStaticBaseNoCtor_Portable, DynamicStaticsInfo* pStaticsInfo);
 
 EXTERN_C FCDECL1(Object*, RhpNewFast, MethodTable* pMT);
+EXTERN_C FCDECL2(Object*, RhpNewFastSized, MethodTable* pMT, UINT_PTR baseSize);
 EXTERN_C FCDECL2(Object*, RhpNewArrayFast, MethodTable* pMT, INT_PTR size);
 EXTERN_C FCDECL2(Object*, RhpNewPtrArrayFast, MethodTable* pMT, INT_PTR size);
 EXTERN_C FCDECL2(Object*, RhNewString, MethodTable* pMT, INT_PTR stringLength);
@@ -162,6 +163,7 @@ EXTERN_C FCDECL2(Object*, RhpNewArrayFastAlign8, MethodTable* pMT, INT_PTR size)
 
 #if defined(TARGET_WINDOWS) && (defined(TARGET_AMD64) || defined(TARGET_X86))
 EXTERN_C FCDECL1(Object*, RhpNewFast_UP, MethodTable* pMT);
+EXTERN_C FCDECL2(Object*, RhpNewFastSized_UP, MethodTable* pMT, UINT_PTR baseSize);
 EXTERN_C FCDECL2(Object*, RhpNewArrayFast_UP, MethodTable* pMT, INT_PTR size);
 EXTERN_C FCDECL2(Object*, RhpNewPtrArrayFast_UP, MethodTable* pMT, INT_PTR size);
 EXTERN_C FCDECL2(Object*, RhNewString_UP, MethodTable* pMT, INT_PTR stringLength);

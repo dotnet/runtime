@@ -384,6 +384,12 @@ unsigned interceptor_ICJI::getHeapClassSize(
     return original_ICorJitInfo->getHeapClassSize(cls);
 }
 
+unsigned interceptor_ICJI::getObjectAllocationSize(
+          CORINFO_CLASS_HANDLE cls)
+{
+    return original_ICorJitInfo->getObjectAllocationSize(cls);
+}
+
 bool interceptor_ICJI::canAllocateOnStack(
           CORINFO_CLASS_HANDLE cls)
 {

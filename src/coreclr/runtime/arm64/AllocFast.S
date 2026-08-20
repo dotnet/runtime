@@ -8,17 +8,25 @@
 //  x0 == MethodTable
     LEAF_ENTRY RhpNewFast, _TEXT
 
-        // x3 = ee_alloc_context pointer
+        ldr         w1, [x0, #OFFSETOF__MethodTable__m_uBaseSize]
+        b           C_FUNC(RhpNewFastSized)
+
+    LEAF_END RhpNewFast, _TEXT
+
+
+// Allocate non-array, non-finalizable object whose size is already known by the caller (the JIT knows
+// the exact type it is allocating in the majority of cases and can pass the size as a constant, saving
+// a dependent load from a potentially cold MethodTable).
+//  x0 == MethodTable
+//  x1 == base size (MethodTable::m_BaseSize)
+    LEAF_ENTRY RhpNewFastSized, _TEXT
+
+        // x3 = ee_alloc_context pointer; preserves x0 and x1
         INLINE_GET_ALLOC_CONTEXT_BASE x3
 
         //
-        // x0 contains MethodTable pointer
-        //
-        ldr         w2, [x0, #OFFSETOF__MethodTable__m_uBaseSize]
-
-        //
         // x0: MethodTable pointer
-        // x2: base size
+        // x1: base size
         // x3: ee_alloc_context pointer
         //
 
@@ -31,26 +39,26 @@
 
         // Determine whether the end of the object is too big for the current allocation context. If so,
         // we abandon the attempt to allocate the object directly and fall back to the slow helper.
-        cmp         x2, x13
-        bhi         LOCAL_LABEL(RhpNewFast_RarePath)
+        cmp         x1, x13
+        bhi         LOCAL_LABEL(RhpNewFastSized_RarePath)
 
         // Calculate the new alloc pointer to account for the allocation.
-        add         x2, x2, x12
+        add         x1, x1, x12
 
         // Set the new object's MethodTable pointer.
         str         x0, [x12, #OFFSETOF__Object__m_pEEType]
 
         // Update the alloc pointer to the newly calculated one.
-        str         x2, [x3, #(OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr)]
+        str         x1, [x3, #(OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr)]
 
         mov         x0, x12
         ret
 
-LOCAL_LABEL(RhpNewFast_RarePath):
+LOCAL_LABEL(RhpNewFastSized_RarePath):
         mov         x1, #0
         b           C_FUNC(RhpNewObject)
 
-    LEAF_END RhpNewFast, _TEXT
+    LEAF_END RhpNewFastSized, _TEXT
 
 
 // Allocate non-array object with finalizer.

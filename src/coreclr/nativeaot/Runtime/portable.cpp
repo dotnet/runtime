@@ -77,6 +77,32 @@ FCIMPL1(Object *, RhpNewFast, MethodTable* pEEType)
 }
 FCIMPLEND
 
+// Same as RhpNewFast, except that the base size of the object is supplied by the caller. The JIT
+// knows the exact type it is allocating in the majority of cases and can pass a constant here,
+// which saves a dependent load from a potentially cold MethodTable.
+FCIMPL2(Object *, RhpNewFastSized, MethodTable* pEEType, uintptr_t baseSize)
+{
+    ASSERT(!pEEType->HasFinalizer());
+    ASSERT(baseSize == pEEType->GetBaseSize());
+
+    Thread * pCurThread = ThreadStore::GetCurrentThread();
+    gc_alloc_context * acontext = pCurThread->GetAllocContext();
+
+    uint8_t* alloc_ptr = acontext->alloc_ptr;
+    uint8_t* combined_limit = pCurThread->GetEEAllocContext()->GetCombinedLimit();
+    ASSERT(alloc_ptr <= combined_limit);
+    if ((size_t)(combined_limit - alloc_ptr) >= baseSize)
+    {
+        acontext->alloc_ptr = alloc_ptr + baseSize;
+        Object* pObject = (Object *)alloc_ptr;
+        pObject->SetMethodTable(pEEType);
+        return pObject;
+    }
+
+    return AllocateObject(pEEType, 0, 0);
+}
+FCIMPLEND
+
 #define GC_ALLOC_FINALIZE    0x1 // TODO: Defined in gc.h
 #define GC_ALLOC_ALIGN8_BIAS 0x4 // TODO: Defined in gc.h
 #define GC_ALLOC_ALIGN8      0x8 // TODO: Defined in gc.h
