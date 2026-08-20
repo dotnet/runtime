@@ -19,38 +19,47 @@ namespace System
         private const int MaxUInt32DecDigits = 10;
         private const string PosNumberFormat = "#";
 
-        private static readonly string[] s_posCurrencyFormats =
-        [
-            "$#", "#$", "$ #", "# $"
-        ];
+        private static class CurrencyFormats
+        {
+            internal static readonly string[] Positive =
+            [
+                "$#", "#$", "$ #", "# $"
+            ];
 
-        private static readonly string[] s_negCurrencyFormats =
-        [
-            "($#)", "-$#", "$-#", "$#-",
-            "(#$)", "-#$", "#-$", "#$-",
-            "-# $", "-$ #", "# $-", "$ #-",
-            "$ -#", "#- $", "($ #)", "(# $)",
-            "$- #"
-        ];
+            internal static readonly string[] Negative =
+            [
+                "($#)", "-$#", "$-#", "$#-",
+                "(#$)", "-#$", "#-$", "#$-",
+                "-# $", "-$ #", "# $-", "$ #-",
+                "$ -#", "#- $", "($ #)", "(# $)",
+                "$- #"
+            ];
+        }
 
-        private static readonly string[] s_posPercentFormats =
-        [
-            "# %", "#%", "%#", "% #"
-        ];
+        private static class PercentFormats
+        {
+            internal static readonly string[] Positive =
+            [
+                "# %", "#%", "%#", "% #"
+            ];
 
-        private static readonly string[] s_negPercentFormats =
-        [
-            "-# %", "-#%", "-%#",
-            "%-#", "%#-",
-            "#-%", "#%-",
-            "-% #", "# %-", "% #-",
-            "% -#", "#- %"
-        ];
+            internal static readonly string[] Negative =
+            [
+                "-# %", "-#%", "-%#",
+                "%-#", "%#-",
+                "#-%", "#%-",
+                "-% #", "# %-", "% #-",
+                "% -#", "#- %"
+            ];
+        }
 
-        private static readonly string[] s_negNumberFormats =
-        [
-            "(#)", "-#", "- #", "#-", "# -",
-        ];
+        private static class NumberFormats
+        {
+            internal static readonly string[] Negative =
+            [
+                "(#)", "-#", "- #", "#-", "# -",
+            ];
+        }
 
         internal static char ParseFormatSpecifier(ReadOnlySpan<char> format, out int digits)
         {
@@ -724,8 +733,8 @@ namespace System
             Debug.Assert(sizeof(TChar) is sizeof(char) or sizeof(byte));
 
             string fmt = number.IsNegative ?
-                s_negCurrencyFormats[info.CurrencyNegativePattern] :
-                s_posCurrencyFormats[info.CurrencyPositivePattern];
+                CurrencyFormats.Negative[info.CurrencyNegativePattern] :
+                CurrencyFormats.Positive[info.CurrencyPositivePattern];
 
             foreach (char ch in fmt)
             {
@@ -894,7 +903,7 @@ namespace System
             Debug.Assert(sizeof(TChar) is sizeof(char) or sizeof(byte));
 
             string fmt = number.IsNegative ?
-                s_negNumberFormats[info.NumberNegativePattern] :
+                NumberFormats.Negative[info.NumberNegativePattern] :
                 PosNumberFormat;
 
             foreach (char ch in fmt)
@@ -1021,8 +1030,8 @@ namespace System
             Debug.Assert(sizeof(TChar) is sizeof(char) or sizeof(byte));
 
             string fmt = number.IsNegative ?
-                s_negPercentFormats[info.PercentNegativePattern] :
-                s_posPercentFormats[info.PercentPositivePattern];
+                PercentFormats.Negative[info.PercentNegativePattern] :
+                PercentFormats.Positive[info.PercentPositivePattern];
 
             foreach (char ch in fmt)
             {
