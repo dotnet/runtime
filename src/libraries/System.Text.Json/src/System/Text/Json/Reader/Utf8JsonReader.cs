@@ -1364,8 +1364,11 @@ namespace System.Text.Json
             long prevLineBytePosition = _bytePositionInLine;
             long prevLineNumber = _lineNumber;
 
-            _bytePositionInLine += idx + 1; // Add 1 for the first quote
-
+            // Within this loop the position advances in lockstep with 'idx', so it does not need to
+            // be tracked separately: it is always 'prevLineBytePosition + idx + 1' (the +1 accounts
+            // for the start quote). Deriving it on the (cold) exits instead of incrementing the
+            // field on every iteration keeps the scan free of a loop-carried memory dependency,
+            // since '_bytePositionInLine' is reached through the 'this' byref.
             bool nextCharEscaped = false;
             for (; idx < data.Length; idx++)
             {
@@ -1387,22 +1390,24 @@ namespace System.Text.Json
                     int index = JsonConstants.EscapableChars.IndexOf(currentByte);
                     if (index == -1)
                     {
+                        _bytePositionInLine = prevLineBytePosition + idx + 1;
                         ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.InvalidCharacterAfterEscapeWithinString, currentByte);
                     }
 
                     if (currentByte == 'u')
                     {
-                        // Expecting 4 hex digits to follow the escaped 'u'
-                        _bytePositionInLine++;  // move past the 'u'
+                        // Expecting 4 hex digits to follow the escaped 'u'. Move the position past
+                        // the 'u'; ValidateHexDigits keeps advancing it from there.
+                        _bytePositionInLine = prevLineBytePosition + idx + 2;
                         if (ValidateHexDigits(data, idx + 1))
                         {
                             idx += 4;   // Skip the 4 hex digits, the for loop accounts for idx incrementing past the 'u'
                         }
                         else
                         {
-                            // We found less than 4 hex digits. Check if there is more data to follow, otherwise throw.
-                            idx = data.Length;
-                            break;
+                            // We found less than 4 hex digits. ValidateHexDigits already left the
+                            // position at the end of the data, so don't recompute it here.
+                            goto NeedMoreData;
                         }
 
                     }
@@ -1410,25 +1415,26 @@ namespace System.Text.Json
                 }
                 else if (currentByte < JsonConstants.Space)
                 {
+                    _bytePositionInLine = prevLineBytePosition + idx + 1;
                     ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.InvalidCharacterWithinString, currentByte);
                 }
-
-                _bytePositionInLine++;
             }
 
-            if (idx >= data.Length)
+            // Ran out of data before the closing quote was found.
+            Debug.Assert(idx == data.Length);
+            _bytePositionInLine = prevLineBytePosition + idx + 1;
+
+        NeedMoreData:
+            if (IsLastSpan)
             {
-                if (IsLastSpan)
-                {
-                    ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.EndOfStringNotFound);
-                }
-                _lineNumber = prevLineNumber;
-                _bytePositionInLine = prevLineBytePosition;
-                return false;
+                ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.EndOfStringNotFound);
             }
+            _lineNumber = prevLineNumber;
+            _bytePositionInLine = prevLineBytePosition;
+            return false;
 
         Done:
-            _bytePositionInLine++;  // Add 1 for the end quote
+            _bytePositionInLine = prevLineBytePosition + idx + 2;  // Add 1 for the start quote and 1 for the end quote
             ValueSpan = data.Slice(0, idx);
             ValueIsEscaped = true;
             _tokenType = JsonTokenType.String;
