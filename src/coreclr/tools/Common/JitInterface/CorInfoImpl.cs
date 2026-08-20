@@ -2440,11 +2440,6 @@ namespace Internal.JitInterface
             return result;
         }
 
-        public static int GetClassAlignmentRequirementStatic(DefType type)
-        {
-            return CompilerTypeSystemContext.GetClassAlignmentRequirementStatic(type);
-        }
-
         private Dictionary<DefType, bool> _doubleAlignHeuristicCache = new Dictionary<DefType, bool>();
 
         //*******************************************************************************
@@ -2506,7 +2501,7 @@ namespace Internal.JitInterface
                 }
             }
 
-            return (uint)GetClassAlignmentRequirementStatic(type);
+            return (uint)CompilerTypeSystemContext.GetClassAlignmentRequirementStatic(type);
         }
 
         private int MarkGcField(byte* gcPtrs, CorInfoGCType gcType)
