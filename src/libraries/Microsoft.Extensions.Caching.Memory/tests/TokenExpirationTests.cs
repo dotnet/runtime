@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Caching.Memory.Infrastructure;
@@ -257,6 +258,82 @@ namespace Microsoft.Extensions.Caching.Memory
             cts.Cancel();
             Assert.True(callbackInvoked.WaitOne(TimeSpan.FromSeconds(10)));
             Assert.False(cache.TryGetValue(key, out _));
+        }
+
+        [Fact]
+        public void ExpirationTokensBehaveLikeAList()
+        {
+            var cache = CreateCache();
+            using ICacheEntry entry = cache.CreateEntry("myKey");
+            IList<IChangeToken> tokens = entry.ExpirationTokens;
+
+            var first = new TestExpirationToken();
+            var second = new TestExpirationToken();
+            var third = new TestExpirationToken();
+
+            Assert.Empty(tokens);
+            Assert.False(tokens.IsReadOnly);
+
+            tokens.Add(first);
+            tokens.Add(third);
+            tokens.Insert(1, second);
+            Assert.Equal(new[] { first, second, third }, tokens);
+            Assert.Equal(3, tokens.Count);
+
+            Assert.Same(second, tokens[1]);
+            Assert.Equal(2, tokens.IndexOf(third));
+            Assert.True(tokens.Contains(second));
+            Assert.Throws<ArgumentOutOfRangeException>(() => tokens[3]);
+            Assert.Throws<ArgumentOutOfRangeException>(() => tokens.Insert(4, first));
+            Assert.Throws<ArgumentOutOfRangeException>(() => tokens.RemoveAt(3));
+
+            var target = new IChangeToken[4];
+            tokens.CopyTo(target, 1);
+            Assert.Equal(new IChangeToken[] { null, first, second, third }, target);
+
+            tokens[0] = third;
+            Assert.Same(third, tokens[0]);
+
+            Assert.True(tokens.Remove(second));
+            Assert.False(tokens.Remove(second));
+            Assert.Equal(new[] { third, third }, tokens);
+
+            tokens.RemoveAt(0);
+            Assert.Same(third, Assert.Single(tokens));
+
+            tokens.Clear();
+            Assert.Empty(tokens);
+        }
+
+        [Theory]
+        [InlineData(1)] // append into spare capacity
+        [InlineData(4)] // grow from the initial capacity
+        public void ExpirationTokensEnumeratorUsesSnapshotWhileAdding(int initialCount)
+        {
+            var cache = CreateCache();
+            using ICacheEntry entry = cache.CreateEntry("myKey");
+            var expected = new List<IChangeToken>(initialCount);
+
+            for (int i = 0; i < initialCount; i++)
+            {
+                var token = new TestExpirationToken();
+                expected.Add(token);
+                entry.AddExpirationToken(token);
+            }
+
+            using IEnumerator<IChangeToken> enumerator = entry.ExpirationTokens.GetEnumerator();
+            Assert.True(enumerator.MoveNext()); // captures the current state and visible count
+
+            var actual = new List<IChangeToken>(initialCount) { enumerator.Current };
+            entry.AddExpirationToken(new TestExpirationToken());
+
+            while (enumerator.MoveNext())
+            {
+                actual.Add(enumerator.Current);
+            }
+
+            Assert.Equal(expected, actual);
+            Assert.Equal(initialCount + 1, entry.ExpirationTokens.Count);
         }
 
         internal class TestToken : IChangeToken
