@@ -2675,7 +2675,6 @@ extern "C"
             if(g_fEEStarted) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);};
             MODE_ANY;
             CAN_TAKE_LOCK;
-            STATIC_CONTRACT_FAULT;
         } CONTRACTL_END;
 
         // Mark that we are the special ETWRundown thread.  Currently all this does

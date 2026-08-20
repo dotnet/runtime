@@ -64,7 +64,6 @@ CQuickHeap::~CQuickHeap()
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -89,7 +88,6 @@ LPVOID CQuickHeap::Alloc(UINT sz)
     {
         THROWS;
         GC_NOTRIGGER;
-        INJECT_FAULT(COMPlusThrowOM(););
     } CONTRACTL_END;
 
     sz = (sz+7) & ~7;
@@ -126,7 +124,6 @@ void PrintToStdErrA(const char *pszString)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -139,7 +136,6 @@ void PrintToStdErrW(const WCHAR *pwzString)
     {
         THROWS;
         GC_NOTRIGGER;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
 
@@ -158,7 +154,6 @@ bool operator ==(const ICorDebugInfo::VarLoc &varLoc1,
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     if (varLoc1.vlType != varLoc2.vlType)
         return false;
@@ -215,7 +210,6 @@ SIZE_T GetRegOffsInCONTEXT(ICorDebugInfo::RegNum regNum)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
 #ifdef TARGET_X86
     switch(regNum)
@@ -449,7 +443,6 @@ ULONG NativeVarLocations(const ICorDebugInfo::VarLoc &   varLoc,
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     _ASSERTE(numLocs >= MAX_NATIVE_VAR_LOCS);
 
@@ -561,7 +554,6 @@ SIZE_T *NativeVarStackAddr(const ICorDebugInfo::VarLoc &   varLoc,
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     SIZE_T *dwAddr = NULL;
 
@@ -669,7 +661,6 @@ bool    GetNativeVarVal(const ICorDebugInfo::VarLoc &   varLoc,
 
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     switch(varLoc.vlType)
     {
@@ -775,7 +766,6 @@ bool    SetNativeVarVal(const ICorDebugInfo::VarLoc &   varLoc,
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     switch(varLoc.vlType)
     {
@@ -881,27 +871,6 @@ CLRMapViewOfFile(
         return NULL;
     }
 
-#ifdef _DEBUG
-#ifdef TARGET_X86
-    if (pv && g_pConfig && g_pConfig->ShouldInjectFault(INJECTFAULT_MAPVIEWOFFILE))
-    {
-        MEMORY_BASIC_INFORMATION mbi;
-        memset(&mbi, 0, sizeof(mbi));
-        if (!ClrVirtualQuery(pv, &mbi, sizeof(mbi)))
-        {
-            if(GetLastError()==ERROR_SUCCESS)
-                SetLastError(ERROR_OUTOFMEMORY);
-            return NULL;
-        }
-        UnmapViewOfFile(pv);
-        pv = ClrVirtualAlloc(lpBaseAddress, mbi.RegionSize, MEM_RESERVE, PAGE_NOACCESS);
-    }
-    else
-#endif // TARGET_X86
-#endif // _DEBUG
-    {
-    }
-
     if (!pv && GetLastError()==ERROR_SUCCESS)
         SetLastError(ERROR_OUTOFMEMORY);
 
@@ -915,22 +884,7 @@ CLRUnmapViewOfFile(
 {
     STATIC_CONTRACT_ENTRY_POINT;
 
-#ifdef _DEBUG
-#ifdef TARGET_X86
-    if (g_pConfig && g_pConfig->ShouldInjectFault(INJECTFAULT_MAPVIEWOFFILE))
-    {
-        return ClrVirtualFree((LPVOID)lpBaseAddress, 0, MEM_RELEASE);
-    }
-    else
-#endif // TARGET_X86
-#endif // _DEBUG
-    {
-        BOOL result = UnmapViewOfFile(lpBaseAddress);
-        if (result)
-        {
-        }
-        return result;
-    }
+    return UnmapViewOfFile(lpBaseAddress);
 }
 
 static HMODULE CLRLoadLibraryWorker(LPCWSTR lpLibFileName, DWORD *pLastError)
@@ -938,8 +892,6 @@ static HMODULE CLRLoadLibraryWorker(LPCWSTR lpLibFileName, DWORD *pLastError)
     // Don't use dynamic contract: will override GetLastError value
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_FAULT;
-
     HMODULE hMod;
     ErrorModeHolder errorMode{};
     {
@@ -955,8 +907,6 @@ HMODULE CLRLoadLibrary(LPCWSTR lpLibFileName)
     // Don't use dynamic contract: will override GetLastError value
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_FAULT;
-
     DWORD dwLastError = 0;
     HMODULE hmod = 0;
 
@@ -974,8 +924,6 @@ static HMODULE CLRLoadLibraryExWorker(LPCWSTR lpLibFileName, HANDLE hFile, DWORD
     // Don't use dynamic contract: will override GetLastError value
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_FAULT;
-
     HMODULE hMod;
     ErrorModeHolder errorMode{};
     {
@@ -993,8 +941,6 @@ HMODULE CLRLoadLibraryEx(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFlags)
     // This will throw in the case of SO
     //STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_FAULT;
-
     DWORD lastError = ERROR_SUCCESS;
     HMODULE hmod = NULL;
 
@@ -1011,7 +957,6 @@ BOOL CLRFreeLibrary(HMODULE hModule)
     // Don't use dynamic contract: will override GetLastError value
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     return FreeLibrary(hModule);
 }
@@ -1779,7 +1724,6 @@ int __cdecl stricmpUTF8(const char* szStr1, const char* szStr2)
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END
 

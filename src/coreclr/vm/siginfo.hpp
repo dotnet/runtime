@@ -809,7 +809,6 @@ class MetaSig
             {
                 if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
                 if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
-                if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
                 MODE_ANY;
                 SUPPORTS_DAC;
             }

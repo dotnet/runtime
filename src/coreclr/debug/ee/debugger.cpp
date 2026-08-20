@@ -5402,12 +5402,6 @@ void Debugger::TraceCall(const BYTE *code)
         // There are situations where our callers can't tolerate us throwing.
         EX_TRY
         {
-            // Since we have a try catch and the debugger code can deal properly with
-            // faults occurring inside DebuggerController::DispatchTraceCall, we can safely
-            // establish a FAULT_NOT_FATAL region. This is required since some callers can't
-            // tolerate faults.
-            FAULT_NOT_FATAL();
-
             DebuggerController::DispatchTraceCall(pCurThread, code);
         }
         EX_CATCH

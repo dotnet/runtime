@@ -111,7 +111,6 @@ PinnedHeapHandleBucket::PinnedHeapHandleBucket(PinnedHeapHandleBucket *pNext, PT
         THROWS;
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -221,7 +220,6 @@ PinnedHeapHandleTable::PinnedHeapHandleTable(DWORD InitialBucketSize)
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -259,7 +257,6 @@ OBJECTREF* PinnedHeapHandleTable::AllocateHandles(DWORD nRequested)
         GC_TRIGGERS;
         MODE_COOPERATIVE;
         PRECONDITION(nRequested > 0);
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -559,7 +556,6 @@ OBJECTREF* AppDomain::AllocateObjRefPtrsInLargeTable(int nRequested, DynamicStat
         GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION((nRequested > 0));
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -647,7 +643,6 @@ STRINGREF* AppDomain::IsStringInterned(STRINGREF *pString)
         THROWS;
         MODE_COOPERATIVE;
         PRECONDITION(CheckPointer(pString));
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -662,7 +657,6 @@ STRINGREF* AppDomain::GetOrInternString(STRINGREF *pString)
         THROWS;
         MODE_COOPERATIVE;
         PRECONDITION(CheckPointer(pString));
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -676,7 +670,6 @@ void AppDomain::InitPinnedHeapHandleTable()
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -714,7 +707,6 @@ void SystemDomain::Attach()
         GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(m_pSystemDomain == NULL);
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -804,7 +796,6 @@ void SystemDomain::PreallocateSpecialObjects()
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -821,7 +812,6 @@ void SystemDomain::CreatePreallocatedExceptions()
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -909,7 +899,6 @@ void SystemDomain::LazyInitGlobalStringLiteralMap()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -932,7 +921,6 @@ void SystemDomain::LazyInitFrozenObjectsHeap()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -1321,7 +1309,6 @@ Module* SystemDomain::GetCallersModule(StackCrawlMark* stackMark)
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -1365,7 +1352,6 @@ StackWalkAction SystemDomain::CallersMethodCallbackWithStackMark(CrawlFrame* pCf
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -1641,7 +1627,6 @@ AppDomain::AppDomain()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        FORBID_FAULT;
     }
     CONTRACTL_END;
 
@@ -1761,7 +1746,6 @@ void AppDomain::AddAssembly(Assembly * assem)
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -1830,7 +1814,6 @@ EEClassFactoryInfoHashTable* AppDomain::SetupClassFactHash()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -1858,7 +1841,6 @@ DispIDCache* AppDomain::SetupRefDispIDCache()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -1889,7 +1871,6 @@ FileLoadLock* FileLoadLock::Create(PEFileListLock* pLock, PEAssembly* pPEAssembl
         MODE_ANY;
         PRECONDITION(pLock->HasLock());
         PRECONDITION(pLock->FindFileLock(pPEAssembly) == NULL);
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -2083,7 +2064,6 @@ void FileLoadLock::SetError(Exception *ex)
         THROWS;
         PRECONDITION(CheckPointer(ex));
         PRECONDITION(HasLock());
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -2291,8 +2271,6 @@ void AppDomain::LoadAssembly(Assembly *pAssembly,
     {
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM();); }
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -2346,7 +2324,6 @@ Assembly *AppDomain::LoadAssembly(AssemblySpec* pSpec,
         THROWS;
         MODE_ANY;
         PRECONDITION(CheckPointer(pPEAssembly));
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -2416,7 +2393,6 @@ Assembly *AppDomain::LoadAssemblyInternal(AssemblySpec* pIdentity,
         MODE_ANY;
         PRECONDITION(CheckPointer(pPEAssembly));
         PRECONDITION(::GetAppDomain()==this);
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -2723,7 +2699,6 @@ void AppDomain::SetupSharedStatics()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -2795,7 +2770,6 @@ void AppDomain::SetFriendlyName(LPCWSTR pwzFriendlyName)
         THROWS;
         GC_TRIGGERS; // for NameChangeEvent
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -2832,7 +2806,6 @@ LPCWSTR AppDomain::GetFriendlyName()
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -2854,7 +2827,6 @@ BOOL AppDomain::AddFileToCache(AssemblySpec* pSpec, PEAssembly * pPEAssembly)
         GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(CheckPointer(pSpec));
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -2873,7 +2845,6 @@ BOOL AppDomain::AddAssemblyToCache(AssemblySpec* pSpec, Assembly *pAssembly)
         MODE_ANY;
         PRECONDITION(CheckPointer(pSpec));
         PRECONDITION(CheckPointer(pAssembly));
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -2893,7 +2864,6 @@ BOOL AppDomain::AddExceptionToCache(AssemblySpec* pSpec, Exception *ex)
         GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(CheckPointer(pSpec));
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -2916,7 +2886,6 @@ void AppDomain::AddUnmanagedImageToCache(LPCWSTR libraryName, NATIVE_LIBRARY_HAN
         MODE_ANY;
         PRECONDITION(CheckPointer(libraryName));
         PRECONDITION(CheckPointer(hMod));
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -2945,7 +2914,6 @@ NATIVE_LIBRARY_HANDLE AppDomain::FindUnmanagedImageInCache(LPCWSTR libraryName)
         GC_NOTRIGGER;
         MODE_ANY;
         PRECONDITION(CheckPointer(libraryName));
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -2988,7 +2956,6 @@ BOOL AppDomain::RemoveAssemblyFromCache(Assembly* pAssembly)
         GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(CheckPointer(pAssembly));
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -3347,7 +3314,6 @@ void AppDomain::RaiseLoadingAssemblyEvent(Assembly *pAssembly)
     }
 
     GCX_COOP();
-    FAULT_NOT_FATAL();
     OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
 
     EX_TRY
@@ -3422,7 +3388,6 @@ DefaultAssemblyBinder *AppDomain::CreateDefaultBinder()
         GC_TRIGGERS;
         THROWS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -3551,7 +3516,6 @@ RCWCache *AppDomain::CreateRCWCache()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -3606,7 +3570,6 @@ Assembly* AppDomain::RaiseTypeResolveEventThrowing(Assembly* pAssembly, LPCSTR s
         MODE_ANY;
         GC_TRIGGERS;
         THROWS;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -3661,7 +3624,6 @@ Assembly* AppDomain::RaiseResourceResolveEvent(Assembly* pAssembly, LPCSTR szNam
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -3708,7 +3670,6 @@ AppDomain::RaiseAssemblyResolveEvent(
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -4289,7 +4250,6 @@ TypeEquivalenceHashTable * AppDomain::GetTypeEquivalenceCache()
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
         MODE_ANY;
     }
     CONTRACTL_END;
