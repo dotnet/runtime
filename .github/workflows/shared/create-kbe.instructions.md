@@ -52,8 +52,16 @@ best-match ranking can place noisier hits above the correct one.
    `SocketBlockingModeTransitionTests label:area-System.Net.Sockets`.
 6. Stripped test-family stem. Strip platform/arch suffixes (`_linux_arm`,
    `_osx_arm64`) and type-width suffixes (`_byte_short`, `_long_ulong`,
-   `_8bit`, `_16bit`, `_32bit`); search the stem in `in:title` and `in:body`.
-   Catches sibling KBEs at different bit widths or instantiations.
+   `_8bit`, `_16bit`, `_32bit`). For coreclr slash-delimited runtime-test
+   paths, also strip trailing script-runner suffixes (`.cmd`, `.dll`, `.sh`,
+   `.exe`) and exit-code/signal descriptors (`exit 134`, `exit 101`,
+   `SIGABRT`); search the bare stem in `in:title` and `in:body`. For example,
+   search `GC/API/Refresh/Refresh/Refresh` for both
+   `GC/API/Refresh/Refresh/Refresh` and `GC/API/Refresh/Refresh/Refresh.cmd`
+   failures with `exit 101`, and search
+   `JIT/Methodical/Arrays/misc/arrres_il_r/arrres_il_r` for the same test with
+   or without `.cmd` and `exit 134`. Catches sibling KBEs at different bit
+   widths, instantiations, script runners, or exit/signal descriptors.
 7. Bare signature, open issues, no label filter:
    `is:issue is:open in:title "<test-name>"` and
    `is:issue is:open "<assertion-text>" in:body`. Catches a pre-existing
@@ -63,15 +71,15 @@ best-match ranking can place noisier hits above the correct one.
 
 When a failure includes a complete test method identifier, search that
 identifier verbatim before deriving any shorter stem. Do not truncate
-underscore-delimited identifiers;
-GitHub search does not reliably prefix-match them. Only strip the specific
-platform, architecture, and type-width suffixes described in variation 6.
+underscore-delimited identifiers; GitHub search does not reliably prefix-match
+them. Only strip the specific platform, architecture, type-width,
+script-runner, and exit-code/signal suffixes described in variation 6.
 
 Variations 4 and 5 catch sibling failures filed for the same test class on a
 different platform or runtime variant, plus pre-existing area-team trackers
 that lack the `Known Build Error` label. Variation 6 catches siblings at
-different bit widths or instantiations. Variation 7 catches an open human
-report with no label at all.
+different bit widths, instantiations, script runners, or exit/signal
+descriptors. Variation 7 catches an open human report with no label at all.
 
 If two candidate KBEs share more than 70% of their `ErrorMessage` /
 `ErrorPattern` tokens, do **not** guess: record
