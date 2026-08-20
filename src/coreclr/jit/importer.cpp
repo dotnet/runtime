@@ -10103,7 +10103,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 op1 = (lclTyp == TYP_STRUCT) ? gtNewStoreBlkNode(layout, op1, op2, indirFlags)->AsIndir()
                                              : gtNewStoreIndNode(lclTyp, op1, op2, indirFlags);
                 impAnnotateFieldIndir(op1->AsIndir());
-                gtUpdateNodeSideEffects(op1);
+                // Annotation may clear GTF_GLOB_REF inherited from the data.
+                op1->gtFlags |= op2->gtFlags & GTF_GLOB_REF;
 
                 if (varTypeIsStruct(op1))
                 {
