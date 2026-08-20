@@ -24,13 +24,7 @@ namespace ILCompiler.ObjectWriter
             where TSection : SectionDataEmitter
         {
             SectionDataEmitter section = _sections[sectionIndex];
-            if (section is TSection typedSection)
-            {
-                return typedSection;
-            }
-
-            throw new InvalidOperationException(
-                $"Section at index {sectionIndex} is {section.GetType().Name}, not {typeof(TSection).Name}.");
+            return (TSection)section;
         }
 
         public TSection GetSection<TSection>(string sectionName)
