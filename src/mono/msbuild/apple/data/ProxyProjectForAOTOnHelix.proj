@@ -13,6 +13,12 @@
     <PublishDir>$(OriginalPublishDir)</PublishDir>
   </PropertyGroup>
 
+  <!-- The app bundle source is staged outside publish because publish is the pristine crossgen2
+       input for every run, and AppleAppBuilder bundles every top-level entry of its AppDir. -->
+  <PropertyGroup Condition="'$(PublishReadyToRun)' == 'true' and '$(UseMonoRuntime)' != 'true' and '$(UseNativeAOTRuntime)' != 'true'">
+    <_R2RAppBundleSourceDir>$([MSBuild]::NormalizeDirectory($(BaseIntermediateOutputPath), 'r2r-app-bundle-source'))</_R2RAppBundleSourceDir>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(UseNativeAOTRuntime)' == 'true'">
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <UseArtifactsIntermediateOutput>true</UseArtifactsIntermediateOutput>
@@ -114,12 +120,8 @@
       <MainLibraryFileName Condition="'$(MainLibraryFileName)' == '' and '$(IncludesTestRunner)' == 'true' and '$(_NativeAotLibraryTestOnHelix)' != 'true'">AppleTestRunner.dll</MainLibraryFileName>
       <MainLibraryFileName Condition="'$(_NativeAotLibraryTestOnHelix)' == 'true'"></MainLibraryFileName>
 
-      <_UseR2RAppBundleSource Condition="'$(PublishReadyToRun)' == 'true' and '$(UseMonoRuntime)' != 'true' and '$(UseNativeAOTRuntime)' != 'true' and '$(PublishReadyToRunContainerFormat)' == 'macho'">true</_UseR2RAppBundleSource>
-      <!-- The app bundle source is staged outside publish because publish is the pristine crossgen2
-           input for every run, and AppleAppBuilder bundles every top-level entry of its AppDir. -->
-      <_R2RAppBundleSourceDir>$([MSBuild]::NormalizeDirectory($(BaseIntermediateOutputPath), 'r2r-app-bundle-source'))</_R2RAppBundleSourceDir>
-      <AppleBuildDir Condition="'$(_UseR2RAppBundleSource)' == 'true'">$(_R2RAppBundleSourceDir)</AppleBuildDir>
-      <AppleBuildDir Condition="'$(_UseR2RAppBundleSource)' != 'true'">$(OriginalPublishDir)</AppleBuildDir>
+      <AppleBuildDir Condition="'$(PublishReadyToRun)' == 'true' and '$(UseMonoRuntime)' != 'true' and '$(UseNativeAOTRuntime)' != 'true' and '$(PublishReadyToRunContainerFormat)' == 'macho'">$(_R2RAppBundleSourceDir)</AppleBuildDir>
+      <AppleBuildDir Condition="'$(AppleBuildDir)' == ''">$(OriginalPublishDir)</AppleBuildDir>
       <AppleBundleDir>$(TestRootDir)AppBundle\</AppleBundleDir>
     </PropertyGroup>
 
