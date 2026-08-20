@@ -15,7 +15,11 @@ namespace System.Text
     //
     internal static partial class EncodingTable
     {
-        private static readonly ConcurrentDictionary<string, int> s_nameToCodePage = new(StringComparer.OrdinalIgnoreCase);
+        private static class NameToCodePageCache
+        {
+            internal static readonly ConcurrentDictionary<string, int> s_nameToCodePage = new(StringComparer.OrdinalIgnoreCase);
+        }
+
         private static CodePageDataItem?[]? s_codePageToCodePageData;
 
         /*=================================GetCodePageFromName==========================
@@ -32,7 +36,7 @@ namespace System.Text
         {
             ArgumentNullException.ThrowIfNull(name);
 
-            return s_nameToCodePage.GetOrAdd(name, InternalGetCodePageFromName);
+            return NameToCodePageCache.s_nameToCodePage.GetOrAdd(name, InternalGetCodePageFromName);
         }
 
         // Find the data item by binary searching the table.
