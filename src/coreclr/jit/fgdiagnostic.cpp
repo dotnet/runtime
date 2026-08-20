@@ -2565,45 +2565,46 @@ void Compiler::fgDumpBlockMemorySsaOut(BasicBlock* block)
     }
 }
 
-//------------------------------------------------------------------------
-// fgStress64RsltMulCB: Callback to stress-test 64-bit result multiplication.
-//    Converts 'intOp1*intOp2' into 'int(long(nop(intOp1))*long(intOp2))'.
-//
-// Arguments:
-//    pTree - Pointer to the current tree node being visited.
-//    data  - Walk data containing the compiler context.
-//
-// Return Value:
-//    WALK_SKIP_SUBTREES if the tree was transformed; WALK_CONTINUE otherwise.
-//
-// static
-Compiler::fgWalkResult Compiler::fgStress64RsltMulCB(GenTree** pTree, fgWalkData* data)
+class Stress64RsltMulVisitor final : public GenTreeVisitor<Stress64RsltMulVisitor>
 {
-    GenTree*  tree  = *pTree;
-    Compiler* pComp = data->m_compiler;
-
-    if (!tree->OperIs(GT_MUL) || !tree->TypeIs(TYP_INT) || (tree->gtOverflow()))
+public:
+    enum
     {
-        return WALK_CONTINUE;
+        DoPreOrder = true,
+    };
+
+    Stress64RsltMulVisitor(Compiler* compiler)
+        : GenTreeVisitor<Stress64RsltMulVisitor>(compiler)
+    {
     }
 
-    JITDUMP("STRESS_64RSLT_MUL before:\n")
-    DISPTREE(tree)
+    fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+    {
+        GenTree* tree = *use;
 
-    tree->AsOp()->gtOp1 = pComp->gtNewCastNode(TYP_LONG, tree->gtGetOp1(), false, TYP_LONG);
-    tree->AsOp()->gtOp2 = pComp->gtNewCastNode(TYP_LONG, tree->gtGetOp2(), false, TYP_LONG);
-    tree->gtType        = TYP_LONG;
-    *pTree              = pComp->gtNewCastNode(TYP_INT, tree, false, TYP_INT);
+        if (!tree->OperIs(GT_MUL) || !tree->TypeIs(TYP_INT) || (tree->gtOverflow()))
+        {
+            return fgWalkResult::WALK_CONTINUE;
+        }
 
-    // To ensure optNarrowTree() doesn't fold back to the original tree.
-    tree->gtGetOp1()->gtDebugFlags |= GTF_DEBUG_CAST_DONT_FOLD;
-    tree->gtGetOp2()->gtDebugFlags |= GTF_DEBUG_CAST_DONT_FOLD;
+        JITDUMP("STRESS_64RSLT_MUL before:\n")
+        DISPTREE(tree)
 
-    JITDUMP("STRESS_64RSLT_MUL after:\n")
-    DISPTREE(*pTree)
+        tree->AsOp()->gtOp1 = m_compiler->gtNewCastNode(TYP_LONG, tree->gtGetOp1(), false, TYP_LONG);
+        tree->AsOp()->gtOp2 = m_compiler->gtNewCastNode(TYP_LONG, tree->gtGetOp2(), false, TYP_LONG);
+        tree->gtType        = TYP_LONG;
+        *use                = m_compiler->gtNewCastNode(TYP_INT, tree, false, TYP_INT);
 
-    return WALK_SKIP_SUBTREES;
-}
+        // To ensure optNarrowTree() doesn't fold back to the original tree.
+        tree->gtGetOp1()->gtDebugFlags |= GTF_DEBUG_CAST_DONT_FOLD;
+        tree->gtGetOp2()->gtDebugFlags |= GTF_DEBUG_CAST_DONT_FOLD;
+
+        JITDUMP("STRESS_64RSLT_MUL after:\n")
+        DISPTREE(*use)
+
+        return fgWalkResult::WALK_SKIP_SUBTREES;
+    }
+};
 
 //------------------------------------------------------------------------
 // fgStress64RsltMul: Stress-test 64-bit result multiplications by walking
@@ -2616,7 +2617,15 @@ void Compiler::fgStress64RsltMul()
         return;
     }
 
-    fgWalkAllTreesPre(fgStress64RsltMulCB, (void*)this);
+    Stress64RsltMulVisitor visitor(this);
+
+    for (BasicBlock* const block : Blocks())
+    {
+        for (Statement* const stmt : block->Statements())
+        {
+            visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
+        }
+    }
 }
 
 // BBPredsChecker checks jumps from the block's predecessors to the block.
@@ -4086,29 +4095,25 @@ void Compiler::fgDebugCheckBlockLinks()
 
 // UniquenessCheckWalker keeps data that is necessary to check
 // that each tree has its own unique id and they do not repeat.
-class UniquenessCheckWalker
+class UniquenessCheckWalker final : public GenTreeVisitor<UniquenessCheckWalker>
 {
 public:
+    enum
+    {
+        DoPreOrder = true,
+    };
+
     UniquenessCheckWalker(Compiler* comp)
-        : m_compiler(comp)
+        : GenTreeVisitor<UniquenessCheckWalker>(comp)
         , nodesVecTraits(comp->compGenTreeID, comp)
         , uniqueNodes(BitVecOps::MakeEmpty(&nodesVecTraits))
     {
     }
 
-    //------------------------------------------------------------------------
-    // fgMarkTreeId: Visit all subtrees in the tree and check gtTreeIDs.
-    //
-    // Arguments:
-    //    pTree     - Pointer to the tree to walk
-    //    fgWalkPre - the UniquenessCheckWalker instance
-    //
-    static Compiler::fgWalkResult MarkTreeId(GenTree** pTree, Compiler::fgWalkData* fgWalkPre)
+    fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
     {
-        UniquenessCheckWalker* walker   = static_cast<UniquenessCheckWalker*>(fgWalkPre->pCallbackData);
-        unsigned               gtTreeID = (*pTree)->gtTreeID;
-        walker->CheckTreeId(gtTreeID);
-        return Compiler::WALK_CONTINUE;
+        CheckTreeId((*use)->gtTreeID);
+        return fgWalkResult::WALK_CONTINUE;
     }
 
     //------------------------------------------------------------------------
@@ -4137,7 +4142,6 @@ public:
     }
 
 private:
-    Compiler*    m_compiler;
     BitVecTraits nodesVecTraits;
     BitVec       uniqueNodes;
 };
@@ -4162,8 +4166,7 @@ void Compiler::fgDebugCheckNodesUniqueness()
         {
             for (Statement* const stmt : block->Statements())
             {
-                GenTree* root = stmt->GetRootNode();
-                fgWalkTreePre(&root, UniquenessCheckWalker::MarkTreeId, &walker);
+                walker.WalkTree(stmt->GetRootNodePointer(), nullptr);
             }
         }
     }

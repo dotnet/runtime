@@ -886,6 +886,68 @@ private:
 //   Inline arguments may be directly substituted into the body of the inlinee
 //   in some cases. See impInlineFetchArg.
 //
+#ifdef DEBUG
+
+class FindNonInlineCandidateVisitor final : public GenTreeVisitor<FindNonInlineCandidateVisitor>
+{
+    Statement* m_stmt;
+
+public:
+    enum
+    {
+        DoPreOrder        = true,
+        UseExecutionOrder = true,
+    };
+
+    FindNonInlineCandidateVisitor(Compiler* compiler, Statement* stmt)
+        : GenTreeVisitor<FindNonInlineCandidateVisitor>(compiler)
+        , m_stmt(stmt)
+    {
+    }
+
+    fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+    {
+        GenTree* tree = *use;
+        if (tree->OperIs(GT_CALL))
+        {
+            m_compiler->fgNoteNonInlineCandidate(m_stmt, tree->AsCall());
+        }
+
+        return fgWalkResult::WALK_CONTINUE;
+    }
+};
+
+class CheckInlineCandidatesVisitor final : public GenTreeVisitor<CheckInlineCandidatesVisitor>
+{
+public:
+    enum
+    {
+        DoPreOrder = true,
+    };
+
+    CheckInlineCandidatesVisitor(Compiler* compiler)
+        : GenTreeVisitor<CheckInlineCandidatesVisitor>(compiler)
+    {
+    }
+
+    fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+    {
+        GenTree* tree = *use;
+        if (tree->OperIs(GT_CALL))
+        {
+            assert((tree->gtFlags & GTF_CALL_INLINE_CANDIDATE) == 0);
+        }
+        else
+        {
+            assert(!tree->OperIs(GT_RET_EXPR));
+        }
+
+        return fgWalkResult::WALK_CONTINUE;
+    }
+};
+
+#endif // DEBUG
+
 PhaseStatus Compiler::fgInline()
 {
     if (!opts.OptEnabled(CLFLG_INLINING))
@@ -1001,7 +1063,8 @@ PhaseStatus Compiler::fgInline()
 #if defined(DEBUG)
             // In debug builds we want the inline tree to show all failed
             // inlines.
-            fgWalkTreePre(stmt->GetRootNodePointer(), fgFindNonInlineCandidate, stmt);
+            FindNonInlineCandidateVisitor findNonInlineCandidate(this, stmt);
+            findNonInlineCandidate.WalkTree(stmt->GetRootNodePointer(), nullptr);
 #endif
             stmt = stmt->GetNextStmt();
         }
@@ -1021,10 +1084,11 @@ PhaseStatus Compiler::fgInline()
 
     do
     {
+        CheckInlineCandidatesVisitor checkInlineCandidates(this);
+
         for (Statement* const stmt : block->Statements())
         {
-            // Call Compiler::fgDebugCheckInlineCandidates on each node
-            fgWalkTreePre(stmt->GetRootNodePointer(), fgDebugCheckInlineCandidates);
+            checkInlineCandidates.WalkTree(stmt->GetRootNodePointer(), nullptr);
         }
 
         block = block->Next();
@@ -1280,34 +1344,6 @@ void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result, 
 #if defined(DEBUG)
 
 //------------------------------------------------------------------------
-// fgFindNonInlineCandidate: tree walk helper to ensure that a tree node
-// that is not an inline candidate is noted as a failed inline.
-//
-// Arguments:
-//    pTree - pointer to pointer tree node being walked
-//    data  - contextual data for the walk
-//
-// Return Value:
-//    walk result
-//
-// Note:
-//    Invokes fgNoteNonInlineCandidate on the nodes it finds.
-
-Compiler::fgWalkResult Compiler::fgFindNonInlineCandidate(GenTree** pTree, fgWalkData* data)
-{
-    GenTree* tree = *pTree;
-    if (tree->OperIs(GT_CALL))
-    {
-        Compiler*    compiler = data->m_compiler;
-        Statement*   stmt     = (Statement*)data->pCallbackData;
-        GenTreeCall* call     = tree->AsCall();
-
-        compiler->fgNoteNonInlineCandidate(stmt, call);
-    }
-    return WALK_CONTINUE;
-}
-
-//------------------------------------------------------------------------
 // fgNoteNonInlineCandidate: account for inlining failures in calls
 // not marked as inline candidates.
 //
@@ -1348,37 +1384,6 @@ void Compiler::fgNoteNonInlineCandidate(Statement* stmt, GenTreeCall* call)
 }
 
 #endif
-
-#ifdef DEBUG
-
-//------------------------------------------------------------------------
-// fgDebugCheckInlineCandidates: Callback to make sure there is no more
-//    GT_RET_EXPR and GTF_CALL_INLINE_CANDIDATE nodes.
-//
-// Arguments:
-//    pTree - pointer to the tree node being walked
-//    data  - walk data
-//
-// Return Value:
-//    WALK_CONTINUE
-//
-// static
-Compiler::fgWalkResult Compiler::fgDebugCheckInlineCandidates(GenTree** pTree, fgWalkData* data)
-{
-    GenTree* tree = *pTree;
-    if (tree->OperIs(GT_CALL))
-    {
-        assert((tree->gtFlags & GTF_CALL_INLINE_CANDIDATE) == 0);
-    }
-    else
-    {
-        assert(!tree->OperIs(GT_RET_EXPR));
-    }
-
-    return WALK_CONTINUE;
-}
-
-#endif // DEBUG
 
 //------------------------------------------------------------------------
 // fgInvokeInlineeCompiler: Invoke the compiler for an inlinee method and
