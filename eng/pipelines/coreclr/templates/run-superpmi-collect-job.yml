@@ -137,7 +137,7 @@ jobs:
     - ${{ if eq(parameters.collectionName, 'aspnet2') }}:
       - name: InputDirectory
         value: '$(Core_Root_Dir)'
-    - ${{ if eq(parameters.collectionName, 'sourcegit') }}:
+    - ${{ if eq(parameters.collectionName, 'aspire') }}:
       - name: InputDirectory
         value: '$(Core_Root_Dir)'
     - ${{ if eq(parameters.collectionName, 'coreclr_tests') }}:

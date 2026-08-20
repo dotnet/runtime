@@ -562,8 +562,8 @@ extends:
             collectionName: aspnet2
 
       #
-      # Collection over the SourceGit application (a real-world, third-party Avalonia app):
-      # crossgen2 and NativeAOT compilation of the app and all of its dependencies.
+      # Collection over the Aspire CLI (a real-world, third-party NativeAOT application):
+      # NativeAOT compilation of the app and all of its dependencies.
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -580,23 +580,5 @@ extends:
           jobParameters:
             testGroup: outerloop
             liveLibrariesBuildConfig: Release
-            collectionType: crossgen2
-            collectionName: sourcegit
-
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/coreclr/templates/superpmi-collect-job.yml
-          buildConfig: checked
-          platforms:
-          - osx_arm64
-          - linux_arm64
-          - linux_x64
-          - windows_x64
-          - windows_arm64
-          helixQueueGroup: ci
-          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-          jobParameters:
-            testGroup: outerloop
-            liveLibrariesBuildConfig: Release
             collectionType: nativeaot
-            collectionName: sourcegit
+            collectionName: aspire
