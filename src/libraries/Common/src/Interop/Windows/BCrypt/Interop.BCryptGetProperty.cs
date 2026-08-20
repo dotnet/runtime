@@ -10,14 +10,6 @@ internal static partial class Interop
 {
     internal static partial class BCrypt
     {
-        [StructLayout(LayoutKind.Sequential)]
-        internal struct BCRYPT_KEY_LENGTHS_STRUCT
-        {
-            internal uint dwMinLength;
-            internal uint dwMaxLength;
-            internal uint dwIncrement;
-        }
-
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.BCrypt, StringMarshalling = StringMarshalling.Utf16)]
         internal static unsafe partial NTSTATUS BCryptGetProperty(
