@@ -19,6 +19,17 @@ namespace ILCompiler.ObjectWriter
         {
         }
 
+        private protected override ObjectNodeSection GetEmitSection(ObjectNodeSection section)
+        {
+            if (section == ObjectNodeSection.TextSection ||
+                section == ObjectNodeSection.ManagedCodeUnixContentSection ||
+                section == ObjectNodeSection.ManagedCodeWindowsContentSection)
+            {
+                return ObjectNodeSection.WasmCodeSection;
+            }
+
+            return section;
+        }
         private protected override void EmitObjectFile(Stream outputFileStream)
         {
             Debug.Assert(outputFileStream.CanSeek, $"EmitObjectFile requires seekable output stream");
