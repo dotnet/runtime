@@ -117,7 +117,7 @@ export class TraceInfo {
     isVerbose: boolean;
 
     constructor (ip: MintOpcodePtr, index: number, isVerbose: number) {
-        this.ip = ip;
+        this.ip = ip as any >>> 0 as any;
         this.index = index;
         this.isVerbose = !!isVerbose;
     }
@@ -731,18 +731,12 @@ function generate_wasm (
     traceIndex: number, methodFullName: string | undefined,
     backwardBranchTable: Uint16Array | null, presetFunctionPointer: number
 ): number {
-    // Pre-allocate a decent number of constant slots - this adds fixed size bloat
-    //  to the trace but will make the actual pointer constants in the trace smaller
-    // If we run out of constant slots it will transparently fall back to i32_const
-    // For System.Runtime.Tests we only run out of slots ~50 times in 9100 test cases
-    const constantSlotCount = 8;
-
     let builder = traceBuilder;
     if (!builder) {
-        traceBuilder = builder = new WasmBuilder(constantSlotCount);
+        traceBuilder = builder = new WasmBuilder();
         initialize_builder(builder);
     } else
-        builder.clear(constantSlotCount);
+        builder.clear();
 
     mostRecentOptions = builder.options;
 
@@ -1011,6 +1005,10 @@ export function mono_interp_tier_prepare_jiterpreter (
     presetFunctionPointer: number
 ): number {
     mono_assert(ip, "expected instruction pointer");
+    ip = ip as any >>> 0 as any;
+    frame = frame as any >>> 0 as any;
+    method = method as any >>> 0 as any;
+    startOfBody = startOfBody as any >>> 0 as any;
     if (!mostRecentOptions)
         mostRecentOptions = getOptions();
 
@@ -1084,6 +1082,9 @@ export function mono_interp_tier_prepare_jiterpreter (
 export function mono_wasm_free_method_data (
     method: MonoMethod, imethod: number, traceIndex: number
 ) {
+    method = method as any >>> 0 as any;
+    imethod = imethod >>> 0;
+
     if (runtimeHelpers.emscriptenBuildOptions.enableDevToolsProfiler) {
         mono_wasm_profiler_free_method(method);
     }
