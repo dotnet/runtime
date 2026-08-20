@@ -9675,15 +9675,15 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
 }
 
 /******************************************************************************/
-// Returns true if the given intrinsic will be implemented by calling System.Math
-// methods.
+// Returns true if the given intrinsic will be implemented by a user call.
 
 bool Compiler::IsIntrinsicImplementedByUserCall(NamedIntrinsic intrinsicName)
 {
     // Currently, if a math intrinsic is not implemented by target-specific
     // instructions, it will be implemented by a System.Math call. In the
     // future, if we turn to implementing some of them with helper calls,
-    // this predicate needs to be revisited.
+    // this predicate needs to be revisited. IsKnownConstant is instead folded
+    // during importation or morph.
     return (intrinsicName != NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant) &&
            !IsTargetIntrinsic(intrinsicName);
 }
