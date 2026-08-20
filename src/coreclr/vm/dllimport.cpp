@@ -5254,6 +5254,14 @@ namespace
         bool                             m_bILStubCreator;     // Only the creator can remove the ILStub from the Cache
     };  //ILStubCreatorHelper
 
+    // The signature for the IL stub specified in pSigDesc should have the following lifetime:
+    // If SF_IsReverseStub(pss->GetFlags()) == true
+    // - The signature can have stack-local lifetime.
+    // If SF_IsReverseStub(pss->GetStubFlags()) != true
+    // - The signature must have the lifetime of pSigDesc->m_pLoaderModule
+    // After return, if *pGeneratedNewStub == true && SF_IsReverseStub(pss->GetStubFlags()) != true
+    // - The memory for the signature in pSigDesc must not be released as ownership has passed to
+    //   the created MethodDesc*
     MethodDesc* CreateInteropILStub(
                             ILStubState*             pss,
                             StubSigDesc*             pSigDesc,
