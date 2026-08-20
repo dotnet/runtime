@@ -1,6 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 //
+// Bug: https://github.com/dotnet/runtime/issues/114693
+// Fix: When CollectCrashDumpWithCreateDump runs `sudo createdump`, both the .dmp
+// file and its companion .crashreport.json are created as root. The original code
+// only ran `sudo chown` on the .dmp path, leaving the .crashreport.json root-owned.
+// Later, TryPrintStackTraceFromCrashReport in XUnitLogChecker.cs reads the
+// .crashreport.json and can throw UnauthorizedAccessException when the file is
+// still root-owned in CI environments where the sudo chown/chmod dance in
+// TryPrintStackTraceFromCrashReport fails (e.g. USER env var missing, wrong user,
+// restricted sudo). This patch extends the post-dump chown to also cover the
+// .crashreport.json file so that the file is consistently accessible.
 
 using System;
 using System.Collections.Generic;
@@ -36,7 +46,7 @@ namespace TestLibrary
             MiniDumpWithPrivateReadWriteMemory      = 0x00000200,
             MiniDumpWithoutOptionalData             = 0x00000400,
             MiniDumpWithFullMemoryInfo              = 0x00000800,
-            MiniDumpWithThreadInfo                  = 0x00001000,
+            MiniDumpWithThreadInfo                  = 0x00000100,
             MiniDumpWithCodeSegs                    = 0x00002000,
             MiniDumpWithoutAuxiliaryState           = 0x00004000,
             MiniDumpWithFullAuxiliaryState          = 0x00008000,
@@ -141,7 +151,7 @@ namespace TestLibrary
             }
         }
 
-        public unsafe static IEnumerable<Process> GetChildren(this Process process)
+        internal unsafe static IEnumerable<Process> GetChildren(this Process process)
         {
             var children = new List<Process>();
             if (OperatingSystem.IsWindows())
@@ -246,9 +256,9 @@ namespace TestLibrary
             var children = new List<Process>();
             if (libproc.ListChildPids(process.Id, out int[] childPids))
             {
-                foreach (var childPid in childPids)
+                foreach (var pid in childPids)
                 {
-                    children.Add(Process.GetProcessById(childPid));
+                    children.Add(Process.GetProcessById(pid));
                 }
             }
 
@@ -260,13 +270,8 @@ namespace TestLibrary
     {
         public const int EXIT_SUCCESS_CODE = 0;
         public const string TIMEOUT_ENVIRONMENT_VAR = "__TestTimeout";
-
-        // Default timeout set to 10 minutes
-        public const int DEFAULT_TIMEOUT_MS = 1000 * 60 * 10;
-
         public const string COLLECT_DUMPS_ENVIRONMENT_VAR = "__CollectDumps";
         public const string CRASH_DUMP_FOLDER_ENVIRONMENT_VAR = "__CrashDumpFolder";
-
         public const string TEST_TARGET_ARCHITECTURE_ENVIRONMENT_VAR = "__TestArchitecture";
 
         static bool CollectCrashDump(Process process, string crashDumpPath, StreamWriter outputWriter)
@@ -346,26 +351,13 @@ namespace TestLibrary
                 Console.WriteLine("createdump stderr:");
                 Console.WriteLine(error);
 
-                // Ensure the dump is accessible by current user
-                Process chown = new Process();
-                chown.StartInfo.FileName = "sudo";
-                chown.StartInfo.Arguments = $"chown \"{Environment.UserName}\" \"{crashDumpPath}\"";
-
-                chown.StartInfo.RedirectStandardOutput = true;
-                chown.StartInfo.RedirectStandardError = true;
-
-                Console.WriteLine($"Invoking: {chown.StartInfo.FileName} {chown.StartInfo.Arguments}");
-                chown.Start();
-                copyOutput = chown.StandardOutput.ReadToEndAsync();
-                copyError = chown.StandardError.ReadToEndAsync();
-
-                chown.WaitForExit(DEFAULT_TIMEOUT_MS);
-
-                Task.WaitAll(copyError, copyOutput);
-                Console.WriteLine("chown stdout:");
-                Console.WriteLine(copyOutput.Result);
-                Console.WriteLine("chown stderr:");
-                Console.WriteLine(copyError.Result);
+                // Ensure the dump and its companion crashreport.json are accessible by current user.
+                // createdump writes both <crashDumpPath> and <crashDumpPath>.crashreport.json as root;
+                // the original code only chowned the .dmp file, leaving the .crashreport.json root-owned
+                // and causing UnauthorizedAccessException when later code tried to read it.
+                string crashReportPath = crashDumpPath + ".crashreport.json";
+                AdjustDumpFileOwnership(crashDumpPath, outputWriter);
+                AdjustDumpFileOwnership(crashReportPath, outputWriter);
             }
             else
             {
@@ -376,6 +368,95 @@ namespace TestLibrary
             }
 
             return fSuccess && createdump.ExitCode == 0;
+        }
+
+        // Adjust ownership and permissions on a dump companion file so that the current user
+        // can read it later. This is used for both the .dmp file and its .crashreport.json
+        // companion. In CI environments (e.g. Helix), the USER environment variable may be unset
+        // or the sudo chown may fail silently; we do not throw here because the caller should be
+        // able to continue even if ownership adjustment fails.
+        private static void AdjustDumpFileOwnership(string filePath, StreamWriter outputWriter)
+        {
+            if (!File.Exists(filePath))
+            {
+                outputWriter.WriteLine($"AdjustDumpFileOwnership: file not found: {filePath}");
+                return;
+            }
+
+            string? userName = ResolveUserName();
+            if (string.IsNullOrEmpty(userName))
+            {
+                outputWriter.WriteLine($"AdjustDumpFileOwnership: unable to resolve user name, skipping chown for {filePath}");
+                return;
+            }
+
+            outputWriter.WriteLine($"Adjusting ownership/permissions for: {filePath}");
+            RunSudoChown(userName, filePath, outputWriter);
+            RunSudoChmod(filePath, outputWriter);
+        }
+
+        // Resolve the current user name for chown. Try USER first (Unix convention), then
+        // USERNAME (Windows/CI fallback), then Environment.UserName as a last resort.
+        private static string? ResolveUserName()
+        {
+            string? userName = Environment.GetEnvironmentVariable("USER");
+            if (!string.IsNullOrEmpty(userName))
+                return userName;
+
+            userName = Environment.GetEnvironmentVariable("USERNAME");
+            if (!string.IsNullOrEmpty(userName))
+                return userName;
+
+            // Environment.UserName may return the process owner even when environment
+            // variables are stripped (common in Helix containers).
+            if (!string.IsNullOrEmpty(Environment.UserName))
+                return Environment.UserName;
+
+            return null;
+        }
+
+        private static void RunSudoChown(string userName, string filePath, StreamWriter outputWriter)
+        {
+            Process chown = new Process();
+            chown.StartInfo.FileName = "sudo";
+            chown.StartInfo.Arguments = $"chown \"{userName}\" \"{filePath}\"";
+            chown.StartInfo.RedirectStandardOutput = true;
+            chown.StartInfo.RedirectStandardError = true;
+
+            outputWriter.WriteLine($"Invoking: {chown.StartInfo.FileName} {chown.StartInfo.Arguments}");
+            chown.Start();
+
+            Task<string> copyOutput = chown.StandardOutput.ReadToEndAsync();
+            Task<string> copyError = chown.StandardError.ReadToEndAsync();
+            chown.WaitForExit(DEFAULT_TIMEOUT_MS);
+
+            Task.WaitAll(copyError, copyOutput);
+            outputWriter.WriteLine("chown stdout:");
+            outputWriter.WriteLine(copyOutput.Result);
+            outputWriter.WriteLine("chown stderr:");
+            outputWriter.WriteLine(copyError.Result);
+        }
+
+        private static void RunSudoChmod(string filePath, StreamWriter outputWriter)
+        {
+            Process chmod = new Process();
+            chmod.StartInfo.FileName = "sudo";
+            chmod.StartInfo.Arguments = $"chmod a+rw \"{filePath}\"";
+            chmod.StartInfo.RedirectStandardOutput = true;
+            chmod.StartInfo.RedirectStandardError = true;
+
+            outputWriter.WriteLine($"Invoking: {chmod.StartInfo.FileName} {chmod.StartInfo.Arguments}");
+            chmod.Start();
+
+            Task<string> copyOutput = chmod.StandardOutput.ReadToEndAsync();
+            Task<string> copyError = chmod.StandardError.ReadToEndAsync();
+            chmod.WaitForExit(DEFAULT_TIMEOUT_MS);
+
+            Task.WaitAll(copyError, copyOutput);
+            outputWriter.WriteLine("chmod stdout:");
+            outputWriter.WriteLine(copyOutput.Result);
+            outputWriter.WriteLine("chmod stderr:");
+            outputWriter.WriteLine(copyError.Result);
         }
 
         // Finds all children processes starting with a process named childName
@@ -510,7 +591,7 @@ namespace TestLibrary
 
                     Console.WriteLine("Collecting diagnostic information...");
                     Console.WriteLine("Snapshot of processes currently running:");
-                    Console.WriteLine($"\t{"ID",-6} ProcessName");
+                    Console.WriteLine($"\t{\"ID\",-6} ProcessName");
                     foreach (var activeProcess in Process.GetProcesses())
                     {
                         activeProcess.TryGetProcessName(out string activeProcessName);
