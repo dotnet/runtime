@@ -780,20 +780,19 @@ namespace System
                 number.IsNegative,
                 number.IsNegative ? info.CurrencyNegativePattern : info.CurrencyPositivePattern);
 
-            foreach (byte value in fmt)
+            foreach (byte ch in fmt)
             {
-                char ch = (char)value;
                 switch (ch)
                 {
-                    case '#':
+                    case (byte)'#':
                         FormatFixed(ref vlb, ref number, nMaxDigits, info.CurrencyGroupSizes(), info.CurrencyDecimalSeparatorTChar<TChar>(), info.CurrencyGroupSeparatorTChar<TChar>());
                         break;
 
-                    case '-':
+                    case (byte)'-':
                         vlb.Append(info.NegativeSignTChar<TChar>());
                         break;
 
-                    case '$':
+                    case (byte)'$':
                         vlb.Append(info.CurrencySymbolTChar<TChar>());
                         break;
 
@@ -949,16 +948,15 @@ namespace System
 
             ReadOnlySpan<byte> fmt = GetNumberFormat(number.IsNegative, info.NumberNegativePattern);
 
-            foreach (byte value in fmt)
+            foreach (byte ch in fmt)
             {
-                char ch = (char)value;
                 switch (ch)
                 {
-                    case '#':
+                    case (byte)'#':
                         FormatFixed(ref vlb, ref number, nMaxDigits, info.NumberGroupSizes(), info.NumberDecimalSeparatorTChar<TChar>(), info.NumberGroupSeparatorTChar<TChar>());
                         break;
 
-                    case '-':
+                    case (byte)'-':
                         vlb.Append(info.NegativeSignTChar<TChar>());
                         break;
 
@@ -1077,20 +1075,19 @@ namespace System
                 number.IsNegative,
                 number.IsNegative ? info.PercentNegativePattern : info.PercentPositivePattern);
 
-            foreach (byte value in fmt)
+            foreach (byte ch in fmt)
             {
-                char ch = (char)value;
                 switch (ch)
                 {
-                    case '#':
+                    case (byte)'#':
                         FormatFixed(ref vlb, ref number, nMaxDigits, info.PercentGroupSizes(), info.PercentDecimalSeparatorTChar<TChar>(), info.PercentGroupSeparatorTChar<TChar>());
                         break;
 
-                    case '-':
+                    case (byte)'-':
                         vlb.Append(info.NegativeSignTChar<TChar>());
                         break;
 
-                    case '%':
+                    case (byte)'%':
                         vlb.Append(info.PercentSymbolTChar<TChar>());
                         break;
 
