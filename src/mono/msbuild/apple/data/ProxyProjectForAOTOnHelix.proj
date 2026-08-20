@@ -114,19 +114,28 @@
       <MainLibraryFileName Condition="'$(MainLibraryFileName)' == '' and '$(IncludesTestRunner)' == 'true' and '$(_NativeAotLibraryTestOnHelix)' != 'true'">AppleTestRunner.dll</MainLibraryFileName>
       <MainLibraryFileName Condition="'$(_NativeAotLibraryTestOnHelix)' == 'true'"></MainLibraryFileName>
 
-      <AppleBuildDir>$(OriginalPublishDir)</AppleBuildDir>
+      <_UseR2RAppBundleSource Condition="'$(PublishReadyToRun)' == 'true' and '$(UseMonoRuntime)' != 'true' and '$(UseNativeAOTRuntime)' != 'true' and '$(PublishReadyToRunContainerFormat)' == 'macho'">true</_UseR2RAppBundleSource>
+      <!-- The app bundle source is staged outside publish because publish is the pristine crossgen2
+           input for every run, and AppleAppBuilder bundles every top-level entry of its AppDir. -->
+      <_R2RAppBundleSourceDir>$([MSBuild]::NormalizeDirectory($(BaseIntermediateOutputPath), 'r2r-app-bundle-source'))</_R2RAppBundleSourceDir>
+      <AppleBuildDir Condition="'$(_UseR2RAppBundleSource)' == 'true'">$(_R2RAppBundleSourceDir)</AppleBuildDir>
+      <AppleBuildDir Condition="'$(_UseR2RAppBundleSource)' != 'true'">$(OriginalPublishDir)</AppleBuildDir>
       <AppleBundleDir>$(TestRootDir)AppBundle\</AppleBundleDir>
     </PropertyGroup>
 
     <ItemGroup Condition="'$(_NativeAotLibraryTestOnHelix)' != 'true'">
       <!-- Figure out if we can support JustInterp mode -->
-      <AppleAssembliesToBundle Include="$(OriginalPublishDir)\*.dll" Exclude="$(OriginalPublishDir)\*.resources.dll" />
+      <_PublishAssemblies Include="$(OriginalPublishDir)*.dll" Exclude="$(OriginalPublishDir)*.resources.dll" />
+      <_PublishNativeFiles Include="$(OriginalPublishDir)**\*.*" Exclude="$(OriginalPublishDir)*.dll" />
 
       <!-- Extra files are NativeLibraries and should be excluded from AppleAssembliesToBundle -->
       <_ExtraFiles Include="$(ExtraFilesPath)**\*" />
 
-      <AppleNativeFilesToBundle Include="@(_ExtraFiles)" Exclude="$(OriginalPublishDir)\*.dll" />
-      <AppleNativeFilesToBundle Include="$(OriginalPublishDir)\**\*.*" Exclude="$(OriginalPublishDir)\*.dll" />
+      <!-- For R2R these are future bundle-source paths. _AddR2RFilesToAppleBundle materializes them
+           before the shared Apple targets consume the final item identities. -->
+      <AppleAssembliesToBundle Include="@(_PublishAssemblies->'$(AppleBuildDir)%(Filename)%(Extension)')" />
+      <AppleNativeFilesToBundle Include="@(_ExtraFiles)" />
+      <AppleNativeFilesToBundle Include="@(_PublishNativeFiles->'$(AppleBuildDir)%(RecursiveDir)%(Filename)%(Extension)')" />
     </ItemGroup>
 
     <!-- For NativeAOT library mode we need to manually create the 'obj' dir and copy all assemblies in there to properly build the library -->
@@ -160,10 +169,6 @@
 
     <PropertyGroup>
       <_R2ROutputPath>$(IntermediateOutputPath)R2R</_R2ROutputPath>
-      <!-- The app payload is staged outside the publish directory because publish is the pristine
-           crossgen2 input for every run in this work item, and AppleAppBuilder bundles every top level
-           entry of its AppDir, so staging inside publish would end up inside the app. -->
-      <_R2RAppPayloadDir>$([MSBuild]::NormalizeDirectory($(BaseIntermediateOutputPath), 'r2r-app-payload'))</_R2RAppPayloadDir>
     </PropertyGroup>
 
     <ItemGroup>
@@ -176,32 +181,19 @@
 
     <!-- Recreated on every run so that a Helix retry in the same work item cannot inherit stale dylibs
          or app builder output from a previous attempt. -->
-    <RemoveDir Directories="$(_R2RAppPayloadDir)" />
-    <MakeDir Directories="$(_R2RAppPayloadDir)" />
+    <RemoveDir Directories="$(_R2RAppBundleSourceDir)" />
+    <MakeDir Directories="$(_R2RAppBundleSourceDir)" />
 
     <ItemGroup>
-      <_R2RAppPayloadSourceFiles Include="$(OriginalPublishDir)**\*" />
+      <_R2RAppBundleSourceFiles Include="$(OriginalPublishDir)**\*" />
     </ItemGroup>
 
-    <Copy SourceFiles="@(_R2RAppPayloadSourceFiles)"
-          DestinationFiles="@(_R2RAppPayloadSourceFiles->'$(_R2RAppPayloadDir)%(RecursiveDir)%(Filename)%(Extension)')" />
+    <Copy SourceFiles="@(_R2RAppBundleSourceFiles)"
+          DestinationFiles="@(_R2RAppBundleSourceFiles->'$(_R2RAppBundleSourceDir)%(RecursiveDir)%(Filename)%(Extension)')" />
 
     <Copy SourceFiles="@(_R2RCompiledAssemblies);@(_R2RDylibFiles)"
-          DestinationFolder="$(_R2RAppPayloadDir)"
+          DestinationFolder="$(_R2RAppBundleSourceDir)"
           OverwriteReadOnlyFiles="true" />
-
-    <PropertyGroup>
-      <AppleBuildDir>$(_R2RAppPayloadDir)</AppleBuildDir>
-    </PropertyGroup>
-
-    <ItemGroup>
-      <AppleAssembliesToBundle Remove="@(AppleAssembliesToBundle)" />
-      <AppleAssembliesToBundle Include="$(_R2RAppPayloadDir)*.dll" Exclude="$(_R2RAppPayloadDir)*.resources.dll" />
-
-      <AppleNativeFilesToBundle Remove="@(AppleNativeFilesToBundle)" />
-      <AppleNativeFilesToBundle Include="@(_ExtraFiles)" />
-      <AppleNativeFilesToBundle Include="$(_R2RAppPayloadDir)**\*.*" Exclude="$(_R2RAppPayloadDir)*.dll" />
-    </ItemGroup>
   </Target>
 
   <Target Name="_PrepareR2RItemsOnHelix">

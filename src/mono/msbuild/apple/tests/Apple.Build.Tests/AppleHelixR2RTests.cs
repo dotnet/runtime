@@ -31,6 +31,8 @@ public class AppleHelixR2RTests
     private const string ProxyProjectFileName = "ProxyProjectForAOTOnHelix.proj";
     private const string ProxyPropsFileName = "ProxyProjectForAOTOnHelix.props";
     private const string BundleStateFileName = "bundle-state.txt";
+    private const string PreparedBundleStateFileName = "prepared-bundle-state.txt";
+    private const string PreparedStaleMarkerStateFileName = "prepared-stale-marker-state.txt";
     private const string ExtraFileName = "libExtra.dylib";
 
     private static readonly TimeSpan s_buildTimeout = TimeSpan.FromMinutes(5);
@@ -68,7 +70,7 @@ public class AppleHelixR2RTests
     public AppleHelixR2RTests(ITestOutputHelper testOutput) => _testOutput = testOutput;
 
     [Fact]
-    public void R2RAppPayloadLeavesPublishPristineAndIsRebuiltOnRetry()
+    public void R2RAppBundleSourceLeavesPublishPristineAndIsRebuiltOnRetry()
     {
         DirectoryInfo workItemRoot = Directory.CreateTempSubdirectory("apple-helix-r2r-");
         try
@@ -77,17 +79,17 @@ public class AppleHelixR2RTests
             string extraFilesDir = Path.Combine(workItemRoot.FullName, "extraFiles");
             string crossgenOutputDir = Path.Combine(workItemRoot.FullName, "crossgen-output");
             string r2rIntermediateDir = Path.Combine(workItemRoot.FullName, "obj", "R2R");
-            string appPayloadDir = Path.Combine(workItemRoot.FullName, "obj", "r2r-app-payload");
+            string appBundleSourceDir = Path.Combine(workItemRoot.FullName, "obj", "r2r-app-bundle-source");
 
             CreateWorkItemLayout(workItemRoot.FullName, publishDir, extraFilesDir);
 
             Dictionary<string, string> publishManifest = Manifest(publishDir);
 
-            RunAttempt(workItemRoot.FullName, publishDir, crossgenOutputDir, r2rIntermediateDir, appPayloadDir, s_firstAttemptR2ROutput);
-            AssertAttempt(workItemRoot.FullName, publishDir, publishManifest, extraFilesDir, appPayloadDir, s_firstAttemptR2ROutput);
+            RunAttempt(workItemRoot.FullName, publishDir, crossgenOutputDir, r2rIntermediateDir, appBundleSourceDir, s_firstAttemptR2ROutput);
+            AssertAttempt(workItemRoot.FullName, publishDir, publishManifest, extraFilesDir, appBundleSourceDir, s_firstAttemptR2ROutput);
 
-            RunAttempt(workItemRoot.FullName, publishDir, crossgenOutputDir, r2rIntermediateDir, appPayloadDir, s_secondAttemptR2ROutput);
-            AssertAttempt(workItemRoot.FullName, publishDir, publishManifest, extraFilesDir, appPayloadDir, s_secondAttemptR2ROutput);
+            RunAttempt(workItemRoot.FullName, publishDir, crossgenOutputDir, r2rIntermediateDir, appBundleSourceDir, s_secondAttemptR2ROutput);
+            AssertAttempt(workItemRoot.FullName, publishDir, publishManifest, extraFilesDir, appBundleSourceDir, s_secondAttemptR2ROutput);
         }
         finally
         {
@@ -133,7 +135,19 @@ public class AppleHelixR2RTests
                 <TargetFramework>net{targetFramework.Version.Major}.{targetFramework.Version.Minor}</TargetFramework>
                 <_TestCrossgenOutputDir>$([MSBuild]::NormalizeDirectory($(TestRootDir), '..', 'crossgen-output'))</_TestCrossgenOutputDir>
                 <_TestBundleStateFile>$([MSBuild]::NormalizePath($(TestRootDir), '..', '{BundleStateFileName}'))</_TestBundleStateFile>
+                <_TestPreparedBundleStateFile>$([MSBuild]::NormalizePath($(TestRootDir), '..', '{PreparedBundleStateFileName}'))</_TestPreparedBundleStateFile>
+                <_TestPreparedStaleMarkerStateFile>$([MSBuild]::NormalizePath($(TestRootDir), '..', '{PreparedStaleMarkerStateFileName}'))</_TestPreparedStaleMarkerStateFile>
               </PropertyGroup>
+
+              <Target Name="_TestRecordPreparedBundleState" AfterTargets="_PrepareForAppleBuildAppOnHelix">
+                <ItemGroup>
+                  <_TestPreparedBundleState Include="AppleBuildDir=$(AppleBuildDir)" />
+                  <_TestPreparedBundleState Include="@(AppleAssembliesToBundle->'Assembly=%(FullPath)')" />
+                  <_TestPreparedBundleState Include="@(AppleNativeFilesToBundle->'Native=%(FullPath)')" />
+                </ItemGroup>
+                <WriteLinesToFile File="$(_TestPreparedBundleStateFile)" Lines="@(_TestPreparedBundleState)" Overwrite="true" WriteOnlyWhenDifferent="false" />
+                <WriteLinesToFile File="$(_TestPreparedStaleMarkerStateFile)" Lines="$([System.IO.File]::Exists('$(AppleBuildDir)stale-marker.txt'))" Overwrite="true" WriteOnlyWhenDifferent="false" />
+              </Target>
 
               <Target Name="_TestProduceR2ROutput" AfterTargets="_PrepareR2RItemsOnHelix">
                 <ItemGroup>
@@ -161,25 +175,31 @@ public class AppleHelixR2RTests
         string publishDir,
         string crossgenOutputDir,
         string r2rIntermediateDir,
-        string appPayloadDir,
+        string appBundleSourceDir,
         (string RelativePath, string Content)[] r2rOutput)
     {
         ReplaceDirectoryContent(crossgenOutputDir, r2rOutput);
 
         // A previous attempt that was killed mid write leaves output behind in both directories.
         // Neither leftover may reach the app: the R2R intermediate dir is wiped before compiling,
-        // the app payload dir is recreated before the payload is staged into it.
+        // the app bundle source dir is recreated before the bundle source is staged into it.
         WriteFile(Path.Combine(r2rIntermediateDir, "KilledAttempt.dll"), "leftover-r2r-output");
-        WriteFile(Path.Combine(appPayloadDir, "stale-marker.txt"), "leftover-payload-file");
-        WriteFile(Path.Combine(appPayloadDir, "bin-previous", "leftover.txt"), "leftover-payload-tree");
-        WriteFile(Path.Combine(appPayloadDir, "app.r2r.dylib"), "leftover-composite");
+        WriteFile(Path.Combine(appBundleSourceDir, "stale-marker.txt"), "leftover-bundle-source-file");
+        WriteFile(Path.Combine(appBundleSourceDir, "bin-previous", "leftover.txt"), "leftover-bundle-source-tree");
+        WriteFile(Path.Combine(appBundleSourceDir, "app.r2r.dylib"), "leftover-composite");
 
         string bundleStateFile = Path.Combine(workItemRoot, BundleStateFileName);
+        string preparedBundleStateFile = Path.Combine(workItemRoot, PreparedBundleStateFileName);
+        string preparedStaleMarkerStateFile = Path.Combine(workItemRoot, PreparedStaleMarkerStateFileName);
         File.Delete(bundleStateFile);
+        File.Delete(preparedBundleStateFile);
+        File.Delete(preparedStaleMarkerStateFile);
 
         RunMSBuild(workItemRoot, publishDir);
 
         Assert.True(File.Exists(bundleStateFile), $"The proxy build did not record the bundle state, so '{ProxyPropsFileName}' was not imported.");
+        Assert.True(File.Exists(preparedBundleStateFile), $"The proxy build did not record the prepared bundle state, so '{ProxyPropsFileName}' was not imported.");
+        Assert.True(File.Exists(preparedStaleMarkerStateFile), "The proxy build did not record whether the stale bundle-source marker existed before materialization.");
     }
 
     private void RunMSBuild(string workItemRoot, string publishDir)
@@ -196,6 +216,9 @@ public class AppleHelixR2RTests
         startInfo.ArgumentList.Add("msbuild");
         startInfo.ArgumentList.Add(ProxyProjectFileName);
         startInfo.ArgumentList.Add("-t:_PrepareForAppleBuildAppOnHelix;_PrepareR2RItemsOnHelix;_AddR2RFilesToAppleBundle");
+        startInfo.ArgumentList.Add("-p:PublishReadyToRun=true");
+        startInfo.ArgumentList.Add("-p:UseMonoRuntime=false");
+        startInfo.ArgumentList.Add("-p:UseNativeAOTRuntime=false");
         startInfo.ArgumentList.Add("-p:PublishReadyToRunContainerFormat=macho");
         startInfo.ArgumentList.Add("-nodeReuse:false");
         startInfo.ArgumentList.Add("-nologo");
@@ -247,40 +270,75 @@ public class AppleHelixR2RTests
         string publishDir,
         Dictionary<string, string> expectedPublishManifest,
         string extraFilesDir,
-        string appPayloadDir,
+        string appBundleSourceDir,
         (string RelativePath, string Content)[] r2rOutput)
     {
         AssertManifest("publish directory", expectedPublishManifest, Manifest(publishDir));
 
-        Dictionary<string, string> expectedPayload = new(expectedPublishManifest, s_pathComparer);
+        Dictionary<string, string> expectedBundleSource = new(expectedPublishManifest, s_pathComparer);
         foreach ((string relativePath, string content) in r2rOutput)
-            expectedPayload[relativePath] = Hash(Encoding.UTF8.GetBytes(content));
+            expectedBundleSource[relativePath] = Hash(Encoding.UTF8.GetBytes(content));
 
-        AssertManifest("app payload directory", expectedPayload, Manifest(appPayloadDir));
+        AssertManifest("app bundle source directory", expectedBundleSource, Manifest(appBundleSourceDir));
 
-        (string appleBuildDir, List<string> assemblies, List<string> nativeFiles) = ReadBundleState(workItemRoot);
+        AssertPreparedBundleState(workItemRoot, expectedPublishManifest, extraFilesDir, appBundleSourceDir);
 
-        Assert.Equal(NormalizeDirectory(appPayloadDir), NormalizeDirectory(appleBuildDir), s_pathComparer);
+        (string appleBuildDir, List<string> assemblies, List<string> nativeFiles) = ReadBundleState(workItemRoot, BundleStateFileName);
 
-        IEnumerable<string> topLevelAssemblies = expectedPayload.Keys
+        Assert.Equal(NormalizeDirectory(appBundleSourceDir), NormalizeDirectory(appleBuildDir), s_pathComparer);
+
+        IEnumerable<string> topLevelAssemblies = expectedPublishManifest.Keys
             .Where(relativePath => IsTopLevel(relativePath)
                 && relativePath.EndsWith(".dll", StringComparison.OrdinalIgnoreCase)
                 && !relativePath.EndsWith(".resources.dll", StringComparison.OrdinalIgnoreCase));
-        AssertPathSet("AppleAssembliesToBundle", topLevelAssemblies.Select(relativePath => Path.Combine(appPayloadDir, ToNativePath(relativePath))), assemblies);
+        AssertPathSet("AppleAssembliesToBundle", topLevelAssemblies.Select(relativePath => Path.Combine(appBundleSourceDir, ToNativePath(relativePath))), assemblies);
 
-        IEnumerable<string> payloadNativeFiles = expectedPayload.Keys
+        IEnumerable<string> bundleSourceNativeFiles = expectedPublishManifest.Keys
             .Where(relativePath => !IsTopLevel(relativePath) || !relativePath.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
-            .Select(relativePath => Path.Combine(appPayloadDir, ToNativePath(relativePath)));
-        AssertPathSet("AppleNativeFilesToBundle", payloadNativeFiles.Append(Path.Combine(extraFilesDir, ExtraFileName)), nativeFiles);
+            .Select(relativePath => Path.Combine(appBundleSourceDir, ToNativePath(relativePath)));
+        AssertPathSet("AppleNativeFilesToBundle", bundleSourceNativeFiles.Append(Path.Combine(extraFilesDir, ExtraFileName)), nativeFiles);
     }
 
-    private static (string AppleBuildDir, List<string> Assemblies, List<string> NativeFiles) ReadBundleState(string workItemRoot)
+    private static void AssertPreparedBundleState(
+        string workItemRoot,
+        Dictionary<string, string> expectedPublishManifest,
+        string extraFilesDir,
+        string appBundleSourceDir)
+    {
+        (string appleBuildDir, List<string> assemblies, List<string> nativeFiles) = ReadBundleState(workItemRoot, PreparedBundleStateFileName);
+
+        Assert.Equal(NormalizeDirectory(appBundleSourceDir), NormalizeDirectory(appleBuildDir), s_pathComparer);
+
+        IEnumerable<string> topLevelAssemblies = expectedPublishManifest.Keys
+            .Where(relativePath => IsTopLevel(relativePath)
+                && relativePath.EndsWith(".dll", StringComparison.OrdinalIgnoreCase)
+                && !relativePath.EndsWith(".resources.dll", StringComparison.OrdinalIgnoreCase));
+        AssertPathSet(
+            "prepared AppleAssembliesToBundle",
+            topLevelAssemblies.Select(relativePath => Path.Combine(appBundleSourceDir, ToNativePath(relativePath))),
+            assemblies);
+
+        IEnumerable<string> bundleSourceNativeFiles = expectedPublishManifest.Keys
+            .Where(relativePath => !IsTopLevel(relativePath) || !relativePath.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+            .Select(relativePath => Path.Combine(appBundleSourceDir, ToNativePath(relativePath)));
+        AssertPathSet(
+            "prepared AppleNativeFilesToBundle",
+            bundleSourceNativeFiles.Append(Path.Combine(extraFilesDir, ExtraFileName)),
+            nativeFiles);
+
+        Assert.Equal(
+            "True",
+            File.ReadAllText(Path.Combine(workItemRoot, PreparedStaleMarkerStateFileName)).Trim(),
+            ignoreCase: true);
+    }
+
+    private static (string AppleBuildDir, List<string> Assemblies, List<string> NativeFiles) ReadBundleState(string workItemRoot, string fileName)
     {
         string? appleBuildDir = null;
         List<string> assemblies = new();
         List<string> nativeFiles = new();
 
-        foreach (string line in File.ReadAllLines(Path.Combine(workItemRoot, BundleStateFileName)))
+        foreach (string line in File.ReadAllLines(Path.Combine(workItemRoot, fileName)))
         {
             string[] parts = line.Split('=', 2);
             switch (parts)
@@ -295,12 +353,12 @@ public class AppleHelixR2RTests
                     nativeFiles.Add(value);
                     break;
                 default:
-                    throw new XunitException($"Unexpected line in {BundleStateFileName}: '{line}'.");
+                    throw new XunitException($"Unexpected line in {fileName}: '{line}'.");
             }
         }
 
         if (appleBuildDir is null)
-            throw new XunitException($"{BundleStateFileName} did not record AppleBuildDir.");
+            throw new XunitException($"{fileName} did not record AppleBuildDir.");
 
         return (appleBuildDir, assemblies, nativeFiles);
     }
