@@ -114,6 +114,13 @@ namespace ILCompiler.ObjectWriter
                             Relocation.WriteValue(reloc.Type, pData, symbol.Index + addend);
                             break;
                         }
+                        case RelocType.WASM_CLR_RESTORE_CONTEXT_EXCEPTION_TAG_LEB:
+                        {
+                            WasmSymbol symbol = _wasmSymbolManager.GetSymbol(RtlRestoreContextTagName);
+                            Debug.Assert(symbol.IndexSpace == WasmIndexSpace.Tag);
+                            Relocation.WriteValue(reloc.Type, pData, symbol.Index + addend);
+                            break;
+                        }
 
                         default:
                             // TODO-WASM: add other cases as needed;
