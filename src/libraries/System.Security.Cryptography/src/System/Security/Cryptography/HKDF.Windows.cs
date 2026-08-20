@@ -24,6 +24,7 @@ namespace System.Security.Cryptography
         private const string BCRYPT_HKDF_SALT_AND_FINALIZE = "HkdfSaltAndFinalize";
         private const string BCRYPT_HKDF_PRK_AND_FINALIZE = "HkdfPrkAndFinalize";
         private const string BCRYPT_HKDF_HASH_ALGORITHM = "HkdfHashAlgorithm";
+        private const int MaxCngIkmLength = 2048; // CNG has a limit on the size of the IKM.
 
         private static void ExtractCore(
             HashAlgorithmName hashAlgorithmName,
@@ -156,7 +157,11 @@ namespace System.Security.Cryptography
                         secret.Length,
                         dwFlags: 0);
 
-                    if (status != NTSTATUS.STATUS_SUCCESS)
+                    if (secretIsIkm && status == NTSTATUS.STATUS_INVALID_PARAMETER && secret.Length > MaxCngIkmLength)
+                    {
+                        throw new CryptographicException(SR.Format(SR.Cryptography_HkdfIkmTooLong, MaxCngIkmLength));
+                    }
+                    else if (status != NTSTATUS.STATUS_SUCCESS)
                     {
                         throw Interop.BCrypt.CreateCryptographicException(status);
                     }
