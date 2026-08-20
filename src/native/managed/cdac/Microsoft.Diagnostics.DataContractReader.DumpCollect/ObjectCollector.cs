@@ -142,22 +142,19 @@ internal sealed class ObjectCollector(
 
         try
         {
-            using (_emitter.SuppressTargetReadEmission())
-            {
-                IRuntimeTypeSystem types = _target.Contracts.RuntimeTypeSystem;
-                ITypeHandle type = types.GetTypeHandle(methodTable);
-                if (types.IsFreeObjectMethodTable(type))
-                    return;
+            IRuntimeTypeSystem types = _target.Contracts.RuntimeTypeSystem;
+            ITypeHandle type = types.GetTypeHandle(methodTable);
+            if (types.IsFreeObjectMethodTable(type))
+                return;
 
-                StringBuilder name = new();
-                TypeNameBuilder.AppendType(
-                    _target,
-                    name,
-                    type,
-                    TypeNameFormat.FormatNamespace | TypeNameFormat.FormatFullInst);
-                if (name.Length != 0)
-                    _names.Add(methodTable, name.ToString());
-            }
+            StringBuilder name = new();
+            TypeNameBuilder.AppendType(
+                _target,
+                name,
+                type,
+                TypeNameFormat.FormatNamespace | TypeNameFormat.FormatFullInst);
+            if (name.Length != 0)
+                _names.Add(methodTable, name.ToString());
         }
         catch (System.Exception ex)
         {

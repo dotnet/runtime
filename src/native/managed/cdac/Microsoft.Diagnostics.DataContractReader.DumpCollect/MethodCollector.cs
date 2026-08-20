@@ -1,31 +1,30 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 using System.Text;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.Contracts.Extensions;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
 using ContractModuleHandle = Microsoft.Diagnostics.DataContractReader.Contracts.ModuleHandle;
 
 namespace Microsoft.Diagnostics.DataContractReader.DumpCollect;
 
-internal sealed class MethodCollector(
-    Target target,
-    MemoryRegionEmitter emitter)
+internal sealed class MethodCollector(Target target)
 {
     private readonly Target _target = target;
-    private readonly MemoryRegionEmitter _emitter = emitter;
+    private readonly HashSet<TargetPointer> _captured = [];
     private readonly Dictionary<TargetPointer, string> _names = [];
 
     public IReadOnlyDictionary<TargetPointer, string> Names => _names;
 
     public void CaptureMethod(TargetPointer methodDesc)
     {
-        if (methodDesc == TargetPointer.Null)
+        if (methodDesc == TargetPointer.Null || !_captured.Add(methodDesc))
             return;
 
         EnumerateMethodDependencies(methodDesc);
+        EnumerateMethodDescDataDependencies(methodDesc);
         CacheMethodName(methodDesc);
     }
 
@@ -43,6 +42,27 @@ internal sealed class MethodCollector(
         _target.Contracts.Loader.GetPath(moduleHandle);
     }
 
+    private void EnumerateMethodDescDataDependencies(TargetPointer methodDesc)
+    {
+        IRuntimeTypeSystem types = _target.Contracts.RuntimeTypeSystem;
+        MethodDescHandle method = types.GetMethodDescHandle(methodDesc);
+        ICodeVersions codeVersions = _target.Contracts.CodeVersions;
+        NativeCodeVersionHandle codeVersion = codeVersions.GetActiveNativeCodeVersion(methodDesc);
+
+        types.IsDynamicMethod(method);
+        types.GetSlotNumber(method);
+        if (codeVersion.Valid)
+        {
+            TargetCodePointer nativeCode = codeVersions.GetNativeCode(codeVersion);
+            if (nativeCode != TargetCodePointer.Null)
+                _target.Contracts.PrecodeStubs.GetInterpreterCodeFromInterpreterPrecodeIfPresent(nativeCode);
+
+            codeVersions.GetGCStressCodeCopy(codeVersion);
+        }
+        if (types.HasNativeCodeSlot(method))
+            types.GetAddressOfNativeCodeSlot(method);
+    }
+
     private void CacheMethodName(TargetPointer methodDesc)
     {
         if (_names.ContainsKey(methodDesc))
@@ -55,19 +75,16 @@ internal sealed class MethodCollector(
 
         try
         {
-            using (_emitter.SuppressTargetReadEmission())
-            {
-                StringBuilder name = new();
-                TypeNameBuilder.AppendMethodInternal(
-                    _target,
-                    name,
-                    method,
-                    TypeNameFormat.FormatSignature |
-                    TypeNameFormat.FormatNamespace |
-                    TypeNameFormat.FormatFullInst);
-                if (name.Length != 0)
-                    _names.Add(methodDesc, name.ToString());
-            }
+            StringBuilder name = new();
+            TypeNameBuilder.AppendMethodInternal(
+                _target,
+                name,
+                method,
+                TypeNameFormat.FormatSignature |
+                TypeNameFormat.FormatNamespace |
+                TypeNameFormat.FormatFullInst);
+            if (name.Length != 0)
+                _names.Add(methodDesc, name.ToString());
         }
         catch (System.Exception ex)
         {

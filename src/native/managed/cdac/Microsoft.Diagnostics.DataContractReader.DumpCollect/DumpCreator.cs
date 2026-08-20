@@ -28,7 +28,7 @@ internal sealed class DumpCreator
         _target = target;
         _includeHeap = includeHeap;
         _emitter = emitter;
-        _methods = new(target, emitter);
+        _methods = new(target);
         _objects = new(target, emitter, _methods);
     }
 
@@ -90,11 +90,16 @@ internal sealed class DumpCreator
         {
             loader.GetModule(module);
             TargetPointer peAssembly = loader.GetPEAssembly(module);
-            loader.GetFlags(module);
+            ModuleFlags flags = loader.GetFlags(module);
             loader.GetSimpleName(module);
             loader.GetPath(module);
             loader.GetFileName(module);
-            loader.TryGetLoadedImageContents(module, out _, out _, out _);
+
+            if (loader.TryGetLoadedImageContents(module, out _, out _, out _))
+                _emitter.RegisterMetadataRange(ecmaMetadata.GetReadOnlyMetadataAddress(module));
+
+            if (flags.HasFlag(ModuleFlags.ReflectionEmit))
+                _emitter.RegisterMetadataRange(ecmaMetadata.GetReadWriteSavedMetadataAddress(module));
 
             if (loader.TryGetSymbolStream(module, out TargetPointer symbolBuffer, out uint symbolSize))
                 _emitter.Add(symbolBuffer.Value, symbolSize);

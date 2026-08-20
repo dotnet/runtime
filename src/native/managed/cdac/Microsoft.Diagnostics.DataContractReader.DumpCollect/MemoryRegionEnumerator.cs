@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
@@ -73,7 +74,7 @@ internal sealed unsafe partial class MemoryRegionEnumerator(
                     if (bytesRead != (uint)buffer.Length)
                         return HResults.E_FAIL;
 
-                    if (emitter.EmitTargetReads)
+                    if (emitter.ShouldEmitTargetRead(address, bytesRead))
                         emitter.Add(address, bytesRead);
                     return hr;
                 }
@@ -129,11 +130,11 @@ internal sealed unsafe class MemoryRegionEmitter(nint callback)
     private string? _phase;
     private ulong _phaseReadBytes;
     private ulong _phaseReadCount;
+    private readonly List<TargetSpan> _metadataRanges = [];
 
     public ulong RegionCount { get; private set; }
     public int Result { get; private set; }
     public ulong TotalBytes { get; private set; }
-    public bool EmitTargetReads { get; private set; } = true;
 
     public void Add(ulong address, uint size) => Add(address, (ulong)size);
 
@@ -189,10 +190,25 @@ internal sealed unsafe class MemoryRegionEmitter(nint callback)
         }
     }
 
-    public IDisposable SuppressTargetReadEmission()
+    public void RegisterMetadataRange(TargetSpan range)
     {
-        EmitTargetReads = false;
-        return new ReadEmissionScope(this);
+        if (range.Address != TargetPointer.Null && range.Size != 0)
+            _metadataRanges.Add(range);
+    }
+
+    public bool ShouldEmitTargetRead(ulong address, uint size)
+    {
+        foreach (TargetSpan range in _metadataRanges)
+        {
+            if (address < range.Address.Value)
+                continue;
+
+            ulong offset = address - range.Address.Value;
+            if (offset <= range.Size && size <= range.Size - offset)
+                return false;
+        }
+
+        return true;
     }
 
     public bool Update(ulong address, ReadOnlySpan<byte> buffer)
@@ -234,8 +250,4 @@ internal sealed unsafe class MemoryRegionEmitter(nint callback)
         }
     }
 
-    private sealed class ReadEmissionScope(MemoryRegionEmitter emitter) : IDisposable
-    {
-        public void Dispose() => emitter.EmitTargetReads = true;
-    }
 }
