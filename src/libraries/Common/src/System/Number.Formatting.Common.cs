@@ -17,48 +17,92 @@ namespace System
         private const int DefaultPrecisionExponentialFormat = 6;
 
         private const int MaxUInt32DecDigits = 10;
-        private const string PosNumberFormat = "#";
 
-        private static class CurrencyFormats
+        private static ReadOnlySpan<byte> GetCurrencyFormat(bool isNegative, int index)
         {
-            internal static readonly string[] Positive =
-            [
-                "$#", "#$", "$ #", "# $"
-            ];
+            if (isNegative)
+            {
+                return index switch
+                {
+                    0 => "($#)"u8,
+                    1 => "-$#"u8,
+                    2 => "$-#"u8,
+                    3 => "$#-"u8,
+                    4 => "(#$)"u8,
+                    5 => "-#$"u8,
+                    6 => "#-$"u8,
+                    7 => "#$-"u8,
+                    8 => "-# $"u8,
+                    9 => "-$ #"u8,
+                    10 => "# $-"u8,
+                    11 => "$ #-"u8,
+                    12 => "$ -#"u8,
+                    13 => "#- $"u8,
+                    14 => "($ #)"u8,
+                    15 => "(# $)"u8,
+                    16 => "$- #"u8,
+                    _ => throw new UnreachableException(),
+                };
+            }
 
-            internal static readonly string[] Negative =
-            [
-                "($#)", "-$#", "$-#", "$#-",
-                "(#$)", "-#$", "#-$", "#$-",
-                "-# $", "-$ #", "# $-", "$ #-",
-                "$ -#", "#- $", "($ #)", "(# $)",
-                "$- #"
-            ];
+            return index switch
+            {
+                0 => "$#"u8,
+                1 => "#$"u8,
+                2 => "$ #"u8,
+                3 => "# $"u8,
+                _ => throw new UnreachableException(),
+            };
         }
 
-        private static class PercentFormats
+        private static ReadOnlySpan<byte> GetPercentFormat(bool isNegative, int index)
         {
-            internal static readonly string[] Positive =
-            [
-                "# %", "#%", "%#", "% #"
-            ];
+            if (isNegative)
+            {
+                return index switch
+                {
+                    0 => "-# %"u8,
+                    1 => "-#%"u8,
+                    2 => "-%#"u8,
+                    3 => "%-#"u8,
+                    4 => "%#-"u8,
+                    5 => "#-%"u8,
+                    6 => "#%-"u8,
+                    7 => "-% #"u8,
+                    8 => "# %-"u8,
+                    9 => "% #-"u8,
+                    10 => "% -#"u8,
+                    11 => "#- %"u8,
+                    _ => throw new UnreachableException(),
+                };
+            }
 
-            internal static readonly string[] Negative =
-            [
-                "-# %", "-#%", "-%#",
-                "%-#", "%#-",
-                "#-%", "#%-",
-                "-% #", "# %-", "% #-",
-                "% -#", "#- %"
-            ];
+            return index switch
+            {
+                0 => "# %"u8,
+                1 => "#%"u8,
+                2 => "%#"u8,
+                3 => "% #"u8,
+                _ => throw new UnreachableException(),
+            };
         }
 
-        private static class NumberFormats
+        private static ReadOnlySpan<byte> GetNumberFormat(bool isNegative, int index)
         {
-            internal static readonly string[] Negative =
-            [
-                "(#)", "-#", "- #", "#-", "# -",
-            ];
+            if (!isNegative)
+            {
+                return "#"u8;
+            }
+
+            return index switch
+            {
+                0 => "(#)"u8,
+                1 => "-#"u8,
+                2 => "- #"u8,
+                3 => "#-"u8,
+                4 => "# -"u8,
+                _ => throw new UnreachableException(),
+            };
         }
 
         internal static char ParseFormatSpecifier(ReadOnlySpan<char> format, out int digits)
@@ -732,12 +776,13 @@ namespace System
         {
             Debug.Assert(sizeof(TChar) is sizeof(char) or sizeof(byte));
 
-            string fmt = number.IsNegative ?
-                CurrencyFormats.Negative[info.CurrencyNegativePattern] :
-                CurrencyFormats.Positive[info.CurrencyPositivePattern];
+            ReadOnlySpan<byte> fmt = GetCurrencyFormat(
+                number.IsNegative,
+                number.IsNegative ? info.CurrencyNegativePattern : info.CurrencyPositivePattern);
 
-            foreach (char ch in fmt)
+            foreach (byte value in fmt)
             {
+                char ch = (char)value;
                 switch (ch)
                 {
                     case '#':
@@ -902,12 +947,11 @@ namespace System
         {
             Debug.Assert(sizeof(TChar) is sizeof(char) or sizeof(byte));
 
-            string fmt = number.IsNegative ?
-                NumberFormats.Negative[info.NumberNegativePattern] :
-                PosNumberFormat;
+            ReadOnlySpan<byte> fmt = GetNumberFormat(number.IsNegative, info.NumberNegativePattern);
 
-            foreach (char ch in fmt)
+            foreach (byte value in fmt)
             {
+                char ch = (char)value;
                 switch (ch)
                 {
                     case '#':
@@ -1029,12 +1073,13 @@ namespace System
         {
             Debug.Assert(sizeof(TChar) is sizeof(char) or sizeof(byte));
 
-            string fmt = number.IsNegative ?
-                PercentFormats.Negative[info.PercentNegativePattern] :
-                PercentFormats.Positive[info.PercentPositivePattern];
+            ReadOnlySpan<byte> fmt = GetPercentFormat(
+                number.IsNegative,
+                number.IsNegative ? info.PercentNegativePattern : info.PercentPositivePattern);
 
-            foreach (char ch in fmt)
+            foreach (byte value in fmt)
             {
+                char ch = (char)value;
                 switch (ch)
                 {
                     case '#':
