@@ -1073,7 +1073,7 @@ extends:
           jobParameters:
             timeoutInMinutes: 30
             nameSuffix: AppleBuildTests
-            buildArgs: -s mono.applebuildtests -c $(_BuildConfig) -test
+            buildArgs: -s apple.buildtests -c $(_BuildConfig) -test
             enablePublishTestResults: true
             testResultsFormat: 'xunit'
             condition: >-

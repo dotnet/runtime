@@ -170,7 +170,8 @@
     <AllSubsetsExpansion>clr.nativeprereqs+clr.iltools+clr.runtime+clr.native+clr.aot+clr.nativeaotlibs+clr.nativeaotruntime+clr.crossarchtools</AllSubsetsExpansion>
     <AllSubsetsExpansion>$(AllSubsetsExpansion)+clr.paltests+clr.paltestlist+clr.hosts+clr.jit+clr.alljits+clr.alljitscommunity+clr.spmi+clr.corelib+clr.nativecorelib+clr.tools+clr.toolstests+clr.packages</AllSubsetsExpansion>
     <AllSubsetsExpansion Condition="$([MSBuild]::IsOsPlatform(Windows))">$(AllSubsetsExpansion)+linuxdac+alpinedac</AllSubsetsExpansion>
-    <AllSubsetsExpansion>$(AllSubsetsExpansion)+mono.runtime+provision.emsdk+mono.aotcross+mono.corelib+mono.manifests+mono.packages+mono.tools+mono.wasmruntime+mono.wasiruntime+mono.wasmworkload+mono.mscordbi+mono.applebuildtests</AllSubsetsExpansion>
+    <AllSubsetsExpansion>$(AllSubsetsExpansion)+mono.runtime+provision.emsdk+mono.aotcross+mono.corelib+mono.manifests+mono.packages+mono.tools+mono.wasmruntime+mono.wasiruntime+mono.wasmworkload+mono.mscordbi</AllSubsetsExpansion>
+    <AllSubsetsExpansion>$(AllSubsetsExpansion)+apple.buildtests</AllSubsetsExpansion>
     <AllSubsetsExpansion>$(AllSubsetsExpansion)+tools.illink+tools.cdac+tools.illinktests+tools.cdactests+tools.cdacdumptests</AllSubsetsExpansion>
     <AllSubsetsExpansion>$(AllSubsetsExpansion)+host.native+host.pkg+host.tools+host.pretest+host.tests</AllSubsetsExpansion>
     <AllSubsetsExpansion>$(AllSubsetsExpansion)+libs.native+libs.sfx+libs.oob+libs.pretest+libs.tests</AllSubsetsExpansion>
@@ -252,7 +253,9 @@
     <SubsetName Include="Mono.WasiRuntime" Description="The WASI runtime." />
     <SubsetName Include="Mono.WasmWorkload" Description="*Helper* subset for building some pre-requisites for wasm workload testing, useful on CI." />
     <SubsetName Include="Mono.MsCorDbi" Description="The implementation of ICorDebug interface." />
-    <SubsetName Include="Mono.AppleBuildTests" OnDemand="true" Description="Unit tests for the Apple mobile MSBuild targets. Note that building this doesn't execute tests: you must also pass the '-test' argument." />
+
+    <!-- Apple build infrastructure -->
+    <SubsetName Include="Apple.BuildTests" OnDemand="true" Description="Unit tests for the Apple mobile MSBuild targets. Note that building this doesn't execute tests: you must also pass the '-test' argument." />
 
     <!-- Tools -->
     <SubsetName Include="Tools" Description="Additional runtime tools projects. Equivalent to: $(DefaultToolsSubsets)" />
@@ -631,11 +634,6 @@
     <ProjectToBuild Include="$(MonoProjectRoot)\wasm\workloads.proj" Category="mono" />
   </ItemGroup>
 
-  <!-- The tests only drive MSBuild in a child process, so they need nothing else from the build. -->
-  <ItemGroup Condition="$(_subset.Contains('+mono.applebuildtests+'))">
-    <ProjectToBuild Include="$(MonoProjectRoot)msbuild\apple\tests\Apple.Build.Tests\Apple.Build.Tests.csproj" Category="mono" Test="true" />
-  </ItemGroup>
-
   <!-- Libraries sets -->
   <ItemGroup Condition="$(_subset.Contains('+libs.native+'))">
     <ProjectToBuild Include="$(SharedNativeRoot)libs\build-native.proj" Category="libs" />
@@ -660,6 +658,12 @@
 
   <ItemGroup Condition="$(_subset.Contains('+mono.wasiruntime+'))">
     <ProjectToBuild Include="$(WasiProjectRoot)wasi.proj" Category="mono" />
+  </ItemGroup>
+
+  <!-- Apple build infrastructure -->
+  <!-- The tests only drive MSBuild in a child process, so they need nothing else from the build. -->
+  <ItemGroup Condition="$(_subset.Contains('+apple.buildtests+'))">
+    <ProjectToBuild Include="$(MonoProjectRoot)msbuild\apple\tests\Apple.Build.Tests\Apple.Build.Tests.csproj" Test="true" />
   </ItemGroup>
 
   <!-- Host sets -->
