@@ -98,7 +98,9 @@ namespace Microsoft.Extensions.Caching.Memory
                         GrowBuilder(state, state._count + 1);
                     }
 
-                    state._items[state._count++] = item;
+                    int count = state._count;
+                    state._items[count] = item;
+                    state._count = count + 1;
                     return;
                 }
 
