@@ -344,7 +344,7 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_GetCpuUtilization) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetCwd) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetDefaultSearchOrderPseudoHandle) // System.Private.CoreLib
-    DllImportEntry(SystemNative_GetErrNo) // System.Net.NameResolution, System.Private.CoreLib
+    DllImportEntry(SystemNative_GetErrNo) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetHostEntryForName) // System.Net.NameResolution
     DllImportEntry(SystemNative_GetHostName) // System.Net.NameResolution
     DllImportEntry(SystemNative_GetIPv4Address) // System.Net.Primitives, System.Net.Sockets

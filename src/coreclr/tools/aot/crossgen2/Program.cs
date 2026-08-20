@@ -39,6 +39,7 @@ namespace ILCompiler
         private readonly bool _singleFileCompilation;
         private readonly bool _outNearInput;
         private readonly string _outputFilePath;
+        private readonly string _generatePortableCallHelpers;
 
         public Program(Crossgen2RootCommand command)
         {
@@ -47,6 +48,7 @@ namespace ILCompiler
             _singleFileCompilation = Get(command.SingleFileCompilation);
             _outNearInput = Get(command.OutNearInput);
             _outputFilePath = Get(command.OutputFilePath);
+            _generatePortableCallHelpers = Get(command.GeneratePortableCallHelpers);
 
             if (Get(command.WaitForDebugger))
             {
@@ -68,7 +70,9 @@ namespace ILCompiler
 
         public int Run()
         {
-            if (_outputFilePath == null && !_outNearInput)
+            // Interop generation mode reads the input assemblies and writes source files, so the
+            // output arguments the compilation path requires do not apply.
+            if (_outputFilePath == null && !_outNearInput && _generatePortableCallHelpers is null)
                 throw new CommandLineException(SR.MissingOutputFile);
 
             if (_singleFileCompilation && !_outNearInput)
@@ -78,6 +82,15 @@ namespace ILCompiler
 
             (TargetArchitecture targetArchitecture, TargetOS targetOS, TargetAbi targetAbi) =
                 Helpers.GetTargetSpec(Get(_command.TargetArchitecture), Get(_command.TargetOS));
+
+            // The interop generator answers ABI questions (struct sizes, argument lowering) through the
+            // same type system the compiler uses, so an unspecified target would silently produce host
+            // layouts. Reject anything but a wasm target instead of emitting subtly wrong helpers.
+            if (_generatePortableCallHelpers is not null
+                && (targetArchitecture != TargetArchitecture.Wasm32 || targetOS is not (TargetOS.Browser or TargetOS.Wasi)))
+            {
+                throw new CommandLineException(SR.GeneratePortableCallHelpersRequiresWasmTarget);
+            }
             bool targetAllowsRuntimeCodeGeneration = GetTargetAllowsRuntimeCodeGeneration(targetOS, targetArchitecture);
 
             // Crossgen2 is partial AOT and its pre-compiled methods can be thrown away at runtime if
@@ -171,8 +184,35 @@ namespace ILCompiler
                 //  typeSystemContext.InputFilePaths = inFilePaths;
                 //
 
-                foreach (var inputFile in inputFilePathsArg)
+                // Argument parsing collapses input files that share a simple name and keeps the
+                // first one, which is what a compilation wants. An app bundle can legitimately
+                // carry several files with the same name though - per-architecture native
+                // payloads shipped as content are the common case - and keeping the first one
+                // there can shadow a managed assembly with a native file. The type system holds
+                // a single module per simple name either way, so the generator walks every path
+                // and lets the first one that actually loads claim the name.
+                IEnumerable<KeyValuePair<string, string>> inputFilesToLoad = inputFilePathsArg;
+                if (_generatePortableCallHelpers is not null
+                    && _command.Result.GetResult(_command.InputFilePaths) is { } inputFilePathsResult)
                 {
+                    List<KeyValuePair<string, string>> everyInputFile = new();
+                    foreach (string path in Helpers.BuildPathList(inputFilePathsResult.Tokens))
+                    {
+                        everyInputFile.Add(new KeyValuePair<string, string>(Path.GetFileNameWithoutExtension(path), path));
+                    }
+
+                    inputFilesToLoad = everyInputFile;
+                }
+
+                HashSet<string> claimedSimpleNames = new(StringComparer.OrdinalIgnoreCase);
+
+                foreach (var inputFile in inputFilesToLoad)
+                {
+                    if (claimedSimpleNames.Contains(inputFile.Key))
+                    {
+                        continue;
+                    }
+
                     try
                     {
                         var module = _typeSystemContext.GetModuleFromPath(inputFile.Value);
@@ -182,6 +222,7 @@ namespace ILCompiler
                             Console.WriteLine(SR.IgnoringCompositeImage, inputFile.Value);
                             continue;
                         }
+                        claimedSimpleNames.Add(inputFile.Key);
                         _allInputFilePaths.Add(inputFile.Key, inputFile.Value);
                         inputFilePaths.Add(inputFile.Key, inputFile.Value);
                         _referenceableModules.Add(module);
@@ -274,6 +315,20 @@ namespace ILCompiler
             string systemModuleName = Get(_command.SystemModuleName) ?? Helpers.DefaultSystemModule;
             _typeSystemContext.SetSystemModule((EcmaModule)_typeSystemContext.GetModuleForSimpleName(systemModuleName));
             ReadyToRunCompilerContext typeSystemContext = _typeSystemContext;
+
+            if (_generatePortableCallHelpers is not null)
+            {
+                return Wasm.WasmInteropGenerator.Run(typeSystemContext, new Wasm.WasmInteropGeneratorOptions
+                {
+                    OutputDirectory = _generatePortableCallHelpers,
+                    PInvokeModules = Get(_command.DirectPInvoke),
+                    IgnoredPInvokeModules = Get(_command.IgnoredDirectPInvoke),
+                    // The normalized name, so that platform attributes match regardless of how
+                    // --targetos was spelled on the command line.
+                    TargetOS = targetOS.ToString().ToLowerInvariant(),
+                    WarnOnUnresolvedPInvokeModules = !Get(_command.NoWarnUnresolvedDirectPInvoke),
+                }, logger);
+            }
 
             if (_singleFileCompilation)
             {

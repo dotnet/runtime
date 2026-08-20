@@ -161,6 +161,8 @@ namespace Wasm.Build.Tests
                     EnvVars["BROWSER_BUILD_TARGETS_DIR"] = EnvironmentVariables.BrowserBuildTargetsDir;
                 if (!string.IsNullOrEmpty(EnvironmentVariables.WasmAppBuilderTasksAssemblyPath))
                     EnvVars["WASM_APP_BUILDER_TASKS_ASSEMBLY_PATH"] = EnvironmentVariables.WasmAppBuilderTasksAssemblyPath;
+                if (!string.IsNullOrEmpty(EnvironmentVariables.WasmInteropGeneratorPath))
+                    EnvVars["WASM_INTEROP_GENERATOR_PATH"] = EnvironmentVariables.WasmInteropGeneratorPath;
                 if (!string.IsNullOrEmpty(EnvironmentVariables.EmsdkPath))
                     EnvVars["EMSDK_PATH"] = EnvironmentVariables.EmsdkPath;
                 if (!string.IsNullOrEmpty(EnvironmentVariables.MinipalIncludeDir))

@@ -79,12 +79,8 @@
   <Import Project="$(MSBuildThisFileDirectory)EmSdkRepo.Defaults.props"
           Condition="'$(EMSDK_PATH)' != '' and '$(EmscriptenSdkToolsPath)' == ''" />
 
-  <!-- Task declarations: Both tasks live in WasmAppBuilder.dll -->
+  <!-- Task declarations -->
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.EmccCompile"
-             AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)"
-             TaskFactory="TaskHostFactory"
-             Condition="'$(WasmAppBuilderTasksAssemblyPath)' != ''" />
-  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.CoreClr.ManagedToNativeGenerator"
              AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)"
              TaskFactory="TaskHostFactory"
              Condition="'$(WasmAppBuilderTasksAssemblyPath)' != ''" />
@@ -544,7 +540,7 @@
       <_EmccCFlags Include="$(EmccExtraCFlags)" />
     </ItemGroup>
 
-    <!-- Compile flags for ManagedToNativeGenerator output (callhelpers-pinvoke.cpp,
+    <!-- Compile flags for the generated interop helpers (callhelpers-pinvoke.cpp,
          callhelpers-interp-to-managed.cpp). The generated files #include the real CoreCLR
          headers (<callhelpers.hpp>, <minipal/entrypoints.h>, <minipal/utils.h>).
          Force-include coreclr_compat.h to provide the prerequisite types/macros
@@ -601,9 +597,6 @@
       <_WasmPInvokeTablePath>$(_WasmIntermediateOutputPath)callhelpers-pinvoke.cpp</_WasmPInvokeTablePath>
       <_WasmReversePInvokeTablePath>$(_WasmIntermediateOutputPath)callhelpers-reverse.cpp</_WasmReversePInvokeTablePath>
       <_WasmInterpToNativeTablePath>$(_WasmIntermediateOutputPath)callhelpers-interp-to-managed.cpp</_WasmInterpToNativeTablePath>
-      <_WasmM2NCachePath>$(_WasmIntermediateOutputPath)m2n_cache.txt</_WasmM2NCachePath>
-      <_IsLibraryMode Condition="'$(OutputType)' == 'Library'">true</_IsLibraryMode>
-      <_IsLibraryMode Condition="'$(_IsLibraryMode)' == ''">false</_IsLibraryMode>
     </PropertyGroup>
 
     <!-- P/Invoke modules: user native libraries + system native libraries -->
@@ -638,18 +631,47 @@
       <_WasmManagedAssemblies Include="$(_CoreLibPath)" />
     </ItemGroup>
 
-    <ManagedToNativeGenerator
-      Assemblies="@(_WasmManagedAssemblies)"
-      PInvokeModules="@(_WasmPInvokeModules)"
-      IgnoredPInvokeModules="@(_WasmIgnoredPInvokeModules)"
-      PInvokeOutputPath="$(_WasmPInvokeTablePath)"
-      ReversePInvokeOutputPath="$(_WasmReversePInvokeTablePath)"
-      InterpToNativeOutputPath="$(_WasmInterpToNativeTablePath)"
-      CacheFilePath="$(_WasmM2NCachePath)"
-      TargetOS="browser"
-      IsLibraryMode="$(_IsLibraryMode)">
-      <Output TaskParameter="FileWrites" ItemName="FileWrites" />
-    </ManagedToNativeGenerator>
+    <!-- crossgen2 has the type system that knows the wasm ABI, so it generates the helpers itself.
+         Generation does not load the JIT, so a host-targeting crossgen2 answers wasm questions
+         correctly. In the repo it comes from the build output; outside it, from the crossgen2 pack
+         the wasm-tools workload acquires, which sets $(Crossgen2ToolPath) from its Sdk.props. -->
+    <PropertyGroup>
+      <_WasmInteropGeneratorExeSuffix Condition="'$(OS)' == 'Windows_NT'">.exe</_WasmInteropGeneratorExeSuffix>
+      <WasmInteropGeneratorPath Condition="'$(WasmInteropGeneratorPath)' == '' and '$(Crossgen2InBuildDir)' != ''">$([MSBuild]::NormalizePath('$(Crossgen2InBuildDir)', 'crossgen2$(_WasmInteropGeneratorExeSuffix)'))</WasmInteropGeneratorPath>
+      <WasmInteropGeneratorPath Condition="'$(WasmInteropGeneratorPath)' == ''">$(Crossgen2ToolPath)</WasmInteropGeneratorPath>
+    </PropertyGroup>
+
+    <Error Condition="'$(WasmInteropGeneratorPath)' == ''"
+           Text="crossgen2 was not found, so the wasm P/Invoke helpers cannot be generated. Install the 'wasm-tools' workload, or set %24(WasmInteropGeneratorPath) to a crossgen2 executable." />
+
+    <PropertyGroup>
+      <_WasmInteropGeneratorRsp>$(_WasmIntermediateOutputPath)wasm-interop-generator.rsp</_WasmInteropGeneratorRsp>
+      <!-- An IL-only build of crossgen2 needs the dotnet host to launch it; an apphost does not. -->
+      <_WasmInteropGeneratorCommand Condition="'$([System.IO.Path]::GetExtension(`$(WasmInteropGeneratorPath)`))' == '.dll'">"$(DOTNET_HOST_PATH)" "$(WasmInteropGeneratorPath)"</_WasmInteropGeneratorCommand>
+      <_WasmInteropGeneratorCommand Condition="'$(_WasmInteropGeneratorCommand)' == ''">"$(WasmInteropGeneratorPath)"</_WasmInteropGeneratorCommand>
+    </PropertyGroup>
+
+    <!-- One token per line: that is how crossgen2 reads a response file. -->
+    <ItemGroup>
+      <_WasmInteropGeneratorArg Include="--targetos" />
+      <_WasmInteropGeneratorArg Include="browser" />
+      <_WasmInteropGeneratorArg Include="--targetarch" />
+      <_WasmInteropGeneratorArg Include="wasm" />
+      <_WasmInteropGeneratorArg Include="--generate-portable-callhelpers" />
+      <_WasmInteropGeneratorArg Include="$(_WasmIntermediateOutputPath)" />
+      <_WasmInteropGeneratorArg Include="--directpinvoke;%(_WasmPInvokeModules.Identity)" Condition="'%(_WasmPInvokeModules.Identity)' != ''" />
+      <_WasmInteropGeneratorArg Include="--ignored-directpinvoke;%(_WasmIgnoredPInvokeModules.Identity)" Condition="'%(_WasmIgnoredPInvokeModules.Identity)' != ''" />
+      <_WasmInteropGeneratorArg Include="--no-warn-unresolved-directpinvoke" Condition="'$(WasmWarnOnUnresolvedPInvokeModules)' == 'false'" />
+      <_WasmInteropGeneratorArg Include="@(_WasmManagedAssemblies->'%(FullPath)')" />
+    </ItemGroup>
+
+    <WriteLinesToFile File="$(_WasmInteropGeneratorRsp)" Lines="@(_WasmInteropGeneratorArg)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+
+    <Exec Command="$(_WasmInteropGeneratorCommand) &quot;@$(_WasmInteropGeneratorRsp)&quot;" />
+
+    <ItemGroup>
+      <FileWrites Include="$(_WasmInteropGeneratorRsp);$(_WasmPInvokeTablePath);$(_WasmReversePInvokeTablePath);$(_WasmInterpToNativeTablePath)" />
+    </ItemGroup>
 
     <ItemGroup>
       <_WasmSourceFileToCompileGenerated Remove="@(_WasmSourceFileToCompileGenerated)" />
@@ -696,7 +718,7 @@
       <Output TaskParameter="OutputFiles" ItemName="FileWrites" />
     </EmccCompile>
 
-    <!-- Compile generated ManagedToNativeGenerator output (force-includes coreclr_compat.h). -->
+    <!-- Compile the generated interop helpers (force-includes coreclr_compat.h). -->
     <EmccCompile
           Condition="@(_WasmSourceFileToCompileGenerated->Count()) > 0"
           SourceFiles="@(_WasmSourceFileToCompileGenerated)"

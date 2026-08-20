@@ -53,9 +53,9 @@ case "$config_lower" in
         ;;
 esac
 
-# Get the repo root (script is in src/tasks/WasmAppBuilder)
+# Get the repo root (script is in src/coreclr/vm/wasm)
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-repo_root="$(cd "$script_dir/../../.." && pwd)"
+repo_root="$(cd "$script_dir/../../../.." && pwd)"
 
 echo "Configuration: $configuration"
 echo "Repo root: $repo_root"
@@ -75,12 +75,48 @@ run_generator() {
         exit 1
     fi
 
+    if [[ ! -f "$crossgen2" ]]; then
+        echo "Error: crossgen2 was not found at: $crossgen2"
+        echo "Please build the clr subset first using: ./build.sh clr -c $configuration"
+        exit 1
+    fi
+
     echo "[$target_os] Scan path: $scan_path"
     echo "[$target_os] Output path: $output_dir"
     echo "Running generator for $target_os..."
-    echo "./dotnet.sh build /t:RunGenerator /p:RuntimeFlavor=CoreCLR /p:TargetOS=$target_os /p:GeneratorOutputPath=$output_dir /p:AssembliesScanPath=$scan_path src/tasks/WasmAppBuilder/WasmAppBuilder.csproj"
-    ./dotnet.sh build /t:RunGenerator /p:RuntimeFlavor=CoreCLR "/p:TargetOS=$target_os" "/p:GeneratorOutputPath=$output_dir" "/p:AssembliesScanPath=$scan_path" src/tasks/WasmAppBuilder/WasmAppBuilder.csproj
+
+    local args=(
+        --targetos "$target_os"
+        --targetarch wasm
+        --generate-portable-callhelpers "$output_dir"
+        --no-warn-unresolved-directpinvoke
+    )
+    local module
+    for module in "${pinvoke_modules[@]}"; do
+        args+=(--directpinvoke "$module")
+    done
+
+    ./dotnet.sh "$crossgen2" "${args[@]}" "$scan_path"*.dll
 }
+
+# Modules the runtime links statically; a P/Invoke into any of them resolves to a direct call.
+pinvoke_modules=(
+    libSystem.Native
+    libSystem.Native.Browser
+    libSystem.IO.Compression.Native
+    libSystem.Globalization.Native
+    libSystem.Runtime.InteropServices.JavaScript.Native
+)
+
+# The generator lives in crossgen2 and uses its type system to compute the wasm ABI. Generation
+# does not load the JIT, so the host-targeting crossgen2 answers wasm questions correctly. Its
+# configuration has to match the one the scanned assemblies came from.
+crossgen2="$repo_root/artifacts/bin/coreclr/$(uname -s | tr '[:upper:]' '[:lower:]').$(uname -m).$configuration/crossgen2/crossgen2.dll"
+case "$(uname -s)" in
+    Darwin) crossgen2="${crossgen2/darwin./osx.}" ;;
+esac
+crossgen2="${crossgen2/aarch64./arm64.}"
+crossgen2="${crossgen2/x86_64./x64.}"
 
 # Resolve scan paths (allow overrides).
 if [[ -n "$browser_scan_path_override" ]]; then

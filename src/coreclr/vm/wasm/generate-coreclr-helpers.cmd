@@ -6,9 +6,9 @@ set "configuration=Debug"
 set "browser_scan_path_override="
 set "wasi_scan_path_override="
 
-:: Get the repo root (script is in src/tasks/WasmAppBuilder).
+:: Get the repo root (script is in src/coreclr/vm/wasm).
 :: This must be computed before argument parsing, because SHIFT also shifts %0.
-for %%I in ("%~dp0..\..\..") do set "repo_root=%%~fI"
+for %%I in ("%~dp0..\..\..\..") do set "repo_root=%%~fI"
 
 set "usage=Usage: %~nx0 [options]"
 set "usage=!usage!^
@@ -75,6 +75,18 @@ echo Repo root: %repo_root%
 
 cd /d "%repo_root%"
 
+:: The generator lives in crossgen2 and uses its type system to compute the wasm ABI. Generation
+:: does not load the JIT, so the host-targeting crossgen2 answers wasm questions correctly. Its
+:: configuration has to match the one the scanned assemblies came from.
+set crossgen2=%repo_root%\artifacts\bin\coreclr\windows.x64.%configuration%\crossgen2\crossgen2.dll
+
+:: Modules the runtime links statically; a P/Invoke into any of them resolves to a direct call.
+set pinvoke_module_args=--directpinvoke libSystem.Native ^
+ --directpinvoke libSystem.Native.Browser ^
+ --directpinvoke libSystem.IO.Compression.Native ^
+ --directpinvoke libSystem.Globalization.Native ^
+ --directpinvoke libSystem.Runtime.InteropServices.JavaScript.Native
+
 :: Resolve scan paths (allow overrides).
 if not "%browser_scan_path_override%"=="" (
     set browser_scan_path=%browser_scan_path_override%
@@ -109,11 +121,16 @@ if not exist "%scan_path%" (
     exit /b 1
 )
 
+if not exist "%crossgen2%" (
+    echo Error: crossgen2 was not found at: %crossgen2%
+    echo Please build the clr subset first using: .\build.cmd clr -c %configuration%
+    exit /b 1
+)
+
 echo [%target_os%] Scan path: %scan_path%
 echo [%target_os%] Output path: %output_dir%
 echo Running generator for %target_os%...
-echo dotnet.cmd build /t:RunGenerator /p:RuntimeFlavor=CoreCLR /p:TargetOS=%target_os% /p:GeneratorOutputPath=%output_dir% /p:AssembliesScanPath=%scan_path% src\tasks\WasmAppBuilder\WasmAppBuilder.csproj
-call .\dotnet.cmd build /t:RunGenerator /p:RuntimeFlavor=CoreCLR /p:TargetOS=%target_os% /p:GeneratorOutputPath=%output_dir% /p:AssembliesScanPath=%scan_path% src\tasks\WasmAppBuilder\WasmAppBuilder.csproj
+call .\dotnet.cmd "%crossgen2%" --targetos %target_os% --targetarch wasm --generate-portable-callhelpers "%output_dir%" --no-warn-unresolved-directpinvoke %pinvoke_module_args% "%scan_path%*.dll"
 
 if errorlevel 1 (
     echo Generator failed for %target_os%!

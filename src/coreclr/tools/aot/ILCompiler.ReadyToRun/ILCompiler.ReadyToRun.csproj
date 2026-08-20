@@ -24,6 +24,7 @@
     <ProjectReference Include="..\ILCompiler.Diagnostics\ILCompiler.Diagnostics.csproj" />
     <ProjectReference Include="..\ILCompiler.TypeSystem\ILCompiler.TypeSystem.csproj" />
 
+    <InternalsVisibleTo Include="crossgen2" />
     <InternalsVisibleTo Include="ILCompiler.ReadyToRun.Tests" />
 
     <PackageReference Condition="'$(DotNetBuildSourceOnly)' != 'true'" Include="StaticCs" Version="$(StaticCsVersion)">
@@ -376,6 +377,13 @@
     <Compile Include="Compiler\SystemObjectFieldLayoutAlgorithm.cs" />
     <Compile Include="IL\ReadyToRunILProvider.cs" />
     <Compile Include="JitInterface\CorInfoImpl.ReadyToRun.cs" />
+    <Compile Include="Wasm\WasmInteropGenerator.cs" />
+    <Compile Include="Wasm\WasmInteropSignature.cs" />
+    <Compile Include="Wasm\WasmInternalCallSignatureCollector.cs" />
+    <Compile Include="Wasm\WasmInterpToNativeGenerator.cs" />
+    <Compile Include="Wasm\WasmPInvokeCollector.cs" />
+    <Compile Include="Wasm\WasmPInvokeTableGenerator.cs" />
+    <Compile Include="Wasm\WasmTypeNames.cs" />
     <Compile Include="JitInterface\WasmLowering.ReadyToRun.cs" />
     <Compile Include="ObjectWriter\TargetExtensions.cs" />
     <Compile Include="TypeSystem\MethodDescExtensions.cs" />

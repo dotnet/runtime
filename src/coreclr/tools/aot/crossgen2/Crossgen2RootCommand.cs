@@ -98,6 +98,14 @@ namespace ILCompiler
             new("--jitpath") { Description = SR.JitPathOption };
         public Option<bool> PrintReproInstructions { get; } =
             new("--print-repro-instructions") { Description = SR.PrintReproInstructionsOption };
+        public Option<string> GeneratePortableCallHelpers { get; } =
+            new("--generate-portable-callhelpers") { Description = SR.GeneratePortableCallHelpersOption };
+        public Option<string[]> DirectPInvoke { get; } =
+            new("--directpinvoke") { Description = SR.DirectPInvokeOption };
+        public Option<string[]> IgnoredDirectPInvoke { get; } =
+            new("--ignored-directpinvoke") { Description = SR.IgnoredDirectPInvokeOption };
+        public Option<bool> NoWarnUnresolvedDirectPInvoke { get; } =
+            new("--no-warn-unresolved-directpinvoke") { Description = SR.NoWarnUnresolvedDirectPInvokeOption };
         public Option<string> SingleMethodTypeName { get; } =
             new("--singlemethodtypename") { Description = SR.SingleMethodTypeName };
         public Option<string> SingleMethodName { get; } =
@@ -160,6 +168,15 @@ namespace ILCompiler
 
         public Crossgen2RootCommand(string[] args) : base(SR.Crossgen2BannerText)
         {
+            // A compilation cannot resolve two inputs with the same simple name, so it rejects them.
+            // The call-helper generator only scans, and it is handed the app's whole bundle, which
+            // routinely carries several native files sharing a name (per-architecture payloads out
+            // of a NuGet package, say). Parsing must not fail over an ambiguity only a compilation
+            // has to settle: the generator re-expands the tokens itself and lets the first path that
+            // actually loads claim each simple name, so a native file cannot shadow a managed one.
+            InputFilePaths.CustomParser = result =>
+                Helpers.BuildPathDictionary(result.Tokens, strict: result.GetResult(GeneratePortableCallHelpers) is null);
+
             Arguments.Add(InputFilePaths);
             Options.Add(UnrootedInputFilePaths);
             Options.Add(ReferenceFilePaths);
@@ -201,6 +218,10 @@ namespace ILCompiler
             Options.Add(TargetOS);
             Options.Add(JitPath);
             Options.Add(PrintReproInstructions);
+            Options.Add(GeneratePortableCallHelpers);
+            Options.Add(DirectPInvoke);
+            Options.Add(IgnoredDirectPInvoke);
+            Options.Add(NoWarnUnresolvedDirectPInvoke);
             Options.Add(SingleMethodTypeName);
             Options.Add(SingleMethodName);
             Options.Add(SingleMethodIndex);

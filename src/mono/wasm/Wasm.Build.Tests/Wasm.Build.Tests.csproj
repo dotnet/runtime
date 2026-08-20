@@ -161,11 +161,13 @@
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT' and '$(RuntimeFlavor)' == 'CoreCLR'" Include="set BROWSER_BUILD_TARGETS_DIR=$(BrowserProjectRoot)build\" />
 
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT' and '$(RuntimeFlavor)' == 'CoreCLR'" Include="export WASM_APP_BUILDER_TASKS_ASSEMBLY_PATH=$(WasmAppBuilderDir)WasmAppBuilder.dll" />
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT' and '$(RuntimeFlavor)' == 'CoreCLR'" Include="export WASM_INTEROP_GENERATOR_PATH=$(Crossgen2InBuildDir)crossgen2" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT' and '$(RuntimeFlavor)' == 'CoreCLR'" Include="set WASM_APP_BUILDER_TASKS_ASSEMBLY_PATH=$(WasmAppBuilderDir)WasmAppBuilder.dll" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT' and '$(RuntimeFlavor)' == 'CoreCLR'" Include="set WASM_INTEROP_GENERATOR_PATH=$(Crossgen2InBuildDir)crossgen2.exe" />
 
       <!-- CoreCLR WBT: BrowserWasmApp.CoreCLR.targets adds -I include paths for
-           <minipal/...> and <callhelpers.hpp> when compiling ManagedToNativeGenerator
-           output. On Helix, MINIPAL_INCLUDE_DIR / CORECLR_VM_WASM_INCLUDE_DIR are
+           <minipal/...> and <callhelpers.hpp> when compiling the generated interop
+           helpers. On Helix, MINIPAL_INCLUDE_DIR / CORECLR_VM_WASM_INCLUDE_DIR are
            provided by sendtohelix-browser.targets via HelixPreCommand. For local
            runs, point at the in-repo dirs so the same import paths resolve. -->
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT' and '$(RuntimeFlavor)' == 'CoreCLR'" Include="export MINIPAL_INCLUDE_DIR=$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'native', 'minipal'))" />

@@ -11,6 +11,7 @@ using System.Linq;
 using crossgen2::ILCompiler;
 using crossgen2::ILCompiler.DependencyAnalysis.ReadyToRun;
 using crossgen2::ILCompiler.DependencyAnalysis.Wasm;
+using crossgen2::ILCompiler.Wasm;
 using crossgen2::Internal.CallingConvention;
 using crossgen2::Internal.JitInterface;
 
@@ -543,10 +544,162 @@ public class WasmArgumentLayoutTests
 
 
     /// <summary>
-    /// Configures a type system context the way crossgen2 does for
-    /// <c>--targetarch wasm --targetos browser</c>.
+    /// The generator encodes a type in parameter position with a single token. These are the three
+    /// shapes that encoding exists to tell apart: a multi-field struct, which goes by reference and
+    /// carries its size; a single-field wrapper, which is passed as the field it wraps; and a
+    /// primitive.
     /// </summary>
-    private ReadyToRunCompilerContext CreateWasmContext()
+    [Theory]
+    [InlineData("Guid", "S16")]
+    [InlineData("DateTime", "l")]
+    [InlineData("Int32", "i")]
+    public void WasmInteropGeneratorEncodesTypesTheWayTheCompilerLowersThem(string typeName, string expected)
+    {
+        ReadyToRunCompilerContext context = CreateWasmContext();
+
+        Assert.Equal(expected, WasmInteropSignature.GetAbiToken(GetSystemType(context, typeName)));
+    }
+
+    /// <summary>
+    /// A struct that holds a reference lays out through the auto-layout path, which asks the
+    /// compilation group whether the base offset needs aligning. Generation is not a compilation, so
+    /// it has to configure a group itself for that question to have an answer at all.
+    /// </summary>
+    [Fact]
+    public void WasmInteropGeneratorComputesLayoutOfStructsHoldingReferences()
+    {
+        ReadyToRunCompilerContext context = CreateWasmContext();
+        var type = GetSystemType(context, "RuntimeTypeHandle");
+
+        // If this stops holding, the test no longer covers the auto-layout path it was written for.
+        Assert.True(type.ContainsGCPointers, $"{type} was chosen because it holds a reference");
+
+        // One field the size of the whole struct: lowered to that field, a reference, passed as i32.
+        Assert.Equal("i", WasmInteropSignature.GetAbiToken(type));
+    }
+
+    /// <summary>
+    /// The thunk a method gets is keyed by its lowered signature, so the generator has to encode a
+    /// method exactly as the compiler lowers it. Anything else and the interpreter calls through a
+    /// thunk built for a different shape.
+    /// </summary>
+    [Fact]
+    public void WasmInteropGeneratorEncodesMethodsLikeTheCompiler()
+    {
+        ReadyToRunCompilerContext context = CreateWasmContext();
+        var method = (EcmaMethod)GetSystemType(context, "DateTime").GetMethod("AddTicks"u8, null);
+
+        string expected = WasmLowering.GetSignature(method.Signature, WasmLowering.LoweringFlags.None).SignatureString;
+        _output.WriteLine($"{method} lowers to '{expected}'");
+
+        Assert.Equal(expected, WasmInteropSignature.GetMethodSignature(method, includeThis: true));
+    }
+
+    /// <summary>
+    /// Void has no lowering of its own - the compiler never sees it in a position that needs one -
+    /// but it is still what a thunk returns, so the generator has to encode it.
+    /// </summary>
+    [Fact]
+    public void WasmInteropGeneratorEncodesVoid()
+    {
+        ReadyToRunCompilerContext context = CreateWasmContext();
+
+        Assert.Equal("v", WasmInteropSignature.GetAbiToken(context.GetWellKnownType(WellKnownType.Void)));
+    }
+
+    /// <summary>
+    /// A type has to get the same token at the interop boundary as it does inside a lowered method
+    /// signature, because the runtime looks a thunk up by the signature the compiler produced. The
+    /// two encoders are separate code, so this pins them together for each shape the ABI treats
+    /// differently: multi-segment types passed by value across several slots, structs passed by
+    /// reference, single-field wrappers, and primitives.
+    /// </summary>
+    [Theory]
+    [InlineData("Int128")]
+    [InlineData("UInt128")]
+    [InlineData("Guid")]
+    [InlineData("DateTime")]
+    [InlineData("Int32")]
+    [InlineData("Double")]
+    public void WasmInteropGeneratorEncodesTypesTheSameWayInAndOutOfASignature(string typeName)
+    {
+        ReadyToRunCompilerContext context = CreateWasmContext();
+        TypeDesc type = GetSystemType(context, typeName);
+
+        string signature = WasmLowering.GetSignature(
+            MakeStaticVoidSignature(context, type),
+            WasmLowering.LoweringFlags.None).SignatureString;
+        _output.WriteLine($"{typeName} lowers to '{signature}' in a signature");
+
+        // 'v' return, then the single parameter, then the 'p' entrypoint suffix.
+        List<string> tokens = WasmInteropSignature.ParseSignatureTokens(signature);
+        Assert.Equal(tokens[1], WasmInteropSignature.GetAbiToken(type));
+    }
+
+    /// <summary>
+    /// Real builds hand the generator the whole app closure, not one assembly. The compilation group
+    /// it configures has to accept that: a multi-assembly set is only legal in composite mode, and a
+    /// group built without it asserts in checked builds and lays out nothing in any build.
+    /// </summary>
+    [Fact]
+    public void WasmInteropGeneratorAcceptsMoreThanOneInputAssembly()
+    {
+        // Any second real assembly will do. This one is guaranteed to exist because it is the
+        // assembly currently executing.
+        string extraInput = typeof(WasmArgumentLayoutTests).Assembly.Location;
+        Assert.True(File.Exists(extraInput), $"test assembly not found at '{extraInput}'");
+
+        ReadyToRunCompilerContext context = CreateWasmContext(extraInput);
+        string outputDirectory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+
+        try
+        {
+            var options = new WasmInteropGeneratorOptions
+            {
+                OutputDirectory = outputDirectory,
+                TargetOS = "browser",
+                PInvokeModules = new[] { "libSystem.Native" },
+                WarnOnUnresolvedPInvokeModules = false,
+            };
+
+            Assert.Equal(0, WasmInteropGenerator.Run(context, options, new Logger(TextWriter.Null, isVerbose: false)));
+
+            foreach (string fileName in new[]
+                     {
+                         WasmInteropGenerator.PInvokeFileName,
+                         WasmInteropGenerator.ReversePInvokeFileName,
+                         WasmInteropGenerator.InterpToNativeFileName,
+                     })
+            {
+                string path = Path.Combine(outputDirectory, fileName);
+                Assert.True(File.Exists(path), $"{fileName} was not generated");
+                Assert.NotEmpty(File.ReadAllText(path));
+            }
+
+            // The statically linked module has to resolve to direct calls, which is the whole point
+            // of naming it on the command line.
+            Assert.Contains("SystemNative_", File.ReadAllText(Path.Combine(outputDirectory, WasmInteropGenerator.PInvokeFileName)));
+        }
+        finally
+        {
+            if (Directory.Exists(outputDirectory))
+                Directory.Delete(outputDirectory, recursive: true);
+        }
+    }
+
+    private const string CoreLibSimpleName = "System.Private.CoreLib";
+
+    private static EcmaType GetSystemType(ReadyToRunCompilerContext context, string typeName)
+    {
+        return (EcmaType)context.SystemModule.GetType("System"u8, System.Text.Encoding.UTF8.GetBytes(typeName));
+    }
+
+    /// <summary>
+    /// Configures a type system context the way crossgen2 does for
+    /// <c>--targetarch wasm --targetos browser</c>. Extra input assemblies stand in for the rest of an
+    /// app closure, which a real build always supplies alongside CoreLib.
+    /// </summary>
+    private ReadyToRunCompilerContext CreateWasmContext(params string[] extraInputAssemblyPaths)
     {
         string coreLibPath = new TestPaths(_output).SystemPrivateCoreLibPath;
         Assert.True(File.Exists(coreLibPath), $"System.Private.CoreLib.dll not found at '{coreLibPath}'");
@@ -554,14 +707,20 @@ public class WasmArgumentLayoutTests
         InstructionSetSupport instructionSetSupport = new(default, default, TargetArchitecture.Wasm32);
         TargetDetails target = new(TargetArchitecture.Wasm32, TargetOS.Browser, TargetAbi.NativeAot, instructionSetSupport.GetVectorTSimdVector());
 
+        Dictionary<string, string> inputFilePaths = new(StringComparer.OrdinalIgnoreCase) { { CoreLibSimpleName, coreLibPath } };
+        foreach (string path in extraInputAssemblyPaths)
+        {
+            inputFilePaths.Add(Path.GetFileNameWithoutExtension(path), path);
+        }
+
         // Wasm cannot generate code at runtime, matching what crossgen2's Program computes for this target.
         ReadyToRunCompilerContext context = new(target, SharedGenericsMode.CanonicalReferenceTypes, bubbleIncludesCoreModule: true, targetAllowsRuntimeCodeGeneration: false, instructionSetSupport, oldTypeSystemContext: null)
         {
-            InputFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) { { "System.Private.CoreLib", coreLibPath } },
+            InputFilePaths = inputFilePaths,
             ReferenceFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase),
         };
 
-        EcmaModule coreLib = (EcmaModule)context.GetModuleForSimpleName("System.Private.CoreLib");
+        EcmaModule coreLib = (EcmaModule)context.GetModuleForSimpleName(CoreLibSimpleName);
         context.SetSystemModule(coreLib);
 
         // The R2R field layout algorithm reaches into the compilation group to decide whether base

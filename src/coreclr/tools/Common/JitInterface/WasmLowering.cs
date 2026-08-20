@@ -389,7 +389,9 @@ namespace Internal.JitInterface
         /// <summary>
         /// Maps a WasmValueType to its single-character signature encoding.
         /// </summary>
-        private static char WasmValueTypeToSigChar(WasmValueType vt) => vt switch
+        // internal rather than private so the call-helper generator can encode a single type with the
+        // same table the signature builder below uses (see ILCompiler.Wasm.WasmInteropSignature).
+        internal static char WasmValueTypeToSigChar(WasmValueType vt) => vt switch
         {
             WasmValueType.I32 => 'i',
             WasmValueType.I64 => 'l',

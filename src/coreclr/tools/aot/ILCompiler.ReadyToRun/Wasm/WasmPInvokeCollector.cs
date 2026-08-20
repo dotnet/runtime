@@ -1,0 +1,403 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
+using System.Collections.Generic;
+using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
+
+using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
+
+namespace ILCompiler.Wasm
+{
+    /// <summary>
+    /// A P/Invoke discovered while scanning the input assemblies.
+    /// </summary>
+    internal sealed class WasmPInvoke(string entryPoint, string module, EcmaMethod method, bool wasmLinkage)
+        : IEquatable<WasmPInvoke>
+    {
+        public string EntryPoint { get; } = entryPoint;
+        public string Module { get; } = module;
+        public EcmaMethod Method { get; } = method;
+        public bool WasmLinkage { get; } = wasmLinkage;
+        public bool Skip { get; set; }
+
+        /// <summary>A stable identity for de-duplicating declarations of the same import.</summary>
+        private string Identity => $"{EntryPoint}!{Module}!{Method.OwningType}::{Method.Name.ToString()}{Method.Signature}";
+
+        public bool Equals(WasmPInvoke other)
+            => other is not null && string.Equals(Identity, other.Identity, StringComparison.Ordinal);
+
+        public override bool Equals(object obj) => Equals(obj as WasmPInvoke);
+
+        public override int GetHashCode() => Identity.GetHashCode(StringComparison.Ordinal);
+
+        public override string ToString() => $"{{ EntryPoint: {EntryPoint}, Module: {Module}, Method: {Method}, Skip: {Skip} }}";
+    }
+
+    /// <summary>
+    /// A managed method callable from native code, discovered while scanning the input assemblies.
+    /// </summary>
+    internal sealed class WasmPInvokeCallback
+    {
+        public WasmPInvokeCallback(EcmaMethod method)
+        {
+            Method = method;
+            var type = (EcmaType)method.OwningType;
+
+            TypeName = type.Name.ToString();
+            TypeFullName = WasmTypeNames.GetFullName(type);
+            AssemblyName = ((EcmaAssembly)type.Module).GetName().Name;
+
+            // Nested types: the runtime reverse-thunk key (vm/wasm/helpers.cpp GetHashCode ->
+            // GetFullyQualifiedNameInfo) reports an empty namespace for nested types, so match that
+            // here or the emitted g_ReverseThunks key won't be found at lookup time (#130129).
+            // This key drops the enclosing-type chain, so nested types with the same simple name in
+            // different namespaces collide; the duplicate-key check in WasmPInvokeTableGenerator
+            // (EmitNativeToInterp) turns that into a build error.
+            // Tracked by https://github.com/dotnet/runtime/issues/130739.
+            Namespace = type.ContainingType is not null ? string.Empty : type.Namespace.ToString();
+            MethodName = method.Name.ToString();
+            ReturnType = method.Signature.ReturnType;
+            IsVoid = ReturnType.IsVoid;
+            Token = (uint)MetadataTokens.GetToken(method.Handle);
+
+            // FIXME: this is a hack, we need to encode this better and allow reflection in the interp case
+            // but either way it needs to match the key generated in get_native_to_interp since the key is
+            // used to look up the interp entry function. It must be unique for each callback runtime errors
+            // can occur since it is used to look up the index in the wasm_native_to_interp_ftndescs and
+            // the signature of the interp entry function must match the native signature
+            //
+            // the key also needs to survive being encoded in C literals, if in doubt
+            // add something like "\U0001F412" to the key on both the managed and unmanaged side
+            Key = $"{MethodName}#{method.Signature.Length}:{AssemblyName}:{Namespace}:{TypeName}";
+
+            if (method.GetDecodedCustomAttribute("System.Runtime.InteropServices", "UnmanagedCallersOnlyAttribute")
+                is CustomAttributeValue<TypeDesc> attribute)
+            {
+                foreach (var argument in attribute.NamedArguments)
+                {
+                    if (argument.Name == "EntryPoint" && argument.Value is string entryPoint)
+                    {
+                        EntryPoint = entryPoint;
+                        IsExport = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// The name of the type that declares the callback, as the runtime spells it. Nested types
+        /// report an empty namespace here, which is what the reverse-thunk key expects.
+        /// </summary>
+        public string EntryName => $"{AssemblyName}_{Namespace}_{TypeName}_{MethodName}";
+
+        public MethodSignature Parameters => Method.Signature;
+        public string EntryPoint { get; }
+        public EcmaMethod Method { get; }
+        public string EntrySymbol { get; set; }
+        public string AssemblyName { get; }
+        public string TypeName { get; }
+        public string TypeFullName { get; }
+        public string Namespace { get; }
+        public string MethodName { get; }
+        public TypeDesc ReturnType { get; }
+        public bool IsExport { get; }
+        public bool IsVoid { get; }
+        public uint Token { get; }
+        public string Key { get; }
+    }
+
+    internal sealed class WasmPInvokeCallbackComparer : IComparer<WasmPInvokeCallback>
+    {
+        public int Compare(WasmPInvokeCallback x, WasmPInvokeCallback y)
+        {
+            int compare = string.Compare(x.Key, y.Key, StringComparison.Ordinal);
+            return compare != 0 ? compare : (int)(x.Token - y.Token);
+        }
+    }
+
+    /// <summary>
+    /// Scans assemblies for the interop surface the wasm interpreter needs thunks for: P/Invokes,
+    /// methods callable from native code, native function pointer signatures, and InternalCalls.
+    /// </summary>
+    internal sealed class WasmPInvokeCollector(WasmInteropLogger log, string targetOS)
+    {
+        private readonly Dictionary<EcmaAssembly, bool> _assemblyDisableRuntimeMarshalling = [];
+        private readonly Dictionary<TypeDesc, bool> _typeUnsupportedOnPlatform = [];
+        private readonly Dictionary<EcmaAssembly, bool> _assemblyUnsupportedOnPlatform = [];
+        private readonly Dictionary<TypeDesc, bool> _blittable = [];
+
+        public void CollectPInvokes(List<WasmPInvoke> pinvokes, List<WasmPInvokeCallback> callbacks, HashSet<string> signatures, EcmaType type)
+        {
+            foreach (MethodDesc methodDesc in type.GetMethods())
+            {
+                var method = (EcmaMethod)methodDesc;
+                try
+                {
+                    CollectPInvokesForMethod(method);
+                    if (DoesMethodHaveCallbacks(method))
+                        callbacks.Add(new WasmPInvokeCallback(method));
+                }
+                catch (Exception ex) when (ex is not LogAsErrorException)
+                {
+                    log.Warning("WASM0001", $"Could not get pinvoke, or callbacks for method '{type}::{method.Name.ToString()}' because '{ex}'");
+                }
+            }
+
+            if (type.HasCustomAttribute("System.Runtime.InteropServices", "UnmanagedFunctionPointerAttribute"))
+            {
+                // Each instantiation of an open generic delegate would marshal differently, so there is
+                // no single native signature to emit a thunk for. The encoding this used to produce came
+                // from mapping the type parameter itself, which was only ever right by accident.
+                if (type.HasInstantiation)
+                {
+                    log.Warning("WASM0001", $"Skipping generic function pointer delegate '{type}', which has no single native signature");
+                    return;
+                }
+
+                MethodDesc invokeMethod = type.GetMethod("Invoke"u8, null);
+                if (invokeMethod is not null)
+                    AddSignature(signatures, invokeMethod, includeThis: false, "pinvoke");
+            }
+
+            void CollectPInvokesForMethod(EcmaMethod method)
+            {
+                if (!method.IsPInvoke)
+                    return;
+
+                if (IsUnsupportedOnPlatform(method))
+                    return;
+
+                PInvokeMetadata metadata = method.GetPInvokeMethodMetadata();
+                bool wasmLinkage = method.HasCustomAttribute("System.Runtime.InteropServices", "WasmImportLinkageAttribute");
+
+                pinvokes.Add(new WasmPInvoke(metadata.Name, metadata.Module, method, wasmLinkage));
+
+                AddSignature(signatures, method, includeThis: false, "pinvoke");
+            }
+        }
+
+        private void AddSignature(HashSet<string> signatures, MethodDesc method, bool includeThis, string kind)
+        {
+            string signature = WasmInteropSignature.GetMethodSignature(method, includeThis);
+            if (signatures.Add(signature))
+                log.Verbose($"Adding {kind} signature {signature} for method '{method.OwningType}.{method.Name.ToString()}'");
+        }
+
+        private bool DoesMethodHaveCallbacks(EcmaMethod method)
+        {
+            if (!MethodHasCallbackAttributes(method))
+                return false;
+
+            if (IsUnsupportedOnPlatform(method))
+                return false;
+
+            if (HasAssemblyDisableRuntimeMarshallingAttribute((EcmaAssembly)method.Module))
+                return true;
+
+            // No DisableRuntimeMarshalling attribute, so check if the params/ret-type are blittable
+            MethodSignature signature = method.Signature;
+            if (!signature.ReturnType.IsVoid && !IsBlittable(signature.ReturnType))
+                throw new LogAsErrorException($"The return type '{signature.ReturnType}' of pinvoke callback method '{method}' needs to be blittable.");
+
+            foreach (TypeDesc parameterType in signature)
+            {
+                if (!IsBlittable(parameterType))
+                    throw new LogAsErrorException($"Parameter types of pinvoke callback method '{method}' needs to be blittable.");
+            }
+
+            return true;
+        }
+
+        private static bool MethodHasCallbackAttributes(EcmaMethod method)
+            => method.HasCustomAttribute("System.Runtime.InteropServices", "UnmanagedCallersOnlyAttribute")
+                || HasAttributeByName(method, "MonoPInvokeCallbackAttribute");
+
+        /// <summary>
+        /// Matches an attribute by its simple name in any namespace, for attributes that are
+        /// declared by user code rather than by the framework.
+        /// </summary>
+        private static bool HasAttributeByName(EcmaMethod method, string attributeName)
+        {
+            MetadataReader reader = method.MetadataReader;
+            foreach (CustomAttributeHandle handle in reader.GetMethodDefinition(method.Handle).GetCustomAttributes())
+            {
+                if (reader.GetAttributeNamespaceAndName(handle, out _, out StringHandle name)
+                    && reader.StringComparer.Equals(name, attributeName))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private bool HasAssemblyDisableRuntimeMarshallingAttribute(EcmaAssembly assembly)
+        {
+            if (!_assemblyDisableRuntimeMarshalling.TryGetValue(assembly, out bool value))
+            {
+                _assemblyDisableRuntimeMarshalling[assembly] = value =
+                    assembly.HasAssemblyCustomAttribute("System.Runtime.CompilerServices", "DisableRuntimeMarshallingAttribute");
+            }
+
+            return value;
+        }
+
+        private bool IsUnsupportedOnPlatform(EcmaMethod method)
+            => EvaluatePlatformAttributes(method.GetDecodedCustomAttributes) switch
+            {
+                PlatformSupport.Unsupported => true,
+                PlatformSupport.Supported => false,
+                _ => IsUnsupportedOnPlatform(method.OwningType)
+            };
+
+        private bool IsUnsupportedOnPlatform(TypeDesc type)
+        {
+            if (type is not EcmaType ecmaType)
+                return false;
+
+            if (_typeUnsupportedOnPlatform.TryGetValue(type, out bool cached))
+                return cached;
+
+            bool value = EvaluatePlatformAttributes(ecmaType.GetDecodedCustomAttributes) switch
+            {
+                PlatformSupport.Unsupported => true,
+                PlatformSupport.Supported => false,
+                _ when ecmaType.ContainingType is not null => IsUnsupportedOnPlatform(ecmaType.ContainingType),
+                _ => IsAssemblyUnsupportedOnPlatform((EcmaAssembly)ecmaType.Module)
+            };
+
+            _typeUnsupportedOnPlatform[type] = value;
+            return value;
+        }
+
+        private bool IsAssemblyUnsupportedOnPlatform(EcmaAssembly assembly)
+        {
+            if (!_assemblyUnsupportedOnPlatform.TryGetValue(assembly, out bool value))
+            {
+                _assemblyUnsupportedOnPlatform[assembly] =
+                    value = EvaluatePlatformAttributes(assembly.GetDecodedCustomAttributes) == PlatformSupport.Unsupported;
+            }
+
+            return value;
+        }
+
+        private enum PlatformSupport
+        {
+            Unknown,     // No platform attributes were observed at this scope
+            Supported,   // Explicitly supported here (target appears in a SupportedOSPlatform list)
+            Unsupported, // Explicitly unsupported here (target matches UnsupportedOSPlatform, or
+                         // SupportedOSPlatform is present and does not list the target)
+        }
+
+        private PlatformSupport EvaluatePlatformAttributes(
+            Func<string, string, IEnumerable<CustomAttributeValue<TypeDesc>>> getAttributes)
+        {
+            const string Namespace = "System.Runtime.Versioning";
+
+            foreach (var attribute in getAttributes(Namespace, "UnsupportedOSPlatformAttribute"))
+            {
+                if (MatchesTargetOS(attribute))
+                    return PlatformSupport.Unsupported;
+            }
+
+            bool hasSupportedOSPlatform = false;
+            foreach (var attribute in getAttributes(Namespace, "SupportedOSPlatformAttribute"))
+            {
+                if (attribute.FixedArguments.Length == 0)
+                    continue;
+
+                hasSupportedOSPlatform = true;
+                if (MatchesTargetOS(attribute))
+                    return PlatformSupport.Supported;
+            }
+
+            return hasSupportedOSPlatform ? PlatformSupport.Unsupported : PlatformSupport.Unknown;
+
+            bool MatchesTargetOS(CustomAttributeValue<TypeDesc> attribute)
+            {
+                if (attribute.FixedArguments.Length == 0)
+                    return false;
+
+                string platformName = attribute.FixedArguments[0].Value?.ToString();
+                if (string.Equals(platformName, targetOS, StringComparison.OrdinalIgnoreCase))
+                    return true;
+
+                // A platform name may carry a version, as in [SupportedOSPlatform("browser1.0")].
+                // Nothing generated here varies by platform version, so a versioned name still
+                // names the target as long as a version is all that follows it.
+                if (platformName?.StartsWith(targetOS, StringComparison.OrdinalIgnoreCase) != true)
+                    return false;
+
+                return Version.TryParse(platformName.AsSpan(targetOS.Length), out _);
+            }
+        }
+
+        /// <summary>
+        /// Whether a type can be handed to native code as-is. Results are cached so that a type used
+        /// by many P/Invokes only produces one diagnostic.
+        /// </summary>
+        public bool IsBlittable(TypeDesc type)
+        {
+            if (_blittable.TryGetValue(type, out bool blittable))
+                return blittable;
+
+            bool result = IsBlittableUncached(type);
+            _blittable[type] = result;
+            return result;
+        }
+
+        private bool IsBlittableUncached(TypeDesc type)
+        {
+            if (type.IsPrimitive || type.IsByRef || type.IsPointer || type.IsEnum || type is FunctionPointerType)
+                return true;
+
+            // HACK: SkiaSharp has pinvokes that rely on this
+            if (type is EcmaType delegateType
+                && delegateType.HasCustomAttribute("System.Runtime.InteropServices", "UnmanagedFunctionPointerAttribute"))
+                return true;
+
+            if (type is MetadataType nonBlittableMarker && nonBlittableMarker.Name.StringEquals("__NonBlittableTypeForAutomatedTests__"))
+                return false;
+
+            if (!type.IsValueType)
+            {
+                log.InfoHigh("WASM0060", $"Type {type} is not blittable: Not a ValueType");
+                return false;
+            }
+
+            if (type is not MetadataType metadataType)
+            {
+                log.InfoHigh("WASM0060", $"Type {type} is not blittable: No metadata");
+                return false;
+            }
+
+            List<FieldDesc> fields = [];
+            foreach (FieldDesc field in metadataType.GetFields())
+            {
+                if (!field.IsStatic)
+                    fields.Add(field);
+            }
+
+            if (!metadataType.IsSequentialLayout && fields.Count > 1)
+            {
+                log.InfoHigh("WASM0061", $"Type {type} is not blittable: LayoutKind is not Sequential");
+                return false;
+            }
+
+            foreach (FieldDesc field in fields)
+            {
+                if (!IsBlittable(field.FieldType))
+                {
+                    log.InfoHigh("WASM0062", $"Type {type} is not blittable: Field {field.Name.ToString()} is not blittable");
+                    return false;
+                }
+            }
+
+            return true;
+        }
+    }
+}
