@@ -11,7 +11,7 @@ namespace ILCompiler.DependencyAnalysis
     {
         protected override void EmitCode(NodeFactory factory, ref WasmEmitter encoder, bool relocsOnly)
         {
-            throw new PlatformNotSupportedException("NativeAOT WebAssembly ReadyToRun helpers are not supported.");
+            throw new NotImplementedException();
         }
     }
 }
