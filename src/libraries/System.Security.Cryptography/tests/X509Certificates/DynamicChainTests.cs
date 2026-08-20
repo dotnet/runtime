@@ -1131,6 +1131,90 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
+        [Fact]
+        public static void IncrediblyLongChain()
+        {
+            const int LastCertNumber = 129;
+
+            X509Certificate2 target = null;
+            ECDsa key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+            X509Extension caExt = X509BasicConstraintsExtension.CreateForCertificateAuthority();
+            X509Extension caKU = new X509KeyUsageExtension(X509KeyUsageFlags.KeyCertSign, critical: true);
+
+            ChainHolder chainHolder = new();
+            X509ChainPolicy policy = chainHolder.Chain.ChainPolicy;
+
+            try
+            {
+                DateTimeOffset notBefore = DateTimeOffset.Now.AddMinutes(-5);
+                DateTimeOffset notAfter = notBefore.AddMinutes(10);
+                UInt128 skid = 0;
+                Span<byte> skidBytes = MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref skid, 1));
+                RandomNumberGenerator.Fill(skidBytes);
+
+                for (int i = 0; i <= LastCertNumber; i++)
+                {
+                    CertificateRequest req = new CertificateRequest($"CN=Turtle {i}", key, HashAlgorithmName.SHA256);
+
+                    if (i == LastCertNumber)
+                    {
+                        req.CertificateExtensions.Add(X509BasicConstraintsExtension.CreateForEndEntity());
+                        req.CertificateExtensions.Add(new X509KeyUsageExtension(X509KeyUsageFlags.DigitalSignature, critical: true));
+                    }
+                    else
+                    {
+                        req.CertificateExtensions.Add(caExt);
+                        req.CertificateExtensions.Add(caKU);
+                    }
+
+                    req.CertificateExtensions.Add(new X509SubjectKeyIdentifierExtension(skidBytes, critical: false));
+
+                    if (target is not null)
+                    {
+                        X509Certificate2 noPriv = req.Create(target, notBefore, notAfter, skidBytes);
+                        policy.ExtraStore.Add(noPriv);
+
+                        target.Dispose();
+                        target = noPriv.CopyWithPrivateKey(key);
+                    }
+                    else
+                    {
+                        target = req.CreateSelfSigned(notBefore, notAfter);
+
+                        policy.CustomTrustStore.Add(X509CertificateLoader.LoadCertificate(target.RawDataMemory.Span));
+                    }
+
+                    skid++;
+                    notBefore = notBefore.AddSeconds(1);
+                    notAfter = notAfter.AddSeconds(-1);
+                }
+
+                policy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+                policy.RevocationMode = X509RevocationMode.NoCheck;
+
+                bool built = chainHolder.Chain.Build(target);
+                Assert.Equal(LastCertNumber + 1, chainHolder.Chain.ChainElements.Count);
+                Assert.True(built);
+            }
+            finally
+            {
+                target?.Dispose();
+
+
+                foreach (X509Certificate2 cert in policy.CustomTrustStore)
+                {
+                    cert.Dispose();
+                }
+
+                foreach (X509Certificate2 cert in policy.ExtraStore)
+                {
+                    cert.Dispose();
+                }
+
+                chainHolder.Dispose();
+            }
+        }
+
         private static X509ChainStatusFlags PlatformBasicConstraints(X509ChainStatusFlags flags)
         {
             if (OperatingSystem.IsAndroid())
