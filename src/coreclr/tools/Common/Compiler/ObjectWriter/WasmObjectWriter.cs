@@ -400,9 +400,12 @@ namespace ILCompiler.ObjectWriter
             _sections.GetSection<WasmExternallyCountedSection>(ObjectNodeSection.WasmCodeSection.Name)
                 .SetEntryCount(MethodCount);
 
-            Debug.Assert(GetOrCreateSection<WasmImportSection>(WasmObjectNodeSection.ImportSection, out _).EntryCount == _wasmSymbolManager.GetImportCount());
-            Debug.Assert(GetOrCreateSection<WasmFunctionSection>(WasmObjectNodeSection.FunctionSection, out _).EntryCount == MethodCount);
-            Debug.Assert(GetOrCreateSection<WasmGlobalSection>(WasmObjectNodeSection.GlobalSection, out _).EntryCount == _wasmSymbolManager.GetDefinitionCount(WasmIndexSpace.Global));
+            Debug.Assert(!_sections.Contains(WasmObjectNodeSection.FunctionSection.Name)
+                || _sections.GetSection<WasmFunctionSection>(WasmObjectNodeSection.FunctionSection.Name).EntryCount == MethodCount);
+            Debug.Assert(!_sections.Contains(WasmObjectNodeSection.ImportSection.Name)
+                || _sections.GetSection<WasmImportSection>(WasmObjectNodeSection.ImportSection.Name).EntryCount == _wasmSymbolManager.GetImportCount());
+            Debug.Assert(!_sections.Contains(WasmObjectNodeSection.GlobalSection.Name)
+                || _sections.GetSection<WasmGlobalSection>(WasmObjectNodeSection.GlobalSection.Name).EntryCount == _wasmSymbolManager.GetDefinitionCount(WasmIndexSpace.Global));
         }
     }
 

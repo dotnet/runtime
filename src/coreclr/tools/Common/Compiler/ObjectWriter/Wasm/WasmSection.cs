@@ -10,7 +10,7 @@ using Internal.Text;
 namespace ILCompiler.ObjectWriter
 {
     /// <summary>
-    /// Interface for types that can be emitted to an object stream.
+    /// Interface for section-like objects that can be emitted to a wasm module stream.
     /// </summary>
     internal interface IWasmEmittable
     {
