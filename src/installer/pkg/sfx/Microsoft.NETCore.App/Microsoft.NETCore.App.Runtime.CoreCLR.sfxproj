@@ -26,9 +26,9 @@
     <PublishReadyToRun>true</PublishReadyToRun>
     <!-- Disable crossgen on NetBSD, illumos, Solaris and Haiku for now. This can be revisited when we have full support. -->
     <PublishReadyToRun Condition="'$(TargetOS)' == 'netbsd' or '$(TargetOS)' == 'illumos' or '$(TargetOS)' == 'solaris' or '$(TargetOS)' == 'haiku'">false</PublishReadyToRun>
-    <!-- TODO-WASM: WASM framework R2R needs the CoreLib model (native/*.wasm webcil + kept lib/*.dll IL),
-         not the SDK's in-place R2R which replaces lib/*.dll. See dotnet/runtime#121257. -->
+    <!-- TODO-WASM: https://github.com/dotnet/runtime/issues/132466 
     <PublishReadyToRun Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi'">false</PublishReadyToRun>
+    -->
     <PublishReadyToRun Condition="'$(StageTwoBuild)'=='true'">false</PublishReadyToRun>
     <UsesMuxerHostModel Condition="'$(TargetsMobile)' != 'true'">true</UsesMuxerHostModel>
     <IncludeDiaSymReaderNative Condition="'$(TargetOS)' == 'windows'">true</IncludeDiaSymReaderNative>
