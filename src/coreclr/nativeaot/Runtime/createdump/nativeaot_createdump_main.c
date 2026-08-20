@@ -21,31 +21,54 @@
 #include <sys/types.h>
 
 #define DEFAULT_DUMP_PATH "/tmp/"
-#define DEFAULT_DUMP_TEMPLATE "coredump.%d"
+#define DEFAULT_DUMP_TEMPLATE "coredump.%p"
 
 // Exported symbol so PalCreateDump.cpp can detect that this library is linked.
 bool g_createdumpLinked = true;
 
-// Forward-substitute %p (pid) in the dump path template.
+// Format the dump path using the same substitutions as external createdump.
 static bool FormatDumpPath(char* output, size_t outputSize, const char* pathTemplate, pid_t pid)
 {
+    if (outputSize == 0 || pathTemplate[0] == '|')
+    {
+        return false;
+    }
+
     const char* src = pathTemplate;
     char* dst = output;
     char* dstEnd = output + outputSize - 1;
 
     while (*src != '\0' && dst < dstEnd)
     {
-        if (*src == '%' && *(src + 1) == 'p')
+        if (*src != '%')
         {
-            int written = snprintf(dst, (size_t)(dstEnd - dst), "%d", pid);
-            if (written < 0 || dst + written >= dstEnd)
+            *dst++ = *src++;
+            continue;
+        }
+
+        src++;
+        if (*src == '\0')
+        {
+            break;
+        }
+
+        if (*src == '%')
+        {
+            *dst++ = '%';
+            src++;
+        }
+        else if (*src == 'd' || *src == 'p')
+        {
+            size_t remaining = (size_t)(dstEnd - dst);
+            int written = snprintf(dst, remaining + 1, "%d", pid);
+            if (written < 0 || (size_t)written > remaining)
             {
                 return false;
             }
             dst += written;
-            src += 2;
+            src++;
         }
-        else if (*src == '%' && *(src + 1) == 'e')
+        else if (*src == 'e')
         {
             // Executable name - read from /proc
             char exePath[4096];
@@ -58,8 +81,9 @@ static bool FormatDumpPath(char* output, size_t outputSize, const char* pathTemp
                 // Get just the filename
                 const char* name = strrchr(exePath, '/');
                 name = name != NULL ? name + 1 : exePath;
-                int written = snprintf(dst, (size_t)(dstEnd - dst), "%s", name);
-                if (written < 0 || dst + written >= dstEnd)
+                size_t remaining = (size_t)(dstEnd - dst);
+                int written = snprintf(dst, remaining + 1, "%s", name);
+                if (written < 0 || (size_t)written > remaining)
                 {
                     return false;
                 }
@@ -67,48 +91,50 @@ static bool FormatDumpPath(char* output, size_t outputSize, const char* pathTemp
             }
             else
             {
-                // Fallback if readlink fails (e.g. target already exited)
-                int written = snprintf(dst, (size_t)(dstEnd - dst), "unknown");
-                if (written < 0 || dst + written >= dstEnd)
-                {
-                    return false;
-                }
-                dst += written;
+                return false;
             }
-            src += 2;
+            src++;
         }
-        else if (*src == '%' && *(src + 1) == 't')
+        else if (*src == 't')
         {
-            int written = snprintf(dst, (size_t)(dstEnd - dst), "%ld", (long)time(NULL));
-            if (written < 0 || dst + written >= dstEnd)
+            size_t remaining = (size_t)(dstEnd - dst);
+            int written = snprintf(dst, remaining + 1, "%ld", (long)time(NULL));
+            if (written < 0 || (size_t)written > remaining)
             {
                 return false;
             }
             dst += written;
-            src += 2;
+            src++;
         }
-        else if (*src == '%' && *(src + 1) == 'h')
+        else if (*src == 'h')
         {
             char hostname[256];
-            const char* hostStr = "unknown";
-            if (gethostname(hostname, sizeof(hostname)) == 0)
+            if (gethostname(hostname, sizeof(hostname)) != 0)
             {
-                hostname[sizeof(hostname) - 1] = '\0';
-                hostStr = hostname;
+                return false;
             }
-            int written = snprintf(dst, (size_t)(dstEnd - dst), "%s", hostStr);
-            if (written < 0 || dst + written >= dstEnd)
+            hostname[sizeof(hostname) - 1] = '\0';
+            size_t remaining = (size_t)(dstEnd - dst);
+            int written = snprintf(dst, remaining + 1, "%s", hostname);
+            if (written < 0 || (size_t)written > remaining)
             {
                 return false;
             }
             dst += written;
-            src += 2;
+            src++;
         }
         else
         {
-            *dst++ = *src++;
+            fprintf(stderr, "[createdump] Invalid dump name format character '%c'\n", *src);
+            return false;
         }
     }
+
+    if (*src != '\0')
+    {
+        return false;
+    }
+
     *dst = '\0';
     return true;
 }
@@ -175,24 +201,18 @@ int nativeaot_createdump_main(int argc, const char* argv[])
         {
             // NativeAOT mode is the only mode we support; accept and ignore
         }
-        else if (strcmp(argv[i], "--logtofile") == 0 && i + 1 < argc)
+        else if (strcmp(argv[i], "--withheap") == 0)
         {
-            // Accept and ignore for now
-            i++;
+            // Heap mode is the default linked-createdump mode.
         }
-        else if (strcmp(argv[i], "--withheap") == 0 ||
-                 strcmp(argv[i], "--normal") == 0 ||
-                 strcmp(argv[i], "--triage") == 0)
+        else if (strcmp(argv[i], "--normal") == 0 ||
+                 strcmp(argv[i], "--triage") == 0 ||
+                 strcmp(argv[i], "--crashreport") == 0 ||
+                 strcmp(argv[i], "--crashreportonly") == 0 ||
+                 strcmp(argv[i], "--logtofile") == 0)
         {
-            // Without DAC, Normal/Triage can't do fine-grained filtering.
-            // These modes use heap-style filtering: all writable/anonymous
-            // memory plus the main executable, excluding shared library
-            // code/rodata (which debuggers load from disk).
-        }
-        else if (strcmp(argv[i], "--crashreport") == 0 ||
-                 strcmp(argv[i], "--crashreportonly") == 0)
-        {
-            fprintf(stderr, "[createdump] Warning: crash reports not supported in linked createdump\n");
+            fprintf(stderr, "[createdump] Option '%s' is not supported by linked createdump\n", argv[i]);
+            return 1;
         }
         else if (strcmp(argv[i], "--exception-record") == 0 && i + 1 < argc)
         {
@@ -206,25 +226,30 @@ int nativeaot_createdump_main(int argc, const char* argv[])
         }
     }
 
-    if (pid == 0)
+    if (pid <= 0)
     {
         fprintf(stderr, "[createdump] No target PID specified\n");
         return 1;
     }
 
+    pid_t parentPid = getppid();
+    if (pid != parentPid)
+    {
+        fprintf(stderr, "[createdump] Target PID %d is not the parent process %d\n", pid, parentPid);
+        return 1;
+    }
+
     // Build dump path from template
     char dumpPath[4096];
-    if (dumpPathTemplate != NULL)
+    if (dumpPathTemplate == NULL)
     {
-        if (!FormatDumpPath(dumpPath, sizeof(dumpPath), dumpPathTemplate, pid))
-        {
-            fprintf(stderr, "[createdump] Failed to format dump path\n");
-            return 1;
-        }
+        dumpPathTemplate = DEFAULT_DUMP_PATH DEFAULT_DUMP_TEMPLATE;
     }
-    else
+
+    if (!FormatDumpPath(dumpPath, sizeof(dumpPath), dumpPathTemplate, pid))
     {
-        snprintf(dumpPath, sizeof(dumpPath), DEFAULT_DUMP_PATH DEFAULT_DUMP_TEMPLATE, pid);
+        fprintf(stderr, "[createdump] Failed to format dump path\n");
+        return 1;
     }
 
     if (diagnostics)
@@ -295,7 +320,7 @@ int nativeaot_createdump_main(int argc, const char* argv[])
     }
 
     // Write the ELF core dump
-    if (WriteElfCoreDump(dumpPath, &processInfo, fullDump, diagnostics))
+    if (WriteElfCoreDump(dumpPath, &processInfo, fullDump))
     {
         fprintf(stderr, "[createdump] Dump successfully written to %s\n", dumpPath);
         exitCode = 0;

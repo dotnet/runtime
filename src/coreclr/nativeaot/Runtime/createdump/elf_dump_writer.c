@@ -8,12 +8,10 @@
 //   ELF Header
 //   Program Headers: [PT_NOTE] [PT_LOAD x N]
 //   Note Section: NT_PRPSINFO, NT_AUXV, NT_FILE, per-thread (NT_PRSTATUS, NT_FPREGSET, NT_SIGINFO)
-//   Memory Region Contents (4KB aligned)
+//   Memory Region Contents (system-page aligned)
 //
-// Region filtering (heap mode): file-backed read-only regions from shared
-// libraries are excluded because debuggers can reconstruct them from the
-// original files using the NT_FILE note. This significantly reduces dump
-// size (e.g., libicudata.so alone is ~30MB).
+// Region filtering (heap mode): reconstructable file-backed content is
+// excluded because debuggers can reload it through the NT_FILE note.
 
 #include "elf_dump_writer.h"
 
@@ -24,6 +22,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <sys/sysmacros.h>
 #include <elf.h>
 #include <sys/procfs.h>
 
@@ -32,19 +31,43 @@
 _Static_assert(sizeof(gp_regs_t) <= sizeof(((struct elf_prstatus*)0)->pr_reg),
                "GP register struct must not be larger than elf_prstatus pr_reg");
 
-#define DUMP_PAGE_SIZE 4096
 #define ALIGN_UP(val, align) (((val) + (align) - 1) & ~((align) - 1))
+
+static bool IsFileMappingReconstructable(const MemRegion* region)
+{
+    if (region->fileName[0] != '/' || region->inode == 0)
+    {
+        return false;
+    }
+
+    int fd = open(region->fileName, O_RDONLY);
+    if (fd == -1)
+    {
+        return false;
+    }
+
+    struct stat fileStatus;
+    bool result =
+        fstat(fd, &fileStatus) == 0 &&
+        S_ISREG(fileStatus.st_mode) &&
+        (uint64_t)major(fileStatus.st_dev) == region->deviceMajor &&
+        (uint64_t)minor(fileStatus.st_dev) == region->deviceMinor &&
+        (uint64_t)fileStatus.st_ino == region->inode;
+    close(fd);
+    return result;
+}
 
 // Determines how many bytes of a memory region to include in the dump.
 //
 // Full mode (DbgMiniDumpType=4): includes all readable memory.
 //
-// Heap mode (default, types 0-3): excludes shared library code/rodata since
-// debuggers load those from disk via NT_FILE. Includes: anonymous memory
-// (heap, stack, GC heaps), writable regions, the main executable's regions
-// (including RELRO pages with r_debug), and the first page of each shared
-// library (ELF header for identification).
-static uint64_t GetDumpSize(const MemRegion* region, const ProcessInfo* info, bool fullDump)
+// Heap mode (default and DbgMiniDumpType=2): includes anonymous memory,
+// private writable mappings, non-reconstructable files, and the first page
+// of private read-only mappings. Reconstructable shared mappings are omitted.
+static uint64_t GetDumpSize(
+    const MemRegion* region,
+    const ProcessInfo* info,
+    bool fullDump)
 {
     uint64_t regionSize = region->endAddress - region->startAddress;
 
@@ -59,38 +82,42 @@ static uint64_t GetDumpSize(const MemRegion* region, const ProcessInfo* info, bo
         return regionSize;
     }
 
-    // Always include the full content of writable regions.
-    if ((region->permissions & PF_W) != 0)
-    {
-        return regionSize;
-    }
-
-    // Include anonymous read-only regions (no file path) and special mappings.
+    // Include anonymous regions and special mappings.
     if (region->fileName[0] == '\0' ||
         region->fileName[0] == '[')
     {
         return regionSize;
     }
 
-    // Include all regions from the main executable. These contain RELRO pages
-    // with .dynamic/.got.plt that the dynamic linker patches at startup then
-    // mprotect's read-only. GDB reads r_debug from .dynamic to discover
-    // shared libraries. The main exe is typically small (<5MB total).
-    if (info->exePath[0] != '\0' && strcmp(region->fileName, info->exePath) == 0)
+    // A debugger can omit file-backed memory only when the original file is
+    // still available and is the same inode that the process mapped.
+    if (!IsFileMappingReconstructable(region))
     {
         return regionSize;
     }
 
-    // Shared library file-backed read-only at file offset 0: include the
-    // first page. This contains the ELF header that GDB needs to identify
-    // the library and load the remaining content from disk.
-    if (region->offset == 0 && regionSize >= DUMP_PAGE_SIZE)
+    bool isPrivate = (region->permissions & MR_PRIVATE) != 0;
+    bool isMainExecutable =
+        info->exePath[0] != '\0' &&
+        strcmp(region->fileName, info->exePath) == 0;
+
+    // Private writable mappings may contain copy-on-write changes that are
+    // not present in the backing file. Shared writable mappings are reflected
+    // in the file's page cache and can be reconstructed.
+    if ((region->permissions & PF_W) != 0)
     {
-        return DUMP_PAGE_SIZE;
+        return isPrivate ? regionSize : 0;
     }
 
-    // Other shared library read-only regions (.text, .rodata): skip.
-    // The debugger loads these from the original files via NT_FILE.
+    // Keep the first page of each private mapping. This preserves ELF headers
+    // and the beginning of RELRO mappings containing loader-patched data such
+    // as DT_DEBUG without embedding NativeAOT executable code and rodata.
+    if (isPrivate || isMainExecutable || region->offset == 0)
+    {
+        return regionSize < info->pageSize ? regionSize : info->pageSize;
+    }
+
+    // Other reconstructable file content is loaded through NT_FILE.
     return 0;
 }
 
@@ -263,7 +290,7 @@ static bool WriteNtFile(FILE* fp, const ProcessInfo* info)
 
     // Header: count and page size
     uint64_t fileCount = CountFileRegions(info);
-    uint64_t pageSize = DUMP_PAGE_SIZE;
+    uint64_t pageSize = info->pageSize;
     memcpy(ptr, &fileCount, sizeof(uint64_t)); ptr += sizeof(uint64_t);
     memcpy(ptr, &pageSize, sizeof(uint64_t)); ptr += sizeof(uint64_t);
 
@@ -277,7 +304,7 @@ static bool WriteNtFile(FILE* fp, const ProcessInfo* info)
         }
         uint64_t start = region->startAddress;
         uint64_t end = region->endAddress;
-        uint64_t offset = region->offset / DUMP_PAGE_SIZE;
+        uint64_t offset = region->offset / info->pageSize;
         memcpy(ptr, &start, sizeof(uint64_t)); ptr += sizeof(uint64_t);
         memcpy(ptr, &end, sizeof(uint64_t)); ptr += sizeof(uint64_t);
         memcpy(ptr, &offset, sizeof(uint64_t)); ptr += sizeof(uint64_t);
@@ -358,9 +385,12 @@ static bool WriteThreadNotes(FILE* fp, const ProcessInfo* info)
     return true;
 }
 
-static bool WriteMemoryRegions(FILE* fp, const ProcessInfo* info, bool fullDump, bool diagnostics)
+static bool WriteMemoryRegions(
+    FILE* fp,
+    const ProcessInfo* info,
+    const uint64_t* dumpSizes)
 {
-    uint8_t* buffer = (uint8_t*)malloc(DUMP_PAGE_SIZE);
+    uint8_t* buffer = (uint8_t*)malloc((size_t)info->pageSize);
     if (buffer == NULL)
     {
         return false;
@@ -381,7 +411,7 @@ static bool WriteMemoryRegions(FILE* fp, const ProcessInfo* info, bool fullDump,
     {
         const MemRegion* region = &info->regions.items[i];
 
-        uint64_t dumpSize = GetDumpSize(region, info, fullDump);
+        uint64_t dumpSize = dumpSizes[i];
         if (dumpSize == 0)
         {
             continue;
@@ -392,7 +422,7 @@ static bool WriteMemoryRegions(FILE* fp, const ProcessInfo* info, bool fullDump,
 
         while (remaining > 0)
         {
-            size_t toRead = remaining > DUMP_PAGE_SIZE ? DUMP_PAGE_SIZE : (size_t)remaining;
+            size_t toRead = remaining > info->pageSize ? (size_t)info->pageSize : (size_t)remaining;
             ssize_t bytesRead = pread(memFd, buffer, toRead, (off_t)address);
 
             if (bytesRead <= 0)
@@ -419,7 +449,7 @@ static bool WriteMemoryRegions(FILE* fp, const ProcessInfo* info, bool fullDump,
     return true;
 }
 
-bool WriteElfCoreDump(const char* dumpPath, ProcessInfo* info, bool fullDump, bool diagnostics)
+bool WriteElfCoreDump(const char* dumpPath, ProcessInfo* info, bool fullDump)
 {
     // Create the dump file with restrictive permissions (0600) since core dumps
     // may contain secrets (heap data, keys, etc.).
@@ -436,16 +466,35 @@ bool WriteElfCoreDump(const char* dumpPath, ProcessInfo* info, bool fullDump, bo
         fprintf(stderr, "[createdump] Failed to open dump file %s: %s (%d)\n",
                 dumpPath, strerror(errno), errno);
         close(fd);
+        remove(dumpPath);
         return false;
     }
 
     bool result = false;
+    uint64_t* dumpSizes = NULL;
+
+    if (info->pageSize > SIZE_MAX)
+    {
+        fprintf(stderr, "[createdump] System page size is too large\n");
+        goto cleanup;
+    }
 
     // Count included regions for PT_LOAD headers
     size_t loadCount = 0;
+    if (info->regions.count > SIZE_MAX / sizeof(uint64_t))
+    {
+        fprintf(stderr, "[createdump] Too many memory regions\n");
+        goto cleanup;
+    }
+    dumpSizes = (uint64_t*)calloc(info->regions.count, sizeof(uint64_t));
+    if (dumpSizes == NULL && info->regions.count != 0)
+    {
+        goto cleanup;
+    }
     for (size_t i = 0; i < info->regions.count; i++)
     {
-        if (GetDumpSize(&info->regions.items[i], info, fullDump) > 0)
+        dumpSizes[i] = GetDumpSize(&info->regions.items[i], info, fullDump);
+        if (dumpSizes[i] > 0)
         {
             loadCount++;
         }
@@ -453,12 +502,32 @@ bool WriteElfCoreDump(const char* dumpPath, ProcessInfo* info, bool fullDump, bo
 
     // Total program headers: 1 (PT_NOTE) + N (PT_LOAD)
     size_t phdrCount = 1 + loadCount;
+    if (phdrCount >= PN_XNUM)
+    {
+        // PN_XNUM requires a section header at index 0 with sh_info = real phnum.
+        // This is extremely unlikely (>65533 memory regions), so fail rather than
+        // produce an invalid core dump.
+        fprintf(stderr, "[createdump] Too many program headers (%zu), cannot write core dump\n", phdrCount);
+        goto cleanup;
+    }
 
     // Calculate sizes
     size_t notesSize = CalculateNotesSize(info);
     size_t phdrOffset = sizeof(Elf64_Ehdr);
+    if (phdrCount > (SIZE_MAX - phdrOffset) / sizeof(Elf64_Phdr))
+    {
+        fprintf(stderr, "[createdump] Program header table is too large\n");
+        goto cleanup;
+    }
     size_t notesOffset = phdrOffset + phdrCount * sizeof(Elf64_Phdr);
-    size_t dataOffset = ALIGN_UP(notesOffset + notesSize, DUMP_PAGE_SIZE);
+    if (notesSize > SIZE_MAX - notesOffset ||
+        notesOffset + notesSize > SIZE_MAX - ((size_t)info->pageSize - 1))
+    {
+        fprintf(stderr, "[createdump] Note section is too large\n");
+        goto cleanup;
+    }
+    size_t dataOffset = ALIGN_UP(notesOffset + notesSize, (size_t)info->pageSize);
+    errno = 0;
 
     // ELF Header
     Elf64_Ehdr ehdr;
@@ -481,14 +550,6 @@ bool WriteElfCoreDump(const char* dumpPath, ProcessInfo* info, bool fullDump, bo
     ehdr.e_phoff = phdrOffset;
     ehdr.e_ehsize = sizeof(Elf64_Ehdr);
     ehdr.e_phentsize = sizeof(Elf64_Phdr);
-    if (phdrCount > 0xffff)
-    {
-        // PN_XNUM requires a section header at index 0 with sh_info = real phnum.
-        // This is extremely unlikely (>65534 memory regions), so fail rather than
-        // produce an invalid core dump.
-        fprintf(stderr, "[createdump] Too many program headers (%zu), cannot write core dump\n", phdrCount);
-        goto cleanup;
-    }
     ehdr.e_phnum = (Elf64_Half)phdrCount;
     ehdr.e_shentsize = sizeof(Elf64_Shdr);
 
@@ -519,7 +580,7 @@ bool WriteElfCoreDump(const char* dumpPath, ProcessInfo* info, bool fullDump, bo
         {
             const MemRegion* region = &info->regions.items[i];
 
-            uint64_t dumpSize = GetDumpSize(region, info, fullDump);
+            uint64_t dumpSize = dumpSizes[i];
             if (dumpSize == 0)
             {
                 continue;
@@ -536,13 +597,18 @@ bool WriteElfCoreDump(const char* dumpPath, ProcessInfo* info, bool fullDump, bo
             loadPhdr.p_filesz = dumpSize;
             loadPhdr.p_memsz = regionSize;
             loadPhdr.p_flags = region->permissions & (PF_R | PF_W | PF_X);
-            loadPhdr.p_align = DUMP_PAGE_SIZE;
+            loadPhdr.p_align = info->pageSize;
 
             if (!WriteData(fp, &loadPhdr, sizeof(loadPhdr)))
             {
                 goto cleanup;
             }
 
+            if (dumpSize > UINT64_MAX - currentOffset)
+            {
+                fprintf(stderr, "[createdump] Dump file layout is too large\n");
+                goto cleanup;
+            }
             currentOffset += dumpSize;
         }
     }
@@ -572,7 +638,7 @@ bool WriteElfCoreDump(const char* dumpPath, ProcessInfo* info, bool fullDump, bo
     }
 
     // Memory region contents
-    if (!WriteMemoryRegions(fp, info, fullDump, diagnostics))
+    if (!WriteMemoryRegions(fp, info, dumpSizes))
     {
         goto cleanup;
     }
@@ -580,10 +646,34 @@ bool WriteElfCoreDump(const char* dumpPath, ProcessInfo* info, bool fullDump, bo
     result = true;
 
 cleanup:
-    if (!result)
     {
-        fprintf(stderr, "[createdump] Failed to write dump file: %s (%d)\n", strerror(errno), errno);
+        int savedErrno = result ? 0 : errno;
+        if (fclose(fp) != 0)
+        {
+            savedErrno = errno;
+            result = false;
+        }
+
+        if (!result)
+        {
+            if (savedErrno != 0)
+            {
+                fprintf(stderr, "[createdump] Failed to write dump file: %s (%d)\n",
+                        strerror(savedErrno), savedErrno);
+            }
+            else
+            {
+                fprintf(stderr, "[createdump] Failed to write dump file\n");
+            }
+
+            if (remove(dumpPath) != 0 && errno != ENOENT)
+            {
+                fprintf(stderr, "[createdump] Failed to remove incomplete dump file %s: %s (%d)\n",
+                        dumpPath, strerror(errno), errno);
+            }
+        }
     }
-    fclose(fp);
+
+    free(dumpSizes);
     return result;
 }

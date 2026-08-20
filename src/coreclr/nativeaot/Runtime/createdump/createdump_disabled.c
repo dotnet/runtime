@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 // Disabled stub for NativeAOT linked-in createdump.
-// Linked when EventSourceSupport is not enabled.
+// Linked when linked createdump is not enabled for the output configuration.
 
 #include <stdbool.h>
 

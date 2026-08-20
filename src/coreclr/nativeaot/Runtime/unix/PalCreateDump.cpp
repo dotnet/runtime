@@ -11,12 +11,14 @@
 #include <string.h>
 #include <assert.h>
 #include <unistd.h>
-#define __STDC_FORMAT_MACROS
 #include <inttypes.h>
 #include <sys/mman.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <signal.h>
+#ifdef TARGET_LINUX
+#include <sys/auxv.h>
+#endif
 #if HAVE_PRCTL_H
 #include <sys/prctl.h>
 #include <sys/syscall.h>
@@ -26,12 +28,6 @@
 #include <sys/resource.h>
 #include <sys/stat.h>
 #include <dlfcn.h>
-
-#ifdef __APPLE__
-#include <sys/sysctl.h>
-#include <mach/task.h>
-#include <mach-o/dyld.h>
-#endif
 
 #ifdef __NetBSD__
 #include <sys/cdefs.h>
@@ -53,8 +49,10 @@
 #include <generatedumpflags.h>
 
 // Defined in the nativeaot-createdump-enabled/disabled library.
-// True when the enabled variant is linked (EventSourceSupport=true on Linux).
+// True when the enabled variant is linked into a supported Linux executable.
 extern "C" bool g_createdumpLinked;
+// True when the linked bootstrap handles the createdump sentinel.
+extern "C" bool g_createdumpDispatchSupported;
 
 #include "createdump/createdump_sentinel.h"
 
@@ -66,11 +64,10 @@ extern "C" bool g_createdumpLinked;
 const char* g_argvCreateDump[MAX_ARGV_ENTRIES] = { nullptr };
 char* g_szCreateDumpPath = nullptr;
 char* g_ppidarg  = nullptr;
-// True when self-restart mode was successfully set up (linked-in createdump
-// with a valid self-executable path). This may be false even when
-// g_createdumpLinked is true, if readlink of /proc/self/exe failed.
+// True when linked-in createdump can re-execute the current process.
 bool g_selfRestartCreatedump = false;
 
+const char* const SelfCreateDumpPath = "/proc/self/exe";
 const size_t MaxUnsigned32BitDecString = STRING_LENGTH("4294967295");
 const size_t MaxUnsigned64BitDecString = STRING_LENGTH("18446744073709551615");
 
@@ -120,6 +117,28 @@ FormatInt64(uint64_t value)
     return buffer;
 }
 
+static bool
+CanUseSelfRestartCreatedump(
+    int dumpType,
+    uint32_t flags,
+    const char* logFileName)
+{
+    const uint32_t SupportedFlags =
+        GenerateDumpFlagsLoggingEnabled |
+        GenerateDumpFlagsVerboseLoggingEnabled;
+
+    if (!g_selfRestartCreatedump ||
+        logFileName != nullptr ||
+        (flags & ~SupportedFlags) != 0)
+    {
+        return false;
+    }
+
+    return dumpType == DumpTypeUnknown ||
+        dumpType == DumpTypeWithHeap ||
+        dumpType == DumpTypeFull;
+}
+
 /*++
 Function
   BuildCreateDumpCommandLine
@@ -141,13 +160,14 @@ BuildCreateDumpCommandLine(
     uint32_t flags,
     bool selfRestart)
 {
-    if (g_szCreateDumpPath == nullptr || g_ppidarg == nullptr)
+    const char* program = selfRestart ? SelfCreateDumpPath : g_szCreateDumpPath;
+    if (program == nullptr || g_ppidarg == nullptr)
     {
         return false;
     }
 
     int argc = 0;
-    argv[argc++] = g_szCreateDumpPath;
+    argv[argc++] = program;
 
     // In self-restart mode, insert the GUID sentinel so the re-executed
     // process knows to enter createdump mode instead of normal startup.
@@ -542,7 +562,7 @@ PalGenerateCoreDump(
     {
         dumpName = nullptr;
     }
-    bool selfRestart = g_selfRestartCreatedump;
+    bool selfRestart = CanUseSelfRestartCreatedump(dumpType, flags, nullptr);
     bool result = BuildCreateDumpCommandLine(argvCreateDump, dumpName, nullptr, dumpType, flags, selfRestart);
     if (result)
     {
@@ -620,93 +640,74 @@ PalCreateDumpInitialize()
             }
         }
 
-        // Build the createdump program path for the command line
+        // Always build the external createdump path. Linked createdump only
+        // handles the subset of options that the minimal ELF writer supports.
         char* dumpToolPath = nullptr;
         char* program = nullptr;
-        bool selfRestart = false;
+        const char* DumpGeneratorName = "createdump";
+        bool customDumpToolPath = RhConfig::Environment::TryGetStringValue("DbgCreateDumpToolPath", &dumpToolPath);
 
-        // If the nativeaot-createdump library is linked in, use self-restart mode:
-        // re-execute ourselves with a GUID sentinel argument.
-        if (g_createdumpLinked)
+        if (customDumpToolPath)
         {
-            // Read our own executable path
-            char selfPath[4096];
-#ifdef __linux__
-            ssize_t len = readlink("/proc/self/exe", selfPath, sizeof(selfPath) - 1);
-#elif defined(__APPLE__)
-            uint32_t bufSize = sizeof(selfPath);
-            ssize_t len = _NSGetExecutablePath(selfPath, &bufSize) == 0 ? (ssize_t)strlen(selfPath) : -1;
-#else
-            ssize_t len = -1;
-#endif
-            if (len > 0)
+            // Use the provided directory path and concatenate with "createdump".
+            size_t dumpToolPathLen = strlen(dumpToolPath);
+            bool needsSlash = dumpToolPathLen > 0 && dumpToolPath[dumpToolPathLen - 1] != '/';
+            if (dumpToolPathLen > SIZE_MAX - strlen(DumpGeneratorName) - 2)
             {
-                selfPath[len] = '\0';
-                program = (char*)malloc(len + 1);
-                if (program != nullptr)
-                {
-                    memcpy(program, selfPath, len + 1);
-                    selfRestart = true;
-                    g_selfRestartCreatedump = true;
-                }
-            }
-        }
-
-        if (program == nullptr)
-        {
-            // Fallback: use external createdump binary
-            const char* DumpGeneratorName = "createdump";
-
-            // Check if user provided a custom path to createdump tool directory
-            if (RhConfig::Environment::TryGetStringValue("DbgCreateDumpToolPath", &dumpToolPath))
-            {
-                // Use the provided directory path and concatenate with "createdump"
-                size_t dumpToolPathLen = strlen(dumpToolPath);
-                bool needsSlash = dumpToolPathLen > 0 && dumpToolPath[dumpToolPathLen - 1] != '/';
-                int programLen = dumpToolPathLen + (needsSlash ? 1 : 0) + strlen(DumpGeneratorName) + 1;
-                program = (char*)malloc(programLen);
-                if (program == nullptr)
-                {
-                    free(dumpToolPath);
-                    return false;
-                }
-                strncpy(program, dumpToolPath, programLen);
-                if (needsSlash)
-                {
-                    strncat(program, "/", programLen);
-                }
-                strncat(program, DumpGeneratorName, programLen);
                 free(dumpToolPath);
+                return false;
+            }
+
+            size_t programLen = dumpToolPathLen + (needsSlash ? 1 : 0) + strlen(DumpGeneratorName) + 1;
+            program = (char*)malloc(programLen);
+            if (program == nullptr)
+            {
+                free(dumpToolPath);
+                return false;
+            }
+            snprintf(program, programLen, "%s%s%s", dumpToolPath, needsSlash ? "/" : "", DumpGeneratorName);
+            free(dumpToolPath);
+        }
+        else
+        {
+            // Default behavior: derive path from current library location.
+            Dl_info info;
+            if (dladdr((void*)&PalCreateDumpInitialize, &info) == 0)
+            {
+                return false;
+            }
+            size_t programLen = strlen(info.dli_fname) + strlen(DumpGeneratorName) + 1;
+            program = (char*)malloc(programLen);
+            if (program == nullptr)
+            {
+                return false;
+            }
+            strncpy(program, info.dli_fname, programLen);
+            char *last = strrchr(program, '/');
+            if (last != nullptr)
+            {
+                *(last + 1) = '\0';
             }
             else
             {
-                // Default behavior: derive path from current library location
-                Dl_info info;
-                if (dladdr((void*)&PalCreateDumpInitialize, &info) == 0)
-                {
-                    return false;
-                }
-                int programLen = strlen(info.dli_fname) + strlen(DumpGeneratorName) + 1;
-                program = (char*)malloc(programLen);
-                if (program == nullptr)
-                {
-                    return false;
-                }
-                strncpy(program, info.dli_fname, programLen);
-                char *last = strrchr(program, '/');
-                if (last != nullptr)
-                {
-                    *(last + 1) = '\0';
-                }
-                else
-                {
-                    program[0] = '\0';
-                }
-                strncat(program, DumpGeneratorName, programLen);
+                program[0] = '\0';
             }
+            strncat(program, DumpGeneratorName, programLen);
         }
 
         g_szCreateDumpPath = program;
+
+#ifdef TARGET_LINUX
+        // An explicit helper path is an override, even when linked createdump
+        // is available. Execute /proc/self/exe directly so replacing or
+        // unlinking the original executable does not break crash handling.
+        g_selfRestartCreatedump =
+            g_createdumpLinked &&
+            g_createdumpDispatchSupported &&
+            !customDumpToolPath &&
+            getauxval(AT_SECURE) == 0 &&
+            access(SelfCreateDumpPath, X_OK) == 0;
+#endif // TARGET_LINUX
 
         // Format the app pid for the createdump command line
         g_ppidarg = FormatInt(getpid());
@@ -715,6 +716,7 @@ PalCreateDumpInitialize()
             return false;
         }
 
+        bool selfRestart = CanUseSelfRestartCreatedump(dumpType, flags, logFilePath);
         if (!BuildCreateDumpCommandLine(g_argvCreateDump, dumpName, logFilePath, dumpType, flags, selfRestart))
         {
             return false;

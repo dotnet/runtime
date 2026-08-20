@@ -6,18 +6,30 @@
 #include <string.h>
 #include <minipal/descriptorlimit.h>
 
+#if defined(TARGET_LINUX)
+#include <sys/auxv.h>
+#endif
+
 #if defined(DEBUG) && defined(_WIN32)
 #include <process.h>
 #include <windows.h>
 #endif
 
-// Linked-in createdump support for NativeAOT (Unix only).
-// When EventSourceSupport is enabled on Linux, the enabled variant provides
-// the real implementation. Otherwise the disabled variant provides no-op stubs.
+// Linked-in createdump support for NativeAOT executables (Unix only).
+// Supported Linux executables link the enabled variant. Other configurations
+// link the disabled variant and retain the external createdump path.
 #if !defined(_WIN32)
 #include "../Runtime/createdump/createdump_sentinel.h"
 extern "C" bool g_createdumpLinked;
 extern "C" int nativeaot_createdump_main(int argc, const char* argv[]);
+extern "C"
+{
+#ifdef NATIVEAOT_DLL
+bool g_createdumpDispatchSupported = false;
+#else
+bool g_createdumpDispatchSupported = true;
+#endif
+}
 #endif
 
 //
@@ -242,6 +254,9 @@ int main(int argc, char* argv[])
     // When a NativeAOT process crashes and createdump is linked in, it forks
     // and re-executes itself with the GUID sentinel as argv[1].
     if (g_createdumpLinked &&
+#if defined(TARGET_LINUX)
+        getauxval(AT_SECURE) == 0 &&
+#endif
         argc >= 2 && strcmp(argv[1], CREATEDUMP_SENTINEL) == 0)
     {
         // Shift args: [self, sentinel, ...createdump args] -> [self, ...createdump args]

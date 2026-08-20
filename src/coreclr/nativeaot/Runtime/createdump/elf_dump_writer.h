@@ -15,6 +15,6 @@
 // When fullDump is true, all readable memory is included.
 // When false, shared library code/rodata is excluded (debuggers load it from disk).
 // Returns true on success, false on failure.
-bool WriteElfCoreDump(const char* dumpPath, ProcessInfo* info, bool fullDump, bool diagnostics);
+bool WriteElfCoreDump(const char* dumpPath, ProcessInfo* info, bool fullDump);
 
 #endif // ELF_DUMP_WRITER_H

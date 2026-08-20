@@ -89,7 +89,16 @@ bool ProcessInfoInit(ProcessInfo* info, pid_t pid, int crashSignal, pid_t crashT
                      int signalCode, int signalErrno, uint64_t signalAddress)
 {
     memset(info, 0, sizeof(ProcessInfo));
+
+    long pageSize = sysconf(_SC_PAGESIZE);
+    if (pageSize <= 0 || ((uint64_t)pageSize & ((uint64_t)pageSize - 1)) != 0)
+    {
+        fprintf(stderr, "[createdump] Invalid system page size: %ld\n", pageSize);
+        return false;
+    }
+
     info->pid = pid;
+    info->pageSize = (uint64_t)pageSize;
     info->crashSignal = crashSignal;
     info->crashThread = crashThread;
     info->signalCode = signalCode;
@@ -146,14 +155,16 @@ bool ReadMemoryRegions(ProcessInfo* info)
 
         uint64_t start, end, offset;
         char perms[5];
-        int inode;
+        unsigned int deviceMajor;
+        unsigned int deviceMinor;
+        uint64_t inode;
         int pathStart = 0;
 
         // Format: START-END PERMS OFFSET DEV INODE PATHNAME
-        int matched = sscanf(line, "%" SCNx64 "-%" SCNx64 " %4s %" SCNx64 " %*s %d %n",
-                             &start, &end, perms, &offset, &inode, &pathStart);
+        int matched = sscanf(line, "%" SCNx64 "-%" SCNx64 " %4s %" SCNx64 " %x:%x %" SCNu64 " %n",
+                             &start, &end, perms, &offset, &deviceMajor, &deviceMinor, &inode, &pathStart);
 
-        if (matched < 5)
+        if (matched < 7)
         {
             continue;
         }
@@ -161,6 +172,9 @@ bool ReadMemoryRegions(ProcessInfo* info)
         region.startAddress = start;
         region.endAddress = end;
         region.offset = offset;
+        region.deviceMajor = deviceMajor;
+        region.deviceMinor = deviceMinor;
+        region.inode = inode;
         region.permissions = ParsePermissions(perms);
 
         if (pathStart > 0 && line[pathStart] != '\0')
@@ -202,6 +216,7 @@ bool EnumerateAndAttachThreads(ProcessInfo* info)
         return false;
     }
 
+    bool crashThreadAttached = info->crashThread == 0;
     struct dirent* entry;
     while ((entry = readdir(dir)) != NULL)
     {
@@ -226,9 +241,16 @@ bool EnumerateAndAttachThreads(ProcessInfo* info)
         }
         while (waitResult == -1 && errno == EINTR);
 
-        if (waitResult == -1)
+        if (waitResult != tid)
         {
             fprintf(stderr, "[createdump] waitpid(%d) failed: %s (%d)\n", tid, strerror(errno), errno);
+            ptrace(PTRACE_DETACH, tid, NULL, NULL);
+            continue;
+        }
+        if (!WIFSTOPPED(waitStatus))
+        {
+            fprintf(stderr, "[createdump] Thread %d did not stop after ptrace attach (status %08x)\n",
+                    tid, waitStatus);
             ptrace(PTRACE_DETACH, tid, NULL, NULL);
             continue;
         }
@@ -244,9 +266,17 @@ bool EnumerateAndAttachThreads(ProcessInfo* info)
             closedir(dir);
             return false;
         }
+
+        crashThreadAttached |= thread.isCrashThread;
     }
 
     closedir(dir);
+    if (!crashThreadAttached)
+    {
+        fprintf(stderr, "[createdump] Failed to attach to crash thread %d\n", info->crashThread);
+        return false;
+    }
+
     return info->threads.count > 0;
 }
 
@@ -353,5 +383,3 @@ void DetachThreads(ProcessInfo* info)
         ptrace(PTRACE_DETACH, info->threads.items[i].tid, NULL, NULL);
     }
 }
-
-

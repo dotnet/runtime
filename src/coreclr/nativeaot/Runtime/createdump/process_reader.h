@@ -37,6 +37,9 @@ typedef struct
     uint64_t startAddress;
     uint64_t endAddress;
     uint64_t offset;
+    uint64_t deviceMajor;
+    uint64_t deviceMinor;
+    uint64_t inode;
     uint32_t permissions; // PF_R | PF_W | PF_X | MR_PRIVATE
     char fileName[4096];
 } MemRegion;
@@ -78,6 +81,7 @@ typedef struct
     pid_t pid;
     pid_t ppid;
     pid_t tgid;
+    uint64_t pageSize;
     char name[256];
     char exePath[4096]; // /proc/pid/exe target
     int crashSignal;
@@ -102,8 +106,5 @@ bool ReadThreadRegisters(ProcessInfo* info);
 bool ReadAuxv(ProcessInfo* info);
 bool ReadProcessStatus(ProcessInfo* info);
 void DetachThreads(ProcessInfo* info);
-
-// Memory reading
-
 
 #endif // PROCESS_READER_H
