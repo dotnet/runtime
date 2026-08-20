@@ -1061,15 +1061,14 @@ extends:
       # Apple mobile MSBuild targets tests
       # Only when the Apple MSBuild targets change
       #
-      # These only drive MSBuild in a child process to check path handling, so they run on ordinary
-      # build hosts on both Linux and Windows and need no mobile, WebAssembly or workload tooling.
+      # These only drive MSBuild in a child process to check path handling, so they run on an ordinary
+      # macOS build host and need no mobile workload or device tooling.
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: Release
           platforms:
-          - linux_x64
-          - windows_x64
+          - osx_x64
           jobParameters:
             timeoutInMinutes: 30
             nameSuffix: AppleBuildTests
