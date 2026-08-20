@@ -1061,8 +1061,8 @@ extends:
       # Apple mobile MSBuild targets tests
       # Only when the Apple MSBuild targets change
       #
-      # These only drive MSBuild in a child process to check path handling, so they run on an ordinary
-      # macOS build host and need no mobile workload or device tooling.
+      # These only drive MSBuild and file orchestration in a child process, so they run on an ordinary
+      # macOS build host and need no Apple mobile workload or device.
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
