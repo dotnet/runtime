@@ -4113,7 +4113,7 @@ public:
         {
             if (m_compiler->verbose)
             {
-                printf("Duplicate gtTreeID was found: %d\n", gtTreeID);
+                printf("Duplicate gtTreeID was found: %u\n", gtTreeID);
             }
             assert(!"Duplicate gtTreeID was found");
         }
