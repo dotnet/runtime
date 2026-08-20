@@ -81,7 +81,7 @@ namespace System.Runtime.CompilerServices
             _maxCacheSize = maxCacheSize;
 
             // A trivial 2-elements table used for "flushing" the cache.
-            // Nothing is ever stored in such a small table and identity of the sentinel is not important.
+            // Nothing is ever stored in the sentinel. Its identity distinguishes it from writable tables.
             // It is required that we are able to allocate this, we may need this in OOM cases.
             _sentinelTable = CreateCacheTable(2, throwOnFail: true)!;
 
@@ -247,7 +247,7 @@ namespace System.Runtime.CompilerServices
             do
             {
                 table = _table;
-                if (table.Length == 2)
+                if (ReferenceEquals(table, _sentinelTable))
                 {
                     // 2-element table is used as a sentinel.
                     // we did not allocate a real table yet or have flushed it.
@@ -323,7 +323,7 @@ namespace System.Runtime.CompilerServices
             // reread tableData after TryGrow.
             table = _table;
 
-            if (table.Length == 2)
+            if (ReferenceEquals(table, _sentinelTable))
             {
                 // do not insert into a sentinel.
                 return;

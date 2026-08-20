@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Needed for GC.WaitForPendingFinalizers and collectible AssemblyLoadContext teardown. -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <GCStressIncompatible>true</GCStressIncompatible>
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+    <!-- Collectible AssemblyLoadContexts are not supported. -->
+    <NativeAotIncompatible>true</NativeAotIncompatible>
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' != 'coreclr'">true</CLRTestTargetUnsupported>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="GenericVirtualDispatchCache.cs" />
+    <ProjectReference Include="GenericVirtualDispatchPayload.csproj" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <PayloadOutputPath>$(OutputPath)/../GenericVirtualDispatchPayload</PayloadOutputPath>
+  </PropertyGroup>
+
+  <Target Name="CopyPayloadToOutput" AfterTargets="Build">
+    <Copy SourceFiles="$(PayloadOutputPath)/GenericVirtualDispatchPayload.dll" DestinationFolder="$(OutputPath)" />
+  </Target>
+</Project>
