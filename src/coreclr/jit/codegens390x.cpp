@@ -2937,7 +2937,7 @@ void CodeGen::genCall(GenTreeCall* call)
 
     void*     callAddr = nullptr;
     regNumber callReg  = REG_NA;
-
+    void*     indirection = nullptr;
     switch (callType)
     {
         case CT_USER_FUNC:
@@ -2948,7 +2948,6 @@ void CodeGen::genCall(GenTreeCall* call)
 
         case CT_HELPER:
         {
-	    void* indirection = nullptr;
             CorInfoHelpFunc helpFunc = compiler->eeGetHelperNum(call->gtCallMethHnd);
 
             callAddr = compiler->compGetHelperFtn(helpFunc, (void**)&indirection);
@@ -3054,16 +3053,28 @@ void CodeGen::genCall(GenTreeCall* call)
         {
             retSize = emitTypeSize(call->TypeGet());
         }
-	emitter::EmitCallType emitType;
-	if (callType == CT_HELPER)
-        {
-            emitType = emitter::EC_FUNC_TOKEN;
-        }
-	else
-        {
-            emitType = emitter::EC_FUNC_TOKEN;
-        }
+        emitter::EmitCallType emitType;
+        regNumber indirReg = REG_NA;
 
+        if (callAddr == nullptr)
+        {
+           if (call->gtControlExpr != nullptr)
+           {
+                genConsumeReg(call->gtControlExpr);
+                indirReg = call->gtControlExpr->GetRegNum();
+           }
+           else
+           {
+                indirReg = REG_R1;
+                instGen_Set_Reg_To_Imm(EA_PTR_DSP_RELOC, indirReg, (ssize_t)indirection);
+                GetEmitter()->emitIns_R_R_I(INS_lg, EA_PTRSIZE, indirReg, indirReg, 0);
+            }
+            emitType = emitter::EC_INDIR_R;
+        }
+        else
+        {
+            emitType = emitter::EC_FUNC_TOKEN;
+        }
         // Emit the call with full GC tracking
         GetEmitter()->emitIns_Call(
             emitType,
@@ -3077,7 +3088,7 @@ void CodeGen::genCall(GenTreeCall* call)
             gcrefRegs,
             byrefRegs,
             DebugInfo(),
-            REG_R2,     // ireg (for indirect)
+            indirReg,     // ireg (for indirect)
             REG_NA,     // xreg (for scaled index)
             0,          // xmul (multiplier)
             0,          // disp (displacement)
@@ -5719,67 +5730,8 @@ bool CodeGen::genInstrWithConstant(instruction ins,
                                    regNumber   tmpReg,
                                    bool        inUnwindRegion /* = false */)
 {
-    _ASSERTE(!"NYI");
-#if 0
     bool     immFitsInIns = false;
     emitAttr size         = EA_SIZE(attr);
-
-    // reg1 is usually a dest register
-    // reg2 is always source register
-    assert(tmpReg != reg2); // regTmp can not match any source register
-
-    switch (ins)
-    {
-        case INS_add:
-        case INS_sub:
-            if (imm < 0)
-            {
-                imm = -imm;
-                ins = (ins == INS_add) ? INS_sub : INS_add;
-            }
-            immFitsInIns = emitter::emitIns_valid_imm_for_add(imm, size);
-            break;
-
-        case INS_strb:
-            assert(size == EA_1BYTE);
-            immFitsInIns = emitter::emitIns_valid_imm_for_ldst_offset(imm, EA_1BYTE);
-            break;
-
-        case INS_strh:
-            assert(size == EA_2BYTE);
-            immFitsInIns = emitter::emitIns_valid_imm_for_ldst_offset(imm, EA_2BYTE);
-            break;
-
-        case INS_str:
-            // reg1 is a source register for store instructions
-            assert(tmpReg != reg1); // regTmp can not match any source register
-            immFitsInIns = emitter::emitIns_valid_imm_for_ldst_offset(imm, size);
-            break;
-
-        case INS_ldrb:
-        case INS_ldrsb:
-            immFitsInIns = emitter::emitIns_valid_imm_for_ldst_offset(imm, EA_1BYTE);
-            break;
-
-        case INS_ldrh:
-        case INS_ldrsh:
-            immFitsInIns = emitter::emitIns_valid_imm_for_ldst_offset(imm, EA_2BYTE);
-            break;
-
-        case INS_ldrsw:
-            assert(size == EA_4BYTE);
-            immFitsInIns = emitter::emitIns_valid_imm_for_ldst_offset(imm, EA_4BYTE);
-            break;
-
-        case INS_ldr:
-            assert((size == EA_4BYTE) || (size == EA_8BYTE) || (size == EA_16BYTE));
-            immFitsInIns = emitter::emitIns_valid_imm_for_ldst_offset(imm, size);
-            break;
-
-        default:
-            assert(!"Unexpected instruction in genInstrWithConstant");
-            break;
-    }
 
     if (immFitsInIns)
     {
@@ -5796,25 +5748,25 @@ bool CodeGen::genInstrWithConstant(instruction ins,
         // first we load the immediate into tmpReg
         instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, imm);
         regSet.verifyRegUsed(tmpReg);
-
+        GetEmitter()->emitIns_R_R(INS_agr, EA_PTRSIZE, tmpReg, reg2);
+//TODO - s390x : Wasnt sure about these unwinding code so I commented these out.
         // when we are in an unwind code region
 
         // first we load the immediate into tmpReg
-        instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, imm);
-        regSet.verifyRegUsed(tmpReg);
+        //instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, imm);
+        //regSet.verifyRegUsed(tmpReg);
 
         // when we are in an unwind code region
         // we record the extra instructions using unwindPadding()
-        if (inUnwindRegion)
-        {
-            compiler->unwindPadding();
-        }
+        //if (inUnwindRegion)
+        //{
+        //    compiler->unwindPadding();
+        //}
 
         // generate the instruction using a three register encoding with the immediate in tmpReg
-        GetEmitter()->emitIns_R_R_R(ins, attr, reg1, reg2, tmpReg);
+        GetEmitter()->emitIns_R_R_I(ins, attr, reg1, tmpReg, 0);
     }
     return immFitsInIns;
-#endif
 }
 
 //---------------------------------------------------------------------

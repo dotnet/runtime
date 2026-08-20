@@ -722,7 +722,7 @@ public:
     }
 #endif
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_S390X)
     void SetJumpStubOverflow(BOOL fJumpStubOverflow)
     {
         LIMITED_METHOD_CONTRACT;
@@ -764,7 +764,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         return 0;
     }
-#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_S390X)
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
     // Called by the runtime to supply patchpoint information to the jit.
@@ -798,7 +798,7 @@ public:
 #ifdef TARGET_AMD64
           m_fAllowRel32(FALSE),
 #endif
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_S390X)
           m_fJumpStubOverflow(FALSE),
           m_reserveForJumpStubs(0),
 #endif

@@ -72,6 +72,6 @@ LEAF_END_MARKED JIT_ByRefWriteBarrier, _TEXT
 // __declspec(naked) void F_CALL_CONV JIT_WriteBarrier_Callable(Object **dst, Object* val)
 .balign 16
 LEAF_ENTRY  JIT_WriteBarrier_Callable, _TEXT
-// NOT YET IMPLEMENTED
-.long 0x34
+stg     %r3, 0(%r2)
+br      %r14
 LEAF_END JIT_WriteBarrier_Callable, _TEXT

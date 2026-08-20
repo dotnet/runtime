@@ -10636,6 +10636,7 @@ void* CEEJitInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
                 CodeVersionManager* manager = helperMD->GetCodeVersionManager();
 
                 NativeCodeVersion activeCodeVersion;
+
                 {
                     // Get active code version under a lock
                     CodeVersionManager::LockHolder codeVersioningLockHolder;
@@ -11518,11 +11519,48 @@ void CEEJitInfo::recordRelocation(void * location,
             // location points to the 4-byte displacement field (bytes 2-5 of BRASL).
             // The CPU uses PC of the instruction (byte 0), which is 2 bytes before.
             INT64 instrAddr = (INT64)location - 2;
-            delta = (INT64)target - instrAddr;
+            PCODE branchTarget = (PCODE)target;
+            delta = (INT64)branchTarget - (INT64)instrAddr;
             // s390x branch targets are always halfword-aligned
             _ASSERTE((delta & 1) == 0);
             delta = delta / 2;
-            _ASSERTE(delta >= (INT64)INT32_MIN && delta <= (INT64)INT32_MAX);
+            if (delta < (INT64)INT32_MIN || delta > (INT64)INT32_MAX)
+            {
+                TADDR baseAddr = instrAddr;
+                TADDR loAddr   = baseAddr - 0x100000000;   // -2^32
+                TADDR hiAddr   = baseAddr + 0xFFFFFFFE;    // +2^32-2
+
+                if (loAddr > baseAddr)
+                    loAddr = UINT64_MIN;
+                if (hiAddr < baseAddr)
+                    hiAddr = UINT64_MAX;
+
+                PCODE jumpStubAddr = ExecutionManager::jumpStub(m_pMethodBeingCompiled,
+                                                                branchTarget,
+                                                                (BYTE *) loAddr,
+                                                                (BYTE *) hiAddr,
+                                                                NULL,
+                                                                false);
+
+                m_reserveForJumpStubs = max((size_t)0x400, m_reserveForJumpStubs + 2*BACK_TO_BACK_JUMP_ALLOCATE_SIZE);
+
+                if (jumpStubAddr == 0)
+                {
+                    m_fJumpStubOverflow = TRUE;
+                    break;
+                }
+
+                delta = (INT64)jumpStubAddr - (INT64)instrAddr;
+                _ASSERTE((delta & 1) == 0);
+                delta = delta / 2;
+
+                if (delta < (INT64)INT32_MIN || delta > (INT64)INT32_MAX)
+                {
+                    _ASSERTE(!"jump stub was not in expected range");
+                    EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
+                }
+            }
+
             *((INT32*)locationRW) = (INT32)delta;
         }
         break;

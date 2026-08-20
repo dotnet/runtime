@@ -6437,10 +6437,16 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
         }
         else
         {
+#if defined(TARGET_S390X)
+            lvaCachedGenericContextArgOffs = stkOffs;
+            lvaIncrementFrameSize(TARGET_POINTER_SIZE);
+            stkOffs += TARGET_POINTER_SIZE;
+#else
             // For CORINFO_CALLCONV_PARAMTYPE (if needed)
             lvaIncrementFrameSize(TARGET_POINTER_SIZE);
             stkOffs -= TARGET_POINTER_SIZE;
             lvaCachedGenericContextArgOffs = stkOffs;
+#endif
         }
     }
 #ifndef JIT32_GCENCODER
@@ -6460,10 +6466,16 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 
         if (!canUseExistingSlot)
         {
+#if defined(TARGET_S390X)
+            lvaCachedGenericContextArgOffs = stkOffs;
+            lvaIncrementFrameSize(TARGET_POINTER_SIZE);
+            stkOffs += TARGET_POINTER_SIZE;
+#else
             // When "this" is also used as generic context arg.
             lvaIncrementFrameSize(TARGET_POINTER_SIZE);
             stkOffs -= TARGET_POINTER_SIZE;
             lvaCachedGenericContextArgOffs = stkOffs;
+#endif
         }
     }
 #endif

@@ -4638,6 +4638,9 @@ void CodeGen::genReportGenericContextArg(regNumber initReg, bool* pInitRegZeroed
 #elif defined(TARGET_RISCV64)
     genInstrWithConstant(ins_Store(TYP_I_IMPL), EA_PTRSIZE, reg, genFramePointerReg(),
                          compiler->lvaCachedGenericContextArgOffset(), rsGetRsvdReg());
+#elif defined(TARGET_S390X)
+    genInstrWithConstant(ins_Store(TYP_I_IMPL), EA_PTRSIZE, reg, genFramePointerReg(),
+                         compiler->lvaCachedGenericContextArgOffset(), REG_R1);
 #else  // !ARM64 !ARM !LOONGARCH64 !RISCV64
     // mov [ebp-lvaCachedGenericContextArgOffset()], reg
     GetEmitter()->emitIns_AR_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, reg, genFramePointerReg(),
