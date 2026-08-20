@@ -661,8 +661,7 @@ public:
         // Notify the profiler of call out of the runtime
         if (CORProfilerTrackTransitions()
             && !SF_SkipTransitionNotify(m_dwStubFlags)
-            && !SF_IsReverseCOMStub(m_dwStubFlags)
-            && !SF_IsReverseDelegateStub(m_dwStubFlags))
+            && SF_IsForwardStub(m_dwStubFlags))
         {
             dwMethodDescLocalNum = m_slIL.EmitProfilerBeginTransitionCallback(pcsDispatch, pStubMD, m_dwStubFlags);
             _ASSERTE(dwMethodDescLocalNum != (DWORD)-1);
@@ -862,8 +861,8 @@ public:
             PrettyPrintSig(pManagedSig, cManagedSig, "*",  &qbManaged, pStubMD->GetMDImport(), NULL);
             PrettyPrintSig(pILHeader->LocalVarSig, pILHeader->cbLocalVarSig, NULL, &qbLocal,   pIMDI, NULL);
 
-            LOG((LF_STUBS, LL_INFO1000, "incoming managed sig: %p: %s\n", pManagedSig, qbManaged.Ptr()));
-            LOG((LF_STUBS, LL_INFO1000, "locals sig:           %p: %s\n", pILHeader->LocalVarSig, qbLocal.Ptr()));
+            LOG((LF_STUBS, LL_INFO1000, "incoming managed sig: %p: %s\n", pManagedSig, (const char*)qbManaged.Ptr()));
+            LOG((LF_STUBS, LL_INFO1000, "locals sig:           %p: %s\n", pILHeader->LocalVarSig, (const char*)qbLocal.Ptr()));
 
             if (cleanupTryFinally.cbHandlerLength != 0)
             {
@@ -1082,7 +1081,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         if (flags & flag)
         {
-            LOG((facility, level, str));
+            LOG((facility, level, "%s", str));
         }
     }
 
@@ -2375,10 +2374,10 @@ void PInvokeStubLinker::DoPInvoke(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
     {
         if (SF_IsDelegateStub(dwStubFlags)) // delegate invocation
         {
-            // get the delegate unmanaged target - we call a helper instead of just grabbing
-            // the _methodPtrAux field because we may need to intercept the call for host, etc.
+            int tokDelegate_methodPtrAux = pcsEmit->GetToken(CoreLibBinder::GetField(FIELD__DELEGATE__METHOD_PTR_AUX));
+
             pcsEmit->EmitLoadThis();
-            pcsEmit->EmitCALL(METHOD__STUBHELPERS__GET_DELEGATE_TARGET, 1, 1);
+            pcsEmit->EmitLDFLD(tokDelegate_methodPtrAux);
         }
 #ifdef FEATURE_COMINTEROP
         else if (SF_IsCOMStub(dwStubFlags))
@@ -2391,13 +2390,8 @@ void PInvokeStubLinker::DoPInvoke(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
         else if (SF_IsCALLIStub(dwStubFlags)) // unmanaged CALLI
         {
             // for managed-to-unmanaged CALLI that requires marshaling, the target is passed
-            // as the secret argument to the stub by GenericPInvokeCalliHelper (asmhelpers.asm)
+            // as the secret argument to the stub by GenericPInvokeCalliHelper
             EmitLoadStubContext(pcsEmit, dwStubFlags);
-#ifdef TARGET_64BIT
-            // the secret arg has been shifted to left and ORed with 1 (see code:GenericPInvokeCalliHelper)
-            pcsEmit->EmitLDC(1);
-            pcsEmit->EmitSHR_UN();
-#endif // TARGET_64BIT
         }
         else if (SF_IsVarArgStub(dwStubFlags)) // vararg P/Invoke
         {
@@ -3507,6 +3501,12 @@ BOOL PInvoke::MarshalingRequired(
                 if (hndArgType.GetMethodTable()->IsInt128OrHasInt128Fields())
                 {
                     // Int128 cannot be marshalled by value at this time
+                    return TRUE;
+                }
+
+                if (hndArgType.GetMethodTable()->IsDecimalFloatingPointOrHasDecimalFloatingPointFields())
+                {
+                    // Decimal32/Decimal64/Decimal128 cannot be marshalled by value at this time
                     return TRUE;
                 }
 
@@ -5410,7 +5410,7 @@ namespace
                             {
                                 pStubMD = ilStubCreatorHelper.GetStubMD();
 
-                                pEntry.Assign(ListLockEntry::Find(pILStubLock, pStubMD, "il stub gen lock"));
+                                pEntry = ListLockEntry::Find(pILStubLock, pStubMD, "il stub gen lock");
                                 pEntryLock.Assign(pEntry, FALSE);
 
                                 // We have the entry lock we need to use, so we can release the global lock.

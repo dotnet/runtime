@@ -21,6 +21,13 @@ namespace System.Xml.Serialization
     {
         private readonly XmlMapping _mapping;
 
+        // The XML specification defines whitespace as exactly these four characters (#x20, #x9, #xA,
+        // #xD). Splitting whitespace-separated list content on this set is the default; it matches the
+        // XSD list/NMTOKENS definition and lets items contain other Unicode whitespace. The
+        // UseLegacyXmlListSeparation switch restores the legacy behavior of splitting on .NET's broader
+        // char.IsWhiteSpace() set, which String.Split does when the separator array is null.
+        private static readonly char[] s_xmlListWhitespace = [' ', '\t', '\n', '\r'];
+
         internal static TypeDesc StringTypeDesc { get; set; } = (new TypeScope()).GetTypeDesc(typeof(string));
         internal static TypeDesc QnameTypeDesc { get; set; } = (new TypeScope()).GetTypeDesc(typeof(XmlQualifiedName));
 
@@ -698,14 +705,24 @@ namespace System.Xml.Serialization
                 {
                     if (anyTextMapping.TypeDesc!.IsArrayLike)
                     {
-                        if (text.Mapping!.TypeDesc!.CollapseWhitespace)
+                        string stringValue = text.Mapping!.TypeDesc!.CollapseWhitespace
+                            ? CollapseWhitespace(Reader.ReadString())
+                            : Reader.ReadString();
+
+                        if (text.IsList)
                         {
-                            value = CollapseWhitespace(Reader.ReadString());
+                            // The text content is a whitespace-separated list; split it and add each
+                            // value to the array-like member (mirrors [XmlAttribute] list handling).
+                            char[]? separators = LocalAppContextSwitches.UseLegacyXmlListSeparation ? null : s_xmlListWhitespace;
+                            foreach (string item in stringValue.Split(separators, StringSplitOptions.RemoveEmptyEntries))
+                            {
+                                anyText.Source!(item);
+                            }
+
+                            return true;
                         }
-                        else
-                        {
-                            value = Reader.ReadString();
-                        }
+
+                        value = stringValue;
                     }
                     else
                     {
@@ -905,51 +922,56 @@ namespace System.Xml.Serialization
                         value = null;
                     }
                 }
-                else if ((element.Default != null && element.Default != DBNull.Value && element.Mapping.TypeDesc!.IsValueType)
-                         && (Reader.IsEmptyElement))
-                {
-                    Reader.Skip();
-                }
-                else if (element.Mapping.TypeDesc!.Type == typeof(TimeSpan) && Reader.IsEmptyElement)
-                {
-                    Reader.Skip();
-                    value = default(TimeSpan);
-                }
-                else if (element.Mapping.TypeDesc!.Type == typeof(DateTimeOffset) && Reader.IsEmptyElement)
-                {
-                    Reader.Skip();
-                    value = default(DateTimeOffset);
-                }
-                else if (element.Mapping.TypeDesc!.Type == typeof(DateOnly) && Reader.IsEmptyElement)
-                {
-                    Reader.Skip();
-                    value = default(DateOnly);
-                }
-                else if (element.Mapping.TypeDesc!.Type == typeof(TimeOnly) && Reader.IsEmptyElement)
-                {
-                    Reader.Skip();
-                    value = default(TimeOnly);
-                }
                 else
                 {
-                    if (element.Mapping.TypeDesc == QnameTypeDesc)
+                    HandleUnknownAttributes();
+
+                    if ((element.Default != null && element.Default != DBNull.Value && element.Mapping.TypeDesc!.IsValueType)
+                            && (Reader.IsEmptyElement))
                     {
-                        value = ReadElementQualifiedName();
+                        Reader.Skip();
+                    }
+                    else if (element.Mapping.TypeDesc!.Type == typeof(TimeSpan) && Reader.IsEmptyElement)
+                    {
+                        Reader.Skip();
+                        value = default(TimeSpan);
+                    }
+                    else if (element.Mapping.TypeDesc!.Type == typeof(DateTimeOffset) && Reader.IsEmptyElement)
+                    {
+                        Reader.Skip();
+                        value = default(DateTimeOffset);
+                    }
+                    else if (element.Mapping.TypeDesc!.Type == typeof(DateOnly) && Reader.IsEmptyElement)
+                    {
+                        Reader.Skip();
+                        value = default(DateOnly);
+                    }
+                    else if (element.Mapping.TypeDesc!.Type == typeof(TimeOnly) && Reader.IsEmptyElement)
+                    {
+                        Reader.Skip();
+                        value = default(TimeOnly);
                     }
                     else
                     {
-                        if (element.Mapping.TypeDesc.FormatterName == "ByteArrayBase64")
+                        if (element.Mapping.TypeDesc == QnameTypeDesc)
                         {
-                            value = ToByteArrayBase64(false);
-                        }
-                        else if (element.Mapping.TypeDesc.FormatterName == "ByteArrayHex")
-                        {
-                            value = ToByteArrayHex(false);
+                            value = ReadElementQualifiedName();
                         }
                         else
                         {
-                            Func<object, string> readFunc = (state) => ((XmlReader)state).ReadElementContentAsString();
-                            value = WritePrimitive(element.Mapping, readFunc, Reader);
+                            if (element.Mapping.TypeDesc.FormatterName == "ByteArrayBase64")
+                            {
+                                value = ToByteArrayBase64(false);
+                            }
+                            else if (element.Mapping.TypeDesc.FormatterName == "ByteArrayHex")
+                            {
+                                value = ToByteArrayHex(false);
+                            }
+                            else
+                            {
+                                Func<object, string> readFunc = (state) => ((XmlReader)state).ReadElementContentAsString();
+                                value = WritePrimitive(element.Mapping, readFunc, Reader);
+                            }
                         }
                     }
                 }
@@ -1015,33 +1037,36 @@ namespace System.Xml.Serialization
                         break;
                     case TypeKind.Serializable:
                         SerializableMapping sm = (SerializableMapping)element.Mapping;
-                        // check to see if we need to do the derivation
-                        bool flag = true;
+                        bool isWrappedAny = !element.Any && IsWildcard(sm);
+                        // Check to see if we need to do the derivation, i.e. the actual xsi:type
+                        // refers to a type derived from the declared SerializableMapping type.
                         if (sm.DerivedMappings != null)
                         {
                             XmlQualifiedName? tser = GetXsiType();
-                            if (tser == null || QNameEqual(tser, sm.XsiType!.Name, defaultNamespace))
+                            if (tser == null || QNameEqual(tser, sm.XsiType!.Name, sm.XsiType.Namespace))
                             {
+                                value = ReadSerializable((IXmlSerializable)ReflectionCreateObject(sm.TypeDesc!.Type!)!, isWrappedAny);
+                            }
+                            else if (ReadDerivedSerializable(sm, sm, tser, isWrappedAny, out object? derivedValue))
+                            {
+                                value = derivedValue;
                             }
                             else
                             {
-                                flag = false;
+                                // The xsi:type matched neither the declared serializable type nor any
+                                // known derived type. Mirror XmlSerializationReaderILGen, which emits
+                                // only Reader.UnknownNode(null) here and leaves the member untouched
+                                // rather than overwriting it with null. Still perform the choice and
+                                // specified bookkeeping the ILGen reader does unconditionally.
+                                UnknownNode(null);
+                                member?.ChoiceSource?.Invoke(elementIndex);
+                                member?.CheckSpecifiedSource?.Invoke(true);
+                                return value;
                             }
                         }
-
-                        if (flag)
+                        else
                         {
-                            bool isWrappedAny = !element.Any && IsWildcard(sm);
                             value = ReadSerializable((IXmlSerializable)ReflectionCreateObject(sm.TypeDesc!.Type!)!, isWrappedAny);
-                        }
-
-                        if (sm.DerivedMappings != null)
-                        {
-                            // https://github.com/dotnet/runtime/issues/1401:
-                            // To Support SpecialMapping Types Having DerivedMappings
-                            throw new NotImplementedException("sm.DerivedMappings != null");
-                            //WriteDerivedSerializable(sm, sm, source, isWrappedAny);
-                            //WriteUnknownNode("UnknownNode", "null", null, true);
                         }
                         break;
                     default:
@@ -1066,6 +1091,39 @@ namespace System.Xml.Serialization
             }
 
             return value;
+        }
+
+        // Walks the SerializableMapping derivation tree looking for the mapping whose XsiType matches
+        // the supplied xsi:type. Mirrors XmlSerializationReaderILGen.WriteDerivedSerializable. Returns
+        // true and the deserialized object when a derived mapping matches; otherwise false.
+        private bool ReadDerivedSerializable(SerializableMapping head, SerializableMapping mapping, XmlQualifiedName? tser, bool isWrappedAny, out object? value)
+        {
+            for (SerializableMapping? derived = mapping.DerivedMappings; derived != null; derived = derived.NextDerivedMapping)
+            {
+                if (tser == null || QNameEqual(tser, derived.XsiType!.Name, derived.XsiType.Namespace))
+                {
+                    if (derived.Type == null)
+                    {
+                        throw CreateMissingIXmlSerializableType(derived.XsiType!.Name, derived.XsiType.Namespace, head.Type!.FullName);
+                    }
+
+                    if (!head.Type!.IsAssignableFrom(derived.Type))
+                    {
+                        throw CreateBadDerivationException(derived.XsiType!.Name, derived.XsiType.Namespace, head.XsiType!.Name, head.XsiType.Namespace, derived.Type.FullName, head.Type.FullName);
+                    }
+
+                    value = ReadSerializable((IXmlSerializable)ReflectionCreateObject(derived.TypeDesc!.Type!)!, isWrappedAny);
+                    return true;
+                }
+
+                if (ReadDerivedSerializable(head, derived, tser, isWrappedAny, out value))
+                {
+                    return true;
+                }
+            }
+
+            value = null;
+            return false;
         }
 
         private XmlSerializationReadCallback CreateXmlSerializationReadCallback(TypeMapping mapping)
@@ -1169,6 +1227,8 @@ namespace System.Xml.Serialization
             {
                 if (!ReadNull())
                 {
+                    HandleUnknownAttributes();
+
                     var memberMapping = new MemberMapping()
                     {
                         Elements = arrayMapping.Elements,
@@ -1926,6 +1986,28 @@ namespace System.Xml.Serialization
             return false;
         }
 
+        // Walks the attributes on the current element and raises the UnknownNode/UnknownAttribute
+        // events for any non-namespace attribute. This mirrors the attribute handling that already
+        // happens for elements mapped to structs (via WriteAttributes), so that unknown attributes
+        // on elements mapped to primitives, arrays, and collections are surfaced consistently.
+        private void HandleUnknownAttributes()
+        {
+            if (!HasUnknownNodeOrAttributeEvents ||
+                !Reader.HasAttributes)
+            {
+                return;
+            }
+
+            while (Reader.MoveToNextAttribute())
+            {
+                if (!IsXmlnsAttribute(Reader.Name))
+                {
+                    UnknownNode(null);
+                }
+            }
+            Reader.MoveToElement();
+        }
+
         private void WriteAttributes(Member[] members, Member? anyAttribute, UnknownNodeAction elseCall, ref object? o)
         {
             Member? xmlnsMember = null;
@@ -2026,10 +2108,10 @@ namespace System.Xml.Serialization
                 {
                     if (attr is not XmlAttribute xmlAttribute)
                     {
-                         if (member.Mapping.CheckSpecified == SpecifiedAccessor.ReadWrite)
-                         {
-                             member.CheckSpecifiedSource?.Invoke(null);
-                         }
+                        if (member.Mapping.CheckSpecified == SpecifiedAccessor.ReadWrite)
+                        {
+                            member.CheckSpecifiedSource?.Invoke(null);
+                        }
 
                         return;
                     }
@@ -2044,7 +2126,11 @@ namespace System.Xml.Serialization
                 if (attribute.IsList)
                 {
                     string listValues = Reader.Value;
-                    string[] vals = listValues.Split(null);
+                    // Split the whitespace-separated attribute list into its items. XSD list whitespace
+                    // normalization has already collapsed runs of whitespace in the attribute value by
+                    // the time we read it, so RemoveEmptyEntries is unnecessary here.
+                    char[]? separators = LocalAppContextSwitches.UseLegacyXmlListSeparation ? null : s_xmlListWhitespace;
+                    string[] vals = listValues.Split(separators);
                     Array arrayValue = Array.CreateInstance(member.Mapping.TypeDesc!.Type!.GetElementType()!, vals.Length);
                     for (int i = 0; i < vals.Length; i++)
                     {

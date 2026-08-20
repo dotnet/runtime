@@ -469,21 +469,9 @@ class StubLinkStubManager : public StubManager
 #endif // DACCESS_COMPILE
 
 #if !defined(DACCESS_COMPILE)
-    StubLinkStubManager() : StubManager(), m_rangeList() {LIMITED_METHOD_CONTRACT;}
+    StubLinkStubManager() : StubManager() {LIMITED_METHOD_CONTRACT;}
     ~StubLinkStubManager() {WRAPPER_NO_CONTRACT;}
 #endif // DACCESS_COMPILE
-
-  protected:
-    LockedRangeList m_rangeList;
-  public:
-    // Get dac-ized pointer to rangelist.
-    PTR_RangeList GetRangeList()
-    {
-        SUPPORTS_DAC;
-
-        TADDR addr = PTR_HOST_MEMBER_TADDR(StubLinkStubManager, this, m_rangeList);
-        return PTR_RangeList(addr);
-    }
 
     virtual BOOL CheckIsStub_Internal(PCODE stubStartAddress);
 

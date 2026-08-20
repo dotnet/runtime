@@ -445,7 +445,6 @@ void *EEMarshalingData::operator new(size_t size, LoaderHeap *pHeap)
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pHeap));
     }
     CONTRACTL_END;
@@ -468,7 +467,6 @@ CustomMarshalerInfo *EEMarshalingData::GetCustomMarshalerInfo(Assembly *pAssembl
     CONTRACTL
     {
         STANDARD_VM_CHECK;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pAssembly));
     }
     CONTRACTL_END;
@@ -536,7 +534,6 @@ CustomMarshalerInfo *EEMarshalingData::GetIEnumeratorMarshalerInfo()
     CONTRACTL
     {
         STANDARD_VM_CHECK;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -685,6 +682,11 @@ namespace
                 if (pMT->IsInt128OrHasInt128Fields())
                 {
                     *errorResIDOut = IDS_EE_BADMARSHAL_INT128_RESTRICTION;
+                    return MarshalInfo::MARSHAL_TYPE_UNKNOWN;
+                }
+                if (pMT->IsDecimalFloatingPointOrHasDecimalFloatingPointFields())
+                {
+                    *errorResIDOut = IDS_EE_BADMARSHAL_DECIMAL_RESTRICTION;
                     return MarshalInfo::MARSHAL_TYPE_UNKNOWN;
                 }
                 *pMTOut = pMT;
@@ -1831,12 +1833,18 @@ MarshalInfo::MarshalInfo(Module* pModule,
 
                 // * Int128: Represents the 128 bit integer ABI primitive type which requires currently unimplemented handling
                 // * UInt128: Represents the 128 bit integer ABI primitive type which requires currently unimplemented handling
+                // * Decimal32/Decimal64/Decimal128: IEEE 754 decimal floating-point ABI primitives which require currently unimplemented handling
                 // The field layout is correct, so field scenarios work, but these should not be passed by value as parameters
                 if (!IsFieldScenario() && !m_byref)
                 {
                     if (m_pMT->IsInt128OrHasInt128Fields())
                     {
                         m_resID = IDS_EE_BADMARSHAL_INT128_RESTRICTION;
+                        IfFailGoto(E_FAIL, lFail);
+                    }
+                    if (m_pMT->IsDecimalFloatingPointOrHasDecimalFloatingPointFields())
+                    {
+                        m_resID = IDS_EE_BADMARSHAL_DECIMAL_RESTRICTION;
                         IfFailGoto(E_FAIL, lFail);
                     }
                 }
@@ -2096,7 +2104,6 @@ HRESULT MarshalInfo::HandleArrayElemType(NativeTypeParamInfo *pParamInfo, TypeHa
     CONTRACTL
     {
         STANDARD_VM_CHECK;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pParamInfo));
     }
     CONTRACTL_END;
@@ -2821,7 +2828,7 @@ VOID MarshalInfo::DumpMarshalInfo(Module* pModule, SigPointer sig, const SigType
         IMDInternalImport *pInternalImport = pModule->GetMDImport();
 
         logbuf.AppendASCII("------------------------------------------------------------\n");
-        LOG((LF_MARSHALER, LL_INFO10, logbuf.GetUTF8()));
+        LOG((LF_MARSHALER, LL_INFO10, "%s", logbuf.GetUTF8()));
         logbuf.Clear();
 
         logbuf.AppendASCII("Managed type: ");
@@ -2839,7 +2846,7 @@ VOID MarshalInfo::DumpMarshalInfo(Module* pModule, SigPointer sig, const SigType
         }
 
         logbuf.AppendASCII("\n");
-        LOG((LF_MARSHALER, LL_INFO10, logbuf.GetUTF8()));
+        LOG((LF_MARSHALER, LL_INFO10, "%s", logbuf.GetUTF8()));
         logbuf.Clear();
 
         logbuf.AppendASCII("NativeType  : ");
@@ -2994,7 +3001,7 @@ VOID MarshalInfo::DumpMarshalInfo(Module* pModule, SigPointer sig, const SigType
             }
         }
         logbuf.AppendASCII("\n");
-        LOG((LF_MARSHALER, LL_INFO10, logbuf.GetUTF8()));
+        LOG((LF_MARSHALER, LL_INFO10, "%s", logbuf.GetUTF8()));
         logbuf.Clear();
 
         logbuf.AppendASCII("MarshalType : ");
@@ -3054,7 +3061,7 @@ VOID MarshalInfo::DumpMarshalInfo(Module* pModule, SigPointer sig, const SigType
 
         logbuf.AppendASCII("\n");
 
-        LOG((LF_MARSHALER, LL_INFO10, logbuf.GetUTF8()));
+        LOG((LF_MARSHALER, LL_INFO10, "%s", logbuf.GetUTF8()));
         logbuf.Clear();
     }
 } // MarshalInfo::DumpMarshalInfo
@@ -3068,7 +3075,6 @@ DispParamMarshaler *MarshalInfo::GenerateDispParamMarshaler()
         THROWS;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -3277,7 +3283,6 @@ void ArrayMarshalInfo::InitElementInfo(CorNativeType arrayNativeType, MarshalInf
     CONTRACTL
     {
         STANDARD_VM_CHECK;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(!thElement.IsNull());
     }
     CONTRACTL_END;

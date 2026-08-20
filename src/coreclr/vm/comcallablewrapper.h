@@ -256,12 +256,6 @@ public:
         return m_flags & enum_ImplementsIMarshal;
     }
 
-    BOOL SupportsIClassX()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_flags & enum_SupportsIClassX;
-    }
-
     TypeHandle GetClassType()
     {
         LIMITED_METHOD_CONTRACT;
@@ -312,7 +306,7 @@ private:
         enum_InvisibleParent                  = 0x20,
         enum_ImplementsICustomQueryInterface  = 0x40,
         // enum_Unused                        = 0x80,
-        enum_SupportsIClassX                  = 0x100,
+        // enum_Unused                        = 0x100,
 
         enum_RepresentsVariantInterface       = 0x400, // this is a template for an interface with variance
 
@@ -1026,7 +1020,26 @@ struct cdac_data<ComCallWrapper>
     static constexpr uintptr_t ThisMask = (uintptr_t)ComCallWrapper::enum_ThisMask;
 };
 
-using CCWHolder = ReleaseHolder<ComCallWrapper>;
+struct CCWHolderTraits final
+{
+    using Type = ComCallWrapper*;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type value)
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_TRIGGERS;
+            MODE_ANY;
+        } CONTRACTL_END;
+
+        if (value != NULL)
+            value->Release();
+    }
+};
+
+using CCWHolder = LifetimeHolder<CCWHolderTraits>;
+
 //
 // Uncommonly used data on Simple CCW
 // Created on-demand

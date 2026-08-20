@@ -410,8 +410,13 @@ MethodDesc* ILStubCache::CreateR2RBackedILStub(
 
     pMD->SetStoredMethodSig((PCCOR_SIGNATURE)pSig, cbSig);
 
+#ifdef TARGET_WASM
+    PCODE pEntryPoint = pMD->GetTemporaryEntryPoint();
+    PortableEntryPoint::SetActualCode(pEntryPoint, r2rEntryPoint);
+#else
     // Set the native code directly - no precode needed since code already exists
     pMD->SetNativeCodeInterlocked(r2rEntryPoint);
+#endif // TARGET_WASM
 
     pChunk->DetermineAndSetIsEligibleForTieredCompilation();
 
@@ -438,7 +443,6 @@ MethodTable* ILStubCache::GetOrCreateStubMethodTable(Module* pModule)
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -652,7 +656,7 @@ MethodDesc* ILStubCache::GetStubMethodDesc(
 #ifdef _DEBUG
     CQuickBytes qbManaged;
     PrettyPrintSig(pSig,  cbSig, "*",  &qbManaged, pSigModule->GetMDImport(), NULL);
-    LOG((LF_STUBS, LL_INFO1000, "ILSTUBCACHE: ILStubCache::GetStubMethodDesc %s StubMD: %p module: %p blob: %p sig: %s\n", pszResult, pMD, pSigModule, pBlob, qbManaged.Ptr()));
+    LOG((LF_STUBS, LL_INFO1000, "ILSTUBCACHE: ILStubCache::GetStubMethodDesc %s StubMD: %p module: %p blob: %p sig: %s\n", pszResult, pMD, pSigModule, pBlob, (char*)qbManaged.Ptr()));
 #endif // _DEBUG
 #endif // DACCESS_COMPILE
 

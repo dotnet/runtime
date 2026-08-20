@@ -4,12 +4,25 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
+using System.Threading;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
 
 namespace Microsoft.Diagnostics.DataContractReader;
 
 internal static class Entrypoints
 {
+    private sealed class CdacHandle
+    {
+        internal Target Target { get; }
+        internal Lock ApiLock { get; }
+
+        internal CdacHandle(Target target, Lock apiLock)
+        {
+            Target = target;
+            ApiLock = apiLock;
+        }
+    }
+
     private const string CDAC = "cdac_reader_";
 
     // Native CONTEXT and DT_CONTEXT declarations require 16-byte alignment.
@@ -85,8 +98,7 @@ internal static class Entrypoints
                 };
             }
 
-            // TODO: [cdac] Better error code/details
-            if (!ContractDescriptorTarget.TryCreate(
+            ContractDescriptorTarget target = ContractDescriptorTarget.Create(
                 descriptor,
                 (address, buffer) =>
                 {
@@ -130,11 +142,9 @@ internal static class Entrypoints
                 },
                 setThreadContextDelegate,
                 allocDelegate,
-                [Contracts.CoreCLRContracts.Register],
-                out ContractDescriptorTarget? target))
-                return -1;
+                [Contracts.CoreCLRContracts.Register]);
 
-            GCHandle gcHandle = GCHandle.Alloc(target);
+            GCHandle gcHandle = GCHandle.Alloc(new CdacHandle(target, new Lock()));
             *handle = GCHandle.ToIntPtr(gcHandle);
             return 0;
         }
@@ -177,14 +187,20 @@ internal static class Entrypoints
                 return HResults.E_INVALIDARG;
             *obj = IntPtr.Zero;
 
-            Target? target = GCHandle.FromIntPtr(handle).Target as Target;
-            if (target == null)
+            CdacHandle? cdacHandle = GCHandle.FromIntPtr(handle).Target as CdacHandle;
+            if (cdacHandle is null)
                 return HResults.E_INVALIDARG;
 
             object? legacyImpl = legacyImplPtr != IntPtr.Zero
                 ? ComInterfaceMarshaller<ISOSDacInterface>.ConvertToManaged((void*)legacyImplPtr)
                 : null;
-            Legacy.SOSDacImpl impl = new(target, legacyImpl);
+
+            // Without a legacy implementation to absorb individually-unimplemented APIs, validate
+            // the complete data-access contract set before publishing the interface.
+            if (legacyImpl is null)
+                Contracts.CoreCLRContracts.ValidateForDataAccess(cdacHandle.Target, cdacHandle.ApiLock);
+
+            Legacy.SOSDacImpl impl = new(cdacHandle.Target, legacyImpl, cdacHandle.ApiLock);
             nint ptr = (nint)ComInterfaceMarshaller<ISOSDacInterface>.ConvertToUnmanaged(impl);
             *obj = ptr;
             return 0;
@@ -207,6 +223,7 @@ internal static class Entrypoints
     [UnmanagedCallersOnly(EntryPoint = $"{CDAC}create_dacdbi_interface")]
     private static unsafe int CreateDacDbiInterface(IntPtr handle, IntPtr legacyImplPtr, nint* obj)
     {
+        object? legacyObj = null;
         try
         {
             if (obj == null)
@@ -217,26 +234,21 @@ internal static class Entrypoints
                 return HResults.E_NOTIMPL;
             }
 
-            Target? target = GCHandle.FromIntPtr(handle).Target as Target;
-            if (target is null)
+            CdacHandle? cdacHandle = GCHandle.FromIntPtr(handle).Target as CdacHandle;
+            if (cdacHandle is null)
             {
                 *obj = IntPtr.Zero;
                 return HResults.E_INVALIDARG;
             }
 
-            object? legacyObj = null;
             if (legacyImplPtr != IntPtr.Zero)
             {
-                legacyObj = ComInterfaceMarshaller<IDacDbiInterface>.ConvertToManaged((void*)legacyImplPtr);
-                if (legacyObj is not Legacy.IDacDbiInterface)
-                {
-                    *obj = IntPtr.Zero;
-                    return HResults.COR_E_INVALIDCAST; // E_NOINTERFACE
-                }
+                legacyObj = UniqueComInterfaceMarshaller<IDacDbiInterface>.ConvertToManaged((void*)legacyImplPtr);
             }
 
-            Legacy.DacDbiImpl impl = new(target, legacyObj);
+            Legacy.DacDbiImpl impl = new(cdacHandle.Target, legacyObj, cdacHandle.ApiLock);
             *obj = (nint)ComInterfaceMarshaller<IDacDbiInterface>.ConvertToUnmanaged(impl);
+            legacyObj = null;
             return HResults.S_OK;
         }
         catch (Exception ex)
@@ -245,6 +257,10 @@ internal static class Entrypoints
                 *obj = IntPtr.Zero;
             int hr = ex.HResult;
             return hr < 0 ? hr : HResults.E_FAIL;
+        }
+        finally
+        {
+            (legacyObj as ComObject)?.FinalRelease();
         }
     }
 
@@ -261,34 +277,47 @@ internal static class Entrypoints
         ulong contractDescriptorAddress,
         IntPtr /*IDacDbiInterface::IAllocator*/ pAllocator,
         IntPtr /*IDacDbiInterface::IMetaDataLookup*/ pMetaDataLookup,
-        void** iface)
+        void** iface,
+        void** legacyDac)
     {
         // The allocator and metadata lookup pointers are not used by the managed implementation,
         // so, unlike the native DAC export, they are not required.
         if (pTarget == IntPtr.Zero
             || runtimeBase == 0
             || contractDescriptorAddress == 0
-            || iface == null)
+            || iface == null
+            || legacyDac == null)
         {
             return HResults.E_INVALIDARG;
         }
 
         *iface = null;
+        *legacyDac = null;
 
+        ComObject? dataTargetComObject = null;
         try
         {
-            object dataTarget = ComInterfaceMarshaller<ICorDebugDataTarget>.ConvertToManaged((void*)pTarget)!;
+            ICorDebugDataTarget dataTarget =
+                UniqueComInterfaceMarshaller<ICorDebugDataTarget>.ConvertToManaged((void*)pTarget)!;
+            dataTargetComObject = (ComObject)(object)dataTarget;
             ContractDescriptorTarget target = CreateTargetFromCorDebugDataTarget(dataTarget, contractDescriptorAddress);
-            Legacy.DacDbiImpl impl = new(target, legacyObj: null);
+            Legacy.DacDbiImpl impl = new(target, legacyObj: null, apiLock: new Lock(), dataTargetComObject: dataTargetComObject);
             *iface = ComInterfaceMarshaller<IDacDbiInterface>.ConvertToUnmanaged(impl);
+            dataTargetComObject = null;
             return HResults.S_OK;
         }
         catch (Exception ex)
         {
             if (iface != null)
                 *iface = null;
+            if (legacyDac != null)
+                *legacyDac = null;
             int hr = ex.HResult;
             return hr < 0 ? hr : HResults.E_FAIL;
+        }
+        finally
+        {
+            dataTargetComObject?.FinalRelease();
         }
     }
 
@@ -311,7 +340,7 @@ internal static class Entrypoints
         try
         {
             object legacyTarget = ComInterfaceMarshaller<ICLRDataTarget>.ConvertToManaged((void*)pLegacyTarget)!;
-            return CreateInstanceFromContractDescriptorCore(pIID, legacyTarget, contractDescriptorAddr, legacyImpl: null, iface);
+            return CreateInstanceFromContractDescriptorCore(pIID, legacyTarget, contractDescriptorAddr, legacyImpl: null, new Lock(), iface);
         }
         catch (Exception ex)
         {
@@ -328,7 +357,7 @@ internal static class Entrypoints
 
         try
         {
-            return CLRDataCreateInstanceCore(pIID, pLegacyTarget, pLegacyImpl, iface);
+            return CLRDataCreateInstanceCore(pIID, pLegacyTarget, pLegacyImpl, new Lock(), iface);
         }
         catch (Exception ex)
         {
@@ -337,7 +366,7 @@ internal static class Entrypoints
         }
     }
 
-    private static unsafe int CLRDataCreateInstanceCore(Guid* pIID, IntPtr /*ICLRDataTarget*/ pLegacyTarget, IntPtr pLegacyImpl, void** iface)
+    private static unsafe int CLRDataCreateInstanceCore(Guid* pIID, IntPtr /*ICLRDataTarget*/ pLegacyTarget, IntPtr pLegacyImpl, Lock apiLock, void** iface)
     {
         object legacyTarget = ComInterfaceMarshaller<ICLRDataTarget>.ConvertToManaged((void*)pLegacyTarget)!;
         object? legacyImpl = pLegacyImpl != IntPtr.Zero ?
@@ -351,13 +380,16 @@ internal static class Entrypoints
         if (hr != 0)
         {
             throw new InvalidOperationException(
-                $"{nameof(ICLRContractLocator)} failed to fetch the contract descriptor with HRESULT: 0x{hr:x}.");
+                $"{nameof(ICLRContractLocator)} failed to fetch the contract descriptor with HRESULT: 0x{hr:x}.")
+            {
+                HResult = CdacHResults.CDAC_E_DESCRIPTOR_NOT_FOUND
+            };
         }
 
-        return CreateInstanceFromContractDescriptorCore(pIID, legacyTarget, contractAddress, legacyImpl, iface);
+        return CreateInstanceFromContractDescriptorCore(pIID, legacyTarget, contractAddress, legacyImpl, apiLock, iface);
     }
 
-    private static unsafe int CreateInstanceFromContractDescriptorCore(Guid* pIID, object legacyTarget, ulong contractAddress, object? legacyImpl, void** iface)
+    private static unsafe int CreateInstanceFromContractDescriptorCore(Guid* pIID, object legacyTarget, ulong contractAddress, object? legacyImpl, Lock apiLock, void** iface)
     {
         ICLRDataTarget dataTarget = legacyTarget as ICLRDataTarget ?? throw new ArgumentException(
             $"Data target does not implement {nameof(ICLRDataTarget)}", nameof(legacyTarget));
@@ -387,7 +419,7 @@ internal static class Entrypoints
             };
         }
 
-        if (!ContractDescriptorTarget.TryCreate(
+        ContractDescriptorTarget target = ContractDescriptorTarget.Create(
             contractAddress,
             (address, buffer) =>
             {
@@ -434,13 +466,14 @@ internal static class Entrypoints
                 }
             },
             allocVirtual,
-            [Contracts.CoreCLRContracts.Register],
-            out ContractDescriptorTarget? target))
-        {
-            return -1;
-        }
+            [Contracts.CoreCLRContracts.Register]);
 
-        Legacy.SOSDacImpl impl = new(target, legacyImpl);
+        // Without a legacy implementation to absorb individually-unimplemented APIs, validate
+        // the complete data-access contract set before publishing the interface.
+        if (legacyImpl is null)
+            Contracts.CoreCLRContracts.ValidateForDataAccess(target);
+
+        Legacy.SOSDacImpl impl = new(target, legacyImpl, apiLock);
         void* ccw = ComInterfaceMarshaller<IXCLRDataProcess>.ConvertToUnmanaged(impl);
         int hrQI = Marshal.QueryInterface((nint)ccw, *pIID, out nint ptrToIface);
 
@@ -460,7 +493,7 @@ internal static class Entrypoints
             $"Data target does not implement {nameof(ICorDebugDataTarget)}", nameof(targetObject));
         ICorDebugMutableDataTarget? mutableDataTarget = targetObject as ICorDebugMutableDataTarget;
 
-        if (!ContractDescriptorTarget.TryCreate(
+        return ContractDescriptorTarget.Create(
             contractAddress,
             (address, buffer) =>
             {
@@ -542,13 +575,6 @@ internal static class Entrypoints
                 allocatedAddress = 0;
                 return HResults.E_NOTIMPL;
             },
-            [Contracts.CoreCLRContracts.Register],
-            out ContractDescriptorTarget? target))
-        {
-            throw new InvalidOperationException(
-                $"Failed to create a {nameof(ContractDescriptorTarget)} from the contract descriptor at 0x{contractAddress:x}.");
-        }
-
-        return target!;
+            [Contracts.CoreCLRContracts.Register]);
     }
 }

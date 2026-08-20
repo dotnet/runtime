@@ -1409,7 +1409,6 @@ BOOL SString::Equals(const SString &s) const
         INSTANCE_CHECK;
         PRECONDITION(s.Check());
         THROWS_UNLESS_BOTH_NORMALIZED(s);
-        FAULTS_UNLESS_BOTH_NORMALIZED(s, ThrowOutOfMemory());
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
@@ -1452,7 +1451,6 @@ BOOL SString::EqualsCaseInsensitive(const SString &s) const
         INSTANCE_CHECK;
         PRECONDITION(s.Check());
         THROWS_UNLESS_BOTH_NORMALIZED(s);
-        FAULTS_UNLESS_BOTH_NORMALIZED(s, ThrowOutOfMemory());
         GC_NOTRIGGER;
     }
     CONTRACTL_END;

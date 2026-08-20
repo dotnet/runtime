@@ -177,7 +177,7 @@ public partial class ZipArchiveEntry
     /// </summary>
     internal async Task ReadEncryptionSaltIfNeededAsync(CancellationToken cancellationToken)
     {
-        if (!IsAesEncrypted || !_originallyInArchive || OperatingSystem.IsBrowser())
+        if (!IsAesEncrypted || !_originallyInArchive || OperatingSystem.IsBrowser() || OperatingSystem.IsWasi())
         {
             return;
         }
@@ -238,9 +238,9 @@ public partial class ZipArchiveEntry
 
             if (IsAesEncrypted)
             {
-                if (OperatingSystem.IsBrowser())
+                if (OperatingSystem.IsBrowser() || OperatingSystem.IsWasi())
                 {
-                    throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnBrowser);
+                    throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnPlatform);
                 }
 
                 if (_aesSalt is null)
@@ -537,9 +537,9 @@ public partial class ZipArchiveEntry
         {
             if (IsAesEncrypted)
             {
-                if (OperatingSystem.IsBrowser())
+                if (OperatingSystem.IsBrowser() || OperatingSystem.IsWasi())
                 {
-                    throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnBrowser);
+                    throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnPlatform);
                 }
 
                 if (_aesSalt is null)
@@ -581,9 +581,9 @@ public partial class ZipArchiveEntry
 
     private async Task<Stream> DecryptAndStoreForUpdateWithAesAsync(WinZipAesKeyMaterial aesKeys, CancellationToken cancellationToken)
     {
-        if (OperatingSystem.IsBrowser())
+        if (OperatingSystem.IsBrowser() || OperatingSystem.IsWasi())
         {
-            throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnBrowser);
+            throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnPlatform);
         }
 
         await ThrowIfNotOpenableAsync(needToUncompress: true, needToLoadIntoMemory: true, cancellationToken).ConfigureAwait(false);
@@ -758,7 +758,7 @@ public partial class ZipArchiveEntry
 
                     ushort verifierLow2Bytes = (ushort)ZipHelper.DateTimeToDosTime(_lastModified.DateTime);
 
-                    ZipCryptoStream encryptionStream = ZipCryptoStream.Create(
+                    Stream encryptionStream = ZipCryptoStream.Create(
                         baseStream: _archive.ArchiveStream,
                         keys: _derivedZipCryptoKeyMaterial.Value,
                         passwordVerifierLow2Bytes: verifierLow2Bytes,
@@ -791,9 +791,9 @@ public partial class ZipArchiveEntry
                 else if (UseAesEncryption && _derivedAesKeyMaterial != null)
                 {
 
-                    if (OperatingSystem.IsBrowser())
+                    if (OperatingSystem.IsBrowser() || OperatingSystem.IsWasi())
                     {
-                        throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnBrowser);
+                        throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnPlatform);
                     }
                     // For AES, we need to:
                     // 1. Write header with CompressionMethod = Aes (99)
@@ -812,7 +812,7 @@ public partial class ZipArchiveEntry
                     // The AES extra field stores the real compression method
                     bool useDeflate = _compressionLevel != CompressionLevel.NoCompression;
 
-                    WinZipAesStream encryptionStream = WinZipAesStream.Create(
+                    Stream encryptionStream = WinZipAesStream.Create(
                         baseStream: _archive.ArchiveStream,
                         keyMaterial: _derivedAesKeyMaterial.Value,
                         totalStreamSize: -1,
@@ -879,7 +879,8 @@ public partial class ZipArchiveEntry
             }
             else // _compressedBytes path - copying unchanged entry data
             {
-                if (_uncompressedSize == 0)
+                bool emptyEncryptedEntry = _uncompressedSize == 0 && Encryption != ZipEncryptionMethod.None;
+                if (_uncompressedSize == 0 && !emptyEncryptedEntry)
                 {
                     // reset size to ensure proper central directory size header
                     _compressedSize = 0;
@@ -904,7 +905,7 @@ public partial class ZipArchiveEntry
                         Encryption = ZipEncryptionMethod.None;
                     }
 
-                    await WriteLocalFileHeaderAsync(isEmptyFile: _uncompressedSize == 0, forceWrite: true, preserveDataDescriptor: false, cancellationToken).ConfigureAwait(false);
+                    await WriteLocalFileHeaderAsync(isEmptyFile: _uncompressedSize == 0 && !emptyEncryptedEntry, forceWrite: true, preserveDataDescriptor: false, cancellationToken).ConfigureAwait(false);
 
                     // WriteLocalFileHeaderInitialize may have cleared the DataDescriptor flag
                     // (because Encryption was temporarily set to None and the stream is seekable).
@@ -932,8 +933,8 @@ public partial class ZipArchiveEntry
                     CompressionMethod = savedCompressionMethod;
                 }
 
-                // according to ZIP specs, zero-byte files MUST NOT include file data
-                if (_uncompressedSize != 0)
+                // according to ZIP specs, zero-byte unencrypted files MUST NOT include file data
+                if (_uncompressedSize != 0 || emptyEncryptedEntry)
                 {
                     Debug.Assert(_compressedBytes != null);
                     foreach (byte[] compressedBytes in _compressedBytes)

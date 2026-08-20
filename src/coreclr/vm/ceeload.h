@@ -326,7 +326,7 @@ typedef DPTR(class MemberRef) PTR_MemberRef;
 
 
 // flag used to mark member ref pointers to field descriptors in the member ref cache
-#define IS_FIELD_MEMBER_REF ((TADDR)0x00000002)
+#define IS_FIELD_MEMBER_REF ((TADDR)0x00000002) // [cDAC] [Loader]: Contract depends on this value.
 
 
 //
@@ -923,7 +923,7 @@ protected:
 #endif
 
     BOOL IsReflectionEmit() const { WRAPPER_NO_CONTRACT; SUPPORTS_DAC; return (m_dwTransientFlags & IS_REFLECTION_EMIT) != 0; }
-    BOOL IsSystem() { WRAPPER_NO_CONTRACT; SUPPORTS_DAC; return m_pPEAssembly->IsSystem(); }
+    bool IsSystem() { WRAPPER_NO_CONTRACT; SUPPORTS_DAC; return m_pPEAssembly->IsSystem(); }
 
     virtual BOOL IsEditAndContinueCapable() const { return FALSE; }
 
@@ -1210,13 +1210,13 @@ public:
 #ifndef DACCESS_COMPILE
     VOID EnsureTypeDefCanBeStored(mdTypeDef token)
     {
-        WRAPPER_NO_CONTRACT; // THROWS/GC_NOTRIGGER/INJECT_FAULT()/MODE_ANY
+        WRAPPER_NO_CONTRACT; // THROWS/GC_NOTRIGGER/MODE_ANY
         m_TypeDefToMethodTableMap.EnsureElementCanBeStored(this, RidFromToken(token));
     }
 
     void EnsuredStoreTypeDef(mdTypeDef token, TypeHandle value)
     {
-        WRAPPER_NO_CONTRACT; // NOTHROW/GC_NOTRIGGER/FORBID_FAULT/MODE_ANY
+        WRAPPER_NO_CONTRACT; // NOTHROW/GC_NOTRIGGER/MODE_ANY
 
         _ASSERTE(TypeFromToken(token) == mdtTypeDef);
         m_TypeDefToMethodTableMap.SetElement(RidFromToken(token), value.AsMethodTable());
@@ -1235,7 +1235,7 @@ public:
 
     void EnsureTypeRefCanBeStored(mdTypeRef token)
     {
-        WRAPPER_NO_CONTRACT; // THROWS/GC_NOTRIGGER/INJECT_FAULT()/MODE_ANY
+        WRAPPER_NO_CONTRACT; // THROWS/GC_NOTRIGGER/MODE_ANY
 
         _ASSERTE(TypeFromToken(token) == mdtTypeRef);
         m_TypeRefToMethodTableMap.EnsureElementCanBeStored(this, RidFromToken(token));
@@ -1247,13 +1247,13 @@ public:
 #ifndef DACCESS_COMPILE
     void EnsureMethodDefCanBeStored(mdMethodDef token)
     {
-        WRAPPER_NO_CONTRACT; // THROWS/GC_NOTRIGGER/INJECT_FAULT()/MODE_ANY
+        WRAPPER_NO_CONTRACT; // THROWS/GC_NOTRIGGER/MODE_ANY
         m_MethodDefToDescMap.EnsureElementCanBeStored(this, RidFromToken(token));
     }
 
     void EnsuredStoreMethodDef(mdMethodDef token, MethodDesc *value)
     {
-        WRAPPER_NO_CONTRACT; // NOTHROW/GC_NOTRIGGER/FORBID_FAULT/MODE_ANY
+        WRAPPER_NO_CONTRACT; // NOTHROW/GC_NOTRIGGER/MODE_ANY
 
         _ASSERTE(TypeFromToken(token) == mdtMethodDef);
         m_MethodDefToDescMap.SetElement(RidFromToken(token), value);
@@ -1266,14 +1266,14 @@ public:
 #ifndef DACCESS_COMPILE
     void EnsureILCodeVersioningStateCanBeStored(mdMethodDef token)
     {
-        WRAPPER_NO_CONTRACT; // THROWS/GC_NOTRIGGER/INJECT_FAULT()/MODE_ANY
+        WRAPPER_NO_CONTRACT; // THROWS/GC_NOTRIGGER/MODE_ANY
         _ASSERTE(CodeVersionManager::IsLockOwnedByCurrentThread());
         m_ILCodeVersioningStateMap.EnsureElementCanBeStored(this, RidFromToken(token));
     }
 
     void EnsuredStoreILCodeVersioningState(mdMethodDef token, PTR_ILCodeVersioningState value)
     {
-        WRAPPER_NO_CONTRACT; // NOTHROW/GC_NOTRIGGER/FORBID_FAULT/MODE_ANY
+        WRAPPER_NO_CONTRACT; // NOTHROW/GC_NOTRIGGER/MODE_ANY
         _ASSERTE(CodeVersionManager::IsLockOwnedByCurrentThread());
         _ASSERTE(TypeFromToken(token) == mdtMethodDef);
         m_ILCodeVersioningStateMap.SetElement(RidFromToken(token), value);
@@ -1297,13 +1297,13 @@ public:
 #ifndef DACCESS_COMPILE
     void EnsureFieldDefCanBeStored(mdFieldDef token)
     {
-        WRAPPER_NO_CONTRACT; // THROWS/GC_NOTRIGGER/INJECT_FAULT()/MODE_ANY
+        WRAPPER_NO_CONTRACT; // THROWS/GC_NOTRIGGER/MODE_ANY
         m_FieldDefToDescMap.EnsureElementCanBeStored(this, RidFromToken(token));
     }
 
     void EnsuredStoreFieldDef(mdFieldDef token, FieldDesc *value)
     {
-        WRAPPER_NO_CONTRACT; // NOTHROW/GC_NOTRIGGER/FORBID_FAULT/MODE_ANY
+        WRAPPER_NO_CONTRACT; // NOTHROW/GC_NOTRIGGER/MODE_ANY
 
         _ASSERTE(TypeFromToken(token) == mdtFieldDef);
         m_FieldDefToDescMap.SetElement(RidFromToken(token), value);
@@ -1351,7 +1351,7 @@ public:
 
     void EnsureAssemblyRefCanBeStored(mdAssemblyRef token)
     {
-        WRAPPER_NO_CONTRACT; // THROWS/GC_NOTRIGGER/INJECT_FAULT()/MODE_ANY
+        WRAPPER_NO_CONTRACT; // THROWS/GC_NOTRIGGER/MODE_ANY
 
         _ASSERTE(TypeFromToken(token) == mdtAssemblyRef);
         m_ManifestModuleReferencesMap.EnsureElementCanBeStored(this, RidFromToken(token));

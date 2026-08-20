@@ -46,6 +46,8 @@ internal sealed class RectangularArrayRecord : ArrayRecord
     {
         bool storeStrings = _elementType == typeof(string);
 
+        CheckExpectedRecordCount(_records, allowNulls);
+
         // We can not deserialize non-string types.
         // This method returns arrays of SerializationRecord for arrays of complex types.
         Array result =

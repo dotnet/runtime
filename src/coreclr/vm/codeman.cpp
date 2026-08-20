@@ -1402,7 +1402,7 @@ void EEJitManager::SetCpuInfo()
     {
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
         EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("\nThe current CPU is missing one or more of the following instruction sets: SSE, SSE2, SSE3, SSSE3, SSE4.1, SSE4.2, POPCNT\n"));
-#elif defined(TARGET_ARM64) && (defined(TARGET_WINDOWS) || defined(TARGET_OSX) || defined(TARGET_MACCATALYST))
+#elif defined(TARGET_ARM64) && (defined(TARGET_OSX) || defined(TARGET_MACCATALYST))
         EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("\nThe current CPU is missing one or more of the following instruction sets: AdvSimd, LSE\n"));
 #elif defined(TARGET_ARM64)
         EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("\nThe current CPU is missing one or more of the following instruction sets: AdvSimd\n"));
@@ -1617,6 +1617,11 @@ void EEJitManager::SetCpuInfo()
     if (((cpuFeatures & ARM64IntrinsicConstants_Rdm) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableArm64Rdm))
     {
         CPUCompileFlags.Set(InstructionSet_Rdm);
+    }
+
+    if (((cpuFeatures & ARM64IntrinsicConstants_Fp16) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableArm64Fp16))
+    {
+        CPUCompileFlags.Set(InstructionSet_Fp16);
     }
 
     if (((cpuFeatures & ARM64IntrinsicConstants_Sha1) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableArm64Sha1))
@@ -2260,14 +2265,7 @@ void CodeFragmentHeap::AddBlock(VOID * pMem, size_t dwSize)
     }
     CONTRACTL_END;
 
-    // The new "nothrow" below failure is handled in a non-fault way, so
-    // make sure that callers with FORBID_FAULT can call this method without
-    // firing the contract violation assert.
-    PERMANENT_CONTRACT_VIOLATION(FaultViolation, ReasonContractInfrastructure);
-
     FreeBlock * pBlock = new (nothrow) FreeBlock;
-    // In the OOM case we don't add the block to the list of free blocks
-    // as we are in a FORBID_FAULT code path.
     if (pBlock != NULL)
     {
         pBlock->m_pNext = m_pFreeBlocks;
@@ -2844,7 +2842,7 @@ extern "C" PT_RUNTIME_FUNCTION GetRuntimeFunctionCallback(IN ULONG     ControlPc
     if (codeInfo.IsValid())
         prf = codeInfo.GetFunctionEntry();
 
-    LOG((LF_EH, LL_INFO1000000, "GetRuntimeFunctionCallback(%p) returned %p\n", ControlPc, prf));
+    LOG((LF_EH, LL_INFO1000000, "GetRuntimeFunctionCallback(%p) returned %p\n", (void*)(size_t)ControlPc, (void*)(size_t)prf));
 
     return  prf;
 }
@@ -5430,7 +5428,6 @@ ExecutionManager::FindCodeRangeWithLock(PCODE currentPC)
     return result;
 }
 
-
 //**************************************************************************
 PCODE ExecutionManager::GetCodeStartAddress(PCODE currentPC)
 {
@@ -5450,7 +5447,6 @@ NativeCodeVersion ExecutionManager::GetNativeCodeVersion(PCODE currentPC)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     }
     CONTRACTL_END;
 
@@ -5465,7 +5461,6 @@ MethodDesc * ExecutionManager::GetCodeMethodDesc(PCODE currentPC)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -5874,7 +5869,7 @@ TADDR ExecutionManager::AddVirtualIPRange(UINT32 numVirtualIPs,
     {
         endVIP = (TADDR)InterlockedAdd64((LONGLONG*)&s_nextVirtualIP, numVirtualIPs);
     }
-    
+
     TADDR startVIP = endVIP - numVirtualIPs;
 
     // Check for overflow
@@ -5889,7 +5884,7 @@ TADDR ExecutionManager::AddVirtualIPRange(UINT32 numVirtualIPs,
         pJit,
         RangeSection::RANGE_SECTION_VIRTUALIP,
         pModule);
-    
+
     VirtualIPRangeSection* pOldRangeSection = nullptr;
     do
     {

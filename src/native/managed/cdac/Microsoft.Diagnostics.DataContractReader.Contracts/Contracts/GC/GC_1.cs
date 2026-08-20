@@ -51,7 +51,7 @@ internal struct GC_1 : IGC
 
     private readonly record struct AllocContext(TargetPointer Pointer, TargetPointer Limit);
 
-    public void Flush()
+    public void Flush(FlushScope scope)
     {
         _allocContexts = null;
     }
