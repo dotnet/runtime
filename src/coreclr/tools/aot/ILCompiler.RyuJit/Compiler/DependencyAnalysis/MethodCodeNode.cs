@@ -50,10 +50,7 @@ namespace ILCompiler.DependencyAnalysis
         public override ObjectNodeSection GetSection(NodeFactory factory)
         {
             return factory.Target.IsWindows ?
-                ObjectNodeSection.ManagedCodeWindowsContentSection :
-                factory.Target.IsWasm ?
-                ObjectNodeSection.WasmCodeSection :
-                ObjectNodeSection.ManagedCodeUnixContentSection;
+                ObjectNodeSection.ManagedCodeWindowsContentSection : ObjectNodeSection.ManagedCodeUnixContentSection;
         }
 
         public override bool StaticDependenciesAreComputed => _methodCode != null;
