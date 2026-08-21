@@ -384,6 +384,33 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
         }
 
         [Fact]
+        public void RaiseChangeEvents_KeepsPollingRemainingTokens_WhenATokenFailsToPoll()
+        {
+            // Arrange
+            var cts1 = new CancellationTokenSource();
+            var cts2 = new CancellationTokenSource();
+
+            var token1 = new TestPollingChangeToken { Id = 1, PollingException = new IOException("Host is down"), CancellationTokenSource = cts1 };
+            var token2 = new TestPollingChangeToken { Id = 2, HasChanged = true, CancellationTokenSource = cts2 };
+
+            var tokens = new ConcurrentDictionary<IPollingChangeToken, IPollingChangeToken>
+            {
+                [token1] = token1,
+                [token2] = token2,
+            };
+
+            // Act
+            PhysicalFilesWatcher.RaiseChangeEvents(tokens);
+
+            // Assert
+            Assert.False(cts1.IsCancellationRequested);
+            Assert.True(cts2.IsCancellationRequested);
+
+            // The token that failed stays registered so it is polled again and can recover.
+            Assert.Equal(new[] { token1 }, tokens.Keys.OfType<TestPollingChangeToken>());
+        }
+
+        [Fact]
         [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public void GetOrAddFilePathChangeToken_AddsPollingChangeTokenWithCancellationToken_WhenActiveCallbackIsTrue()
         {
@@ -964,11 +991,20 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
 
         private class TestPollingChangeToken : IPollingChangeToken
         {
+            private bool _hasChanged;
+
             public int Id { get; set; }
 
             public CancellationTokenSource CancellationTokenSource { get; set; }
 
-            public bool HasChanged { get; set; }
+            // When set, polling the token fails with this exception.
+            public Exception PollingException { get; set; }
+
+            public bool HasChanged
+            {
+                get => PollingException is null ? _hasChanged : throw PollingException;
+                set => _hasChanged = value;
+            }
 
             public bool ActiveChangeCallbacks => throw new NotImplementedException();
 

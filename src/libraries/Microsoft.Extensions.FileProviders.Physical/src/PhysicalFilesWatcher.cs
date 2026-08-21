@@ -842,25 +842,25 @@ namespace Microsoft.Extensions.FileProviders.Physical
             {
                 IPollingChangeToken token = item.Key;
 
-                if (!token.HasChanged)
-                {
-                    continue;
-                }
-
-                if (!changeTokens.TryRemove(token, out _))
-                {
-                    // Move on if we couldn't remove the item.
-                    continue;
-                }
-
-                // We're already on a background thread, don't need to spawn a background Task to cancel the CTS
+                // This runs on a timer callback, so an exception escaping here is unhandled and takes the process down.
                 try
                 {
+                    if (!token.HasChanged)
+                    {
+                        continue;
+                    }
+
+                    if (!changeTokens.TryRemove(token, out _))
+                    {
+                        // Move on if we couldn't remove the item.
+                        continue;
+                    }
+
+                    // We're already on a background thread, don't need to spawn a background Task to cancel the CTS
                     token.CancellationTokenSource!.Cancel();
                 }
                 catch
                 {
-
                 }
             }
         }

@@ -8,6 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Security;
 using System.Security.Cryptography;
 using System.Threading;
 using Microsoft.Extensions.FileSystemGlobbing;
@@ -114,7 +115,18 @@ namespace Microsoft.Extensions.FileProviders.Physical
 
         private bool CalculateChanges()
         {
-            PatternMatchingResult result = _matcher.Execute(_directoryInfo);
+            PatternMatchingResult result;
+            try
+            {
+                result = _matcher.Execute(_directoryInfo);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or SecurityException)
+            {
+                // The directory couldn't be scanned, for example because a network share went down or
+                // the directory became inaccessible. Report no change and try again on the next poll.
+                _lastScanTimeUtc = Clock.UtcNow;
+                return false;
+            }
 
             IOrderedEnumerable<FilePatternMatch> files = result.Files.OrderBy(f => f.Path, StringComparer.Ordinal);
             using (var sha256 = IncrementalHash.CreateHash(HashAlgorithmName.SHA256))
@@ -122,10 +134,11 @@ namespace Microsoft.Extensions.FileProviders.Physical
                 foreach (FilePatternMatch file in files)
                 {
                     DateTime lastWriteTimeUtc = GetLastWriteUtc(file.Path);
-                    if (_lastScanTimeUtc.Ticks != 0 && _lastScanTimeUtc < lastWriteTimeUtc)
+                    if (_previousHash is not null && _lastScanTimeUtc < lastWriteTimeUtc)
                     {
                         // _lastScanTimeUtc is the greatest timestamp that any last writes could have been.
                         // If a file has a newer timestamp than this value, it must've changed.
+                        // A non-null hash means a scan completed, so there is something to compare against.
                         return true;
                     }
 
