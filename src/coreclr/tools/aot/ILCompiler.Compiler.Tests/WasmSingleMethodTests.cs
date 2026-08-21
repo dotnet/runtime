@@ -71,12 +71,12 @@ namespace ILCompiler.Compiler.Tests
                         rtlRestoreContextTag: new WebAssembly.Tag({ parameters: [] }),
                         memory: new WebAssembly.Memory({ initial: 32 }),
                     };
-                    WebAssembly.instantiate(bytes, { env }).then(({ instance }) => {
-                        const result = instance.exports.{{ExportName}}(65000, 0);
-                        if (result !== 100) {
-                            throw new Error(`Expected 100, got ${result}.`);
-                        }
-                    });
+                    const module = new WebAssembly.Module(bytes);
+                    const instance = new WebAssembly.Instance(module, { env });
+                    const result = instance.exports.{{ExportName}}(65000, 0);
+                    if (result !== 100) {
+                        throw new Error(`Expected 100, got ${result}.`);
+                    }
                     """);
 
                 ProcessResult result = RunProcess("node", [scriptPath], throwOnError: false);
