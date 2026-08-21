@@ -29,8 +29,7 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
 <Project>
 
   <!-- The framework P/Invoke modules, shared with the build that generates the checked-in product
-       call tables so that the two cannot be edited apart. Validated against those tables in
-       _WasmResolveTestCorerunPInvokeModules below. -->
+       call tables so that the two cannot be edited apart. -->
   <Import Project="$(RepositoryEngineeringDir)wasm\WasmPInvokeModules.props" />
 
   <PropertyGroup>
@@ -87,7 +86,6 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
   <Target Name="WasmBuildTestCorerun"
           DependsOnTargets="_WasmResolveTestCorerunInputs;
                             _WasmWriteTestCorerunResponseFiles;
-                            _WasmResolveTestCorerunPInvokeModules;
                             _WasmWriteTestCorerunInputManifest;
                             _WasmGenerateTestCallHelpers;
                             _WasmCompileTestCallHelpers;
@@ -101,10 +99,6 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
            Resolved here rather than during evaluation because eng/liveBuilds.targets, which
            defines CoreCLRArtifactsPath, is imported after this file. -->
       <WasmCorerunKitDir Condition="'$(WasmCorerunKitDir)' == ''">$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)', 'corerun-link'))</WasmCorerunKitDir>
-
-      <!-- The product's checked-in framework call tables, used to keep the framework module list
-           below honest. -->
-      <_WasmCorerunProductPInvokeTable>$([MSBuild]::NormalizePath('$(RepoRoot)', 'src', 'coreclr', 'vm', 'wasm', 'browser', 'callhelpers-pinvoke.cpp'))</_WasmCorerunProductPInvokeTable>
     </PropertyGroup>
 
     <ItemGroup>
@@ -290,49 +284,6 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
   </Target>
 
   <!--
-    The framework modules that CORE_ROOT/corerun.js already resolves, shared with the build that
-    generates the checked-in product tables (eng/wasm/WasmPInvokeModules.props). The generated
-    sources replace libcoreclr_gen_static.a wholesale, so the list has to name every module those
-    tables cover: one missing here becomes a DllNotFoundException at run time, in the test rather
-    than in the build.
-
-    Sharing the list keeps the two builds from being edited apart, but not from drifting: the
-    tables are generated from it and checked in, so changing it without regenerating them leaves
-    the two out of step. Read the modules back out of the generated table and compare. This runs
-    outside the incremental generate target, and the product file is one of that target's inputs,
-    so a regenerated table is picked up without a clean build.
-  -->
-  <Target Name="_WasmResolveTestCorerunPInvokeModules"
-          DependsOnTargets="_WasmResolveTestCorerunInputs"
-          Condition="'$(_WasmCorerunSkip)' != 'true'">
-    <Error Condition="'@(WasmCoreClrFrameworkPInvokeModule)' == ''"
-           Text="No framework P/Invoke modules were found. They are defined in eng/wasm/WasmPInvokeModules.props, which CLRTest.WasmCorerun.targets imports." />
-
-    <Error Condition="!Exists('$(_WasmCorerunProductPInvokeTable)')"
-           Text="'$(_WasmCorerunProductPInvokeTable)' does not exist. The framework P/Invoke module list in eng/wasm/WasmPInvokeModules.props is validated against that table, so _WasmCorerunProductPInvokeTable has to be pointed at its new location if the product table moved." />
-
-    <ReadLinesFromFile File="$(_WasmCorerunProductPInvokeTable)">
-      <Output TaskParameter="Lines" ItemName="_WasmCorerunProductTableLine" />
-    </ReadLinesFromFile>
-
-    <ItemGroup>
-      <!-- Rows of the product table read: {"libSystem.Native", s_libSystem_Native, 94}, -->
-      <_WasmCorerunProductPInvokeModule
-          Include="$([System.Text.RegularExpressions.Regex]::Replace('%(_WasmCorerunProductTableLine.Identity)', '^\{&quot;([^&quot;]+)&quot;,.*$', '$1'))"
-          Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('%(_WasmCorerunProductTableLine.Identity)', '^\{&quot;[^&quot;]+&quot;, s_'))" />
-
-      <_WasmCorerunMissingPInvokeModule Include="@(_WasmCorerunProductPInvokeModule)" Exclude="@(WasmCoreClrFrameworkPInvokeModule)" />
-      <_WasmCorerunUnknownPInvokeModule Include="@(WasmCoreClrFrameworkPInvokeModule)" Exclude="@(_WasmCorerunProductPInvokeModule)" />
-    </ItemGroup>
-
-    <Error Condition="'@(_WasmCorerunProductPInvokeModule)' == ''"
-           Text="No module rows could be read from '$(_WasmCorerunProductPInvokeTable)'. The parsing in CLRTest.WasmCorerun.targets needs to be updated to match the table's current shape." />
-
-    <Error Condition="'@(_WasmCorerunMissingPInvokeModule)' != '' or '@(_WasmCorerunUnknownPInvokeModule)' != ''"
-           Text="The framework P/Invoke module list in eng/wasm/WasmPInvokeModules.props no longer matches '$(_WasmCorerunProductPInvokeTable)'. Regenerate the product tables from the list and commit them (see src/tasks/WasmAppBuilder/generate-coreclr-helpers.md). Missing from the list: '@(_WasmCorerunMissingPInvokeModule)'. Not in the product table: '@(_WasmCorerunUnknownPInvokeModule)'." />
-  </Target>
-
-  <!--
     MSBuild decides whether a target is up to date by comparing timestamps, which cannot show that
     an input was *removed*: with one archive or assembly fewer, every surviving input is still older
     than the outputs, the target is skipped, and the previous build's native code stays linked in.
@@ -362,13 +313,17 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
     into the new one would throw DllNotFoundException.
   -->
   <Target Name="_WasmGenerateTestCallHelpers"
-          DependsOnTargets="_WasmResolveTestCorerunAssemblies;_WasmResolveTestCorerunPInvokeModules;_WasmWriteTestCorerunInputManifest"
+          DependsOnTargets="_WasmResolveTestCorerunAssemblies;_WasmWriteTestCorerunInputManifest"
           Condition="'$(_WasmCorerunSkip)' != 'true'"
-          Inputs="@(_WasmCorerunAssembly);@(_WasmCorerunTestLib);$(_WasmCorerunInputManifest);$(_WasmCorerunProductPInvokeTable)"
+          Inputs="@(_WasmCorerunAssembly);@(_WasmCorerunTestLib);$(_WasmCorerunInputManifest);$(WasmCoreClrFrameworkPInvokeModuleListFile)"
           Outputs="@(_WasmCorerunGeneratedSource)">
     <MakeDir Directories="$(_WasmCorerunDir)" />
 
     <ItemGroup>
+      <!-- The framework modules that CORE_ROOT/corerun.js already resolves. These generated sources
+           replace libcoreclr_gen_static.a wholesale, so the list has to name every module the
+           product's own tables cover: one missing becomes a DllNotFoundException at run time, in
+           the test rather than in the build. -->
       <_WasmCorerunPInvokeModule Include="@(WasmCoreClrFrameworkPInvokeModule)" />
 
       <!-- The test's own modules. Module matching is an exact string compare against the

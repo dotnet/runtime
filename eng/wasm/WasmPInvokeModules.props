@@ -12,14 +12,20 @@
       the same modules: one missing here surfaces as a DllNotFoundException at run time, inside
       the test rather than in the build.
 
-  The list is authored here and the checked-in tables are generated from it, so the two can still
-  disagree if it is edited without regenerating them. CLRTest.WasmCorerun.targets checks for that.
+  The checked-in tables are generated from this list, so editing it means regenerating and
+  committing them in the same change.
 
   src/mono/browser/build/BrowserWasmApp.CoreCLR.targets keeps a copy of its own on purpose: it
   ships in the WebAssembly workload and is evaluated inside the user's SDK, where this file does
   not exist.
 -->
 <Project>
+  <PropertyGroup>
+    <!-- For consumers that regenerate their own tables from the list and need editing it to
+         invalidate them. -->
+    <WasmCoreClrFrameworkPInvokeModuleListFile>$(MSBuildThisFileFullPath)</WasmCoreClrFrameworkPInvokeModuleListFile>
+  </PropertyGroup>
+
   <ItemGroup>
     <WasmCoreClrFrameworkPInvokeModule Include="libSystem.Globalization.Native" />
     <WasmCoreClrFrameworkPInvokeModule Include="libSystem.IO.Compression.Native" />
