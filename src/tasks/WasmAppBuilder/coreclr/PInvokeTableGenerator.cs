@@ -82,6 +82,12 @@ internal sealed class PInvokeTableGenerator
 
     private void EmitPInvokeTable(StreamWriter w, SortedDictionary<string, string> modules, HashSet<string> ignoredModules, List<PInvoke> pinvokes)
     {
+        // What actually gets linked in, captured before the scan below starts adding to modules.
+        // The lib-prefix fallback has to resolve against this rather than against modules, or an
+        // alias could be derived from another alias, or from a module that is only imported for
+        // [WasmImportLinkage] and has no archive behind it at all.
+        HashSet<string> linkedModules = new(modules.Keys, StringComparer.Ordinal);
+
         foreach (var pinvoke in pinvokes)
         {
             if (modules.ContainsKey(pinvoke.Module))
@@ -92,7 +98,7 @@ internal sealed class PInvokeTableGenerator
             // of what gets linked in -- carries "libFoo", while the managed side spells the
             // [DllImport] "Foo", the name it would use on Windows. That is also the name the
             // runtime resolver looks up, so accept it as naming the same module.
-            if (modules.ContainsKey($"lib{pinvoke.Module}"))
+            if (linkedModules.Contains($"lib{pinvoke.Module}"))
             {
                 modules.Add(pinvoke.Module, pinvoke.Module);
                 Log.LogMessage(MessageImportance.Low, $"Adding module {pinvoke.Module} for statically linked lib{pinvoke.Module}");
