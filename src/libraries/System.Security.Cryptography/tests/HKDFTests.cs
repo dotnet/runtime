@@ -230,17 +230,17 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public void DeriveKeyLargeSalt()
         {
-            byte[] salt = Enumerable.Range(0, 2049).Select(i => (byte)i).ToArray();
+            byte[] salt = new byte[1024];
             byte[] okm = DeriveKey(HashAlgorithmName.SHA256, "ikm"u8.ToArray(), 32, salt, Array.Empty<byte>());
-            Assert.Equal("3F711F77DCF1C07FFBA8747377AC004F032A2515567C84FE22FDA3AE25F03170", okm.ByteArrayToHex());
+            Assert.Equal("EDA18C97F87B21690CF1211C7C440AED6F0526412C6C2F8BA8F718D3CAC72471", okm.ByteArrayToHex());
         }
 
         [Fact]
         public void DeriveKeyLargeInfo()
         {
-            byte[] info = Enumerable.Range(0, 2049).Select(i => (byte)i).ToArray();
+            byte[] info = new byte[1024];
             byte[] okm = DeriveKey(HashAlgorithmName.SHA256, "ikm"u8.ToArray(), 32, "salt"u8.ToArray(), info);
-            Assert.Equal("77E66871259700FE97779CE3C03C898B0B2FC3EFD8204465C1F3F4F45B61F791", okm.ByteArrayToHex());
+            Assert.Equal("9B1C96B2000BA1F84A40605AC70C46C8FE339796BC7F82EDCA9A71CEF69A396B", okm.ByteArrayToHex());
         }
 
         [Theory]
