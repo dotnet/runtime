@@ -415,19 +415,19 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(aot: true, config: Configuration.Release)]
-        [TestCategory("native-mono")]
+        [TestCategory("native"), TestCategory("mono")]
         public async Task EnsureWasmAbiRulesAreFollowedInAOT(Configuration config, bool aot) =>
             await EnsureWasmAbiRulesAreFollowed(config, aot);
 
         [Theory]
         [BuildAndRun(aot: false)]
-        [TestCategory("native-mono")]
+        [TestCategory("native"), TestCategory("mono")]
         public async Task EnsureWasmAbiRulesAreFollowedInInterpreter(Configuration config, bool aot) =>
             await EnsureWasmAbiRulesAreFollowed(config, aot);
 
         [Theory]
         [BuildAndRun(aot: false)]
-        [TestCategory("native-mono")]
+        [TestCategory("native"), TestCategory("mono")]
         public void UnsupportedOSPlatformPInvokeIsSkipped(Configuration config, bool aot)
         {
             // https://github.com/dotnet/runtime/issues/110870: a Windows-only pinvoke with
@@ -481,7 +481,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(aot: true, config: Configuration.Release)]
-        [TestCategory("native-mono")]
+        [TestCategory("native"), TestCategory("mono")]
         public void EnsureComInteropCompilesInAOT(Configuration config, bool aot)
         {
             ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "com");

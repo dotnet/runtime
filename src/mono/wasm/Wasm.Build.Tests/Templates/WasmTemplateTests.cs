@@ -198,7 +198,7 @@ namespace Wasm.Build.Tests
         [Theory]
         [InlineData("", true)] // Default case
         [InlineData("false", false)] // the other case
-        [TestCategory("native"), TestCategory("workload")]
+        [TestCategory("native"), TestCategory("mono"), TestCategory("workload")]
         public async Task Test_WasmStripILAfterAOT(string stripILAfterAOT, bool expectILStripping)
         {
             Configuration config = Configuration.Release;
@@ -376,7 +376,7 @@ namespace Wasm.Build.Tests
         [InlineData("true", false)]
         [InlineData("false", true)]
         [InlineData("", false)] // Default case
-        [TestCategory("workload")]
+        [TestCategory("mono"), TestCategory("workload")]
         public void UseMonoRuntimeParameter(string useMonoRuntimeArg, bool expectUseMonoRuntimeProperty)
         {
             Configuration config = Configuration.Debug;
