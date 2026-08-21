@@ -247,7 +247,6 @@ TypeHandle Object::GetGCSafeTypeHandleIfPossible() const
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pInterfaceMT));
         PRECONDITION(pInterfaceMT->IsInterface());
     }
@@ -305,7 +304,6 @@ void Object::ValidateHeap(BOOL bDeep)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
 #if defined (VERIFY_HEAP)
     //no need to verify next object's header in this case
@@ -318,7 +316,6 @@ void Object::SetOffsetObjectRef(DWORD dwOffset, size_t dwValue)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
     STATIC_CONTRACT_MODE_COOPERATIVE;
 
     OBJECTREF*  location;
@@ -334,7 +331,6 @@ void SetObjectReferenceUnchecked(OBJECTREF *dst,OBJECTREF ref)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
     STATIC_CONTRACT_MODE_COOPERATIVE;
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
 
@@ -353,7 +349,6 @@ void CopyValueClassUnchecked(void* dest, void* src, MethodTable *pMT)
 
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
     STATIC_CONTRACT_MODE_COOPERATIVE;
 
     _ASSERTE(!pMT->IsArray());  // bunch of assumptions about arrays wrong.
@@ -399,7 +394,6 @@ void CopyValueClassArgUnchecked(ArgDestination *argDest, void* src, MethodTable 
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
     STATIC_CONTRACT_MODE_COOPERATIVE;
 
 #if defined(UNIX_AMD64_ABI)
@@ -438,7 +432,6 @@ void InitValueClassArg(ArgDestination *argDest, MethodTable *pMT)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
     STATIC_CONTRACT_MODE_COOPERATIVE;
 
 #if defined(UNIX_AMD64_ABI)
@@ -486,7 +479,6 @@ VOID Object::Validate(BOOL bDeep, BOOL bVerifyNextHeader, BOOL bVerifySyncBlock)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
     STATIC_CONTRACT_MODE_COOPERATIVE;
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
 
@@ -518,7 +510,7 @@ VOID Object::Validate(BOOL bDeep, BOOL bVerifyNextHeader, BOOL bVerifySyncBlock)
 
 
     {   // ValidateInner can throw or fault on failure which violates contract.
-        CONTRACT_VIOLATION(ThrowsViolation | FaultViolation);
+        CONTRACT_VIOLATION(ThrowsViolation);
 
         // using inner helper because of TRY and stack objects with destructors.
         ValidateInner(bDeep, bVerifyNextHeader, bVerifySyncBlock);
@@ -529,7 +521,6 @@ VOID Object::ValidateInner(BOOL bDeep, BOOL bVerifyNextHeader, BOOL bVerifySyncB
 {
     STATIC_CONTRACT_THROWS; // See CONTRACT_VIOLATION above
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FAULT; // See CONTRACT_VIOLATION above
     STATIC_CONTRACT_MODE_COOPERATIVE;
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
 
@@ -838,7 +829,6 @@ OBJECTREF::OBJECTREF()
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     m_asObj = (Object*)POISONC;
     Thread::ObjectRefNew(this);
@@ -852,7 +842,6 @@ OBJECTREF::OBJECTREF(const OBJECTREF & objref)
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_MODE_COOPERATIVE;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     VALIDATEOBJECT(objref.m_asObj);
 
@@ -886,7 +875,6 @@ OBJECTREF::OBJECTREF(const OBJECTREF *pObjref, tagVolatileLoadWithoutBarrier tag
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_MODE_COOPERATIVE;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     Object* objrefAsObj = VolatileLoadWithoutBarrier(&pObjref->m_asObj);
     VALIDATEOBJECT(objrefAsObj);
@@ -920,7 +908,6 @@ OBJECTREF::OBJECTREF(TADDR nul)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     //_ASSERTE(nul == 0);
     m_asObj = (Object*)nul;
@@ -946,7 +933,6 @@ OBJECTREF::OBJECTREF(Object *pObject)
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_MODE_COOPERATIVE;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     DEBUG_ONLY_FUNCTION;
 
@@ -979,7 +965,6 @@ int OBJECTREF::operator!() const
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     // We don't do any validation here, as we want to allow zero comparison in preemptive mode
     return !m_asObj;
@@ -992,7 +977,6 @@ int OBJECTREF::operator==(const OBJECTREF &objref) const
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     if (objref.m_asObj != NULL) // Allow comparison to zero in preemptive mode
     {
@@ -1030,7 +1014,6 @@ int OBJECTREF::operator!=(const OBJECTREF &objref) const
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     if (objref.m_asObj != NULL)  // Allow comparison to zero in preemptive mode
     {
@@ -1070,7 +1053,6 @@ Object* OBJECTREF::operator->()
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     VALIDATEOBJECT(m_asObj);
         // If this assert fires, you probably did not protect
@@ -1095,7 +1077,6 @@ const Object* OBJECTREF::operator->() const
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     VALIDATEOBJECT(m_asObj);
         // If this assert fires, you probably did not protect
@@ -1124,7 +1105,6 @@ OBJECTREF& OBJECTREF::operator=(const OBJECTREF &objref)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     VALIDATEOBJECT(objref.m_asObj);
 
@@ -1158,7 +1138,6 @@ OBJECTREF& OBJECTREF::operator=(TADDR nul)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     _ASSERTE(nul == 0);
     Thread::ObjectRefAssign(this);
@@ -1415,7 +1394,6 @@ OBJECTREF Nullable::Box(void* srcPtr, MethodTable* nullableMT)
     }
     CONTRACTL_END;
 
-    FAULT_NOT_FATAL();      // FIX_NOW: why do we need this?
 
     Nullable* src = (Nullable*) srcPtr;
 

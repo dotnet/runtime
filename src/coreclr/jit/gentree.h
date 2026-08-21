@@ -1939,12 +1939,6 @@ public:
 
     bool OperIsLIR() const
     {
-        if (OperIs(GT_NOP))
-        {
-            // NOPs may only be present in LIR if they do not produce a value.
-            return IsNothingNode();
-        }
-
         return (DebugOperKind() & DBK_NOTLIR) == 0;
     }
 

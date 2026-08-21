@@ -77,7 +77,6 @@ const CHAR * TraceDestination::DbgToString(SString & buffer)
     SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE;
 
 
-    FAULT_NOT_FATAL();
 
     EX_TRY
     {
@@ -171,7 +170,6 @@ void TraceDestination::InitForUnjittedMethod(MethodDesc * pDesc)
         {
             MethodDesc * pNewDesc = NULL;
 
-            FAULT_NOT_FATAL();
 
 
 #ifndef DACCESS_COMPILE
@@ -382,7 +380,6 @@ BOOL StubManager::IsSingleOwner(PCODE stubAddress, StubManager * pOwner)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
     STATIC_CONTRACT_CAN_TAKE_LOCK;         // courtesy StubManagerIterator
 
     // ensure this stubmanager owns it.
@@ -559,7 +556,6 @@ BOOL StubManager::TraceStub(PCODE stubStartAddress, TraceDestination *trace)
             if (fValid)
             {
                 SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE;
-                FAULT_NOT_FATAL();
                 SString buffer;
                 DbgWriteLog("  td=%s\n", trace->DbgToString(buffer));
             }
@@ -605,7 +601,6 @@ BOOL StubManager::FollowTrace(TraceDestination *trace)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     while (trace->GetTraceType() == TRACE_STUB)
     {
@@ -779,7 +774,6 @@ void StubManager::DbgBeginLog(TADDR addrCallInstruction, TADDR addrCallTarget)
     }
     // Now that we know we're not interop-debugging, we can safely call new.
     SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE;
-    FAULT_NOT_FATAL();
 
     {
         CrstHolder ch(&s_DbgLogCrst);
@@ -823,7 +817,6 @@ void StubManager::DbgFinishLog()
 
     // Since this is just a tool for debugging, we don't care if we call new.
     SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE;
-    FAULT_NOT_FATAL();
 
     delete s_pDbgStubManagerLog;
     s_pDbgStubManagerLog = NULL;
@@ -855,7 +848,6 @@ void StubManager::DbgWriteLog(const CHAR *format, ...)
 
     // Since this is just a tool for debugging, we don't care if we call new.
     SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE;
-    FAULT_NOT_FATAL();
 
     CrstHolder ch(&s_DbgLogCrst);
 
@@ -909,7 +901,6 @@ void StubManager::DbgGetLog(SString * pStringOut)
 
     // Since this is just a tool for debugging, we don't care if we call new.
     SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE;
-    FAULT_NOT_FATAL();
 
     CrstHolder ch(&s_DbgLogCrst);
 
@@ -1050,7 +1041,6 @@ BOOL PrecodeStubManager::DoTraceStub(PCODE stubStartAddress,
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -1376,7 +1366,6 @@ BOOL StubLinkStubManager::TraceManager(Thread *thread,
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(return FALSE;);
     }
     CONTRACTL_END
 
@@ -1476,7 +1465,6 @@ BOOL RangeSectionStubManager::DoTraceStub(PCODE stubStartAddress, TraceDestinati
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 

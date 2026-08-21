@@ -35,7 +35,7 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
 
 
     [Fact]
-    [TestCategory("native-mono")]
+    [TestCategory("native"), TestCategory("mono")]
     public Task BlazorEventPipeTestWithCpuSamplesAOT() => BlazorEventPipeTestWithCpuSamples(Configuration.Release, aot: true);
 
     [Theory]

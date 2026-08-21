@@ -217,7 +217,6 @@ void Module::UpdateNewlyAddedTypes()
         MODE_PREEMPTIVE;
         THROWS;
         GC_NOTRIGGER;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
 
@@ -278,7 +277,6 @@ void Module::NotifyProfilerLoadFinished(HRESULT hr)
         INSTANCE_CHECK;
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
         MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
@@ -365,7 +363,6 @@ Module::Module(Assembly *pAssembly, PEAssembly *pPEAssembly)
     {
         NOTHROW;
         GC_TRIGGERS;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -835,7 +832,6 @@ MethodTable *Module::GetGlobalMethodTable()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(return NULL;);
     }
     CONTRACTL_END;
 
@@ -1972,7 +1968,6 @@ void Module::ReleaseISymUnmanagedReader(void)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        FORBID_FAULT;
     }
     CONTRACTL_END;
 
@@ -1998,7 +1993,6 @@ ILStubCache* Module::GetILStubCache()
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -2221,7 +2215,6 @@ BOOL Module::IsSigInILImpl(PCCOR_SIGNATURE signature)
     CONTRACTL
     {
         INSTANCE_CHECK;
-        FORBID_FAULT;
         MODE_ANY;
         NOTHROW;
         GC_NOTRIGGER;
@@ -2239,7 +2232,6 @@ void ModuleBase::InitializeStringData(DWORD token, EEStringData *pstrData, CQuic
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(TypeFromToken(token) == mdtString);
     }
     CONTRACTL_END;
@@ -2276,7 +2268,6 @@ STRINGREF* ModuleBase::ResolveStringRef(DWORD token, void** ppPinnedString)
     {
         INSTANCE_CHECK;
         STANDARD_VM_CHECK;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(TypeFromToken(token) == mdtString);
     }
     CONTRACTL_END;
@@ -2340,7 +2331,6 @@ Module::GetAssemblyIfLoaded(
         INSTANCE_CHECK;
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         MODE_ANY;
         SUPPORTS_DAC;
     }
@@ -2465,7 +2455,6 @@ Assembly * Module::LoadAssemblyImpl(mdAssemblyRef kAssemblyRef)
         INSTANCE_CHECK;
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM();); }
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -2524,7 +2513,6 @@ Module *Module::GetModuleIfLoaded(mdFile kFile)
         MODE_ANY;
         PRECONDITION(TypeFromToken(kFile) == mdtFile
                      || TypeFromToken(kFile) == mdtModuleRef);
-        FORBID_FAULT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
@@ -2593,8 +2581,6 @@ PTR_Module Module::LookupModule(mdToken kFile)
         INSTANCE_CHECK;
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT;
-        else { INJECT_FAULT(COMPlusThrowOM()); }
         MODE_ANY;
         PRECONDITION(TypeFromToken(kFile) == mdtFile
                      || TypeFromToken(kFile) == mdtModuleRef);
@@ -2619,7 +2605,6 @@ TypeHandle ModuleBase::LookupTypeRef(mdTypeRef token)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
     SUPPORTS_DAC;
 
     _ASSERTE(TypeFromToken(token) == mdtTypeRef);
@@ -2648,7 +2633,6 @@ PTR_TADDR LookupMapBase::GrowMap(ModuleBase * pModule, DWORD rid)
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT(ThrowOutOfMemory(););
     }
     CONTRACTL_END;
 
@@ -3478,7 +3462,6 @@ IMDInternalImport* Module::GetNativeAssemblyImport(BOOL loadAllowed)
         INSTANCE_CHECK;
         if (loadAllowed) GC_TRIGGERS;                    else GC_NOTRIGGER;
         if (loadAllowed) THROWS;                         else NOTHROW;
-        if (loadAllowed) INJECT_FAULT(COMPlusThrowOM()); else FORBID_FAULT;
         MODE_ANY;
         PRECONDITION(IsReadyToRun());
     }
@@ -3847,7 +3830,6 @@ ReflectionModule::ReflectionModule(Assembly *pAssembly, PEAssembly *pPEAssembly)
     {
         NOTHROW;
         GC_TRIGGERS;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -4250,7 +4232,6 @@ VASigCookie *Module::GetVASigCookie(Signature vaSignature, const SigTypeContext*
     {
         INSTANCE_CHECK;
         STANDARD_VM_CHECK;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -4291,7 +4272,6 @@ VASigCookie *Module::GetVASigCookieWorker(Module* pDefiningModule, Module* pLoad
     CONTRACTL
     {
         STANDARD_VM_CHECK;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -4445,7 +4425,6 @@ LookupMapBase::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        FORBID_FAULT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
@@ -4471,7 +4450,6 @@ LookupMapBase::ListEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        FORBID_FAULT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
@@ -4544,7 +4522,6 @@ void Module::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        FORBID_FAULT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
@@ -4625,7 +4602,6 @@ LPCWSTR Module::GetPathForErrorMessages()
     {
         THROWS;
         GC_TRIGGERS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
     }
     CONTRACTL_END
 
@@ -4647,7 +4623,6 @@ LPCWSTR ModuleBase::GetPathForErrorMessages()
     {
         THROWS;
         GC_TRIGGERS;
-        FORBID_FAULT;
     }
     CONTRACTL_END;
     return W("");

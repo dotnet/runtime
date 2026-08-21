@@ -5402,12 +5402,6 @@ void Debugger::TraceCall(const BYTE *code)
         // There are situations where our callers can't tolerate us throwing.
         EX_TRY
         {
-            // Since we have a try catch and the debugger code can deal properly with
-            // faults occurring inside DebuggerController::DispatchTraceCall, we can safely
-            // establish a FAULT_NOT_FATAL region. This is required since some callers can't
-            // tolerate faults.
-            FAULT_NOT_FATAL();
-
             DebuggerController::DispatchTraceCall(pCurThread, code);
         }
         EX_CATCH
@@ -11771,7 +11765,7 @@ void Debugger::GetAndSendTransitionStubInfo(CORDB_ADDRESS_TYPE *stubAddress)
     // If its not a stub, then maybe its an address in mscoree?
     if (result == false)
     {
-        result = (IsIPInModule(GetClrModuleBase(), (PCODE)stubAddress) == TRUE);
+        result = (g_pEEInterface->IsIPInModule(GetClrModuleBase(), (PCODE)stubAddress) == TRUE);
     }
 
     // This is a synchronous event (reply required)

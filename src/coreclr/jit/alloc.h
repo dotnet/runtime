@@ -62,7 +62,7 @@ struct JitMemKindTraits
     static void fillWithUninitializedPattern(void* block, size_t size)
     {
 #if defined(DEBUG)
-        memset(block, UninitializedWord<char>(nullptr), size);
+        memset(block, UninitializedFillByte, size);
 #else
         (void)block;
         (void)size;
