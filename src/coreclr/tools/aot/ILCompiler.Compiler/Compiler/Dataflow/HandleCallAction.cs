@@ -573,7 +573,7 @@ namespace ILLink.Shared.TrimAnalysis
                 foreach (TypeDesc constraint in p.TypeConstraints)
                 {
                     if (constraint.IsInterface)
-                        marker.Dependencies.Add(marker.Factory.InterfaceUse(constraint.GetTypeDefinition()), "MakeGeneric used with a constrained type");
+                        marker.Dependencies.Add(marker.Factory.ReflectedType(constraint.GetTypeDefinition()), "MakeGeneric used with a constrained type");
                 }
             }
 #endif
