@@ -28,6 +28,11 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
 -->
 <Project>
 
+  <!-- The framework P/Invoke modules, shared with the build that generates the checked-in product
+       call tables so that the two cannot be edited apart. Validated against those tables in
+       _WasmResolveTestCorerunPInvokeModules below. -->
+  <Import Project="$(RepositoryEngineeringDir)wasm\WasmPInvokeModules.props" />
+
   <PropertyGroup>
     <!--
       Engage implicitly for any browser CoreCLR test that brings its own native code. BuildOnly
@@ -285,26 +290,26 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
   </Target>
 
   <!--
-    The framework modules that CORE_ROOT/corerun.js already resolves. The generated sources replace
-    libcoreclr_gen_static.a wholesale, so this list has to name every module the checked-in product
+    The framework modules that CORE_ROOT/corerun.js already resolves, shared with the build that
+    generates the checked-in product tables (eng/wasm/WasmPInvokeModules.props). The generated
+    sources replace libcoreclr_gen_static.a wholesale, so the list has to name every module those
     tables cover: one missing here becomes a DllNotFoundException at run time, in the test rather
-    than in the build. Rather than trust that the two stay in step, read the product's own list and
-    compare. This runs outside the incremental generate target, and the product file is one of that
-    target's inputs, so adding a module there is picked up without a clean build.
+    than in the build.
+
+    Sharing the list keeps the two builds from being edited apart, but not from drifting: the
+    tables are generated from it and checked in, so changing it without regenerating them leaves
+    the two out of step. Read the modules back out of the generated table and compare. This runs
+    outside the incremental generate target, and the product file is one of that target's inputs,
+    so a regenerated table is picked up without a clean build.
   -->
   <Target Name="_WasmResolveTestCorerunPInvokeModules"
           DependsOnTargets="_WasmResolveTestCorerunInputs"
           Condition="'$(_WasmCorerunSkip)' != 'true'">
-    <ItemGroup>
-      <_WasmCorerunFrameworkPInvokeModule Include="libSystem.Globalization.Native" />
-      <_WasmCorerunFrameworkPInvokeModule Include="libSystem.IO.Compression.Native" />
-      <_WasmCorerunFrameworkPInvokeModule Include="libSystem.Native" />
-      <_WasmCorerunFrameworkPInvokeModule Include="libSystem.Native.Browser" />
-      <_WasmCorerunFrameworkPInvokeModule Include="libSystem.Runtime.InteropServices.JavaScript.Native" />
-    </ItemGroup>
+    <Error Condition="'@(WasmCoreClrFrameworkPInvokeModule)' == ''"
+           Text="No framework P/Invoke modules were found. They are defined in eng/wasm/WasmPInvokeModules.props, which CLRTest.WasmCorerun.targets imports." />
 
     <Error Condition="!Exists('$(_WasmCorerunProductPInvokeTable)')"
-           Text="'$(_WasmCorerunProductPInvokeTable)' does not exist. The framework P/Invoke module list in CLRTest.WasmCorerun.targets is validated against that table, so _WasmCorerunProductPInvokeTable has to be pointed at its new location if the product table moved." />
+           Text="'$(_WasmCorerunProductPInvokeTable)' does not exist. The framework P/Invoke module list in eng/wasm/WasmPInvokeModules.props is validated against that table, so _WasmCorerunProductPInvokeTable has to be pointed at its new location if the product table moved." />
 
     <ReadLinesFromFile File="$(_WasmCorerunProductPInvokeTable)">
       <Output TaskParameter="Lines" ItemName="_WasmCorerunProductTableLine" />
@@ -316,15 +321,15 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
           Include="$([System.Text.RegularExpressions.Regex]::Replace('%(_WasmCorerunProductTableLine.Identity)', '^\{&quot;([^&quot;]+)&quot;,.*$', '$1'))"
           Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('%(_WasmCorerunProductTableLine.Identity)', '^\{&quot;[^&quot;]+&quot;, s_'))" />
 
-      <_WasmCorerunMissingPInvokeModule Include="@(_WasmCorerunProductPInvokeModule)" Exclude="@(_WasmCorerunFrameworkPInvokeModule)" />
-      <_WasmCorerunUnknownPInvokeModule Include="@(_WasmCorerunFrameworkPInvokeModule)" Exclude="@(_WasmCorerunProductPInvokeModule)" />
+      <_WasmCorerunMissingPInvokeModule Include="@(_WasmCorerunProductPInvokeModule)" Exclude="@(WasmCoreClrFrameworkPInvokeModule)" />
+      <_WasmCorerunUnknownPInvokeModule Include="@(WasmCoreClrFrameworkPInvokeModule)" Exclude="@(_WasmCorerunProductPInvokeModule)" />
     </ItemGroup>
 
     <Error Condition="'@(_WasmCorerunProductPInvokeModule)' == ''"
            Text="No module rows could be read from '$(_WasmCorerunProductPInvokeTable)'. The parsing in CLRTest.WasmCorerun.targets needs to be updated to match the table's current shape." />
 
     <Error Condition="'@(_WasmCorerunMissingPInvokeModule)' != '' or '@(_WasmCorerunUnknownPInvokeModule)' != ''"
-           Text="The framework P/Invoke module list in CLRTest.WasmCorerun.targets no longer matches '$(_WasmCorerunProductPInvokeTable)'. Missing from the test list: '@(_WasmCorerunMissingPInvokeModule)'. Not in the product table: '@(_WasmCorerunUnknownPInvokeModule)'." />
+           Text="The framework P/Invoke module list in eng/wasm/WasmPInvokeModules.props no longer matches '$(_WasmCorerunProductPInvokeTable)'. Regenerate the product tables from the list and commit them (see src/tasks/WasmAppBuilder/generate-coreclr-helpers.md). Missing from the list: '@(_WasmCorerunMissingPInvokeModule)'. Not in the product table: '@(_WasmCorerunUnknownPInvokeModule)'." />
   </Target>
 
   <!--
@@ -364,7 +369,7 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
     <MakeDir Directories="$(_WasmCorerunDir)" />
 
     <ItemGroup>
-      <_WasmCorerunPInvokeModule Include="@(_WasmCorerunFrameworkPInvokeModule)" />
+      <_WasmCorerunPInvokeModule Include="@(WasmCoreClrFrameworkPInvokeModule)" />
 
       <!-- The test's own modules. Module matching is an exact string compare against the
            [DllImport] name and tests spell it either way, so offer both the archive's file name
