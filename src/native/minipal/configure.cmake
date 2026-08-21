@@ -25,7 +25,12 @@ check_c_source_compiles("
     int main(void)
     {
         pthread_rwlockattr_t attributes;
-        return pthread_rwlockattr_setkind_np(&attributes, PTHREAD_RWLOCK_PREFER_WRITER_NONRECURSIVE_NP);
+        if (pthread_rwlockattr_init(&attributes) != 0)
+            return 1;
+
+        int result = pthread_rwlockattr_setkind_np(&attributes, PTHREAD_RWLOCK_PREFER_WRITER_NONRECURSIVE_NP);
+        pthread_rwlockattr_destroy(&attributes);
+        return result;
     }"
     HAVE_PTHREAD_RWLOCK_PREFER_WRITER_NONRECURSIVE_NP)
 

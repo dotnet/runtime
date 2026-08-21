@@ -54,7 +54,7 @@ LOADEDMODULES::InitializeStatics()
             IfNullGo(pLoadedModules);
 
             {
-                CMDReadWriteLock lockHolder(m_pReadWriteLock COMMA_INDEBUG(nullptr));
+                CMDReadWriteLock lockHolder(m_pReadWriteLock COMMA_INDEBUG(NULL));
                 IfFailGo(lockHolder.LockWrite());
 
                 if (VolatileLoad(&s_pLoadedModules) == NULL)
@@ -80,7 +80,7 @@ HRESULT LOADEDMODULES::AddModuleToLoadedList(RegMeta * pRegMeta)
     IfFailGo(InitializeStatics());
 
     {
-        CMDReadWriteLock lockHolder(m_pReadWriteLock COMMA_INDEBUG(nullptr));
+        CMDReadWriteLock lockHolder(m_pReadWriteLock COMMA_INDEBUG(NULL));
         IfFailGo(lockHolder.LockWrite());
 
         ppRegMeta = s_pLoadedModules->Append();
@@ -113,7 +113,7 @@ BOOL LOADEDMODULES::RemoveModuleFromLoadedList(RegMeta * pRegMeta)
     IfFailGo(InitializeStatics());
 
     {
-        CMDReadWriteLock lockHolder(m_pReadWriteLock COMMA_INDEBUG(nullptr));
+        CMDReadWriteLock lockHolder(m_pReadWriteLock COMMA_INDEBUG(NULL));
         IfFailGo(lockHolder.LockWrite());
 
         // Search for this module in list of loaded modules.
@@ -178,7 +178,7 @@ BOOL LOADEDMODULES::IsEntryInList(
     IfFailGo(InitializeStatics());
 
     {
-        CMDReadWriteLock lockHolder(m_pReadWriteLock COMMA_INDEBUG(nullptr));
+        CMDReadWriteLock lockHolder(m_pReadWriteLock COMMA_INDEBUG(NULL));
         IfFailGo(lockHolder.LockRead());
 
         // Loop through each loaded modules
@@ -224,7 +224,7 @@ LOADEDMODULES::ResolveTypeRefWithLoadedModules(
     IfFailGo(InitializeStatics());
 
     {
-        CMDReadWriteLock lockHolder(m_pReadWriteLock COMMA_INDEBUG(nullptr));
+        CMDReadWriteLock lockHolder(m_pReadWriteLock COMMA_INDEBUG(NULL));
         IfFailGo(lockHolder.LockRead());
 
         // Get the Nesting hierarchy.

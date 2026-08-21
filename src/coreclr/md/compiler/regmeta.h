@@ -1305,7 +1305,7 @@ public:
     {
         _ASSERTE(m_pReadWriteLock == NULL);
         m_pReadWriteLock = pLock;
-        INDEBUG(if (pLock != nullptr) { m_pStgdb->m_MiniMd.Debug_EnableLockCheck(); })
+        INDEBUG(if (pLock != NULL) { m_pStgdb->m_MiniMd.Debug_EnableLockCheck(); })
         return NOERROR;
     }
     STDMETHODIMP_(minipal_rwlock *) GetReaderWriterLock() { return m_pReadWriteLock; }

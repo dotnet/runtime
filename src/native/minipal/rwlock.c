@@ -11,8 +11,7 @@ bool minipal_rwlock_init(minipal_rwlock* rwlock)
 #ifdef HOST_WINDOWS
     InitializeSRWLock(&rwlock->_impl);
     return true;
-#else
-#if HAVE_PTHREAD_RWLOCK_PREFER_WRITER_NONRECURSIVE_NP
+#elif HAVE_PTHREAD_RWLOCK_PREFER_WRITER_NONRECURSIVE_NP
     pthread_rwlockattr_t attributes;
     int st = pthread_rwlockattr_init(&attributes);
     if (st != 0)
@@ -27,7 +26,6 @@ bool minipal_rwlock_init(minipal_rwlock* rwlock)
 #else
     return pthread_rwlock_init(&rwlock->_impl, NULL) == 0;
 #endif
-#endif // HOST_WINDOWS
 }
 
 void minipal_rwlock_destroy(minipal_rwlock* rwlock)

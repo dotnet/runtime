@@ -14,14 +14,6 @@
 #include "contract.h"
 #include "../inc/mdlog.h"
 
-#if !defined(SELF_NO_HOST) && !defined(DACCESS_COMPILE) && !defined(DBI_COMPILE) && defined(TARGET_X86) && !defined(TARGET_UNIX)
-void IncCantStopCount();
-void DecCantStopCount();
-#else
-#define IncCantStopCount()
-#define DecCantStopCount()
-#endif
-
 HRESULT CreateMDReadWriteLock(minipal_rwlock **ppLock)
 {
     minipal_rwlock *pLock = new (nothrow) minipal_rwlock;
@@ -56,11 +48,8 @@ HRESULT AcquireMDReadLock(minipal_rwlock *pLock)
     }
     CONTRACTL_END;
 
-    IncCantStopCount();
-
     if (!minipal_rwlock_enter_read(pLock))
     {
-        DecCantStopCount();
         return E_FAIL;
     }
 
@@ -78,16 +67,13 @@ HRESULT AcquireMDWriteLock(minipal_rwlock *pLock COMMA_INDEBUG(CMiniMdRW *pMiniM
     }
     CONTRACTL_END;
 
-    IncCantStopCount();
-
     if (!minipal_rwlock_enter_write(pLock))
     {
-        DecCantStopCount();
         return E_FAIL;
     }
 
 #ifdef _DEBUG
-    if (pMiniMd != nullptr)
+    if (pMiniMd != NULL)
     {
         pMiniMd->Debug_SetIsLockedForWrite(true);
     }
@@ -106,7 +92,6 @@ void ReleaseMDReadLock(minipal_rwlock *pLock)
     CONTRACTL_END;
 
     minipal_rwlock_leave_read(pLock);
-    DecCantStopCount();
     EE_LOCK_RELEASED(pLock);
 }
 
@@ -120,13 +105,12 @@ void ReleaseMDWriteLock(minipal_rwlock *pLock COMMA_INDEBUG(CMiniMdRW *pMiniMd))
     CONTRACTL_END;
 
 #ifdef _DEBUG
-    if (pMiniMd != nullptr)
+    if (pMiniMd != NULL)
     {
         pMiniMd->Debug_SetIsLockedForWrite(false);
     }
 #endif // _DEBUG
     minipal_rwlock_leave_write(pLock);
-    DecCantStopCount();
     EE_LOCK_RELEASED(pLock);
 }
 
@@ -1417,6 +1401,6 @@ void CMDReadWriteLock::Debug_DetachMiniMd(CMiniMdRW *pMiniMd)
     {
         m_pMiniMd->Debug_SetIsLockedForWrite(false);
     }
-    m_pMiniMd = nullptr;
+    m_pMiniMd = NULL;
 }
 #endif // _DEBUG

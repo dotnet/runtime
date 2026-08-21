@@ -345,8 +345,11 @@ HRESULT RegMeta::OpenExistingMD(
 
     if (IsThreadSafetyOn())
     {
-        IfFailGo(CreateMDReadWriteLock(&m_pReadWriteLock));
-        m_fOwnLock = true;
+        if (m_pReadWriteLock == NULL)
+        {
+            IfFailGo(CreateMDReadWriteLock(&m_pReadWriteLock));
+            m_fOwnLock = true;
+        }
 
         INDEBUG(m_pStgdb->m_MiniMd.Debug_EnableLockCheck();)
     }
