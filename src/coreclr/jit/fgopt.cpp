@@ -2885,13 +2885,16 @@ void Compiler::fgPeelSwitch(BasicBlock* block)
 
     // Set up a compare in the upstream block, "stealing" the switch value tree.
     //
-    GenTree* const   dominantCaseCompare = gtNewOperNode(GT_EQ, TYP_INT, switchValue, gtNewIconNode(dominantCase));
-    GenTree* const   jmpTree             = gtNewOperNode(GT_JTRUE, TYP_VOID, dominantCaseCompare);
-    Statement* const jmpStmt             = fgNewStmtFromTree(jmpTree, switchStmt->GetDebugInfo());
-    fgInsertStmtAtEnd(block, jmpStmt);
+    GenTree* const dominantCaseCompare = gtNewOperNode(GT_EQ, TYP_INT, switchValue, gtNewIconNode(dominantCase));
+    GenTree* const jmpTree             = gtNewOperNode(GT_JTRUE, TYP_VOID, dominantCaseCompare);
 
     // Reattach switch value to the switch. This may introduce a comma
     // in the upstream compare tree, if the switch value expression is complex.
+    //
+    // Note this must happen before the compare is put into a statement below: creating the
+    // statement sequences the tree via gtSetEvalOrder, which is allowed to swap the operands
+    // of the compare (and does so when the switch value is a constant). After that point
+    // "gtOp1" is no longer guaranteed to be the switch value.
     //
     switchTree->AsOp()->gtOp1 = fgMakeMultiUse(&dominantCaseCompare->AsOp()->gtOp1);
 
@@ -2901,6 +2904,9 @@ void Compiler::fgPeelSwitch(BasicBlock* block)
     dominantCaseCompare->gtFlags |= dominantCaseCompare->gtGetOp1()->gtFlags & GTF_ALL_EFFECT;
     jmpTree->gtFlags |= dominantCaseCompare->gtFlags & GTF_ALL_EFFECT;
     dominantCaseCompare->gtFlags |= GTF_RELOP_JMP_USED | GTF_DONT_CSE;
+
+    Statement* const jmpStmt = fgNewStmtFromTree(jmpTree, switchStmt->GetDebugInfo());
+    fgInsertStmtAtEnd(block, jmpStmt);
 
     // Wire up the new control flow.
     //
@@ -2944,11 +2950,8 @@ void Compiler::fgPeelSwitch(BasicBlock* block)
         gtSetStmtInfo(switchStmt);
         fgSetStmtSeq(switchStmt);
 
-        // fgNewStmtFromTree() already threaded the tree, but calling fgMakeMultiUse() might have
-        // added new nodes if a COMMA was introduced.
-        JITDUMP("Rethreading " FMT_STMT "\n", jmpStmt->GetID());
-        gtSetStmtInfo(jmpStmt);
-        fgSetStmtSeq(jmpStmt);
+        // Note the compare does not need rethreading here: it was fully built (including any
+        // nodes fgMakeMultiUse() added) before fgNewStmtFromTree() sequenced it.
     }
 }
 
