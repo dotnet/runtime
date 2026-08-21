@@ -564,6 +564,7 @@ namespace ILLink.Shared.TrimAnalysis
 
         private static void AddDependenciesFromConstraintUse(ReflectionMarker marker, Instantiation inst)
         {
+#if !ILTRIM
             // Operations like MakeGeneric make use of constraints on the generic type parameter. Make sure
             // the compiler considers all of the interfaces in constraints used.
             // We only need to do this with interface constraints since base types are not removed (class constraints are safe).
@@ -575,6 +576,7 @@ namespace ILLink.Shared.TrimAnalysis
                         marker.Dependencies.Add(marker.Factory.InterfaceUse(constraint.GetTypeDefinition()), "MakeGeneric used with a constrained type");
                 }
             }
+#endif
         }
 
         private static bool TryGetMakeGenericInstantiation(
