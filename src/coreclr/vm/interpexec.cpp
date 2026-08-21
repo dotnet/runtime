@@ -2912,6 +2912,39 @@ SWITCH_OPCODE:
                     INTOP_NEXT;
                 }
 
+                INTOP_CASE(INTOP_CALL_HELPER_P_S_IF_NOT_NULL)
+                {
+                    pFrame->ip = ip;
+                    void* helperArg = LOCAL_VAR(ip[2], void*);
+
+                    if (helperArg == NULL)
+                    {
+                        LOCAL_VAR(ip[1], void*) = NULL;
+                        ip += 4;
+                        INTOP_NEXT;
+                    }
+
+                    MethodDesc *pILTargetMethod = NULL;
+                    HELPER_FTN_P_P helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_P_P>(pMethod, ip[3], &pILTargetMethod);
+                    if (pILTargetMethod != NULL)
+                    {
+                        returnOffset = ip[1];
+                        callArgsOffset = pMethod->allocaSize;
+
+                        // Pass argument to the target method
+                        LOCAL_VAR(callArgsOffset, void*) = helperArg;
+                        targetMethod = pILTargetMethod;
+                        ip += 4;
+                        goto CALL_INTERP_METHOD;
+                    }
+
+                    _ASSERTE(helperFtn != NULL);
+
+                    LOCAL_VAR(ip[1], void*) = Call_HELPER_FTN_P_P(helperFtn, helperArg);
+                    ip += 4;
+                    INTOP_NEXT;
+                }
+
                 INTOP_CASE(INTOP_CALL_HELPER_P_PS)
                 {
                     pFrame->ip = ip;

@@ -10961,8 +10961,8 @@ retry_emit:
                         m_pLastNewIns->SetSVar(typedByRefVar);
                         m_pLastNewIns->SetDVar(classHandleVar);
 
-                        AddIns(INTOP_CALL_HELPER_P_S);
-                        m_pLastNewIns->data[0] = GetDataForHelperFtn(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL);
+                        AddIns(INTOP_CALL_HELPER_P_S_IF_NOT_NULL);
+                        m_pLastNewIns->data[0] = GetDataForHelperFtn(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE);
                         m_pLastNewIns->SetSVar(classHandleVar);
                         PushInterpType(InterpTypeVT, m_compHnd->getBuiltinClass(CLASSID_TYPE_HANDLE));
                         m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);

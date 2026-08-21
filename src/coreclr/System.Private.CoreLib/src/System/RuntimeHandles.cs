@@ -55,7 +55,6 @@ namespace System
                 : h.AsMethodTable()->AuxiliaryData->ExposedClassObject) ?? GetRuntimeTypeFromHandleSlow(handle);
         }
 
-        // implementation of CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE_MAYBENULL, CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL
         internal static RuntimeType? GetRuntimeTypeFromHandleMaybeNull(IntPtr handle)
         {
             if (handle == IntPtr.Zero)
