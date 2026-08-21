@@ -1061,7 +1061,7 @@ extends:
       # Apple mobile MSBuild targets tests
       # Only when the Apple MSBuild targets change
       #
-      # Apple MSBuild changes trigger this direct host test project on an ordinary macOS build host.
+      # Apple MSBuild changes trigger this host test project directly on an ordinary macOS build host.
       # It only drives MSBuild and file orchestration, so it needs no Apple mobile workload or device.
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:

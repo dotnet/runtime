@@ -182,7 +182,7 @@ jobs:
       - src/native/managed/cdac/*
       - src/coreclr/debug/runtimeinfo/*
 
-    # Apple MSBuild changes trigger the direct host test project on macOS; it needs none of the
+    # Apple MSBuild changes trigger the host test project directly on macOS; it needs none of the
     # mobile or WebAssembly tooling.
     - subset: apple_msbuild
       include:
