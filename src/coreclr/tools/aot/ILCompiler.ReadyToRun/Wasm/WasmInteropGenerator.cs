@@ -21,7 +21,6 @@ namespace ILCompiler.Wasm
         public IReadOnlyList<string> PInvokeModules { get; init; } = [];
         public IReadOnlyList<string> IgnoredPInvokeModules { get; init; } = [];
         public string TargetOS { get; init; }
-        public bool WarnOnUnresolvedPInvokeModules { get; init; } = true;
     }
 
     /// <summary>
@@ -95,7 +94,7 @@ namespace ILCompiler.Wasm
                 }
             }
 
-            var generator = new WasmPInvokeTableGenerator(log, options.WarnOnUnresolvedPInvokeModules);
+            var generator = new WasmPInvokeTableGenerator(log);
 
             WriteIfDifferent(Path.Combine(options.OutputDirectory, PInvokeFileName), log,
                 w => generator.EmitPInvokeTable(w, options.PInvokeModules, options.IgnoredPInvokeModules, pinvokes));

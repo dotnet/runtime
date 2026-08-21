@@ -135,13 +135,7 @@
     <Error Condition="!Exists('$(_WasiHttpWorldWit)')"
            Text="WasiHttpWorld_component_type.wit not found at $(_WasiHttpWorldWit)." />
 
-    <!-- 1. Generate the per-app callhelper tables over the bundled managed closure.
-         WarnOnUnresolvedPInvokeModules=false: library-test bundles are untrimmed and pull in
-         cross-platform test-support assemblies whose foreign-platform P/Invokes (kernel32,
-         Security.framework, libsecret, ...) are unresolved on wasm. The generator correctly
-         skips them (throw-if-called), but the WASM0066 warning would fail the build under
-         warn-as-error; downgrade it to a message here. (BrowserWasmApp.CoreCLR.targets should
-         set the same flag when its library-test leg runs untrimmed closures.) -->
+    <!-- 1. Generate the per-app callhelper tables over the bundled managed closure. -->
     <ItemGroup>
       <_WasiManagedAssemblies Include="$(WasmAppDir)managed\*.dll" />
 
@@ -181,7 +175,6 @@
       <_WasiInteropGeneratorArg Include="wasm" />
       <_WasiInteropGeneratorArg Include="--generate-portable-callhelpers" />
       <_WasiInteropGeneratorArg Include="$(_WasiRelinkObjDir)" />
-      <_WasiInteropGeneratorArg Include="--no-warn-unresolved-directpinvoke" />
       <_WasiInteropGeneratorArg Include="--directpinvoke;%(_WasiPInvokeModules.Identity)" Condition="'%(_WasiPInvokeModules.Identity)' != ''" />
       <_WasiInteropGeneratorArg Include="--ignored-directpinvoke;%(_WasiIgnoredPInvokeModules.Identity)" Condition="'%(_WasiIgnoredPInvokeModules.Identity)' != ''" />
       <_WasiInteropGeneratorArg Include="@(_WasiManagedAssemblies->'%(FullPath)')" />

@@ -659,7 +659,6 @@ public class WasmArgumentLayoutTests
                 OutputDirectory = outputDirectory,
                 TargetOS = "browser",
                 PInvokeModules = new[] { "libSystem.Native" },
-                WarnOnUnresolvedPInvokeModules = false,
             };
 
             Assert.Equal(0, WasmInteropGenerator.Run(context, options, new Logger(TextWriter.Null, isVerbose: false)));

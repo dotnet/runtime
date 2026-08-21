@@ -326,7 +326,6 @@ namespace ILCompiler
                     // The normalized name, so that platform attributes match regardless of how
                     // --targetos was spelled on the command line.
                     TargetOS = targetOS.ToString().ToLowerInvariant(),
-                    WarnOnUnresolvedPInvokeModules = !Get(_command.NoWarnUnresolvedDirectPInvoke),
                 }, logger);
             }
 

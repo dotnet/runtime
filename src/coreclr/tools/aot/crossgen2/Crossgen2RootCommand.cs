@@ -104,8 +104,6 @@ namespace ILCompiler
             new("--directpinvoke") { Description = SR.DirectPInvokeOption };
         public Option<string[]> IgnoredDirectPInvoke { get; } =
             new("--ignored-directpinvoke") { Description = SR.IgnoredDirectPInvokeOption };
-        public Option<bool> NoWarnUnresolvedDirectPInvoke { get; } =
-            new("--no-warn-unresolved-directpinvoke") { Description = SR.NoWarnUnresolvedDirectPInvokeOption };
         public Option<string> SingleMethodTypeName { get; } =
             new("--singlemethodtypename") { Description = SR.SingleMethodTypeName };
         public Option<string> SingleMethodName { get; } =
@@ -221,7 +219,6 @@ namespace ILCompiler
             Options.Add(GeneratePortableCallHelpers);
             Options.Add(DirectPInvoke);
             Options.Add(IgnoredDirectPInvoke);
-            Options.Add(NoWarnUnresolvedDirectPInvoke);
             Options.Add(SingleMethodTypeName);
             Options.Add(SingleMethodName);
             Options.Add(SingleMethodIndex);

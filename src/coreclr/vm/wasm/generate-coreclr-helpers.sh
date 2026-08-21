@@ -89,7 +89,6 @@ run_generator() {
         --targetos "$target_os"
         --targetarch wasm
         --generate-portable-callhelpers "$output_dir"
-        --no-warn-unresolved-directpinvoke
     )
     local module
     for module in "${pinvoke_modules[@]}"; do

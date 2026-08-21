@@ -130,7 +130,7 @@ if not exist "%crossgen2%" (
 echo [%target_os%] Scan path: %scan_path%
 echo [%target_os%] Output path: %output_dir%
 echo Running generator for %target_os%...
-call .\dotnet.cmd "%crossgen2%" --targetos %target_os% --targetarch wasm --generate-portable-callhelpers "%output_dir%" --no-warn-unresolved-directpinvoke %pinvoke_module_args% "%scan_path%*.dll"
+call .\dotnet.cmd "%crossgen2%" --targetos %target_os% --targetarch wasm --generate-portable-callhelpers "%output_dir%" %pinvoke_module_args% "%scan_path%*.dll"
 
 if errorlevel 1 (
     echo Generator failed for %target_os%!
