@@ -502,6 +502,12 @@ namespace Mono.Linker.Steps
                 ApplyPreserveInfo(type);
             }
 
+            foreach (var type in Annotations.GetPendingPreservedMembers())
+            {
+                marked = true;
+                ApplyPreservedMembers(type);
+            }
+
             return marked;
         }
 
@@ -2259,6 +2265,7 @@ namespace Mono.Linker.Steps
             DoAdditionalTypeProcessing(type, typeOrigin);
 
             ApplyPreserveInfo(type);
+            ApplyPreservedMembers(type);
             ApplyPreserveMethods(type, typeOrigin);
 
             return type;
@@ -2983,9 +2990,15 @@ namespace Mono.Linker.Steps
                         break;
                 }
             }
+        }
+
+        void ApplyPreservedMembers(TypeDefinition type)
+        {
+            Annotations.ClearPendingPreservedMembers(type);
 
             if (Annotations.TryGetPreservedMembers(type, out TypePreserveMembers members))
             {
+                var typeOrigin = new MessageOrigin(type);
                 var di = new DependencyInfo(DependencyKind.TypePreserve, type);
 
                 if (type.HasMethods)
