@@ -1061,8 +1061,8 @@ extends:
       # Apple mobile MSBuild targets tests
       # Only when the Apple MSBuild targets change
       #
-      # These only drive MSBuild and file orchestration in a child process, so they run on an ordinary
-      # macOS build host and need no Apple mobile workload or device.
+      # Apple MSBuild changes trigger this direct host test project on an ordinary macOS build host.
+      # It only drives MSBuild and file orchestration, so it needs no Apple mobile workload or device.
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
@@ -1072,12 +1072,16 @@ extends:
           jobParameters:
             timeoutInMinutes: 30
             nameSuffix: AppleBuildTests
-            buildArgs: -s apple.buildtests -c $(_BuildConfig) -test
+            buildArgs: >-
+              --projects
+              $(Build.SourcesDirectory)/src/mono/msbuild/apple/tests/Apple.Build.Tests/Apple.Build.Tests.csproj
+              -c $(_BuildConfig)
+              -test
             enablePublishTestResults: true
             testResultsFormat: 'xunit'
             condition: >-
               or(
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_applebuildtests.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_apple_msbuild.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       #

@@ -182,9 +182,9 @@ jobs:
       - src/native/managed/cdac/*
       - src/coreclr/debug/runtimeinfo/*
 
-    # The Apple mobile MSBuild targets and the tests that cover them. The tests only drive MSBuild, so
-    # they run on ordinary build hosts and need none of the mobile or WebAssembly tooling.
-    - subset: applebuildtests
+    # Apple MSBuild changes trigger the direct host test project on macOS; it needs none of the
+    # mobile or WebAssembly tooling.
+    - subset: apple_msbuild
       include:
       - src/mono/msbuild/apple/*
 
