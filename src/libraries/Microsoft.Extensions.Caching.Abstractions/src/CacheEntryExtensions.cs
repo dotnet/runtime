@@ -168,11 +168,13 @@ namespace Microsoft.Extensions.Caching.Memory
         {
             ArgumentNullException.ThrowIfNull(options);
 
+            // Apply Size first because some implementations reject it after disposal. If that happens,
+            // none of the other options should have been changed.
+            entry.Size = options.Size;
             entry.AbsoluteExpiration = options.AbsoluteExpiration;
             entry.AbsoluteExpirationRelativeToNow = options.AbsoluteExpirationRelativeToNow;
             entry.SlidingExpiration = options.SlidingExpiration;
             entry.Priority = options.Priority;
-            entry.Size = options.Size;
 
             if (options.ExpirationTokensDirect is { } expirationTokens)
             {

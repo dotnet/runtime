@@ -60,6 +60,99 @@ namespace Microsoft.Extensions.Caching.Memory
         }
 
         [Fact]
+        public void SettingOptionsAfterEntryIsDisposedDoesNotChangeOtherOptions()
+        {
+            var cache = new MemoryCache(new MemoryCacheOptions { SizeLimit = 10 });
+
+            ICacheEntry cacheEntry = cache.CreateEntry("key");
+            cacheEntry.AbsoluteExpiration = DateTimeOffset.MaxValue;
+            cacheEntry.SlidingExpiration = TimeSpan.FromMinutes(5);
+            cacheEntry.Priority = CacheItemPriority.NeverRemove;
+            cacheEntry.Size = 5;
+            cacheEntry.Value = "value";
+            cacheEntry.Dispose();
+
+            DateTimeOffset? absoluteExpiration = cacheEntry.AbsoluteExpiration;
+            TimeSpan? absoluteExpirationRelativeToNow = cacheEntry.AbsoluteExpirationRelativeToNow;
+            TimeSpan? slidingExpiration = cacheEntry.SlidingExpiration;
+            CacheItemPriority priority = cacheEntry.Priority;
+
+            var replacementOptions = new MemoryCacheEntryOptions
+            {
+                AbsoluteExpiration = DateTimeOffset.MaxValue.AddDays(-1),
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(2),
+                SlidingExpiration = TimeSpan.FromMinutes(1),
+                Priority = CacheItemPriority.Low,
+                Size = 6,
+            };
+
+            Assert.Throws<InvalidOperationException>(() => cacheEntry.SetOptions(replacementOptions));
+            Assert.Equal(absoluteExpiration, cacheEntry.AbsoluteExpiration);
+            Assert.Equal(absoluteExpirationRelativeToNow, cacheEntry.AbsoluteExpirationRelativeToNow);
+            Assert.Equal(slidingExpiration, cacheEntry.SlidingExpiration);
+            Assert.Equal(priority, cacheEntry.Priority);
+            Assert.Equal(5L, cacheEntry.Size);
+        }
+
+        [Fact]
+        public void SettingSizeCapturedByGetOrCreateAfterEntryIsDisposedThrows()
+        {
+            var cache = new MemoryCache(new MemoryCacheOptions { SizeLimit = 10 });
+            ICacheEntry? capturedEntry = null;
+
+            string? value = cache.GetOrCreate("key", entry =>
+            {
+                capturedEntry = entry;
+                entry.Size = 4;
+                return "value";
+            });
+
+            Assert.Equal("value", value);
+
+            ICacheEntry cacheEntry = Assert.IsAssignableFrom<ICacheEntry>(capturedEntry);
+            Assert.Throws<InvalidOperationException>(() => { cacheEntry.Size = 2; });
+            AssertCacheSize(4, cache);
+
+            cache.Remove("key");
+            AssertCacheSize(0, cache);
+        }
+
+        [Fact]
+        public void SettingSizeAfterNestedGetOrCreateWithLinkedTrackingThrows()
+        {
+            var cache = new MemoryCache(new MemoryCacheOptions
+            {
+                SizeLimit = 10,
+                TrackLinkedCacheEntries = true,
+            });
+            ICacheEntry? capturedEntry = null;
+
+            string? value = cache.GetOrCreate("outer", outerEntry =>
+            {
+                outerEntry.Size = 4;
+                return cache.GetOrCreate("inner", innerEntry =>
+                {
+                    capturedEntry = innerEntry;
+                    innerEntry.Size = 3;
+                    return "value";
+                });
+            });
+
+            Assert.Equal("value", value);
+            Assert.Equal("value", cache.Get("outer"));
+            Assert.Equal("value", cache.Get("inner"));
+
+            ICacheEntry cacheEntry = Assert.IsAssignableFrom<ICacheEntry>(capturedEntry);
+            Assert.Throws<InvalidOperationException>(() => { cacheEntry.Size = 2; });
+            AssertCacheSize(7, cache);
+
+            cache.Remove("inner");
+            AssertCacheSize(4, cache);
+            cache.Remove("outer");
+            AssertCacheSize(0, cache);
+        }
+
+        [Fact]
         public void SettingSizeAfterEntryIsDisposedValidatesArgumentBeforeState()
         {
             var cache = new MemoryCache(new MemoryCacheOptions { SizeLimit = 10 });
