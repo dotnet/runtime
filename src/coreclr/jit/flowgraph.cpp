@@ -1857,9 +1857,7 @@ void Compiler::fgAddReversePInvokeEnterExit()
         GenTree* stubArgument;
         if (compHasSecretStubArgument())
         {
-            // If we have a secret param for a Reverse P/Invoke, that means that we are in an IL stub.
-            // In this case, the method handle we pass down to the Reverse P/Invoke helper should be
-            // the target method, which is passed in the secret parameter.
+            // Reverse P/Invoke IL stubs receive UMEntryThunkData in the secret parameter.
             stubArgument = gtNewLclvNode(lvaGetSecretStubArgumentVar(), TYP_I_IMPL);
         }
         else

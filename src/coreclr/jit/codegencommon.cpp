@@ -3446,34 +3446,6 @@ void CodeGen::genSpillOrAddRegisterParam(
 }
 
 // -----------------------------------------------------------------------------
-// genSpillOrAddNonStandardRegisterParam: Handle a non-standard register parameter either
-// by homing it to stack immediately, or by adding it to the register graph.
-//
-// Parameters:
-//    lclNum    - Local that represents the non-standard parameter
-//    sourceReg - Register that the non-standard parameter is in on entry to the function
-//    graph     - The register graph to add to
-//
-void CodeGen::genSpillOrAddNonStandardRegisterParam(unsigned lclNum, regNumber sourceReg, RegGraph* graph)
-{
-    LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
-    if (varDsc->lvOnFrame && (!varDsc->lvIsInReg() || varDsc->IsLiveInOutOfHandler()))
-    {
-        GetEmitter()->emitIns_S_R(ins_Store(varDsc->TypeGet()), emitActualTypeSize(varDsc), sourceReg, lclNum, 0);
-    }
-
-    if (varDsc->lvIsInReg())
-    {
-        RegNode* sourceRegNode = graph->GetOrAdd(sourceReg);
-        RegNode* destRegNode   = graph->GetOrAdd(varDsc->GetRegNum());
-        if (sourceRegNode != destRegNode)
-        {
-            graph->AddEdge(sourceRegNode, destRegNode, TYP_I_IMPL, 0);
-        }
-    }
-}
-
-// -----------------------------------------------------------------------------
 // genHomeRegisterParams: Move all register parameters to their initial
 // assigned location.
 //
