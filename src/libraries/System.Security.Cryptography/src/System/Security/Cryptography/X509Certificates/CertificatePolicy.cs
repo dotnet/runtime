@@ -50,29 +50,27 @@ namespace System.Security.Cryptography.X509Certificates
         {
             CertificatePolicyChain policies = new CertificatePolicyChain(chainLength);
             bool corruptDeclaredPolicies = false;
-            bool ignored = false;
-            ref bool detector = ref corruptDeclaredPolicies;
 
             int rootDepth = isPartialChain ? -1 : chainLength - 1;
             int i = 0;
 
             foreach (X509Certificate2 cert in chain)
             {
+                bool error;
+
                 // Windows ignores declared policy corruption on the root cert.
                 if (i == rootDepth)
                 {
-                    detector = ref ignored;
+                    bool ignored = false;
+                    policies._policies[i] = ReadPolicy(cert, out error, ref ignored);
                 }
-
-                policies._policies[i] = ReadPolicy(cert, out bool error, ref detector);
+                else
+                {
+                    policies._policies[i] = ReadPolicy(cert, out error, ref corruptDeclaredPolicies);
+                }
 
                 if (error)
                 {
-                    if (extensionErrors.Uninitialized)
-                    {
-                        extensionErrors = new ErrorVector(chainLength);
-                    }
-
                     extensionErrors.Set(i);
                 }
 
@@ -88,7 +86,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         internal static ErrorVector CheckEncodingOnly(IEnumerable<X509Certificate2> chain, int chainLength)
         {
-            ErrorVector vector = new ErrorVector(chainLength);
+            ErrorVector vector = default;
             int i = 0;
 
             foreach (X509Certificate2 cert in chain)
@@ -172,11 +170,6 @@ namespace System.Security.Cryptography.X509Certificates
         {
             if (!MatchesCertificatePolicies(policyOid))
             {
-                if (usageErrors.Uninitialized)
-                {
-                    usageErrors = new ErrorVector(_policies.Length);
-                }
-
                 usageErrors.Set(0);
             }
         }
@@ -279,11 +272,6 @@ namespace System.Security.Cryptography.X509Certificates
 
                 if (invalid)
                 {
-                    if (usageErrors.Uninitialized)
-                    {
-                        usageErrors = new ErrorVector(_policies.Length);
-                    }
-
                     usageErrors.Set(dataIdx);
                 }
             }
@@ -538,6 +526,8 @@ namespace System.Security.Cryptography.X509Certificates
                     throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
                 }
 
+                // This won't detect an invalidly encoded OID, but Windows doesn't check
+                // that either, at this stage.
                 sequenceReader.ReadEncodedValue();
             }
         }
@@ -644,45 +634,41 @@ namespace System.Security.Cryptography.X509Certificates
 
         internal struct ErrorVector
         {
-            private nint _scalar;
-            private System.Collections.BitArray? _vector;
+            private UInt128 _data;
 
-            internal ErrorVector(int length)
-            {
-                if (length > 8 * sizeof(nint))
-                {
-                    _vector = new System.Collections.BitArray(length);
-                }
-            }
-
-            internal bool Uninitialized => _vector is null && _scalar == 0;
-            internal bool Any => _scalar != 0;
+            internal bool Any => _data != 0;
 
             internal bool this[int index]
             {
                 get
                 {
-                    if (_vector is null)
-                    {
-                        return (_scalar & ((nint)1 << index)) != 0;
-                    }
+                    Debug.Assert(index < 128);
+                    Debug.Assert(index >= 0);
 
-                    return _vector[index];
+                    index = int.Min(index, 127);
+
+                    UInt128 test = 1;
+                    test <<= index;
+
+                    return (_data & test) != 0;
                 }
             }
 
             internal void Set(int index)
             {
-                if (_vector is null)
-                {
-                    _scalar |= ((nint)1 << index);
-                }
-                else
-                {
-                    // Make scalar non-zero so IsEmpty returns false.
-                    _scalar = 1;
-                    _vector[index] = true;
-                }
+                // In Debug, complain if we see 128 or higher.
+                //
+                // In Release, we'll clamp to 128, so any platform
+                // with a ridiculously long chain will report any errors
+                // at 128 or above on all of them.
+                Debug.Assert(index < 128);
+                Debug.Assert(index >= 0);
+
+                index = int.Min(index, 127);
+
+                UInt128 test = 1;
+                test <<= index;
+                _data |= test;
             }
         }
     }

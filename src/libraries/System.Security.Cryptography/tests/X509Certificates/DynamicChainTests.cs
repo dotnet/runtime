@@ -1148,8 +1148,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             {
                 DateTimeOffset notBefore = DateTimeOffset.Now.AddMinutes(-5);
                 DateTimeOffset notAfter = notBefore.AddMinutes(10);
-                UInt128 skid = 0;
-                Span<byte> skidBytes = MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref skid, 1));
+                Span<byte> skidBytes = stackalloc byte[256 / 8];
                 RandomNumberGenerator.Fill(skidBytes);
 
                 for (int i = 0; i <= LastCertNumber; i++)
@@ -1184,7 +1183,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                         policy.CustomTrustStore.Add(X509CertificateLoader.LoadCertificate(target.RawDataMemory.Span));
                     }
 
-                    skid++;
+                    // Increment the SKID so that each cert has a unique SKID.
+                    // Since we don't have more than 256, we can just increment the lead byte.
+                    skidBytes[0]++;
+
                     notBefore = notBefore.AddSeconds(1);
                     notAfter = notAfter.AddSeconds(-1);
                 }
