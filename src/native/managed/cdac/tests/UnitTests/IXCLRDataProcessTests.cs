@@ -376,7 +376,8 @@ public unsafe class IXCLRDataProcessTests
             builder.Build(),
             new TargetPointer(ModuleAddress),
             Token,
-            legacyImpl: null);
+            legacyImpl: null,
+            new());
 
         ulong handle;
         Assert.Equal(HResults.S_FALSE, method.StartEnumExtents(&handle));
@@ -435,7 +436,8 @@ public unsafe class IXCLRDataProcessTests
             builder.Build(),
             new TargetPointer(ModuleAddress),
             Token,
-            legacyImpl: null);
+            legacyImpl: null,
+            new());
 
         AssertMethodDefinitionExtent(
             method,
@@ -573,6 +575,6 @@ public unsafe class IXCLRDataProcessTests
                 builder.MemoryBuilder.AddHeapFragment(fragment);
         }
 
-        return new SOSDacImpl(builder.Build(), legacyObj: null);
+        return new SOSDacImpl(builder.Build(), legacyObj: null, new());
     }
 }

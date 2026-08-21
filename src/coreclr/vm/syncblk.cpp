@@ -285,7 +285,6 @@ void SyncBlockCache::Init()
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -447,7 +446,6 @@ void SyncBlockCache::Start()
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -554,7 +552,6 @@ SyncBlock *SyncBlockCache::GetNextFreeSyncBlock()
 {
     CONTRACTL
     {
-        INJECT_FAULT(COMPlusThrowOM());
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
@@ -611,7 +608,6 @@ void SyncBlockCache::Grow()
         THROWS;
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -648,7 +644,6 @@ void SyncBlockCache::Grow()
         //! From here on, we assume that we will succeed and start doing global side-effects.
         //! Any operation that could fail must occur before this point.
         CANNOTTHROWCOMPLUSEXCEPTION();
-        FAULT_FORBID();
 
         newSyncTable.SuppressRelease();
         newBitMap.SuppressRelease();
@@ -705,7 +700,6 @@ DWORD SyncBlockCache::NewSyncBlockSlot(Object *obj)
         THROWS;
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
     _ASSERTE(m_CacheLock.OwnedByCurrentThread()); // GetSyncBlock takes the lock, make sure no one else does.
@@ -764,7 +758,6 @@ void SyncBlockCache::DeleteSyncBlock(SyncBlock *psb)
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -815,7 +808,6 @@ void    SyncBlockCache::DeleteSyncBlockMemory(SyncBlock *psb)
         INSTANCE_CHECK;
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -1060,7 +1052,9 @@ BOOL SyncBlockCache::GCWeakPtrScanElement (int nb, HANDLESCANPROC scanProc, LPAR
 #ifdef VERIFY_HEAP
         if (g_pConfig->GetHeapVerifyLevel () & EEConfig::HEAPVERIFY_SYNCBLK)
         {
-            STRESS_LOG3 (LF_GC | LF_SYNC, LL_INFO100000, "scanning syncblk[%d, %p, %p]\n", nb, (size_t)SyncTableEntry::GetSyncTableEntry()[nb].m_SyncBlock, (size_t)*keyv);
+              STRESS_LOG3 (LF_GC | LF_SYNC, LL_INFO100000, "scanning syncblk[%d, %p, %p]\n", nb,
+                           (void*)(size_t)SyncTableEntry::GetSyncTableEntry()[nb].m_SyncBlock,
+                           (void*)(size_t)*keyv);
         }
 #endif
 
@@ -1071,7 +1065,8 @@ BOOL SyncBlockCache::GCWeakPtrScanElement (int nb, HANDLESCANPROC scanProc, LPAR
 #ifdef VERIFY_HEAP
             if (g_pConfig->GetHeapVerifyLevel () & EEConfig::HEAPVERIFY_SYNCBLK)
             {
-                STRESS_LOG3 (LF_GC | LF_SYNC, LL_INFO100000, "freeing syncblk[%d, %p, %p]\n", nb, (size_t)pSB, (size_t)*keyv);
+                  STRESS_LOG3 (LF_GC | LF_SYNC, LL_INFO100000, "freeing syncblk[%d, %p, %p]\n", nb,
+                               (void*)(size_t)pSB, (void*)(size_t)*keyv);
             }
 #endif
 
@@ -1296,7 +1291,7 @@ void DumpSyncBlockCache()
             descrip = buffer;
         }
         if (dumpSBStyle < 2)
-            LogSpewAlways("[%4.4d]: %zx %s\n", nb, oref, descrip);
+            LogSpewAlways("[%4.4d]: %p %s\n", nb, (void*)oref, descrip);
         else if (dumpSBStyle == 2)
             LogSpewAlways("[%4.4d]: %s\n", nb, descrip);
     }
@@ -1421,7 +1416,6 @@ DWORD ObjHeader::GetSyncBlockIndex()
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -1557,7 +1551,6 @@ SyncBlock *ObjHeader::GetSyncBlock()
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -1603,8 +1596,6 @@ SyncBlock *ObjHeader::GetSyncBlock()
             //! NewSyncBlockSlot has side-effects that we don't have backout for - thus, that must be the last
             //! failable operation called.
             CANNOTTHROWCOMPLUSEXCEPTION();
-            FAULT_FORBID();
-
 
             syncBlockMemoryHolder.SuppressRelease();
 

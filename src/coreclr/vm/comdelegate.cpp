@@ -887,7 +887,6 @@ static PCODE SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMeth)
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -950,7 +949,6 @@ static PCODE GetVirtualCallStub(MethodDesc *method, TypeHandle scopeType)
         THROWS;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        INJECT_FAULT(COMPlusThrowOM()); // from MetaSig::SizeOfArgStack
     }
     CONTRACTL_END;
 
@@ -1259,7 +1257,6 @@ LPVOID COMDelegate::ConvertToCallback(OBJECTREF pDelegateObj)
         GC_TRIGGERS;
         MODE_COOPERATIVE;
 
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -1453,7 +1450,7 @@ OBJECTREF COMDelegate::ConvertToDelegate(LPVOID pCallback, MethodTable* pMT)
     // Wire up the stubs to the new delegate instance.
     //
 
-    LOG((LF_INTEROP, LL_INFO10000, "Created delegate for function pointer: entrypoint: %p\n", pMarshalStub));
+    LOG((LF_INTEROP, LL_INFO10000, "Created delegate for function pointer: entrypoint: %p\n", (void*)pMarshalStub));
 
     // Create the new delegate
     DELEGATEREF delObj = (DELEGATEREF) pMT->Allocate();

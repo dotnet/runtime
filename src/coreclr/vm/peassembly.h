@@ -20,7 +20,7 @@
 #include "peimage.h"
 #include "metadata.h"
 #include "../binder/inc/assembly.hpp"
-#include "eecontract.h"
+#include <contract.h>
 
 #include "assemblybinderutil.h"
 
