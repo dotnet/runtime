@@ -921,10 +921,10 @@ namespace System
                     else
                     {
                         // This is a day number
-                        if (raw.numCount == DateTimeRawInfo.MaxBufferLength || tokenValue == -1)
+                        if (raw.numCount == DateTimeRawInfo.MaxBufferLength)
                         {
                             result.SetBadDateTimeFailure();
-                            LexTraceExit("0105 (raw.numCount == 3)", dps);
+                            LexTraceExit("0105 (Not enough space in the raw info buffer when parsing Hebrew numbers)", dps);
                             return false;
                         }
 
