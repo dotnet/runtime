@@ -46,8 +46,7 @@ namespace Microsoft.DotNet.Cli.Build
             newArgs.Insert(0, command);
 
             return Command.Create(DotnetExecutablePath, newArgs)
-                .EnvironmentVariable("DOTNET_NOLOGO", "1")
-                .MultilevelLookup(false); // Avoid looking at machine state by default
+                .EnvironmentVariable("DOTNET_NOLOGO", "1");
         }
     }
 }

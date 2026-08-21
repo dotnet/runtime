@@ -6419,17 +6419,30 @@ ASSERT_TP* Compiler::optInitAssertionDataflowFlags()
     return jumpDestOut;
 }
 
-// Callback data for the VN based constant prop visitor.
-struct VNAssertionPropVisitorInfo
+class VNAssertionPropVisitor final : public GenTreeVisitor<VNAssertionPropVisitor>
 {
-    Compiler*   m_compiler;
-    Statement*  stmt;
-    BasicBlock* block;
-    VNAssertionPropVisitorInfo(Compiler* pThis, BasicBlock* block, Statement* stmt)
-        : m_compiler(pThis)
-        , stmt(stmt)
-        , block(block)
+    BasicBlock* m_block;
+    Statement*  m_stmt;
+
+public:
+    enum
     {
+        DoPostOrder       = true,
+        UseExecutionOrder = true,
+    };
+
+    VNAssertionPropVisitor(Compiler* compiler, BasicBlock* block, Statement* stmt)
+        : GenTreeVisitor<VNAssertionPropVisitor>(compiler)
+        , m_block(block)
+        , m_stmt(stmt)
+    {
+    }
+
+    fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
+    {
+        m_compiler->optVnNonNullPropCurStmt(m_block, m_stmt, *use);
+
+        return m_compiler->optVNBasedFoldCurStmt(m_block, m_stmt, user, *use);
     }
 };
 
@@ -6652,32 +6665,6 @@ void Compiler::optVnNonNullPropCurStmt(BasicBlock* block, Statement* stmt, GenTr
     }
 }
 
-//------------------------------------------------------------------------------
-// optVNAssertionPropCurStmtVisitor
-//    Unified Value Numbering based assertion propagation visitor.
-//
-// Assumption:
-//    This function is called as part of a post-order tree walk.
-//
-// Return Value:
-//    WALK_RESULTs.
-//
-// Description:
-//    An unified value numbering based assertion prop visitor that
-//    performs non-null and constant assertion propagation based on
-//    value numbers.
-//
-/* static */
-Compiler::fgWalkResult Compiler::optVNAssertionPropCurStmtVisitor(GenTree** ppTree, fgWalkData* data)
-{
-    VNAssertionPropVisitorInfo* pData = (VNAssertionPropVisitorInfo*)data->pCallbackData;
-    Compiler*                   pThis = pData->m_compiler;
-
-    pThis->optVnNonNullPropCurStmt(pData->block, pData->stmt, *ppTree);
-
-    return pThis->optVNBasedFoldCurStmt(pData->block, pData->stmt, data->parent, *ppTree);
-}
-
 /*****************************************************************************
  *
  *   Perform VN based i.e., data flow based assertion prop first because
@@ -6703,8 +6690,8 @@ Statement* Compiler::optVNAssertionPropCurStmt(BasicBlock* block, Statement* stm
     // anything in assertion gen.
     optAssertionPropagatedCurrentStmt = false;
 
-    VNAssertionPropVisitorInfo data(this, block, stmt);
-    fgWalkTreePost(stmt->GetRootNodePointer(), Compiler::optVNAssertionPropCurStmtVisitor, &data);
+    VNAssertionPropVisitor visitor(this, block, stmt);
+    visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
 
     if (optAssertionPropagatedCurrentStmt)
     {
