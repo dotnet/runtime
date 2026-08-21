@@ -86,6 +86,7 @@ StubSigDesc::StubSigDesc(MethodDesc* pMD, const Signature& sig, Module* pModule,
         NOTHROW;
         GC_NOTRIGGER;
         SUPPORTS_DAC;
+        PRECONDITION(pMD != NULL);
         PRECONDITION(!sig.IsEmpty());
         PRECONDITION(pModule != NULL);
     }
@@ -96,58 +97,16 @@ StubSigDesc::StubSigDesc(MethodDesc* pMD, const Signature& sig, Module* pModule,
     m_sig = sig;
     m_pModule = pModule;
 
-    if (pMD != NULL)
-    {
-        _ASSERTE(!pMD->IsAsyncMethod());
-        m_tkMethodDef = pMD->GetMemberDef();
-        SigTypeContext::InitTypeContext(pMD, &m_typeContext);
-        m_pMetadataModule = pMD->GetModule();
-        m_pLoaderModule = pLoaderModule == NULL ? pMD->GetLoaderModule() : pLoaderModule;   // Used for ILStubCache selection and MethodTable creation.
-    }
-    else
-    {
-        m_tkMethodDef = mdMethodDefNil;
-        m_pMetadataModule = m_pModule;
-        m_pLoaderModule = pLoaderModule == NULL ? m_pModule : pLoaderModule;
-    }
+    _ASSERTE(!pMD->IsAsyncMethod());
+    m_tkMethodDef = pMD->GetMemberDef();
+    SigTypeContext::InitTypeContext(pMD, &m_typeContext);
+    m_pMetadataModule = pMD->GetModule();
+    m_pLoaderModule = pLoaderModule == NULL ? pMD->GetLoaderModule() : pLoaderModule;   // Used for ILStubCache selection and MethodTable creation.
 
     INDEBUG(InitDebugNames());
 }
 
-StubSigDesc::StubSigDesc(MethodTable* pMT, const Signature& sig, Module* pModule)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        SUPPORTS_DAC;
-        PRECONDITION(!sig.IsEmpty());
-        PRECONDITION(pModule != NULL);
-    }
-    CONTRACTL_END;
-
-    m_pMD = nullptr;
-    m_pMT = pMT;
-    m_sig = sig;
-    m_pModule = pModule;
-
-    m_tkMethodDef = mdMethodDefNil;
-
-    if (pMT != NULL)
-    {
-        SigTypeContext::InitTypeContext(pMT, &m_typeContext);
-        m_pMetadataModule = pMT->GetModule();
-        m_pLoaderModule = pMT->GetLoaderModule();
-    }
-    else
-    {
-        m_pLoaderModule = m_pModule;
-    }
-
-    INDEBUG(InitDebugNames());
-}
-
-StubSigDesc::StubSigDesc(const Signature& sig, Module* pModule)
+StubSigDesc::StubSigDesc(const Signature& sig, Module* pModule, Module* pLoaderModule)
 {
     CONTRACTL
     {
@@ -165,7 +124,7 @@ StubSigDesc::StubSigDesc(const Signature& sig, Module* pModule)
     m_pModule = pModule;
     m_tkMethodDef = mdMethodDefNil;
     m_pMetadataModule = m_pModule;
-    m_pLoaderModule = m_pModule;
+    m_pLoaderModule = pLoaderModule == NULL ? m_pModule : pLoaderModule;
 
     INDEBUG(InitDebugNames());
 }
@@ -6426,7 +6385,7 @@ MethodDesc* PInvoke::CreateCalliILStub(
         pLoaderModule->GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(cbStubSig)));
     memcpyNoGCRefs(pStubSigCopy, pStubSig, cbStubSig);
 
-    StubSigDesc sigDesc(NULL, Signature((PCCOR_SIGNATURE)(BYTE*)pStubSigCopy, cbStubSig), pModule, pLoaderModule);
+    StubSigDesc sigDesc(Signature((PCCOR_SIGNATURE)(BYTE*)pStubSigCopy, cbStubSig), pModule, pLoaderModule);
     sigDesc.InitTypeContext(typeContext.m_classInst, typeContext.m_methodInst);
 
     int iLCIDArg = 0;

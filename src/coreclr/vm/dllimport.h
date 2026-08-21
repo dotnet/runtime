@@ -17,8 +17,7 @@ struct StubSigDesc
 public:
     StubSigDesc(MethodDesc* pMD);
     StubSigDesc(MethodDesc*  pMD, const Signature& sig, Module* pModule, Module* pLoaderModule = NULL);
-    StubSigDesc(MethodTable* pMT, const Signature& sig, Module* pModule);
-    StubSigDesc(const Signature& sig, Module* pModule);
+    StubSigDesc(const Signature& sig, Module* pModule, Module* pLoaderModule = NULL);
 
     MethodDesc        *m_pMD;
     MethodTable       *m_pMT;
