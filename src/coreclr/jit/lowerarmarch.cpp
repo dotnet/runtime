@@ -2422,8 +2422,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             // For mask operations: ConditionalSelect<T>(CreateTrueMask<T>(), Op<T>(...), CreateFalseMask<T>())
             bool isMaskOp = HWIntrinsicInfo::ReturnsPerElementMask(node->GetHWIntrinsicId());
 
-            var_types      selectType =
-                isMaskOp ? TYP_MASK : Compiler::getSIMDTypeForSize(node->GetSimdSize());
+            var_types      selectType   = isMaskOp ? TYP_MASK : Compiler::getSIMDTypeForSize(node->GetSimdSize());
             NamedIntrinsic selectIntrin = isMaskOp ? NI_Sve_ConditionalSelect_Predicates : NI_Sve_ConditionalSelect;
 
             GenTree* trueMask = m_compiler->gtNewSimdTrueMaskNode(node->GetSimdBaseType());
@@ -4659,10 +4658,11 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
 
             // If the nested op uses Pg/Z, then inactive lanes will result in zeros, so can only transform if
             // op3 is all zeros. Such a Csel operation is absorbed into the instruction when emitted. Skip this
-            // optimisation when the nestedOp is a reduce operation.
+            // optimisation when the nestedOp is a reduce operation or CreateBreakPropagateMask, whose governing
+            // predicate affects its propagation semantics.
 
             if (nestedOp1->IsTrueMask(cndSelNode->GetSimdBaseType()) &&
-                !HWIntrinsicInfo::IsReduceOperation(nestedOp2Id) &&
+                !HWIntrinsicInfo::IsReduceOperation(nestedOp2Id) && (nestedOp2Id != NI_Sve_CreateBreakPropagateMask) &&
                 (!HWIntrinsicInfo::IsZeroingMaskedOperation(nestedOp2Id) || op3->IsZeroForSelect()))
             {
                 GenTree* nestedOp2 = nestedCndSel->Op(2);
