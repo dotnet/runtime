@@ -11,7 +11,7 @@ internal sealed class TerminalFormatStrings
 {
 #if !UNITTEST
     /// <summary>The cached instance for the current terminal.</summary>
-    internal static readonly TerminalFormatStrings s_instance = new(TermInfo.DatabaseFactory.ReadActiveDatabase());
+    internal static readonly TerminalFormatStrings Instance = new(TermInfo.DatabaseFactory.ReadActiveDatabase());
 #endif
 
     /// <summary>The format string to use to change the foreground color.</summary>
