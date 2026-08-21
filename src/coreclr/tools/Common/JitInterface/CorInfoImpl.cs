@@ -2449,12 +2449,12 @@ namespace Internal.JitInterface
 
             if (type is MetadataType metadataType && !metadataType.IsAutoLayout)
             {
-                if (metadataType.IsSequentialLayout || MarshalUtils.IsBlittableType(metadataType))
+                if (metadataType.IsSequentialLayout ||
+                    MarshalUtils.IsBlittableType(metadataType))
                 {
                     alignment = metadataType.InstanceFieldAlignment.AsInt;
                 }
             }
-
             if (type.Context.Target.SupportsAlign8 &&
                 alignment < 8 && type.RequiresAlign8())
             {

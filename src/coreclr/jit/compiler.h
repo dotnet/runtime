@@ -21,6 +21,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #define _COMPILER_H_
 /*****************************************************************************/
 
+#include <minipal/types.h>
 #include "jit.h"
 #include "opcode.h"
 #include "varset.h"
@@ -2840,6 +2841,9 @@ struct HWIntrinsicInfo;
 
 class Compiler
 {
+#ifdef DEBUG
+    friend class FindNonInlineCandidateVisitor;
+#endif
     friend class emitter;
     friend class UnwindInfo;
     friend class UnwindFragmentInfo;
@@ -4240,13 +4244,6 @@ public:
         WALK_SKIP_SUBTREES,
         WALK_ABORT
     };
-    struct fgWalkData;
-    typedef fgWalkResult(fgWalkPreFn)(GenTree** pTree, fgWalkData* data);
-    typedef fgWalkResult(fgWalkPostFn)(GenTree** pTree, fgWalkData* data);
-
-    static fgWalkPreFn gtMarkColonCond;
-    static fgWalkPreFn gtClearColonCond;
-
     struct FindLinkData
     {
         GenTree*  nodeToFind;
@@ -4255,7 +4252,6 @@ public:
     };
 
     FindLinkData gtFindLink(Statement* stmt, GenTree* node);
-    bool gtHasCatchArg(GenTree* tree);
 
     typedef ArrayStack<GenTree*> GenTreeStack;
 
@@ -4873,14 +4869,8 @@ public:
     void lvaAllocOutgoingArgSpaceVar(); // Set up lvaOutgoingArgSpaceVar
 
 #ifdef DEBUG
-    struct lvaStressLclFldArgs
-    {
-        Compiler* m_compiler;
-        bool      m_bFirstPass;
-    };
-
-    static fgWalkPreFn lvaStressLclFldCB;
-    void               lvaStressLclFld();
+    fgWalkResult lvaStressLclFldNode(GenTree** pTree, bool bFirstPass);
+    void         lvaStressLclFld();
     unsigned lvaStressLclFldPadding(unsigned lclNum);
 
     void lvaDispVarSet(VARSET_VALARG_TP set, VARSET_VALARG_TP allVars);
@@ -6983,9 +6973,6 @@ public:
 #endif // DEBUG
 #endif // TARGET_WASM
 
-    // method that returns if you should split here
-    typedef bool(fgSplitPredicate)(GenTree* tree, GenTree* parent, fgWalkData* data);
-
     PhaseStatus fgSetBlockOrder();
     bool fgHasCycleWithoutGCSafePoint();
 
@@ -7042,24 +7029,23 @@ public:
     void fgDumpBlockMemorySsaIn(BasicBlock* block);
     void fgDumpBlockMemorySsaOut(BasicBlock* block);
 
-    static fgWalkPreFn fgStress64RsltMulCB;
-    void               fgStress64RsltMul();
-    void               fgDebugCheckUpdate();
+    void fgStress64RsltMul();
+    void fgDebugCheckUpdate();
 
     void fgDebugCheckBBNumIncreasing();
     void fgDebugCheckBBlist(bool checkBBNum = false, bool checkBBRefs = true);
     void fgDebugCheckBlockLinks();
     void fgDebugCheckInitBB();
-    void fgDebugCheckLinks(bool morphTrees = false);
-    void fgDebugCheckStmtsList(BasicBlock* block, bool morphTrees);
+    void fgDebugCheckLinks();
+    void fgDebugCheckStmtsList(BasicBlock* block);
     void fgDebugCheckNodeLinks(BasicBlock* block, Statement* stmt);
     void fgDebugCheckLinkedLocals();
     void fgDebugCheckNodesUniqueness();
     void fgDebugCheckLoops();
     void fgDebugCheckSsa();
 
-    void fgDebugCheckTypes(GenTree* tree);
-    void fgDebugCheckFlags(GenTree* tree, BasicBlock* block);
+    void fgDebugCheckType(GenTree* node);
+    void fgDebugCheckFlagsAndTypes(GenTree* tree, BasicBlock* block);
     void fgDebugCheckDispFlags(GenTree* tree, GenTreeFlags dispFlags, GenTreeDebugFlags debugFlags);
     void fgDebugCheckFlagsHelper(GenTree* tree, GenTreeFlags actualFlags, GenTreeFlags expectedFlags);
     void fgDebugCheckTryFinallyExits();
@@ -7077,41 +7063,6 @@ public:
     static bool fgProfileWeightsConsistentOrSmall(weight_t weight1, weight_t weight2, weight_t epsilon = 1e-4);
 
     static GenTree* fgGetFirstNode(GenTree* tree);
-
-    //--------------------- Walking the trees in the IR -----------------------
-
-    struct fgWalkData
-    {
-        Compiler*     m_compiler;
-        fgWalkPreFn*  wtprVisitorFn;
-        fgWalkPostFn* wtpoVisitorFn;
-        void*         pCallbackData; // user-provided data
-        GenTree*      parent;        // parent of current node, provided to callback
-        bool          wtprLclsOnly;  // whether to only visit lclvar nodes
-#ifdef DEBUG
-        bool printModified; // callback can use this
-#endif
-    };
-
-    fgWalkResult fgWalkTreePre(GenTree**    pTree,
-                               fgWalkPreFn* visitor,
-                               void*        pCallBackData = nullptr,
-                               bool         lclVarsOnly   = false,
-                               bool         computeStack  = false);
-
-    fgWalkResult fgWalkTree(GenTree**     pTree,
-                            fgWalkPreFn*  preVisitor,
-                            fgWalkPostFn* postVisitor,
-                            void*         pCallBackData = nullptr);
-
-    void fgWalkAllTreesPre(fgWalkPreFn* visitor, void* pCallBackData);
-
-    //----- Postorder
-
-    fgWalkResult fgWalkTreePost(GenTree**     pTree,
-                                fgWalkPostFn* visitor,
-                                void*         pCallBackData = nullptr,
-                                bool          computeStack  = false);
 
 #ifdef DEBUG
     void fgInvalidateBBLookup();
@@ -7376,7 +7327,6 @@ private:
     void fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result, InlineContext** createdContext);
 #if DEBUG
     void fgNoteNonInlineCandidate(Statement* stmt, GenTreeCall* call);
-    static fgWalkPreFn fgFindNonInlineCandidate;
 #endif
     GenTree* fgOptimizeDelegateConstructor(GenTreeCall*            call,
                                            CORINFO_CONTEXT_HANDLE* ExactContextHnd,
@@ -7598,10 +7548,7 @@ private:
     GenTree* gtNewContinuationMemberIndir(const struct ContinuationMember& member, var_types type);
 
 #ifdef DEBUG
-    static fgWalkPreFn fgDebugCheckInlineCandidates;
-
-    void               CheckNoTransformableIndirectCallsRemain();
-    static fgWalkPreFn fgDebugCheckForTransformableIndirectCalls;
+    void CheckNoTransformableIndirectCallsRemain();
 #endif
 
     PhaseStatus fgPromoteStructs();
@@ -7649,6 +7596,7 @@ private:
     GenTree* gtFindNodeInTree(GenTree* tree, Predicate predicate);
 
     bool gtTreeContainsOper(GenTree* tree, genTreeOps op);
+    bool gtHasCatchArg(GenTree* tree);
     ExceptionSetFlags gtCollectExceptions(GenTree* tree);
 
 public:
@@ -9274,8 +9222,6 @@ public:
     };
 
 protected:
-    static fgWalkPreFn optVNAssertionPropCurStmtVisitor;
-
     bool optLocalAssertionProp;  // indicates that we are performing local assertion prop
     bool optAssertionPropagated; // set to true if we modified the trees
     bool optAssertionPropagatedCurrentStmt;
@@ -9452,19 +9398,18 @@ public:
         }
     };
 
-    bool optIsStackLocalInvariant(FlowGraphNaturalLoop* loop, unsigned lclNum);
-    bool optCloningHeuristic(FlowGraphNaturalLoop* loop, LoopCloneContext* context);
-    bool optExtractArrIndex(GenTree* tree, ArrIndex* result, unsigned lhsNum, bool* topLevelIsFinal);
-    bool optExtractSpanIndex(GenTree* tree, SpanIndex* result);
-    bool optReconstructArrIndexHelp(GenTree* tree, ArrIndex* result, unsigned lhsNum, bool* topLevelIsFinal);
-    bool optReconstructArrIndex(GenTree* tree, ArrIndex* result);
-    bool optIdentifyLoopOptInfo(FlowGraphNaturalLoop* loop, LoopCloneContext* context);
-    static fgWalkPreFn optCanOptimizeByLoopCloningVisitor;
-    fgWalkResult       optCanOptimizeByLoopCloning(GenTree* tree, LoopCloneVisitorInfo* info);
-    bool               optObtainLoopCloningOpts(LoopCloneContext* context);
-    bool               optIsLoopClonable(FlowGraphNaturalLoop* loop, LoopCloneContext* context);
-    bool               optCheckLoopCloningGDVTestProfitable(GenTreeOp* guard, LoopCloneVisitorInfo* info);
-    bool               optIsHandleOrIndirOfHandle(GenTree* tree, GenTreeFlags handleType);
+    bool         optIsStackLocalInvariant(FlowGraphNaturalLoop* loop, unsigned lclNum);
+    bool         optCloningHeuristic(FlowGraphNaturalLoop* loop, LoopCloneContext* context);
+    bool         optExtractArrIndex(GenTree* tree, ArrIndex* result, unsigned lhsNum, bool* topLevelIsFinal);
+    bool         optExtractSpanIndex(GenTree* tree, SpanIndex* result);
+    bool         optReconstructArrIndexHelp(GenTree* tree, ArrIndex* result, unsigned lhsNum, bool* topLevelIsFinal);
+    bool         optReconstructArrIndex(GenTree* tree, ArrIndex* result);
+    bool         optIdentifyLoopOptInfo(FlowGraphNaturalLoop* loop, LoopCloneContext* context);
+    fgWalkResult optCanOptimizeByLoopCloning(GenTree* tree, LoopCloneVisitorInfo* info);
+    bool         optObtainLoopCloningOpts(LoopCloneContext* context);
+    bool         optIsLoopClonable(FlowGraphNaturalLoop* loop, LoopCloneContext* context);
+    bool         optCheckLoopCloningGDVTestProfitable(GenTreeOp* guard, LoopCloneVisitorInfo* info);
+    bool         optIsHandleOrIndirOfHandle(GenTree* tree, GenTreeFlags handleType);
 
     static bool optLoopCloningEnabled();
 
@@ -11676,7 +11621,7 @@ public:
 
     const char* devirtualizationDetailToString(CORINFO_DEVIRTUALIZATION_DETAIL detail);
 
-    const char* printfAlloc(const char* format, ...);
+    const char* printfAlloc(const char* format, ...) MINIPAL_ATTR_FORMAT_PRINTF(2, 3);
 
     void convertUtf16ToUtf8ForPrinting(const char16_t* utf16Src, size_t utf16SrcLen, char* utf8Dst, size_t utf8DstLen);
 
@@ -12308,9 +12253,6 @@ public:
     bool compDonotInline();
 
 #ifdef DEBUG
-    // Get the default fill char value we randomize this value when JitStress is enabled.
-    static unsigned char compGetJitDefaultFill(Compiler* comp);
-
     const char* compLocalVarName(unsigned varNum, unsigned offs);
     VarName     compVarName(regNumber reg, bool isFloatReg = false);
 #endif // DEBUG
@@ -12485,7 +12427,7 @@ public:
     // more log information
 
     // levels are currently unused: #define JITDUMP(level,...)                     ();
-    void JitLogEE(unsigned level, const char* fmt, ...);
+    void JitLogEE(unsigned level, const char* fmt, ...) MINIPAL_ATTR_FORMAT_PRINTF(3, 4);
 
     bool compDebugBreak;
 
@@ -13240,42 +13182,51 @@ public:
     }
 };
 
-template <bool doPreOrder, bool doPostOrder, bool doLclVarsOnly, bool useExecutionOrder>
-class GenericTreeWalker final
-    : public GenTreeVisitor<GenericTreeWalker<doPreOrder, doPostOrder, doLclVarsOnly, useExecutionOrder>>
+class MarkColonCondVisitor final : public GenTreeVisitor<MarkColonCondVisitor>
 {
 public:
     enum
     {
-        ComputeStack      = false,
-        DoPreOrder        = doPreOrder,
-        DoPostOrder       = doPostOrder,
-        DoLclVarsOnly     = doLclVarsOnly,
-        UseExecutionOrder = useExecutionOrder,
+        DoPreOrder = true,
     };
 
-private:
-    Compiler::fgWalkData* m_walkData;
+    MarkColonCondVisitor(Compiler* compiler)
+        : GenTreeVisitor<MarkColonCondVisitor>(compiler)
+    {
+    }
 
+    fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+    {
+        (*use)->gtFlags |= GTF_COLON_COND;
+        return fgWalkResult::WALK_CONTINUE;
+    }
+};
+
+class ClearColonCondVisitor final : public GenTreeVisitor<ClearColonCondVisitor>
+{
 public:
-    GenericTreeWalker(Compiler::fgWalkData* walkData)
-        : GenTreeVisitor<GenericTreeWalker<doPreOrder, doPostOrder, doLclVarsOnly, useExecutionOrder>>(
-              walkData->m_compiler)
-        , m_walkData(walkData)
+    enum
     {
-        assert(walkData != nullptr);
+        DoPreOrder = true,
+    };
+
+    ClearColonCondVisitor(Compiler* compiler)
+        : GenTreeVisitor<ClearColonCondVisitor>(compiler)
+    {
     }
 
-    Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+    fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
     {
-        m_walkData->parent = user;
-        return m_walkData->wtprVisitorFn(use, m_walkData);
-    }
+        GenTree* tree = *use;
 
-    Compiler::fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
-    {
-        m_walkData->parent = user;
-        return m_walkData->wtpoVisitorFn(use, m_walkData);
+        if (tree->OperIs(GT_COLON))
+        {
+            // Nodes below this will be conditionally executed.
+            return fgWalkResult::WALK_SKIP_SUBTREES;
+        }
+
+        tree->gtFlags &= ~GTF_COLON_COND;
+        return fgWalkResult::WALK_CONTINUE;
     }
 };
 

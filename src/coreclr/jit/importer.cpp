@@ -6802,7 +6802,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
             case CEE_LDC_I8:
                 cval.lngVal = getI8LittleEndian(codeAddr);
-                JITDUMP(" 0x%016llx", cval.lngVal);
+                JITDUMP(" 0x%016llx", (unsigned long long)cval.lngVal);
                 impPushOnStack(gtNewLconNode(cval.lngVal), typeInfo(TYP_LONG));
                 break;
 
@@ -10364,9 +10364,13 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         }
 
                         op1 = gtNewOperNode(GT_LCLHEAP, TYP_I_IMPL, op2);
-                        // We do not model stack overflow from localloc as an exception side effect.
+                        // We do not model stack overflow from localloc as an exception side effect,
+                        // but the allocation must not be reordered with, or made to execute under a
+                        // different condition than, the code around it: the dominating check is
+                        // typically what bounds its size. Mark it as a call and global reference,
+                        // much as is done for GT_KEEPALIVE.
                         // Obviously, we don't want locallocs to be CSE'd.
-                        op1->gtFlags |= GTF_DONT_CSE;
+                        op1->gtFlags |= GTF_DONT_CSE | GTF_CALL | GTF_GLOB_REF;
 
                         // Request stack security for this method.
                         setNeedsGSSecurityCookie();
@@ -12857,7 +12861,7 @@ void Compiler::impImportBlockPending(BasicBlock* block)
 #ifdef DEBUG
     if (verbose && 0)
     {
-        printf("Added PendingDsc - %08p for " FMT_BB "\n", dspPtr(dsc), block->bbNum);
+        printf("Added PendingDsc - %p for " FMT_BB "\n", dspPtr(dsc), block->bbNum);
     }
 #endif
 }
@@ -12922,7 +12926,7 @@ void Compiler::impReimportBlockPending(BasicBlock* block)
 #ifdef DEBUG
     if (verbose && 0)
     {
-        printf("Added PendingDsc - %08p for " FMT_BB "\n", dspPtr(dsc), block->bbNum);
+        printf("Added PendingDsc - %p for " FMT_BB "\n", dspPtr(dsc), block->bbNum);
     }
 #endif
 }

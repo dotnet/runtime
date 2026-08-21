@@ -485,7 +485,7 @@ enter_msl_status gc_heap::enter_spin_lock_msl_helper (GCSpinLock* msl)
 #ifdef DYNAMIC_HEAP_COUNT
         uint64_t end = GetHighPrecisionTimeStamp();
         Interlocked::ExchangeAdd64 (&msl->msl_wait_time, end - start);
-        dprintf (3, ("h%d wait for msl lock wait time %zd, total wait time: %zd", heap_number, (end - start), msl->msl_wait_time));
+        dprintf (3, ("h%d wait for msl lock wait time %" PRIu64 ", total wait time: %" PRIu64, heap_number, (end - start), msl->msl_wait_time));
 #endif //DYNAMIC_HEAP_COUNT
     }
     while (Interlocked::CompareExchange (&msl->lock, lock_taken, lock_free) != lock_free);
@@ -4245,7 +4245,7 @@ gc_heap::verify_free_lists ()
                 {
                     // The logic in change_heap_count depends on the coming BGC (or blocking gen 2) to rebuild the gen 2 free list.
                     // In that case, before the rebuild happens, the gen2 free list is expected to contain free list items that do not belong to the right heap.
-                    dprintf (1, ("curr free item %p should be on heap %d, but actually is on heap %d: %d", free_list, this->heap_number, region->heap->heap_number));
+                    dprintf (1, ("curr free item %p should be on heap %d, but actually is on heap %d", free_list, this->heap_number, region->heap->heap_number));
                     FATAL_GC_ERROR();
                 }
 #endif //USE_REGIONS && MULTIPLE_HEAPS
