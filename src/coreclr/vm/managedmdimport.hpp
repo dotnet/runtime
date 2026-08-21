@@ -78,6 +78,7 @@ extern "C" void QCALLTYPE MetadataImport_Enum(
     mdToken tkParent,
     INT32* length,
     INT32* shortResult,
-    QCall::ObjectHandleOnStack longResult);
+    QCall::ObjectHandleOnStack longResult,
+    QCallExceptionStatus* qcallError);
 
 #endif

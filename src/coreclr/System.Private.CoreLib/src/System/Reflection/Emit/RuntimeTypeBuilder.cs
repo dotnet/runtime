@@ -58,23 +58,25 @@ namespace System.Reflection.Emit
 
         #region Private Static FCalls
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_SetParentType")]
-        private static partial void SetParentType(QCallModule module, int tdTypeDef, int tkParent);
+        private static partial void SetParentType(QCallModule module, int tdTypeDef, int tkParent, out QCallExceptionStatus qcallException);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_AddInterfaceImpl")]
-        private static partial void AddInterfaceImpl(QCallModule module, int tdTypeDef, int tkInterface);
+        private static partial void AddInterfaceImpl(QCallModule module, int tdTypeDef, int tkInterface, out QCallExceptionStatus qcallException);
         #endregion
 
         #region Internal Static FCalls
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineMethod", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int DefineMethod(QCallModule module, int tkParent, string name, byte[] signature, int sigLength,
-            MethodAttributes attributes);
+            MethodAttributes attributes,
+            out QCallExceptionStatus qcallException);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineMethodSpec")]
-        internal static partial int DefineMethodSpec(QCallModule module, int tkParent, byte[] signature, int sigLength);
+        internal static partial int DefineMethodSpec(QCallModule module, int tkParent, byte[] signature, int sigLength, out QCallExceptionStatus qcallException);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineField", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int DefineField(QCallModule module, int tkParent, string name, byte[] signature, int sigLength,
-            FieldAttributes attributes);
+            FieldAttributes attributes,
+            out QCallExceptionStatus qcallException);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_SetMethodIL")]
         private static partial void SetMethodIL(QCallModule module, int tk, [MarshalAs(UnmanagedType.Bool)] bool isInitLocals,
@@ -82,54 +84,60 @@ namespace System.Reflection.Emit
             byte[] LocalSig, int sigLength,
             int maxStackSize,
             ExceptionHandler[]? exceptions, int numExceptions,
-            int[]? tokenFixups, int numTokenFixups);
+            int[]? tokenFixups, int numTokenFixups,
+            out QCallExceptionStatus qcallException);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineCustomAttribute")]
         private static partial void DefineCustomAttribute(QCallModule module, int tkAssociate, int tkConstructor,
-            ReadOnlySpan<byte> attr, int attrLength);
+            ReadOnlySpan<byte> attr, int attrLength,
+            out QCallExceptionStatus qcallException);
 
         internal static void DefineCustomAttribute(RuntimeModuleBuilder module, int tkAssociate, int tkConstructor,
             ReadOnlySpan<byte> attr)
         {
             DefineCustomAttribute(new QCallModule(ref module), tkAssociate, tkConstructor,
-                attr, attr.Length);
+                attr, attr.Length,
+                out _);
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineProperty", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int DefineProperty(QCallModule module, int tkParent, string name, PropertyAttributes attributes,
-            byte[] signature, int sigLength);
+            byte[] signature, int sigLength,
+            out QCallExceptionStatus qcallException);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineEvent", StringMarshalling = StringMarshalling.Utf16)]
-        internal static partial int DefineEvent(QCallModule module, int tkParent, string name, EventAttributes attributes, int tkEventType);
+        internal static partial int DefineEvent(QCallModule module, int tkParent, string name, EventAttributes attributes, int tkEventType, out QCallExceptionStatus qcallException);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineMethodSemantics")]
         internal static partial void DefineMethodSemantics(QCallModule module, int tkAssociation,
-            MethodSemanticsAttributes semantics, int tkMethod);
+            MethodSemanticsAttributes semantics, int tkMethod,
+            out QCallExceptionStatus qcallException);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineMethodImpl")]
-        internal static partial void DefineMethodImpl(QCallModule module, int tkType, int tkBody, int tkDecl);
+        internal static partial void DefineMethodImpl(QCallModule module, int tkType, int tkBody, int tkDecl, out QCallExceptionStatus qcallException);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_SetMethodImpl")]
-        internal static partial void SetMethodImpl(QCallModule module, int tkMethod, MethodImplAttributes MethodImplAttributes);
+        internal static partial void SetMethodImpl(QCallModule module, int tkMethod, MethodImplAttributes MethodImplAttributes, out QCallExceptionStatus qcallException);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_SetParamInfo", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int SetParamInfo(QCallModule module, int tkMethod, int iSequence,
-            ParameterAttributes iParamAttributes, string? strParamName);
+            ParameterAttributes iParamAttributes, string? strParamName,
+            out QCallExceptionStatus qcallException);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_GetTokenFromSig")]
-        internal static partial int GetTokenFromSig(QCallModule module, byte[] signature, int sigLength);
+        internal static partial int GetTokenFromSig(QCallModule module, byte[] signature, int sigLength, out QCallExceptionStatus qcallException);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_SetFieldLayoutOffset")]
-        internal static partial void SetFieldLayoutOffset(QCallModule module, int fdToken, int iOffset);
+        internal static partial void SetFieldLayoutOffset(QCallModule module, int fdToken, int iOffset, out QCallExceptionStatus qcallException);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_SetClassLayout")]
-        internal static partial void SetClassLayout(QCallModule module, int tk, PackingSize iPackingSize, int iTypeSize);
+        internal static partial void SetClassLayout(QCallModule module, int tk, PackingSize iPackingSize, int iTypeSize, out QCallExceptionStatus qcallException);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_SetConstantValue")]
-        private static unsafe partial void SetConstantValue(QCallModule module, int tk, int corType, void* pValue);
+        private static unsafe partial void SetConstantValue(QCallModule module, int tk, int corType, void* pValue, out QCallExceptionStatus qcallException);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_SetPInvokeData", StringMarshalling = StringMarshalling.Utf16)]
-        private static partial void SetPInvokeData(QCallModule module, string DllName, string name, int token, int linkFlags);
+        private static partial void SetPInvokeData(QCallModule module, string DllName, string name, int token, int linkFlags, out QCallExceptionStatus qcallException);
 
         #endregion
         #region Internal\Private Static Members
@@ -266,20 +274,20 @@ namespace System.Reflection.Emit
                     case CorElementType.ELEMENT_TYPE_U8:
                     case CorElementType.ELEMENT_TYPE_R8:
                         fixed (byte* pData = &value.GetRawData())
-                            SetConstantValue(new QCallModule(ref module), tk, (int)corType, pData);
+                            SetConstantValue(new QCallModule(ref module), tk, (int)corType, pData, out _);
                         break;
 
                     default:
                         if (type == typeof(string))
                         {
                             fixed (char* pString = (string)value)
-                                SetConstantValue(new QCallModule(ref module), tk, (int)CorElementType.ELEMENT_TYPE_STRING, pString);
+                                SetConstantValue(new QCallModule(ref module), tk, (int)CorElementType.ELEMENT_TYPE_STRING, pString, out _);
                         }
                         else if (type == typeof(DateTime))
                         {
                             // date is a I8 representation
                             long ticks = ((DateTime)value).Ticks;
-                            SetConstantValue(new QCallModule(ref module), tk, (int)CorElementType.ELEMENT_TYPE_I8, &ticks);
+                            SetConstantValue(new QCallModule(ref module), tk, (int)CorElementType.ELEMENT_TYPE_I8, &ticks, out _);
                         }
                         else
                         {
@@ -294,7 +302,7 @@ namespace System.Reflection.Emit
                 // (See ECMA-335 II.15.4.1.4 "The .param directive" and II.22.9 "Constant" for details.)
                 // This is how the Roslyn compilers generally encode `default(TValueType)` default values.
 
-                SetConstantValue(new QCallModule(ref module), tk, (int)CorElementType.ELEMENT_TYPE_CLASS, null);
+                SetConstantValue(new QCallModule(ref module), tk, (int)CorElementType.ELEMENT_TYPE_CLASS, null, out _);
             }
         }
 
@@ -450,12 +458,13 @@ namespace System.Reflection.Emit
             }
 
             m_tdType = DefineType(new QCallModule(ref module),
-                name, tkParent, m_iAttr, tkEnclosingType, interfaceTokens!);
+                name, tkParent, m_iAttr, tkEnclosingType, interfaceTokens!,
+                out _);
 
             m_iPackingSize = iPackingSize;
             m_iTypeSize = iTypeSize;
             if ((m_iPackingSize != 0) || (m_iTypeSize != 0))
-                SetClassLayout(new QCallModule(ref module), m_tdType, m_iPackingSize, m_iTypeSize);
+                SetClassLayout(new QCallModule(ref module), m_tdType, m_iPackingSize, m_iTypeSize, out _);
 
             m_module.AddType(FullName!, this);
         }
@@ -535,14 +544,16 @@ namespace System.Reflection.Emit
         #region FCalls
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineType", StringMarshalling = StringMarshalling.Utf16)]
         private static partial int DefineType(QCallModule module,
-            string fullname, int tkParent, TypeAttributes attributes, int tkEnclosingType, int[] interfaceTokens);
+            string fullname, int tkParent, TypeAttributes attributes, int tkEnclosingType, int[] interfaceTokens,
+            out QCallExceptionStatus qcallException);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineGenericParam", StringMarshalling = StringMarshalling.Utf16)]
         private static partial int DefineGenericParam(QCallModule module,
-            string name, int tkParent, GenericParameterAttributes attributes, int position, int[] constraints);
+            string name, int tkParent, GenericParameterAttributes attributes, int position, int[] constraints,
+            out QCallExceptionStatus qcallException);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_TermCreateClass")]
-        private static partial void TermCreateClass(QCallModule module, int tk, ObjectHandleOnStack type);
+        private static partial void TermCreateClass(QCallModule module, int tk, ObjectHandleOnStack type, out QCallExceptionStatus qcallException);
         #endregion
 
         #region Internal Methods
@@ -1071,7 +1082,7 @@ namespace System.Reflection.Emit
                 int tkDecl = m_module.GetMethodMetadataToken(methodInfoDeclaration);
 
                 RuntimeModuleBuilder module = m_module;
-                DefineMethodImpl(new QCallModule(ref module), m_tdType, tkBody, tkDecl);
+                DefineMethodImpl(new QCallModule(ref module), m_tdType, tkBody, tkDecl, out _);
             }
         }
 
@@ -1182,7 +1193,8 @@ namespace System.Reflection.Emit
                     dllName,
                     entryName,
                     token,
-                    linkFlags);
+                    linkFlags,
+                    out _);
 
                 method.SetToken(token);
 
@@ -1409,7 +1421,8 @@ namespace System.Reflection.Emit
                     name,
                     attributes,
                     sigBytes,
-                    sigLength);
+                    sigLength,
+                    out _);
 
                 // create the property builder now.
                 return new RuntimePropertyBuilder(
@@ -1445,7 +1458,8 @@ namespace System.Reflection.Emit
                     m_tdType,
                     name,
                     attributes,
-                    tkType);
+                    tkType,
+                    out _);
 
                 // create the property builder now.
                 return new RuntimeEventBuilder(
@@ -1527,7 +1541,8 @@ namespace System.Reflection.Emit
 
                 int declMember = m_declMeth == null ? m_DeclaringType!.m_tdType : m_declMeth.MetadataToken;
                 m_tdType = DefineGenericParam(new QCallModule(ref module),
-                    m_strName!, declMember, m_genParamAttributes, m_genParamPos, constraints);
+                    m_strName!, declMember, m_genParamAttributes, m_genParamPos, constraints,
+                    out _);
 
                 if (m_ca != null)
                 {
@@ -1546,7 +1561,7 @@ namespace System.Reflection.Emit
                 // Check for global typebuilder
                 if (((m_tdType & 0x00FFFFFF) != 0) && ((tkParent & 0x00FFFFFF) != 0))
                 {
-                    SetParentType(new QCallModule(ref module), m_tdType, tkParent);
+                    SetParentType(new QCallModule(ref module), m_tdType, tkParent, out _);
                 }
 
                 if (m_inst != null)
@@ -1621,7 +1636,8 @@ namespace System.Reflection.Emit
                     body, (body != null) ? body.Length : 0,
                     localSig, sigLength, maxStack,
                     exceptions, (exceptions != null) ? exceptions.Length : 0,
-                    tokenFixups, (tokenFixups != null) ? tokenFixups.Length : 0);
+                    tokenFixups, (tokenFixups != null) ? tokenFixups.Length : 0,
+                    out _);
 
                 if (m_module.ContainingAssemblyBuilder._access == AssemblyBuilderAccess.Run)
                 {
@@ -1635,7 +1651,7 @@ namespace System.Reflection.Emit
 
             // Terminate the process.
             RuntimeType? cls = null;
-            TermCreateClass(new QCallModule(ref module), m_tdType, ObjectHandleOnStack.Create(ref cls));
+            TermCreateClass(new QCallModule(ref module), m_tdType, ObjectHandleOnStack.Create(ref cls), out _);
 
             if (!m_isHiddenGlobalType)
             {
@@ -1696,7 +1712,7 @@ namespace System.Reflection.Emit
 
             int tkInterface = m_module.GetTypeTokenInternal(interfaceType);
             RuntimeModuleBuilder module = m_module;
-            AddInterfaceImpl(new QCallModule(ref module), m_tdType, tkInterface);
+            AddInterfaceImpl(new QCallModule(ref module), m_tdType, tkInterface, out _);
 
             m_typeInterfaces!.Add(interfaceType);
         }

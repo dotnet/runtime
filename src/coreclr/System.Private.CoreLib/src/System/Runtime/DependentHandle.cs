@@ -241,10 +241,10 @@ namespace System.Runtime
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static IntPtr InternalAllocWithGCTransition(object? target, object? dependent)
-            => _InternalAllocWithGCTransition(ObjectHandleOnStack.Create(ref target), ObjectHandleOnStack.Create(ref dependent));
+            => _InternalAllocWithGCTransition(ObjectHandleOnStack.Create(ref target), ObjectHandleOnStack.Create(ref dependent), out _);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DependentHandle_InternalAllocWithGCTransition")]
-        private static partial IntPtr _InternalAllocWithGCTransition(ObjectHandleOnStack target, ObjectHandleOnStack dependent);
+        private static partial IntPtr _InternalAllocWithGCTransition(ObjectHandleOnStack target, ObjectHandleOnStack dependent, out QCallExceptionStatus qcallException);
 
 #if DEBUG
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -273,9 +273,9 @@ namespace System.Runtime
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static void InternalFreeWithGCTransition(IntPtr dependentHandle)
-            => _InternalFreeWithGCTransition(dependentHandle);
+            => _InternalFreeWithGCTransition(dependentHandle, out _);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DependentHandle_InternalFreeWithGCTransition")]
-        private static partial void _InternalFreeWithGCTransition(IntPtr dependentHandle);
+        private static partial void _InternalFreeWithGCTransition(IntPtr dependentHandle, out QCallExceptionStatus qcallException);
     }
 }

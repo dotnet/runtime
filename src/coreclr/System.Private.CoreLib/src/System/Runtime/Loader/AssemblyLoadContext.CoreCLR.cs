@@ -12,59 +12,59 @@ namespace System.Runtime.Loader
     public partial class AssemblyLoadContext
     {
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_InitializeAssemblyLoadContext")]
-        private static partial IntPtr InitializeAssemblyLoadContext(IntPtr ptrAssemblyLoadContext, [MarshalAs(UnmanagedType.Bool)] bool fRepresentsTPALoadContext, [MarshalAs(UnmanagedType.Bool)] bool isCollectible);
+        private static partial IntPtr InitializeAssemblyLoadContext(IntPtr ptrAssemblyLoadContext, [MarshalAs(UnmanagedType.Bool)] bool fRepresentsTPALoadContext, [MarshalAs(UnmanagedType.Bool)] bool isCollectible, out QCallExceptionStatus qcallException);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_PrepareForAssemblyLoadContextRelease")]
-        private static partial void PrepareForAssemblyLoadContextRelease(IntPtr ptrNativeAssemblyBinder, IntPtr ptrAssemblyLoadContextStrong);
+        private static partial void PrepareForAssemblyLoadContextRelease(IntPtr ptrNativeAssemblyBinder, IntPtr ptrAssemblyLoadContextStrong, out QCallExceptionStatus qcallException);
 
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_LoadFromStream")]
-        private static partial void LoadFromStream(IntPtr ptrNativeAssemblyBinder, IntPtr ptrAssemblyArray, int iAssemblyArrayLen, IntPtr ptrSymbols, int iSymbolArrayLen, ObjectHandleOnStack retAssembly);
+        private static partial void LoadFromStream(IntPtr ptrNativeAssemblyBinder, IntPtr ptrAssemblyArray, int iAssemblyArrayLen, IntPtr ptrSymbols, int iSymbolArrayLen, ObjectHandleOnStack retAssembly, out QCallExceptionStatus qcallException);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MultiCoreJIT_InternalSetProfileRoot", StringMarshalling = StringMarshalling.Utf16)]
-        internal static partial void InternalSetProfileRoot(string directoryPath);
+        internal static partial void InternalSetProfileRoot(string directoryPath, out QCallExceptionStatus qcallException);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MultiCoreJIT_InternalStartProfile", StringMarshalling = StringMarshalling.Utf16)]
-        internal static partial void InternalStartProfile(string? profile, IntPtr ptrNativeAssemblyBinder);
+        internal static partial void InternalStartProfile(string? profile, IntPtr ptrNativeAssemblyBinder, out QCallExceptionStatus qcallException);
 
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_LoadFromPath", StringMarshalling = StringMarshalling.Utf16)]
-        private static partial void LoadFromPath(IntPtr ptrNativeAssemblyBinder, string? ilPath, ObjectHandleOnStack retAssembly);
+        private static partial void LoadFromPath(IntPtr ptrNativeAssemblyBinder, string? ilPath, ObjectHandleOnStack retAssembly, out QCallExceptionStatus qcallException);
 
         internal static Assembly[] GetLoadedAssemblies()
         {
             Assembly[]? assemblies = null;
-            GetLoadedAssemblies(ObjectHandleOnStack.Create(ref assemblies));
+            GetLoadedAssemblies(ObjectHandleOnStack.Create(ref assemblies), out _);
             return assemblies!;
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetLoadedAssemblies")]
-        private static partial void GetLoadedAssemblies(ObjectHandleOnStack retAssemblies);
+        private static partial void GetLoadedAssemblies(ObjectHandleOnStack retAssemblies, out QCallExceptionStatus qcallException);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern bool IsTracingEnabled();
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_TraceResolvingHandlerInvoked", StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool TraceResolvingHandlerInvoked(string assemblyName, string handlerName, string? alcName, string? resultAssemblyName, string? resultAssemblyPath);
+        internal static partial bool TraceResolvingHandlerInvoked(string assemblyName, string handlerName, string? alcName, string? resultAssemblyName, string? resultAssemblyPath, out QCallExceptionStatus qcallException);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_TraceAssemblyResolveHandlerInvoked", StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool TraceAssemblyResolveHandlerInvoked(string assemblyName, string handlerName, string? resultAssemblyName, string? resultAssemblyPath);
+        internal static partial bool TraceAssemblyResolveHandlerInvoked(string assemblyName, string handlerName, string? resultAssemblyName, string? resultAssemblyPath, out QCallExceptionStatus qcallException);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_TraceAssemblyLoadFromResolveHandlerInvoked", StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool TraceAssemblyLoadFromResolveHandlerInvoked(string assemblyName, [MarshalAs(UnmanagedType.Bool)] bool isTrackedAssembly, string requestingAssemblyPath, string? requestedAssemblyPath);
+        internal static partial bool TraceAssemblyLoadFromResolveHandlerInvoked(string assemblyName, [MarshalAs(UnmanagedType.Bool)] bool isTrackedAssembly, string requestingAssemblyPath, string? requestedAssemblyPath, out QCallExceptionStatus qcallException);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_TraceSatelliteSubdirectoryPathProbed", StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool TraceSatelliteSubdirectoryPathProbed(string filePath, int hResult);
+        internal static partial bool TraceSatelliteSubdirectoryPathProbed(string filePath, int hResult, out QCallExceptionStatus qcallException);
 
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         private RuntimeAssembly InternalLoadFromPath(string? assemblyPath)
         {
             RuntimeAssembly? loadedAssembly = null;
-            LoadFromPath(_nativeAssemblyLoadContext, assemblyPath, ObjectHandleOnStack.Create(ref loadedAssembly));
+            LoadFromPath(_nativeAssemblyLoadContext, assemblyPath, ObjectHandleOnStack.Create(ref loadedAssembly), out _);
             return loadedAssembly!;
         }
 
@@ -76,7 +76,8 @@ namespace System.Runtime.Loader
             fixed (byte* ptrAssembly = arrAssembly, ptrSymbols = arrSymbols)
             {
                 LoadFromStream(_nativeAssemblyLoadContext, new IntPtr(ptrAssembly), arrAssembly.Length,
-                    new IntPtr(ptrSymbols), arrSymbols.Length, ObjectHandleOnStack.Create(ref loadedAssembly));
+                    new IntPtr(ptrSymbols), arrSymbols.Length, ObjectHandleOnStack.Create(ref loadedAssembly),
+                    out _);
             }
 
             return loadedAssembly!;
@@ -84,7 +85,7 @@ namespace System.Runtime.Loader
 
 #if TARGET_WINDOWS
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_LoadFromInMemoryModule")]
-        private static partial IntPtr LoadFromInMemoryModuleInternal(IntPtr ptrNativeAssemblyBinder, IntPtr hModule, ObjectHandleOnStack retAssembly);
+        private static partial IntPtr LoadFromInMemoryModuleInternal(IntPtr ptrNativeAssemblyBinder, IntPtr hModule, ObjectHandleOnStack retAssembly, out QCallExceptionStatus qcallException);
 
 
         /// <summary>
@@ -102,7 +103,8 @@ namespace System.Runtime.Loader
                 LoadFromInMemoryModuleInternal(
                     _nativeAssemblyLoadContext,
                     moduleHandle,
-                    ObjectHandleOnStack.Create(ref loadedAssembly));
+                    ObjectHandleOnStack.Create(ref loadedAssembly),
+                    out _);
                 return loadedAssembly!;
             }
         }
@@ -143,7 +145,7 @@ namespace System.Runtime.Loader
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetLoadContextForAssembly")]
-        private static partial IntPtr GetLoadContextForAssembly(QCallAssembly assembly);
+        private static partial IntPtr GetLoadContextForAssembly(QCallAssembly assembly, out QCallExceptionStatus qcallException);
 
         // Returns the load context in which the specified assembly has been loaded
         public static AssemblyLoadContext? GetLoadContext(Assembly assembly)
@@ -157,7 +159,7 @@ namespace System.Runtime.Loader
             if (rtAsm != null)
             {
                 RuntimeAssembly runtimeAssembly = rtAsm;
-                IntPtr ptrAssemblyLoadContext = GetLoadContextForAssembly(new QCallAssembly(ref runtimeAssembly));
+                IntPtr ptrAssemblyLoadContext = GetLoadContextForAssembly(new QCallAssembly(ref runtimeAssembly), out _);
                 if (ptrAssemblyLoadContext == IntPtr.Zero)
                 {
                     // If the load context is returned null, then the assembly was bound using the TPA binder
@@ -176,13 +178,13 @@ namespace System.Runtime.Loader
         // Set the root directory path for profile optimization.
         public void SetProfileOptimizationRoot(string directoryPath)
         {
-            InternalSetProfileRoot(directoryPath);
+            InternalSetProfileRoot(directoryPath, out _);
         }
 
         // Start profile optimization for the specified profile name.
         public void StartProfileOptimization(string? profile)
         {
-            InternalStartProfile(profile, _nativeAssemblyLoadContext);
+            InternalStartProfile(profile, _nativeAssemblyLoadContext, out _);
         }
 
         private static RuntimeAssembly? GetRuntimeAssembly(Assembly? asm)

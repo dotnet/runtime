@@ -10,7 +10,7 @@ namespace System
     internal sealed partial class ComAwareWeakReference
     {
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ComWeakRefToObject")]
-        private static partial void ComWeakRefToObject(IntPtr pComWeakRef, ObjectHandleOnStack retRcw);
+        private static partial void ComWeakRefToObject(IntPtr pComWeakRef, ObjectHandleOnStack retRcw, out QCallExceptionStatus qcallException);
 
         internal static object? ComWeakRefToObject(IntPtr pComWeakRef, object? context)
         {
@@ -19,7 +19,7 @@ namespace System
             {
                 // This wrapper was not created by ComWrappers, so we try to rehydrate using built-in COM.
                 object? retRcw = null;
-                ComWeakRefToObject(pComWeakRef, ObjectHandleOnStack.Create(ref retRcw));
+                ComWeakRefToObject(pComWeakRef, ObjectHandleOnStack.Create(ref retRcw), out _);
                 return retRcw;
             }
 #endif // FEATURE_COMINTEROP
@@ -39,7 +39,7 @@ namespace System
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ObjectToComWeakRef")]
-        private static partial IntPtr ObjectToComWeakRef(ObjectHandleOnStack retRcw);
+        private static partial IntPtr ObjectToComWeakRef(ObjectHandleOnStack retRcw, out QCallExceptionStatus qcallException);
 
         internal static nint ObjectToComWeakRef(object target, out object? context)
         {
@@ -48,7 +48,7 @@ namespace System
             {
                 // This object is using built-in COM, so use built-in COM to create the weak reference.
                 context = null;
-                return ObjectToComWeakRef(ObjectHandleOnStack.Create(ref target));
+                return ObjectToComWeakRef(ObjectHandleOnStack.Create(ref target), out _);
             }
 #endif // FEATURE_COMINTEROP
 

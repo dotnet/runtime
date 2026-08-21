@@ -92,11 +92,11 @@ namespace System
         /// exceed it. <see cref="StartNoGCRegionWorker(long, bool, long, bool)"/> is the audited entry point that
         /// validates both.</safety>
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_StartNoGCRegion")]
-        internal static unsafe partial int _StartNoGCRegion(long totalSize, [MarshalAs(UnmanagedType.Bool)] bool lohSizeKnown, long lohSize, [MarshalAs(UnmanagedType.Bool)] bool disallowFullBlockingGC);
+        internal static unsafe partial int _StartNoGCRegion(long totalSize, [MarshalAs(UnmanagedType.Bool)] bool lohSizeKnown, long lohSize, [MarshalAs(UnmanagedType.Bool)] bool disallowFullBlockingGC, out QCallExceptionStatus qcallException);
 
         /// <safety>QCall that ends the no-GC region and returns a status code; it takes no arguments and accesses no caller-supplied memory.</safety>
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_EndNoGCRegion")]
-        internal static safe partial int _EndNoGCRegion();
+        internal static safe partial int _EndNoGCRegion(out QCallExceptionStatus qcallException);
 
         // keep in sync with GC_ALLOC_FLAGS in gcinterface.h
         internal enum GC_ALLOC_FLAGS
@@ -107,17 +107,17 @@ namespace System
         };
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_AllocateNewArray")]
-        private static partial void AllocateNewArray(IntPtr typeHandlePtr, int length, GC_ALLOC_FLAGS flags, ObjectHandleOnStack ret);
+        private static partial void AllocateNewArray(IntPtr typeHandlePtr, int length, GC_ALLOC_FLAGS flags, ObjectHandleOnStack ret, out QCallExceptionStatus qcallException);
 
         /// <safety>QCall that returns the total managed heap byte count as a scalar; it takes no arguments and accesses no caller-supplied memory.</safety>
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_GetTotalMemory")]
-        private static safe partial long GetTotalMemory();
+        private static safe partial long GetTotalMemory(out QCallExceptionStatus qcallException);
 
         /// <safety>The runtime only asserts that <paramref name="generation"/> is at least -1 before handing it to the
         /// GC, so the caller must not pass a smaller value. <see cref="Collect(int, GCCollectionMode, bool, bool, bool)"/>
         /// is the audited entry point that validates it.</safety>
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_Collect")]
-        private static unsafe partial void _Collect(int generation, int mode, [MarshalAs(UnmanagedType.U1)] bool lowMemoryPressure);
+        private static unsafe partial void _Collect(int generation, int mode, [MarshalAs(UnmanagedType.U1)] bool lowMemoryPressure, out QCallExceptionStatus qcallException);
 
         /// <safety>FCall that returns the maximum supported generation number as a scalar; it takes no arguments and accesses no caller-supplied memory.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -144,11 +144,11 @@ namespace System
 
         /// <safety>QCall that records added memory pressure from a scalar byte count; it accesses no caller-supplied memory.</safety>
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_AddMemoryPressure")]
-        private static safe partial void _AddMemoryPressure(ulong bytesAllocated);
+        private static safe partial void _AddMemoryPressure(ulong bytesAllocated, out QCallExceptionStatus qcallException);
 
         /// <safety>QCall that records removed memory pressure from a scalar byte count; it accesses no caller-supplied memory.</safety>
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_RemoveMemoryPressure")]
-        private static safe partial void _RemoveMemoryPressure(ulong bytesAllocated);
+        private static safe partial void _RemoveMemoryPressure(ulong bytesAllocated, out QCallExceptionStatus qcallException);
 
         public static void AddMemoryPressure(long bytesAllocated)
         {
@@ -158,7 +158,7 @@ namespace System
                 ArgumentOutOfRangeException.ThrowIfGreaterThan(bytesAllocated, int.MaxValue);
             }
 
-            _AddMemoryPressure((ulong)bytesAllocated);
+            _AddMemoryPressure((ulong)bytesAllocated, out _);
         }
 
         public static void RemoveMemoryPressure(long bytesAllocated)
@@ -169,7 +169,7 @@ namespace System
                 ArgumentOutOfRangeException.ThrowIfGreaterThan(bytesAllocated, int.MaxValue);
             }
 
-            _RemoveMemoryPressure((ulong)bytesAllocated);
+            _RemoveMemoryPressure((ulong)bytesAllocated, out _);
         }
 
         // Returns the generation that obj is currently in.
@@ -195,7 +195,7 @@ namespace System
         public static void Collect()
         {
             // -1 says to GC all generations.
-            _Collect(-1, (int)InternalGCCollectionMode.Blocking, lowMemoryPressure: false);
+            _Collect(-1, (int)InternalGCCollectionMode.Blocking, lowMemoryPressure: false, out _);
         }
 
         public static void Collect(int generation, GCCollectionMode mode)
@@ -260,7 +260,7 @@ namespace System
                 iInternalModes |= (int)InternalGCCollectionMode.NonBlocking;
             }
 
-            _Collect(generation, (int)iInternalModes, lowMemoryPressure);
+            _Collect(generation, (int)iInternalModes, lowMemoryPressure, out _);
         }
 
         public static int CollectionCount(int generation)
@@ -328,7 +328,7 @@ namespace System
         public static int MaxGeneration => GetMaxGeneration();
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_GetNextFinalizableObject")]
-        private static unsafe partial void* GetNextFinalizeableObject(ObjectHandleOnStack target);
+        private static unsafe partial void* GetNextFinalizeableObject(ObjectHandleOnStack target, out QCallExceptionStatus qcallException);
 
         [UnmanagedCallersOnly]
         private static unsafe uint RunFinalizers()
@@ -339,7 +339,7 @@ namespace System
             while (true)
             {
                 object? target = null;
-                void* fptr = GetNextFinalizeableObject(ObjectHandleOnStack.Create(ref target));
+                void* fptr = GetNextFinalizeableObject(ObjectHandleOnStack.Create(ref target), out _);
                 if (fptr == null)
                     break;
 
@@ -361,12 +361,12 @@ namespace System
 
         /// <safety>QCall that blocks until pending finalizers drain; it takes no arguments and accesses no caller-supplied memory.</safety>
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_WaitForPendingFinalizers")]
-        private static safe partial void _WaitForPendingFinalizers();
+        private static safe partial void _WaitForPendingFinalizers(out QCallExceptionStatus qcallException);
 
         public static void WaitForPendingFinalizers()
         {
             // QCalls can not be exposed directly, need to wrap it.
-            _WaitForPendingFinalizers();
+            _WaitForPendingFinalizers(out _);
         }
 
         // Indicates that the system should not call the Finalize() method on
@@ -390,7 +390,7 @@ namespace System
         // where calling ReRegisterForFinalize is useful is inside a finalizer that
         // needs to resurrect itself or an object that it references.
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_ReRegisterForFinalize")]
-        private static partial void ReRegisterForFinalize(ObjectHandleOnStack o);
+        private static partial void ReRegisterForFinalize(ObjectHandleOnStack o, out QCallExceptionStatus qcallException);
 
         public static unsafe void ReRegisterForFinalize(object obj)
         {
@@ -399,7 +399,7 @@ namespace System
             MethodTable* pMT = RuntimeHelpers.GetMethodTable(obj);
             if (pMT->HasFinalizer)
             {
-                ReRegisterForFinalize(ObjectHandleOnStack.Create(ref obj));
+                ReRegisterForFinalize(ObjectHandleOnStack.Create(ref obj), out _);
             }
 
             // GC.KeepAlive(obj) not required. pMT kept alive via ObjectHandleOnStack
@@ -411,7 +411,7 @@ namespace System
         //
         public static long GetTotalMemory(bool forceFullCollection)
         {
-            long size = GetTotalMemory();
+            long size = GetTotalMemory(out _);
             if (!forceFullCollection)
                 return size;
             // If we force a full collection, we will run the finalizers on all
@@ -427,17 +427,17 @@ namespace System
                 WaitForPendingFinalizers();
                 Collect();
                 size = newSize;
-                newSize = GetTotalMemory();
+                newSize = GetTotalMemory(out _);
                 diff = ((float)(newSize - size)) / size;
             } while (reps-- > 0 && !(-.05 < diff && diff < .05));
             return newSize;
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_RegisterFrozenSegment")]
-        private static partial IntPtr _RegisterFrozenSegment(IntPtr sectionAddress, nint sectionSize);
+        private static partial IntPtr _RegisterFrozenSegment(IntPtr sectionAddress, nint sectionSize, out QCallExceptionStatus qcallException);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_UnregisterFrozenSegment")]
-        private static partial void _UnregisterFrozenSegment(IntPtr segmentHandle);
+        private static partial void _UnregisterFrozenSegment(IntPtr segmentHandle, out QCallExceptionStatus qcallException);
 
         /// <safety>FCall that returns the current thread's allocated byte count as a scalar; it takes no arguments and accesses no caller-supplied memory.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -448,7 +448,7 @@ namespace System
         /// Get a count of the bytes allocated over the lifetime of the process.
         /// </summary>
         /// <param name="precise">If true, gather a precise number, otherwise gather a fairly count. Gathering a precise value triggers at a significant performance penalty.</param>
-        public static long GetTotalAllocatedBytes(bool precise = false) => precise ? GetTotalAllocatedBytesPrecise() : GetTotalAllocatedBytesApproximate();
+        public static long GetTotalAllocatedBytes(bool precise = false) => precise ? GetTotalAllocatedBytesPrecise(out _) : GetTotalAllocatedBytesApproximate();
 
         /// <safety>FCall that returns an approximate process-wide allocated byte count as a scalar; it takes no arguments and accesses no caller-supplied memory.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -456,7 +456,7 @@ namespace System
 
         /// <safety>QCall that returns a precise process-wide allocated byte count as a scalar; it takes no arguments and accesses no caller-supplied memory.</safety>
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_GetTotalAllocatedBytesPrecise")]
-        private static safe partial long GetTotalAllocatedBytesPrecise();
+        private static safe partial long GetTotalAllocatedBytesPrecise(out QCallExceptionStatus qcallException);
 
         /// <safety>FCall that enables full-GC notifications from scalar percentage arguments and returns a status flag; it accesses no caller-supplied memory.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -468,11 +468,11 @@ namespace System
 
         /// <safety>QCall that waits for an approaching full GC using a scalar timeout and returns a status code; it accesses no caller-supplied memory.</safety>
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_WaitForFullGCApproach")]
-        private static safe partial int _WaitForFullGCApproach(int millisecondsTimeout);
+        private static safe partial int _WaitForFullGCApproach(int millisecondsTimeout, out QCallExceptionStatus qcallException);
 
         /// <safety>QCall that waits for full-GC completion using a scalar timeout and returns a status code; it accesses no caller-supplied memory.</safety>
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_WaitForFullGCComplete")]
-        private static safe partial int _WaitForFullGCComplete(int millisecondsTimeout);
+        private static safe partial int _WaitForFullGCComplete(int millisecondsTimeout, out QCallExceptionStatus qcallException);
 
         public static void RegisterForFullGCNotification(int maxGenerationThreshold, int largeObjectHeapThreshold)
         {
@@ -510,25 +510,25 @@ namespace System
 
         public static GCNotificationStatus WaitForFullGCApproach()
         {
-            return (GCNotificationStatus)_WaitForFullGCApproach(-1);
+            return (GCNotificationStatus)_WaitForFullGCApproach(-1, out _);
         }
 
         public static GCNotificationStatus WaitForFullGCApproach(int millisecondsTimeout)
         {
             ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
 
-            return (GCNotificationStatus)_WaitForFullGCApproach(millisecondsTimeout);
+            return (GCNotificationStatus)_WaitForFullGCApproach(millisecondsTimeout, out _);
         }
 
         public static GCNotificationStatus WaitForFullGCComplete()
         {
-            return (GCNotificationStatus)_WaitForFullGCComplete(-1);
+            return (GCNotificationStatus)_WaitForFullGCComplete(-1, out _);
         }
 
         public static GCNotificationStatus WaitForFullGCComplete(int millisecondsTimeout)
         {
             ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
-            return (GCNotificationStatus)_WaitForFullGCComplete(millisecondsTimeout);
+            return (GCNotificationStatus)_WaitForFullGCComplete(millisecondsTimeout, out _);
         }
 
         private enum StartNoGCRegionStatus
@@ -558,7 +558,7 @@ namespace System
                 ArgumentOutOfRangeException.ThrowIfGreaterThan(lohSize, totalSize);
             }
 
-            StartNoGCRegionStatus status = (StartNoGCRegionStatus)_StartNoGCRegion(totalSize, hasLohSize, lohSize, disallowFullBlockingGC);
+            StartNoGCRegionStatus status = (StartNoGCRegionStatus)_StartNoGCRegion(totalSize, hasLohSize, lohSize, disallowFullBlockingGC, out _);
             switch (status)
             {
                 case StartNoGCRegionStatus.NotEnoughMemory:
@@ -595,7 +595,7 @@ namespace System
 
         public static void EndNoGCRegion()
         {
-            EndNoGCRegionStatus status = (EndNoGCRegionStatus)_EndNoGCRegion();
+            EndNoGCRegionStatus status = (EndNoGCRegionStatus)_EndNoGCRegion(out _);
             if (status == EndNoGCRegionStatus.NotInProgress)
                 throw new InvalidOperationException(SR.InvalidOperationException_NoGCRegionNotInProgress);
             else if (status == EndNoGCRegionStatus.GCInduced)
@@ -751,7 +751,7 @@ namespace System
                 pWorkItem->action = new GCHandle<Action>(callback);
                 pWorkItem->callback = &Callback;
 
-                EnableNoGCRegionCallbackStatus status = (EnableNoGCRegionCallbackStatus)_EnableNoGCRegionCallback(pWorkItem, totalSize);
+                EnableNoGCRegionCallbackStatus status = (EnableNoGCRegionCallbackStatus)_EnableNoGCRegionCallback(pWorkItem, totalSize, out _);
                 if (status != EnableNoGCRegionCallbackStatus.Success)
                 {
                     switch (status)
@@ -790,17 +790,17 @@ namespace System
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_EnableNoGCRegionCallback")]
-        private static unsafe partial EnableNoGCRegionCallbackStatus _EnableNoGCRegionCallback(NoGCRegionCallbackFinalizerWorkItem* callback, long totalSize);
+        private static unsafe partial EnableNoGCRegionCallbackStatus _EnableNoGCRegionCallback(NoGCRegionCallbackFinalizerWorkItem* callback, long totalSize, out QCallExceptionStatus qcallException);
 
         internal static long GetGenerationBudget(int generation)
         {
-            return _GetGenerationBudget(generation);
+            return _GetGenerationBudget(generation, out _);
         }
 
         /// <safety>The GC indexes its per-generation dynamic data with <paramref name="generation"/> without
         /// bounds-checking it, so the caller must pass an existing generation number.</safety>
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_GetGenerationBudget")]
-        internal static unsafe partial long _GetGenerationBudget(int generation);
+        internal static unsafe partial long _GetGenerationBudget(int generation, out QCallExceptionStatus qcallException);
 
         internal static void UnregisterMemoryLoadChangeNotification(Action notification)
         {
@@ -861,7 +861,7 @@ namespace System
                 }
 
                 T[]? result = null;
-                AllocateNewArray(RuntimeTypeHandle.ToIntPtr(typeof(T[]).TypeHandle), length, flags, ObjectHandleOnStack.Create(ref result));
+                AllocateNewArray(RuntimeTypeHandle.ToIntPtr(typeof(T[]).TypeHandle), length, flags, ObjectHandleOnStack.Create(ref result), out _);
                 return result!;
             }
         }
@@ -882,7 +882,7 @@ namespace System
             }
 
             T[]? result = null;
-            AllocateNewArray(RuntimeTypeHandle.ToIntPtr(typeof(T[]).TypeHandle), length, flags, ObjectHandleOnStack.Create(ref result));
+            AllocateNewArray(RuntimeTypeHandle.ToIntPtr(typeof(T[]).TypeHandle), length, flags, ObjectHandleOnStack.Create(ref result), out _);
             return result!;
         }
 
@@ -953,7 +953,7 @@ namespace System
                 Configurations = new Dictionary<string, object>()
             };
 
-            _EnumerateConfigurationValues(&context, &ConfigCallback);
+            _EnumerateConfigurationValues(&context, &ConfigCallback, out _);
             return context.Configurations!;
         }
 
@@ -966,7 +966,7 @@ namespace System
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_EnumerateConfigurationValues")]
-        internal static unsafe partial void _EnumerateConfigurationValues(void* configurationDictionary, delegate* unmanaged<void*, byte*, byte*, GCConfigurationType, long, void> callback);
+        internal static unsafe partial void _EnumerateConfigurationValues(void* configurationDictionary, delegate* unmanaged<void*, byte*, byte*, GCConfigurationType, long, void> callback, out QCallExceptionStatus qcallException);
 
         internal enum RefreshMemoryStatus
         {
@@ -1021,7 +1021,7 @@ namespace System
                 HeapHardLimitLOHPercent = heapHardLimitLOHPercent,
                 HeapHardLimitPOHPercent = heapHardLimitPOHPercent,
             };
-            RefreshMemoryStatus status = (RefreshMemoryStatus)_RefreshMemoryLimit(heapHardLimitInfo);
+            RefreshMemoryStatus status = (RefreshMemoryStatus)_RefreshMemoryLimit(heapHardLimitInfo, out _);
             switch (status)
             {
                 case RefreshMemoryStatus.HardLimitTooLow:
@@ -1033,7 +1033,7 @@ namespace System
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_RefreshMemoryLimit")]
-        internal static partial int _RefreshMemoryLimit(GCHeapHardLimitInfo heapHardLimitInfo);
+        internal static partial int _RefreshMemoryLimit(GCHeapHardLimitInfo heapHardLimitInfo, out QCallExceptionStatus qcallException);
 
         internal struct GCHeapHardLimitInfo
         {

@@ -23,22 +23,22 @@ namespace System
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "String_Intern")]
-        private static partial void Intern(StringHandleOnStack src);
+        private static partial void Intern(StringHandleOnStack src, out QCallExceptionStatus qcallException);
 
         public static string Intern(string str)
         {
             ArgumentNullException.ThrowIfNull(str);
-            Intern(new StringHandleOnStack(ref str!));
+            Intern(new StringHandleOnStack(ref str!), out _);
             return str;
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "String_IsInterned")]
-        private static partial void IsInterned(StringHandleOnStack src);
+        private static partial void IsInterned(StringHandleOnStack src, out QCallExceptionStatus qcallException);
 
         public static string? IsInterned(string str)
         {
             ArgumentNullException.ThrowIfNull(str);
-            IsInterned(new StringHandleOnStack(ref str!));
+            IsInterned(new StringHandleOnStack(ref str!), out _);
             return str;
         }
 

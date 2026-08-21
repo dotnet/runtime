@@ -101,7 +101,13 @@ namespace System.Runtime.Loader
             // If this is a collectible ALC, we are creating a weak handle tracking resurrection otherwise we use a strong handle
             var thisHandle = GCHandle.Alloc(this, IsCollectible ? GCHandleType.WeakTrackResurrection : GCHandleType.Normal);
             var thisHandlePtr = GCHandle.ToIntPtr(thisHandle);
-            _nativeAssemblyLoadContext = InitializeAssemblyLoadContext(thisHandlePtr, representsTPALoadContext, isCollectible);
+            _nativeAssemblyLoadContext = InitializeAssemblyLoadContext(thisHandlePtr, representsTPALoadContext, isCollectible
+#if CORECLR
+#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
+                , out _
+#pragma warning restore SA1001, SA1113, SA1115
+#endif
+            );
 
             // Add this instance to the list of alive ALC
             Dictionary<long, WeakReference<AssemblyLoadContext>> allContexts = AllContexts;
@@ -149,7 +155,13 @@ namespace System.Runtime.Loader
                     var thisStrongHandlePtr = GCHandle.ToIntPtr(thisStrongHandle);
                     // The underlying code will transform the original weak handle
                     // created by InitializeLoadContext to a strong handle
-                    PrepareForAssemblyLoadContextRelease(_nativeAssemblyLoadContext, thisStrongHandlePtr);
+                    PrepareForAssemblyLoadContextRelease(_nativeAssemblyLoadContext, thisStrongHandlePtr
+#if CORECLR
+#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
+                        , out _
+#pragma warning restore SA1001, SA1113, SA1115
+#endif
+                    );
 
                     _state = InternalState.Unloading;
                 }
@@ -667,7 +679,13 @@ namespace System.Runtime.Loader
                         handler.Method.DeclaringType is Type declaringType ? $"{declaringType.FullName}.{handler.Method.Name}" : handler.Method.Name,
                         this != Default ? ToString() : Name,
                         resolvedAssembly?.FullName,
-                        resolvedAssembly != null && !resolvedAssembly.IsDynamic ? resolvedAssembly.Location : null);
+                        resolvedAssembly != null && !resolvedAssembly.IsDynamic ? resolvedAssembly.Location : null
+#if CORECLR
+#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
+                        , out _
+#pragma warning restore SA1001, SA1113, SA1115
+#endif
+                    );
                 }
 #endif // CORECLR
                 if (resolvedAssembly != null)
@@ -763,7 +781,13 @@ namespace System.Runtime.Loader
                         name,
                         handler.Method.DeclaringType is Type declaringType ? $"{declaringType.FullName}.{handler.Method.Name}" : handler.Method.Name,
                         asm?.FullName,
-                        asm != null && !asm.IsDynamic ? asm.Location : null);
+                        asm != null && !asm.IsDynamic ? asm.Location : null
+#if CORECLR
+#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
+                        , out _
+#pragma warning restore SA1001, SA1113, SA1115
+#endif
+                    );
                 }
 #endif // CORECLR
                 RuntimeAssembly? ret = GetRuntimeAssembly(asm);
@@ -926,7 +950,13 @@ namespace System.Runtime.Loader
 #if CORECLR
                 if (IsTracingEnabled())
                 {
-                    TraceSatelliteSubdirectoryPathProbed(assemblyPath, HResults.COR_E_FILENOTFOUND);
+                    TraceSatelliteSubdirectoryPathProbed(assemblyPath, HResults.COR_E_FILENOTFOUND
+#if CORECLR
+#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
+                        , out _
+#pragma warning restore SA1001, SA1113, SA1115
+#endif
+                    );
                 }
 #endif // CORECLR
                 assemblyPath = Path.Combine(parentDirectory, assemblyName.CultureName!.ToLowerInvariant(), $"{assemblyName.Name}.dll");
@@ -937,7 +967,13 @@ namespace System.Runtime.Loader
 #if CORECLR
             if (IsTracingEnabled())
             {
-                TraceSatelliteSubdirectoryPathProbed(assemblyPath, exists ? HResults.S_OK : HResults.COR_E_FILENOTFOUND);
+                TraceSatelliteSubdirectoryPathProbed(assemblyPath, exists ? HResults.S_OK : HResults.COR_E_FILENOTFOUND
+#if CORECLR
+#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
+                    , out _
+#pragma warning restore SA1001, SA1113, SA1115
+#endif
+                );
             }
 #endif // CORECLR
 

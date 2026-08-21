@@ -6,6 +6,19 @@
 
 
 #include "common.h"
+#include "threadstatics.h"
+
+void QCallExceptionStatus::SetThrowable(OBJECTREF throwable)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    _ASSERTE(throwable != NULL);
+    _ASSERTE(m_exceptionPending == 0);
+
+    _ASSERTE(t_ThreadStatics.pQCallException == NULL);
+    t_ThreadStatics.pQCallException = OBJECTREFToObject(throwable);
+    VolatileStore(&m_exceptionPending, 1);
+}
 
 //
 // Helpers for returning managed string from QCall

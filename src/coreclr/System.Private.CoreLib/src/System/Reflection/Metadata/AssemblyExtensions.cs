@@ -11,7 +11,7 @@ namespace System.Reflection.Metadata
     {
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_InternalTryGetRawMetadata")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static unsafe partial bool InternalTryGetRawMetadata(QCallAssembly assembly, ref byte* blob, ref int length);
+        private static unsafe partial bool InternalTryGetRawMetadata(QCallAssembly assembly, ref byte* blob, ref int length, out QCallExceptionStatus qcallException);
 
         /// <summary>
         /// Retrieves the metadata section of the assembly, for use with <see cref="T:System.Reflection.Metadata.MetadataReader" />.
@@ -44,7 +44,7 @@ namespace System.Reflection.Metadata
 
             RuntimeAssembly rtAsm = runtimeAssembly;
 
-            return InternalTryGetRawMetadata(new QCallAssembly(ref rtAsm), ref blob, ref length);
+            return InternalTryGetRawMetadata(new QCallAssembly(ref rtAsm), ref blob, ref length, out _);
         }
     }
 }

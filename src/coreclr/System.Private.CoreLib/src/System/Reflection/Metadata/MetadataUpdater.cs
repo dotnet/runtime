@@ -11,11 +11,11 @@ namespace System.Reflection.Metadata
     public static partial class MetadataUpdater
     {
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_ApplyUpdate")]
-        private static unsafe partial void ApplyUpdate(QCallAssembly assembly, byte* metadataDelta, int metadataDeltaLength, byte* ilDelta, int ilDeltaLength, byte* pdbDelta, int pdbDeltaLength);
+        private static unsafe partial void ApplyUpdate(QCallAssembly assembly, byte* metadataDelta, int metadataDeltaLength, byte* ilDelta, int ilDeltaLength, byte* pdbDelta, int pdbDeltaLength, out QCallExceptionStatus qcallException);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_IsApplyUpdateSupported")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static unsafe partial bool IsApplyUpdateSupported();
+        private static unsafe partial bool IsApplyUpdateSupported(out QCallExceptionStatus qcallException);
 
         /// <summary>
         /// Updates the specified assembly using the provided metadata, IL and PDB deltas.
@@ -47,7 +47,7 @@ namespace System.Reflection.Metadata
                 RuntimeAssembly rtAsm = runtimeAssembly;
                 fixed (byte* metadataDeltaPtr = metadataDelta, ilDeltaPtr = ilDelta, pdbDeltaPtr = pdbDelta)
                 {
-                    ApplyUpdate(new QCallAssembly(ref rtAsm), metadataDeltaPtr, metadataDelta.Length, ilDeltaPtr, ilDelta.Length, pdbDeltaPtr, pdbDelta.Length);
+                    ApplyUpdate(new QCallAssembly(ref rtAsm), metadataDeltaPtr, metadataDelta.Length, ilDeltaPtr, ilDelta.Length, pdbDeltaPtr, pdbDelta.Length, out _);
                 }
             }
         }
@@ -61,6 +61,6 @@ namespace System.Reflection.Metadata
         /// Returns true if the apply assembly update is enabled and available.
         /// </summary>
         [FeatureSwitchDefinition("System.Reflection.Metadata.MetadataUpdater.IsSupported")]
-        public static bool IsSupported { get; } = IsApplyUpdateSupported();
+        public static bool IsSupported { get; } = IsApplyUpdateSupported(out _);
     }
 }

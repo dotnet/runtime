@@ -21,22 +21,22 @@ namespace System.IO
         internal static string FormatFileLoadExceptionMessage(string? fileName, int hResult)
         {
             string? format = null;
-            GetFileLoadExceptionMessage(hResult, new StringHandleOnStack(ref format));
+            GetFileLoadExceptionMessage(hResult, new StringHandleOnStack(ref format), out _);
 
             string? message = null;
             if (hResult == HResults.COR_E_BADEXEFORMAT)
                 message = SR.Arg_BadImageFormatException;
             else
-                GetMessageForHR(hResult, new StringHandleOnStack(ref message));
+                GetMessageForHR(hResult, new StringHandleOnStack(ref message), out _);
 
             return string.Format(format!, fileName, message);
         }
 
         [LibraryImport(RuntimeHelpers.QCall)]
-        private static partial void GetFileLoadExceptionMessage(int hResult, StringHandleOnStack retString);
+        private static partial void GetFileLoadExceptionMessage(int hResult, StringHandleOnStack retString, out QCallExceptionStatus qcallException);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "FileLoadException_GetMessageForHR")]
-        private static partial void GetMessageForHR(int hresult, StringHandleOnStack retString);
+        private static partial void GetMessageForHR(int hresult, StringHandleOnStack retString, out QCallExceptionStatus qcallException);
 
         // See clrex.cpp for native version.
         internal enum FileLoadExceptionKind

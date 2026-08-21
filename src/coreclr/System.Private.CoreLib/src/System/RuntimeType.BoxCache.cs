@@ -122,7 +122,8 @@ namespace System
                 GetBoxInfo(
                     new QCallTypeHandle(ref rt),
                     &pfnAllocatorTemp, &vAllocatorFirstArgTemp,
-                    &nullableValueOffsetTemp, &valueTypeSizeTemp);
+                    &nullableValueOffsetTemp, &valueTypeSizeTemp,
+                    out _);
 
                 pfnAllocator = pfnAllocatorTemp;
                 vAllocatorFirstArg = vAllocatorFirstArgTemp;
@@ -136,7 +137,8 @@ namespace System
                 delegate*<void*, object>* ppfnAllocator,
                 void** pvAllocatorFirstArg,
                 int* pNullableValueOffset,
-                uint* pValueTypeSize);
+                uint* pValueTypeSize,
+                out QCallExceptionStatus qcallException);
         }
 
         internal object? Box(ref byte data)

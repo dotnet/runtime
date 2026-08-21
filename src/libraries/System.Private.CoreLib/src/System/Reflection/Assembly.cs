@@ -331,7 +331,7 @@ namespace System.Reflection
 #if CORECLR
                     if (AssemblyLoadContext.IsTracingEnabled())
                     {
-                        AssemblyLoadContext.TraceAssemblyLoadFromResolveHandlerInvoked(args.Name, false, requestorPath, null);
+                        AssemblyLoadContext.TraceAssemblyLoadFromResolveHandlerInvoked(args.Name, false, requestorPath, null, out _);
                     }
 #endif // CORECLR
                     return null;
@@ -346,7 +346,7 @@ namespace System.Reflection
 #if CORECLR
             if (AssemblyLoadContext.IsTracingEnabled())
             {
-                AssemblyLoadContext.TraceAssemblyLoadFromResolveHandlerInvoked(args.Name, true, requestorPath, requestedAssemblyPath);
+                AssemblyLoadContext.TraceAssemblyLoadFromResolveHandlerInvoked(args.Name, true, requestorPath, requestedAssemblyPath, out _);
             }
 #endif // CORECLR
             try

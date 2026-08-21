@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -19,10 +19,22 @@ namespace System.Diagnostics.Tracing
         private static readonly string s_eventSourceNameFilter = GetClrConfig("EventSourceFilter");
         private static readonly string s_eventSourceEventFilter = GetClrConfig("EventNameFilter");
 
-        private static unsafe string GetClrConfig(string configName) => new string(EventSource_GetClrConfig(configName));
+        private static unsafe string GetClrConfig(string configName) => new string(EventSource_GetClrConfig(configName
+#if CORECLR
+#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
+            , out _
+#pragma warning restore SA1001, SA1113, SA1115
+#endif
+        ));
 
         [LibraryImport(RuntimeHelpers.QCall, StringMarshalling = StringMarshalling.Utf16)]
-        private static unsafe partial char* EventSource_GetClrConfig(string configName);
+        private static unsafe partial char* EventSource_GetClrConfig(string configName
+#if CORECLR
+#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
+            , out QCallExceptionStatus qcallException
+#pragma warning restore SA1001, SA1113, SA1115
+#endif
+        );
 
         private static bool initializedPersistentListener;
 
@@ -30,7 +42,13 @@ namespace System.Diagnostics.Tracing
         {
             try
             {
-                if (!initializedPersistentListener && XplatEventLogger.IsEventSourceLoggingEnabled())
+                if (!initializedPersistentListener && XplatEventLogger.IsEventSourceLoggingEnabled(
+#if CORECLR
+#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
+                    out _
+#pragma warning restore SA1001, SA1113, SA1115
+#endif
+                ))
                 {
                     initializedPersistentListener = true;
                     return new XplatEventLogger();
@@ -43,10 +61,22 @@ namespace System.Diagnostics.Tracing
 
         [LibraryImport(RuntimeHelpers.QCall)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static partial bool IsEventSourceLoggingEnabled();
+        private static partial bool IsEventSourceLoggingEnabled(
+#if CORECLR
+#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
+            out QCallExceptionStatus qcallException
+#pragma warning restore SA1001, SA1113, SA1115
+#endif
+        );
 
         [LibraryImport(RuntimeHelpers.QCall, StringMarshalling = StringMarshalling.Utf16)]
-        private static partial void LogEventSource(int eventID, string? eventName, string eventSourceName, string payload);
+        private static partial void LogEventSource(int eventID, string? eventName, string eventSourceName, string payload
+#if CORECLR
+#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
+            , out QCallExceptionStatus qcallException
+#pragma warning restore SA1001, SA1113, SA1115
+#endif
+        );
 
         private static readonly List<char> escape_seq = new List<char> { '\b', '\f', '\n', '\r', '\t', '\"', '\\' };
         private static readonly Dictionary<char, string> seq_mapping = new Dictionary<char, string>()
@@ -195,7 +225,13 @@ namespace System.Diagnostics.Tracing
                 }
             }
 
-            LogEventSource(eventData.EventId, eventData.EventName, eventData.EventSource.Name, payload);
+            LogEventSource(eventData.EventId, eventData.EventName, eventData.EventSource.Name, payload
+#if CORECLR
+#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
+                , out _
+#pragma warning restore SA1001, SA1113, SA1115
+#endif
+            );
         }
     }
 }

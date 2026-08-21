@@ -10,7 +10,13 @@ namespace System.Diagnostics.Tracing
     {
         [NonEvent]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "NativeRuntimeEventSource_LogContentionLockCreated")]
-        private static partial void LogContentionLockCreated(nint LockID, nint AssociatedObjectID, ushort ClrInstanceID);
+        private static partial void LogContentionLockCreated(nint LockID, nint AssociatedObjectID, ushort ClrInstanceID
+#if CORECLR
+#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
+            , out QCallExceptionStatus qcallException
+#pragma warning restore SA1001, SA1113, SA1115
+#endif
+        );
 
         [NonEvent]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "NativeRuntimeEventSource_LogContentionStart")]
@@ -19,38 +25,86 @@ namespace System.Diagnostics.Tracing
             ushort ClrInstanceID,
             nint LockID,
             nint AssociatedObjectID,
-            ulong LockOwnerThreadID);
+            ulong LockOwnerThreadID
+#if CORECLR
+#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
+            , out QCallExceptionStatus qcallException
+#pragma warning restore SA1001, SA1113, SA1115
+#endif
+        );
 
         [NonEvent]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "NativeRuntimeEventSource_LogContentionStop")]
         private static partial void LogContentionStop(
             ContentionFlagsMap ContentionFlags,
             ushort ClrInstanceID,
-            double DurationNs);
+            double DurationNs
+#if CORECLR
+#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
+            , out QCallExceptionStatus qcallException
+#pragma warning restore SA1001, SA1113, SA1115
+#endif
+        );
 
         [NonEvent]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "NativeRuntimeEventSource_LogThreadPoolWorkerThreadStart")]
-        private static partial void LogThreadPoolWorkerThreadStart(uint ActiveWorkerThreadCount, uint RetiredWorkerThreadCount, ushort ClrInstanceID);
+        private static partial void LogThreadPoolWorkerThreadStart(uint ActiveWorkerThreadCount, uint RetiredWorkerThreadCount, ushort ClrInstanceID
+#if CORECLR
+#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
+            , out QCallExceptionStatus qcallException
+#pragma warning restore SA1001, SA1113, SA1115
+#endif
+        );
 
         [NonEvent]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "NativeRuntimeEventSource_LogThreadPoolWorkerThreadStop")]
-        private static partial void LogThreadPoolWorkerThreadStop(uint ActiveWorkerThreadCount, uint RetiredWorkerThreadCount, ushort ClrInstanceID);
+        private static partial void LogThreadPoolWorkerThreadStop(uint ActiveWorkerThreadCount, uint RetiredWorkerThreadCount, ushort ClrInstanceID
+#if CORECLR
+#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
+            , out QCallExceptionStatus qcallException
+#pragma warning restore SA1001, SA1113, SA1115
+#endif
+        );
 
         [NonEvent]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "NativeRuntimeEventSource_LogThreadPoolWorkerThreadWait")]
-        private static partial void LogThreadPoolWorkerThreadWait(uint ActiveWorkerThreadCount, uint RetiredWorkerThreadCount, ushort ClrInstanceID);
+        private static partial void LogThreadPoolWorkerThreadWait(uint ActiveWorkerThreadCount, uint RetiredWorkerThreadCount, ushort ClrInstanceID
+#if CORECLR
+#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
+            , out QCallExceptionStatus qcallException
+#pragma warning restore SA1001, SA1113, SA1115
+#endif
+        );
 
         [NonEvent]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "NativeRuntimeEventSource_LogThreadPoolMinMaxThreads")]
-        private static partial void LogThreadPoolMinMaxThreads(ushort MinWorkerThreads, ushort MaxWorkerThreads, ushort MinIOCompletionThreads, ushort MaxIOCompletionThreads, ushort ClrInstanceID);
+        private static partial void LogThreadPoolMinMaxThreads(ushort MinWorkerThreads, ushort MaxWorkerThreads, ushort MinIOCompletionThreads, ushort MaxIOCompletionThreads, ushort ClrInstanceID
+#if CORECLR
+#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
+            , out QCallExceptionStatus qcallException
+#pragma warning restore SA1001, SA1113, SA1115
+#endif
+        );
 
         [NonEvent]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentSample")]
-        private static partial void LogThreadPoolWorkerThreadAdjustmentSample(double Throughput, ushort ClrInstanceID);
+        private static partial void LogThreadPoolWorkerThreadAdjustmentSample(double Throughput, ushort ClrInstanceID
+#if CORECLR
+#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
+            , out QCallExceptionStatus qcallException
+#pragma warning restore SA1001, SA1113, SA1115
+#endif
+        );
 
         [NonEvent]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentAdjustment")]
-        private static partial void LogThreadPoolWorkerThreadAdjustmentAdjustment(double AverageThroughput, uint NewWorkerThreadCount, ThreadAdjustmentReasonMap Reason, ushort ClrInstanceID);
+        private static partial void LogThreadPoolWorkerThreadAdjustmentAdjustment(double AverageThroughput, uint NewWorkerThreadCount, ThreadAdjustmentReasonMap Reason, ushort ClrInstanceID
+#if CORECLR
+#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
+            , out QCallExceptionStatus qcallException
+#pragma warning restore SA1001, SA1113, SA1115
+#endif
+        );
 
         [NonEvent]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentStats")]
@@ -65,7 +119,13 @@ namespace System.Diagnostics.Tracing
             double Confidence,
             double NewControlSetting,
             ushort NewThreadWaveMagnitude,
-            ushort ClrInstanceID);
+            ushort ClrInstanceID
+#if CORECLR
+#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
+            , out QCallExceptionStatus qcallException
+#pragma warning restore SA1001, SA1113, SA1115
+#endif
+        );
 
         [NonEvent]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "NativeRuntimeEventSource_LogThreadPoolIOEnqueue")]
@@ -73,37 +133,73 @@ namespace System.Diagnostics.Tracing
             IntPtr NativeOverlapped,
             IntPtr Overlapped,
             [MarshalAs(UnmanagedType.Bool)] bool MultiDequeues,
-            ushort ClrInstanceID);
+            ushort ClrInstanceID
+#if CORECLR
+#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
+            , out QCallExceptionStatus qcallException
+#pragma warning restore SA1001, SA1113, SA1115
+#endif
+        );
 
         [NonEvent]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "NativeRuntimeEventSource_LogThreadPoolIODequeue")]
         private static partial void LogThreadPoolIODequeue(
             IntPtr NativeOverlapped,
             IntPtr Overlapped,
-            ushort ClrInstanceID);
+            ushort ClrInstanceID
+#if CORECLR
+#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
+            , out QCallExceptionStatus qcallException
+#pragma warning restore SA1001, SA1113, SA1115
+#endif
+        );
 
         [NonEvent]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "NativeRuntimeEventSource_LogThreadPoolWorkingThreadCount")]
         private static partial void LogThreadPoolWorkingThreadCount(
             uint Count,
-            ushort ClrInstanceID);
+            ushort ClrInstanceID
+#if CORECLR
+#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
+            , out QCallExceptionStatus qcallException
+#pragma warning restore SA1001, SA1113, SA1115
+#endif
+        );
 
         [NonEvent]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "NativeRuntimeEventSource_LogThreadPoolIOPack")]
         private static partial void LogThreadPoolIOPack(
             IntPtr NativeOverlapped,
             IntPtr Overlapped,
-            ushort ClrInstanceID);
+            ushort ClrInstanceID
+#if CORECLR
+#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
+            , out QCallExceptionStatus qcallException
+#pragma warning restore SA1001, SA1113, SA1115
+#endif
+        );
 
         [NonEvent]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "NativeRuntimeEventSource_LogWaitHandleWaitStart")]
         private static partial void LogWaitHandleWaitStart(
             WaitHandleWaitSourceMap WaitSource,
             IntPtr AssociatedObjectID,
-            ushort ClrInstanceID);
+            ushort ClrInstanceID
+#if CORECLR
+#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
+            , out QCallExceptionStatus qcallException
+#pragma warning restore SA1001, SA1113, SA1115
+#endif
+        );
 
         [NonEvent]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "NativeRuntimeEventSource_LogWaitHandleWaitStop")]
-        private static partial void LogWaitHandleWaitStop(ushort ClrInstanceID);
+        private static partial void LogWaitHandleWaitStop(ushort ClrInstanceID
+#if CORECLR
+#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
+            , out QCallExceptionStatus qcallException
+#pragma warning restore SA1001, SA1113, SA1115
+#endif
+        );
     }
 }

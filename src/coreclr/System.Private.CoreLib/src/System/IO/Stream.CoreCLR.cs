@@ -11,7 +11,7 @@ namespace System.IO
     {
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Stream_HasOverriddenSlow")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static partial bool HasOverriddenSlow(MethodTable* pMT, [MarshalAs(UnmanagedType.Bool)] bool isRead);
+        private static partial bool HasOverriddenSlow(MethodTable* pMT, [MarshalAs(UnmanagedType.Bool)] bool isRead, out QCallExceptionStatus qcallException);
 
         private bool HasOverriddenBeginEndRead()
         {
@@ -24,7 +24,7 @@ namespace System.IO
 
             [MethodImpl(MethodImplOptions.NoInlining)]
             static bool HasOverriddenReadSlow(MethodTable* pMT)
-                => HasOverriddenSlow(pMT, isRead: true);
+                => HasOverriddenSlow(pMT, isRead: true, out _);
         }
 
         private bool HasOverriddenBeginEndWrite()
@@ -38,7 +38,7 @@ namespace System.IO
 
             [MethodImpl(MethodImplOptions.NoInlining)]
             static bool HasOverriddenWriteSlow(MethodTable* pMT)
-                => HasOverriddenSlow(pMT, isRead: false);
+                => HasOverriddenSlow(pMT, isRead: false, out _);
         }
     }
 }

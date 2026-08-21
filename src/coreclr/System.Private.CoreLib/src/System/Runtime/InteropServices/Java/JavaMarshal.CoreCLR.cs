@@ -42,7 +42,7 @@ namespace System.Runtime.InteropServices.Java
         {
             ArgumentNullException.ThrowIfNull(markCrossReferences);
 
-            if (!InitializeInternal((IntPtr)markCrossReferences))
+            if (!InitializeInternal((IntPtr)markCrossReferences, out _))
             {
                 throw new InvalidOperationException(SR.InvalidOperation_ReinitializeJavaMarshal);
             }
@@ -66,7 +66,7 @@ namespace System.Runtime.InteropServices.Java
         {
             ArgumentNullException.ThrowIfNull(obj);
 
-            IntPtr handle = CreateReferenceTrackingHandleInternal(ObjectHandleOnStack.Create(ref obj), context);
+            IntPtr handle = CreateReferenceTrackingHandleInternal(ObjectHandleOnStack.Create(ref obj), context, out _);
             return GCHandle.FromIntPtr(handle);
         }
 
@@ -112,19 +112,20 @@ namespace System.Runtime.InteropServices.Java
                 FinishCrossReferenceProcessing(
                     crossReferences,
                     (nuint)unreachableObjectHandles.Length,
-                    pHandles);
+                    pHandles,
+                    out _);
             }
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "JavaMarshal_Initialize")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static partial bool InitializeInternal(IntPtr callback);
+        private static partial bool InitializeInternal(IntPtr callback, out QCallExceptionStatus qcallException);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "JavaMarshal_CreateReferenceTrackingHandle")]
-        private static unsafe partial IntPtr CreateReferenceTrackingHandleInternal(ObjectHandleOnStack obj, void* context);
+        private static unsafe partial IntPtr CreateReferenceTrackingHandleInternal(ObjectHandleOnStack obj, void* context, out QCallExceptionStatus qcallException);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "JavaMarshal_FinishCrossReferenceProcessing")]
-        private static unsafe partial void FinishCrossReferenceProcessing(MarkCrossReferencesArgs* crossReferences, nuint length, void* unreachableObjectHandles);
+        private static unsafe partial void FinishCrossReferenceProcessing(MarkCrossReferencesArgs* crossReferences, nuint length, void* unreachableObjectHandles, out QCallExceptionStatus qcallException);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "JavaMarshal_GetContext")]
         [SuppressGCTransition]

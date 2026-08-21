@@ -12,13 +12,13 @@ namespace System.Diagnostics
     public static partial class Debugger
     {
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DebugDebugger_Break")]
-        private static partial void BreakInternal();
+        private static partial void BreakInternal(out QCallExceptionStatus qcallException);
 
         // Break causes a breakpoint to be signalled to an attached debugger.  If no debugger
         // is attached, the user is asked if they want to attach a debugger. If yes, then the
         // debugger is launched.
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void Break() => BreakInternal();
+        public static void Break() => BreakInternal(out _);
 
         // Launch launches & attaches a debugger to the process. If a debugger is already attached,
         // nothing happens.
@@ -50,7 +50,7 @@ namespace System.Diagnostics
             static void NotifyOfCrossThreadDependencySlow()
             {
                 var notify = new CrossThreadDependencyNotification();
-                CustomNotification(ObjectHandleOnStack.Create(ref notify));
+                CustomNotification(ObjectHandleOnStack.Create(ref notify), out _);
             }
         }
 
@@ -84,7 +84,7 @@ namespace System.Diagnostics
         // debugger attached, has no effect.  The debugger may or may not
         // report the notification depending on its settings.
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DebugDebugger_CustomNotification")]
-        private static partial void CustomNotification(ObjectHandleOnStack data);
+        private static partial void CustomNotification(ObjectHandleOnStack data, out QCallExceptionStatus qcallException);
 
         // implementation of CORINFO_HELP_USER_BREAKPOINT
         [StackTraceHidden]

@@ -79,12 +79,12 @@ namespace System
                 return pAuxData->CanCompareBitsOrUseFastGetHashCode;
             }
 
-            return CanCompareBitsOrUseFastGetHashCodeHelper(pMT);
+            return CanCompareBitsOrUseFastGetHashCodeHelper(pMT, out _);
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MethodTable_CanCompareBitsOrUseFastGetHashCode")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static unsafe partial bool CanCompareBitsOrUseFastGetHashCodeHelper(MethodTable* pMT);
+        private static unsafe partial bool CanCompareBitsOrUseFastGetHashCodeHelper(MethodTable* pMT, out QCallExceptionStatus qcallException);
 
         /*=================================GetHashCode==================================
         **Action: Our algorithm for returning the hashcode is a little bit complex.  We look
@@ -120,7 +120,7 @@ namespace System
             else
             {
                 object thisRef = this;
-                switch (GetHashCodeStrategy(pMT, ObjectHandleOnStack.Create(ref thisRef), out uint fieldOffset, out uint fieldSize, out MethodTable* fieldMT))
+                switch (GetHashCodeStrategy(pMT, ObjectHandleOnStack.Create(ref thisRef), out uint fieldOffset, out uint fieldSize, out MethodTable* fieldMT, out _))
                 {
                     case ValueTypeHashCodeStrategy.ReferenceField:
                         hashCode.Add(Unsafe.As<byte, object>(ref Unsafe.AddByteOffset(ref rawData, fieldOffset)).GetHashCode());
@@ -164,7 +164,8 @@ namespace System
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ValueType_GetHashCodeStrategy")]
         private static unsafe partial ValueTypeHashCodeStrategy GetHashCodeStrategy(
-            MethodTable* pMT, ObjectHandleOnStack objHandle, out uint fieldOffset, out uint fieldSize, out MethodTable* fieldMT);
+            MethodTable* pMT, ObjectHandleOnStack objHandle, out uint fieldOffset, out uint fieldSize, out MethodTable* fieldMT,
+            out QCallExceptionStatus qcallException);
 
         public override string? ToString()
         {

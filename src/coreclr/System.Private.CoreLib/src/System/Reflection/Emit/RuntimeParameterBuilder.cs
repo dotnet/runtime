@@ -42,7 +42,8 @@ namespace System.Reflection.Emit
                         _methodBuilder.MetadataToken,
                         sequence,
                         attributes,
-                        paramName);
+                        paramName,
+                        out _);
         }
 
         internal int GetToken()

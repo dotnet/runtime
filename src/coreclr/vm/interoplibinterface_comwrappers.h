@@ -34,19 +34,19 @@ extern "C" void QCALLTYPE ComWrappers_GetIUnknownImpl(
 
 extern "C" void* QCALLTYPE ComWrappers_GetUntrackedAddRefRelease();
 
-extern "C" void* QCALLTYPE ComWrappers_AllocateRefCountedHandle(_In_ QCall::ObjectHandleOnStack obj);
+extern "C" void* QCALLTYPE ComWrappers_AllocateRefCountedHandle(_In_ QCall::ObjectHandleOnStack obj, QCallExceptionStatus* qcallError);
 
 extern "C" void const* QCALLTYPE ComWrappers_GetIReferenceTrackerTargetVftbl();
 
 extern "C" void const* QCALLTYPE ComWrappers_GetTaggedImpl();
 
-extern "C" void QCALLTYPE ComWrappers_RegisterIsRootedCallback();
+extern "C" void QCALLTYPE ComWrappers_RegisterIsRootedCallback(QCallExceptionStatus* qcallError);
 
 extern "C" CLR_BOOL QCALLTYPE TrackerObjectManager_HasReferenceTrackerManager();
 
 extern "C" CLR_BOOL QCALLTYPE TrackerObjectManager_TryRegisterReferenceTrackerManager(_In_ void* manager);
 
-extern "C" void QCALLTYPE TrackerObjectManager_RegisterNativeObjectWrapperCache(_In_ QCall::ObjectHandleOnStack cache);
+extern "C" void QCALLTYPE TrackerObjectManager_RegisterNativeObjectWrapperCache(_In_ QCall::ObjectHandleOnStack cache, QCallExceptionStatus* qcallError);
 
 extern "C" CLR_BOOL QCALLTYPE TrackerObjectManager_IsGlobalPeggingEnabled();
 

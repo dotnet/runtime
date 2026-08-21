@@ -10,10 +10,10 @@ namespace System.Diagnostics
     public partial class StackTrace
     {
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StackTrace_GetStackFramesInternal")]
-        private static partial void GetStackFramesInternal(ObjectHandleOnStack sfh, [MarshalAs(UnmanagedType.Bool)] bool fNeedFileInfo, ObjectHandleOnStack e);
+        private static partial void GetStackFramesInternal(ObjectHandleOnStack sfh, [MarshalAs(UnmanagedType.Bool)] bool fNeedFileInfo, ObjectHandleOnStack e, out QCallExceptionStatus qcallException);
 
         internal static void GetStackFramesInternal(StackFrameHelper sfh, bool fNeedFileInfo, Exception? e)
-            => GetStackFramesInternal(ObjectHandleOnStack.Create(ref sfh), fNeedFileInfo, ObjectHandleOnStack.Create(ref e));
+            => GetStackFramesInternal(ObjectHandleOnStack.Create(ref sfh), fNeedFileInfo, ObjectHandleOnStack.Create(ref e), out _);
 
         internal static int CalculateFramesToSkip(StackFrameHelper StackF, int iNumFrames)
         {

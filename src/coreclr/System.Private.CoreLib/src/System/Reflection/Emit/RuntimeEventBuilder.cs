@@ -55,7 +55,8 @@ namespace System.Reflection.Emit
                 new QCallModule(ref module),
                 m_evToken,
                 semantics,
-                mdBuilder.MetadataToken);
+                mdBuilder.MetadataToken,
+                out _);
         }
 
         protected override void SetAddOnMethodCore(MethodBuilder mdBuilder)

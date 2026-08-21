@@ -2662,7 +2662,7 @@ BSTR OleVariant::ConvertStringToBSTR(STRINGREF *pStringObj)
     return result;
 }
 
-extern "C" void QCALLTYPE Variant_ConvertValueTypeToRecord(QCall::ObjectHandleOnStack obj, VARIANT * pOle)
+extern "C" void QCALLTYPE Variant_ConvertValueTypeToRecord(QCall::ObjectHandleOnStack obj, VARIANT * pOle, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 

@@ -131,7 +131,13 @@ namespace System.Diagnostics.Tracing
                 fixed (char* outputFilePath = outputFile)
                 fixed (EventPipeProviderConfigurationNative* providersNativePointer = providersNative)
                 {
-                    return Enable(outputFilePath, format, circularBufferSizeInMB, providersNativePointer, (uint)providersNative.Length);
+                    return Enable(outputFilePath, format, circularBufferSizeInMB, providersNativePointer, (uint)providersNative.Length
+#if CORECLR
+#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
+                        , out _
+#pragma warning restore SA1001, SA1113, SA1115
+#endif
+                    );
                 }
             }
             finally

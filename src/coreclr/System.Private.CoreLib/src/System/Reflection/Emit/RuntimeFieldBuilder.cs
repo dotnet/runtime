@@ -38,7 +38,7 @@ namespace System.Reflection.Emit
 
             RuntimeModuleBuilder module = m_typeBuilder.GetModuleBuilder();
             m_fieldTok = RuntimeTypeBuilder.DefineField(new QCallModule(ref module),
-                typeBuilder.TypeToken, fieldName, signature, sigLength, m_Attributes);
+                typeBuilder.TypeToken, fieldName, signature, sigLength, m_Attributes, out _);
         }
 
         #endregion
@@ -47,7 +47,7 @@ namespace System.Reflection.Emit
         internal void SetData(byte[]? data, int size)
         {
             RuntimeModuleBuilder module = m_typeBuilder.GetModuleBuilder();
-            RuntimeModuleBuilder.SetFieldRVAContent(new QCallModule(ref module), m_fieldTok, data, size);
+            RuntimeModuleBuilder.SetFieldRVAContent(new QCallModule(ref module), m_fieldTok, data, size, out _);
         }
         #endregion
 
@@ -133,7 +133,7 @@ namespace System.Reflection.Emit
             m_typeBuilder.ThrowIfCreated();
 
             RuntimeModuleBuilder module = m_typeBuilder.GetModuleBuilder();
-            RuntimeTypeBuilder.SetFieldLayoutOffset(new QCallModule(ref module), m_fieldTok, iOffset);
+            RuntimeTypeBuilder.SetFieldLayoutOffset(new QCallModule(ref module), m_fieldTok, iOffset, out _);
         }
 
         protected override void SetConstantCore(object? defaultValue)
