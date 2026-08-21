@@ -5135,7 +5135,7 @@ class GCForbidLoaderUseHolder
 
 #endif
 
-// Declaring this macro turns off the GC_TRIGGERS/THROWS/INJECT_FAULT contract in LoadTypeHandle.
+// Declaring this macro turns off the GC_TRIGGERS/THROWS contract in LoadTypeHandle.
 // If you do this, you must restrict your use of the loader only to retrieve TypeHandles
 // for types that have already been loaded and resolved. If you fail to observe this restriction, you will
 // reach a GC_TRIGGERS point somewhere in the loader and assert. If you're lucky, that is.
@@ -5165,8 +5165,7 @@ class GCForbidLoaderUseHolder
 #ifdef ENABLE_CONTRACTS_IMPL
 #define ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE()    GCForbidLoaderUseHolder __gcfluh; \
                                                        CANNOTTHROWCOMPLUSEXCEPTION();  \
-                                                       GCX_NOTRIGGER(); \
-                                                       FAULT_FORBID();
+                                                       GCX_NOTRIGGER();
 #else   // _DEBUG_IMPL
 #define ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE()    ;
 #endif  // _DEBUG_IMPL

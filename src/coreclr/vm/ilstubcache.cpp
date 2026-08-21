@@ -452,7 +452,6 @@ MethodTable* ILStubCache::GetOrCreateStubMethodTable(Module* pModule)
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 

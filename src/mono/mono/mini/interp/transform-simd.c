@@ -43,9 +43,29 @@ simd_intrinsic_compare_by_name (const void *key, const void *value)
 	return strcmp ((const char*)key, method_name (*(guint16*)value));
 }
 
+#ifdef ENABLE_CHECKED_BUILD
+// The tables below are searched with mono_binary_search, so an out-of-order entry silently makes
+//  itself and potentially its neighbors unreachable - the intrinsic is never emitted and we fall
+//  back to the managed implementation with no other visible symptom. Validate the invariant here
+//  so that a mis-sorted table fails loudly in checked builds instead of quietly losing performance.
+static void
+check_intrins_sorted (guint16 *intrinsics, int size)
+{
+	int count = size / sizeof (guint16);
+	for (int i = 1; i < count; i++) {
+		const char *prev = method_name (intrinsics [i - 1]), *cur = method_name (intrinsics [i]);
+		g_assertf (strcmp (prev, cur) < 0,
+			"interp SIMD intrinsic table is not in ASCII order: '%s' must not precede '%s'", prev, cur);
+	}
+}
+#endif
+
 static int
 lookup_intrins (guint16 *intrinsics, int size, const char *cmethod_name)
 {
+#ifdef ENABLE_CHECKED_BUILD
+        check_intrins_sorted (intrinsics, size);
+#endif
         guint16 *result = mono_binary_search (cmethod_name, intrinsics, size / sizeof (guint16), sizeof (guint16), &simd_intrinsic_compare_by_name);
 
         if (result == NULL)
@@ -74,8 +94,8 @@ static guint16 sri_vector128_methods [] = {
 	SN_AsUInt32,
 	SN_AsUInt64,
 	SN_AsVector,
-	SN_AsVector4,
 	SN_AsVector128,
+	SN_AsVector4,
 	SN_ConditionalSelect,
 	SN_Create,
 	SN_CreateScalar,
@@ -83,9 +103,11 @@ static guint16 sri_vector128_methods [] = {
 	SN_Equals,
 	SN_EqualsAny,
 	SN_ExtractMostSignificantBits,
+	SN_GetElement,
 	SN_GreaterThan,
 	SN_LessThan,
 	SN_LessThanOrEqual,
+	SN_MultiplyAddEstimate,
 	SN_Narrow,
 	SN_ShiftLeft,
 	SN_ShiftRightArithmetic,
@@ -93,6 +115,7 @@ static guint16 sri_vector128_methods [] = {
 	SN_Shuffle,
 	SN_WidenLower,
 	SN_WidenUpper,
+	SN_WithElement,
 	SN_get_IsHardwareAccelerated,
 };
 
@@ -173,12 +196,12 @@ static guint16 packedsimd_alias_methods [] = {
 	SN_ShiftLeft,
 	SN_ShiftRightArithmetic,
 	SN_ShiftRightLogical,
+	SN_Sqrt,
+	SN_SquareRoot,
 	SN_Store,
 	SN_StoreUnsafe,
 	SN_Subtract,
 	SN_SubtractSaturate,
-	SN_Sqrt,
-	SN_SquareRoot,
 	SN_Truncate,
 	SN_WidenLower,
 	SN_WidenUpper,
@@ -511,6 +534,39 @@ emit_vector_create (TransformData *td, MonoMethodSignature *csignature, MonoClas
 	interp_ins_set_dreg (td->last_ins, td->sp [-1].var);
 }
 
+#if defined(HOST_BROWSER) || defined(HOST_WASI)
+/*
+ * Vector128.GetElement / Vector128.WithElement are documented to throw
+ * ArgumentOutOfRangeException when the lane index is out of range. Interpreter SIMD intrinsics
+ * are plain helper functions with no way to raise a managed exception, so we only intrinsify
+ * when the index is a compile time constant that is provably in range and the bounds check can
+ * be safely elided. Every other case (a variable index, or a constant that is out of range)
+ * falls back to the managed implementation, which performs the check and throws.
+ *
+ * Restricting to constant indexes is also what the jiterpreter needs: the wasm
+ * extract_lane/replace_lane opcodes take the lane as an immediate, so a non constant lane would
+ * truncate the trace instead of producing vectorized code.
+ *
+ * Returns TRUE if var is defined by a constant load whose value is in range [0, lane_count).
+ */
+static gboolean
+is_constant_lane_index_in_range (TransformData *td, int var, int lane_count)
+{
+	// Search backwards within the current basic block for the unique definition of var.
+	// A new var is created every time a value is pushed on the stack, so the first match is it.
+	for (InterpInst *ins = td->cbb->last_ins; ins != NULL; ins = ins->prev) {
+		if (!mono_interp_op_dregs [ins->opcode] || ins->dreg != var)
+			continue;
+		if (!MINT_IS_LDC_I4 (ins->opcode))
+			return FALSE;
+		gint32 value = interp_get_const_from_ldc_i4 (ins);
+		return value >= 0 && value < lane_count;
+	}
+
+	return FALSE;
+}
+#endif // HOST_BROWSER || HOST_WASI
+
 static gboolean
 emit_sri_vector128 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature *csignature)
 {
@@ -602,6 +658,12 @@ emit_sri_vector128 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature 
 			simd_opcode = MINT_SIMD_INTRINS_P_PPP;
 			simd_intrins = INTERP_SIMD_INTRINSIC_V128_CONDITIONAL_SELECT;
 			break;
+		case SN_MultiplyAddEstimate:
+			if (atype == MONO_TYPE_R4) {
+				simd_opcode = MINT_SIMD_INTRINS_P_PPP;
+				simd_intrins = INTERP_SIMD_INTRINSIC_V128_R4_MULTIPLY_ADD_ESTIMATE;
+			}
+			break;
 		case SN_Create:
 			if (!is_element_type_primitive (csignature->ret))
 				return FALSE;
@@ -650,6 +712,48 @@ emit_sri_vector128 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature 
 			else if (arg_size == 4) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I4_EXTRACT_MSB;
 			else if (arg_size == 8) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I8_EXTRACT_MSB;
 			break;
+#if defined(HOST_BROWSER) || defined(HOST_WASI)
+		case SN_GetElement: {
+			if (!is_constant_lane_index_in_range (td, td->sp [-1].var, vector_size / arg_size))
+				return FALSE;
+
+			simd_opcode = MINT_SIMD_INTRINS_P_PP;
+			switch (resolve_native_size (atype)) {
+				case MONO_TYPE_I1: simd_intrins = INTERP_SIMD_INTRINSIC_ExtractScalarI1; break;
+				case MONO_TYPE_U1: simd_intrins = INTERP_SIMD_INTRINSIC_ExtractScalarU1; break;
+				case MONO_TYPE_I2: simd_intrins = INTERP_SIMD_INTRINSIC_ExtractScalarI2; break;
+				case MONO_TYPE_U2: simd_intrins = INTERP_SIMD_INTRINSIC_ExtractScalarU2; break;
+				case MONO_TYPE_I4:
+				case MONO_TYPE_U4: simd_intrins = INTERP_SIMD_INTRINSIC_ExtractScalarD4; break;
+				case MONO_TYPE_I8:
+				case MONO_TYPE_U8: simd_intrins = INTERP_SIMD_INTRINSIC_ExtractScalarD8; break;
+				case MONO_TYPE_R4: simd_intrins = INTERP_SIMD_INTRINSIC_ExtractScalarR4; break;
+				case MONO_TYPE_R8: simd_intrins = INTERP_SIMD_INTRINSIC_ExtractScalarR8; break;
+				default: return FALSE;
+			}
+			break;
+		}
+		case SN_WithElement: {
+			if (!is_constant_lane_index_in_range (td, td->sp [-2].var, vector_size / arg_size))
+				return FALSE;
+
+			simd_opcode = MINT_SIMD_INTRINS_P_PPP;
+			switch (resolve_native_size (atype)) {
+				case MONO_TYPE_I1:
+				case MONO_TYPE_U1: simd_intrins = INTERP_SIMD_INTRINSIC_ReplaceScalarD1; break;
+				case MONO_TYPE_I2:
+				case MONO_TYPE_U2: simd_intrins = INTERP_SIMD_INTRINSIC_ReplaceScalarD2; break;
+				case MONO_TYPE_I4:
+				case MONO_TYPE_U4: simd_intrins = INTERP_SIMD_INTRINSIC_ReplaceScalarD4; break;
+				case MONO_TYPE_I8:
+				case MONO_TYPE_U8: simd_intrins = INTERP_SIMD_INTRINSIC_ReplaceScalarD8; break;
+				case MONO_TYPE_R4: simd_intrins = INTERP_SIMD_INTRINSIC_ReplaceScalarR4; break;
+				case MONO_TYPE_R8: simd_intrins = INTERP_SIMD_INTRINSIC_ReplaceScalarR8; break;
+				default: return FALSE;
+			}
+			break;
+		}
+#endif
 		case SN_GreaterThan:
 			simd_opcode = MINT_SIMD_INTRINS_P_PP;
 			if (atype == MONO_TYPE_U1) simd_intrins = INTERP_SIMD_INTRINSIC_V128_U1_GREATER_THAN;
@@ -1094,6 +1198,9 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 	const char *cmethod_name = cmethod->name;
 	int id = lookup_intrins (sri_packedsimd_methods, sizeof (sri_packedsimd_methods), cmethod_name);
 	MonoClass *vector_klass;
+	// Set when the aliased Vector128 method takes its operands in the opposite order from the
+	//  PackedSimd method we are lowering to. See SN_Store below.
+	gboolean swap_operands = FALSE;
 
 	bool is_packedsimd = strcmp (m_class_get_name (cmethod->klass), "PackedSimd") == 0;
 	if (is_packedsimd) {
@@ -1253,8 +1360,22 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 				break;
 			case SN_Store:
 			case SN_StoreUnsafe:
-				if (csignature->param_count != 2)
+				// PackedSimd.Store (T* address, Vector128<T> source) takes its operands in the
+				//  opposite order from Vector128.Store (this Vector128<T> source, T* destination)
+				//  and Vector128.StoreUnsafe (this Vector128<T> source, ref T destination), so the
+				//  sregs have to be swapped once the epilogue has assigned them in signature order.
+				// The three-argument StoreUnsafe (source, destination, elementOffset) has no
+				//  PackedSimd counterpart, so leave it for managed code. Store is registered for
+				//  every element type, so also confirm the shape we are about to reorder: sregs [1]
+				//  is dereferenced as the destination address, so require it to be a raw address
+				//  (T* or ref T) rather than merely pointer-sized. Anything else falls back to
+				//  managed code, which is always correct if slower.
+				if ((csignature->param_count != 2) ||
+					(csignature->ret->type != MONO_TYPE_VOID) ||
+					!(m_type_is_byref (csignature->params [1]) ||
+					  (csignature->params [1]->type == MONO_TYPE_PTR)))
 					return FALSE;
+				swap_operands = TRUE;
 				cmethod_name = "Store";
 				break;
 			case SN_Add:
@@ -1317,6 +1438,12 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 
 opcode_added:
 	emit_common_simd_epilogue (td, vector_klass, csignature, vector_size, TRUE);
+	if (swap_operands) {
+		// The epilogue assigned the sregs in signature order; see SN_Store above.
+		gint32 tmp = td->last_ins->sregs [0];
+		td->last_ins->sregs [0] = td->last_ins->sregs [1];
+		td->last_ins->sregs [1] = tmp;
+	}
 	return TRUE;
 }
 

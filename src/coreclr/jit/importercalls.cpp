@@ -3747,6 +3747,8 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             // Intrinsics that we should make every effort to expand for NativeAOT.
             // If the intrinsic cannot possibly be expanded, it's fine, but
             // if it can be, it should expand.
+            // ILScanner mirrors the expansion checks before omitting dependencies.
+            // Keep new bailout conditions in sync with ILImporter.Scanner.cs.
             case NI_System_Runtime_CompilerServices_RuntimeHelpers_CreateSpan:
             case NI_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray:
                 betterToExpand = true;
@@ -4197,7 +4199,8 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     // Skip roundtrip "handle -> RuntimeType -> handle" for
                     // RuntimeTypeHandle.ToIntPtr(typeof(T).TypeHandle)
                     GenTreeCall* call = op1->IsCall() ? op1->AsCall() : op1->AsRetExpr()->gtInlineCandidate;
-                    if (lookupNamedIntrinsic(call->gtCallMethHnd) == NI_System_RuntimeType_get_TypeHandle)
+                    if ((call->gtCallType == CT_USER_FUNC) &&
+                        (lookupNamedIntrinsic(call->gtCallMethHnd) == NI_System_RuntimeType_get_TypeHandle))
                     {
                         // Check that the arg is CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE helper call
                         GenTree* arg = call->gtArgs.GetArgByIndex(0)->GetNode();
@@ -8077,11 +8080,17 @@ void Compiler::impInsertAsyncArgsForLdvirtftnCall(GenTreeCall* call, bool usesOw
 //------------------------------------------------------------------------
 // SpillRetExprHelper: iterate through arguments tree and spill ret_expr to local variables.
 //
-class SpillRetExprHelper
+class SpillRetExprHelper final : public GenTreeVisitor<SpillRetExprHelper>
 {
 public:
+    enum
+    {
+        DoPreOrder        = true,
+        UseExecutionOrder = true,
+    };
+
     SpillRetExprHelper(Compiler* comp)
-        : m_compiler(comp)
+        : GenTreeVisitor<SpillRetExprHelper>(comp)
     {
     }
 
@@ -8089,28 +8098,27 @@ public:
     {
         for (CallArg& arg : call->gtArgs.Args())
         {
-            m_compiler->fgWalkTreePre(&arg.EarlyNodeRef(), SpillRetExprVisitor, this);
+            WalkTree(&arg.EarlyNodeRef(), nullptr);
         }
     }
 
-private:
-    static Compiler::fgWalkResult SpillRetExprVisitor(GenTree** pTree, Compiler::fgWalkData* fgWalkPre)
+    fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
     {
-        assert((pTree != nullptr) && (*pTree != nullptr));
-        GenTree* tree = *pTree;
+        assert((use != nullptr) && (*use != nullptr));
+        GenTree* tree = *use;
         if ((tree->gtFlags & GTF_CALL) == 0)
         {
             // Trees with ret_expr are marked as GTF_CALL.
-            return Compiler::WALK_SKIP_SUBTREES;
+            return fgWalkResult::WALK_SKIP_SUBTREES;
         }
         if (tree->OperIs(GT_RET_EXPR))
         {
-            SpillRetExprHelper* walker = static_cast<SpillRetExprHelper*>(fgWalkPre->pCallbackData);
-            walker->StoreRetExprAsLocalVar(pTree);
+            StoreRetExprAsLocalVar(use);
         }
-        return Compiler::WALK_CONTINUE;
+        return fgWalkResult::WALK_CONTINUE;
     }
 
+private:
     void StoreRetExprAsLocalVar(GenTree** pRetExpr)
     {
         GenTree* retExpr = *pRetExpr;
@@ -8138,9 +8146,6 @@ private:
             }
         }
     }
-
-private:
-    Compiler* m_compiler;
 };
 
 //------------------------------------------------------------------------

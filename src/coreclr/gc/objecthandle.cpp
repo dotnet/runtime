@@ -641,7 +641,6 @@ bool Ref_Initialize()
     {
         NOTHROW;
         WRAPPER(GC_NOTRIGGER);
-        INJECT_FAULT(return false);
     }
     CONTRACTL_END;
 

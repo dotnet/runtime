@@ -469,14 +469,6 @@ inline Object* Alloc(size_t size, GC_ALLOC_FLAGS flags)
         MODE_COOPERATIVE; // returns an objref without pinning it => cooperative
     } CONTRACTL_END;
 
-#ifdef _DEBUG
-    if (g_pConfig->ShouldInjectFault(INJECTFAULT_GCHEAP))
-    {
-        char *a = new char;
-        delete a;
-    }
-#endif
-
     if (flags & GC_ALLOC_CONTAINS_REF)
         flags &= ~GC_ALLOC_ZEROING_OPTIONAL;
 
@@ -822,14 +814,6 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
         PRECONDITION(dwNumArgs > 0);
     } CONTRACTL_END;
 
-#ifdef _DEBUG
-    if (g_pConfig->ShouldInjectFault(INJECTFAULT_GCHEAP))
-    {
-        char *a = new char;
-        delete a;
-    }
-#endif
-
     SetTypeHandleOnThreadForAlloc(TypeHandle(pArrayMT));
 
     // keep original flags in case the call is recursive (jugged array case)
@@ -1009,7 +993,6 @@ OBJECTREF AllocatePrimitiveArray(CorElementType type, DWORD cElements)
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
         MODE_COOPERATIVE;  // returns an objref without pinning it => cooperative
     }
     CONTRACTL_END
@@ -1101,14 +1084,6 @@ STRINGREF AllocateString( DWORD cchStringLength )
         GC_TRIGGERS;
         MODE_COOPERATIVE; // returns an objref without pinning it => cooperative
     } CONTRACTL_END;
-
-#ifdef _DEBUG
-    if (g_pConfig->ShouldInjectFault(INJECTFAULT_GCHEAP))
-    {
-        char *a = new char;
-        delete a;
-    }
-#endif
 
     // Limit the maximum string size to <2GB to mitigate risk of security issues caused by 32-bit integer
     // overflows in buffer size calculations.

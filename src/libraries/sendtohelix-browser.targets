@@ -81,8 +81,6 @@
 
     <NeedsWorkload Condition="'$(Scenario)' == 'BuildWasmApps'">true</NeedsWorkload>
     <NeedsEMSDK Condition="'$(NeedsToBuildWasmAppsOnHelix)' == 'true'">true</NeedsEMSDK>
-    <!-- CoreCLR WBT re-links dotnet.native.wasm per-app via emcc, so it needs the full EMSDK payload too. -->
-    <NeedsEMSDK Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(Scenario)' == 'BuildWasmApps'">true</NeedsEMSDK>
     <NeedsEMSDKNode Condition="'$(Scenario)' == 'BuildWasmApps'">false</NeedsEMSDKNode>
     <NeedsToRunOnChrome Condition="'$(Scenario)' == 'WasmTestOnChrome' or '$(Scenario)' == 'BuildWasmApps'">true</NeedsToRunOnChrome>
     <NeedsToRunOnFirefox Condition="'$(Scenario)' == 'WasmTestOnFirefox'">true</NeedsToRunOnFirefox>
@@ -111,10 +109,7 @@
 
   <!--
     Stage emsdk as a Helix dependency so it ends up at $(EmSdkDirForHelixPayload) and can be
-    packaged into the correlation payload. This is needed for CoreCLR WBT agents, which do not
-    build the wasm runtime locally and therefore do not pre-populate the shared wasm tool cache.
-    Those agents provision emsdk in a separate pipeline step before sendtohelix runs, at which
-    point AcquireEmscriptenSdk.props/targets set $(EMSDK_PATH) during project evaluation.
+    packaged into the correlation payload.
 
     This ItemGroup must be at project-evaluation scope (not inside a target), because
     StageDependenciesForHelix guards its body with a condition over @(HelixDependenciesToStage)
@@ -177,31 +172,6 @@
     <HelixPreCommand Include="$(EnvVarCommand) PATH=$(_HelixLocalNodePath)/%_HELIX_NODEJS_VERSION%/bin%3B%PATH%" />
   </ItemGroup>
 
-  <!--
-    CoreCLR WBT (BuildWasmApps) needs BrowserWasmApp.CoreCLR.targets and its import chain on Helix.
-    The NeedsEMSDK payload already ships BrowserBuildTargetsDir (build/wasm), WasmAppBuilderDir
-    (build/WasmAppBuilder) and EmSdk (build/emsdk); eng/native.wasm.targets + AcquireEmscriptenSdk.targets
-    are shipped as build/eng. These env vars bridge those payload locations to the MSBuild properties
-    consumed by BrowserWasmApp.CoreCLR.targets when the test-created project imports it.
-  -->
-  <ItemGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(Scenario)' == 'BuildWasmApps' and '$(WindowsShell)' != 'true'">
-    <HelixPreCommand Include="$(EnvVarCommand) REPOSITORY_ENGINEERING_DIR=$HELIX_CORRELATION_PAYLOAD/build/eng/" />
-    <HelixPreCommand Include="$(EnvVarCommand) BROWSER_BUILD_TARGETS_DIR=$HELIX_CORRELATION_PAYLOAD/build/wasm/" />
-    <HelixPreCommand Include="$(EnvVarCommand) WASM_APP_BUILDER_TASKS_ASSEMBLY_PATH=$HELIX_CORRELATION_PAYLOAD/build/WasmAppBuilder/WasmAppBuilder.dll" />
-    <HelixPreCommand Include="$(EnvVarCommand) EMSDK_PATH=$HELIX_CORRELATION_PAYLOAD/build/emsdk/" />
-    <HelixPreCommand Include="$(EnvVarCommand) MINIPAL_INCLUDE_DIR=$HELIX_CORRELATION_PAYLOAD/build/minipal/" />
-    <HelixPreCommand Include="$(EnvVarCommand) CORECLR_VM_WASM_INCLUDE_DIR=$HELIX_CORRELATION_PAYLOAD/build/coreclr-vm-wasm/" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(Scenario)' == 'BuildWasmApps' and '$(WindowsShell)' == 'true'">
-    <HelixPreCommand Include="$(EnvVarCommand) REPOSITORY_ENGINEERING_DIR=%HELIX_CORRELATION_PAYLOAD%\build\eng\" />
-    <HelixPreCommand Include="$(EnvVarCommand) BROWSER_BUILD_TARGETS_DIR=%HELIX_CORRELATION_PAYLOAD%\build\wasm\" />
-    <HelixPreCommand Include="$(EnvVarCommand) WASM_APP_BUILDER_TASKS_ASSEMBLY_PATH=%HELIX_CORRELATION_PAYLOAD%\build\WasmAppBuilder\WasmAppBuilder.dll" />
-    <HelixPreCommand Include="$(EnvVarCommand) EMSDK_PATH=%HELIX_CORRELATION_PAYLOAD%\build\emsdk\" />
-    <HelixPreCommand Include="$(EnvVarCommand) MINIPAL_INCLUDE_DIR=%HELIX_CORRELATION_PAYLOAD%\build\minipal\" />
-    <HelixPreCommand Include="$(EnvVarCommand) CORECLR_VM_WASM_INCLUDE_DIR=%HELIX_CORRELATION_PAYLOAD%\build\coreclr-vm-wasm\" />
-  </ItemGroup>
-
   <PropertyGroup Condition="'$(Scenario)' == 'BuildWasmApps'">
     <BuildWasmAppsJobsList Condition="'$(RuntimeFlavor)' == 'Mono'">$(RepositoryEngineeringDir)testing\scenarios\BuildWasmAppsJobsList.txt</BuildWasmAppsJobsList>
     <BuildWasmAppsJobsList Condition="'$(RuntimeFlavor)' == 'CoreCLR'">$(RepositoryEngineeringDir)testing\scenarios\BuildWasmAppsJobsListCoreCLR.txt</BuildWasmAppsJobsList>
@@ -209,7 +179,10 @@
     <_XUnitTraitArg Condition="'$(TestUsingWorkloads)' != 'true'">-trait category=no-workload</_XUnitTraitArg>
     <_XUnitTraitArg Condition="'$(WasmFingerprintAssets)' == 'false'">$(_XUnitTraitArg) -trait category=no-fingerprinting</_XUnitTraitArg>
     <_XUnitTraitArg Condition="'$(WasmBundlerFriendlyBootConfig)' == 'true'">$(_XUnitTraitArg) -trait category=bundler-friendly</_XUnitTraitArg>
-    <_XUnitTraitArg Condition="'$(RuntimeFlavor)' == 'CoreCLR'">-notrait category=native-mono -notrait category=mono -notrait category=workload</_XUnitTraitArg>
+    <!-- Mono-specific tests never apply to CoreCLR. Tests that are both native and Mono-only carry
+         the `mono` category too, so excluding `mono` alone covers them; `native` on its own marks
+         relink/AOT coverage that CoreCLR does run. The workload/no-workload selection above still applies. -->
+    <_XUnitTraitArg Condition="'$(RuntimeFlavor)' == 'CoreCLR'">$(_XUnitTraitArg) -notrait category=mono</_XUnitTraitArg>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -309,53 +282,6 @@
       <HelixCorrelationPayload Include="$(WasmBuildTargetsDir)"                  Destination="build/wasm-shared" />
       <HelixCorrelationPayload Include="$(MonoAotCrossDir)"                      Destination="build/cross" />
       <HelixCorrelationPayload Include="$(MonoTargetsTasksDir)"                  Destination="build/MonoTargetsTasks" />
-    </ItemGroup>
-
-    <!-- CoreCLR WBT needs eng/native.wasm.targets + eng/AcquireEmscriptenSdk.targets (the import chain
-         of BrowserWasmApp.CoreCLR.targets) shipped alongside BrowserBuildTargetsDir. Stage them into
-         a directory first — HelixCorrelationPayload on individual files causes the Helix client to
-         try unzipping them as archives. -->
-    <PropertyGroup Condition="'$(NeedsEMSDK)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">
-      <_CoreCLRWbtEngPayloadDir>$(ArtifactsObjDir)helix-staging\coreclr-wbt-eng\</_CoreCLRWbtEngPayloadDir>
-    </PropertyGroup>
-    <ItemGroup Condition="'$(NeedsEMSDK)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">
-      <_CoreCLRWbtEngFiles Include="$(RepositoryEngineeringDir)native.wasm.targets" />
-      <_CoreCLRWbtEngFiles Include="$(RepositoryEngineeringDir)AcquireEmscriptenSdk.targets" />
-    </ItemGroup>
-    <Copy Condition="'$(NeedsEMSDK)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'"
-          SourceFiles="@(_CoreCLRWbtEngFiles)"
-          DestinationFolder="$(_CoreCLRWbtEngPayloadDir)"
-          SkipUnchangedFiles="true" />
-    <ItemGroup Condition="'$(NeedsEMSDK)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">
-      <HelixCorrelationPayload Include="$(_CoreCLRWbtEngPayloadDir)" Destination="build/eng" />
-    </ItemGroup>
-
-    <!-- CoreCLR WBT: ship src/native/minipal/{utils.h,entrypoints.h} and
-         src/coreclr/vm/wasm/callhelpers.hpp into the payload so per-app native
-         re-link (BrowserWasmApp.CoreCLR.targets) can resolve the #include lines
-         emitted by ManagedToNativeGenerator output. Stage into directories first
-         because HelixCorrelationPayload on individual files causes the Helix
-         client to try unzipping them as archives. -->
-    <PropertyGroup Condition="'$(NeedsEMSDK)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">
-      <_CoreCLRWbtMinipalPayloadDir>$(ArtifactsObjDir)helix-staging\coreclr-wbt-minipal\</_CoreCLRWbtMinipalPayloadDir>
-      <_CoreCLRWbtVmWasmPayloadDir>$(ArtifactsObjDir)helix-staging\coreclr-wbt-vm-wasm\</_CoreCLRWbtVmWasmPayloadDir>
-    </PropertyGroup>
-    <ItemGroup Condition="'$(NeedsEMSDK)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">
-      <_CoreCLRWbtMinipalFiles Include="$(RepoRoot)src\native\minipal\utils.h" />
-      <_CoreCLRWbtMinipalFiles Include="$(RepoRoot)src\native\minipal\entrypoints.h" />
-      <_CoreCLRWbtVmWasmFiles Include="$(RepoRoot)src\coreclr\vm\wasm\callhelpers.hpp" />
-    </ItemGroup>
-    <Copy Condition="'$(NeedsEMSDK)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'"
-          SourceFiles="@(_CoreCLRWbtMinipalFiles)"
-          DestinationFolder="$(_CoreCLRWbtMinipalPayloadDir)"
-          SkipUnchangedFiles="true" />
-    <Copy Condition="'$(NeedsEMSDK)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'"
-          SourceFiles="@(_CoreCLRWbtVmWasmFiles)"
-          DestinationFolder="$(_CoreCLRWbtVmWasmPayloadDir)"
-          SkipUnchangedFiles="true" />
-    <ItemGroup Condition="'$(NeedsEMSDK)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">
-      <HelixCorrelationPayload Include="$(_CoreCLRWbtMinipalPayloadDir)" Destination="build/minipal" />
-      <HelixCorrelationPayload Include="$(_CoreCLRWbtVmWasmPayloadDir)" Destination="build/coreclr-vm-wasm" />
     </ItemGroup>
 
     <!-- copy node separately only if EMSDK is not being included -->
