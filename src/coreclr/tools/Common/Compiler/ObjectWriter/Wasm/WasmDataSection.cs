@@ -11,26 +11,30 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.ObjectWriter
 {
-    internal class WasmDataSection : IWasmEmittable, IWasmSection
+    internal sealed class WasmDataSection : IWasmEmittable, IWasmSection
     {
-        private List<WasmDataSegment> _segments;
-        public List<WasmDataSegment> Segments => _segments;
-        private int _contentAlign = 1;
-        public WasmDataSection(List<WasmDataSegment> segments, Utf8String name, int contentAlign = 1)
+        private readonly List<IWasmDataSegment> _segments;
+        private readonly int _contentAlign;
+
+        public WasmDataSection(List<IWasmDataSegment> segments, Utf8String name, int contentAlign = 1)
         {
+            Debug.Assert(!name.IsNull);
+
             _segments = segments;
             _contentAlign = contentAlign;
+            Name = name;
         }
 
+        public Utf8String Name { get; }
         public WasmSectionType Type => WasmSectionType.Data;
+        public int SegmentCount => _segments.Count;
 
         public int ContentSize
         {
             get
             {
-                int size = 0;
-                size += (int)DwarfHelper.SizeOfULEB128((ulong)_segments.Count);
-                foreach (WasmDataSegment segment in _segments)
+                int size = (int)DwarfHelper.SizeOfULEB128((ulong)_segments.Count);
+                foreach (IWasmDataSegment segment in _segments)
                 {
                     size += segment.EncodeSize();
                 }
@@ -39,7 +43,7 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        public int HeaderSize => 1 + Relocation.WASM_PADDED_RELOC_SIZE_32;
+        public static int HeaderSize => 1 + Relocation.WASM_PADDED_RELOC_SIZE_32;
 
         private int EncodeHeader(Span<byte> headerBuffer)
         {
@@ -75,7 +79,7 @@ namespace ILCompiler.ObjectWriter
 
             for (int i = 0; i < _segments.Count; i++)
             {
-                WasmDataSegment segment = _segments[i];
+                IWasmDataSegment segment = _segments[i];
                 // Do we have a next segment?
                 if ((i + 1) < _segments.Count)
                 {
@@ -89,7 +93,7 @@ namespace ILCompiler.ObjectWriter
                 {
                     segment.Padding = 0;
                 }
-                size += segment.Emit(outputFileStream);
+                size += segment.EmitToStream(outputFileStream);
             }
 
             // Write the header (this must be done second because we first need to determine inter-segment padding based on file placement)
