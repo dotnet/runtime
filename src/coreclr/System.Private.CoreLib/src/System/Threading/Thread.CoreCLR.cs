@@ -39,8 +39,8 @@ namespace System.Threading
         internal WaitSubsystem.ThreadWaitInfo? _waitInfo;
 #endif
 
-        private IntPtr _DONT_USE_InternalThread; // Pointer
-        private int _priority; // INT32
+        private IntPtr _DONT_USE_InternalThread;
+        private int _priority;
         private int _managedThreadId; // Debugger depends on the exact name of this field.
 
         // This is used for a quick check on thread pool threads after running a work item to determine if the name, background
