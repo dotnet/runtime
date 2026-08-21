@@ -96,7 +96,6 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
 
   <Target Name="WasmBuildTestCorerun"
           DependsOnTargets="_WasmResolveTestCorerunInputs;
-                            _WasmWriteTestCorerunResponseFiles;
                             _WasmWriteTestCorerunInputManifest;
                             _WasmGenerateTestCallHelpers;
                             _WasmCompileTestCallHelpers;
@@ -189,9 +188,13 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
            these are worth about 300 KB per test there for no run-time purpose. Only corerun.js
            and corerun.wasm below belong in the output directory. -->
       <_WasmCorerunDir>$([MSBuild]::NormalizeDirectory('$(IntermediateOutputPath)', 'wasm-corerun'))</_WasmCorerunDir>
-      <_WasmCorerunCompileRsp>$(_WasmCorerunDir)corerun-compile.rsp</_WasmCorerunCompileRsp>
-      <_WasmCorerunLinkRsp>$(_WasmCorerunDir)corerun-link.rsp</_WasmCorerunLinkRsp>
       <_WasmCorerunInputManifest>$(_WasmCorerunDir)inputs.txt</_WasmCorerunInputManifest>
+
+      <!-- Consumed straight out of the kit: the paths in them are relative to the kit directory,
+           which is why both em++ invocations below run from there. -->
+      <_WasmCorerunCompileRsp>$(WasmCorerunKitDir)corerun-compile.rsp</_WasmCorerunCompileRsp>
+      <_WasmCorerunLinkRsp>$(WasmCorerunKitDir)corerun-link.rsp</_WasmCorerunLinkRsp>
+
       <_WasmCorerunJs>$(OutDir)corerun.js</_WasmCorerunJs>
       <!-- em++ emits the loader and the module as a pair. Both are outputs of the link: tracking
            only the loader would leave the target up to date after corerun.wasm alone is lost. -->
@@ -206,9 +209,10 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
       <_WasmCorerunGeneratedSource Include="$(_WasmCorerunDir)callhelpers-interp-to-managed.cpp"
                                    ObjectFile="$(_WasmCorerunDir)callhelpers-interp-to-managed.o" />
 
-      <!-- The response files only carry relocatable path tokens, so their contents do not change
-           when the runtime is rebuilt. Track the kit payload itself, or a coreclr native rebuild
-           would leave every test linked against the previous runtime with no diagnostic. -->
+      <!-- Track the kit payload itself, not just its response files: those name their inputs
+           relatively and so do not change when the runtime is rebuilt, and a coreclr native
+           rebuild would otherwise leave every test linked against the previous runtime with no
+           diagnostic. -->
       <_WasmCorerunKitInclude Include="$(WasmCorerunKitDir)include/**/*" />
       <_WasmCorerunKitLinkInput Include="$(WasmCorerunKitDir)*$(StaticLibSuffix)" />
       <_WasmCorerunKitLinkInput Include="$(WasmCorerunKitDir)*.js" />
@@ -223,43 +227,6 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
            unused, because wasm-ld pulls in only the archive members that are referenced. -->
       <_WasmCorerunCommonLib Include="$(TestBinDir)bin/libplatformdefines$(StaticLibSuffix)"
                              Condition="Exists('$(TestBinDir)bin/libplatformdefines$(StaticLibSuffix)')" />
-    </ItemGroup>
-  </Target>
-
-  <!-- ======================== Response files ======================== -->
-
-  <!--
-    The kit's response files carry the literal token !CORERUN_KIT_DIR! wherever a path into the kit
-    is needed, because CMake cannot know where the kit will be consumed from. Substitute it here.
-    ('@' is emcc's response-file include prefix and '%' collides with MSBuild metadata, hence '!'.)
-  -->
-  <Target Name="_WasmWriteTestCorerunResponseFiles"
-          DependsOnTargets="_WasmResolveTestCorerunInputs"
-          Condition="'$(_WasmCorerunSkip)' != 'true'"
-          Inputs="$(WasmCorerunKitDir)corerun-compile.rsp;$(WasmCorerunKitDir)corerun-link.rsp"
-          Outputs="$(_WasmCorerunCompileRsp);$(_WasmCorerunLinkRsp)">
-    <MakeDir Directories="$(_WasmCorerunDir)" />
-
-    <PropertyGroup>
-      <_WasmCorerunKitDirNoSlash>$(WasmCorerunKitDir.TrimEnd('\/').Replace('\', '/'))</_WasmCorerunKitDirNoSlash>
-      <_WasmCorerunCompileRspText>$([System.IO.File]::ReadAllText('$(WasmCorerunKitDir)corerun-compile.rsp'))</_WasmCorerunCompileRspText>
-      <_WasmCorerunLinkRspText>$([System.IO.File]::ReadAllText('$(WasmCorerunKitDir)corerun-link.rsp'))</_WasmCorerunLinkRspText>
-    </PropertyGroup>
-
-    <PropertyGroup>
-      <_WasmCorerunCompileRspText>$(_WasmCorerunCompileRspText.Replace('!CORERUN_KIT_DIR!', '$(_WasmCorerunKitDirNoSlash)'))</_WasmCorerunCompileRspText>
-      <_WasmCorerunLinkRspText>$(_WasmCorerunLinkRspText.Replace('!CORERUN_KIT_DIR!', '$(_WasmCorerunKitDirNoSlash)'))</_WasmCorerunLinkRspText>
-    </PropertyGroup>
-
-    <!-- Escaped because the text reaches WriteLinesToFile as an item list, which would otherwise
-         split it on ';' and reinterpret '%xx'. The task unescapes what it is given, so the file
-         still gets the original text. This covers the substituted kit path as well, which is a
-         property of wherever the repo happens to be cloned rather than of the kit. -->
-    <WriteLinesToFile File="$(_WasmCorerunCompileRsp)" Lines="$([MSBuild]::Escape('$(_WasmCorerunCompileRspText)'))" Overwrite="true" WriteOnlyWhenDifferent="true" />
-    <WriteLinesToFile File="$(_WasmCorerunLinkRsp)" Lines="$([MSBuild]::Escape('$(_WasmCorerunLinkRspText)'))" Overwrite="true" WriteOnlyWhenDifferent="true" />
-
-    <ItemGroup>
-      <FileWrites Include="$(_WasmCorerunCompileRsp);$(_WasmCorerunLinkRsp)" />
     </ItemGroup>
   </Target>
 
@@ -373,7 +340,7 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
     <Message Importance="High" Text="$(MSBuildProjectName) -> compiling managed-to-native tables for a test-specific corerun" />
 
     <Exec Command="&quot;$(_WasmCorerunEmxx)&quot; &quot;@$(_WasmCorerunCompileRsp)&quot; -c &quot;%(_WasmCorerunGeneratedSource.Identity)&quot; -o &quot;%(_WasmCorerunGeneratedSource.ObjectFile)&quot;"
-          WorkingDirectory="$(_WasmCorerunDir)"
+          WorkingDirectory="$(WasmCorerunKitDir)"
           EnvironmentVariables="@(_WasmCorerunEmscriptenEnv)" />
 
     <ItemGroup>
@@ -401,7 +368,7 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
     </PropertyGroup>
 
     <Exec Command="&quot;$(_WasmCorerunEmxx)&quot; $(_WasmCorerunLinkInputs) &quot;@$(_WasmCorerunLinkRsp)&quot; -o &quot;$(_WasmCorerunJs)&quot;"
-          WorkingDirectory="$(_WasmCorerunDir)"
+          WorkingDirectory="$(WasmCorerunKitDir)"
           EnvironmentVariables="@(_WasmCorerunEmscriptenEnv)" />
 
     <ItemGroup>

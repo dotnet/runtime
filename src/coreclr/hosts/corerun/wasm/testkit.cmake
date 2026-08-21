@@ -19,9 +19,11 @@
 #   * the headers the generated call tables include.
 #   * response files carrying the exact compile and link flags CMake would use.
 #
-# Paths inside the response files are written as !CORERUN_KIT_DIR!/<file> rather
-# than absolute paths: coreclr and the runtime tests are built in separate CI
-# jobs, so the kit is consumed from wherever the build artifact was unpacked.
+# Paths inside the response files are written relative to the kit directory
+# rather than as absolute paths: coreclr and the runtime tests are built in
+# separate CI jobs, so the kit is consumed from wherever the build artifact was
+# unpacked. Its consumer runs em++ with the kit directory as the working
+# directory and can therefore hand the response files straight to the compiler.
 #
 # The kit is verified by reproducing corerun itself from it: compiling the
 # checked-in call tables in src/coreclr/vm/wasm/browser with corerun-compile.rsp
@@ -168,18 +170,18 @@ function(corerun_kit_export)
                 continue()
             endif()
             list(APPEND kitLibraries "${CMAKE_MATCH_1}")
-            list(APPEND kitLinkInputs "\"!CORERUN_KIT_DIR!/$<TARGET_FILE_NAME:${CMAKE_MATCH_1}>\"")
+            list(APPEND kitLinkInputs "\"$<TARGET_FILE_NAME:${CMAKE_MATCH_1}>\"")
         elseif(input MATCHES "^FILE:(.+)$")
             list(APPEND kitFiles "${CMAKE_MATCH_1}")
             get_filename_component(fileName "${CMAKE_MATCH_1}" NAME)
-            list(APPEND kitLinkInputs "\"!CORERUN_KIT_DIR!/${fileName}\"")
+            list(APPEND kitLinkInputs "\"${fileName}\"")
         elseif(input MATCHES "^FLAG:(.+)$")
             list(APPEND kitLinkInputs "${CMAKE_MATCH_1}")
         endif()
     endforeach()
 
     list(PREPEND kitLibraries corerun_static)
-    list(PREPEND kitLinkInputs "\"!CORERUN_KIT_DIR!/$<TARGET_FILE_NAME:corerun_static>\"")
+    list(PREPEND kitLinkInputs "\"$<TARGET_FILE_NAME:corerun_static>\"")
 
     # Nothing links corerun_static, so without this the component target would
     # try to install an archive that was never built.
@@ -195,7 +197,9 @@ function(corerun_kit_export)
     #
     # Everything collected here has to be relocatable -- no absolute path may
     # reach the response file, because the kit is consumed from a different
-    # machine than the one that built it.
+    # machine than the one that built it. Paths into the kit are therefore
+    # written relative to it, which is the working directory the consumer runs
+    # em++ from.
     get_directory_property(inheritedLinkOptions LINK_OPTIONS)
     string(TOUPPER "${CMAKE_BUILD_TYPE}" configurationName)
     separate_arguments(configuredLinkerFlags NATIVE_COMMAND
@@ -207,10 +211,10 @@ function(corerun_kit_export)
     endforeach()
     foreach(jsLibrary IN LISTS KIT_JS_LIBRARIES)
         get_filename_component(jsName "${jsLibrary}" NAME)
-        string(APPEND linkResponse "--js-library\n\"!CORERUN_KIT_DIR!/${jsName}\"\n")
+        string(APPEND linkResponse "--js-library\n\"${jsName}\"\n")
     endforeach()
     get_filename_component(externPostName "${KIT_EXTERN_POST_JS}" NAME)
-    string(APPEND linkResponse "--extern-post-js\n\"!CORERUN_KIT_DIR!/${externPostName}\"\n")
+    string(APPEND linkResponse "--extern-post-js\n\"${externPostName}\"\n")
     foreach(input IN LISTS kitLinkInputs)
         string(APPEND linkResponse "${input}\n")
     endforeach()
@@ -231,8 +235,8 @@ function(corerun_kit_export)
     string(APPEND compileResponse "-sWASM_LEGACY_EXCEPTIONS=0\n")
     string(APPEND compileResponse "-msimd128\n")
     string(APPEND compileResponse "-DGEN_PINVOKE=1\n")
-    string(APPEND compileResponse "-I\"!CORERUN_KIT_DIR!/include\"\n")
-    string(APPEND compileResponse "-include\n\"!CORERUN_KIT_DIR!/include/coreclr_compat.h\"\n")
+    string(APPEND compileResponse "-I\"include\"\n")
+    string(APPEND compileResponse "-include\n\"include/coreclr_compat.h\"\n")
 
     set(generatedDirectory "${CMAKE_CURRENT_BINARY_DIR}/corerun-link")
     file(GENERATE OUTPUT "${generatedDirectory}/corerun-link.rsp" CONTENT "${linkResponse}"
