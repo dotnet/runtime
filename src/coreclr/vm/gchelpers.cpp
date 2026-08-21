@@ -307,10 +307,13 @@ extern "C"
 // being too large.
 inline void CheckObjectSize(size_t alloc_size)
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         THROWS;
         GC_TRIGGERS;
-    } CONTRACTL_END;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
 
     size_t max_object_size;
 #ifdef HOST_64BIT
@@ -769,9 +772,7 @@ OBJECTREF TryAllocateFrozenSzArray(MethodTable* pArrayMT, INT32 cElements)
 
 void ThrowOutOfMemoryDimensionsExceeded()
 {
-    CONTRACTL {
-        THROWS;
-    } CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
 #ifdef HOST_64BIT
     EX_THROW(EEMessageException, (kOutOfMemoryException, IDS_EE_ARRAY_DIMENSIONS_EXCEEDED));

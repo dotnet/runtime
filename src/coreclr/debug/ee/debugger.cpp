@@ -1752,12 +1752,7 @@ void DebuggerStartUp::WaitForContinueNotification()
 //---------------------------------------------------------------------------------------
 HRESULT Debugger::Startup(void)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     HRESULT hr = S_OK;
 
@@ -1917,12 +1912,7 @@ HRESULT Debugger::Startup(void)
 //---------------------------------------------------------------------------------------
 HRESULT Debugger::StartupPhase2(Thread * pThread)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     HRESULT hr = S_OK;
 
@@ -1970,12 +1960,7 @@ HRESULT Debugger::StartupPhase2(Thread * pThread)
 
 void Debugger::InitializeLazyDataIfNecessary()
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     if (!HasLazyData())
     {
@@ -3133,12 +3118,7 @@ void Debugger::getBoundaries(MethodDesc * md,
                              ICorDebugInfo::BoundaryTypes *implicitBoundaries)
 {
 #ifndef DACCESS_COMPILE
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     // May be here even when a debugger is not attached.
 
@@ -8674,9 +8654,7 @@ void Debugger::SendUserBreakpoint(Thread * thread)
 {
     CONTRACTL
     {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
+        STANDARD_VM_CHECK;
 
         PRECONDITION(thread != NULL);
         PRECONDITION(thread == ::GetThreadNULLOk());
@@ -11667,12 +11645,7 @@ TypeHandle Debugger::TypeDataWalk::ReadInstantiation(Module *pModule, mdTypeDef 
 
 TypeHandle Debugger::TypeDataWalk::ReadTypeHandle()
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     DebuggerIPCE_TypeArgData * data = ReadOne();
     if (!data)
@@ -13904,12 +13877,7 @@ void Debugger::SendLogMessage(int iLevel,
                               SString * pSwitchName,
                               SString * pMessage)
 {
-    CONTRACTL
-    {
-        GC_TRIGGERS;
-        THROWS;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     LOG((LF_CORDB, LL_INFO10000, "D::SLM: Sending log message.\n"));
 
@@ -13995,12 +13963,7 @@ void Debugger::SendCustomDebuggerNotification(Thread * pThread,
                                               Assembly * pAssembly,
                                               mdTypeDef classToken)
 {
-    CONTRACTL
-    {
-        GC_TRIGGERS;
-        THROWS;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     LOG((LF_CORDB, LL_INFO10000, "D::SLM: Sending log message.\n"));
 

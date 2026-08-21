@@ -351,6 +351,8 @@ LPCUTF8 MethodDesc::GetNameThrowing()
     CONTRACTL
     {
         THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -1981,9 +1983,7 @@ MethodDesc* MethodDesc::ResolveGenericVirtualMethod(OBJECTREF *orThis, MethodTab
 {
     CONTRACTL
     {
-        MODE_PREEMPTIVE;
-        THROWS;
-        GC_TRIGGERS;
+        STANDARD_VM_CHECK;
 
         PRECONDITION(IsVtableMethod());
         PRECONDITION(HasMethodInstantiation());
@@ -2048,11 +2048,9 @@ PCODE MethodDesc::GetSingleCallableAddrOfCodeForUnmanagedCallersOnly()
 {
     CONTRACTL
     {
-        THROWS;
+        STANDARD_VM_CHECK;
         // On portable entrypoint platforms resolving the entrypoint may need to run the prestub
         // (e.g. to publish R2R native code for the method), which can trigger a GC.
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
         PRECONDITION(HasUnmanagedCallersOnlyAttribute());
     }
     CONTRACTL_END;
@@ -2073,13 +2071,8 @@ PCODE MethodDesc::GetSingleCallableAddrOfCodeForUnmanagedCallersOnly()
 //*******************************************************************************
 PCODE MethodDesc::GetSingleCallableAddrOfVirtualizedCode(OBJECTREF *orThis, MethodTable* pMTOfThis, TypeHandle staticTH)
 {
-    CONTRACTL
-    {
-        THROWS;                 // Resolving a generic virtual method can throw
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    // Resolving a generic virtual method can throw.
+    STANDARD_VM_CONTRACT;
 
     PRECONDITION(IsVtableMethod());
 
@@ -2113,9 +2106,7 @@ MethodDesc* MethodDesc::GetMethodDescOfVirtualizedCode(OBJECTREF *orThis, Method
 {
     CONTRACTL
     {
-        MODE_PREEMPTIVE;
-        THROWS;
-        GC_TRIGGERS;
+        STANDARD_VM_CHECK;
 
         PRECONDITION(IsVtableMethod());
         PRECONDITION(!staticTH.IsNull() || !IsInterface()); // If this is a non-interface method, staticTH may be null
@@ -2147,13 +2138,7 @@ MethodDesc* MethodDesc::GetMethodDescOfVirtualizedCode(OBJECTREF *orThis, Method
 // handling of context proxies and other thunking layers.
 PCODE MethodDesc::GetMultiCallableAddrOfVirtualizedCode(OBJECTREF *orThis, MethodTable* pMTOfThis, TypeHandle staticTH)
 {
-    CONTRACTL
-    {
-        MODE_PREEMPTIVE;
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     MethodDesc *pTargetMD = GetMethodDescOfVirtualizedCode(orThis, pMTOfThis, staticTH);
     return pTargetMD->GetMultiCallableAddrOfCode();
@@ -3800,12 +3785,7 @@ BOOL MethodDesc::HasUnmanagedCallersOnlyAttribute()
 //*******************************************************************************
 BOOL MethodDesc::ShouldSuppressGCTransition()
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     MethodDesc* tgt = nullptr;
     if (IsPInvoke())
@@ -4115,12 +4095,7 @@ typedef void (*WalkValueTypeParameterFnPtr)(Module *pModule, mdToken token, Modu
 
 void MethodDesc::WalkValueTypeParameters(MethodTable *pMT, WalkValueTypeParameterFnPtr function, void *pData)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     uint32_t numArgs = 0;
     Module *pModule = this->GetModule();
@@ -4223,12 +4198,7 @@ void MethodDesc::PrepareForUseAsADependencyOfANativeImageWorker()
 
 static void CheckForEquivalenceAndLoadType(Module *pModule, mdToken token, Module *pDefModule, mdToken defToken, const SigParser *ptr, SigTypeContext *pTypeContext, void *pData)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     BOOL *pHasEquivalentParam = (BOOL *)pData;
 

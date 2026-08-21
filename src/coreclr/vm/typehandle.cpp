@@ -1263,8 +1263,7 @@ BOOL SatisfiesClassConstraints(TypeHandle instanceTypeHnd, TypeHandle typicalTyp
 {
     CONTRACTL
     {
-        THROWS;
-        GC_TRIGGERS;
+        STANDARD_VM_CHECK;
         PRECONDITION(!instanceTypeHnd.IsCanonicalSubtype());
     }
     CONTRACTL_END;
