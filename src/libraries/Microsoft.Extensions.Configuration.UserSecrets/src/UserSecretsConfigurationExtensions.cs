@@ -5,7 +5,6 @@ using System;
 using System.IO;
 using System.Reflection;
 using Microsoft.Extensions.Configuration.UserSecrets;
-using Microsoft.Extensions.FileProviders;
 
 namespace Microsoft.Extensions.Configuration
 {
@@ -180,10 +179,12 @@ namespace Microsoft.Extensions.Configuration
             }
 
             string? directoryPath = Path.GetDirectoryName(secretPath);
-            PhysicalFileProvider? fileProvider = Directory.Exists(directoryPath)
-                ? new PhysicalFileProvider(directoryPath)
-                : null;
-            return configuration.AddJsonFile(fileProvider, PathHelper.SecretsFileName, optional, reloadOnChange);
+
+            // Passing the rooted path lets the source create the file provider itself, which also makes the source
+            // responsible for disposing it. Creating one here would leak it, along with its file watcher.
+            return Directory.Exists(directoryPath)
+                ? configuration.AddJsonFile(secretPath, optional, reloadOnChange)
+                : configuration.AddJsonFile(PathHelper.SecretsFileName, optional, reloadOnChange);
         }
     }
 }
