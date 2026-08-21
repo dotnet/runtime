@@ -43,9 +43,29 @@ simd_intrinsic_compare_by_name (const void *key, const void *value)
 	return strcmp ((const char*)key, method_name (*(guint16*)value));
 }
 
+#ifdef ENABLE_CHECKED_BUILD
+// The tables below are searched with mono_binary_search, so an out-of-order entry silently makes
+//  itself and potentially its neighbors unreachable - the intrinsic is never emitted and we fall
+//  back to the managed implementation with no other visible symptom. Validate the invariant here
+//  so that a mis-sorted table fails loudly in checked builds instead of quietly losing performance.
+static void
+check_intrins_sorted (guint16 *intrinsics, int size)
+{
+	int count = size / sizeof (guint16);
+	for (int i = 1; i < count; i++) {
+		const char *prev = method_name (intrinsics [i - 1]), *cur = method_name (intrinsics [i]);
+		g_assertf (strcmp (prev, cur) < 0,
+			"interp SIMD intrinsic table is not in ASCII order: '%s' must not precede '%s'", prev, cur);
+	}
+}
+#endif
+
 static int
 lookup_intrins (guint16 *intrinsics, int size, const char *cmethod_name)
 {
+#ifdef ENABLE_CHECKED_BUILD
+        check_intrins_sorted (intrinsics, size);
+#endif
         guint16 *result = mono_binary_search (cmethod_name, intrinsics, size / sizeof (guint16), sizeof (guint16), &simd_intrinsic_compare_by_name);
 
         if (result == NULL)
@@ -74,8 +94,8 @@ static guint16 sri_vector128_methods [] = {
 	SN_AsUInt32,
 	SN_AsUInt64,
 	SN_AsVector,
-	SN_AsVector4,
 	SN_AsVector128,
+	SN_AsVector4,
 	SN_ConditionalSelect,
 	SN_Create,
 	SN_CreateScalar,
@@ -86,6 +106,7 @@ static guint16 sri_vector128_methods [] = {
 	SN_GreaterThan,
 	SN_LessThan,
 	SN_LessThanOrEqual,
+	SN_MultiplyAddEstimate,
 	SN_Narrow,
 	SN_ShiftLeft,
 	SN_ShiftRightArithmetic,
@@ -173,12 +194,12 @@ static guint16 packedsimd_alias_methods [] = {
 	SN_ShiftLeft,
 	SN_ShiftRightArithmetic,
 	SN_ShiftRightLogical,
+	SN_Sqrt,
+	SN_SquareRoot,
 	SN_Store,
 	SN_StoreUnsafe,
 	SN_Subtract,
 	SN_SubtractSaturate,
-	SN_Sqrt,
-	SN_SquareRoot,
 	SN_Truncate,
 	SN_WidenLower,
 	SN_WidenUpper,
@@ -601,6 +622,12 @@ emit_sri_vector128 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature 
 		case SN_ConditionalSelect:
 			simd_opcode = MINT_SIMD_INTRINS_P_PPP;
 			simd_intrins = INTERP_SIMD_INTRINSIC_V128_CONDITIONAL_SELECT;
+			break;
+		case SN_MultiplyAddEstimate:
+			if (atype == MONO_TYPE_R4) {
+				simd_opcode = MINT_SIMD_INTRINS_P_PPP;
+				simd_intrins = INTERP_SIMD_INTRINSIC_V128_R4_MULTIPLY_ADD_ESTIMATE;
+			}
 			break;
 		case SN_Create:
 			if (!is_element_type_primitive (csignature->ret))
@@ -1094,6 +1121,9 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 	const char *cmethod_name = cmethod->name;
 	int id = lookup_intrins (sri_packedsimd_methods, sizeof (sri_packedsimd_methods), cmethod_name);
 	MonoClass *vector_klass;
+	// Set when the aliased Vector128 method takes its operands in the opposite order from the
+	//  PackedSimd method we are lowering to. See SN_Store below.
+	gboolean swap_operands = FALSE;
 
 	bool is_packedsimd = strcmp (m_class_get_name (cmethod->klass), "PackedSimd") == 0;
 	if (is_packedsimd) {
@@ -1253,8 +1283,22 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 				break;
 			case SN_Store:
 			case SN_StoreUnsafe:
-				if (csignature->param_count != 2)
+				// PackedSimd.Store (T* address, Vector128<T> source) takes its operands in the
+				//  opposite order from Vector128.Store (this Vector128<T> source, T* destination)
+				//  and Vector128.StoreUnsafe (this Vector128<T> source, ref T destination), so the
+				//  sregs have to be swapped once the epilogue has assigned them in signature order.
+				// The three-argument StoreUnsafe (source, destination, elementOffset) has no
+				//  PackedSimd counterpart, so leave it for managed code. Store is registered for
+				//  every element type, so also confirm the shape we are about to reorder: sregs [1]
+				//  is dereferenced as the destination address, so require it to be a raw address
+				//  (T* or ref T) rather than merely pointer-sized. Anything else falls back to
+				//  managed code, which is always correct if slower.
+				if ((csignature->param_count != 2) ||
+					(csignature->ret->type != MONO_TYPE_VOID) ||
+					!(m_type_is_byref (csignature->params [1]) ||
+					  (csignature->params [1]->type == MONO_TYPE_PTR)))
 					return FALSE;
+				swap_operands = TRUE;
 				cmethod_name = "Store";
 				break;
 			case SN_Add:
@@ -1317,6 +1361,12 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 
 opcode_added:
 	emit_common_simd_epilogue (td, vector_klass, csignature, vector_size, TRUE);
+	if (swap_operands) {
+		// The epilogue assigned the sregs in signature order; see SN_Store above.
+		gint32 tmp = td->last_ins->sregs [0];
+		td->last_ins->sregs [0] = td->last_ins->sregs [1];
+		td->last_ins->sregs [1] = tmp;
+	}
 	return TRUE;
 }
 

@@ -113,6 +113,8 @@ namespace System.Text.Json.Serialization.Converters
             return null;
         }
 
+        internal override JsonValueType GetSupportedJsonValueTypes(JsonNumberHandling _) => JsonValueType.Object;
+
         internal override JsonSchema? GetSchema(JsonNumberHandling _) => new() { Type = JsonSchemaType.Object };
     }
 }
