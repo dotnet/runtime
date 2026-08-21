@@ -9,7 +9,7 @@ namespace System;
 /// <summary>Provides format strings and related information for use with the current terminal.</summary>
 internal sealed class TerminalFormatStrings
 {
-#if !TARGET_WINDOWS
+#if !UNITTEST
     /// <summary>The cached instance for the current terminal.</summary>
     internal static readonly TerminalFormatStrings s_instance = new(TermInfo.DatabaseFactory.ReadActiveDatabase());
 #endif

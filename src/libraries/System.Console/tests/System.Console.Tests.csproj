@@ -5,7 +5,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-windows</TargetFrameworks>
     <StringResourcesPath>..\src\Resources\Strings.resx</StringResourcesPath>
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
-    <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'windows'">$(DefineConstants);TARGET_WINDOWS</DefineConstants>
+    <DefineConstants>$(DefineConstants);UNITTEST</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="BeepByBellChar.cs" />
