@@ -68,13 +68,16 @@ namespace
                 g_context->coreclr_properties.log_properties();
                 if (!g_context->coreclr_properties.contains(_STRINGIFY(HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES)))
                 {
-                    for (const char* name : g_context->trusted_platform_assembly_names)
+                    for (const char* name : g_context->tpa_names)
                     {
-                        std::unordered_map<std::string, std::string>::const_iterator path =
-                            g_context->trusted_platform_assembly_paths.find(name);
-                        assert(path != g_context->trusted_platform_assembly_paths.end());
+                        std::unordered_map<std::string, hostpolicy_context_t::tpa_path_t>::const_iterator path =
+                            g_context->tpa_paths.find(name);
+                        assert(path != g_context->tpa_paths.end());
 
-                        trace::verbose(_X("TPA entry %hs = %hs"), name, path->second.c_str());
+                        const char* directory = path->second.directory;
+                        size_t directoryLength = strlen(directory);
+                        assert(directoryLength != 0 && directory[directoryLength - 1] == static_cast<char>(DIR_SEPARATOR));
+                        trace::verbose(_X("TPA entry %hs = %hs%hs"), name, directory, path->second.file_name.c_str());
                     }
                 }
             }
@@ -1004,9 +1007,13 @@ SHARED_API int HOSTPOLICY_CALLTYPE corehost_resolve_component_dependencies(
     }
 
     pal::string_t tpa;
-    for (const pal::string_t& entry : probe_paths.tpa)
+    for (const probe_paths_t::tpa_t::entry_t& entry : probe_paths.tpa.entries)
     {
-        tpa.append(entry);
+        assert(entry.directory_index < probe_paths.tpa.directories.size());
+        const pal::string_t& directory = probe_paths.tpa.directories[entry.directory_index];
+        assert(!directory.empty() && directory.back() == DIR_SEPARATOR);
+        tpa.append(directory);
+        tpa.append(entry.file_name);
         tpa.push_back(PATH_SEPARATOR);
     }
 

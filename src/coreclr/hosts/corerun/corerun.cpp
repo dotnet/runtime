@@ -19,6 +19,7 @@
 
 #include <fstream>
 #include <unordered_map>
+#include <unordered_set>
 
 #if defined(TARGET_UNIX)
 #include <dlfcn.h>
@@ -250,11 +251,18 @@ static void log_error_info(const char* line)
     std::fprintf(stderr, "%s\n", line);
 }
 
+struct host_runtime_contract_assembly_path
+{
+    const char* directory;
+    std::string file_name;
+};
+
 struct host_runtime_contract_context
 {
     const configuration* config;
     std::vector<const char*> assembly_names;
-    std::unordered_map<std::string, std::string> assembly_paths;
+    std::unordered_set<std::string> assembly_directories;
+    std::unordered_map<std::string, host_runtime_contract_assembly_path> assembly_paths;
 };
 
 size_t HOST_CONTRACT_CALLTYPE get_runtime_property(
@@ -321,13 +329,24 @@ static bool HOST_CONTRACT_CALLTYPE get_assembly_names(
     return true;
 }
 
-static const char* HOST_CONTRACT_CALLTYPE resolve_assembly_to_path(
+static bool HOST_CONTRACT_CALLTYPE resolve_assembly_to_path(
     const char* simple_name,
+    const char** directory,
+    const char** file_name,
     void* contract_context)
 {
+    if (directory == nullptr || file_name == nullptr)
+        return false;
+
     host_runtime_contract_context* context = static_cast<host_runtime_contract_context*>(contract_context);
-    std::unordered_map<std::string, std::string>::const_iterator entry = context->assembly_paths.find(simple_name);
-    return entry == context->assembly_paths.end() ? nullptr : entry->second.c_str();
+    std::unordered_map<std::string, host_runtime_contract_assembly_path>::const_iterator entry =
+        context->assembly_paths.find(simple_name);
+    if (entry == context->assembly_paths.end())
+        return false;
+
+    *directory = entry->second.directory;
+    *file_name = entry->second.file_name.c_str();
+    return true;
 }
 
 // Paths for external assembly probe
@@ -611,16 +630,31 @@ static int run(const configuration& config)
     if (use_tpa_callbacks)
     {
         contract_context.assembly_names.reserve(tpa.size());
+        contract_context.assembly_directories.reserve(tpa.size());
         contract_context.assembly_paths.reserve(tpa.size());
         for (const std::pair<const string_t, string_t>& entry : tpa)
         {
+            string_t directory;
+            string_t file_name;
+            pal::split_path_to_dir_filename(entry.second, directory, file_name);
+            pal::ensure_trailing_delimiter(directory);
+
             pal::string_utf8_t name = pal::convert_to_utf8(entry.first.c_str());
-            pal::string_utf8_t path = pal::convert_to_utf8(entry.second.c_str());
-            std::pair<std::unordered_map<std::string, std::string>::iterator, bool> result =
-                contract_context.assembly_paths.insert_or_assign(name.c_str(), path.c_str());
+            pal::string_utf8_t directory_utf8 = pal::convert_to_utf8(directory.c_str());
+            pal::string_utf8_t file_name_utf8 = pal::convert_to_utf8(file_name.c_str());
+            std::pair<std::unordered_set<std::string>::iterator, bool> directory_result =
+                contract_context.assembly_directories.emplace(directory_utf8.c_str());
+            host_runtime_contract_assembly_path path{
+                directory_result.first->c_str(),
+                file_name_utf8.c_str()
+            };
+            std::pair<std::unordered_map<std::string, host_runtime_contract_assembly_path>::iterator, bool> result =
+                contract_context.assembly_paths.emplace(name.c_str(), std::move(path));
             if (result.second)
                 contract_context.assembly_names.push_back(result.first->first.c_str());
         }
+
+        std::unordered_map<string_t, string_t>().swap(tpa);
     }
 
     host_runtime_contract host_contract = {

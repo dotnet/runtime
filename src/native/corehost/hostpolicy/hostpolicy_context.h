@@ -15,6 +15,12 @@
 struct hostpolicy_context_t
 {
 public:
+    struct tpa_path_t
+    {
+        const char* directory;
+        std::string file_name;
+    };
+
     pal::string_t application;
     pal::string_t clr_dir;
     pal::string_t clr_path;
@@ -29,8 +35,10 @@ public:
 
     std::unique_ptr<coreclr_t> coreclr;
     host_runtime_contract host_contract;
-    std::vector<const char*> trusted_platform_assembly_names;
-    std::unordered_map<std::string, std::string> trusted_platform_assembly_paths;
+
+    std::vector<const char*> tpa_names;
+    std::vector<std::string> tpa_directories;
+    std::unordered_map<std::string, tpa_path_t> tpa_paths;
 
     int initialize(const hostpolicy_init_t &hostpolicy_init, const arguments_t &args, bool enable_breadcrumbs);
     const pal::string_t& get_reconstructed_tpa_property();

@@ -31,11 +31,23 @@ mono_host_information_get_assembly_names (const char * const **names, size_t *co
 	return host_contract.get_assembly_names (names, count, host_contract.context);
 }
 
-const char *
-mono_host_information_resolve_assembly_to_path (const char *simple_name)
+gboolean
+mono_host_information_resolve_assembly_to_path (
+	const char *simple_name,
+	const char **directory,
+	const char **file_name)
 {
-	if (!HOST_CONTRACT_HAS_FIELD (resolve_assembly_to_path) || host_contract.resolve_assembly_to_path == NULL)
-		return NULL;
+	if (directory == NULL || file_name == NULL)
+		return FALSE;
 
-	return host_contract.resolve_assembly_to_path (simple_name, host_contract.context);
+	*directory = NULL;
+	*file_name = NULL;
+	if (!HOST_CONTRACT_HAS_FIELD (resolve_assembly_to_path) || host_contract.resolve_assembly_to_path == NULL)
+		return FALSE;
+
+	return host_contract.resolve_assembly_to_path (simple_name, directory, file_name, host_contract.context)
+		&& *directory != NULL
+		&& (*directory) [0] != '\0'
+		&& *file_name != NULL
+		&& (*file_name) [0] != '\0';
 }

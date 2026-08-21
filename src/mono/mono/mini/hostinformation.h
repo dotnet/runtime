@@ -17,7 +17,10 @@ mono_host_information_set_contract (const struct host_runtime_contract *contract
 gboolean
 mono_host_information_get_assembly_names (const char * const **names, size_t *count);
 
-const char *
-mono_host_information_resolve_assembly_to_path (const char *simple_name);
+gboolean
+mono_host_information_resolve_assembly_to_path (
+	const char *simple_name,
+	const char **directory,
+	const char **file_name);
 
 #endif /* __MONO_MINI_HOSTINFORMATION_H__ */

@@ -19,7 +19,22 @@
 // Probe paths to be resolved for ordering
 struct probe_paths_t
 {
-    std::vector<pal::string_t> tpa;
+    struct tpa_t
+    {
+        struct entry_t
+        {
+            size_t directory_index;
+            pal::string_t file_name;
+        };
+
+        // Directories are non-empty and end with DIR_SEPARATOR.
+        std::vector<pal::string_t> directories;
+        std::vector<entry_t> entries;
+
+        void add(const pal::string_t& path);
+    };
+
+    tpa_t tpa;
     pal::string_t native;
     pal::string_t resources;
     pal::string_t coreclr;
@@ -230,7 +245,7 @@ private:
 private:
     // Resolve order for TPA lookup.
     bool resolve_tpa_list(
-        std::vector<pal::string_t>* output,
+        probe_paths_t::tpa_t* output,
         std::unordered_set<pal::string_t>* breadcrumb,
         bool ignore_missing_assemblies);
 

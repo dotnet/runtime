@@ -83,11 +83,20 @@ void HostInformation::ResolveAssemblyToPath(const SString& simpleName, SString& 
 
     StackSString utf8Name;
     utf8Name.SetAndConvertToUTF8(simpleName.GetUnicode());
-    const char* resolvedPath = s_hostContract.resolve_assembly_to_path(utf8Name.GetUTF8(), s_hostContract.context);
-    if (resolvedPath == nullptr)
+    const char* directory;
+    const char* fileName;
+    if (!s_hostContract.resolve_assembly_to_path(utf8Name.GetUTF8(), &directory, &fileName, s_hostContract.context))
         return;
 
-    path.SetUTF8(resolvedPath);
+    if (directory == nullptr || directory[0] == '\0' || fileName == nullptr || fileName[0] == '\0')
+        return;
+
+    path.SetUTF8(directory);
+    size_t directoryLength = strlen(directory);
+    if (directory[directoryLength - 1] != DIRECTORY_SEPARATOR_CHAR_A)
+        path.Append(DIRECTORY_SEPARATOR_CHAR_W);
+
+    path.AppendUTF8(fileName);
 }
 
 bool HostInformation::HasExternalProbe()

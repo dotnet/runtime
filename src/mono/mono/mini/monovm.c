@@ -153,9 +153,14 @@ mono_core_preload_hook (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname, c
 			req.request.predicate = predicate;
 			req.request.predicate_ud = predicate_ud;
 
-			const char *fullpath = has_fullpath
-				? a->assembly_filepaths [i]
-				: mono_host_information_resolve_assembly_to_path (a->basenames [i]);
+			char *resolved_path = NULL;
+			const char *fullpath = a->assembly_filepaths [i];
+			if (!has_fullpath) {
+				const char *directory;
+				const char *file_name;
+				if (mono_host_information_resolve_assembly_to_path (a->basenames [i], &directory, &file_name))
+					fullpath = resolved_path = g_build_filename (directory, file_name, (const char*)NULL);
+			}
 			if (fullpath == NULL)
 				break;
 
@@ -165,15 +170,15 @@ mono_core_preload_hook (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname, c
 				MonoImageOpenStatus status;
 				result = mono_assembly_request_open (fullpath, &req, &status);
 				/* TODO: do something with the status at the end? */
-				if (result)
-					break;
 			}
 #ifdef ENABLE_WEBCIL
 			else {
 				/* /path/foo.dll -> /path/foo.webcil */
 				size_t n = strlen (fullpath);
-				if (n < strlen(".dll"))
+				if (n < strlen(".dll")) {
+					g_free (resolved_path);
 					continue;
+				}
 				n -= strlen(".dll");
 				char *fullpath2 = g_malloc (n + strlen(".webcil") + 1);
 				g_strlcpy (fullpath2, fullpath, n + 1);
@@ -183,20 +188,21 @@ mono_core_preload_hook (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname, c
 					result = mono_assembly_request_open (fullpath2, &req, &status);
 				}
 				g_free (fullpath2);
-				if (result)
-					break;
-				char *fullpath3 = g_malloc (n + strlen(MONO_WEBCIL_IN_WASM_EXTENSION) + 1);
-				g_strlcpy (fullpath3, fullpath, n + 1);
-				g_strlcpy (fullpath3 + n, MONO_WEBCIL_IN_WASM_EXTENSION, strlen(MONO_WEBCIL_IN_WASM_EXTENSION) + 1);
-				if (g_file_test (fullpath3, G_FILE_TEST_IS_REGULAR)) {
-					MonoImageOpenStatus status;
-					result = mono_assembly_request_open (fullpath3, &req, &status);
+				if (!result) {
+					char *fullpath3 = g_malloc (n + strlen(MONO_WEBCIL_IN_WASM_EXTENSION) + 1);
+					g_strlcpy (fullpath3, fullpath, n + 1);
+					g_strlcpy (fullpath3 + n, MONO_WEBCIL_IN_WASM_EXTENSION, strlen(MONO_WEBCIL_IN_WASM_EXTENSION) + 1);
+					if (g_file_test (fullpath3, G_FILE_TEST_IS_REGULAR)) {
+						MonoImageOpenStatus status;
+						result = mono_assembly_request_open (fullpath3, &req, &status);
+					}
+					g_free (fullpath3);
 				}
-				g_free (fullpath3);
-				if (result)
-					break;
 			}
 #endif
+			g_free (resolved_path);
+			if (result)
+				break;
 		}
 	}
 
@@ -231,13 +237,19 @@ ves_icall_System_AppContext_TryGetHostPropertyValue (MonoStringHandle name, Mono
 
 	GString *property_value = g_string_new (NULL);
 	for (guint32 i = 0; i < trusted_platform_assemblies->assembly_count; ++i) {
-		const char *path = mono_host_information_resolve_assembly_to_path (trusted_platform_assemblies->basenames [i]);
-		if (path == NULL)
+		const char *directory;
+		const char *file_name;
+		if (!mono_host_information_resolve_assembly_to_path (
+				trusted_platform_assemblies->basenames [i],
+				&directory,
+				&file_name))
 			continue;
 
 		if (property_value->len != 0)
 			g_string_append_c (property_value, G_SEARCHPATH_SEPARATOR);
+		char *path = g_build_filename (directory, file_name, (const char*)NULL);
 		g_string_append (property_value, path);
+		g_free (path);
 	}
 
 	if (property_value->len == 0) {

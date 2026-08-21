@@ -23,16 +23,18 @@ namespace
     std::string reconstruct_tpa_property(const hostpolicy_context_t* context)
     {
         std::string value;
-        for (const char* name : context->trusted_platform_assembly_names)
+        for (const char* name : context->tpa_names)
         {
-            std::unordered_map<std::string, std::string>::const_iterator path =
-                context->trusted_platform_assembly_paths.find(name);
-            assert(path != context->trusted_platform_assembly_paths.end());
+            std::unordered_map<std::string, hostpolicy_context_t::tpa_path_t>::const_iterator path = context->tpa_paths.find(name);
+            assert(path != context->tpa_paths.end());
 
             if (!value.empty())
                 value.push_back(static_cast<char>(PATH_SEPARATOR));
 
-            value.append(path->second);
+            size_t directory_length = strlen(path->second.directory);
+            assert(directory_length != 0 && path->second.directory[directory_length - 1] == static_cast<char>(DIR_SEPARATOR));
+            value.append(path->second.directory);
+            value.append(path->second.file_name);
         }
 
         return value;
@@ -206,24 +208,34 @@ namespace
         if (context->coreclr_properties.contains(_STRINGIFY(HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES)))
             return false;
 
-        *names = context->trusted_platform_assembly_names.data();
-        *count = context->trusted_platform_assembly_names.size();
+        *names = context->tpa_names.data();
+        *count = context->tpa_names.size();
         return true;
     }
 
-    const char* HOST_CONTRACT_CALLTYPE resolve_assembly_to_path(
+    bool HOST_CONTRACT_CALLTYPE resolve_assembly_to_path(
         const char* simple_name,
+        const char** directory,
+        const char** file_name,
         void* contract_context)
     {
+        if (directory == nullptr || file_name == nullptr)
+            return false;
+
         hostpolicy_context_t* context = static_cast<hostpolicy_context_t*>(contract_context);
 
         // Custom host explicitly set the assemblies via a property string
         if (context->coreclr_properties.contains(_STRINGIFY(HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES)))
-            return nullptr;
+            return false;
 
-        std::unordered_map<std::string, std::string>::const_iterator entry =
-            context->trusted_platform_assembly_paths.find(simple_name);
-        return entry == context->trusted_platform_assembly_paths.end() ? nullptr : entry->second.c_str();
+        std::unordered_map<std::string, hostpolicy_context_t::tpa_path_t>::const_iterator entry =
+            context->tpa_paths.find(simple_name);
+        if (entry == context->tpa_paths.end())
+            return false;
+
+        *directory = entry->second.directory;
+        *file_name = entry->second.file_name.c_str();
+        return true;
     }
 }
 
@@ -323,7 +335,7 @@ int hostpolicy_context_t::initialize(const hostpolicy_init_t &hostpolicy_init, c
         append_path(&corelib_path, CORELIB_NAME);
 
         // Append CoreLib path
-        probe_paths.tpa.push_back(std::move(corelib_path));
+        probe_paths.tpa.add(corelib_path);
     }
 
     pal::string_t fx_deps_str;
@@ -402,16 +414,27 @@ int hostpolicy_context_t::initialize(const hostpolicy_init_t &hostpolicy_init, c
         }
     }
 
-    trusted_platform_assembly_names.reserve(probe_paths.tpa.size());
-    trusted_platform_assembly_paths.reserve(probe_paths.tpa.size());
-    for (const pal::string_t& entry : probe_paths.tpa)
+    tpa_directories.reserve(probe_paths.tpa.directories.size());
+    for (const pal::string_t& directory : probe_paths.tpa.directories)
     {
-        std::string name = pal::pal_utf8string(get_filename_without_ext(entry));
-        std::string path = pal::pal_utf8string(entry);
-        std::pair<std::unordered_map<std::string, std::string>::iterator, bool> result =
-            trusted_platform_assembly_paths.insert_or_assign(std::move(name), std::move(path));
+        assert(!directory.empty() && directory.back() == DIR_SEPARATOR);
+        tpa_directories.push_back(pal::pal_utf8string(directory));
+    }
+
+    tpa_names.reserve(probe_paths.tpa.entries.size());
+    tpa_paths.reserve(probe_paths.tpa.entries.size());
+    for (const probe_paths_t::tpa_t::entry_t& entry : probe_paths.tpa.entries)
+    {
+        assert(entry.directory_index < tpa_directories.size());
+        tpa_path_t path{
+            tpa_directories[entry.directory_index].c_str(),
+            pal::pal_utf8string(entry.file_name)
+        };
+        std::string name = pal::pal_utf8string(get_filename_without_ext(entry.file_name));
+        std::pair<std::unordered_map<std::string, tpa_path_t>::iterator, bool> result =
+            tpa_paths.emplace(std::move(name), std::move(path));
         if (result.second)
-            trusted_platform_assembly_names.push_back(result.first->first.c_str());
+            tpa_names.push_back(result.first->first.c_str());
     }
 
     // Startup hooks

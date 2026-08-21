@@ -404,11 +404,33 @@ bool report_missing_assembly_in_manifest(const deps_entry_t& entry, bool continu
     return continueResolving;
 }
 
+void probe_paths_t::tpa_t::add(const pal::string_t& path)
+{
+    pal::string_t directory = get_directory(path);
+    pal::string_t file_name = get_filename(path);
+    assert(!directory.empty() && directory.back() == DIR_SEPARATOR);
+
+    std::vector<pal::string_t>::const_iterator existing =
+        std::find(directories.cbegin(), directories.cend(), directory);
+    size_t directory_index;
+    if (existing == directories.cend())
+    {
+        directory_index = directories.size();
+        directories.push_back(std::move(directory));
+    }
+    else
+    {
+        directory_index = static_cast<size_t>(existing - directories.cbegin());
+    }
+
+    entries.push_back({ directory_index, std::move(file_name) });
+}
+
 /**
  *  Resolve the TPA assembly locations
  */
 bool deps_resolver_t::resolve_tpa_list(
-        std::vector<pal::string_t>* output,
+        probe_paths_t::tpa_t* output,
         std::unordered_set<pal::string_t>* breadcrumb,
         bool ignore_missing_assemblies)
 {
@@ -565,10 +587,10 @@ bool deps_resolver_t::resolve_tpa_list(
         }
     }
 
-    output->reserve(output->size() + items.size());
-    for (auto& item : items)
+    output->entries.reserve(output->entries.size() + items.size());
+    for (const std::pair<const pal::string_t, deps_resolved_asset_t>& item : items)
     {
-        output->push_back(std::move(item.second.resolved_path));
+        output->add(item.second.resolved_path);
     }
 
     return true;

@@ -92,10 +92,12 @@ struct host_runtime_contract
         /*out*/ size_t* count,
         void* contract_context);
 
-    // Resolve an assembly simple name to its path.
-    // Returned path is owned by the host and valid for the lifetime of the process.
-    const char* (HOST_CONTRACT_CALLTYPE* resolve_assembly_to_path)(
+    // Resolve an assembly simple name to its path components.
+    // On success, returned strings are owned by the host and valid for the lifetime of the process.
+    bool(HOST_CONTRACT_CALLTYPE* resolve_assembly_to_path)(
         const char* simple_name,
+        /*out*/ const char** directory,
+        /*out*/ const char** file_name,
         void* contract_context);
 };
 #endif // __HOST_RUNTIME_CONTRACT_H__
