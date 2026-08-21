@@ -472,9 +472,7 @@ PTR_MethodTable InterfaceInfo_t::GetApproxMethodTable(Module * pContainingModule
 {
     CONTRACTL
     {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
+        STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pItfMD));
         PRECONDITION(pItfMD->IsInterface());
         PRECONDITION(!ownerType.IsNull());
@@ -544,9 +542,7 @@ MethodDesc *MethodTable::GetMethodDescForComInterfaceMethod(MethodDesc *pItfMD)
 {
     CONTRACTL
     {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
+        STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pItfMD));
         PRECONDITION(pItfMD->IsInterface());
         PRECONDITION(IsComObjectType());
@@ -1715,8 +1711,7 @@ bool MethodTable::InterfaceMapIterator::CurrentInterfaceEquivalentTo(MethodTable
 {
     CONTRACTL
     {
-        THROWS;
-        GC_TRIGGERS;
+        STANDARD_VM_CHECK;
         PRECONDITION(pMT->IsInterface()); // class we are looking up should be an interface
     }
     CONTRACTL_END;
@@ -1775,6 +1770,7 @@ BOOL MethodTable::ImplementsEquivalentInterface(MethodTable *pInterface)
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(pInterface->IsInterface()); // class we are looking up should be an interface
     }
     CONTRACTL_END;
@@ -1808,8 +1804,7 @@ MethodDesc *MethodTable::GetMethodDescForInterfaceMethod(MethodDesc *pInterfaceM
 {
     CONTRACTL
     {
-        THROWS;
-        GC_TRIGGERS;
+        STANDARD_VM_CHECK;
         PRECONDITION(!pInterfaceMD->HasClassOrMethodInstantiation());
     }
     CONTRACTL_END;
@@ -1823,8 +1818,7 @@ MethodDesc *MethodTable::GetMethodDescForInterfaceMethod(TypeHandle ownerType, M
 {
     CONTRACTL
     {
-        THROWS;
-        GC_TRIGGERS;
+        STANDARD_VM_CHECK;
         PRECONDITION(!ownerType.IsNull());
         PRECONDITION(ownerType.GetMethodTable()->IsInterface());
         PRECONDITION(ownerType.GetMethodTable()->HasSameTypeDefAs(pInterfaceMD->GetMethodTable()));
@@ -3895,6 +3889,7 @@ void MethodTable::EnsureStaticDataAllocated()
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -3922,6 +3917,7 @@ bool MethodTable::IsClassInitedOrPreinited()
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -3939,6 +3935,7 @@ bool MethodTable::IsInitedIfStaticDataAllocated()
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -4473,12 +4470,7 @@ struct DoFullyLoadLocals
 #if defined(FEATURE_TYPEEQUIVALENCE) && !defined(DACCESS_COMPILE)
 static void CheckForEquivalenceAndFullyLoadType(Module *pModule, mdToken token, Module *pDefModule, mdToken defToken, const SigParser *ptr, SigTypeContext *pTypeContext, void *pData)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     SigPointer sigPtr(*ptr);
 
@@ -5157,8 +5149,7 @@ MethodTable::FindEncodedMapDispatchEntry(
     CONTRACTL {
         // NOTE: LookupDispatchMapType may or may not throw. Currently, it
         // should never throw because lazy interface restore is disabled.
-        THROWS;
-        GC_TRIGGERS;
+        STANDARD_VM_CHECK;
         INSTANCE_CHECK;
         PRECONDITION(CheckPointer(pEntry));
         PRECONDITION(typeID != TYPE_ID_THIS_CLASS);
@@ -5265,8 +5256,7 @@ BOOL MethodTable::FindDispatchEntryForCurrentType(UINT32 typeID,
                                                   DispatchMapEntry *pEntry)
 {
     CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
+        STANDARD_VM_CHECK;
         INSTANCE_CHECK;
         PRECONDITION(CheckPointer(pEntry));
         PRECONDITION(typeID != TYPE_ID_THIS_CLASS);
@@ -5729,8 +5719,7 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
 {
     CONTRACTL {
         INSTANCE_CHECK;
-        THROWS;
-        GC_TRIGGERS;
+        STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pInterfaceMD));
         PRECONDITION(CheckPointer(pInterfaceMT));
         PRECONDITION(CheckPointer(ppDefaultMethod));
@@ -5956,10 +5945,7 @@ DispatchSlot MethodTable::FindDispatchSlotForInterfaceMD(TypeHandle ownerType, M
 //      The mapping exists in this type, not a parent type.
 MethodDesc * MethodTable::ReverseInterfaceMDLookup(UINT32 slotNumber)
 {
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-    } CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
     DispatchMap::Iterator it(this);
     for (; it.IsValid(); it.Next())
     {
@@ -5987,10 +5973,7 @@ MethodDesc * MethodTable::ReverseInterfaceMDLookup(UINT32 slotNumber)
 //==========================================================================================
 UINT32 MethodTable::GetTypeID()
 {
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-    } CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     PTR_MethodTable pMT = PTR_MethodTable(this);
 
@@ -6557,10 +6540,7 @@ InteropMethodTableData *MethodTable::CreateComInteropData(AllocMemTracker *pamTr
 //==========================================================================================
 InteropMethodTableData *MethodTable::GetComInteropData()
 {
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-    } CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     _ASSERTE(GetAuxiliaryData()->IsPublished());
 
@@ -8471,10 +8451,7 @@ MethodTable::TryResolveConstraintMethodApprox(
     MethodDesc * pInterfaceMD,
     BOOL *       pfForceUseRuntimeLookup)   // = NULL
 {
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-    } CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     if (pInterfaceMD->IsStatic())
     {
@@ -8812,8 +8789,9 @@ PTR_MethodTable MethodTable::InterfaceMapIterator::GetInterface(MethodTable* pMT
 {
     CONTRACTL
     {
-        GC_TRIGGERS;
         THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(m_i != (DWORD) -1 && m_i < m_count);
         PRECONDITION(CheckPointer(pMTOwner));
     }

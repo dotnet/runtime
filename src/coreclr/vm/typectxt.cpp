@@ -89,10 +89,7 @@ void SigTypeContext::InitTypeContext(MethodDesc *md, TypeHandle declaringType, S
 #ifndef DACCESS_COMPILE
 TypeHandle GetDeclaringMethodTableFromTypeVarTypeDesc(TypeVarTypeDesc *pTypeVar, MethodDesc *pMD)
 {
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-    } CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     // This can only happen for reflection over type variables. Notably the logic which is used to enumerate the locals
     // of a MethodBody which was found by reflection over a type variable. This only needs to be non-null
@@ -129,8 +126,7 @@ void SigTypeContext::InitTypeContext(MethodDesc *md, TypeHandle declaringType, I
 {
     // This method has an unusual contract for SigTypeContext so that it can be used to load type with a declaringType which is a generic variable.
     CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
+        STANDARD_VM_CHECK;
 
         PRECONDITION(CheckPointer(md));
     } CONTRACTL_END;

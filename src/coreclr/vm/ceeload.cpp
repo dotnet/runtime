@@ -1956,9 +1956,7 @@ void Module::AddClass(mdTypeDef classdef)
     CONTRACTL
     {
         INSTANCE_CHECK;
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
+        STANDARD_VM_CHECK;
     }
     CONTRACTL_END;
 
@@ -3035,9 +3033,7 @@ mdToken GetTokenForVTableEntry(HINSTANCE hInst, BYTE **ppVTEntry)
 //=================================================================================
 void SetTargetForVTableEntry(HINSTANCE hInst, BYTE **ppVTEntry, BYTE *pTarget)
 {
-    CONTRACTL{
-        THROWS;
-    } CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     DWORD oldProtect;
     if (!ClrVirtualProtect(ppVTEntry, sizeof(BYTE*), PAGE_READWRITE, &oldProtect))

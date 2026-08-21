@@ -71,10 +71,7 @@ void CallDescrWorker(CallDescrData * pCallDescrData)
     // out-of-order destruction of the contract object, resulting in very odd crashes later.
     //
 #if 0
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-    } CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 #endif // 0
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;

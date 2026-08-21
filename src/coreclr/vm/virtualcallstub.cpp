@@ -98,22 +98,14 @@ struct CachedIndirectionCellBlockListNode
 
 BYTE* GenerateDispatchStubCellEntryMethodDesc(LoaderAllocator *pLoaderAllocator, TypeHandle ownerType, MethodDesc *pMD, LCGMethodResolver *pResolver)
 {
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     return GenerateDispatchStubCellEntrySlot(pLoaderAllocator, ownerType, pMD->GetSlot(), pResolver);
 }
 
 BYTE* GenerateDispatchStubCellEntrySlot(LoaderAllocator *pLoaderAllocator, TypeHandle ownerType, int methodSlot, LCGMethodResolver *pResolver)
 {
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     VirtualCallStubManager * pMgr = pLoaderAllocator->GetVirtualCallStubManager();
 
@@ -1166,8 +1158,7 @@ BYTE* GetStubIndirectionCell(BYTE** pBlocksStart, UINT32 index, UINT32 sizeOfInd
 BYTE *VirtualCallStubManager::GenerateStubIndirection(PCODE target, DispatchToken token, BOOL fUseRecycledCell /* = FALSE*/ )
 {
     CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
+        STANDARD_VM_CHECK;
         PRECONDITION(target != NULL);
     } CONTRACTL_END;
 
@@ -2319,6 +2310,7 @@ VirtualCallStubManager::Resolver(
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(CheckPointer(pMT));
         PRECONDITION(TypeHandle(pMT).CheckFullyLoaded());
     } CONTRACTL_END;
@@ -2916,8 +2908,7 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStubLong(PCODE          
                                                                  bool *           pMayHaveReenteredCooperativeGCMode)
 {
     CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
+        STANDARD_VM_CHECK;
         PRECONDITION(addrOfCode != NULL);
         PRECONDITION(addrOfFail != NULL);
         PRECONDITION(CheckPointer(pMTExpected));
@@ -3060,8 +3051,7 @@ ResolveHolder *VirtualCallStubManager::GenerateResolveStub(PCODE            addr
 LookupHolder *VirtualCallStubManager::GenerateLookupStub(PCODE addrOfResolver, size_t dispatchToken)
 {
     CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
+        STANDARD_VM_CHECK;
         PRECONDITION(addrOfResolver != NULL);
     } CONTRACTL_END;
 

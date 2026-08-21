@@ -1581,12 +1581,7 @@ BOOL Assembly::GetResource(LPCSTR szName, DWORD *cbResource,
                              PBYTE *pbInMemoryResource, Assembly** pAssemblyRef,
                              LPCSTR *szFileName, DWORD *dwLocation)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     BOOL result = GetPEAssembly()->GetResource(szName, cbResource,
                                                 pbInMemoryResource, pAssemblyRef,
@@ -1933,6 +1928,7 @@ void Assembly::RequireLoadLevel(FileLoadLevel targetLevel)
         INSTANCE_CHECK;
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -1950,8 +1946,7 @@ void Assembly::SetError(Exception *ex)
         PRECONDITION(!IsError());
         PRECONDITION(ex != NULL);
         INSTANCE_CHECK;
-        THROWS;
-        GC_TRIGGERS;
+        STANDARD_VM_CHECK;
     }
     CONTRACTL_END;
 

@@ -1106,12 +1106,8 @@ bool UseActivationInjection()
 HRESULT
 Thread::UserAbort(EEPolicy::ThreadAbortTypes abortType, DWORD timeout)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS; // For GetXxxException
-    }
-    CONTRACTL_END;
+    // GetXxxException may trigger GC.
+    STANDARD_VM_CONTRACT;
 
     STRESS_LOG2(LF_SYNC | LF_APPDOMAIN, LL_INFO100, "UserAbort Thread %p Thread Id = %x\n", this, GetThreadId());
 
@@ -4810,9 +4806,11 @@ HijackFrame::HijackFrame(LPVOID returnAddress, Thread *thread, HijackArgs *args 
 
 void STDCALL OnHijackWorker(HijackArgs * pArgs)
 {
-    CONTRACTL{
+    CONTRACTL
+    {
         THROWS;
         GC_TRIGGERS;
+        MODE_COOPERATIVE;
     }
     CONTRACTL_END;
 

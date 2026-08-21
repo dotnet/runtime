@@ -91,11 +91,7 @@ void PerfMap::InitializeConfiguration()
 
 void PerfMap::Enable(PerfMapType type, bool sendExisting)
 {
-    CONTRACTL
-    {
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     if (type == PerfMapType::DISABLED)
     {
@@ -378,12 +374,7 @@ void PerfMap::LogJITCompiledMethod(MethodDesc * pMethod, PCODE pCode, size_t cod
 // Log a pre-compiled method to the perfmap.
 void PerfMap::LogPreCompiledMethod(MethodDesc * pMethod, PCODE pCode)
 {
-    CONTRACTL
-    {
-        THROWS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     if (!s_enabled)
     {
