@@ -3404,6 +3404,26 @@ handle_alloc (MonoCompile *cfg, MonoClass *klass, gboolean for_box, int context_
 }
 
 /*
+ * Box a gsharedvt Nullable<T> via a non-generic runtime helper, passing the value by
+ * address and the concrete class from the rgctx. This avoids a per-T box wrapper that
+ * cannot be emitted at AOT time when the consuming assembly runs interpreted.
+ */
+static MonoInst*
+mini_emit_nullable_box_helper (MonoCompile *cfg, MonoInst *val, MonoClass *klass, int context_used)
+{
+	MonoInst *iargs [2], *addr, *var;
+
+	var = get_vreg_to_inst (cfg, val->dreg);
+	if (!var)
+		var = mono_compile_create_var_for_vreg (cfg, m_class_get_byval_arg (klass), OP_LOCAL, val->dreg);
+	EMIT_NEW_VARLOADA (cfg, addr, var, var->inst_vtype);
+
+	iargs [0] = addr;
+	iargs [1] = mini_emit_get_rgctx_klass (cfg, context_used, klass, MONO_RGCTX_INFO_KLASS);
+	return mono_emit_jit_icall (cfg, mono_helper_box_nullable, iargs);
+}
+
+/*
  * Returns NULL and set the cfg exception on error.
  */
 MonoInst*
@@ -3425,11 +3445,9 @@ mini_emit_box (MonoCompile *cfg, MonoInst *val, MonoClass *klass, int context_us
 				MonoInst *addr;
 				MonoMethodSignature *sig = mono_method_signature_internal (method);
 				if (mini_is_gsharedvt_klass (klass))
-					addr = mini_emit_get_gsharedvt_info_klass (cfg, klass,
-															   MONO_RGCTX_INFO_NULLABLE_CLASS_BOX);
-				else
-					addr = emit_get_rgctx_method (cfg, context_used, method,
-												  MONO_RGCTX_INFO_METHOD_FTNDESC);
+					return mini_emit_nullable_box_helper (cfg, val, klass, context_used);
+				addr = emit_get_rgctx_method (cfg, context_used, method,
+											  MONO_RGCTX_INFO_METHOD_FTNDESC);
 				cfg->interp_in_signatures = g_slist_prepend_mempool (cfg->mempool, cfg->interp_in_signatures, sig);
 				return mini_emit_llvmonly_calli (cfg, sig, &val, addr);
 			} else {
@@ -3495,9 +3513,14 @@ mini_emit_box (MonoCompile *cfg, MonoInst *val, MonoClass *klass, int context_us
 		/* Nullable case */
 		MONO_START_BB (cfg, is_nullable_bb);
 
-		{
+		if (cfg->llvm_only) {
+			MonoInst *box_call = mini_emit_nullable_box_helper (cfg, val, klass, context_used);
+			EMIT_NEW_UNALU (cfg, res, OP_MOVE, dreg, box_call->dreg);
+			res->type = STACK_OBJ;
+			res->klass = klass;
+		} else {
 			MonoInst *box_addr = mini_emit_get_gsharedvt_info_klass (cfg, klass,
-													MONO_RGCTX_INFO_NULLABLE_CLASS_BOX);
+										MONO_RGCTX_INFO_NULLABLE_CLASS_BOX);
 			MonoInst *box_call;
 			MonoMethodSignature *box_sig;
 
@@ -3510,10 +3533,7 @@ mini_emit_box (MonoCompile *cfg, MonoInst *val, MonoClass *klass, int context_us
 			box_sig->param_count = 1;
 			box_sig->params [0] = m_class_get_byval_arg (klass);
 
-			if (cfg->llvm_only)
-				box_call = mini_emit_llvmonly_calli (cfg, box_sig, &val, box_addr);
-			else
-				box_call = mini_emit_calli (cfg, box_sig, &val, box_addr, NULL, NULL);
+			box_call = mini_emit_calli (cfg, box_sig, &val, box_addr, NULL, NULL);
 			EMIT_NEW_UNALU (cfg, res, OP_MOVE, dreg, box_call->dreg);
 			res->type = STACK_OBJ;
 			res->klass = klass;
@@ -11961,6 +11981,57 @@ mono_ldptr:
 			const gboolean has_unmanaged_callers_only =
 				cmethod->wrapper_type == MONO_WRAPPER_NONE &&
 				mono_method_has_unmanaged_callers_only_attribute (cmethod);
+
+			/*
+			 * ldftn of a static virtual (static abstract) interface method resolved through gsharedvt
+			 * followed by a delegate creation. The target method is only known at runtime (via the rgctx),
+			 * so the generic newobj ctor-call fallback below cannot be used: under llvmonly it would call
+			 * the runtime delegate ctor with an extra rgctx argument it does not accept, producing a wasm
+			 * signature mismatch. Create the delegate directly and let the runtime initialize it from
+			 * del->method instead.
+			 */
+			if (gshared_static_virtual && cfg->llvm_only && (sp > stack_start) && (next_ip + 4 < end) && ip_in_bb (cfg, cfg->cbb, next_ip) && (next_ip [0] == CEE_NEWOBJ)) {
+				MonoMethod *ctor_method = mini_get_method (cfg, method, read32 (next_ip + 1), NULL, generic_context);
+				if (ctor_method && (m_class_get_parent (ctor_method->klass) == mono_defaults.multicastdelegate_class)) {
+					int dele_context_used = mini_class_check_context_used (cfg, ctor_method->klass);
+					MonoInst *target_ins = sp [-1];
+					MonoInst *method_ins = emit_get_rgctx_virt_method (cfg, -1, constrained_class, cmethod, MONO_RGCTX_INFO_VIRT_METHOD);
+					MonoInst *obj = handle_alloc (cfg, ctor_method->klass, FALSE, dele_context_used);
+
+					if (!obj)
+						CHECK_CFG_ERROR;
+
+					if (obj) {
+						/* Set the target field (typically null for a static method) */
+						if (!MONO_INS_IS_PCONST_NULL (target_ins)) {
+							if (!mini_debug_options.weak_memory_model)
+								mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_REL);
+							MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, obj->dreg, MONO_STRUCT_OFFSET (MonoDelegate, target), target_ins->dreg);
+							if (cfg->gen_write_barriers) {
+								MonoInst *ptr;
+								int dreg = alloc_preg (cfg);
+								EMIT_NEW_BIALU_IMM (cfg, ptr, OP_PADD_IMM, dreg, obj->dreg, MONO_STRUCT_OFFSET (MonoDelegate, target));
+								mini_emit_write_barrier (cfg, ptr, target_ins);
+							}
+						}
+						/* del->method = runtime-resolved implementation; init_delegate derives the rest */
+						MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, obj->dreg, MONO_STRUCT_OFFSET (MonoDelegate, method), method_ins->dreg);
+
+						MonoInst *init_args [2];
+						init_args [0] = obj;
+						EMIT_NEW_PCONST (cfg, init_args [1], NULL);
+						mono_emit_jit_icall (cfg, mini_llvmonly_init_delegate, init_args);
+
+						constrained_class = NULL;
+						sp --;
+						*sp = obj;
+						sp ++;
+						next_ip += 5;
+						il_op = MONO_CEE_NEWOBJ;
+						break;
+					}
+				}
+			}
 
 			/*
 			 * Optimize the common case of ldftn+delegate creation

@@ -861,9 +861,13 @@ namespace System.Text.Json.SourceGeneration
                                 // generated pattern arm uses the underlying T symbol — never the source
                                 // Nullable<T> string spelling. Compute this from the symbol here so the
                                 // emitter never has to manipulate FQN strings.
-                                TypeRef patternTypeRef = caseType is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } nullableCaseType
-                                    ? new TypeRef(nullableCaseType.TypeArguments[0])
-                                    : caseTypeRef;
+                                ITypeSymbol patternType = caseType is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } nullableCaseType
+                                    ? nullableCaseType.TypeArguments[0]
+                                    : caseType;
+
+                                TypeRef patternTypeRef = SymbolEqualityComparer.Default.Equals(patternType, caseType)
+                                    ? caseTypeRef
+                                    : new TypeRef(patternType);
 
                                 resolvedUnionCaseSpecs.Add(new UnionCaseSpec
                                 {
@@ -980,13 +984,15 @@ namespace System.Text.Json.SourceGeneration
 
                 bool hasPolymorphicAttribute = false;
                 bool ignoreUnrecognizedTypeDiscriminators = false;
+                bool? inferClosedTypePolymorphismOverride = null;
+                Location? polymorphicAttributeLocation = null;
                 JsonUnknownDerivedTypeHandling unknownDerivedTypeHandling = default;
                 string? typeDiscriminatorPropertyName = null;
                 TypeRef? polymorphicClassifierFactoryType = null;
                 List<DerivedTypeSpec>? derivedTypes = null;
                 HashSet<object>? typeDiscriminators = null;
                 bool hasExplicitDerivedTypeAttribute = false;
-                bool hasUnionTypeClassifierSpecified = false;
+                bool hasUnionTypeClassifierSpecified = options?.TypeClassifiers is { Count: > 0 };
                 bool isUnionType = IsUnionType(typeToGenerate.Type);
                 INamedTypeSymbol? namedUnionType = typeToGenerate.Type as INamedTypeSymbol;
 
@@ -1079,6 +1085,7 @@ namespace System.Text.Json.SourceGeneration
                     else if (SymbolEqualityComparer.Default.Equals(attributeType, _knownSymbols.JsonPolymorphicAttributeType))
                     {
                         hasPolymorphicAttribute = true;
+                        polymorphicAttributeLocation = attributeData.GetLocation();
 
                         foreach (KeyValuePair<string, TypedConstant> namedArg in attributeData.NamedArguments)
                         {
@@ -1086,6 +1093,9 @@ namespace System.Text.Json.SourceGeneration
                             {
                                 case "IgnoreUnrecognizedTypeDiscriminators":
                                     ignoreUnrecognizedTypeDiscriminators = (bool)namedArg.Value.Value!;
+                                    break;
+                                case "InferClosedTypePolymorphism":
+                                    inferClosedTypePolymorphismOverride = (bool)namedArg.Value.Value!;
                                     break;
                                 case "TypeDiscriminatorPropertyName":
                                     typeDiscriminatorPropertyName = (string?)namedArg.Value.Value;
@@ -1123,16 +1133,48 @@ namespace System.Text.Json.SourceGeneration
                 // whether generated metadata must reject runtime-only inference. Explicit derived-type
                 // registrations suppress inference, while any explicit polymorphism metadata makes the
                 // runtime-only inference guard unnecessary.
+                //
+                // A value specified on the declaration overrides the context-wide
+                // JsonSourceGenerationOptionsAttribute setting; the context-wide value applies when unset.
                 bool shouldInferClosedTypePolymorphism =
-                    options?.InferClosedTypePolymorphism is true && !hasExplicitDerivedTypeAttribute;
+                    (inferClosedTypePolymorphismOverride ?? (options?.InferClosedTypePolymorphism is true)) &&
+                    !hasExplicitDerivedTypeAttribute;
                 bool needsRuntimeInferenceGuard =
                     options?.InferClosedTypePolymorphism is not true &&
                     !hasPolymorphicAttribute &&
                     derivedTypes is null;
 
-                if ((shouldInferClosedTypePolymorphism || needsRuntimeInferenceGuard) &&
-                    typeToGenerate.Type is INamedTypeSymbol closedBaseType &&
-                    closedBaseType.IsClosedType())
+                INamedTypeSymbol? closedBaseType = null;
+                if ((shouldInferClosedTypePolymorphism || needsRuntimeInferenceGuard || inferClosedTypePolymorphismOverride is true) &&
+                    typeToGenerate.Type is INamedTypeSymbol namedBaseType &&
+                    namedBaseType.IsClosedType())
+                {
+                    closedBaseType = namedBaseType;
+                }
+
+                // Enabling inference on a type that is not closed can never infer derived types, so it is
+                // always a mistake -- including when the declaration carries explicit JsonDerivedTypeAttribute
+                // registrations, which would otherwise mask the error behind a working hierarchy.
+                if (inferClosedTypePolymorphismOverride is true && closedBaseType is null)
+                {
+                    ReportDiagnostic(
+                        DiagnosticDescriptors.InferClosedTypePolymorphismOnNonClosedType,
+                        polymorphicAttributeLocation ?? typeToGenerate.Location,
+                        typeToGenerate.Type.ToDisplayString());
+                }
+                else if (inferClosedTypePolymorphismOverride is true && hasExplicitDerivedTypeAttribute)
+                {
+                    // Explicit registrations replace inference rather than adding to it, so a declaration
+                    // requesting both silently drops every derived type it did not register. Only the
+                    // declaration-level opt-in is reported: a context-wide opt-in is meant to be overridden
+                    // by explicit registrations.
+                    ReportDiagnostic(
+                        DiagnosticDescriptors.InferClosedTypePolymorphismWithExplicitDerivedTypes,
+                        polymorphicAttributeLocation ?? typeToGenerate.Location,
+                        typeToGenerate.Type.ToDisplayString());
+                }
+
+                if ((shouldInferClosedTypePolymorphism || needsRuntimeInferenceGuard) && closedBaseType is not null)
                 {
                     List<ITypeSymbol>? closedDerivedTypes = closedBaseType.GetClosedDerivedTypes();
                     hasClosedDerivedTypes = closedDerivedTypes is { Count: > 0 };
@@ -1143,7 +1185,23 @@ namespace System.Text.Json.SourceGeneration
                     }
                 }
 
-                if (hasPolymorphicAttribute || derivedTypes is { Count: > 0 })
+                // A declaration that explicitly opts out of inference, registers no derived types of its own,
+                // and specifies no other polymorphism metadata is left non-polymorphic: JsonPolymorphicAttribute
+                // is being used to exclude the type from a context-wide opt-in rather than to declare a hierarchy.
+                // The generator emits an empty JsonPolymorphismOptions instance for a null spec, which the runtime
+                // recognizes as 'no polymorphism metadata'; emitting a configured instance with an empty
+                // registration list would instead fail configuration at run time.
+                bool hasNonDefaultPolymorphismSettings =
+                    ignoreUnrecognizedTypeDiscriminators ||
+                    polymorphicClassifierFactoryType is not null ||
+                    typeDiscriminatorPropertyName is not null ||
+                    unknownDerivedTypeHandling != default;
+                bool optedOutOfPolymorphism =
+                    inferClosedTypePolymorphismOverride is false &&
+                    derivedTypes is not { Count: > 0 } &&
+                    !hasNonDefaultPolymorphismSettings;
+
+                if (!optedOutOfPolymorphism && (hasPolymorphicAttribute || derivedTypes is { Count: > 0 }))
                 {
                     polymorphismOptions = new PolymorphismOptionsSpec
                     {
@@ -1733,19 +1791,7 @@ namespace System.Text.Json.SourceGeneration
                     string caseTypeName = caseType.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
                     JsonValueType valueTypes = GetSupportedJsonValueTypes(caseType);
 
-                    if (valueTypes is JsonValueType.None)
-                    {
-                        // [JsonConverter] on the case type makes it inherently non-classifiable
-                        // at compile time -- a custom converter can serialize as any JSON value type.
-                        ReportDiagnostic(
-                            DiagnosticDescriptors.UnionCaseTypesNotClassifiable,
-                            location,
-                            unionTypeName,
-                            $"case type '{caseTypeName}' is annotated with [JsonConverter] and may serialize as any JSON value type");
-                        continue;
-                    }
-
-                    for (int flag = 1; flag <= (int)JsonValueType.Null; flag <<= 1)
+                    for (int flag = 1; flag <= (int)JsonValueType.Boolean; flag <<= 1)
                     {
                         JsonValueType valueType = (JsonValueType)flag;
                         if ((valueTypes & valueType) == 0)
@@ -1780,20 +1826,19 @@ namespace System.Text.Json.SourceGeneration
             // table here MUST stay in sync with:
             //   * src/System/Text/Json/Serialization/Metadata/DefaultJsonTypeInfoResolver.Converters.cs (GetDefaultSimpleConverters)
             //   * src/System/Text/Json/Serialization/Metadata/JsonMetadataServices.Converters.cs (the *Converter properties)
-            //   * src/System/Text/Json/Serialization/Converters/Value/*Converter.cs (each leaf converter's
+            //   * src/System/Text/Json/Serialization/Converters/ (each built-in converter's
             //     GetSupportedJsonValueTypes override)
             // When a built-in converter is added/removed/retargeted in any of those locations,
             // update this method as well so the union ambiguity diagnostic agrees with the
             // runtime value-shape map (JsonTypeInfo.BuildUnionValueTypeMap).
             //
-            // Returns None when the case type carries a user-defined [JsonConverter]. User
-            // converters can serialize as any JSON value type, so the caller surfaces a
-            // not-classifiable diagnostic.
+            // User-defined converters are conservatively classified as potentially representing
+            // every JSON value shape, matching the JsonConverter base implementation.
             private JsonValueType GetSupportedJsonValueTypes(ITypeSymbol type)
             {
                 if (HasCustomConverterAttribute(type))
                 {
-                    return JsonValueType.None;
+                    return JsonValueType.Any;
                 }
 
                 if (type is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } nullable)
@@ -1802,8 +1847,15 @@ namespace System.Text.Json.SourceGeneration
 
                     if (HasCustomConverterAttribute(type))
                     {
-                        return JsonValueType.None;
+                        return JsonValueType.Any;
                     }
+                }
+
+                if (type is INamedTypeSymbol unionType && IsUnionType(unionType))
+                {
+                    // The runtime skips nested union cases when building its value-shape map.
+                    // Contributing no shapes keeps this compile-time ambiguity check aligned.
+                    return JsonValueType.None;
                 }
 
                 // Boolean
@@ -1847,18 +1899,23 @@ namespace System.Text.Json.SourceGeneration
 
                 // Enums: default EnumConverter writes a number. A user-applied
                 // [JsonConverter] override (e.g. JsonStringEnumConverter) is detected at the
-                // top of this method and returns None.
+                // top of this method and returns Any.
                 if (type.TypeKind is TypeKind.Enum)
                 {
                     return JsonValueType.Number;
                 }
 
-                // Object-shaped built-ins (JsonElement / JsonDocument / JsonNode hierarchy).
+                // Built-ins that can represent every JSON value shape.
                 if (SymbolEqualityComparer.Default.Equals(type, _knownSymbols.JsonElementType) ||
                     SymbolEqualityComparer.Default.Equals(type, _knownSymbols.JsonDocumentType) ||
                     SymbolEqualityComparer.Default.Equals(type, _knownSymbols.JsonNodeType) ||
-                    SymbolEqualityComparer.Default.Equals(type, _knownSymbols.JsonObjectType) ||
-                    SymbolEqualityComparer.Default.Equals(type, _knownSymbols.JsonValueType))
+                    SymbolEqualityComparer.Default.Equals(type, _knownSymbols.JsonValueType) ||
+                    type.SpecialType is SpecialType.System_Object)
+                {
+                    return JsonValueType.Any;
+                }
+
+                if (SymbolEqualityComparer.Default.Equals(type, _knownSymbols.JsonObjectType))
                 {
                     return JsonValueType.Object;
                 }
@@ -1885,7 +1942,7 @@ namespace System.Text.Json.SourceGeneration
                     return JsonValueType.Array;
                 }
 
-                // Anything else (POCOs, dictionaries, object, etc.) defaults to Object.
+                // Anything else (POCOs, dictionaries, etc.) defaults to Object.
                 // This matches the runtime ConverterStrategy fallback in JsonTypeInfo.
                 return JsonValueType.Object;
             }

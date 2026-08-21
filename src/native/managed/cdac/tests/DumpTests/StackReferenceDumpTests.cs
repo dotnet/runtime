@@ -281,7 +281,7 @@ public class StackReferenceDumpTests : DumpTestBase
 
             try
             {
-                TargetPointer dataStart = objectContract.GetArrayData(r.Object, out uint count, out _, out _);
+                TargetPointer dataStart = objectContract.GetArrayData(r.Object, out uint count, out _, out _, out _, out _);
                 if (count != 5)
                     continue;
 

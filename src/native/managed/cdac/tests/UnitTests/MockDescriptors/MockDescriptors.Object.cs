@@ -417,6 +417,22 @@ internal partial class MockDescriptors
             MockArrayObjectData arrayObject = ArrayLayout.Create(fragment);
             arrayObject.MethodTable = methodTable.Address;
             arrayObject.NumComponents = (uint)array.Length;
+
+            if (!isSingleDimensionZeroLowerBound)
+            {
+                int boundsOffset = ArrayLayout.Size;
+                int lowerBoundsOffset = boundsOffset + (array.Rank * sizeof(int));
+                for (int i = 0; i < array.Rank; i++)
+                {
+                    Builder.TargetTestHelpers.Write(
+                        fragment.Data.AsSpan(boundsOffset + (i * sizeof(int)), sizeof(int)),
+                        array.GetLength(i));
+                    Builder.TargetTestHelpers.Write(
+                        fragment.Data.AsSpan(lowerBoundsOffset + (i * sizeof(int)), sizeof(int)),
+                        array.GetLowerBound(i));
+                }
+            }
+
             return fragment.Address;
         }
 
