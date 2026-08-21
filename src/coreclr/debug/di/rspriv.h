@@ -8947,7 +8947,7 @@ public:
     // an array or string
     static
     void GetObjectData(CordbProcess *            pProcess,
-                       void *                    objectAddress,
+                       CORDB_ADDRESS             objectAddress,
                        CorElementType            type,
                        VMPTR_AppDomain           vmAppdomain,
                        DacDbiObjectData * pInfo);
@@ -8961,7 +8961,7 @@ public:
                            DacDbiObjectData * pInfo);
 
     //  get the address of the object referenced
-    void * GetObjectAddress(MemoryRange localValue);
+    CORDB_ADDRESS GetObjectAddress(MemoryRange localValue);
 
     // update type information after initializing -- when we initialize, we may get more exact type
     // information than we previously had

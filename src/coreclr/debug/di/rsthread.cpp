@@ -6749,12 +6749,15 @@ HRESULT CordbNativeFrame::GetLocalRegisterValue(CorDebugRegister reg,
         EnregisteredValueHomeHolder pRemoteReg(new RegValueHome(this, reg));
         EnregisteredValueHomeHolder * pRegHolder = pRemoteReg.GetAddr();
 
+        ULONG32 valueSize = CordbValue::GetSizeForType(pType, kUnboxed);
+        _ASSERTE(valueSize <= REG_SIZE);
+
         ICorDebugValue *pValue;
         CordbValue::CreateValueByType(GetCurrentAppDomain(),
                                       pType,
                                       false,
                                       EMPTY_BUFFER,
-                                      MemoryRange(pLocalValue, REG_SIZE),
+                                      MemoryRange(pLocalValue, valueSize),
                                       pRegHolder,
                                       &pValue);  // throws
 
