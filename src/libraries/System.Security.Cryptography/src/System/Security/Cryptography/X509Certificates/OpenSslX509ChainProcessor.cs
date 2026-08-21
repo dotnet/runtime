@@ -1136,7 +1136,6 @@ namespace System.Security.Cryptography.X509Certificates
             switch (code.UniversalCode)
             {
                 case X509VerifyStatusCodeUniversal.X509_V_OK:
-                case X509VerifyStatusCodeUniversal.X509_V_ERR_CERT_CHAIN_TOO_LONG:
                     return X509ChainStatusFlags.NoError;
 
                 case X509VerifyStatusCodeUniversal.X509_V_ERR_CERT_NOT_YET_VALID:
@@ -1427,9 +1426,12 @@ namespace System.Security.Cryptography.X509Certificates
                 // * For compatibility with Windows / .NET Framework, do not report X509_V_CRL_NOT_YET_VALID.
                 // * X509_V_ERR_DIFFERENT_CRL_SCOPE will result in X509_V_ERR_UNABLE_TO_GET_CRL
                 //   which will trigger OCSP, so is ignorable.
+                // * X509_V_ERR_CERT_CHAIN_TOO_LONG is just the reason the loop stopped, not a
+                //   problem with the cert itself.
                 if (errorCode != X509VerifyStatusCodeUniversal.X509_V_OK &&
                     errorCode != X509VerifyStatusCodeUniversal.X509_V_ERR_CRL_NOT_YET_VALID &&
-                    errorCode != X509VerifyStatusCodeUniversal.X509_V_ERR_DIFFERENT_CRL_SCOPE)
+                    errorCode != X509VerifyStatusCodeUniversal.X509_V_ERR_DIFFERENT_CRL_SCOPE &&
+                    errorCode != X509VerifyStatusCodeUniversal.X509_V_ERR_CERT_CHAIN_TOO_LONG)
                 {
                     if (_errors == null)
                     {
