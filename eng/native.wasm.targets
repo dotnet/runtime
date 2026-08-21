@@ -34,7 +34,20 @@
       <NativeCMakeArg Include="-cmakeargs &quot;-DCMAKE_BUILD_RUNTIME_CONFIGURATION=$(RuntimeConfiguration)&quot;" />
       <NativeCMakeArg Include="-cmakeargs &quot;-DCMAKE_BUILD_RUNTIME_FLAVOR=$(RuntimeFlavor)&quot;" />
   </ItemGroup>
+  <!-- Memory settings baked into the prebuilt browserhost link. These are the single source of
+       truth: they are passed to the browserhost CMake build here, and emitted as the
+       runtime-pack defaults in BrowserWasmApp.CoreCLR.Generated.props (see corehost.proj) so the
+       per-app relink can detect when a project overrides them. -->
+  <PropertyGroup Condition="'$(TargetsBrowser)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">
+    <BrowserHostInitialHeapSize Condition="'$(BrowserHostInitialHeapSize)' == ''">33554432</BrowserHostInitialHeapSize>
+    <BrowserHostMaximumHeapSize Condition="'$(BrowserHostMaximumHeapSize)' == ''">2147483648</BrowserHostMaximumHeapSize>
+    <BrowserHostStackSize Condition="'$(BrowserHostStackSize)' == ''">2MB</BrowserHostStackSize>
+  </PropertyGroup>
+
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">
+      <NativeCMakeArg Include="-cmakeargs &quot;-DCMAKE_BROWSERHOST_INITIAL_MEMORY=$(BrowserHostInitialHeapSize)&quot;" />
+      <NativeCMakeArg Include="-cmakeargs &quot;-DCMAKE_BROWSERHOST_MAXIMUM_MEMORY=$(BrowserHostMaximumHeapSize)&quot;" />
+      <NativeCMakeArg Include="-cmakeargs &quot;-DCMAKE_BROWSERHOST_STACK_SIZE=$(BrowserHostStackSize)&quot;" />
       <NativeCMakeArg Include="-cmakeargs &quot;-DBUILD_LIBS_NATIVE_BROWSER=1&quot;" />
       <NativeCMakeArg Include="-cmakeargs &quot;-DGEN_PINVOKE=1&quot;" />
       <NativeCMakeArg Include="-cmakeargs &quot;-DFEATURE_PERFTRACING_PAL_WS=1&quot;" />
