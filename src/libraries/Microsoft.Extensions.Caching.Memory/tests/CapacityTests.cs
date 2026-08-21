@@ -40,6 +40,82 @@ namespace Microsoft.Extensions.Caching.Memory
             }
         }
 
+        [Theory]
+        [InlineData(null)]
+        [InlineData(10L)]
+        public void SettingSizeAfterEntryIsDisposedThrows(long? sizeLimit)
+        {
+            var cache = new MemoryCache(new MemoryCacheOptions { SizeLimit = sizeLimit });
+
+            ICacheEntry cacheEntry = cache.CreateEntry("key");
+            cacheEntry.Size = 5;
+            cacheEntry.Value = "value";
+            cacheEntry.Dispose();
+
+            Assert.Throws<InvalidOperationException>(() => { cacheEntry.Size = 6; });
+            Assert.Throws<InvalidOperationException>(() => { cacheEntry.SetSize(6); });
+            Assert.Throws<InvalidOperationException>(() => { cacheEntry.Size = null; });
+            Assert.Throws<InvalidOperationException>(() => cacheEntry.SetOptions(new MemoryCacheEntryOptions { Size = 6 }));
+            Assert.Equal(5L, cacheEntry.Size);
+        }
+
+        [Fact]
+        public void SettingSizeAfterEntryIsDisposedValidatesArgumentBeforeState()
+        {
+            var cache = new MemoryCache(new MemoryCacheOptions { SizeLimit = 10 });
+
+            ICacheEntry cacheEntry = cache.CreateEntry("key");
+            cacheEntry.Size = 5;
+            cacheEntry.Value = "value";
+            cacheEntry.Dispose();
+
+            // A negative size is reported as an argument problem whichever route is used, so the property
+            // and the SetSize extension agree rather than differing on which check runs first.
+            Assert.Throws<ArgumentOutOfRangeException>(() => { cacheEntry.Size = -1; });
+            Assert.Throws<ArgumentOutOfRangeException>(() => { cacheEntry.SetSize(-1); });
+        }
+
+        [Fact]
+        public void SettingSizeAfterEntryIsDisposedWithoutValueThrows()
+        {
+            var cache = new MemoryCache(new MemoryCacheOptions { SizeLimit = 10 });
+
+            // Disposing without setting Value never commits the entry, but the size is frozen regardless.
+            ICacheEntry cacheEntry = cache.CreateEntry("key");
+            cacheEntry.Size = 5;
+            cacheEntry.Dispose();
+
+            Assert.Throws<InvalidOperationException>(() => { cacheEntry.Size = 6; });
+            Assert.Equal(0, cache.Count);
+            AssertCacheSize(0, cache);
+        }
+
+        [Fact]
+        public void SettingSizeAfterEntryIsDisposedDoesNotSkewCacheSize()
+        {
+            var cache = new MemoryCache(new MemoryCacheOptions { SizeLimit = 10 });
+
+            ICacheEntry cacheEntry = cache.CreateEntry("key");
+            cacheEntry.Size = 4;
+            cacheEntry.Value = "value";
+            cacheEntry.Dispose();
+
+            AssertCacheSize(4, cache);
+
+            Assert.Throws<InvalidOperationException>(() => { cacheEntry.Size = 2; });
+            AssertCacheSize(4, cache);
+
+            cache.Remove("key");
+            AssertCacheSize(0, cache);
+
+            // The cache is not latched: an entry needing the whole limit is still admitted, which a skewed
+            // total would have refused.
+            cache.Set("key2", "value2", new MemoryCacheEntryOptions { Size = 10 });
+
+            Assert.Equal("value2", cache.Get("key2"));
+            AssertCacheSize(10, cache);
+        }
+
         [Fact]
         public void CacheWithSizeLimitAddingEntryWithoutSizeThrows()
         {
