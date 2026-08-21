@@ -39,6 +39,17 @@ namespace System
         private static bool s_invalidateCachedSettings = true; // Tracks whether we should invalidate the cached settings.
         private static SafeFileHandle? s_terminalHandle; // Tracks the handle used for writing to the terminal.
 
+        /// <summary>Gets the lazily-initialized terminal information for the terminal.</summary>
+        public static TerminalFormatStrings TerminalFormatStringsInstance => s_terminalFormatStringsInstance ?? Initialize();
+
+        private static TerminalFormatStrings? s_terminalFormatStringsInstance;
+
+        private static TerminalFormatStrings Initialize()
+        {
+            TerminalFormatStrings instance = new TerminalFormatStrings(TermInfo.DatabaseFactory.ReadActiveDatabase());
+            return Interlocked.CompareExchange(ref s_terminalFormatStringsInstance, instance, null) ?? instance;
+        }
+
         public static Stream OpenStandardInput()
         {
             return new UnixConsoleStream(OpenStandardInputHandle(), FileAccess.Read,
@@ -200,7 +211,7 @@ namespace System
                 if (Console.IsOutputRedirected)
                     return;
 
-                string? titleFormat = TerminalFormatStrings.Instance.Title;
+                string? titleFormat = TerminalFormatStringsInstance.Title;
                 if (!string.IsNullOrEmpty(titleFormat))
                 {
                     string ansiStr = TermInfo.ParameterizedStrings.Evaluate(titleFormat, value);
@@ -213,7 +224,7 @@ namespace System
         {
             if (!Console.IsOutputRedirected)
             {
-                WriteTerminalAnsiString(TerminalFormatStrings.Instance.Bell, mayChangeCursorPosition: false);
+                WriteTerminalAnsiString(TerminalFormatStringsInstance.Bell, mayChangeCursorPosition: false);
             }
         }
 
@@ -221,7 +232,7 @@ namespace System
         {
             if (!Console.IsOutputRedirected)
             {
-                WriteTerminalAnsiString(TerminalFormatStrings.Instance.Clear);
+                WriteTerminalAnsiString(TerminalFormatStringsInstance.Clear);
             }
         }
 
@@ -244,7 +255,7 @@ namespace System
                     return;
                 }
 
-                string? cursorAddressFormat = TerminalFormatStrings.Instance.CursorAddress;
+                string? cursorAddressFormat = TerminalFormatStringsInstance.CursorAddress;
                 if (!string.IsNullOrEmpty(cursorAddressFormat))
                 {
                     string ansiStr = TermInfo.ParameterizedStrings.Evaluate(cursorAddressFormat, top, left);
@@ -370,8 +381,8 @@ namespace System
                     }
                     else
                     {
-                        s_windowWidth = TerminalFormatStrings.Instance.Columns;
-                        s_windowHeight = TerminalFormatStrings.Instance.Lines;
+                        s_windowWidth = TerminalFormatStringsInstance.Columns;
+                        s_windowHeight = TerminalFormatStringsInstance.Lines;
                     }
                 }
 
@@ -397,8 +408,8 @@ namespace System
                 if (!Console.IsOutputRedirected)
                 {
                     WriteTerminalAnsiString(value ?
-                        TerminalFormatStrings.Instance.CursorVisible :
-                        TerminalFormatStrings.Instance.CursorInvisible);
+                        TerminalFormatStringsInstance.CursorVisible :
+                        TerminalFormatStringsInstance.CursorInvisible);
                 }
             }
         }
@@ -800,10 +811,10 @@ namespace System
             }
 
             // We haven't yet computed a format string.  Compute it, use it, then cache it.
-            string? formatString = foreground ? TerminalFormatStrings.Instance.Foreground : TerminalFormatStrings.Instance.Background;
+            string? formatString = foreground ? TerminalFormatStringsInstance.Foreground : TerminalFormatStringsInstance.Background;
             if (!string.IsNullOrEmpty(formatString))
             {
-                int maxColors = TerminalFormatStrings.Instance.MaxColors; // often 8 or 16; 0 is invalid
+                int maxColors = TerminalFormatStringsInstance.MaxColors; // often 8 or 16; 0 is invalid
                 if (maxColors > 0)
                 {
                     // The values of the ConsoleColor enums unfortunately don't map to the
@@ -847,7 +858,7 @@ namespace System
         {
             if (ConsoleUtils.EmitAnsiColorCodes)
             {
-                WriteTerminalAnsiColorString(TerminalFormatStrings.Instance.Reset);
+                WriteTerminalAnsiColorString(TerminalFormatStringsInstance.Reset);
             }
         }
 
@@ -901,7 +912,7 @@ namespace System
                     // "application mode".  This will both transition it immediately, as well as allow
                     // the native lib later to handle signals that require re-entering the mode.
                     if (s_terminalHandle != null &&
-                        TerminalFormatStrings.Instance.KeypadXmit is string keypadXmit)
+                        TerminalFormatStringsInstance.KeypadXmit is string keypadXmit)
                     {
                         Interop.Sys.SetKeypadXmit(s_terminalHandle, keypadXmit);
                     }

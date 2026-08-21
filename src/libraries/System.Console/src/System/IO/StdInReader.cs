@@ -212,7 +212,7 @@ namespace System.IO
                             if (ConsolePal.TryGetCursorPosition(out int left, out int top, reinitializeForRead: true) &&
                                 left == 0 && top > 0)
                             {
-                                s_clearToEol ??= TerminalFormatStrings.Instance.ClrEol ?? string.Empty;
+                                s_clearToEol ??= ConsolePal.TerminalFormatStringsInstance.ClrEol ?? string.Empty;
 
                                 // Move to end of previous line
                                 ConsolePal.SetTerminalCursorPosition(ConsolePal.WindowWidth - 1, top - 1);
@@ -223,7 +223,7 @@ namespace System.IO
                             {
                                 if (s_moveLeftString == null)
                                 {
-                                    string? moveLeft = TerminalFormatStrings.Instance.CursorLeft;
+                                    string? moveLeft = ConsolePal.TerminalFormatStringsInstance.CursorLeft;
                                     s_moveLeftString = !string.IsNullOrEmpty(moveLeft) ? moveLeft + " " + moveLeft : string.Empty;
                                 }
 
@@ -247,7 +247,7 @@ namespace System.IO
                         _readLineSB.Clear();
                         if (freshKeys)
                         {
-                            ConsolePal.WriteTerminalAnsiString(TerminalFormatStrings.Instance.Clear);
+                            ConsolePal.WriteTerminalAnsiString(ConsolePal.TerminalFormatStringsInstance.Clear);
                         }
                     }
                     else if (keyInfo.KeyChar != '\0')
@@ -365,7 +365,7 @@ namespace System.IO
                     }
                 }
 
-                return KeyParser.Parse(_unprocessedBufferToBeRead, TerminalFormatStrings.Instance, ConsolePal.s_posixDisableValue, ConsolePal.s_veraseCharacter, ref _startIndex, _endIndex);
+                return KeyParser.Parse(_unprocessedBufferToBeRead, ConsolePal.TerminalFormatStringsInstance, ConsolePal.s_posixDisableValue, ConsolePal.s_veraseCharacter, ref _startIndex, _endIndex);
             }
             finally
             {
