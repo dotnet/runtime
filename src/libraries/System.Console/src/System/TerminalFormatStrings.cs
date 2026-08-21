@@ -7,8 +7,13 @@ using System.Diagnostics;
 namespace System;
 
 /// <summary>Provides format strings and related information for use with the current terminal.</summary>
-internal sealed partial class TerminalFormatStrings
+internal sealed class TerminalFormatStrings
 {
+#if !TARGET_WINDOWS
+    /// <summary>The cached instance for the current terminal.</summary>
+    internal static readonly TerminalFormatStrings s_instance = new(TermInfo.DatabaseFactory.ReadActiveDatabase());
+#endif
+
     /// <summary>The format string to use to change the foreground color.</summary>
     public readonly string? Foreground;
     /// <summary>The format string to use to change the background color.</summary>
