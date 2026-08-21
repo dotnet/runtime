@@ -118,7 +118,8 @@ void Phase::PostPhase(PhaseStatus status)
     //
     const bool madeChanges       = (status != PhaseStatus::MODIFIED_NOTHING);
     const bool doPostPhase       = madeChanges;
-    const bool doPostPhaseChecks = (m_compiler->activePhaseChecks != PhaseChecks::CHECK_NONE);
+    const bool doPostPhaseChecks =
+        (m_compiler->activePhaseChecks != PhaseChecks::CHECK_NONE) && (JitConfig.JitEnablePhaseChecks() != 0);
     const bool doPostPhaseDumps  = (m_compiler->activePhaseDumps == PhaseDumps::DUMP_ALL);
 
     const char* const statusMessage = madeChanges ? "" : " [no changes]";
