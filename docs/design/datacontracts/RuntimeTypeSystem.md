@@ -88,7 +88,8 @@ partial interface IRuntimeTypeSystem : IContract
     public virtual bool RequiresAlign8(ITypeHandle typeHandle);
     // Returns the alignment requirement of a type. Mirrors
     // CEEInfo::getClassAlignmentRequirementStatic in src/coreclr/vm/jitinterface.cpp. The result is
-    // unclamped -- callers such as ArgIterator apply their own clamping.
+    // unclamped -- callers such as ArgIterator apply their own clamping. Runtimes that predate the
+    // layout descriptors return the target pointer size.
     public virtual int GetClassAlignmentRequirement(ITypeHandle typeHandle);
     // Returns the cached SystemV AMD64 eightbyte register-passing classification for a value type
     // (used to decide how a struct is passed in registers), or false if the type has no such

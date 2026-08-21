@@ -254,7 +254,7 @@ internal readonly struct CdacTypeHandle : Internal.CallingConvention.ITypeHandle
     // same purpose (src/coreclr/vm/callingconvention.h). Returns the unclamped alignment; the
     // shared ArgIterator applies its own clamp.
     public int GetFieldAlignment()
-        => _typeHandle is null ? _target.PointerSize : Rts.GetClassAlignmentRequirement(_typeHandle);
+        => ExactTypeHandle is null ? _target.PointerSize : Rts.GetClassAlignmentRequirement(ExactTypeHandle);
 
     /// <summary>
     /// Maps cDAC CorElementType (short names like I4) to the shared CorElementType

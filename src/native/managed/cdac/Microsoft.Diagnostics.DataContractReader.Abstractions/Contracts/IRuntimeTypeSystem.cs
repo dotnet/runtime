@@ -195,7 +195,8 @@ public interface IRuntimeTypeSystem : IContract
     // the target pointer size; types with sequential or blittable layout report their managed
     // layout alignment, and targets requiring 64-bit alignment (FEATURE_64BIT_ALIGNMENT: ARM,
     // WASM) report at least 8 for types that need it. The result is unclamped -- callers such as
-    // ArgIterator apply their own clamping.
+    // ArgIterator apply their own clamping. Runtimes that predate the layout descriptors return
+    // the target pointer size.
     int GetClassAlignmentRequirement(ITypeHandle typeHandle) => throw new NotImplementedException();
     // Returns the cached SystemV AMD64 eightbyte register-passing classification for a value type
     // (used to decide how a struct is passed in registers), or false if the type has no such

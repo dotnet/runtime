@@ -1494,6 +1494,40 @@ public class MethodTableTests
         Assert.Equal(target.PointerSize, contract.GetClassAlignmentRequirement(handle));
     }
 
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetClassAlignmentRequirement_PreLayoutDescriptor_ReturnsPointerSize(MockTarget.Architecture arch)
+    {
+        TestPlaceholderTarget.Builder targetBuilder = new(arch);
+        MockRTS rtsBuilder = new(targetBuilder.MemoryBuilder);
+        MockEEClass eeClass = rtsBuilder.AddEEClass("PreLayoutDescriptor");
+        MockMethodTable methodTable = rtsBuilder.AddMethodTable("PreLayoutDescriptor");
+        methodTable.BaseSize = rtsBuilder.Builder.TargetTestHelpers.ObjectBaseSize;
+        methodTable.NumVirtuals = 3;
+        methodTable.ParentMethodTable = rtsBuilder.SystemObjectMethodTable.Address;
+        methodTable.EEClassOrCanonMT = eeClass.Address;
+        eeClass.MethodTable = methodTable.Address;
+
+        Dictionary<DataType, Target.TypeInfo> types = CreateContractTypes(rtsBuilder);
+        Target.TypeInfo eeClassType = types[DataType.EEClass];
+        types[DataType.EEClass] = eeClassType with
+        {
+            Fields = eeClassType.Fields
+                .Where(field => field.Key != nameof(Data.EEClass.VMFlags))
+                .ToDictionary(field => field.Key, field => field.Value),
+        };
+
+        TestPlaceholderTarget target = targetBuilder
+            .AddTypes(types)
+            .AddGlobals(CreateContractGlobals(rtsBuilder))
+            .AddContract<IRuntimeTypeSystem>(version: "c1")
+            .Build();
+        IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
+        ITypeHandle handle = contract.GetTypeHandle(methodTable.Address);
+
+        Assert.Equal(target.PointerSize, contract.GetClassAlignmentRequirement(handle));
+    }
+
     // Sequential and blittable layouts report the managed layout alignment. 16 is the value the
     // runtime assigns to v128 SIMD types and Int128/UInt128 on WASM.
     [Theory]
