@@ -20,9 +20,9 @@ namespace System.Net.ServerSentEvents
         /// <summary>Gets the parser to use to transform each payload of bytes into a data element.</summary>
         public SseItemParser<T> ItemParser { get; }
 
-        /// <summary>Gets or sets the maximum buffer size, or -1 to use the default limit.</summary>
+        /// <summary>Gets or sets the maximum buffer size requested from the underlying allocator, or -1 to use the default limit</summary>
         /// <exception cref="ArgumentOutOfRangeException">The value set is less than -1.</exception>
-        /// <remarks>Values below an internal minimum are treated as that minimum, as buffers smaller than that don't meaningfully reduce memory usage.</remarks>
+        /// <remarks>Values below an internal minimum are treated as that minimum. If the underlying memory allocator provides more memory than requested, the parser will use all of it.</remarks>
         public int MaxBufferSize
         {
             get => _maxBufferSize;
