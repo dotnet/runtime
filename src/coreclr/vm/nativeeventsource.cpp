@@ -130,7 +130,7 @@ extern "C" void QCALLTYPE NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdju
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE NativeRuntimeEventSource_LogThreadPoolIOEnqueue(_In_z_ void* nativeOverlapped, _In_z_ void* overlapped, _In_z_ bool multiDequeues, _In_z_ short ClrInstanceID)
+extern "C" void QCALLTYPE NativeRuntimeEventSource_LogThreadPoolIOEnqueue(_In_z_ void* nativeOverlapped, _In_z_ void* overlapped, _In_z_ BOOL multiDequeues, _In_z_ short ClrInstanceID)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;

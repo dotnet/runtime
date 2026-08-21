@@ -67,9 +67,9 @@
       <Uri>https://github.com/dotnet/dotnet</Uri>
       <Sha>7cdb217445905f3342bbb0266a4497b9a014389a</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Helix.JobMonitor" Version="11.0.0-beta.26411.119">
-      <Uri>https://github.com/dotnet/dotnet</Uri>
-      <Sha>7cdb217445905f3342bbb0266a4497b9a014389a</Sha>
+    <Dependency Name="Microsoft.DotNet.Helix.JobMonitor" Version="11.0.0-beta.26421.1">
+      <Uri>https://github.com/dotnet/arcade</Uri>
+      <Sha>1353cab671305cff0ae5afc0d96ff3d03f239e0c</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.GenAPI" Version="11.0.0-beta.26411.119">
       <Uri>https://github.com/dotnet/dotnet</Uri>
@@ -78,10 +78,6 @@
     <Dependency Name="Microsoft.DotNet.GenFacades" Version="11.0.0-beta.26411.119">
       <Uri>https://github.com/dotnet/dotnet</Uri>
       <Sha>7cdb217445905f3342bbb0266a4497b9a014389a</Sha>
-    </Dependency>
-    <Dependency Name="Microsoft.DotNet.XUnitAssert" Version="3.2.2-beta.26257.113">
-      <Uri>https://github.com/dotnet/dotnet</Uri>
-      <Sha>0eae08ed2f094f44e0151e4815e7cdd1a334fcdf</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.XUnitExtensions" Version="11.0.0-beta.26411.119">
       <Uri>https://github.com/dotnet/dotnet</Uri>
@@ -322,10 +318,6 @@
     <Dependency Name="optimization.PGO.CoreCLR" Version="1.0.0-prerelease.26407.1">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
       <Sha>e960b77a63b94a4b7c1f077c2d325d003a461d2d</Sha>
-    </Dependency>
-    <Dependency Name="Microsoft.DotNet.HotReload.Utils.Generator.BuildTool" Version="11.0.0-alpha.0.26180.1">
-      <Uri>https://github.com/dotnet/hotreload-utils</Uri>
-      <Sha>28af8e7016d4b1ad30ed932f15bd56c033402457</Sha>
     </Dependency>
     <Dependency Name="System.Runtime.Numerics.TestData" Version="11.0.0-beta.26403.1">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
