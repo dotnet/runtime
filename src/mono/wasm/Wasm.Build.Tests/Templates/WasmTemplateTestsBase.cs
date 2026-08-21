@@ -163,7 +163,6 @@ public class WasmTemplateTestsBase : BuildTestBase
         extraProperties +=
         """
             <UseMonoRuntime>false</UseMonoRuntime>
-            <UsingBrowserRuntimeWorkload>false</UsingBrowserRuntimeWorkload>
         """;
         extraItems +=
         $$"""

@@ -2015,7 +2015,6 @@ static bool IsSimdIntrinsicType(MethodTable* pMT)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     }
     CONTRACTL_END;
 
