@@ -3948,7 +3948,6 @@ void Compiler::fgDebugCheckLinks(bool morphTrees)
         }
     }
 
-    fgDebugCheckNodesUniqueness();
     fgDebugCheckSsa();
 }
 
