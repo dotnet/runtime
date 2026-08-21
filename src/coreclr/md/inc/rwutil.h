@@ -335,19 +335,19 @@ private:
 };
 
 
-#define LOCKREADIFFAILRET()         CMDReadWriteLock lockHolder(m_pReadWriteLock COMMA_INDEBUG(m_pStgdb != NULL ? &m_pStgdb->m_MiniMd : nullptr));\
+#define LOCKREADIFFAILRET()         CMDReadWriteLock lockHolder(m_pReadWriteLock COMMA_INDEBUG(m_pStgdb != NULL ? &m_pStgdb->m_MiniMd : NULL));\
                                     IfFailRet(lockHolder.LockRead());
-#define LOCKWRITEIFFAILRET()        CMDReadWriteLock lockHolder(m_pReadWriteLock COMMA_INDEBUG(m_pStgdb != NULL ? &m_pStgdb->m_MiniMd : nullptr));\
+#define LOCKWRITEIFFAILRET()        CMDReadWriteLock lockHolder(m_pReadWriteLock COMMA_INDEBUG(m_pStgdb != NULL ? &m_pStgdb->m_MiniMd : NULL));\
                                     IfFailRet(lockHolder.LockWrite());
 
-#define LOCKREADNORET()             CMDReadWriteLock lockHolder(m_pReadWriteLock COMMA_INDEBUG(m_pStgdb != NULL ? &m_pStgdb->m_MiniMd : nullptr));\
+#define LOCKREADNORET()             CMDReadWriteLock lockHolder(m_pReadWriteLock COMMA_INDEBUG(m_pStgdb != NULL ? &m_pStgdb->m_MiniMd : NULL));\
                                     hr = lockHolder.LockRead();
-#define LOCKWRITENORET()            CMDReadWriteLock lockHolder(m_pReadWriteLock COMMA_INDEBUG(m_pStgdb != NULL ? &m_pStgdb->m_MiniMd : nullptr));\
+#define LOCKWRITENORET()            CMDReadWriteLock lockHolder(m_pReadWriteLock COMMA_INDEBUG(m_pStgdb != NULL ? &m_pStgdb->m_MiniMd : NULL));\
                                     hr = lockHolder.LockWrite();
 
-#define LOCKREAD()                  CMDReadWriteLock lockHolder(m_pReadWriteLock COMMA_INDEBUG(m_pStgdb != NULL ? &m_pStgdb->m_MiniMd : nullptr));\
+#define LOCKREAD()                  CMDReadWriteLock lockHolder(m_pReadWriteLock COMMA_INDEBUG(m_pStgdb != NULL ? &m_pStgdb->m_MiniMd : NULL));\
                                     IfFailGo(lockHolder.LockRead());
-#define LOCKWRITE()                 CMDReadWriteLock lockHolder(m_pReadWriteLock COMMA_INDEBUG(m_pStgdb != NULL ? &m_pStgdb->m_MiniMd : nullptr));\
+#define LOCKWRITE()                 CMDReadWriteLock lockHolder(m_pReadWriteLock COMMA_INDEBUG(m_pStgdb != NULL ? &m_pStgdb->m_MiniMd : NULL));\
                                     IfFailGo(lockHolder.LockWrite());
 
 #define UNLOCKWRITE()               lockHolder.UnlockWrite();
