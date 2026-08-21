@@ -247,9 +247,11 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
       <!-- Everything the test build staged next to the test: its own assembly, its project
            references, and any assembly it launches as a child process. -->
       <_WasmCorerunTestAssembly Include="$(OutDir)*.dll" />
-      <!-- Drop test outputs that merely shadow a framework assembly: scanning both copies would
-           emit duplicate table entries. The Distinct() already applied to the generator's input
-           cannot express this, because it compares whole item identities and the two copies of an
+      <!-- Drop test outputs that merely shadow a framework assembly. Scanning both copies makes
+           the generator see every [UnmanagedCallersOnly] method twice, which it rejects outright
+           with "Two callbacks with the same symbol", so this is a build break rather than a
+           cosmetic duplicate. The Distinct() already applied to the generator's input cannot
+           express this, because it compares whole item identities and the two copies of an
            assembly differ by directory. -->
       <_WasmCorerunTestAssembly Remove="@(_WasmCorerunFrameworkAssembly->'$(OutDir)%(FileName)%(Extension)')" />
 
