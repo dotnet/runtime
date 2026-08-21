@@ -14,8 +14,6 @@ using Microsoft.DotNet.XUnitExtensions;
 using Test.Cryptography;
 using Xunit;
 
-using RSATestData = System.Security.Cryptography.Rsa.Tests.TestData;
-
 namespace System.Security.Cryptography.X509Certificates.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support X.509 certificates")]
@@ -1218,6 +1216,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 }
 
                 chainHolder.Dispose();
+                key.Dispose();
             }
         }
 

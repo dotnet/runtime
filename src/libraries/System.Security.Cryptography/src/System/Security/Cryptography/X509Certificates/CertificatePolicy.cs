@@ -658,7 +658,7 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 // In Debug, complain if we see 128 or higher.
                 //
-                // In Release, we'll clamp to 128, so any platform
+                // In Release, we'll clamp to 128 items, so any platform
                 // with a ridiculously long chain will report any errors
                 // at 128 or above on all of them.
                 Debug.Assert(index < 128);
