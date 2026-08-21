@@ -197,6 +197,7 @@
     <Compile Include="System\ConsolePal.Unix.cs" />
     <Compile Include="System\ConsolePal.Unix.ConsoleStream.cs" />
     <Compile Include="System\TerminalFormatStrings.cs" />
+    <Compile Include="System\TerminalFormatStrings.Unix.cs" />
     <Compile Include="$(CommonPath)System\Console\ConsoleUtils.cs"
              Link="Common\System\Console\ConsoleUtils.cs" />
     <Compile Include="$(CommonPath)System\NullableBool.cs"

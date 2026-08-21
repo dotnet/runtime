@@ -7,7 +7,7 @@ using System.Diagnostics;
 namespace System;
 
 /// <summary>Provides format strings and related information for use with the current terminal.</summary>
-internal sealed class TerminalFormatStrings
+internal sealed partial class TerminalFormatStrings
 {
     /// <summary>The format string to use to change the foreground color.</summary>
     public readonly string? Foreground;

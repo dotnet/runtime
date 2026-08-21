@@ -39,9 +39,8 @@ namespace System
         private static int s_invalidateCachedSettings = 1; // Tracks whether we should invalidate the cached settings.
         private static SafeFileHandle? s_terminalHandle; // Tracks the handle used for writing to the terminal.
 
-        /// <summary>Gets the lazily-initialized terminal information for the terminal.</summary>
-        public static TerminalFormatStrings TerminalFormatStringsInstance { get { return s_terminalFormatStringsInstance.Value; } }
-        private static readonly Lazy<TerminalFormatStrings> s_terminalFormatStringsInstance = new(() => new TerminalFormatStrings(TermInfo.DatabaseFactory.ReadActiveDatabase()));
+        /// <summary>Gets the terminal information for the terminal.</summary>
+        public static TerminalFormatStrings TerminalFormatStringsInstance => TerminalFormatStrings.Instance;
 
         public static Stream OpenStandardInput()
         {
