@@ -921,10 +921,10 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                     else
                     {
                         // This is a day number
-                        if (raw.numCount == DateTimeRawInfo.MaxBufferLength || tokenValue == -1)
+                        if (raw.numCount == DateTimeRawInfo.MaxBufferLength)
                         {
                             result.SetBadDateTimeFailure();
-                            LexTraceExit("0105 (raw.numCount == DateTimeRawInfo.MaxBufferLength)", dps);
+                            LexTraceExit("0105 (Not enough space in the raw info buffer when parsing Hebrew numbers)", dps);
                             return false;
                         }
 
