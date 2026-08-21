@@ -2148,7 +2148,10 @@ void GenTree::BashToConst(T value, var_types type /* = TYP_UNDEF */)
             assert(varTypeIsIntegral(type) || varTypeIsGC(type));
             if (genTypeSize(type) <= genTypeSize(TYP_INT))
             {
-                assert(FitsIn<int32_t>(value));
+                // For unsigned integral types, the value may use the full unsigned
+                // 32-bit range (e.g. 0xFFFFFFFF for TYP_UINT). For signed types and
+                // GC types (TYP_REF, TYP_BYREF), use the signed 32-bit range.
+                assert(FitsIn<int32_t>(value) || (varTypeIsUnsigned(type) && FitsIn<uint32_t>(value)));
             }
 
             AsIntCon()->SetIconValue(static_cast<ssize_t>(value));
