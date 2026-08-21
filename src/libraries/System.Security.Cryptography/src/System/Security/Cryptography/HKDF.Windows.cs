@@ -132,11 +132,11 @@ namespace System.Security.Cryptography
                         dwFlags: 0);
                 }
 
-                if (status != NTSTATUS.STATUS_SUCCESS ||
-                    bytesWritten != keyLengthsSize ||
-                    keyLengths.dwMinLength > keyLengths.dwMaxLength)
+                if (status != NTSTATUS.STATUS_SUCCESS || bytesWritten != keyLengthsSize)
                 {
-                    return -1;
+                    // We couldn't figure out the length but the algorithm handle opened successfully. Treat the
+                    // max length as unknown and let the actual HKDF operation handle it.
+                    return int.MaxValue;
                 }
 
                 return (int)(keyLengths.dwMaxLength / 8);
