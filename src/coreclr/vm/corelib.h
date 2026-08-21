@@ -250,8 +250,13 @@ DEFINE_METHOD(DELEGATE,       CTOR_COLLECTIBLE_CLOSED_STATIC,     CtorCollectibl
 DEFINE_METHOD(DELEGATE,       CTOR_COLLECTIBLE_OPEN,              CtorCollectibleOpen,                   NoSig)
 DEFINE_METHOD(DELEGATE,       CTOR_COLLECTIBLE_VIRTUAL_DISPATCH,  CtorCollectibleVirtualDispatch,        NoSig)
 
+DEFINE_CLASS(DELEGATEWRAPPER, System,             Delegate+Wrapper)
+DEFINE_FIELD(DELEGATEWRAPPER, VALUE,              Value)
+
 DEFINE_CLASS(INT128,               System,                 Int128)
 DEFINE_CLASS(UINT128,              System,                 UInt128)
+
+DEFINE_CLASS(DECIMAL128,           Numerics,               Decimal128)
 
 DEFINE_CLASS(MATH,                  System,                 Math)
 DEFINE_METHOD(MATH,                 CONVERT_TO_INT32_CHECKED,    ConvertToInt32Checked,    NoSig)
@@ -720,11 +725,17 @@ DEFINE_METHOD(ASYNC_HELPERS,      TRANSPARENT_AWAIT_TASK,                Transpa
 DEFINE_METHOD(ASYNC_HELPERS,      TRANSPARENT_AWAIT_VALUETASK,           TransparentAwait, SM_ValueTask_RetVoid)
 DEFINE_METHOD(ASYNC_HELPERS,      TRANSPARENT_AWAIT_TASK_OF_T,           TransparentAwait, GM_TaskOfT_RetT)
 DEFINE_METHOD(ASYNC_HELPERS,      TRANSPARENT_AWAIT_VALUETASK_OF_T,      TransparentAwait, GM_ValueTaskOfT_RetT)
+DEFINE_METHOD(ASYNC_HELPERS,      AWAIT_AWAITER_IN_CONTINUATION,          AwaitAwaiterInContinuation, NoSig)
+DEFINE_METHOD(ASYNC_HELPERS,      UNSAFE_AWAIT_AWAITER_IN_CONTINUATION,   UnsafeAwaitAwaiterInContinuation, NoSig)
 DEFINE_METHOD(ASYNC_HELPERS,      CAPTURE_EXECUTION_CONTEXT, CaptureExecutionContext, NoSig)
 DEFINE_METHOD(ASYNC_HELPERS,      CAPTURE_CONTINUATION_CONTEXT, CaptureContinuationContext, NoSig)
 DEFINE_METHOD(ASYNC_HELPERS,      CAPTURE_CONTEXTS,          CaptureContexts, NoSig)
 DEFINE_METHOD(ASYNC_HELPERS,      RESTORE_CONTEXTS,          RestoreContexts, NoSig)
 DEFINE_METHOD(ASYNC_HELPERS,      RESTORE_CONTEXTS_ON_SUSPENSION, RestoreContextsOnSuspension, NoSig)
+DEFINE_METHOD(ASYNC_HELPERS,      RESTORE_INLINED_FRAME_CONTEXTS, RestoreInlinedFrameContexts, NoSig)
+DEFINE_METHOD(ASYNC_HELPERS,      CAPTURE_INLINED_FRAME_TRANSITION_WITH_CONTINUATION_CONTEXT, CaptureInlinedFrameTransitionWithContinuationContext, NoSig)
+DEFINE_METHOD(ASYNC_HELPERS,      CAPTURE_INLINED_FRAME_TRANSITION_NO_CONTINUATION_CONTEXT, CaptureInlinedFrameTransitionNoContinuationContext, NoSig)
+DEFINE_METHOD(ASYNC_HELPERS,      CAPTURE_INLINED_FRAME_TRANSITION_CONTINUE_ON_THREAD_POOL, CaptureInlinedFrameTransitionContinueOnThreadPool, NoSig)
 DEFINE_METHOD(ASYNC_HELPERS,      FINISH_SUSPENSION_NO_CONTINUATION_CONTEXT, FinishSuspensionNoContinuationContext, NoSig)
 DEFINE_METHOD(ASYNC_HELPERS,      FINISH_SUSPENSION_WITH_CONTINUATION_CONTEXT, FinishSuspensionWithContinuationContext, NoSig)
 DEFINE_METHOD(ASYNC_HELPERS,      ASYNC_CALL_CONTINUATION,   AsyncCallContinuation, NoSig)
@@ -1052,7 +1063,6 @@ DEFINE_METHOD(BUFFER,               MEMCPY,                 Memcpy,             
 DEFINE_METHOD(BUFFER,               MEMCOPYGC,              BulkMoveWithWriteBarrier, SM_RefByte_RefByte_UIntPtr_RetVoid)
 
 DEFINE_CLASS(STUBHELPERS,           StubHelpers,            StubHelpers)
-DEFINE_METHOD(STUBHELPERS,          GET_DELEGATE_TARGET,    GetDelegateTarget,          SM_Delegate_RetIntPtr)
 #ifdef FEATURE_COMINTEROP
 DEFINE_METHOD(STUBHELPERS,          GET_COM_HR_EXCEPTION_OBJECT,              GetCOMHRExceptionObject,            SM_Int_IntPtr_IntPtr_RetException)
 DEFINE_METHOD(STUBHELPERS,          GET_COM_IP_FROM_RCW,                      GetCOMIPFromRCW,                    SM_Obj_IntPtr_RefIntPtr_RefBool_RetIntPtr)
@@ -1438,13 +1448,8 @@ DEFINE_FIELD_U(_generation, GCMemoryInfoData, generation)
 DEFINE_FIELD_U(_pauseTimePercentage, GCMemoryInfoData, pauseTimePercent)
 DEFINE_FIELD_U(_compacted, GCMemoryInfoData, isCompaction)
 DEFINE_FIELD_U(_concurrent, GCMemoryInfoData, isConcurrent)
-DEFINE_FIELD_U(_pauseDuration0, GCMemoryInfoData, pauseDuration0)
-DEFINE_FIELD_U(_pauseDuration1, GCMemoryInfoData, pauseDuration1)
-DEFINE_FIELD_U(_generationInfo0, GCMemoryInfoData, generationInfo0)
-DEFINE_FIELD_U(_generationInfo1, GCMemoryInfoData, generationInfo1)
-DEFINE_FIELD_U(_generationInfo2, GCMemoryInfoData, generationInfo2)
-DEFINE_FIELD_U(_generationInfo3, GCMemoryInfoData, generationInfo3)
-DEFINE_FIELD_U(_generationInfo4, GCMemoryInfoData, generationInfo4)
+DEFINE_FIELD_U(_pauseDurations, GCMemoryInfoData, pauseDurations)
+DEFINE_FIELD_U(_generationInfo, GCMemoryInfoData, generationInfo)
 
 #undef DEFINE_CLASS
 #undef DEFINE_METHOD

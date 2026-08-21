@@ -254,7 +254,7 @@ namespace System
     {
         internal const int DecimalPrecision = 29; // Decimal.DecCalc also uses this value
 
-        /// <summary>The non-inclusive upper bound of <see cref="s_smallNumberCache"/>.</summary>
+        /// <summary>The non-inclusive upper bound of <see cref="SmallNumberCache.Value"/>.</summary>
         /// <remarks>
         /// This is a semi-arbitrary bound. For mono, which is often used for more size-constrained workloads,
         /// we keep the size really small, supporting only single digit values.  For coreclr, we use a larger
@@ -269,39 +269,46 @@ namespace System
 #else
             300;
 #endif
-        /// <summary>Lazily-populated cache of strings for uint values in the range [0, <see cref="SmallNumberCacheLength"/>).</summary>
-        private static readonly string?[] s_smallNumberCache = new string[SmallNumberCacheLength];
+        private static class SmallNumberCache
+        {
+            /// <summary>Lazily-populated cache of strings for uint values in the range [0, <see cref="SmallNumberCacheLength"/>).</summary>
+            internal static readonly string?[] Value = new string[SmallNumberCacheLength];
+        }
 
         // Optimizations using "TwoDigits" inspired by:
         // https://engineering.fb.com/2013/03/15/developer-tools/three-optimization-tips-for-c/
 #if MONO
         // Workaround for a performance regression on Mono: https://github.com/dotnet/runtime/issues/111932
-        private static readonly byte[] TwoDigitsCharsAsBytes =
-            MemoryMarshal.AsBytes<char>("00010203040506070809" +
-                                        "10111213141516171819" +
-                                        "20212223242526272829" +
-                                        "30313233343536373839" +
-                                        "40414243444546474849" +
-                                        "50515253545556575859" +
-                                        "60616263646566676869" +
-                                        "70717273747576777879" +
-                                        "80818283848586878889" +
-                                        "90919293949596979899").ToArray();
-        private static readonly byte[] TwoDigitsBytes =
-                                       ("00010203040506070809"u8 +
-                                        "10111213141516171819"u8 +
-                                        "20212223242526272829"u8 +
-                                        "30313233343536373839"u8 +
-                                        "40414243444546474849"u8 +
-                                        "50515253545556575859"u8 +
-                                        "60616263646566676869"u8 +
-                                        "70717273747576777879"u8 +
-                                        "80818283848586878889"u8 +
-                                        "90919293949596979899"u8).ToArray();
+        private static class TwoDigitsCache
+        {
+            internal static readonly byte[] CharsAsBytes =
+                MemoryMarshal.AsBytes<char>("00010203040506070809" +
+                                            "10111213141516171819" +
+                                            "20212223242526272829" +
+                                            "30313233343536373839" +
+                                            "40414243444546474849" +
+                                            "50515253545556575859" +
+                                            "60616263646566676869" +
+                                            "70717273747576777879" +
+                                            "80818283848586878889" +
+                                            "90919293949596979899").ToArray();
+
+            internal static readonly byte[] Bytes =
+                                           ("00010203040506070809"u8 +
+                                            "10111213141516171819"u8 +
+                                            "20212223242526272829"u8 +
+                                            "30313233343536373839"u8 +
+                                            "40414243444546474849"u8 +
+                                            "50515253545556575859"u8 +
+                                            "60616263646566676869"u8 +
+                                            "70717273747576777879"u8 +
+                                            "80818283848586878889"u8 +
+                                            "90919293949596979899"u8).ToArray();
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static ref byte GetTwoDigitsBytesRef(bool useChars) =>
-            ref MemoryMarshal.GetArrayDataReference(useChars ? TwoDigitsCharsAsBytes : TwoDigitsBytes);
+            ref MemoryMarshal.GetArrayDataReference(useChars ? TwoDigitsCache.CharsAsBytes : TwoDigitsCache.Bytes);
 #else
         private static ReadOnlySpan<byte> TwoDigitsCharsAsBytes =>
             MemoryMarshal.AsBytes<char>("00010203040506070809" +
@@ -376,7 +383,7 @@ namespace System
             char fmt = ParseFormatSpecifier(format, out int digits);
 
             byte* pDigits = stackalloc byte[TDecimal.BufferLength];
-            NumberBuffer number = new NumberBuffer(NumberBufferKind.Decimal, pDigits, TDecimal.BufferLength);
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.DecimalIeee754, pDigits, TDecimal.BufferLength);
 
             DecimalIeee754ToNumber<TDecimal, TValue>(value, ref number);
 
@@ -384,7 +391,14 @@ namespace System
             {
                 if (fmt is 'G' or 'R' or 'g' or 'r')
                 {
-                    FormatGeneralAndRoundTripDecimalIeee754(ref vlb, ref number, fmt, digits, info);
+                    if (fmt is 'R' or 'r')
+                    {
+                        // The roundtrip specifier ignores any precision specifier and is otherwise identical to the general specifier
+                        fmt = (char)(fmt - ('R' - 'G'));
+                        digits = -1;
+                    }
+
+                    FormatGeneralAndRoundTripDecimalIeee754(ref vlb, ref number, (char)(fmt - ('G' - 'E')), digits, info);
                 }
                 else
                 {
@@ -418,14 +432,94 @@ namespace System
             return success;
         }
 
-        private static void FormatGeneralAndRoundTripDecimalIeee754<TChar>(ref ValueListBuilder<TChar> vlb, ref NumberBuffer number, char fmt, int digits, NumberFormatInfo info)
+        /// <summary>
+        /// Formats <paramref name="number"/> using the general format, preserving the quantum exponent so that
+        /// reparsing the result recovers the same member of the cohort.
+        /// </summary>
+        /// <remarks>
+        /// Fixed-point notation can only spell a quantum exponent that is at or below zero, since a positive
+        /// quantum would require trailing zeros that reparse as a larger coefficient. Scientific notation is
+        /// therefore required whenever the quantum exponent is positive, and is otherwise picked using the same
+        /// compactness heuristic as the binary floating-point types.
+        /// </remarks>
+        private static unsafe void FormatGeneralAndRoundTripDecimalIeee754<TChar>(ref ValueListBuilder<TChar> vlb, ref NumberBuffer number, char expChar, int nMaxDigits, NumberFormatInfo info)
             where TChar : unmanaged, IUtfChar<TChar>
         {
+            Debug.Assert(number.Kind == NumberBufferKind.DecimalIeee754);
+
+            bool rounded = (nMaxDigits > 0) && (nMaxDigits < number.DigitsCount);
+
+            if (rounded)
+            {
+                RoundNumber(ref number, nMaxDigits, isCorrectlyRounded: false);
+            }
+
             if (number.IsNegative)
             {
                 vlb.Append(info.NegativeSignTChar<TChar>());
             }
-            FormatGeneral(ref vlb, ref number, digits, info, (char)(fmt - ('G' - 'E')), suppressScientific: true);
+
+            byte* dig = number.DigitsPtr;
+            int digitCount = number.DigitsCount;
+
+            // `Scale` is the coefficient digit count plus the quantum exponent, so `Scale` exceeding the number
+            // of significant digits means the quantum exponent is positive. Rounding drops trailing coefficient
+            // digits without touching `Scale`, so the requested precision is what remains significant in that
+            // case; the dropped digits are recovered as trailing zeros below.
+            int significantDigits = rounded ? nMaxDigits : digitCount;
+
+            // A zero coefficient has no stored digits but still participates as the single digit `0` when
+            // computing the adjusted exponent.
+            int adjustedExponent = (digitCount != 0) ? (number.Scale - 1) : number.Scale;
+
+            if ((number.Scale > significantDigits) || (adjustedExponent < -4))
+            {
+                vlb.Append(TChar.CastFrom((digitCount != 0) ? (char)dig[0] : '0'));
+
+                if (digitCount > 1)
+                {
+                    vlb.Append(info.NumberDecimalSeparatorTChar<TChar>());
+
+                    for (int i = 1; i < digitCount; i++)
+                    {
+                        vlb.Append(TChar.CastFrom((char)dig[i]));
+                    }
+                }
+
+                FormatExponent(ref vlb, info, adjustedExponent, expChar, minDigits: 2, positiveSign: true);
+                return;
+            }
+
+            int integerDigits = number.Scale;
+
+            if (integerDigits > 0)
+            {
+                for (int i = 0; i < integerDigits; i++)
+                {
+                    // Rounding can leave fewer digits than the scale requires, in which case the remaining
+                    // integer positions are trailing zeros of the rounded coefficient.
+                    vlb.Append(TChar.CastFrom((i < digitCount) ? (char)dig[i] : '0'));
+                }
+            }
+            else
+            {
+                vlb.Append(TChar.CastFrom('0'));
+            }
+
+            if (integerDigits < digitCount)
+            {
+                vlb.Append(info.NumberDecimalSeparatorTChar<TChar>());
+
+                for (int i = integerDigits; i < 0; i++)
+                {
+                    vlb.Append(TChar.CastFrom('0'));
+                }
+
+                for (int i = Math.Max(integerDigits, 0); i < digitCount; i++)
+                {
+                    vlb.Append(TChar.CastFrom((char)dig[i]));
+                }
+            }
         }
 
         public static unsafe string FormatDecimal(decimal value, ReadOnlySpan<char> format, NumberFormatInfo info)
@@ -491,7 +585,9 @@ namespace System
 
             if (TValue.IsZero(unpackDecimal.Significand))
             {
-                number.Scale = unpackDecimal.UnbiasedExponent < 0 ? unpackDecimal.UnbiasedExponent : 0;
+                // A zero coefficient has no stored digits, so `Scale` carries the quantum exponent directly.
+                // Every other format specifier calls `RoundNumber` (or resets `Scale` itself) before reading it.
+                number.Scale = unpackDecimal.UnbiasedExponent;
                 number.DigitsCount = 0;
                 number.Digits[0] = (byte)'\0';
                 number.CheckConsistency();
@@ -2074,11 +2170,11 @@ namespace System
         internal static string UInt32ToDecStrForKnownSmallNumber(uint value)
         {
             Debug.Assert(value < SmallNumberCacheLength);
-            return s_smallNumberCache[value] ?? CreateAndCacheString(value);
+            return SmallNumberCache.Value[value] ?? CreateAndCacheString(value);
 
             [MethodImpl(MethodImplOptions.NoInlining)] // keep rare usage out of fast path
             static string CreateAndCacheString(uint value) =>
-                s_smallNumberCache[value] = UInt32ToDecStr_NoSmallNumberCheck(value);
+                SmallNumberCache.Value[value] = UInt32ToDecStr_NoSmallNumberCheck(value);
         }
 
         private static unsafe string UInt32ToDecStr_NoSmallNumberCheck(uint value)

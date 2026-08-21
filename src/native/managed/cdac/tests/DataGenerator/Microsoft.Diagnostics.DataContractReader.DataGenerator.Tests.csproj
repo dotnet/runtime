@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <TargetFramework>$(CDacTfm)</TargetFramework>
+    <RollForward Condition="'$(CDacTfm)' != '$(NetCoreAppToolCurrent)'">LatestMajor</RollForward>
     <Nullable>enable</Nullable>
     <IsTestProject>true</IsTestProject>
     <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>

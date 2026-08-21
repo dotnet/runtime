@@ -1178,14 +1178,6 @@ void Compiler::fgCompactBlock(BasicBlock* block)
     }
 
     assert(block->KindIs(target->GetKind()));
-
-#if DEBUG
-    if (JitConfig.JitSlowDebugChecksEnabled() != 0)
-    {
-        // Make sure that the predecessor lists are accurate
-        fgDebugCheckBBlist();
-    }
-#endif // DEBUG
 }
 
 //-------------------------------------------------------------
@@ -4563,6 +4555,15 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPh
 
                     bool optimizeJump = isJumpAroundEmpty || isJumpToJoinFree;
 
+#ifdef TARGET_WASM
+                    // Don't reverse a wasm try/catch header's GT_WASM_JEXCEPT.
+                    //
+                    if (block->lastNode()->OperIs(GT_WASM_JEXCEPT))
+                    {
+                        optimizeJump = false;
+                    }
+#endif // TARGET_WASM
+
                     // We do not optimize jumps between two different try regions.
                     // However jumping to a block that is not in any try region is OK
                     //
@@ -5017,6 +5018,28 @@ unsigned Compiler::fgGetCodeEstimate(BasicBlock* block)
 
 #ifdef FEATURE_JIT_METHOD_PERF
 
+class NodeCountVisitor final : public GenTreeVisitor<NodeCountVisitor>
+{
+public:
+    enum
+    {
+        DoPreOrder = true,
+    };
+
+    unsigned m_nodeCount = 0;
+
+    NodeCountVisitor(Compiler* compiler)
+        : GenTreeVisitor<NodeCountVisitor>(compiler)
+    {
+    }
+
+    fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+    {
+        m_nodeCount++;
+        return fgWalkResult::WALK_CONTINUE;
+    }
+};
+
 //------------------------------------------------------------------------
 // fgMeasureIR: count and return the number of IR nodes in the function.
 //
@@ -5025,7 +5048,7 @@ unsigned Compiler::fgGetCodeEstimate(BasicBlock* block)
 //
 unsigned Compiler::fgMeasureIR()
 {
-    unsigned nodeCount = 0;
+    NodeCountVisitor visitor(this);
 
     for (BasicBlock* const block : Blocks())
     {
@@ -5033,25 +5056,19 @@ unsigned Compiler::fgMeasureIR()
         {
             for (Statement* const stmt : block->Statements())
             {
-                fgWalkTreePre(
-                    stmt->GetRootNodePointer(),
-                    [](GenTree** slot, fgWalkData* data) -> Compiler::fgWalkResult {
-                    (*reinterpret_cast<unsigned*>(data->pCallbackData))++;
-                    return Compiler::WALK_CONTINUE;
-                },
-                    &nodeCount);
+                visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
             }
         }
         else
         {
             for (GenTree* node : LIR::AsRange(block))
             {
-                nodeCount++;
+                visitor.m_nodeCount++;
             }
         }
     }
 
-    return nodeCount;
+    return visitor.m_nodeCount;
 }
 
 #endif // FEATURE_JIT_METHOD_PERF
@@ -5153,10 +5170,13 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
         assert(emptyBlock->isEmpty());
         assert(emptyBlock->KindIs(BBJ_RETURN, BBJ_THROW, BBJ_ALWAYS));
 
-        // Try to remove emptyBlock and make its preds jump directly to newTarget
+        // Try to remove emptyBlock and make its preds jump directly to newTarget.
+        // Under OSR, the original method entry (fgEntryBB) has an artificial bbRefs
+        // bump to keep it live until morph un-protects it; removing it here would
+        // leave that ref dangling and trip asserts in fgRemoveBlock.
         //
-        bool canRemove =
-            !emptyBlock->HasFlag(BBF_DONT_REMOVE) && (emptyBlock != fgFirstBB) && (emptyBlock != fgOSREntryBB);
+        bool canRemove = !emptyBlock->HasFlag(BBF_DONT_REMOVE) && (emptyBlock != fgFirstBB) &&
+                         (emptyBlock != fgOSREntryBB) && (!opts.IsOSR() || (emptyBlock != fgEntryBB));
         if (canRemove)
         {
             for (BasicBlock* const pred : emptyBlock->PredBlocksEditing())
