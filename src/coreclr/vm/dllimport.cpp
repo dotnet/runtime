@@ -162,21 +162,12 @@ static bool StubNeedsSecretArgument(DWORD dwStubFlags)
 {
     WRAPPER_NO_CONTRACT;
 
-    if (SF_IsFieldGetterStub(dwStubFlags) || SF_IsFieldSetterStub(dwStubFlags))
+    if (SF_IsForwardStub(dwStubFlags))
     {
-        return false;
+        return SF_IsVarArgStub(dwStubFlags) || SF_IsCOMStub(dwStubFlags);
     }
 
-    if (SF_IsForwardDelegateStub(dwStubFlags))
-    {
-        return false;
-    }
-
-    if (SF_IsForwardPInvokeStub(dwStubFlags) && !SF_IsVarArgStub(dwStubFlags))
-    {
-        return false;
-    }
-
+    // All native-to-managed stubs currently need the secret argument.
     return true;
 }
 

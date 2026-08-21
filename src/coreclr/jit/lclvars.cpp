@@ -5728,12 +5728,6 @@ bool Compiler::lvaParamHasLocalStackSpace(unsigned lclNum)
 {
     LclVarDsc* varDsc = lvaGetDesc(lclNum);
 
-    if (lclNum == lvaSecretStubArg)
-    {
-        // The secret stub argument is passed in a nonstandard register without caller-reserved stack space.
-        return true;
-    }
-
 #ifdef SWIFT_SUPPORT
     if ((info.compCallConv == CorInfoCallConvExtension::Swift) && !lvaIsImplicitByRefLocal(lclNum) &&
         !lvaGetParameterABIInfo(lclNum).HasExactlyOneStackSegment())
@@ -5743,8 +5737,10 @@ bool Compiler::lvaParamHasLocalStackSpace(unsigned lclNum)
 #endif
 
 #if defined(WINDOWS_AMD64_ABI)
-    // On Windows AMD64 we can use the caller-reserved stack area that is already setup
-    return false;
+    // On Windows AMD64, standard register arguments have caller-reserved stack space.
+    unsigned paramLclNum = varDsc->lvIsStructField ? varDsc->lvParentLcl : lclNum;
+    int      callerOffset;
+    return !lvaGetRelativeOffsetToCallerAllocatedSpaceForParameter(paramLclNum, &callerOffset);
 #else // !WINDOWS_AMD64_ABI
 
     //  A register argument that is not enregistered ends up as
