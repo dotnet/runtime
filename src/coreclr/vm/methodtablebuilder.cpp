@@ -6627,15 +6627,22 @@ MethodTableBuilder::bmtMethodHandle MethodTableBuilder::FindDeclMethodOnClassInH
 
                         if (variantLookup != AsyncVariantLookup::Ordinary)
                         {
-                            if (pCurMD->ReturnsTaskOrValueTask())
+                            // NOTE: we cannot use GetAsyncVariant() here. Fetching an associated MethodDesc
+                            //       of a generic method may create one and that may load types, which is not
+                            //       allowed while building a method table. We only need the slot of the
+                            //       variant, so the MethodDesc introduced by the declaring type will do.
+                            MethodDesc* pVariantMD = pCurMD->ReturnsTaskOrValueTask() ?
+                                pCurMD->GetMethodTable()->GetParallelMethodDesc(pCurMD, variantLookup) :
+                                NULL;
+
+                            if (pVariantMD == NULL)
                             {
-                                pCurMD = pCurMD->GetAsyncVariant();
-                            }
-                            else
-                            {
+                                // Other variant may not exist. For example we return Task and the base is generic and returns T.
                                 declMethod = {};
                                 break;
                             }
+
+                            pCurMD = pVariantMD;
                         }
 
                         declMethod = (*bmtParent->pSlotTable)[pCurMD->GetSlot()].Decl();
