@@ -377,17 +377,18 @@ namespace System
                 }
 
                 char[] buffer = new char[bufferLength];
-                if (Interop.Globalization.GetCanonicalLocationTimeZoneIds(buffer, bufferLength) != bufferLength)
+                int actualLength = Interop.Globalization.GetCanonicalLocationTimeZoneIds(buffer, bufferLength);
+                if (actualLength <= 0 || actualLength > buffer.Length)
                 {
                     return null;
                 }
 
                 HashSet<string> ids = new HashSet<string>();
                 int index = 0;
-                while (index < bufferLength)
+                while (index < actualLength)
                 {
                     int idLength = buffer[index++];
-                    if (idLength == 0 || idLength > bufferLength - index)
+                    if (idLength == 0 || idLength > actualLength - index)
                     {
                         return null;
                     }
