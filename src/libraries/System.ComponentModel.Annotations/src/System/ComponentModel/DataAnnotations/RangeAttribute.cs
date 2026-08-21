@@ -180,7 +180,22 @@ namespace System.ComponentModel.DataAnnotations
         {
             SetupConversion();
 
-            return string.Format(CultureInfo.CurrentCulture, ErrorMessageString, name, Minimum, Maximum);
+            return FormatMessage(ErrorMessageString, name);
+        }
+
+        /// <inheritdoc />
+        /// <remarks>
+        /// <c>{0}</c> is replaced with <paramref name="name" />, <c>{1}</c> is replaced with <see cref="Minimum" />,
+        /// and <c>{2}</c> is replaced with <see cref="Maximum" />.
+        /// </remarks>
+        /// <exception cref="InvalidOperationException">The attribute is not configured with a valid range.</exception>
+        public override string FormatMessage([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string messageString, string name)
+        {
+            ArgumentNullException.ThrowIfNull(messageString);
+
+            SetupConversion();
+
+            return string.Format(CultureInfo.CurrentCulture, messageString, name, Minimum, Maximum);
         }
 
         /// <summary>

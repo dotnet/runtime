@@ -56,6 +56,17 @@ namespace System.ComponentModel.DataAnnotations.Tests
             Assert.Equal(newValue, attribute.MatchTimeoutInMilliseconds);
         }
 
+        [Fact]
+        public static void FormatMessage_UsesSuppliedTemplateAndPattern()
+        {
+            const string ExternalMessageString = "external {0}:{1}";
+            const string ErrorMessageString = "internal {0}:{1}";
+            var attribute = new RegularExpressionAttribute("^[a-z]+$") { ErrorMessage = ErrorMessageString };
+
+            Assert.Equal("external name:^[a-z]+$", attribute.FormatMessage(ExternalMessageString, "name"));
+            Assert.Equal("internal name:^[a-z]+$", attribute.FormatErrorMessage("name"));
+        }
+
         [Theory]
         [InlineData(null)]
         [InlineData("")]
