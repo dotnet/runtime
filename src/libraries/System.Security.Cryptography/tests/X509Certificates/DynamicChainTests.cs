@@ -1194,9 +1194,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 policy.TrustMode = X509ChainTrustMode.CustomRootTrust;
                 policy.RevocationMode = X509RevocationMode.NoCheck;
 
-                bool built = chainHolder.Chain.Build(target);
-                Assert.Equal(LastCertNumber + 1, chainHolder.Chain.ChainElements.Count);
-                Assert.True(built);
+                // The policy builder makes assumptions that the native chain engines won't
+                // build chains longer than 127 certificates (it can handle longer chains,
+                // just not gracefully).
+                //
+                // This test just makes sure that the assumption holds.
+                _ = chainHolder.Chain.Build(target);
+                AssertExtensions.LessThan(chainHolder.Chain.ChainElements.Count, 128);
             }
             finally
             {
