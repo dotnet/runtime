@@ -344,17 +344,6 @@ HRESULT FakeCoCreateInstanceEx(REFCLSID       rclsid,
     return hr;
 }
 
-#ifdef _DEBUG
-static DWORD ShouldInjectFaultInRange()
-{
-    static DWORD fInjectFaultInRange = 99;
-
-    if (fInjectFaultInRange == 99)
-        fInjectFaultInRange = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_InjectFault) & 0x40);
-    return fInjectFaultInRange;
-}
-#endif
-
 // Reserves free memory within the range [pMinAddr..pMaxAddr] using
 // ClrVirtualQuery to find free memory and ClrVirtualAlloc to reserve it.
 //
@@ -442,7 +431,6 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
     //
     BYTE *   tryAddr            = (BYTE *)ALIGN_UP((BYTE *)pMinAddr, VIRTUAL_ALLOC_RESERVE_GRANULARITY);
     bool     virtualQueryFailed = false;
-    bool     faultInjected      = false;
     unsigned virtualQueryCount  = 0;
 
     // Now scan memory and try to find a free block of the size requested.
@@ -475,15 +463,6 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
                 // return pResult
                 break;
             }
-
-#ifdef _DEBUG
-            if (ShouldInjectFaultInRange())
-            {
-                // return nullptr (failure)
-                faultInjected = true;
-                break;
-            }
-#endif // _DEBUG
 
             // On UNIX we can also fail if our request size 'dwSize' is larger than 64K and
             // and our tryAddr is pointing at a small MEM_FREE region (smaller than 'dwSize')
@@ -519,11 +498,6 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
         if (virtualQueryFailed)
         {
             STRESS_LOG0(LF_JIT, LL_INFO100, "Additional reason: VirtualQuery operation failed.\n");
-        }
-
-        if (faultInjected)
-        {
-            STRESS_LOG0(LF_JIT, LL_INFO100, "Additional reason: fault injected.\n");
         }
     }
 

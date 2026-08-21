@@ -2842,7 +2842,6 @@ class RangeList
         {
             INSTANCE_CHECK;
             NOTHROW;
-            FORBID_FAULT;
             GC_NOTRIGGER;
         }
         CONTRACTL_END

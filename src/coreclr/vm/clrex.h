@@ -842,18 +842,6 @@ LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv);
 #define EX_ENDTRY                                           \
     PAL_CPP_ENDTRY
 
-
-// CLRException::GetErrorInfo below invokes GetComIPFromObjectRef
-// that invokes ObjHeader::GetSyncBlock which has the INJECT_FAULT contract.
-//
-// This EX_CATCH_HRESULT implementation can be used in functions
-// that have FORBID_FAULT contracts.
-//
-// However, failure due to OOM (or any other potential exception) in GetErrorInfo
-// implies that we couldnt get the interface pointer from the objectRef and would be
-// returned NULL.
-//
-// Thus, the scoped use of FAULT_NOT_FATAL macro.
 #undef EX_CATCH_HRESULT
 #ifdef FEATURE_COMINTEROP
 #define EX_CATCH_HRESULT(_hr)                                                   \
@@ -861,7 +849,6 @@ LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv);
     {                                                                           \
         (_hr) = GET_EXCEPTION()->GetHR();                                       \
         {                                                                       \
-            FAULT_NOT_FATAL();                                                  \
             HRESULT hrErrorInfo = GET_EXCEPTION()->SetErrorInfo();              \
             if (FAILED(hrErrorInfo))                                            \
             {                                                                   \

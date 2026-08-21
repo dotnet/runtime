@@ -105,7 +105,6 @@ PTR_Module ClassLoader::ComputeLoaderModuleWorker(
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         MODE_ANY;
         PRECONDITION(CheckPointer(pDefinitionModule, NULL_OK));
         SUPPORTS_DAC;
@@ -244,7 +243,6 @@ BOOL ClassLoader::IsTypicalInstantiation(Module *pModule, mdToken token, Instant
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         PRECONDITION(CheckPointer(pModule));
         PRECONDITION(TypeFromToken(token) == mdtTypeDef || TypeFromToken(token) == mdtMethodDef);
         SUPPORTS_DAC;
@@ -317,7 +315,6 @@ TypeHandle ClassLoader::LoadTypeByNameThrowing(Assembly *pAssembly,
     {
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
         MODE_ANY;
 
         if (FORBIDGC_LOADER_USE_ENABLED() || fLoadTypes != LoadTypes) { LOADS_TYPE(CLASS_LOAD_BEGIN); } else { LOADS_TYPE(level); }
@@ -380,7 +377,6 @@ TypeHandle ClassLoader::LoadTypeHandleThrowIfFailed(NameHandle* pName, ClassLoad
         INSTANCE_CHECK;
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
         DAC_LOADS_TYPE(level, !pName->OKToLoad());
         MODE_ANY;
         PRECONDITION(CheckPointer(pName));
@@ -441,7 +437,6 @@ EEClassHashEntry_t* ClassLoader::InsertValue(EEClassHashTable *pClassHash, EECla
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
 
@@ -460,8 +455,6 @@ EEClassHashEntry_t* ClassLoader::InsertValue(EEClassHashTable *pClassHash, EECla
     {
         // ! We cannot fail after this point.
         CANNOTTHROWCOMPLUSEXCEPTION();
-        FAULT_FORBID();
-
 
         pClassHash->InsertValueUsingPreallocatedEntry(pEntry, pszNamespace, pszClassName, Data, pEncloser);
 
@@ -491,7 +484,6 @@ void ClassLoader::GetClassValue(NameHandleTable nhTable,
         MODE_ANY;
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
         PRECONDITION(CheckPointer(pName));
         SUPPORTS_DAC;
     }
@@ -607,7 +599,6 @@ VOID ClassLoader::PopulateAvailableClassHashTable(Module* pModule,
         THROWS;
         GC_NOTRIGGER;
         MODE_PREEMPTIVE;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -661,7 +652,6 @@ void ClassLoader::LazyPopulateCaseSensitiveHashTablesDontHaveLock()
         THROWS;
         GC_NOTRIGGER;
         MODE_PREEMPTIVE;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -678,7 +668,6 @@ void ClassLoader::LazyPopulateCaseSensitiveHashTables()
         THROWS;
         GC_NOTRIGGER;
         MODE_PREEMPTIVE;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -712,7 +701,6 @@ void ClassLoader::LazyPopulateCaseInsensitiveHashTables()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -737,7 +725,6 @@ void ClassLoader::LazyPopulateCaseInsensitiveHashTables()
 
         {
             CANNOTTHROWCOMPLUSEXCEPTION();
-            FAULT_FORBID();
 
             amTracker.SuppressRelease();
             pModule->SetAvailableClassCaseInsHash(pNewClassCaseInsHash);
@@ -772,7 +759,6 @@ TypeHandle ClassLoader::LoadConstructedTypeThrowing(const TypeKey *pKey,
     {
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
         if (FORBIDGC_LOADER_USE_ENABLED() || fLoadTypes != LoadTypes) { LOADS_TYPE(CLASS_LOAD_BEGIN); } else { LOADS_TYPE(level); }
         PRECONDITION(CheckPointer(pKey));
         PRECONDITION(level > CLASS_LOAD_BEGIN && level <= CLASS_LOADED);
@@ -833,7 +819,6 @@ void ClassLoader::EnsureLoaded(TypeHandle typeHnd, ClassLoadLevel level)
         PRECONDITION(level > CLASS_LOAD_BEGIN && level <= CLASS_LOADED);
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
         if (FORBIDGC_LOADER_USE_ENABLED()) { LOADS_TYPE(CLASS_LOAD_BEGIN); } else { LOADS_TYPE(level); }
         SUPPORTS_DAC;
 
@@ -863,7 +848,6 @@ TypeHandle ClassLoader::LookupTypeKey(const TypeKey *pKey, EETypeHashTable *pTab
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         PRECONDITION(CheckPointer(pKey));
         PRECONDITION(pKey->IsConstructed());
         PRECONDITION(CheckPointer(pTable));
@@ -880,7 +864,6 @@ TypeHandle ClassLoader::LookupInLoaderModule(const TypeKey *pKey)
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         PRECONDITION(CheckPointer(pKey));
         PRECONDITION(pKey->IsConstructed());
         MODE_ANY;
@@ -901,7 +884,6 @@ TypeHandle ClassLoader::LookupTypeHandleForTypeKey(const TypeKey *pKey)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         PRECONDITION(CheckPointer(pKey));
         MODE_ANY;
         SUPPORTS_DAC;
@@ -978,7 +960,6 @@ BOOL ClassLoader::FindClassModuleThrowing(
         INSTANCE_CHECK;
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
         PRECONDITION(CheckPointer(pName));
         PRECONDITION(CheckPointer(ppModule));
         MODE_ANY;
@@ -1132,7 +1113,7 @@ bool CompareNameHandleWithTypeHandleNoThrow(
     {
         // This block is specifically designed to handle transient faults such
         // as OOM exceptions.
-        CONTRACT_VIOLATION(FaultViolation | ThrowsViolation);
+        CONTRACT_VIOLATION(ThrowsViolation);
         StackSString ssBuiltName;
         ns::MakePath(ssBuiltName,
                      StackSString(SString::Utf8, pName->GetNameSpace()),
@@ -1174,7 +1155,6 @@ ClassLoader::LoadTypeHandleThrowing(
         INSTANCE_CHECK;
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
         DAC_LOADS_TYPE(level, !pName->OKToLoad());
         PRECONDITION(level > CLASS_LOAD_BEGIN && level <= CLASS_LOADED);
         PRECONDITION(CheckPointer(pName));
@@ -1349,7 +1329,6 @@ TypeHandle ClassLoader::LoadPointerOrByrefTypeThrowing(CorElementType typ,
     {
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
         if (FORBIDGC_LOADER_USE_ENABLED() || fLoadTypes != LoadTypes) { LOADS_TYPE(CLASS_LOAD_BEGIN); } else { LOADS_TYPE(level); }
         MODE_ANY;
         PRECONDITION(CheckPointer(baseType));
@@ -1372,7 +1351,6 @@ TypeHandle ClassLoader::LoadNativeValueTypeThrowing(TypeHandle baseType,
     {
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
         MODE_ANY;
         PRECONDITION(CheckPointer(baseType));
         PRECONDITION(baseType.AsMethodTable()->IsValueType());
@@ -1395,7 +1373,6 @@ TypeHandle ClassLoader::LoadFnptrTypeThrowing(BYTE callConv,
     {
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
         if (FORBIDGC_LOADER_USE_ENABLED() || fLoadTypes != LoadTypes) { LOADS_TYPE(CLASS_LOAD_BEGIN); } else { LOADS_TYPE(level); }
         PRECONDITION(level > CLASS_LOAD_BEGIN && level <= CLASS_LOADED);
         MODE_ANY;
@@ -1496,7 +1473,6 @@ HRESULT ClassLoader::FindTypeDefByExportedType(IMDInternalImport *pCTImport, mdE
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         MODE_ANY;
         SUPPORTS_DAC;
     }
@@ -1537,7 +1513,6 @@ VOID ClassLoader::CreateCanonicallyCasedKey(LPCUTF8 pszNameSpace, LPCUTF8 pszNam
         INSTANCE_CHECK;
         THROWS;
         GC_NOTRIGGER;
-        INJECT_FAULT(COMPlusThrowOM(););
         MODE_ANY;
     }
     CONTRACTL_END
@@ -1582,7 +1557,6 @@ TypeHandle ClassLoader::LookupTypeDefOrRefInModule(ModuleBase *pModule, mdToken 
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         MODE_ANY;
         PRECONDITION(CheckPointer(pModule));
         SUPPORTS_DAC;
@@ -1623,7 +1597,6 @@ void ClassLoader::FreeModules()
         NOTHROW;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        DISABLED(FORBID_FAULT);  //Lots of crud to clean up to make this work
     }
     CONTRACTL_END;
 
@@ -1643,7 +1616,6 @@ ClassLoader::~ClassLoader()
         DESTRUCTOR_CHECK;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        DISABLED(FORBID_FAULT);  //Lots of crud to clean up to make this work
     }
     CONTRACTL_END
 
@@ -1703,7 +1675,6 @@ ClassLoader::ClassLoader(Assembly *pAssembly)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -1778,7 +1749,6 @@ TypeHandle ClassLoader::LoadTypeDefOrRefOrSpecThrowing(Module *pModule,
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
         MODE_ANY;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
         if (FORBIDGC_LOADER_USE_ENABLED() || fLoadTypes != LoadTypes) { LOADS_TYPE(CLASS_LOAD_BEGIN); } else { LOADS_TYPE(level); }
         PRECONDITION(CheckPointer(pModule));
         PRECONDITION(level > CLASS_LOAD_BEGIN && level <= CLASS_LOADED);
@@ -1841,7 +1811,6 @@ TypeHandle ClassLoader::LoadTypeDefThrowing(Module *pModule,
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
         MODE_ANY;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
         DAC_LOADS_TYPE(level, !NameHandle::OKToLoad(typeDef, tokenNotToLoad));
         PRECONDITION(CheckPointer(pModule));
         PRECONDITION(level > CLASS_LOAD_BEGIN && level <= CLASS_LOADED);
@@ -2022,7 +1991,6 @@ TypeHandle ClassLoader::LoadTypeDefOrRefThrowing(ModuleBase *pModule,
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
         MODE_ANY;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
         PRECONDITION(CheckPointer(pModule));
         PRECONDITION(level > CLASS_LOAD_BEGIN && level <= CLASS_LOADED);
 
@@ -2190,7 +2158,6 @@ ClassLoader::ResolveTokenToTypeDefThrowing(
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
         MODE_ANY;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
         PRECONDITION(CheckPointer(pTypeRefModule));
         SUPPORTS_DAC;
     }
@@ -2282,7 +2249,6 @@ ClassLoader::ResolveNameToTypeDefThrowing(
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
         MODE_ANY;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
         PRECONDITION(CheckPointer(pModule));
         PRECONDITION(CheckPointer(pName));
         SUPPORTS_DAC;
@@ -2372,7 +2338,6 @@ ClassLoader::GetEnclosingClassThrowing(
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -2417,7 +2382,6 @@ ClassLoader::LoadApproxTypeThrowing(
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
         MODE_ANY;
         PRECONDITION(CheckPointer(pSigInst, NULL_OK));
         PRECONDITION(CheckPointer(pModule));
@@ -2516,7 +2480,6 @@ ClassLoader::LoadApproxParentThrowing(
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -2798,7 +2761,6 @@ TypeHandle ClassLoader::PublishType(const TypeKey *pTypeKey, TypeHandle typeHnd)
 
         // ! We cannot fail after this point.
         CANNOTTHROWCOMPLUSEXCEPTION();
-        FAULT_FORBID();
 
         // The type could have been loaded by a different thread as side-effect of avoiding deadlocks caused by LoadsTypeViolation
         TypeHandle existing = pModule->LookupTypeDef(typeDef);
@@ -2913,7 +2875,6 @@ void ClassLoader::NotifyUnload(MethodTable* pMT, bool unloadStarted)
         NOTHROW;
         GC_TRIGGERS;
         MODE_ANY;
-        FORBID_FAULT;
         PRECONDITION(pMT != NULL);
     }
     CONTRACTL_END
@@ -2941,7 +2902,6 @@ void ClassLoader::NotifyUnload(MethodTable* pMT, bool unloadStarted)
             // profiling API.
             //
 
-            FAULT_NOT_FATAL();
 
             EX_TRY
             {
@@ -3400,7 +3360,6 @@ ClassLoader::LoadArrayTypeThrowing(
     {
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
         if (FORBIDGC_LOADER_USE_ENABLED() || fLoadTypes != LoadTypes) { LOADS_TYPE(CLASS_LOAD_BEGIN); } else { LOADS_TYPE(level); }
         MODE_ANY;
         SUPPORTS_DAC;
@@ -3475,7 +3434,6 @@ VOID ClassLoader::AddAvailableClassDontHaveLock(Module *pModule,
         THROWS;
         GC_NOTRIGGER;
         MODE_PREEMPTIVE;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
 
@@ -3510,7 +3468,6 @@ VOID ClassLoader::AddAvailableClassHaveLock(
         THROWS;
         GC_NOTRIGGER;
         MODE_PREEMPTIVE;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
 
@@ -3584,7 +3541,6 @@ VOID ClassLoader::AddExportedTypeDontHaveLock(Module *pManifestModule,
         THROWS;
         GC_NOTRIGGER;
         MODE_PREEMPTIVE;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
 
@@ -3609,7 +3565,6 @@ VOID ClassLoader::AddExportedTypeHaveLock(Module *pManifestModule,
         THROWS;
         GC_NOTRIGGER;
         MODE_PREEMPTIVE;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
 
@@ -3691,7 +3646,6 @@ static MethodTable* GetEnclosingMethodTable(MethodTable *pMT)
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         MODE_ANY;
         PRECONDITION(CheckPointer(pMT));
     }
@@ -4125,7 +4079,6 @@ BOOL ClassLoader::CanAccessMethodInstantiation( // True if access is legal, fals
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         MODE_ANY;
         PRECONDITION(CheckPointer(pContext));
     }
@@ -4185,7 +4138,6 @@ BOOL ClassLoader::CanAccessClass(                   // True if access is legal, 
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         MODE_ANY;
         PRECONDITION(CheckPointer(pContext));
         PRECONDITION(CheckPointer(pTargetClass));
@@ -4327,7 +4279,6 @@ BOOL ClassLoader::CanAccess(                            // TRUE if access is all
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(CheckPointer(pContext));
         MODE_ANY;
     }
@@ -4408,7 +4359,6 @@ BOOL ClassLoader::CheckAccessMember(                // TRUE if access is allowed
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(CheckPointer(pContext));
         MODE_ANY;
     }
@@ -4590,7 +4540,6 @@ BOOL ClassLoader::CanAccessFamily(
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         MODE_ANY;
         PRECONDITION(CheckPointer(pTargetClass));
     }

@@ -136,7 +136,6 @@ namespace
         {
             NOTHROW;
             GC_NOTRIGGER;
-            FORBID_FAULT;
             CANNOT_TAKE_LOCK;
         }
         CONTRACTL_END;
@@ -179,8 +178,6 @@ namespace
         }
 
         wcscat_s(buff, ARRAY_SIZE(buff), name);
-
-        FAULT_NOT_FATAL(); // We don't report OOM errors here, we return a default value.
 
         NewArrayHolder<WCHAR> ret = NULL;
         HRESULT hr = S_OK;
@@ -238,14 +235,12 @@ namespace
         {
             NOTHROW;
             GC_NOTRIGGER;
-            FORBID_FAULT;
             CANNOT_TAKE_LOCK;
         }
         CONTRACTL_END;
 
         SUPPORTS_DAC_HOST_ONLY;
 
-        FAULT_NOT_FATAL(); // We don't report OOM errors here, we return a default value.
 
         int radix = CheckLookupOption(options, LookupOptions::ParseIntegerAsBase10)
             ? 10
@@ -277,13 +272,11 @@ namespace
         {
             NOTHROW;
             GC_NOTRIGGER;
-            FORBID_FAULT;
         }
         CONTRACTL_END;
 
         NewArrayHolder<WCHAR> ret(NULL);
 
-        FAULT_NOT_FATAL(); // We don't report OOM errors here, we return a default value.
 
         ret = EnvGetString(name, options);
         if (ret != NULL)
@@ -444,7 +437,6 @@ DWORD CLRConfig::GetConfigValue(const ConfigDWORDInfo & info, /* [Out] */ bool *
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     }
     CONTRACTL_END;
 
@@ -513,14 +505,12 @@ LPWSTR CLRConfig::GetConfigValue(const ConfigStringInfo & info)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     }
     CONTRACTL_END;
 
     LPWSTR result = NULL;
 
     // TODO: We swallow OOM exception here. Is this OK?
-    FAULT_NOT_FATAL();
 
     // If this fails, result will stay NULL.
     GetConfigValue(info, &result);
@@ -545,7 +535,6 @@ HRESULT CLRConfig::GetConfigValue(const ConfigStringInfo & info, _Outptr_result_
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        INJECT_FAULT (return E_OUTOFMEMORY);
     } CONTRACTL_END;
 
     LPWSTR result = NULL;

@@ -2217,7 +2217,6 @@ public:
             MODE_ANY;
             PRECONDITION(TypeFromToken(kFile) == mdtFile
                         || TypeFromToken(kFile) == mdtModuleRef);
-            FORBID_FAULT;
             SUPPORTS_DAC;
         }
         CONTRACTL_END;

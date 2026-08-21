@@ -3660,7 +3660,6 @@ Thread::ApartmentState Thread::SetApartment(ApartmentState state)
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -4871,7 +4870,6 @@ BOOL Thread::UniqueStack(void* stackStart)
         else
         {
             fUnique = TRUE;
-            FAULT_NOT_FATAL();
             UniqueStackHelper(stackTraceHash, stackTrace);
         }
 #ifdef _DEBUG
@@ -5930,7 +5928,7 @@ static void ManagedThreadBase_DispatchOuter(ManagedThreadCallState *pCallState)
     // The sole purpose of having this frame is to tell the debugger that we have a catch handler here
     // which may swallow managed exceptions.  The debugger needs this in order to send a
     // CatchHandlerFound (CHF) notification.
-    DebuggerU2MCatchHandlerFrame catchFrame(false /* catchesAllExceptions */);
+    DebuggerU2MCatchHandlerFrame catchFrame;
 
     TryParam param(pCallState);
     param.pFrame = &catchFrame;
