@@ -215,6 +215,46 @@ namespace Microsoft.Extensions.FileProviders.Physical
         }
 
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [MemberData(nameof(DirectoryScanFailures))]
+        public void HasChanged_ReturnsFalseIfFileTimestampCannotBeRead(Exception exception)
+        {
+            // Arrange
+            var filePath = "1.txt";
+            var directoryInfo = new Mock<DirectoryInfoBase>();
+            directoryInfo.Setup(d => d.EnumerateFileSystemInfos())
+                .Returns(new[] { CreateFile(filePath) });
+            var clock = new TestClock();
+            var token = new TestablePollingWildCardChangeToken(directoryInfo.Object, "**/*.txt", clock);
+            int initialReadCount = token.LastWriteCount;
+            token.LastWriteException = exception;
+
+            // Act - 1
+            clock.Increment();
+            var result1 = token.HasChanged;
+
+            // Assert - 1
+            Assert.False(result1);
+            Assert.Equal(initialReadCount + 1, token.LastWriteCount);
+
+            // Act - 2: the polling interval is still honored while the failure persists.
+            var result2 = token.HasChanged;
+
+            // Assert - 2
+            Assert.False(result2);
+            Assert.Equal(initialReadCount + 1, token.LastWriteCount);
+
+            // Act - 3: timestamp reads recover and changes made during the failure are detected.
+            token.LastWriteException = null;
+            token.FileTimestampLookup[filePath] = clock.UtcNow.AddMilliseconds(1);
+            clock.Increment();
+            var result3 = token.HasChanged;
+
+            // Assert - 3
+            Assert.True(result3);
+        }
+
+        // Moq heavily utilizes RefEmit, which does not work on most aot workloads
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void HasChanged_ReturnsTrueIfFilesChangedWhileTheDirectoryCouldNotBeScanned()
         {
@@ -293,8 +333,18 @@ namespace Microsoft.Extensions.FileProviders.Physical
             public Dictionary<string, DateTime> FileTimestampLookup { get; } =
                 new Dictionary<string, DateTime>(StringComparer.OrdinalIgnoreCase);
 
+            public Exception LastWriteException { get; set; }
+
+            public int LastWriteCount { get; private set; }
+
             protected override DateTime GetLastWriteUtc(string path)
             {
+                LastWriteCount++;
+                if (LastWriteException is not null)
+                {
+                    throw LastWriteException;
+                }
+
                 DateTime value;
                 if (!FileTimestampLookup.TryGetValue(path, out value))
                 {

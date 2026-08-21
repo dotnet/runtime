@@ -408,6 +408,34 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
 
             // The token that failed stays registered so it is polled again and can recover.
             Assert.Equal(new[] { token1 }, tokens.Keys.OfType<TestPollingChangeToken>());
+
+            token1.PollingException = null;
+            token1.HasChanged = true;
+            PhysicalFilesWatcher.RaiseChangeEvents(tokens);
+
+            Assert.True(cts1.IsCancellationRequested);
+            Assert.Empty(tokens);
+        }
+
+        [Fact]
+        public void RaiseChangeEvents_PropagatesUnexpectedPollingException()
+        {
+            // Arrange
+            var cts = new CancellationTokenSource();
+            var token = new TestPollingChangeToken
+            {
+                PollingException = new InvalidOperationException(),
+                CancellationTokenSource = cts,
+            };
+            var tokens = new ConcurrentDictionary<IPollingChangeToken, IPollingChangeToken>
+            {
+                [token] = token,
+            };
+
+            // Act and assert
+            Assert.Throws<InvalidOperationException>(() => PhysicalFilesWatcher.RaiseChangeEvents(tokens));
+            Assert.Contains(token, tokens.Keys);
+            Assert.False(cts.IsCancellationRequested);
         }
 
         [Fact]

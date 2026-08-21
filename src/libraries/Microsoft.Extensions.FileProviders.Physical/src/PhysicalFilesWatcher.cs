@@ -842,21 +842,33 @@ namespace Microsoft.Extensions.FileProviders.Physical
             {
                 IPollingChangeToken token = item.Key;
 
-                // This runs on a timer callback, so an exception escaping here is unhandled and takes the process down.
+                // This runs on a timer callback, so an unexpected exception escaping here is unhandled
+                // and takes the process down. Only expected file system failures are contained below.
+                bool hasChanged;
                 try
                 {
-                    if (!token.HasChanged)
-                    {
-                        continue;
-                    }
+                    hasChanged = token.HasChanged;
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or SecurityException)
+                {
+                    // Leave the token registered so that it is polled again after the file system recovers.
+                    continue;
+                }
 
-                    if (!changeTokens.TryRemove(token, out _))
-                    {
-                        // Move on if we couldn't remove the item.
-                        continue;
-                    }
+                if (!hasChanged)
+                {
+                    continue;
+                }
 
-                    // We're already on a background thread, don't need to spawn a background Task to cancel the CTS
+                if (!changeTokens.TryRemove(token, out _))
+                {
+                    // Move on if we couldn't remove the item.
+                    continue;
+                }
+
+                // We're already on a background thread, don't need to spawn a background Task to cancel the CTS
+                try
+                {
                     token.CancellationTokenSource!.Cancel();
                 }
                 catch
