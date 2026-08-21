@@ -57,7 +57,7 @@ int32_t GlobalizationNative_IanaIdToWindowsId(const UChar* ianaId, UChar* window
 Get canonical location time zone IDs from ICU.
 If value is null, returns the length needed to store the IDs.
 Otherwise, stores each ID prefixed by its length and returns the number of UChars written.
-Returns a negative number on failure.
+Returns -1 on failure.
 */
 int32_t GlobalizationNative_GetCanonicalLocationTimeZoneIds(UChar* value, int32_t valueLength)
 {
@@ -91,7 +91,7 @@ int32_t GlobalizationNative_GetCanonicalLocationTimeZoneIds(UChar* value, int32_
             totalLength > INT32_MAX - timeZoneIdLength - 1)
         {
             uenum_close(timeZoneIds);
-            return -2;
+            return -1;
         }
 
         totalLength += timeZoneIdLength + 1;
@@ -100,7 +100,7 @@ int32_t GlobalizationNative_GetCanonicalLocationTimeZoneIds(UChar* value, int32_
             if (totalLength > valueLength)
             {
                 uenum_close(timeZoneIds);
-                return -3;
+                return -1;
             }
 
             value[index++] = (UChar)timeZoneIdLength;
@@ -110,7 +110,7 @@ int32_t GlobalizationNative_GetCanonicalLocationTimeZoneIds(UChar* value, int32_
     }
 
     uenum_close(timeZoneIds);
-    return U_SUCCESS(status) ? totalLength : -2;
+    return U_SUCCESS(status) ? totalLength : -1;
 }
 
 /*
