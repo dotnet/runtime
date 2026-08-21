@@ -90,23 +90,15 @@ namespace Microsoft.Extensions.Caching.Memory
 
             public void Add(IChangeToken item)
             {
-                State state = _state;
-                if (!state._isPublished)
-                {
-                    if (state._count == state._items.Length)
-                    {
-                        GrowBuilder(state, state._count + 1);
-                    }
-
-                    int count = state._count;
-                    state._items[count] = item;
-                    state._count = count + 1;
-                    return;
-                }
-
                 lock (_gate)
                 {
-                    state = _state;
+                    State state = _state;
+                    if (!state._isPublished)
+                    {
+                        AddToBuilder(state, item);
+                        return;
+                    }
+
                     int count = Volatile.Read(ref state._count);
                     if (count < state._items.Length)
                     {
@@ -296,6 +288,18 @@ namespace Microsoft.Extensions.Caching.Memory
                 {
                     _state._isPublished = true;
                 }
+            }
+
+            private static void AddToBuilder(State state, IChangeToken item)
+            {
+                if (state._count == state._items.Length)
+                {
+                    GrowBuilder(state, state._count + 1);
+                }
+
+                int count = state._count;
+                state._items[count] = item;
+                state._count = count + 1;
             }
 
             private static int GetCapacity(int currentCapacity, int requiredCapacity)

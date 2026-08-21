@@ -510,6 +510,56 @@ namespace Microsoft.Extensions.Caching.Memory
             Assert.Null(cache.Get(key4));
         }
 
+        [Fact]
+        public async Task AddingTokensToParentIsSafeWhileChildrenPropagateBeforeCommit()
+        {
+            const int Workers = 4;
+            const int ChildrenPerWorker = 250;
+            const int ParentTokenCount = 1_000;
+
+            var cache = CreateCache(trackLinkedCacheEntries: true);
+            using ICacheEntry parent = cache.CreateEntry("parent");
+            parent.SetValue(new object());
+
+            var childrenReleased = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var firstChildCommitted = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+
+            Task[] workers = Enumerable.Range(0, Workers)
+                .Select(worker => Task.Run(async () =>
+                {
+                    await childrenReleased.Task;
+                    for (int i = 0; i < ChildrenPerWorker; i++)
+                    {
+                        timeout.Token.ThrowIfCancellationRequested();
+                        using (ICacheEntry child = cache.CreateEntry($"child {worker}.{i}"))
+                        {
+                            child.SetValue(i);
+                            child.AddExpirationToken(new TestExpirationToken());
+                        }
+                        firstChildCommitted.TrySetResult(true);
+                    }
+                }))
+                .ToArray();
+
+            childrenReleased.SetResult(true);
+            await firstChildCommitted.Task;
+
+            for (int i = 0; i < ParentTokenCount; i++)
+            {
+                parent.AddExpirationToken(new TestExpirationToken());
+            }
+
+            Task allWorkers = Task.WhenAll(workers);
+            Task timeoutTask = Task.Delay(Timeout.InfiniteTimeSpan, timeout.Token);
+            Assert.Same(allWorkers, await Task.WhenAny(allWorkers, timeoutTask));
+            timeout.Cancel();
+            await allWorkers;
+
+            Assert.Equal(ParentTokenCount + (Workers * ChildrenPerWorker), parent.ExpirationTokens.Count);
+            Assert.All(parent.ExpirationTokens, token => Assert.NotNull(token));
+        }
+
         [Theory]
         [InlineData(false, false)]
         [InlineData(false, true)]
