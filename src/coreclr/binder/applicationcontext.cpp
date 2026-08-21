@@ -92,9 +92,6 @@ namespace BINDER_SPACE
         m_pTrustedPlatformAssemblyMap = new SimpleNameToFileNameMap();
 
         sTrustedPlatformAssemblies.Normalize();
-        const SString sDll(SString::Literal, W(".dll"));
-        const SString sExe(SString::Literal, W(".exe"));
-
         for (SString::Iterator i = sTrustedPlatformAssemblies.Begin(); i != sTrustedPlatformAssemblies.End(); )
         {
             SString fileName;
@@ -106,19 +103,10 @@ namespace BINDER_SPACE
                 break;
             }
 
-            const bool isDll = fileName.EndsWithCaseInsensitive(sDll);
-
             const SimpleNameToFileNameMapEntry *pExistingEntry = m_pTrustedPlatformAssemblyMap->LookupPtr(simpleName.GetUnicode());
             if (pExistingEntry != nullptr)
             {
-                SString existingFileName(SString::Literal, pExistingEntry->m_wszILFileName);
-                const bool existingIsDll = existingFileName.EndsWithCaseInsensitive(sDll);
-                const bool existingIsExe = existingFileName.EndsWithCaseInsensitive(sExe);
-
-                if (!(isDll && existingIsExe) || existingIsDll)
-                {
-                    continue;
-                }
+                continue;
             }
 
             LPWSTR wszSimpleName = nullptr;
