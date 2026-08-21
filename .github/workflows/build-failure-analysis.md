@@ -351,8 +351,9 @@ jobs:
           for name in "${names[@]}"; do
             # `name` is PR-controlled ADO artifact metadata and the
             # `^Logs_Build_` filter only anchors the prefix, so sanitize it
-            # before using it in any on-disk path (guards against `/` or `..`
-            # traversal); keep the original `name` for the artifacts_json lookup.
+            # before using it in any on-disk path or workflow command (guards
+            # against path traversal and command injection); keep the original
+            # `name` only for the artifacts_json lookup.
             safe_name=$(printf '%s' "${name}" | tr -c 'A-Za-z0-9._-' '_')
             ai=$((ai + 1))
             url=$(printf '%s' "${artifacts_json}" | jq -r --arg n "${name}" '.value[] | select(.name==$n) | .resource.downloadUrl // empty')
@@ -378,15 +379,15 @@ jobs:
             curl_rc=$?
             ZIP_BYTES=$(stat -c%s /tmp/a.zip 2>/dev/null || echo 0)
             if [ "${ZIP_BYTES}" -eq 0 ]; then
-              echo "::warning::Skipping ${name}: empty or failed download."; continue
+              echo "::warning::Skipping ${safe_name}: empty or failed download."; continue
             fi
             if [ "${ZIP_BYTES}" -ge "${MAX_ZIP_BYTES}" ]; then
-              echo "::warning::Skipping ${name}: download reached the ${MAX_ZIP_BYTES}-byte cap."; continue
+              echo "::warning::Skipping ${safe_name}: download reached the ${MAX_ZIP_BYTES}-byte cap."; continue
             fi
             # After the size guards: hitting the ulimit cap is reported as an
             # oversized artifact above, not as a generic transfer failure.
             if [ "${curl_rc}" -ne 0 ]; then
-              echo "::warning::Skipping ${name}: download failed or was truncated (curl exit ${curl_rc})."; continue
+              echo "::warning::Skipping ${safe_name}: download failed or was truncated (curl exit ${curl_rc})."; continue
             fi
             # `unzip -Zt` prints ONE summary line ("<n> files, <x> bytes
             # uncompressed, ..."), so the total comes from a fixed column
@@ -397,25 +398,25 @@ jobs:
             # bounds a hostile archive; pipefail + fail-closed because a killed
             # probe's partial output can end in a numeric column and undercount.
             UNCOMP=$(set -o pipefail; timeout 60 unzip -Zt /tmp/a.zip 2>/dev/null | awk 'END{print $3}') \
-              || { echo "::warning::Skipping ${name}: 'unzip -Zt' failed or timed out; cannot verify uncompressed size."; continue; }
+              || { echo "::warning::Skipping ${safe_name}: 'unzip -Zt' failed or timed out; cannot verify uncompressed size."; continue; }
             # Fail safe: a non-numeric size (corrupt zip, unexpected or
             # timed-out output) can't be verified, so skip rather than let it
             # bypass the guards below.
             if ! printf '%s' "${UNCOMP}" | grep -qE '^[0-9]+$'; then
-              echo "::warning::Skipping ${name}: could not determine uncompressed size (unparseable/timed-out unzip output)."; continue
+              echo "::warning::Skipping ${safe_name}: could not determine uncompressed size (unparseable/timed-out unzip output)."; continue
             fi
             # ZIP64 sizes can reach ~20 digits, overflowing Bash's signed
             # 64-bit `-gt` (and the `$((...))` below), which under `set +e`
             # would let an oversized archive through. More digits than the
             # limit is unambiguously larger, so reject on length first.
             if [ "${#UNCOMP}" -gt "${#MAX_UNZIP_BYTES}" ]; then
-              echo "::warning::Skipping ${name}: uncompressed size has ${#UNCOMP} digits, exceeding the ${MAX_UNZIP_BYTES} guard (possible zip bomb)."; continue
+              echo "::warning::Skipping ${safe_name}: uncompressed size has ${#UNCOMP} digits, exceeding the ${MAX_UNZIP_BYTES} guard (possible zip bomb)."; continue
             fi
             if [ "${UNCOMP}" -gt "${MAX_UNZIP_BYTES}" ]; then
-              echo "::warning::Skipping ${name}: uncompressed size ${UNCOMP} exceeds ${MAX_UNZIP_BYTES} guard (possible zip bomb)."; continue
+              echo "::warning::Skipping ${safe_name}: uncompressed size ${UNCOMP} exceeds ${MAX_UNZIP_BYTES} guard (possible zip bomb)."; continue
             fi
             if [ $((TOTAL_BYTES + UNCOMP)) -gt "${MAX_TOTAL_BYTES}" ]; then
-              echo "::warning::Cumulative uncompressed budget ${MAX_TOTAL_BYTES} reached at ${name}; stopping extraction."; break
+              echo "::warning::Cumulative uncompressed budget ${MAX_TOTAL_BYTES} reached at ${safe_name}; stopping extraction."; break
             fi
             # Refuse the archive if any entry path is absolute or has a `..`
             # component (defense-in-depth over unzip's own traversal guard),
@@ -429,13 +430,13 @@ jobs:
             timeout 60 unzip -Z1 /tmp/a.zip 2>/dev/null | grep -qE '(^/|(^|/)\.\.(/|$))'
             zscan_rc=("${PIPESTATUS[@]}")
             if [ "${zscan_rc[0]}" -ne 0 ]; then
-              echo "::warning::Skipping ${name}: could not list archive entries (unzip -Z1 rc=${zscan_rc[0]})."; continue
+              echo "::warning::Skipping ${safe_name}: could not list archive entries (unzip -Z1 rc=${zscan_rc[0]})."; continue
             fi
             if [ "${zscan_rc[1]}" -eq 0 ]; then
-              echo "::warning::Skipping ${name}: archive has a suspicious (absolute or ..) entry path."; continue
+              echo "::warning::Skipping ${safe_name}: archive has a suspicious (absolute or ..) entry path."; continue
             fi
             timeout 120 unzip -o /tmp/a.zip '*.binlog' -d /tmp/ax >/dev/null 2>&1 \
-              || { echo "::warning::Skipping ${name}: extraction failed or timed out."; continue; }
+              || { echo "::warning::Skipping ${safe_name}: extraction failed or timed out."; continue; }
             # Consume the budget only once the archive actually extracted, so a
             # skipped leg can't exhaust it and force later legs to be dropped.
             TOTAL_BYTES=$((TOTAL_BYTES + UNCOMP))
