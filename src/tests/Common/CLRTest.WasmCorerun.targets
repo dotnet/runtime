@@ -32,6 +32,17 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
        call tables so that the two cannot be edited apart. -->
   <Import Project="$(RepositoryEngineeringDir)wasm\WasmPInvokeModules.props" />
 
+  <!-- The shared wasm tool cache (eng/wasm/WasmToolCache.props) is already populated by the native
+       CoreCLR build that produced the link kit, so nothing needs provisioning here. -->
+  <PropertyGroup>
+    <EMSDK_PATH Condition="'$(EMSDK_PATH)' == '' and Exists('$(EmscriptenSdkStampFile)')">$(EmscriptenSdkCacheDir)</EMSDK_PATH>
+  </PropertyGroup>
+
+  <!-- Where em++ and the bundled python sit inside EMSDK_PATH, from the same file the app-side
+       build derives them from rather than restated here. -->
+  <Import Project="$(MonoProjectRoot)browser\build\EmSdkRepo.Defaults.props"
+          Condition="'$(EMSDK_PATH)' != '' and '$(EmscriptenSdkToolsPath)' == ''" />
+
   <PropertyGroup>
     <!--
       Engage implicitly for any browser CoreCLR test that brings its own native code. BuildOnly
@@ -158,20 +169,18 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
            Text="WasmAppBuilder.dll was not found at '$(WasmAppBuilderDir)'. It is built by the 'tasks' subset into %24(TasksConfiguration)='$(TasksConfiguration)'; build the repo in that configuration, or pass /p:TasksConfiguration=&lt;config&gt; to the test build." />
 
     <PropertyGroup Condition="'$(_WasmCorerunSkip)' != 'true'">
-      <!-- The shared wasm tool cache (eng/wasm/WasmToolCache.props) is already populated by the
-           native CoreCLR build that produced the kit, so nothing needs provisioning here. -->
-      <EMSDK_PATH Condition="'$(EMSDK_PATH)' == '' and Exists('$(EmscriptenSdkStampFile)')">$(EmscriptenSdkCacheDir)</EMSDK_PATH>
-      <_WasmCorerunEmxx Condition="'$(EMSDK_PATH)' != ''">$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'emscripten', 'em++$(_WasmCorerunScriptExt)'))</_WasmCorerunEmxx>
+      <_WasmCorerunEmxx Condition="'$(EmscriptenUpstreamEmscriptenPath)' != ''">$(EmscriptenUpstreamEmscriptenPath)em++$(_WasmCorerunScriptExt)</_WasmCorerunEmxx>
     </PropertyGroup>
 
     <Error Condition="'$(_WasmCorerunSkip)' != 'true' and ('$(_WasmCorerunEmxx)' == '' or !Exists('$(_WasmCorerunEmxx)'))"
            Text="Could not find em++ for the test-specific corerun. Set %24(EMSDK_PATH), or build the browser-wasm runtime first so that the Emscripten SDK is provisioned into '$(EmscriptenSdkCacheDir)'." />
 
     <!-- em++ finds its own toolchain through the self-relative .emscripten config next to it. Only
-         the Windows launcher needs help, because it shells out to a bundled python. -->
-    <ItemGroup Condition="'$(_WasmCorerunSkip)' != 'true' and $([MSBuild]::IsOSPlatform('windows'))">
-      <_WasmCorerunEmscriptenEnv Include="EMSDK_PYTHON=$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'python', 'python.exe'))"
-                                 Condition="Exists('$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'python', 'python.exe'))')" />
+         the Windows launcher needs help, because it shells out to a bundled python. That is also
+         the only platform EmSdkRepo.Defaults.props resolves a python path for. -->
+    <ItemGroup Condition="'$(_WasmCorerunSkip)' != 'true' and '$(EmscriptenPythonToolsPath)' != ''">
+      <_WasmCorerunEmscriptenEnv Include="EMSDK_PYTHON=$(EmscriptenPythonToolsPath)python.exe"
+                                 Condition="Exists('$(EmscriptenPythonToolsPath)python.exe')" />
     </ItemGroup>
 
     <PropertyGroup Condition="'$(_WasmCorerunSkip)' != 'true'">
