@@ -13,7 +13,7 @@
     <PublishDir>$(OriginalPublishDir)</PublishDir>
   </PropertyGroup>
 
-  <!-- The app bundle source is staged outside publish because publish is the pristine crossgen2
+  <!-- The app bundle source is staged outside publish because publish is the crossgen2
        input for every run, and AppleAppBuilder bundles every top-level entry of its AppDir. -->
   <PropertyGroup Condition="'$(PublishReadyToRun)' == 'true' and '$(UseMonoRuntime)' != 'true' and '$(UseNativeAOTRuntime)' != 'true'">
     <_R2RAppBundleSourceDir>$([MSBuild]::NormalizeDirectory($(BaseIntermediateOutputPath), 'r2r-app-bundle-source'))</_R2RAppBundleSourceDir>
