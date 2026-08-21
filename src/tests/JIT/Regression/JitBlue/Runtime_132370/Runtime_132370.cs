@@ -36,6 +36,7 @@ public class Runtime_132370
         };
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private static bool IsZero(V3 value)
     {
         for (int axis = 0; axis < 3; axis++)
