@@ -15,6 +15,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             bool isInitOnly = setMethod?.IsInitOnly is true;
 
             IsStatic = property.IsStatic;
+            // Only public setters are considered here, consistent with CanSet. A required or init-only property with a
+            // non-public (e.g. internal) setter is therefore not treated as SetOnInit, so the generator does not emit
+            // an object initializer for it. A required property in that shape cannot be constructed by the generator;
+            // the parser detects it and reports a diagnostic instead of emitting code that would fail with CS9035.
             SetOnInit = setterIsPublic && (property.IsRequired || isInitOnly);
             CanSet = setterIsPublic && !isInitOnly;
             CanGet = property.GetMethod?.DeclaredAccessibility is Accessibility.Public;

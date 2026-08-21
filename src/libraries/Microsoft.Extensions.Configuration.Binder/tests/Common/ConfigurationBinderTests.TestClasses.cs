@@ -339,6 +339,32 @@ namespace Microsoft.Extensions
             public string Value { get; set; }
         }
 
+        public sealed class ClassWithInitOnlyCollectionParameterlessCtor
+        {
+            public List<string> Items { get; init; } = new();
+            public string Name { get; init; }
+        }
+
+        public sealed class InitOnlyPropertiesWithNonNullDefaults
+        {
+            public string Name { get; init; } = "defaultName";
+            public List<string> Items { get; init; } = new() { "preset" };
+        }
+
+#if NET
+        public sealed class RequiredPropertiesParameterlessCtor
+        {
+            public required string Name { get; set; }
+            public required NestedForInitOnly Child { get; set; }
+        }
+
+        public sealed class RequiredInitPropertiesParameterlessCtor
+        {
+            public required string Name { get; init; }
+            public required NestedForInitOnly Child { get; init; }
+        }
+#endif
+
         public readonly record struct ReadonlyRecordStructTypeOptions(string Color, int Length);
 
         public class ContainerWithNestedImmutableObject

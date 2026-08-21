@@ -21,6 +21,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 public static DiagnosticDescriptor MultipleParameterizedConstructors { get; } = CreateTypeNotSupportedDescriptor(nameof(SR.MultipleParameterizedConstructors));
                 public static DiagnosticDescriptor MultiDimArraysNotSupported { get; } = CreateTypeNotSupportedDescriptor(nameof(SR.MultiDimArraysNotSupported));
                 public static DiagnosticDescriptor NullableUnderlyingTypeNotSupported { get; } = CreateTypeNotSupportedDescriptor(nameof(SR.NullableUnderlyingTypeNotSupported));
+                public static DiagnosticDescriptor RequiredMemberWithNonPublicSetter { get; } = CreateTypeNotSupportedDescriptor(nameof(SR.RequiredMemberWithNonPublicSetter));
 
                 public static DiagnosticDescriptor PropertyNotSupported { get; } = DiagnosticDescriptorHelper.Create(
                     id: "SYSLIB1101",

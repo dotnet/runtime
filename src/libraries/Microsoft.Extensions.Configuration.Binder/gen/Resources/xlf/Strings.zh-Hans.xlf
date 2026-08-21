@@ -67,6 +67,11 @@
         <target state="translated">没有为类型中的属性生成绑定逻辑</target>
         <note />
       </trans-unit>
+      <trans-unit id="RequiredMemberWithNonPublicSetter">
+        <source>The type '{0}' has one or more required members with non-public setters, which the source generator cannot set.</source>
+        <target state="new">The type '{0}' has one or more required members with non-public setters, which the source generator cannot set.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="TypeNotSupported">
         <source>The type is not supported: '{0}'.</source>
         <target state="translated">不支持此类型: '{0}'。</target>
