@@ -19,8 +19,8 @@ environment:
         - run
         - --interactive
         - --rm
-        - --env
-        - GITHUB_PERSONAL_ACCESS_TOKEN
+        - --env-file
+        - "${GITHUB_MCP_ENV_FILE}"
         - --env
         - GITHUB_READ_ONLY=1
         - --env

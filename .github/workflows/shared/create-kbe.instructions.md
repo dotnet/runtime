@@ -41,7 +41,9 @@ responsible for:
 
 Search open `dotnet/runtime` issues with the `Known Build Error` label. Try
 these variations in order, scanning the first ~10 results of each. GitHub
-best-match ranking can place noisier hits above the correct one.
+best-match ranking can place noisier hits above the correct one. For the
+open-KBE variations below, include `is:open label:"Known Build Error"` unless
+the variation explicitly says to omit the KBE filter.
 
 1. Full `[FAIL]` line.
 2. Assertion text.
