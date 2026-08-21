@@ -862,8 +862,10 @@ void ResolveHolder::Initialize(ResolveHolder* pResolveHolderRX,
 
     // ResolveStub._failEntryPoint(r0:MethodToken, r1, r2, r3, r4:IndirectionCellAndFlags)
     // {
-    //     if(--*(this._pCounter) < 0) r4 = r4 | SDF_ResolveBackPatch;
-    //     this._resolveEntryPoint(r0, r1, r2, r3, r4);
+    //     if (--*(this._pCounter) >= 0)
+    //         return this._resolveEntryPoint(r0, r1, r2, r3, r4);
+    //     r4 = r4 | SDF_ResolveBackPatch;
+    //     return this._slowEntryPoint(r0, r1, r2, r3, r4);
     // }
 
     // The following macro relies on this entry point being DWORD-aligned. We've already asserted that the
@@ -899,23 +901,26 @@ void ResolveHolder::Initialize(ResolveHolder* pResolveHolderRX,
     // pop {r5}
     _stub._failEntryPoint[n++] = 0xbc20;
 
-    // bge resolveEntryPoint
-    _stub._failEntryPoint[n++] = 0xda01;
+    // bge resolveEntryPointBranch
+    _stub._failEntryPoint[n++] = 0xda02;
 
     // or r4, r4, SDF_ResolveBackPatch
     _ASSERTE(SDF_ResolveBackPatch < 256);
     _stub._failEntryPoint[n++] = 0xf044;
     _stub._failEntryPoint[n++] = 0x0400 | SDF_ResolveBackPatch;
 
-    // resolveEntryPoint:
+    // b _slowEntryPoint
+    offset = (WORD)(offsetof(ResolveStub, _slowEntryPoint) - (offsetof(ResolveStub, _failEntryPoint) + sizeof(*ResolveStub::_failEntryPoint) * (n + 2)));
+    _ASSERTE((offset & 1) == 0);
+    offset = (offset >> 1) & 0x07ff;
+    _stub._failEntryPoint[n++] = 0xe000 | offset;
+
+    // resolveEntryPointBranch:
     // b _resolveEntryPoint
     offset = (WORD)(offsetof(ResolveStub, _resolveEntryPoint) - (offsetof(ResolveStub, _failEntryPoint) + sizeof(*ResolveStub::_failEntryPoint) * (n + 2)));
     _ASSERTE((offset & 1) == 0);
     offset = (offset >> 1) & 0x07ff;
     _stub._failEntryPoint[n++] = 0xe000 | offset;
-
-    // nop for alignment
-    _stub._failEntryPoint[n++] = 0xbf00;
 
     _ASSERTE(n == ResolveStub::failEntryPointLen);
 
