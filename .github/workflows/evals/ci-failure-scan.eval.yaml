@@ -45,10 +45,18 @@ stimuli:
 
       This is a live run — discover a real, currently-failing outer-loop build yourself. Do not invent a failure.
 
-      1. Find a recent failed build on `main` of an outer-loop pipeline via the dnceng-public AzDO REST API. It is anonymous and needs no auth, so stay on `_apis/build/...`. Start with `runtime-extra-platforms`, which is definition 154, and fall back to other outer-loop defs if needed.
-         `curl -fsSL "https://dev.azure.com/dnceng-public/public/_apis/build/builds?definitions=154&branchName=refs/heads/main&statusFilter=completed&resultFilter=failed&\$top=5&api-version=7.1"`
-      2. Open that build's timeline at `/_apis/build/builds/{id}/timeline?api-version=7.1`, pick a failed leg, and read its log at `/_apis/build/builds/{id}/logs/{logId}?api-version=7.1` to extract a concrete error or assertion signature. Save the leg log you extract from as `failure.log` under /tmp and grep it for your signature to get the hit count.
-      3. Before filing, follow the shared KBE lookup instructions to check whether an equivalent open KBE already exists. Use the GitHub MCP `search_issues` tool for every search, pass `owner: dotnet` and `repo: runtime` as tool arguments, and include the literal qualifier `is:open` in each query. Search both by `[ci-scan]` title and by your signature text. Assume you would file only if none matches.
+      1. Find a recent failed build on `main` of an outer-loop pipeline via the dnceng-public AzDO REST API. It is anonymous and needs no auth, so stay on `_apis/build/...`. Start with `runtime-extra-platforms`, which is definition 154, and fall back to other outer-loop defs if needed. Pre-bind each URL before fetching it, as required by the workflow:
+         ```bash
+         url='https://dev.azure.com/dnceng-public/public/_apis/build/builds?definitions=154&branchName=refs/heads/main&statusFilter=completed&resultFilter=failed&%24top=5&api-version=7.1'
+         set -o pipefail
+         curl -fsS "$url"
+         ```
+      2. Open that build's timeline at `/_apis/build/builds/{id}/timeline?api-version=7.1`, pick a failed leg, and read its log at `/_apis/build/builds/{id}/logs/{logId}?api-version=7.1` to extract a concrete error or assertion signature. Save the leg log you extract from as `failure.log` under /tmp and grep it for your signature to get the hit count. Select assertion text, an exception message, or a diagnostic that distinguishes the failure. A `Failed test:` or `[FAIL]` line whose variable content is only a test path/name is forbidden even when it is stable; if the log contains no better signature, continue to another real failure.
+      3. Before filing, follow the shared KBE lookup instructions to check whether an equivalent open KBE or in-flight fix already exists. Use the GitHub MCP `search_issues` tool for every issue search and `search_pull_requests` for every PR search, always passing `owner: dotnet` and `repo: runtime` as tool arguments. Run separate searches whose queries start with:
+         - `is:open label:"Known Build Error" "<signature-text>"` for the extracted assertion or exception text;
+         - `is:open in:title "[ci-scan]" "<signature-or-test-stem>"` for scanner-filed siblings; and
+         - `is:open "<signature-or-test-source-term>"` with `search_pull_requests` for an existing fix.
+         If a search returns a candidate, read it with `issue_read` or `pull_request_read` before deciding whether it matches. When an equivalent KBE or PR already handles the failure, keep scanning real failed outer-loop builds until you find a concrete unmatched signature; do not emit a KBE for a known failure and do not fabricate one.
 
       Then **emit the create-issue safe-output you would file, as a single markdown document at `./out/kbe.md`**, in exactly this shape.
 
@@ -114,11 +122,20 @@ stimuli:
               args:
                 owner: '^dotnet$'
                 repo: '^runtime$'
-                query: '(?i)is:open'
-              min_count: 2
+                query: '(?i)^is:open\s+label:"Known Build Error"\s+".+'
+            - name: '^github-search_issues$'
+              args:
+                owner: '^dotnet$'
+                repo: '^runtime$'
+                query: '(?i)^is:open\s+in:title\s+"\[ci-scan\]"\s+".+'
+            - name: '^github-search_pull_requests$'
+              args:
+                owner: '^dotnet$'
+                repo: '^runtime$'
+                query: '(?i)^is:open\s+".+'
           disallowed:
             - name: '^(bash|powershell)$'
-              command: '(?i)(\bgh\s+(search|issue|pr|api)\b|api\.github\.com)'
+              command: '(?is)(\bgh\s+(search|issue|pr|api)\b|\b(?:curl|wget|Invoke-WebRequest|Invoke-RestMethod|iwr|irm)\b.*(?:[a-z0-9-]+\.)*(?:github\.com|githubusercontent\.com)\b|(?:[a-z0-9-]+\.)*(?:github\.com|githubusercontent\.com)\b.*\b(?:curl|wget|Invoke-WebRequest|Invoke-RestMethod|iwr|irm)\b)'
 
       - type: prompt
         name: kbe-format-conformant
