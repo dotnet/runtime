@@ -14,10 +14,10 @@
 #define _METADATA_H_
 
 #include "ex.h"
+#include <minipal/rwlock.h>
 
 class IMetaModelCommon;
 class MDInternalRW;
-class UTSemReadWrite;
 
 inline int IsGlobalMethodParentTk(mdTypeDef td)
 {
@@ -950,9 +950,9 @@ DECLARE_INTERFACE_(IMDInternalImport, IUnknown)
     STDMETHOD_(IUnknown *, GetCachedPublicInterface)(BOOL fWithLock) PURE;   // return the cached public interface
     __checkReturn
     STDMETHOD(SetCachedPublicInterface)(IUnknown *pUnk) PURE;  // no return value
-    STDMETHOD_(UTSemReadWrite*, GetReaderWriterLock)() PURE;   // return the reader writer lock
+    STDMETHOD_(minipal_rwlock*, GetReaderWriterLock)() PURE;   // return the reader writer lock
     __checkReturn
-    STDMETHOD(SetReaderWriterLock)(UTSemReadWrite * pSem) PURE;
+    STDMETHOD(SetReaderWriterLock)(minipal_rwlock * pLock) PURE;
 
     STDMETHOD_(mdModule, GetModuleFromScope)() PURE;             // [OUT] Put mdModule token here.
 

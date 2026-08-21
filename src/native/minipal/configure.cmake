@@ -1,6 +1,7 @@
 include(CheckFunctionExists)
 include(CheckIncludeFiles)
 include(CheckLibraryExists)
+include(CheckCSourceCompiles)
 include(CheckSymbolExists)
 
 check_include_files("windows.h;bcrypt.h" HAVE_BCRYPT_H)
@@ -19,6 +20,14 @@ check_symbol_exists(getentropy "unistd.h" HAVE_GETENTROPY)
 check_symbol_exists(O_CLOEXEC fcntl.h HAVE_O_CLOEXEC)
 check_symbol_exists(CLOCK_MONOTONIC_COARSE time.h HAVE_CLOCK_MONOTONIC_COARSE)
 check_symbol_exists(clock_gettime_nsec_np time.h HAVE_CLOCK_GETTIME_NSEC_NP)
+check_c_source_compiles("
+    #include <pthread.h>
+    int main(void)
+    {
+        pthread_rwlockattr_t attributes;
+        return pthread_rwlockattr_setkind_np(&attributes, PTHREAD_RWLOCK_PREFER_WRITER_NONRECURSIVE_NP);
+    }"
+    HAVE_PTHREAD_RWLOCK_PREFER_WRITER_NONRECURSIVE_NP)
 
 if(CLR_CMAKE_HOST_UNIX)
     check_library_exists(pthread pthread_create "" HAVE_LIBPTHREAD)
