@@ -4930,7 +4930,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     }
 #endif
 
-    INDEBUG(activePhaseChecks |= PhaseChecks::CHECK_LIR_UNUSED_VALUES);
+    activePhaseChecks |= PhaseChecks::CHECK_LIR_UNUSED_VALUES;
 
     // rationalize trees
     Rationalizer rat(this); // PHASE_RATIONALIZE
@@ -5007,7 +5007,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     // LSRA may insert nodes without users to model register saves/restores.
     //
-    INDEBUG(activePhaseChecks &= ~PhaseChecks::CHECK_LIR_UNUSED_VALUES);
+    activePhaseChecks &= ~PhaseChecks::CHECK_LIR_UNUSED_VALUES;
 
     auto regAllocPhase = [this] {
         m_regAlloc->doRegisterAllocation();
