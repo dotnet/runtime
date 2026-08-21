@@ -815,23 +815,12 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             || t == CorElementType.U;
     public bool RequiresAlign8(ITypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.RequiresAlign8;
 
-    // Mirrors CEEInfo::getClassAlignmentRequirementStatic in src/coreclr/vm/jitinterface.cpp.
-    // The result is unclamped; callers (e.g. ArgIterator) apply their own clamping.
-    //
-    // Two deliberate differences from the native helper, both unreachable from the managed
-    // argument layout this contract serves:
-    //  - The native helper starts from TypeHandle::GetMethodTable, which also resolves a
-    //    MethodTable for a TypeDesc. Here a non-MethodTable handle simply reports the default,
-    //    since the ArgIterator only consults alignment for ELEMENT_TYPE_VALUETYPE arguments.
-    //  - The native helper handles the unmanaged (marshalled) view of a type via
-    //    TypeHandle::IsNativeValueType, which is a TypeDesc produced for native signatures
-    //    (ELEMENT_TYPE_NATIVE_VALUETYPE_ZAPSIG) rather than by decoding an ECMA metadata
-    //    signature, so it cannot appear here.
+    // Mirrors CEEInfo::getClassAlignmentRequirementStatic for managed value types. TypeDesc and
+    // native-value-type paths are omitted because the managed signature decoder cannot produce them.
     private const string LayoutInfoFieldName = "LayoutInfo";
 
     public int GetClassAlignmentRequirement(ITypeHandle typeHandle)
     {
-        // Default alignment is sizeof(void*).
         int result = _target.PointerSize;
         if (!typeHandle.IsMethodTable())
             return result;
@@ -841,13 +830,9 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         {
             Data.EEClass eeClass = _target.ProcessedData.GetOrAdd<Data.EEClass>(eeClassPtr);
 
-            // Only a LayoutEEClass carries layout info; reading it otherwise interprets unrelated
-            // memory. The managed alignment requirement is only used for sequential or blittable
-            // layout, matching the native implementation.
+            // LayoutInfo aliases unrelated memory unless HasLayout is set.
             if (eeClass.HasLayout)
             {
-                // LayoutEEClass derives from EEClass, so its layout info lives at a fixed offset
-                // from the same address.
                 Target.TypeInfo layoutClassType = _target.GetTypeInfo(DataType.LayoutEEClass);
                 TargetPointer layoutInfoPtr = eeClassPtr + (ulong)layoutClassType.Fields[LayoutInfoFieldName].Offset;
                 Data.EEClassLayoutInfo layoutInfo = _target.ProcessedData.GetOrAdd<Data.EEClassLayoutInfo>(layoutInfoPtr);
@@ -858,9 +843,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             }
         }
 
-        // FEATURE_64BIT_ALIGNMENT: some 32-bit ABIs (ARM, WASM) require 8-byte alignment for
-        // 64-bit primitives. RequiresAlign8 is only set on targets with that requirement, so this
-        // is a no-op elsewhere.
+        // RequiresAlign8 is only set on FEATURE_64BIT_ALIGNMENT targets.
         if (result < 8 && RequiresAlign8(typeHandle))
         {
             result = 8;

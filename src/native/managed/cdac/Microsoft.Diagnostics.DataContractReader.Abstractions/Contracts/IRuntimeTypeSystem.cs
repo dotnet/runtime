@@ -190,13 +190,8 @@ public interface IRuntimeTypeSystem : IContract
     bool TryGetHFAElementSize(ITypeHandle typeHandle, out int elementSize) => throw new NotImplementedException();
     // True if the type requires 8-byte alignment on platforms that don't 8-byte align by default (FEATURE_64BIT_ALIGNMENT)
     bool RequiresAlign8(ITypeHandle typeHandle) => throw new NotImplementedException();
-    // Returns the alignment requirement of a type, mirroring
-    // CEEInfo::getClassAlignmentRequirementStatic in src/coreclr/vm/jitinterface.cpp. Defaults to
-    // the target pointer size; types with sequential or blittable layout report their managed
-    // layout alignment, and targets requiring 64-bit alignment (FEATURE_64BIT_ALIGNMENT: ARM,
-    // WASM) report at least 8 for types that need it. The result is unclamped -- callers such as
-    // ArgIterator apply their own clamping. Runtimes that predate the layout descriptors return
-    // the target pointer size.
+    // Returns the unclamped alignment from CEEInfo::getClassAlignmentRequirementStatic.
+    // Runtimes that predate the required layout descriptors return the target pointer size.
     int GetClassAlignmentRequirement(ITypeHandle typeHandle) => throw new NotImplementedException();
     // Returns the cached SystemV AMD64 eightbyte register-passing classification for a value type
     // (used to decide how a struct is passed in registers), or false if the type has no such

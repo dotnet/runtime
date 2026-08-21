@@ -1466,9 +1466,6 @@ public class MethodTableTests
         return blobBuilder.ToArray();
     }
 
-    // GetClassAlignmentRequirement mirrors CEEInfo::getClassAlignmentRequirementStatic. A type
-    // without layout info reports the target pointer size, regardless of any bytes that happen to
-    // follow the EEClass.
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
     public void GetClassAlignmentRequirement_NoLayout_ReturnsPointerSize(MockTarget.Architecture arch)
@@ -1528,13 +1525,11 @@ public class MethodTableTests
         Assert.Equal(target.PointerSize, contract.GetClassAlignmentRequirement(handle));
     }
 
-    // Sequential and blittable layouts report the managed layout alignment. 16 is the value the
-    // runtime assigns to v128 SIMD types and Int128/UInt128 on WASM.
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
     public void GetClassAlignmentRequirement_SequentialOrBlittableLayout_ReturnsLayoutAlignment(MockTarget.Architecture arch)
     {
-        const byte Sequential = (byte)Data.EEClassLayoutInfo.Type.Auto + 1; // LayoutType.Sequential
+        const byte Sequential = (byte)Data.EEClassLayoutInfo.Type.Sequential;
         const byte Blittable = 0x01;
         const byte Alignment = 16;
 
@@ -1562,8 +1557,6 @@ public class MethodTableTests
         }
     }
 
-    // Auto layout that is not blittable does not report the layout alignment, even though the
-    // layout info is present -- it falls back to the pointer size.
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
     public void GetClassAlignmentRequirement_AutoNonBlittableLayout_ReturnsPointerSize(MockTarget.Architecture arch)
@@ -1590,9 +1583,6 @@ public class MethodTableTests
         Assert.Equal(target.PointerSize, contract.GetClassAlignmentRequirement(handle));
     }
 
-    // FEATURE_64BIT_ALIGNMENT (ARM, WASM): a type whose alignment would otherwise be below 8 is
-    // bumped to 8 when the MethodTable carries the RequiresAlign8 flag. The flag is only ever set
-    // on targets with that requirement, so this branch is inert elsewhere.
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
     public void GetClassAlignmentRequirement_RequiresAlign8_BumpsToEight(MockTarget.Architecture arch)
@@ -1604,7 +1594,6 @@ public class MethodTableTests
             arch,
             rtsBuilder =>
             {
-                // Sequential layout reporting 4-byte alignment: below 8, so the flag applies.
                 MockEEClass eeClass = rtsBuilder.AddLayoutEEClass(
                     "Align8", (byte)Data.EEClassLayoutInfo.Type.Sequential, alignmentRequirement: 4, flags: 0);
                 MockMethodTable methodTable = rtsBuilder.AddMethodTable("Align8");

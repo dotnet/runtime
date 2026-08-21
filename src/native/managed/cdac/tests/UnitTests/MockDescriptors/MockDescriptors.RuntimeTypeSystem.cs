@@ -426,8 +426,6 @@ internal partial class MockDescriptors
         internal Layout<MockGCCoverageInfo> GCCoverageInfoLayout { get; }
         internal Layout<MockEEClassLayoutInfo> EEClassLayoutInfoLayout { get; }
 
-        // LayoutEEClass derives from EEClass, so its LayoutInfo sits immediately after the EEClass
-        // fields. Only the offset is consumed by the reader.
         internal Layout<TypedView> LayoutEEClassLayout { get; }
 
         internal MockEEClass SystemObjectEEClass { get; private set; } = null!;
@@ -581,10 +579,6 @@ internal partial class MockDescriptors
         internal MockEEClass AddEEClass(string name)
             => Add(EEClassLayout, $"EEClass '{name}'");
 
-        /// <summary>
-        /// Allocates an EEClass sized as a LayoutEEClass (EEClass fields followed by the layout
-        /// info), sets the HasLayout VMFlag, and returns a view over the embedded layout info.
-        /// </summary>
         internal MockEEClass AddLayoutEEClass(string name, byte layoutType, byte alignmentRequirement, byte flags)
         {
             MockEEClass eeClass = Add(EEClassLayout, (ulong)LayoutEEClassLayout.Size, $"LayoutEEClass '{name}'");
@@ -598,7 +592,6 @@ internal partial class MockDescriptors
             return eeClass;
         }
 
-        // EEClass::VMFLAG_HASLAYOUT
         internal const uint HasLayoutVMFlag = 0x00000040;
 
         internal MockMethodTable AddMethodTable(string name)

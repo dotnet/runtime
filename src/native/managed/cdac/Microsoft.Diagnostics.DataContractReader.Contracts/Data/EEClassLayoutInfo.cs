@@ -6,7 +6,6 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.EEClassLayoutInfo))]
 internal sealed partial class EEClassLayoutInfo : IData<EEClassLayoutInfo>
 {
-    // Mirrors EEClassLayoutInfo::LayoutType in src/coreclr/vm/class.h.
     public enum Type : byte
     {
         Auto = 0,
@@ -21,8 +20,6 @@ internal sealed partial class EEClassLayoutInfo : IData<EEClassLayoutInfo>
 
     [Field] public partial byte LayoutType { get; }
 
-    // EEClassLayoutInfo::GetAlignmentRequirement -- the largest alignment requirement of all
-    // members (m_ManagedLargestAlignmentRequirementOfAllMembers).
     [Field] public partial byte AlignmentRequirement { get; }
 
     [Field] public partial byte Flags { get; }

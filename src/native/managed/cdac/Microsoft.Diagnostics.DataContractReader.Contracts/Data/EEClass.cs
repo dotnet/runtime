@@ -27,7 +27,6 @@ internal sealed partial class EEClass : IData<EEClass>
     [Field] public partial byte BaseSizePadding { get; }
     [Field] public partial TargetPointer OptionalFields { get; }
 
-    // EEClass::VMFLAG_HASLAYOUT -- the EEClass is a LayoutEEClass carrying managed layout info.
     private const uint HasLayoutFlag = 0x00000040;
 
     // Descriptor-optional for runtimes that predate GetClassAlignmentRequirement.
@@ -40,9 +39,5 @@ internal sealed partial class EEClass : IData<EEClass>
         return target.ReadFieldOrDefault<uint>(address, type, nameof(VMFlags));
     }
 
-    /// <summary>
-    /// Mirrors <c>EEClass::HasLayout</c>. When true the class is a <see cref="LayoutEEClass"/> and
-    /// its <see cref="LayoutEEClass.LayoutInfo"/> may be read.
-    /// </summary>
     public bool HasLayout => (VMFlags & HasLayoutFlag) != 0;
 }
