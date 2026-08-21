@@ -121,6 +121,6 @@
     <value>Cache entry must specify a value for {0} when {1} is set.</value>
   </data>
   <data name="CacheEntrySetAfterDispose" xml:space="preserve">
-    <value>The value of {0} cannot be changed after the cache entry has been disposed. Disposing a cache entry commits it to the cache.</value>
+    <value>The value of {0} cannot be changed after the cache entry has been disposed. Set {0} before disposing the entry.</value>
   </data>
 </root>

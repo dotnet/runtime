@@ -9,7 +9,7 @@ namespace Microsoft.Extensions.Caching.Memory
 {
     /// <summary>
     /// Represents an entry in the <see cref="IMemoryCache"/> implementation.
-    /// When Disposed, is committed to the cache.
+    /// When disposed, the entry is committed to the cache if a <see cref="Value"/> has been set.
     /// </summary>
     public interface ICacheEntry : IDisposable
     {
