@@ -302,13 +302,9 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
            the test rather than in the build. -->
       <_WasmCorerunPInvokeModule Include="@(WasmCoreClrFrameworkPInvokeModule)" />
 
-      <!-- The test's own modules. Module matching is an exact string compare against the
-           [DllImport] name and tests spell it either way, so offer both the archive's file name
-           and that name without the 'lib' prefix. -->
-      <_WasmCorerunTestLibName Include="@(_WasmCorerunTestLib->'%(FileName)')" />
-      <_WasmCorerunPInvokeModule Include="@(_WasmCorerunTestLibName)" />
-      <_WasmCorerunPInvokeModule Include="$([System.String]::Copy('%(_WasmCorerunTestLibName.Identity)').Substring(3))"
-                                 Condition="$([System.String]::Copy('%(_WasmCorerunTestLibName.Identity)').StartsWith('lib'))" />
+      <!-- The test's own modules, named after the archives that get linked in. The generator also
+           accepts the [DllImport] spelling without the 'lib' prefix, which is how tests write it. -->
+      <_WasmCorerunPInvokeModule Include="@(_WasmCorerunTestLib->'%(FileName)')" />
     </ItemGroup>
 
     <!--

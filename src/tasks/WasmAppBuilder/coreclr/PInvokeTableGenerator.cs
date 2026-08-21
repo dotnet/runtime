@@ -88,6 +88,16 @@ internal sealed class PInvokeTableGenerator
                 continue;
             if (ignoredModules.Contains(pinvoke.Module))
                 continue;
+            // A static archive is named libFoo.a, so the module list -- built from the file names
+            // of what gets linked in -- carries "libFoo", while the managed side spells the
+            // [DllImport] "Foo", the name it would use on Windows. That is also the name the
+            // runtime resolver looks up, so accept it as naming the same module.
+            if (modules.ContainsKey($"lib{pinvoke.Module}"))
+            {
+                modules.Add(pinvoke.Module, pinvoke.Module);
+                Log.LogMessage(MessageImportance.Low, $"Adding module {pinvoke.Module} for statically linked lib{pinvoke.Module}");
+                continue;
+            }
             // Handle special modules, and add them to the list of modules
             // otherwise, skip them and throw an exception at runtime if they
             // are called.
