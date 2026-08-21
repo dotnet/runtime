@@ -921,7 +921,7 @@ namespace System.Runtime.Serialization.DataContracts
 
     internal sealed class ByteArrayDataContract : PrimitiveDataContract
     {
-        [RequiresUnreferencedCode("The default constructor of the array's element type may be trimmed if not referenced elsewhere.")]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public ByteArrayDataContract() : base(typeof(byte[]), DictionaryGlobals.ByteArrayLocalName, DictionaryGlobals.SchemaNamespace)
         {
         }
