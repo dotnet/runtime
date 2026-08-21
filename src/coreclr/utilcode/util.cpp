@@ -905,13 +905,33 @@ BOOL CPUGroupInfo::GetCPUGroupRange(WORD group_number, WORD* group_begin, WORD* 
 }
 #endif // HOST_WINDOWS
 
+#ifdef HOST_WINDOWS
+#ifdef SELF_NO_HOST
+static Volatile<BOOL> g_fInitializedGlobalSystemInfo = FALSE;
+SYSTEM_INFO g_SystemInfo;
+
+static void InitializeGlobalSystemInfo()
+{
+    if (!g_fInitializedGlobalSystemInfo)
+    {
+        GetSystemInfo(&g_SystemInfo);
+        g_fInitializedGlobalSystemInfo = TRUE;
+    }
+}
+#else
 extern SYSTEM_INFO g_SystemInfo;
+#endif // SELF_NO_HOST
+#endif // HOST_WINDOWS
 
 int GetTotalProcessorCount()
 {
     LIMITED_METHOD_CONTRACT;
 
 #ifdef HOST_WINDOWS
+#ifdef SELF_NO_HOST
+    InitializeGlobalSystemInfo();
+#endif // SELF_NO_HOST
+
     if (CPUGroupInfo::CanEnableGCCPUGroups())
     {
         return CPUGroupInfo::GetNumActiveProcessors();
