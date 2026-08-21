@@ -145,11 +145,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 if (_typeArgument != null)
                     factory.AddVirtualMethodDiscoveryDependencies(ref dependencies, _typeArgument);
             }
-            else if (_fixupKind == ReadyToRunFixupKind.DeclaringTypeHandle)
-            {
-                // This fixup is a type handle lookup as well - the type is the one declaring the method.
-                factory.AddVirtualMethodDiscoveryDependencies(ref dependencies, _methodArgument.Method.OwningType);
-            }
 
             return dependencies;
         }
