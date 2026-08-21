@@ -158,9 +158,13 @@ namespace System.Security.Cryptography
 
             Debug.Assert(IsCngSupported);
 
-            if (secretIsIkm && secret.Length > s_maxCngKeyLengthInBytes)
+            if (secret.Length > s_maxCngKeyLengthInBytes)
             {
-                throw new CryptographicException(SR.Format(SR.Cryptography_HkdfIkmTooLong, s_maxCngKeyLengthInBytes));
+                string message = secretIsIkm ?
+                    SR.Cryptography_HkdfIkmTooLong :
+                    SR.Cryptography_HkdfPrkTooLong;
+
+                throw new CryptographicException(SR.Format(message, s_maxCngKeyLengthInBytes));
             }
 
             byte[]? rented;

@@ -142,6 +142,26 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
+        public void ExpandLargePrk()
+        {
+            const int MaxPrkLength = 2048;
+            byte[] prk = new byte[MaxPrkLength + 1];
+
+            if (PlatformDetection.IsWindows10Version1803OrGreater)
+            {
+                CryptographicException exception = Assert.Throws<CryptographicException>(() =>
+                    Expand(HashAlgorithmName.SHA256, prk, 32, Array.Empty<byte>()));
+
+                Assert.Contains(MaxPrkLength.ToString(), exception.Message);
+            }
+            else
+            {
+                byte[] okm = Expand(HashAlgorithmName.SHA256, prk, 32, Array.Empty<byte>());
+                Assert.Equal("1F3BBC11EFB1D1DE50442A9BF8317A7A1B119883B3D507229AD169F8770BDD0E", okm.ByteArrayToHex());
+            }
+        }
+
+        [Fact]
         public void ExpandOkmMaxSize()
         {
             byte[] prk = new byte[20];
@@ -211,14 +231,15 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public void DeriveKeyLargeIkm()
         {
-            byte[] ikm = new byte[2049];
+            const int MaxIkmLength = 2048;
+            byte[] ikm = new byte[MaxIkmLength + 1];
 
             if (PlatformDetection.IsWindows10Version1803OrGreater)
             {
                 CryptographicException exception = Assert.Throws<CryptographicException>(() =>
                     DeriveKey(HashAlgorithmName.SHA256, ikm, 32, Array.Empty<byte>(), Array.Empty<byte>()));
 
-                Assert.Contains("2048", exception.Message);
+                Assert.Contains(MaxIkmLength.ToString(), exception.Message);
             }
             else
             {
