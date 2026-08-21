@@ -523,7 +523,7 @@ namespace System.Threading.Channels.Tests
         }
 
 #if NET
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime))]
         public async Task AsyncOperation_SynchronousCancellationDuringRegistration_ReservesCompletion()
         {
             using var cts = new CancellationTokenSource();
