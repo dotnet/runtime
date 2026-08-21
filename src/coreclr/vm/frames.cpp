@@ -1506,7 +1506,6 @@ void TransitionFrame::PromoteCallerStack(promote_func* fn, ScanContext* sc)
     //    INSTANCE_CHECK;
     //    NOTHROW;
     //    GC_NOTRIGGER;
-    //    FORBID_FAULT;
     //    MODE_ANY;
     //}
     //CONTRACTL_END
@@ -1572,7 +1571,6 @@ void TransitionFrame::PromoteCallerStackHelper(promote_func* fn, ScanContext* sc
     //    INSTANCE_CHECK;
     //    NOTHROW;
     //    GC_NOTRIGGER;
-    //    FORBID_FAULT;
     //    MODE_ANY;
     //}
     //CONTRACTL_END

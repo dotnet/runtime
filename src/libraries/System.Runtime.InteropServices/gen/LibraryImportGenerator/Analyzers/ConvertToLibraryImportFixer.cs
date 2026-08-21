@@ -275,6 +275,15 @@ namespace Microsoft.Interop.Analyzers
                     .WithIsExtern(false)
                     .WithPartial(true));
 
+            // DeclarationModifiers cannot represent 'safe', so it has to be carried over separately or the
+            // conversion would widen the method's contract to its callers.
+            if (methodSyntax is MethodDeclarationSyntax originalMethod
+                && generatedDeclaration is MethodDeclarationSyntax rewrittenMethod)
+            {
+                generatedDeclaration = rewrittenMethod.WithModifiers(
+                    rewrittenMethod.Modifiers.WithSafeModifierFrom(originalMethod.Modifiers));
+            }
+
             generatedDeclaration = AddExplicitDefaultBoolMarshalling(generator, methodSymbol, generatedDeclaration, "Bool");
 
             return generatedDeclaration;

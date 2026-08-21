@@ -7,9 +7,9 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 internal sealed partial class DebuggerEval : IData<DebuggerEval>
 {
     [FieldAddress]
-    public TargetPointer TargetContext { get; }
+    public partial TargetPointer TargetContext { get; }
 
-    [Field] public bool EvalUsesHijack { get; }
-    [Field] public uint MethodToken { get; }
-    [Field] public TargetPointer AssemblyPtr { get; }
+    [Field] public partial bool EvalUsesHijack { get; }
+    [Field] public partial uint MethodToken { get; }
+    [Field] public partial TargetPointer AssemblyPtr { get; }
 }

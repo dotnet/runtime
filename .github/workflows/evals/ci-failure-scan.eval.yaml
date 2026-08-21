@@ -10,6 +10,23 @@ defaults:
 scoring:
   threshold: 1.0
 
+environment:
+  mcpServers:
+    github:
+      type: stdio
+      command: docker
+      args:
+        - run
+        - --interactive
+        - --rm
+        - --env
+        - GITHUB_PERSONAL_ACCESS_TOKEN
+        - --env
+        - GITHUB_READ_ONLY=1
+        - --env
+        - GITHUB_TOOLSETS=pull_requests,repos,issues,search
+        - ghcr.io/github/github-mcp-server:v1.5.0@sha256:e25564dccc9110a70a77b9df560cbde11aa392fcb5f08b9abe5c4ebc6d146ea4
+
 stimuli:
   - name: live-kbe-safe-output
     environment:
@@ -37,10 +54,14 @@ stimuli:
 
       - First line is `Title: [ci-scan] <one stable failure shape>`, an assertion string or test family with no build numbers, dates, queue or machine names, or run IDs.
       - Second line is `Labels: Known Build Error, <blocking-clean-ci|blocking-clean-ci-optional>`. Pick exactly one blocking label. The JIT, GC, and PGO stress pipelines are `optional-ci` and use `blocking-clean-ci-optional`, and the required gate uses `blocking-clean-ci`.
-      - Then a blank line and the KBE issue body from the shared template. It has a `## Build Information` section citing the real build id and leg you found, a `## Error Details` section with the fenced log excerpt, and a `## Error Message` section containing exactly one ` ```json ` block with the four keys `ErrorMessage`, `ErrorPattern`, `BuildRetry`, and `ExcludeConsoleLog`. Exactly one of `ErrorMessage` or `ErrorPattern` is non-empty, a specific substring copied verbatim from the real log, never a bare test name.
-      - Embed the `<!-- ci-scan-match-count: <N> hits in failure.log -->` marker with the real grep count from step 2.
+      - Then a blank line and the KBE issue body from the shared template. It has a `## Build Information` section citing the real build id and leg you found, a collapsed `KBE authoring guidance (ci-failure-scan)` block, a `## Error Details` section with the fenced log excerpt, and a `## Error Message` section containing exactly one ` ```json ` block with the four keys `ErrorMessage`, `ErrorPattern`, `BuildRetry`, and `ExcludeConsoleLog`. Exactly one of `ErrorMessage` or `ErrorPattern` is non-empty, a specific substring copied verbatim from the real log, never a bare test name.
+      - Immediately after the fenced JSON block, add the collapsed `Agentic workflow metadata (ci-failure-scan)` block. It contains `Workflow artifact: ci-failure-scan`, `Artifact kind: kbe-verification`, and `Verified match count: <N> hits in failure.log` with the real positive grep count from step 2.
 
       Outer-loop pipelines have failing `main` builds essentially all the time, so search across defs, starting with 154 and then other outer-loop defs, until you find a real one. Do not give up and do not fabricate. Keep all scratch state under /tmp.
+
+    rubric:
+      - |
+       The emitted `./out/kbe.md` conforms to the static Known Build Error format. It has a `[ci-scan] ` title naming exactly one failure shape with no run-specific IDs, the `Known Build Error` label plus exactly one of `blocking-clean-ci` or `blocking-clean-ci-optional`, the three body sections, a collapsed `KBE authoring guidance (ci-failure-scan)` block, and exactly one fenced json block with all four keys where exactly one of ErrorMessage or ErrorPattern is a non-empty specific substring rather than a bare identifier and the other is `""`. The Build Information section cites a concrete real build id. After the JSON, it has a collapsed `Agentic workflow metadata (ci-failure-scan)` block identifying the `kbe-verification` artifact and a positive verified match count.
 
     graders:
       - type: file-matches
@@ -66,7 +87,12 @@ stimuli:
       - type: file-matches
         config:
           path: "out/kbe.md"
-          pattern: 'ci-scan-match-count:\s*\d+\s*hits'
+          pattern: '(?s)<details>\s*<summary>KBE authoring guidance \(ci-failure-scan\)</summary>.*?</details>'
+
+      - type: file-matches
+        config:
+          path: "out/kbe.md"
+          pattern: '(?s)<details>\s*<summary>Agentic workflow metadata \(ci-failure-scan\)</summary>\s*Workflow artifact:\s*ci-failure-scan\s*Artifact kind:\s*kbe-verification\s*Verified match count:\s*[1-9]\d*\s+hits in failure\.log\s*</details>'
 
       - type: file-not-matches
         config:
@@ -77,19 +103,18 @@ stimuli:
         name: fetched-real-failing-build
         config:
           required:
-            - name: '^bash$'
+            - name: '^(bash|powershell)$'
               command: 'dev\.azure\.com/dnceng-public/public/_apis/build/builds'
 
       - type: tool-calls
         name: searched-existing-kbe
         config:
           required:
-            - name: '^bash$'
+            - name: '^(bash|powershell)$'
               command: 'gh (search|issue)'
 
       - type: prompt
         name: kbe-format-conformant
         config:
           scoring: binary
-          prompt: |
-            Read ./out/kbe.md. Pass only if it conforms to the static Known Build Error format. It needs a `[ci-scan] ` title naming exactly one failure shape with no run-specific IDs, the `Known Build Error` label plus exactly one of `blocking-clean-ci` or `blocking-clean-ci-optional`, the three body sections, and exactly one fenced json block with all four keys where exactly one of ErrorMessage or ErrorPattern is a non-empty specific substring rather than a bare identifier and the other is `""`, and the Build Information section cites a concrete real build id. Otherwise fail.
+          evidence: [trajectory, diff]
