@@ -2173,6 +2173,78 @@ namespace System.Tests
             Assert.True(double.Abs(actual - expected) <= 5e-7 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"cbrt({input}): expected {expected}, got {actual}");
         }
 
+        // The near-tie inputs are the significands whose exact product sits closest to a rounding
+        // boundary, which is where carrying the constant to fewer digits would decide the result
+        // differently; the expected values were computed independently at several hundred digits.
+        [Theory]
+        [InlineData(0x7C000000U, 0x7C000000U)] // NaN
+        [InlineData(0x7C001234U, 0x7C001234U)] // NaN payload
+        [InlineData(0x78000000U, 0x78000000U)] // +Infinity
+        [InlineData(0xF8000000U, 0xF8000000U)] // -Infinity
+        [InlineData(0x32800000U, 0x2A000000U)] // +0
+        [InlineData(0xB2800000U, 0xAA000000U)] // -0
+        [InlineData(0x32800001U, 0x2E9AA1B1U)] // 1
+        [InlineData(0xB2800001U, 0xAE9AA1B1U)] // -1
+        [InlineData(0x328000B4U, 0x2FAFEFD9U)] // 180
+        [InlineData(0x3280005AU, 0x2F97F7ECU)] // 90
+        [InlineData(0x77F8967FU, 0x5F1AA1B1U)] // MaxValue
+        [InlineData(0xF7F8967FU, 0xDF1AA1B1U)] // MinValue
+        [InlineData(0x00000001U, 0x00000000U)] // Epsilon
+        [InlineData(0x80000001U, 0x80000000U)] // -Epsilon
+        [InlineData(0x000F4240U, 0x0000442DU)] // MinNormal
+        [InlineData(0x32E53CFFU, 0x3211AB5EU)] // near tie 6634751
+        [InlineData(0x00E53CFFU, 0x0011AB5EU)] // near tie 6634751 subnormal
+        [InlineData(0x32C8BD57U, 0x31FEF45EU)] // near tie 4767063
+        [InlineData(0x00C8BD57U, 0x000CB209U)] // near tie 4767063 subnormal
+        [InlineData(0x32AA4456U, 0x31C9C50CU)] // near tie 2770006
+        [InlineData(0x00AA4456U, 0x00076081U)] // near tie 2770006 subnormal
+        [InlineData(0x32CFC6FBU, 0x6C6B3CD3U)] // near tie 5228283
+        [InlineData(0x00CFC6FBU, 0x000DEC7CU)] // near tie 5228283 subnormal
+        [InlineData(0x6CA4F64DU, 0x321734CEU)] // near tie 8713805
+        [InlineData(0x6024F64DU, 0x001734CEU)] // near tie 8713805 subnormal
+        [InlineData(0x32F8F270U, 0x32151BF7U)] // near tie 7926384
+        [InlineData(0x00F8F270U, 0x00151BF7U)] // near tie 7926384 subnormal
+        public static void DegreesToRadiansTest(uint value, uint expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.DegreesToRadians(Unsafe.BitCast<uint, Decimal32>(value))));
+        }
+
+        // The near-tie inputs are the significands whose exact product sits closest to a rounding
+        // boundary, which is where carrying the constant to fewer digits would decide the result
+        // differently; the expected values were computed independently at several hundred digits.
+        [Theory]
+        [InlineData(0x7C000000U, 0x7C000000U)] // NaN
+        [InlineData(0x7C001234U, 0x7C001234U)] // NaN payload
+        [InlineData(0x78000000U, 0x78000000U)] // +Infinity
+        [InlineData(0xF8000000U, 0xF8000000U)] // -Infinity
+        [InlineData(0x32800000U, 0x2B800000U)] // +0
+        [InlineData(0xB2800000U, 0xAB800000U)] // -0
+        [InlineData(0x32800001U, 0x30576D2AU)] // 1
+        [InlineData(0xB2800001U, 0xB0576D2AU)] // -1
+        [InlineData(0x328000B4U, 0x318FBC9CU)] // 180
+        [InlineData(0x3280005AU, 0x314EAF0CU)] // 90
+        [InlineData(0x77F8967FU, 0x78000000U)] // MaxValue
+        [InlineData(0xF7F8967FU, 0xF8000000U)] // MinValue
+        [InlineData(0x00000001U, 0x00000039U)] // Epsilon
+        [InlineData(0x80000001U, 0x80000039U)] // -Epsilon
+        [InlineData(0x000F4240U, 0x00D76D2AU)] // MinNormal
+        [InlineData(0x32E53CFFU, 0x33BA0158U)] // near tie 6634751
+        [InlineData(0x00E53CFFU, 0x01BA0158U)] // near tie 6634751 subnormal
+        [InlineData(0x32C8BD57U, 0x33A9AD3EU)] // near tie 4767063
+        [InlineData(0x00C8BD57U, 0x01A9AD3EU)] // near tie 4767063 subnormal
+        [InlineData(0x32AA4456U, 0x33983799U)] // near tie 2770006
+        [InlineData(0x00AA4456U, 0x01983799U)] // near tie 2770006 subnormal
+        [InlineData(0x32CFC6FBU, 0x33ADB581U)] // near tie 5228283
+        [InlineData(0x00CFC6FBU, 0x01ADB581U)] // near tie 5228283 subnormal
+        [InlineData(0x6CA4F64DU, 0x33CC2E82U)] // near tie 8713805
+        [InlineData(0x6024F64DU, 0x01CC2E82U)] // near tie 8713805 subnormal
+        [InlineData(0x32F8F270U, 0x33C54C2CU)] // near tie 7926384
+        [InlineData(0x00F8F270U, 0x01C54C2CU)] // near tie 7926384 subnormal
+        public static void RadiansToDegreesTest(uint value, uint expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.RadiansToDegrees(Unsafe.BitCast<uint, Decimal32>(value))));
+        }
+
         [Theory]
         [InlineData(0x7C000000U, 0x78000000U, 0x78000000U)] // hypot(NaN, +Infinity) = +Infinity
         [InlineData(0x78000000U, 0x7C000000U, 0x78000000U)] // hypot(+Infinity, NaN) = +Infinity
