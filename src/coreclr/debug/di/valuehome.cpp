@@ -129,13 +129,12 @@ void RegValueHome::SetEnregisteredValue(MemoryRange newValue, ContextBuffer cont
 // for full header comment)
 void RegValueHome::GetEnregisteredValue(MemoryRange valueOutBuffer)
 {
-    _ASSERTE(sizeof(TADDR) == valueOutBuffer.Size());
-
     TADDR value = 0;
+    _ASSERTE(valueOutBuffer.Size() <= sizeof(value));
     HRESULT hr = m_pFrame->ReadContextRegister(m_reg1Info.m_kRegNumber, &value);
     IfFailThrow(hr);
 
-    memcpy(valueOutBuffer.StartAddress(), &value, sizeof(value));
+    memcpy(valueOutBuffer.StartAddress(), &value, valueOutBuffer.Size());
 } // RegValueHome::GetEnregisteredValue
 
 
@@ -730,13 +729,15 @@ CORDB_ADDRESS HandleValueHome::GetAddress()
 void HandleValueHome::GetValue(MemoryRange dest)
 {
     _ASSERTE((m_pProcess != NULL) && !m_vmObjectHandle.IsNull());
-    CORDB_ADDRESS objPtr = PTR_TO_CORDB_ADDRESS((void *)NULL);
+    CORDB_ADDRESS objPtr = 0;
+    IDacDbiInterface::TargetInfo targetInfo;
+    IfFailThrow(m_pProcess->GetTargetInfo(&targetInfo));
     IfFailThrow(m_pProcess->GetDAC()->GetHandleAddressFromVmHandle(m_vmObjectHandle, &objPtr));
 
-    _ASSERTE(dest.Size() <= sizeof(void *));
+    _ASSERTE(dest.Size() == targetInfo.pointerSize);
     _ASSERTE(dest.StartAddress() != NULL);
     _ASSERTE(objPtr != (CORDB_ADDRESS)NULL);
-    m_pProcess->SafeReadBuffer(TargetBuffer(objPtr, sizeof(void *)), (BYTE *)dest.StartAddress());
+    m_pProcess->SafeReadBuffer(TargetBuffer(objPtr, targetInfo.pointerSize), (BYTE *)dest.StartAddress());
 } // HandleValueHome::GetValue
 
 // Sets a location to the value provided in src
@@ -745,13 +746,20 @@ void HandleValueHome::SetValue(MemoryRange src, CordbType * pType)
 {
     _ASSERTE(!m_vmObjectHandle.IsNull());
 
+    IDacDbiInterface::TargetInfo targetInfo;
+    IfFailThrow(m_pProcess->GetTargetInfo(&targetInfo));
+    _ASSERTE(src.Size() == targetInfo.pointerSize);
+
+    CORDB_ADDRESS newReference = 0;
+    memcpy(&newReference, src.StartAddress(), src.Size());
+
     DebuggerIPCEvent event;
 
     m_pProcess->InitIPCEvent(&event, DB_IPCE_SET_REFERENCE, true, VMPTR_AppDomain::NullPtr());
 
     event.SetReference.objectRefAddress = (CORDB_ADDRESS)0;
     event.SetReference.vmObjectHandle = m_vmObjectHandle;
-    event.SetReference.newReference = PTR_TO_CORDB_ADDRESS(*((void **)src.StartAddress()));
+    event.SetReference.newReference = newReference;
 
     // Note: two-way event here...
     IfFailThrow(m_pProcess->SendIPCEvent(&event, sizeof(DebuggerIPCEvent)));
@@ -846,8 +854,10 @@ RefRemoteValueHome ::RefRemoteValueHome (CordbProcess *                 pProcess
                                          TargetBuffer                   remoteValue):
    RemoteValueHome(pProcess, remoteValue)
 {
+    IDacDbiInterface::TargetInfo targetInfo;
+    IfFailThrow(pProcess->GetTargetInfo(&targetInfo));
     // caller supplies remoteValue, to work w/ Func-eval.
-    _ASSERTE((!remoteValue.IsEmpty()) && (remoteValue.cbSize == sizeof (void *)));
+    _ASSERTE((!remoteValue.IsEmpty()) && (remoteValue.cbSize == targetInfo.pointerSize));
 
 } // RefRemoteValueHome::RefRemoteValueHome
 
@@ -862,6 +872,13 @@ void RefRemoteValueHome::SetValue(MemoryRange src, CordbType * pType)
 {
     // We had better have a remote address.
     _ASSERTE(!m_remoteValue.IsEmpty());
+
+    IDacDbiInterface::TargetInfo targetInfo;
+    IfFailThrow(m_pProcess->GetTargetInfo(&targetInfo));
+    _ASSERTE(src.Size() == targetInfo.pointerSize);
+
+    CORDB_ADDRESS newReference = 0;
+    memcpy(&newReference, src.StartAddress(), src.Size());
 
     // send a Set Reference message to the right side with the address of this reference and whether or not
     // the reference points to a handle.
@@ -881,7 +898,7 @@ void RefRemoteValueHome::SetValue(MemoryRange src, CordbType * pType)
 
         event.SetReference.objectRefAddress = m_remoteValue.pAddress;
         event.SetReference.vmObjectHandle = VMPTR_OBJECTHANDLE::NullPtr();
-        event.SetReference.newReference = PTR_TO_CORDB_ADDRESS(*((void **)src.StartAddress()));
+        event.SetReference.newReference = newReference;
 
         // Note: two-way event here...
         IfFailThrow(m_pProcess->SendIPCEvent(&event, sizeof(DebuggerIPCEvent)));

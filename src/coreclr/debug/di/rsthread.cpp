@@ -5826,12 +5826,15 @@ HRESULT CordbNativeFrame::GetLocalRegisterValue(CorDebugRegister reg,
         EnregisteredValueHomeHolder pRemoteReg(new RegValueHome(this, reg));
         EnregisteredValueHomeHolder * pRegHolder = std::addressof(pRemoteReg);
 
+        ULONG32 valueSize = CordbValue::GetSizeForType(pType, kUnboxed);
+        _ASSERTE(valueSize <= REG_SIZE);
+
         ICorDebugValue *pValue;
         CordbValue::CreateValueByType(GetCurrentAppDomain(),
                                       pType,
                                       false,
                                       EMPTY_BUFFER,
-                                      MemoryRange(&regVal, targetInfo.pointerSize),
+                                      MemoryRange(&regVal, valueSize),
                                       pRegHolder,
                                       VMPTR_DebuggerExternalMemoryOwner::NullPtr(),
                                       &pValue);  // throws
