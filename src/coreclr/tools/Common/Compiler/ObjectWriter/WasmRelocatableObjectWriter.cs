@@ -105,7 +105,7 @@ namespace ILCompiler.ObjectWriter
                         case RelocType.WASM_MEMORY_ADDR_REL_SLEB when _sections.GetSection<WasmSection>(definedSymbol.SectionIndex).Type == WasmSectionType.Code:
                         {
                             // These relocations reference a wasm structural index (function, type,
-                            // table entry, or well-known global). For R2R we self-resolve them here to
+                            // table entry, or well-known global). We self-resolve them here to
                             // the index assigned when the symbol was registered into its index space.
                             if (!_wasmSymbolManager.TryGetSymbol(reloc.SymbolName, out WasmSymbol symbol))
                             {
