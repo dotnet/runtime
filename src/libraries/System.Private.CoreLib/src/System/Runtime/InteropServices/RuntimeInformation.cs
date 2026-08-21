@@ -30,32 +30,31 @@ namespace System.Runtime.InteropServices
         public static Architecture ProcessArchitecture
         {
             [NonVersionable]
-            get
-            {
+            get =>
 #if TARGET_X86
-                return Architecture.X86;
+                Architecture.X86
 #elif TARGET_AMD64
-                return Architecture.X64;
+                Architecture.X64
 #elif TARGET_ARMV6
-                return Architecture.Armv6;
+                Architecture.Armv6
 #elif TARGET_ARM
-                return Architecture.Arm;
+                Architecture.Arm
 #elif TARGET_ARM64
-                return Architecture.Arm64;
+                Architecture.Arm64
 #elif TARGET_WASM
-                return Architecture.Wasm;
+                Architecture.Wasm
 #elif TARGET_S390X
-                return Architecture.S390x;
+                Architecture.S390x
 #elif TARGET_LOONGARCH64
-                return Architecture.LoongArch64;
+                Architecture.LoongArch64
 #elif TARGET_POWERPC64
-                return Architecture.Ppc64le;
+                Architecture.Ppc64le
 #elif TARGET_RISCV64
-                return Architecture.RiscV64;
+                Architecture.RiscV64
 #else
 #error Unknown Architecture
 #endif
-            }
+            ;
         }
     }
 }
