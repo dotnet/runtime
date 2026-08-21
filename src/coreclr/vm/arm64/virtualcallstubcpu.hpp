@@ -345,9 +345,9 @@ struct ResolveHolder
          // ResolveStub._failEntryPoint(x0:MethodToken, x1,.., x7 and x8, x11:IndirectionCellAndFlags)
          // {
          //     if (--*(this._pCounter) >= 0)
-         //         this._resolveEntryPoint(x0, [x1..x7 and x8]);
+         //         return this._resolveEntryPoint(x0, [x1..x7 and x8]);
          //     x11 = x11 | SDF_ResolveBackPatch;
-         //     this._slowEntryPoint(x0, [x1..x7 and x8]);
+         //     return this._slowEntryPoint(x0, [x1..x7 and x8]);
          // }
 
 #undef PC_REL_OFFSET //NOTE Offset can be negative
