@@ -10,27 +10,16 @@ using Microsoft.Diagnostics.DataContractReader.Legacy;
 
 namespace Microsoft.Diagnostics.DataContractReader.DumpCollect;
 
-// Callback implementation returns E_NOINTERFACE for IID_IUnknown. Accepting the callback as a
-// generated COM interface would therefore fail in the generated stub before EnumMemoryRegions runs.
-[GeneratedComInterface]
-[Guid("471c35b4-7c2f-4ef0-a945-00f8c38056f1")]
-internal unsafe partial interface ICLRDataEnumMemoryRegionsRaw
-{
-    [PreserveSig]
-    int EnumMemoryRegions(nint callback, uint miniDumpFlags, int clrFlags);
-}
-
 [GeneratedComClass]
 internal sealed unsafe partial class MemoryRegionEnumerator(
     ICLRDataTarget dataTarget,
-    ulong contractDescriptor) : ICLRDataEnumMemoryRegionsRaw
+    ulong contractDescriptor,
+    RuntimeModuleInfo runtimeModule) : ICLRDataEnumMemoryRegions
 {
-    private const int ClrDataEnumMemHeap = 0x1;
-    private const int ClrDataEnumMemHeap2 = 0x3;
     private const uint MiniDumpWithPrivateReadWriteMemory = 0x200;
     private const nuint ContextAlignment = 16;
 
-    public int EnumMemoryRegions(nint callback, uint miniDumpFlags, int clrFlags)
+    public int EnumMemoryRegions(nint callback, uint miniDumpFlags, CLRDataEnumMemoryFlags clrFlags)
     {
         if (callback == 0)
             return HResults.E_INVALIDARG;
@@ -40,12 +29,12 @@ internal sealed unsafe partial class MemoryRegionEnumerator(
             var emitter = new MemoryRegionEmitter(callback);
             ContractDescriptorTarget target = CreateTarget(emitter);
             bool includeHeap =
-                clrFlags is ClrDataEnumMemHeap or ClrDataEnumMemHeap2
+                clrFlags is CLRDataEnumMemoryFlags.CLRDATA_ENUM_MEM_HEAP or CLRDataEnumMemoryFlags.CLRDATA_ENUM_MEM_HEAP2
                 || (miniDumpFlags & MiniDumpWithPrivateReadWriteMemory) != 0;
 
             DumpCollectLogger.Log(
                 $"Starting memory enumeration: miniDumpFlags=0x{miniDumpFlags:x}, clrFlags=0x{clrFlags:x}, includeHeap={includeHeap}.");
-            new DumpCreator(target, includeHeap, emitter).EnumerateMemoryRegions();
+            new DumpCreator(target, runtimeModule, includeHeap, emitter).EnumerateMemoryRegions();
             DumpCollectLogger.Log(
                 $"Completed memory enumeration: result=0x{emitter.Result:x8}, regions={emitter.RegionCount}, bytes={emitter.TotalBytes}.");
             return emitter.Result;

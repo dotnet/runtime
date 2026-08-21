@@ -26,14 +26,33 @@ internal static class Entrypoints
         try
         {
             ICLRDataTarget dataTarget = ComInterfaceMarshaller<ICLRDataTarget>.ConvertToManaged((void*)pDataTarget)!;
-            if (!ContractDescriptorLocator.TryGetFromPE(dataTarget, out ulong contractAddress))
+            if (!RuntimeModuleInfo.TryCreate(dataTarget, out RuntimeModuleInfo runtimeModule))
+            {
+                DumpCollectLogger.Log("Failed to locate the runtime module.");
+                return HResults.E_FAIL;
+            }
+
+            ulong contractAddress;
+            if (dataTarget is ICLRContractLocator contractLocator)
+            {
+                if (contractLocator.GetContractDescriptor(&contractAddress) < 0)
+                    contractAddress = 0;
+            }
+            else if (!runtimeModule.TryGetExport(
+                RuntimeModuleInfo.ContractDescriptorSymbolName,
+                out contractAddress))
+            {
+                contractAddress = 0;
+            }
+
+            if (contractAddress == 0)
             {
                 DumpCollectLogger.Log("Failed to locate DotNetRuntimeContractDescriptor.");
                 return HResults.E_FAIL;
             }
 
-            var enumerator = new MemoryRegionEnumerator(dataTarget, contractAddress);
-            *iface = ComInterfaceMarshaller<ICLRDataEnumMemoryRegionsRaw>.ConvertToUnmanaged(enumerator);
+            var enumerator = new MemoryRegionEnumerator(dataTarget, contractAddress, runtimeModule);
+            *iface = ComInterfaceMarshaller<ICLRDataEnumMemoryRegions>.ConvertToUnmanaged(enumerator);
             DumpCollectLogger.Log($"Created memory-region enumerator for contract descriptor 0x{contractAddress:x}.");
             return 0;
         }

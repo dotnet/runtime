@@ -14,6 +14,7 @@ internal sealed class DumpCreator
     private const int MaxThreads = 1_000_000;
 
     private readonly Target _target;
+    private readonly RuntimeModuleInfo _runtimeModule;
     private readonly bool _includeHeap;
     private readonly MemoryRegionEmitter _emitter;
     private readonly HashSet<TargetPointer> _loaderAllocators = [];
@@ -22,10 +23,12 @@ internal sealed class DumpCreator
 
     public DumpCreator(
         Target target,
+        RuntimeModuleInfo runtimeModule,
         bool includeHeap,
         MemoryRegionEmitter emitter)
     {
         _target = target;
+        _runtimeModule = runtimeModule;
         _includeHeap = includeHeap;
         _emitter = emitter;
         _methods = new(target);
@@ -34,6 +37,7 @@ internal sealed class DumpCreator
 
     public void EnumerateMemoryRegions()
     {
+        TryEnumerate("runtime module", EnumerateRuntimeModule);
         TryEnumerate("statics", EnumerateStatics);
         TryEnumerate("modules", EnumerateModules);
         TryEnumerate("threads", EnumerateThreads);
@@ -47,6 +51,11 @@ internal sealed class DumpCreator
         }
 
         TryEnumerate("mini metadata", WriteMiniMetadata);
+    }
+
+    private void EnumerateRuntimeModule()
+    {
+        _runtimeModule.EnumerateMemoryRegions(_emitter);
     }
 
     private void TryEnumerate(string phase, Action enumerate)
