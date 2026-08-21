@@ -8673,6 +8673,7 @@ GenTree* Compiler::fgOptimizeCast(GenTreeCast* cast)
 
                 if (srcCastRange.Equals(operandRange) && dstRange.Equals(operandRange))
                 {
+                    DEBUG_DESTROY_NODE(cast, srcCast);
                     return srcCastOp;
                 }
             }
