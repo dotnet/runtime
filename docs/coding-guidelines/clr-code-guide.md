@@ -1268,11 +1268,11 @@ For Linux builds, we build against an older C++ runtime to support older Linux d
 
 The `wchar_t` type is implementation-defined, with Windows and Unix-based platforms using different definitions (2 byte vs 4 byte). Use the `WCHAR` alias instead, which is always 2 bytes. The CoreCLR PAL provides implementations of a variety of the C standard `wchar_t` APIs with the `WCHAR` type instead. These methods, as well as the methods in the [CoreCLR minipal](https://github.com/dotnet/runtime/tree/main/src/coreclr/minipal) and in the [repo minipal](https://github.com/dotnet/runtime/tree/main/src/native/minipal) should be used. In these minipals, the APIs may use `char16_t` or a locally-defined `CHAR16_T` type. In both cases, these types are compatible with the `WCHAR` alias in CoreCLR. If a minipal API exists, it should be used instead of the PAL API.
 
-### <a name="2.11.2"></a> 2.11.2 Do not use C++ Standard-defined exceptions
+### <a name="2.11.2"></a> 2.11.2 C++ Standard-defined exceptions
 
-The exception handling mechanisms in CoreCLR only handle `Exception`-derived types and `PAL_SEHException`. As a result, standard C++ exceptions, derived from `std::exception`, will cause runtime instability and should never be used. There is one standard C++ exception type the CoreCLR infrastructure supports, `std::bad_alloc`. Since CoreCLR supports `std::bad_alloc`, the standard container allocators, `std::allocator<T>` and the standard C++ containers, can be used as long as only the non-throwing members are used.
+The CoreCLR exception handling mechanisms convert exceptions derived from `std::exception` to the closest existing managed exception type. `std::bad_alloc` is converted to `OutOfMemoryException`, `std::system_error` is converted through the runtime's Win32 exception handling, and unknown `std::exception` types are converted to `System.Exception`.
 
-For example, `std::vector<T>::at()` should not be used as it may throw an `std::out_of_range` exception. Check the C++ standard or [cppreference.com](https://en.cppreference.com) for each member you plan to use to ensure that it will not throw a C++ standard exception other than `std::bad_alloc`.
+Standard library APIs that can throw must only be used in code with a `THROWS` contract and within the scope of the runtime's exception handling infrastructure. Do not throw types that do not derive from `std::exception`.
 
 ### <a name="2.11.3"></a> 2.11.3 Do not use getenv on Unix platforms
 

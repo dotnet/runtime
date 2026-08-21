@@ -701,6 +701,7 @@ void ExThrowTrap(const char *fcn, const char *file, int line, const char *szType
 // every place we call EX_THROW_WITH_INNER.
 //--------------------------------------------------------------------------------
 Exception *ExThrowWithInnerHelper(Exception *inner);
+Exception *GetExceptionFromCxxException();
 
 // This macro will set the m_innerException into the newly created exception
 // The passed in _type has to be derived from CLRException. You cannot put OOM
@@ -751,11 +752,11 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
 #define EX_CATCH_IMPL_EX(DerivedExceptionClass)                                         \
                 }                                                                       \
             }                                                                           \
-            PAL_CPP_CATCH_NON_DERIVED_NOARG (const std::bad_alloc&)                     \
+            PAL_CPP_CATCH_NON_DERIVED_NOARG (const std::exception&)                     \
             {                                                                           \
                 __state.SetCaughtCxx();                                                 \
-                __state.m_pExceptionPtr = Exception::GetOOMException();                 \
-                ThrowOutOfMemory();                                                     \
+                __state.m_pExceptionPtr = GetExceptionFromCxxException();                 \
+                PAL_CPP_THROW(Exception *, __state.m_pExceptionPtr);                    \
             }                                                                           \
             PAL_CPP_CATCH_DERIVED (DerivedExceptionClass, __pExceptionRaw)              \
             {                                                                           \
@@ -792,11 +793,11 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
 #define EX_CATCH_IMPL_CPP_ONLY                                                      \
                 }                                                                   \
             }                                                                       \
-            PAL_CPP_CATCH_NON_DERIVED_NOARG (const std::bad_alloc&)                 \
+            PAL_CPP_CATCH_NON_DERIVED_NOARG (const std::exception&)                 \
             {                                                                       \
                 __state.SetCaughtCxx();                                             \
-                __state.m_pExceptionPtr = Exception::GetOOMException();             \
-                ThrowOutOfMemory();                                                 \
+                __state.m_pExceptionPtr = GetExceptionFromCxxException();             \
+                PAL_CPP_THROW(Exception *, __state.m_pExceptionPtr);                \
             }                                                                       \
             PAL_CPP_ENDTRY                                                          \
         }                                                                           \

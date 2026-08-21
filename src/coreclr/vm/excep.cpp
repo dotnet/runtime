@@ -9542,6 +9542,12 @@ UINT GetResourceIDForFileLoadExceptionHR(HRESULT hr)
 
 #ifndef DACCESS_COMPILE
 
+void DECLSPEC_NORETURN ThrowCxxSystemError(DWORD errorCode)
+{
+    WRAPPER_NO_CONTRACT;
+    COMPlusThrowWin32(HRESULT_FROM_WIN32(errorCode));
+}
+
 //==========================================================================
 // Throw a runtime exception based on the last Win32 error (GetLastError())
 //==========================================================================
