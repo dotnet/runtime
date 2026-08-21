@@ -598,11 +598,11 @@ safe-outputs:
   report-failure-as-issue: false
   add-comment:
     max: 5
-    target: ${{ github.event_name == 'workflow_dispatch' && inputs['pr-number'] || github.event.check_run.pull_requests[0].number }}
+    target: ${{ github.event.check_run.pull_requests[0].number || inputs['pr-number'] }}
     hide-older-comments: true
   create-pull-request-review-comment:
     max: 25
-    target: ${{ github.event_name == 'workflow_dispatch' && inputs['pr-number'] || github.event.check_run.pull_requests[0].number }}
+    target: ${{ github.event.check_run.pull_requests[0].number || inputs['pr-number'] }}
   noop:
     max: 5
     report-as-issue: false
