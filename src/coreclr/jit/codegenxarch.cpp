@@ -1065,7 +1065,9 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
     else
     {
         // when reg3 != reg1 && reg3 != reg2, and NDD is available, we can use APX-EVEX.ND to optimize the codegen.
-        eligibleForNDD = emit->DoJitUseApxNDD(ins);
+        // On the latest Intel processors with APX, the memory form of NDD instructions has to be turned off by
+        // default for optimal hardware performance, so keep NDD only for register and immediate sources.
+        eligibleForNDD = emit->DoJitUseApxNDD(ins) && !op2->isUsedFromMemory();
         if (!eligibleForNDD)
         {
             var_types op1Type = op1->TypeGet();
