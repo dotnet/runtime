@@ -1152,7 +1152,6 @@ bool UseActivationInjection()
 HRESULT
 Thread::UserAbort(EEPolicy::ThreadAbortTypes abortType, DWORD timeout)
 {
-    // GetXxxException may trigger GC.
     STANDARD_VM_CONTRACT;
 
     STRESS_LOG2(LF_SYNC | LF_APPDOMAIN, LL_INFO100, "UserAbort Thread %p Thread Id = %x\n", this, GetThreadId());

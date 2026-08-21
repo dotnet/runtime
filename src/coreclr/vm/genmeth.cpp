@@ -1280,7 +1280,6 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
 {
     CONTRACTL {
         STANDARD_VM_CHECK;
-            // Because allowCreate is TRUE
         PRECONDITION(CheckPointer(pMethod));
     }
     CONTRACTL_END;
