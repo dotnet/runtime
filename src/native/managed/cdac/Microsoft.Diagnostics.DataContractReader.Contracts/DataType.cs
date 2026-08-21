@@ -65,6 +65,8 @@ public enum DataType
     DynamicStaticsInfo,
     EEClass,
     EEClassOptionalFields,
+    LayoutEEClass,
+    EEClassLayoutInfo,
     SystemVEightByteRegistersInfo,
     CoreLibBinder,
     MethodTableAuxiliaryData,

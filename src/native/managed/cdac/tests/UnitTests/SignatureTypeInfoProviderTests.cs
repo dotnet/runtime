@@ -172,6 +172,32 @@ public class SignatureTypeInfoProviderTests
         Assert.Throws<NotImplementedException>(() => typeHandle.GetSize());
     }
 
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetFieldAlignmentUsesRuntimeLayoutOrPointerSize(MockTarget.Architecture arch)
+    {
+        ITypeHandle exactTypeHandle = Mock.Of<ITypeHandle>();
+        Mock<IRuntimeTypeSystem> rts = new();
+        rts.Setup(r => r.GetClassAlignmentRequirement(exactTypeHandle)).Returns(16);
+        TestPlaceholderTarget target = new TestPlaceholderTarget.Builder(arch)
+            .AddMockContract(rts)
+            .Build();
+        CallingConvention_1 callingConvention = new(target);
+
+        CdacTypeHandle exact = new(
+            new SignatureTypeInfo(CorElementType.ValueType, exactTypeHandle),
+            target,
+            callingConvention);
+        CdacTypeHandle unresolved = new(
+            new SignatureTypeInfo(CorElementType.ValueType, exactTypeHandle: null),
+            target,
+            callingConvention);
+
+        Assert.Equal(16, exact.GetFieldAlignment());
+        Assert.Equal(target.PointerSize, unresolved.GetFieldAlignment());
+        rts.Verify(r => r.GetClassAlignmentRequirement(exactTypeHandle), Times.Once);
+    }
+
     private static SignatureTypeInfoProvider CreateProvider(
         MockTarget.Architecture arch,
         ModuleHandle moduleHandle,

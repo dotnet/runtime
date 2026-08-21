@@ -814,6 +814,44 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             || t == CorElementType.I
             || t == CorElementType.U;
     public bool RequiresAlign8(ITypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.RequiresAlign8;
+
+    // Mirrors CEEInfo::getClassAlignmentRequirementStatic for managed value types. TypeDesc and
+    // native-value-type paths are omitted because the managed signature decoder cannot produce them.
+    private const string LayoutInfoFieldName = "LayoutInfo";
+
+    public int GetClassAlignmentRequirement(ITypeHandle typeHandle)
+    {
+        int result = _target.PointerSize;
+        if (!typeHandle.IsMethodTable())
+            return result;
+
+        TargetPointer eeClassPtr = GetClassPointer(typeHandle);
+        if (eeClassPtr != TargetPointer.Null)
+        {
+            Data.EEClass eeClass = _target.ProcessedData.GetOrAdd<Data.EEClass>(eeClassPtr);
+
+            // LayoutInfo aliases unrelated memory unless HasLayout is set.
+            if (eeClass.HasLayout)
+            {
+                Target.TypeInfo layoutClassType = _target.GetTypeInfo(DataType.LayoutEEClass);
+                TargetPointer layoutInfoPtr = eeClassPtr + (ulong)layoutClassType.Fields[LayoutInfoFieldName].Offset;
+                Data.EEClassLayoutInfo layoutInfo = _target.ProcessedData.GetOrAdd<Data.EEClassLayoutInfo>(layoutInfoPtr);
+                if (layoutInfo.LayoutType == (byte)Data.EEClassLayoutInfo.Type.Sequential || layoutInfo.IsBlittable)
+                {
+                    result = layoutInfo.AlignmentRequirement;
+                }
+            }
+        }
+
+        // RequiresAlign8 is only set on FEATURE_64BIT_ALIGNMENT targets.
+        if (result < 8 && RequiresAlign8(typeHandle))
+        {
+            result = 8;
+        }
+
+        return result;
+    }
+
     public bool IsContinuationWithoutMetadata(ITypeHandle typeHandle) => typeHandle.IsMethodTable()
         && ContinuationMethodTablePointer != TargetPointer.Null
         && _methodTables[typeHandle.Address].ParentMethodTable == ContinuationMethodTablePointer
