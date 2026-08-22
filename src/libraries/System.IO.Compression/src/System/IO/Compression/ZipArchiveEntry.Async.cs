@@ -366,6 +366,7 @@ public partial class ZipArchiveEntry
                 throw new InvalidDataException(SR.EntryUncompressedSizeTooLargeForUpdateMode);
             }
 
+            ValidateUncompressedSizeIsPlausible();
 
             _storedUncompressedData = new MemoryStream((int)_uncompressedSize);
 
@@ -612,6 +613,8 @@ public partial class ZipArchiveEntry
         {
             throw new InvalidDataException(SR.EntryTooLarge);
         }
+
+        ValidateUncompressedSizeIsPlausible();
 
         _storedUncompressedData = new MemoryStream((int)_uncompressedSize);
 
