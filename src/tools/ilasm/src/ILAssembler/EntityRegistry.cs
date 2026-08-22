@@ -874,6 +874,34 @@ namespace ILAssembler
             return null;
         }
 
+        /// <summary>
+        /// Finds the local type definition that a type reference refers to, without assigning or
+        /// reading any handles. Passes that run before <see cref="WriteContentTo"/> resolves
+        /// references need this, because handles are not assigned until emission.
+        /// </summary>
+        public TypeDefinitionEntity? FindLocalTypeDefinition(TypeReferenceEntity typeReference)
+        {
+            switch (typeReference.ResolutionScope)
+            {
+                case TypeReferenceEntity enclosing:
+                    return FindLocalTypeDefinition(enclosing) is { } enclosingTypeDef
+                        ? FindTypeDefinition(enclosingTypeDef, typeReference.Namespace, typeReference.Name)
+                        : null;
+
+                case AssemblyReferenceEntity assemblyReference:
+                    return Assembly is not null
+                        && string.Equals(assemblyReference.Name, Assembly.Name, StringComparison.OrdinalIgnoreCase)
+                        ? FindTypeDefinition(null, typeReference.Namespace, typeReference.Name)
+                        : null;
+
+                case ModuleEntity or ModuleReferenceEntity:
+                    return FindTypeDefinition(null, typeReference.Namespace, typeReference.Name);
+
+                default:
+                    return null;
+            }
+        }
+
         public AssemblyReferenceEntity GetOrCreateAssemblyReference(string name, Action<AssemblyReferenceEntity> onCreateAssemblyReference)
         {
             return GetOrCreateEntity(name, TableIndex.AssemblyRef, _seenAssemblyRefs, _ => new(name), onCreateAssemblyReference);
@@ -1670,6 +1698,31 @@ namespace ILAssembler
             return entity;
         }
 
+        /// <summary>
+        /// Removes custom attributes that were lowered to metadata bits or auxiliary table rows
+        /// by the pseudo custom attribute pass, and renumbers the handles of the survivors.
+        /// </summary>
+        /// <remarks>
+        /// Nothing in metadata refers to a CustomAttribute handle (a CustomAttribute can never be
+        /// the parent of another custom attribute), so removing rows is safe. Handles are still
+        /// reassigned so that they stay consistent with the emitted row numbers.
+        /// </remarks>
+        public void RemoveCustomAttributes(IReadOnlyCollection<CustomAttributeEntity> toRemove)
+        {
+            if (toRemove.Count == 0 || !_seenEntities.TryGetValue(TableIndex.CustomAttribute, out List<EntityBase>? entities))
+            {
+                return;
+            }
+
+            var removeSet = new HashSet<CustomAttributeEntity>(toRemove);
+            entities.RemoveAll(entity => entity is CustomAttributeEntity customAttribute && removeSet.Contains(customAttribute));
+
+            for (int i = 0; i < entities.Count; i++)
+            {
+                ((IHasHandle)entities[i]).SetHandle(MetadataTokens.EntityHandle(TableIndex.CustomAttribute, i + 1));
+            }
+        }
+
         public static MethodImplementationEntity CreateUnrecordedMethodImplementation(MethodDefinitionEntity methodBody, MemberReferenceEntity methodDeclaration)
         {
             return new MethodImplementationEntity(methodBody.ContainingType, methodBody, methodDeclaration);
@@ -2017,7 +2070,7 @@ namespace ILAssembler
 
         public sealed class ParameterEntity(ParameterAttributes attributes, string? name, BlobBuilder marshallingDescriptor, int sequence) : EntityBase
         {
-            public ParameterAttributes Attributes { get; } = attributes;
+            public ParameterAttributes Attributes { get; set; } = attributes;
             public string? Name { get; } = name;
             public BlobBuilder MarshallingDescriptor { get; set; } = marshallingDescriptor;
             public bool HasCustomAttributes { get; set; }
@@ -2082,6 +2135,12 @@ namespace ILAssembler
             public EntityBase? Owner { get; set; }
             public EntityBase Constructor { get; } = constructor;
             public BlobBuilder Value { get; } = value;
+
+            /// <summary>
+            /// Source location of the originating <c>.custom</c> directive, used to report
+            /// diagnostics from the pseudo custom attribute lowering pass, which runs after parsing.
+            /// </summary>
+            public Location? Location { get; set; }
         }
 
         public sealed class MethodImplementationEntity(TypeDefinitionEntity type, EntityBase methodBody, MemberReferenceEntity methodDeclaration) : EntityBase
@@ -2093,7 +2152,7 @@ namespace ILAssembler
 
         public sealed class FieldDefinitionEntity(FieldAttributes attributes, TypeDefinitionEntity type, string name, BlobBuilder signature) : EntityBase
         {
-            public FieldAttributes Attributes { get; } = attributes;
+            public FieldAttributes Attributes { get; set; } = attributes;
             public TypeDefinitionEntity ContainingType { get; } = type;
             public string Name { get; } = name;
             public BlobBuilder Signature { get; } = signature;
@@ -2117,7 +2176,7 @@ namespace ILAssembler
 
         public sealed class EventEntity(EventAttributes attributes, TypeEntity type, string name) : EntityBase
         {
-            public EventAttributes Attributes { get; } = attributes;
+            public EventAttributes Attributes { get; set; } = attributes;
             public TypeEntity Type { get; } = type;
             public string Name { get; } = name;
 

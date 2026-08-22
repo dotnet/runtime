@@ -21,6 +21,8 @@ namespace ILAssembler.Tests
 {
     public class FieldTests
     {
+        private const FieldAttributes NotSerializedField = (FieldAttributes)0x0080;
+
         [Fact]
         public void TrailingCustomAttribute_AttachesToField()
         {
@@ -167,6 +169,51 @@ namespace ILAssembler.Tests
             Assert.Equal(ConstantTypeCode.NullReference, nullConstant.TypeCode);
         }
 
+        [Theory]
+        [InlineData("System.NonSerializedAttribute", NotSerializedField)]
+        [InlineData("System.Runtime.CompilerServices.SpecialNameAttribute", FieldAttributes.SpecialName)]
+        public void PseudoCustomAttribute_OnField_LowersToFlagAndDropsAttribute(string attributeType, FieldAttributes expected)
+        {
+            string source = $$"""
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .field public int32 Value
+                }
+
+                .custom (field int32 Test::Value) instance void [mscorlib]{{attributeType}}::.ctor() = ( 01 00 00 00 )
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var field = reader.GetFieldDefinition(Assert.Single(reader.FieldDefinitions));
+
+            Assert.Equal(expected, field.Attributes & expected);
+            Assert.Empty(field.GetCustomAttributes());
+        }
+
+        [Fact]
+        public void PseudoCustomAttribute_FieldOffset_CreatesFieldLayoutAndDropsAttribute()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public explicit ansi Test extends [mscorlib]System.Object
+                {
+                    .field public int32 Value
+                }
+
+                .custom (field int32 Test::Value) instance void [mscorlib]System.Runtime.InteropServices.FieldOffsetAttribute::.ctor(uint32) = ( 01 00 08 00 00 00 00 00 )
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var field = reader.GetFieldDefinition(Assert.Single(reader.FieldDefinitions));
+
+            Assert.Equal(8, field.GetOffset());
+            Assert.Empty(field.GetCustomAttributes());
+        }
 
         [Fact]
         public void FieldRVA_MultipleDataSections()
