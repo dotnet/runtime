@@ -85,7 +85,6 @@ export function configureEmscriptenStartup (module: DotnetModuleInternal): void 
     if (runtimeHelpers.emscriptenBuildOptions.wasmEnableEH) {
         mono_assert(runtimeHelpers.featureWasmFinalEh, "This browser/engine doesn't support WASM exception handling. Please use a modern version. See also https://learn.microsoft.com/aspnet/core/blazor/supported-platforms");
     }
-    module.mainScriptUrlOrBlob = loaderHelpers.scriptUrl;// this is needed by worker threads
 
     // these all could be overridden on DotnetModuleConfig, we are chaining them to async below, as opposed to emscripten
     // when the user sets config, we are running our default startup sequence.

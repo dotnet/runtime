@@ -66,10 +66,14 @@ namespace System.Net.Http
         internal Func<SocketsHttpConnectionContext, CancellationToken, ValueTask<Stream>>? _connectCallback;
         internal Func<SocketsHttpPlaintextStreamFilterContext, CancellationToken, ValueTask<Stream>>? _plaintextStreamFilter;
 
+        internal Func<SocketsHttpConnectionEvictionContext, CancellationToken, Task<bool>>? _shouldEvictConnection;
+
         internal IDictionary<string, object?>? _properties;
 
         // Http2 flow control settings:
         internal int _initialHttp2StreamWindowSize = HttpHandlerDefaults.DefaultInitialHttp2StreamWindowSize;
+
+        internal int _initialHttp2MaxConcurrentStreams = HttpHandlerDefaults.DefaultInitialHttp2MaxConcurrentStreams;
 
         internal ClientCertificateOption _clientCertificateOptions;
 
@@ -126,7 +130,9 @@ namespace System.Net.Http
                 _enableMultipleHttp3Connections = _enableMultipleHttp3Connections,
                 _connectCallback = _connectCallback,
                 _plaintextStreamFilter = _plaintextStreamFilter,
+                _shouldEvictConnection = _shouldEvictConnection,
                 _initialHttp2StreamWindowSize = _initialHttp2StreamWindowSize,
+                _initialHttp2MaxConcurrentStreams = _initialHttp2MaxConcurrentStreams,
                 _activityHeadersPropagator = _activityHeadersPropagator,
                 _defaultCredentialsUsedForProxy = _proxy != null && (_proxy.Credentials == CredentialCache.DefaultCredentials || _defaultProxyCredentials == CredentialCache.DefaultCredentials),
                 _defaultCredentialsUsedForServer = _credentials == CredentialCache.DefaultCredentials,

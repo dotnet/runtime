@@ -816,6 +816,10 @@ INST2(rbit,        "rbit",         0,      IF_EN2L,   0x5AC00000,  0x2E605800)
                                    //  rbit    Rd,Rm                DR_2G  X101101011000000 000000nnnnnddddd   5AC0 0000   Rd Rn    (general)
                                    //  rbit    Vd,Vn                DV_2M  0Q10111001100000 010110nnnnnddddd   2E60 5800   Vd,Vn    (vector)
 
+INST2(cnt,         "cnt",          0,      IF_EN2L,   0x5AC01C00,  0x0E205800)
+                                   //  cnt     Rd,Rm                DR_2G  X101101011000000 000111nnnnnddddd   5AC0 1C00   Rd Rn    (general, FEAT_CSSC)
+                                   //  cnt     Vd,Vn                DV_2M  0Q00111000100000 010110nnnnnddddd   0E20 5800   Vd,Vn    (vector)
+
 INST2(rev16,       "rev16",        0,      IF_EN2L,   0x5AC00400,  0x0E201800)
                                    //  rev16   Rd,Rm                DR_2G  X101101011000000 000001nnnnnddddd   5AC0 0400   Rd Rn    (general)
                                    //  rev16   Vd,Vn                DV_2M  0Q001110XX100000 000110nnnnnddddd   0E20 1800   Vd,Vn    (vector)
@@ -1716,8 +1720,8 @@ INST1(bif,         "bif",          0,      IF_DV_3C,  0x2EE01C00)
 INST1(addv,        "addv",         0,      IF_DV_2T,  0x0E31B800)
                                    //  addv    Vd,Vn                DV_2T  0Q001110XX110001 101110nnnnnddddd   0E31 B800   Vd,Vn      (vector)
 
-INST1(cnt,         "cnt",          0,      IF_DV_2M,  0x0E205800)
-                                   //  cnt     Vd,Vn                DV_2M  0Q00111000100000 010110nnnnnddddd   0E20 5800   Vd,Vn      (vector)
+INST1(ctz,         "ctz",          0,      IF_DR_2G,  0x5AC01800)
+                                   //  ctz     Rd,Rn                DR_2G  X101101011000000 000110nnnnnddddd   5AC0 1800   Rd Rn      (general, FEAT_CSSC)
 
 INST1(not,         "not",          0,      IF_DV_2M,  0x2E205800)
                                    //  not     Vd,Vn                DV_2M  0Q10111000100000 010110nnnnnddddd   2E20 5800   Vd,Vn      (vector)

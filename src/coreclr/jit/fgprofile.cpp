@@ -2979,8 +2979,8 @@ PhaseStatus Compiler::fgIncorporateProfileData()
 
             default:
                 JITDUMP("Unknown PGO record type 0x%x in schema entry %u (offset 0x%x count 0x%x other 0x%x)\n",
-                        fgPgoSchema[iSchema].InstrumentationKind, iSchema, fgPgoSchema[iSchema].ILOffset,
-                        fgPgoSchema[iSchema].Count, fgPgoSchema[iSchema].Other);
+                        static_cast<unsigned>(fgPgoSchema[iSchema].InstrumentationKind), iSchema,
+                        fgPgoSchema[iSchema].ILOffset, fgPgoSchema[iSchema].Count, fgPgoSchema[iSchema].Other);
                 otherRecords++;
                 break;
         }
@@ -4595,6 +4595,8 @@ void Compiler::fgDebugCheckProfile(PhaseChecks checks)
 //
 // Arguments:
 //   checks - checker options
+//   dump   - if true, report inconsistencies via JITDUMP without asserting (used by the
+//            re-run below to log details before the initial pass asserts)
 //
 // Returns:
 //   True if all enabled checks pass
@@ -4610,7 +4612,7 @@ void Compiler::fgDebugCheckProfile(PhaseChecks checks)
 //   There's no point checking until we've built pred lists, as
 //   we can't easily reason about consistency without them.
 //
-bool Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
+bool Compiler::fgDebugCheckProfileWeights(ProfileChecks checks, bool dump)
 {
     // We can check classic (min/max, late computed) weights
     //   and/or
@@ -4638,7 +4640,7 @@ bool Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
         return false;
     }
 
-    JITDUMP("Checking Profile Weights (flags:0x%x)\n", checks);
+    JITDUMP("Checking Profile Weights (flags:0x%x)\n", static_cast<unsigned>(checks));
     unsigned problemBlocks    = 0;
     unsigned unprofiledBlocks = 0;
     unsigned profiledBlocks   = 0;
@@ -4806,7 +4808,7 @@ bool Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
             //
             if (fgFirstBB->bbRefs > 1)
             {
-                JITDUMP("  Method entry " FMT_BB " is loop head, can't check entry/exit balance\n");
+                JITDUMP("  Method entry " FMT_BB " is loop head, can't check entry/exit balance\n", fgFirstBB->bbNum);
             }
             else if (!fgProfileWeightsConsistent(entryWeight, exitWeight))
             {
@@ -4845,13 +4847,20 @@ bool Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
 
         // Note we only assert when we think the profile data should be consistent.
         //
-        if (assertOnFailure)
+        if (assertOnFailure && !dump)
         {
+            // Re-run with dumping forced on so the offending blocks are logged before we assert.
+            //
+            const bool wasVerbose = verbose;
+            verbose               = true;
+            fgDebugCheckProfileWeights(checks, /* dump */ true);
+            verbose = wasVerbose;
+
             assert(!"Inconsistent profile data");
         }
     }
 
-    if (unflaggedBlocks > 0)
+    if ((unflaggedBlocks > 0) && !dump)
     {
         JITDUMP("%d blocks are missing BBF_PROF_WEIGHT flag.\n", unflaggedBlocks);
         assert(!"Missing BBF_PROF_WEIGHT flag");

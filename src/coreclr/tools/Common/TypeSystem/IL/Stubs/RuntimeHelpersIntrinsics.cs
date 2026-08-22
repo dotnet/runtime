@@ -3,6 +3,7 @@
 
 using System;
 
+using Internal.Text;
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
@@ -56,9 +57,7 @@ namespace Internal.IL.Stubs
                         result = false;
                         if (elementType is MetadataType mdType)
                         {
-                            if (mdType.Module == mdType.Context.SystemModule &&
-                                mdType.Namespace == "System.Text"u8 &&
-                                mdType.Name == "Rune"u8)
+                            if (IsKnownBitwiseEquatableType(mdType))
                             {
                                 result = true;
                             }
@@ -87,6 +86,22 @@ namespace Internal.IL.Stubs
             ILOpcode opcode = result ? ILOpcode.ldc_i4_1 : ILOpcode.ldc_i4_0;
 
             return new ILStubMethodIL(method, new byte[] { (byte)opcode, (byte)ILOpcode.ret }, Array.Empty<LocalVariableDefinition>(), Array.Empty<object>());
+        }
+
+        private static bool IsKnownBitwiseEquatableType(MetadataType type)
+        {
+            if (type.Module != type.Context.SystemModule)
+            {
+                return false;
+            }
+
+            Utf8Span ns = type.Namespace;
+            if (ns == "System"u8)
+            {
+                Utf8Span name = type.Name;
+                return name == "Guid"u8 || name == "Int128"u8 || name == "UInt128"u8;
+            }
+            return ns == "System.Text"u8 && type.Name == "Rune"u8;
         }
     }
 }
