@@ -8,6 +8,10 @@
       <!-- Used by VS4Mac via reflection to symbolize stack traces -->
       <method name="GetMethodFromNativeIP" />
     </type>
+    <type fullname="System.Environment">
+      <!-- Used by System.Diagnostics.Process via UnsafeAccessor -->
+      <method name="get_HasEnvironmentVariablesBeenModified" />
+    </type>
     <type fullname="System.Reflection.Emit.AssemblyBuilder">
       <!-- Used by System.Linq.Expressions via reflection -->
       <method name="ForceAllowDynamicCode" />
