@@ -400,6 +400,29 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void ReverseBitsTest()
+        {
+            if (Environment.Is64BitProcess)
+            {
+                Assert.Equal(unchecked((nuint)0x80000000_00000000), BinaryIntegerHelper<nuint>.ReverseBits(0x00000000_00000001));
+                Assert.Equal(unchecked((nuint)0b1000000000_100000000_10000000_1000000_100000_10000_1000_100_10_1_000000000),
+                    BinaryIntegerHelper<nuint>.ReverseBits(unchecked((nuint)0b000000000_1_01_001_0001_00001_000001_0000001_00000001_000000001_0000000001)));
+                Assert.Equal(unchecked((nuint)0xF7B3D591_E6A2C480), BinaryIntegerHelper<nuint>.ReverseBits(unchecked((nuint)0x01234567_89ABCDEF)));
+                Assert.Equal(unchecked((nuint)0x80402010_08040201), BinaryIntegerHelper<nuint>.ReverseBits(unchecked((nuint)0x80402010_08040201)));
+                Assert.Equal(unchecked((nuint)0xAAAAAAAA_AAAAAAAA), BinaryIntegerHelper<nuint>.ReverseBits(unchecked((nuint)0x55555555_55555555)));
+            }
+            else
+            {
+                Assert.Equal(0x80000000, BinaryIntegerHelper<nuint>.ReverseBits(0x00000001));
+                Assert.Equal(0b1000000_100000_10000_1000_100_10_1_0000, BinaryIntegerHelper<nuint>.ReverseBits(0b0000_1_01_001_0001_00001_000001_0000001));
+                Assert.Equal(0xE6A2C480, BinaryIntegerHelper<nuint>.ReverseBits(0x01234567));
+                Assert.Equal(0xF7B3D591, BinaryIntegerHelper<nuint>.ReverseBits(0x89ABCDEF));
+                Assert.Equal(0x80402010, BinaryIntegerHelper<nuint>.ReverseBits(0x08040201));
+                Assert.Equal(0xAAAAAAAA, BinaryIntegerHelper<nuint>.ReverseBits(0x55555555));
+            }
+        }
+
+        [Fact]
         public static void RotateLeftTest()
         {
             if (Environment.Is64BitProcess)
