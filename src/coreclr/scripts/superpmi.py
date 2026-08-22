@@ -310,6 +310,7 @@ collect_parser.add_argument("--pmi", action="store_true", help="Run PMI on a set
 collect_parser.add_argument("--crossgen2", action="store_true", help="Run crossgen2 on a set of directories or assemblies.")
 collect_parser.add_argument("--nativeaot", action="store_true", help="Run nativeaot on a set of directories or 'ilc.rsps' files.")
 collect_parser.add_argument("-assemblies", dest="assemblies", nargs="+", default=[], help="A list of managed dlls or directories to recursively use while collecting with PMI or crossgen2. Required if --pmi or --crossgen2 is specified.")
+collect_parser.add_argument("-crossgen2_reference_directory", help="Directory containing the assemblies crossgen2 should resolve references against. Optional; defaults to the Core_Root directory. Used for cross-target crossgen2 collections, where the assemblies being compiled are built for the target and not for the host.")
 collect_parser.add_argument("-ilc_rsps", dest="ilc_rsps", nargs="+", default=[], help="For --nativeaot only. A list of 'ilc.rsp' files.")
 collect_parser.add_argument("-exclude", dest="exclude", nargs="+", default=[], help="A list of files or directories to exclude from the files and directories specified by `-assemblies`.")
 collect_parser.add_argument("-pmi_location", help="Path to pmi.dll to use during PMI run. Optional; pmi.dll will be downloaded from Azure Storage if necessary.")
@@ -1069,12 +1070,16 @@ class SuperPMICollect:
                     #
                     # <dll to compile>
                     # -o:<output dll>
-                    # -r:<Core_Root>\System.*.dll
-                    # -r:<Core_Root>\Microsoft.*.dll
-                    # -r:<Core_Root>\System.Private.CoreLib.dll
-                    # -r:<Core_Root>\netstandard.dll
+                    # -r:<reference_dir>\System.*.dll
+                    # -r:<reference_dir>\Microsoft.*.dll
+                    # -r:<reference_dir>\System.Private.CoreLib.dll
+                    # -r:<reference_dir>\netstandard.dll
                     # --jitpath:<self.collection_shim_name>
                     # --codegenopt:<option>=<value>   /// for each member of dotnet_env
+                    #
+                    # where <reference_dir> is Core_Root unless -crossgen2_reference_directory
+                    # was passed, which cross-target collections use to resolve references
+                    # against target-built assemblies instead of the host's.
                     #
                     # invoke with:
                     #
@@ -1085,14 +1090,16 @@ class SuperPMICollect:
                     # 2. "dotnet" on PATH
                     # 3. corerun in Core_Root
 
+                    reference_directory = self.coreclr_args.crossgen2_reference_directory or self.core_root
+
                     rsp_file_handle, rsp_filepath = tempfile.mkstemp(suffix=".rsp", prefix=root_output_filename, dir=self.temp_location)
                     with open(rsp_file_handle, "w") as rsp_write_handle:
                         rsp_write_handle.write(assembly + "\n")
                         rsp_write_handle.write("-o:" + crossgen2_output_assembly_filename + "\n")
-                        rsp_write_handle.write("-r:" + os.path.join(self.core_root, "System.*.dll") + "\n")
-                        rsp_write_handle.write("-r:" + os.path.join(self.core_root, "Microsoft.*.dll") + "\n")
-                        rsp_write_handle.write("-r:" + os.path.join(self.core_root, "mscorlib.dll") + "\n")
-                        rsp_write_handle.write("-r:" + os.path.join(self.core_root, "netstandard.dll") + "\n")
+                        rsp_write_handle.write("-r:" + os.path.join(reference_directory, "System.*.dll") + "\n")
+                        rsp_write_handle.write("-r:" + os.path.join(reference_directory, "Microsoft.*.dll") + "\n")
+                        rsp_write_handle.write("-r:" + os.path.join(reference_directory, "mscorlib.dll") + "\n")
+                        rsp_write_handle.write("-r:" + os.path.join(reference_directory, "netstandard.dll") + "\n")
                         rsp_write_handle.write("--parallelism:1" + "\n")
                         rsp_write_handle.write("--jitpath:" + os.path.join(self.core_root, self.collection_shim_name) + "\n")
                         # If we are cross-compiling (target != host), tell crossgen2 explicitly which
@@ -2293,7 +2300,7 @@ class SuperPMIReplayAsmDiffs:
 
                     # `-ignoreStoredConfig` drops any codegenopt the collection recorded into the
                     # MCH stored config. For wasm we need to re-supply
-                    # `JitWasmNyiToR2RUnsupported=1` (set by crossgen-corelib.proj during collection)
+                    # `JitWasmNyiToR2RUnsupported=1` (passed to crossgen2 during collection)
                     # so that unimplemented opcodes turn into R2R-unsupported skips rather than
                     # asserts. FIXME: remove once wasm codegen covers all cases.
                     if self.coreclr_args.target_arch == "wasm":
@@ -5385,6 +5392,12 @@ def setup_args(args):
                             "crossgen2",
                             lambda unused: True,
                             "Unable to set crossgen2")
+
+        coreclr_args.verify(args,
+                            "crossgen2_reference_directory",
+                            lambda directory: directory is None or os.path.isdir(directory),
+                            "crossgen2_reference_directory doesn't exist",
+                            modify_arg=lambda directory: None if directory is None else os.path.abspath(directory))
 
         coreclr_args.verify(args,
                             "nativeaot",

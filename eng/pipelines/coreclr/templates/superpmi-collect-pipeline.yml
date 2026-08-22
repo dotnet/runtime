@@ -8,18 +8,24 @@ extends:
     - stage: Build
       jobs:
 
+      # ============================================================================
+      # TEMPORARY, do not merge: every collection other than the browser/wasm
+      # crossgen2 collection is commented out, and the windows_x64 runtime builds are
+      # trimmed to that single platform, so a test run of the new wasm collection
+      # doesn't spend CI time on everything else. Revert this commit before merging.
+      # ============================================================================
+
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: checked
           platforms:
           - windows_x64
-          - linux_x64
           jobParameters:
             testGroup: outerloop
             # Build clr.wasmjit on x64 hosts so the checked wasm cross-targeting JIT
             # (clrjit_universal_wasm_x64.dll) is present in the checked Core_Root for
-            # crossgen2-corelib-wasm SPMI collection. clr.alljits does not include it.
+            # crossgen2-libraries-wasm SPMI collection. clr.alljits does not include it.
             buildArgs: -s clr+libs+libs.tests+clr.wasmjit -rc $(_BuildConfig) -c Release /p:ArchiveTests=true
             timeoutInMinutes: 120
             postBuildSteps:
@@ -46,93 +52,93 @@ extends:
                   testGroup: outerloop
             disableComponentGovernance: true # No shipping artifacts produced by this pipeline
 
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: checked
-          platforms:
-          - windows_x86
-          - windows_arm64
-          - osx_arm64
-          jobParameters:
-            testGroup: outerloop
-            buildArgs: -s clr+libs+libs.tests -rc $(_BuildConfig) -c Release /p:ArchiveTests=true
-            timeoutInMinutes: 120
-            postBuildSteps:
-              # Build CLR assets for x64 as well as the target as we need an x64 mcs
-              - template: /eng/pipelines/common/templates/global-build-step.yml
-                parameters:
-                  buildArgs: -s clr.spmi -c $(_BuildConfig)
-                  archParameter: -arch x64
-                  displayName: Build SuperPMI
-              - template: /eng/pipelines/coreclr/templates/build-native-test-assets-step.yml
-              - template: /eng/pipelines/common/upload-artifact-step.yml
-                parameters:
-                  rootFolder: $(Build.SourcesDirectory)/artifacts/bin
-                  includeRootFolder: false
-                  archiveType: $(archiveType)
-                  archiveExtension: $(archiveExtension)
-                  tarCompression: $(tarCompression)
-                  artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
-              - template: /eng/pipelines/common/upload-artifact-step.yml
-                parameters:
-                  rootFolder: $(Build.SourcesDirectory)/artifacts/helix
-                  includeRootFolder: false
-                  archiveType: $(archiveType)
-                  archiveExtension: $(archiveExtension)
-                  tarCompression: $(tarCompression)
-                  artifactName: LibrariesTestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
-            extraVariablesTemplates:
-              - template: /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
-                parameters:
-                  testGroup: outerloop
-            disableComponentGovernance: true # No shipping artifacts produced by this pipeline
+#      - template: /eng/pipelines/common/platform-matrix.yml
+#        parameters:
+#          jobTemplate: /eng/pipelines/common/global-build-job.yml
+#          buildConfig: checked
+#          platforms:
+#          - windows_x86
+#          - windows_arm64
+#          - osx_arm64
+#          jobParameters:
+#            testGroup: outerloop
+#            buildArgs: -s clr+libs+libs.tests -rc $(_BuildConfig) -c Release /p:ArchiveTests=true
+#            timeoutInMinutes: 120
+#            postBuildSteps:
+#              # Build CLR assets for x64 as well as the target as we need an x64 mcs
+#              - template: /eng/pipelines/common/templates/global-build-step.yml
+#                parameters:
+#                  buildArgs: -s clr.spmi -c $(_BuildConfig)
+#                  archParameter: -arch x64
+#                  displayName: Build SuperPMI
+#              - template: /eng/pipelines/coreclr/templates/build-native-test-assets-step.yml
+#              - template: /eng/pipelines/common/upload-artifact-step.yml
+#                parameters:
+#                  rootFolder: $(Build.SourcesDirectory)/artifacts/bin
+#                  includeRootFolder: false
+#                  archiveType: $(archiveType)
+#                  archiveExtension: $(archiveExtension)
+#                  tarCompression: $(tarCompression)
+#                  artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+#              - template: /eng/pipelines/common/upload-artifact-step.yml
+#                parameters:
+#                  rootFolder: $(Build.SourcesDirectory)/artifacts/helix
+#                  includeRootFolder: false
+#                  archiveType: $(archiveType)
+#                  archiveExtension: $(archiveExtension)
+#                  tarCompression: $(tarCompression)
+#                  artifactName: LibrariesTestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+#            extraVariablesTemplates:
+#              - template: /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
+#                parameters:
+#                  testGroup: outerloop
+#            disableComponentGovernance: true # No shipping artifacts produced by this pipeline
 
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: checked
-          platforms:
-          - linux_arm
-          - linux_arm64
-          jobParameters:
-            testGroup: outerloop
-            buildArgs: -s clr+libs+libs.tests -rc $(_BuildConfig) -c Release /p:ArchiveTests=true
-            timeoutInMinutes: 120
-            postBuildSteps:
-              # Build CLR assets for x64 as well as the target as we need an x64
-              # mcs. We need to do that in a container, so ensure we can access the
-              # internal NuGet feeds in that container.
-              - task: NuGetAuthenticate@1
-                target: linux_x64
-              - template: /eng/pipelines/common/templates/global-build-step.yml
-                parameters:
-                  buildArgs: -s clr.spmi -c $(_BuildConfig)
-                  archParameter: -arch x64
-                  container: linux_x64
-                  displayName: Build SuperPMI
-              - template: /eng/pipelines/coreclr/templates/build-native-test-assets-step.yml
-              - template: /eng/pipelines/common/upload-artifact-step.yml
-                parameters:
-                  rootFolder: $(Build.SourcesDirectory)/artifacts/bin
-                  includeRootFolder: false
-                  archiveType: $(archiveType)
-                  archiveExtension: $(archiveExtension)
-                  tarCompression: $(tarCompression)
-                  artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
-              - template: /eng/pipelines/common/upload-artifact-step.yml
-                parameters:
-                  rootFolder: $(Build.SourcesDirectory)/artifacts/helix
-                  includeRootFolder: false
-                  archiveType: $(archiveType)
-                  archiveExtension: $(archiveExtension)
-                  tarCompression: $(tarCompression)
-                  artifactName: LibrariesTestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
-            extraVariablesTemplates:
-              - template: /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
-                parameters:
-                  testGroup: outerloop
-            disableComponentGovernance: true # No shipping artifacts produced by this pipeline
+#      - template: /eng/pipelines/common/platform-matrix.yml
+#        parameters:
+#          jobTemplate: /eng/pipelines/common/global-build-job.yml
+#          buildConfig: checked
+#          platforms:
+#          - linux_arm
+#          - linux_arm64
+#          jobParameters:
+#            testGroup: outerloop
+#            buildArgs: -s clr+libs+libs.tests -rc $(_BuildConfig) -c Release /p:ArchiveTests=true
+#            timeoutInMinutes: 120
+#            postBuildSteps:
+#              # Build CLR assets for x64 as well as the target as we need an x64
+#              # mcs. We need to do that in a container, so ensure we can access the
+#              # internal NuGet feeds in that container.
+#              - task: NuGetAuthenticate@1
+#                target: linux_x64
+#              - template: /eng/pipelines/common/templates/global-build-step.yml
+#                parameters:
+#                  buildArgs: -s clr.spmi -c $(_BuildConfig)
+#                  archParameter: -arch x64
+#                  container: linux_x64
+#                  displayName: Build SuperPMI
+#              - template: /eng/pipelines/coreclr/templates/build-native-test-assets-step.yml
+#              - template: /eng/pipelines/common/upload-artifact-step.yml
+#                parameters:
+#                  rootFolder: $(Build.SourcesDirectory)/artifacts/bin
+#                  includeRootFolder: false
+#                  archiveType: $(archiveType)
+#                  archiveExtension: $(archiveExtension)
+#                  tarCompression: $(tarCompression)
+#                  artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+#              - template: /eng/pipelines/common/upload-artifact-step.yml
+#                parameters:
+#                  rootFolder: $(Build.SourcesDirectory)/artifacts/helix
+#                  includeRootFolder: false
+#                  archiveType: $(archiveType)
+#                  archiveExtension: $(archiveExtension)
+#                  tarCompression: $(tarCompression)
+#                  artifactName: LibrariesTestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+#            extraVariablesTemplates:
+#              - template: /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
+#                parameters:
+#                  testGroup: outerloop
+#            disableComponentGovernance: true # No shipping artifacts produced by this pipeline
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -140,7 +146,6 @@ extends:
           buildConfig: release
           platforms:
           - windows_x64
-          - linux_x64
           jobParameters:
             testGroup: outerloop
             buildArgs: -s clr+libs+libs.tests -rc $(_BuildConfig) -c Release /p:ArchiveTests=true
@@ -169,10 +174,12 @@ extends:
                   testGroup: outerloop
             disableComponentGovernance: true # No shipping artifacts produced by this pipeline
 
-      # Release build of System.Private.CoreLib.dll targeting browser/wasm, hosted on
-      # Windows x64. Produces artifacts/bin/coreclr/browser.wasm.Release/System.Private.CoreLib.dll,
-      # which is the assembly the corelib_wasm SPMI collection runs crossgen2 over.
-      # We only need the managed CoreLib here, so build the minimal clr.corelib subset.
+      # Release build of the browser/wasm CoreCLR runtime pack, hosted on Windows x64.
+      # Produces artifacts/bin/microsoft.netcore.app.runtime.browser-wasm/Release, whose
+      # runtimes/browser-wasm/lib/<tfm>/*.dll and runtimes/browser-wasm/native/System.Private.CoreLib.dll
+      # are the managed assemblies the wasm SPMI collection runs crossgen2 over.
+      # The runtime pack layout comes from the packs.product subset, which harvests native
+      # runtime files, so the full clr+libs+packs set has to be built here.
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
@@ -180,161 +187,170 @@ extends:
           platforms:
           - browser_wasm_win
           jobParameters:
-            buildArgs: -s clr.corelib -c Release
-            timeoutInMinutes: 120
+            buildArgs: -s clr+libs+packs -c Release
+            timeoutInMinutes: 180
             postBuildSteps:
+              # Only the runtime pack is needed downstream, so avoid uploading the whole
+              # (much larger) artifacts/bin tree that clr+libs+packs produces.
               - template: /eng/pipelines/common/upload-artifact-step.yml
                 parameters:
-                  rootFolder: $(Build.SourcesDirectory)/artifacts/bin
-                  includeRootFolder: false
+                  rootFolder: $(Build.SourcesDirectory)/artifacts/bin/microsoft.netcore.app.runtime.browser-wasm
+                  includeRootFolder: true
                   archiveType: $(archiveType)
                   archiveExtension: $(archiveExtension)
                   tarCompression: $(tarCompression)
-                  artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+                  artifactName: WasmRuntimePack_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
             disableComponentGovernance: true # No shipping artifacts produced by this pipeline
 
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: release
-          platforms:
-          - windows_x86
-          - windows_arm64
-          - osx_arm64
-          jobParameters:
-            testGroup: outerloop
-            buildArgs: -s clr+libs+libs.tests -rc $(_BuildConfig) -c Release /p:ArchiveTests=true
-            timeoutInMinutes: 120
-            postBuildSteps:
-              # Build CLR assets for x64 as well as the target as we need an x64 mcs
-              - template: /eng/pipelines/common/templates/global-build-step.yml
-                parameters:
-                  buildArgs: -s clr.spmi -c $(_BuildConfig)
-                  archParameter: -arch x64
-                  displayName: Build SuperPMI
-              - template: /eng/pipelines/coreclr/templates/build-native-test-assets-step.yml
-              - template: /eng/pipelines/common/upload-artifact-step.yml
-                parameters:
-                  rootFolder: $(Build.SourcesDirectory)/artifacts/bin
-                  includeRootFolder: false
-                  archiveType: $(archiveType)
-                  archiveExtension: $(archiveExtension)
-                  tarCompression: $(tarCompression)
-                  artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
-              - template: /eng/pipelines/common/upload-artifact-step.yml
-                parameters:
-                  rootFolder: $(Build.SourcesDirectory)/artifacts/helix
-                  includeRootFolder: false
-                  archiveType: $(archiveType)
-                  archiveExtension: $(archiveExtension)
-                  tarCompression: $(tarCompression)
-                  artifactName: LibrariesTestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
-            extraVariablesTemplates:
-              - template: /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
-                parameters:
-                  testGroup: outerloop
-            disableComponentGovernance: true # No shipping artifacts produced by this pipeline
+#      - template: /eng/pipelines/common/platform-matrix.yml
+#        parameters:
+#          jobTemplate: /eng/pipelines/common/global-build-job.yml
+#          buildConfig: release
+#          platforms:
+#          - windows_x86
+#          - windows_arm64
+#          - osx_arm64
+#          jobParameters:
+#            testGroup: outerloop
+#            buildArgs: -s clr+libs+libs.tests -rc $(_BuildConfig) -c Release /p:ArchiveTests=true
+#            timeoutInMinutes: 120
+#            postBuildSteps:
+#              # Build CLR assets for x64 as well as the target as we need an x64 mcs
+#              - template: /eng/pipelines/common/templates/global-build-step.yml
+#                parameters:
+#                  buildArgs: -s clr.spmi -c $(_BuildConfig)
+#                  archParameter: -arch x64
+#                  displayName: Build SuperPMI
+#              - template: /eng/pipelines/coreclr/templates/build-native-test-assets-step.yml
+#              - template: /eng/pipelines/common/upload-artifact-step.yml
+#                parameters:
+#                  rootFolder: $(Build.SourcesDirectory)/artifacts/bin
+#                  includeRootFolder: false
+#                  archiveType: $(archiveType)
+#                  archiveExtension: $(archiveExtension)
+#                  tarCompression: $(tarCompression)
+#                  artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+#              - template: /eng/pipelines/common/upload-artifact-step.yml
+#                parameters:
+#                  rootFolder: $(Build.SourcesDirectory)/artifacts/helix
+#                  includeRootFolder: false
+#                  archiveType: $(archiveType)
+#                  archiveExtension: $(archiveExtension)
+#                  tarCompression: $(tarCompression)
+#                  artifactName: LibrariesTestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+#            extraVariablesTemplates:
+#              - template: /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
+#                parameters:
+#                  testGroup: outerloop
+#            disableComponentGovernance: true # No shipping artifacts produced by this pipeline
 
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: release
-          platforms:
-          - linux_arm
-          - linux_arm64
-          jobParameters:
-            testGroup: outerloop
-            buildArgs: -s clr+libs+libs.tests -rc $(_BuildConfig) -c Release /p:ArchiveTests=true
-            timeoutInMinutes: 120
-            postBuildSteps:
-              # Build CLR assets for x64 as well as the target as we need an x64
-              # mcs. We need to do that in a container, so ensure we can access the
-              # internal NuGet feeds in that container.
-              - task: NuGetAuthenticate@1
-                target: linux_x64
-              - template: /eng/pipelines/common/templates/global-build-step.yml
-                parameters:
-                  buildArgs: -s clr.spmi -c $(_BuildConfig)
-                  archParameter: -arch x64
-                  container: linux_x64
-                  displayName: Build SuperPMI
-              - template: /eng/pipelines/coreclr/templates/build-native-test-assets-step.yml
-              - template: /eng/pipelines/common/upload-artifact-step.yml
-                parameters:
-                  rootFolder: $(Build.SourcesDirectory)/artifacts/bin
-                  includeRootFolder: false
-                  archiveType: $(archiveType)
-                  archiveExtension: $(archiveExtension)
-                  tarCompression: $(tarCompression)
-                  artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
-              - template: /eng/pipelines/common/upload-artifact-step.yml
-                parameters:
-                  rootFolder: $(Build.SourcesDirectory)/artifacts/helix
-                  includeRootFolder: false
-                  archiveType: $(archiveType)
-                  archiveExtension: $(archiveExtension)
-                  tarCompression: $(tarCompression)
-                  artifactName: LibrariesTestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
-            extraVariablesTemplates:
-              - template: /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
-                parameters:
-                  testGroup: outerloop
-            disableComponentGovernance: true # No shipping artifacts produced by this pipeline
+#      - template: /eng/pipelines/common/platform-matrix.yml
+#        parameters:
+#          jobTemplate: /eng/pipelines/common/global-build-job.yml
+#          buildConfig: release
+#          platforms:
+#          - linux_arm
+#          - linux_arm64
+#          jobParameters:
+#            testGroup: outerloop
+#            buildArgs: -s clr+libs+libs.tests -rc $(_BuildConfig) -c Release /p:ArchiveTests=true
+#            timeoutInMinutes: 120
+#            postBuildSteps:
+#              # Build CLR assets for x64 as well as the target as we need an x64
+#              # mcs. We need to do that in a container, so ensure we can access the
+#              # internal NuGet feeds in that container.
+#              - task: NuGetAuthenticate@1
+#                target: linux_x64
+#              - template: /eng/pipelines/common/templates/global-build-step.yml
+#                parameters:
+#                  buildArgs: -s clr.spmi -c $(_BuildConfig)
+#                  archParameter: -arch x64
+#                  container: linux_x64
+#                  displayName: Build SuperPMI
+#              - template: /eng/pipelines/coreclr/templates/build-native-test-assets-step.yml
+#              - template: /eng/pipelines/common/upload-artifact-step.yml
+#                parameters:
+#                  rootFolder: $(Build.SourcesDirectory)/artifacts/bin
+#                  includeRootFolder: false
+#                  archiveType: $(archiveType)
+#                  archiveExtension: $(archiveExtension)
+#                  tarCompression: $(tarCompression)
+#                  artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+#              - template: /eng/pipelines/common/upload-artifact-step.yml
+#                parameters:
+#                  rootFolder: $(Build.SourcesDirectory)/artifacts/helix
+#                  includeRootFolder: false
+#                  archiveType: $(archiveType)
+#                  archiveExtension: $(archiveExtension)
+#                  tarCompression: $(tarCompression)
+#                  artifactName: LibrariesTestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+#            extraVariablesTemplates:
+#              - template: /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
+#                parameters:
+#                  testGroup: outerloop
+#            disableComponentGovernance: true # No shipping artifacts produced by this pipeline
 
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
-          buildConfig: checked
-          platforms:
-          - CoreClrTestBuildHost # Either osx_x64 or linux_x64
-          jobParameters:
-            testGroup: outerloop
+#      - template: /eng/pipelines/common/platform-matrix.yml
+#        parameters:
+#          jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
+#          buildConfig: checked
+#          platforms:
+#          - CoreClrTestBuildHost # Either osx_x64 or linux_x64
+#          jobParameters:
+#            testGroup: outerloop
 
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/coreclr/templates/superpmi-collect-job.yml
-          buildConfig: checked
-          platforms:
-          - osx_arm64
-          - linux_arm
-          - linux_arm64
-          - linux_x64
-          - windows_x64
-          - windows_x86
-          - windows_arm64
-          helixQueueGroup: ci
-          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-          jobParameters:
-            testGroup: outerloop
-            liveLibrariesBuildConfig: Release
-            collectionType: pmi
-            collectionName: libraries
+#      - template: /eng/pipelines/common/platform-matrix.yml
+#        parameters:
+#          jobTemplate: /eng/pipelines/coreclr/templates/superpmi-collect-job.yml
+#          buildConfig: checked
+#          platforms:
+#          - osx_arm64
+#          - linux_arm
+#          - linux_arm64
+#          - linux_x64
+#          - windows_x64
+#          - windows_x86
+#          - windows_arm64
+#          helixQueueGroup: ci
+#          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+#          jobParameters:
+#            testGroup: outerloop
+#            liveLibrariesBuildConfig: Release
+#            collectionType: pmi
+#            collectionName: libraries
 
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/coreclr/templates/superpmi-collect-job.yml
-          buildConfig: checked
-          platforms:
-          - osx_arm64
-          - linux_arm
-          - linux_arm64
-          - linux_x64
-          - windows_x64
-          - windows_x86
-          - windows_arm64
-          helixQueueGroup: ci
-          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-          jobParameters:
-            testGroup: outerloop
-            liveLibrariesBuildConfig: Release
-            collectionType: crossgen2
-            collectionName: libraries
+#      - template: /eng/pipelines/common/platform-matrix.yml
+#        parameters:
+#          jobTemplate: /eng/pipelines/coreclr/templates/superpmi-collect-job.yml
+#          buildConfig: checked
+#          platforms:
+#          - osx_arm64
+#          - linux_arm
+#          - linux_arm64
+#          - linux_x64
+#          - windows_x64
+#          - windows_x86
+#          - windows_arm64
+#          helixQueueGroup: ci
+#          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+#          jobParameters:
+#            testGroup: outerloop
+#            liveLibrariesBuildConfig: Release
+#            collectionType: crossgen2
+#            collectionName: libraries
 
-      # Crossgen2 of release System.Private.CoreLib.dll targeting browser/wasm.
+      # Crossgen2 of the release browser/wasm managed assembly set (the browser-wasm
+      # CoreCLR runtime pack: all shared framework libraries plus System.Private.CoreLib.dll).
       # Runs crossgen2 on a windows_x64 host with the wasm cross-targeting JIT
       # (clrjit_universal_wasm_x64.dll) under superpmi-shim-collector, producing an MCH
       # uploaded under <jit_ee_version>/browser/x64/ (the wasm mch_arch override in
       # superpmi.py maps target_arch=wasm to mch_arch=<host_arch>=x64).
+      #
+      # NOTE: this collection was previously named 'corelib'. Replay downloads every MCH
+      # under <jit_ee_version>/browser/x64/, so the now-orphaned
+      # corelib.crossgen2.windows.x64.checked.mch (and its .mct) has to be deleted from the
+      # superpmi collections container by hand; nothing overwrites it any more, and it
+      # would otherwise be replayed until the JIT-EE GUID rolls.
       #
       # Uses buildConfig: checked so the wasm cross-targeting JIT used during collection
       # is a Checked build.
@@ -350,213 +366,216 @@ extends:
             testGroup: outerloop
             liveLibrariesBuildConfig: Release
             collectionType: crossgen2
-            collectionName: corelib
+            collectionName: libraries
             targetOS: browser
             targetArch: wasm
+            # The wasm assembly set is only ~30 MB, so use a smaller partition size than
+            # the default to get a reasonable number of Helix work items.
+            maxPartitionSizeMB: 5
 
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/coreclr/templates/superpmi-collect-job.yml
-          buildConfig: checked
-          platforms:
-          - osx_arm64
-          - linux_arm
-          - linux_arm64
-          - linux_x64
-          - windows_x64
-          - windows_x86
-          - windows_arm64
-          helixQueueGroup: ci
-          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-          jobParameters:
-            testGroup: outerloop
-            liveLibrariesBuildConfig: Release
-            collectionType: run
-            collectionName: realworld
+#      - template: /eng/pipelines/common/platform-matrix.yml
+#        parameters:
+#          jobTemplate: /eng/pipelines/coreclr/templates/superpmi-collect-job.yml
+#          buildConfig: checked
+#          platforms:
+#          - osx_arm64
+#          - linux_arm
+#          - linux_arm64
+#          - linux_x64
+#          - windows_x64
+#          - windows_x86
+#          - windows_arm64
+#          helixQueueGroup: ci
+#          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+#          jobParameters:
+#            testGroup: outerloop
+#            liveLibrariesBuildConfig: Release
+#            collectionType: run
+#            collectionName: realworld
 
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/coreclr/templates/superpmi-collect-job.yml
-          buildConfig: checked
-          platforms:
-          - osx_arm64
-          - linux_arm
-          - linux_arm64
-          - linux_x64
-          - windows_x64
-          - windows_x86
-          - windows_arm64
-          helixQueueGroup: ci
-          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-          jobParameters:
-            testGroup: outerloop
-            liveLibrariesBuildConfig: Release
-            collectionType: run
-            collectionName: benchmarks
+#      - template: /eng/pipelines/common/platform-matrix.yml
+#        parameters:
+#          jobTemplate: /eng/pipelines/coreclr/templates/superpmi-collect-job.yml
+#          buildConfig: checked
+#          platforms:
+#          - osx_arm64
+#          - linux_arm
+#          - linux_arm64
+#          - linux_x64
+#          - windows_x64
+#          - windows_x86
+#          - windows_arm64
+#          helixQueueGroup: ci
+#          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+#          jobParameters:
+#            testGroup: outerloop
+#            liveLibrariesBuildConfig: Release
+#            collectionType: run
+#            collectionName: benchmarks
 
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/coreclr/templates/superpmi-collect-job.yml
-          buildConfig: checked
-          platforms:
-          - osx_arm64
-          - linux_arm
-          - linux_arm64
-          - linux_x64
-          - windows_x64
-          - windows_x86
-          - windows_arm64
-          helixQueueGroup: ci
-          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-          jobParameters:
-            testGroup: outerloop
-            liveLibrariesBuildConfig: Release
-            collectionType: run_pgo
-            collectionName: benchmarks
+#      - template: /eng/pipelines/common/platform-matrix.yml
+#        parameters:
+#          jobTemplate: /eng/pipelines/coreclr/templates/superpmi-collect-job.yml
+#          buildConfig: checked
+#          platforms:
+#          - osx_arm64
+#          - linux_arm
+#          - linux_arm64
+#          - linux_x64
+#          - windows_x64
+#          - windows_x86
+#          - windows_arm64
+#          helixQueueGroup: ci
+#          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+#          jobParameters:
+#            testGroup: outerloop
+#            liveLibrariesBuildConfig: Release
+#            collectionType: run_pgo
+#            collectionName: benchmarks
 
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/coreclr/templates/superpmi-collect-job.yml
-          buildConfig: checked
-          platforms:
-          - osx_arm64
-          - linux_arm
-          - linux_arm64
-          - linux_x64
-          - windows_x64
-          - windows_x86
-          - windows_arm64
-          helixQueueGroup: ci
-          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-          jobParameters:
-            testGroup: outerloop
-            liveLibrariesBuildConfig: Release
-            collectionType: run_pgo_optrepeat
-            collectionName: benchmarks
+#      - template: /eng/pipelines/common/platform-matrix.yml
+#        parameters:
+#          jobTemplate: /eng/pipelines/coreclr/templates/superpmi-collect-job.yml
+#          buildConfig: checked
+#          platforms:
+#          - osx_arm64
+#          - linux_arm
+#          - linux_arm64
+#          - linux_x64
+#          - windows_x64
+#          - windows_x86
+#          - windows_arm64
+#          helixQueueGroup: ci
+#          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+#          jobParameters:
+#            testGroup: outerloop
+#            liveLibrariesBuildConfig: Release
+#            collectionType: run_pgo_optrepeat
+#            collectionName: benchmarks
 
-      #
-      # Collection of coreclr test run
-      #
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
-          buildConfig: checked
-          platforms:
-          - osx_arm64
-          - linux_arm
-          - linux_arm64
-          - linux_x64
-          - windows_x64
-          - windows_x86
-          - windows_arm64
-          helixQueueGroup: superpmi
-          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-          jobParameters:
-            testGroup: outerloop
-            liveLibrariesBuildConfig: Release
-            SuperPmiCollect: true
-            unifiedArtifactsName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+#      #
+#      # Collection of coreclr test run
+#      #
+#      - template: /eng/pipelines/common/platform-matrix.yml
+#        parameters:
+#          jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
+#          buildConfig: checked
+#          platforms:
+#          - osx_arm64
+#          - linux_arm
+#          - linux_arm64
+#          - linux_x64
+#          - windows_x64
+#          - windows_x86
+#          - windows_arm64
+#          helixQueueGroup: superpmi
+#          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+#          jobParameters:
+#            testGroup: outerloop
+#            liveLibrariesBuildConfig: Release
+#            SuperPmiCollect: true
+#            unifiedArtifactsName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
 
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/coreclr/templates/superpmi-collect-job.yml
-          buildConfig: checked
-          platforms:
-          - linux_arm64
-          - linux_x64
-          - windows_x64
-          - windows_arm64
-          helixQueueGroup: ci
-          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-          jobParameters:
-            testGroup: outerloop
-            liveLibrariesBuildConfig: Release
-            collectionType: nativeaot
-            collectionName: smoke_tests
+#      - template: /eng/pipelines/common/platform-matrix.yml
+#        parameters:
+#          jobTemplate: /eng/pipelines/coreclr/templates/superpmi-collect-job.yml
+#          buildConfig: checked
+#          platforms:
+#          - linux_arm64
+#          - linux_x64
+#          - windows_x64
+#          - windows_arm64
+#          helixQueueGroup: ci
+#          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+#          jobParameters:
+#            testGroup: outerloop
+#            liveLibrariesBuildConfig: Release
+#            collectionType: nativeaot
+#            collectionName: smoke_tests
 
-      #
-      # Collection of libraries test run: normal
-      # Libraries Test Run using Release libraries, and Checked CoreCLR
-      #
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/libraries/run-test-job.yml
-          buildConfig: Release
-          platforms:
-          - osx_arm64
-          - linux_arm
-          - linux_arm64
-          - linux_x64
-          - windows_x64
-          - windows_x86
-          - windows_arm64
-          helixQueueGroup: superpmi
-          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-          jobParameters:
-            testScope: innerloop
-            liveRuntimeBuildConfig: Checked
-            dependsOnTestBuildConfiguration: Release
-            dependsOnTestArchitecture: x64
-            scenarios:
-            - normal
-            SuperPmiCollect: true
-            SuperPmiCollectionName: libraries_tests
-            unifiedArtifactsName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_Checked
-            helixArtifactsName: LibrariesTestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_Checked
-            unifiedBuildConfigOverride: checked
-            # Default timeout is 150 minutes, which is too low for osx-arm64 queue.
-            timeoutInMinutes: 300
+#      #
+#      # Collection of libraries test run: normal
+#      # Libraries Test Run using Release libraries, and Checked CoreCLR
+#      #
+#      - template: /eng/pipelines/common/platform-matrix.yml
+#        parameters:
+#          jobTemplate: /eng/pipelines/libraries/run-test-job.yml
+#          buildConfig: Release
+#          platforms:
+#          - osx_arm64
+#          - linux_arm
+#          - linux_arm64
+#          - linux_x64
+#          - windows_x64
+#          - windows_x86
+#          - windows_arm64
+#          helixQueueGroup: superpmi
+#          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+#          jobParameters:
+#            testScope: innerloop
+#            liveRuntimeBuildConfig: Checked
+#            dependsOnTestBuildConfiguration: Release
+#            dependsOnTestArchitecture: x64
+#            scenarios:
+#            - normal
+#            SuperPmiCollect: true
+#            SuperPmiCollectionName: libraries_tests
+#            unifiedArtifactsName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_Checked
+#            helixArtifactsName: LibrariesTestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_Checked
+#            unifiedBuildConfigOverride: checked
+#            # Default timeout is 150 minutes, which is too low for osx-arm64 queue.
+#            timeoutInMinutes: 300
 
-      #
-      # Collection of libraries test run: no_tiered_compilation
-      # Libraries Test Run using Release libraries, and Checked CoreCLR
-      #
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/libraries/run-test-job.yml
-          buildConfig: Release
-          platforms:
-          - osx_arm64
-          - linux_arm
-          - linux_arm64
-          - linux_x64
-          - windows_x64
-          - windows_x86
-          - windows_arm64
-          helixQueueGroup: superpmi
-          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-          jobParameters:
-            testScope: innerloop
-            liveRuntimeBuildConfig: Checked
-            dependsOnTestBuildConfiguration: Release
-            dependsOnTestArchitecture: x64
-            scenarios:
-            - no_tiered_compilation
-            SuperPmiCollect: true
-            SuperPmiCollectionName: libraries_tests_no_tiered_compilation
-            unifiedArtifactsName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_Checked
-            helixArtifactsName: LibrariesTestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_Checked
-            unifiedBuildConfigOverride: checked
-            # Default timeout is 150 minutes, which is too low for osx-arm64 queue.
-            timeoutInMinutes: 300
+#      #
+#      # Collection of libraries test run: no_tiered_compilation
+#      # Libraries Test Run using Release libraries, and Checked CoreCLR
+#      #
+#      - template: /eng/pipelines/common/platform-matrix.yml
+#        parameters:
+#          jobTemplate: /eng/pipelines/libraries/run-test-job.yml
+#          buildConfig: Release
+#          platforms:
+#          - osx_arm64
+#          - linux_arm
+#          - linux_arm64
+#          - linux_x64
+#          - windows_x64
+#          - windows_x86
+#          - windows_arm64
+#          helixQueueGroup: superpmi
+#          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+#          jobParameters:
+#            testScope: innerloop
+#            liveRuntimeBuildConfig: Checked
+#            dependsOnTestBuildConfiguration: Release
+#            dependsOnTestArchitecture: x64
+#            scenarios:
+#            - no_tiered_compilation
+#            SuperPmiCollect: true
+#            SuperPmiCollectionName: libraries_tests_no_tiered_compilation
+#            unifiedArtifactsName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_Checked
+#            helixArtifactsName: LibrariesTestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_Checked
+#            unifiedBuildConfigOverride: checked
+#            # Default timeout is 150 minutes, which is too low for osx-arm64 queue.
+#            timeoutInMinutes: 300
 
-      #
-      # Collection of aspnet/TechEmpower benchmarks (crank-based): aspnet2
-      #
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/coreclr/templates/superpmi-collect-job.yml
-          buildConfig: checked
-          platforms:
-          - osx_arm64
-          - linux_arm64
-          - linux_x64
-          - windows_x64
-          - windows_arm64
-          helixQueueGroup: ci
-          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-          jobParameters:
-            testGroup: outerloop
-            liveLibrariesBuildConfig: Release
-            collectionType: run
-            collectionName: aspnet2
+#      #
+#      # Collection of aspnet/TechEmpower benchmarks (crank-based): aspnet2
+#      #
+#      - template: /eng/pipelines/common/platform-matrix.yml
+#        parameters:
+#          jobTemplate: /eng/pipelines/coreclr/templates/superpmi-collect-job.yml
+#          buildConfig: checked
+#          platforms:
+#          - osx_arm64
+#          - linux_arm64
+#          - linux_x64
+#          - windows_x64
+#          - windows_arm64
+#          helixQueueGroup: ci
+#          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+#          jobParameters:
+#            testGroup: outerloop
+#            liveLibrariesBuildConfig: Release
+#            collectionType: run
+#            collectionName: aspnet2
