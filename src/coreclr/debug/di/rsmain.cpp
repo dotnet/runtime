@@ -508,7 +508,7 @@ void CordbCommonBase::InitializeCommon()
 // setting this since V1.0 and removing it may be a breaking change.
 void CordbCommonBase::AddDebugPrivilege()
 {
-#ifndef TARGET_UNIX
+#ifndef HOST_UNIX
     HANDLE hToken;
     TOKEN_PRIVILEGES Privileges;
     BOOL fSucc;
