@@ -407,7 +407,6 @@ provider_invoke_callback (EventPipeProviderCallbackData *provider_callback_data)
 	uint64_t configuration_generation = ep_provider_callback_data_get_configuration_generation (provider_callback_data);
 
 	bool is_event_filter_desc_init = false;
-	bool callback_completed = false;
 	EventFilterDescriptor event_filter_desc;
 	uint8_t *buffer = NULL;
 
@@ -464,13 +463,11 @@ provider_invoke_callback (EventPipeProviderCallbackData *provider_callback_data)
 			callback_data /* CallbackContext */);
 	}
 
-ep_on_exit:
-	if (callback_function != NULL && !callback_completed) {
+	if (callback_function != NULL) {
 		// The callback completed or was skipped after a preparation failure; update the provider lifetime state.
 		EventPipeProvider *provider = provider_callback_data->provider;
 		EP_LOCK_ENTER (section1)
 			provider->callbacks_pending--;
-			callback_completed = true;
 			if (provider->callbacks_pending == 0 && provider->callback_func == NULL) {
 				// ep_delete_provider deferred provider deletion and is waiting for all in-flight callbacks
 				// to complete. This is the last callback, so signal completion.
@@ -479,6 +476,7 @@ ep_on_exit:
 		EP_LOCK_EXIT (section1)
 	}
 
+ep_on_exit:
 	if (is_event_filter_desc_init)
 		ep_event_filter_desc_fini (&event_filter_desc);
 
