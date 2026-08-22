@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Reproduces https://github.com/dotnet/runtime/issues/131537: corelib is AOT'd
+         while this app assembly runs in the interpreter, so the object(Nullable<T>)
+         gsharedvt out-sig wrapper is never emitted by AOT and boxing a 16-byte
+         Nullable<T> through the non-generic IEnumerator traps. -->
+    <RunAOTCompilation>true</RunAOTCompilation>
+    <MonoForceInterpreter>false</MonoForceInterpreter>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Run this assembly interpreted while corelib stays AOT'd: this is the
+         WasmTestOnChrome-MONO configuration in which #131537 regresses. -->
+    <_AOT_InternalForceInterpretAssemblies Include="WebAssembly.Browser.Aot_131537.Test.dll" />
+  </ItemGroup>
+</Project>

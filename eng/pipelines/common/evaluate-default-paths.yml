@@ -42,6 +42,7 @@ parameters:
         src/tasks/Microsoft.NET.Sdk.WebAssembly.Pack.Tasks/*
         src/tasks/Microsoft.NET.WebAssembly.Webcil/*
         src/tests/Common/wasm-test-runner/*
+        src/tests/FunctionalTests/WebAssembly/*
         src/coreclr/vm/wasm/*
         src/native/corehost/browserhost/*
         src/native/libs/Common/JavaScript/*
