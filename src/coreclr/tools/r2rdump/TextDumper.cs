@@ -628,7 +628,7 @@ namespace R2RDump
                 case ReadyToRunSectionType.AttributePresence:
                     int attributesStartOffset = _r2r.GetOffset(section.RelativeVirtualAddress);
                     int attributesEndOffset = attributesStartOffset + section.Size;
-                    NativeCuckooFilter attributes = new NativeCuckooFilter(_r2r.ImageReader, attributesStartOffset, attributesEndOffset);
+                    NativeCuckooFilter attributes = new NativeCuckooFilter(_r2r.ImageReader, attributesStartOffset, attributesEndOffset, section.RelativeVirtualAddress);
                     _writer.WriteLine("Attribute presence filter");
                     _writer.WriteLine(attributes.ToString());
                     break;

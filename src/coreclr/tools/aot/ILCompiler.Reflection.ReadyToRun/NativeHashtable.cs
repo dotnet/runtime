@@ -250,15 +250,19 @@ namespace ILCompiler.Reflection.ReadyToRun
         private int _filterStartOffset;
         private int _filterEndOffset;
 
-        public NativeCuckooFilter(NativeReader imageReader, int filterStartOffset, int filterEndOffset)
+        public NativeCuckooFilter(NativeReader imageReader, int filterStartOffset, int filterEndOffset, int filterRva)
         {
             _imageReader = imageReader;
             _filterStartOffset = filterStartOffset;
             _filterEndOffset = filterEndOffset;
 
-            if (((_filterStartOffset & 0xF) != 0) || ((_filterEndOffset & 0xF) != 0))
+            // Mirrors NativeCuckooFilter in nativeformatreader.h, which validates the filter's RVA
+            // and size. The 16 byte alignment requirement applies to the filter's RVA within the
+            // image, not to its file offset: a Webcil image embedded in a WASM wrapper does not
+            // begin at a 16 byte aligned file offset, so file offsets are shifted even though the
+            // image itself is correctly aligned.
+            if (((filterRva & 0xF) != 0) || (((_filterEndOffset - _filterStartOffset) & 0xF) != 0))
             {
-                // Native cuckoo filters must be aligned at 16byte boundaries within the PE file
                 throw new System.BadImageFormatException();
             }
         }
