@@ -16,7 +16,7 @@ namespace Microsoft.Extensions.Configuration
         private bool _disposed;
 
         // This is only used to support IConfigurationRoot.Providers because we cannot track the lifetime of that reference.
-        public IEnumerable<IConfigurationProvider> NonReferenceCountedProviders => _refCountedProviders.NonReferenceCountedProviders;
+        public IReadOnlyList<IConfigurationProvider> NonReferenceCountedProviders => _refCountedProviders.NonReferenceCountedProviders;
 
         public ReferenceCountedProviders GetReference()
         {
