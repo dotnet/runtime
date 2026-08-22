@@ -83,13 +83,22 @@ namespace System.Reflection.PortableExecutable
         {
             if (IsDeterministic)
             {
-                var builder = new DebugDirectoryBuilder();
+                // The exact size of a reproducible debug entry: 7 4-byte integers, and no additional data (28 bytes).
+                var builder = new DebugDirectoryBuilder(CreateBlobBuilder(28));
                 builder.AddReproducibleEntry();
                 return builder;
             }
 
             return null;
         }
+
+        /// <summary>
+        /// Creates a <see cref="BlobBuilder"/> for use by this <see cref="ManagedPEBuilder"/> instance.
+        /// Can be overridden in derived types to customize the logic.
+        /// </summary>
+        /// <param name="minimumSize">The builder's minimum initial capacity.</param>
+        protected virtual BlobBuilder CreateBlobBuilder(int minimumSize = 0) =>
+            minimumSize == 0 ? new BlobBuilder() : new BlobBuilder(minimumSize);
 
         protected override ImmutableArray<Section> CreateSections()
         {
@@ -120,8 +129,8 @@ namespace System.Reflection.PortableExecutable
 
         private BlobBuilder SerializeTextSection(SectionLocation location)
         {
-            var sectionBuilder = new BlobBuilder();
-            var metadataBuilder = new BlobBuilder();
+            var sectionBuilder = CreateBlobBuilder();
+            var metadataBuilder = CreateBlobBuilder();
 
             var metadataSizes = _metadataRootBuilder.Sizes;
 
@@ -144,7 +153,7 @@ namespace System.Reflection.PortableExecutable
             if (_debugDirectoryBuilderOpt != null)
             {
                 int debugDirectoryOffset = textSection.ComputeOffsetToDebugDirectory();
-                debugTableBuilderOpt = new BlobBuilder(_debugDirectoryBuilderOpt.TableSize);
+                debugTableBuilderOpt = CreateBlobBuilder(_debugDirectoryBuilderOpt.TableSize);
                 _debugDirectoryBuilderOpt.Serialize(debugTableBuilderOpt, location, debugDirectoryOffset);
 
                 // Only the size of the fixed part of the debug table goes here.
@@ -186,7 +195,7 @@ namespace System.Reflection.PortableExecutable
         {
             Debug.Assert(_nativeResourcesOpt != null);
 
-            var sectionBuilder = new BlobBuilder();
+            var sectionBuilder = CreateBlobBuilder();
             _nativeResourcesOpt.Serialize(sectionBuilder, location);
 
             _peDirectoriesBuilder.ResourceTable = new DirectoryEntry(location.RelativeVirtualAddress, sectionBuilder.Count);
@@ -195,7 +204,7 @@ namespace System.Reflection.PortableExecutable
 
         private BlobBuilder SerializeRelocationSection(SectionLocation location)
         {
-            var sectionBuilder = new BlobBuilder();
+            var sectionBuilder = CreateBlobBuilder();
             WriteRelocationSection(sectionBuilder, Header.Machine, _lazyEntryPointAddress);
 
             _peDirectoriesBuilder.BaseRelocationTable = new DirectoryEntry(location.RelativeVirtualAddress, sectionBuilder.Count);
