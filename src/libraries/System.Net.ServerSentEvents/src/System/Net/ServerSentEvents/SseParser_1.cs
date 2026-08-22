@@ -33,13 +33,20 @@ namespace System.Net.ServerSentEvents
         private readonly long TimeSpan_MaxValueMilliseconds = (long)TimeSpan.MaxValue.TotalMilliseconds;
 
         /// <summary>The default size of an ArrayPool buffer to rent.</summary>
-        /// <remarks>Larger size used by default to minimize number of reads. Smaller size used in debug to stress growth/shifting logic.</remarks>
+        /// <remarks>
+        /// Larger size used by default to minimize number of reads. Smaller size used in debug to stress growth/shifting logic.
+        /// Also serves as the smallest configurable maximum buffer size; buffers smaller than this don't meaningfully reduce
+        /// memory usage but can cause excessive I/O and line-buffer churn.
+        /// </remarks>
         private const int DefaultArrayPoolRentSize =
 #if DEBUG
             16;
 #else
             1024;
 #endif
+
+        /// <summary>The maximum amount of data buffered by default.</summary>
+        private const int DefaultMaxBufferSize = 1024 * 1024 * 1024;
 
         /// <summary>The stream to be parsed.</summary>
         private readonly Stream _stream;
@@ -74,7 +81,7 @@ namespace System.Net.ServerSentEvents
         /// <remarks>This can be different than <see cref="_dataLength"/> != 0 if empty data was appended.</remarks>
         private bool _dataAppended;
 
-        private int _maxBufferSize = 1024 * 1024 * 1024;
+        private readonly int _maxBufferSize;
 
         /// <summary>The event type for the next event.</summary>
         private string? _eventType;
@@ -87,11 +94,12 @@ namespace System.Net.ServerSentEvents
 
         /// <summary>Initialize the enumerable.</summary>
         /// <param name="stream">The stream to parse.</param>
-        /// <param name="itemParser">The function to use to parse payload bytes into a <typeparamref name="T"/>.</param>
-        internal SseParser(Stream stream, SseItemParser<T> itemParser)
+        /// <param name="options">The options to use to parse the stream.</param>
+        internal SseParser(Stream stream, SseParserOptions<T> options)
         {
             _stream = stream;
-            _itemParser = itemParser;
+            _itemParser = options.ItemParser;
+            _maxBufferSize = options.MaxBufferSize == -1 ? DefaultMaxBufferSize : Math.Max(options.MaxBufferSize, DefaultArrayPoolRentSize);
         }
 
         /// <summary>Gets an enumerable of the server-sent events from this parser.</summary>
@@ -313,12 +321,27 @@ namespace System.Net.ServerSentEvents
                     }
                     catch (OverflowException)
                     {
-                        throw new InvalidDataException(SR.InvalidDataException_SseExceededMaxLength);
+                        newLength = int.MaxValue;
                     }
 
-                    GrowBuffer(ref _lineBuffer, newLength);
+                    if (newLength > _maxBufferSize)
+                    {
+                        newLength = _maxBufferSize;
+                    }
+
+                    if (newLength > _lineBuffer.Length)
+                    {
+                        GrowBuffer(ref _lineBuffer, newLength);
+                    }
+                    else
+                    {
+                        throw new InvalidDataException(SR.InvalidDataException_SseExceededMaxLength);
+                    }
                 }
             }
+
+            // Storage avalaible for at least one byte
+            Debug.Assert(_lineOffset + _lineLength < _lineBuffer.Length);
         }
 
         /// <summary>Processes a complete line from the SSE stream.</summary>
@@ -497,11 +520,17 @@ namespace System.Net.ServerSentEvents
             ShiftOrGrowLineBufferIfNecessary();
 
             int offset = _lineOffset + _lineLength;
+            int count = _lineBuffer.Length - offset;
+            if (count == 0)
+            {
+                throw new InvalidDataException(SR.InvalidDataException_SseExceededMaxLength);
+            }
+
             int bytesRead = _stream.Read(
 #if NET
-                _lineBuffer.AsSpan(offset));
+                _lineBuffer.AsSpan(offset, count));
 #else
-                _lineBuffer, offset, _lineBuffer.Length - offset);
+                _lineBuffer, offset, count);
 #endif
 
             if (bytesRead > 0)
@@ -523,6 +552,12 @@ namespace System.Net.ServerSentEvents
             ShiftOrGrowLineBufferIfNecessary();
 
             int offset = _lineOffset + _lineLength;
+            int count = _lineBuffer.Length - offset;
+            if (count == 0)
+            {
+                throw new InvalidDataException(SR.InvalidDataException_SseExceededMaxLength);
+            }
+
             int bytesRead = await _stream.ReadAsync(_lineBuffer.AsMemory(offset), cancellationToken).ConfigureAwait(false);
 
             if (bytesRead > 0)
