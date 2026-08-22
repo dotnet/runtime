@@ -12,6 +12,13 @@
              Link="Common\src\Extensions\ChangeCallbackRegistrar.cs" />
     <Compile Include="$(CommonPath)Extensions\EmptyDisposable.cs"
              Link="Common\src\Extensions\EmptyDisposable.cs" />
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
+             Link="Common\src\System\Text\ValueStringBuilder.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp' or $([MSBuild]::VersionLessThan('$(TargetFrameworkVersion)', '9.0'))">
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\FeatureSwitchDefinitionAttribute.cs"
+             Link="Common\src\System\Diagnostics\CodeAnalysis\FeatureSwitchDefinitionAttribute.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">
