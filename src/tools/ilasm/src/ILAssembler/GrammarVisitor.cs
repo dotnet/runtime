@@ -134,7 +134,7 @@ namespace ILAssembler
         private void ReportWarning(string id, string message, Antlr4.Runtime.ParserRuleContext context)
             => ReportDiagnostic(DiagnosticSeverity.Warning, id, message, context);
 
-        public (ImmutableArray<Diagnostic> Diagnostics, PEBuilder? Image) BuildImage()
+        public (ImmutableArray<Diagnostic> Diagnostics, CompilationResult? Image) BuildImage()
         {
             // Default module name to output filename if no .module directive was provided
             if (_entityRegistry.Module.Name is null && _options.OutputFileName is not null)
@@ -162,9 +162,9 @@ namespace ILAssembler
 
             // Check for vtable fixups and exports - collect export info
             var exports = ImmutableArray.CreateBuilder<VTableExportPEBuilder.ExportInfo>();
-            foreach (var entity in _entityRegistry.GetSeenEntities(TableIndex.MethodDef))
+            foreach (EntityRegistry.MethodDefinitionEntity method in GetParsedMethods())
             {
-                if (entity is EntityRegistry.MethodDefinitionEntity method && method.ExportOrdinal >= 0)
+                if (method.ExportOrdinal >= 0)
                 {
                     exports.Add(new VTableExportPEBuilder.ExportInfo(
                         method.ExportOrdinal,
@@ -176,7 +176,7 @@ namespace ILAssembler
             }
 
             BlobBuilder ilStream = new();
-            _entityRegistry.WriteContentTo(_metadataBuilder, ilStream, _mappedFieldDataNames);
+            Blob mvidFixup = _entityRegistry.WriteContentTo(_metadataBuilder, ilStream, _mappedFieldDataNames, _options.Deterministic);
             MetadataRootBuilder rootBuilder = new(_metadataBuilder, _options.MetadataVersion);
 
             // Compute metadata size from the MetadataSizes
@@ -207,6 +207,20 @@ namespace ILAssembler
                 dllCharacteristics &= ~DllCharacteristics.DynamicBase;
             }
 
+            Characteristics imageCharacteristics = Characteristics.ExecutableImage;
+            if (_options.Dll)
+            {
+                imageCharacteristics |= Characteristics.Dll;
+            }
+            if (machine is Machine.I386 or Machine.Arm)
+            {
+                imageCharacteristics |= Characteristics.Bit32Machine;
+            }
+            else if (machine is Machine.Amd64 or Machine.Arm64)
+            {
+                imageCharacteristics |= Characteristics.LargeAddressAware;
+            }
+
             // Compute stack reserve: command-line option overrides directive, which overrides default
             ulong sizeOfStackReserve = (ulong)(_options.StackReserve ?? (_stackReserve != 0 ? _stackReserve : 0x00100000));
 
@@ -218,6 +232,7 @@ namespace ILAssembler
                 majorSubsystemVersion: majorSubsystemVersion,
                 minorSubsystemVersion: minorSubsystemVersion,
                 dllCharacteristics: dllCharacteristics,
+                imageCharacteristics: imageCharacteristics,
                 sizeOfStackReserve: sizeOfStackReserve);
 
             MethodDefinitionHandle entryPoint = default;
@@ -257,7 +272,7 @@ namespace ILAssembler
                     metadataSize: metadataSize,
                     debugDataSize: debugDataSize);
 
-                return (_diagnostics.ToImmutable(), peBuilder);
+                return (_diagnostics.ToImmutable(), new CompilationResult(peBuilder, mvidFixup));
             }
 
             // Apply CorFlags from options or directive
@@ -269,15 +284,7 @@ namespace ILAssembler
 
             // Deterministic ID provider for reproducible builds
             Func<IEnumerable<Blob>, BlobContentId>? deterministicIdProvider = _options.Deterministic
-                ? content =>
-                {
-                    using var hash = IncrementalHash.CreateHash(System.Security.Cryptography.HashAlgorithmName.SHA256);
-                    foreach (var blob in content)
-                    {
-                        hash.AppendData(blob.GetBytes());
-                    }
-                    return BlobContentId.FromHash(hash.GetHashAndReset());
-                }
+                ? GetDeterministicContentId
                 : null;
 
             ManagedPEBuilder standardBuilder = new(
@@ -291,7 +298,18 @@ namespace ILAssembler
                 debugDirectoryBuilder: debugDirectoryBuilder,
                 deterministicIdProvider: deterministicIdProvider);
 
-            return (_diagnostics.ToImmutable(), standardBuilder);
+            return (_diagnostics.ToImmutable(), new CompilationResult(standardBuilder, mvidFixup));
+        }
+
+        private static BlobContentId GetDeterministicContentId(IEnumerable<Blob> content)
+        {
+            using IncrementalHash hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+            foreach (Blob blob in content)
+            {
+                hash.AppendData(blob.GetBytes());
+            }
+
+            return BlobContentId.FromHash(hash.GetHashAndReset());
         }
 
         private ImmutableArray<VTableExportPEBuilder.VTableFixupInfo> BuildVTableFixupInfos()
@@ -313,10 +331,9 @@ namespace ILAssembler
                 }
 
                 // Find methods that reference this vtable entry
-                foreach (var entity in _entityRegistry.GetSeenEntities(TableIndex.MethodDef))
+                foreach (EntityRegistry.MethodDefinitionEntity method in GetParsedMethods())
                 {
-                    if (entity is EntityRegistry.MethodDefinitionEntity method &&
-                        method.VTableEntry == entryIndex + 1 && // 1-based
+                    if (method.VTableEntry == entryIndex + 1 && // 1-based
                         method.VTableSlot > 0 &&
                         method.VTableSlot <= vtf.SlotCount)
                     {
@@ -332,6 +349,17 @@ namespace ILAssembler
             }
 
             return builder.ToImmutable();
+        }
+
+        private IEnumerable<EntityRegistry.MethodDefinitionEntity> GetParsedMethods()
+        {
+            foreach (EntityRegistry.TypeDefinitionEntity type in _entityRegistry.GetSeenEntities(TableIndex.TypeDef))
+            {
+                foreach (EntityRegistry.MethodDefinitionEntity method in type.Methods)
+                {
+                    yield return method;
+                }
+            }
         }
 
         private DebugDirectoryBuilder? BuildDebugDirectory(MethodDefinitionHandle entryPoint, out int debugDataSize)
@@ -368,7 +396,7 @@ namespace ILAssembler
                 _pdbBuilder,
                 typeSystemRowCounts,
                 entryPoint,
-                idProvider: content => new BlobContentId(Guid.NewGuid(), 0x04030201));
+                idProvider: _options.Deterministic ? GetDeterministicContentId : null);
 
             var pdbBlob = new BlobBuilder();
             var pdbContentId = pdbBuilder.Serialize(pdbBlob);
@@ -453,8 +481,8 @@ namespace ILAssembler
             builder.WriteCompressedInteger(0);
 
             int previousOffset = 0;
-            int previousStartLine = 0;
-            int previousStartColumn = 0;
+            int previousStartLine = -1;
+            int previousStartColumn = -1;
 
             foreach (var sp in sequencePoints)
             {
@@ -487,7 +515,7 @@ namespace ILAssembler
                     }
 
                     // Start line delta (signed)
-                    if (previousStartLine == 0)
+                    if (previousStartLine < 0)
                     {
                         builder.WriteCompressedInteger(sp.StartLine);
                     }
@@ -497,7 +525,7 @@ namespace ILAssembler
                     }
 
                     // Start column delta (signed)
-                    if (previousStartColumn == 0)
+                    if (previousStartColumn < 0)
                     {
                         builder.WriteCompressedInteger(sp.StartColumn);
                     }
@@ -527,8 +555,7 @@ namespace ILAssembler
                 or DiagnosticIds.ParameterIndexOutOfRange
                 or DiagnosticIds.GenericParameterNotFound
                 or DiagnosticIds.UnknownGenericParameter
-                or DiagnosticIds.MissingInstanceCallConv
-                or DiagnosticIds.TooManyGenericParameters;
+                or DiagnosticIds.MissingInstanceCallConv;
         }
 
         public GrammarResult Visit(IParseTree tree) => tree.Accept(this);
@@ -585,11 +612,18 @@ namespace ILAssembler
             }
 
             string decl = context.GetChild(0).GetText();
-            if (decl == ".publicKey")
+            if (decl is ".publickey" or ".publicKey")
             {
                 BlobBuilder blob = new();
                 blob.WriteBytes(VisitBytes(context.bytes()).Value);
-                _currentAssemblyOrRef!.PublicKeyOrToken = blob;
+                // COMPAT: Native ilasm gives a public key token precedence regardless of declaration order.
+                if (_currentAssemblyOrRef is not EntityRegistry.AssemblyReferenceEntity assemblyReference
+                    || assemblyReference.PublicKeyOrToken is null
+                    || assemblyReference.Flags.HasFlag(AssemblyFlags.PublicKey))
+                {
+                    _currentAssemblyOrRef!.PublicKeyOrToken = blob;
+                    _currentAssemblyOrRef.Flags |= AssemblyFlags.PublicKey;
+                }
             }
             else if (decl == ".ver")
             {
@@ -763,6 +797,7 @@ namespace ILAssembler
                 var blob = new BlobBuilder();
                 blob.WriteBytes(VisitBytes(context.bytes()).Value);
                 _currentAssemblyOrRef!.PublicKeyOrToken = blob;
+                _currentAssemblyOrRef.Flags &= ~AssemblyFlags.PublicKey;
             }
             return GrammarResult.SentinelValue.Result;
         }
@@ -862,7 +897,9 @@ namespace ILAssembler
             }
             else if (context.EXPLICIT() is not null)
             {
-                return new((byte)(VisitCallConv(context.callConv()).Value | (byte)SignatureAttributes.ExplicitThis));
+                return new((byte)(
+                    VisitCallConv(context.callConv()).Value |
+                    (byte)(SignatureAttributes.ExplicitThis | SignatureAttributes.Instance)));
             }
             return new(0);
         }
@@ -1072,14 +1109,27 @@ namespace ILAssembler
         }
 
         private CurrentMethodContext? _currentMethod;
+        private EntityRegistry.EntityBase? _pendingClassCustomAttributeOwner;
 
         public GrammarResult VisitClassDecl(CILParser.ClassDeclContext context)
         {
+            bool isStandaloneCustomAttribute =
+                context.customAttrDecl().Length == 1 &&
+                context.PARAM() is null;
+            bool isTrailingCustomAttribute =
+                isStandaloneCustomAttribute &&
+                context.customAttrDecl()[0].dottedName() is null;
+            if (!isTrailingCustomAttribute)
+            {
+                _pendingClassCustomAttributeOwner = null;
+            }
+
             if (context.classHead() is CILParser.ClassHeadContext classHead)
             {
                 _currentTypeDefinition.Push(VisitClassHead(classHead).Value);
                 VisitClassDecls(context.classDecls());
                 _currentTypeDefinition.Pop();
+                _pendingClassCustomAttributeOwner = null;
             }
             else if (context.methodHead() is CILParser.MethodHeadContext methodHead)
             {
@@ -1106,9 +1156,111 @@ namespace ILAssembler
                 var declarativeSecurity = VisitSecDecl(secDecl).Value;
                 declarativeSecurity?.Parent = _currentTypeDefinition.PeekOrDefault();
             }
+            else if (context.TYPE() is not null &&
+                     context.typeSpec().Length == 1 &&
+                     context.customDescr() is { } interfaceAttribute)
+            {
+                var currentType = _currentTypeDefinition.PeekOrDefault();
+                if (currentType is not null)
+                {
+                    EntityRegistry.TypeEntity interfaceType = VisitTypeSpec(context.typeSpec()[0]).Value;
+                    EntityRegistry.InterfaceImplementationEntity? implementation =
+                        currentType.InterfaceImplementations.FirstOrDefault(
+                            candidate => candidate.InterfaceType == interfaceType);
+                    if (implementation is null)
+                    {
+                        implementation =
+                            EntityRegistry.CreateUnrecordedInterfaceImplementation(currentType, interfaceType);
+                        currentType.InterfaceImplementations.Add(implementation);
+                    }
+
+                    VisitCustomDescr(interfaceAttribute).Value.Owner = implementation;
+                }
+            }
             else if (context.fieldDecl() is {} fieldDecl)
             {
                 _ = VisitFieldDecl(fieldDecl);
+            }
+            else if (context.dataDecl() is { } dataDecl)
+            {
+                _ = VisitDataDecl(dataDecl);
+            }
+            else if (context.extSourceSpec() is { } extSourceSpec)
+            {
+                _ = VisitExtSourceSpec(extSourceSpec);
+            }
+            else if (context.languageDecl() is { } languageDecl)
+            {
+                _ = VisitLanguageDecl(languageDecl);
+            }
+            else if (context.OVERRIDE() is not null)
+            {
+                var currentType = _currentTypeDefinition.PeekOrDefault();
+                if (currentType is not null)
+                {
+                    var typeSpecs = context.typeSpec();
+                    var methodNames = context.methodName();
+                    var callConventions = context.callConv();
+                    var returnTypes = context.type();
+                    var signatureArguments = context.sigArgs();
+                    var genericArities = context.genArity();
+
+                    int bodySignatureIndex = context.METHOD().Length == 0 ? 0 : 1;
+                    BlobBuilder declarationSignature = BuildMethodReferenceSignature(
+                        callConventions[0],
+                        returnTypes[0],
+                        signatureArguments[0],
+                        genericArities.Length > 0 ? VisitGenArity(genericArities[0]).Value : 0);
+                    BlobBuilder bodySignature = context.METHOD().Length == 0
+                        ? declarationSignature
+                        : BuildMethodReferenceSignature(
+                            callConventions[bodySignatureIndex],
+                            returnTypes[bodySignatureIndex],
+                            signatureArguments[bodySignatureIndex],
+                            genericArities.Length > bodySignatureIndex
+                                ? VisitGenArity(genericArities[bodySignatureIndex]).Value
+                                : 0);
+
+                    EntityRegistry.TypeEntity bodyOwner = VisitTypeSpec(typeSpecs[1]).Value;
+                    string bodyName = VisitMethodName(methodNames[1]).Value;
+                    EntityRegistry.MemberReferenceEntity declaration =
+                        _entityRegistry.CreateLazilyRecordedMemberReference(
+                            VisitTypeSpec(typeSpecs[0]).Value,
+                            VisitMethodName(methodNames[0]).Value,
+                            declarationSignature);
+
+                    if (ReferenceEquals(bodyOwner, currentType))
+                    {
+                        EntityRegistry.MethodDefinitionEntity[] bodyMethods = currentType.Methods
+                            .Where(method =>
+                                method.Name == bodyName &&
+                                method.MethodSignature is not null &&
+                                method.MethodSignature.ContentEquals(bodySignature))
+                            .Take(2)
+                            .ToArray();
+                        if (bodyMethods.Length != 1)
+                        {
+                            ReportError(
+                                DiagnosticIds.InvalidMetadataToken,
+                                $"Override body method '{bodyName}' could not be resolved uniquely",
+                                context);
+                            return GrammarResult.SentinelValue.Result;
+                        }
+
+                        currentType.MethodImplementations.Add(
+                            EntityRegistry.CreateUnrecordedMethodImplementation(bodyMethods[0], declaration));
+                    }
+                    else
+                    {
+                        EntityRegistry.MemberReferenceEntity body =
+                            _entityRegistry.CreateLazilyRecordedMemberReference(
+                                bodyOwner,
+                                bodyName,
+                                bodySignature);
+                        currentType.MethodImplementations.Add(
+                            EntityRegistry.CreateUnrecordedMethodImplementation(currentType, body, declaration));
+                    }
+                }
             }
             else if (context.int32() is {} int32)
             {
@@ -1176,12 +1328,55 @@ namespace ILAssembler
                     }
                 }
             }
-            else if (context.customAttrDecl().Length == 1 && context.PARAM() is null)
+            else if (context.OVERRIDE() is not null)
             {
-                // Custom attribute directly on the type
+                var currentType = _currentTypeDefinition.PeekOrDefault();
+                if (currentType is null)
+                {
+                    throw new UnreachableException();
+                }
+
+                CILParser.CallConvContext[] callConvs = context.callConv();
+                CILParser.TypeContext[] returnTypes = context.type();
+                CILParser.TypeSpecContext[] owners = context.typeSpec();
+                CILParser.MethodNameContext[] methodNames = context.methodName();
+                CILParser.GenArityContext[] genericArities = context.genArity();
+                CILParser.SigArgsContext[] parameterLists = context.sigArgs();
+
+                EntityRegistry.MemberReferenceEntity declaration;
+                EntityRegistry.MemberReferenceEntity body;
+                if (callConvs.Length == 2)
+                {
+                    declaration = CreateExplicitMethodReference(
+                        callConvs[0], returnTypes[0], owners[0], methodNames[0], genericArities[0], parameterLists[0]);
+                    body = CreateExplicitMethodReference(
+                        callConvs[1], returnTypes[1], owners[1], methodNames[1], genericArities[1], parameterLists[1]);
+                }
+                else
+                {
+                    EntityRegistry.TypeEntity declarationOwner = VisitTypeSpec(owners[0]).Value;
+                    string declarationName = VisitMethodName(methodNames[0]).Value;
+                    EntityRegistry.TypeEntity bodyOwner = VisitTypeSpec(owners[1]).Value;
+                    string bodyName = VisitMethodName(methodNames[1]).Value;
+                    BlobBuilder bodySignature = CreateExplicitMethodSignature(
+                        callConvs[0], returnTypes[0], genericArity: null, parameterLists[0]);
+                    BlobBuilder declarationSignature = new();
+                    bodySignature.WriteContentTo(declarationSignature);
+                    declaration = _entityRegistry.CreateLazilyRecordedMemberReference(
+                        declarationOwner, declarationName, declarationSignature);
+                    body = _entityRegistry.CreateLazilyRecordedMemberReference(
+                        bodyOwner, bodyName, bodySignature);
+                }
+
+                currentType.MethodImplementations.Add(EntityRegistry.CreateUnrecordedMethodImplementation(currentType, body, declaration));
+            }
+            else if (isStandaloneCustomAttribute)
+            {
                 if (VisitCustomAttrDecl(context.customAttrDecl()[0]).Value is { } customAttr)
                 {
-                    customAttr.Owner = _currentTypeDefinition.PeekOrDefault();
+                    customAttr.Owner =
+                        _pendingClassCustomAttributeOwner ??
+                        _currentTypeDefinition.PeekOrDefault();
                 }
             }
             else if (context.PARAM() is not null)
@@ -1197,6 +1392,13 @@ namespace ILAssembler
                         if (index >= 0 && index < currentType.GenericParameters.Count)
                         {
                             param = currentType.GenericParameters[index];
+                        }
+                        else
+                        {
+                            ReportError(
+                                DiagnosticIds.GenericParameterIndexOutOfRange,
+                                string.Format(DiagnosticMessageTemplates.GenericParameterIndexOutOfRange, index),
+                                context);
                         }
                     }
                     else if (context.dottedName() is { } dn)
@@ -1218,6 +1420,7 @@ namespace ILAssembler
                             var customAttrDecl = VisitCustomAttrDecl(attr).Value;
                             customAttrDecl?.Owner = param;
                         }
+                        _pendingClassCustomAttributeOwner = param;
                     }
                 }
                 else if (currentType is not null && context.CONSTRAINT() is not null)
@@ -1229,6 +1432,13 @@ namespace ILAssembler
                         if (index >= 0 && index < currentType.GenericParameters.Count)
                         {
                             param = currentType.GenericParameters[index];
+                        }
+                        else
+                        {
+                            ReportError(
+                                DiagnosticIds.GenericParameterIndexOutOfRange,
+                                string.Format(DiagnosticMessageTemplates.GenericParameterIndexOutOfRange, index),
+                                context);
                         }
                     }
                     else if (context.dottedName() is { } dn)
@@ -1246,22 +1456,83 @@ namespace ILAssembler
                     if (param is not null)
                     {
                         var baseType = VisitTypeSpec(context.typeSpec()[0]).Value;
-                        var constraint = new EntityRegistry.GenericParameterConstraintEntity(baseType);
-                        constraint.Owner = param;
-                        param.Constraints.Add(constraint);
-                        currentType.GenericParameterConstraints.Add(constraint);
+                        EntityRegistry.GenericParameterConstraintEntity? constraint =
+                            param.Constraints.FirstOrDefault(entity => entity.BaseType == baseType);
+                        if (constraint is null)
+                        {
+                            constraint = EntityRegistry.CreateGenericConstraint(baseType);
+                            constraint.Owner = param;
+                            param.Constraints.Add(constraint);
+                            currentType.GenericParameterConstraints.Add(constraint);
+                        }
                         foreach (var attr in customAttrDeclarations ?? Array.Empty<CILParser.CustomAttrDeclContext>())
                         {
                             var customAttrDecl = VisitCustomAttrDecl(attr).Value;
                             customAttrDecl?.Owner = constraint;
                         }
+                        _pendingClassCustomAttributeOwner = constraint;
                     }
                 }
             }
 
             return GrammarResult.SentinelValue.Result;
         }
-        public GrammarResult VisitClassDecls(CILParser.ClassDeclsContext context) => VisitChildren(context);
+
+        private BlobBuilder BuildMethodReferenceSignature(
+            CILParser.CallConvContext callConvention,
+            CILParser.TypeContext returnType,
+            CILParser.SigArgsContext signatureArguments,
+            int genericArity)
+        {
+            var signature = new BlobBuilder();
+            byte header = VisitCallConv(callConvention).Value;
+            if (genericArity > 0)
+            {
+                header |= (byte)SignatureAttributes.Generic;
+            }
+
+            signature.WriteByte(header);
+            if (genericArity > 0)
+            {
+                signature.WriteCompressedInteger(genericArity);
+            }
+
+            ImmutableArray<SignatureArg> arguments = VisitSigArgs(signatureArguments).Value;
+            signature.WriteCompressedInteger(arguments.Count(argument => !argument.IsSentinel));
+            VisitType(returnType).Value.WriteContentTo(signature);
+            foreach (SignatureArg argument in arguments)
+            {
+                argument.SignatureBlob.WriteContentTo(signature);
+            }
+
+            return signature;
+        }
+
+        public GrammarResult VisitClassDecls(CILParser.ClassDeclsContext context)
+        {
+            CILParser.ClassDeclContext[] declarations = context.classDecl();
+            foreach (CILParser.ClassDeclContext declaration in declarations)
+            {
+                if (declaration.OVERRIDE() is null)
+                {
+                    VisitClassDecl(declaration);
+                }
+                else
+                {
+                    _pendingClassCustomAttributeOwner = null;
+                }
+            }
+
+            foreach (CILParser.ClassDeclContext declaration in declarations)
+            {
+                if (declaration.OVERRIDE() is not null)
+                {
+                    VisitClassDecl(declaration);
+                }
+            }
+
+            return GrammarResult.SentinelValue.Result;
+        }
 
 
         GrammarResult ICILVisitor<GrammarResult>.VisitClassHead(CILParser.ClassHeadContext context) => VisitClassHead(context);
@@ -1346,12 +1617,6 @@ namespace ILAssembler
                     // Two-pass generic parameter processing:
                     // Pass 1: Register all parameter names (without resolving constraints)
                     var typarContexts = context.typarsClause()?.typars()?.typar() ?? Array.Empty<CILParser.TyparContext>();
-                    if (typarContexts.Length > ushort.MaxValue)
-                    {
-                        ReportError(DiagnosticIds.TooManyGenericParameters,
-                            string.Format(DiagnosticMessageTemplates.TooManyGenericParameters, typarContexts.Length, ushort.MaxValue),
-                            context.typarsClause());
-                    }
                     for (int i = 0; i < typarContexts.Length; i++)
                     {
                         var attributes = VisitTyparAttribs(typarContexts[i].typarAttribs()).Value;
@@ -1435,12 +1700,6 @@ namespace ILAssembler
                 {
                     // Two-pass generic parameter processing for forward-referenced types
                     var typarContexts = context.typarsClause()?.typars()?.typar() ?? Array.Empty<CILParser.TyparContext>();
-                    if (typarContexts.Length > ushort.MaxValue)
-                    {
-                        ReportError(DiagnosticIds.TooManyGenericParameters,
-                            string.Format(DiagnosticMessageTemplates.TooManyGenericParameters, typarContexts.Length, ushort.MaxValue),
-                            context.typarsClause());
-                    }
                     for (int i = 0; i < typarContexts.Length; i++)
                     {
                         var attributes = VisitTyparAttribs(typarContexts[i].typarAttribs()).Value;
@@ -1635,11 +1894,10 @@ namespace ILAssembler
         GrammarResult ICILVisitor<GrammarResult>.VisitClassSeq(CILParser.ClassSeqContext context) => VisitClassSeq(context);
         public GrammarResult.FormattedBlob VisitClassSeq(CILParser.ClassSeqContext context)
         {
-            // We're going to add all of the elements in the sequence as prefix blobs to this blob.
             BlobBuilder objSeqBlob = new(0);
             foreach (var item in context.classSeqElement())
             {
-                objSeqBlob.LinkPrefix(VisitClassSeqElement(item).Value);
+                objSeqBlob.LinkSuffix(VisitClassSeqElement(item).Value);
             }
             return new(objSeqBlob);
         }
@@ -1662,7 +1920,10 @@ namespace ILAssembler
                 return new(blob);
             }
 
-            blob.WriteSerializedString(context.SQSTRING()?.Symbol.Text);
+            blob.WriteSerializedString(
+                context.SQSTRING() is { } stringNode
+                    ? StringHelpers.ParseQuotedString(stringNode.Symbol.Text)
+                    : null);
             return new(blob);
         }
         public GrammarResult VisitCompControl(CILParser.CompControlContext context)
@@ -1813,7 +2074,9 @@ namespace ILAssembler
             }
             else
             {
-                throw new UnreachableException();
+                value = new();
+                value.WriteUInt16(CustomAttributeBlobFormatVersion);
+                value.WriteUInt16(0);
             }
 
             return new(_entityRegistry.CreateCustomAttribute(ctor, value));
@@ -1842,7 +2105,9 @@ namespace ILAssembler
             }
             else
             {
-                throw new UnreachableException();
+                value = new();
+                value.WriteUInt16(CustomAttributeBlobFormatVersion);
+                value.WriteUInt16(0);
             }
 
             var attr = _entityRegistry.CreateCustomAttribute(ctor, value);
@@ -1976,6 +2241,14 @@ namespace ILAssembler
 
         public GrammarResult VisitDecl(CILParser.DeclContext context)
         {
+            bool isTrailingCustomAttribute =
+                context.customAttrDecl() is { } customAttribute &&
+                customAttribute.dottedName() is null;
+            if (context.fieldDecl() is null && !isTrailingCustomAttribute)
+            {
+                _pendingClassCustomAttributeOwner = null;
+            }
+
             if (context.nameSpaceHead() is CILParser.NameSpaceHeadContext ns)
             {
                 string namespaceName = VisitNameSpaceHead(ns).Value;
@@ -1983,6 +2256,7 @@ namespace ILAssembler
                 _currentNamespace.Push(string.IsNullOrEmpty(outer) ? namespaceName : $"{outer}.{namespaceName}");
                 VisitDecls(context.decls());
                 _currentNamespace.Pop();
+                _pendingClassCustomAttributeOwner = null;
                 return GrammarResult.SentinelValue.Result;
             }
             if (context.classHead() is CILParser.ClassHeadContext classHead)
@@ -1990,6 +2264,7 @@ namespace ILAssembler
                 _currentTypeDefinition.Push(VisitClassHead(classHead).Value);
                 VisitClassDecls(context.classDecls());
                 _currentTypeDefinition.Pop();
+                _pendingClassCustomAttributeOwner = null;
                 return GrammarResult.SentinelValue.Result;
             }
             if (context.methodHead() is CILParser.MethodHeadContext methodHead)
@@ -2152,10 +2427,9 @@ namespace ILAssembler
             }
             if (context.customAttrDecl() is { } topLevelCustomAttr)
             {
-                // Top-level custom attribute — owned by the module (matching native ilasm behavior)
                 if (VisitCustomAttrDecl(topLevelCustomAttr).Value is { } customAttr)
                 {
-                    customAttr.Owner = _entityRegistry.Module;
+                    customAttr.Owner = (EntityRegistry.EntityBase?)_pendingClassCustomAttributeOwner ?? _entityRegistry.Module;
                 }
             }
             if (context.secDecl() is { } topSecDecl)
@@ -2197,6 +2471,26 @@ namespace ILAssembler
 
         public static GrammarResult.String VisitDottedName(CILParser.DottedNameContext context)
         {
+            CILParser.DottedNamePartContext[] parts = context.dottedNamePart();
+            if (parts.Length > 0)
+            {
+                StringBuilder builder = new();
+                for (int i = 0; i < parts.Length; i++)
+                {
+                    if (i > 0)
+                    {
+                        builder.Append('.');
+                    }
+
+                    CILParser.DottedNamePartContext part = parts[i];
+                    builder.Append(part.SQSTRING() is { } quotedPart
+                        ? StringHelpers.ParseQuotedString(quotedPart.GetText())
+                        : part.GetText());
+                }
+
+                return new(builder.ToString());
+            }
+
             string text = context.GetText();
             if (context.SQSTRING() is not null && text.Length >= 2 && text[0] == '\'')
             {
@@ -2686,13 +2980,36 @@ namespace ILAssembler
                 // 0xFEEFEE indicates a hidden sequence point
                 if (startLine == 0xFEEFEE)
                 {
-                    _currentMethod.Definition.DebugInfo.SequencePoints.Add(
-                        EntityRegistry.SequencePoint.Hidden(ilOffset));
+                    AddSequencePoint(EntityRegistry.SequencePoint.Hidden(ilOffset));
                 }
                 else
                 {
-                    _currentMethod.Definition.DebugInfo.SequencePoints.Add(
-                        new EntityRegistry.SequencePoint(ilOffset, startLine, startColumn, endLine, endColumn));
+                    if (endLine == startLine && endColumn == startColumn)
+                    {
+                        endColumn++;
+                    }
+
+                    AddSequencePoint(
+                        new EntityRegistry.SequencePoint(
+                            ilOffset,
+                            startLine,
+                            startColumn,
+                            endLine,
+                            endColumn));
+                }
+
+                void AddSequencePoint(EntityRegistry.SequencePoint sequencePoint)
+                {
+                    List<EntityRegistry.SequencePoint> sequencePoints =
+                        _currentMethod.Definition.DebugInfo.SequencePoints;
+                    if (sequencePoints.Count > 0 && sequencePoints[^1].ILOffset == ilOffset)
+                    {
+                        sequencePoints[^1] = sequencePoint;
+                    }
+                    else
+                    {
+                        sequencePoints.Add(sequencePoint);
+                    }
                 }
             }
 
@@ -2702,9 +3019,9 @@ namespace ILAssembler
         GrammarResult ICILVisitor<GrammarResult>.VisitF32seq(CILParser.F32seqContext context) => VisitF32seq(context);
         public GrammarResult.FormattedBlob VisitF32seq(CILParser.F32seqContext context)
         {
-            var builder = ImmutableArray.CreateBuilder<float>();
+            var builder = ImmutableArray.CreateBuilder<float>(context.ChildCount);
 
-            foreach (var item in context.children)
+            foreach (var item in context.children ?? [])
             {
                 builder.Add((float)(item switch
                 {
@@ -2718,9 +3035,9 @@ namespace ILAssembler
         GrammarResult ICILVisitor<GrammarResult>.VisitF64seq(CILParser.F64seqContext context) => VisitF64seq(context);
         public GrammarResult.FormattedBlob VisitF64seq(CILParser.F64seqContext context)
         {
-            var builder = ImmutableArray.CreateBuilder<double>();
+            var builder = ImmutableArray.CreateBuilder<double>(context.ChildCount);
 
-            foreach (var item in context.children)
+            foreach (var item in context.children ?? [])
             {
                 builder.Add((double)(item switch
                 {
@@ -2775,7 +3092,7 @@ namespace ILAssembler
             var fieldType = VisitType(context.type()).Value;
             var marshalBlobs = context.marshalBlob();
             var marshalBlob = marshalBlobs.Length > 0 ? VisitMarshalBlob(marshalBlobs[marshalBlobs.Length - 1]).Value : null;
-            var name = VisitDottedName(context.dottedName()).Value;
+            string name = VisitDottedName(context.dottedName()).Value;
             var rvaOffset = VisitAtOpt(context.atOpt()).Value;
             var fieldOffset = VisitRepeatOpt(context.repeatOpt()).Value;
             var constantValue = VisitInitOpt(context.initOpt()).Value;
@@ -2785,6 +3102,7 @@ namespace ILAssembler
             fieldType.WriteContentTo(signature.Builder);
 
             var field = EntityRegistry.CreateUnrecordedFieldDefinition(fieldAttrs, _currentTypeDefinition.PeekOrDefault() ?? _entityRegistry.ModuleType, name, signature.Builder);
+            _pendingClassCustomAttributeOwner = field;
 
             if (field is not null)
             {
@@ -2926,13 +3244,13 @@ namespace ILAssembler
             }
 
             var fieldTypeSig = VisitType(type).Value;
-            EntityRegistry.TypeEntity definingType = _currentTypeDefinition.PeekOrDefault() ?? _entityRegistry.ModuleType;
+            EntityRegistry.TypeEntity definingType = _entityRegistry.ModuleType;
             if (context.typeSpec() is CILParser.TypeSpecContext typeSpec)
             {
                 definingType = VisitTypeSpec(typeSpec).Value;
             }
 
-            var name = VisitDottedName(context.dottedName()).Value;
+            string name = VisitDottedName(context.dottedName()).Value;
 
             var fieldSig = new BlobBuilder(fieldTypeSig.Count + 1);
             fieldSig.WriteByte((byte)SignatureKind.Field);
@@ -2989,7 +3307,18 @@ namespace ILAssembler
                     {
                         if (context.float64() is CILParser.Float64Context float64)
                         {
-                            builder.WriteSingle((float)VisitFloat64(float64).Value);
+                            string text = float64.GetText();
+                            if (!text.Contains('.') &&
+                                text.IndexOf('e') < 0 &&
+                                text.IndexOf('E') < 0 &&
+                                ParseIntegerValue(text.AsSpan(), out long rawValue))
+                            {
+                                builder.WriteSingle(BitConverter.Int32BitsToSingle((int)rawValue));
+                            }
+                            else
+                            {
+                                builder.WriteSingle((float)VisitFloat64(float64).Value);
+                            }
                         }
                         if (context.int32() is CILParser.Int32Context int32)
                         {
@@ -2998,11 +3327,22 @@ namespace ILAssembler
                         }
                         break;
                     }
-                case CILParser.FLOAT64:
+                case CILParser.FLOAT64_:
                     {
                         if (context.float64() is CILParser.Float64Context float64)
                         {
-                            builder.WriteDouble(VisitFloat64(float64).Value);
+                            string text = float64.GetText();
+                            if (!text.Contains('.') &&
+                                text.IndexOf('e') < 0 &&
+                                text.IndexOf('E') < 0 &&
+                                ParseIntegerValue(text.AsSpan(), out long rawValue))
+                            {
+                                builder.WriteDouble(BitConverter.Int64BitsToDouble(rawValue));
+                            }
+                            else
+                            {
+                                builder.WriteDouble(VisitFloat64(float64).Value);
+                            }
                         }
                         if (context.int64() is CILParser.Int64Context int64)
                         {
@@ -3027,8 +3367,8 @@ namespace ILAssembler
             var hashBlob = hash is not null ? new BlobBuilder() : null;
             hashBlob?.WriteBytes(hash!.Value);
 
-            bool hasMetadata = context.fileAttr().Aggregate(true, (acc, attr) => acc || VisitFileAttr(attr).Value);
-            bool isEntrypoint = context.fileEntry().Aggregate(true, (acc, attr) => acc || VisitFileEntry(attr).Value);
+            bool hasMetadata = context.fileAttr().Aggregate(true, (acc, attr) => acc && VisitFileAttr(attr).Value);
+            bool isEntrypoint = context.fileEntry().Aggregate(false, (acc, attr) => acc || VisitFileEntry(attr).Value);
             var entity = _entityRegistry.GetOrCreateFile(dottedName, hasMetadata, hashBlob);
             if (isEntrypoint)
             {
@@ -3081,11 +3421,21 @@ namespace ILAssembler
             }
             else if (context.int32() is CILParser.Int32Context int32)
             {
-                int intValue = VisitInt32(int32).Value;
+                IToken node = int32.INT32().Symbol;
+                if (!ParseIntegerValue(node.Text.AsSpan(), out long intValue))
+                {
+                    _diagnostics.Add(new Diagnostic(
+                        DiagnosticIds.LiteralOutOfRange,
+                        DiagnosticSeverity.Error,
+                        string.Format(DiagnosticMessageTemplates.LiteralOutOfRange, node.Text),
+                        Location.From(node, _documents)));
+                    intValue = 0;
+                }
+
                 if (context.FLOAT32() is not null)
                 {
                     // FLOAT32 '(' int32 ')' — hex bits reinterpreted as float32
-                    return new(BitConverter.Int32BitsToSingle(intValue));
+                    return new(BitConverter.Int32BitsToSingle((int)intValue));
                 }
                 // int32 or int32 '.' — plain integer or trailing-dot float
                 return new((double)intValue);
@@ -3291,6 +3641,10 @@ namespace ILAssembler
         {
             var instrContext = context.GetRuleContext<ParserRuleContext>(0);
             ILOpCode opcode = ((GrammarResult.Literal<ILOpCode>)instrContext.Accept(this)).Value;
+            if (opcode == ILOpCode.Localloc)
+            {
+                _currentMethod!.Definition.HasDynamicStackAllocation = true;
+            }
             switch (instrContext.RuleIndex)
             {
                 case CILParser.RULE_instr_brtarget:
@@ -3404,7 +3758,7 @@ namespace ILAssembler
                         else if (argument is CILParser.Int64Context int64)
                         {
                             long intValue = VisitInt64(int64).Value;
-                            value = BitConverter.Int64BitsToDouble(intValue);
+                            value = intValue;
                         }
                         else if (argument is CILParser.BytesContext bytesContext)
                         {
@@ -3439,11 +3793,12 @@ namespace ILAssembler
                     break;
                 case CILParser.RULE_instr_sig:
                     {
+                        Debug.Assert(opcode == ILOpCode.Calli);
                         BlobBuilder signature = new();
                         byte callConv = VisitCallConv(context.callConv()).Value;
                         signature.WriteByte(callConv);
                         var args = VisitSigArgs(context.sigArgs()).Value;
-                        signature.WriteCompressedInteger(args.Length);
+                        signature.WriteCompressedInteger(args.Count(arg => !arg.IsSentinel));
                         // Write return type
                         VisitType(context.type()).Value.WriteContentTo(signature);
                         // Write arg signatures
@@ -3451,6 +3806,7 @@ namespace ILAssembler
                         {
                             arg.SignatureBlob.WriteContentTo(signature);
                         }
+                        _currentMethod!.Definition.MethodBody.OpCode(opcode);
                         _currentMethod!.Definition.MethodBody.Token(_entityRegistry.GetOrCreateStandaloneSignature(signature).Handle);
                     }
                     break;
@@ -3550,11 +3906,21 @@ namespace ILAssembler
                     }
                     break;
                 case CILParser.RULE_instr_tok:
-                    var tok = VisitOwnerType(context.ownerType()).Value;
                     _currentMethod!.Definition.MethodBody.OpCode(opcode);
+                    if (context.int32() is { } tokenValue)
+                    {
+                        _currentMethod.Definition.MethodBody.CodeBuilder.WriteInt32(VisitInt32(tokenValue).Value);
+                        break;
+                    }
+
+                    var tok = VisitOwnerType(context.ownerType()).Value;
                     if (tok is EntityRegistry.TypeReferenceEntity tokTypeRef)
                     {
                         tokTypeRef.RecordBlobToWriteResolvedToken(_currentMethod.Definition.MethodBody.CodeBuilder.ReserveBytes(4));
+                    }
+                    else if (tok is EntityRegistry.MemberReferenceEntity tokMemberRef)
+                    {
+                        tokMemberRef.RecordBlobToWriteResolvedHandle(_currentMethod.Definition.MethodBody.CodeBuilder.ReserveBytes(4));
                     }
                     else
                     {
@@ -3664,6 +4030,12 @@ namespace ILAssembler
         private static ILOpCode ParseOpCodeFromToken(IToken token)
         {
             string text = token.Text.TrimEnd('.');
+            if (text == "unused")
+            {
+                // Native ilasm's keyword index uses the last matching opcode.def entry, CEE_UNUSED70.
+                return ILOpCode.Unused;
+            }
+
             string normalized = text.Replace('.', '_');
 
             // Handle instruction aliases that don't directly map to ILOpCode enum names
@@ -4339,12 +4711,6 @@ namespace ILAssembler
             // Pass 1: Register all parameter names (without resolving constraints)
             _currentMethod = new(methodDefinition);
             var typarContexts = context.typarsClause()?.typars()?.typar() ?? Array.Empty<CILParser.TyparContext>();
-            if (typarContexts.Length > ushort.MaxValue)
-            {
-                ReportError(DiagnosticIds.TooManyGenericParameters,
-                    string.Format(DiagnosticMessageTemplates.TooManyGenericParameters, typarContexts.Length, ushort.MaxValue),
-                    context.typarsClause());
-            }
             for (int i = 0; i < typarContexts.Length; i++)
             {
                 var attributes = VisitTyparAttribs(typarContexts[i].typarAttribs()).Value;
@@ -4388,7 +4754,7 @@ namespace ILAssembler
                         pInvokeInfo);
                     continue;
                 }
-                pInvokeInformation = (_entityRegistry.GetOrCreateModuleReference(moduleName, _ => { }), entryPoint, attributes);
+                pInvokeInformation = (_entityRegistry.GetOrCreateModuleReference(moduleName, _ => { }), entryPoint ?? name, attributes);
             }
             methodDefinition.MethodImportInformation = pInvokeInformation;
 
@@ -4503,7 +4869,7 @@ namespace ILAssembler
                 return new(_entityRegistry.CreateLazilyRecordedMemberReference(_entityRegistry.ModuleType, "<error>", methodRefSignature));
             }
             byte callConv = VisitCallConv(callConvCtx).Value;
-            EntityRegistry.TypeEntity owner = _currentTypeDefinition.PeekOrDefault() ?? _entityRegistry.ModuleType;
+            EntityRegistry.TypeEntity owner = _entityRegistry.ModuleType;
             if (context.typeSpec() is CILParser.TypeSpecContext typeSpec)
             {
                 owner = VisitTypeSpec(typeSpec).Value;
@@ -4561,6 +4927,54 @@ namespace ILAssembler
 
             return new(memberRef);
         }
+
+        private EntityRegistry.MemberReferenceEntity CreateExplicitMethodReference(
+            CILParser.CallConvContext callConv,
+            CILParser.TypeContext returnType,
+            CILParser.TypeSpecContext owner,
+            CILParser.MethodNameContext methodName,
+            CILParser.GenArityContext? genericArity,
+            CILParser.SigArgsContext parameterList)
+        {
+            EntityRegistry.TypeEntity ownerType = VisitTypeSpec(owner).Value;
+            string name = VisitMethodName(methodName).Value;
+            return _entityRegistry.CreateLazilyRecordedMemberReference(
+                ownerType,
+                name,
+                CreateExplicitMethodSignature(callConv, returnType, genericArity, parameterList));
+        }
+
+        private BlobBuilder CreateExplicitMethodSignature(
+            CILParser.CallConvContext callConv,
+            CILParser.TypeContext returnType,
+            CILParser.GenArityContext? genericArity,
+            CILParser.SigArgsContext parameterList)
+        {
+            BlobBuilder signature = new();
+            byte signatureHeader = VisitCallConv(callConv).Value;
+            int arity = genericArity is null ? 0 : VisitGenArity(genericArity).Value;
+            if (arity != 0)
+            {
+                signatureHeader |= (byte)SignatureAttributes.Generic;
+            }
+
+            signature.WriteByte(signatureHeader);
+            if (arity != 0)
+            {
+                signature.WriteCompressedInteger(arity);
+            }
+
+            ImmutableArray<SignatureArg> parameters = VisitSigArgs(parameterList).Value;
+            signature.WriteCompressedInteger(parameters.Count(parameter => !parameter.IsSentinel));
+            VisitType(returnType).Value.WriteContentTo(signature);
+            foreach (SignatureArg parameter in parameters)
+            {
+                parameter.SignatureBlob.WriteContentTo(signature);
+            }
+
+            return signature;
+        }
+
         public GrammarResult VisitModuleHead(CILParser.ModuleHeadContext context)
         {
             if (context.ChildCount > 2)
@@ -4569,7 +4983,10 @@ namespace ILAssembler
                 return GrammarResult.SentinelValue.Result;
             }
 
-            _entityRegistry.Module.Name = VisitDottedName(context.dottedName()).Value;
+            if (context.dottedName() is { } moduleName)
+            {
+                _entityRegistry.Module.Name = VisitDottedName(moduleName).Value;
+            }
             return GrammarResult.SentinelValue.Result;
         }
 
@@ -4594,12 +5011,18 @@ namespace ILAssembler
         GrammarResult ICILVisitor<GrammarResult>.VisitNativeType(CILParser.NativeTypeContext context) => VisitNativeType(context);
         public GrammarResult.FormattedBlob VisitNativeType(CILParser.NativeTypeContext context)
         {
-            if (context.nativeTypeArrayPointerInfo() is not CILParser.NativeTypeArrayPointerInfoContext[] arrayPointerInfo)
+            if (context.nativeTypeElement() is not CILParser.NativeTypeElementContext element)
             {
-                return VisitNativeTypeElement(context.nativeTypeElement());
+                return new(new BlobBuilder());
+            }
+
+            CILParser.NativeTypeArrayPointerInfoContext[] arrayPointerInfo = context.nativeTypeArrayPointerInfo();
+            if (arrayPointerInfo.Length == 0)
+            {
+                return VisitNativeTypeElement(element);
             }
             var prefix = new BlobBuilder(arrayPointerInfo.Length);
-            var elementType = VisitNativeTypeElement(context.nativeTypeElement()).Value;
+            var elementType = VisitNativeTypeElement(element).Value;
             var suffix = new BlobBuilder();
 
             for (int i = arrayPointerInfo.Length - 1; i >= 0; i--)
@@ -4629,20 +5052,20 @@ namespace ILAssembler
             {
                 if (arrayPointerInfo[i] is CILParser.PointerArrayTypeSizeContext size)
                 {
+                    suffix.WriteCompressedInteger(0);
                     suffix.WriteCompressedInteger(VisitInt32(size.int32()).Value);
+                    suffix.WriteCompressedInteger(0);
                 }
                 else if (arrayPointerInfo[i] is CILParser.PointerArrayTypeSizeParamIndexContext sizeParamIndex)
                 {
                     var ints = sizeParamIndex.int32();
                     suffix.WriteCompressedInteger(VisitInt32(ints[1]).Value);
-                    suffix.WriteCompressedInteger(VisitInt32(ints[2]).Value);
+                    suffix.WriteCompressedInteger(VisitInt32(ints[0]).Value);
                     suffix.WriteCompressedInteger(1); // Write that the paramIndex parameter was specified
                 }
                 else if (arrayPointerInfo[i] is CILParser.PointerArrayTypeParamIndexContext paramIndex)
                 {
-                    suffix.WriteCompressedInteger(0);
                     suffix.WriteCompressedInteger(VisitInt32(paramIndex.int32()).Value);
-                    suffix.WriteCompressedInteger(0); // Write that the paramIndex parameter was not specified
                 }
             }
 
@@ -4654,7 +5077,7 @@ namespace ILAssembler
         GrammarResult ICILVisitor<GrammarResult>.VisitNativeTypeElement(CILParser.NativeTypeElementContext context) => VisitNativeTypeElement(context);
         public GrammarResult.FormattedBlob VisitNativeTypeElement(CILParser.NativeTypeElementContext context)
         {
-            var blob = new BlobBuilder(5);
+            var blob = new BlobBuilder();
             if (context.dottedName() is CILParser.DottedNameContext typedef)
             {
                 // Native type typedefs are not yet fully supported
@@ -4666,6 +5089,21 @@ namespace ILAssembler
 
             if (context.marshalType is null)
             {
+                if (context.marshalBool is not null)
+                {
+                    blob.WriteByte((byte)UnmanagedType.VariantBool);
+                }
+                else if (context.unsignedMarshalType is not null)
+                {
+                    blob.WriteByte(context.unsignedMarshalType.Type switch
+                    {
+                        CILParser.INT8 => (byte)UnmanagedType.U1,
+                        CILParser.INT16 => (byte)UnmanagedType.U2,
+                        CILParser.INT32_ => (byte)UnmanagedType.U4,
+                        CILParser.INT64_ => (byte)UnmanagedType.U8,
+                        _ => throw new UnreachableException(),
+                    });
+                }
                 return new(blob);
             }
 
@@ -4702,7 +5140,7 @@ namespace ILAssembler
                 case CILParser.ARRAY:
                     blob.WriteByte((byte)UnmanagedType.ByValArray);
                     blob.WriteCompressedInteger(VisitInt32(context.int32()).Value);
-                    blob.LinkSuffix(VisitNativeType(context.nativeType()).Value);
+                    VisitNativeType(context.nativeType()).Value.WriteContentTo(blob);
                     break;
                 case CILParser.VARIANT:
                     ReportWarning(DiagnosticIds.DeprecatedNativeType,
@@ -4731,15 +5169,7 @@ namespace ILAssembler
                     blob.WriteByte(NATIVE_TYPE_VOID);
                     break;
                 case CILParser.BOOL:
-                    // Distinguish 'variant bool' (VariantBool) from plain 'bool' (Bool)
-                    if (context.marshalBool is not null)
-                    {
-                        blob.WriteByte((byte)UnmanagedType.VariantBool);
-                    }
-                    else
-                    {
-                        blob.WriteByte((byte)UnmanagedType.Bool);
-                    }
+                    blob.WriteByte((byte)UnmanagedType.Bool);
                     break;
                 case CILParser.INT8:
                     blob.WriteByte((byte)UnmanagedType.I1);
@@ -4905,11 +5335,21 @@ namespace ILAssembler
         GrammarResult ICILVisitor<GrammarResult>.VisitObjSeq(CILParser.ObjSeqContext context) => VisitObjSeq(context);
         public GrammarResult.FormattedBlob VisitObjSeq(CILParser.ObjSeqContext context)
         {
-            // We're going to add all of the elements in the sequence as prefix blobs to this blob.
-            BlobBuilder objSeqBlob = new(0);
+            BlobBuilder objSeqBlob = new();
             foreach (var item in context.serInit())
             {
-                objSeqBlob.LinkPrefix(VisitSerInit(item).Value);
+                // Each element in object[] is encoded as FieldOrPropType + value,
+                // where FieldOrPropType is the concrete type (bool, int32, string, etc.),
+                // NOT TaggedObject (0x51). The object(...) wrapper is used to explicitly
+                // box a value but does not change the element's concrete type in the encoding.
+                // Unwrap any object(...) wrappers to get the actual typed inner element.
+                CILParser.SerInitContext actualItem = item;
+                while (actualItem.serInit() is { } inner)
+                {
+                    actualItem = inner;
+                }
+                WriteCustomAttributeFieldOrPropType(objSeqBlob, actualItem);
+                objSeqBlob.LinkSuffix(VisitSerInit(actualItem).Value);
             }
             return new(objSeqBlob);
         }
@@ -5291,7 +5731,7 @@ namespace ILAssembler
                 blob.WriteByte((byte)SerializationTypeCode.Enum);
                 if (context.SQSTRING() is ITerminalNode sqString)
                 {
-                    blob.WriteSerializedString(sqString.GetText());
+                    blob.WriteSerializedString(StringHelpers.ParseQuotedString(sqString.GetText()));
                 }
                 else
                 {
@@ -5308,44 +5748,77 @@ namespace ILAssembler
         {
             if (context.fieldSerInit() is CILParser.FieldSerInitContext fieldSerInit)
             {
-                return VisitFieldSerInit(fieldSerInit);
+                if (fieldSerInit.bytes() is not null)
+                {
+                    ReportError(
+                        DiagnosticIds.InvalidMetadataToken,
+                        "bytearray is not a valid structured custom attribute value",
+                        context);
+                    var invalidValue = new BlobBuilder();
+                    invalidValue.WriteSerializedString(null);
+                    return new(invalidValue);
+                }
+
+                ImmutableArray<byte> encodedValue = VisitFieldSerInit(fieldSerInit).Value.ToImmutableArray();
+                var value = new BlobBuilder(Math.Max(0, encodedValue.Length - 1));
+                if (encodedValue.Length > 1)
+                {
+                    value.WriteBytes(encodedValue.AsSpan().Slice(1).ToArray());
+                }
+                return new(value);
             }
 
             if (context.serInit() is CILParser.SerInitContext serInit)
             {
                 Debug.Assert(context.OBJECT() is not null);
-                BlobBuilder taggedObjectBlob = new(1);
-                taggedObjectBlob.WriteByte((byte)SerializationTypeCode.TaggedObject);
+                BlobBuilder taggedObjectBlob = new();
+                WriteCustomAttributeFieldOrPropType(taggedObjectBlob, serInit);
                 taggedObjectBlob.LinkSuffix(VisitSerInit(serInit).Value);
                 return new(taggedObjectBlob);
             }
 
             if (context.int32() is not CILParser.Int32Context arrLength)
             {
-                // The only cases where there is no int32 node is when the value is a string or type.
                 BlobBuilder blob = new();
-                blob.WriteByte((byte)GetTypeCodeForToken(((ITerminalNode)context.GetChild(0)).Symbol.Type));
                 if (context.className() is CILParser.ClassNameContext className)
                 {
                     blob.WriteSerializedString(VisitClassName(className).Value is EntityRegistry.IHasReflectionNotation reflection ? reflection.ReflectionNotation : string.Empty);
                 }
                 else
                 {
-                    blob.WriteSerializedString(context.SQSTRING()?.Symbol.Text);
+                    blob.WriteSerializedString(
+                        context.SQSTRING() is { } stringNode
+                            ? StringHelpers.ParseQuotedString(stringNode.Symbol.Text)
+                            : null);
                 }
                 return new(blob);
             }
 
-            int tokenType = ((ITerminalNode)context.GetChild(0)).Symbol.Type;
-
-            // 1 byte for ELEMENT_TYPE_SZARRAY, 1 byte for the array element type, 4 bytes for the length.
-            BlobBuilder arrayHeader = new(6);
-            arrayHeader.WriteByte((byte)SerializationTypeCode.SZArray);
-            arrayHeader.WriteByte((byte)GetTypeCodeForToken(tokenType));
+            BlobBuilder arrayHeader = new(sizeof(int));
             arrayHeader.WriteInt32(VisitInt32(arrLength).Value);
             var sequenceResult = (GrammarResult.FormattedBlob)Visit(context.GetRuleContext<ParserRuleContext>(1));
             arrayHeader.LinkSuffix(sequenceResult.Value);
             return new(arrayHeader);
+        }
+
+        private static void WriteCustomAttributeFieldOrPropType(
+            BlobBuilder builder,
+            CILParser.SerInitContext context)
+        {
+            int tokenType = context.fieldSerInit() is { } fieldSerInit
+                ? ((ITerminalNode)fieldSerInit.GetChild(0)).Symbol.Type
+                : ((ITerminalNode)context.GetChild(0)).Symbol.Type;
+            if (context.fieldSerInit()?.bytes() is not null)
+            {
+                builder.WriteByte((byte)SerializationTypeCode.String);
+                return;
+            }
+            if (context.int32() is not null)
+            {
+                builder.WriteByte((byte)SerializationTypeCode.SZArray);
+            }
+
+            builder.WriteByte((byte)GetTypeCodeForToken(tokenType));
         }
 
         private static SerializationTypeCode GetTypeCodeForToken(int tokenType)
@@ -5495,18 +5968,18 @@ namespace ILAssembler
         public static GrammarResult.FormattedBlob VisitSqstringSeq(CILParser.SqstringSeqContext context)
         {
             var strings = ImmutableArray.CreateBuilder<string?>(context.ChildCount);
-            foreach (var child in context.children)
+            foreach (var child in context.children ?? [])
             {
                 string? str = null;
 
                 if (child is ITerminalNode { Symbol: { Type: CILParser.SQSTRING, Text: string stringValue } })
                 {
-                    str = stringValue;
+                    str = StringHelpers.ParseQuotedString(stringValue);
                 }
 
                 strings.Add(str);
             }
-            return new(strings.ToImmutable().SerializeSequence());
+            return new(strings.MoveToImmutable().SerializeSequence());
         }
 
         GrammarResult ICILVisitor<GrammarResult>.VisitStackreserve(CILParser.StackreserveContext context) => VisitStackreserve(context);
@@ -5914,7 +6387,12 @@ namespace ILAssembler
         GrammarResult ICILVisitor<GrammarResult>.VisitVariantType(CILParser.VariantTypeContext context) => VisitVariantType(context);
         public GrammarResult.Literal<VarEnum> VisitVariantType(CILParser.VariantTypeContext context)
         {
-            VarEnum variant = VisitVariantTypeElement(context.variantTypeElement()).Value;
+            if (context.variantTypeElement() is not CILParser.VariantTypeElementContext element)
+            {
+                return new(VarEnum.VT_EMPTY);
+            }
+
+            VarEnum variant = VisitVariantTypeElement(element).Value;
             // The 0th child is the variant element type.
             for (int i = 1; i < context.ChildCount; i++)
             {

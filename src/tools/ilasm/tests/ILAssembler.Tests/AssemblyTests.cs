@@ -21,6 +21,50 @@ namespace ILAssembler.Tests
 {
     public class AssemblyTests
     {
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void ImageCharacteristics_AreValid(bool dll)
+        {
+            string source = """
+                .assembly test { }
+                .method public static void Main() cil managed
+                {
+                    .entrypoint
+                    ret
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options { Dll = dll });
+            Characteristics characteristics = pe.PEHeaders.CoffHeader.Characteristics;
+
+            Assert.True(characteristics.HasFlag(Characteristics.ExecutableImage));
+            Assert.True(characteristics.HasFlag(Characteristics.Bit32Machine));
+            Assert.Equal(dll, characteristics.HasFlag(Characteristics.Dll));
+        }
+
+        [Theory]
+        [InlineData(Machine.Amd64)]
+        [InlineData(Machine.Arm64)]
+        public void ImageCharacteristics_64BitImageIsLargeAddressAware(Machine machine)
+        {
+            string source = """
+                .assembly test { }
+                .method public static void Main() cil managed
+                {
+                    .entrypoint
+                    ret
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options { Machine = machine });
+            Characteristics characteristics = pe.PEHeaders.CoffHeader.Characteristics;
+
+            Assert.True(characteristics.HasFlag(Characteristics.ExecutableImage));
+            Assert.True(characteristics.HasFlag(Characteristics.LargeAddressAware));
+            Assert.False(characteristics.HasFlag(Characteristics.Bit32Machine));
+        }
+
         [Fact]
         public void Diagnostic_AssemblyNotFound()
         {
@@ -69,6 +113,85 @@ namespace ILAssembler.Tests
             var objectRef = typeRefs.Single(t => reader.GetString(t.Name) == "Object");
             Assert.Equal("System", reader.GetString(objectRef.Namespace));
             Assert.Equal(asmRefs[0].Name, reader.GetAssemblyReference((AssemblyReferenceHandle)objectRef.ResolutionScope).Name);
+        }
+
+        [Fact]
+        public void AssemblyReference_KeywordName_IsAccepted()
+        {
+            string source = """
+                .assembly extern volatile
+                {
+                    .ver 0:0:0:0
+                }
+                .assembly test { }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var assemblyReference = Assert.Single(reader.AssemblyReferences);
+
+            Assert.Equal("volatile", reader.GetString(reader.GetAssemblyReference(assemblyReference).Name));
+        }
+
+        [Theory]
+        [InlineData(".publickey")]
+        [InlineData(".publicKey")]
+        public void AssemblyReference_PublicKeySpellings_AreAccepted(string directive)
+        {
+            string source = $$"""
+                .assembly extern mscorlib
+                {
+                    {{directive}} = (01 02 03 04)
+                    .ver 2:0:0:0
+                }
+                .assembly test { }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var assemblyReference = reader.GetAssemblyReference(Assert.Single(reader.AssemblyReferences));
+
+            Assert.True(assemblyReference.Flags.HasFlag(AssemblyFlags.PublicKey));
+            Assert.Equal([1, 2, 3, 4], reader.GetBlobBytes(assemblyReference.PublicKeyOrToken));
+        }
+
+        [Fact]
+        public void AssemblyDefinition_PublicKeySetsFlag()
+        {
+            string source = """
+                .assembly test
+                {
+                    .publickey = (01 02 03 04)
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var assembly = reader.GetAssemblyDefinition();
+
+            Assert.True(assembly.Flags.HasFlag(AssemblyFlags.PublicKey));
+            Assert.Equal([1, 2, 3, 4], reader.GetBlobBytes(assembly.PublicKey));
+        }
+
+        [Theory]
+        [InlineData(".publickey = (01 02 03 04)\n.publickeytoken = (05 06 07 08)")]
+        [InlineData(".publickeytoken = (05 06 07 08)\n.publickey = (01 02 03 04)")]
+        public void AssemblyReference_PublicKeyTokenTakesPrecedence(string declarations)
+        {
+            string source = $$"""
+                .assembly extern External
+                {
+                    {{declarations}}
+                }
+                .assembly test { }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var assemblyReference = reader.GetAssemblyReference(Assert.Single(reader.AssemblyReferences));
+
+            Assert.False(assemblyReference.Flags.HasFlag(AssemblyFlags.PublicKey));
+            Assert.Equal([5, 6, 7, 8], reader.GetBlobBytes(assemblyReference.PublicKeyOrToken));
         }
 
 
@@ -255,6 +378,99 @@ namespace ILAssembler.Tests
             Assert.Equal(new Version(1, 2, 3, 4), asmDef.Version);
             var asmRef = reader.GetAssemblyReference(MetadataTokens.AssemblyReferenceHandle(1));
             Assert.Equal(new Version(8, 0, 0, 0), asmRef.Version);
+        }
+
+        [Theory]
+        [InlineData("Deterministic.dll", false)]
+        [InlineData("Deterministic.exe", true)]
+        public void ManagedIlasm_DeterministicOutput_IsByteIdentical(string outputFileName, bool executable)
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly Deterministic
+                {
+                    .ver 1:2:3:4
+                }
+                .class public auto ansi beforefieldinit Program extends [mscorlib]System.Object
+                {
+                    .method public static void Main() cil managed
+                    {
+                        ENTRYPOINT
+                        ldstr "deterministic"
+                        pop
+                        ret
+                    }
+                }
+                """.Replace("ENTRYPOINT", executable ? ".entrypoint" : string.Empty);
+
+            var options = new Options
+            {
+                Deterministic = true,
+                OutputFileName = outputFileName,
+            };
+
+            ImmutableArray<byte> firstImage = DocumentCompilerTestHelpers.Compile(source, options);
+            ImmutableArray<byte> secondImage = DocumentCompilerTestHelpers.Compile(source, options);
+
+            Assert.Equal<byte>(firstImage, secondImage);
+        }
+
+        [Fact]
+        public void ManagedIlasm_DeterministicPdbOutput_IsByteIdentical()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly Deterministic { }
+                .class public auto ansi beforefieldinit Program extends [mscorlib]System.Object
+                {
+                    .method public static void Main() cil managed
+                    {
+                        .line 1 "deterministic.il"
+                        ret
+                    }
+                }
+                """;
+
+            var options = new Options
+            {
+                Deterministic = true,
+                Pdb = true,
+            };
+
+            ImmutableArray<byte> firstPdb = DocumentCompilerTestHelpers.CompileAndGetEmbeddedPortablePdb(source, options);
+            ImmutableArray<byte> secondPdb = DocumentCompilerTestHelpers.CompileAndGetEmbeddedPortablePdb(source, options);
+
+            Assert.Equal<byte>(firstPdb, secondPdb);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void ManagedIlasm_PdbIdGuid_IsNotEmpty(bool deterministic)
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly PdbId { }
+                .class public auto ansi beforefieldinit Program extends [mscorlib]System.Object
+                {
+                    .method public static void Main() cil managed
+                    {
+                        ret
+                    }
+                }
+                """;
+
+            var options = new Options
+            {
+                Deterministic = deterministic,
+                Pdb = true,
+            };
+
+            ImmutableArray<byte> pdb = DocumentCompilerTestHelpers.CompileAndGetEmbeddedPortablePdb(source, options);
+            using MetadataReaderProvider pdbProvider = MetadataReaderProvider.FromPortablePdbImage(pdb);
+            BlobContentId pdbId = new(pdbProvider.GetMetadataReader().DebugMetadataHeader!.Id);
+
+            Assert.NotEqual(Guid.Empty, pdbId.Guid);
         }
 
 
@@ -633,6 +849,91 @@ namespace ILAssembler.Tests
 
             var catchRegion = ehRegions.First(r => r.Kind == ExceptionRegionKind.Catch);
             Assert.Equal(HandleKind.TypeDefinition, catchRegion.CatchType.Kind);
+        }
+
+        [Fact]
+        public void AssemblyReferenceMetadata_EmitsExpectedIdentity()
+        {
+            string source = """
+                .assembly extern Sample.Dependency
+                {
+                    .ver 2:5:0:7
+                    .locale "en-US"
+                    .publickeytoken = (01 23 45 67 89 AB CD EF)
+                    .hash = (AA BB CC)
+                }
+                .assembly TestAssembly { }
+                .class public auto ansi beforefieldinit Test
+                {
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            var assemblyRef = reader.GetAssemblyReference(MetadataTokens.AssemblyReferenceHandle(1));
+            Assert.Equal("Sample.Dependency", reader.GetString(assemblyRef.Name));
+            Assert.Equal(new Version(2, 5, 0, 7), assemblyRef.Version);
+            Assert.Equal("en-US", reader.GetString(assemblyRef.Culture));
+            Assert.Equal([0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF], reader.GetBlobBytes(assemblyRef.PublicKeyOrToken));
+            Assert.Equal([0xAA, 0xBB, 0xCC], reader.GetBlobBytes(assemblyRef.HashValue));
+        }
+
+        [Fact]
+        public void AssemblyAndAliasedReferenceDeclarations_EmitKeysWildcardsLocalesAndAttributes()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly extern Original.Dependency as Alias
+                {
+                    .publicKey = (01 02 03 04)
+                    .ver *:2:*:4
+                    .locale = (65 00 6E 00)
+                    .hash = (AA BB)
+                    auto
+                    .custom instance void [mscorlib]System.ObsoleteAttribute::.ctor() = (01 00 00 00)
+                    ;
+                }
+                .assembly test
+                {
+                    .publicKey = (10 20 30 40)
+                    .ver *:5:*:7
+                    .locale = (66 00 72 00)
+                    .custom instance void [mscorlib]System.CLSCompliantAttribute::.ctor(bool) = (01 00 01 00 00)
+                    ;
+                }
+                .class public auto ansi Test
+                {
+                    .field public class [Alias]Contoso.External Value
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var assembly = reader.GetAssemblyDefinition();
+            var dependencyHandle = reader.AssemblyReferences
+                .Single(handle => reader.GetString(reader.GetAssemblyReference(handle).Name) == "Original.Dependency");
+            var dependency = reader.GetAssemblyReference(dependencyHandle);
+            var externalType = reader.TypeReferences
+                .Select(reader.GetTypeReference)
+                .Single(type => reader.GetString(type.Name) == "External");
+
+            Assert.Equal(new Version(0, 5, 0, 7), assembly.Version);
+            Assert.Equal("fr", reader.GetString(assembly.Culture));
+            Assert.True(assembly.Flags.HasFlag(AssemblyFlags.PublicKey));
+            Assert.Equal([0x10, 0x20, 0x30, 0x40], reader.GetBlobBytes(assembly.PublicKey));
+            CustomAttributeValue<string> assemblyAttribute = reader
+                .GetCustomAttribute(Assert.Single(reader.GetAssemblyDefinition().GetCustomAttributes()))
+                .DecodeValue(DocumentCompilerTestHelpers.Decoder);
+            Assert.Equal(true, Assert.Single(assemblyAttribute.FixedArguments).Value);
+
+            Assert.Equal(new Version(0, 2, 0, 4), dependency.Version);
+            Assert.Equal("en", reader.GetString(dependency.Culture));
+            Assert.True(dependency.Flags.HasFlag(AssemblyFlags.PublicKey));
+            Assert.Equal([0x01, 0x02, 0x03, 0x04], reader.GetBlobBytes(dependency.PublicKeyOrToken));
+            Assert.Equal([0xAA, 0xBB], reader.GetBlobBytes(dependency.HashValue));
+            Assert.Single(reader.GetCustomAttributes(dependencyHandle));
+            Assert.Equal(dependencyHandle, externalType.ResolutionScope);
         }
     }
 }
