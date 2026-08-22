@@ -164,6 +164,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         IsAsyncVariant = 0x4,
         Thunk = 0x10,
         ReturnDroppingThunk = 0x20,
+        CovariantForwardingThunk = 0x40,
     }
 
     [Flags]
@@ -2292,6 +2293,8 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             result |= AsyncMethodFlags.Thunk;
         if ((raw & AsyncMethodFlags_1.ReturnDroppingThunk) != 0)
             result |= AsyncMethodFlags.ReturnDroppingThunk;
+        if ((raw & AsyncMethodFlags_1.CovariantForwardingThunk) != 0)
+            result |= AsyncMethodFlags.CovariantForwardingThunk;
         return result;
     }
 
