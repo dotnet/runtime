@@ -4930,6 +4930,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     }
 #endif
 
+    activePhaseChecks |= PhaseChecks::CHECK_LIR_UNUSED_VALUES;
+
     // rationalize trees
     Rationalizer rat(this); // PHASE_RATIONALIZE
     rat.Run();
@@ -5003,6 +5005,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Now that lowering is completed we can proceed to perform register allocation
     //
+    // LSRA may insert nodes without users to model register saves/restores.
+    //
+    activePhaseChecks &= ~PhaseChecks::CHECK_LIR_UNUSED_VALUES;
+
     auto regAllocPhase = [this] {
         m_regAlloc->doRegisterAllocation();
     };
