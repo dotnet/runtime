@@ -23,6 +23,13 @@ public class ConvertDllsToWebcil : Task
     [Required]
     public bool IsEnabled { get; set; }
 
+    /// <summary>
+    /// Directory holding prebuilt R2R webcil-in-wasm images (CoreCLR browser). For a managed non-culture
+    /// .dll candidate with empty <c>R2RWebcilPath</c>, the matching image is staged instead of
+    /// converting the IL. Empty for Mono.
+    /// </summary>
+    public string? PrebuiltR2RDirectory { get; set; }
+
     public int WebcilVersion { get; set; }
 
     [Output]
@@ -137,6 +144,24 @@ public class ConvertDllsToWebcil : Task
         // stage (copy) it into the webcil output so it flows through the same downstream metadata as a
         // converted assembly, but carries native code. The .dll is kept only as the metadata source.
         string r2rWebcilPath = candidate.GetMetadata("R2RWebcilPath");
+        if (string.IsNullOrEmpty(r2rWebcilPath) && !isCulture && !string.IsNullOrEmpty(PrebuiltR2RDirectory))
+        {
+            string assemblyName = Path.GetFileNameWithoutExtension(dllFilePath);
+
+            // Probe .dll before .wasm: per-app crossgen (--out:<name>.dll) writes the R2R image to
+            // <name>.dll and can leave a same-named <name>.wasm that is NOT it. Pack images are
+            // <name>.wasm with no sibling .dll, so they still resolve.
+            string candidateDll = Path.Combine(PrebuiltR2RDirectory, assemblyName + ".dll");
+            string candidateWasm = Path.Combine(PrebuiltR2RDirectory, assemblyName + Utils.WebcilInWasmExtension);
+            if (File.Exists(candidateDll))
+            {
+                r2rWebcilPath = candidateDll;
+            }
+            else if (File.Exists(candidateWasm))
+            {
+                r2rWebcilPath = candidateWasm;
+            }
+        }
         if (!string.IsNullOrEmpty(r2rWebcilPath))
         {
             if (Utils.IsNewerThan(r2rWebcilPath, finalWebcil))

@@ -579,7 +579,11 @@ public class Program
         Console.WriteLine("TestDefaultVsExactStaticVirtualMethodImplementation");
         TestDefaultVsExactStaticVirtualMethodImplementation();
         
+#if !NO_CROSS_MODULE_INLINING
+        // ILInliningVersioningTest validates the set of methods that were inlined across modules using the map file
+        // produced by crossgen2, so it is only meaningful when the test binary is compiled with --opt-cross-module.
         ILInliningVersioningTest<LocallyDefinedStructure>.RunAllTests(typeof(Program).Assembly);
+#endif
     }
 
     public static int Main()
