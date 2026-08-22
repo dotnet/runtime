@@ -121,7 +121,7 @@
     <!-- Even on platforms that do not support the CoreCLR runtime, we still want to build ilasm/ildasm. -->
     <DefaultCoreClrSubsets Condition="'$(RuntimeFlavor)' != 'CoreCLR'">clr.iltools+clr.packages</DefaultCoreClrSubsets>
 
-    <DefaultNativeAotSubsets>clr.alljits+clr.tools+clr.nativeaotlibs+clr.nativeaotruntime</DefaultNativeAotSubsets>
+    <DefaultNativeAotSubsets>clr.jit+clr.tools+clr.nativeaotlibs+clr.nativeaotruntime</DefaultNativeAotSubsets>
 
     <_MonoAotCrossSubsets Condition="'$(MonoCrossAOTTargetOS)' != ''">mono.aotcross</_MonoAotCrossSubsets>
 
