@@ -533,8 +533,10 @@ namespace System.Collections.Immutable.Tests
             var builder = ImmutableArray.CreateBuilder<int>();
             builder.AddRange(2, 4, 1, 3);
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => builder.Sort(-1, 2, Comparer<int>.Default));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => builder.Sort(5, 0, Comparer<int>.Default));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => builder.Sort(1, 4, Comparer<int>.Default));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => builder.Sort(0, -1, Comparer<int>.Default));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => builder.Sort(1, int.MaxValue, Comparer<int>.Default));
 
             builder.Sort(builder.Count, 0, Comparer<int>.Default);
             Assert.Equal(new int[] { 2, 4, 1, 3 }, builder);
