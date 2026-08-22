@@ -54,6 +54,66 @@ int32_t GlobalizationNative_IanaIdToWindowsId(const UChar* ianaId, UChar* window
 }
 
 /*
+Get canonical location time zone IDs from ICU.
+If value is null, returns the length needed to store the IDs.
+Otherwise, stores each ID prefixed by its length and returns the number of UChars written.
+Returns -1 on failure.
+*/
+int32_t GlobalizationNative_GetCanonicalLocationTimeZoneIds(UChar* value, int32_t valueLength)
+{
+    if (valueLength < 0)
+    {
+        return -1;
+    }
+
+    UErrorCode status = U_ZERO_ERROR;
+    UEnumeration* timeZoneIds = ucal_openTimeZoneIDEnumeration(UCAL_ZONE_TYPE_CANONICAL_LOCATION, NULL, NULL, &status);
+    if (U_FAILURE(status) || timeZoneIds == NULL)
+    {
+        if (timeZoneIds != NULL)
+        {
+            uenum_close(timeZoneIds);
+        }
+
+        return -1;
+    }
+
+    int32_t totalLength = 0;
+    int32_t index = 0;
+    int32_t timeZoneIdLength;
+    const char* timeZoneId;
+
+    while ((timeZoneId = uenum_next(timeZoneIds, &timeZoneIdLength, &status)) != NULL)
+    {
+        if (U_FAILURE(status) ||
+            timeZoneIdLength <= 0 ||
+            timeZoneIdLength > UINT16_MAX ||
+            totalLength > INT32_MAX - timeZoneIdLength - 1)
+        {
+            uenum_close(timeZoneIds);
+            return -1;
+        }
+
+        totalLength += timeZoneIdLength + 1;
+        if (value != NULL)
+        {
+            if (totalLength > valueLength)
+            {
+                uenum_close(timeZoneIds);
+                return -1;
+            }
+
+            value[index++] = (UChar)timeZoneIdLength;
+            u_charsToUChars(timeZoneId, value + index, timeZoneIdLength);
+            index += timeZoneIdLength;
+        }
+    }
+
+    uenum_close(timeZoneIds);
+    return U_SUCCESS(status) ? totalLength : -1;
+}
+
+/*
 Private function to get the standard and daylight names from the ICU Calendar API.
 */
 static void GetTimeZoneDisplayName_FromCalendar(const char* locale, const UChar* timeZoneId, const UDate timestamp, UCalendarDisplayNameType type, UChar* result, int32_t resultLength, UErrorCode* err)
