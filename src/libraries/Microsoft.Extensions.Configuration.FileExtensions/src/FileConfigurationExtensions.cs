@@ -37,13 +37,30 @@ namespace Microsoft.Extensions.Configuration
         public static IFileProvider GetFileProvider(this IConfigurationBuilder builder)
         {
             ArgumentNullException.ThrowIfNull(builder);
+            return builder.GetFileProvider(out _);
+        }
+
+        /// <summary>
+        /// Gets the default <see cref="IFileProvider"/> to be used for file-based providers, reporting the
+        /// <see cref="PhysicalFileProvider"/> created when <paramref name="builder"/> doesn't have one configured.
+        /// </summary>
+        /// <param name="builder">The <see cref="IConfigurationBuilder"/>.</param>
+        /// <param name="created">
+        /// When this method returns, contains the file provider created by this call and therefore safe to dispose,
+        /// or <see langword="null"/> if the returned file provider was supplied by the caller.
+        /// </param>
+        /// <returns>The default <see cref="IFileProvider"/>.</returns>
+        internal static IFileProvider GetFileProvider(this IConfigurationBuilder builder, out PhysicalFileProvider? created)
+        {
+            ArgumentNullException.ThrowIfNull(builder);
 
             if (builder.Properties.TryGetValue(FileProviderKey, out object? provider))
             {
+                created = null;
                 return (IFileProvider)provider;
             }
 
-            return new PhysicalFileProvider(AppContext.BaseDirectory ?? string.Empty);
+            return created = new PhysicalFileProvider(AppContext.BaseDirectory ?? string.Empty);
         }
 
         /// <summary>
