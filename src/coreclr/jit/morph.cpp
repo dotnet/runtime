@@ -1756,7 +1756,8 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
             // add as a non-standard arg.
         }
     }
-    else if ((call->gtCallType == CT_INDIRECT) && !call->IsVirtualStub() && (call->gtCallCookie != nullptr))
+    else if ((call->gtCallType == CT_INDIRECT) && !call->IsVirtualStub() && !call->IsGenericVirtual(comp) &&
+             (call->gtCallCookie != nullptr))
     {
         assert(!call->IsUnmanaged());
 

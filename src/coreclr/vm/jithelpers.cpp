@@ -2081,6 +2081,62 @@ HCIMPL3(void, JIT_VTableProfile64, Object* obj, MethodDesc* pBaseMD, ICorJitInfo
 }
 HCIMPLEND
 
+HCIMPL2(void, JIT_GenericVirtualProfile32, MethodDesc* pExactMD, ICorJitInfo::HandleHistogram32* methodProfile)
+{
+    FCALL_CONTRACT;
+
+    size_t methodSampleIndex;
+    if (!CheckSample(&methodProfile->Count, &methodSampleIndex))
+    {
+        return;
+    }
+
+    _ASSERTE(pExactMD->IsVirtual());
+    _ASSERTE(pExactMD->HasMethodInstantiation());
+
+    MethodDesc* pRecordedMD = (MethodDesc*)DEFAULT_UNKNOWN_HANDLE;
+    if (!pExactMD->GetLoaderAllocator()->IsCollectible() && !pExactMD->IsDynamicMethod())
+    {
+        pRecordedMD = pExactMD;
+    }
+
+#ifdef _DEBUG
+    PgoManager::VerifyAddress(methodProfile);
+    PgoManager::VerifyAddress(methodProfile + 1);
+#endif
+
+    methodProfile->HandleTable[methodSampleIndex] = (CORINFO_METHOD_HANDLE)pRecordedMD;
+}
+HCIMPLEND
+
+HCIMPL2(void, JIT_GenericVirtualProfile64, MethodDesc* pExactMD, ICorJitInfo::HandleHistogram64* methodProfile)
+{
+    FCALL_CONTRACT;
+
+    size_t methodSampleIndex;
+    if (!CheckSample(&methodProfile->Count, &methodSampleIndex))
+    {
+        return;
+    }
+
+    _ASSERTE(pExactMD->IsVirtual());
+    _ASSERTE(pExactMD->HasMethodInstantiation());
+
+    MethodDesc* pRecordedMD = (MethodDesc*)DEFAULT_UNKNOWN_HANDLE;
+    if (!pExactMD->GetLoaderAllocator()->IsCollectible() && !pExactMD->IsDynamicMethod())
+    {
+        pRecordedMD = pExactMD;
+    }
+
+#ifdef _DEBUG
+    PgoManager::VerifyAddress(methodProfile);
+    PgoManager::VerifyAddress(methodProfile + 1);
+#endif
+
+    methodProfile->HandleTable[methodSampleIndex] = (CORINFO_METHOD_HANDLE)pRecordedMD;
+}
+HCIMPLEND
+
 // Helpers for scalable approximate counters
 //
 // Here threshold = 13 means we count accurately up to 2^13 = 8192 and
