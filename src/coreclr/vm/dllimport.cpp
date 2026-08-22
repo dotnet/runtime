@@ -5168,11 +5168,6 @@ namespace
             RemoveILStubCacheEntry();
         }
 
-        inline bool CreatedTheAssociatedPublishedStubMD()
-        {
-            return m_bILStubCreator;
-        }
-
         inline void GetStubMethodDesc()
         {
             WRAPPER_NO_CONTRACT;
