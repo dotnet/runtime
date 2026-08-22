@@ -121,7 +121,7 @@ public class WasmR2RInfoTests
     }
 
     // Live memory from a dispatching composite ReadyToRun WASM build supplied the range values.
-    // Disassembly of System.Exception..ctor supplied its local index and frame virtual-IP field.
+    // Disassembly of a System.Exception constructor supplied its local index and frame virtual-IP field.
     // MinVirtualIP and RuntimeFunction[1040].BeginAddress were not reliably captured, so the fixture
     // supplies synthetic values that satisfy the runtime's virtual-IP encoding.
     private const uint CapturedMinFunctionTableIndex = 6259;
