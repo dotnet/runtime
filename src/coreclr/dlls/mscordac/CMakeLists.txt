@@ -201,28 +201,6 @@ target_link_libraries(mscordaccore PRIVATE ${COREDAC_LIBRARIES})
 
 esrp_sign(mscordaccore)
 
-# add the install targets
-install_clr(TARGETS mscordaccore DESTINATIONS . sharedFramework COMPONENT debug)
-
-if(CLR_CMAKE_HOST_WIN32)
-    set(LONG_NAME_HOST_ARCH ${CLR_CMAKE_HOST_ARCH})
-    set(LONG_NAME_TARGET_ARCH ${CLR_CMAKE_TARGET_ARCH})
-    if (LONG_NAME_HOST_ARCH STREQUAL x64)
-        set(LONG_NAME_HOST_ARCH "amd64")
-    endif()
-    if (LONG_NAME_TARGET_ARCH STREQUAL x64)
-        set(LONG_NAME_TARGET_ARCH "amd64")
-    endif()
-    message ("Read file version from native version header at '${VERSION_HEADER_PATH}'.")
-    file(READ "${VERSION_HEADER_PATH}" NATIVE_VERSION_HEADER)
-    string(REGEX MATCH "#define VER_FILEVERSION[ \t]+[0-9]+(,[0-9]+)+" FILE_VERSION_LINE "${NATIVE_VERSION_HEADER}")
-    string(REGEX MATCHALL "[0-9]+" FILE_VERSION_COMPONENTS "${FILE_VERSION_LINE}")
-    list(JOIN FILE_VERSION_COMPONENTS "." FILE_VERSION)
-
-    # This is unlike all other targets in the runtime, and is largely a long standing contract between
-    # debuggers and the runtime. This long form supports postmortem cross-architecture diagnostic scenarios.
-    # It doesn't make sense to complicate install_clr for this purpose, so keep it self-contained here.
-    set(LONG_NAME_BASE mscordaccore_${LONG_NAME_HOST_ARCH}_${LONG_NAME_TARGET_ARCH}_${FILE_VERSION})
-    install(PROGRAMS $<TARGET_FILE:mscordaccore> RENAME ${LONG_NAME_BASE}.dll DESTINATION sharedFramework COMPONENT debug)
-    install(FILES $<TARGET_PDB_FILE:mscordaccore> RENAME ${LONG_NAME_BASE}.pdb DESTINATION sharedFramework/PDB COMPONENT debug)
+if(NOT CLR_CMAKE_TARGET_WIN32)
+    install_clr(TARGETS mscordaccore DESTINATIONS . sharedFramework COMPONENT debug)
 endif()

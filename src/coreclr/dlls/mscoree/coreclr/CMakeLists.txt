@@ -237,24 +237,31 @@ if(CLR_CMAKE_TARGET_WIN32)
         set(CLRDEBUGINFO_RESOURCE_NAME CLRDEBUGINFOWINDOWSARM64)
     endif(CLR_CMAKE_TARGET_ARCH_AMD64)
 
-    add_custom_target(
-        clr_debug_resources
-        DEPENDS mscordaccore mscordbi
-        # make CLRDEBUGINFO resource
-        COMMAND powershell -NoProfile -ExecutionPolicy ByPass -File "${CMAKE_CURRENT_SOURCE_DIR}/GenClrDebugResource.ps1" -dac $<TARGET_FILE:mscordaccore> -dbi $<TARGET_FILE:mscordbi> -out ${CLRDEBUGINFO_RESOURCE_PATH}
+    if(CLR_DUMP_COLLECT_PROVIDER_PATH)
+        set(CLRDEBUGINFO_DAC_PATH "${CLR_DUMP_COLLECT_PROVIDER_PATH}")
+    else()
+        set(CLRDEBUGINFO_DAC_PATH $<TARGET_FILE:mscordaccore>)
+    endif()
+
+    add_custom_command(
+        OUTPUT ${CLRDEBUGINFO_RESOURCE_PATH}
+        # Make the CLRDEBUGINFO resource for the external dump provider.
+        COMMAND powershell -NoProfile -ExecutionPolicy ByPass -File "${CMAKE_CURRENT_SOURCE_DIR}/GenClrDebugResource.ps1" -dac "${CLRDEBUGINFO_DAC_PATH}" -dbi $<TARGET_FILE:mscordbi> -out ${CLRDEBUGINFO_RESOURCE_PATH}
+        DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/GenClrDebugResource.ps1" mscordaccore mscordbi
     )
+    add_custom_target(clr_debug_resources DEPENDS ${CLRDEBUGINFO_RESOURCE_PATH})
 
     configure_file(dump_helper_resource.rc.in ${CMAKE_CURRENT_BINARY_DIR}/dump_helper_resource.rc)
-
-    set(EMBEDDED_MINIDUMP_AUXILIARY_PROVIDER $<TARGET_FILE:mscordaccore>)
-    configure_file(dump_helper_resource.rc.in ${CMAKE_CURRENT_BINARY_DIR}/dump_helper_resource_embedded_minidump_provider.rc.gen)
-    file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/dump_helper_resource_embedded_minidump_provider.rc INPUT ${CMAKE_CURRENT_BINARY_DIR}/dump_helper_resource_embedded_minidump_provider.rc.gen)
+    set_property(
+        SOURCE ${CMAKE_CURRENT_BINARY_DIR}/dump_helper_resource.rc
+        APPEND PROPERTY OBJECT_DEPENDS ${CLRDEBUGINFO_RESOURCE_PATH})
 
     target_sources(coreclr PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/dump_helper_resource.rc)
-    target_sources(coreclr_static PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/dump_helper_resource_embedded_minidump_provider.rc)
 
     add_dependencies(coreclr clr_debug_resources)
-    add_dependencies(coreclr_static clr_debug_resources mscordaccore)
+
+    # Embedded CoreCLR does not currently support the managed dump provider.
+    # It can add an embedded auxiliary-provider resource when that scenario is supported.
 endif(CLR_CMAKE_TARGET_WIN32)
 
 # add the install targets
