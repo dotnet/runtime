@@ -7036,8 +7036,8 @@ public:
     void fgDebugCheckBBlist(bool checkBBNum = false, bool checkBBRefs = true);
     void fgDebugCheckBlockLinks();
     void fgDebugCheckInitBB();
-    void fgDebugCheckLinks(bool morphTrees = false);
-    void fgDebugCheckStmtsList(BasicBlock* block, bool morphTrees);
+    void fgDebugCheckLinks();
+    void fgDebugCheckStmtsList(BasicBlock* block);
     void fgDebugCheckNodeLinks(BasicBlock* block, Statement* stmt);
     void fgDebugCheckLinkedLocals();
     void fgDebugCheckNodesUniqueness();

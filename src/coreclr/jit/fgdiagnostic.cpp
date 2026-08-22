@@ -3921,10 +3921,7 @@ void Compiler::fgDebugCheckLinkedLocals()
 // fgDebugCheckLinks: Check the correctness of the links between statements
 //    and ordinary nodes within a statement.
 //
-// Arguments:
-//    morphTrees - if true, morph trees during the check
-//
-void Compiler::fgDebugCheckLinks(bool morphTrees)
+void Compiler::fgDebugCheckLinks()
 {
     if ((fgBBcount > 10000) && (expensiveDebugCheckLevel < 1))
     {
@@ -3944,7 +3941,7 @@ void Compiler::fgDebugCheckLinks(bool morphTrees)
         }
         else
         {
-            fgDebugCheckStmtsList(block, morphTrees);
+            fgDebugCheckStmtsList(block);
         }
     }
 
@@ -3961,12 +3958,11 @@ void Compiler::fgDebugCheckLinks(bool morphTrees)
 //
 // Arguments:
 //    block  - the block to check statements in
-//    morphTrees - try to morph trees in the checker
 //
 // Note:
 //    Checking that all bits that are set in treeFlags are also set in chkFlags is currently disabled.
 
-void Compiler::fgDebugCheckStmtsList(BasicBlock* block, bool morphTrees)
+void Compiler::fgDebugCheckStmtsList(BasicBlock* block)
 {
     for (Statement* const stmt : block->Statements())
     {
@@ -4012,20 +4008,6 @@ void Compiler::fgDebugCheckStmtsList(BasicBlock* block, bool morphTrees)
             bool     isReturn      = tree->OperIs(GT_RETURN);
             bool     isNotLastStmt = stmt->GetNextStmt() != nullptr;
             assert(!(isReturn && isNotLastStmt) && "GT_RETURN node found that is not the last statement in the block");
-        }
-
-        // Not only will this stress fgMorphBlockStmt(), but we also get all the checks
-        // done by fgMorphTree()
-
-        if (morphTrees)
-        {
-            // If 'stmt' is removed from the block, start a new check for the current block,
-            // break the current check.
-            if (fgMorphBlockStmt(block, stmt DEBUGARG("test morphing")))
-            {
-                fgDebugCheckStmtsList(block, morphTrees);
-                break;
-            }
         }
 
         // For each statement check that the nodes are threaded correctly - m_treeList.
@@ -4127,17 +4109,13 @@ public:
     //
     void CheckTreeId(unsigned gtTreeID)
     {
-        if (BitVecOps::IsMember(&nodesVecTraits, uniqueNodes, gtTreeID))
+        if (!BitVecOps::TryAddElemD(&nodesVecTraits, uniqueNodes, gtTreeID))
         {
             if (m_compiler->verbose)
             {
-                printf("Duplicate gtTreeID was found: %d\n", gtTreeID);
+                printf("Duplicate gtTreeID was found: %u\n", gtTreeID);
             }
             assert(!"Duplicate gtTreeID was found");
-        }
-        else
-        {
-            BitVecOps::AddElemD(&nodesVecTraits, uniqueNodes, gtTreeID);
         }
     }
 
@@ -4160,6 +4138,16 @@ void Compiler::fgDebugCheckNodesUniqueness()
             for (GenTree* i : LIR::AsRange(block))
             {
                 walker.CheckTreeId(i->gtTreeID);
+            }
+        }
+        else if (fgNodeThreading == NodeThreading::AllTrees)
+        {
+            for (Statement* const stmt : block->Statements())
+            {
+                for (GenTree* const tree : stmt->TreeList())
+                {
+                    walker.CheckTreeId(tree->gtTreeID);
+                }
             }
         }
         else

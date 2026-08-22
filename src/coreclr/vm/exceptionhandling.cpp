@@ -4197,12 +4197,11 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
         {
             pFrame = pThis->m_crawl.GetFrame();
 
-            // Check if there are any further managed frames on the stack or a catch for all exceptions in native code (marked by
-            // DebuggerU2MCatchHandlerFrame with CatchesAllExceptions() returning true).
+            // Check if there are any further managed frames on the stack.
             // If not, the exception is unhandled.
             bool isNotHandledByRuntime =
                 (pFrame == FRAME_TOP) ||
-                (IsTopmostDebuggerU2MCatchHandlerFrame(pFrame) && !((DebuggerU2MCatchHandlerFrame*)pFrame)->CatchesAllExceptions())
+                IsTopmostDebuggerU2MCatchHandlerFrame(pFrame)
 #ifdef HOST_UNIX
                 // Don't allow propagating exceptions from managed to non-runtime native code
                 || isPropagatingToExternalNativeCode
