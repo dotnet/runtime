@@ -485,7 +485,22 @@ namespace System.Threading
             {
                 Debug.Assert(keyValues.Length > MultiElementAsyncLocalValueMap.MaxMultiElements);
                 _keyValues = keyValues;
-                CreateLookup(keyValues, out _buckets, out _next);
+
+                int capacity = 4;
+                long minimumCapacity = keyValues.Length + ((long)keyValues.Length >> 1);
+                while (capacity < minimumCapacity && capacity < 1 << 30)
+                {
+                    capacity <<= 1;
+                }
+
+                _buckets = new int[capacity];
+                _next = new int[keyValues.Length];
+                for (int i = 0; i < keyValues.Length; i++)
+                {
+                    int bucket = GetBucket(keyValues[i].Key, _buckets.Length);
+                    _next[i] = _buckets[bucket] - 1;
+                    _buckets[bucket] = i + 1;
+                }
             }
 
             private ManyElementAsyncLocalValueMap(
@@ -567,28 +582,6 @@ namespace System.Threading
                     }
                 }
                 return -1;
-            }
-
-            private static void CreateLookup(
-                KeyValuePair<IAsyncLocal, object?>[] keyValues,
-                out int[] buckets,
-                out int[] next)
-            {
-                int capacity = 4;
-                long minimumCapacity = keyValues.Length + ((long)keyValues.Length >> 1);
-                while (capacity < minimumCapacity && capacity < 1 << 30)
-                {
-                    capacity <<= 1;
-                }
-
-                buckets = new int[capacity];
-                next = new int[keyValues.Length];
-                for (int i = 0; i < keyValues.Length; i++)
-                {
-                    int bucket = GetBucket(keyValues[i].Key, buckets.Length);
-                    next[i] = buckets[bucket] - 1;
-                    buckets[bucket] = i + 1;
-                }
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
