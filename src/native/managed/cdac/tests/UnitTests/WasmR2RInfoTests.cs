@@ -120,16 +120,18 @@ public class WasmR2RInfoTests
         Assert.False(info.TryGetUnwindData(FunctionTableIndex, out _));
     }
 
-    // A dispatching merged WASI image supplied the range values and RuntimeFunction[1040], whose raw
-    // bytes cc 11 00 00 79 07 00 00 establish BeginAddress 0x11cc with the funclet bit clear.
-    // MinFunctionTableIndex is the linker-assigned absolute table base for that image and is not
-    // portable across relinks. Disassembly of a System.Exception constructor supplied its local
-    // index and frame virtual-IP field. MinVirtualIP was not reliably captured, so the fixture
-    // supplies a synthetic value that satisfies the runtime's virtual-IP encoding.
+    // Source: linked merged WASI corerun-composite.wasm (MD5 a978074b91cd722574b308f52c9ca994).
+    // The MVID-matched System.Private.CoreLib component's MethodDefEntryPoints uniquely maps
+    // RuntimeFunction[1040] to parameterless System.Exception::.ctor() (token 0x060004AB).
+    // The runtime-function bytes cc 11 00 00 79 07 00 00 establish BeginAddress 0x11cc with the
+    // funclet bit clear. MinFunctionTableIndex is the linker-assigned absolute table base for that
+    // image and is not portable across relinks. Disassembly of the same method supplied the frame
+    // virtual-IP field. MinVirtualIP was not reliably captured, so the fixture supplies a synthetic
+    // value that satisfies the runtime's virtual-IP encoding.
     private const uint CapturedMinFunctionTableIndex = 6259;
     private const uint CapturedNumRuntimeFunctions = 45283;
-    private const uint DisassembledLocalIndex = 1040;
-    private const uint DisassembledFunctionTableIndex = CapturedMinFunctionTableIndex + DisassembledLocalIndex;
+    private const uint CapturedExceptionCtorLocalIndex = 1040;
+    private const uint CapturedExceptionCtorFunctionTableIndex = CapturedMinFunctionTableIndex + CapturedExceptionCtorLocalIndex;
     private const uint DisassembledFrameVirtualIPHalf = 1;
     private const uint CapturedFunctionBeginAddress = 0x11cc;
     private const ulong SyntheticMinVirtualIP = 0x8000_0001;
@@ -158,7 +160,7 @@ public class WasmR2RInfoTests
 
         uint runtimeFunctionStride = runtimeFunctionLayout.Stride;
         var runtimeFuncTableFrag = allocator.Allocate((ulong)(CapturedNumRuntimeFunctions * runtimeFunctionStride), "RuntimeFunctions");
-        int beginOffset = (int)(DisassembledLocalIndex * runtimeFunctionStride) + runtimeFunctionLayout.Fields["BeginAddress"].Offset;
+        int beginOffset = (int)(CapturedExceptionCtorLocalIndex * runtimeFunctionStride) + runtimeFunctionLayout.Fields["BeginAddress"].Offset;
         helpers.Write(runtimeFuncTableFrag.Data.AsSpan().Slice(beginOffset, sizeof(uint)), CapturedFunctionBeginAddress);
         int lastBeginOffset = (int)((CapturedNumRuntimeFunctions - 1) * runtimeFunctionStride) + runtimeFunctionLayout.Fields["BeginAddress"].Offset;
         helpers.Write(runtimeFuncTableFrag.Data.AsSpan().Slice(lastBeginOffset, sizeof(uint)), SyntheticLastFunctionBeginAddress);
@@ -184,7 +186,7 @@ public class WasmR2RInfoTests
         helpers.WritePointer(slotFrag.Data.AsSpan().Slice(0, helpers.PointerSize), sectionFrag.Address);
 
         var frameFrag = allocator.Allocate(16, "R2RFrame");
-        helpers.Write(frameFrag.Data.AsSpan().Slice(0, sizeof(uint)), DisassembledFunctionTableIndex);
+        helpers.Write(frameFrag.Data.AsSpan().Slice(0, sizeof(uint)), CapturedExceptionCtorFunctionTableIndex);
         helpers.Write(frameFrag.Data.AsSpan().Slice(4, sizeof(uint)), DisassembledFrameVirtualIPHalf);
 
         var types = new Dictionary<DataType, Target.TypeInfo>
@@ -209,7 +211,7 @@ public class WasmR2RInfoTests
         (TestPlaceholderTarget target, _) = CreateDispatchingCompositeFixture();
         WasmR2RInfo info = new(target);
 
-        Assert.True(info.TryGetVirtualIPBase(DisassembledFunctionTableIndex, out ulong baseVirtualIP));
+        Assert.True(info.TryGetVirtualIPBase(CapturedExceptionCtorFunctionTableIndex, out ulong baseVirtualIP));
         Assert.Equal(SyntheticMinVirtualIP + CapturedFunctionBeginAddress, baseVirtualIP);
 
         uint lastFunctionTableIndex = CapturedMinFunctionTableIndex + CapturedNumRuntimeFunctions - 1;
