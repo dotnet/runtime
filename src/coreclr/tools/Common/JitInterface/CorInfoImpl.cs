@@ -1580,9 +1580,25 @@ namespace Internal.JitInterface
 
                 if (originalImpl.IsRuntimeDeterminedExactMethod || originalImpl.IsSharedByGenericInstantiations)
                 {
-                    // TODO: Support for runtime lookup
+                    if (info->pResolvedTokenVirtualMethod == null || unboxingStub)
+                    {
+                        info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+                        return false;
+                    }
+
+#if READYTORUN
+                    ComputeRuntimeLookupForSharedGenericToken(
+                        Internal.ReadyToRunConstants.DictionaryEntryKind.DevirtualizedMethodDescSlot,
+                        ref *info->pResolvedTokenVirtualMethod,
+                        null,
+                        originalImpl,
+                        HandleToObject(info->callerMethod),
+                        ref info->instParamLookup);
+#else
+                    // TODO: Implement generic virtual method devirtualization runtime lookup for NativeAOT
                     info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_CANON;
                     return false;
+#endif
                 }
             }
 
@@ -1595,34 +1611,37 @@ namespace Internal.JitInterface
             }
 #endif
 
-            if (requiresInstMethodDescArg)
+            if (!info->instParamLookup.lookupKind.needsRuntimeLookup)
             {
-#if READYTORUN
-                if (unboxingStub)
+                if (requiresInstMethodDescArg)
                 {
-                    // We need an unboxing stub that points to an instantiated method but this is not happening in R2R.
+#if READYTORUN
+                    if (unboxingStub)
+                    {
+                        // We need an unboxing stub that points to an instantiated method but this is not happening in R2R.
+                        info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+                        return false;
+                    }
+
+                    MethodWithToken originalImplWithToken = new MethodWithToken(originalImpl, methodWithTokenImpl.Token, null, false, null, null);
+                    info->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.MethodDictionary, originalImplWithToken));
+#else
+                    // We could produce a method generic dictionary constant lookup for originalImpl,
+                    // but due to IL scanner limitations, we cannot devirtualize shared generic virtual methods right now.
                     info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_CANON;
                     return false;
+#endif
                 }
-
-                MethodWithToken originalImplWithToken = new MethodWithToken(originalImpl, methodWithTokenImpl.Token, null, false, null, null);
-                info->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.MethodDictionary, originalImplWithToken));
-#else
-                // We could produce a method generic dictionary constant lookup for originalImpl,
-                // but due to IL scanner limitations, we cannot devirtualize shared generic virtual methods right now.
-                info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_CANON;
-                return false;
-#endif
-            }
-            else if (requiresInstMethodTableArg)
-            {
-                if (!unboxingStub)
+                else if (requiresInstMethodTableArg)
                 {
+                    if (!unboxingStub)
+                    {
 #if READYTORUN
-                    info->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.TypeDictionary, originalImpl.OwningType));
+                        info->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.TypeDictionary, originalImpl.OwningType));
 #else
-                    info->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ConstructedTypeSymbol(originalImpl.OwningType));
+                        info->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ConstructedTypeSymbol(originalImpl.OwningType));
 #endif
+                    }
                 }
             }
 

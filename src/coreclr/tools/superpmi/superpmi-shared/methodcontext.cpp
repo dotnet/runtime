@@ -3238,6 +3238,7 @@ void MethodContext::recResolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info
     Agnostic_ResolveVirtualMethodKey key;
     ZeroMemory(&key, sizeof(key)); // Zero token including any struct padding
     key.virtualMethod  = CastHandle(info->virtualMethod);
+    key.callerMethod   = CastHandle(info->callerMethod);
     key.objClass       = CastHandle(info->objClass);
     key.context        = CastHandle(info->context);
 
@@ -3269,8 +3270,10 @@ void MethodContext::recResolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info
 
 void MethodContext::dmpResolveVirtualMethod(const Agnostic_ResolveVirtualMethodKey& key, const Agnostic_ResolveVirtualMethodResult& result)
 {
-    printf("ResolveVirtualMethod key virtMethod-%016" PRIX64 ", objClass-%016" PRIX64 ", context-%016" PRIX64 " pResolvedTokenVirtualMethodNonNull-%08X pResolvedTokenVirtualMethod{%s}",
+    printf("ResolveVirtualMethod key virtMethod-%016" PRIX64 ", callerMethod-%016" PRIX64 ", objClass-%016" PRIX64
+           ", context-%016" PRIX64 " pResolvedTokenVirtualMethodNonNull-%08X pResolvedTokenVirtualMethod{%s}",
         key.virtualMethod,
+        key.callerMethod,
         key.objClass,
         key.context,
         key.pResolvedTokenVirtualMethodNonNull,
@@ -3290,6 +3293,7 @@ bool MethodContext::repResolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info
     Agnostic_ResolveVirtualMethodKey key;
     ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
     key.virtualMethod  = CastHandle(info->virtualMethod);
+    key.callerMethod   = CastHandle(info->callerMethod);
     key.objClass       = CastHandle(info->objClass);
     key.context        = CastHandle(info->context);
 
@@ -3297,7 +3301,7 @@ bool MethodContext::repResolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info
     if (key.pResolvedTokenVirtualMethodNonNull)
         key.pResolvedTokenVirtualMethod = SpmiRecordsHelper::StoreAgnostic_CORINFO_RESOLVED_TOKEN(info->pResolvedTokenVirtualMethod, ResolveToken);
 
-    Agnostic_ResolveVirtualMethodResult result = LookupByKeyOrMiss(ResolveVirtualMethod, key, ": %016" PRIX64 "-%016" PRIX64 "-%016" PRIX64 "-%08X", key.virtualMethod, key.objClass, key.context, key.pResolvedTokenVirtualMethodNonNull);
+    Agnostic_ResolveVirtualMethodResult result = LookupByKeyOrMiss(ResolveVirtualMethod, key, ": %016" PRIX64 "-%016" PRIX64 "-%016" PRIX64 "-%016" PRIX64 "-%08X", key.virtualMethod, key.callerMethod, key.objClass, key.context, key.pResolvedTokenVirtualMethodNonNull);
 
     DEBUG_REP(dmpResolveVirtualMethod(key, result));
 
