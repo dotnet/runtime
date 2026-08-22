@@ -292,7 +292,7 @@ ep_config_create_provider (
 
 	EventPipeProvider *provider = NULL;
 	EP_LOCK_ENTER (section1)
-		provider = config_create_provider (config, provider_name, callback_func, callback_data, provider_callback_data_queue);
+		provider = config_create_provider (config, provider_name, callback_func, callback_data, false, provider_callback_data_queue);
 		ep_raise_error_if_nok_holding_lock (provider != NULL, section1);
 	EP_LOCK_EXIT (section1)
 
@@ -504,6 +504,7 @@ config_create_provider (
 	const ep_char8_t *provider_name,
 	EventPipeCallback callback_func,
 	void *callback_data,
+	bool callback_data_includes_generation,
 	EventPipeProviderCallbackDataQueue *provider_callback_data_queue)
 {
 	EP_ASSERT (config != NULL);
@@ -511,7 +512,7 @@ config_create_provider (
 
 	ep_requires_lock_held ();
 
-	EventPipeProvider *provider = ep_provider_alloc (config, provider_name, callback_func, callback_data);
+	EventPipeProvider *provider = ep_provider_alloc (config, provider_name, callback_func, callback_data, callback_data_includes_generation);
 	ep_raise_error_if_nok (provider != NULL);
 
 	config_register_provider (config, provider, provider_callback_data_queue);

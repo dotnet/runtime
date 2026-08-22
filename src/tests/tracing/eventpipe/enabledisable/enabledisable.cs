@@ -7,6 +7,7 @@ using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using System;
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Reflection;
 using System.Diagnostics.Tracing;
 using System.IO;
 using System.Linq;
@@ -137,6 +138,8 @@ namespace Tracing.Tests.EnableDisableValidation
 
         public bool[] IsEnabledOnDisableResults => _isEnabledOnDisable.ToArray();
 
+        public void ClearDisableResults() => _isEnabledOnDisable.Clear();
+
         private FilterRegressionEventSource() { }
 
         public static FilterRegressionEventSource Log = new FilterRegressionEventSource();
@@ -152,6 +155,58 @@ namespace Tracing.Tests.EnableDisableValidation
             {
                 _isEnabledOnDisable.Enqueue(this.IsEnabled(EventLevel.Informational, (EventKeywords)0x2));
             }
+        }
+    }
+
+    public sealed class FilterRegressionEventListener : EventListener
+    {
+        protected override void OnEventWritten(EventWrittenEventArgs eventData)
+        {
+        }
+    }
+
+    public class CallbackGenerationValidation
+    {
+        [Fact]
+        public static int TestEntryPoint()
+        {
+            Type? generationType = typeof(EventSource).Assembly.GetType("System.Diagnostics.Tracing.EventPipeEventProvider+CallbackGeneration");
+            object? generation = generationType is null ? null : Activator.CreateInstance(generationType, nonPublic: true);
+            MethodInfo? tryApply = generationType?.GetMethod("TryApply", BindingFlags.Instance | BindingFlags.NonPublic);
+
+            if (generation is null || tryApply is null)
+            {
+                Console.WriteLine("Test failed: EventPipe callback generation helper was not found");
+                return -1;
+            }
+
+            int appliedGeneration = 0;
+            if (!(bool)tryApply.Invoke(generation, new object[] { 2UL, new Action(() => appliedGeneration = 2) })! ||
+                (bool)tryApply.Invoke(generation, new object[] { 1UL, new Action(() => appliedGeneration = 1) })! ||
+                appliedGeneration != 2)
+            {
+                Console.WriteLine($"Test failed: stale generation overwrote generation {appliedGeneration}");
+                return -1;
+            }
+
+            bool nestedApplied = false;
+            bool generation3Applied = (bool)tryApply.Invoke(generation, new object[]
+            {
+                3UL,
+                new Action(() =>
+                {
+                    appliedGeneration = 3;
+                    nestedApplied = (bool)tryApply.Invoke(generation, new object[] { 4UL, new Action(() => appliedGeneration = 4) })!;
+                })
+            })!;
+
+            if (!generation3Applied || !nestedApplied || appliedGeneration != 4)
+            {
+                Console.WriteLine($"Test failed: reentrant generation ended at {appliedGeneration}");
+                return -1;
+            }
+
+            return 100;
         }
     }
 
@@ -227,6 +282,41 @@ namespace Tracing.Tests.EnableDisableValidation
             if (results[1])
             {
                 Console.WriteLine("Test failed: IsEnabled(Informational, keyword=0x2) should be false after all sessions stop");
+                return -1;
+            }
+
+            FilterRegressionEventSource.Log.ClearDisableResults();
+
+            using (var listener = new FilterRegressionEventListener())
+            {
+                listener.EnableEvents(FilterRegressionEventSource.Log, EventLevel.Informational, (EventKeywords)0x2);
+
+                session1 = client.StartEventPipeSession(providers1);
+                source1 = new EventPipeEventSource(session1.EventStream);
+
+                session2 = client.StartEventPipeSession(providers2);
+                source2 = new EventPipeEventSource(session2.EventStream);
+
+                StopSession(session1, source1);
+                StopSession(session2, source2);
+
+                session1.Dispose();
+                session2.Dispose();
+
+                listener.DisableEvents(FilterRegressionEventSource.Log);
+            }
+
+            results = FilterRegressionEventSource.Log.IsEnabledOnDisableResults;
+
+            if (results.Length < 3)
+            {
+                Console.WriteLine($"Test failed: expected at least 3 Disable callbacks, got {results.Length}");
+                return -1;
+            }
+
+            if (!results[0])
+            {
+                Console.WriteLine("Test failed: IsEnabled(Informational, keyword=0x2) should remain true while an EventListener enables that filter");
                 return -1;
             }
 

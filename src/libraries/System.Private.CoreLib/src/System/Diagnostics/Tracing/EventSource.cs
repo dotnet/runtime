@@ -242,6 +242,7 @@ namespace System.Diagnostics.Tracing
         private object? m_createEventLock;
         private IntPtr m_writeEventStringEventHandle = IntPtr.Zero;
         private volatile OverrideEventProvider m_eventPipeProvider = null!;
+        private ulong m_eventPipeConfigurationGeneration;
 #endif
         private bool m_completelyInited;                // The EventSource constructor has returned without exception.
         private Exception? m_constructionException;      // If there was an exception construction, this is it
@@ -2504,6 +2505,28 @@ namespace System.Diagnostics.Tracing
                 _eventSourceFactory()?.SendCommand(listener, _eventProviderType, perEventSourceSessionId,
                                           (EventCommand)command, IsEnabled(), Level, MatchAnyKeyword, arguments);
             }
+
+            internal override void OnControllerCommand(
+                ControllerCommand command,
+                IDictionary<string, string?>? arguments,
+                int perEventSourceSessionId,
+                ulong configurationGeneration,
+                bool enabled,
+                EventLevel level,
+                EventKeywords matchAnyKeyword)
+            {
+                EventListener? listener = null;
+                _eventSourceFactory()?.SendCommand(
+                    listener,
+                    _eventProviderType,
+                    perEventSourceSessionId,
+                    (EventCommand)command,
+                    enabled,
+                    level,
+                    matchAnyKeyword,
+                    arguments,
+                    configurationGeneration);
+            }
             private readonly Func<EventSource?> _eventSourceFactory;
             private readonly EventProviderType _eventProviderType;
         }
@@ -2618,14 +2641,15 @@ namespace System.Diagnostics.Tracing
         internal void SendCommand(EventListener? listener, EventProviderType eventProviderType, int perEventSourceSessionId,
                                   EventCommand command, bool enable,
                                   EventLevel level, EventKeywords matchAnyKeyword,
-                                  IDictionary<string, string?>? commandArguments)
+                                  IDictionary<string, string?>? commandArguments,
+                                  ulong configurationGeneration = 0)
         {
             if (!IsSupported)
             {
                 return;
             }
 
-            var commandArgs = new EventCommandEventArgs(command, commandArguments, this, listener, eventProviderType, perEventSourceSessionId, enable, level, matchAnyKeyword);
+            var commandArgs = new EventCommandEventArgs(command, commandArguments, this, listener, eventProviderType, perEventSourceSessionId, enable, level, matchAnyKeyword, configurationGeneration);
             lock (EventListener.EventListenersLock)
             {
                 if (m_completelyInited)
@@ -2696,6 +2720,21 @@ namespace System.Diagnostics.Tracing
 
                 if (commandArgs.Command == EventCommand.Update)
                 {
+#if FEATURE_PERFTRACING
+                    if (commandArgs.eventProviderType == EventProviderType.EventPipe && commandArgs.configurationGeneration != 0)
+                    {
+                        if (commandArgs.configurationGeneration <= m_eventPipeConfigurationGeneration)
+                            return;
+                        m_eventPipeConfigurationGeneration = commandArgs.configurationGeneration;
+                    }
+#endif
+
+                    if (commandArgs.dispatcher is not null)
+                    {
+                        commandArgs.dispatcher.m_CommandEnabled = commandArgs.enable;
+                        commandArgs.dispatcher.m_Enabled = commandArgs.enable || commandArgs.dispatcher.m_EnabledEventCount != 0;
+                    }
+
                     // Set it up using the 'standard' filtering bitfields (use the "global" enable, not session specific one)
                     foreach (int eventID in m_eventData.Keys)
                         EnableEventForDispatcher(commandArgs.dispatcher, commandArgs.eventProviderType, eventID, IsEnabledByDefault(eventID, commandArgs.enable, commandArgs.level, commandArgs.matchAnyKeyword));
@@ -2726,7 +2765,8 @@ namespace System.Diagnostics.Tracing
                             else if (m_matchAnyKeyword != 0)
                                 m_matchAnyKeyword = unchecked(m_matchAnyKeyword | commandArgs.matchAnyKeyword);
                         }
-                        else
+                        else if (commandArgs.eventProviderType == EventProviderType.EventPipe &&
+                                 !IsAnyOtherDispatcherEnabled(commandArgs.eventProviderType))
                         {
                             // A session is stopping but other sessions remain active; update the filter to
                             // the recomputed values which now reflect only the remaining sessions.
@@ -2863,14 +2903,36 @@ namespace System.Diagnostics.Tracing
             {
                 Debug.Assert(dispatcher.m_EventEnabled != null);
 
-                if (!dispatcher.m_EventEnabled.ContainsKey(eventId))
+                if (!dispatcher.m_EventEnabled.TryGetValue(eventId, out bool wasEnabled))
                     return false;
 
                 dispatcher.m_EventEnabled[eventId] = value;
+                if (wasEnabled != value)
+                    dispatcher.m_EnabledEventCount += value ? 1 : -1;
+                dispatcher.m_Enabled = dispatcher.m_CommandEnabled || dispatcher.m_EnabledEventCount != 0;
                 if (value)
                     eventMeta.EnabledForAnyListener = true;
             }
             return true;
+        }
+
+        private bool IsAnyOtherDispatcherEnabled(EventProviderType eventProviderType)
+        {
+            for (EventDispatcher? dispatcher = m_Dispatchers; dispatcher is not null; dispatcher = dispatcher.m_Next)
+            {
+                if (dispatcher.m_Enabled)
+                    return true;
+            }
+
+            if (eventProviderType != EventProviderType.ETW && m_etwProvider.IsEnabled())
+                return true;
+
+#if FEATURE_PERFTRACING
+            if (eventProviderType != EventProviderType.EventPipe && m_eventPipeProvider.IsEnabled())
+                return true;
+#endif
+
+            return false;
         }
 
         /// <summary>
@@ -4136,7 +4198,7 @@ namespace System.Diagnostics.Tracing
 #region private
 
         internal EventCommandEventArgs(EventCommand command, IDictionary<string, string?>? arguments, EventSource eventSource,
-            EventListener? listener, EventProviderType eventProviderType, int perEventSourceSessionId, bool enable, EventLevel level, EventKeywords matchAnyKeyword)
+            EventListener? listener, EventProviderType eventProviderType, int perEventSourceSessionId, bool enable, EventLevel level, EventKeywords matchAnyKeyword, ulong configurationGeneration)
         {
             this.Command = command;
             this.Arguments = arguments;
@@ -4147,6 +4209,7 @@ namespace System.Diagnostics.Tracing
             this.enable = enable;
             this.level = level;
             this.matchAnyKeyword = matchAnyKeyword;
+            this.configurationGeneration = configurationGeneration;
         }
 
         internal EventSource eventSource;
@@ -4159,6 +4222,7 @@ namespace System.Diagnostics.Tracing
         internal bool enable;
         internal EventLevel level;
         internal EventKeywords matchAnyKeyword;
+        internal ulong configurationGeneration;
         internal EventCommandEventArgs? nextCommand;     // We form a linked list of these deferred commands.
 
 #endregion
@@ -4660,6 +4724,9 @@ namespace System.Diagnostics.Tracing
         // Instance fields
         internal readonly EventListener m_Listener;   // The dispatcher this entry is for
         internal Dictionary<int, bool>? m_EventEnabled;              // For every event in a the eventSource, is it enabled?
+        internal bool m_Enabled;
+        internal bool m_CommandEnabled;
+        internal int m_EnabledEventCount;
 
         // Only guaranteed to exist after a EnsureInit()
         internal EventDispatcher? m_Next;              // These form a linked list in code:EventSource.m_Dispatchers
