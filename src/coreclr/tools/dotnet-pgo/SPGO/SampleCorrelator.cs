@@ -66,7 +66,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
         public void SmoothAllProfiles()
         {
             foreach (PerMethodInfo pmi in _methodInf.Values)
-                pmi.Profile.SmoothFlow();
+                try { pmi.Profile.SmoothFlow(); } catch (Exception) { /* Skip methods with disconnected flow graphs */ }
         }
 
         public void AttributeSamplesToIP(ulong ip, long numSamples)
