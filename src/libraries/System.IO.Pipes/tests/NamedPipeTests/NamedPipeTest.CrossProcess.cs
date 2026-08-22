@@ -105,6 +105,22 @@ namespace System.IO.Pipes.Tests
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
+        public void NamedPipe_MaxOneInstance_Throws_WhenNameIsUsedAcrossProcesses()
+        {
+            string uniqueServerName = PipeStreamConformanceTests.GetUniquePipeName();
+            using (var firstServer = new NamedPipeServerStream(uniqueServerName, PipeDirection.In, 1, PipeTransmissionMode.Byte, PipeOptions.None))
+            {
+                RemoteExecutor.Invoke(new Action<string>(MaxOneInstance_OtherProcess), uniqueServerName).Dispose();
+            }
+        }
+
+        private static void MaxOneInstance_OtherProcess(string uniqueServerName)
+        {
+            Assert.Throws<UnauthorizedAccessException>(() => new NamedPipeServerStream(uniqueServerName, PipeDirection.In, 1, PipeTransmissionMode.Byte, PipeOptions.None));
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
         public void NamedPipeOptionsFirstPipeInstance_Throws_WhenNameIsUsedAcrossProcesses()
         {
             var uniqueServerName = PipeStreamConformanceTests.GetUniquePipeName();

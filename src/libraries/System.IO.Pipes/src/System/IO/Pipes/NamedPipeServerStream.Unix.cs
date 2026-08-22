@@ -38,8 +38,9 @@ namespace System.IO.Pipes
             }
 
             // We don't have a good way to enforce maxNumberOfServerInstances across processes; we only factor it in
-            // for streams created in this process.  Between processes, we behave similarly to maxNumberOfServerInstances == 1,
-            // in that the second process to come along and create a stream will find the pipe already in existence and will fail.
+            // for streams created in this process. When maxNumberOfServerInstances is 1, we match Windows behavior by
+            // applying first-instance semantics: a second process attempting to create a server with the same name will
+            // fail. For other maxNumberOfServerInstances values, cross-process enforcement is not possible on Unix.
             _instance = SharedServer.Get(
                 GetPipePath(".", pipeName),
                 (maxNumberOfServerInstances == MaxAllowedServerInstances) ? int.MaxValue : maxNumberOfServerInstances, options);
@@ -254,7 +255,7 @@ namespace System.IO.Pipes
 
                 lock (s_servers)
                 {
-                    bool isFirstPipeInstance = (pipeOptions & PipeOptions.FirstPipeInstance) != 0;
+                    bool isFirstPipeInstance = (pipeOptions & PipeOptions.FirstPipeInstance) != 0 || maxCount == 1;
                     bool isCurrentUserOnly = (pipeOptions & PipeOptions.CurrentUserOnly) != 0;
                     if (s_servers.TryGetValue(path, out SharedServer? server))
                     {
