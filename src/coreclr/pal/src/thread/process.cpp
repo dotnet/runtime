@@ -178,6 +178,9 @@ Volatile<PCREATEDUMP_CALLBACK> g_createdumpCallback = nullptr;
 // Function to call to log the managed callstack for a signal. Used by Android since CoreCLR doesn't support CreateDump on Android.
 Volatile<PLOGMANAGEDCALLSTACKFORSIGNAL_CALLBACK> g_logManagedCallstackForSignalCallback = nullptr;
 
+// Function to call when normal hardware-exception dispatch declines a fatal native fault.
+Volatile<PFATALERRORHANDLERFORNATIVEEXCEPTION_CALLBACK> g_fatalErrorHandlerForNativeExceptionCallback = nullptr;
+
 // Crash dump generating program arguments. Initialized in PROCAbortInitialize().
 #define MAX_ARGV_ENTRIES 32
 const char* g_argvCreateDump[MAX_ARGV_ENTRIES] = { nullptr };
@@ -531,6 +534,24 @@ PAL_SetLogManagedCallstackForSignalCallback(
 {
     _ASSERTE(g_logManagedCallstackForSignalCallback == nullptr);
     g_logManagedCallstackForSignalCallback = callback;
+}
+
+/*++
+Function:
+  PAL_SetFatalErrorHandlerForNativeExceptionCallback
+
+Abstract:
+  Sets a callback that is invoked after normal hardware-exception dispatch declines
+  a fatal native fault.
+--*/
+PALIMPORT
+VOID
+PALAPI
+PAL_SetFatalErrorHandlerForNativeExceptionCallback(
+    IN PFATALERRORHANDLERFORNATIVEEXCEPTION_CALLBACK callback)
+{
+    _ASSERTE(g_fatalErrorHandlerForNativeExceptionCallback == nullptr);
+    g_fatalErrorHandlerForNativeExceptionCallback = callback;
 }
 
 /*++
@@ -1271,6 +1292,21 @@ PROCNotifyProcessShutdown(bool isExecutingOnAltStack)
     if (callback != NULL)
     {
         callback(isExecutingOnAltStack);
+    }
+}
+
+VOID
+PROCInvokeFatalErrorHandlerForNativeException(
+    DWORD exceptionCode,
+    LPVOID faultAddress,
+    PEXCEPTION_POINTERS exceptionInfo,
+    PFATALERRORPLATFORMPROPERTYGETTER getPlatformProperty,
+    LPVOID context)
+{
+    PFATALERRORHANDLERFORNATIVEEXCEPTION_CALLBACK callback = g_fatalErrorHandlerForNativeExceptionCallback;
+    if (callback != nullptr)
+    {
+        callback(exceptionCode, faultAddress, exceptionInfo, getPlatformProperty, context);
     }
 }
 

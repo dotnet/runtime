@@ -17,6 +17,14 @@
 
 extern "C" UINT_PTR STDCALL GetCurrentIP();
 
+// The user-registered fatal error handler.
+extern void* s_fatalErrorHandler;
+
+using FatalErrorPlatformPropertyGetter = int32_t (*)(
+    void* context,
+    int32_t property,
+    const void** value);
+
 // EEPolicy maintains actions for resource failure and timeout
 class EEPolicy
 {
@@ -42,7 +50,28 @@ public:
     static void LogManagedCallstackForSignal(LPCWSTR signalName);
 #endif
 
+    static void HandleFatalErrorForNativeException(
+        DWORD exceptionCode,
+        void* faultAddress,
+        PEXCEPTION_POINTERS pExceptionInfo,
+        FatalErrorPlatformPropertyGetter getPlatformProperty,
+        void* context);
+
+#ifdef TARGET_WINDOWS
+    static void HandleFatalErrorForNativeException(PEXCEPTION_POINTERS pExceptionInfo);
+#endif
+
 private:
+    static void InvokeFatalErrorHandlerForNativeException(
+        DWORD exceptionCode,
+        void* faultAddress,
+        PEXCEPTION_POINTERS pExceptionInfo,
+        FatalErrorPlatformPropertyGetter getPlatformProperty,
+        void* context,
+        LPCWSTR message,
+        LPCWSTR errorSource,
+        LPCWSTR exceptionString);
+
     static void LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pMessage, PEXCEPTION_POINTERS pExceptionInfo, LPCWSTR errorSource, LPCWSTR argExceptionString=NULL);
 };
 

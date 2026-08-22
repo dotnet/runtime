@@ -27,7 +27,7 @@
 #include "eventtrace.h"
 #undef ExitProcess
 
-void SafeExitProcess(UINT exitCode, ShutdownCompleteAction sca = SCA_ExitProcessWhenShutdownComplete)
+static void SafeExitProcess(UINT exitCode, ShutdownCompleteAction sca)
 {
     STRESS_LOG2(LF_SYNC, LL_INFO10, "SafeExitProcess: exitCode = %d sca = %d\n", exitCode, sca);
     CONTRACTL
@@ -153,6 +153,33 @@ void EEPolicy::HandleExitProcess(ShutdownCompleteAction sca)
 
 
 //---------------------------------------------------------------------------------------
+// Writer abstraction for crash info output. Allows EmitCrashInfo and stack trace
+// printing to target either stderr (default) or a user-provided fatal error log callback.
+//---------------------------------------------------------------------------------------
+
+struct CrashInfoWriter
+{
+    void (*m_pfnWriteA)(const char* pszString, void* context);
+    void (*m_pfnWriteW)(const WCHAR* pwzString, void* context);
+    void* m_pContext;
+
+    void Write(const char* pszString) const { m_pfnWriteA(pszString, m_pContext); }
+    void Write(const WCHAR* pwzString) const { m_pfnWriteW(pwzString, m_pContext); }
+};
+
+static void StdErrWriteA(const char* pszString, void* /*context*/)
+{
+    PrintToStdErrA(pszString);
+}
+
+static void StdErrWriteW(const WCHAR* pwzString, void* /*context*/)
+{
+    PrintToStdErrW(pwzString);
+}
+
+static const CrashInfoWriter s_stdErrWriter = { StdErrWriteA, StdErrWriteW, nullptr };
+
+//---------------------------------------------------------------------------------------
 // This class is responsible for displaying a stack trace. It uses a condensed way for
 // stack overflow stack traces where there are possibly many repeated frames.
 // It displays a count and a repeated sequence of frames at the top of the stack in
@@ -162,6 +189,7 @@ void EEPolicy::HandleExitProcess(ShutdownCompleteAction sca)
 class CallStackLogger
 {
     PEXCEPTION_POINTERS m_pExceptionInfo;
+    const CrashInfoWriter* m_pWriter;
     // MethodDescs of the stack frames, the TOS is at index 0
     CDynArray<MethodDesc*> m_frames;
     bool m_captureStackOverflowTrace;
@@ -224,16 +252,17 @@ class CallStackLogger
         str.Append(frame);
         str.Append(W("\n"));
 
-        PrintToStdErrW(str.GetUnicode());
+        m_pWriter->Write(str.GetUnicode());
     }
 
 public:
 
-    CallStackLogger(PEXCEPTION_POINTERS pExceptionInfo, bool captureStackOverflowTrace)
+    CallStackLogger(PEXCEPTION_POINTERS pExceptionInfo, const CrashInfoWriter* pWriter, bool captureStackOverflowTrace)
     {
         WRAPPER_NO_CONTRACT;
 
         m_pExceptionInfo = pExceptionInfo;
+        m_pWriter = pWriter;
         m_captureStackOverflowTrace = captureStackOverflowTrace;
     }
 
@@ -337,9 +366,9 @@ public:
             SmallStackSString repeatStr;
             repeatStr.AppendPrintf("Repeated %d times:\n", largestCommonRepeat);
 
-            PrintToStdErrW(repeatStr.GetUnicode());
+            m_pWriter->Write(repeatStr.GetUnicode());
 
-            PrintToStdErrA("--------------------------------\n");
+            m_pWriter->Write("--------------------------------\n");
             for (int i = largestCommonStartOffset; i < largestCommonStartOffset + largestCommonLength; i++)
             {
                 PrintFrame(i,
@@ -347,7 +376,7 @@ public:
                     static_cast<uint32_t>(largestCommonRepeat),
                     static_cast<uint32_t>(largestCommonLength));
             }
-            PrintToStdErrA("--------------------------------\n");
+            m_pWriter->Write("--------------------------------\n");
         }
 
         for (int i = largestCommonLength * largestCommonRepeat + largestCommonStartOffset; i < m_frames.Count(); i++)
@@ -380,7 +409,7 @@ static bool g_LogStackOverflowExit = false;
 // Return Value:
 //    None
 //
-inline void LogCallstackForLogWorker(Thread* pThread, PEXCEPTION_POINTERS pExceptionInfo, bool captureStackOverflowTrace)
+static void LogCallstackForLogWorker(Thread* pThread, PEXCEPTION_POINTERS pExceptionInfo, const CrashInfoWriter& writer, bool captureStackOverflowTrace)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -396,7 +425,7 @@ inline void LogCallstackForLogWorker(Thread* pThread, PEXCEPTION_POINTERS pExcep
     }
     WordAt.Append(W(" "));
 
-    CallStackLogger logger(pExceptionInfo, captureStackOverflowTrace);
+    CallStackLogger logger(pExceptionInfo, &writer, captureStackOverflowTrace);
 
     pThread->StackWalkFrames(&CallStackLogger::LogCallstackForLogCallback, &logger, QUICKUNWIND | FUNCTIONSONLY | ALLOW_ASYNC_STACK_WALK);
 
@@ -419,8 +448,78 @@ inline void LogCallstackForLogWorker(Thread* pThread, PEXCEPTION_POINTERS pExcep
 //
 // Return Value:
 //    None
-//
-void LogInfoForFatalError(UINT exitCode, LPCWSTR pszMessage, PEXCEPTION_POINTERS pExceptionInfo, LPCWSTR errorSource, LPCWSTR argExceptionString)
+
+#include <public/fatal_error_handling.h>
+
+// State passed through the CrashInfoWriter context pointer to forward
+// crash output to the user's FatalErrorLogAction callback.
+struct CallbackState { FatalErrorLogAction pfnLogAction; void* userContext; };
+
+static void CallbackWriteA(const char* pszString, void* context)
+{
+    CallbackState* state = static_cast<CallbackState*>(context);
+    state->pfnLogAction(pszString, state->userContext);
+}
+
+static void CallbackWriteW(const WCHAR* pwzString, void* context)
+{
+    CallbackState* state = static_cast<CallbackState*>(context);
+    MAKE_MULTIBYTE_FROMWIDE_BESTFIT(pUtf8, pwzString, CP_UTF8);
+    state->pfnLogAction(pUtf8, state->userContext);
+}
+
+static void EmitCrashInfo(const CrashInfoWriter& writer, UINT exitCode, LPCWSTR pszMessage, PEXCEPTION_POINTERS pExceptionInfo, LPCWSTR errorSource, LPCWSTR argExceptionString)
+{
+    WRAPPER_NO_CONTRACT;
+
+    EX_TRY
+    {
+        if (exitCode == (UINT)COR_E_FAILFAST)
+        {
+            writer.Write("Process terminated.\n");
+        }
+        else if (exitCode != (UINT)COR_E_STACKOVERFLOW)
+        {
+            writer.Write("Fatal error.\n");
+        }
+
+        if (errorSource != NULL)
+        {
+            writer.Write(errorSource);
+            writer.Write("\n");
+        }
+
+        if (pszMessage != NULL)
+        {
+            writer.Write(pszMessage);
+        }
+        else
+        {
+            // If no message was passed in, generate it from the exitCode
+            InlineSString<256> exitCodeMessage;
+            GetHRMsg(exitCode, exitCodeMessage);
+            writer.Write(exitCodeMessage.GetUnicode());
+        }
+
+        writer.Write("\n");
+
+        Thread* pThread = GetThreadNULLOk();
+        if (pThread && errorSource == NULL)
+        {
+            LogCallstackForLogWorker(pThread, pExceptionInfo, writer, /*captureStackOverflowTrace*/ false);
+
+            if (argExceptionString != NULL) {
+                writer.Write(argExceptionString);
+            }
+        }
+    }
+    EX_CATCH
+    {
+    }
+    EX_END_CATCH
+}
+
+static void LogInfoForFatalError(UINT exitCode, LPCWSTR pszMessage, PEXCEPTION_POINTERS pExceptionInfo, LPCWSTR errorSource, LPCWSTR argExceptionString)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -453,51 +552,7 @@ void LogInfoForFatalError(UINT exitCode, LPCWSTR pszMessage, PEXCEPTION_POINTERS
         return;
     }
 
-    EX_TRY
-    {
-        if (exitCode == (UINT)COR_E_FAILFAST)
-        {
-            PrintToStdErrA("Process terminated.\n");
-        }
-        else
-        {
-            PrintToStdErrA("Fatal error.\n");
-        }
-
-        if (errorSource != NULL)
-        {
-            PrintToStdErrW(errorSource);
-            PrintToStdErrA("\n");
-        }
-
-        if (pszMessage != NULL)
-        {
-            PrintToStdErrW(pszMessage);
-        }
-        else
-        {
-            // If no message was passed in, generate it from the exitCode
-            InlineSString<256> exitCodeMessage;
-            GetHRMsg(exitCode, exitCodeMessage);
-            PrintToStdErrW(exitCodeMessage.GetUnicode());
-        }
-
-        PrintToStdErrA("\n");
-
-        Thread* pThread = GetThreadNULLOk();
-        if (pThread && errorSource == NULL)
-        {
-            LogCallstackForLogWorker(pThread, pExceptionInfo, /*captureStackOverflowTrace*/ false);
-
-            if (argExceptionString != NULL) {
-                PrintToStdErrW(argExceptionString);
-            }
-        }
-    }
-    EX_CATCH
-    {
-    }
-    EX_END_CATCH
+    EmitCrashInfo(s_stdErrWriter, exitCode, pszMessage, pExceptionInfo, errorSource, argExceptionString);
 }
 
 //This starts FALSE and then converts to true if HandleFatalError has ever been called by a GC thread
@@ -678,6 +733,286 @@ void EEPolicy::LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage
     }
 }
 
+//
+// Fatal error handler invocation support.
+//
+
+using FatalErrorHandlerFunc = int (DOTNET_CALLCONV *)(int hresult, FatalErrorPropertyGetter getProperty);
+
+void* s_fatalErrorHandler = NULL;
+
+// Stored crash context for on-demand replay by GetFatalErrorLogFunc.
+static thread_local UINT t_crashExitCode;
+static thread_local LPCWSTR t_crashMessage;
+static thread_local PEXCEPTION_POINTERS t_crashExceptionInfo;
+static thread_local LPCWSTR t_crashErrorSource;
+static thread_local LPCWSTR t_crashExceptionString;
+
+// The crash address surfaced to the handler through the property getter,
+// captured immediately before the handler is invoked.
+static thread_local void* t_crashAddress;
+
+// Synchronous provider for the live platform-native state of a genuinely-unmanaged fatal fault.
+static thread_local FatalErrorPlatformPropertyGetter t_getPlatformProperty;
+static thread_local void* t_platformPropertyContext;
+
+#ifdef TARGET_WINDOWS
+struct WindowsFatalErrorContext
+{
+    PEXCEPTION_RECORD ExceptionRecord;
+    PCONTEXT ContextRecord;
+};
+
+static int32_t GetWindowsFatalErrorProperty(void* context, int32_t property, const void** value)
+{
+    WindowsFatalErrorContext* fatalErrorContext = static_cast<WindowsFatalErrorContext*>(context);
+
+    switch (static_cast<FatalErrorProperty>(property))
+    {
+    case FEP_WindowsExceptionRecord:
+        if (fatalErrorContext->ExceptionRecord == nullptr)
+            return 0;
+        *value = fatalErrorContext->ExceptionRecord;
+        return 1;
+
+    case FEP_WindowsContextRecord:
+        if (fatalErrorContext->ContextRecord == nullptr)
+            return 0;
+        *value = fatalErrorContext->ContextRecord;
+        return 1;
+
+    default:
+        return 0;
+    }
+}
+#endif // TARGET_WINDOWS
+
+static void StoreCrashContext(UINT exitCode, LPCWSTR pszMessage, PEXCEPTION_POINTERS pExceptionInfo, LPCWSTR errorSource, LPCWSTR argExceptionString)
+{
+    LIMITED_METHOD_CONTRACT;
+    t_crashExitCode = exitCode;
+    t_crashMessage = pszMessage;
+    t_crashExceptionInfo = pExceptionInfo;
+    t_crashErrorSource = errorSource;
+    t_crashExceptionString = argExceptionString;
+}
+
+static void DOTNET_CALLCONV GetFatalErrorLogFunc(FatalErrorLogAction pfnLogAction, void* userContext)
+{
+    WRAPPER_NO_CONTRACT;
+
+    if (pfnLogAction == nullptr)
+        return;
+
+    // Build a callback writer that streams crash info as UTF-8 to the user's callback.
+    CallbackState state = { pfnLogAction, userContext };
+    CrashInfoWriter writer = { CallbackWriteA, CallbackWriteW, &state };
+    EmitCrashInfo(writer, t_crashExitCode, t_crashMessage, t_crashExceptionInfo, t_crashErrorSource, t_crashExceptionString);
+}
+
+// Property getter passed to the user's fatal error handler. Surfaces the crash-log entry point
+// and stored crash address. Platform-native fault state is additionally surfaced for a
+// genuinely-unmanaged fatal fault (Path B); it is unavailable on the managed fatal path
+// (Path A). Returns a nonzero value when the requested property is available (and *value is
+// written), or 0 otherwise.
+static int32_t DOTNET_CALLCONV FatalErrorPropertyGetterImpl(int32_t prop, const void** value)
+{
+    WRAPPER_NO_CONTRACT;
+
+    if (value == nullptr)
+        return 0;
+
+    switch (static_cast<FatalErrorProperty>(prop))
+    {
+    case FEP_FatalErrorLogFunc:
+        *value = reinterpret_cast<const void*>(reinterpret_cast<uintptr_t>(GetFatalErrorLogFunc));
+        return 1;
+
+    case FEP_Address:
+        if (t_crashAddress == nullptr)
+            return 0;
+        *value = t_crashAddress;
+        return 1;
+
+    default:
+        if (t_getPlatformProperty == nullptr)
+            return 0;
+        return t_getPlatformProperty(t_platformPropertyContext, static_cast<int32_t>(prop), value);
+    }
+}
+
+// Invokes the user-registered fatal error handler if one has been set.
+static void InvokeFatalErrorHandler(UINT exitCode, UINT_PTR address)
+{
+    WRAPPER_NO_CONTRACT;
+
+    void* pHandler = VolatileLoad(&s_fatalErrorHandler);
+    FatalErrorHandlerFunc pfnHandler = reinterpret_cast<FatalErrorHandlerFunc>(pHandler);
+    if (pfnHandler == NULL)
+        return;
+
+    // Serialize concurrent fatal errors so the user handler is invoked on only the first
+    // crashing thread. If several threads take a fatal error at the same time, the first one
+    // runs the handler and rips the process down while the others park here. This mirrors the
+    // serialization in LogInfoForFatalError and the crash-dump paths, and guarantees the handler
+    // is never entered by more than one thread at a time.
+    static size_t s_fatalErrorHandlerThreadID;
+
+    size_t currentThreadID;
+#ifndef TARGET_UNIX
+    currentThreadID = GetCurrentThreadId();
+#else
+    currentThreadID = PAL_GetCurrentOSThreadId();
+#endif
+
+    size_t previousThreadID = InterlockedCompareExchangeT<size_t>(&s_fatalErrorHandlerThreadID, currentThreadID, 0);
+    if (previousThreadID != 0)
+    {
+        if (previousThreadID == currentThreadID)
+        {
+            // Reentrancy: this thread already owns fatal handling.
+            // Do not invoke the handler again and let default handling proceed.
+            return;
+        }
+
+        // A different thread is already running the handler and terminating the process.
+        // Managed threads must switch to preemptive mode before waiting because the owner
+        // may suspend the runtime while reporting. Native utility threads have no Thread
+        // object and are not part of managed suspension.
+        if (GetThreadNULLOk() != nullptr)
+        {
+            GCX_PREEMP();
+            ClrSleepEx(INFINITE, /*bAlertable*/ FALSE);
+        }
+        else
+        {
+            ClrSleepEx(INFINITE, /*bAlertable*/ FALSE);
+        }
+
+        // If the wait ever returns (for example, a spurious wakeup), the owner failed to
+        // terminate the process. Terminate here rather than running the handler on a
+        // non-owner thread and breaking the single-invocation guarantee.
+        CrashDumpAndTerminateProcess(exitCode);
+        UNREACHABLE();
+    }
+
+    // Capture the crash address for the property getter.
+    t_crashAddress = reinterpret_cast<void*>(address);
+
+    // Call user-defined fatal error handler.
+    int result = pfnHandler(static_cast<int>(exitCode), FatalErrorPropertyGetterImpl);
+    _ASSERTE(result == RunDefaultHandler);
+}
+
+void EEPolicy::HandleFatalErrorForNativeException(
+    DWORD exceptionCode,
+    void* faultAddress,
+    PEXCEPTION_POINTERS pExceptionInfo,
+    FatalErrorPlatformPropertyGetter getPlatformProperty,
+    void* context)
+{
+    WRAPPER_NO_CONTRACT;
+
+    InvokeFatalErrorHandlerForNativeException(
+        exceptionCode,
+        faultAddress,
+        pExceptionInfo,
+        getPlatformProperty,
+        context,
+        nullptr,
+        nullptr,
+        nullptr);
+}
+
+void EEPolicy::InvokeFatalErrorHandlerForNativeException(
+    DWORD exceptionCode,
+    void* faultAddress,
+    PEXCEPTION_POINTERS pExceptionInfo,
+    FatalErrorPlatformPropertyGetter getPlatformProperty,
+    void* context,
+    LPCWSTR message,
+    LPCWSTR errorSource,
+    LPCWSTR exceptionString)
+{
+    WRAPPER_NO_CONTRACT;
+
+    FatalErrorPlatformPropertyGetter previousGetter = t_getPlatformProperty;
+    void* previousContext = t_platformPropertyContext;
+    t_getPlatformProperty = getPlatformProperty;
+    t_platformPropertyContext = context;
+    StoreCrashContext(exceptionCode, message, pExceptionInfo, errorSource, exceptionString);
+
+    InvokeFatalErrorHandler(exceptionCode, reinterpret_cast<UINT_PTR>(faultAddress));
+
+    t_getPlatformProperty = previousGetter;
+    t_platformPropertyContext = previousContext;
+}
+
+#ifdef TARGET_WINDOWS
+
+// Genuinely-fatal hardware fault codes handled by the unmanaged fatal path (Path B). Mirrors
+// the NativeAOT Windows choke point. STATUS_STACK_OVERFLOW is deliberately excluded: it has a
+// dedicated fatal path and too little stack remains to transition back into managed code.
+static bool IsFatalHardwareExceptionForFatalErrorHandler(DWORD exceptionCode)
+{
+    switch (exceptionCode)
+    {
+    case STATUS_ACCESS_VIOLATION:
+    case STATUS_IN_PAGE_ERROR:
+    case STATUS_DATATYPE_MISALIGNMENT:
+    case STATUS_ILLEGAL_INSTRUCTION:
+    case STATUS_PRIVILEGED_INSTRUCTION:
+    case STATUS_ARRAY_BOUNDS_EXCEEDED:
+    case STATUS_INTEGER_DIVIDE_BY_ZERO:
+    case STATUS_INTEGER_OVERFLOW:
+    case STATUS_FLOAT_DIVIDE_BY_ZERO:
+    case STATUS_FLOAT_INVALID_OPERATION:
+    case STATUS_FLOAT_OVERFLOW:
+    case STATUS_FLOAT_UNDERFLOW:
+    case STATUS_FLOAT_INEXACT_RESULT:
+    case STATUS_FLOAT_DENORMAL_OPERAND:
+    case STATUS_FLOAT_STACK_CHECK:
+        return true;
+    default:
+        return false;
+    }
+}
+
+void EEPolicy::HandleFatalErrorForNativeException(PEXCEPTION_POINTERS pExceptionInfo)
+{
+    WRAPPER_NO_CONTRACT;
+
+    _ASSERTE(pExceptionInfo != nullptr && pExceptionInfo->ExceptionRecord != nullptr);
+
+    DWORD exceptionCode = pExceptionInfo->ExceptionRecord->ExceptionCode;
+    if (!IsFatalHardwareExceptionForFatalErrorHandler(exceptionCode))
+    {
+        return;
+    }
+
+    // Only genuine hardware faults reach this point, and the OS always supplies a
+    // context record for those when the top-level unhandled filter is invoked.
+    _ASSERTE(pExceptionInfo->ContextRecord != nullptr);
+
+    WindowsFatalErrorContext fatalErrorContext =
+    {
+        pExceptionInfo->ExceptionRecord,
+        pExceptionInfo->ContextRecord
+    };
+
+    InvokeFatalErrorHandlerForNativeException(
+        exceptionCode,
+        pExceptionInfo->ExceptionRecord->ExceptionAddress,
+        pExceptionInfo,
+        GetWindowsFatalErrorProperty,
+        &fatalErrorContext,
+        nullptr,
+        nullptr,
+        nullptr);
+}
+
+#endif // TARGET_WINDOWS
+
 void DisplayStackOverflowException()
 {
     LIMITED_METHOD_CONTRACT;
@@ -687,7 +1022,7 @@ void DisplayStackOverflowException()
 
 DWORD LogStackOverflowStackTraceThread(void* arg)
 {
-    LogCallstackForLogWorker((Thread*)arg, NULL, /*captureStackOverflowTrace*/ true);
+    LogCallstackForLogWorker((Thread*)arg, NULL, s_stdErrWriter, /*captureStackOverflowTrace*/ true);
 
     return 0;
 }
@@ -707,6 +1042,11 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
     GCStressPolicy::InhibitHolder iholder;
 
     STRESS_LOG0(LF_EH, LL_INFO100, "In EEPolicy::HandleFatalStackOverflow\n");
+
+    // Store crash context for the handler's pfnGetFatalErrorLog callback.
+    // For stack overflow, we store minimal context — the callback will emit
+    // "Stack overflow.\n" plus what the stack walk produces.
+    StoreCrashContext(COR_E_STACKOVERFLOW, W("Stack overflow."), pExceptionInfo, nullptr, nullptr);
 
     FaultingExceptionFrame fef;
     if (pExceptionInfo->ContextRecord)
@@ -801,6 +1141,13 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
                        GetClrInstanceId());
     }
 
+    // Invoke the user's fatal error handler after stack trace but before Watson.
+    // The stack is too limited to invoke the handler before stderr output is emitted.
+    {
+        UINT_PTR soAddress = pExceptionInfo->ContextRecord ? GetIP(pExceptionInfo->ContextRecord) : 0;
+        InvokeFatalErrorHandler(COR_E_STACKOVERFLOW, soAddress);
+    }
+
     if (!fSkipDebugger)
     {
         Thread *pThread = GetThreadNULLOk();
@@ -855,6 +1202,7 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
     if (g_LogStackOverflowExit)
         PrintToStdErrA("@Terminating the process.\n");
 #endif
+
     CrashDumpAndTerminateProcess(COR_E_STACKOVERFLOW);
     UNREACHABLE();
 }
@@ -887,6 +1235,10 @@ int NOINLINE EEPolicy::HandleFatalError(UINT exitCode, UINT_PTR address, LPCWSTR
     EXCEPTION_RECORD   exceptionRecord;
     EXCEPTION_POINTERS exceptionPointers;
     CONTEXT            context;
+
+    // Whether a live hardware EXCEPTION_POINTERS was supplied by the caller (as opposed to the
+    // synthesized one built below for the managed FailFast path).
+    bool hasHardwareExceptionInfo = (pExceptionInfo != NULL);
 
     if (pExceptionInfo == NULL)
     {
@@ -935,8 +1287,59 @@ int NOINLINE EEPolicy::HandleFatalError(UINT exitCode, UINT_PTR address, LPCWSTR
 
         g_fFastExitProcess = 2;
 
+        // Invoke the user's fatal error handler before Watson / RaiseFailFastException.
+        // On Windows, WatsonLastChance (called from LogFatalError) invokes RaiseFailFastException
+        // which terminates the process, so the handler must run first.
+        //
+        // Prefer the faulting instruction pointer recorded on the exception record: the
+        // 'address' argument is 0 on the unhandled managed exception path (the real IP is
+        // carried by pExceptionInfo), while for synthesized exception pointers it already
+        // equals 'address'.
+        UINT_PTR faultAddress = address;
+        if (pExceptionInfo != NULL && pExceptionInfo->ExceptionRecord != NULL && pExceptionInfo->ExceptionRecord->ExceptionAddress != NULL)
+        {
+            faultAddress = reinterpret_cast<UINT_PTR>(pExceptionInfo->ExceptionRecord->ExceptionAddress);
+        }
+
+#ifdef TARGET_WINDOWS
+        // A genuinely-unmanaged fatal fault is never translated into a managed exception.
+        // Route it through the common native-exception entry point with a provider for the
+        // live Windows exception records.
+        if (hasHardwareExceptionInfo
+            && pExceptionInfo->ExceptionRecord != NULL
+            && IsFatalHardwareExceptionForFatalErrorHandler(pExceptionInfo->ExceptionRecord->ExceptionCode)
+            && !ExecutionManager::IsManagedCode(static_cast<PCODE>(faultAddress)))
+        {
+            WindowsFatalErrorContext fatalErrorContext =
+            {
+                pExceptionInfo->ExceptionRecord,
+                pExceptionInfo->ContextRecord
+            };
+
+            InvokeFatalErrorHandlerForNativeException(
+                exitCode,
+                reinterpret_cast<void*>(faultAddress),
+                pExceptionInfo,
+                GetWindowsFatalErrorProperty,
+                &fatalErrorContext,
+                pszMessage,
+                errorSource,
+                argExceptionString);
+        }
+        else
+#endif // TARGET_WINDOWS
+        {
+            // Store crash context for on-demand replay by the fatal error handler's
+            // pfnGetFatalErrorLog callback.
+            StoreCrashContext(exitCode, pszMessage, pExceptionInfo, errorSource, argExceptionString);
+            InvokeFatalErrorHandler(exitCode, faultAddress);
+        }
+
+        // Write crash info to stderr and proceed with default fatal handling
+        // (Watson, crash dump, etc.).
         STRESS_LOG0(LF_CORDB,LL_INFO100, "D::HFE: About to call LogFatalError\n");
         LogFatalError(exitCode, address, pszMessage, pExceptionInfo, errorSource, argExceptionString);
+
         SafeExitProcess(exitCode, SCA_TerminateProcessWhenShutdownComplete);
     }
 

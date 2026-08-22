@@ -120,6 +120,13 @@ Function:
 --*/
 VOID PROCNotifyProcessShutdown(bool isExecutingOnAltStack = false);
 
+VOID PROCInvokeFatalErrorHandlerForNativeException(
+    DWORD exceptionCode,
+    LPVOID faultAddress,
+    PEXCEPTION_POINTERS exceptionInfo,
+    PFATALERRORPLATFORMPROPERTYGETTER getPlatformProperty,
+    LPVOID context);
+
 // Controls how concurrent crash diagnostics -- both the out-of-proc
 // crash dump and the in-proc crash report -- are serialized across threads.
 // Except for CrashDumpSerialize_None, only one thread (the "winner") ever
