@@ -1,0 +1,327 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+
+using Xunit;
+
+#pragma warning disable CS0649 // field is never assigned to
+
+namespace BitwiseEquatableTests
+{
+    public static class BitwiseEquatable
+    {
+        // Call the internal RuntimeHelpers.IsBitwiseEquatable<T> directly via UnsafeAccessor so the
+        // intrinsic is exercised as the JIT/AOT compiler expands it, rather than through reflection
+        // (which wouldn't hit the intrinsic path and doesn't work under NativeAOT).
+        [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "IsBitwiseEquatable")]
+        private static extern bool IsBitwiseEquatable<T>([UnsafeAccessorType("System.Runtime.CompilerServices.RuntimeHelpers")] object o);
+
+        private static void Check<T>(bool expected) => Assert.Equal(expected, IsBitwiseEquatable<T>(null!));
+
+        [Fact]
+        public static void IsBitwiseEquatable_MatchesExpected()
+        {
+            // Primitive: '==' and Equals lower to the same bit-for-bit compare.
+            Check<int>(true);
+            // Int128/UInt128: field-wise IEquatable<T>.Equals over two ulong halves.
+            Check<Int128>(true);
+            Check<UInt128>(true);
+            // Guid is proven field-wise by the scanner (its Equals compares all 11 fields). GuidShape
+            // below covers the same many-field shape (which forces long-form branches) independently.
+            Check<Guid>(true);
+            Check<GuidShape>(true);
+            // Plain field-wise IEquatable<T>.Equals.
+            Check<Point>(true);
+            Check<ThreeFields>(true);
+            Check<OneField>(true);
+            // 'Equals(other) => this == other' forwarding into a field-wise op_Equality.
+            Check<ForwardsToOp>(true);
+            // Nested value-type fields compared through their own field-wise IEquatable<T>.Equals.
+            Check<Nested>(true);
+            Check<NestedLast>(true);
+            Check<AllNested>(true);
+            // Nested type's Equals ignores a field, or is internally padded.
+            Check<WrapsPartial>(false);
+            Check<WrapsPadded>(false);
+            // No IEquatable<T> at all: legacy path still accepts safe blittable fields.
+            Check<PlainNoEquatable>(true);
+            // float/double are never bitwise (NaN and signed-zero semantics differ from memcmp).
+            Check<HasFloat>(false);
+            // Equals ignores a field, does custom logic, or forwards to a non-op_Equality helper.
+            Check<IgnoresField>(false);
+            Check<CustomLogic>(false);
+            Check<CallsHelper>(false);
+            // Explicit padding means memcmp inspects bytes Equals does not.
+            Check<WithPadding>(false);
+            // Overrides object.Equals only; no IEquatable<T>.
+            Check<OverriddenOnly>(false);
+            // Primitive fields compared via '.Equals' rather than '=='.
+            Check<PrimEquals>(true);
+            Check<MixedEquals>(true);
+            Check<FloatEquals>(false);
+            // Record structs: Roslyn emits EqualityComparer<F>.Default.Equals(this.F, other.F) per field.
+            Check<RecTwo>(true);
+            Check<RecNested>(true);
+            Check<RecMixed>(true);
+            Check<RecPadded>(false);
+            Check<RecFloat>(false);
+            // Enum fields are integer-backed, so they compare bitwise like their underlying primitive.
+            Check<EnumPair>(true);
+            Check<EnumAndInt>(true);
+            Check<RecEnum>(true);
+            // Generic value types: the exact instantiation must be threaded through field and token
+            // resolution. A 'T' field is compared via EqualityComparer<T>.Default.Equals (Roslyn cannot
+            // emit inline '==' for a type parameter), so this also exercises that path per instantiation.
+            Check<GenPair<int>>(true);
+            Check<GenPair<Point>>(true);
+            Check<GenPair<RecTwo>>(true);
+            Check<GenPair<string>>(false);   // reference argument: contains GC pointers
+            Check<GenPair<float>>(false);     // float: Default.Equals is not bitwise
+            Check<GenMixed<int>>(true);       // inline '==' for an int field plus EqualityComparer for T
+            Check<GenMixed<float>>(false);
+            Check<GenForwardsToOp<int>>(true);// forwards into a generic op_Equality
+            Check<GenPadded<int>>(false);     // leading byte forces padding before the T field
+        }
+
+        // The following structs have no Equals/GetHashCode override, so ValueType.Equals/GetHashCode go
+        // through CanCompareBitsOrUseFastGetHashCode. The IsNotTightlyPacked fix moved a struct with a
+        // multi-byte value-type field off the reflection slow path onto the memcmp fast path; either way
+        // the result must match the obvious value semantics.
+
+        [Fact]
+        public static void TightlyPacked_EqualsAndHash_AreConsistent()
+        {
+            var a = new PlainOuter { X = new PlainInner { A = 1, B = 2 }, C = 3 };
+            var b = new PlainOuter { X = new PlainInner { A = 1, B = 2 }, C = 3 };
+            var c = new PlainOuter { X = new PlainInner { A = 1, B = 9 }, C = 3 };
+
+            Assert.True(a.Equals(b));
+            Assert.False(a.Equals(c));
+            Assert.Equal(a.GetHashCode(), b.GetHashCode());
+        }
+    }
+
+    public struct PlainInner { public int A; public int B; }
+    public struct PlainOuter { public PlainInner X; public int C; }
+
+    public record struct RecTwo(int X, int Y);
+    public record struct RecNested(RecTwo P, long Z);
+    public record struct RecMixed(long A, int B, short C, short D);
+    public record struct RecPadded(int X, byte Y);
+    public record struct RecFloat(float X, int Y);
+    public record struct RecEnum(ColorInt A, ColorInt B);
+
+    // Generic value types. A 'T' field is compared via EqualityComparer<T>.Default.Equals.
+    public record struct GenPair<T>(T A, T B);
+
+    public struct GenMixed<T> : IEquatable<GenMixed<T>>
+    {
+        public int X; public T Y;
+        public bool Equals(GenMixed<T> o) => X == o.X && System.Collections.Generic.EqualityComparer<T>.Default.Equals(Y, o.Y);
+        public override bool Equals(object o) => o is GenMixed<T> p && Equals(p);
+        public override int GetHashCode() => 0;
+    }
+
+    public struct GenForwardsToOp<T> : IEquatable<GenForwardsToOp<T>>
+    {
+        public T V;
+        public bool Equals(GenForwardsToOp<T> o) => this == o;
+        public static bool operator ==(GenForwardsToOp<T> a, GenForwardsToOp<T> b) => System.Collections.Generic.EqualityComparer<T>.Default.Equals(a.V, b.V);
+        public static bool operator !=(GenForwardsToOp<T> a, GenForwardsToOp<T> b) => !(a == b);
+        public override bool Equals(object o) => o is GenForwardsToOp<T> p && Equals(p);
+        public override int GetHashCode() => 0;
+    }
+
+    public struct GenPadded<T> : IEquatable<GenPadded<T>>
+    {
+        public byte B; public T V;
+        public bool Equals(GenPadded<T> o) => B == o.B && System.Collections.Generic.EqualityComparer<T>.Default.Equals(V, o.V);
+        public override bool Equals(object o) => o is GenPadded<T> p && Equals(p);
+        public override int GetHashCode() => 0;
+    }
+
+    // Int-backed enum: two fields pack to 8 bytes with no padding.
+    public enum ColorInt { A, B, C }
+
+    public readonly struct EnumPair : IEquatable<EnumPair>
+    {
+        public readonly ColorInt First; public readonly ColorInt Second;
+        public bool Equals(EnumPair o) => First == o.First && Second == o.Second;
+        public override bool Equals(object o) => o is EnumPair p && Equals(p);
+        public override int GetHashCode() => 0;
+    }
+
+    public readonly struct EnumAndInt : IEquatable<EnumAndInt>
+    {
+        public readonly int X; public readonly ColorInt E;
+        public bool Equals(EnumAndInt o) => X == o.X && E == o.E;
+        public override bool Equals(object o) => o is EnumAndInt p && Equals(p);
+        public override int GetHashCode() => 0;
+    }
+
+    public readonly struct Point : IEquatable<Point>
+    {
+        public readonly int X; public readonly int Y;
+        public bool Equals(Point o) => X == o.X && Y == o.Y;
+        public override bool Equals(object o) => o is Point p && Equals(p);
+        public override int GetHashCode() => 0;
+    }
+
+    public readonly struct ThreeFields : IEquatable<ThreeFields>
+    {
+        public readonly int A; public readonly int B; public readonly int C;
+        public bool Equals(ThreeFields o) => A == o.A && B == o.B && C == o.C;
+        public override bool Equals(object o) => o is ThreeFields p && Equals(p);
+        public override int GetHashCode() => 0;
+    }
+
+    public readonly struct OneField : IEquatable<OneField>
+    {
+        public readonly long V;
+        public bool Equals(OneField o) => V == o.V;
+        public override bool Equals(object o) => o is OneField p && Equals(p);
+        public override int GetHashCode() => 0;
+    }
+
+    // 11 fields (int, 2x short, 8x byte = 16 bytes, tightly packed) shaped like Guid. Enough fields
+    // that Roslyn emits long-form branches in the field-wise Equals; the scanner must accept those.
+    public readonly struct GuidShape : IEquatable<GuidShape>
+    {
+        public readonly int A; public readonly short B; public readonly short C;
+        public readonly byte D, E, F, G, H, I, J, K;
+        public bool Equals(GuidShape o) =>
+            A == o.A && B == o.B && C == o.C && D == o.D && E == o.E && F == o.F &&
+            G == o.G && H == o.H && I == o.I && J == o.J && K == o.K;
+        public override bool Equals(object o) => o is GuidShape g && Equals(g);
+        public override int GetHashCode() => 0;
+    }
+
+    public readonly struct ForwardsToOp : IEquatable<ForwardsToOp>
+    {
+        public readonly int Lo; public readonly int Hi;
+        public bool Equals(ForwardsToOp o) => this == o;
+        public static bool operator ==(ForwardsToOp a, ForwardsToOp b) => a.Lo == b.Lo && a.Hi == b.Hi;
+        public static bool operator !=(ForwardsToOp a, ForwardsToOp b) => !(a == b);
+        public override bool Equals(object o) => o is ForwardsToOp p && Equals(p);
+        public override int GetHashCode() => 0;
+    }
+
+    public readonly struct Nested : IEquatable<Nested>
+    {
+        public readonly Point P; public readonly int Z;
+        public bool Equals(Nested o) => P.Equals(o.P) && Z == o.Z;
+        public override bool Equals(object o) => o is Nested p && Equals(p);
+        public override int GetHashCode() => 0;
+    }
+
+    public readonly struct NestedLast : IEquatable<NestedLast>
+    {
+        public readonly int Z; public readonly Point P;
+        public bool Equals(NestedLast o) => Z == o.Z && P.Equals(o.P);
+        public override bool Equals(object o) => o is NestedLast p && Equals(p);
+        public override int GetHashCode() => 0;
+    }
+
+    public readonly struct AllNested : IEquatable<AllNested>
+    {
+        public readonly Point A; public readonly OneField B;
+        public bool Equals(AllNested o) => A.Equals(o.A) && B.Equals(o.B);
+        public override bool Equals(object o) => o is AllNested p && Equals(p);
+        public override int GetHashCode() => 0;
+    }
+
+    public readonly struct WrapsPartial : IEquatable<WrapsPartial>
+    {
+        public readonly IgnoresField A; public readonly int Z;
+        public bool Equals(WrapsPartial o) => A.Equals(o.A) && Z == o.Z;
+        public override bool Equals(object o) => o is WrapsPartial p && Equals(p);
+        public override int GetHashCode() => 0;
+    }
+
+    public readonly struct WrapsPadded : IEquatable<WrapsPadded>
+    {
+        public readonly WithPadding A; public readonly int Z;
+        public bool Equals(WrapsPadded o) => A.Equals(o.A) && Z == o.Z;
+        public override bool Equals(object o) => o is WrapsPadded p && Equals(p);
+        public override int GetHashCode() => 0;
+    }
+
+    public struct PlainNoEquatable { public int A; public int B; }
+
+    public readonly struct HasFloat : IEquatable<HasFloat>
+    {
+        public readonly int A; public readonly float F;
+        public bool Equals(HasFloat o) => A == o.A && F == o.F;
+        public override bool Equals(object o) => o is HasFloat p && Equals(p);
+        public override int GetHashCode() => 0;
+    }
+
+    public readonly struct IgnoresField : IEquatable<IgnoresField>
+    {
+        public readonly int A; public readonly int B;
+        public bool Equals(IgnoresField o) => A == o.A;
+        public override bool Equals(object o) => o is IgnoresField p && Equals(p);
+        public override int GetHashCode() => 0;
+    }
+
+    public readonly struct CustomLogic : IEquatable<CustomLogic>
+    {
+        public readonly int A;
+        public bool Equals(CustomLogic o) => (A & 0xF) == (o.A & 0xF);
+        public override bool Equals(object o) => o is CustomLogic p && Equals(p);
+        public override int GetHashCode() => 0;
+    }
+
+    public readonly struct CallsHelper : IEquatable<CallsHelper>
+    {
+        public readonly int A; public readonly int B;
+        public bool Equals(CallsHelper o) => Cmp(this, o);
+        private static bool Cmp(CallsHelper a, CallsHelper b) => a.A == b.A && a.B == b.B;
+        public override bool Equals(object o) => o is CallsHelper p && Equals(p);
+        public override int GetHashCode() => 0;
+    }
+
+    [StructLayout(LayoutKind.Explicit, Size = 16)]
+    public readonly struct WithPadding : IEquatable<WithPadding>
+    {
+        [FieldOffset(0)] public readonly byte A;
+        [FieldOffset(8)] public readonly int B;
+        public bool Equals(WithPadding o) => A == o.A && B == o.B;
+        public override bool Equals(object o) => o is WithPadding p && Equals(p);
+        public override int GetHashCode() => 0;
+    }
+
+    public struct OverriddenOnly
+    {
+        public int A;
+        public override bool Equals(object o) => o is OverriddenOnly p && p.A == A;
+        public override int GetHashCode() => A;
+    }
+
+    public readonly struct PrimEquals : IEquatable<PrimEquals>
+    {
+        public readonly byte A; public readonly sbyte B; public readonly short C; public readonly int D; public readonly long E;
+        public bool Equals(PrimEquals o) => A.Equals(o.A) && B.Equals(o.B) && C.Equals(o.C) && D.Equals(o.D) && E.Equals(o.E);
+        public override bool Equals(object o) => o is PrimEquals p && Equals(p);
+        public override int GetHashCode() => 0;
+    }
+
+    public readonly struct MixedEquals : IEquatable<MixedEquals>
+    {
+        public readonly int A; public readonly int B;
+        public bool Equals(MixedEquals o) => A == o.A && B.Equals(o.B);
+        public override bool Equals(object o) => o is MixedEquals p && Equals(p);
+        public override int GetHashCode() => 0;
+    }
+
+    public readonly struct FloatEquals : IEquatable<FloatEquals>
+    {
+        public readonly int A; public readonly float F;
+        public bool Equals(FloatEquals o) => A.Equals(o.A) && F.Equals(o.F);
+        public override bool Equals(object o) => o is FloatEquals p && Equals(p);
+        public override int GetHashCode() => 0;
+    }
+}
