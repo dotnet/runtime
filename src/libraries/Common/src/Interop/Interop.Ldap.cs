@@ -159,6 +159,8 @@ namespace System.DirectoryServices.Protocols
         LDAP_OPT_NETWORK_TIMEOUT = 0x5005, // Not Supported in Windows
         LDAP_OPT_URI = 0x5006, // Not Supported in Windows
         LDAP_OPT_X_TLS_CACERTDIR = 0x6003, // Not Supported in Windows
+        LDAP_OPT_X_TLS_CONNECT_CB = 0x600c, // Not Supported in Windows
+        LDAP_OPT_X_TLS_CONNECT_ARG = 0x600d, // Not Supported in Windows
         LDAP_OPT_X_TLS_NEWCTX = 0x600F, // Not Supported in Windows
         LDAP_OPT_X_SASL_REALM = 0x6101,
         LDAP_OPT_X_SASL_AUTHCID = 0x6102,
