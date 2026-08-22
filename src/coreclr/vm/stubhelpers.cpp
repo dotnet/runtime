@@ -223,24 +223,24 @@ static SOleTlsData* GetOrCreateOleTlsData()
     return pOleTlsData;
 }
 
-FORCEINLINE static void* GetCOMIPFromRCW_GetTarget(IUnknown *pUnk, CLRToCOMCallInfo *pComInfo)
+FORCEINLINE static void* GetCOMIPFromRCW_GetTarget(IUnknown *pUnk, INT32 comSlot)
 {
     LIMITED_METHOD_CONTRACT;
 
     LPVOID* lpVtbl = *(LPVOID **)pUnk;
-    LPVOID tgt = lpVtbl[pComInfo->m_cachedComSlot];
+    LPVOID tgt = lpVtbl[comSlot];
     if (tgt != NULL)
         GetCOMIPFromRCW_ClearFP();
 
     return tgt;
 }
 
-FORCEINLINE static IUnknown* GetCOMIPFromRCW_GetTargetFromRCWCache(SOleTlsData* pOleTlsData, RCW* pRCW, CLRToCOMCallInfo* pComInfo, void** ppTarget)
+FORCEINLINE static IUnknown* GetCOMIPFromRCW_GetTargetFromRCWCache(SOleTlsData* pOleTlsData, RCW* pRCW, MethodTable* pInterfaceMT, INT32 comSlot, void** ppTarget)
 {
     LIMITED_METHOD_CONTRACT;
     _ASSERTE(pOleTlsData != NULL);
     _ASSERTE(pRCW != NULL);
-    _ASSERTE(pComInfo != NULL);
+    _ASSERTE(pInterfaceMT != NULL);
     _ASSERTE(ppTarget != NULL);
 
     // test for free-threaded after testing for context match to optimize for apartment-bound objects
@@ -248,12 +248,12 @@ FORCEINLINE static IUnknown* GetCOMIPFromRCW_GetTargetFromRCWCache(SOleTlsData* 
     {
         for (int i = 0; i < INTERFACE_ENTRY_CACHE_SIZE; i++)
         {
-            if (pRCW->m_aInterfaceEntries[i].m_pMT == pComInfo->m_pInterfaceMT)
+            if (pRCW->m_aInterfaceEntries[i].m_pMT == pInterfaceMT)
             {
                 IUnknown* pUnk = pRCW->m_aInterfaceEntries[i].m_pUnknown;
                 if (pUnk != NULL)
                 {
-                    void* targetMaybe = GetCOMIPFromRCW_GetTarget(pUnk, pComInfo);
+                    void* targetMaybe = GetCOMIPFromRCW_GetTarget(pUnk, comSlot);
                     if (targetMaybe != NULL)
                     {
                         *ppTarget = targetMaybe;
@@ -267,14 +267,6 @@ FORCEINLINE static IUnknown* GetCOMIPFromRCW_GetTargetFromRCWCache(SOleTlsData* 
     return NULL;
 }
 
-FCIMPL1(MethodTable*, StubHelpers::GetComInterfaceFromMethodDesc, MethodDesc* pMD)
-{
-    FCALL_CONTRACT;
-    _ASSERTE(pMD != NULL);
-    return CLRToCOMCallInfo::FromMethodDesc(pMD)->m_pInterfaceMT;
-}
-FCIMPLEND
-
 //==================================================================================================================
 // The GetCOMIPFromRCW helper exists in four specialized versions to optimize CLR->COM perf. Please be careful when
 // changing this code as one of these methods is executed as part of every CLR->COM call so every instruction counts.
@@ -283,13 +275,13 @@ FCIMPLEND
 #include <optsmallperfcritical.h>
 
 // This helper can handle any CLR->COM call.
-FCIMPL3(IUnknown*, StubHelpers::GetCOMIPFromRCW, Object* pSrcUNSAFE, MethodDesc* pMD, void** ppTarget)
+FCIMPL4(IUnknown*, StubHelpers::GetCOMIPFromRCW, Object* pSrcUNSAFE, MethodTable* pInterfaceMT, INT32 comSlot, void** ppTarget)
 {
     CONTRACTL
     {
         FCALL_CHECK;
         PRECONDITION(pSrcUNSAFE != NULL);
-        PRECONDITION(pMD != NULL && (pMD->IsCLRToCOMCall() || pMD->IsEEImpl()));
+        PRECONDITION(pInterfaceMT != NULL);
         PRECONDITION(ppTarget != NULL);
     }
     CONTRACTL_END;
@@ -298,14 +290,13 @@ FCIMPL3(IUnknown*, StubHelpers::GetCOMIPFromRCW, Object* pSrcUNSAFE, MethodDesc*
     // function is identical to this one, but it handles the case where the OLE TLS
     // data hasn't been created yet.
     OBJECTREF pSrc = ObjectToOBJECTREF(pSrcUNSAFE);
-    CLRToCOMCallInfo* pComInfo = CLRToCOMCallInfo::FromMethodDesc(pMD);
     RCW* pRCW = pSrc->PassiveGetSyncBlock()->GetInteropInfoNoCreate()->GetRawRCW();
     if (pRCW != NULL)
     {
         // This is the "fast path" for compiled ML stubs. The idea is to aim for an efficient RCW cache hit.
         SOleTlsData* pOleTlsData = TryGetOleTlsData();
         if (pOleTlsData != NULL)
-            return GetCOMIPFromRCW_GetTargetFromRCWCache(pOleTlsData, pRCW, pComInfo, ppTarget);
+            return GetCOMIPFromRCW_GetTargetFromRCWCache(pOleTlsData, pRCW, pInterfaceMT, comSlot, ppTarget);
     }
     return NULL;
 }
@@ -313,10 +304,10 @@ FCIMPLEND
 
 #include <optdefault.h>
 
-extern "C" IUnknown* QCALLTYPE StubHelpers_GetCOMIPFromRCWSlow(QCall::ObjectHandleOnStack pSrc, MethodDesc* pMD, void** ppTarget, BOOL* pfNeedsRelease)
+extern "C" IUnknown* QCALLTYPE StubHelpers_GetCOMIPFromRCWSlow(QCall::ObjectHandleOnStack pSrc, MethodTable* pInterfaceMT, INT32 comSlot, void** ppTarget, BOOL* pfNeedsRelease)
 {
     QCALL_CONTRACT;
-    _ASSERTE(pMD != NULL);
+    _ASSERTE(pInterfaceMT != NULL);
     _ASSERTE(ppTarget != NULL);
     _ASSERTE(pfNeedsRelease != NULL);
 
@@ -335,18 +326,17 @@ extern "C" IUnknown* QCALLTYPE StubHelpers_GetCOMIPFromRCWSlow(QCall::ObjectHand
     // data on this thread hasn't occurred yet, we will create it. Since this is the slow path, trying the
     // cache again isn't a problem.
     SOleTlsData* pOleTlsData = GetOrCreateOleTlsData(); // Ensure OLE TLS data is created.
-    CLRToCOMCallInfo* pComInfo = CLRToCOMCallInfo::FromMethodDesc(pMD);
     RCW* pRCW = objRef->PassiveGetSyncBlock()->GetInteropInfoNoCreate()->GetRawRCW();
     if (pRCW != NULL)
     {
-        pIntf = GetCOMIPFromRCW_GetTargetFromRCWCache(pOleTlsData, pRCW, pComInfo, ppTarget);
+        pIntf = GetCOMIPFromRCW_GetTargetFromRCWCache(pOleTlsData, pRCW, pInterfaceMT, comSlot, ppTarget);
     }
 
     if (pIntf == NULL)
     {
         // Still not in the cache and we've ensured the OLE TLS data was created.
-        ReleaseHolderAnyMode<IUnknown> pRetUnk{ ComObject::GetComIPFromRCWThrowing(&objRef, pComInfo->m_pInterfaceMT) };
-        *ppTarget = GetCOMIPFromRCW_GetTarget(pRetUnk, pComInfo);
+        ReleaseHolderAnyMode<IUnknown> pRetUnk{ ComObject::GetComIPFromRCWThrowing(&objRef, pInterfaceMT) };
+        *ppTarget = GetCOMIPFromRCW_GetTarget(pRetUnk, comSlot);
         _ASSERTE(*ppTarget != NULL);
 
         pIntf = pRetUnk.Detach();
