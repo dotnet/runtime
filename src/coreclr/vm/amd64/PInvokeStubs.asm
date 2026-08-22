@@ -4,64 +4,10 @@
 include AsmMacros.inc
 include AsmConstants.inc
 
-extern GenericPInvokeCalliStubWorker:proc
 extern VarargPInvokeStubWorker:proc
 extern JIT_PInvokeEndRarePath:proc
 
 extern g_TrapReturningThreads:DWORD
-
-;
-; in:
-; PINVOKE_CALLI_TARGET_REGISTER (r10) = unmanaged target
-; PINVOKE_CALLI_SIGTOKEN_REGNUM (r11) = sig token
-;
-; out:
-; METHODDESC_REGISTER           (r10) = unmanaged target
-;
-LEAF_ENTRY GenericPInvokeCalliHelper, _TEXT
-
-        ;
-        ; check for existing IL stub
-        ;
-        mov             rax, [PINVOKE_CALLI_SIGTOKEN_REGISTER + OFFSETOF__VASigCookie__pPInvokeILStub]
-        test            rax, rax
-        jz              GenericPInvokeCalliGenILStub
-
-        ;
-        ; jump to existing IL stub
-        ;
-        jmp             rax
-
-LEAF_END GenericPInvokeCalliHelper, _TEXT
-
-NESTED_ENTRY GenericPInvokeCalliGenILStub, _TEXT
-
-        PROLOG_WITH_TRANSITION_BLOCK
-
-        ;
-        ; save target
-        ;
-        mov             r12, METHODDESC_REGISTER
-        mov             r13, PINVOKE_CALLI_SIGTOKEN_REGISTER
-
-        ;
-        ; GenericPInvokeCalliStubWorker(TransitionBlock * pTransitionBlock, VASigCookie * pVASigCookie, PCODE pUnmanagedTarget)
-        ;
-        lea             rcx, [rsp + __PWTB_TransitionBlock]     ; pTransitionBlock*
-        mov             rdx, PINVOKE_CALLI_SIGTOKEN_REGISTER    ; pVASigCookie
-        mov             r8, METHODDESC_REGISTER                 ; pUnmanagedTarget
-        call            GenericPInvokeCalliStubWorker
-
-        ;
-        ; restore target
-        ;
-        mov             METHODDESC_REGISTER, r12
-        mov             PINVOKE_CALLI_SIGTOKEN_REGISTER, r13
-
-        EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
-        jmp             GenericPInvokeCalliHelper
-
-NESTED_END GenericPInvokeCalliGenILStub, _TEXT
 
 LEAF_ENTRY VarargPInvokeStub, _TEXT
         mov             PINVOKE_CALLI_SIGTOKEN_REGISTER, rcx

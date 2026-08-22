@@ -502,6 +502,18 @@ extern "C" void QCALLTYPE StubHelpers_ThrowInteropParamException(INT resID, INT 
     END_QCALL;
 }
 
+// Throws an interop failure that was detected while the stub was being generated. Stubs that are
+// created while their caller is being jitted report their failures this way so that a call site
+// that is never executed does not fail the compilation of the method containing it.
+extern "C" void QCALLTYPE StubHelpers_ThrowInteropException(INT exceptionKind, INT resID)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+    COMPlusThrow(static_cast<RuntimeExceptionKind>(exceptionKind), static_cast<UINT>(resID));
+    END_QCALL;
+}
+
 #ifdef PROFILING_SUPPORTED
 extern "C" void* QCALLTYPE StubHelpers_ProfilerBeginTransitionCallback(MethodDesc* pTargetMD)
 {
