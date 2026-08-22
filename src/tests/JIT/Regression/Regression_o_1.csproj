@@ -141,6 +141,7 @@
     <Compile Include="JitBlue\GitHub_9692\GitHub_9692.cs" />
     <Compile Include="JitBlue\GitHub_9891\GitHub_9891.cs" />
     <Compile Include="JitBlue\Performance_2700\Performance_2700.cs" />
+    <Compile Include="JitBlue\Runtime_70182\Runtime_70182.cs" />
     <Compile Include="JitBlue\Runtime_101028\Runtime_101028.cs" />
     <Compile Include="JitBlue\Runtime_101034\Runtime_101034.cs" />
     <Compile Include="JitBlue\Runtime_101175\Runtime_101175.cs" />
