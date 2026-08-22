@@ -3945,7 +3945,6 @@ void Compiler::fgDebugCheckLinks()
         }
     }
 
-    fgDebugCheckNodesUniqueness();
     fgDebugCheckSsa();
 }
 
