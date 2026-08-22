@@ -147,16 +147,16 @@ jobs:
     # windows x64
     - ${{ if eq(parameters.platform, 'windows_x64') }}:
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), ne(parameters.jobParameters.helixQueueGroup, 'cet')) }}:
-        - Windows.10.Amd64.Open
+        - Windows.Amd64.Open.rt
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(parameters.jobParameters.helixQueueGroup, 'cet')) }}:
         - Windows.11.Amd64.Cet.Open
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-        - Windows.10.Amd64
+        - Windows.Amd64.rt
 
     # windows x86
     - ${{ if eq(parameters.platform, 'windows_x86') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        - Windows.10.Amd64.Open
+        - Windows.Amd64.Open.rt
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
         - Windows.10.Amd64.X86.Rt
 
