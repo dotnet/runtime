@@ -63,7 +63,19 @@ jobs:
     # Android x64
     - ${{ if in(parameters.platform, 'android_x64') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
+        - Ubuntu.2204.Amd64.Android.24.Open
+        - Ubuntu.2204.Amd64.Android.25.Open
+        - Ubuntu.2204.Amd64.Android.26.Open
+        - Ubuntu.2204.Amd64.Android.27.Open
+        - Ubuntu.2204.Amd64.Android.28.Open
         - Ubuntu.2204.Amd64.Android.29.Open
+        - Ubuntu.2204.Amd64.Android.30.Open
+        - Ubuntu.2204.Amd64.Android.31.Open
+        - Ubuntu.2204.Amd64.Android.32.Open
+        - Ubuntu.2204.Amd64.Android.33.Open
+        - Ubuntu.2204.Amd64.Android.34.Open
+        - Ubuntu.2204.Amd64.Android.35.Open
+        - Ubuntu.2204.Amd64.Android.36.Open
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
         - Ubuntu.2204.Amd64.Android.29
 
