@@ -210,6 +210,74 @@ public class R2RTestSuites
     }
 
     [Fact]
+    public void WasmCompositeModule()
+    {
+        var compositeLib = new CompiledAssembly
+        {
+            AssemblyName = "CompositeLib",
+            SourceResourceNames = ["CrossModuleInlining/Dependencies/CompositeLib.cs"],
+        };
+        var wasmCompositeModule = new CompiledAssembly
+        {
+            AssemblyName = nameof(WasmCompositeModule),
+            SourceResourceNames = ["CrossModuleInlining/CompositeBasic.cs"],
+            References = [compositeLib]
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(WasmCompositeModule),
+            [
+                new(nameof(WasmCompositeModule),
+                [
+                    new CrossgenAssembly(compositeLib),
+                    new CrossgenAssembly(wasmCompositeModule),
+                ])
+                {
+                    OutputFileExtension = ".wasm",
+                    Options = [Crossgen2Option.Composite, Crossgen2Option.Optimize],
+                    AdditionalArgs =
+                    {
+                        "--targetarch",
+                        "wasm",
+                        "--targetos",
+                        "browser",
+                    },
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            // A composite Webcil image has no ILLibrary flag in its COR header, and Webcil has no
+            // export table to publish an RTR_HEADER export, so the ReadyToRun header has to be
+            // found through the CLI header's ManagedNativeHeader directory.
+            var webcilReader = Assert.IsType<WebcilImageReader>(reader.CompositeReader);
+            Assert.True(webcilReader.IsWasmWrapped);
+            Assert.True(reader.Composite);
+            Assert.True(R2RAssert.HasManifestRef(reader, "CompositeLib", out string diag), diag);
+        }
+    }
+
+    [Fact]
+    public void CuckooFilterAlignmentIsValidatedAgainstTheRva()
+    {
+        var imageReader = new NativeReader(new MemoryStream(new byte[64]));
+
+        // The Webcil payload of a wasm-wrapped image does not start at a 16 byte aligned file
+        // offset, so a correctly aligned filter RVA still maps to a misaligned file offset. That
+        // has to be accepted: like the runtime, only the RVA and the size are required to be
+        // aligned.
+        var filter = new NativeCuckooFilter(imageReader, filterStartOffset: 8, filterEndOffset: 40, filterRva: 0x20);
+        Assert.StartsWith("NativeCuckooFilter Size: 2", filter.ToString());
+
+        // A misaligned RVA, or a size that is not a whole number of 16 byte buckets, is invalid.
+        Assert.Throws<BadImageFormatException>(
+            () => new NativeCuckooFilter(imageReader, filterStartOffset: 0, filterEndOffset: 32, filterRva: 0x24));
+        Assert.Throws<BadImageFormatException>(
+            () => new NativeCuckooFilter(imageReader, filterStartOffset: 0, filterEndOffset: 24, filterRva: 0x20));
+    }
+
+    [Fact]
     public void RuntimeFunctionsSectionSizeExcludesSentinel()
     {
         var lib = new CompiledAssembly
