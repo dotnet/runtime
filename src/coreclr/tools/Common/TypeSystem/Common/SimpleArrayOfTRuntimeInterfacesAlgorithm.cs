@@ -40,6 +40,26 @@ namespace Internal.TypeSystem
             Array.Resize(ref _genericRuntimeInterfaces, count);
         }
 
+        public bool IsGenericRuntimeInterface(TypeDesc interfaceType)
+        {
+            Debug.Assert(interfaceType.IsInterface);
+
+            if (!interfaceType.HasInstantiation)
+            {
+                return false;
+            }
+
+            foreach (MetadataType genericRuntimeInterface in _genericRuntimeInterfaces)
+            {
+                if (interfaceType.HasSameTypeDefinition(genericRuntimeInterface))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         public override DefType[] ComputeRuntimeInterfaces(TypeDesc type)
         {
             ArrayType arrayType = (ArrayType)type;

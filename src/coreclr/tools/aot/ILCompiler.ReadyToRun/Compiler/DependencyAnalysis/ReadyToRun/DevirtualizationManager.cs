@@ -3,6 +3,7 @@
 
 using Internal.TypeSystem;
 using CORINFO_DEVIRTUALIZATION_DETAIL = Internal.JitInterface.CORINFO_DEVIRTUALIZATION_DETAIL;
+using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -133,6 +134,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 }
             }
 
+            MethodDesc resolvedVirtualMethod = null;
 
             if (declMethod.OwningType.IsInterface)
             {
@@ -156,9 +158,35 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         }
                     }
                 }
+
+                // Check for array interfaces
+                if (implType.IsWellKnownType(WellKnownType.Array))
+                {
+                    ReadyToRunCompilerContext context = (ReadyToRunCompilerContext)declMethod.Context;
+                    SimpleArrayOfTRuntimeInterfacesAlgorithm runtimeInterfacesAlgorithm =
+                        (SimpleArrayOfTRuntimeInterfacesAlgorithm)context.GetRuntimeInterfacesAlgorithmForType(context.GetArrayType(context.GetWellKnownType(WellKnownType.Object)));
+
+                    if (runtimeInterfacesAlgorithm.IsGenericRuntimeInterface(declMethod.OwningType))
+                    {
+                        if (declMethod.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any))
+                        {
+                            devirtualizationDetail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+                            return null;
+                        }
+
+                        // The instantiation we want is based on the interface element type, not the array element type.
+                        TypeDesc resultElemType = declMethod.OwningType.Instantiation[0];
+                        // We should have ruled this out above.
+                        Debug.Assert(!resultElemType.IsCanonicalSubtype(CanonicalFormKind.Any));
+                        resolvedVirtualMethod = context.GetActualImplementationForArrayGenericIListOrIReadOnlyListMethod(declMethod, resultElemType);
+                    }
+                }
             }
 
-            MethodDesc resolvedVirtualMethod = base.ResolveVirtualMethod(declMethod, implType, out devirtualizationDetail);
+            if (resolvedVirtualMethod == null)
+            {
+                resolvedVirtualMethod = base.ResolveVirtualMethod(declMethod, implType, out devirtualizationDetail);
+            }
 
             if (resolvedVirtualMethod != null)
             {
