@@ -4,6 +4,7 @@ set(UTILCODE_COMMON_SOURCES
   dn_xxhash.cpp
   clrhost_nodependencies.cpp
   ccomprc.cpp
+  cxxexception.cpp
   ex.cpp
   sbuffer.cpp
   sstring_com.cpp
@@ -53,6 +54,8 @@ set(UTILCODE_COMMON_SOURCES
   longfilepathwrappers.cpp
   yieldprocessornormalized.cpp
 )
+
+set_source_files_properties(cxxexception.cpp PROPERTIES SKIP_PRECOMPILE_HEADERS ON)
 
 # These source file do not yet compile on Linux.
 # They should be moved out from here into the declaration
