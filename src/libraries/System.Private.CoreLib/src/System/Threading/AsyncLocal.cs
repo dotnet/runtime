@@ -587,11 +587,7 @@ namespace System.Threading
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private static int GetBucket(IAsyncLocal key, int bucketCount)
             {
-                uint hashCode = (uint)RuntimeHelpers.GetHashCode(key);
-                hashCode ^= hashCode >> 16;
-                hashCode *= 0x7FEB352Du;
-                hashCode ^= hashCode >> 15;
-                return (int)hashCode & (bucketCount - 1);
+                return RuntimeHelpers.GetHashCode(key) & (bucketCount - 1);
             }
         }
     }
