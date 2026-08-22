@@ -153,6 +153,8 @@ set( JIT_SOURCES
   inline.cpp
   inlinepolicy.cpp
   instr.cpp
+  interpbackend.cpp
+  interpdump.cpp
   jitconfig.cpp
   jiteh.cpp
   jithashtable.cpp
@@ -375,6 +377,8 @@ set( JIT_HEADERS
   inlinepolicy.h
   instr.h
   instrs.h
+  interpbackend.h
+  interpdump.h
   jit.h
   jitconfig.h
   jitconfigvalues.h

@@ -117,6 +117,10 @@ HRESULT EEConfig::Init()
     fDebuggable = false;
     modifiableAssemblies = MODIFIABLE_ASSM_UNSET;
 
+#if defined(FEATURE_INTERPRETER) && defined(_DEBUG)
+    pInterpOptMethods = NULL;
+#endif
+
 #ifdef _DEBUG
     fExpandAllOnLoad = false;
     pPrestubHalt = 0;
@@ -244,6 +248,14 @@ HRESULT EEConfig::Cleanup()
     if (pszLogCCWRefCountChange)
         delete [] pszLogCCWRefCountChange;
 #endif // FEATURE_COMINTEROP
+
+#if defined(FEATURE_INTERPRETER) && defined(_DEBUG)
+    if (pInterpOptMethods)
+    {
+        DestroyMethList(pInterpOptMethods);
+        pInterpOptMethods = NULL;
+    }
+#endif
 
 #ifdef _DEBUG
     if (pPrestubHalt)
@@ -464,6 +476,13 @@ HRESULT EEConfig::sync()
 #else
     enableInterpreter = true;
 #endif // FEATURE_DYNAMIC_CODE_COMPILED
+
+#ifdef _DEBUG
+    LPWSTR wszInterpOptMethod = NULL;
+    IfFailRet(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_InterpOptMethod, &wszInterpOptMethod));
+    IfFailRet(ParseMethList(wszInterpOptMethod, &pInterpOptMethods));
+#endif // _DEBUG
+
 #endif // FEATURE_INTERPRETER
 
     enableHWIntrinsic = (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableHWIntrinsic) != 0);
