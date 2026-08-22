@@ -34,7 +34,7 @@ namespace System.Security.Cryptography.X509Certificates
             X509RevocationFlag revocationFlag,
             X509Certificate2Collection? customTrustStore,
             X509ChainTrustMode trustMode,
-            DateTime verificationTime,
+            DateTimeOffset verificationTime,
             TimeSpan timeout,
             bool disableAia)
         {
@@ -182,7 +182,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
 
             internal void Evaluate(
-                DateTime verificationTime,
+                DateTimeOffset verificationTime,
                 OidCollection? applicationPolicy,
                 OidCollection? certificatePolicy,
                 X509RevocationMode revocationMode,
@@ -190,7 +190,7 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 Debug.Assert(_chainContext != null);
 
-                long timeInMsFromUnixEpoch = new DateTimeOffset(verificationTime).ToUnixTimeMilliseconds();
+                long timeInMsFromUnixEpoch = verificationTime.ToUnixTimeMilliseconds();
                 _isValid = Interop.AndroidCrypto.X509ChainBuild(_chainContext, timeInMsFromUnixEpoch);
                 if (!_isValid)
                 {
