@@ -1683,6 +1683,11 @@ void EEJitManager::SetCpuInfo()
                 CPUCompileFlags.Set(InstructionSet_SveAes);
             }
 
+            if (((cpuFeatures & ARM64IntrinsicConstants_SvePmull128) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableArm64SvePmull128))
+            {
+                CPUCompileFlags.Set(InstructionSet_SvePmull128);
+            }
+
             if (((cpuFeatures & ARM64IntrinsicConstants_SveSha3) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableArm64SveSha3))
             {
                 CPUCompileFlags.Set(InstructionSet_SveSha3);

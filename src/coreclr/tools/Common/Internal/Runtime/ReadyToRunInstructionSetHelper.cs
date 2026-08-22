@@ -58,6 +58,8 @@ namespace Internal.ReadyToRunConstants
                         case InstructionSet.ARM64_Sm4_Arm64: return ReadyToRunInstructionSet.Sm4;
                         case InstructionSet.ARM64_SveAes: return ReadyToRunInstructionSet.SveAes;
                         case InstructionSet.ARM64_SveAes_Arm64: return ReadyToRunInstructionSet.SveAes;
+                        case InstructionSet.ARM64_SvePmull128: return ReadyToRunInstructionSet.SvePmull128;
+                        case InstructionSet.ARM64_SvePmull128_Arm64: return ReadyToRunInstructionSet.SvePmull128;
                         case InstructionSet.ARM64_SveSha3: return ReadyToRunInstructionSet.SveSha3;
                         case InstructionSet.ARM64_SveSha3_Arm64: return ReadyToRunInstructionSet.SveSha3;
                         case InstructionSet.ARM64_SveSm4: return ReadyToRunInstructionSet.SveSm4;
