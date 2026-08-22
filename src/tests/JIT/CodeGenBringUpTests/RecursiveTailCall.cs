@@ -109,7 +109,7 @@ public class Test_RecursiveTailCall
             if (x == 1) throw new GenericException<T>();
         }
         catch (GenericException<T>)
-        {            
+        {
             return 1;
         }
 
