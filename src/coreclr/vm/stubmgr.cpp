@@ -2219,16 +2219,13 @@ BOOL AsyncThunkStubManager::TraceManager(Thread *thread,
     MethodDesc* pMD = NonVirtualEntry2MethodDesc(stubIP);
     if (pMD->IsAsyncThunkMethod())
     {
-        MethodDesc* pOtherMD = pMD->GetOrdinaryVariant();
-        _ASSERTE_MSG(pOtherMD != NULL, "ATSM::TraceManager: Async thunk does not have non-async variant");
+        MethodDesc* pOtherMD = pMD->IsReturnDroppingThunk()
+            ? pMD->GetAsyncVariantNoCreate()
+            : pMD->GetOrdinaryVariantNoCreate();
 
-        // An ordinary variant may be a thunk in a rare case when we start from ReturnDroppingThunk.
-        // In such case the regular async variant must not be a thunk.
         if (pOtherMD->IsAsyncThunkMethod())
         {
-            pOtherMD = pMD->GetAsyncVariant();
-            _ASSERTE_MSG(pOtherMD != NULL, "ATSM::TraceManager: Async thunk has no non-thunk variant to step through to");
-            _ASSERTE(!pOtherMD->IsAsyncThunkMethod());
+            pOtherMD = pMD->GetAsyncVariantNoCreate();
         }
 
         LOG((LF_CORDB, LL_INFO1000, "ATSM::TraceManager: Step through async thunk to target - %p\n", pOtherMD));
