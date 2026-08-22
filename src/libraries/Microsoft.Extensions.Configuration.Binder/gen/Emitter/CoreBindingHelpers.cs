@@ -966,16 +966,27 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     case ConfigurationSectionSpec:
                         return property.CanSet;
                     case ComplexTypeSpec complexType:
-                        // EmitBindImplForMember skips a complex member only when it is a
-                        // parameterized-constructor object with no bindable members. Every other complex member is bound.
-                        return _typeIndex.HasBindableMembers(complexType) ||
-                            complexType.IsValueType ||
-                            complexType is CollectionSpec ||
-                            complexType is not ObjectSpec { InstantiationStrategy: ObjectInstantiationStrategy.ParameterizedConstructor };
+                        return IsBindableAsMember(complexType, property.CanSet);
                     default:
                         return false;
                 }
             }
+
+            /// <summary>
+            /// Whether binding a member of type <paramref name="complexType"/> emits any binding logic. An object
+            /// created through a parameterized constructor binds its constructor parameters in its Initialize method,
+            /// so it is bindable even without any bindable member of its own (e.g. its only member is a constructor
+            /// parameter backed by a read-only collection type) - but only where the member can be assigned the
+            /// instance that Initialize creates. One that has neither bindable members nor an instance to assign has
+            /// nothing to bind, and is skipped. A value-type member is bindable only when it can be set at all, since
+            /// binding one in place would only mutate the copy its getter returns.
+            /// </summary>
+            private bool IsBindableAsMember(ComplexTypeSpec complexType, bool canSet) =>
+                complexType.IsValueType
+                    ? canSet && (_typeIndex.HasBindableMembers(complexType) || _typeIndex.CanInstantiate(complexType))
+                    : _typeIndex.HasBindableMembers(complexType) ||
+                      complexType is not ObjectSpec { InstantiationStrategy: ObjectInstantiationStrategy.ParameterizedConstructor } ||
+                      (canSet && _typeIndex.CanInstantiate(complexType));
 
             private bool EmitBindImplForMember(
                 MemberSpec member,
@@ -1082,10 +1093,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     case ComplexTypeSpec complexType:
                         {
                             // Early detection of types we cannot bind to and skip it.
-                            if (!_typeIndex.HasBindableMembers(complexType) &&
-                                !complexType.IsValueType &&
-                                complexType is not CollectionSpec &&
-                                ((ObjectSpec)complexType).InstantiationStrategy == ObjectInstantiationStrategy.ParameterizedConstructor)
+                            if (!IsBindableAsMember(complexType, canSet))
                             {
                                 return false;
                             }
@@ -1142,7 +1150,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         return;
                     }
 
-                    Debug.Assert(canSet);
+                    // A value type with nothing to bind beyond its constructor parameters is created outright by its
+                    // Initialize method. There is nothing to bind in place, so assign the created instance straight to
+                    // the member rather than through the temporary the in-place binding path below needs.
+                    if (!_typeIndex.HasBindableMembers(effectiveMemberType) &&
+                        effectiveMemberType is ObjectSpec { InstantiationStrategy: ObjectInstantiationStrategy.ParameterizedConstructor } &&
+                        _typeIndex.CanInstantiate(effectiveMemberType))
+                    {
+                        EmitObjectInit(effectiveMemberType, memberAccessExpr, InitializationKind.SimpleAssignment, configArgExpr);
+                        return;
+                    }
+
                     string effectiveMemberTypeFQN = effectiveMemberType.TypeRef.FullyQualifiedName;
                     initKind = InitializationKind.None;
 
