@@ -1152,5 +1152,28 @@ namespace System.IO.Compression.Tests
             Assert.Equal(ExpectedComment, readArchive.Comment);
             await readArchive.DisposeAsync();
         }
+
+        [Fact]
+        public static void ArchiveComment_AtMaxLength_Succeeds()
+        {
+            // ALettersUShortMaxValue is exactly ushort.MaxValue ASCII characters, so its encoded
+            // length is exactly the maximum allowed archive comment length.
+            using MemoryStream ms = new MemoryStream();
+            using ZipArchive archive = new ZipArchive(ms, ZipArchiveMode.Create, leaveOpen: true);
+
+            archive.Comment = ALettersUShortMaxValue;
+
+            Assert.Equal(ALettersUShortMaxValue, archive.Comment);
+        }
+
+        [Fact]
+        public static void ArchiveComment_OverMaxLength_Throws()
+        {
+            using MemoryStream ms = new MemoryStream();
+            using ZipArchive archive = new ZipArchive(ms, ZipArchiveMode.Create, leaveOpen: true);
+
+            ArgumentException ex = Assert.Throws<ArgumentException>(() => archive.Comment = ALettersUShortMaxValue + "a");
+            Assert.Equal("Comment", ex.ParamName);
+        }
     }
 }
