@@ -192,6 +192,19 @@ check_symbol_exists(
     HAVE_STAT64)
 
 check_symbol_exists(
+    statx
+    sys/stat.h
+    HAVE_STATX)
+
+# The statx() syscall was added in Linux 4.11 and provides the file creation (birth) time,
+# which stat() doesn't. It is invoked directly via syscall() because the C library the runtime
+# is built against may predate it.
+check_symbol_exists(
+    __NR_statx
+    sys/syscall.h
+    HAVE_STATX_SYSCALL)
+
+check_symbol_exists(
     vfork
     unistd.h
     HAVE_VFORK)
