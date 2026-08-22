@@ -48,6 +48,13 @@ namespace System.IO.Compression
         private byte[] _fileComment;
         private ZipEncryptionMethod _encryptionMethod;
         private readonly CompressionLevel _compressionLevel;
+        // Set when this entry is produced by ZipStreamReader for forward-only reading.
+        // Such an entry is not attached to a ZipArchive (_archive is null) and exposes a
+        // single-use data stream through Open().
+        private readonly bool _isForwardReadEntry;
+        private readonly Stream? _forwardDataStream;
+        private bool _forwardStreamOpened;
+
         private ZipCompressionMethod _headerCompressionMethod;
         private ushort? _aeVersion;
         // Cached derived key material for encrypted entries to allow updating in place.
@@ -205,6 +212,69 @@ namespace System.IO.Compression
             {
                 _archive.AcquireArchiveStream(this);
             }
+
+            Changes = ZipArchive.ChangeState.Unchanged;
+        }
+
+        // Initializes a ZipArchiveEntry instance for an entry read sequentially from a
+        // ZipStreamReader. Such an entry is not attached to a ZipArchive (Archive is null),
+        // is populated from the local file header, and exposes a single-use forward-only
+        // data stream through Open().
+        internal ZipArchiveEntry(
+            string fullName,
+            byte[] fullNameBytes,
+            ZipCompressionMethod compressionMethod,
+            DateTimeOffset lastModified,
+            uint crc32,
+            long compressedSize,
+            long uncompressedSize,
+            ushort generalPurposeBitFlag,
+            ushort versionNeeded,
+            Stream? dataStream,
+            ZipEncryptionMethod encryptionMethod,
+            ZipCompressionMethod headerCompressionMethod,
+            ushort aeVersion)
+        {
+            _archive = null!;
+
+            _isForwardReadEntry = true;
+            _originallyInArchive = true;
+            _forwardDataStream = dataStream;
+
+            _diskNumberStart = 0;
+            _versionMadeByPlatform = CurrentZipPlatform;
+            _versionMadeBySpecification = ZipVersionNeededValues.Default;
+            _versionToExtract = (ZipVersionNeededValues)versionNeeded;
+            _generalPurposeBitFlag = (BitFlagValues)generalPurposeBitFlag;
+            // For AES entries the header compression method is 99 (the WinZip AES wrapper indicator),
+            // while CompressionMethod carries the real method parsed from the AES extra field.
+            _headerCompressionMethod = headerCompressionMethod;
+            Encryption = encryptionMethod;
+            _aeVersion = aeVersion;
+            CompressionMethod = compressionMethod;
+            _lastModified = lastModified;
+            _compressedSize = compressedSize;
+            _uncompressedSize = uncompressedSize;
+            _externalFileAttr = 0;
+            _offsetOfLocalHeader = 0;
+            _storedOffsetOfCompressedData = null;
+            _crc32 = crc32;
+
+            _compressedBytes = null;
+            _storedUncompressedData = null;
+            _currentlyOpenForWrite = false;
+            _everOpenedForWrite = false;
+            _outstandingWriteStream = null;
+
+            _storedEntryNameBytes = fullNameBytes;
+            _storedEntryName = fullName;
+            DetectEntryNameVersion();
+
+            _lhUnknownExtraFields = null;
+            _cdUnknownExtraFields = null;
+            _fileComment = Array.Empty<byte>();
+
+            _compressionLevel = MapCompressionLevel(_generalPurposeBitFlag, CompressionMethod);
 
             Changes = ZipArchive.ChangeState.Unchanged;
         }
@@ -419,6 +489,34 @@ namespace System.IO.Compression
 
         internal long OffsetOfLocalHeader => _offsetOfLocalHeader;
 
+        // True when the local file header set the data-descriptor bit, meaning the CRC-32
+        // and sizes are not known until the entry's data has been fully read.
+        internal bool HasDataDescriptor => (_generalPurposeBitFlag & BitFlagValues.DataDescriptor) != 0;
+
+        // The single-use forward-only data stream for a ZipStreamReader entry, or null when
+        // the entry has no data (for example a directory entry). Null for archive-backed entries.
+        internal Stream? ForwardDataStream => _forwardDataStream;
+
+        // Populates the CRC-32 and sizes of a forward-read data-descriptor entry after its data
+        // has been drained, validating them against the values accumulated while reading.
+        internal void UpdateDataDescriptor(uint crc32, long compressedLength, long length,
+            uint runningCrc, long totalBytesRead)
+        {
+            if (runningCrc != crc32)
+            {
+                throw new InvalidDataException(SR.CrcMismatch);
+            }
+
+            if (totalBytesRead != length)
+            {
+                throw new InvalidDataException(SR.UnexpectedStreamLength);
+            }
+
+            _crc32 = crc32;
+            _compressedSize = compressedLength;
+            _uncompressedSize = length;
+        }
+
         /// <summary>
         /// Deletes the entry from the archive.
         /// </summary>
@@ -458,6 +556,11 @@ namespace System.IO.Compression
         /// <exception cref="ObjectDisposedException">The ZipArchive that this entry belongs to has been disposed.</exception>
         public Stream Open()
         {
+            if (_isForwardReadEntry)
+            {
+                return OpenForwardReadMode();
+            }
+
             ThrowIfInvalidArchive();
             return OpenCore(InferAccessFromMode());
         }
@@ -475,6 +578,11 @@ namespace System.IO.Compression
         /// <param name="password">The password used to decrypt the entry. If the entry is not encrypted, this parameter is ignored.</param>
         public Stream Open(ReadOnlySpan<char> password)
         {
+            if (_isForwardReadEntry)
+            {
+                return OpenForwardReadMode(password);
+            }
+
             ThrowIfInvalidArchive();
 
             if (IsEncrypted && password.IsEmpty)
@@ -505,6 +613,16 @@ namespace System.IO.Compression
         /// <exception cref="ObjectDisposedException">The ZipArchive that this entry belongs to has been disposed.</exception>
         public Stream Open(FileAccess access)
         {
+            if (_isForwardReadEntry)
+            {
+                if (access != FileAccess.Read)
+                {
+                    throw new InvalidOperationException(SR.CannotBeWrittenInReadMode);
+                }
+
+                return OpenForwardReadMode();
+            }
+
             ThrowIfInvalidArchive();
             ValidateAccessForMode(access);
             return OpenCore(access);
@@ -512,6 +630,16 @@ namespace System.IO.Compression
 
         public Stream Open(FileAccess access, ReadOnlySpan<char> password)
         {
+            if (_isForwardReadEntry)
+            {
+                if (access != FileAccess.Read)
+                {
+                    throw new InvalidOperationException(SR.CannotBeWrittenInReadMode);
+                }
+
+                return OpenForwardReadMode(password);
+            }
+
             ThrowIfInvalidArchive();
             ValidateAccessForMode(access);
 
@@ -1149,6 +1277,91 @@ namespace System.IO.Compression
                 ThrowIfNotOpenable(needToUncompress: true, needToLoadIntoMemory: false);
             }
             return OpenInReadModeGetDataCompressor(GetOffsetOfCompressedData(), password);
+        }
+
+        // Returns the forward-only data stream for a ZipStreamReader entry. The stream is
+        // single-use: once returned it is consumed as it is read, and it is invalidated when
+        // the reader advances to the next entry. Directory or empty entries return Stream.Null.
+        // For encrypted entries the raw bounded stream is decrypted and decompressed here, reusing
+        // the same pipeline as the seekable read path.
+        private Stream OpenForwardReadMode(ReadOnlySpan<char> password = default)
+        {
+            if (_forwardDataStream is null)
+            {
+                return Stream.Null;
+            }
+
+            if (_forwardStreamOpened)
+            {
+                throw new InvalidOperationException(SR.ZipStreamEntryAlreadyConsumed);
+            }
+
+            if (!IsEncrypted)
+            {
+                _forwardStreamOpened = true;
+                return _forwardDataStream;
+            }
+
+            // Validate before marking the single-use stream consumed so that an attempt which reads no
+            // bytes (missing password or unsupported scheme) can be retried with a valid password.
+            if (Encryption == ZipEncryptionMethod.Unknown)
+            {
+                throw new NotSupportedException(SR.UnsupportedEncryptionMethod);
+            }
+
+            if (password.IsEmpty)
+            {
+                throw new InvalidDataException(SR.PasswordRequired);
+            }
+
+            _forwardStreamOpened = true;
+
+            Stream decrypted = WrapForwardReadStreamWithDecryption(_forwardDataStream, password);
+            return BuildDecompressionPipeline(decrypted);
+        }
+
+        // Decrypts a forward-only raw entry stream. Unlike WrapWithDecryptionIfNeeded, the AES salt is
+        // not pre-read (there is no central directory pass), so it is consumed sequentially from the raw
+        // stream here and the AES stream is created in salt-already-read mode.
+        private Stream WrapForwardReadStreamWithDecryption(Stream rawStream, ReadOnlySpan<char> password)
+        {
+            if (Encryption == ZipEncryptionMethod.Unknown)
+            {
+                throw new NotSupportedException(SR.UnsupportedEncryptionMethod);
+            }
+
+            if (password.IsEmpty)
+            {
+                throw new InvalidDataException(SR.PasswordRequired);
+            }
+
+            if (IsAesEncrypted)
+            {
+                int keySizeBits = GetAesKeySizeBits(Encryption);
+                int saltSize = WinZipAesStream.GetSaltSize(keySizeBits);
+                byte[] salt = new byte[saltSize];
+                rawStream.ReadExactly(salt);
+
+                WinZipAesKeyMaterial keyMaterial = WinZipAesStream.CreateKey(password, salt, keySizeBits);
+                return WinZipAesStream.Create(
+                    baseStream: rawStream,
+                    keyMaterial: keyMaterial,
+                    totalStreamSize: _compressedSize,
+                    encrypting: false,
+                    // The forward reader owns rawStream and drains/disposes it when it advances,
+                    // so the decryption stream must not dispose it on the caller's behalf.
+                    leaveOpen: true,
+                    saltAlreadyRead: true);
+            }
+
+            if (IsZipCryptoEncrypted)
+            {
+                byte expectedCheckByte = CalculateZipCryptoCheckByte();
+                ZipCryptoKeys keyMaterial = ZipCryptoStream.CreateKey(password);
+                return ZipCryptoStream.Create(rawStream, keyMaterial, expectedCheckByte, encrypting: false, leaveOpen: true);
+            }
+
+            throw new NotSupportedException(SR.UnsupportedEncryptionMethod);
         }
 
         private Stream OpenInReadModeGetDataCompressor(long offsetOfCompressedData, ReadOnlySpan<char> password = default)
