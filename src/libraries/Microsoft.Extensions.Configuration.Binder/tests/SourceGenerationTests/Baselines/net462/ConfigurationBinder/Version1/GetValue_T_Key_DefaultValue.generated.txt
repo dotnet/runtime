@@ -52,7 +52,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 if (type == typeof(int))
                 {
-                    return ParseInt(value, section.Path);
+                    if (TryParseInt(value, section.Path, true, out int temp0))
+                    {
+                        return temp0;
+                    }
                 }
             }
 
@@ -71,11 +74,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             return value != null;
         }
 
-        public static int ParseInt(string value, string? path)
+        public static bool TryParseInt(string value, string? path, bool errorOnFailedBinding, out int result)
         {
             try
             {
-                return int.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
+                result = int.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
+                return true;
+            }
+            catch when (!errorOnFailedBinding)
+            {
+                result = default;
+                return false;
             }
             catch (Exception exception)
             {

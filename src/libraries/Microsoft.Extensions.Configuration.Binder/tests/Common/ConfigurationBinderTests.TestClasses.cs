@@ -511,6 +511,11 @@ namespace Microsoft.Extensions
             public byte[] MyByteArray { get; set; }
         }
 
+        public class OptionsWithPresetIntegerValue
+        {
+            public int IntegerValue { get; set; } = 11;
+        }
+
         public enum TestSettingsEnum
         {
             Option1,
@@ -529,7 +534,7 @@ namespace Microsoft.Extensions
                 public Dictionary<string, TestSettingsEnum> Enums { get; set; }
             }
 
-            [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Ensure exception messages are in sync
+            [Fact]
             public void WithFlagUnset_NoExceptionIsThrownWhenFailingToParseEnumsInAnArrayAndValidItemsArePreserved()
             {
                 var dic = new Dictionary<string, string>
@@ -552,7 +557,7 @@ namespace Microsoft.Extensions
                 Assert.Equal(TestSettingsEnum.Option2, model.Enums[1]);
             }
 
-            [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Ensure exception messages are in sync
+            [Fact]
             public void WithFlagUnset_NoExceptionIsThrownWhenFailingToParseEnumsInADictionaryAndValidItemsArePreserved()
             {
                 var dic = new Dictionary<string, string>

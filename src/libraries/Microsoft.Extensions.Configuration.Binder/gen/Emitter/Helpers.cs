@@ -44,6 +44,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             private static class Expression
             {
                 public const string configurationGetSection = "configuration.GetSection";
+                public const string errorOnFailedBinding = $"{Identifier.binderOptions}?.{Identifier.ErrorOnUnknownConfiguration} is true";
                 public const string sectionKey = "section.Key";
                 public const string sectionPath = "section.Path";
                 public const string sectionValue = "section.Value";
@@ -72,6 +73,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 public const string defaultValue = nameof(defaultValue);
                 public const string element = nameof(element);
                 public const string enumValue = nameof(enumValue);
+                public const string errorOnFailedBinding = nameof(errorOnFailedBinding);
                 public const string exception = nameof(exception);
                 public const string key = nameof(key);
                 public const string name = nameof(name);
@@ -79,6 +81,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 public const string optionsBuilder = nameof(optionsBuilder);
                 public const string originalCount = nameof(originalCount);
                 public const string path = nameof(path);
+                public const string result = nameof(result);
                 public const string section = nameof(section);
                 public const string sectionKey = nameof(sectionKey);
                 public const string services = nameof(services);

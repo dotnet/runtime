@@ -72,9 +72,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (TryGetConfigurationValue(configuration, key: "MyInt", out string? value1))
             {
-                if (!string.IsNullOrEmpty(value1))
+                if (!string.IsNullOrEmpty(value1) && TryParseInt(value1, configuration.GetSection("MyInt").Path, binderOptions?.ErrorOnUnknownConfiguration is true, out int temp2))
                 {
-                    instance.MyInt = ParseInt(value1, configuration.GetSection("MyInt").Path);
+                    instance.MyInt = temp2;
                 }
             }
             else if (defaultValueIfNotFound)
@@ -154,11 +154,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             return binderOptions;
         }
 
-        public static int ParseInt(string value, string? path)
+        public static bool TryParseInt(string value, string? path, bool errorOnFailedBinding, out int result)
         {
             try
             {
-                return int.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
+                result = int.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
+                return true;
+            }
+            catch when (!errorOnFailedBinding)
+            {
+                result = default;
+                return false;
             }
             catch (Exception exception)
             {

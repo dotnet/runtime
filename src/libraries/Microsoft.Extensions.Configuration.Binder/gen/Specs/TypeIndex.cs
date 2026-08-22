@@ -115,13 +115,13 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         public static string GetConfigKeyCacheFieldName(ObjectSpec type) => $"s_configKeys_{type.IdentifierCompatibleSubstring}";
 
-        public static string GetParseMethodName(ParsableFromStringSpec type)
+        public static string GetTryParseMethodName(ParsableFromStringSpec type)
         {
             Debug.Assert(type.StringParsableTypeKind is not StringParsableTypeKind.AssignFromSectionValue);
 
             if (type.StringParsableTypeKind is StringParsableTypeKind.ByteArray)
             {
-                return "ParseByteArray";
+                return "TryParseByteArray";
             }
 
             string displayString = type.TypeRef.FullyQualifiedName;
@@ -143,7 +143,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 displayString = displayString.Replace(".", "");
             }
 
-            return "Parse" + displayString;
+            return "TryParse" + displayString;
         }
     }
 }
