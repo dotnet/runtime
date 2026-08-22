@@ -604,6 +604,8 @@ Thread* SetupThread()
     if ((pThread = GetThreadNULLOk()) != NULL)
         return pThread;
 
+    CheckThreadStateNotDestroyed();
+
     // For interop debugging, we must mark that we're in a can't-stop region
     // b.c we may take Crsts here that may block the helper thread.
     // We're especially fragile here b/c we don't have a Thread object yet

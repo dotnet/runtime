@@ -46,6 +46,9 @@ void ForceEEShutdown(ShutdownCompleteAction sca = SCA_ExitProcessWhenShutdownCom
 void ThreadDetaching();
 
 void EnsureTlsDestructionMonitor();
+
+// Fails fast if the runtime thread state of the current thread has already been destroyed.
+void CheckThreadStateNotDestroyed();
 #ifdef TARGET_WINDOWS
 void InitFlsSlot();
 void OsDetachThread(void* thread);
