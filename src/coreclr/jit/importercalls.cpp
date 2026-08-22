@@ -2157,14 +2157,15 @@ GenTree* Compiler::impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HAN
 
     assert(retRegCount >= 2);
 
-    if (!call->CanTailCall() && !call->IsInlineCandidate())
+    if (!call->CanTailCall() && !call->IsInlineCandidate() && !call->IsGuardedDevirtualizationCandidate())
     {
         // Force a call returning multi-reg struct to be always of the IR form
         //   tmp = call
         //
         // No need to assign a multi-reg struct to a local var if:
         //  - It is a tail call or
-        //  - The call is marked for in-lining later
+        //  - The call is marked for in-lining later or
+        //  - The call is a guarded devirtualization candidate (fate not yet known)
         return impStoreMultiRegValueToVar(call, retClsHnd DEBUGARG(call->GetUnmanagedCallConv()));
     }
     return call;
@@ -9039,16 +9040,23 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*            call,
     // Gather some information for later. Note we actually allocate InlineCandidateInfo
     // here, as the devirtualized half of this call will likely become an inline candidate.
     //
-    InlineCandidateInfo* pInfo = new (this, CMK_Inlining) InlineCandidateInfo;
+    // Value-initialize: the candidate may be expanded without ever going through
+    // impCheckCanInline, so every field has to be in a well-defined state.
+    //
+    InlineCandidateInfo* pInfo = new (this, CMK_Inlining) InlineCandidateInfo{};
 
-    pInfo->guardedMethodHandle               = methodHandle;
-    pInfo->guardedMethodInstParamLookup      = {};
-    pInfo->guardedMethodResolvedToken        = {};
-    pInfo->guardedMethodUnboxedResolvedToken = {};
-    pInfo->guardedClassHandle                = classHandle;
-    pInfo->likelihood                        = likelihood;
-    pInfo->exactContextHandle                = contextHandle;
-    pInfo->originalMethodHandle              = originalMethodHandle;
+    pInfo->guardedMethodHandle  = methodHandle;
+    pInfo->guardedClassHandle   = classHandle;
+    pInfo->likelihood           = likelihood;
+    pInfo->exactContextHandle   = contextHandle;
+    pInfo->originalMethodHandle = originalMethodHandle;
+    pInfo->clsAttr              = classAttr;
+    pInfo->methAttr             = methodAttr;
+    pInfo->preexistingSpillTemp = BAD_VAR_NUM;
+
+    // The call only carries its IL offset in debug builds, and not this early.
+    //
+    pInfo->ilOffset = BAD_IL_OFFSET;
 
     if (instParamLookup != nullptr)
     {
@@ -9112,6 +9120,63 @@ void Compiler::impConvertToUserCallAndMarkForInlining(GenTreeCall* call)
 }
 
 //------------------------------------------------------------------------
+// canKeepNonInlineableGdvCandidate: check if we can keep a guarded devirtualization
+//    candidate whose target we're not going to inline.
+//
+// Arguments:
+//    call -- guarded devirtualization candidate
+//
+// Return Value:
+//    true if the candidate can be kept just for the sake of devirtualization.
+//
+// Notes:
+//    A direct call is cheaper than a virtual/interface call, so we keep such candidates
+//    by default. The bail-outs below mirror the call-site checks in
+//    impMarkInlineCandidateHelper; keep the two in sync.
+//
+bool Compiler::canKeepNonInlineableGdvCandidate(GenTreeCall* call)
+{
+    assert(call->IsGuardedDevirtualizationCandidate());
+
+    if (JitConfig.JitGuardedDevirtualizationRequireInlining() != 0)
+    {
+        return false;
+    }
+
+    // Class-based GDV only for now; method-based (e.g. delegate) GDV still requires inlining.
+    //
+    if (call->GetGDVCandidateInfo(0)->guardedClassHandle == NO_CLASS_HANDLE)
+    {
+        return false;
+    }
+
+    // An explicit tail call has to stay a tail call, so don't perturb its shape.
+    // Implicit ones are fine: fgMorphPotentialTailCall can tail call out of the
+    // BBJ_ALWAYS blocks the expansion produces.
+    //
+    if (call->IsTailPrefixedCall())
+    {
+        return false;
+    }
+
+    // Except recursive ones, where turning the call into a loop is more valuable.
+    //
+    if (call->IsImplicitTailCall() && gtIsRecursiveCall(call))
+    {
+        return false;
+    }
+
+    // NextCallReturnAddress needs the call to stay exactly where it is.
+    //
+    if (info.compHasNextCallRetAddr)
+    {
+        return false;
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------
 // impMarkInlineCandidate: determine if this call can be subsequently inlined
 //
 // Arguments:
@@ -9122,8 +9187,8 @@ void Compiler::impConvertToUserCallAndMarkForInlining(GenTreeCall* call)
 //
 // Notes:
 //    Mostly a wrapper for impMarkInlineCandidateHelper that also undoes
-//    guarded devirtualization for virtual calls where the method we'd
-//    devirtualize to cannot be inlined.
+//    guarded devirtualization when it's not worth doing (or not legal) once
+//    we know we can't inline the target.
 
 void Compiler::impMarkInlineCandidate(GenTree*               callNode,
                                       CORINFO_CONTEXT_HANDLE exactContextHnd,
@@ -9145,19 +9210,33 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
     if (call->IsGuardedDevirtualizationCandidate())
     {
         assert(call->GetInlineCandidatesCount() > 0);
+
+        // We usually still want to devirtualize a target we can't inline,
+        // see canKeepNonInlineableGdvCandidate for the exceptions.
+        //
+        const bool keepNonInlineable = canKeepNonInlineableGdvCandidate(call);
+
         for (uint8_t candidateId = 0; candidateId < call->GetInlineCandidatesCount(); candidateId++)
         {
             InlineResult inlineResult(this, call, nullptr, "impMarkInlineCandidate for GDV");
 
             // Do the actual evaluation
             impMarkInlineCandidateHelper(call, candidateId, exactContextHnd, callInfo, inlinersContext, &inlineResult);
-            // Ignore non-inlineable candidates
-            // TODO: Consider keeping them to just devirtualize without inlining, at least for interface
-            // calls on NativeAOT, but that requires more changes elsewhere too.
+
             if (!inlineResult.IsCandidate())
             {
-                call->RemoveGDVCandidateInfo(this, candidateId);
-                candidateId--;
+                if (!keepNonInlineable)
+                {
+                    call->RemoveGDVCandidateInfo(this, candidateId);
+                    candidateId--;
+                    continue;
+                }
+
+                JITDUMP("Keeping GDV candidate %u of call [%06u] for devirtualization only: target can't be inlined\n",
+                        candidateId, dspTreeID(call));
+
+                assert(!call->GetGDVCandidateInfo(candidateId)->isInlineable);
+                assert(call->GetGDVCandidateInfo(candidateId)->guardedClassHandle != NO_CLASS_HANDLE);
             }
         }
 
@@ -9175,25 +9254,6 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
         InlineResult inlineResult(this, call, nullptr, "impMarkInlineCandidate");
         impMarkInlineCandidateHelper(call, 0, exactContextHnd, callInfo, inlinersContext, &inlineResult);
     }
-
-    // If this call is an inline candidate or is not a guarded devirtualization
-    // candidate, we're done.
-    if (call->IsInlineCandidate() || !call->IsGuardedDevirtualizationCandidate())
-    {
-        return;
-    }
-
-    // If we can't inline the call we'd guardedly devirtualize to,
-    // we undo the guarded devirtualization, as the benefit from
-    // just guarded devirtualization alone is likely not worth the
-    // extra jit time and code size.
-    //
-    // TODO: it is possibly interesting to allow this, but requires
-    // fixes elsewhere too...
-    JITDUMP("Revoking guarded devirtualization candidacy for call [%06u]: target method can't be inlined\n",
-            dspTreeID(call));
-
-    call->ClearInlineInfo();
 }
 
 //------------------------------------------------------------------------
@@ -9481,6 +9541,8 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
         assert(candidateIndex == 0);
         call->SetSingleInlineCandidateInfo(inlineCandidateInfo);
     }
+
+    inlineCandidateInfo->isInlineable = true;
 
     // Let the strategy know there's another candidate.
     impInlineRoot()->m_inlineStrategy->NoteCandidate();
@@ -11050,17 +11112,7 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
         }
         else
         {
-            pInfo = new (pParam->pThis, CMK_Inlining) InlineCandidateInfo;
-
-            // Null out bits we don't use when we're just inlining
-            //
-            pInfo->guardedClassHandle                = nullptr;
-            pInfo->guardedMethodHandle               = nullptr;
-            pInfo->guardedMethodInstParamLookup      = {};
-            pInfo->guardedMethodResolvedToken        = {};
-            pInfo->guardedMethodUnboxedResolvedToken = {};
-            pInfo->originalMethodHandle              = nullptr;
-            pInfo->likelihood                        = 0;
+            pInfo = new (pParam->pThis, CMK_Inlining) InlineCandidateInfo{};
         }
 
         pInfo->methInfo             = methInfo;
