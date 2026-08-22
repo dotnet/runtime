@@ -1035,7 +1035,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Sve_CreateTrueMaskUInt64:
         {
             assert(sig->numArgs == 1);
-            assert(retType == TYP_MASK);
             op1 = impPopStack().val;
 
             // Where possible, import a constant vector to allow for optimisations.
