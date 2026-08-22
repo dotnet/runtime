@@ -2705,13 +2705,7 @@ OBJECTREF DispatchInfo::GetReflectionObject()
 // Virtual method to retrieve the member info map.
 ComMTMemberInfoMap *DispatchInfo::GetMemberInfoMap()
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     // Create the member info map.
     NewHolder<ComMTMemberInfoMap> pMemberInfoMap (new ComMTMemberInfoMap(m_pMT));

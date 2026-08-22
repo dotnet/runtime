@@ -4044,8 +4044,7 @@ static BOOL AssemblyOrFriendAccessAllowed(Assembly       *pAccessingAssembly,
 {
     CONTRACTL
     {
-        THROWS;
-        GC_TRIGGERS;
+        STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pAccessingAssembly));
         PRECONDITION(CheckPointer(pTargetAssembly));
     }

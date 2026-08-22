@@ -2930,7 +2930,7 @@ BOOL AppDomain::RemoveFileFromCache(PEAssembly * pPEAssembly)
 {
     CONTRACTL
     {
-        GC_TRIGGERS;
+        STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pPEAssembly));
     }
     CONTRACTL_END;
@@ -3798,10 +3798,7 @@ PTR_LoaderAllocator AppDomain::GetLoaderAllocator()
 
 //------------------------------------------------------------------------
 UINT32 AppDomain::GetTypeID(PTR_MethodTable pMT) {
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-    } CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     return m_typeIDMap.GetTypeID(pMT, true);
 }

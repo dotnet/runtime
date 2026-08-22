@@ -119,13 +119,7 @@ bool TieredCompilationManager::IsTieringDelayActive()
 
 void TieredCompilationManager::HandleCallCountingForFirstCall(MethodDesc* pMethodDesc)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     _ASSERTE(pMethodDesc != nullptr);
     _ASSERTE(pMethodDesc->IsEligibleForTieredCompilation());
@@ -368,13 +362,7 @@ bool TieredCompilationManager::TryScheduleBackgroundWorkerWithoutGCTrigger_Locke
 
 void TieredCompilationManager::CreateBackgroundWorker()
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     _ASSERTE(!IsLockOwnedByCurrentThread());
     _ASSERTE(s_isBackgroundWorkerRunning);
@@ -423,13 +411,7 @@ void TieredCompilationManager::CreateBackgroundWorker()
 
 DWORD WINAPI TieredCompilationManager::BackgroundWorkerBootstrapper0(LPVOID args)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     _ASSERTE(args != nullptr);
     Thread *thread = (Thread *)args;
@@ -470,13 +452,7 @@ void TieredCompilationManager::BackgroundWorkerBootstrapper1(LPVOID)
 
 void TieredCompilationManager::BackgroundWorkerStart()
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     _ASSERTE(s_backgroundWorkAvailableEvent.IsValid());
 
@@ -561,13 +537,7 @@ void TieredCompilationManager::BackgroundWorkerStart()
 
 bool TieredCompilationManager::TryDeactivateTieringDelay()
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     _ASSERTE(GetThread() == s_backgroundWorkerThread);
 
@@ -652,13 +622,7 @@ bool TieredCompilationManager::TryDeactivateTieringDelay()
 
 void TieredCompilationManager::AsyncCompleteCallCounting()
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     {
         LockHolder tieredCompilationLockHolder;
