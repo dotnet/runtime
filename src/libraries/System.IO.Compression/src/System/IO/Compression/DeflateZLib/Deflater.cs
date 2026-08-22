@@ -153,6 +153,13 @@ namespace System.IO.Compression
             return ReadDeflateOutput(outputBuffer, ZFlushCode.SyncFlush, out bytesRead) == ZErrorCode.Ok;
         }
 
+        /// <summary>
+        /// Discards any unconsumed input previously set via SetInput, releasing the pinned reference (if any).
+        /// Must be called if an in-progress operation is abandoned (e.g. due to an exception or cancellation) so
+        /// the deflater doesn't retain a dangling reference to a buffer the caller may since have reused or freed.
+        /// </summary>
+        internal void UnsetInput() => DeallocateInputBufferHandle(resetStreamHandle: true);
+
         private void DeallocateInputBufferHandle(bool resetStreamHandle)
         {
             lock (SyncLock)

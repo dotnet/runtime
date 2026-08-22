@@ -592,13 +592,23 @@ namespace System.IO.Compression
         private void WriteDeflaterOutput()
         {
             Debug.Assert(_deflater != null && _buffer != null);
-            while (!_deflater.NeedsInput())
+            try
             {
-                int compressedBytes = _deflater.GetDeflateOutput(_buffer);
-                if (compressedBytes > 0)
+                while (!_deflater.NeedsInput())
                 {
-                    _stream.Write(_buffer, 0, compressedBytes);
+                    int compressedBytes = _deflater.GetDeflateOutput(_buffer);
+                    if (compressedBytes > 0)
+                    {
+                        _stream.Write(_buffer, 0, compressedBytes);
+                    }
                 }
+            }
+            catch
+            {
+                // Discard any stale input reference so a later call (e.g. Dispose) doesn't read from a
+                // buffer the caller may have since mutated, reused, or freed.
+                _deflater.UnsetInput();
+                throw;
             }
         }
 
@@ -876,13 +886,23 @@ namespace System.IO.Compression
         private async ValueTask WriteDeflaterOutputAsync(CancellationToken cancellationToken)
         {
             Debug.Assert(_deflater != null && _buffer != null);
-            while (!_deflater.NeedsInput())
+            try
             {
-                int compressedBytes = _deflater.GetDeflateOutput(_buffer);
-                if (compressedBytes > 0)
+                while (!_deflater.NeedsInput())
                 {
-                    await _stream.WriteAsync(new ReadOnlyMemory<byte>(_buffer, 0, compressedBytes), cancellationToken).ConfigureAwait(false);
+                    int compressedBytes = _deflater.GetDeflateOutput(_buffer);
+                    if (compressedBytes > 0)
+                    {
+                        await _stream.WriteAsync(new ReadOnlyMemory<byte>(_buffer, 0, compressedBytes), cancellationToken).ConfigureAwait(false);
+                    }
                 }
+            }
+            catch
+            {
+                // Discard any stale input reference so a later call (e.g. Dispose) doesn't read from a
+                // buffer the caller may have since mutated, reused, or freed.
+                _deflater.UnsetInput();
+                throw;
             }
         }
 
@@ -1055,19 +1075,29 @@ namespace System.IO.Compression
                 // Feed the data from base stream into decompression engine.
                 _deflateStream._inflater.SetInput(buffer);
 
-                // While there's more decompressed data available, forward it to the buffer stream.
-                while (!_deflateStream._inflater.Finished())
+                try
                 {
-                    int bytesRead = _deflateStream._inflater.Inflate(new Span<byte>(_arrayPoolBuffer));
-                    if (bytesRead > 0)
+                    // While there's more decompressed data available, forward it to the buffer stream.
+                    while (!_deflateStream._inflater.Finished())
                     {
-                        await _destination.WriteAsync(new ReadOnlyMemory<byte>(_arrayPoolBuffer, 0, bytesRead), cancellationToken).ConfigureAwait(false);
+                        int bytesRead = _deflateStream._inflater.Inflate(new Span<byte>(_arrayPoolBuffer));
+                        if (bytesRead > 0)
+                        {
+                            await _destination.WriteAsync(new ReadOnlyMemory<byte>(_arrayPoolBuffer, 0, bytesRead), cancellationToken).ConfigureAwait(false);
+                        }
+                        else if (_deflateStream._inflater.NeedsInput())
+                        {
+                            // only break if we read 0 and ran out of input, if input is still available it may be another GZip payload
+                            break;
+                        }
                     }
-                    else if (_deflateStream._inflater.NeedsInput())
-                    {
-                        // only break if we read 0 and ran out of input, if input is still available it may be another GZip payload
-                        break;
-                    }
+                }
+                catch
+                {
+                    // Discard any stale input reference to "buffer" so the inflater doesn't retain a
+                    // dangling reference once this exception propagates.
+                    _deflateStream._inflater.UnsetInput();
+                    throw;
                 }
             }
 
@@ -1091,19 +1121,29 @@ namespace System.IO.Compression
                 // Feed the data from base stream into the decompression engine.
                 _deflateStream._inflater.SetInput(buffer, offset, count);
 
-                // While there's more decompressed data available, forward it to the buffer stream.
-                while (!_deflateStream._inflater.Finished())
+                try
                 {
-                    int bytesRead = _deflateStream._inflater.Inflate(new Span<byte>(_arrayPoolBuffer));
-                    if (bytesRead > 0)
+                    // While there's more decompressed data available, forward it to the buffer stream.
+                    while (!_deflateStream._inflater.Finished())
                     {
-                        _destination.Write(_arrayPoolBuffer, 0, bytesRead);
+                        int bytesRead = _deflateStream._inflater.Inflate(new Span<byte>(_arrayPoolBuffer));
+                        if (bytesRead > 0)
+                        {
+                            _destination.Write(_arrayPoolBuffer, 0, bytesRead);
+                        }
+                        else if (_deflateStream._inflater.NeedsInput())
+                        {
+                            // only break if we read 0 and ran out of input, if input is still available it may be another GZip payload
+                            break;
+                        }
                     }
-                    else if (_deflateStream._inflater.NeedsInput())
-                    {
-                        // only break if we read 0 and ran out of input, if input is still available it may be another GZip payload
-                        break;
-                    }
+                }
+                catch
+                {
+                    // Discard any stale input reference to "buffer" so the inflater doesn't retain a
+                    // dangling reference once this exception propagates.
+                    _deflateStream._inflater.UnsetInput();
+                    throw;
                 }
             }
 
