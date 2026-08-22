@@ -2402,6 +2402,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\WindowsThreadPool.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneInfo.Windows.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(FeatureVarargs)' != 'true' and '$(FeatureMono)' != 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)System\ArgIterator.PlatformNotSupported.cs" />
+  </ItemGroup>
   <ItemGroup Condition="'$(FeatureComWrappers)' != 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ComWrappers.PlatformNotSupported.cs" />
   </ItemGroup>
