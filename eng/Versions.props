@@ -233,7 +233,7 @@
     <!-- ICU -->
     <MicrosoftNETCoreRuntimeICUTransportVersion>8.0.0-rtm.26407.4</MicrosoftNETCoreRuntimeICUTransportVersion>
     <!-- MsQuic -->
-    <MicrosoftNativeQuicMsQuicSchannelVersion>2.5.9</MicrosoftNativeQuicMsQuicSchannelVersion>
+    <MicrosoftNativeQuicMsQuicSchannelVersion>2.5.10</MicrosoftNativeQuicMsQuicSchannelVersion>
     <!-- Mono LLVM -->
     <runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>16.0.5-alpha.1.25311.1</runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
     <runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>16.0.5-alpha.1.25311.1</runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
@@ -253,7 +253,7 @@
          Note: when the name is updated, make sure to update dependency name in eng/pipelines/common/xplat-setup.yml
                like - DarcDependenciesChanged.Microsoft_NET_Workload_Emscripten_Current_Manifest-8_0_100_Transport
     -->
-    <MicrosoftNETWorkloadEmscriptenCurrentManifest80100Version>8.0.30</MicrosoftNETWorkloadEmscriptenCurrentManifest80100Version>
+    <MicrosoftNETWorkloadEmscriptenCurrentManifest80100Version>8.0.31</MicrosoftNETWorkloadEmscriptenCurrentManifest80100Version>
     <MicrosoftNETRuntimeEmscriptenVersion>$(MicrosoftNETWorkloadEmscriptenCurrentManifest80100Version)</MicrosoftNETRuntimeEmscriptenVersion>
     <!-- SdkVersionForWorkloadTesting is used to compute the sdk band and version for workload testing.
          The published manifests are built in dotnet/sdk so these values are for testing purposes only.
