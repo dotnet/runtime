@@ -284,5 +284,39 @@ namespace System.Reflection.Tests
             object[] attributesWithInherit = objectType.GetCustomAttributes(inherit: true);
             Assert.Equal(attributesWithoutInherit.Length, attributesWithInherit.Length);
         }
+
+        // Test for generic enum argument with array - related to https://github.com/dotnet/runtime/pull/123439
+        private class GenericEnumAttributeWithArray : Attribute
+        {
+            public GenericEnumAttributeWithArray(GenericClassForEnum<int[]>.E e) { }
+        }
+
+        private class GenericClassForEnum<T>
+        {
+            public enum E { }
+        }
+
+        [GenericEnumAttributeWithArray(default)]
+        private class ClassWithGenericEnumAttribute { }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123878", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        public void CustomAttributeCtor_WithGenericEnumArgument_DecodesCorrectly()
+        {
+            // This test ensures correct reflection behavior when loading a custom attribute
+            // whose constructor argument is a generic enum instance involving an array.
+            // This scenario was causing a crash in Mono (see https://github.com/dotnet/runtime/pull/123439)
+            var attr = typeof(ClassWithGenericEnumAttribute).CustomAttributes.Single(d => d.AttributeType == typeof(GenericEnumAttributeWithArray));
+            var arg = attr.ConstructorArguments.Single();
+
+            // Verify that we can successfully decode the attribute without crashing
+            Assert.Equal(typeof(CustomAttributeTypedArgument), arg.GetType());
+
+            // Verify the argument type is the expected generic enum type
+            Assert.Equal(typeof(GenericClassForEnum<int[]>.E), arg.ArgumentType);
+
+            // Verify the value is the default enum value (0)
+            Assert.Equal(0, Convert.ToInt32(arg.Value));
+        }
     }
 }
