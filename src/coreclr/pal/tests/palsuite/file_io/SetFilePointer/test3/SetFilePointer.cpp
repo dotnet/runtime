@@ -181,6 +181,7 @@ PALTEST(file_io_SetFilePointer_test3_paltest_setfilepointer_test3, "file_io/SetF
             PAL_TerminateEx(FAIL);
             return FAIL;
         }
+        szBuffer[dwByteCount] = '\0';
         szPtr = szText + 20;;
         if (strcmp(szPtr, szBuffer) != 0)
         {
@@ -263,6 +264,7 @@ PALTEST(file_io_SetFilePointer_test3_paltest_setfilepointer_test3, "file_io/SetF
             PAL_TerminateEx(FAIL);
             return FAIL;
         }
+        szBuffer[dwByteCount] = '\0';
         szPtr = szText + 42;
         if (strcmp(szPtr, szBuffer) != 0)
         {

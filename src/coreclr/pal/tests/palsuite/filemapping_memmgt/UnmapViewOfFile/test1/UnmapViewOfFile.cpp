@@ -128,6 +128,7 @@ PALTEST(filemapping_memmgt_UnmapViewOfFile_test1_paltest_unmapviewoffile_test1, 
         Fail("");
     }
 
+    readString[dwBytesRead] = '\0';
     if (memcmp(ch, readString, strlen(readString)) != 0)
         {
         Trace("ERROR: Read string from file \"%s\", is "
