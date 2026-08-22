@@ -24,6 +24,7 @@ namespace ILCompiler.ObjectWriter
     {
         private readonly ArrayBufferWriter<byte> _appendBuffer = new();
         private readonly List<ReadOnlyMemory<byte>> _buffers = new();
+        private readonly List<long> _bufferOffsets = new();
         private long _length;
         private readonly byte[] _padding = new byte[16];
 
@@ -36,6 +37,7 @@ namespace ILCompiler.ObjectWriter
         {
             if (_appendBuffer.WrittenCount > 0)
             {
+                _bufferOffsets.Add(_length);
                 _buffers.Add(_appendBuffer.WrittenSpan.ToArray());
                 _length += _appendBuffer.WrittenCount;
                 _appendBuffer.Clear();
@@ -45,6 +47,7 @@ namespace ILCompiler.ObjectWriter
         public void AppendData(ReadOnlyMemory<byte> data)
         {
             FlushAppendBuffer();
+            _bufferOffsets.Add(_length);
             _buffers.Add(data);
             _length += data.Length;
         }
@@ -94,23 +97,31 @@ namespace ILCompiler.ObjectWriter
                     // Flush any non-appended data
                     _sectionData.FlushAppendBuffer();
 
-                    // Seek to the correct buffer
-                    _position = 0;
-                    _bufferIndex = 0;
+                    _position = Math.Clamp(value, 0, _sectionData._length);
+                    _bufferIndex = _sectionData._buffers.Count;
                     _bufferPosition = 0;
-                    while (_position < value && _bufferIndex < _sectionData._buffers.Count)
+
+                    if (_position < _sectionData._length)
                     {
-                        if (_sectionData._buffers[_bufferIndex].Length < value - _position)
+                        // Find the first buffer that starts after the requested position. The preceding
+                        // buffer contains the position; choosing the last duplicate offset skips empty buffers.
+                        int lower = 0;
+                        int upper = _sectionData._buffers.Count;
+                        while (lower < upper)
                         {
-                            _position += _sectionData._buffers[_bufferIndex].Length;
-                            _bufferIndex++;
+                            int middle = lower + ((upper - lower) / 2);
+                            if (_sectionData._bufferOffsets[middle] <= _position)
+                            {
+                                lower = middle + 1;
+                            }
+                            else
+                            {
+                                upper = middle;
+                            }
                         }
-                        else
-                        {
-                            _bufferPosition = (int)(value - _position);
-                            _position = value;
-                            break;
-                        }
+
+                        _bufferIndex = lower - 1;
+                        _bufferPosition = (int)(_position - _sectionData._bufferOffsets[_bufferIndex]);
                     }
                 }
             }
