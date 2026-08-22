@@ -842,7 +842,20 @@ namespace Microsoft.Extensions.FileProviders.Physical
             {
                 IPollingChangeToken token = item.Key;
 
-                if (!token.HasChanged)
+                // This runs on a timer callback, so an unexpected exception escaping here is unhandled
+                // and takes the process down. Only expected file system failures are contained below.
+                bool hasChanged;
+                try
+                {
+                    hasChanged = token.HasChanged;
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or SecurityException)
+                {
+                    // Leave the token registered so that it is polled again after the file system recovers.
+                    continue;
+                }
+
+                if (!hasChanged)
                 {
                     continue;
                 }
@@ -860,7 +873,6 @@ namespace Microsoft.Extensions.FileProviders.Physical
                 }
                 catch
                 {
-
                 }
             }
         }
