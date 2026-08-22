@@ -659,10 +659,10 @@ RELEASE_CONFIG_STRING(TailCallOpt, "TailCallOpt")
 // If set, allow fast tail calls; otherwise allow only helper-based calls for explicit tail calls.
 RELEASE_CONFIG_INTEGER(FastTailCalls, "FastTailCalls", 1)
 
-// Set to 1 to measure noway_assert usage. Only valid if MEASURE_NOWAY is defined.
+// Set to 1 to measure noway_assert usage. Only valid if MEASURE_NOWAY is defined to 1.
 RELEASE_CONFIG_INTEGER(JitMeasureNowayAssert, "JitMeasureNowayAssert", 0)
 
-// Set to file to write noway_assert usage to a file (if not set: stdout). Only valid if MEASURE_NOWAY is defined.
+// Set to file to write noway_assert usage to a file (if not set: stdout). Only valid if MEASURE_NOWAY is defined to 1.
 RELEASE_CONFIG_STRING(JitMeasureNowayAssertFile, "JitMeasureNowayAssertFile")
 
 CONFIG_INTEGER(EnableExtraSuperPmiQueries, "EnableExtraSuperPmiQueries", 0) // Make extra queries to somewhat
