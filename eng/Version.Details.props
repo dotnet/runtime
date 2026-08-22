@@ -48,7 +48,7 @@ This file should be imported by eng/Versions.props
     <SystemReflectionMetadataLoadContextPackageVersion>11.0.0-rc.1.26411.119</SystemReflectionMetadataLoadContextPackageVersion>
     <SystemTextJsonPackageVersion>11.0.0-rc.1.26411.119</SystemTextJsonPackageVersion>
     <!-- dotnet-icu dependencies -->
-    <MicrosoftNETCoreRuntimeICUTransportPackageVersion>11.0.0-alpha.1.26364.1</MicrosoftNETCoreRuntimeICUTransportPackageVersion>
+    <MicrosoftNETCoreRuntimeICUTransportPackageVersion>11.0.0-alpha.1.26418.1</MicrosoftNETCoreRuntimeICUTransportPackageVersion>
     <!-- dotnet-llvm-project dependencies -->
     <runtimelinuxarm64MicrosoftNETCoreRuntimeJITToolsPackageVersion>23.1.0-alpha.1.26405.2</runtimelinuxarm64MicrosoftNETCoreRuntimeJITToolsPackageVersion>
     <runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMLibclangPackageVersion>23.1.0-alpha.1.26405.2</runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMLibclangPackageVersion>
