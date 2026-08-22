@@ -3390,8 +3390,13 @@ void Compiler::fgDebugCheckFlagsAndTypes(GenTree* tree, BasicBlock* block)
             break;
 
         case GT_QMARK:
-            assert(!op1->CanCSE());
+            assert(hasFlag(activePhaseChecks, PhaseChecks::CHECK_IR_RELAXED) || !op1->CanCSE());
             assert(op1->OperIsCompare() || op1->IsIntegralConst(0) || op1->IsIntegralConst(1));
+            break;
+
+        case GT_RET_EXPR:
+            // A RET_EXPR may be replaced by its linked call, so it must preserve the call side effect.
+            expectedFlags |= GTF_CALL;
             break;
 
         case GT_IND:
@@ -3648,19 +3653,30 @@ void Compiler::fgDebugCheckFlagsHelper(GenTree* tree, GenTreeFlags actualFlags, 
             flagsToCheck &= ~GTF_IND_INVARIANT;
         }
 
-        if ((actualFlags & ~expectedFlags & flagsToCheck) != 0)
+        GenTreeFlags const extraFlags = actualFlags & ~expectedFlags & flagsToCheck;
+        if (extraFlags != 0)
         {
-            // Print the tree so we can see it in the log.
-            printf("Extra flags on tree [%06d]: ", dspTreeID(tree));
-            Compiler::fgDebugCheckDispFlags(tree, actualFlags & ~expectedFlags, GTF_DEBUG_NONE);
-            printf("\n");
-            gtDispTree(tree);
+            bool const isRelaxed = hasFlag(activePhaseChecks, PhaseChecks::CHECK_IR_RELAXED);
+            if (!isRelaxed || verbose)
+            {
+                // Print the tree so we can see it in the log.
+                printf("Extra flags on tree [%06d]: ", dspTreeID(tree));
+                Compiler::fgDebugCheckDispFlags(tree, extraFlags, GTF_DEBUG_NONE);
+                printf("\n");
+                gtDispTree(tree);
+            }
+
+            if (isRelaxed)
+            {
+                Metrics.IRExtraFlags += genCountBits(static_cast<uint32_t>(extraFlags));
+                return;
+            }
 
             noway_assert(!"Extra flags on tree");
 
             // Print the tree again so we can see it right after we hook up the debugger.
             printf("Extra flags on tree [%06d]: ", dspTreeID(tree));
-            Compiler::fgDebugCheckDispFlags(tree, actualFlags & ~expectedFlags, GTF_DEBUG_NONE);
+            Compiler::fgDebugCheckDispFlags(tree, extraFlags, GTF_DEBUG_NONE);
             printf("\n");
             gtDispTree(tree);
         }

@@ -3838,11 +3838,12 @@ void Compiler::impImportNewObjArray(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORI
         lvaSetStruct(lvaNewObjArrayArgs, typGetBlkLayout(dimensionsSize), false);
     }
 
-    // Increase size of lvaNewObjArrayArgs to be the largest size needed to hold 'numArgs' integers
-    // for our call to CORINFO_HELP_NEW_MDARR.
+    // Use a new temp if the current one is too small. Growing the existing temp would make earlier
+    // full-width stores partial definitions after they have already been created.
     if (dimensionsSize > lvaTable[lvaNewObjArrayArgs].lvExactSize())
     {
-        lvaTable[lvaNewObjArrayArgs].GrowBlockLayout(typGetBlkLayout(dimensionsSize));
+        lvaNewObjArrayArgs = lvaGrabTemp(false DEBUGARG("NewObjArrayArgs"));
+        lvaSetStruct(lvaNewObjArrayArgs, typGetBlkLayout(dimensionsSize), false);
     }
 
     // The side-effects may include allocation of more multi-dimensional arrays. Spill all side-effects
@@ -7778,6 +7779,10 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 // Fold result, if possible.
                 op1 = gtFoldExpr(op1);
+                if (op1->OperIs(GT_LSH, GT_RSH, GT_RSZ))
+                {
+                    gtUpdateNodeSideEffects(op1);
+                }
 
                 impPushOnStack(op1, tiRetVal);
                 break;
@@ -10098,6 +10103,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 op1 = (lclTyp == TYP_STRUCT) ? gtNewStoreBlkNode(layout, op1, op2, indirFlags)->AsIndir()
                                              : gtNewStoreIndNode(lclTyp, op1, op2, indirFlags);
                 impAnnotateFieldIndir(op1->AsIndir());
+                // Annotation may clear GTF_GLOB_REF inherited from the data.
+                op1->gtFlags |= op2->gtFlags & GTF_GLOB_REF;
 
                 if (varTypeIsStruct(op1))
                 {
@@ -11995,12 +12002,6 @@ bool Compiler::impWrapTopOfStackInAwait()
     callInfo.methodFlags       = info.compCompHnd->getMethodAttribs(awaitMethod);
     impMarkInlineCandidate(awaitCall, contextHandle, &callInfo, compInlineContext);
 
-    GenTree* toPush = awaitCall;
-    if (varTypeIsStruct(callRetType))
-    {
-        toPush = impFixupCallStructReturn(awaitCall, awaitSig.retTypeClass);
-    }
-
     AsyncCallInfo* asyncInfo = new (this, CMK_Async) AsyncCallInfo;
 
     bool const hasContextHandling =
@@ -12010,16 +12011,6 @@ bool Compiler::impWrapTopOfStackInAwait()
     if (!hasContextHandling)
     {
         asyncInfo->IsTailAwait = !compIsForInlining() || impInlineInfo->iciCall->GetAsyncInfo().IsTailAwait;
-
-#if FEATURE_TAILCALL_OPT
-        // We intentionally do not consult with the EE and canTailCall because
-        // this is us introducing a call as an implementation detail and not a
-        // user-introduced call.
-        if (asyncInfo->IsTailAwait && opts.compTailCallOpt && opts.OptimizationEnabled())
-        {
-            awaitCall->gtCallMoreFlags |= GTF_CALL_M_IMPLICIT_TAILCALL;
-        }
-#endif
 
         awaitCall->SetIsAsync(asyncInfo);
     }
@@ -12039,6 +12030,31 @@ bool Compiler::impWrapTopOfStackInAwait()
         // frame depth, which lives in the async call info.
         awaitCall->SetIsAsync(asyncInfo);
         impInheritAsyncContextsFromInliner(awaitCall);
+    }
+
+    gtUpdateNodeSideEffects(awaitCall);
+
+    // Struct-return fixup may spill the call, so finalize its async effects first.
+    GenTree* toPush = awaitCall;
+    if (varTypeIsStruct(callRetType))
+    {
+        toPush = impFixupCallStructReturn(awaitCall, awaitSig.retTypeClass);
+    }
+
+#if FEATURE_TAILCALL_OPT
+    // Set this after struct-return fixup so it does not suppress the existing multi-reg spill.
+    // We intentionally do not consult with the EE and canTailCall because
+    // this is us introducing a call as an implementation detail and not a
+    // user-introduced call.
+    if (!hasContextHandling && asyncInfo->IsTailAwait && opts.compTailCallOpt && opts.OptimizationEnabled())
+    {
+        awaitCall->gtCallMoreFlags |= GTF_CALL_M_IMPLICIT_TAILCALL;
+    }
+#endif
+
+    if (toPush != awaitCall)
+    {
+        gtUpdateNodeSideEffects(toPush);
     }
 
     if (awaitCall->IsInlineCandidate())

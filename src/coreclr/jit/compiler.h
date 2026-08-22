@@ -1519,6 +1519,7 @@ enum class PhaseChecks : unsigned int
     CHECK_PROFILE_FLAGS = 1 << 7, // blocks with profile-derived weights have BBF_PROF_WEIGHT flag set
     CHECK_LINKED_LOCALS = 1 << 8, // check linked list of locals
     CHECK_FG_INIT_BLOCK = 1 << 9, // flow graph has an init block
+    CHECK_IR_RELAXED    = 1 << 10, // allow and count extra IR flags
 };
 
 inline constexpr PhaseChecks operator ~(PhaseChecks a)

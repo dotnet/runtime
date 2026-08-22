@@ -336,6 +336,9 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
     /*-------------------------------------------------------------------------
      * First create the call node
+     *
+     * Initialize operation side effects for direct calls before attaching operands,
+     * since gtUpdateNodeOperSideEffects does not preserve operand-derived flags.
      */
 
     if (opcode == CEE_CALLI)
@@ -558,7 +561,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
                     call = gtNewIndCallNode(stubAddr, callRetTyp, di);
 
-                    call->gtFlags |= GTF_EXCEPT | (stubAddr->gtFlags & GTF_GLOB_EFFECT);
+                    call->gtFlags |= GTF_EXCEPT | (stubAddr->gtFlags & GTF_ALL_EFFECT);
                     call->gtFlags |= GTF_CALL_VIRT_STUB;
 
 #ifdef TARGET_X86
@@ -570,7 +573,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 else
                 {
                     // The stub address is known at compile time
-                    call                               = gtNewCallNode(CT_USER_FUNC, callInfo->hMethod, callRetTyp, di);
+                    call = gtNewCallNode(CT_USER_FUNC, callInfo->hMethod, callRetTyp, di);
+                    call->gtFlags |= GTF_EXCEPT;
                     call->AsCall()->gtStubCallStubAddr = callInfo->stubLookup.constLookup.addr;
                     call->gtFlags |= GTF_CALL_VIRT_STUB;
                     assert(callInfo->stubLookup.constLookup.accessType != IAT_PPVALUE &&
@@ -601,6 +605,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 assert(!(mflags & CORINFO_FLG_STATIC)); // can't call a static method
                 assert(!(clsFlags & CORINFO_FLG_VALUECLASS));
                 call = gtNewCallNode(CT_USER_FUNC, callInfo->hMethod, callRetTyp, di);
+                call->gtFlags |= GTF_EXCEPT;
                 call->gtFlags |= GTF_CALL_VIRT_VTABLE;
 
                 if (opts.OptimizationEnabled())
@@ -669,10 +674,11 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
                 call->AsCall()
                     ->gtArgs.PushFront(this, NewCallArg::Primitive(thisPtrCopy).WellKnown(WellKnownArg::ThisPointer));
+                call->gtFlags |= thisPtrCopy->gtFlags & GTF_ALL_EFFECT;
 
                 // Now make an indirect call through the function pointer
                 call->AsCall()->gtControlExpr = fptr;
-                call->gtFlags |= GTF_EXCEPT | (fptr->gtFlags & GTF_GLOB_EFFECT);
+                call->gtFlags |= GTF_EXCEPT | (fptr->gtFlags & GTF_ALL_EFFECT);
 
                 if (needsFatPointerHandling)
                 {
@@ -728,6 +734,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             {
                 // This is for a non-virtual, non-interface etc. call
                 call = gtNewCallNode(CT_USER_FUNC, callInfo->hMethod, callRetTyp, di);
+                call->gtFlags |= GTF_EXCEPT;
 
                 // We remove the nullcheck for the GetType call intrinsic.
                 // TODO-CQ: JIT64 does not introduce the null check for many more helper calls
@@ -772,7 +779,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 fptr = gtNewLclvNode(lclNum, TYP_I_IMPL);
 
                 call = gtNewIndCallNode(fptr, callRetTyp, di);
-                call->gtFlags |= GTF_EXCEPT | (fptr->gtFlags & GTF_GLOB_EFFECT);
+                call->gtFlags |= GTF_EXCEPT | (fptr->gtFlags & GTF_ALL_EFFECT);
                 if (callInfo->nullInstanceCheck)
                 {
                     call->gtFlags |= GTF_CALL_NULLCHECK;
@@ -1078,18 +1085,21 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             {
                 call->AsCall()->gtArgs.PushFront(this, NewCallArg::Primitive(varArgsCookie)
                                                            .WellKnown(WellKnownArg::VarArgsCookie));
+                call->gtFlags |= varArgsCookie->gtFlags & GTF_ALL_EFFECT;
             }
 
             if (asyncContinuation != nullptr)
             {
                 call->AsCall()->gtArgs.PushFront(this, NewCallArg::Primitive(asyncContinuation)
                                                            .WellKnown(WellKnownArg::AsyncContinuation));
+                call->gtFlags |= asyncContinuation->gtFlags & GTF_ALL_EFFECT;
             }
 
             if (instParam != nullptr)
             {
                 call->AsCall()->gtArgs.PushFront(this,
                                                  NewCallArg::Primitive(instParam).WellKnown(WellKnownArg::InstParam));
+                call->gtFlags |= instParam->gtFlags & GTF_ALL_EFFECT;
             }
         }
         else
@@ -1098,18 +1108,21 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             {
                 call->AsCall()->gtArgs.PushBack(this, NewCallArg::Primitive(asyncContinuation)
                                                           .WellKnown(WellKnownArg::AsyncContinuation));
+                call->gtFlags |= asyncContinuation->gtFlags & GTF_ALL_EFFECT;
             }
 
             if (instParam != nullptr)
             {
                 call->AsCall()->gtArgs.PushBack(this,
                                                 NewCallArg::Primitive(instParam).WellKnown(WellKnownArg::InstParam));
+                call->gtFlags |= instParam->gtFlags & GTF_ALL_EFFECT;
             }
 
             if (varArgsCookie != nullptr)
             {
                 call->AsCall()->gtArgs.PushBack(this, NewCallArg::Primitive(varArgsCookie)
                                                           .WellKnown(WellKnownArg::VarArgsCookie));
+                call->gtFlags |= varArgsCookie->gtFlags & GTF_ALL_EFFECT;
             }
         }
     }
@@ -1141,7 +1154,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         }
 
         // Store the "this" value in the call
-        call->gtFlags |= obj->gtFlags & GTF_GLOB_EFFECT;
+        call->gtFlags |= obj->gtFlags & GTF_ALL_EFFECT;
         call->AsCall()->gtArgs.PushFront(this, NewCallArg::Primitive(obj).WellKnown(WellKnownArg::ThisPointer));
 
         if (impIsThis(obj))
@@ -2211,7 +2224,7 @@ GenTreeCall* Compiler::impImportIndirectCall(CORINFO_SIG_INFO* sig, const DebugI
 
     GenTreeCall* call = gtNewIndCallNode(fptr, callRetTyp, di);
 
-    call->gtFlags |= GTF_EXCEPT | (fptr->gtFlags & GTF_GLOB_EFFECT);
+    call->gtFlags |= GTF_EXCEPT | (fptr->gtFlags & GTF_ALL_EFFECT);
 #ifdef UNIX_X86_ABI
     call->gtFlags &= ~GTF_CALL_POP_ARGS;
 #endif
@@ -7079,6 +7092,7 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
 
                 GenTree* fallback =
                     new (this, GT_INTRINSIC) GenTreeIntrinsic(retType, op1Dup, intrinsic, method R2RARG(*entryPoint));
+                gtUpdateNodeSideEffects(fallback);
                 GenTree*      cond  = gtNewOperNode(GT_LT, TYP_INT, op1, gtNewZeroConNode(isLong ? TYP_LONG : TYP_INT));
                 GenTreeColon* colon = gtNewColonNode(retType, fallback, result);
                 GenTreeQmark* qmark = gtNewQmarkNode(retType, cond, colon);
@@ -7439,7 +7453,7 @@ void Compiler::impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call)
         }
 
         call->gtArgs.PushFront(this, arg);
-        call->gtFlags |= argNode->gtFlags & GTF_GLOB_EFFECT;
+        call->gtFlags |= argNode->gtFlags & GTF_ALL_EFFECT;
     }
 }
 
@@ -9090,6 +9104,7 @@ void Compiler::impConvertToUserCallAndMarkForInlining(GenTreeCall* call)
     {
         call->gtCallMethHnd = managedCallHnd;
         call->gtCallType    = CT_USER_FUNC;
+        gtUpdateNodeSideEffects(call);
 
         CORINFO_CALL_INFO hCallInfo = {};
         hCallInfo.hMethod           = managedCallHnd;
@@ -9665,16 +9680,17 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
 }
 
 /******************************************************************************/
-// Returns true if the given intrinsic will be implemented by calling System.Math
-// methods.
+// Returns true if the given intrinsic will be implemented by a user call.
 
 bool Compiler::IsIntrinsicImplementedByUserCall(NamedIntrinsic intrinsicName)
 {
     // Currently, if a math intrinsic is not implemented by target-specific
     // instructions, it will be implemented by a System.Math call. In the
     // future, if we turn to implementing some of them with helper calls,
-    // this predicate needs to be revisited.
-    return !IsTargetIntrinsic(intrinsicName);
+    // this predicate needs to be revisited. IsKnownConstant is instead folded
+    // during importation or morph.
+    return (intrinsicName != NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant) &&
+           !IsTargetIntrinsic(intrinsicName);
 }
 
 bool Compiler::IsMathIntrinsic(NamedIntrinsic intrinsicName)

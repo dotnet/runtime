@@ -4299,6 +4299,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Import: convert the instrs in each basic block to a tree based intermediate representation
     //
+    activePhaseChecks |= PhaseChecks::CHECK_IR | PhaseChecks::CHECK_IR_RELAXED;
     DoPhase(this, PHASE_IMPORTATION, &Compiler::fgImport);
 
     // If this is a failed inline attempt, we're done.
@@ -4336,6 +4337,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Transform indirect calls that require control flow expansion.
     //
     DoPhase(this, PHASE_INDXCALL, &Compiler::fgTransformIndirectCalls);
+
+    // Relaxed IR checks are currently only enabled through indirect call transformation.
+    activePhaseChecks &= ~(PhaseChecks::CHECK_IR | PhaseChecks::CHECK_IR_RELAXED);
 
     // Cleanup un-imported BBs, cleanup un-imported or
     // partially imported try regions, add OSR step blocks.
