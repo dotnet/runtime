@@ -609,6 +609,21 @@ void Compiler::lvaInitUserArgs(unsigned* curVarNum, unsigned skipArgs, unsigned 
         CorInfoTypeWithMod corInfoType = info.compCompHnd->getArgType(&info.compMethodInfo->args, argLst, &typeHnd);
         varDsc->lvIsParam              = 1;
 
+        if ((corInfoType & CORINFO_TYPE_MOD_SECRET_STUB_ARGUMENT) != 0)
+        {
+            if (strip(corInfoType) != CORINFO_TYPE_NATIVEINT)
+            {
+                BADCODE("SecretStubArgument modifier must be applied to a native int parameter");
+            }
+
+            if (lvaSecretStubArg != BAD_VAR_NUM)
+            {
+                BADCODE("Duplicate SecretStubArgument modifier");
+            }
+
+            lvaSecretStubArg = *curVarNum;
+        }
+
 #if defined(TARGET_X86) && defined(FEATURE_IJW)
         if ((corInfoType & CORINFO_TYPE_MOD_COPY_WITH_HELPER) != 0)
         {
@@ -930,6 +945,10 @@ void Compiler::lvaClassifyParameterABI(Classifier& classifier)
         if (i == info.compRetBuffArg)
         {
             wellKnownArg = WellKnownArg::RetBuffer;
+        }
+        else if (i == lvaSecretStubArg)
+        {
+            wellKnownArg = WellKnownArg::SecretStubParam;
         }
 #ifdef SWIFT_SUPPORT
         else if (i == lvaSwiftSelfArg)

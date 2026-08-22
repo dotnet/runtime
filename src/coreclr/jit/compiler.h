@@ -4446,6 +4446,7 @@ public:
     // mechanism passes the address of the return address to a runtime helper
     // where it is used to detect tail-call chains.
     unsigned lvaRetAddrVar = BAD_VAR_NUM;
+    unsigned lvaSecretStubArg = BAD_VAR_NUM;
 
 #ifdef SWIFT_SUPPORT
     unsigned lvaSwiftSelfArg = BAD_VAR_NUM;
@@ -9621,8 +9622,6 @@ public:
 
     // Get the offset of a MDArray's lower bound for a given dimension.
     static unsigned eeGetMDArrayLowerBoundOffset(unsigned rank, unsigned dimension);
-
-    CORINFO_CONST_LOOKUP eeConvertToLookup(void* value, void* pValue);
 
     // Returns the page size for the target machine as reported by the EE.
     target_size_t eeGetPageSize()

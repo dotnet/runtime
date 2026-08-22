@@ -2051,7 +2051,10 @@ void Lowering::LowerSpecialCopyArgs(GenTreeCall* call)
         // which will be first in the list.
         // The this parameter is always passed in registers, so we can ignore it.
         unsigned argIndex = call->gtArgs.CountUserArgs() - 1;
-        assert(call->gtArgs.CountUserArgs() == m_compiler->info.compILargsCount);
+        // The arguments of the unmanaged call are the leading arguments of the IL stub, so the stub
+        // cannot have fewer of them. It can have more: an unmanaged CALLI stub takes the call target
+        // as an extra trailing argument that is not passed on to the unmanaged call.
+        assert(call->gtArgs.CountUserArgs() <= m_compiler->info.compILargsCount);
         bool checkForUnmanagedThisArg = call->GetUnmanagedCallConv() == CorInfoCallConvExtension::Thiscall;
         for (CallArg& arg : call->gtArgs.Args())
         {
@@ -2910,11 +2913,7 @@ GenTree* Lowering::LowerCall(GenTree* node)
                 {
                     controlExpr = LowerNonvirtPinvokeCall(call);
                 }
-                else if (call->gtCallType == CT_INDIRECT)
-                {
-                    controlExpr = LowerIndirectNonvirtCall(call);
-                }
-                else
+                else if (call->gtCallType != CT_INDIRECT)
                 {
                     controlExpr = LowerDirectCall(call);
                 }
@@ -6663,14 +6662,6 @@ void Lowering::OptimizeCallIndirectTargetEvaluation(GenTreeCall* call)
 
     JITDUMP("Result of moved target evaluation:\n");
     DISPTREERANGE(BlockRange(), call);
-}
-
-GenTree* Lowering::LowerIndirectNonvirtCall(GenTreeCall* call)
-{
-    // Indirect cookie calls gets transformed by fgMorphArgs as indirect call with non-standard args.
-    // Hence we should never see this type of call in lower.
-    noway_assert(call->gtCallCookie == nullptr);
-    return nullptr;
 }
 
 //------------------------------------------------------------------------
