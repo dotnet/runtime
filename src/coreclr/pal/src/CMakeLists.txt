@@ -197,7 +197,6 @@ set(SOURCES
   safecrt/wcsncpy_s.cpp
   safecrt/wmakepath_s.cpp
   synchobj/event.cpp
-  synchobj/semaphore.cpp
   synchmgr/synchcontrollers.cpp
   synchmgr/synchmanager.cpp
   synchmgr/wait.cpp
