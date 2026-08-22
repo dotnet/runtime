@@ -1855,12 +1855,10 @@ void Compiler::fgAddReversePInvokeEnterExit()
     if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TRACK_TRANSITIONS))
     {
         GenTree* stubArgument;
-        if (info.compPublishStubParam)
+        if (compHasSecretStubArgument())
         {
-            // If we have a secret param for a Reverse P/Invoke, that means that we are in an IL stub.
-            // In this case, the method handle we pass down to the Reverse P/Invoke helper should be
-            // the target method, which is passed in the secret parameter.
-            stubArgument = gtNewLclvNode(lvaStubArgumentVar, TYP_I_IMPL);
+            // Reverse P/Invoke IL stubs receive UMEntryThunkData in the secret parameter.
+            stubArgument = gtNewLclvNode(lvaGetSecretStubArgumentVar(), TYP_I_IMPL);
         }
         else
         {
@@ -2598,8 +2596,8 @@ PhaseStatus Compiler::fgAddInternal()
         LclVarDsc* varDsc = lvaGetDesc(lvaInlinedPInvokeFrameVar);
         // Make room for the inlined frame.
         const CORINFO_EE_INFO* eeInfo = eeGetEEInfo();
-        unsigned frameSize            = info.compPublishStubParam ? eeInfo->inlinedCallFrameInfo.sizeWithSecretStubArg
-                                                                  : eeInfo->inlinedCallFrameInfo.size;
+        unsigned frameSize            = compMethodHasMDContextArg() ? eeInfo->inlinedCallFrameInfo.sizeWithSecretStubArg
+                                                                    : eeInfo->inlinedCallFrameInfo.size;
         lvaSetStruct(lvaInlinedPInvokeFrameVar, typGetBlkLayout(frameSize), false);
     }
 
