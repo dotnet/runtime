@@ -171,12 +171,12 @@ namespace System.IO.Compression
             bytesWritten = 0;
             bytesConsumed = 0;
 
+            EnsureNotDisposed();
+
             if (_finished)
             {
                 return OperationStatus.Done;
             }
-
-            EnsureNotDisposed();
 
             if (destination.IsEmpty)
             {
