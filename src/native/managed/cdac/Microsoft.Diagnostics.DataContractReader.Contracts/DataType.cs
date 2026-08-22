@@ -65,8 +65,6 @@ public enum DataType
     DynamicStaticsInfo,
     EEClass,
     EEClassOptionalFields,
-    LayoutEEClass,
-    EEClassLayoutInfo,
     SystemVEightByteRegistersInfo,
     CoreLibBinder,
     MethodTableAuxiliaryData,
@@ -230,6 +228,9 @@ public enum DataType
     EnCAddedStaticField,
     EnCSyncBlockInfo,
     UnorderedArrayBase,
+
+    LayoutEEClass,
+    EEClassLayoutInfo,
 }
 
 public static class DataTypeTargetExtensions
