@@ -1,6 +1,7 @@
 include(CheckFunctionExists)
 include(CheckIncludeFiles)
 include(CheckCSourceCompiles)
+include(CheckLibraryExists)
 include(CheckSymbolExists)
 
 check_include_files("windows.h;bcrypt.h" HAVE_BCRYPT_H)
@@ -32,6 +33,19 @@ check_c_source_compiles("
         return result;
     }"
     HAVE_PTHREAD_RWLOCK_PREFER_WRITER_NONRECURSIVE_NP)
+
+if(CLR_CMAKE_HOST_UNIX)
+    check_library_exists(pthread pthread_create "" HAVE_LIBPTHREAD)
+    check_library_exists(c pthread_create "" HAVE_PTHREAD_IN_LIBC)
+    if(HAVE_LIBPTHREAD)
+        set(PTHREAD_LIBRARY pthread)
+    elseif(HAVE_PTHREAD_IN_LIBC)
+        set(PTHREAD_LIBRARY c)
+    endif()
+    if(PTHREAD_LIBRARY)
+        check_library_exists(${PTHREAD_LIBRARY} pthread_condattr_setclock "" HAVE_PTHREAD_CONDATTR_SETCLOCK)
+    endif()
+endif()
 
 if(CMAKE_C_BYTE_ORDER STREQUAL "BIG_ENDIAN")
     set(BIGENDIAN 1)
