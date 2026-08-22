@@ -229,6 +229,48 @@ public class Program
         }
 
         Assert.AreEqual("NullReferenceException", "thrown");
+
+        TestMovedGenericVirtualMethodSharedGenericCaller();
+    }
+
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
+    static void TestMovedGenericVirtualMethodSharedGeneric<T, V>()
+    {
+        var o = new MyChildGeneric<T>();
+
+        Assert.AreEqual(o.MovedToBaseClass<V>(), typeof(List<V>).ToString());
+        Assert.AreEqual(o.ChangedToVirtual<V>(), typeof(List<V>).ToString());
+
+        // Test that changing a virtual to a non-virtual doesn't cause a crash. (Behavior is somewhat undefined, as this change is explicitly defined as a breaking change.)
+        Assert.AreEqual(GetChangedToNonVirtualDelegate<T, V>(o)(), typeof(List<V>).ToString());
+
+        o = null;
+
+        try
+        {
+            o.MovedToBaseClass<V>();
+        }
+        catch (NullReferenceException)
+        {
+            try
+            {
+                o.ChangedToVirtual<V>();
+            }
+            catch (NullReferenceException)
+            {
+                return;
+            }
+        }
+
+        Assert.AreEqual("NullReferenceException", "thrown");
+
+        var o2 = new MyChildClass();
+        Assert.AreEqual(o2.MovedToBaseClassGeneric<T>(), "MovedToBaseClassGeneric");
+    }
+
+    static void TestMovedGenericVirtualMethodSharedGenericCaller()
+    {
+        TestMovedGenericVirtualMethodSharedGeneric<object, WeakReference>();
     }
 
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
@@ -579,7 +621,11 @@ public class Program
         Console.WriteLine("TestDefaultVsExactStaticVirtualMethodImplementation");
         TestDefaultVsExactStaticVirtualMethodImplementation();
         
+#if !NO_CROSS_MODULE_INLINING
+        // ILInliningVersioningTest validates the set of methods that were inlined across modules using the map file
+        // produced by crossgen2, so it is only meaningful when the test binary is compiled with --opt-cross-module.
         ILInliningVersioningTest<LocallyDefinedStructure>.RunAllTests(typeof(Program).Assembly);
+#endif
     }
 
     public static int Main()
