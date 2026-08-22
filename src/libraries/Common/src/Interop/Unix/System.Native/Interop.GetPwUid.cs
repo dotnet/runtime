@@ -3,7 +3,6 @@
 
 using System;
 using System.Diagnostics;
-using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
@@ -42,7 +41,7 @@ internal static partial class Interop
             }
 
             // Fallback to heap allocations if necessary, growing the buffer until
-            // we succeed.  TryGetUserNameFromPasswd will throw if there's an unexpected error.
+            // we succeed.
             int lastBufLen = BufLen;
             while (true)
             {
@@ -90,8 +89,9 @@ internal static partial class Interop
                 return false;
             }
 
-            // Otherwise, fail.
-            throw new IOException(errorInfo.GetErrorMessage(), errorInfo.RawErrno);
+            // Otherwise, give back null.
+            username = null;
+            return true;
         }
 
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetPwUidR", SetLastError = false)]
