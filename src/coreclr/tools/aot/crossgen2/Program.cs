@@ -658,6 +658,10 @@ namespace ILCompiler
                     nodeFactoryFlags.StripInliningInfo = Get(_command.StripInliningInfo);
                     nodeFactoryFlags.StripDebugInfo = Get(_command.StripDebugInfo);
                     nodeFactoryFlags.StripILBodies = Get(_command.StripILBodies);
+                    if (nodeFactoryFlags.StripILBodies && !composite)
+                    {
+                        throw new Exception(SR.ErrorStripILBodiesRequiresComposite);
+                    }
 
                     builder
                         .UseMapFile(Get(_command.Map))
