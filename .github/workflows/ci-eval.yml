@@ -277,7 +277,8 @@ jobs:
           SPECS: ${{ steps.sel.outputs.specs }}
         run: |
           for spec in $SPECS; do
-            vally lint --eval-spec "$spec" --strict
+            vally lint --eval-spec "$spec" --strict \
+              --param "GITHUB_MCP_ENV_FILE=lint-only"
           done
 
       - name: Run the eval(s)
@@ -305,6 +306,9 @@ jobs:
         run: |
           workdir="$RUNNER_TEMP/vally"
           mkdir -p "$workdir"
+          mcp_env="$RUNNER_TEMP/github-mcp.env"
+          trap 'rm -f -- "$mcp_env"' EXIT
+          (umask 077; printf 'GITHUB_PERSONAL_ACCESS_TOKEN=%s\n' "$GITHUB_PERSONAL_ACCESS_TOKEN" > "$mcp_env")
           report="$workdir/report.md"
           : > "$report"
           rc=0
@@ -312,7 +316,9 @@ jobs:
             name="$(basename "$spec" .eval.yaml)"
             echo "## $name" >> "$report"
             if vally eval --eval-spec "$spec" --skill-dir .github/workflows \
-                 --workspace "$workdir/ws-$name" --output-dir "$workdir/out-$name" > "$workdir/log-$name.txt" 2>&1; then
+                 --workspace "$workdir/ws-$name" --output-dir "$workdir/out-$name" \
+                 --param "GITHUB_MCP_ENV_FILE=$mcp_env" \
+                 > "$workdir/log-$name.txt" 2>&1; then
               echo "✅ passed" >> "$report"
             else
               rc=1
