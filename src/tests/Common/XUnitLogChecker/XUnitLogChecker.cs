@@ -57,6 +57,26 @@ public class XUnitLogChecker
 
     private static LogCheckerConfigParameters s_configuration;
 
+    /// <summary>
+    /// Resolve the current user name for chown in CI environments where USER may be unset.
+    /// Mirrors the resolution order used by CoreclrTestWrapperLib.ResolveUserName().
+    /// </summary>
+    private static string? ResolveUserName()
+    {
+        string? userName = Environment.GetEnvironmentVariable("USER");
+        if (!string.IsNullOrEmpty(userName))
+            return userName;
+
+        userName = Environment.GetEnvironmentVariable("USERNAME");
+        if (!string.IsNullOrEmpty(userName))
+            return userName;
+
+        if (!string.IsNullOrEmpty(Environment.UserName))
+            return Environment.UserName;
+
+        return null;
+    }
+
     public static int Main(string[] args)
     {
         s_configuration = new LogCheckerConfigParameters();
@@ -593,20 +613,25 @@ public class XUnitLogChecker
             }
 
             Console.WriteLine("=========================================");
-            string? userName = Environment.GetEnvironmentVariable("USER");
+            string? userName = ResolveUserName();
             if (string.IsNullOrEmpty(userName))
             {
-                userName = "helixbot";
+                // When all environment/user resolution paths are empty, skip the chown
+                // rather than chowning as a wrong user (which would silently leave the
+                // file owned by the wrong account and still unreadable by the test runner).
+                Console.WriteLine("TryPrintStackTraceFromCrashReport: unable to resolve user name, skipping chown.");
             }
-
-            if (!RunProcess("sudo", $"chmod a+rw {crashReportJsonFile}", Console.Out))
+            else
             {
-                return false;
-            }
+                if (!RunProcess("sudo", $"chmod a+rw {crashReportJsonFile}", Console.Out))
+                {
+                    return false;
+                }
 
-            if (!RunProcess("sudo", $"chown {userName} {crashReportJsonFile}", Console.Out))
-            {
-                return false;
+                if (!RunProcess("sudo", $"chown {userName} {crashReportJsonFile}", Console.Out))
+                {
+                    return false;
+                }
             }
 
             Console.WriteLine("=========================================");
