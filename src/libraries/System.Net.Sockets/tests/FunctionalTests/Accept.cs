@@ -493,4 +493,46 @@ namespace System.Net.Sockets.Tests
     {
         public AcceptEap(ITestOutputHelper output) : base(output) {}
     }
+
+    public sealed class AcceptDualStackResetTests
+    {
+        // Regression: on macOS, when a peer connects to a dual-stack AF_INET6 listener and
+        // immediately resets (SO_LINGER=0), accept(2) can return successfully with an empty
+        // remote sockaddr. Without a guard on the resulting zero-sized SocketAddress, the
+        // shared FinishOperationSyncSuccess path throws ArgumentException from EndPoint.Create
+        // and permanently breaks the listener (observed in Kestrel's accept loop).
+        [ConditionalFact(typeof(Socket), nameof(Socket.OSSupportsIPv6))]
+        public async Task AcceptAsync_DualStackListener_PeerImmediatelyResets_ListenerStaysHealthy()
+        {
+            using Socket listener = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp);
+            listener.DualMode = true;
+            listener.Bind(new IPEndPoint(IPAddress.IPv6Any, 0));
+            int port = ((IPEndPoint)listener.LocalEndPoint!).Port;
+            listener.Listen(128);
+
+            for (int i = 0; i < 200; i++)
+            {
+                using Socket ipv6 = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
+                using Socket ipv4 = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
+
+                Task connect6 = ipv6.ConnectAsync(IPAddress.IPv6Loopback, port);
+                Task connect4 = ipv4.ConnectAsync(IPAddress.Loopback, port);
+                await Task.WhenAll(connect6, connect4).WaitAsync(TimeSpan.FromSeconds(5));
+
+                ipv4.LingerState = new LingerOption(true, 0);
+                ipv4.Close();
+
+                using Socket a1 = await listener.AcceptAsync().WaitAsync(TimeSpan.FromSeconds(5));
+                using Socket a2 = await listener.AcceptAsync().WaitAsync(TimeSpan.FromSeconds(5));
+            }
+
+            Task<Socket> finalAccept = listener.AcceptAsync();
+            using (Socket probe = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                await probe.ConnectAsync(IPAddress.Loopback, port);
+                using Socket finalAccepted = await finalAccept.WaitAsync(TimeSpan.FromSeconds(5));
+                Assert.True(finalAccepted.Connected);
+            }
+        }
+    }
 }
