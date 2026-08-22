@@ -899,7 +899,7 @@ HRESULT Thread::DetachThread(BOOL inTerminationCallback)
         // We can not call __SwitchToThread since we can not go back to host.
         ClrSleepEx(10, FALSE);
     }
-    if (m_WeOwnThreadHandle && m_ThreadHandleForClose == INVALID_HANDLE_VALUE)
+    if (m_ThreadHandleForClose == INVALID_HANDLE_VALUE)
     {
         m_ThreadHandleForClose = hThread;
     }
@@ -1238,7 +1238,6 @@ Thread::Thread()
     m_ThreadHandle = INVALID_HANDLE_VALUE;
     m_ThreadHandleForClose = INVALID_HANDLE_VALUE;
     m_ThreadHandleForResume = INVALID_HANDLE_VALUE;
-    m_WeOwnThreadHandle = FALSE;
 
 #ifdef _DEBUG
     m_ThreadId = UNINITIALIZED_THREADID;
@@ -1515,7 +1514,6 @@ void Thread::InitThread()
             _ASSERTE(hDup != INVALID_HANDLE_VALUE);
 
             SetThreadHandle(hDup);
-            m_WeOwnThreadHandle = TRUE;
         }
         else
         {
@@ -1982,7 +1980,6 @@ BOOL Thread::CreateNewOSThread(SIZE_T sizeToCommitOrReserve, LPTHREAD_START_ROUT
     _ASSERTE(!m_fPreemptiveGCDisabled);     // leave in preemptive until HasStarted.
 
     SetThreadHandle(h);
-    m_WeOwnThreadHandle = TRUE;
 
     // Before we do the resume, we need to take note of the new ThreadId.  This
     // is necessary because -- before the thread starts executing at KickofThread --
@@ -2116,7 +2113,7 @@ int Thread::DecExternalCount(BOOL holdingLock)
         }
         // Can not assert like this.  We have already removed the Unstarted bit.
         //_ASSERTE (IsUnstarted() || h != INVALID_HANDLE_VALUE);
-        if (h != INVALID_HANDLE_VALUE && m_WeOwnThreadHandle)
+        if (h != INVALID_HANDLE_VALUE)
         {
             ::CloseHandle(h);
             SetThreadHandle(INVALID_HANDLE_VALUE);
@@ -2259,8 +2256,8 @@ Thread::~Thread()
 
     // Normally we shouldn't get here with a valid thread handle; however if SetupThread
     // failed (due to an OOM for example) then we need to CloseHandle the thread
-    // handle if we own it.
-    if (m_WeOwnThreadHandle && (GetThreadHandle() != INVALID_HANDLE_VALUE))
+    // handle.
+    if (GetThreadHandle() != INVALID_HANDLE_VALUE)
     {
         CloseHandle(GetThreadHandle());
     }
