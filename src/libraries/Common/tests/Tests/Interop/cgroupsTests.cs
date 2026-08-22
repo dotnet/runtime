@@ -50,6 +50,7 @@ namespace Common.Tests
         [InlineData(true, 1, "0 0 0:0 / /foo-with-dashes ignore ignore - cgroup cgroup memory", "memory", "/", "/foo-with-dashes")]
         [InlineData(true, 1, "0 0 0:0 / /foo ignore ignore - cgroup cgroup cpu,memory", "memory", "/", "/foo")]
         [InlineData(true, 1, "0 0 0:0 / /foo ignore ignore - cgroup cgroup memory,cpu", "memory", "/", "/foo")]
+        [InlineData(true, 1, "0 0 0:0 /root\\040path /foo\\040bar ignore ignore - cgroup cgroup memory", "memory", "/root path", "/foo bar")]
         public void ParseValidateMountInfo(bool expectedFound, int cgroupVersion, string procSelfMountInfoText, string subsystem, string expectedRoot, string expectedMount)
         {
             string path = GetTestFilePath();
