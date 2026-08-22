@@ -10,7 +10,7 @@
 
   <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="$(CoverletCollectorVersion)" />
-    <ProjectReference Include="..\..\src\ILAssembler\ILAssembler.csproj" />
+    <ProjectReference Include="..\..\src\ILAssembler\ILAssembler.csproj" SkipUseReferenceAssembly="true" />
   </ItemGroup>
 
   <!-- Link CLI normalization so it can be tested without referencing the self-contained executable project. -->

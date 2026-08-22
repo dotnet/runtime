@@ -498,6 +498,98 @@ namespace ILAssembler.Tests
             Assert.Equal("Impl", reader.GetString(reader.GetMemberReference((MemberReferenceHandle)implementation.MethodBody).Name));
         }
 
+        [Fact]
+        public void DeferredClassOverride_RemainsOwnedByOuterTypeAcrossNestedType()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly extern External { }
+                .assembly TestOverride { }
+                .class public auto ansi Outer extends [mscorlib]System.Object
+                {
+                    .override [External]IFoo::M with instance int32 Outer::Impl(string)
+                    .class nested public auto ansi Inner extends [mscorlib]System.Object
+                    {
+                        .method public instance int32 Impl(string value) cil managed
+                        {
+                            ldc.i4.0
+                            ret
+                        }
+                    }
+                    .method public instance int32 Impl(string value) cil managed
+                    {
+                        ldc.i4.1
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var types = reader.TypeDefinitions
+                .ToDictionary(
+                    handle => reader.GetString(reader.GetTypeDefinition(handle).Name),
+                    handle => (Handle: handle, Definition: reader.GetTypeDefinition(handle)));
+
+            var implementation = reader.GetMethodImplementation(
+                Assert.Single(types["Outer"].Definition.GetMethodImplementations()));
+            Assert.Empty(types["Inner"].Definition.GetMethodImplementations());
+            Assert.Equal(HandleKind.MethodDefinition, implementation.MethodBody.Kind);
+            Assert.Equal(
+                types["Outer"].Handle,
+                reader.GetMethodDefinition((MethodDefinitionHandle)implementation.MethodBody).GetDeclaringType());
+        }
+
+        [Fact]
+        public void TruncatedNestedMethodHeader_DoesNotLeakMemberStateToFollowingDocument()
+        {
+            string malformedSource = """
+                .assembly extern mscorlib { }
+                .assembly malformed { }
+                .class public auto ansi Outer extends [mscorlib]System.Object
+                {
+                    .class nested public auto ansi Inner extends [mscorlib]System.Object
+                    {
+                        .method public static void Broken(int32 value
+                """;
+            string validSource = """
+                .assembly extern mscorlib { }
+                .assembly valid { }
+                .class public auto ansi Following extends [mscorlib]System.Object
+                {
+                    .method public static void Good() cil managed
+                    {
+                        ret
+                    }
+                }
+                """;
+
+            var compiler = new DocumentCompiler();
+            var (malformedDiagnostics, _) = compiler.Compile(
+                new SourceText(malformedSource, "malformed.il"),
+                _ => default!,
+                _ => default!,
+                new Options { ErrorTolerant = true });
+            var (validDiagnostics, result) = compiler.Compile(
+                new SourceText(validSource, "valid.il"),
+                _ => default!,
+                _ => default!,
+                new Options());
+
+            Assert.Contains(malformedDiagnostics, diagnostic => diagnostic.Id == "Parser");
+            Assert.Empty(validDiagnostics);
+            Assert.NotNull(result);
+            var image = new BlobBuilder();
+            result.Serialize(image);
+            using var pe = new PEReader(image.ToImmutableArray());
+            var reader = pe.GetMetadataReader();
+            var followingType = reader.TypeDefinitions
+                .Select(reader.GetTypeDefinition)
+                .Single(type => reader.GetString(type.Name) == "Following");
+            MethodDefinitionHandle goodMethod = Assert.Single(followingType.GetMethods());
+            Assert.Equal("Good", reader.GetString(reader.GetMethodDefinition(goodMethod).Name));
+        }
+
 
         [Fact]
         public void MultipleOverrides_EmitsAllMethodImpls()

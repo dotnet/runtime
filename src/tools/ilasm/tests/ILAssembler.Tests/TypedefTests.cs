@@ -175,18 +175,22 @@ namespace ILAssembler.Tests
 
             Assert.Equal(MetadataTokens.GetToken(fieldHandle), fieldToken);
 
-            var attributes = reader.GetCustomAttributes(testTypeHandle)
+            var fieldAttributes = reader.GetCustomAttributes(fieldHandle)
                 .Select(reader.GetCustomAttribute)
                 .Select(attribute => attribute.DecodeValue(DocumentCompilerTestHelpers.Decoder))
                 .ToArray();
-            Assert.Equal(2, attributes.Length);
-            Assert.Contains(attributes, attribute => attribute.FixedArguments.Length == 0);
-            Assert.Contains(
-                attributes,
-                attribute =>
-                    attribute.FixedArguments.Length == 1 &&
-                    attribute.FixedArguments[0].Type == "bool" &&
-                    Equals(attribute.FixedArguments[0].Value, true));
+            CustomAttributeValue<string> fieldAttribute = Assert.Single(fieldAttributes);
+            Assert.Empty(fieldAttribute.FixedArguments);
+
+            var typeAttributes = reader.GetCustomAttributes(testTypeHandle)
+                .Select(reader.GetCustomAttribute)
+                .Select(attribute => attribute.DecodeValue(DocumentCompilerTestHelpers.Decoder))
+                .ToArray();
+            CustomAttributeValue<string> typeAttribute = Assert.Single(typeAttributes);
+            CustomAttributeTypedArgument<string> argument =
+                Assert.Single(typeAttribute.FixedArguments);
+            Assert.Equal("bool", argument.Type);
+            Assert.Equal(true, argument.Value);
         }
 
     }

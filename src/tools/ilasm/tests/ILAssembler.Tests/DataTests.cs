@@ -6,6 +6,7 @@ using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Metadata;
@@ -194,6 +195,137 @@ namespace ILAssembler.Tests
             ReadOnlySpan<byte> data = pe.GetSectionData(field.GetRelativeVirtualAddress()).GetContent().AsSpan(0, sizeof(double));
 
             Assert.Equal(4503599627370496d, BitConverter.Int64BitsToDouble(BinaryPrimitives.ReadInt64LittleEndian(data)));
+        }
+
+        [Fact]
+        public void LargeByteArray_StreamsIntoDataSectionWithoutLosingBytes()
+        {
+            const int Length = 64 * 1024;
+            byte[] expected = new byte[Length];
+            for (int i = 0; i < Length; i++)
+            {
+                expected[i] = (byte)((i * 31) + 7);
+            }
+
+            StringBuilder literal = new(Length * 3);
+            for (int i = 0; i < Length; i++)
+            {
+                if (i > 0)
+                {
+                    literal.Append(i % 32 == 0 ? '\n' : ' ');
+                }
+
+                literal.Append(expected[i].ToString("X2", CultureInfo.InvariantCulture));
+            }
+
+            string source = $$"""
+                .assembly extern mscorlib { }
+                .assembly test { }
+
+                .data D_LARGE = bytearray ({{literal}})
+
+                .class public explicit ansi sealed DataHolder extends [mscorlib]System.ValueType
+                {
+                    .size 8
+                    .field [0] public static int8 LargeData at D_LARGE
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var field = reader.FieldDefinitions
+                .Select(reader.GetFieldDefinition)
+                .Single(definition => reader.GetString(definition.Name) == "LargeData");
+
+            Assert.Equal(expected, ReadData(pe, field, Length));
+        }
+
+        [Fact]
+        public void DataDeclaration_SyntaxVariantsPreserveOffsetsAndReferenceFixups()
+        {
+            string source = """
+                .assembly test { }
+                .data int8(0xAA)
+                .data tls TlsData = int8(0x11)
+                .data cil CilData = int8(0x22)
+                .data TargetData = int32(0x12345678)
+                .data ParenthesizedReference = &(TargetData)
+                .data BareReference = &TargetData
+
+                .class public explicit ansi sealed DataHolder
+                {
+                    .field [0] public static int8 TlsValue at TlsData
+                    .field [1] public static int8 CilValue at CilData
+                    .field [2] public static int32 TargetValue at TargetData
+                    .field [6] public static int32 ParenthesizedValue at ParenthesizedReference
+                    .field [10] public static int32 BareValue at BareReference
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            MetadataReader reader = pe.GetMetadataReader();
+            Dictionary<string, FieldDefinition> fields = reader.FieldDefinitions
+                .Select(reader.GetFieldDefinition)
+                .ToDictionary(field => reader.GetString(field.Name));
+
+            int tlsRva = fields["TlsValue"].GetRelativeVirtualAddress();
+            int cilRva = fields["CilValue"].GetRelativeVirtualAddress();
+            int targetRva = fields["TargetValue"].GetRelativeVirtualAddress();
+            int parenthesizedRva = fields["ParenthesizedValue"].GetRelativeVirtualAddress();
+            int bareRva = fields["BareValue"].GetRelativeVirtualAddress();
+
+            Assert.Equal(tlsRva + 1, cilRva);
+            Assert.Equal(cilRva + 1, targetRva);
+            Assert.Equal(targetRva + sizeof(int), parenthesizedRva);
+            Assert.Equal(parenthesizedRva + sizeof(int), bareRva);
+            Assert.Equal(0x11, Assert.Single(ReadData(pe, fields["TlsValue"], 1)));
+            Assert.Equal(0x22, Assert.Single(ReadData(pe, fields["CilValue"], 1)));
+            Assert.Equal(0x12345678, BitConverter.ToInt32(ReadData(pe, fields["TargetValue"], sizeof(int))));
+            Assert.Equal(targetRva, BitConverter.ToInt32(ReadData(pe, fields["ParenthesizedValue"], sizeof(int))));
+            Assert.Equal(targetRva, BitConverter.ToInt32(ReadData(pe, fields["BareValue"], sizeof(int))));
+        }
+
+        [Fact]
+        public void MalformedDataDeclaration_DoesNotLeakBytesOrLabelIntoNextDocument()
+        {
+            ImmutableArray<SourceText> documents =
+            [
+                new SourceText("""
+                    .assembly test { }
+                    .data Broken = { int8(0xAA), }
+                    """, "broken.il"),
+                new SourceText("""
+                    .data Good = int32(0x12345678)
+                    .class public auto ansi DataHolder
+                    {
+                        .field public static int8 Missing at Broken
+                        .field public static int32 Value at Good
+                    }
+                    """, "valid.il"),
+            ];
+
+            var compiler = new DocumentCompiler();
+            (ImmutableArray<Diagnostic> diagnostics, CompilationResult? result) = compiler.Compile(
+                documents,
+                _ => throw new InvalidOperationException("Unexpected include"),
+                _ => throw new InvalidOperationException("Unexpected resource"),
+                new Options { ErrorTolerant = true });
+
+            Assert.Contains(diagnostics, diagnostic => diagnostic.Severity == DiagnosticSeverity.Error);
+            Assert.NotNull(result);
+
+            var image = new BlobBuilder();
+            result!.Serialize(image);
+            using var pe = new PEReader(image.ToImmutableArray());
+            MetadataReader reader = pe.GetMetadataReader();
+            Dictionary<string, FieldDefinition> fields = reader.FieldDefinitions
+                .Select(reader.GetFieldDefinition)
+                .ToDictionary(field => reader.GetString(field.Name));
+
+            Assert.Equal(0, fields["Missing"].GetRelativeVirtualAddress());
+            Assert.Equal(
+                0x12345678,
+                BitConverter.ToInt32(ReadData(pe, fields["Value"], sizeof(int))));
         }
 
         private static byte[] ReadData(PEReader pe, FieldDefinition field, int length)
