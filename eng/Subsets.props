@@ -338,6 +338,10 @@
     <ClrRuntimeBuildSubsets>$(ClrRuntimeBuildSubsets);ClrWasmJitSubset=true</ClrRuntimeBuildSubsets>
   </PropertyGroup>
 
+  <PropertyGroup Condition="$(_subset.Contains('+clr.toolstests+')) and '$(DotNetBuildSourceOnly)' != 'true' and ('$(BuildArchitecture)' == 'x64' or '$(BuildArchitecture)' == 'arm64') and ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'arm64')">
+    <ClrRuntimeBuildSubsets>$(ClrRuntimeBuildSubsets);ClrWasmJitSubset=true</ClrRuntimeBuildSubsets>
+  </PropertyGroup>
+
   <PropertyGroup Condition="$(_subset.Contains('+clr.paltests+'))">
     <ClrRuntimeBuildSubsets>$(ClrRuntimeBuildSubsets);ClrPalTestsSubset=true</ClrRuntimeBuildSubsets>
   </PropertyGroup>
@@ -394,6 +398,7 @@
   <ItemGroup>
     <!-- crossgen2/ILC have dependencies on the JITs, so build them if the cross component includes crossgen2/ILC. -->
     <_CrossToolSubset Condition="'$(_BuildCrossComponents)' == 'true' and '$(TargetArchitecture)' != 'wasm' and $(_subset.Contains('+clr.toolstests+'))" Include="ClrAllJitsSubset=true" />
+    <_CrossToolSubset Condition="'$(_BuildCrossComponents)' == 'true' and ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'arm64') and $(_subset.Contains('+clr.toolstests+')) and ('$(BuildArchitecture)' == 'x64' or '$(BuildArchitecture)' == 'arm64')" Include="ClrWasmJitSubset=true" />
     <_CrossToolSubset Condition="'$(_BuildCrossComponents)' == 'true' and '$(TargetArchitecture)' != 'wasm' and ($(_subset.Contains('+clr.tools+')) or $(_subset.Contains('+clr.nativecorelib+')) or $(_subset.Contains('+clr.crossarchtools+')))" Include="ClrJitSubset=true" />
     <!-- When targeting WebAssembly, only build the wasm JIT for the cross component. -->
     <_CrossToolSubset Condition="'$(_BuildCrossComponents)' == 'true' and '$(TargetArchitecture)' == 'wasm' and ($(_subset.Contains('+clr.tools+')) or $(_subset.Contains('+clr.nativecorelib+')) or $(_subset.Contains('+clr.crossarchtools+')))" Include="ClrWasmJitSubset=true" />
