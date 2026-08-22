@@ -2422,7 +2422,22 @@ namespace System.Threading.Tasks
         /// double-invoke; derived internal tasks can override to customize their behavior,
         /// which is usually done by promises that want to reuse the same object as a queued work item.
         /// </summary>
-        internal virtual void ExecuteDirectly(Thread? threadPoolThread) => ExecuteEntryUnsafe(threadPoolThread);
+        internal virtual void ExecuteDirectly(Thread? threadPoolThread)
+        {
+            // ThreadPoolWorkQueue.Enqueue commits the work item before requesting a worker. If worker
+            // creation then fails, ScheduleAndStart may still Finish the task while it remains queued.
+            // When that item is later dequeued, skip execution so we do not Finish / RunContinuations again
+            // (which would throw InvalidCastException on the completion sentinel). See https://github.com/dotnet/runtime/issues/132492
+            //
+            // Only the base Task path is guarded: overrides of ExecuteDirectly (e.g. async state machines)
+            // keep full control. ExecuteEntryUnsafe stays unchecked for LongRunning / TryExecuteTaskInline.
+            if ((m_stateFlags & (int)TaskStateFlags.CompletedMask) != 0)
+            {
+                return;
+            }
+
+            ExecuteEntryUnsafe(threadPoolThread);
+        }
 
         internal void ExecuteEntryUnsafe(Thread? threadPoolThread) // used instead of ExecuteEntry() when we don't have to worry about double-execution prevent
         {
