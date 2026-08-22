@@ -487,6 +487,10 @@ enum GenTreeFlags : unsigned
     GTF_IND_INITCLASS           = 0x00200000, // OperIsIndir() -- the indirection requires preceding static cctor
     GTF_IND_ALLOW_NON_ATOMIC    = 0x00100000, // GT_IND -- this memory access does not need to be atomic
 
+    // Set by the importer on arm64 for the atomic nodes created from the Lse intrinsics. Note this
+    // bit is not used by any of the GTF_IND_* flags, which the atomic opers otherwise share.
+    GTF_ATOMIC_LSE              = 0x04000000, // GT_XADD/GT_XAND/GT_XORR/GT_XCHG/GT_CMPXCHG -- use the Armv8.1 atomics
+
     // Represents flags that an indirection based on another indirection must preserve
     GTF_IND_MUST_PRESERVE_FLAGS = GTF_IND_VOLATILE | GTF_IND_UNALIGNED | GTF_IND_INITCLASS,
 
