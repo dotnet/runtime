@@ -31,6 +31,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Caching;
 using System.Text;
 
@@ -64,6 +65,7 @@ namespace MonoTests.Common
             }
         }
 
+        [UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode", Justification = "The tests intentionally exercise MemoryCache, and ILLink.Descriptors.xml roots the configuration constructor required by these scenarios.")]
         public PokerMemoryCache(string name, NameValueCollection config = null)
             : base(name, config)
         { }

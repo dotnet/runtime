@@ -261,6 +261,7 @@ namespace System.Runtime.Caching
 
         public static MemoryCache Default
         {
+            [RequiresUnreferencedCode("Configuration files are not compatible with trimming.")]
             get
             {
                 if (s_defaultCache == null)
@@ -319,6 +320,7 @@ namespace System.Runtime.Caching
             Init(null);
         }
 
+        [RequiresUnreferencedCode("Configuration files are not compatible with trimming.")]
         public MemoryCache(string name, NameValueCollection config = null)
         {
             ArgumentNullException.ThrowIfNull(name);
@@ -337,6 +339,7 @@ namespace System.Runtime.Caching
 
         // ignoreConfigSection is used when redirecting ASP.NET cache into the MemoryCache.  This avoids infinite recursion
         // due to the fact that the (ASP.NET) config system uses the cache, and the cache uses the config system.
+        [RequiresUnreferencedCode("Configuration files are not compatible with trimming. The warning can be suppressed when ignoreConfigSection is true.")]
         public MemoryCache(string name, NameValueCollection config, bool ignoreConfigSection)
         {
             ArgumentNullException.ThrowIfNull(name);
