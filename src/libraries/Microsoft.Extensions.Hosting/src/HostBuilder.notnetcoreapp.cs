@@ -10,7 +10,7 @@ namespace Microsoft.Extensions.Hosting
     {
         private static void AddLifetime(IServiceCollection services)
         {
-            services.AddSingleton<IHostLifetime, ConsoleLifetime>();
+            HostingHostBuilderExtensions.AddConsoleLifetime(services);
         }
     }
 }
