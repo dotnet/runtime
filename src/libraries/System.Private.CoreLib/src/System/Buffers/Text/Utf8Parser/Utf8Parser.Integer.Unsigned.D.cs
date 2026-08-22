@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
+using System.Runtime.CompilerServices;
+
 namespace System.Buffers.Text
 {
     public static partial class Utf8Parser
@@ -354,6 +357,66 @@ namespace System.Buffers.Text
             bytesConsumed = 0;
             value = default;
             return false;
+        }
+
+        // Keep the uncommon overflow path out of TryParseUInt64D so short inputs remain a leaf method.
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static bool TryParseUInt64DOverflow(ReadOnlySpan<byte> source, out ulong value, out int bytesConsumed)
+        {
+            uint first = BinaryPrimitives.ReadUInt32LittleEndian(source);
+            uint second = BinaryPrimitives.ReadUInt32LittleEndian(source.Slice(4));
+            uint third = BinaryPrimitives.ReadUInt32LittleEndian(source.Slice(8));
+            uint fourth = BinaryPrimitives.ReadUInt32LittleEndian(source.Slice(12));
+            if (!AreFourDigits(first) || !AreFourDigits(second) || !AreFourDigits(third) || !AreFourDigits(fourth))
+            {
+                return TryParseUInt64D(source, out value, out bytesConsumed);
+            }
+
+            ulong parsedValue = ((ulong)ParseFourDigits(first) * 10_000u + ParseFourDigits(second)) * 100_000_000 +
+                ParseFourDigits(third) * 10_000u + ParseFourDigits(fourth);
+            int idx = 16;
+
+            while (true)
+            {
+                if ((uint)idx >= (uint)source.Length) { break; } // EOF
+                nuint nextChar = (uint)source[idx] - '0';
+                if ((uint)nextChar > 9) { break; } // not a digit
+                idx++;
+
+                const ulong OverflowRisk = 0x1999_9999_9999_9999ul;
+
+                if (parsedValue < OverflowRisk)
+                {
+                    parsedValue = parsedValue * 10 + nextChar;
+                    continue;
+                }
+
+                if (parsedValue != OverflowRisk || (uint)nextChar > 5)
+                {
+                    bytesConsumed = 0;
+                    value = default;
+                    return false;
+                }
+
+                parsedValue = OverflowRisk * 10 + nextChar;
+            }
+
+            bytesConsumed = idx;
+            value = parsedValue;
+            return true;
+        }
+
+        // Each byte is an ASCII digit iff neither boundary calculation sets its high bit.
+        private static bool AreFourDigits(uint value) =>
+            (((value + 0x46464646u) | (value - 0x30303030u)) & 0x80808080u) == 0;
+
+        private static uint ParseFourDigits(uint value)
+        {
+            value -= 0x30303030u;
+            return (value & 0xFF) * 1_000 +
+                ((value >> 8) & 0xFF) * 100 +
+                ((value >> 16) & 0xFF) * 10 +
+                (value >> 24);
         }
     }
 }

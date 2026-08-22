@@ -187,7 +187,9 @@ namespace System.Buffers.Text
         FastPath:
             if (standardFormat == default)
             {
-                return TryParseUInt64D(source, out value, out bytesConsumed);
+                return source.Length >= ParserHelpers.UInt64OverflowLength ?
+                    TryParseUInt64DOverflow(source, out value, out bytesConsumed) :
+                    TryParseUInt64D(source, out value, out bytesConsumed);
             }
 
             // There's small but measurable overhead when entering the switch block below.
