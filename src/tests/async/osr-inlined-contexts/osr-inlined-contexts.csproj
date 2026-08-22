@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Needed for CLRTestEnvironmentVariable -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildProjectName).cs" />
+
+    <!-- Force the loops below to be rejitted via OSR, which is where an inlined async
+         callee's frame gets treated as if it were the OSR method's own. -->
+    <CLRTestEnvironmentVariable Include="DOTNET_TieredCompilation" Value="1" />
+    <CLRTestEnvironmentVariable Include="DOTNET_TC_QuickJitForLoops" Value="1" />
+    <CLRTestEnvironmentVariable Include="DOTNET_TC_OnStackReplacement" Value="1" />
+    <CLRTestEnvironmentVariable Include="DOTNET_TC_OnStackReplacement_InitialCounter" Value="1" />
+    <CLRTestEnvironmentVariable Include="DOTNET_OSR_HitLimit" Value="2" />
+  </ItemGroup>
+</Project>

@@ -442,6 +442,8 @@ struct CLRMapViewTraits final
 };
 using CLRMapViewHolder = LifetimeHolder<CLRMapViewTraits>;
 
+BOOL IsIPInModule(PTR_VOID pModuleBaseAddress, PCODE ip);
+
 #ifdef TARGET_UNIX
 struct PALPEFileTraits final
 {

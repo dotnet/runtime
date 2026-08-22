@@ -1974,7 +1974,7 @@ namespace System
 
         static bool INumberBase<char>.TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out char result) => TryParse(s, out result);
 
-        static bool INumberBase<char>.TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out char result, out int charsConsumed)
+        static bool INumberBase<char>.TryParsePartial([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out char result, out int charsConsumed)
         {
             if (TryParse(s, out result))
             {
@@ -1986,7 +1986,7 @@ namespace System
             return false;
         }
 
-        static bool INumberBase<char>.TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out char result, out int charsConsumed)
+        static bool INumberBase<char>.TryParsePartial(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out char result, out int charsConsumed)
         {
             if (TryParse(s, out result))
             {
@@ -1998,7 +1998,7 @@ namespace System
             return false;
         }
 
-        static bool INumberBase<char>.TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out char result, out int bytesConsumed)
+        static bool INumberBase<char>.TryParsePartial(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out char result, out int bytesConsumed)
         {
             if (Rune.DecodeFromUtf8(utf8Text, out Rune rune, out bytesConsumed) != Buffers.OperationStatus.Done ||
                 bytesConsumed != utf8Text.Length ||

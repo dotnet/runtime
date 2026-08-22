@@ -40,8 +40,8 @@ namespace JIT.HardwareIntrinsics.General._Vector128
 
             public DataTable(Single[] inArray1, Single[] inArray2, int alignment)
             {
-                int sizeOfinArray1 = inArray1.Length * Unsafe.SizeOf<Single>();
-                int sizeOfinArray2 = inArray2.Length * Unsafe.SizeOf<Single>();
+                int sizeOfinArray1 = inArray1.Length * sizeof(Single);
+                int sizeOfinArray2 = inArray2.Length * sizeof(Single);
                 if (!int.IsPow2(alignment) || (alignment > 16) || (alignment * 2) < sizeOfinArray1 || (alignment * 2) < sizeOfinArray2)
                 {
                     throw new ArgumentException("Invalid value of alignment");
@@ -76,8 +76,8 @@ namespace JIT.HardwareIntrinsics.General._Vector128
 
         private static readonly int LargestVectorSize = 16;
 
-        private static readonly int Op1ElementCount = Unsafe.SizeOf<Vector128<Single>>() / sizeof(Single);
-        private static readonly int Op2ElementCount = Unsafe.SizeOf<Vector128<Single>>() / sizeof(Single);
+        private static readonly int Op1ElementCount = sizeof(Vector128<Single>) / sizeof(Single);
+        private static readonly int Op2ElementCount = sizeof(Vector128<Single>) / sizeof(Single);
 
         private static Single[] _data1 = new Single[Op1ElementCount];
         private static Single[] _data2 = new Single[Op2ElementCount];
@@ -146,8 +146,8 @@ namespace JIT.HardwareIntrinsics.General._Vector128
             Single[] inArray1 = new Single[Op1ElementCount];
             Single[] inArray2 = new Single[Op2ElementCount];
 
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Single, byte>(ref inArray1[0]), ref Unsafe.AsRef<byte>(op1), (uint)Unsafe.SizeOf<Vector128<Single>>());
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Single, byte>(ref inArray2[0]), ref Unsafe.AsRef<byte>(op2), (uint)Unsafe.SizeOf<Vector128<Single>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Single, byte>(ref inArray1[0]), ref Unsafe.AsRef<byte>(op1), (uint)sizeof(Vector128<Single>));
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Single, byte>(ref inArray2[0]), ref Unsafe.AsRef<byte>(op2), (uint)sizeof(Vector128<Single>));
 
             ValidateResult(inArray1, inArray2, result, method);
         }

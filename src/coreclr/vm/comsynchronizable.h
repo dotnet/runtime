@@ -40,6 +40,9 @@ public:
     };
 
     FCDECL0(static INT32,       GetOptimalMaxSpinWaitsPerSpinIteration);
+#ifdef TARGET_WASM
+    FCDECL0(static void*,       GetThreadStaticsBaseNative);
+#endif
     FCDECL1(static void,        Finalize, ThreadBaseObject* pThis);
     FCDECL0(static FC_BOOL_RET, CatchAtSafePoint);
     FCDECL0(static FC_BOOL_RET, CurrentThreadIsFinalizerThread);
@@ -56,12 +59,10 @@ extern "C" void QCALLTYPE ThreadNative_PollGC();
 extern "C" UINT64 QCALLTYPE ThreadNative_GetCurrentOSThreadId();
 extern "C" void QCALLTYPE ThreadNative_Initialize(QCall::ObjectHandleOnStack t);
 extern "C" INT32 QCALLTYPE ThreadNative_GetThreadState(QCall::ThreadHandle thread);
-extern "C" void QCALLTYPE ThreadNative_SetWaitSleepJoinState(QCall::ThreadHandle thread);
-extern "C" void QCALLTYPE ThreadNative_ClearWaitSleepJoinState(QCall::ThreadHandle thread);
 extern "C" INT32 QCALLTYPE ThreadNative_ReentrantWaitAny(BOOL alertable, INT32 timeout, INT32 count, HANDLE *handles);
 #ifdef TARGET_WINDOWS
 extern "C" void QCALLTYPE ThreadNative_Interrupt(QCall::ThreadHandle thread);
-extern "C" void QCALLTYPE ThreadNative_CheckForPendingInterrupt(QCall::ThreadHandle thread);
+extern "C" void QCALLTYPE ThreadNative_CheckForPendingInterrupt();
 #endif // TARGET_WINDOWS
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
@@ -84,4 +85,3 @@ extern "C" void QCALLTYPE ObjectHeader_GetOrCreateLockObject(QCall::ObjectHandle
 
 FCDECL1(OBJECTHANDLE, ObjectHeader_GetLockHandleIfExists, Object* obj);
 #endif // _COMSYNCHRONIZABLE_H
-

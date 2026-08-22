@@ -495,7 +495,7 @@ namespace System.IO.Compression
         /// <list type="bullet">
         /// <item><description><see cref="ZipArchiveMode.Read"/>: Only <see cref="FileAccess.Read"/> is allowed.</description></item>
         /// <item><description><see cref="ZipArchiveMode.Create"/>: <see cref="FileAccess.Write"/> and <see cref="FileAccess.ReadWrite"/> are allowed (both write-only).</description></item>
-        /// <item><description><see cref="ZipArchiveMode.Update"/>: All values are allowed. <see cref="FileAccess.Read"/> reads directly from the archive. <see cref="FileAccess.Write"/> discards existing content and provides an empty writable stream. <see cref="FileAccess.ReadWrite"/> loads existing content into memory (equivalent to <see cref="Open()"/>).</description></item>
+        /// <item><description><see cref="ZipArchiveMode.Update"/>: All values are allowed. <see cref="FileAccess.Read"/> provides a read-only stream over the entry's current content, including any modifications made in the current session. <see cref="FileAccess.Write"/> discards existing content and provides an empty writable stream. <see cref="FileAccess.ReadWrite"/> loads existing content into memory (equivalent to <see cref="Open()"/>).</description></item>
         /// </list>
         /// </remarks>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="access"/> is not a valid <see cref="FileAccess"/> value.</exception>
@@ -567,7 +567,12 @@ namespace System.IO.Compression
                     Debug.Assert(_archive.Mode == ZipArchiveMode.Update);
                     return access switch
                     {
-                        FileAccess.Read => OpenInReadMode(checkOpenable: true, password),
+                        // Reads in Update mode must observe content written earlier in this session and
+                        // treat a newly created entry as empty. Only an unmodified entry that already
+                        // exists in the archive can be read directly without loading it into memory.
+                        FileAccess.Read => _storedUncompressedData is not null || !_originallyInArchive
+                            ? OpenInUpdateModeForRead()
+                            : OpenInReadMode(checkOpenable: true, password),
                         FileAccess.Write => OpenInUpdateMode(loadExistingContent: false, password),
                         _ => OpenInUpdateMode(loadExistingContent: true, password),
                     };
@@ -620,7 +625,16 @@ namespace System.IO.Compression
         /// </summary>
         internal void ReadEncryptionSaltIfNeeded()
         {
-            if (!IsAesEncrypted || !_originallyInArchive || OperatingSystem.IsBrowser())
+            if (!IsAesEncrypted || !_originallyInArchive || OperatingSystem.IsBrowser() || OperatingSystem.IsWasi())
+            {
+                return;
+            }
+
+            // A corrupt central directory can point the local header offset past the end of the
+            // archive. Seeking there throws ArgumentOutOfRangeException on some streams (e.g.
+            // MemoryStream). Mirror the check in IsOpenableInitialVerifications and defer the error
+            // to when the entry is actually opened, same as for non AES encrypted entries.
+            if (_offsetOfLocalHeader > _archive.ArchiveStream.Length)
             {
                 return;
             }
@@ -1297,6 +1311,20 @@ namespace System.IO.Compression
                 notifyEntryOnWrite: true);
         }
 
+        // Returns a read-only, seekable view over the entry's current uncompressed buffer in Update mode.
+        // It reflects modifications made earlier in the current session (and is empty for a freshly created
+        // entry), unlike OpenInReadMode which reads the original bytes directly from the archive. The stream
+        // shares the underlying buffer with the entry rather than copying it, so it is not isolated from later
+        // in-place writes; callers are expected to finish reading before reopening the entry for writing.
+        private MemoryStream OpenInUpdateModeForRead()
+        {
+            if (_currentlyOpenForWrite)
+                throw new IOException(SR.UpdateModeOneStream);
+
+            MemoryStream uncompressedData = GetUncompressedData();
+            return new MemoryStream(uncompressedData.GetBuffer(), 0, (int)uncompressedData.Length, writable: false);
+        }
+
         /// <summary>
         /// Marks this entry as modified, indicating that its data has changed and needs to be rewritten.
         /// </summary>
@@ -1580,6 +1608,9 @@ namespace System.IO.Compression
                 if (Encryption == ZipEncryptionMethod.ZipCrypto)
                 {
                     _generalPurposeBitFlag |= BitFlagValues.IsEncrypted;
+                    // If DataDescriptor is used, then ZipCrypto password validation is done against the modification time of the entry,
+                    // not the CRC (which is not known in DataDescriptor mode). The current implementation always uses DataDescriptor
+                    // for ZipCrypto to avoid needing to seek back and update the header with the CRC that is known only after the entry is closed.
                     _generalPurposeBitFlag |= BitFlagValues.DataDescriptor;
                     compressedSizeTruncated = 0;
                     uncompressedSizeTruncated = 0;
@@ -1587,6 +1618,10 @@ namespace System.IO.Compression
                 else if (UseAesEncryption)
                 {
                     _generalPurposeBitFlag |= BitFlagValues.IsEncrypted;
+                    if (!_archive.ArchiveStream.CanSeek)
+                    {
+                        _generalPurposeBitFlag |= BitFlagValues.DataDescriptor;
+                    }
                     CompressionMethod = (ZipCompressionMethod)WinZipAesMethod;
                     compressedSizeTruncated = 0;
                     uncompressedSizeTruncated = 0;
@@ -1776,7 +1811,7 @@ namespace System.IO.Compression
 
                         ushort verifierLow2Bytes = (ushort)ZipHelper.DateTimeToDosTime(_lastModified.DateTime);
 
-                        using (ZipCryptoStream encryptionStream = ZipCryptoStream.Create(
+                        using (Stream encryptionStream = ZipCryptoStream.Create(
                             baseStream: _archive.ArchiveStream,
                             keys: _derivedZipCryptoKeyMaterial.Value,
                             passwordVerifierLow2Bytes: verifierLow2Bytes,
@@ -1807,7 +1842,7 @@ namespace System.IO.Compression
 
                         bool useDeflate = _compressionLevel != CompressionLevel.NoCompression;
 
-                        using (WinZipAesStream encryptionStream = WinZipAesStream.Create(
+                        using (Stream encryptionStream = WinZipAesStream.Create(
                             baseStream: _archive.ArchiveStream,
                             keyMaterial: _derivedAesKeyMaterial.Value,
                             totalStreamSize: -1,
@@ -1860,7 +1895,8 @@ namespace System.IO.Compression
                 }
                 else // _compressedBytes path - copying unchanged entry data
                 {
-                    if (_uncompressedSize == 0)
+                    bool emptyEncryptedEntry = _uncompressedSize == 0 && Encryption != ZipEncryptionMethod.None;
+                    if (_uncompressedSize == 0 && !emptyEncryptedEntry)
                     {
                         // reset size to ensure proper central directory size header
                         _compressedSize = 0;
@@ -1885,7 +1921,7 @@ namespace System.IO.Compression
                             Encryption = ZipEncryptionMethod.None;
                         }
 
-                        WriteLocalFileHeader(isEmptyFile: _uncompressedSize == 0, forceWrite: true);
+                        WriteLocalFileHeader(isEmptyFile: _uncompressedSize == 0 && !emptyEncryptedEntry, forceWrite: true);
 
                         // WriteLocalFileHeaderInitialize may have cleared the DataDescriptor flag
                         // (because Encryption was temporarily set to None and the stream is seekable).
@@ -1913,8 +1949,8 @@ namespace System.IO.Compression
                         CompressionMethod = savedCompressionMethod;
                     }
 
-                    // according to ZIP specs, zero-byte files MUST NOT include file data
-                    if (_uncompressedSize != 0)
+                    // according to ZIP specs, zero-byte unencrypted files MUST NOT include file data
+                    if (_uncompressedSize != 0 || emptyEncryptedEntry)
                     {
                         Debug.Assert(_compressedBytes != null);
                         foreach (byte[] compressedBytes in _compressedBytes)
@@ -2374,18 +2410,34 @@ namespace System.IO.Compression
                 {
                     _crcSizeStream.Dispose(); // now we have size/crc info
 
-                    // If no data was written through CheckSumAndSizeWriteStream, its lazy _baseStream
-                    // (DeflateStream wrapping the encryption stream) was never created, so the encryption
-                    // stream would be orphaned. Dispose it explicitly to finalize encryption
-                    // (e.g., write the ZipCrypto 12-byte header or AES salt/verifier/HMAC).
+                    bool finishHeader = _everWritten;
+
                     if (!_everWritten)
                     {
-                        _encryptionStream?.Dispose();
+                        if (_encryptionStream is null)
+                        {
+                            // write local header, no data, so we use stored
+                            _entry.WriteLocalFileHeader(isEmptyFile: true, forceWrite: true);
+                        }
+                        else
+                        {
+                            // No data was written through CheckSumAndSizeWriteStream, but an encrypted entry
+                            // still stores its encryption header (and, for AES, the authentication code), so
+                            // the local file header must describe an encrypted entry. Write it first, then
+                            // dispose the encryption stream (its lazy _baseStream was never created, so it
+                            // would otherwise be orphaned) to emit those bytes after the header.
+                            _usedZip64inLH = _entry.WriteLocalFileHeader(isEmptyFile: false, forceWrite: true);
 
-                        // write local header, no data, so we use stored
-                        _entry.WriteLocalFileHeader(isEmptyFile: true, forceWrite: true);
+                            long startPosition = _entry._archive.ArchiveStream.Position;
+
+                            _encryptionStream.Dispose();
+
+                            _entry._compressedSize = _entry._archive.ArchiveStream.Position - startPosition;
+                            finishHeader = true;
+                        }
                     }
-                    else
+
+                    if (finishHeader)
                     {
                         // go back and finish writing
                         if (_entry._archive.ArchiveStream.CanSeek)
@@ -2417,21 +2469,34 @@ namespace System.IO.Compression
                 {
                     await _crcSizeStream.DisposeAsync().ConfigureAwait(false); // now we have size/crc info
 
-                    // If no data was written through CheckSumAndSizeWriteStream, its lazy _baseStream
-                    // (DeflateStream wrapping the encryption stream) was never created, so the encryption
-                    // stream would be orphaned. Dispose it explicitly to finalize encryption
-                    // (e.g., write the ZipCrypto 12-byte header or AES salt/verifier/HMAC).
+                    bool finishHeader = _everWritten;
+
                     if (!_everWritten)
                     {
-                        if (_encryptionStream is not null)
+                        if (_encryptionStream is null)
                         {
-                            await _encryptionStream.DisposeAsync().ConfigureAwait(false);
+                            // write local header, no data, so we use stored
+                            await _entry.WriteLocalFileHeaderAsync(isEmptyFile: true, forceWrite: true, preserveDataDescriptor: false, cancellationToken: default).ConfigureAwait(false);
                         }
+                        else
+                        {
+                            // No data was written through CheckSumAndSizeWriteStream, but an encrypted entry
+                            // still stores its encryption header (and, for AES, the authentication code), so
+                            // the local file header must describe an encrypted entry. Write it first, then
+                            // dispose the encryption stream (its lazy _baseStream was never created, so it
+                            // would otherwise be orphaned) to emit those bytes after the header.
+                            _usedZip64inLH = await _entry.WriteLocalFileHeaderAsync(isEmptyFile: false, forceWrite: true, preserveDataDescriptor: false, cancellationToken: default).ConfigureAwait(false);
 
-                        // write local header, no data, so we use stored
-                        await _entry.WriteLocalFileHeaderAsync(isEmptyFile: true, forceWrite: true, preserveDataDescriptor: false, cancellationToken: default).ConfigureAwait(false);
+                            long startPosition = _entry._archive.ArchiveStream.Position;
+
+                            await _encryptionStream.DisposeAsync().ConfigureAwait(false);
+
+                            _entry._compressedSize = _entry._archive.ArchiveStream.Position - startPosition;
+                            finishHeader = true;
+                        }
                     }
-                    else
+
+                    if (finishHeader)
                     {
                         // go back and finish writing
                         if (_entry._archive.ArchiveStream.CanSeek)

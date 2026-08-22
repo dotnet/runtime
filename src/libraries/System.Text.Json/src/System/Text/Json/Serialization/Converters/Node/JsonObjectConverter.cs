@@ -28,7 +28,7 @@ namespace System.Text.Json.Serialization.Converters
             Debug.Assert(obj is JsonObject);
             JsonObject jObject = (JsonObject)obj;
 
-            Debug.Assert(value == null || value is JsonNode);
+            Debug.Assert(value is null || value is JsonNode);
             JsonNode? jNodeValue = value;
 
             if (options.AllowDuplicateProperties)
@@ -112,6 +112,8 @@ namespace System.Text.Json.Serialization.Converters
             ThrowHelper.ThrowJsonException();
             return null;
         }
+
+        internal override JsonValueType GetSupportedJsonValueTypes(JsonNumberHandling _) => JsonValueType.Object;
 
         internal override JsonSchema? GetSchema(JsonNumberHandling _) => new() { Type = JsonSchemaType.Object };
     }

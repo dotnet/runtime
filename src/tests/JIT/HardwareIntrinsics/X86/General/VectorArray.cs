@@ -29,7 +29,7 @@ public partial class Program
         static public unsafe int Vector128Array()
         {
             Vector128<T>[] v = new Vector128<T>[3];
-            int elementSize = Unsafe.SizeOf<T>();
+            int elementSize = sizeof(T);
             const int vectorSize = 16;
             int elementCount = vectorSize / elementSize;
 
@@ -69,7 +69,7 @@ public partial class Program
         static public unsafe int Vector256Array()
         {
             Vector256<T>[] v = new Vector256<T>[3];
-            int elementSize = Unsafe.SizeOf<T>();
+            int elementSize = sizeof(T);
             const int vectorSize = 32;
             int elementCount = vectorSize / elementSize;
 
