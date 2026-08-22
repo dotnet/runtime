@@ -109,8 +109,9 @@ Walk the steps in order. Do not skip. Stop at Step 6.
 
 Read once at start:
 
+- `.github/skills/create-kbe/SKILL.md` — the repo-level skill for creating a `Known Build Error` issue from an actionable failure
 - `.github/workflows/shared/create-kbe.instructions.md`
-- In that shared file, load these exact sections and apply them when referenced below:
+- In those instructions, load these exact sections and apply them when referenced below:
   - `<a id="shared-kbe-rules"></a>` / `## Shared rules`
   - `<a id="search-existing-kbe"></a>` / `## Search for an existing KBE`
   - `<a id="search-area-team-tracker"></a>` / `## Search for an area-team tracker`

@@ -1336,7 +1336,6 @@ void ScanRootsHelper(Object* pObj, Object ** ppRoot, ScanContext *pSC, uint32_t 
     // On the other hand, this only means profiling information will be incomplete,
     // so it's ok to swallow E_OUTOFMEMORY.
     //
-    FAULT_NOT_FATAL();
 
     ProfilingScanContext *pPSC = (ProfilingScanContext *)pSC;
 
@@ -5206,15 +5205,6 @@ HRESULT ProfToEEInterfaceImpl::GetClassFromTokenAndTypeArgs(ModuleID moduleID,
             // a type in unsupported ways (e.g. from a non-EE thread).  It doesn't
             // impact retail builds, in which contracts are not available.
             ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
-
-            // ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE also defines FAULT_FORBID, which
-            // causes Scanruntime to flag a fault violation in AssemblySpec::InitializeSpec,
-            // which is defined as FAULTS.   It only happens in a type-loading path, which
-            // is not supported on a non-EE thread.  Suppressing a contract violation in an
-            // unsupported execution path is more preferable than causing AV when calling
-            // GetClassFromTokenAndTypeArgs on a non-EE thread in a check build.  See Dev10
-            // 682526 for more details.
-            FAULT_NOT_FATAL();
 
             th = ClassLoader::LoadGenericInstantiationThrowing(pModule,
                                                                typeDef,
@@ -9807,7 +9797,6 @@ HRESULT ProfilingGetFunctionEnter3Info(FunctionID functionId,                   
 
     {
         // Can handle E_OUTOFMEMORY from ProfileArgIterator.
-        FAULT_NOT_FATAL();
 
         pProfileArgIterator = new (nothrow) ProfileArgIterator(&metaSig, pELTInfo->platformSpecificHandle);
 
@@ -10006,7 +9995,6 @@ HRESULT ProfilingGetFunctionLeave3Info(FunctionID functionId,                   
 
     {
         // Can handle E_OUTOFMEMORY from ProfileArgIterator.
-        FAULT_NOT_FATAL();
 
         pProfileArgIterator = new (nothrow) ProfileArgIterator(&metaSig, pELTInfo->platformSpecificHandle);
 
@@ -10168,7 +10156,6 @@ HRESULT ProfilingGetFunctionTailcall3Info(FunctionID functionId,                
 
     {
         // Can handle E_OUTOFMEMORY from ProfileArgIterator.
-        FAULT_NOT_FATAL();
 
         pProfileArgIterator = new (nothrow) ProfileArgIterator(&metaSig, pELTInfo->platformSpecificHandle);
 
@@ -10812,7 +10799,6 @@ HCIMPL2(EXTERN_C void, ProfileEnter, UINT_PTR clientData, void * platformSpecifi
 
             {
                 // Can handle E_OUTOFMEMORY from ProfileArgIterator.
-                FAULT_NOT_FATAL();
 
                 pProfileArgIterator = new (nothrow) ProfileArgIterator(&metaSig, platformSpecificHandle);
 
