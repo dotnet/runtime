@@ -93,9 +93,15 @@ namespace System.Buffers.ArrayPool.Tests
 
                 const int AllocSize = 1024 * 1024 * 64;
                 int PageSize = Environment.SystemPageSize;
-#pragma warning disable IL2075 // This private reflection is broken since .NET 6: https://github.com/dotnet/runtime/issues/128431
-                var pressureMethod = ArrayPool<byte>.Shared.GetType().GetMethod("GetMemoryPressure", BindingFlags.Static | BindingFlags.NonPublic);
-#pragma warning restore IL2075
+
+                // This private reflection was broken since .NET 6: https://github.com/dotnet/runtime/issues/128431
+                // It doesn't hurt to assert it just in case it ever gets broken again
+                Type utilitiesType = typeof(ArrayPool<byte>).Assembly.GetType("System.Buffers.Utilities");
+                Assert.NotNull(utilitiesType);
+
+                MethodInfo pressureMethod = utilitiesType.GetMethod("GetMemoryPressure", BindingFlags.Static | BindingFlags.NonPublic);
+                Assert.NotNull(pressureMethod);
+
                 do
                 {
                     Span<byte> native = new Span<byte>(Marshal.AllocHGlobal(AllocSize).ToPointer(), AllocSize);
@@ -107,7 +113,7 @@ namespace System.Buffers.ArrayPool.Tests
                     }
 
                     GC.Collect(2);
-                } while ((int)pressureMethod.Invoke(null, null) != 2);
+                } while ((int)pressureMethod.Invoke(null, null) != 2); // this magic 2 corresponds to MemoryPressure.High
 
                 GC.WaitForPendingFinalizers();
 
