@@ -130,18 +130,17 @@ public class WorkstationGCDumpTests : DumpTestBase
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnVersion("net10.0", "GC contract is not available in .NET 10 dumps")]
-    public void WorkstationGC_GlobalAllocationContextIsReadable(TestConfiguration config)
+    public void WorkstationGC_GlobalAllocationContextIsEmpty(TestConfiguration config)
     {
         InitializeDumpTest(config);
         IGC gcContract = Target.Contracts.GC;
+
+        // The runtime allocates exclusively out of thread allocation contexts and does not
+        // export the optional GlobalAllocContext global, so the contract reports an empty context.
         gcContract.GetGlobalAllocationContext(out TargetPointer pointer, out TargetPointer limit);
 
-        if (pointer != TargetPointer.Null)
-        {
-            Assert.NotEqual(TargetPointer.Null, limit);
-            Assert.True(pointer <= limit,
-                $"Expected allocPtr (0x{pointer:X}) <= allocLimit (0x{limit:X})");
-        }
+        Assert.Equal(TargetPointer.Null, pointer);
+        Assert.Equal(TargetPointer.Null, limit);
     }
 
     [ConditionalTheory]

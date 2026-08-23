@@ -147,12 +147,6 @@ GPTR_DECL(uint8_t,g_highest_address);
 GPTR_DECL(uint32_t,g_card_table);
 GVAL_DECL(GCHeapType, g_heap_type);
 
-// The runtime no longer allocates out of a global allocation context - every allocation goes
-// through the thread allocation context. This global is kept permanently zeroed so that
-// diagnostic tools implementing version c1 of the GC data contract, which requires the
-// GlobalAllocContext global, keep working against this runtime.
-GVAL_DECL(ee_alloc_context, g_global_alloc_context);
-
 #ifndef DACCESS_COMPILE
 }
 #endif // !DACCESS_COMPILE
