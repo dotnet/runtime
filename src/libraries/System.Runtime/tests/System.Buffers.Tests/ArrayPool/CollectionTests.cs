@@ -94,8 +94,6 @@ namespace System.Buffers.ArrayPool.Tests
                 const int AllocSize = 1024 * 1024 * 64;
                 int PageSize = Environment.SystemPageSize;
 
-                // This private reflection was broken since .NET 6: https://github.com/dotnet/runtime/issues/128431
-                // It doesn't hurt to assert it just in case it ever gets broken again
                 Type utilitiesType = typeof(ArrayPool<byte>).Assembly.GetType("System.Buffers.Utilities");
                 Assert.NotNull(utilitiesType);
 
