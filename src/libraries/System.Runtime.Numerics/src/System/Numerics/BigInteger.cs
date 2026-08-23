@@ -3486,37 +3486,45 @@ namespace System.Numerics
                 NumericsHelpers.DangerousMakeTwosComplement(buffer[1..^1]);
             }
 
+            uint signWord = value._sign < 0 ? uint.MaxValue : 0;
+
             int MSBstrip = 0;
-            // First handle round-tripping for the extra trailing word
-            // 33 bits differ from sign.
-            if (IntPtr.Size == 4 && buffer.Length >= 4
-                && buffer[^2] == (value._sign < 0 ? 0 : nuint.MaxValue)
-                && ((nint)(buffer[^3] ^ buffer[^2]) >= 0))
+            ulong MSW; // The most significant 64 bits
+            buffer[0] = signWord; // Sentinel for value._bits.Length == 1 case
+            if (IntPtr.Size == 8)
             {
-                MSBstrip = 0;
+                if (((ulong)buffer[^2] >> 32) == signWord)
+                {
+                    // On 64 bit platform, if there're 32 bits same with sign, strip them first to keep 32-bit semantic
+                    MSW = ((ulong)buffer[^2] << 32) | (((ulong)buffer[^3] >> 32));
+                    MSBstrip = 1;
+                }
+                else
+                {
+                    MSW = (ulong)buffer[^2];
+                }
             }
-            else if (IntPtr.Size == 8
-                && ((ulong)buffer[^2] & 0xFFFFFFFF_80000000) == (value._sign < 0 ? 0 : 0xFFFFFFFF_80000000))
+            else
             {
-                MSBstrip = 0;
+                MSW = ((ulong)buffer[^2] << 32) | (ulong)buffer[^3];
             }
-            else if (IntPtr.Size == 8 && buffer.Length >= 4
-                && (ulong)buffer[^2] == (value._sign < 0 ? 0xFFFFFFFF_00000000 : 0x00000000_FFFFFFFF)
-                && (long)(buffer[^3] ^ buffer[^2]) < 0)
+
+            if ((MSW >> 32) == signWord)
             {
-                // On 64 bit platform there may be 32 bits same with sign at the leading, which needs to be stripped
-                MSBstrip = 1;
+                // There can still be 32 bits same with sign (only for -2^32n case). Also strip them.
+                Debug.Assert(value._sign < 0);
+                Debug.Assert((uint)MSW == 0);
+                Debug.Assert(!buffer[1..^3].ContainsAnyExcept(0u));
+                MSBstrip++;
             }
-            else if (((nint)value._sign ^ (nint)buffer[^2]) < 0)
+            else if (((long)MSW ^ (long)value._sign) < 0
+                && (MSW & 0xFFFFFFFF_80000000) != (value._sign < 0 ? 0 : 0xFFFFFFFF_80000000))
             {
-                // Regular case. If the sign of MSB != sign of the value, then the virtual leading sign is required
-                MSBstrip = -1;
-                buffer[^1] = value._sign < 0 ? nuint.MaxValue : 0;
-            }
-            else if (IntPtr.Size == 8 && ((ulong)buffer[^2] & 0xFFFFFFFF_80000000) == (value._sign < 0 ? 0xFFFFFFFF_80000000 : 0))
-            {
-                // If there're 33 bits same with sign (on 64 bit platform), strip 32 bits
-                MSBstrip = 1;
+                // There're at most 32 bits differ from sign. The leading sign word is required.
+                MSBstrip--;
+                // If MSB is the same with sign, no sign word is required.
+                // If there're 33 bits differ from sign, it will be recognized as extra trailing word case,
+                // and the sign word will be inferred when round-tripping.
             }
 
             // Extra trailing word is required when there's 33 or more bits of 0/1s.
