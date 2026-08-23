@@ -105,6 +105,11 @@ namespace System.Buffers.ArrayPool.Tests
                 Type pressureType = utilitiesType.GetNestedType("MemoryPressure", BindingFlags.NonPublic);
                 Assert.NotNull(pressureType);
 
+                // The loop below only terminates once the helper reports High, so bail out early
+                // if its signature ever changes rather than allocating forever.
+                Assert.Empty(pressureMethod.GetParameters());
+                Assert.Equal(pressureType, pressureMethod.ReturnType);
+
                 object highPressure = Enum.Parse(pressureType, "High");
 
                 do
