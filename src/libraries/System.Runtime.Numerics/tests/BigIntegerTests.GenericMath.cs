@@ -374,33 +374,57 @@ namespace System.Numerics.Tests
         [Fact]
         public static void ReverseBitsTest()
         {
+            // The trivial but special cases. Do not trim the only 32 bits.
             Assert.Equal((BigInteger)0, BinaryIntegerHelper<BigInteger>.ReverseBits((BigInteger)0));
             Assert.Equal((BigInteger)(-1), BinaryIntegerHelper<BigInteger>.ReverseBits((BigInteger)(-1)));
+
+            // () represents appended bits and [] represents trimmed bits
+
+            // 00000001 <-> 80000000
             Assert.Equal((BigInteger)unchecked((int)0x80000000), BinaryIntegerHelper<BigInteger>.ReverseBits((BigInteger)0x00000001));
             Assert.Equal((BigInteger)0x00000001, BinaryIntegerHelper<BigInteger>.ReverseBits((BigInteger)unchecked((int)0x80000000)));
+
+            // 00000001_00000001 <-> 80000000_80000000
             Assert.Equal((BigInteger)unchecked((long)0x80000000_80000000), BinaryIntegerHelper<BigInteger>.ReverseBits((BigInteger)0x00000001_00000001));
             Assert.Equal((BigInteger)0x00000001_00000001, BinaryIntegerHelper<BigInteger>.ReverseBits((BigInteger)unchecked((long)0x80000000_80000000)));
-            Assert.Equal(new BigInteger([0x01, 0, 0, 0, 0, 0, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF]),
+
+            // 80000000_00000000_(FFFFFFFF) <-> [FFFFFFFF]_00000000_00000001
+            Assert.Equal((BigInteger)new Int128(0xFFFFFFFF_FFFFFFFF, 0x00000000_00000001),
                 BinaryIntegerHelper<BigInteger>.ReverseBits((BigInteger)unchecked((long)0x80000000_00000000)));
             Assert.Equal((BigInteger)unchecked((long)0x80000000_00000000),
-                BinaryIntegerHelper<BigInteger>.ReverseBits(new BigInteger([0x01, 0, 0, 0, 0, 0, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF])));
+                BinaryIntegerHelper<BigInteger>.ReverseBits((BigInteger)new Int128(0xFFFFFFFF_FFFFFFFF, 0x00000000_00000001)));
+
+            // (00000000)_80000001 <-> 80000001_[00000000]
             Assert.Equal((BigInteger)0x80000001u, BinaryIntegerHelper<BigInteger>.ReverseBits((BigInteger)unchecked((long)0x80000001_00000000)));
             Assert.Equal((BigInteger)unchecked((long)0x80000001_00000000), BinaryIntegerHelper<BigInteger>.ReverseBits((BigInteger)0x80000001u));
-            Assert.Equal(new BigInteger([0x01, 0, 0, 0, 0xAA, 0x55, 0, 0, 0, 0, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF]),
-                BinaryIntegerHelper<BigInteger>.ReverseBits(new BigInteger([0, 0, 0, 0, 0, 0, 0xAA, 0x55, 0, 0, 0, 0x80])));
-            Assert.Equal(new BigInteger([0, 0, 0, 0, 0, 0, 0xAA, 0x55, 0, 0, 0, 0x80]),
-                BinaryIntegerHelper<BigInteger>.ReverseBits(new BigInteger([0x01, 0, 0, 0, 0xAA, 0x55, 0, 0, 0, 0, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF])));
+
+            // [FFFFFFFF]_00000000_000055AA_00000001 <-> 80000000_55AA0000_00000000_(FFFFFFFF)
+            Assert.Equal((BigInteger)new Int128(0xFFFFFFFF_00000000, 0x000055AA_00000001),
+                BinaryIntegerHelper<BigInteger>.ReverseBits((BigInteger)new Int128(0xFFFFFFFF_80000000, 0x55AA0000_00000000)));
+            Assert.Equal((BigInteger)new Int128(0xFFFFFFFF_80000000, 0x55AA0000_00000000),
+                BinaryIntegerHelper<BigInteger>.ReverseBits((BigInteger)new Int128(0xFFFFFFFF_00000000, 0x000055AA_00000001)));
+
+            // Regular Int32/Int64 case. The results are sign extended.
             Assert.Equal((BigInteger)unchecked((int)0xFBD9EAC8), BinaryIntegerHelper<BigInteger>.ReverseBits((BigInteger)0x13579BDF));
             Assert.Equal((BigInteger)0x13579BDF, BinaryIntegerHelper<BigInteger>.ReverseBits((BigInteger)unchecked((int)0xFBD9EAC8)));
             Assert.Equal((BigInteger)unchecked((long)0xF7B3D591_E6A2C480), BinaryIntegerHelper<BigInteger>.ReverseBits((BigInteger)0x01234567_89ABCDEFul));
             Assert.Equal((BigInteger)0x01234567_89ABCDEFul, BinaryIntegerHelper<BigInteger>.ReverseBits((BigInteger)unchecked((long)0xF7B3D591_E6A2C480)));
+
+            // 13579BDF_[00000000] <-> (00000000)_FBD9EAC8
             Assert.Equal((BigInteger)0x13579BDF_00000000, BinaryIntegerHelper<BigInteger>.ReverseBits((BigInteger)0xFBD9EAC8u));
             Assert.Equal((BigInteger)0xFBD9EAC8u, BinaryIntegerHelper<BigInteger>.ReverseBits((BigInteger)0x13579BDF_00000000));
+
+            // (00000000)_FFFFFFFF_[00000000] <-> (00000000)_FFFFFFFF_[00000000]
             Assert.Equal((BigInteger)0xFFFFFFFF_00000000ul, BinaryIntegerHelper<BigInteger>.ReverseBits((BigInteger)0xFFFFFFFF_00000000ul));
-            Assert.Equal(new BigInteger([0, 0, 0, 0, 0, 0, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF]),
-                BinaryIntegerHelper<BigInteger>.ReverseBits(new BigInteger([0, 0, 0, 0, 0, 0, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF])));
-            Assert.Equal(new BigInteger([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF]),
-                BinaryIntegerHelper<BigInteger>.ReverseBits(new BigInteger([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF])));
+
+            // [FFFFFFFF_FFFFFFFF]_00000000_00000000_(FFFFFFFF) <-> [FFFFFFFF_FFFFFFFF]_00000000_00000000_(FFFFFFFF)
+            // -2^64n case, there are 64 bits to be trimmed. Needs correct handling on 64-bit platform.
+            Assert.Equal((BigInteger)new Int128(0xFFFFFFFF_FFFFFFFF, 0x00000000_00000000),
+                BinaryIntegerHelper<BigInteger>.ReverseBits((BigInteger)new Int128(0xFFFFFFFF_FFFFFFFF, 0x00000000_00000000)));
+
+            // [FFFFFFFF]_00000000_00000000_00000000_(FFFFFFFF) <-> [FFFFFFFF]_00000000_00000000_00000000_(FFFFFFFF)
+            Assert.Equal((BigInteger)new Int128(0xFFFFFFFF_00000000, 0x00000000_00000000),
+                BinaryIntegerHelper<BigInteger>.ReverseBits((BigInteger)new Int128(0xFFFFFFFF_00000000, 0x00000000_00000000)));
         }
 
         [Fact]
