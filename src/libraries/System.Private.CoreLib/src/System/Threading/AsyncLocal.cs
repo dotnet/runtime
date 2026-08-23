@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 
 namespace System.Threading
@@ -486,12 +487,8 @@ namespace System.Threading
                 Debug.Assert(keyValues.Length > MultiElementAsyncLocalValueMap.MaxMultiElements);
                 _keyValues = keyValues;
 
-                int capacity = 4;
-                long minimumCapacity = keyValues.Length + ((long)keyValues.Length >> 1);
-                while (capacity < minimumCapacity && capacity < 1 << 30)
-                {
-                    capacity <<= 1;
-                }
+                int capacity = (int)BitOperations.RoundUpToPowerOf2(
+                    (uint)Math.Min(keyValues.Length + ((long)keyValues.Length >> 1), 1 << 30));
 
                 _buckets = new int[capacity];
                 _next = new int[keyValues.Length];
