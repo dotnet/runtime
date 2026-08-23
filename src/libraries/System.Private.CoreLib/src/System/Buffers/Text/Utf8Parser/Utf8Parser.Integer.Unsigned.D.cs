@@ -278,6 +278,7 @@ namespace System.Buffers.Text
             return true;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool TryParseUInt64D(ReadOnlySpan<byte> source, out ulong value, out int bytesConsumed)
         {
             if (source.IsEmpty)
@@ -293,65 +294,43 @@ namespace System.Buffers.Text
             nuint firstDigit = (uint)source[0] - '0';
             if ((uint)firstDigit > 9) { goto FalseExit; }
 
-            if (source.Length >= ParserHelpers.UInt64OverflowLength)
+            ulong parsedValue = firstDigit;
+            int idx = 1;
+
+            if (source.Length == 1)
             {
-                return TryParseUInt64DOverflow(source, firstDigit, out value, out bytesConsumed);
+                goto Done;
             }
 
-            ulong parsedValue = firstDigit;
-
-            int idx = 1;
-            while (true)
+            // Parse the first four digits individually so early invalid inputs remain cheap.
+            while (idx < 4)
             {
-                if ((uint)idx >= (uint)source.Length) { break; } // EOF
+                if ((uint)idx >= (uint)source.Length) { goto Done; }
                 nuint nextChar = (uint)source[idx] - '0';
-                if ((uint)nextChar > 9) { break; } // not a digit
+                if ((uint)nextChar > 9) { goto Done; }
                 parsedValue = parsedValue * 10 + nextChar;
                 idx++;
             }
 
-            bytesConsumed = idx;
-            value = parsedValue;
-            return true;
-
-        FalseExit:
-            bytesConsumed = 0;
-            value = default;
-            return false;
-        }
-
-        // Keep the uncommon overflow path out of the short-input code in TryParseUInt64D.
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static bool TryParseUInt64DOverflow(ReadOnlySpan<byte> source, nuint firstDigit, out ulong value, out int bytesConsumed)
-        {
-            uint first = BinaryPrimitives.ReadUInt32LittleEndian(source);
-            ulong parsedValue;
-            int idx;
-
-            if (!AreFourDigits(first))
-            {
-                parsedValue = firstDigit;
-                idx = 1;
-                goto ParseRemaining;
-            }
-
-            parsedValue = ParseFourDigits(first);
-            idx = 4;
-
+            if (source.Length < 8) { goto ParseRemainingBounded; }
             uint second = BinaryPrimitives.ReadUInt32LittleEndian(source.Slice(4));
             if (!AreFourDigits(second)) { goto ParseRemaining; }
             parsedValue = parsedValue * 10_000 + ParseFourDigits(second);
             idx = 8;
 
+            if (source.Length < 12) { goto ParseRemainingBounded; }
             uint third = BinaryPrimitives.ReadUInt32LittleEndian(source.Slice(8));
             if (!AreFourDigits(third)) { goto ParseRemaining; }
             parsedValue = parsedValue * 10_000 + ParseFourDigits(third);
             idx = 12;
 
+            if (source.Length < 16) { goto ParseRemainingBounded; }
             uint fourth = BinaryPrimitives.ReadUInt32LittleEndian(source.Slice(12));
             if (!AreFourDigits(fourth)) { goto ParseRemaining; }
             parsedValue = parsedValue * 10_000 + ParseFourDigits(fourth);
             idx = 16;
+
+            if (source.Length < ParserHelpers.UInt64OverflowLength) { goto ParseRemainingBounded; }
 
             while (true)
             {
@@ -370,12 +349,32 @@ namespace System.Buffers.Text
 
                 if (parsedValue != OverflowRisk || (uint)nextChar > 5)
                 {
-                    bytesConsumed = 0;
-                    value = default;
-                    return false;
+                    goto FalseExit;
                 }
 
                 parsedValue = OverflowRisk * 10 + nextChar;
+            }
+
+            goto Done;
+
+        ParseRemaining:
+            while (true)
+            {
+                nuint nextChar = (uint)source[idx] - '0';
+                if ((uint)nextChar > 9) { break; }
+                parsedValue = parsedValue * 10 + nextChar;
+                idx++;
+            }
+
+            goto Done;
+
+        ParseRemainingBounded:
+            while ((uint)idx < (uint)source.Length)
+            {
+                nuint nextChar = (uint)source[idx] - '0';
+                if ((uint)nextChar > 9) { break; }
+                parsedValue = parsedValue * 10 + nextChar;
+                idx++;
             }
 
         Done:
@@ -383,20 +382,18 @@ namespace System.Buffers.Text
             value = parsedValue;
             return true;
 
-        ParseRemaining:
-            while (true)
-            {
-                nuint nextChar = (uint)source[idx] - '0';
-                if ((uint)nextChar > 9) { goto Done; }
-                parsedValue = parsedValue * 10 + nextChar;
-                idx++;
-            }
+        FalseExit:
+            bytesConsumed = 0;
+            value = default;
+            return false;
         }
 
         // Each byte is an ASCII digit iff neither boundary calculation sets its high bit.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool AreFourDigits(uint value) =>
             (((value + 0x46464646u) | (value - 0x30303030u)) & 0x80808080u) == 0;
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static uint ParseFourDigits(uint value)
         {
             value -= 0x30303030u;
