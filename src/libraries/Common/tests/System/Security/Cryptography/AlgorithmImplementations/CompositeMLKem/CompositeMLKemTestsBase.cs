@@ -175,6 +175,90 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [MemberData(nameof(CompositeMLKemTestData.SupportedAlgorithmIetfVectorsTestData), MemberType = typeof(CompositeMLKemTestData))]
+        public void DifferentTradKeyComponents_DecapsulationRejection(CompositeMLKemTestVector vector)
+        {
+            using (CompositeMLKem orig = ImportDecapsulationKey(vector.Algorithm, vector.DecapsulationKey))
+            {
+                byte[] otherDecapsKeyBytes;
+                byte[] otherEncapsKeyBytes;
+
+                using (CompositeMLKem other = GenerateKey(vector.Algorithm))
+                {
+                    otherDecapsKeyBytes = other.ExportDecapsulationKey();
+                    otherEncapsKeyBytes = other.ExportEncapsulationKey();
+                }
+
+                // Make decaps key with original ML-KEM component and other traditional component.
+                byte[] origKeyBytes = vector.DecapsulationKey.ToArray();
+                int tradKeyOffset = CompositeMLKemTestData.GetMLKemAlgorithm(vector.Algorithm).PrivateSeedSizeInBytes;
+                origKeyBytes.AsSpan().Slice(0, tradKeyOffset).CopyTo(otherDecapsKeyBytes);
+
+                using (CompositeMLKem other = ImportDecapsulationKey(vector.Algorithm, otherDecapsKeyBytes))
+                {
+                    orig.Encapsulate(out byte[] ciphertext, out byte[] sharedSecret);
+                    AssertDecapsulationRejects(other, ciphertext, sharedSecret);
+
+                    other.Encapsulate(out ciphertext, out sharedSecret);
+                    AssertDecapsulationRejects(orig, ciphertext, sharedSecret);
+                }
+
+                // Now the encaps key
+                origKeyBytes = vector.EncapsulationKey.ToArray();
+                tradKeyOffset = CompositeMLKemTestData.GetMLKemAlgorithm(vector.Algorithm).EncapsulationKeySizeInBytes;
+                origKeyBytes.AsSpan().Slice(0, tradKeyOffset).CopyTo(otherEncapsKeyBytes);
+
+                using (CompositeMLKem other = ImportEncapsulationKey(vector.Algorithm, otherEncapsKeyBytes))
+                {
+                    other.Encapsulate(out byte[] ciphertext, out byte[] sharedSecret);
+                    AssertDecapsulationRejects(orig, ciphertext, sharedSecret);
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(CompositeMLKemTestData.SupportedAlgorithmIetfVectorsTestData), MemberType = typeof(CompositeMLKemTestData))]
+        public void DifferentMLKemComponents_DecapsulationRejection(CompositeMLKemTestVector vector)
+        {
+            using (CompositeMLKem orig = ImportDecapsulationKey(vector.Algorithm, vector.DecapsulationKey))
+            {
+                byte[] otherDecapsKeyBytes;
+                byte[] otherEncapsKeyBytes;
+
+                using (CompositeMLKem other = GenerateKey(vector.Algorithm))
+                {
+                    otherDecapsKeyBytes = other.ExportDecapsulationKey();
+                    otherEncapsKeyBytes = other.ExportEncapsulationKey();
+                }
+
+                // Make decaps key with original TradKey component and other ML-KEM component.
+                byte[] testKeyBytes = vector.DecapsulationKey.ToArray();
+                int tradKeyOffset = CompositeMLKemTestData.GetMLKemAlgorithm(vector.Algorithm).PrivateSeedSizeInBytes;
+                otherDecapsKeyBytes.AsSpan().Slice(0, tradKeyOffset).CopyTo(testKeyBytes);
+
+                using (CompositeMLKem other = ImportDecapsulationKey(vector.Algorithm, testKeyBytes))
+                {
+                    orig.Encapsulate(out byte[] ciphertext, out byte[] sharedSecret);
+                    AssertDecapsulationRejects(other, ciphertext, sharedSecret);
+
+                    other.Encapsulate(out ciphertext, out sharedSecret);
+                    AssertDecapsulationRejects(orig, ciphertext, sharedSecret);
+                }
+
+                // Now the encaps key
+                testKeyBytes = vector.EncapsulationKey.ToArray();
+                tradKeyOffset = CompositeMLKemTestData.GetMLKemAlgorithm(vector.Algorithm).EncapsulationKeySizeInBytes;
+                otherEncapsKeyBytes.AsSpan().Slice(0, tradKeyOffset).CopyTo(testKeyBytes);
+
+                using (CompositeMLKem other = ImportEncapsulationKey(vector.Algorithm, testKeyBytes))
+                {
+                    other.Encapsulate(out byte[] ciphertext, out byte[] sharedSecret);
+                    AssertDecapsulationRejects(orig, ciphertext, sharedSecret);
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(CompositeMLKemTestData.SupportedAlgorithmIetfVectorsTestData), MemberType = typeof(CompositeMLKemTestData))]
         public void ModifiedMLKemCiphertext_DecapsulationRejection(CompositeMLKemTestVector vector)
         {
             byte[] ciphertext = vector.Ciphertext.ToArray();
@@ -249,14 +333,27 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [MemberData(nameof(CompositeMLKemTestData.SupportedXDiffieHellmanIetfVectorsTestData), MemberType = typeof(CompositeMLKemTestData))]
-        public void ModifiedXDiffieHellmanEncapsulationKey_DecapsulationRejection(CompositeMLKemTestVector vector)
+        public void ModifiedXDiffieHellmanEncapsulationKey_Failure(CompositeMLKemTestVector vector)
         {
             byte[] encapsulationKeyBytes = vector.EncapsulationKey.ToArray();
             int traditionalKeyOffset = CompositeMLKemTestData.GetMLKemAlgorithm(vector.Algorithm).EncapsulationKeySizeInBytes;
             encapsulationKeyBytes[traditionalKeyOffset] ^= 1;
 
-            // Tampering doesn't cause import failures, but should cause decapsulation rejection.
-            using (CompositeMLKem tamperedEncapsulationKey = ImportEncapsulationKey(vector.Algorithm, encapsulationKeyBytes))
+            CompositeMLKem tamperedEncapsulationKey;
+
+            try
+            {
+                tamperedEncapsulationKey = ImportEncapsulationKey(vector.Algorithm, encapsulationKeyBytes);
+            }
+            catch (CryptographicException)
+            {
+                // Some providers notice the tampering and throw immediately.
+                return;
+            }
+
+            // Other providers allow import, but decapsulation must result in rejection.
+
+            using (tamperedEncapsulationKey)
             using (CompositeMLKem decapsulationKey = ImportDecapsulationKey(vector.Algorithm, vector.DecapsulationKey))
             {
                 tamperedEncapsulationKey.Encapsulate(out byte[] ciphertext, out byte[] sharedSecret);
