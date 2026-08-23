@@ -102,6 +102,11 @@ namespace System.Buffers.ArrayPool.Tests
                 MethodInfo pressureMethod = utilitiesType.GetMethod("GetMemoryPressure", BindingFlags.Static | BindingFlags.NonPublic);
                 Assert.NotNull(pressureMethod);
 
+                Type pressureType = utilitiesType.GetNestedType("MemoryPressure", BindingFlags.NonPublic);
+                Assert.NotNull(pressureType);
+
+                object highPressure = Enum.Parse(pressureType, "High");
+
                 do
                 {
                     Span<byte> native = new Span<byte>(Marshal.AllocHGlobal(AllocSize).ToPointer(), AllocSize);
@@ -113,7 +118,7 @@ namespace System.Buffers.ArrayPool.Tests
                     }
 
                     GC.Collect(2);
-                } while ((int)pressureMethod.Invoke(null, null) != 2); // this magic 2 corresponds to MemoryPressure.High
+                } while (!highPressure.Equals(pressureMethod.Invoke(null, null)));
 
                 GC.WaitForPendingFinalizers();
 
