@@ -59,6 +59,15 @@ namespace System.Numerics
         private const ulong MaxInternalValue = 0x77FB_86F2_6FC0_FFFF; // 9.999_999_999_999_999 * 10^384; aka 9_999_999_999_999_999 * 10^369
         private const ulong MinInternalValue = 0xF7FB_86F2_6FC0_FFFF; // -9.999_999_999_999_999 * 10^384; aka -9_999_999_999_999_999 * 10^369
 
+        // See `Decimal128` for how these are laid out and why they carry the digits they do.
+        private const ulong DegreesToRadiansHead = 174_532_925_199_432_957;
+        private const ulong DegreesToRadiansTail = 6_923_690_768_488_613;
+        private const int DegreesToRadiansExponent = -35;
+
+        private const ulong RadiansToDegreesHead = 572_957_795_130_823_208;
+        private const ulong RadiansToDegreesTail = 7_679_815_481_410_517;
+        private const int RadiansToDegreesExponent = -32;
+
         /// <summary>Gets a value that represents positive <c>infinity</c>.</summary>
         public static Decimal64 PositiveInfinity => new Decimal64(PositiveInfinityValue);
 
@@ -968,6 +977,9 @@ namespace System.Numerics
         /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Cosh(TSelf)" />
         public static Decimal64 Cosh(Decimal64 x) => new Decimal64(Number.CoshDecimalIeee754<Decimal64, ulong>(x._value));
 
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.DegreesToRadians(TSelf)" />
+        public static Decimal64 DegreesToRadians(Decimal64 degrees) => new Decimal64(Number.MultiplyByWideConstantDecimalIeee754<Decimal64, ulong>(degrees._value, DegreesToRadiansHead, DegreesToRadiansTail, DegreesToRadiansExponent));
+
         /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp(TSelf)" />
         public static Decimal64 Exp(Decimal64 x) => new Decimal64(Number.ExpDecimalIeee754<Decimal64, ulong>(x._value));
 
@@ -1024,6 +1036,9 @@ namespace System.Numerics
 
         /// <inheritdoc cref="IPowerFunctions{TSelf}.Pow(TSelf, TSelf)" />
         public static Decimal64 Pow(Decimal64 x, Decimal64 y) => new Decimal64(Number.PowDecimalIeee754<Decimal64, ulong>(x._value, y._value));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.RadiansToDegrees(TSelf)" />
+        public static Decimal64 RadiansToDegrees(Decimal64 radians) => new Decimal64(Number.MultiplyByWideConstantDecimalIeee754<Decimal64, ulong>(radians._value, RadiansToDegreesHead, RadiansToDegreesTail, RadiansToDegreesExponent));
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ReciprocalEstimate(TSelf)" />
         public static Decimal64 ReciprocalEstimate(Decimal64 x) => One / x;

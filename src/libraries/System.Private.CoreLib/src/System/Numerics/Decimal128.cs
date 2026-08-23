@@ -61,6 +61,25 @@ namespace System.Numerics
         private const ulong SNaNMaskUpper = 0x7E00_0000_0000_0000;
         private const ulong InfinityMaskUpper = 0x7800_0000_0000_0000;
 
+        // `pi / 180` and `180 / pi` cannot be written exactly in decimal, so each is kept as two
+        // integers and an exponent, `(Head * 10^34 + Tail) * 10^Exponent`. That is just the digits of
+        // the value with the point moved: `pi / 180 = 1.745_329...e-2`, `180 / pi = 5.729_577...e+1`,
+        // and since the pair is a `2p + 2` digit integer, `Exponent` is `-(2p + 1)` plus that `-2` or `+1`.
+        //
+        // `Tail` is `p` digits and `Head` is `p + 2`, since `Head` is bounded by the `UInt128` it is
+        // stored in rather than by the format. Those two extra digits are the accuracy: the product
+        // is exact and rounded only once, so the digits dropped off the constant are the only error,
+        // and they have to stay below the closest a `p` digit input can push the product to a
+        // rounding tie. Every format stops at two, `Decimal32` being the one with no room for more,
+        // since `180 / pi` at `p + 3` digits no longer fits its `uint`.
+        private static UInt128 DegreesToRadiansHead => new UInt128(0x0021_9D23_38C9_2382, 0xBF86_F9E5_ACDE_A057); // 174_532_925_199_432_957_692_369_076_848_861_271
+        private static UInt128 DegreesToRadiansTail => new UInt128(0x0000_A9BF_270D_B49E, 0x82D0_06FB_7D2C_4001);  // 3_442_871_888_541_725_456_097_191_440_171_009
+        private const int DegreesToRadiansExponent = -71;
+
+        private static UInt128 RadiansToDegreesHead => new UInt128(0x006E_5900_1427_58B2, 0xDB41_A116_5AA0_7F37); // 572_957_795_130_823_208_767_981_548_141_051_703
+        private static UInt128 RadiansToDegreesTail => new UInt128(0x0000_9FC5_74E0_7F0D, 0x2D46_04B9_0C4C_EA5D);  // 3_240_547_246_656_432_154_916_024_386_120_285
+        private const int RadiansToDegreesExponent = -68;
+
         /// <summary>Gets a value that represents positive <c>infinity</c>.</summary>
         public static Decimal128 PositiveInfinity => new Decimal128(PositiveInfinityValue);
 
@@ -954,6 +973,9 @@ namespace System.Numerics
         /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Cosh(TSelf)" />
         public static Decimal128 Cosh(Decimal128 x) => new Decimal128(Number.CoshDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
 
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.DegreesToRadians(TSelf)" />
+        public static Decimal128 DegreesToRadians(Decimal128 degrees) => new Decimal128(Number.MultiplyByWideConstantDecimalIeee754<Decimal128, UInt128>(new UInt128(degrees._upper, degrees._lower), DegreesToRadiansHead, DegreesToRadiansTail, DegreesToRadiansExponent));
+
         /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp(TSelf)" />
         public static Decimal128 Exp(Decimal128 x) => new Decimal128(Number.ExpDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
 
@@ -1010,6 +1032,9 @@ namespace System.Numerics
 
         /// <inheritdoc cref="IPowerFunctions{TSelf}.Pow(TSelf, TSelf)" />
         public static Decimal128 Pow(Decimal128 x, Decimal128 y) => new Decimal128(Number.PowDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower), new UInt128(y._upper, y._lower)));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.RadiansToDegrees(TSelf)" />
+        public static Decimal128 RadiansToDegrees(Decimal128 radians) => new Decimal128(Number.MultiplyByWideConstantDecimalIeee754<Decimal128, UInt128>(new UInt128(radians._upper, radians._lower), RadiansToDegreesHead, RadiansToDegreesTail, RadiansToDegreesExponent));
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ReciprocalEstimate(TSelf)" />
         public static Decimal128 ReciprocalEstimate(Decimal128 x) => One / x;

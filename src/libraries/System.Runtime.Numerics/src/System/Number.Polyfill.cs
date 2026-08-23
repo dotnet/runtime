@@ -20,6 +20,8 @@ namespace System
         IEquatable<TSelf>
         where TSelf : unmanaged, IUtfChar<TSelf>
     {
+        public static abstract bool IsUtf8 { get; }
+
         public static abstract TSelf CastFrom(byte value);
 
         public static abstract TSelf CastFrom(char value);
@@ -39,6 +41,8 @@ namespace System
     {
         private readonly char value = ch;
 
+        public static bool IsUtf8 => false;
+
         public static Utf16Char CastFrom(byte value) => new((char)value);
         public static Utf16Char CastFrom(char value) => new(value);
         public static Utf16Char CastFrom(int value) => new((char)value);
@@ -53,6 +57,8 @@ namespace System
 #pragma warning restore CA1067
     {
         private readonly byte value = ch;
+
+        public static bool IsUtf8 => true;
 
         public static Utf8Char CastFrom(byte value) => new(value);
         public static Utf8Char CastFrom(char value) => new((byte)value);

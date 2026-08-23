@@ -2169,11 +2169,11 @@ namespace System.StubHelpers
     {
         /// <safety>Runtime FCall that clears the thread's stored last-error slot; it takes no arguments and accesses no caller-supplied memory.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static safe extern void ClearLastError();
+        internal static extern safe void ClearLastError();
 
         /// <safety>Runtime FCall that captures the OS last-error into the thread's stored slot; it takes no arguments and accesses no caller-supplied memory.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static safe extern void SetLastError();
+        internal static extern safe void SetLastError();
 
         /// <safety>QCall that throws an interop parameter exception selected by integer resource and parameter indices; it accesses no caller-supplied memory.</safety>
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_ThrowInteropParamException")]

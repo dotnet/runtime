@@ -12,7 +12,6 @@
 
   <ItemGroup>
     <Compile Include="System\ThrowHelper.cs" />
-    <Compile Include="System\Numerics\BigIntegerCalculator.AddSub.cs" />
     <Compile Include="System\Numerics\BigIntegerCalculator.Bitwise.cs" />
     <Compile Include="System\Numerics\BigInteger.RentedBuffer.cs" />
     <Compile Include="System\Numerics\BigIntegerCalculator.DivRem.cs" />
@@ -34,6 +33,8 @@
   <ItemGroup>
     <Compile Include="$(CoreLibSharedDir)System\Buffers\Text\FormattingHelpers.CountDigits.cs"
              Link="CoreLib\System\Buffers\Text\FormattingHelpers.CountDigits.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Numerics\BigIntegerCalculator.Shared.cs"
+             Link="CoreLib\System\Numerics\BigIntegerCalculator.Shared.cs" />
     <Compile Include="$(CommonPath)System\Collections\Generic\ValueListBuilder.cs"
              Link="CoreLib\System\Collections\Generic\ValueListBuilder.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder_1.cs"

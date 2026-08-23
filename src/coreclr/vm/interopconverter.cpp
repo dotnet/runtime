@@ -55,7 +55,6 @@ namespace
             return;
 
         // make sure we can cast to the specified class
-        FAULT_NOT_FATAL();
 
         // Bad format exception thrown for backward compatibility
         THROW_BAD_FORMAT_MAYBE(pMTClass->IsArray() == FALSE, BFA_UNEXPECTED_ARRAY_TYPE, pMTClass);

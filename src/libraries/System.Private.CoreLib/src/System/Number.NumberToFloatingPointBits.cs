@@ -705,8 +705,20 @@ namespace System
 
             while (!digits.IsEmpty)
             {
-                uint count = (uint)Math.Min(digits.Length, 9);
-                uint value = DigitsToUInt32(digits.Slice(0, (int)count));
+                // Batch as many digits as fill a single block -- 9 on 32-bit (10^9 fits a uint),
+                // 19 on 64-bit (10^19 fits a nuint) -- so wide builds halve the multiply/add
+                // iterations instead of staying 32-bit-granular. nint.Size constant-folds here.
+                uint count = (uint)Math.Min(digits.Length, nint.Size == 8 ? 19 : 9);
+                nuint value;
+
+                if (nint.Size == 8)
+                {
+                    value = (nuint)DigitsToUInt64(digits.Slice(0, (int)count));
+                }
+                else
+                {
+                    value = DigitsToUInt32(digits.Slice(0, (int)count));
+                }
 
                 result.MultiplyPow10(count);
                 result.Add(value);
@@ -845,45 +857,12 @@ namespace System
                 return AssembleFloatingPointBits<TFloat>(value.ToUInt64(), baseExponent, !hasNonZeroFractionalPart);
             }
 
-            (int topBlockIndex, int topBlockBits) = Math.DivRem(integerBitsOfPrecision, 32);
-            int middleBlockIndex = topBlockIndex - 1;
-            int bottomBlockIndex = middleBlockIndex - 1;
+            // The mantissa is the top 64 bits of the value; everything below that window is the tail.
+            int windowBitIndex = integerBitsOfPrecision - 64;
 
-            ulong mantissa;
-            int exponent = baseExponent + ((int)(bottomBlockIndex) * 32);
-            bool hasZeroTail = !hasNonZeroFractionalPart;
-
-            // When the top 64-bits perfectly span two blocks, we can get those blocks directly
-            if (topBlockBits == 0)
-            {
-                mantissa = ((ulong)(value.GetBlock(middleBlockIndex)) << 32) + value.GetBlock(bottomBlockIndex);
-            }
-            else
-            {
-                // Otherwise, we need to read three blocks and combine them into a 64-bit mantissa
-
-                int bottomBlockShift = (int)(topBlockBits);
-                int topBlockShift = 64 - bottomBlockShift;
-                int middleBlockShift = topBlockShift - 32;
-
-                exponent += (int)(topBlockBits);
-
-                uint bottomBlock = value.GetBlock(bottomBlockIndex);
-                uint bottomBits = bottomBlock >> bottomBlockShift;
-
-                ulong middleBits = (ulong)(value.GetBlock(middleBlockIndex)) << middleBlockShift;
-                ulong topBits = (ulong)(value.GetBlock(topBlockIndex)) << topBlockShift;
-
-                mantissa = topBits + middleBits + bottomBits;
-
-                uint unusedBottomBlockBitsMask = (1u << (int)(topBlockBits)) - 1;
-                hasZeroTail &= (bottomBlock & unusedBottomBlockBitsMask) == 0;
-            }
-
-            for (int i = 0; i < bottomBlockIndex; i++)
-            {
-                hasZeroTail &= (value.GetBlock(i) == 0);
-            }
+            ulong mantissa = value.GetBits64(windowBitIndex);
+            int exponent = baseExponent + windowBitIndex;
+            bool hasZeroTail = !hasNonZeroFractionalPart && value.HasZeroTail(windowBitIndex);
 
             return AssembleFloatingPointBits<TFloat>(mantissa, exponent, hasZeroTail);
         }

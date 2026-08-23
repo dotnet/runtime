@@ -17,40 +17,92 @@ namespace System
 
         private const int DefaultPrecisionExponentialFormat = 6;
 
-        private const string PosNumberFormat = "#";
+        private static ReadOnlySpan<byte> GetCurrencyFormat(bool isNegative, int index)
+        {
+            if (isNegative)
+            {
+                return index switch
+                {
+                    0 => "($#)"u8,
+                    1 => "-$#"u8,
+                    2 => "$-#"u8,
+                    3 => "$#-"u8,
+                    4 => "(#$)"u8,
+                    5 => "-#$"u8,
+                    6 => "#-$"u8,
+                    7 => "#$-"u8,
+                    8 => "-# $"u8,
+                    9 => "-$ #"u8,
+                    10 => "# $-"u8,
+                    11 => "$ #-"u8,
+                    12 => "$ -#"u8,
+                    13 => "#- $"u8,
+                    14 => "($ #)"u8,
+                    15 => "(# $)"u8,
+                    16 => "$- #"u8,
+                    _ => throw new UnreachableException(),
+                };
+            }
 
-        private static readonly string[] s_posCurrencyFormats =
-        [
-            "$#", "#$", "$ #", "# $"
-        ];
+            return index switch
+            {
+                0 => "$#"u8,
+                1 => "#$"u8,
+                2 => "$ #"u8,
+                3 => "# $"u8,
+                _ => throw new UnreachableException(),
+            };
+        }
 
-        private static readonly string[] s_negCurrencyFormats =
-        [
-            "($#)", "-$#", "$-#", "$#-",
-            "(#$)", "-#$", "#-$", "#$-",
-            "-# $", "-$ #", "# $-", "$ #-",
-            "$ -#", "#- $", "($ #)", "(# $)",
-            "$- #"
-        ];
+        private static ReadOnlySpan<byte> GetPercentFormat(bool isNegative, int index)
+        {
+            if (isNegative)
+            {
+                return index switch
+                {
+                    0 => "-# %"u8,
+                    1 => "-#%"u8,
+                    2 => "-%#"u8,
+                    3 => "%-#"u8,
+                    4 => "%#-"u8,
+                    5 => "#-%"u8,
+                    6 => "#%-"u8,
+                    7 => "-% #"u8,
+                    8 => "# %-"u8,
+                    9 => "% #-"u8,
+                    10 => "% -#"u8,
+                    11 => "#- %"u8,
+                    _ => throw new UnreachableException(),
+                };
+            }
 
-        private static readonly string[] s_posPercentFormats =
-        [
-            "# %", "#%", "%#", "% #"
-        ];
+            return index switch
+            {
+                0 => "# %"u8,
+                1 => "#%"u8,
+                2 => "%#"u8,
+                3 => "% #"u8,
+                _ => throw new UnreachableException(),
+            };
+        }
 
-        private static readonly string[] s_negPercentFormats =
-        [
-            "-# %", "-#%", "-%#",
-            "%-#", "%#-",
-            "#-%", "#%-",
-            "-% #", "# %-", "% #-",
-            "% -#", "#- %"
-        ];
+        private static ReadOnlySpan<byte> GetNumberFormat(bool isNegative, int index)
+        {
+            if (!isNegative)
+            {
+                return "#"u8;
+            }
 
-        private static readonly string[] s_negNumberFormats =
-        [
-            "(#)", "-#", "- #", "#-", "# -",
-        ];
+            return index switch
+            {
+                0 => "(#)"u8,
+                1 => "-#"u8,
+                2 => "- #"u8,
+                3 => "#-"u8,
+                4 => "# -"u8,
+                _ => throw new UnreachableException(),
+            };
+        }
 
         internal static char ParseFormatSpecifier(ReadOnlySpan<char> format, out int digits)
         {
@@ -881,23 +933,23 @@ namespace System
         {
             Debug.Assert(sizeof(TChar) is sizeof(char) or sizeof(byte));
 
-            string fmt = number.IsNegative ?
-                s_negCurrencyFormats[info.CurrencyNegativePattern] :
-                s_posCurrencyFormats[info.CurrencyPositivePattern];
+            ReadOnlySpan<byte> fmt = GetCurrencyFormat(
+                number.IsNegative,
+                number.IsNegative ? info.CurrencyNegativePattern : info.CurrencyPositivePattern);
 
-            foreach (char ch in fmt)
+            foreach (byte ch in fmt)
             {
                 switch (ch)
                 {
-                    case '#':
+                    case (byte)'#':
                         FormatFixed(ref vlb, ref number, nMaxDigits, info.CurrencyGroupSizes(), info.CurrencyDecimalSeparatorTChar<TChar>(), info.CurrencyGroupSeparatorTChar<TChar>());
                         break;
 
-                    case '-':
+                    case (byte)'-':
                         vlb.Append(info.NegativeSignTChar<TChar>());
                         break;
 
-                    case '$':
+                    case (byte)'$':
                         vlb.Append(info.CurrencySymbolTChar<TChar>());
                         break;
 
@@ -1080,19 +1132,17 @@ namespace System
         {
             Debug.Assert(sizeof(TChar) is sizeof(char) or sizeof(byte));
 
-            string fmt = number.IsNegative ?
-                s_negNumberFormats[info.NumberNegativePattern] :
-                PosNumberFormat;
+            ReadOnlySpan<byte> fmt = GetNumberFormat(number.IsNegative, info.NumberNegativePattern);
 
-            foreach (char ch in fmt)
+            foreach (byte ch in fmt)
             {
                 switch (ch)
                 {
-                    case '#':
+                    case (byte)'#':
                         FormatFixed(ref vlb, ref number, nMaxDigits, info.NumberGroupSizes(), info.NumberDecimalSeparatorTChar<TChar>(), info.NumberGroupSeparatorTChar<TChar>());
                         break;
 
-                    case '-':
+                    case (byte)'-':
                         vlb.Append(info.NegativeSignTChar<TChar>());
                         break;
 
@@ -1227,23 +1277,23 @@ namespace System
         {
             Debug.Assert(sizeof(TChar) is sizeof(char) or sizeof(byte));
 
-            string fmt = number.IsNegative ?
-                s_negPercentFormats[info.PercentNegativePattern] :
-                s_posPercentFormats[info.PercentPositivePattern];
+            ReadOnlySpan<byte> fmt = GetPercentFormat(
+                number.IsNegative,
+                number.IsNegative ? info.PercentNegativePattern : info.PercentPositivePattern);
 
-            foreach (char ch in fmt)
+            foreach (byte ch in fmt)
             {
                 switch (ch)
                 {
-                    case '#':
+                    case (byte)'#':
                         FormatFixed(ref vlb, ref number, nMaxDigits, info.PercentGroupSizes(), info.PercentDecimalSeparatorTChar<TChar>(), info.PercentGroupSeparatorTChar<TChar>());
                         break;
 
-                    case '-':
+                    case (byte)'-':
                         vlb.Append(info.NegativeSignTChar<TChar>());
                         break;
 
-                    case '%':
+                    case (byte)'%':
                         vlb.Append(info.PercentSymbolTChar<TChar>());
                         break;
 

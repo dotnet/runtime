@@ -76,7 +76,7 @@ public class NibbleMapConstantLookupTests : NibbleMapTestsBase
         /// this is how big the address space is that the map covers
         const uint MapRangeSize = 0x1000;
         TargetPointer MapEnd = mapBase + MapRangeSize;
-        var builder = new NibbleMapTestBuilder_2(mapBase, MapRangeSize, mapStart, arch);
+        var builder = new NibbleMapTestBuilder_1(mapBase, MapRangeSize, mapStart, arch);
 
         // don't put the code too close to the start - the NibbleMap bails if the code is too close to the start of the range
         TargetCodePointer inputPC = new(mapBase + 0x0200u);

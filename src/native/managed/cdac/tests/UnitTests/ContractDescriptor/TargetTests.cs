@@ -252,6 +252,24 @@ public unsafe partial class TargetTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
+    public void Create_UnsupportedDataDescriptorVersion_ThrowsFormatException(MockTarget.Architecture arch)
+    {
+        int?[] unsupportedVersions = [null, 0, 1, 3];
+
+        foreach (int? version in unsupportedVersions)
+        {
+            TargetTestHelpers targetTestHelpers = new(arch);
+            ContractDescriptorBuilder builder = new(targetTestHelpers);
+            ContractDescriptorBuilder.DescriptorBuilder descriptorBuilder = new(builder);
+            descriptorBuilder.SetVersion(version);
+
+            FormatException ex = Assert.Throws<FormatException>(() => builder.CreateTarget(descriptorBuilder));
+            Assert.Equal(CdacHResults.CDAC_E_DESCRIPTOR_MALFORMED, ex.HResult);
+        }
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
     public void Create_InvalidMagic_ThrowsDescriptorNotFound(MockTarget.Architecture arch)
     {
         TargetTestHelpers targetTestHelpers = new(arch);
@@ -379,10 +397,10 @@ public unsafe partial class TargetTests
             ["ConditionalWeakTable"] = "c1",
             ["DacStreams"] = "c1",
             ["Debugger"] = "c1",
-            ["DebugInfo"] = "c2",
+            ["DebugInfo"] = "c1",
             ["EcmaMetadata"] = "c1",
             ["Exception"] = "c1",
-            ["ExecutionManager"] = "c2",
+            ["ExecutionManager"] = "c1",
             ["FeatureFlags"] = "c1",
             ["GC"] = "c1",
             ["GCInfo"] = "c1",
@@ -390,7 +408,7 @@ public unsafe partial class TargetTests
             ["Notifications"] = "c1",
             ["Object"] = "c1",
             ["PlatformMetadata"] = "c1",
-            ["PrecodeStubs"] = "c3",
+            ["PrecodeStubs"] = "c1",
             ["ReJIT"] = "c1",
             ["RuntimeInfo"] = "c1",
             ["RuntimeMutableTypeSystem"] = "c1",

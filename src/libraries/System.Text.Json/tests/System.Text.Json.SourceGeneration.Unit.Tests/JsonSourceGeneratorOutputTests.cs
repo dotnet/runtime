@@ -143,6 +143,93 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
 
         [Fact]
+        public void RecursiveUnionType()
+        {
+            // Declared with [Union] rather than the `union` keyword: the Microsoft.CodeAnalysis
+            // version this project builds against cannot parse `union`, but the generator also
+            // recognizes a union by the attribute plus a public object-typed Value property,
+            // and derives its cases from the public single-parameter constructors.
+            //
+            // Diagnostic validation is off because the same version has no union pattern
+            // matching either, so it rejects the emitted `bool` arm against a Nat operand.
+            VerifyAgainstBaseline("""
+                using System.Runtime.CompilerServices;
+                using System.Text.Json.Serialization;
+                namespace TestApp
+                {
+                    [JsonSerializable(typeof(Nat))]
+                    internal partial class MyContext : JsonSerializerContext { }
+
+                    [Union]
+                    public readonly struct Nat
+                    {
+                        public Nat(bool value) => Value = value;
+                        public Nat(Nat value) => Value = value;
+                        public object Value { get; }
+                    }
+                }
+                """, nameof(RecursiveUnionType), disableDiagnosticValidation: true);
+        }
+
+        [Fact]
+        public void RecursiveNullableUnionType()
+        {
+            // Same as RecursiveUnionType, but the self-referential case is nullable, so it is
+            // also the union's null case. The emitted arm has to pattern match the unwrapped
+            // Nat while still reporting typeof(Nat?) as the case type.
+            VerifyAgainstBaseline("""
+                using System.Runtime.CompilerServices;
+                using System.Text.Json.Serialization;
+                namespace TestApp
+                {
+                    [JsonSerializable(typeof(Nat))]
+                    internal partial class MyContext : JsonSerializerContext { }
+
+                    [Union]
+                    public readonly struct Nat
+                    {
+                        public Nat(bool value) => Value = value;
+                        public Nat(Nat? value) => Value = value;
+                        public object Value { get; }
+                    }
+                }
+                """, nameof(RecursiveNullableUnionType), disableDiagnosticValidation: true);
+        }
+
+        [Fact]
+        public void SubclassCaseUnionType()
+        {
+            // A class union is not sealed, so a case type can derive from the union itself.
+            // The union instance is pattern compatible with Circle by the opposite subtyping
+            // direction to a self-referential case, and needs the same property-pattern arm.
+            VerifyAgainstBaseline("""
+                using System.Runtime.CompilerServices;
+                using System.Text.Json.Serialization;
+                namespace TestApp
+                {
+                    [JsonSerializable(typeof(Shape))]
+                    internal partial class MyContext : JsonSerializerContext { }
+
+                    [Union]
+                    public class Shape
+                    {
+                        public Shape(int value) => Value = value;
+                        public Shape(Circle value) => Value = value;
+                        protected Shape() => Value = null;
+
+                        [JsonIgnore]
+                        public object Value { get; }
+                    }
+
+                    public sealed class Circle : Shape
+                    {
+                        public double Radius { get; set; }
+                    }
+                }
+                """, nameof(SubclassCaseUnionType), disableDiagnosticValidation: true);
+        }
+
+        [Fact]
         public void JsonPropertyNameAttribute()
         {
             VerifyAgainstBaseline("""

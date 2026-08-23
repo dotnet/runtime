@@ -747,7 +747,7 @@ internal sealed class MockExecutionManagerBuilder
     {
         NibbleMapTestBuilderBase nibBuilder = Version switch
         {
-            "c2" => new NibbleMapTestBuilder_2(codeRangeStart, codeRangeSize, _nibbleMapAllocator, Builder.TargetTestHelpers.Arch),
+            "c1" => new NibbleMapTestBuilder_1(codeRangeStart, codeRangeSize, _nibbleMapAllocator, Builder.TargetTestHelpers.Arch),
             _ => throw new InvalidOperationException($"Unknown version '{Version}'"),
         };
 

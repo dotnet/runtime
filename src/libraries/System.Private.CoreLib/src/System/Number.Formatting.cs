@@ -255,7 +255,7 @@ namespace System
     {
         internal const int DecimalPrecision = 29; // Decimal.DecCalc also uses this value
 
-        /// <summary>The non-inclusive upper bound of <see cref="s_smallNumberCache"/>.</summary>
+        /// <summary>The non-inclusive upper bound of <see cref="SmallNumberCache.Value"/>.</summary>
         /// <remarks>
         /// This is a semi-arbitrary bound. For mono, which is often used for more size-constrained workloads,
         /// we keep the size really small, supporting only single digit values.  For coreclr, we use a larger
@@ -270,8 +270,11 @@ namespace System
 #else
             300;
 #endif
-        /// <summary>Lazily-populated cache of strings for uint values in the range [0, <see cref="SmallNumberCacheLength"/>).</summary>
-        private static readonly string?[] s_smallNumberCache = new string[SmallNumberCacheLength];
+        private static class SmallNumberCache
+        {
+            /// <summary>Lazily-populated cache of strings for uint values in the range [0, <see cref="SmallNumberCacheLength"/>).</summary>
+            internal static readonly string?[] Value = new string[SmallNumberCacheLength];
+        }
 
         // Keep the pair's alignment equal to char so every char span can be safely reinterpreted.
         [StructLayout(LayoutKind.Sequential, Pack = sizeof(char))]
@@ -1989,11 +1992,11 @@ namespace System
         internal static string UInt32ToDecStrForKnownSmallNumber(uint value)
         {
             Debug.Assert(value < SmallNumberCacheLength);
-            return s_smallNumberCache[value] ?? CreateAndCacheString(value);
+            return SmallNumberCache.Value[value] ?? CreateAndCacheString(value);
 
             [MethodImpl(MethodImplOptions.NoInlining)] // keep rare usage out of fast path
             static string CreateAndCacheString(uint value) =>
-                s_smallNumberCache[value] = UInt32ToDecStr_NoSmallNumberCheck(value);
+                SmallNumberCache.Value[value] = UInt32ToDecStr_NoSmallNumberCheck(value);
         }
 
         private static string UInt32ToDecStr_NoSmallNumberCheck(uint value)

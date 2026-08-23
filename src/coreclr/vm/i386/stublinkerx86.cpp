@@ -82,7 +82,6 @@ class X86NearJump : public InstructionFormat
         {
             STATIC_CONTRACT_NOTHROW;
             STATIC_CONTRACT_GC_NOTRIGGER;
-            STATIC_CONTRACT_FORBID_FAULT;
 
 
             if (fExternal)
@@ -133,7 +132,6 @@ static BYTE gX86NearJump[sizeof(X86NearJump)];
     {
         THROWS;
         GC_NOTRIGGER;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -871,6 +869,7 @@ bool StubLinkerCPU::EmitUnboxMethodStub(MethodDesc* pUnboxMD)
     //
     X86EmitAddReg(THIS_kREG, sizeof(void*));
     EmitTailJumpToMethod(pUnboxMD);
+    SetTargetMethod(pUnboxMD);
     return true;
 }
 
@@ -944,6 +943,7 @@ bool StubLinkerCPU::EmitInstantiatingMethodStub(MethodDesc* pMD, void* extra)
     }
 
     EmitTailJumpToMethod(pMD);
+    SetTargetMethod(pMD);
 
     return true;
 #endif // UNIX_X86_ABI

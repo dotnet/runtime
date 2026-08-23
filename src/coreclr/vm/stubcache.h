@@ -17,8 +17,8 @@
 #include "util.hpp"
 #include "crst.h"
 
-class Stub;
 class StubLinker;
+enum StubCodeBlockKind : int;
 
 class StubCacheBase : private CClosedHashBase
 {
@@ -32,7 +32,7 @@ private:
         //   NULL  = free
         //   -1    = deleted
         //   other = used
-        Stub    *m_pStub;
+        PCODE    m_pCode;
 
         // Offset where the RawStub begins (the RawStub can be
         // preceded by native stub code.)
@@ -44,7 +44,7 @@ public:
     //---------------------------------------------------------
     // Constructor
     //---------------------------------------------------------
-    StubCacheBase(LoaderHeap *heap = 0);
+    StubCacheBase(LoaderAllocator *pLoaderAllocator = NULL);
 
     //---------------------------------------------------------
     // Destructor
@@ -52,12 +52,12 @@ public:
     virtual ~StubCacheBase();
 
     //---------------------------------------------------------
-    // Returns the equivalent hashed Stub, creating a new hash
+    // Returns the equivalent hashed code, creating a new hash
     // entry if necessary. If the latter, will call out to CompileStub.
     //
     // Throws on out of memory or other fatal error.
     //---------------------------------------------------------
-    Stub *Canonicalize(const BYTE *pRawStub, const char *stubType);
+    PCODE Canonicalize(const BYTE *pRawStub, const char *stubType);
 
 protected:
     //---------------------------------------------------------
@@ -67,10 +67,10 @@ protected:
     // This method should compile into the provided stublinker (but
     // not call the Link method.)
     //
-    // It can return flags that will be passed to StubLinker::Link().
+    // It can return the kind passed to StubLinker::Link().
     //---------------------------------------------------------
-    virtual DWORD CompileStub(const BYTE *pRawStub,
-                             StubLinker *psl) = 0;
+    virtual StubCodeBlockKind CompileStub(const BYTE *pRawStub,
+                                          StubLinker *psl) = 0;
 
     //---------------------------------------------------------
     // OVERRIDE
@@ -82,7 +82,7 @@ protected:
     // OVERRIDE (OPTIONAL)
     // Notifies the various derived classes that a new stub has been created
     //---------------------------------------------------------
-    virtual void AddStub(const BYTE* pRawStub, Stub* pNewStub);
+    virtual void AddStub(const BYTE* pRawStub, PCODE pNewStub);
 
 
 private:
@@ -127,7 +127,7 @@ private:
 
 private:
     Crst        m_crst;
-    LoaderHeap* m_heap;
+    LoaderAllocator* m_pLoaderAllocator;
 };
 
 

@@ -1189,6 +1189,64 @@ namespace System
         }
 
         /// <summary>
+        /// Multiplies the IEEE 754 decimal value represented by <paramref name="bits"/> by the positive constant
+        /// <c>((<paramref name="constantHead"/> × 10^Precision) + <paramref name="constantTail"/>) ×
+        /// 10^<paramref name="constantExponent"/></c>, rounds the exact product once (round-to-nearest,
+        /// ties-to-even), and returns its bit pattern.
+        /// </summary>
+        /// <remarks>
+        /// Splitting the constant at the format precision is what keeps this within the double-width machinery
+        /// the arithmetic operators already use: both halves fit a single limb, so each partial product is one
+        /// <see cref="WideMultiply{TValue}"/>, and the low product is exactly <c>Precision</c> digits below the
+        /// high one, so shifting it into place is a digit drop whose remainder can only ever be sticky.
+        ///
+        /// How many digits a constant needs is a property of that constant, not of the format: for an irrational
+        /// constant the closest a <c>Precision</c> digit significand drives the exact product to a midpoint has
+        /// no closed form, so it has to be enumerated against the truncation error once per constant rather than
+        /// carried over from a narrower format. See <c>Decimal128</c> for the existing pair.
+        /// </remarks>
+        internal static TValue MultiplyByWideConstantDecimalIeee754<TDecimal, TValue>(TValue bits, TValue constantHead, TValue constantTail, int constantExponent)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            if (TDecimal.IsNaN(bits))
+            {
+                return PropagateNaN<TDecimal, TValue>(bits, bits);
+            }
+
+            if (TDecimal.IsInfinity(bits))
+            {
+                // The constant is positive and finite, so the infinity carries through with its sign
+                return TDecimal.IsNegative(bits) ? TDecimal.NegativeInfinity : TDecimal.PositiveInfinity;
+            }
+
+            DecodedDecimalIeee754<TValue> value = UnpackDecimalIeee754<TDecimal, TValue>(bits);
+
+            int precision = TDecimal.Precision;
+
+            if (TValue.IsZero(value.Significand))
+            {
+                // The IEEE 754 preferred exponent for a product is the sum of the operand exponents, and the
+                // constant's own quantum is 10^constantExponent
+                return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(value.Signed, TValue.Zero, value.UnbiasedExponent + constantExponent);
+            }
+
+            // `significand × constantHead` spans at most `2p + 2` digits and `significand × constantTail` at most
+            // `2p`, so both fit the limb pair, and everything the alignment drop removes is far enough below the
+            // result's last digit to only ever reach it through `sticky`.
+            WideMultiply(value.Significand, constantHead, out TValue high, out TValue low);
+            WideMultiply(value.Significand, constantTail, out TValue tailHigh, out TValue tailLow);
+
+            bool sticky = false;
+            DropDigits<TDecimal, TValue>(ref tailHigh, ref tailLow, precision, ref sticky, out int roundDigit);
+            sticky |= roundDigit != 0;
+
+            WideAdd(high, low, tailHigh, tailLow, out high, out low);
+
+            return NumberToDecimalIeee754BitsFromWide<TDecimal, TValue>(value.Signed, high, low, value.UnbiasedExponent + constantExponent + precision, sticky);
+        }
+
+        /// <summary>
         /// Computes <c>(left × right) + addend</c> for three IEEE 754 decimal values represented by their raw bit
         /// patterns, rounds the exact result once (round-to-nearest, ties-to-even), and returns its bit pattern.
         /// </summary>
@@ -2467,14 +2525,20 @@ namespace System
         private static void WideDropLowDigits<TValue>(ref TValue high, ref TValue low, int dropCount, ref bool sticky)
             where TValue : unmanaged, IBinaryInteger<TValue>
         {
-            for (int i = 0; i < dropCount; i++)
+            int chunkPower = SinglePassPow10<TValue>(out TValue chunkDivisor);
+
+            while (dropCount > 0)
             {
                 if (TValue.IsZero(high) && TValue.IsZero(low))
                 {
                     break;
                 }
 
-                sticky |= WideDivideByTen(ref high, ref low) != 0;
+                int step = Math.Min(dropCount, chunkPower);
+                TValue divisor = (step == chunkPower) ? chunkDivisor : WidePow10<TValue>(step);
+
+                sticky |= !TValue.IsZero(WideDivideByPow10(ref high, ref low, divisor));
+                dropCount -= step;
             }
         }
 
@@ -2495,6 +2559,23 @@ namespace System
             else if (exponent < commonExponent)
             {
                 WideDropLowDigits(ref high, ref low, commonExponent - exponent, ref sticky);
+            }
+        }
+
+        /// <summary>
+        /// Adds the double-width magnitudes (<paramref name="leftHigh"/>, <paramref name="leftLow"/>) and
+        /// (<paramref name="rightHigh"/>, <paramref name="rightLow"/>), which the caller guarantees cannot carry
+        /// out of the high limb.
+        /// </summary>
+        private static void WideAdd<TValue>(TValue leftHigh, TValue leftLow, TValue rightHigh, TValue rightLow, out TValue high, out TValue low)
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            low = leftLow + rightLow;
+            high = leftHigh + rightHigh;
+
+            if (low < leftLow)
+            {
+                high += TValue.One;
             }
         }
 
@@ -2527,27 +2608,71 @@ namespace System
         }
 
         /// <summary>
-        /// Divides the double-width value in (<paramref name="high"/>, <paramref name="low"/>) by ten in place,
-        /// returning the discarded least-significant decimal digit. Used to strip low-order digits during rounding.
+        /// Gets the largest power of ten that a single <see cref="WideDivideByPow10{TValue}"/> pass can strip,
+        /// returning its exponent and, in <paramref name="divisor"/>, its value.
         /// </summary>
         /// <remarks>
-        /// Only the 128-bit format reaches this helper: the 32-bit and 64-bit formats widen the limb pair to a
-        /// single native integer and divide directly (see <see cref="DropDigits{TDecimal, TValue}"/> and
-        /// <see cref="WideDigitCount{TDecimal, TValue}"/>). The Intel reference implementation avoids hardware
-        /// division here by multiplying with precomputed reciprocals of powers of ten (e.g.
-        /// <c>bid_reciprocals10_64</c>) and shifting; this helper instead uses direct integer division for
-        /// simplicity, and adopting the reciprocal-multiply tables is a possible future performance optimization.
+        /// The bound is <c>10^k &lt;= 2^(bits / 2)</c>, which is what keeps the running remainder times the
+        /// half-width base inside <typeparamref name="TValue"/>: <c>10^4</c> for a 32-bit limb, <c>10^9</c> for a
+        /// 64-bit limb, and <c>10^19</c> for a 128-bit limb.
         /// </remarks>
-        private static int WideDivideByTen<TValue>(ref TValue high, ref TValue low)
+        private static int SinglePassPow10<TValue>(out TValue divisor)
             where TValue : unmanaged, IBinaryInteger<TValue>
         {
             TValue ten = TValue.CreateTruncating(10);
+            TValue limit = (TValue.One << ((TValue.Zero.GetByteCount() * 8) / 2)) / ten;
 
+            divisor = TValue.One;
+            int power = 0;
+
+            while (divisor <= limit)
+            {
+                divisor *= ten;
+                power++;
+            }
+
+            return power;
+        }
+
+        /// <summary>
+        /// Computes <c>10^<paramref name="power"/></c>, which the caller guarantees fits a single limb.
+        /// </summary>
+        private static TValue WidePow10<TValue>(int power)
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            TValue ten = TValue.CreateTruncating(10);
+            TValue result = TValue.One;
+
+            for (int i = 0; i < power; i++)
+            {
+                result *= ten;
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Divides the double-width value in (<paramref name="high"/>, <paramref name="low"/>) by
+        /// <paramref name="divisor"/> in place, returning the discarded low-order digits. Used to strip low-order
+        /// digits during rounding, a whole <see cref="SinglePassPow10{TValue}"/> chunk of them at a time.
+        /// </summary>
+        /// <remarks>
+        /// The rounding paths only reach this helper with a two-limb value for the 128-bit format: the 32-bit and
+        /// 64-bit formats widen the limb pair to a single native integer and divide directly (see
+        /// <see cref="DropDigits{TDecimal, TValue}"/> and <see cref="WideDigitCount{TDecimal, TValue}"/>). Addition
+        /// reaches it for every format through <see cref="WideDropLowDigits{TValue}"/>. The Intel reference
+        /// implementation avoids hardware division here by multiplying with precomputed reciprocals of powers of ten
+        /// (e.g. <c>bid_reciprocals10_64</c>) and shifting; this helper instead uses direct integer division for
+        /// simplicity, and adopting the reciprocal-multiply tables is a possible future performance optimization.
+        /// </remarks>
+        private static TValue WideDivideByPow10<TValue>(ref TValue high, ref TValue low, TValue divisor)
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
             if (TValue.IsZero(high))
             {
-                (TValue quotient, TValue remainder) = TValue.DivRem(low, ten);
+                (TValue quotient, TValue remainder) = TValue.DivRem(low, divisor);
                 low = quotient;
-                return int.CreateTruncating(remainder);
+                return remainder;
             }
 
             int bits = TValue.Zero.GetByteCount() * 8;
@@ -2555,17 +2680,18 @@ namespace System
             TValue lowMask = (TValue.One << half) - TValue.One;
             TValue baseValue = TValue.One << half;
 
-            // Long division of the four half-width limbs (most significant first) by ten. Because the running
-            // remainder stays below ten, `remainder * baseValue + limb` never exceeds the integer width.
+            // Long division of the four half-width limbs (most significant first). Because the running remainder
+            // stays below the divisor, which `SinglePassPow10` caps at `baseValue`, the intermediate
+            // `remainder * baseValue + limb` never exceeds the integer width.
             TValue rem = TValue.Zero;
-            (TValue q3, rem) = TValue.DivRem((rem * baseValue) + (high >> half), ten);
-            (TValue q2, rem) = TValue.DivRem((rem * baseValue) + (high & lowMask), ten);
-            (TValue q1, rem) = TValue.DivRem((rem * baseValue) + (low >> half), ten);
-            (TValue q0, rem) = TValue.DivRem((rem * baseValue) + (low & lowMask), ten);
+            (TValue q3, rem) = TValue.DivRem((rem * baseValue) + (high >> half), divisor);
+            (TValue q2, rem) = TValue.DivRem((rem * baseValue) + (high & lowMask), divisor);
+            (TValue q1, rem) = TValue.DivRem((rem * baseValue) + (low >> half), divisor);
+            (TValue q0, rem) = TValue.DivRem((rem * baseValue) + (low & lowMask), divisor);
 
             high = (q3 << half) | q2;
             low = (q1 << half) | q0;
-            return int.CreateTruncating(rem);
+            return rem;
         }
 
         /// <summary>
@@ -2599,11 +2725,14 @@ namespace System
             }
 
             int count = 0;
+            int chunkPower = SinglePassPow10<TValue>(out TValue chunkDivisor);
 
+            // A non-zero high limb means the value spans at least the full limb width, which is more digits than a
+            // single pass strips, so the count stays additive across each pass.
             while (!TValue.IsZero(high))
             {
-                WideDivideByTen(ref high, ref low);
-                count++;
+                WideDivideByPow10(ref high, ref low, chunkDivisor);
+                count += chunkPower;
             }
 
             return count + TDecimal.CountDigits(low);
@@ -2735,15 +2864,21 @@ namespace System
                 return low;
             }
 
-            for (int i = 0; i < dropCount; i++)
-            {
-                if (i > 0)
-                {
-                    sticky |= roundDigit != 0;
-                }
+            // Every removed digit below the most-significant one only contributes stickiness, so they come off a
+            // whole single-pass chunk at a time; the rounding digit is then stripped on its own.
+            int chunkPower = SinglePassPow10<TValue>(out TValue chunkDivisor);
+            int remaining = dropCount - 1;
 
-                roundDigit = WideDivideByTen(ref high, ref low);
+            while (remaining > 0)
+            {
+                int step = Math.Min(remaining, chunkPower);
+                TValue divisor = (step == chunkPower) ? chunkDivisor : WidePow10<TValue>(step);
+
+                sticky |= !TValue.IsZero(WideDivideByPow10(ref high, ref low, divisor));
+                remaining -= step;
             }
+
+            roundDigit = int.CreateTruncating(WideDivideByPow10(ref high, ref low, TValue.CreateTruncating(10)));
 
             Debug.Assert(TValue.IsZero(high));
             return low;
