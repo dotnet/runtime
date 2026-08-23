@@ -292,61 +292,22 @@ namespace System.Buffers.Text
 
             nuint firstDigit = (uint)source[0] - '0';
             if ((uint)firstDigit > 9) { goto FalseExit; }
+
+            if (source.Length >= ParserHelpers.UInt64OverflowLength)
+            {
+                return TryParseUInt64DOverflow(source, firstDigit, out value, out bytesConsumed);
+            }
+
             ulong parsedValue = firstDigit;
 
-            // At this point, we successfully read a single digit character.
-            // The only failure condition from here on out is integer overflow.
-
             int idx = 1;
-            if (source.Length < ParserHelpers.UInt64OverflowLength)
+            while (true)
             {
-                // If the input span is short enough such that integer overflow isn't an issue,
-                // don't bother performing overflow checks. Just keep shifting in new digits
-                // until we see a non-digit character or until we've exhausted our input buffer.
-
-                while (true)
-                {
-                    if ((uint)idx >= (uint)source.Length) { break; } // EOF
-                    nuint nextChar = (uint)source[idx] - '0';
-                    if ((uint)nextChar > 9) { break; } // not a digit
-                    parsedValue = parsedValue * 10 + nextChar;
-                    idx++;
-                }
-            }
-            else
-            {
-                while (true)
-                {
-                    if ((uint)idx >= (uint)source.Length) { break; } // EOF
-                    nuint nextChar = (uint)source[idx] - '0';
-                    if ((uint)nextChar > 9) { break; } // not a digit
-                    idx++;
-
-                    // The const below is the smallest unsigned x for which "x * 10 + 9"
-                    // might overflow ulong.MaxValue. If the current accumulator is below
-                    // this const, there's no risk of overflowing.
-
-                    const ulong OverflowRisk = 0x1999_9999_9999_9999ul;
-
-                    if (parsedValue < OverflowRisk)
-                    {
-                        parsedValue = parsedValue * 10 + nextChar;
-                        continue;
-                    }
-
-                    // If the current accumulator is exactly equal to the const above,
-                    // then "accumulator * 10 + 5" is the highest we can go without overflowing
-                    // ulong.MaxValue. This also implies that if the current accumulator
-                    // is higher than the const above, there's no hope that we'll succeed,
-                    // so we may as well just fail now.
-
-                    if (parsedValue != OverflowRisk || (uint)nextChar > 5)
-                    {
-                        goto FalseExit;
-                    }
-
-                    parsedValue = OverflowRisk * 10 + nextChar;
-                }
+                if ((uint)idx >= (uint)source.Length) { break; } // EOF
+                nuint nextChar = (uint)source[idx] - '0';
+                if ((uint)nextChar > 9) { break; } // not a digit
+                parsedValue = parsedValue * 10 + nextChar;
+                idx++;
             }
 
             bytesConsumed = idx;
@@ -359,22 +320,38 @@ namespace System.Buffers.Text
             return false;
         }
 
-        // Keep the uncommon overflow path out of TryParseUInt64D so short inputs remain a leaf method.
+        // Keep the uncommon overflow path out of the short-input code in TryParseUInt64D.
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static bool TryParseUInt64DOverflow(ReadOnlySpan<byte> source, out ulong value, out int bytesConsumed)
+        private static bool TryParseUInt64DOverflow(ReadOnlySpan<byte> source, nuint firstDigit, out ulong value, out int bytesConsumed)
         {
             uint first = BinaryPrimitives.ReadUInt32LittleEndian(source);
-            uint second = BinaryPrimitives.ReadUInt32LittleEndian(source.Slice(4));
-            uint third = BinaryPrimitives.ReadUInt32LittleEndian(source.Slice(8));
-            uint fourth = BinaryPrimitives.ReadUInt32LittleEndian(source.Slice(12));
-            if (!AreFourDigits(first) || !AreFourDigits(second) || !AreFourDigits(third) || !AreFourDigits(fourth))
+            ulong parsedValue;
+            int idx;
+
+            if (!AreFourDigits(first))
             {
-                return TryParseUInt64D(source, out value, out bytesConsumed);
+                parsedValue = firstDigit;
+                idx = 1;
+                goto ParseRemaining;
             }
 
-            ulong parsedValue = ((ulong)ParseFourDigits(first) * 10_000u + ParseFourDigits(second)) * 100_000_000 +
-                ParseFourDigits(third) * 10_000u + ParseFourDigits(fourth);
-            int idx = 16;
+            parsedValue = ParseFourDigits(first);
+            idx = 4;
+
+            uint second = BinaryPrimitives.ReadUInt32LittleEndian(source.Slice(4));
+            if (!AreFourDigits(second)) { goto ParseRemaining; }
+            parsedValue = parsedValue * 10_000 + ParseFourDigits(second);
+            idx = 8;
+
+            uint third = BinaryPrimitives.ReadUInt32LittleEndian(source.Slice(8));
+            if (!AreFourDigits(third)) { goto ParseRemaining; }
+            parsedValue = parsedValue * 10_000 + ParseFourDigits(third);
+            idx = 12;
+
+            uint fourth = BinaryPrimitives.ReadUInt32LittleEndian(source.Slice(12));
+            if (!AreFourDigits(fourth)) { goto ParseRemaining; }
+            parsedValue = parsedValue * 10_000 + ParseFourDigits(fourth);
+            idx = 16;
 
             while (true)
             {
@@ -401,9 +378,19 @@ namespace System.Buffers.Text
                 parsedValue = OverflowRisk * 10 + nextChar;
             }
 
+        Done:
             bytesConsumed = idx;
             value = parsedValue;
             return true;
+
+        ParseRemaining:
+            while (true)
+            {
+                nuint nextChar = (uint)source[idx] - '0';
+                if ((uint)nextChar > 9) { goto Done; }
+                parsedValue = parsedValue * 10 + nextChar;
+                idx++;
+            }
         }
 
         // Each byte is an ASCII digit iff neither boundary calculation sets its high bit.

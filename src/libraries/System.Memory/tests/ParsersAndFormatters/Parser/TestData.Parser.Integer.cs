@@ -179,7 +179,10 @@ namespace System.Buffers.Text.Tests
                 yield return new ParserTestData<ulong>("5$", 5, 'x', expectedSuccess: true) { ExpectedBytesConsumed = 1 };
                 yield return new ParserTestData<ulong>("5faaccbb11223344f", 0, 'x', expectedSuccess: false);
                 yield return new ParserTestData<ulong>("00000000000000000000", 0, 'D', expectedSuccess: true);
+                yield return new ParserTestData<ulong>("123x5678901234567890", 123, 'D', expectedSuccess: true) { ExpectedBytesConsumed = 3 };
                 yield return new ParserTestData<ulong>("1234567x901234567890", 1_234_567, 'D', expectedSuccess: true) { ExpectedBytesConsumed = 7 };
+                yield return new ParserTestData<ulong>("12345678901x34567890", 12_345_678_901, 'D', expectedSuccess: true) { ExpectedBytesConsumed = 11 };
+                yield return new ParserTestData<ulong>("123456789012345x7890", 123_456_789_012_345, 'D', expectedSuccess: true) { ExpectedBytesConsumed = 15 };
             }
         }
 
