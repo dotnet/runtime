@@ -183,9 +183,13 @@ public partial class ContractDescriptorParser
             throw new JsonException();
 
         ReadNext(ref reader);
+        //   [number, string]
+        //    ^ we're here
         if (!TryGetInt32FromToken(ref reader, out offset))
             throw new JsonException();
         ReadNext(ref reader);
+        //   [number, string]
+        //            ^ we're here
         if (reader.TokenType != JsonTokenType.String)
             throw new JsonException();
         string type = reader.GetString() ?? throw new JsonException();
@@ -234,6 +238,14 @@ public partial class ContractDescriptorParser
             throw new JsonException();
 
         ReadNext(ref reader);
+        // Cases 2 and 3:
+        //   [value]
+        //    ^ we're here
+        //   [value, string]
+        //    ^ we're here
+        // Case 4:
+        //   [[value], string]
+        //    ^ we're here
         if (TryGetGlobalValueFromToken(ref reader, out GlobalValue value))
         {
             ReadNext(ref reader);
@@ -252,12 +264,18 @@ public partial class ContractDescriptorParser
         if (reader.TokenType != JsonTokenType.StartArray)
             throw new JsonException();
         ReadNext(ref reader);
+        //   [[value], string]
+        //     ^ we're here
         if (!TryGetGlobalValueFromToken(ref reader, out value))
             throw new JsonException();
         ReadNext(ref reader);
+        //   [[value], string]
+        //           ^ we're here
         if (reader.TokenType != JsonTokenType.EndArray)
             throw new JsonException();
         ReadNext(ref reader);
+        //   [[value], string]
+        //             ^ we're here
         if (reader.TokenType != JsonTokenType.String)
             throw new JsonException();
         string indirectType = reader.GetString() ?? throw new JsonException();
