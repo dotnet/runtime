@@ -25,11 +25,10 @@ namespace System
 #endif
         private const nuint ZeroMemoryNativeThreshold = 1024;
 
-#if TARGET_AMD64 || TARGET_ARM64
-        // Overlapping copies are done in blocks of this size with a constant-length Memmove, which the JIT
-        // unrolls into "load the whole block into registers, then store it" - correct for any overlap. 64
-        // bytes stays within its unrolling budget everywhere, and bounds re-entry: a call it didn't unroll
-        // comes back with a length the tail handles without calling Memmove again, so these can't recurse.
+#if (TARGET_AMD64 || TARGET_ARM64) && !MONO
+        // Blocks are copied with a constant-length Memmove, which the JIT unrolls into "load the whole block
+        // into registers, then store it" - correct for any overlap. 64 bytes fits its unrolling budget on
+        // every target here, and bounds re-entry: a shorter length is finished without calling Memmove.
         private const nuint MemmoveOverlappedBlock = 64;
 
         // Aligning the destination only pays for the extra leading block on larger copies.
@@ -248,12 +247,10 @@ namespace System
                 return;
             }
 
-#if TARGET_AMD64 || TARGET_ARM64
-            // The platform memmove's forward loop is tuned for disjoint buffers: 'rep movsb' collapses when
-            // they are less than a cache line apart - a shift by one element - and the non-temporal stores it
-            // uses for large copies evict the lines the rest of the copy reads back. Its backward loop has
-            // neither problem and outruns a managed descending one, so that direction is only handled here
-            // while the QCall dominates the copy.
+#if (TARGET_AMD64 || TARGET_ARM64) && !MONO
+            // memmove's forward loop is tuned for disjoint buffers: 'rep movsb' collapses when they are less
+            // than a cache line apart, and the non-temporal stores it uses for large copies evict the lines
+            // the rest of the copy reads back. Its backward loop has neither problem and beats us above 256.
             if ((nuint)Unsafe.ByteOffset(ref dest, ref src) < len)
             {
                 CopyOverlappedForward(ref dest, ref src, len);
@@ -275,17 +272,16 @@ namespace System
             MemmoveNative(ref dest, ref src, len);
         }
 
-#if TARGET_AMD64 || TARGET_ARM64
+#if (TARGET_AMD64 || TARGET_ARM64) && !MONO
         // Blocks run in strictly ascending order, so a store can never reach a source byte a later block
-        // still has to read. That also rules out the "copy a final block anchored at the end of the buffer"
-        // trick the non-overlapping paths use - those bytes would already have been rewritten.
+        // still has to read. That also rules out the trailing "block anchored at the end of the buffer"
+        // shortcut the non-overlapping paths use - those bytes would already have been rewritten.
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static void CopyOverlappedForward(ref byte dest, ref byte src, nuint len)
         {
             Debug.Assert(len > 0);
 
-            // An unaligned store costs more than an unaligned load, and an overlapping copy can only ever
-            // have one of the two aligned.
+            // Only one of the two can be aligned, and an unaligned store costs more than an unaligned load.
             if (len >= MemmoveOverlappedAlignThreshold)
             {
                 nuint head = 64 - Unsafe.OpportunisticMisalignment(ref dest, 64);
