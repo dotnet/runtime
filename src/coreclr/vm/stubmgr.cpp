@@ -1981,7 +1981,7 @@ BOOL CLRToCOMStubManager::TraceManager(Thread *thread,
         if (target == (PCODE)NULL)
             return FALSE;
 
-        LOG((LF_CORDB, LL_INFO10000, "CTCSM::TraceManager: COM event call case %p\n", target));
+        LOG((LF_CORDB, LL_INFO10000, "CTCSM::TraceManager: COM event call case %p\n", reinterpret_cast<void*>(target)));
         trace->InitForManaged(target);
         return TRUE;
     }
@@ -1994,7 +1994,7 @@ BOOL CLRToCOMStubManager::TraceManager(Thread *thread,
     }
 
     PCODE target = SF_IsCOMLateBoundStub(dwStubFlags) ? GetLateBoundCOMTarget(pThis, pInfo) : GetCOMTarget(pThis, pInfo);
-    LOG((LF_CORDB, LL_INFO10000, "CTCSM::TraceManager: CLR-to-COM case %p\n", target));
+    LOG((LF_CORDB, LL_INFO10000, "CTCSM::TraceManager: CLR-to-COM case %p\n", reinterpret_cast<void*>(target)));
     trace->InitForUnmanaged(target);
 
     return TRUE;
