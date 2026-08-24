@@ -85,7 +85,7 @@ NativeCodeVersionNode::NativeCodeVersionNode(
 PCODE NativeCodeVersionNode::GetNativeCode() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    return m_pNativeCode;
+    return VolatileLoad(&m_pNativeCode);
 }
 
 ReJITID NativeCodeVersionNode::GetILVersionId() const
@@ -1288,7 +1288,7 @@ NativeCodeVersionId MethodDescVersioningState::AllocateVersionId()
 PTR_NativeCodeVersionNode MethodDescVersioningState::GetFirstVersionNode() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    return m_pFirstVersionNode;
+    return VolatileLoad(&m_pFirstVersionNode);
 }
 
 BOOL MethodDescVersioningState::IsDefaultVersionActiveChild() const
