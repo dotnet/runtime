@@ -2672,9 +2672,20 @@ namespace Internal.JitInterface
                     }
                     else
                     {
-                        pResult->instParamLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(
-                            ReadyToRunHelperId.TypeDictionary,
-                            exactType));
+                        ISymbolNode instParamLookup;
+                        if (targetMethod.OwningType == exactType && !CanEncodeTypeInSignature(exactType))
+                        {
+                            instParamLookup = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(
+                                ReadyToRunHelperId.DeclaringTypeHandle,
+                                ComputeMethodWithToken(targetMethod, ref resolvedToken, constrainedType, unboxing: false));
+                        }
+                        else
+                        {
+                            instParamLookup = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(
+                                ReadyToRunHelperId.TypeDictionary,
+                                exactType);
+                        }
+                        pResult->instParamLookup = CreateConstLookupToSymbol(instParamLookup);
                     }
                 }
             }
@@ -2844,6 +2855,22 @@ namespace Internal.JitInterface
                 ModuleToken fieldToken = HandleToModuleToken(ref pResolvedToken, out bool strippedInstantiation);
                 Debug.Assert(!strippedInstantiation);
                 helperArg = new FieldWithToken(fieldDesc, fieldToken, forceOwningTypeNotDerivedFromToken: strippedInstantiation);
+            }
+            else if (helperId == ReadyToRunHelperId.TypeHandle &&
+                helperArg is TypeDesc typeDesc &&
+                pResolvedToken.hMethod != null &&
+                HandleToObject(pResolvedToken.hMethod) is MethodDesc declaringMethod &&
+                declaringMethod.OwningType == typeDesc &&
+                !CanEncodeTypeInSignature(typeDesc))
+            {
+                // The type handle being looked up is the type which declares the method described by the token. Encode
+                // the method instead when the declaring type isn't referenceable from the modules being compiled.
+                helperId = ReadyToRunHelperId.DeclaringTypeHandle;
+                helperArg = ComputeMethodWithToken(
+                    declaringMethod,
+                    ref pResolvedToken,
+                    constrainedType: null,
+                    unboxing: false);
             }
 
             var methodContext = new GenericContext(callerHandle);

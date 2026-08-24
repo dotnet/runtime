@@ -365,6 +365,41 @@ public class MyChildGeneric<T>
 #endif
 }
 
+#if V2
+// V1 declares these methods on DeclaringTypeHandleChild<T, U>. V2 moves them to an intermediate base and transforms
+// the exact declaring type from <T, U> to <U, T[]> so the runtime hierarchy walk must recover more than the TypeDef.
+public class DeclaringTypeHandleIntermediate<TFirst, TSecond>
+{
+    public Type MovedToBaseClass<TMethod>()
+    {
+        return typeof(TMethod);
+    }
+
+    public static Type[] StaticMovedToBaseClass()
+    {
+        return new Type[] { typeof(TFirst), typeof(TSecond) };
+    }
+}
+#endif
+
+public class DeclaringTypeHandleChild<T, U>
+#if V2
+    : DeclaringTypeHandleIntermediate<U, T[]>
+#endif
+{
+#if !V2
+    public Type MovedToBaseClass<TMethod>()
+    {
+        return typeof(TMethod);
+    }
+
+    public static Type[] StaticMovedToBaseClass()
+    {
+        return new Type[] { typeof(U), typeof(T[]) };
+    }
+#endif
+}
+
 [StructLayout(LayoutKind.Sequential)]
 public class MyClassWithLayout
 {

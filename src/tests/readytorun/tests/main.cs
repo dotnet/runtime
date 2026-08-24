@@ -240,6 +240,8 @@ public class Program
     {
         var o = new MyChildGeneric<T>();
 
+        // The generic method moved from MyChildGeneric<T> to MyIntermediateGeneric<T, T>. This call requires a
+        // generic-dictionary DeclaringTypeHandle lookup whose method is encoded as a MethodSpec.
         Assert.AreEqual(o.MovedToBaseClass<V>(), typeof(List<V>).ToString());
         Assert.AreEqual(new Func<string>(o.MovedToBaseClass<V>)(), typeof(List<V>).ToString());
         Assert.AreEqual(o.ChangedToVirtual<V>(), typeof(List<V>).ToString());
@@ -269,12 +271,67 @@ public class Program
         Assert.AreEqual("NullReferenceException", "thrown");
 
         var o2 = new MyChildClass();
+        // The generic method moved from MyChildClass to MyIntermediateClass. Because the owning type is not generic,
+        // this requires a standalone DeclaringTypeHandle lookup whose method is encoded as a MethodSpec.
         Assert.AreEqual(o2.MovedToBaseClassGeneric<T>(), "MovedToBaseClassGeneric");
     }
 
     static void TestMovedGenericVirtualMethodSharedGenericCaller()
     {
         TestMovedGenericVirtualMethodSharedGeneric<object, WeakReference>();
+    }
+
+    static void TestDeclaringTypeHandle()
+    {
+        TestDirectDeclaringTypeHandle<byte>();
+        TestDeclaringTypeHandleSharedGeneric<object, WeakReference, string>();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void TestDirectDeclaringTypeHandle<V>()
+    {
+        var instance = new DeclaringTypeHandleChild<string, int>();
+        // The closed generic owning type makes this a standalone DeclaringTypeHandle lookup. The generic method is
+        // encoded as a MethodSpec, and the delegate checks that the exact transformed declaring type was recovered.
+        Assert.AreEqual(instance.MovedToBaseClass<V>(), typeof(V));
+
+        var movedMethod = new Func<Type>(instance.MovedToBaseClass<V>);
+        Assert.AreEqual(movedMethod(), typeof(V));
+        AssertDeclaringType(movedMethod.Method.DeclaringType, typeof(int), typeof(string[]));
+
+        // A non-generic method is encoded as a MemberRef. The static call needs the declaring type as its hidden
+        // instantiation argument, so this covers a standalone DeclaringTypeHandle lookup using a MemberRef.
+        Type[] staticMethodTypes = DeclaringTypeHandleChild<string, int>.StaticMovedToBaseClass();
+        Assert.AreEqual(staticMethodTypes[0], typeof(int));
+        Assert.AreEqual(staticMethodTypes[1], typeof(string[]));
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void TestDeclaringTypeHandleSharedGeneric<T, U, V>()
+    {
+        var instance = new DeclaringTypeHandleChild<T, U>();
+        // Runtime-determined type and method arguments require a generic-dictionary DeclaringTypeHandle lookup whose
+        // method is encoded as a MethodSpec.
+        Assert.AreEqual(instance.MovedToBaseClass<V>(), typeof(V));
+
+        var movedMethod = new Func<Type>(instance.MovedToBaseClass<V>);
+        Assert.AreEqual(movedMethod(), typeof(V));
+        AssertDeclaringType(movedMethod.Method.DeclaringType, typeof(U), typeof(T[]));
+
+        // The static non-generic method requires the same dictionary lookup for its hidden instantiation argument,
+        // but its method is encoded directly as a MemberRef.
+        Type[] staticMethodTypes = DeclaringTypeHandleChild<T, U>.StaticMovedToBaseClass();
+        Assert.AreEqual(staticMethodTypes[0], typeof(U));
+        Assert.AreEqual(staticMethodTypes[1], typeof(T[]));
+    }
+
+    static void AssertDeclaringType(Type declaringType, Type firstTypeArgument, Type secondTypeArgument)
+    {
+        Assert.AreEqual(declaringType.Name, "DeclaringTypeHandleIntermediate`2");
+
+        Type[] typeArguments = declaringType.GetGenericArguments();
+        Assert.AreEqual(typeArguments[0], firstTypeArgument);
+        Assert.AreEqual(typeArguments[1], secondTypeArgument);
     }
 
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
@@ -564,6 +621,8 @@ public class Program
         TestGenericVirtualMethod();
         Console.WriteLine("TestMovedGenericVirtualMethod");
         TestMovedGenericVirtualMethod();
+        Console.WriteLine("TestDeclaringTypeHandle");
+        TestDeclaringTypeHandle();
         Console.WriteLine("TestGenericNonVirtualMethod");
         TestGenericNonVirtualMethod();
 
