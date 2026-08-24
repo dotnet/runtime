@@ -3457,7 +3457,7 @@ namespace System.Numerics
 
             // *Leading sign word*:
             // If the MSB differs from sign, append 32 bits of sign before MSB. This
-            // distinguishes posotive and negative values with the same ending
+            // distinguishes positive and negative values with the same ending
             // FFFFFFFF 0xxxxxxx <-> xxxxxxx0 FFFFFFFF
             //      (0) 0xxxxxxx <-> xxxxxxx0
             // When round-tripping, the constructor will trim leading bits same with sign.
@@ -3466,7 +3466,7 @@ namespace System.Numerics
 
             // *Extra trailing word*:
             // If there're 33 or more homogeneous bits from LSB, the raw trailing bits will
-            // be trimmed by constructor and make the reversed result undistinguishable with
+            // be trimmed by constructor and make the reversed result indistinguishable with
             // 32 less bits at LSB.
             // For this case, append 32 opposite bits after LSB. They will always be trimmed
             // by the constructor and only affects the sign of reversed result.
