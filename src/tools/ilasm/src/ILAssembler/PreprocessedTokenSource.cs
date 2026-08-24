@@ -107,18 +107,14 @@ namespace ILAssembler
             return nextToken;
         }
 
-        // Queue of tokens produced by macro expansion re-lexing
-        private readonly Queue<IToken> _macroExpansionQueue = new();
+        // Stack of tokens produced by macro expansion re-lexing
+        private readonly Stack<IToken> _macroExpansionStack = new();
 
         public IToken NextToken()
         {
-            // If we have queued tokens from a previous macro expansion, return them first
-            if (_macroExpansionQueue.Count > 0)
-            {
-                return _macroExpansionQueue.Dequeue();
-            }
-
-            IToken nextToken = NextTokenWithoutNestedEof(errorOnEof: ActiveIfDefBlocksInCurrentSource != 0);
+            IToken nextToken = _macroExpansionStack.Count > 0
+                ? _macroExpansionStack.Pop()
+                : NextTokenWithoutNestedEof(errorOnEof: ActiveIfDefBlocksInCurrentSource != 0);
 
             if (nextToken.Type == CILLexer.PP_INCLUDE)
             {
@@ -212,13 +208,13 @@ namespace ILAssembler
                 }
                 else if (tokens.Count > 1)
                 {
-                    // Multiple tokens: return the first, queue the rest.
-                    // Clone queued tokens to inherit the original macro identifier's source
+                    // Multiple tokens: return the first, stack the rest.
+                    // Clone stacked tokens to inherit the original macro identifier's source
                     // location so diagnostics on expanded tokens map to the right file/span.
                     IWritableToken writableToken = (IWritableToken)nextToken;
                     writableToken.Type = tokens[0].Type;
                     writableToken.Text = tokens[0].Text;
-                    for (int i = 1; i < tokens.Count; i++)
+                    for (int i = tokens.Count - 1; i >= 1; i--)
                     {
                         var source = new Tuple<ITokenSource, ICharStream>(nextToken.TokenSource!, nextToken.TokenSource?.InputStream!);
                         var expanded = new CommonToken(source, tokens[i].Type, Lexer.DefaultTokenChannel, nextToken.StartIndex, nextToken.StopIndex)
@@ -227,7 +223,7 @@ namespace ILAssembler
                             Column = nextToken.Column,
                             Text = tokens[i].Text,
                         };
-                        _macroExpansionQueue.Enqueue(expanded);
+                        _macroExpansionStack.Push(expanded);
                     }
                 }
                 // If tokens.Count == 0 (empty macro value), just return the original token as-is

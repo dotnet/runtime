@@ -406,6 +406,44 @@ namespace ILAssembler.Tests
         }
 
         [Fact]
+        public void Define_MultiTokenValue_RecursivelyExpandsQueuedMacroTokensInOrder()
+        {
+            string source = """
+                #define INNER "B C"
+                #define OUTER "A INNER D"
+                OUTER
+                """;
+
+            ITokenSource lexer = CreateLexerForSource(source);
+            PreprocessedTokenSource preprocessor = new PreprocessedTokenSource(lexer, NoIncludeDirectivesCallback, CreateDefaultLexer());
+            preprocessor.OnPreprocessorSyntaxError += NoLexerDiagnosticsCallback;
+            BufferedTokenStream stream = new(preprocessor);
+            stream.Fill();
+            Assert.Collection(stream.GetTokens(),
+                token =>
+                {
+                    Assert.Equal(CILLexer.ID, token.Type);
+                    Assert.Equal("A", token.Text);
+                },
+                token =>
+                {
+                    Assert.Equal(CILLexer.ID, token.Type);
+                    Assert.Equal("B", token.Text);
+                },
+                token =>
+                {
+                    Assert.Equal(CILLexer.ID, token.Type);
+                    Assert.Equal("C", token.Text);
+                },
+                token =>
+                {
+                    Assert.Equal(CILLexer.ID, token.Type);
+                    Assert.Equal("D", token.Text);
+                },
+                token => Assert.Equal(CILLexer.Eof, token.Type));
+        }
+
+        [Fact]
         public void Define_SingleTokenValue_SubstitutedCorrectly()
         {
             string source = """
