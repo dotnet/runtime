@@ -4,8 +4,11 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection.Metadata;
+using System.Reflection.PortableExecutable;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
+using Microsoft.NET.WebAssembly.Webcil;
 
 namespace Microsoft.NET.Sdk.WebAssembly;
 
@@ -153,13 +156,17 @@ public class ConvertDllsToWebcil : Task
             // <name>.wasm with no sibling .dll, so they still resolve.
             string candidateDll = Path.Combine(PrebuiltR2RDirectory, assemblyName + ".dll");
             string candidateWasm = Path.Combine(PrebuiltR2RDirectory, assemblyName + Utils.WebcilInWasmExtension);
-            if (File.Exists(candidateDll))
+            string prebuilt = File.Exists(candidateDll) ? candidateDll
+                            : File.Exists(candidateWasm) ? candidateWasm
+                            : null;
+
+            // The prebuilt image is matched only by file name, so an app-local assembly that shadows a
+            // framework one (e.g. a Private=true higher-version copy) would otherwise be replaced by the
+            // pack's version-pinned image. Reuse it only when its assembly version matches the candidate;
+            // otherwise fall through and convert the app-local IL (ships as an IL webcil, like a non-R2R build).
+            if (prebuilt != null && PrebuiltR2RVersionMatches(dllFilePath, prebuilt))
             {
-                r2rWebcilPath = candidateDll;
-            }
-            else if (File.Exists(candidateWasm))
-            {
-                r2rWebcilPath = candidateWasm;
+                r2rWebcilPath = prebuilt;
             }
         }
         if (!string.IsNullOrEmpty(r2rWebcilPath))
@@ -215,5 +222,40 @@ public class ConvertDllsToWebcil : Task
         }
 
         return webcilItem;
+    }
+
+    private bool PrebuiltR2RVersionMatches(string candidateDllPath, string prebuiltImagePath)
+    {
+        Version candidateVersion = TryReadAssemblyVersion(candidateDllPath);
+        Version prebuiltVersion = TryReadAssemblyVersion(prebuiltImagePath);
+
+        // If either identity is unreadable, keep the prebuilt image (prior behavior) so the common case
+        // where every candidate is the pack's own assembly is never regressed.
+        if (candidateVersion is null || prebuiltVersion is null || candidateVersion.Equals(prebuiltVersion))
+            return true;
+
+        Log.LogMessage(MessageImportance.Normal,
+            $"Not staging prebuilt R2R image '{prebuiltImagePath}' (v{prebuiltVersion}) for '{candidateDllPath}' (v{candidateVersion}): assembly version mismatch; converting IL instead.");
+        return false;
+    }
+
+    private static Version TryReadAssemblyVersion(string path)
+    {
+        try
+        {
+            using FileStream stream = File.OpenRead(path);
+            if (path.EndsWith(Utils.WebcilInWasmExtension, StringComparison.OrdinalIgnoreCase))
+            {
+                using var webcilReader = new WebcilReader(stream, path);
+                return webcilReader.GetMetadataReader().GetAssemblyDefinition().Version;
+            }
+
+            using var peReader = new PEReader(stream);
+            return peReader.GetMetadataReader().GetAssemblyDefinition().Version;
+        }
+        catch
+        {
+            return null;
+        }
     }
 }
