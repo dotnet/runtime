@@ -18,8 +18,6 @@ namespace ILCompiler.ObjectWriter
 
         public WasmDataSection(List<IWasmDataSegment> segments, Utf8String name, int contentAlign = 1)
         {
-            Debug.Assert(!name.IsNull);
-
             _segments = segments;
             _contentAlign = contentAlign;
             Name = name;
@@ -86,12 +84,13 @@ namespace ILCompiler.ObjectWriter
                     // Calculate end padding to insert after end of this segment's contents, before the wasm header for the next section
                     // to ensure that the next section's content is aligned at the file level
                     int position = (int)outputFileStream.Position + segment.HeaderSize + (int)segment.RawContentSize + _segments[i + 1].HeaderSize;
-                    int padding = AlignmentHelper.AlignUp(position, _contentAlign) - position;
-                    segment.Padding = padding;
+                    int alignment = Math.Max(_contentAlign, _segments[i + 1].Alignment);
+                    int padding = AlignmentHelper.AlignUp(position, alignment) - position;
+                    segment.SetPadding(padding);
                 }
                 else
                 {
-                    segment.Padding = 0;
+                    segment.SetPadding(0);
                 }
                 size += segment.EmitToStream(outputFileStream);
             }
