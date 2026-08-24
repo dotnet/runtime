@@ -667,6 +667,254 @@ namespace System.Numerics.Tests
             Assert.Equal(dividend >> bits, q);
         }
 
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        [InlineData(4)]
+        [InlineData(31)]
+        [InlineData(32)]
+        [InlineData(63)]
+        [InlineData(64)]
+        [InlineData(65)]
+        [InlineData(73)]
+        [InlineData(127)]
+        [InlineData(128)]
+        [InlineData(1_024)]
+        public void DivisionByPowerOfTwoUsesShiftSemantics(int exponent)
+        {
+            BigInteger divisorMagnitude = BigInteger.One << exponent;
+            BigInteger dividendMagnitude = (BigInteger.One << (exponent + 70))
+                + (new BigInteger(9) << exponent)
+                + 13;
+            BigInteger expectedQuotientMagnitude = (BigInteger.One << 70) + 9 + (exponent >= 4 ? 0 : 13 >> exponent);
+            BigInteger expectedRemainderMagnitude = exponent >= 4 ? 13 : 13 & ((1 << exponent) - 1);
+
+            foreach (bool negativeDividend in new[] { false, true })
+            {
+                foreach (bool negativeDivisor in new[] { false, true })
+                {
+                    BigInteger dividend = negativeDividend ? -dividendMagnitude : dividendMagnitude;
+                    BigInteger divisor = negativeDivisor ? -divisorMagnitude : divisorMagnitude;
+                    BigInteger expectedQuotient = negativeDividend ^ negativeDivisor
+                        ? -expectedQuotientMagnitude
+                        : expectedQuotientMagnitude;
+                    BigInteger expectedRemainder = negativeDividend
+                        ? -expectedRemainderMagnitude
+                        : expectedRemainderMagnitude;
+
+                    Assert.Equal(expectedQuotient, dividend / divisor);
+                    Assert.Equal(expectedRemainder, dividend % divisor);
+
+                    BigInteger quotient = BigInteger.DivRem(dividend, divisor, out BigInteger remainder);
+                    Assert.Equal(expectedQuotient, quotient);
+                    Assert.Equal(expectedRemainder, remainder);
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(4)]
+        [InlineData(31)]
+        [InlineData(32)]
+        [InlineData(63)]
+        [InlineData(64)]
+        [InlineData(65)]
+        [InlineData(73)]
+        [InlineData(1_024)]
+        public void MultiplicationByPowerOfTwoUsesShiftSemantics(int exponent)
+        {
+            BigInteger valueMagnitude = (BigInteger.One << 130) + (BigInteger.One << 65) + 13;
+            BigInteger powerMagnitude = BigInteger.One << exponent;
+
+            foreach (bool negativeValue in new[] { false, true })
+            {
+                foreach (bool negativePower in new[] { false, true })
+                {
+                    BigInteger value = negativeValue ? -valueMagnitude : valueMagnitude;
+                    BigInteger power = negativePower ? -powerMagnitude : powerMagnitude;
+                    BigInteger product = value * power;
+                    BigInteger expected = value << exponent;
+                    if (negativePower)
+                    {
+                        expected = -expected;
+                    }
+
+                    Assert.Equal(expected, product);
+                    Assert.Equal(power, product / value);
+                    Assert.Equal(BigInteger.Zero, product % value);
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(0, 64)]
+        [InlineData(1, 64)]
+        [InlineData(9, 64)]
+        [InlineData(64, 64)]
+        [InlineData(73, 64)]
+        [InlineData(1_024, 73)]
+        public void GcdWithPowerOfTwoUsesTrailingZeroCount(int valueTrailingZeros, int power)
+        {
+            BigInteger value = new BigInteger(15) << valueTrailingZeros;
+            BigInteger powerOfTwo = BigInteger.One << power;
+            BigInteger expected = BigInteger.One << Math.Min(valueTrailingZeros, power);
+
+            Assert.Equal(expected, BigInteger.GreatestCommonDivisor(value, powerOfTwo));
+            Assert.Equal(expected, BigInteger.GreatestCommonDivisor(powerOfTwo, value));
+            Assert.Equal(expected, BigInteger.GreatestCommonDivisor(-value, -powerOfTwo));
+        }
+
+        [Theory]
+        [InlineData(1, 1, 64)]
+        [InlineData(2, 0, 1)]
+        [InlineData(2, 0, 64)]
+        [InlineData(2, 31, 64)]
+        [InlineData(2, 32, 64)]
+        [InlineData(2, 63, 64)]
+        [InlineData(4, 15, 64)]
+        [InlineData(4, 16, 64)]
+        [InlineData(-1, 31, 64)]
+        [InlineData(-1, 32, 64)]
+        [InlineData(-2, 31, 64)]
+        [InlineData(-2, 32, 64)]
+        [InlineData(2, 64, 64)]
+        [InlineData(-4, 33, 64)]
+        [InlineData(16, 64, 1_024)]
+        public void ModPowOfPowersOfTwoUsesExponentScaling(int value, int exponent, int modulusExponent)
+        {
+            BigInteger modulus = BigInteger.One << modulusExponent;
+            int valueExponent = BitOperations.TrailingZeroCount((uint)Math.Abs(value));
+            int resultExponent = checked(valueExponent * exponent);
+            BigInteger expected = resultExponent >= modulusExponent
+                ? BigInteger.Zero
+                : BigInteger.One << resultExponent;
+
+            if (value < 0 && (exponent & 1) != 0)
+            {
+                expected = -expected;
+            }
+
+            Assert.Equal(expected, BigInteger.ModPow(value, exponent, modulus));
+            Assert.Equal(expected, BigInteger.ModPow(value, exponent, -modulus));
+        }
+
+        [Theory]
+        [InlineData(2, 31)]
+        [InlineData(2, 64)]
+        [InlineData(2, 1_024)]
+        [InlineData(-2, 31)]
+        [InlineData(-2, 32)]
+        [InlineData(16, 257)]
+        public void PowOfPowerOfTwoUsesExponentScaling(int value, int exponent)
+        {
+            int valueExponent = BitOperations.TrailingZeroCount((uint)Math.Abs(value));
+            BigInteger expected = BigInteger.One << checked(valueExponent * exponent);
+            if (value < 0 && (exponent & 1) != 0)
+            {
+                expected = -expected;
+            }
+
+            Assert.Equal(expected, BigInteger.Pow(value, exponent));
+        }
+
+        [Theory]
+        [InlineData(1, 1)]
+        [InlineData(31, 31)]
+        [InlineData(32, 32)]
+        [InlineData(32, 64)]
+        [InlineData(33, 33)]
+        [InlineData(64, 32)]
+        [InlineData(256, 257)]
+        public void CommonZeroLimbsPreserveArithmetic(int leftLimbOffset, int rightLimbOffset)
+        {
+            int leftShift = leftLimbOffset * nint.Size * 8;
+            int rightShift = rightLimbOffset * nint.Size * 8;
+            int commonShift = Math.Min(leftShift, rightShift);
+            BigInteger leftMagnitude = (BigInteger.One << 130) + (BigInteger.One << 65) + 12_345;
+            BigInteger rightMagnitude = (BigInteger.One << 66) + 321;
+            BigInteger left = leftMagnitude << leftShift;
+            BigInteger right = rightMagnitude << rightShift;
+            BigInteger reducedLeft = leftMagnitude << (leftShift - commonShift);
+            BigInteger reducedRight = rightMagnitude << (rightShift - commonShift);
+
+            foreach (bool negativeLeft in new[] { false, true })
+            {
+                foreach (bool negativeRight in new[] { false, true })
+                {
+                    BigInteger signedLeftMagnitude = negativeLeft ? -leftMagnitude : leftMagnitude;
+                    BigInteger signedRightMagnitude = negativeRight ? -rightMagnitude : rightMagnitude;
+                    BigInteger signedLeft = negativeLeft ? -left : left;
+                    BigInteger signedRight = negativeRight ? -right : right;
+                    BigInteger signedReducedLeft = negativeLeft ? -reducedLeft : reducedLeft;
+                    BigInteger signedReducedRight = negativeRight ? -reducedRight : reducedRight;
+
+                    Assert.Equal((signedReducedLeft + signedReducedRight) << commonShift, signedLeft + signedRight);
+                    Assert.Equal((signedReducedLeft - signedReducedRight) << commonShift, signedLeft - signedRight);
+                    Assert.Equal((signedLeftMagnitude * signedRightMagnitude) << (leftShift + rightShift), signedLeft * signedRight);
+                    Assert.Equal(signedReducedLeft / signedReducedRight, signedLeft / signedRight);
+                    Assert.Equal((signedReducedLeft % signedReducedRight) << commonShift, signedLeft % signedRight);
+
+                    BigInteger quotient = BigInteger.DivRem(signedLeft, signedRight, out BigInteger remainder);
+                    Assert.Equal(signedReducedLeft / signedReducedRight, quotient);
+                    Assert.Equal((signedReducedLeft % signedReducedRight) << commonShift, remainder);
+                }
+            }
+
+            BigInteger expectedGcd = BigInteger.GreatestCommonDivisor(reducedLeft, reducedRight) << commonShift;
+            Assert.Equal(expectedGcd, BigInteger.GreatestCommonDivisor(left, right));
+            Assert.Equal(expectedGcd, BigInteger.GreatestCommonDivisor(-left, -right));
+        }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(32)]
+        [InlineData(256)]
+        public void ZeroLimbScalarMultiplicationAndSquarePreserveValue(int limbOffset)
+        {
+            int shift = limbOffset * nint.Size * 8;
+            BigInteger magnitude = (BigInteger.One << 130) + (BigInteger.One << 65) + 12_345;
+            BigInteger value = magnitude << shift;
+
+            Assert.Equal((magnitude * 3) << shift, value * 3);
+            Assert.Equal((magnitude * magnitude) << (shift * 2), value * value);
+        }
+
+        [Fact]
+        public void RemainderByPowerOfTwoNormalizesZeroAndSmallValues()
+        {
+            BigInteger divisor = BigInteger.One << (nint.Size * 8);
+            BigInteger exactDividend = BigInteger.One << (nint.Size * 8 * 4);
+
+            Assert.Equal(BigInteger.Zero, exactDividend % divisor);
+            Assert.Equal(BigInteger.One << (nint.Size * 8 * 3), BigInteger.DivRem(exactDividend, divisor, out BigInteger exactRemainder));
+            Assert.Equal(BigInteger.Zero, exactRemainder);
+
+            Assert.Equal(new BigInteger(13), new BigInteger(13) % divisor);
+            Assert.Equal(BigInteger.Zero, new BigInteger(13) / divisor);
+        }
+
+        [Fact]
+        public void CommonZeroLimbMultiplicationPreservesCanonicalRecursiveInputs()
+        {
+            const int HalfLength = 256;
+            int bitsPerLimb = nint.Size * 8;
+            var rng = new Random(13000 + bitsPerLimb);
+            BigInteger low = MakePositive(HalfLength - 16, rng);
+            BigInteger high = MakePositive(HalfLength, rng);
+            BigInteger leftMagnitude = (high << (HalfLength * bitsPerLimb)) + low;
+            BigInteger rightMagnitude = MakePositive(HalfLength, rng);
+            int shift = 32 * bitsPerLimb;
+            BigInteger left = leftMagnitude << shift;
+            BigInteger right = rightMagnitude << shift;
+
+            Assert.Equal((leftMagnitude * rightMagnitude) << (shift * 2), left * right);
+            Assert.Equal((leftMagnitude * leftMagnitude) << (shift * 2), left * left);
+        }
+
         // --- Toom-Cook 3 body coverage (both operands >= 256 limbs) ---
 
         [Theory]
