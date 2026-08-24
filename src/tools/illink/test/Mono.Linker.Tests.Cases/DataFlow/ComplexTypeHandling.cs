@@ -11,6 +11,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
     [SetupIlcWholeProgramAnalysis]
     [ExpectedNoWarnings]
     [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "Applying DAM PublicMethods on an array will mark Array.CreateInstance which has RDC on it")]
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026", Justification = "Applying DAM PublicMethods on an array will mark Array.Initialize which has RUC on it")]
+    [KeptAttributeAttribute(typeof(UnconditionalSuppressMessageAttribute))]
     [KeptAttributeAttribute(typeof(UnconditionalSuppressMessageAttribute))]
     public class ComplexTypeHandling
     {

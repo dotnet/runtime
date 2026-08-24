@@ -8,6 +8,8 @@ using Mono.Linker.Tests.Cases.Expectations.Assertions;
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
     [ExpectedNoWarnings]
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026", Justification = "Applying DAM PublicMethods on an array (from a string-based type name) will mark Array.Initialize which has RUC on it")]
+    [KeptAttributeAttribute(typeof(UnconditionalSuppressMessageAttribute))]
     public class ApplyTypeAnnotations
     {
         public static void Main()
