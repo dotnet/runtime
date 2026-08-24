@@ -199,6 +199,8 @@ configuration:
         - labelAdded:
             label: area-NativeAOT-coreclr
         - labelAdded:
+            label: area-ReadyToRun
+        - labelAdded:
             label: area-Single-File
         - labelAdded:
             label: area-System.Buffers
