@@ -49,7 +49,7 @@ namespace ILCompiler.ObjectWriter
                 }
 
                 WebcilSection lastSection = _sections[_sections.Length - 1];
-                Debug.Assert(lastSection.Header is not default);
+                Debug.Assert(!lastSection.Header.Equals(default(WebcilSectionHeader)));
                 return checked((int)(lastSection.Header.PointerToRawData + lastSection.Header.SizeOfRawData));
             }
         }
