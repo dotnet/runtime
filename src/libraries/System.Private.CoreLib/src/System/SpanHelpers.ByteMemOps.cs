@@ -11,7 +11,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime.Intrinsics;
 
 namespace System
 {
@@ -27,16 +26,17 @@ namespace System
         private const nuint ZeroMemoryNativeThreshold = 1024;
 
 #if (TARGET_AMD64 || TARGET_ARM64) && !MONO
-        // Blocks are copied with a constant-length Memmove, which the JIT unrolls into "load the whole block
-        // into registers, then store it" - correct for any overlap. 64 bytes fits its unrolling budget on
-        // every target here, and bounds re-entry: a shorter length is finished without calling Memmove.
-        private const nuint MemmoveOverlappedBlock = 64;
+        // Blocks are copied with a constant-length Memmove, which the JIT expands into "load the whole
+        // block into registers, then store it" - correct for any overlap. 64 bytes fits its unrolling
+        // budget on every target here, and bounds re-entry: a block-sized call skips the loop below and
+        // is finished by the tail, which never calls Memmove back.
+        private const nuint OverlappedBlockSize = 64;
 
         // Aligning the destination only pays for the extra leading block on larger copies.
-        private const nuint MemmoveOverlappedAlignThreshold = 2048;
+        private const nuint OverlappedAlignThreshold = 2048;
 
-        // Past this the platform memmove's backward loop is about twice as fast as a managed descending one.
-        private const nuint MemmoveOverlappedBackwardThreshold = 256;
+        // Past this the platform memmove's backward loop beats a managed descending one.
+        private const nuint OverlappedBackwardThreshold = 256;
 #endif
 
 #if HAS_CUSTOM_BLOCKS
@@ -47,10 +47,8 @@ namespace System
         private struct Block64 {}
 #endif // HAS_CUSTOM_BLOCKS
 
-        // Too big to be worth inlining: it burns a lot of the caller's budget, and keeping the call is also
-        // what lets the JIT unroll it when the length is constant.
         [Intrinsic] // Unrolled for small constant lengths
-        [MethodImpl(MethodImplOptions.NoInlining)]
+        [MethodImpl(MethodImplOptions.NoInlining)] // keeping the call is what lets the JIT unroll it
         internal static void Memmove(ref byte dest, ref byte src, nuint len)
         {
             // P/Invoke into the native version when the buffers are overlapping.
@@ -252,16 +250,19 @@ namespace System
             }
 
 #if (TARGET_AMD64 || TARGET_ARM64) && !MONO
-            // memmove's forward loop is tuned for disjoint buffers: 'rep movsb' collapses when they are less
-            // than a cache line apart, and the non-temporal stores it uses for large copies evict the lines
-            // the rest of the copy reads back. Its backward loop has neither problem and beats us above 256.
+            // We're better off here than calling the platform memmove: for short copies the P/Invoke alone
+            // costs more than the copy, and its forward loop is tuned for disjoint buffers - 'rep movsb'
+            // collapses when the buffers are less than a cache line apart, and the non-temporal stores it
+            // uses for large copies evict the lines the rest of the copy reads back. Its backward loop has
+            // neither problem, so long right shifts are left to it.
             if ((nuint)Unsafe.ByteOffset(ref dest, ref src) < len)
             {
+                // dest is below src, so copying upwards never overwrites a byte we still have to read.
                 CopyOverlappedForward(ref dest, ref src, len);
                 return;
             }
 
-            if (len <= MemmoveOverlappedBackwardThreshold)
+            if (len <= OverlappedBackwardThreshold)
             {
                 CopyOverlappedBackward(ref dest, ref src, len);
                 return;
@@ -277,16 +278,19 @@ namespace System
         }
 
 #if (TARGET_AMD64 || TARGET_ARM64) && !MONO
-        // Blocks run in strictly ascending order, so a store can never reach a source byte a later block
-        // still has to read. That also rules out the trailing "block anchored at the end of the buffer"
-        // shortcut the non-overlapping paths use - those bytes would already have been rewritten.
+        // Every step below either is a constant-length Memmove, which the JIT expands so that the whole
+        // block is loaded before any of it is stored, or a single load feeding a single store, where the
+        // data dependency does the same for one register's worth. Steps then run in strictly ascending,
+        // non-overlapping order, so a store can never reach a source byte a later step has to read. That
+        // also rules out the trailing "block anchored at the end of the buffer" shortcut the
+        // non-overlapping paths use - those bytes may already have been rewritten.
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static void CopyOverlappedForward(ref byte dest, ref byte src, nuint len)
         {
             Debug.Assert(len > 0);
 
             // Only one of the two can be aligned, and an unaligned store costs more than an unaligned load.
-            if (len >= MemmoveOverlappedAlignThreshold)
+            if (len >= OverlappedAlignThreshold)
             {
                 nuint head = 64 - Unsafe.OpportunisticMisalignment(ref dest, 64);
                 if (head != 64)
@@ -298,87 +302,100 @@ namespace System
                 }
             }
 
-            // The JIT unrolls a constant-length Memmove up to four vector registers wide, so take the widest
-            // block it will still expand. Bigger blocks also mean fewer boundaries where a store and the
-            // next block's load land in the same cache line, which is what a tight overlap is sensitive to.
-            if (Vector512.IsHardwareAccelerated)
+            while (len > OverlappedBlockSize)
             {
-                while (len > 256)
-                {
-                    Memmove(ref dest, ref src, 256);
-                    dest = ref Unsafe.Add(ref dest, 256);
-                    src = ref Unsafe.Add(ref src, 256);
-                    len -= 256;
-                }
-            }
-            else if (Vector256.IsHardwareAccelerated)
-            {
-                while (len > 128)
-                {
-                    Memmove(ref dest, ref src, 128);
-                    dest = ref Unsafe.Add(ref dest, 128);
-                    src = ref Unsafe.Add(ref src, 128);
-                    len -= 128;
-                }
-            }
-
-            while (len > MemmoveOverlappedBlock)
-            {
-                Memmove(ref dest, ref src, MemmoveOverlappedBlock);
-                dest = ref Unsafe.Add(ref dest, MemmoveOverlappedBlock);
-                src = ref Unsafe.Add(ref src, MemmoveOverlappedBlock);
-                len -= MemmoveOverlappedBlock;
+                Memmove(ref dest, ref src, OverlappedBlockSize);
+                dest = ref Unsafe.Add(ref dest, OverlappedBlockSize);
+                src = ref Unsafe.Add(ref src, OverlappedBlockSize);
+                len -= OverlappedBlockSize;
             }
 
             CopyOverlappedForwardTail(ref dest, ref src, len);
         }
 
-        // Mirror image: blocks run in strictly descending order, walking down from the end.
+        // Mirror image: steps run in strictly descending order, walking down from the end.
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static void CopyOverlappedBackward(ref byte dest, ref byte src, nuint len)
         {
             Debug.Assert(len > 0);
 
-            while (len > MemmoveOverlappedBlock)
+            while (len > OverlappedBlockSize)
             {
-                len -= MemmoveOverlappedBlock;
-                Memmove(ref Unsafe.Add(ref dest, len), ref Unsafe.Add(ref src, len), MemmoveOverlappedBlock);
+                len -= OverlappedBlockSize;
+                Memmove(ref Unsafe.Add(ref dest, len), ref Unsafe.Add(ref src, len), OverlappedBlockSize);
             }
 
-            while (len >= sizeof(ulong))
-            {
-                len -= sizeof(ulong);
-                Unsafe.WriteUnaligned(ref Unsafe.Add(ref dest, len), Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref src, len)));
-            }
+            CopyOverlappedBackwardTail(ref dest, ref src, len);
+        }
 
-            while (len != 0)
+        // Finishes at most OverlappedBlockSize bytes, ascending. Deliberately doesn't call Memmove - this
+        // is where a block the JIT didn't expand comes back around, so calling it again is what recursion
+        // would look like. One step per set bit of len, so the steps tile the range without overlapping.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void CopyOverlappedForwardTail(ref byte dest, ref byte src, nuint len)
+        {
+            Debug.Assert(len <= OverlappedBlockSize);
+
+            while (len >= 16)
             {
-                len--;
-                Unsafe.Add(ref dest, len) = Unsafe.Add(ref src, len);
+                Unsafe.WriteUnaligned(ref dest, Unsafe.ReadUnaligned<Block16>(ref src));
+                dest = ref Unsafe.Add(ref dest, 16);
+                src = ref Unsafe.Add(ref src, 16);
+                len -= 16;
+            }
+            if ((len & 8) != 0)
+            {
+                Unsafe.WriteUnaligned(ref dest, Unsafe.ReadUnaligned<ulong>(ref src));
+                dest = ref Unsafe.Add(ref dest, 8);
+                src = ref Unsafe.Add(ref src, 8);
+            }
+            if ((len & 4) != 0)
+            {
+                Unsafe.WriteUnaligned(ref dest, Unsafe.ReadUnaligned<uint>(ref src));
+                dest = ref Unsafe.Add(ref dest, 4);
+                src = ref Unsafe.Add(ref src, 4);
+            }
+            if ((len & 2) != 0)
+            {
+                Unsafe.WriteUnaligned(ref dest, Unsafe.ReadUnaligned<ushort>(ref src));
+                dest = ref Unsafe.Add(ref dest, 2);
+                src = ref Unsafe.Add(ref src, 2);
+            }
+            if ((len & 1) != 0)
+            {
+                dest = src;
             }
         }
 
-        // Finishes at most MemmoveOverlappedBlock bytes. Deliberately doesn't call Memmove - this is where a
-        // call the JIT didn't unroll lands, so calling it again is what recursion would look like. Every step
-        // is one load feeding one store, so the ordering comes from the data dependency.
-        private static void CopyOverlappedForwardTail(ref byte dest, ref byte src, nuint len)
+        // Mirror image: the steps tile the range from the end downwards.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void CopyOverlappedBackwardTail(ref byte dest, ref byte src, nuint len)
         {
-            Debug.Assert(len <= MemmoveOverlappedBlock);
+            Debug.Assert(len <= OverlappedBlockSize);
 
-            while (len >= sizeof(ulong))
+            while (len >= 16)
             {
-                Unsafe.WriteUnaligned(ref dest, Unsafe.ReadUnaligned<ulong>(ref src));
-                dest = ref Unsafe.Add(ref dest, sizeof(ulong));
-                src = ref Unsafe.Add(ref src, sizeof(ulong));
-                len -= sizeof(ulong);
+                len -= 16;
+                Unsafe.WriteUnaligned(ref Unsafe.Add(ref dest, len), Unsafe.ReadUnaligned<Block16>(ref Unsafe.Add(ref src, len)));
             }
-
-            while (len != 0)
+            if ((len & 8) != 0)
+            {
+                len -= 8;
+                Unsafe.WriteUnaligned(ref Unsafe.Add(ref dest, len), Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref src, len)));
+            }
+            if ((len & 4) != 0)
+            {
+                len -= 4;
+                Unsafe.WriteUnaligned(ref Unsafe.Add(ref dest, len), Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref src, len)));
+            }
+            if ((len & 2) != 0)
+            {
+                len -= 2;
+                Unsafe.WriteUnaligned(ref Unsafe.Add(ref dest, len), Unsafe.ReadUnaligned<ushort>(ref Unsafe.Add(ref src, len)));
+            }
+            if ((len & 1) != 0)
             {
                 dest = src;
-                dest = ref Unsafe.Add(ref dest, 1);
-                src = ref Unsafe.Add(ref src, 1);
-                len--;
             }
         }
 #endif
