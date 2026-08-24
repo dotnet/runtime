@@ -776,8 +776,9 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                 root.DescendantNodes().OfType<ForEachStatementSyntax>(),
                 loop => loop.Statement is BlockSyntax { Statements.Count: 0 });
 
-            // The element type is only reachable through the collection, so it needs no binding logic either.
-            // The generator emits fully qualified parameter types, so the comparison has to match that.
+            // The element type itself can never be created, so it needs no binding logic. Nested cases keep a
+            // BindCore for the outer collection because its elements are empty inner collections, which can be
+            // created; matching on the end of the name excludes those without pinning the exact emitted name.
             MethodDeclarationSyntax[] bindCoreMethods = root.DescendantNodes()
                 .OfType<MethodDeclarationSyntax>()
                 .Where(method => method.Identifier.ValueText == "BindCore")
@@ -786,7 +787,8 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             Assert.NotEmpty(bindCoreMethods);
             Assert.DoesNotContain(
                 bindCoreMethods,
-                method => method.ParameterList.Parameters.Any(parameter => parameter.Type!.ToString() == "global::AbstractElement"));
+                method => method.ParameterList.Parameters.Any(
+                    parameter => parameter.Type!.ToString().EndsWith("AbstractElement", StringComparison.Ordinal)));
 
             // The member is still recognized as bindable; it is assigned an empty collection.
             Assert.Contains("instance.Elements", generated);

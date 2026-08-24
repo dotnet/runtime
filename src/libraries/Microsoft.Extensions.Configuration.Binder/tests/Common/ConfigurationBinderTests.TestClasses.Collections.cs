@@ -488,6 +488,33 @@ namespace Microsoft.Extensions
             public int Value { get; set; }
         }
 
+        public class OptionsWithNonInstantiableElementsAndTrackingSetter
+        {
+            private List<AbstractElement> _list = new();
+
+            public int ListSetterCallCount { get; private set; }
+
+            public List<AbstractElement> List
+            {
+                get => _list;
+                set
+                {
+                    ListSetterCallCount++;
+                    _list = value;
+                }
+            }
+        }
+
+        public struct StructWithNoBindableMembers
+        {
+            public int Field;
+        }
+
+        public class OptionsWithStructWithNoBindableMembers
+        {
+            public StructWithNoBindableMembers Struct { get; set; } = new StructWithNoBindableMembers { Field = 42 };
+        }
+
         public struct ReadOnlyCollectionStructExplicit : IReadOnlyCollection<string>
         {
             public ReadOnlyCollectionStructExplicit()

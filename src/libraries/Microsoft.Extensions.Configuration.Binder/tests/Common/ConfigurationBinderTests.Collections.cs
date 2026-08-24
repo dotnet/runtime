@@ -2447,6 +2447,21 @@ namespace Microsoft.Extensions
         }
 
         [Fact]
+        public void BindStructWithNoBindableMembers_PreservesExistingValue()
+        {
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(new Dictionary<string, string>
+            {
+                {"Struct:Field", "7"},
+            });
+
+            var options = new OptionsWithStructWithNoBindableMembers();
+            configurationBuilder.Build().Bind(options);
+
+            Assert.Equal(42, options.Struct.Field);
+        }
+
+        [Fact]
         public void TestCollectionsOfNonInstantiableElements()
         {
             var dic = new Dictionary<string, string>
@@ -2518,6 +2533,31 @@ namespace Microsoft.Extensions
             configuration.Bind("key", elements);
 
             Assert.False(configureOptionsInvoked);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void BindCollectionOfNonInstantiableElements_InvokesMemberSetter(bool configurationHasMatchingSection)
+        {
+            var configurationBuilder = new ConfigurationBuilder();
+            var input = new Dictionary<string, string> { { "Unrelated", "value" } };
+            if (configurationHasMatchingSection)
+            {
+                input.Add("List:0:Value", "1");
+            }
+
+            configurationBuilder.AddInMemoryCollection(input);
+
+            var config = configurationBuilder.Build();
+
+            var options = new OptionsWithNonInstantiableElementsAndTrackingSetter();
+            config.Bind(options);
+
+            // Nothing can be bound into the collection, but the member is still written back so that a
+            // setter adjusting the value keeps running, matching the reflection-based binder.
+            Assert.Equal(1, options.ListSetterCallCount);
+            Assert.Empty(options.List);
         }
 
         // Test behavior for root level arrays.

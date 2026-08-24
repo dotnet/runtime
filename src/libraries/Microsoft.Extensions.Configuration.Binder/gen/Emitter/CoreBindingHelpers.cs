@@ -1222,7 +1222,13 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 Action<string, string?>? writeOnSuccess = null,
                 string? constructedExpr = null)
             {
-                if (!_typeIndex.HasBindableMembers(type))
+                bool hasBindableMembers = _typeIndex.HasBindableMembers(type);
+                bool writesBackToMember = writeOnSuccess is not null
+                    && !type.IsValueType
+                    && type is CollectionSpec and not DictionarySpec
+                    && _typeIndex.CanInstantiate(type);
+
+                if (!hasBindableMembers && !writesBackToMember)
                 {
                     if (initKind is not InitializationKind.None)
                     {
@@ -1323,8 +1329,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                     void EmitBindCoreCall()
                     {
-                        string bindCoreCall = $@"{nameof(MethodsToGen_CoreBindingHelper.BindCore)}({configArgExpr}, ref {instanceToBindExpr}, defaultValueIfNotFound: {FormatDefaultValueIfNotFound()}, {Identifier.binderOptions}{boundThroughConstructorArg});";
-                        _writer.WriteLine(bindCoreCall);
+                        if (hasBindableMembers)
+                        {
+                            string bindCoreCall = $@"{nameof(MethodsToGen_CoreBindingHelper.BindCore)}({configArgExpr}, ref {instanceToBindExpr}, defaultValueIfNotFound: {FormatDefaultValueIfNotFound()}, {Identifier.binderOptions}{boundThroughConstructorArg});";
+                            _writer.WriteLine(bindCoreCall);
+                        }
+
                         writeOnSuccess?.Invoke(instanceToBindExpr, tempIdentifierStoringExpr);
                     }
 
