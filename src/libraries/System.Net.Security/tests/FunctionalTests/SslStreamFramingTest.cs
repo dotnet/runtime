@@ -228,6 +228,16 @@ namespace System.Net.Security.Tests
             public override long Seek(long offset, SeekOrigin origin) => _inner.Seek(offset, origin);
             public override void SetLength(long value) => throw new NotImplementedException();
             public override void Write(byte[] buffer, int offset, int count) => _inner.Write(buffer, offset, count);
+
+            protected override void Dispose(bool disposing)
+            {
+                if (disposing)
+                {
+                    _inner.Dispose();
+                }
+
+                base.Dispose(disposing);
+            }
         }
 
         internal class ConfigurableReadStream : Stream
