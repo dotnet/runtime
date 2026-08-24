@@ -329,7 +329,7 @@ namespace Microsoft.Extensions.Configuration.Test
         }
 
         [Fact]
-        public void ChainedConfiguration_EmptyValueShadowingATypedValue_FailsToBindLikeADirectlyAddedSource()
+        public void ChainedConfiguration_EmptyValueShadowingATypedValue_BindsLikeADirectlyAddedSource()
         {
             static IConfigurationBuilder AddEarlierProvider(IConfigurationBuilder builder)
                 => builder.AddInMemoryCollection(new Dictionary<string, string> { { "Port", "9000" } });
@@ -344,12 +344,19 @@ namespace Microsoft.Extensions.Configuration.Test
                     .Build())
                 .Build();
 
-            // An empty value shadows the earlier provider, so binding it to a non-string type fails. This matches
-            // what an equivalent directly added source has always done.
+            var directOptions = new TypedOptions { Port = 1 };
+            var chainedOptions = new TypedOptions { Port = 1 };
+
+            // An empty value shadows the earlier provider, so 9000 never reaches the model, and it carries nothing
+            // to convert either, so the member keeps the value it already had. A chained source behaves the same as
+            // an equivalent directly added one.
 #pragma warning disable IL2026, IL3050 // https://github.com/dotnet/runtime/issues/126862
-            Assert.Throws<InvalidOperationException>(() => direct.Bind(new TypedOptions()));
-            Assert.Throws<InvalidOperationException>(() => chained.Bind(new TypedOptions()));
+            direct.Bind(directOptions);
+            chained.Bind(chainedOptions);
 #pragma warning restore IL2026, IL3050
+
+            Assert.Equal(1, directOptions.Port);
+            Assert.Equal(1, chainedOptions.Port);
         }
 
         [Fact]
