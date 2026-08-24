@@ -95,7 +95,9 @@ CURRENT_ROLE="$(gh api "/orgs/${ORG}/teams/${TEAM_SLUG}/memberships/${CURRENT_US
 
 run() {
   echo "+ gh $*"
-  [[ "$APPLY" == true ]] && gh "$@"
+  if [[ "$APPLY" == true ]]; then
+    gh "$@"
+  fi
 }
 
 for username in "${ADD_MEMBERS[@]}"; do
@@ -192,14 +194,15 @@ foreach ($Username in $FormerOwners) {
 if (-not $Apply) {
     Write-Output 'Dry run only. Re-run with -Apply to execute additions and removals.'
 }
-else {
+
+if ($Apply) {
     if ($CurrentRole -eq 'maintainer' -and $NewMaintainers -notcontains $CurrentUser) {
         Write-Warning 'The current user remains a maintainer. Have a new maintainer perform any requested downgrade.'
     }
-    & gh api "/orgs/$Org/teams/$TeamSlug/members" | Out-Null
-    if ($LASTEXITCODE -ne 0) {
-        throw "gh api verification failed with exit code $LASTEXITCODE"
-    }
+}
+& gh api "/orgs/$Org/teams/$TeamSlug/members" | Out-Null
+if ($LASTEXITCODE -ne 0) {
+    throw "gh api verification failed with exit code $LASTEXITCODE"
 }
 ```
 
