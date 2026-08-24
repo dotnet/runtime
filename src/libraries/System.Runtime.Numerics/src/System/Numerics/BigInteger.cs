@@ -3452,92 +3452,111 @@ namespace System.Numerics
             // Reversing bits makes little sense to BigInteger which is effectively infinite.
             // Only ensure a proper round-tripping behavior.
 
-            // To distinguish positive and negative values, a virtual leading word of sign
-            // will be added at the front if it differs with MSB. This means that -8000xxxx
-            // will be treated as-is, and +8000xxxx will be treated as 00000000 8000xxxx.
-            // (All values are represented in sign & 2's complement).
+            // The following transforms are applied to the raw 2's complement bits,
+            // defined in 32-bit semantic:
 
-            // To keep trailing words of 0/1s and round-tripping, the following rule is applied:
-            // If there is one word (32bit) of trailing 0/1s, AND differs from 33th digit,
-            // it will be recognized as virtual leading word and stripped.
-            // If there's more than one words, they will be protected by setting the result's sign
-            // different with LSB.
-            // Otherwise, the result's sign will be set to the same as LSB.
-            // Implementation wise, if there's more than 33 bits of 0/1's, a sign word will
-            // be appended. Otherwise, let the constructor of result to trim unused word.
+            // *Leading sign word*:
+            // If the MSB differs from sign, append 32 bits of sign before MSB. This
+            // distinguishes posotive and negative values with the same ending
+            // FFFFFFFF 0xxxxxxx <-> xxxxxxx0 FFFFFFFF
+            //      (0) 0xxxxxxx <-> xxxxxxx0
+            // When round-tripping, the constructor will trim leading bits same with sign.
+            // If there're homogeneous 33 bits differ from sign, this rule doesn't apply,
+            // and treated as the round-tripping case of the next rule instead.
 
-            // On 64-bit platform, the highest 32 bits of nint may be considered trimmed
-            // when same as sign. Thus, there's actually 3 states for MSB operation:
-            // append a virtual 32 bit word, keep exact boundary, or trim 32 bit word.
+            // *Extra trailing word*:
+            // If there're 33 or more homogeneous bits from LSB, the raw trailing bits will
+            // be trimmed by constructor and make the reversed result undistinguishable with
+            // 32 less bits at LSB.
+            // For this case, append 32 opposite bits after LSB. They will always be trimmed
+            // by the constructor and only affects the sign of reversed result.
+            // xxxxxxx0 00000000 <-> FFFFFFFF 00000000 0xxxxxxx
+            // xxxxxxx0          <->                   0xxxxxxx
+            // When round-tripping, if there're 33 or more homogeneous bits differ from sign,
+            // the sign will be recognized as extra trailing word, thus not included for
+            // reversing.
+
+            // On 64-bit platform, when there're odd number of effective 32-bit words,
+            // the highest 32 bits of most significant nuint will be same as sign, which
+            // need to be excluded first when evaluating the rules in 32-bit semantic.
+            // They can be included back if leading sign word is required.
 
             if (value._bits is null)
             {
-                // Special values 0 and -1 can be incorrectly handled in the trailing 33 bit test
+                // Use Int32 semantic and sign extend the result.
+                // 0x00000001 <-> 0x80000000 is correctly handled.
                 return new BigInteger(int.ReverseBits(value._sign));
             }
 
-            // Always operate in buffer to simplify the implementation.
             Span<nuint> buffer = RentedBuffer.Create(value._bits.Length + 2, out RentedBuffer rentedBuffer);
-
-            // Operate in 2's complement
             value._bits.AsSpan().CopyTo(buffer[1..^1]);
             if (value._sign < 0)
             {
+                // Operate in 2's complement
                 NumericsHelpers.DangerousMakeTwosComplement(buffer[1..^1]);
             }
 
-            uint signWord = value._sign < 0 ? uint.MaxValue : 0;
+            nuint signWord = value._sign < 0 ? nuint.MaxValue : 0;
+            // Set the word beyond LSB to opposite bits of LSB. It may be used as extended word.
+            // This also acts as a sentinel to avoid counting homogeneous bits beyond LSB
+            // (only applies to 0xFFFFFFFF_00000000).
+            buffer[0] = (buffer[1] & 1) != 0 ? 0 : nuint.MaxValue;
+            // Set the word beyond MSB to sign. It may be included or excluded in the result.
+            buffer[^1] = signWord;
 
-            int MSBstrip = 0;
-            ulong MSW; // The most significant 64 bits
-            buffer[0] = signWord; // Sentinel for value._bits.Length == 1 case
+            int msbTrim = 0;
+            ulong msw; // The most significant 64 bits
             if (IntPtr.Size == 8)
             {
-                if (((ulong)buffer[^2] >> 32) == signWord)
+                if (((ulong)buffer[^2] >> 32) == (uint)signWord)
                 {
-                    // On 64 bit platform, if there're 32 bits same with sign, strip them first to keep 32-bit semantic
-                    MSW = ((ulong)buffer[^2] << 32) | (((ulong)buffer[^3] >> 32));
-                    MSBstrip = 1;
+                    // On 64 bit platform, if there're 32 bits same with sign, trim them first to keep 32-bit semantic
+                    // The sentinel beyond LSB ensures correct behavior for _bits.Length == 1 case
+                    msw = ((ulong)buffer[^2] << 32) | (((ulong)buffer[^3] >> 32));
+                    msbTrim++;
                 }
                 else
                 {
-                    MSW = (ulong)buffer[^2];
+                    msw = (ulong)buffer[^2];
                 }
             }
             else
             {
-                MSW = ((ulong)buffer[^2] << 32) | (ulong)buffer[^3];
+                // The sentinel beyond LSB ensures correct behavior for _bits.Length == 1 case
+                msw = ((ulong)buffer[^2] << 32) | (ulong)buffer[^3];
             }
 
-            if ((MSW >> 32) == signWord)
+            if ((msw >> 32) == (uint)signWord)
             {
-                // There can still be 32 bits same with sign (only for -2^32n case). Also strip them.
+                // There can still be 32 bits same with sign (only for -2^32n / -2^64n cases).
+                // Trim them and stop evaluating other MSB rule.
                 Debug.Assert(value._sign < 0);
-                Debug.Assert((uint)MSW == 0);
+                Debug.Assert((uint)msw == 0);
                 Debug.Assert(!buffer[1..^3].ContainsAnyExcept(0u));
-                MSBstrip++;
+                // For -2^64n on 64-bit platform, totally 64 bits will be trimmed.
+                // First 32 bits are trimmed above.
+                msbTrim++;
             }
-            else if (((long)MSW ^ (long)value._sign) < 0
-                && (MSW & 0xFFFFFFFF_80000000) != (value._sign < 0 ? 0 : 0xFFFFFFFF_80000000))
+            else if (((long)msw ^ (long)value._sign) < 0
+                && (msw & 0xFFFFFFFF_80000000) != (value._sign < 0 ? 0 : 0xFFFFFFFF_80000000))
             {
                 // There're at most 32 bits differ from sign. The leading sign word is required.
-                MSBstrip--;
+                msbTrim--;
                 // If MSB is the same with sign, no sign word is required.
                 // If there're 33 bits differ from sign, it will be recognized as extra trailing word case,
                 // and the sign word will be inferred when round-tripping.
             }
 
             // Extra trailing word is required when there's 33 or more bits of 0/1s.
-            bool additionalTrailingRequired;
+            bool extraTrailingRequired;
             if (IntPtr.Size == 8)
             {
-                additionalTrailingRequired = ((ulong)buffer[1] & 0x1_FFFFFFFF) is 0 or 0x1_FFFFFFFF;
+                extraTrailingRequired = ((ulong)buffer[1] & 0x1_FFFFFFFF) is 0 or 0x1_FFFFFFFF;
             }
             else
             {
-                additionalTrailingRequired = ((uint)buffer[1] is 0 or uint.MaxValue) && ((buffer[1] ^ buffer[2]) & 1) == 0;
+                extraTrailingRequired = ((uint)buffer[1] is 0 or uint.MaxValue) && ((buffer[1] ^ buffer[2]) & 1) == 0;
             }
-            buffer[0] = (buffer[1] & 1) == 0 ? nuint.MaxValue : 0;
 
             // Do the actual reverse.
             // On big endian platform, the result value will be treated as byte-wise BE,
@@ -3552,18 +3571,19 @@ namespace System.Numerics
             }
 
             Span<byte> byteBuffer = MemoryMarshal.AsBytes(buffer);
-            int MSBadjust = IntPtr.Size + MSBstrip * sizeof(uint);
-            int LSBadjust = IntPtr.Size - (additionalTrailingRequired ? sizeof(uint) : 0);
+            int msbAdjust = IntPtr.Size + msbTrim * sizeof(uint);
+            int lsbAdjust = IntPtr.Size - (extraTrailingRequired ? sizeof(uint) : 0);
             if (BitConverter.IsLittleEndian)
             {
-                byteBuffer = byteBuffer[MSBadjust..^LSBadjust];
+                byteBuffer = byteBuffer[msbAdjust..^lsbAdjust];
             }
             else
             {
-                byteBuffer = byteBuffer[LSBadjust..^MSBadjust];
+                byteBuffer = byteBuffer[lsbAdjust..^msbAdjust];
             }
 
-            // Let the constructor to strip any redundant bits
+            // The extra trailing word or exactly 32 bits at trailing will be trimmed
+            // by the constructor with sign
             BigInteger result = new BigInteger(byteBuffer, isBigEndian: !BitConverter.IsLittleEndian);
 
             rentedBuffer.Dispose();
