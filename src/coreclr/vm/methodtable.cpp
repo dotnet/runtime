@@ -5945,7 +5945,14 @@ DispatchSlot MethodTable::FindDispatchSlotForInterfaceMD(TypeHandle ownerType, M
 //      The mapping exists in this type, not a parent type.
 MethodDesc * MethodTable::ReverseInterfaceMDLookup(UINT32 slotNumber)
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
     DispatchMap::Iterator it(this);
     for (; it.IsValid(); it.Next())
     {
@@ -5973,7 +5980,13 @@ MethodDesc * MethodTable::ReverseInterfaceMDLookup(UINT32 slotNumber)
 //==========================================================================================
 UINT32 MethodTable::GetTypeID()
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     PTR_MethodTable pMT = PTR_MethodTable(this);
 
@@ -6540,7 +6553,13 @@ InteropMethodTableData *MethodTable::CreateComInteropData(AllocMemTracker *pamTr
 //==========================================================================================
 InteropMethodTableData *MethodTable::GetComInteropData()
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     _ASSERTE(GetAuxiliaryData()->IsPublished());
 

@@ -1020,7 +1020,13 @@ PTR_CBYTE EditAndContinueModule::ResolveField(OBJECTREF      thisPointer,
 PTR_CBYTE EditAndContinueModule::ResolveOrAllocateField(OBJECTREF      thisPointer,
                                                         EnCFieldDesc * pFD)
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
 
     // first try getting a pre-existing field
     PTR_CBYTE fieldAddr = ResolveField(thisPointer, pFD);
@@ -1127,7 +1133,13 @@ PTR_EnCEEClassData EditAndContinueModule::GetEnCEEClassData(MethodTable * pMT, B
 void *EnCFieldDesc::GetAddress( void *o)
 {
 #ifndef DACCESS_COMPILE
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
 
     // can't throw through FieldDesc::GetInstanceField if FORBIDGC_LOADER_USE_ENABLED
     _ASSERTE(! FORBIDGC_LOADER_USE_ENABLED());
@@ -1500,7 +1512,13 @@ void EnCSyncBlockInfo::Cleanup()
 // Allocate space to hold the value for the new static field
 EnCAddedStaticField *EnCAddedStaticField::Allocate(EnCFieldDesc *pFD)
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
 
     AppDomain *pDomain = AppDomain::GetCurrentDomain();
 
@@ -1589,7 +1607,13 @@ EnCAddedStaticField * EnCFieldDesc::GetStaticFieldData()
 // May throw OOM.
 EnCAddedStaticField * EnCFieldDesc::GetOrAllocateStaticFieldData()
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
 
     _ASSERTE(IsStatic());
 

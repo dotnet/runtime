@@ -87,7 +87,7 @@ void SigTypeContext::InitTypeContext(MethodDesc *md, TypeHandle declaringType, S
 }
 
 #ifndef DACCESS_COMPILE
-TypeHandle GetDeclaringMethodTableFromTypeVarTypeDesc(TypeVarTypeDesc *pTypeVar, MethodDesc *pMD)
+static TypeHandle GetDeclaringMethodTableFromTypeVarTypeDesc(TypeVarTypeDesc *pTypeVar, MethodDesc *pMD)
 {
     STANDARD_VM_CONTRACT;
 
