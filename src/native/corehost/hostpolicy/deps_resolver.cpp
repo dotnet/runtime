@@ -404,26 +404,30 @@ bool report_missing_assembly_in_manifest(const deps_entry_t& entry, bool continu
     return continueResolving;
 }
 
-void probe_paths_t::tpa_t::add(const pal::string_t& path)
+void probe_paths_t::tpa_t::add(pal::string_t&& path)
 {
-    pal::string_t directory = get_directory(path);
-    pal::string_t file_name = get_filename(path);
-    assert(!directory.empty() && directory.back() == DIR_SEPARATOR);
+    size_t file_name_offset = path.find_last_of(DIR_SEPARATOR);
+    assert(file_name_offset != pal::string_t::npos);
+    ++file_name_offset;
+    assert(file_name_offset < path.size());
 
-    std::vector<pal::string_t>::const_iterator existing =
-        std::find(directories.cbegin(), directories.cend(), directory);
-    size_t directory_index;
-    if (existing == directories.cend())
+    size_t directory_index = 0;
+    for (; directory_index < directories.size(); ++directory_index)
     {
-        directory_index = directories.size();
-        directories.push_back(std::move(directory));
-    }
-    else
-    {
-        directory_index = static_cast<size_t>(existing - directories.cbegin());
+        const entry_t& existing = entries[directories[directory_index]];
+        if (existing.file_name_offset == file_name_offset &&
+            path.compare(0, file_name_offset, existing.path, 0, existing.file_name_offset) == 0)
+        {
+            break;
+        }
     }
 
-    entries.push_back({ directory_index, std::move(file_name) });
+    if (directory_index == directories.size())
+    {
+        directories.push_back(entries.size());
+    }
+
+    entries.push_back({ std::move(path), directory_index, file_name_offset });
 }
 
 /**
@@ -588,9 +592,9 @@ bool deps_resolver_t::resolve_tpa_list(
     }
 
     output->entries.reserve(output->entries.size() + items.size());
-    for (const std::pair<const pal::string_t, deps_resolved_asset_t>& item : items)
+    for (std::pair<const pal::string_t, deps_resolved_asset_t>& item : items)
     {
-        output->add(item.second.resolved_path);
+        output->add(std::move(item.second.resolved_path));
     }
 
     return true;

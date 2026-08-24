@@ -1010,10 +1010,11 @@ SHARED_API int HOSTPOLICY_CALLTYPE corehost_resolve_component_dependencies(
     for (const probe_paths_t::tpa_t::entry_t& entry : probe_paths.tpa.entries)
     {
         assert(entry.directory_index < probe_paths.tpa.directories.size());
-        const pal::string_t& directory = probe_paths.tpa.directories[entry.directory_index];
-        assert(!directory.empty() && directory.back() == DIR_SEPARATOR);
-        tpa.append(directory);
-        tpa.append(entry.file_name);
+        const probe_paths_t::tpa_t::entry_t& directory =
+            probe_paths.tpa.entries[probe_paths.tpa.directories[entry.directory_index]];
+        assert(directory.file_name_offset != 0 && directory.path[directory.file_name_offset - 1] == DIR_SEPARATOR);
+        tpa.append(directory.path, 0, directory.file_name_offset);
+        tpa.append(entry.path, entry.file_name_offset, pal::string_t::npos);
         tpa.push_back(PATH_SEPARATOR);
     }
 

@@ -23,15 +23,16 @@ struct probe_paths_t
     {
         struct entry_t
         {
+            pal::string_t path;
             size_t directory_index;
-            pal::string_t file_name;
+            size_t file_name_offset;
         };
 
-        // Directories are non-empty and end with DIR_SEPARATOR.
-        std::vector<pal::string_t> directories;
+        // Indexes of entries whose path represents each unique directory.
+        std::vector<size_t> directories;
         std::vector<entry_t> entries;
 
-        void add(const pal::string_t& path);
+        void add(pal::string_t&& path);
     };
 
     tpa_t tpa;

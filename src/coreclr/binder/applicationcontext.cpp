@@ -98,7 +98,7 @@ namespace BINDER_SPACE
         {
             for (size_t i = 0; i < assemblyCount; i++)
             {
-                SString simpleName(SString::Utf8, assemblyNames[i]);
+                StackSString simpleName(SString::Utf8, assemblyNames[i]);
                 _ASSERT(!simpleName.IsEmpty());
 
                 if (m_pTrustedPlatformAssemblyMap->LookupPtr(simpleName.GetUnicode()) != nullptr)
@@ -112,9 +112,7 @@ namespace BINDER_SPACE
 
                 wcscpy_s(wszSimpleName, simpleName.GetCount() + 1, simpleName.GetUnicode());
 
-                SimpleNameToFileNameMapEntry mapEntry;
-                mapEntry.m_wszSimpleName = wszSimpleName;
-                mapEntry.m_wszILFileName = nullptr;
+                SimpleNameToFileNameMapEntry mapEntry{ wszSimpleName, nullptr };
                 m_pTrustedPlatformAssemblyMap->AddOrReplace(mapEntry);
             }
         }
@@ -138,20 +136,12 @@ namespace BINDER_SPACE
                     continue;
                 }
 
-                LPWSTR wszSimpleName = nullptr;
-                if (pExistingEntry == nullptr)
+                LPWSTR wszSimpleName = new WCHAR[simpleName.GetCount() + 1];
+                if (wszSimpleName == nullptr)
                 {
-                    wszSimpleName = new WCHAR[simpleName.GetCount() + 1];
-                    if (wszSimpleName == nullptr)
-                    {
-                        GO_WITH_HRESULT(E_OUTOFMEMORY);
-                    }
-                    wcscpy_s(wszSimpleName, simpleName.GetCount() + 1, simpleName.GetUnicode());
+                    GO_WITH_HRESULT(E_OUTOFMEMORY);
                 }
-                else
-                {
-                    wszSimpleName = pExistingEntry->m_wszSimpleName;
-                }
+                wcscpy_s(wszSimpleName, simpleName.GetCount() + 1, simpleName.GetUnicode());
 
                 LPWSTR wszFileName = new WCHAR[fileName.GetCount() + 1];
                 if (wszFileName == nullptr)
@@ -160,10 +150,7 @@ namespace BINDER_SPACE
                 }
                 wcscpy_s(wszFileName, fileName.GetCount() + 1, fileName.GetUnicode());
 
-                SimpleNameToFileNameMapEntry mapEntry;
-                mapEntry.m_wszSimpleName = wszSimpleName;
-                mapEntry.m_wszILFileName = wszFileName;
-
+                SimpleNameToFileNameMapEntry mapEntry{ wszSimpleName, wszFileName };
                 m_pTrustedPlatformAssemblyMap->AddOrReplace(mapEntry);
             }
         }

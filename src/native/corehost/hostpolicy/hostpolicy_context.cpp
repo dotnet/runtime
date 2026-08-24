@@ -335,7 +335,7 @@ int hostpolicy_context_t::initialize(const hostpolicy_init_t &hostpolicy_init, c
         append_path(&corelib_path, CORELIB_NAME);
 
         // Append CoreLib path
-        probe_paths.tpa.add(corelib_path);
+        probe_paths.tpa.add(std::move(corelib_path));
     }
 
     pal::string_t fx_deps_str;
@@ -415,10 +415,12 @@ int hostpolicy_context_t::initialize(const hostpolicy_init_t &hostpolicy_init, c
     }
 
     tpa_directories.reserve(probe_paths.tpa.directories.size());
-    for (const pal::string_t& directory : probe_paths.tpa.directories)
+    for (size_t directory_entry_index : probe_paths.tpa.directories)
     {
-        assert(!directory.empty() && directory.back() == DIR_SEPARATOR);
-        tpa_directories.push_back(pal::pal_utf8string(directory));
+        const probe_paths_t::tpa_t::entry_t& entry = probe_paths.tpa.entries[directory_entry_index];
+        assert(entry.file_name_offset != 0 && entry.path[entry.file_name_offset - 1] == DIR_SEPARATOR);
+        tpa_directories.push_back(
+            pal::pal_utf8string(entry.path.data(), entry.file_name_offset));
     }
 
     tpa_names.reserve(probe_paths.tpa.entries.size());
@@ -428,9 +430,16 @@ int hostpolicy_context_t::initialize(const hostpolicy_init_t &hostpolicy_init, c
         assert(entry.directory_index < tpa_directories.size());
         tpa_path_t path{
             tpa_directories[entry.directory_index].c_str(),
-            pal::pal_utf8string(entry.file_name)
+            pal::pal_utf8string(
+                entry.path.data() + entry.file_name_offset,
+                entry.path.size() - entry.file_name_offset)
         };
-        std::string name = pal::pal_utf8string(get_filename_without_ext(entry.file_name));
+        size_t extension_offset = entry.path.rfind(_X('.'));
+        size_t name_length =
+            extension_offset == pal::string_t::npos || extension_offset < entry.file_name_offset
+                ? entry.path.size() - entry.file_name_offset
+                : extension_offset - entry.file_name_offset;
+        std::string name = pal::pal_utf8string(entry.path.data() + entry.file_name_offset, name_length);
         std::pair<std::unordered_map<std::string, tpa_path_t>::iterator, bool> result =
             tpa_paths.emplace(std::move(name), std::move(path));
         if (result.second)
