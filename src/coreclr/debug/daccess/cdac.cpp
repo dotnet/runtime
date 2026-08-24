@@ -163,12 +163,11 @@ CDAC::~CDAC()
     }
 }
 
-void CDAC::CreateSosInterface(IUnknown** sos)
+int CDAC::CreateSosInterface(IUnknown** sos)
 {
     decltype(&cdac_reader_create_sos_interface) createSosInterface = reinterpret_cast<decltype(&cdac_reader_create_sos_interface)>(::GetProcAddress(m_module, "cdac_reader_create_sos_interface"));
     _ASSERTE(createSosInterface != nullptr);
-    int ret = createSosInterface(m_cdac_handle, m_legacyImpl, sos);
-    _ASSERTE(ret == 0);
+    return createSosInterface(m_cdac_handle, m_legacyImpl, sos);
 }
 
 void CDAC::CreateDacDbiInterface(IUnknown** dbi)

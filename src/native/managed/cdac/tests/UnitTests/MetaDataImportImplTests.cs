@@ -457,6 +457,7 @@ public unsafe class MetaDataImportImplTests
         IMetaDataImport2 wrapper = CreateWrapper();
 
         Assert.Equal(HResults.E_NOTIMPL, wrapper.GetScopeProps(null, 0, null, null));
+        Assert.Equal(HResults.E_NOTIMPL, wrapper.GetModuleFromScope(null));
         Assert.Equal(HResults.E_NOTIMPL, wrapper.ResolveTypeRef(0, null, null, null));
         Assert.Equal(HResults.E_NOTIMPL, wrapper.EnumTypeRefs(null, null, 0, null));
     }
