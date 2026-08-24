@@ -232,6 +232,7 @@ extends:
                 eq(variables['wasmDarcDependenciesChanged'], true),
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_wasm_coreclr_runtimetests.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       - template: /eng/pipelines/common/platform-matrix.yml
@@ -951,6 +952,166 @@ extends:
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_cdac.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
+
+      # The R2R test suite compiles for one target per run: the test assembly itself always runs on
+      # the build machine, while crossgen2 and the shared framework it compiles against are staged
+      # for whatever the build targets. Each leg therefore needs only its own target's artifacts,
+      # and test cases the target cannot compile are skipped rather than failed.
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: checked
+          platforms:
+          - linux_x64
+          jobParameters:
+            dependsOn:
+            - build_linux_x64_checked_CoreCLR_ReleaseLibraries
+            timeoutInMinutes: 120
+            nameSuffix: CLR_R2R_Tests_linux_x64
+            buildArgs: -s clr.r2rtests -lc Release -c $(_BuildConfig) -test
+            enablePublishTestResults: true
+            testResultsFormat: 'xunit'
+            preBuildSteps:
+              - template: /eng/pipelines/common/download-artifact-step.yml
+                parameters:
+                  artifactName: CoreCLR_ReleaseLibraries_BuildArtifacts_linux_x64_Checked
+                  artifactFileName: CoreCLR_ReleaseLibraries_BuildArtifacts_linux_x64_Checked$(archiveExtension)
+                  unpackFolder: $(Build.SourcesDirectory)/artifacts/bin
+                  cleanUnpackFolder: false
+                  overwriteExistingFiles: true
+                  displayName: Download linux-x64 artifacts
+            condition: >-
+              or(
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
+
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: checked
+          platforms:
+          - linux_x64
+          variables:
+            - name: _osParameter
+              value: -os browser
+            - name: _archParameter
+              value: -arch wasm
+          jobParameters:
+            dependsOn:
+            - build_browser_wasm_linux_checked_CoreCLR_ReleaseLibraries
+            timeoutInMinutes: 120
+            nameSuffix: CLR_R2R_Tests_browser_wasm
+            buildArgs: -s clr.r2rtests -lc Release -c $(_BuildConfig) -test
+            enablePublishTestResults: true
+            testResultsFormat: 'xunit'
+            preBuildSteps:
+              - template: /eng/pipelines/common/download-artifact-step.yml
+                parameters:
+                  artifactName: CoreCLR_ReleaseLibraries_BuildArtifacts_browser_wasm_linux_Checked
+                  artifactFileName: CoreCLR_ReleaseLibraries_BuildArtifacts_browser_wasm_linux_Checked$(archiveExtension)
+                  unpackFolder: $(Build.SourcesDirectory)/artifacts/bin
+                  cleanUnpackFolder: false
+                  overwriteExistingFiles: true
+                  displayName: Download browser-wasm artifacts
+            condition: >-
+              or(
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
+
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: checked
+          platforms:
+          - linux_x64
+          variables:
+            - name: _archParameter
+              value: -arch arm
+          jobParameters:
+            dependsOn:
+            - build_linux_arm_checked_CoreCLR_ReleaseLibraries
+            timeoutInMinutes: 120
+            nameSuffix: CLR_R2R_Tests_linux_arm
+            buildArgs: -s clr.r2rtests -lc Release -c $(_BuildConfig) -test
+            enablePublishTestResults: true
+            testResultsFormat: 'xunit'
+            preBuildSteps:
+              - template: /eng/pipelines/common/download-artifact-step.yml
+                parameters:
+                  artifactName: CoreCLR_ReleaseLibraries_BuildArtifacts_linux_arm_Checked
+                  artifactFileName: CoreCLR_ReleaseLibraries_BuildArtifacts_linux_arm_Checked$(archiveExtension)
+                  unpackFolder: $(Build.SourcesDirectory)/artifacts/bin
+                  cleanUnpackFolder: false
+                  overwriteExistingFiles: true
+                  displayName: Download linux-arm artifacts
+            condition: >-
+              or(
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
+
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: checked
+          platforms:
+          - linux_x64
+          variables:
+            - name: _osParameter
+              value: -os ios
+            - name: _archParameter
+              value: -arch arm64
+          jobParameters:
+            timeoutInMinutes: 120
+            nameSuffix: CLR_R2R_Tests_ios_arm64
+            # No prebuilt artifact can supply this leg: the iOS jobs run on macOS, so their cross
+            # components are Mach-O and unusable here. The cross components are built from source
+            # instead - they target the build host (linux-x64), not iOS, so no Apple SDK is needed.
+            # libs.sfx rather than libs, because libs.native does require the Apple SDK.
+            buildArgs: -s clr.crossarchtools+clr.corelib+libs.sfx -rf CoreCLR -lc Release -c $(_BuildConfig)
+            enablePublishTestResults: true
+            testResultsFormat: 'xunit'
+            postBuildSteps:
+              # A separate invocation because clr.r2rtests is ordered ahead of libs.sfx in
+              # Subsets.props, so a single build would run the tests before their inputs exist.
+              - template: /eng/pipelines/common/templates/global-build-step.yml
+                parameters:
+                  buildArgs: -s clr.r2rtests -rf CoreCLR -lc Release -c $(_BuildConfig) -test
+                  displayName: Build and run R2R tests
+            condition: >-
+              or(
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
+
+      # The only leg with a Windows host, which the two --pdb test cases require: crossgen2 writes
+      # Windows PDBs through Microsoft.DiaSymReader.Native, which is restored for Windows only.
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: checked
+          platforms:
+          - windows_x64
+          jobParameters:
+            dependsOn:
+            - build_windows_x64_checked_CoreCLR_ReleaseLibraries
+            timeoutInMinutes: 120
+            nameSuffix: CLR_R2R_Tests_windows_x64
+            buildArgs: -s clr.r2rtests -lc Release -c $(_BuildConfig) -test
+            enablePublishTestResults: true
+            testResultsFormat: 'xunit'
+            preBuildSteps:
+              - template: /eng/pipelines/common/download-artifact-step.yml
+                parameters:
+                  artifactName: CoreCLR_ReleaseLibraries_BuildArtifacts_windows_x64_Checked
+                  artifactFileName: CoreCLR_ReleaseLibraries_BuildArtifacts_windows_x64_Checked$(archiveExtension)
+                  unpackFolder: $(Build.SourcesDirectory)/artifacts/bin
+                  cleanUnpackFolder: false
+                  overwriteExistingFiles: true
+                  displayName: Download windows-x64 artifacts
+            condition: >-
+              or(
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
+
       #
       # Build CrossDacs
       #
