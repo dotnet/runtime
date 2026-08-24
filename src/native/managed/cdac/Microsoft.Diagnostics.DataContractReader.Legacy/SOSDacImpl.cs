@@ -45,7 +45,9 @@ public sealed unsafe partial class SOSDacImpl
 
     // The native DAC owns the cDAC host and passes itself here. Keep the wrapper rooted for
     // the lifetime of this object even when release builds do not use it for comparisons.
+#pragma warning disable CS0414 // Assigned to keep the legacy DAC wrapper rooted for lifetime management.
     private readonly object? _legacyLifetime;
+#pragma warning restore CS0414
 
     private readonly ISOSDacInterface? _legacyImpl;
     private readonly ISOSDacInterface13? _legacyImpl13;
