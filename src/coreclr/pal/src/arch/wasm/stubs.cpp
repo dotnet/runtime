@@ -277,6 +277,12 @@ void SEHCleanupSignals(bool isChildProcess)
     (void)isChildProcess;
 }
 
+PAL_NORETURN VOID PALAPI
+PAL_Abort(void)
+{
+    abort();
+}
+
 void UnmaskActivationSignal()
 {
 }

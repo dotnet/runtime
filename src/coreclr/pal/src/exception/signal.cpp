@@ -28,6 +28,8 @@ SET_DEFAULT_DEBUG_CHANNEL(EXCEPT); // some headers have code with asserts, so do
 #include <errno.h>
 #include <signal.h>
 #include <dlfcn.h>
+#include <stdlib.h>
+#include <unistd.h>
 
 #if !HAVE_MACH_EXCEPTIONS
 #include "pal/init.h"
@@ -37,7 +39,6 @@ SET_DEFAULT_DEBUG_CHANNEL(EXCEPT); // some headers have code with asserts, so do
 
 #include <string.h>
 #include <sys/utsname.h>
-#include <unistd.h>
 #include <sys/mman.h>
 
 #if HAVE_SYS_UCONTEXT_H
@@ -126,6 +127,23 @@ const int StackOverflowFlag = 0x40000000;
 #endif // !HAVE_MACH_EXCEPTIONS
 
 /* public function definitions ************************************************/
+
+PAL_NORETURN
+VOID
+PALAPI
+PAL_Abort(
+    void)
+{
+    SEHCleanupSignals(false /* isChildProcess */);
+
+    sigset_t signalSet;
+    sigemptyset(&signalSet);
+    sigaddset(&signalSet, SIGABRT);
+    (void)pthread_sigmask(SIG_UNBLOCK, &signalSet, nullptr);
+
+    abort();
+    _exit(128 + SIGABRT);
+}
 
 /*++
 Function:

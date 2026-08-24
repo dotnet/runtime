@@ -12,17 +12,13 @@
 #include <poll.h>
 #include <pthread.h>
 #include <signal.h>
-#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <minipal/log.h>
 #include <minipal/time.h>
 #include <minipal/thread.h>
 
-#include "pal/signal.hpp"
-
 static constexpr int CRASH_REPORT_WATCHDOG_SECONDS_TO_MILLISECONDS = 1000;
-static constexpr int CRASH_REPORT_WATCHDOG_SIGNAL_EXIT_CODE_OFFSET = 128;
 
 pthread_mutex_t CrashReportWatchdog::s_initializationMutex = PTHREAD_MUTEX_INITIALIZER;
 CrashReportWatchdog* CrashReportWatchdog::s_instance;
@@ -350,21 +346,12 @@ CrashReportWatchdog::GetRemainingTimeoutMs(int64_t deadlineMs)
     return static_cast<int>(remainingMs);
 }
 
-// Terminate from the watchdog thread after restoring the original SIGABRT
-// handler, matching the normal post-crash-report abort path without trying to
-// create another crash report from the watchdog thread.
+// The watchdog did not observe crash-report completion, so terminate without
+// entering crash reporting again.
 void
 CrashReportWatchdog::Abort()
 {
-    SEHCleanupSignals(false /* isChildProcess */);
-
-    sigset_t signalSet;
-    sigemptyset(&signalSet);
-    sigaddset(&signalSet, SIGABRT);
-    (void)pthread_sigmask(SIG_UNBLOCK, &signalSet, nullptr);
-
-    abort();
-    _exit(CRASH_REPORT_WATCHDOG_SIGNAL_EXIT_CODE_OFFSET + SIGABRT);
+    PAL_Abort();
 }
 
 CrashReportWatchdogScope::CrashReportWatchdogScope()
