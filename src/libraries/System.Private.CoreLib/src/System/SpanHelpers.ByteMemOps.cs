@@ -45,7 +45,9 @@ namespace System
         // this size it wins. Below it the P/Invoke is still the dominant cost and we come out ahead.
         private const nuint OverlappedForwardThreshold = 1024;
 #else
-        private const nuint OverlappedForwardThreshold = nuint.MaxValue;
+        // ulong rather than nuint because nuint.MaxValue is not a compile-time constant, same as
+        // MemmoveNativeThreshold above. The comparison widens to ulong and folds away.
+        private const ulong OverlappedForwardThreshold = ulong.MaxValue;
 #endif
 #endif
 
