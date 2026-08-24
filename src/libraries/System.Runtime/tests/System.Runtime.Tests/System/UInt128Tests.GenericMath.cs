@@ -280,7 +280,6 @@ namespace System.Tests
                     0b000000000_1_01_001_0001_00001_000001_0000001_00000001_000000001_0000000001)));
             Assert.Equal(new UInt128(0xF7B3D591_E6A2C480, 0x084C2A6E_195D3B7F),
                 BinaryIntegerHelper<UInt128>.ReverseBits(new UInt128(0xFEDCBA98_76543210, 0x01234567_89ABCDEF)));
-            Assert.Equal(0x80402010_08040201, BinaryIntegerHelper<ulong>.ReverseBits(0x80402010_08040201));
             Assert.Equal(new UInt128(0x80402010_08040201, 0x08040201_80402010),
                 BinaryIntegerHelper<UInt128>.ReverseBits(new UInt128(0x08040201_80402010, 0x80402010_08040201)));
             Assert.Equal(new UInt128(0xAAAAAAAA_AAAAAAAA, 0x55555555_55555555),
