@@ -125,11 +125,14 @@ static TypeHandle GetDeclaringMethodTableFromTypeVarTypeDesc(TypeVarTypeDesc *pT
 void SigTypeContext::InitTypeContext(MethodDesc *md, TypeHandle declaringType, Instantiation exactMethodInst, SigTypeContext *pRes)
 {
     // This method has an unusual contract for SigTypeContext so that it can be used to load type with a declaringType which is a generic variable.
-    CONTRACTL {
-        STANDARD_VM_CHECK;
-
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(CheckPointer(md));
-    } CONTRACTL_END;
+    }
+    CONTRACTL_END;
 
     if (declaringType.IsNull())
     {
@@ -313,4 +316,3 @@ BOOL SigTypeContext::Equal(const SigTypeContext *pCtx1, const SigTypeContext *pC
 
     return TRUE;
 }
-
