@@ -44,6 +44,51 @@ public class ParserTests
     }
 
     [Fact]
+    public void ParsesExtensionData()
+    {
+        ReadOnlySpan<byte> json = """
+        {
+            "version": "1",
+            "unknownObject": { "value": 2 },
+            "unknownArray": [3, 4],
+            "unknownString": "value"
+        }
+        """u8;
+
+        ContractDescriptorParser.ContractDescriptor descriptor = ContractDescriptorParser.ParseCompact(json);
+
+        Assert.Equal(1, descriptor.Version);
+        Assert.Equal(2, descriptor.Extras["unknownObject"].GetProperty("value").GetInt32());
+        Assert.Equal(2, descriptor.Extras["unknownArray"].GetArrayLength());
+        Assert.Equal("value", descriptor.Extras["unknownString"].GetString());
+    }
+
+    [Fact]
+    public void RejectsTrailingJson()
+    {
+        byte[] json = "{}{}"u8.ToArray();
+
+        Assert.Throws<JsonException>(() => ContractDescriptorParser.ParseCompact(json));
+    }
+
+    [Fact]
+    public void RejectsDuplicateFieldNames()
+    {
+        byte[] json = """
+        {
+            "types": {
+                "Type": {
+                    "field": 0,
+                    "field": 8
+                }
+            }
+        }
+        """u8.ToArray();
+
+        Assert.Throws<JsonException>(() => ContractDescriptorParser.ParseCompact(json));
+    }
+
+    [Fact]
     public void ParseSizedTypes()
     {
         ReadOnlySpan<byte> json = """
