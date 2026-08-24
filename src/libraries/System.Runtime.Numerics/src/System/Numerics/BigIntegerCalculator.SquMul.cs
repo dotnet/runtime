@@ -39,6 +39,7 @@ namespace System.Numerics
 
             if (nint.Size == 8
                 && value.Length >= 8
+                && IsShiftedRepeatedLimbCandidate(value)
                 && TryMultiplyShiftedRepeatedLimbOperands(value, value, bits))
             {
                 return;
@@ -272,17 +273,29 @@ namespace System.Numerics
                 return;
             }
 
-            if ((IsRepeatedLimbCandidate(right)
-                    && TryMultiplyRepeatedLimb(left, right, bits))
-                || (IsRepeatedLimbCandidate(left)
-                    && TryMultiplyRepeatedLimb(right, left, bits)))
+            if (right.Length >= 4)
             {
-                return;
-            }
+                if ((IsRepeatedLimbCandidate(right)
+                        && TryMultiplyRepeatedLimb(left, right, bits))
+                    || (IsRepeatedLimbCandidate(left)
+                        && TryMultiplyRepeatedLimb(right, left, bits)))
+                {
+                    return;
+                }
 
-            if (nint.Size == 8 && TryMultiplyShiftedRepeatedLimbOperands(left, right, bits))
-            {
-                return;
+                if (nint.Size == 8
+                    && (IsShiftedRepeatedLimbCandidate(left) || IsShiftedRepeatedLimbCandidate(right))
+                    && TryMultiplyShiftedRepeatedLimbOperands(left, right, bits))
+                {
+                    return;
+                }
+
+                if (right.Length < MultiplyKaratsubaThreshold
+                    && right.ContainsAny((nuint)0, (nuint)1))
+                {
+                    MultiplyNaiveSparse(left, right, bits);
+                    return;
+                }
             }
 
             // Executes different algorithms for computing z = a * b

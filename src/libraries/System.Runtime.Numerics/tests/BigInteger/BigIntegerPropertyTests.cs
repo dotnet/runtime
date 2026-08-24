@@ -1114,6 +1114,22 @@ namespace System.Numerics.Tests
             Assert.Equal(expected, BigInteger.Pow(value, exponent));
         }
 
+        [Theory]
+        [InlineData(5_559_060_566_555_523, 17)]
+        [InlineData(762_939_453_125, 17)]
+        [InlineData(232_630_513_987_207, 17)]
+        public void PowWithRepeatedLargeFactors(long value, int exponent)
+        {
+            BigInteger expected = BigInteger.One;
+
+            for (int i = 0; i < exponent; i++)
+            {
+                expected *= value;
+            }
+
+            Assert.Equal(expected, BigInteger.Pow(value, exponent));
+        }
+
         [Fact]
         public void PowerOfTwoResultsRespectMaximumLength()
         {
@@ -1251,7 +1267,9 @@ namespace System.Numerics.Tests
 
             foreach (BigInteger expectedRemainder in new[] { BigInteger.Zero, BigInteger.One, divisor - 1 })
             {
-                BigInteger dividend = (expectedQuotient * divisor) + expectedRemainder;
+                BigInteger dividend = (expectedQuotient << (divisorLength * bitsPerLimb))
+                    - expectedQuotient
+                    + expectedRemainder;
 
                 foreach (bool negativeDividend in new[] { false, true })
                 {

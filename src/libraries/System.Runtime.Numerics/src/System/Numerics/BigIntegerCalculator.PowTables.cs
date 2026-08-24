@@ -26,22 +26,25 @@ namespace System.Numerics
 
         internal static int ExtractFactorPower(ref nuint value, nuint factor, ReadOnlySpan<uint> factorizationPowers)
         {
-            if (value % factor != 0)
-            {
-                return 0;
-            }
+            Debug.Assert(value % factor == 0);
 
             value /= factor;
             int exponent = 1;
 
             for (int i = 0; i < factorizationPowers.Length; i++)
             {
+                if (value == 1)
+                {
+                    break;
+                }
+
                 nuint factorPower = factorizationPowers[i];
 
-                if (value % factorPower == 0)
+                int factorExponent = 1 << (factorizationPowers.Length - i - 1);
+                while (value % factorPower == 0)
                 {
                     value /= factorPower;
-                    exponent += 1 << (factorizationPowers.Length - i - 1);
+                    exponent += factorExponent;
                 }
             }
 
@@ -112,13 +115,12 @@ namespace System.Numerics
         // every e < 2048; binary decomposition would require at most ten multiplies, reduced to
         // at most eight here by the scalar factor. Larger exponents are increasingly uncommon, but
         // the tables can be extended by appending successive squares.
-#if TARGET_64BIT
-        internal static ReadOnlySpan<int> Pow3TableIndices =>
+        private static ReadOnlySpan<int> Pow3TableIndices64 =>
         [
             0, 2, 5, 10, 18, 32,
         ];
 
-        private static ReadOnlySpan<ulong> Pow3TableStorage =>
+        private static ReadOnlySpan<ulong> Pow3TableStorage64 =>
         [
             1, 0x0006954FE21E3E81, // 3^32
 
@@ -185,18 +187,12 @@ namespace System.Numerics
             0x0000000000802460,
         ];
 
-        internal static ReadOnlySpan<nuint> Pow3Table
-            => MemoryMarshal.Cast<ulong, nuint>(Pow3TableStorage);
-
-        // The low 5 exponent bits cover 3^0..3^31, all of which fit in one ulong; 3^63 does not.
-        internal const int Pow3TableStartIndex = 5;
-
-        internal static ReadOnlySpan<int> Pow5TableIndices =>
+        private static ReadOnlySpan<int> Pow5TableIndices64 =>
         [
             0, 2, 5, 9, 15, 26, 46,
         ];
 
-        private static ReadOnlySpan<ulong> Pow5TableStorage =>
+        private static ReadOnlySpan<ulong> Pow5TableStorage64 =>
         [
             1, 0x0000002386F26FC1, // 5^16
 
@@ -290,18 +286,12 @@ namespace System.Numerics
             0x0000000000000325,
         ];
 
-        internal static ReadOnlySpan<nuint> Pow5Table
-            => MemoryMarshal.Cast<ulong, nuint>(Pow5TableStorage);
-
-        // The low 4 exponent bits cover 5^0..5^15, all of which fit in one ulong; 5^31 does not.
-        internal const int Pow5TableStartIndex = 4;
-
-        internal static ReadOnlySpan<int> Pow7TableIndices =>
+        private static ReadOnlySpan<int> Pow7TableIndices64 =>
         [
             0, 2, 5, 9, 16, 29, 53,
         ];
 
-        private static ReadOnlySpan<ulong> Pow7TableStorage =>
+        private static ReadOnlySpan<ulong> Pow7TableStorage64 =>
         [
             1, 0x00001E39A5057D81, // 7^16
 
@@ -409,18 +399,12 @@ namespace System.Numerics
             0x06A4248C9598B26E,
         ];
 
-        internal static ReadOnlySpan<nuint> Pow7Table
-            => MemoryMarshal.Cast<ulong, nuint>(Pow7TableStorage);
-
-        // The low 4 exponent bits cover 7^0..7^15, all of which fit in one ulong; 7^31 does not.
-        internal const int Pow7TableStartIndex = 4;
-#else
-        internal static ReadOnlySpan<int> Pow3TableIndices =>
+        private static ReadOnlySpan<int> Pow3TableIndices32 =>
         [
             0, 2, 5, 10, 18, 32, 59,
         ];
 
-        private static ReadOnlySpan<uint> Pow3TableStorage =>
+        private static ReadOnlySpan<uint> Pow3TableStorage32 =>
         [
             1, 0x0290D741, // 3^16
 
@@ -540,18 +524,12 @@ namespace System.Numerics
             0x00802460,
         ];
 
-        internal static ReadOnlySpan<nuint> Pow3Table
-            => MemoryMarshal.Cast<uint, nuint>(Pow3TableStorage);
-
-        // The low 4 exponent bits cover 3^0..3^15, all of which fit in one uint; 3^31 does not.
-        internal const int Pow3TableStartIndex = 4;
-
-        internal static ReadOnlySpan<int> Pow5TableIndices =>
+        private static ReadOnlySpan<int> Pow5TableIndices32 =>
         [
             0, 2, 5, 9, 15, 26, 46, 85,
         ];
 
-        private static ReadOnlySpan<uint> Pow5TableStorage =>
+        private static ReadOnlySpan<uint> Pow5TableStorage32 =>
         [
             1, 0x0005F5E1, // 5^8
 
@@ -722,18 +700,12 @@ namespace System.Numerics
             0x00000325,
         ];
 
-        internal static ReadOnlySpan<nuint> Pow5Table
-            => MemoryMarshal.Cast<uint, nuint>(Pow5TableStorage);
-
-        // The low 3 exponent bits cover 5^0..5^7, all of which fit in one uint; 5^15 does not.
-        internal const int Pow5TableStartIndex = 3;
-
-        internal static ReadOnlySpan<int> Pow7TableIndices =>
+        private static ReadOnlySpan<int> Pow7TableIndices32 =>
         [
             0, 2, 5, 9, 16, 29, 53, 99,
         ];
 
-        private static ReadOnlySpan<uint> Pow7TableStorage =>
+        private static ReadOnlySpan<uint> Pow7TableStorage32 =>
         [
             1, 0x0057F6C1, // 7^8
 
@@ -933,12 +905,35 @@ namespace System.Numerics
             0x06A4248C,
         ];
 
-        internal static ReadOnlySpan<nuint> Pow7Table
-            => MemoryMarshal.Cast<uint, nuint>(Pow7TableStorage);
+        internal static ReadOnlySpan<int> Pow3TableIndices
+            => nint.Size == 8 ? Pow3TableIndices64 : Pow3TableIndices32;
 
-        // The low 3 exponent bits cover 7^0..7^7, all of which fit in one uint; 7^15 does not.
-        internal const int Pow7TableStartIndex = 3;
-#endif
+        internal static ReadOnlySpan<nuint> Pow3Table
+            => nint.Size == 8
+                ? MemoryMarshal.Cast<ulong, nuint>(Pow3TableStorage64)
+                : MemoryMarshal.Cast<uint, nuint>(Pow3TableStorage32);
+
+        internal static int Pow3TableStartIndex => nint.Size == 8 ? 5 : 4;
+
+        internal static ReadOnlySpan<int> Pow5TableIndices
+            => nint.Size == 8 ? Pow5TableIndices64 : Pow5TableIndices32;
+
+        internal static ReadOnlySpan<nuint> Pow5Table
+            => nint.Size == 8
+                ? MemoryMarshal.Cast<ulong, nuint>(Pow5TableStorage64)
+                : MemoryMarshal.Cast<uint, nuint>(Pow5TableStorage32);
+
+        internal static int Pow5TableStartIndex => nint.Size == 8 ? 4 : 3;
+
+        internal static ReadOnlySpan<int> Pow7TableIndices
+            => nint.Size == 8 ? Pow7TableIndices64 : Pow7TableIndices32;
+
+        internal static ReadOnlySpan<nuint> Pow7Table
+            => nint.Size == 8
+                ? MemoryMarshal.Cast<ulong, nuint>(Pow7TableStorage64)
+                : MemoryMarshal.Cast<uint, nuint>(Pow7TableStorage32);
+
+        internal static int Pow7TableStartIndex => nint.Size == 8 ? 4 : 3;
 
         internal static ReadOnlySpan<nuint> GetPower(
             ReadOnlySpan<int> indices,
@@ -950,8 +945,5 @@ namespace System.Numerics
             return powers.Slice(tableIndex + 1, length);
         }
 
-        /// <summary>Gets the magnitude limbs for 10 raised to <c>2^exponentBit</c>.</summary>
-        internal static ReadOnlySpan<nuint> GetPow10Power(int exponentBit)
-            => GetPower(Pow10BigNumTableIndices, Pow10BigNumTable, exponentBit - Pow10BigNumTableStartIndex);
     }
 }

@@ -5,7 +5,6 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
-using System.Runtime.InteropServices;
 
 namespace System.Numerics
 {
@@ -537,8 +536,11 @@ namespace System.Numerics
                     return;
                 }
 
-                AddWithLimbOffsets(left, leftOffset, right, rightOffset, bits);
-                return;
+                if (Math.Max(leftOffset, rightOffset) >= 32)
+                {
+                    AddWithLimbOffsets(left, leftOffset, right, rightOffset, bits);
+                    return;
+                }
             }
 
             // Establish cross-span length relationships so the JIT can
@@ -791,61 +793,10 @@ namespace System.Numerics
             }
         }
 
-        /// <summary>
-        /// Multiplies using the "grammar-school" method or a specialized equivalent.
-        /// Callers guarantee left.Length >= right.Length, bits is large enough for the product, and bits is zero-initialized.
-        /// </summary>
         public static void MultiplyNaive(ReadOnlySpan<nuint> left, ReadOnlySpan<nuint> right, Span<nuint> bits)
         {
             Debug.Assert(left.Length >= right.Length);
             Debug.Assert(right.IsEmpty || bits.Length >= left.Length + right.Length);
-
-            if ((!left.IsEmpty && left[0] == 0) || (!right.IsEmpty && right[0] == 0))
-            {
-                int leftOffset = left.IndexOfAnyExcept((nuint)0);
-                int rightOffset = right.IndexOfAnyExcept((nuint)0);
-
-                if (leftOffset < 0 || rightOffset < 0)
-                {
-                    return;
-                }
-
-                left = left[leftOffset..];
-                right = right[rightOffset..];
-                bits = bits[(leftOffset + rightOffset)..];
-
-                if (left.Length < right.Length)
-                {
-                    ReadOnlySpan<nuint> temporary = right;
-                    right = left;
-                    left = temporary;
-                }
-            }
-
-            if ((IsRepeatedLimbCandidate(right)
-                    && TryMultiplyRepeatedLimb(left, right, bits))
-                || (IsRepeatedLimbCandidate(left)
-                    && TryMultiplyRepeatedLimb(right, left, bits)))
-            {
-                return;
-            }
-
-            if (nint.Size == 8 && TryMultiplyShiftedRepeatedLimbOperands(left, right, bits))
-            {
-                return;
-            }
-
-            if (!right.IsEmpty && TryGetPowerOfTwoExponent(right, out int exponent))
-            {
-                MultiplyByPowerOfTwo(left, exponent, bits);
-                return;
-            }
-
-            if (!left.IsEmpty && TryGetPowerOfTwoExponent(left, out exponent))
-            {
-                MultiplyByPowerOfTwo(right, exponent, bits);
-                return;
-            }
 
             // Multiplies the bits using the "grammar-school" method.
             // Envisioning the "rhombus" of a pen-and-paper calculation
@@ -853,6 +804,18 @@ namespace System.Numerics
             // The inner multiplication operations are safe, because
             // z_i+j + a_j * b_i + c <= 2(2^n - 1) + (2^n - 1)^2 =
             // = 2^(2n) - 1, where n = BitsPerLimb.
+
+            for (int i = 0; i < right.Length; i++)
+            {
+                nuint carry = MulAdd1(bits.Slice(i), left, right[i]);
+                bits[i + left.Length] = carry;
+            }
+        }
+
+        internal static void MultiplyNaiveSparse(ReadOnlySpan<nuint> left, ReadOnlySpan<nuint> right, Span<nuint> bits)
+        {
+            Debug.Assert(left.Length >= right.Length);
+            Debug.Assert(right.IsEmpty || bits.Length >= left.Length + right.Length);
 
             for (int i = 0; i < right.Length; i++)
             {
@@ -974,7 +937,6 @@ namespace System.Numerics
             return true;
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
         internal static bool TryMultiplyShiftedRepeatedLimbOperands(
             ReadOnlySpan<nuint> left,
             ReadOnlySpan<nuint> right,
@@ -985,13 +947,15 @@ namespace System.Numerics
                 || (IsShiftedRepeatedLimbCandidate(left)
                     && TryMultiplyShiftedRepeatedLimb(right, left, bits));
 
-            static bool IsShiftedRepeatedLimbCandidate(ReadOnlySpan<nuint> value)
-            {
-                return value.Length >= 4
-                    && value[0] != 0
-                    && value[0] != value[1]
-                    && value[1] == value[2];
-            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool IsShiftedRepeatedLimbCandidate(ReadOnlySpan<nuint> value)
+        {
+            return value.Length >= 4
+                && value[0] != 0
+                && value[0] != value[1]
+                && value[1] == value[2];
         }
 
         internal static bool TryMultiplyShiftedRepeatedLimb(
@@ -1235,6 +1199,14 @@ namespace System.Numerics
             }
 
             nuint carry = 0;
+
+            if (!ShouldUseSpecializedScalarDivision(left.Length, right))
+            {
+                DivideDirect(left, right, quotient, ref carry);
+                remainder = carry;
+                return;
+            }
+
             DivideCore(left, right, quotient, ref carry);
             remainder = carry;
         }
@@ -1250,7 +1222,47 @@ namespace System.Numerics
             }
 
             nuint carry = 0;
+
+            if (!ShouldUseSpecializedScalarDivision(left.Length, right))
+            {
+                DivideDirect(left, right, quotient, ref carry);
+                return;
+            }
+
             DivideCore(left, right, quotient, ref carry);
+        }
+
+        private static bool ShouldUseSpecializedScalarDivision(int length, nuint divisor)
+        {
+            if (length < 8)
+            {
+                return false;
+            }
+
+            int shift = BitOperations.TrailingZeroCount(divisor);
+            nuint oddDivisor = divisor >> shift;
+            return oddDivisor is 3 or 5 or 7
+                || ShouldUseInvariantDivisor(length, oddDivisor, shift);
+        }
+
+        private static void DivideDirect(
+            ReadOnlySpan<nuint> left,
+            nuint right,
+            Span<nuint> quotient,
+            ref nuint carry)
+        {
+            for (int i = left.Length - 1; i >= 0; i--)
+            {
+                quotient[i] = DivRem(carry, left[i], right, out carry);
+            }
+        }
+
+        private static void RemainderDirect(ReadOnlySpan<nuint> left, nuint right, ref nuint carry)
+        {
+            for (int i = left.Length - 1; i >= 0; i--)
+            {
+                DivRem(carry, left[i], right, out carry);
+            }
         }
 
         private static void DivideCore(ReadOnlySpan<nuint> left, nuint right, Span<nuint> quotient, ref nuint carry)
@@ -1263,19 +1275,22 @@ namespace System.Numerics
             int shift = BitOperations.TrailingZeroCount(right);
             nuint oddDivisor = right >> shift;
 
-            switch (oddDivisor)
+            if (left.Length >= 4)
             {
-                case 3:
-                    DivideSmallPrime<Divisor3>(left, shift, quotient, ref carry);
-                    return;
+                switch (oddDivisor)
+                {
+                    case 3:
+                        DivideSmallPrime<Divisor3>(left, shift, quotient, ref carry);
+                        return;
 
-                case 5:
-                    DivideSmallPrime<Divisor5>(left, shift, quotient, ref carry);
-                    return;
+                    case 5:
+                        DivideSmallPrime<Divisor5>(left, shift, quotient, ref carry);
+                        return;
 
-                case 7:
-                    DivideSmallPrime<Divisor7>(left, shift, quotient, ref carry);
-                    return;
+                    case 7:
+                        DivideSmallPrime<Divisor7>(left, shift, quotient, ref carry);
+                        return;
+                }
             }
 
             if (ShouldUseInvariantDivisor(left.Length, oddDivisor, shift))
@@ -1573,24 +1588,35 @@ namespace System.Numerics
                 return left[0] & (right - 1);
             }
 
+            nuint remainder = 0;
+
+            if (!ShouldUseSpecializedScalarDivision(left.Length, right))
+            {
+                RemainderDirect(left, right, ref remainder);
+                return remainder;
+            }
+
             int shift = BitOperations.TrailingZeroCount(right);
             nuint oddDivisor = right >> shift;
 
             nuint invariantRemainder = 0;
 
-            switch (oddDivisor)
+            if (left.Length >= 4)
             {
-                case 3:
-                    DivideSmallPrime<Divisor3>(left, shift, default, ref invariantRemainder);
-                    return invariantRemainder;
+                switch (oddDivisor)
+                {
+                    case 3:
+                        DivideSmallPrime<Divisor3>(left, shift, default, ref invariantRemainder);
+                        return invariantRemainder;
 
-                case 5:
-                    DivideSmallPrime<Divisor5>(left, shift, default, ref invariantRemainder);
-                    return invariantRemainder;
+                    case 5:
+                        DivideSmallPrime<Divisor5>(left, shift, default, ref invariantRemainder);
+                        return invariantRemainder;
 
-                case 7:
-                    DivideSmallPrime<Divisor7>(left, shift, default, ref invariantRemainder);
-                    return invariantRemainder;
+                    case 7:
+                        DivideSmallPrime<Divisor7>(left, shift, default, ref invariantRemainder);
+                        return invariantRemainder;
+                }
             }
 
             if (ShouldUseInvariantDivisor(left.Length, oddDivisor, shift))
@@ -1609,25 +1635,36 @@ namespace System.Numerics
             return carry;
         }
 
-        internal static void DivideGrammarSchool(Span<nuint> left, ReadOnlySpan<nuint> right, Span<nuint> quotient)
+        internal static void DivideGrammarSchoolSpecial(Span<nuint> left, ReadOnlySpan<nuint> right, Span<nuint> quotient)
         {
             Debug.Assert(left.Length >= 1);
             Debug.Assert(right.Length >= 1);
             Debug.Assert(left.Length >= right.Length);
+            Debug.Assert(right[0] == 0);
             Debug.Assert(
                 quotient.Length == 0
                 || quotient.Length == left.Length - right.Length + 1
                 || (CompareActual(left.Slice(left.Length - right.Length), right) < 0 && quotient.Length == left.Length - right.Length));
 
-            int commonOffset = GetCommonLimbOffset(left, right);
+            int commonOffset = left[0] == 0 ? GetCommonLimbOffset(left, right) : 0;
             if (commonOffset != 0)
             {
-                DivideGrammarSchool(left[commonOffset..], right[commonOffset..], quotient);
+                Span<nuint> reducedLeft = left[commonOffset..];
+                ReadOnlySpan<nuint> reducedRight = right[commonOffset..];
+
+                if (reducedRight[0] == 0)
+                {
+                    DivideGrammarSchoolSpecial(reducedLeft, reducedRight, quotient);
+                }
+                else
+                {
+                    DivideGrammarSchool(reducedLeft, reducedRight, quotient);
+                }
                 return;
             }
 
-            int rightOffset = right[0] == 0 ? GetLimbOffset(right) : 0;
-            if (rightOffset != 0 && right.Length - rightOffset <= ShiftedDivisorMaxReducedLength)
+            int rightOffset = GetLimbOffset(right);
+            if (right.Length - rightOffset <= ShiftedDivisorMaxReducedLength)
             {
                 DivideGrammarSchool(left[rightOffset..], right[rightOffset..], quotient);
                 return;
@@ -1639,6 +1676,19 @@ namespace System.Numerics
                 RemainderByPowerOfTwo(left, exponent);
                 return;
             }
+
+            DivideGrammarSchool(left, right, quotient);
+        }
+
+        internal static void DivideGrammarSchool(Span<nuint> left, ReadOnlySpan<nuint> right, Span<nuint> quotient)
+        {
+            Debug.Assert(left.Length >= 1);
+            Debug.Assert(right.Length >= 1);
+            Debug.Assert(left.Length >= right.Length);
+            Debug.Assert(
+                quotient.Length == 0
+                || quotient.Length == left.Length - right.Length + 1
+                || (CompareActual(left.Slice(left.Length - right.Length), right) < 0 && quotient.Length == left.Length - right.Length));
 
             // Executes the "grammar-school" algorithm for computing q = a / b.
             // Before calculating q_i, we get more bits into the highest bit
@@ -1765,437 +1815,6 @@ namespace System.Numerics
             return (chkHiHi > valHi1)
                 || ((chkHiHi == valHi1) && ((chkHiLo > valHi0) || ((chkHiLo == valHi0) && (chkLoLo > valLo))));
         }
-
-#if TARGET_64BIT
-        internal static ReadOnlySpan<int> Pow10BigNumTableIndices =>
-        [
-            0,          // 10^16
-            2,          // 10^32
-            5,          // 10^64
-            10,         // 10^128
-            18,         // 10^256
-            33,         // 10^512
-            61,         // 10^1024
-        ];
-
-        private static ReadOnlySpan<ulong> Pow10BigNumTableStorage =>
-        [
-            // 10^16
-            1,                      // _length
-            0x002386F26FC10000,     // _blocks
-
-            // 10^32
-            2,                      // _length
-            0x85ACEF8100000000,     // _blocks
-            0x000004EE2D6D415B,
-
-            // 10^64
-            4,                      // _length
-            0x0000000000000000,     // _blocks
-            0x6E38ED64BF6A1F01,
-            0xE93FF9F4DAA797ED,
-            0x0000000000184F03,
-
-            // 10^128
-            7,                      // _length
-            0x0000000000000000,     // _blocks
-            0x0000000000000000,
-            0x03DF99092E953E01,
-            0x2374E42F0F1538FD,
-            0xC404DC08D3CFF5EC,
-            0xA6337F19BCCDB0DA,
-            0x0000024EE91F2603,
-
-            // 10^256
-            14,                     // _length
-            0x0000000000000000,     // _blocks
-            0x0000000000000000,
-            0x0000000000000000,
-            0x0000000000000000,
-            0xBED3875B982E7C01,
-            0x12152F87D8D99F72,
-            0xCF4A6E706BDE50C6,
-            0x26B2716ED595D80F,
-            0x1D153624ADC666B0,
-            0x63FF540E3C42D35A,
-            0x65F9EF17CC5573C0,
-            0x80DCC7F755BC28F2,
-            0x5FDCEFCEF46EEDDC,
-            0x00000000000553F7,
-
-            // 10^512
-            27,                     // _length
-            0x0000000000000000,     // _blocks
-            0x0000000000000000,
-            0x0000000000000000,
-            0x0000000000000000,
-            0x0000000000000000,
-            0x0000000000000000,
-            0x0000000000000000,
-            0x0000000000000000,
-            0x77F27267FC6CF801,
-            0x5D96976F8F9546DC,
-            0xC31E1AD9B83A8A97,
-            0x94E6574746C40513,
-            0x4475B579C88976C1,
-            0xAA1DA1BF28F8733B,
-            0x1E25CFEA703ED321,
-            0xBC51FB2EB21A2F22,
-            0xBFA3EDAC96E14F5D,
-            0xE7FC7153329C57AE,
-            0x85A91924C3FC0695,
-            0xB2908EE0F95F635E,
-            0x1366732A93ABADE4,
-            0x69BE5B0E9449775C,
-            0xB099BC817343AFAC,
-            0xA269974845A71D46,
-            0x8A0B1F138CB07303,
-            0xC1D238D98CAB8A97,
-            0x0000001C633415D4,
-
-            // 10^1024
-            54,                     // _length
-            0x0000000000000000,     // _blocks
-            0x0000000000000000,
-            0x0000000000000000,
-            0x0000000000000000,
-            0x0000000000000000,
-            0x0000000000000000,
-            0x0000000000000000,
-            0x0000000000000000,
-            0x0000000000000000,
-            0x0000000000000000,
-            0x0000000000000000,
-            0x0000000000000000,
-            0x0000000000000000,
-            0x0000000000000000,
-            0x0000000000000000,
-            0x0000000000000000,
-            0xF55B2B722919F001,
-            0x1EC29F866E7C215B,
-            0x15C51A88991C4E87,
-            0x4C7D1E1A140AC535,
-            0x0ED1440ECC2CD819,
-            0x7DE16CFB896634EE,
-            0x9FCE837D1E43F61F,
-            0x233E55C7231D2B9C,
-            0xF451218B65DC60D7,
-            0xC96359861C5CD134,
-            0xA7E89431922BBB9F,
-            0x62BE695A9F9F2A07,
-            0x045B7A748E1042C4,
-            0x8AD822A51ABE1DE3,
-            0xD814B505BA34C411,
-            0x8FC51A16BF3FDEB3,
-            0xF56DEEECB1B896BC,
-            0xB6F4654B31FB6BFD,
-            0x6B7595FB101A3616,
-            0x80D98089DC1A47FE,
-            0x9A20288280BDA5A5,
-            0xFC8F1F9031EB0F66,
-            0xE26A7B7E976A3310,
-            0x3CE3A0B8DF68368A,
-            0x75A351A28E4262CE,
-            0x445975836CB0B6C9,
-            0xC356E38A31B5653F,
-            0x0190FBA035FAABA6,
-            0x88BC491B9FC4ED52,
-            0x005B80411640114A,
-            0x1E8D4649F4F3235E,
-            0x73C5534936A8DE06,
-            0xC1A6970CA7E6BD2A,
-            0xD2DB49EF47187094,
-            0xAE6209D4926C3F5B,
-            0x34F4A3C62D433949,
-            0xD9D61A05D4305D94,
-            0x0000000000000325,
-
-            // 5 trailing zero blocks so the last entry can be reinterpreted as a full BigInteger
-            0x0000000000000000,
-            0x0000000000000000,
-            0x0000000000000000,
-            0x0000000000000000,
-            0x0000000000000000,
-        ];
-
-        internal static ReadOnlySpan<nuint> Pow10BigNumTable
-            => MemoryMarshal.Cast<ulong, nuint>(Pow10BigNumTableStorage);
-
-        internal const int Pow10BigNumTableStartIndex = 4;
-#else
-        internal static ReadOnlySpan<int> Pow10BigNumTableIndices =>
-        [
-            0,          // 10^8
-            2,          // 10^16
-            5,          // 10^32
-            10,         // 10^64
-            18,         // 10^128
-            33,         // 10^256
-            61,         // 10^512
-            116,        // 10^1024
-        ];
-
-        private static ReadOnlySpan<uint> Pow10BigNumTableStorage =>
-        [
-            // 10^8
-            1,          // _length
-            100000000,  // _blocks
-
-            // 10^16
-            2,          // _length
-            0x6FC10000, // _blocks
-            0x002386F2,
-
-            // 10^32
-            4,          // _length
-            0x00000000, // _blocks
-            0x85ACEF81,
-            0x2D6D415B,
-            0x000004EE,
-
-            // 10^64
-            7,          // _length
-            0x00000000, // _blocks
-            0x00000000,
-            0xBF6A1F01,
-            0x6E38ED64,
-            0xDAA797ED,
-            0xE93FF9F4,
-            0x00184F03,
-
-            // 10^128
-            14,         // _length
-            0x00000000, // _blocks
-            0x00000000,
-            0x00000000,
-            0x00000000,
-            0x2E953E01,
-            0x03DF9909,
-            0x0F1538FD,
-            0x2374E42F,
-            0xD3CFF5EC,
-            0xC404DC08,
-            0xBCCDB0DA,
-            0xA6337F19,
-            0xE91F2603,
-            0x0000024E,
-
-            // 10^256
-            27,         // _length
-            0x00000000, // _blocks
-            0x00000000,
-            0x00000000,
-            0x00000000,
-            0x00000000,
-            0x00000000,
-            0x00000000,
-            0x00000000,
-            0x982E7C01,
-            0xBED3875B,
-            0xD8D99F72,
-            0x12152F87,
-            0x6BDE50C6,
-            0xCF4A6E70,
-            0xD595D80F,
-            0x26B2716E,
-            0xADC666B0,
-            0x1D153624,
-            0x3C42D35A,
-            0x63FF540E,
-            0xCC5573C0,
-            0x65F9EF17,
-            0x55BC28F2,
-            0x80DCC7F7,
-            0xF46EEDDC,
-            0x5FDCEFCE,
-            0x000553F7,
-
-            // 10^512
-            54,         // _length
-            0x00000000, // _blocks
-            0x00000000,
-            0x00000000,
-            0x00000000,
-            0x00000000,
-            0x00000000,
-            0x00000000,
-            0x00000000,
-            0x00000000,
-            0x00000000,
-            0x00000000,
-            0x00000000,
-            0x00000000,
-            0x00000000,
-            0x00000000,
-            0x00000000,
-            0xFC6CF801,
-            0x77F27267,
-            0x8F9546DC,
-            0x5D96976F,
-            0xB83A8A97,
-            0xC31E1AD9,
-            0x46C40513,
-            0x94E65747,
-            0xC88976C1,
-            0x4475B579,
-            0x28F8733B,
-            0xAA1DA1BF,
-            0x703ED321,
-            0x1E25CFEA,
-            0xB21A2F22,
-            0xBC51FB2E,
-            0x96E14F5D,
-            0xBFA3EDAC,
-            0x329C57AE,
-            0xE7FC7153,
-            0xC3FC0695,
-            0x85A91924,
-            0xF95F635E,
-            0xB2908EE0,
-            0x93ABADE4,
-            0x1366732A,
-            0x9449775C,
-            0x69BE5B0E,
-            0x7343AFAC,
-            0xB099BC81,
-            0x45A71D46,
-            0xA2699748,
-            0x8CB07303,
-            0x8A0B1F13,
-            0x8CAB8A97,
-            0xC1D238D9,
-            0x633415D4,
-            0x0000001C,
-
-            // 10^1024
-            107,        // _length
-            0x00000000, // _blocks
-            0x00000000,
-            0x00000000,
-            0x00000000,
-            0x00000000,
-            0x00000000,
-            0x00000000,
-            0x00000000,
-            0x00000000,
-            0x00000000,
-            0x00000000,
-            0x00000000,
-            0x00000000,
-            0x00000000,
-            0x00000000,
-            0x00000000,
-            0x00000000,
-            0x00000000,
-            0x00000000,
-            0x00000000,
-            0x00000000,
-            0x00000000,
-            0x00000000,
-            0x00000000,
-            0x00000000,
-            0x00000000,
-            0x00000000,
-            0x00000000,
-            0x00000000,
-            0x00000000,
-            0x00000000,
-            0x00000000,
-            0x2919F001,
-            0xF55B2B72,
-            0x6E7C215B,
-            0x1EC29F86,
-            0x991C4E87,
-            0x15C51A88,
-            0x140AC535,
-            0x4C7D1E1A,
-            0xCC2CD819,
-            0x0ED1440E,
-            0x896634EE,
-            0x7DE16CFB,
-            0x1E43F61F,
-            0x9FCE837D,
-            0x231D2B9C,
-            0x233E55C7,
-            0x65DC60D7,
-            0xF451218B,
-            0x1C5CD134,
-            0xC9635986,
-            0x922BBB9F,
-            0xA7E89431,
-            0x9F9F2A07,
-            0x62BE695A,
-            0x8E1042C4,
-            0x045B7A74,
-            0x1ABE1DE3,
-            0x8AD822A5,
-            0xBA34C411,
-            0xD814B505,
-            0xBF3FDEB3,
-            0x8FC51A16,
-            0xB1B896BC,
-            0xF56DEEEC,
-            0x31FB6BFD,
-            0xB6F4654B,
-            0x101A3616,
-            0x6B7595FB,
-            0xDC1A47FE,
-            0x80D98089,
-            0x80BDA5A5,
-            0x9A202882,
-            0x31EB0F66,
-            0xFC8F1F90,
-            0x976A3310,
-            0xE26A7B7E,
-            0xDF68368A,
-            0x3CE3A0B8,
-            0x8E4262CE,
-            0x75A351A2,
-            0x6CB0B6C9,
-            0x44597583,
-            0x31B5653F,
-            0xC356E38A,
-            0x35FAABA6,
-            0x0190FBA0,
-            0x9FC4ED52,
-            0x88BC491B,
-            0x1640114A,
-            0x005B8041,
-            0xF4F3235E,
-            0x1E8D4649,
-            0x36A8DE06,
-            0x73C55349,
-            0xA7E6BD2A,
-            0xC1A6970C,
-            0x47187094,
-            0xD2DB49EF,
-            0x926C3F5B,
-            0xAE6209D4,
-            0x2D433949,
-            0x34F4A3C6,
-            0xD4305D94,
-            0xD9D61A05,
-            0x00000325,
-
-            // 10 Trailing blocks to ensure MaxBlockCount
-            0x00000000,
-            0x00000000,
-            0x00000000,
-            0x00000000,
-            0x00000000,
-            0x00000000,
-            0x00000000,
-            0x00000000,
-            0x00000000,
-            0x00000000,
-        ];
-
-        internal static ReadOnlySpan<nuint> Pow10BigNumTable
-            => MemoryMarshal.Cast<uint, nuint>(Pow10BigNumTableStorage);
-
-        internal const int Pow10BigNumTableStartIndex = 3;
-#endif
-
 
     }
 }

@@ -33,7 +33,7 @@ namespace System.Numerics
 
         // Scanning and slicing starts paying for itself at 32 skipped limbs.
         private const int AddSubtractZeroLimbThreshold = 32;
-        private const int Pow7CombinationThreshold = 384;
+        private const int Pow7CombinationThreshold = 128;
 
         /// <summary>
         /// Maximum number of limbs in a <see cref="BigInteger"/>. Restricts allocations to ~256MB,
@@ -959,7 +959,7 @@ namespace System.Numerics
             }
 
             int commonOffset = dividend._bits[0] == 0 && divisor._bits[0] == 0
-                ? GetCommonLimbOffset(dividend._bits, divisor._bits)
+                ? BigIntegerCalculator.GetCommonLimbOffset(dividend._bits, divisor._bits)
                 : 0;
             ReadOnlySpan<nuint> dividendBits = dividend._bits.AsSpan(commonOffset);
             ReadOnlySpan<nuint> divisorBits = divisor._bits.AsSpan(commonOffset);
@@ -977,11 +977,15 @@ namespace System.Numerics
                 size = dividendBits.Length - divisorBits.Length + 1;
                 Span<nuint> quotient = RentedBuffer.Create(size, out RentedBuffer quotientBuffer);
 
-                BigIntegerCalculator.Divide(
-                    dividendBits,
-                    divisorBits,
-                    quotient,
-                    rest.Slice(commonOffset, dividendBits.Length));
+                Span<nuint> remainderBits = rest.Slice(commonOffset, dividendBits.Length);
+                if (ShouldUseSpecialDivision(dividendBits, divisorBits))
+                {
+                    BigIntegerCalculator.DivideSpecial(dividendBits, divisorBits, quotient, remainderBits);
+                }
+                else
+                {
+                    BigIntegerCalculator.Divide(dividendBits, divisorBits, quotient, remainderBits);
+                }
 
                 remainder = new(rest, dividend._sign < 0);
                 BigInteger result = new(quotient, (dividend._sign < 0) ^ (divisor._sign < 0));
@@ -1119,7 +1123,7 @@ namespace System.Numerics
         private static BigInteger GreatestCommonDivisor(nuint[] leftBits, nuint[] rightBits)
         {
             int commonOffset = leftBits[0] == 0 && rightBits[0] == 0
-                ? GetCommonLimbOffset(leftBits, rightBits)
+                ? BigIntegerCalculator.GetCommonLimbOffset(leftBits, rightBits)
                 : 0;
             ReadOnlySpan<nuint> reducedLeft = leftBits.AsSpan(commonOffset);
             ReadOnlySpan<nuint> reducedRight = rightBits.AsSpan(commonOffset);
@@ -1420,12 +1424,41 @@ namespace System.Numerics
                 int shift = BitOperations.TrailingZeroCount(magnitude);
                 nuint oddMagnitude = magnitude >> shift;
                 nuint remainingMagnitude = oddMagnitude;
-                int powerOfThree = BigIntegerCalculator.ExtractFactorPower(
-                    ref remainingMagnitude, 3, BigIntegerCalculator.Pow3FactorizationPowers);
-                int powerOfFive = BigIntegerCalculator.ExtractFactorPower(
-                    ref remainingMagnitude, 5, BigIntegerCalculator.Pow5FactorizationPowers);
-                int powerOfSeven = BigIntegerCalculator.ExtractFactorPower(
-                    ref remainingMagnitude, 7, BigIntegerCalculator.Pow7FactorizationPowers);
+                uint factorResidue = (uint)oddMagnitude % (3 * 5 * 7);
+                bool hasFactorThree = factorResidue % 3 == 0;
+                bool hasFactorFive = factorResidue % 5 == 0;
+                bool hasFactorSeven = factorResidue % 7 == 0;
+                int distinctFactorCount = (hasFactorThree ? 1 : 0)
+                    + (hasFactorFive ? 1 : 0)
+                    + (hasFactorSeven ? 1 : 0);
+                bool extractFactors = distinctFactorCount <= 2
+                    && !(hasFactorSeven
+                        && distinctFactorCount == 2
+                        && exponent < Pow7CombinationThreshold);
+
+                if (!extractFactors)
+                {
+                    int genericSize = BigIntegerCalculator.PowBound(power, 1);
+                    Span<nuint> genericBits = RentedBuffer.Create(genericSize, out RentedBuffer genericBuffer);
+
+                    BigIntegerCalculator.Pow(magnitude, power, genericBits);
+                    result = new BigInteger(genericBits, value._sign < 0 && (exponent & 1) != 0);
+                    genericBuffer.Dispose();
+                    return result;
+                }
+
+                int powerOfThree = hasFactorThree
+                    ? BigIntegerCalculator.ExtractFactorPower(
+                        ref remainingMagnitude, 3, BigIntegerCalculator.Pow3FactorizationPowers)
+                    : 0;
+                int powerOfFive = hasFactorFive
+                    ? BigIntegerCalculator.ExtractFactorPower(
+                        ref remainingMagnitude, 5, BigIntegerCalculator.Pow5FactorizationPowers)
+                    : 0;
+                int powerOfSeven = hasFactorSeven
+                    ? BigIntegerCalculator.ExtractFactorPower(
+                        ref remainingMagnitude, 7, BigIntegerCalculator.Pow7FactorizationPowers)
+                    : 0;
 
                 ReadOnlySpan<int> powerIndices = default;
                 ReadOnlySpan<nuint> powers = default;
@@ -1454,13 +1487,9 @@ namespace System.Numerics
                     powerTableStartIndex = BigIntegerCalculator.Pow7TableStartIndex;
                 }
 
-                int primeFactorCount = (powerOfThree != 0 ? 1 : 0)
-                    + (powerOfFive != 0 ? 1 : 0)
-                    + (powerOfSeven != 0 ? 1 : 0);
                 bool usePowerTable = !powers.IsEmpty;
                 bool useMultiplePowerTables = remainingMagnitude == 1
-                    && primeFactorCount == 2
-                    && (powerOfSeven == 0 || exponent >= Pow7CombinationThreshold);
+                    && distinctFactorCount == 2;
                 nuint tablePower = usePowerTable
                     ? checked(power * (uint)(powerOfThree + powerOfFive + powerOfSeven))
                     : 0;
@@ -1476,16 +1505,6 @@ namespace System.Numerics
                         / (uint)BigIntegerCalculator.BitsPerLimb) > (uint)MaxLength)
                     {
                         ThrowHelper.ThrowOverflowException();
-                    }
-                }
-
-                if (magnitude == 10 && power <= 1_024 && BitOperations.IsPow2(power))
-                {
-                    int powerIndex = BitOperations.Log2(power);
-
-                    if (powerIndex >= BigIntegerCalculator.Pow10BigNumTableStartIndex)
-                    {
-                        return new BigInteger(BigIntegerCalculator.GetPow10Power(powerIndex), negative: false);
                     }
                 }
 
@@ -2452,27 +2471,13 @@ namespace System.Numerics
             return result;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static int GetLimbOffset(ReadOnlySpan<nuint> bits)
-        {
-            int offset = bits[0] == 0 ? bits.IndexOfAnyExcept((nuint)0) : 0;
-            Debug.Assert(offset >= 0);
-            return offset;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static int GetCommonLimbOffset(ReadOnlySpan<nuint> leftBits, ReadOnlySpan<nuint> rightBits)
-        {
-            return Math.Min(GetLimbOffset(leftBits), GetLimbOffset(rightBits));
-        }
-
         private static bool TryAddWithCommonLimbOffset(
             ReadOnlySpan<nuint> leftBits,
             int leftSign,
             ReadOnlySpan<nuint> rightBits,
             out BigInteger result)
         {
-            int commonOffset = GetCommonLimbOffset(leftBits, rightBits);
+            int commonOffset = BigIntegerCalculator.GetCommonLimbOffset(leftBits, rightBits);
             if (commonOffset < AddSubtractZeroLimbThreshold)
             {
                 result = default;
@@ -2505,7 +2510,7 @@ namespace System.Numerics
             ReadOnlySpan<nuint> rightBits,
             out BigInteger result)
         {
-            int commonOffset = GetCommonLimbOffset(leftBits, rightBits);
+            int commonOffset = BigIntegerCalculator.GetCommonLimbOffset(leftBits, rightBits);
             if (commonOffset < AddSubtractZeroLimbThreshold)
             {
                 result = default;
@@ -3683,7 +3688,7 @@ namespace System.Numerics
             }
 
             int commonOffset = dividend._bits[0] == 0 && divisor._bits[0] == 0
-                ? GetCommonLimbOffset(dividend._bits, divisor._bits)
+                ? BigIntegerCalculator.GetCommonLimbOffset(dividend._bits, divisor._bits)
                 : 0;
             ReadOnlySpan<nuint> dividendBits = dividend._bits.AsSpan(commonOffset);
             ReadOnlySpan<nuint> divisorBits = divisor._bits.AsSpan(commonOffset);
@@ -3697,7 +3702,14 @@ namespace System.Numerics
                 int size = dividendBits.Length - divisorBits.Length + 1;
                 Span<nuint> quotient = RentedBuffer.Create(size, out RentedBuffer quotientBuffer);
 
-                BigIntegerCalculator.Divide(dividendBits, divisorBits, quotient);
+                if (ShouldUseSpecialDivision(dividendBits, divisorBits))
+                {
+                    BigIntegerCalculator.DivideSpecial(dividendBits, divisorBits, quotient);
+                }
+                else
+                {
+                    BigIntegerCalculator.Divide(dividendBits, divisorBits, quotient);
+                }
                 BigInteger result = new(quotient, (dividend._sign < 0) ^ (divisor._sign < 0));
 
                 quotientBuffer.Dispose();
@@ -3738,7 +3750,7 @@ namespace System.Numerics
             }
 
             int commonOffset = dividend._bits[0] == 0 && divisor._bits[0] == 0
-                ? GetCommonLimbOffset(dividend._bits, divisor._bits)
+                ? BigIntegerCalculator.GetCommonLimbOffset(dividend._bits, divisor._bits)
                 : 0;
             ReadOnlySpan<nuint> dividendBits = dividend._bits.AsSpan(commonOffset);
             ReadOnlySpan<nuint> divisorBits = divisor._bits.AsSpan(commonOffset);
@@ -3751,16 +3763,24 @@ namespace System.Numerics
             int size = dividend._bits.Length;
             Span<nuint> bits = RentedBuffer.Create(size, out RentedBuffer bitsBuffer);
 
-            BigIntegerCalculator.Remainder(
-                dividendBits,
-                divisorBits,
-                bits.Slice(commonOffset, dividendBits.Length));
+            Span<nuint> remainderBits = bits.Slice(commonOffset, dividendBits.Length);
+            if (ShouldUseSpecialDivision(dividendBits, divisorBits))
+            {
+                BigIntegerCalculator.RemainderSpecial(dividendBits, divisorBits, remainderBits);
+            }
+            else
+            {
+                BigIntegerCalculator.Remainder(dividendBits, divisorBits, remainderBits);
+            }
             BigInteger result = new(bits, dividend._sign < 0);
 
             bitsBuffer.Dispose();
 
             return result;
         }
+
+        private static bool ShouldUseSpecialDivision(ReadOnlySpan<nuint> left, ReadOnlySpan<nuint> right)
+            => left.Length >= 16 && (right[0] == 0 || right[0] == nuint.MaxValue);
 
         public static bool operator <(BigInteger left, BigInteger right) => left.CompareTo(right) < 0;
 

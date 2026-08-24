@@ -5,28 +5,10 @@
     <RootNamespace>System.Numerics</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
-    <Is64Bit Condition="'$(TargetArchitecture)' == 'x64' or
-                        '$(TargetArchitecture)' == 'arm64' or
-                        '$(TargetArchitecture)' == 'loongarch64' or
-                        '$(TargetArchitecture)' == 'riscv64' or
-                        '$(TargetArchitecture)' == 's390x' or
-                        '$(TargetArchitecture)' == 'ppc64le'">true</Is64Bit>
-    <Is32Bit Condition="'$(TargetArchitecture)' == 'x86' or
-                        '$(TargetArchitecture)' == 'arm' or
-                        '$(TargetArchitecture)' == 'armel' or
-                        '$(TargetArchitecture)' == 'armv6' or
-                        '$(TargetArchitecture)' == 'wasm'">true</Is32Bit>
-    <DefineConstants Condition="'$(Is32Bit)' == 'true'">$(DefineConstants);TARGET_32BIT</DefineConstants>
-    <DefineConstants Condition="'$(Is64Bit)' == 'true'">$(DefineConstants);TARGET_64BIT</DefineConstants>
     <!-- Mono routes ulong -> float through double, which double rounds; the BigInteger -> float
          conversion excludes its correctly-rounded fast path there. -->
     <DefineConstants Condition="'$(RuntimeFlavor)' == 'Mono'">$(DefineConstants);MONO</DefineConstants>
   </PropertyGroup>
-
-  <Target Name="ValidateTargetArchitecture" BeforeTargets="CoreCompile">
-    <Error Condition="'$(Is32Bit)' != 'true' and '$(Is64Bit)' != 'true'"
-           Text="Unsupported TargetArchitecture '$(TargetArchitecture)' for System.Runtime.Numerics." />
-  </Target>
 
   <ItemGroup>
     <Compile Include="System\ThrowHelper.cs" />
