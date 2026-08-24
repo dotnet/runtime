@@ -484,6 +484,167 @@ namespace System.Numerics.Tests
             Assert.Equal(a * a, BigInteger.Pow(a, 2));
         }
 
+        [Theory]
+        [InlineData(4, 3, 1, 0)]
+        [InlineData(4, 8, 2, 0)]
+        [InlineData(8, 4, 3, 0)]
+        [InlineData(16, 32, 5, 0)]
+        [InlineData(31, 64, 7, 0)]
+        [InlineData(32, 16, 10, 0)]
+        [InlineData(33, 64, 257, 0)]
+        [InlineData(64, 31, 65_535, 0)]
+        [InlineData(64, 33, 1, 2)]
+        [InlineData(256, 65, 0, 4)]
+        public void MultiplyLimbRun(int runLength, int otherLength, int repeatedLimb, int limbOffset)
+        {
+            int bitsPerLimb = nint.Size * 8;
+            int runBits = runLength * bitsPerLimb;
+            BigInteger radix = BigInteger.One << bitsPerLimb;
+            BigInteger run = repeatedLimb == 0
+                ? (BigInteger.One << runBits) - 1
+                : repeatedLimb * (((BigInteger.One << runBits) - 1) / (radix - 1));
+            BigInteger other = MakePositive(otherLength, new Random(5_100 + runLength + otherLength));
+            run <<= limbOffset * bitsPerLimb;
+
+            BigInteger expected;
+
+            if (repeatedLimb == 0)
+            {
+                expected = ((other << runBits) - other) << (limbOffset * bitsPerLimb);
+            }
+            else
+            {
+                expected = BigInteger.Zero;
+
+                for (int i = 0; i < runLength; i++)
+                {
+                    expected += (other * repeatedLimb) << (i * bitsPerLimb);
+                }
+
+                expected <<= limbOffset * bitsPerLimb;
+            }
+
+            Assert.Equal(expected, other * run);
+            Assert.Equal(expected, run * other);
+
+            if (limbOffset == 0)
+            {
+                BigInteger expectedSquare;
+
+                if (repeatedLimb == 0)
+                {
+                    expectedSquare = (run << runBits) - run;
+                }
+                else
+                {
+                    expectedSquare = BigInteger.Zero;
+
+                    for (int i = 0; i < runLength; i++)
+                    {
+                        expectedSquare += (run * repeatedLimb) << (i * bitsPerLimb);
+                    }
+                }
+
+                Assert.Equal(expectedSquare, BigInteger.Pow(run, 2));
+            }
+        }
+
+        [Fact]
+        public void MultiplyLimbRunFallsBackWhenAccumulatorWouldOverflow()
+        {
+            const int RunLength = 8;
+            int bitsPerLimb = nint.Size * 8;
+            BigInteger repeatedLimb = new BigInteger((ulong)(nuint.MaxValue / 2));
+            BigInteger repunit = ((BigInteger.One << (RunLength * bitsPerLimb)) - 1)
+                / ((BigInteger.One << bitsPerLimb) - 1);
+            BigInteger run = repeatedLimb * repunit;
+            BigInteger other = MakePositive(16, new Random(5_200));
+            BigInteger expected = BigInteger.Zero;
+            BigInteger expectedSquare = BigInteger.Zero;
+
+            for (int i = 0; i < RunLength; i++)
+            {
+                int shift = i * bitsPerLimb;
+                expected += (other * repeatedLimb) << shift;
+                expectedSquare += (run * repeatedLimb) << shift;
+            }
+
+            Assert.Equal(expected, other * run);
+            Assert.Equal(expected, run * other);
+            Assert.Equal(expectedSquare, BigInteger.Pow(run, 2));
+        }
+
+        [Fact]
+        public void MultiplyLimbRunCandidateFallsBackWhenLimbsDiffer()
+        {
+            const int LimbCount = 8;
+            const int RepeatedLimb = 5;
+            int bitsPerLimb = nint.Size * 8;
+            BigInteger candidate = BigInteger.Zero;
+            BigInteger other = MakePositive(16, new Random(5_300));
+            BigInteger expected = BigInteger.Zero;
+            BigInteger expectedSquare = BigInteger.Zero;
+
+            for (int i = 0; i < LimbCount; i++)
+            {
+                int limb = i == 3 ? 9 : RepeatedLimb;
+                int shift = i * bitsPerLimb;
+                candidate += (BigInteger)limb << shift;
+                expected += (other * limb) << shift;
+            }
+
+            for (int i = 0; i < LimbCount; i++)
+            {
+                int limb = i == 3 ? 9 : RepeatedLimb;
+                expectedSquare += (candidate * limb) << (i * bitsPerLimb);
+            }
+
+            Assert.Equal(expected, other * candidate);
+            Assert.Equal(expected, candidate * other);
+            Assert.Equal(expectedSquare, BigInteger.Pow(candidate, 2));
+        }
+
+        [Theory]
+        [InlineData(4, 3, 1, 1, 0)]
+        [InlineData(4, 8, 3, 31, 0)]
+        [InlineData(8, 4, 7, 32, 0)]
+        [InlineData(16, 32, 257, 63, 0)]
+        [InlineData(64, 33, 0, 17, 0)]
+        [InlineData(8, 4, 3, 0, 1)]
+        public void MultiplyShiftedLimbRun(int runLength, int otherLength, int repeatedLimb, int shift, int limbOffset)
+        {
+            int bitsPerLimb = nint.Size * 8;
+            shift = Math.Min(shift, bitsPerLimb - 1);
+            int totalShift = shift + (limbOffset * bitsPerLimb);
+            BigInteger limb = repeatedLimb == 0 ? nuint.MaxValue : repeatedLimb;
+            BigInteger run = BigInteger.Zero;
+            BigInteger other = MakePositive(otherLength, new Random(5_400 + runLength + otherLength));
+            BigInteger expected = BigInteger.Zero;
+
+            for (int i = 0; i < runLength; i++)
+            {
+                int limbShift = i * bitsPerLimb;
+                run += limb << limbShift;
+                expected += (other * limb) << limbShift;
+            }
+
+            run <<= totalShift;
+            expected <<= totalShift;
+
+            Assert.Equal(expected, other * run);
+            Assert.Equal(expected, run * other);
+
+            BigInteger expectedSquare = BigInteger.Zero;
+
+            for (int i = 0; i < runLength; i++)
+            {
+                expectedSquare += (run * limb) << (i * bitsPerLimb);
+            }
+
+            expectedSquare <<= totalShift;
+            Assert.Equal(expectedSquare, BigInteger.Pow(run, 2));
+        }
+
         // --- Asymmetric operand sizes ---
 
         public static IEnumerable<object[]> AsymmetricSizePairs => new object[][]
@@ -527,6 +688,90 @@ namespace System.Numerics.Tests
             // Also with negative dividend
             var (q2, r2) = BigInteger.DivRem(-dividend, divisor);
             Assert.Equal(-dividend, q2 * divisor + r2);
+        }
+
+        [Theory]
+        [InlineData(3)]
+        [InlineData(5)]
+        [InlineData(7)]
+        [InlineData(9)]
+        [InlineData(10)]
+        public void SmallConstantDivision(int divisor)
+        {
+            var rng = new Random(7100 + divisor);
+
+            for (int sample = 1; sample <= 8; sample++)
+            {
+                BigInteger expectedQuotient = MakePositive(sample, rng);
+
+                for (int expectedRemainder = 0; expectedRemainder < divisor; expectedRemainder++)
+                {
+                    BigInteger dividend = expectedRemainder;
+
+                    for (int i = 0; i < divisor; i++)
+                    {
+                        dividend += expectedQuotient;
+                    }
+
+                    (BigInteger quotient, BigInteger remainder) = BigInteger.DivRem(dividend, divisor);
+                    Assert.Equal(expectedQuotient, quotient);
+                    Assert.Equal(expectedRemainder, remainder);
+                    Assert.Equal(expectedQuotient, dividend / divisor);
+                    Assert.Equal(expectedRemainder, dividend % divisor);
+
+                    (quotient, remainder) = BigInteger.DivRem(-dividend, divisor);
+                    Assert.Equal(-expectedQuotient, quotient);
+                    Assert.Equal(-expectedRemainder, remainder);
+
+                    (quotient, remainder) = BigInteger.DivRem(dividend, -divisor);
+                    Assert.Equal(-expectedQuotient, quotient);
+                    Assert.Equal(expectedRemainder, remainder);
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(6)]
+        [InlineData(9)]
+        [InlineData(12)]
+        [InlineData(20)]
+        [InlineData(27)]
+        [InlineData(343)]
+        [InlineData(625)]
+        [InlineData(6_561)]
+        [InlineData(43_046_721)]
+        [InlineData(65_535)]
+        [InlineData(4_294_967_295)]
+        [InlineData(6_973_568_802)]
+        [InlineData(1_000_000_000_000_000_000)]
+        [InlineData(3_909_821_048_582_988_049)]
+        [InlineData(7_450_580_596_923_828_125)]
+        [InlineData(12_157_665_459_056_928_801)]
+        public void ScalarDivision(ulong divisor)
+        {
+            var rng = new Random(unchecked(7300 + (int)divisor));
+
+            foreach (int limbCount in new[] { 8, 16, 32, 128 })
+            {
+                BigInteger expectedQuotient = MakePositive(limbCount, rng);
+
+                foreach (BigInteger expectedRemainder in new BigInteger[]
+                {
+                    BigInteger.Zero,
+                    BigInteger.One,
+                    divisor / 2,
+                    divisor - 1,
+                })
+                {
+                    BigInteger dividend = (expectedQuotient * divisor) + expectedRemainder;
+                    BigInteger quotient = BigInteger.DivRem(dividend, divisor, out BigInteger remainder);
+
+                    Assert.Equal(expectedQuotient, quotient);
+                    Assert.Equal(expectedRemainder, remainder);
+                    Assert.Equal(expectedQuotient, dividend / divisor);
+                    Assert.Equal(expectedRemainder, dividend % divisor);
+                }
+            }
         }
 
         [Theory]
@@ -738,6 +983,7 @@ namespace System.Numerics.Tests
                     BigInteger power = negativePower ? -powerMagnitude : powerMagnitude;
                     BigInteger product = value * power;
                     BigInteger expected = value << exponent;
+
                     if (negativePower)
                     {
                         expected = -expected;
@@ -746,6 +992,7 @@ namespace System.Numerics.Tests
                     Assert.Equal(expected, product);
                     Assert.Equal(power, product / value);
                     Assert.Equal(BigInteger.Zero, product % value);
+                    Assert.Equal(product, power * value);
                 }
             }
         }
@@ -821,11 +1068,59 @@ namespace System.Numerics.Tests
             Assert.Equal(expected, BigInteger.Pow(value, exponent));
         }
 
+        [Theory]
+        [InlineData(3, 1_025)]
+        [InlineData(-3, 1_025)]
+        [InlineData(5, 1_024)]
+        [InlineData(-5, 1_025)]
+        [InlineData(6, 1_025)]
+        [InlineData(10, 1_024)]
+        [InlineData(12, 1_025)]
+        [InlineData(20, 1_024)]
+        [InlineData(15, 1_025)]
+        [InlineData(45, 1_025)]
+        [InlineData(75, 1_025)]
+        [InlineData(21, 257)]
+        [InlineData(21, 384)]
+        [InlineData(42, 257)]
+        [InlineData(42, 384)]
+        [InlineData(35, 257)]
+        [InlineData(35, 384)]
+        [InlineData(70, 257)]
+        [InlineData(63, 257)]
+        [InlineData(175, 257)]
+        [InlineData(105, 257)]
+        [InlineData(10_326, 31)]
+        [InlineData(43_046_721, 33)]
+        [InlineData(-43_046_721, 1)]
+        [InlineData(1_162_261_467, 17)]
+        [InlineData(390_625, 33)]
+        [InlineData(-390_625, 1)]
+        [InlineData(1_220_703_125, 17)]
+        [InlineData(4_100_625, 17)]
+        [InlineData(7, 31)]
+        [InlineData(7, 1_024)]
+        [InlineData(49, 257)]
+        [InlineData(5_764_801, 33)]
+        public void PowWithThreeFiveOrSevenFactors(int value, int exponent)
+        {
+            BigInteger expected = BigInteger.One;
+
+            for (int i = 0; i < exponent; i++)
+            {
+                expected *= value;
+            }
+
+            Assert.Equal(expected, BigInteger.Pow(value, exponent));
+        }
+
         [Fact]
         public void PowerOfTwoResultsRespectMaximumLength()
         {
             Assert.Throws<OverflowException>(() => BigInteger.One << int.MaxValue);
             Assert.Throws<OverflowException>(() => BigInteger.Pow(2, int.MaxValue));
+            Assert.Throws<OverflowException>(() => BigInteger.Pow(3, int.MaxValue));
+            Assert.Throws<OverflowException>(() => BigInteger.Pow(10, int.MaxValue));
 
             BigInteger arrayBacked = (BigInteger.One << (nint.Size * 8)) + 1;
             Assert.Throws<OverflowException>(() => arrayBacked << int.MaxValue);
@@ -899,6 +1194,101 @@ namespace System.Numerics.Tests
             Assert.Equal((magnitude * magnitude) << (shift * 2), value * value);
         }
 
+        [Theory]
+        [InlineData(3, 1, 1)]
+        [InlineData(3, 64, 16)]
+        [InlineData(5, 64, 16)]
+        [InlineData(7, 64, 16)]
+        [InlineData(15, 16, 4)]
+        public void DivisorZeroLimbsPreserveArithmetic(int factor, int exponent, int limbOffset)
+        {
+            int shift = limbOffset * nint.Size * 8;
+            BigInteger reducedDivisor = BigInteger.Pow(factor, exponent);
+            BigInteger divisor = reducedDivisor << shift;
+            BigInteger expectedQuotient = (BigInteger.One << 521) + 12_345;
+            BigInteger expectedRemainder = divisor - 1;
+            BigInteger dividend = (expectedQuotient * divisor) + expectedRemainder;
+
+            foreach (bool negativeDividend in new[] { false, true })
+            {
+                foreach (bool negativeDivisor in new[] { false, true })
+                {
+                    BigInteger signedDividend = negativeDividend ? -dividend : dividend;
+                    BigInteger signedDivisor = negativeDivisor ? -divisor : divisor;
+                    BigInteger signedQuotient = negativeDividend != negativeDivisor
+                        ? -expectedQuotient
+                        : expectedQuotient;
+                    BigInteger signedRemainder = negativeDividend
+                        ? -expectedRemainder
+                        : expectedRemainder;
+
+                    Assert.Equal(signedQuotient, signedDividend / signedDivisor);
+                    Assert.Equal(signedRemainder, signedDividend % signedDivisor);
+
+                    BigInteger quotient = BigInteger.DivRem(signedDividend, signedDivisor, out BigInteger remainder);
+                    Assert.Equal(signedQuotient, quotient);
+                    Assert.Equal(signedRemainder, remainder);
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(2, 2)]
+        [InlineData(2, 9)]
+        [InlineData(4, 16)]
+        [InlineData(3, 7)]
+        [InlineData(4, 33)]
+        [InlineData(31, 64)]
+        [InlineData(32, 65)]
+        [InlineData(64, 129)]
+        [InlineData(65, 261)]
+        [InlineData(256, 515)]
+        public void MersenneDivisorPreservesArithmetic(int divisorLength, int quotientLength)
+        {
+            int bitsPerLimb = nint.Size * 8;
+            BigInteger divisor = (BigInteger.One << (divisorLength * bitsPerLimb)) - 1;
+            BigInteger expectedQuotient = MakePositive(quotientLength, new Random(9_100 + divisorLength + quotientLength));
+
+            foreach (BigInteger expectedRemainder in new[] { BigInteger.Zero, BigInteger.One, divisor - 1 })
+            {
+                BigInteger dividend = (expectedQuotient * divisor) + expectedRemainder;
+
+                foreach (bool negativeDividend in new[] { false, true })
+                {
+                    foreach (bool negativeDivisor in new[] { false, true })
+                    {
+                        BigInteger signedDividend = negativeDividend ? -dividend : dividend;
+                        BigInteger signedDivisor = negativeDivisor ? -divisor : divisor;
+                        BigInteger signedQuotient = negativeDividend != negativeDivisor
+                            ? -expectedQuotient
+                            : expectedQuotient;
+                        BigInteger signedRemainder = negativeDividend
+                            ? -expectedRemainder
+                            : expectedRemainder;
+
+                        Assert.Equal(signedQuotient, signedDividend / signedDivisor);
+                        Assert.Equal(signedRemainder, signedDividend % signedDivisor);
+
+                        BigInteger quotient = BigInteger.DivRem(signedDividend, signedDivisor, out BigInteger remainder);
+                        Assert.Equal(signedQuotient, quotient);
+                        Assert.Equal(signedRemainder, remainder);
+                    }
+                }
+            }
+        }
+
+        [Fact]
+        public void CalculatorGcdHandlesCommonZeroLimbs()
+        {
+            nuint[] left = [0, 0, 18, 3];
+            nuint[] right = [0, 0, 12, 1];
+            nuint[] result = new nuint[left.Length];
+
+            BigIntegerCalculator.Gcd(left, right, result);
+
+            Assert.Equal(new nuint[] { 0, 0, 2, 0 }, result);
+        }
+
         [Fact]
         public void RemainderByPowerOfTwoNormalizesZeroAndSmallValues()
         {
@@ -911,6 +1301,30 @@ namespace System.Numerics.Tests
 
             Assert.Equal(new BigInteger(13), new BigInteger(13) % divisor);
             Assert.Equal(BigInteger.Zero, new BigInteger(13) / divisor);
+        }
+
+        [Theory]
+        [InlineData(0, 1)]
+        [InlineData(1, 0)]
+        [InlineData(1, 32)]
+        [InlineData(32, 1)]
+        [InlineData(31, 32)]
+        [InlineData(32, 31)]
+        public void UnequalZeroLimbsPreserveAddition(int leftOffset, int rightOffset)
+        {
+            int bitsPerLimb = nint.Size * 8;
+            BigInteger left = ((BigInteger.One << 130) + 12_345) << (leftOffset * bitsPerLimb);
+            BigInteger right = ((BigInteger.One << 66) + 321) << (rightOffset * bitsPerLimb);
+            BigInteger sum = left + right;
+            int commonOffset = Math.Min(leftOffset, rightOffset);
+            int commonShift = commonOffset * bitsPerLimb;
+            BigInteger expectedDifference = ((left >> commonShift) - (right >> commonShift)) << commonShift;
+
+            Assert.Equal(left, sum - right);
+            Assert.Equal(right, sum - left);
+            Assert.Equal(sum, right + left);
+            Assert.Equal(-sum, -left + -right);
+            Assert.Equal(expectedDifference, left - right);
         }
 
         [Fact]
