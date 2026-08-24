@@ -326,6 +326,10 @@ public class MyIntermediateGeneric<T, U> : MyGeneric<T,U>
         typeof(Dictionary<W,W>).ToString();
         return typeof(List<W>).ToString();
     }
+    public string MovedToBaseClass()
+    {
+        return "MyIntermediateGeneric.MovedToBaseClass";
+    }
 }
 #endif
 
@@ -345,6 +349,10 @@ public class MyChildGeneric<T>
     public string MovedToBaseClass<W>()
     {
         return typeof(List<W>).ToString();
+    }
+    public string MovedToBaseClass()
+    {
+        return "MyIntermediateGeneric.MovedToBaseClass";
     }
 #endif
 

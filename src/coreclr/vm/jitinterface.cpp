@@ -14430,6 +14430,8 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                 pDeclaringMT->EnsureInstanceActive();
             }
 
+            _ASSERTE(!pDeclaringMT->IsSharedByGenericInstantiations());
+
             result = (size_t)TypeHandle(pDeclaringMT).AsPtr();
         }
         break;

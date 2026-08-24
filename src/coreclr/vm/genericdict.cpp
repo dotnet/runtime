@@ -1050,6 +1050,8 @@ Dictionary::PopulateEntry(
 
                 pDeclaringMT->EnsureInstanceActive();
 
+                _ASSERT(!pDeclaringMT->IsSharedByGenericInstantiations());
+
                 result = (CORINFO_GENERIC_HANDLE)TypeHandle(pDeclaringMT).AsPtr();
                 break;
             }

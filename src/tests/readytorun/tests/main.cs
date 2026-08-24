@@ -205,7 +205,9 @@ public class Program
         var o = new MyChildGeneric<Object>();
 
         Assert.AreEqual(o.MovedToBaseClass<WeakReference>(), typeof(List<WeakReference>).ToString());
+        Assert.AreEqual(new Func<string>(o.MovedToBaseClass<WeakReference>)(), typeof(List<WeakReference>).ToString());
         Assert.AreEqual(o.ChangedToVirtual<WeakReference>(), typeof(List<WeakReference>).ToString());
+        Assert.AreEqual(new Func<string>(o.MovedToBaseClass)(), "MyIntermediateGeneric.MovedToBaseClass");
 
         // Test that changing a virtual to a non-virtual doesn't cause a crash. (Behavior is somewhat undefined, as this change is explicitly defined as a breaking change.)
         Assert.AreEqual(GetChangedToNonVirtualDelegate<object, WeakReference>(o)(), typeof(List<WeakReference>).ToString());
@@ -239,7 +241,9 @@ public class Program
         var o = new MyChildGeneric<T>();
 
         Assert.AreEqual(o.MovedToBaseClass<V>(), typeof(List<V>).ToString());
+        Assert.AreEqual(new Func<string>(o.MovedToBaseClass<V>)(), typeof(List<V>).ToString());
         Assert.AreEqual(o.ChangedToVirtual<V>(), typeof(List<V>).ToString());
+        Assert.AreEqual(new Func<string>(o.MovedToBaseClass)(), "MyIntermediateGeneric.MovedToBaseClass");
 
         // Test that changing a virtual to a non-virtual doesn't cause a crash. (Behavior is somewhat undefined, as this change is explicitly defined as a breaking change.)
         Assert.AreEqual(GetChangedToNonVirtualDelegate<T, V>(o)(), typeof(List<V>).ToString());
