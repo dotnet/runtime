@@ -4394,6 +4394,10 @@ void MethodContext::recGetAsyncInfo(const CORINFO_ASYNC_INFO* pAsyncInfo)
     value.captureContextsMethHnd = CastHandle(pAsyncInfo->captureContextsMethHnd);
     value.restoreContextsMethHnd = CastHandle(pAsyncInfo->restoreContextsMethHnd);
     value.restoreContextsOnSuspensionMethHnd = CastHandle(pAsyncInfo->restoreContextsOnSuspensionMethHnd);
+    value.restoreInlinedFrameContextsMethHnd = CastHandle(pAsyncInfo->restoreInlinedFrameContextsMethHnd);
+    value.captureInlinedFrameTransitionWithContinuationContextMethHnd = CastHandle(pAsyncInfo->captureInlinedFrameTransitionWithContinuationContextMethHnd);
+    value.captureInlinedFrameTransitionNoContinuationContextMethHnd = CastHandle(pAsyncInfo->captureInlinedFrameTransitionNoContinuationContextMethHnd);
+    value.captureInlinedFrameTransitionContinueOnThreadPoolMethHnd = CastHandle(pAsyncInfo->captureInlinedFrameTransitionContinueOnThreadPoolMethHnd);
     value.finishSuspensionNoContinuationContextMethHnd = CastHandle(pAsyncInfo->finishSuspensionNoContinuationContextMethHnd);
     value.finishSuspensionWithContinuationContextMethHnd = CastHandle(pAsyncInfo->finishSuspensionWithContinuationContextMethHnd);
 
@@ -4420,6 +4424,10 @@ void MethodContext::repGetAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfoOut)
     pAsyncInfoOut->captureContextsMethHnd = (CORINFO_METHOD_HANDLE)value.captureContextsMethHnd;
     pAsyncInfoOut->restoreContextsMethHnd = (CORINFO_METHOD_HANDLE)value.restoreContextsMethHnd;
     pAsyncInfoOut->restoreContextsOnSuspensionMethHnd = (CORINFO_METHOD_HANDLE)value.restoreContextsOnSuspensionMethHnd;
+    pAsyncInfoOut->restoreInlinedFrameContextsMethHnd = (CORINFO_METHOD_HANDLE)value.restoreInlinedFrameContextsMethHnd;
+    pAsyncInfoOut->captureInlinedFrameTransitionWithContinuationContextMethHnd = (CORINFO_METHOD_HANDLE)value.captureInlinedFrameTransitionWithContinuationContextMethHnd;
+    pAsyncInfoOut->captureInlinedFrameTransitionNoContinuationContextMethHnd = (CORINFO_METHOD_HANDLE)value.captureInlinedFrameTransitionNoContinuationContextMethHnd;
+    pAsyncInfoOut->captureInlinedFrameTransitionContinueOnThreadPoolMethHnd = (CORINFO_METHOD_HANDLE)value.captureInlinedFrameTransitionContinueOnThreadPoolMethHnd;
     pAsyncInfoOut->finishSuspensionNoContinuationContextMethHnd = (CORINFO_METHOD_HANDLE)value.finishSuspensionNoContinuationContextMethHnd;
     pAsyncInfoOut->finishSuspensionWithContinuationContextMethHnd = (CORINFO_METHOD_HANDLE)value.finishSuspensionWithContinuationContextMethHnd;
     DEBUG_REP(dmpGetAsyncInfo(0, value));
@@ -4483,6 +4491,72 @@ CORINFO_METHOD_HANDLE MethodContext::repGetAwaitReturnCall(CORINFO_METHOD_HANDLE
     *contextHandle = (CORINFO_CONTEXT_HANDLE)result.contextHandle;
     *instArg = SpmiRecordsHelper::RestoreCORINFO_LOOKUP(result.instArg);
     return (CORINFO_METHOD_HANDLE)result.methodHnd;
+}
+
+void MethodContext::recGetAwaitAwaiterInContinuationCall(CORINFO_METHOD_HANDLE callerHnd,
+                                                         CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                                                         bool isUnsafe,
+                                                         CORINFO_CONTEXT_HANDLE* contextHandle,
+                                                         CORINFO_LOOKUP* instArg,
+                                                         CORINFO_METHOD_HANDLE methHnd)
+{
+    if (GetAwaitAwaiterInContinuationCall == nullptr)
+    {
+        GetAwaitAwaiterInContinuationCall =
+            new LightWeightMap<Agnostic_GetAwaitAwaiterInContinuationCall, Agnostic_GetAwaitReturnCallResult>();
+    }
+
+    Agnostic_GetAwaitAwaiterInContinuationCall key;
+    ZeroMemory(&key, sizeof(key));
+    key.callerHnd = CastHandle(callerHnd);
+    key.ResolvedToken =
+        SpmiRecordsHelper::StoreAgnostic_CORINFO_RESOLVED_TOKEN(pResolvedToken, GetAwaitAwaiterInContinuationCall);
+    key.isUnsafe = isUnsafe;
+
+    Agnostic_GetAwaitReturnCallResult value;
+    ZeroMemory(&value, sizeof(value));
+    value.methodHnd = CastHandle(methHnd);
+    value.contextHandle = CastHandle(*contextHandle);
+    value.instArg = SpmiRecordsHelper::StoreAgnostic_CORINFO_LOOKUP(instArg);
+
+    GetAwaitAwaiterInContinuationCall->Add(key, value);
+    DEBUG_REC(dmpGetAwaitAwaiterInContinuationCall(key, value));
+}
+
+void MethodContext::dmpGetAwaitAwaiterInContinuationCall(
+    const Agnostic_GetAwaitAwaiterInContinuationCall& key,
+    Agnostic_GetAwaitReturnCallResult& value)
+{
+    printf("GetAwaitAwaiterInContinuationCall caller-%016" PRIX64 " rt{%s} unsafe-%u "
+           "methodHnd-%016" PRIX64 " contextHandle-%016" PRIX64 " instArg %s",
+           key.callerHnd,
+           SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKEN(key.ResolvedToken).c_str(),
+           key.isUnsafe,
+           value.methodHnd,
+           value.contextHandle,
+           SpmiDumpHelper::DumpAgnostic_CORINFO_LOOKUP(value.instArg).c_str());
+}
+
+CORINFO_METHOD_HANDLE MethodContext::repGetAwaitAwaiterInContinuationCall(
+    CORINFO_METHOD_HANDLE callerHnd,
+    CORINFO_RESOLVED_TOKEN* pResolvedToken,
+    bool isUnsafe,
+    CORINFO_CONTEXT_HANDLE* contextHandle,
+    CORINFO_LOOKUP* instArg)
+{
+    Agnostic_GetAwaitAwaiterInContinuationCall key;
+    ZeroMemory(&key, sizeof(key));
+    key.callerHnd = CastHandle(callerHnd);
+    key.ResolvedToken =
+        SpmiRecordsHelper::RestoreAgnostic_CORINFO_RESOLVED_TOKEN(pResolvedToken, GetAwaitAwaiterInContinuationCall);
+    key.isUnsafe = isUnsafe;
+
+    Agnostic_GetAwaitReturnCallResult value =
+        LookupByKeyOrMissNoMessage(GetAwaitAwaiterInContinuationCall, key);
+    DEBUG_REP(dmpGetAwaitAwaiterInContinuationCall(key, value));
+    *contextHandle = (CORINFO_CONTEXT_HANDLE)value.contextHandle;
+    *instArg = SpmiRecordsHelper::RestoreCORINFO_LOOKUP(value.instArg);
+    return (CORINFO_METHOD_HANDLE)value.methodHnd;
 }
 
 void MethodContext::recGetGSCookie(GSCookie* pCookieVal, GSCookie** ppCookieVal)

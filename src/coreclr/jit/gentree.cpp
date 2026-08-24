@@ -13,6 +13,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "jitpch.h"
 #include "hwintrinsic.h"
 #include "simd.h"
+#include "async.h"
 
 #ifdef _MSC_VER
 #pragma hdrstop
@@ -681,23 +682,6 @@ LocalsGenTreeList Statement::LocalsTreeList()
 {
     assert(JitTls::GetCompiler()->fgNodeThreading == NodeThreading::AllLocals);
     return LocalsGenTreeList(this);
-}
-
-/*****************************************************************************
- *
- *  Walk all basic blocks and call the given function pointer for all tree
- *  nodes contained therein.
- */
-
-void Compiler::fgWalkAllTreesPre(fgWalkPreFn* visitor, void* pCallBackData)
-{
-    for (BasicBlock* const block : Blocks())
-    {
-        for (Statement* const stmt : block->Statements())
-        {
-            fgWalkTreePre(stmt->GetRootNodePointer(), visitor, pCallBackData);
-        }
-    }
 }
 
 //-----------------------------------------------------------
@@ -1648,6 +1632,7 @@ bool CallArgs::GetCustomRegister(Compiler* comp, CorInfoCallConvExtension cc, We
 #endif // HAS_FIXED_REGISTER_SET
 
         case WellKnownArg::StackArrayLocal:
+        case WellKnownArg::AsyncAwaiter:
         case WellKnownArg::AsyncExecutionContext:
         case WellKnownArg::AsyncSynchronizationContext:
         case WellKnownArg::AsyncResumedUse:
@@ -2882,6 +2867,7 @@ AGAIN:
                 return true;
 
             case GT_ASYNC_RESUME_INFO:
+            case GT_CONTINUATION_MEMBER_OFFSET:
                 return op1->AsVal()->gtVal1 == op2->AsVal()->gtVal1;
 
             case GT_NOP:
@@ -4616,6 +4602,7 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
                     case NI_AVX_Divide:
                     case NI_AVX512_Divide:
                     case NI_AVX512_DivideScalar:
+                    case NI_AVX10v1_DivideScalar:
                     {
                         costEx = (simdBaseType == TYP_DOUBLE) ? 14 : 11;
                         break;
@@ -4666,6 +4653,7 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
                     case NI_AVX_Sqrt:
                     case NI_AVX512_Sqrt:
                     case NI_AVX512_SqrtScalar:
+                    case NI_AVX10v1_SqrtScalar:
                     {
                         costEx = (simdBaseType == TYP_DOUBLE) ? 16 : 12;
                         break;
@@ -5768,7 +5756,18 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
             }
         }
 #elif defined(TARGET_WASM)
-        NYI_WASM("gtMarkAddrMode");
+        // Only "base + cns" is an addressing mode on Wasm. The constant folds into the memarg, which grows by
+        // the size of its ULEB encoding.
+        //
+        assert((base != nullptr) && (idx == nullptr));
+
+        addrModeCostEx += base->GetCostEx();
+        addrModeCostSz += base->GetCostSz();
+
+        for (target_size_t value = static_cast<target_size_t>(cns); value >= 0x80; value >>= 7)
+        {
+            addrModeCostSz += 1;
+        }
 #else
 #error "Unknown TARGET"
 #endif
@@ -8574,6 +8573,7 @@ bool GenTree::OperRequiresCallFlag(Compiler* comp) const
         case GT_CALL:
         case GT_GCPOLL:
         case GT_KEEPALIVE:
+        case GT_LCLHEAP:
         case GT_ASYNC_CONTINUATION:
         case GT_RETURN_SUSPEND:
         case GT_PATCHPOINT:
@@ -8920,6 +8920,7 @@ bool GenTree::OperRequiresGlobRefFlag(Compiler* comp) const
         case GT_CMPXCHG:
         case GT_MEMORYBARRIER:
         case GT_KEEPALIVE:
+        case GT_LCLHEAP:
         case GT_ASYNC_CONTINUATION:
         case GT_RETURN_SUSPEND:
         case GT_PATCHPOINT:
@@ -10507,7 +10508,14 @@ GenTree* Compiler::gtNewLoadValueNode(var_types type, ClassLayout* layout, GenTr
     {
         unsigned   lclNum = addr->AsLclFld()->GetLclNum();
         LclVarDsc* varDsc = lvaGetDesc(lclNum);
+#if defined(TARGET_SUNOS) && !defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnonnull"
+#endif
         if ((varDsc->TypeGet() == type) && ((type != TYP_STRUCT) || layout->CanAssignFrom(varDsc->GetLayout())))
+#if defined(TARGET_SUNOS) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
         {
             return gtNewLclvNode(lclNum, type);
         }
@@ -11289,6 +11297,7 @@ GenTree* Compiler::gtCloneExpr(GenTree* tree)
             case GT_JMP:
             case GT_RECORD_ASYNC_RESUME:
             case GT_ASYNC_RESUME_INFO:
+            case GT_CONTINUATION_MEMBER_OFFSET:
                 copy = new (this, oper) GenTreeVal(oper, tree->gtType, tree->AsVal()->gtVal1);
                 goto DONE;
 
@@ -12045,6 +12054,7 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_CATCH_ARG:
         case GT_ASYNC_CONTINUATION:
         case GT_ASYNC_RESUME_INFO:
+        case GT_CONTINUATION_MEMBER_OFFSET:
         case GT_LABEL:
         case GT_FTN_ADDR:
         case GT_FTN_ENTRY:
@@ -13253,7 +13263,7 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
         msgLength = 0;
     }
 
-    printf(isLIR ? " %+*s" : " %-*s", msgLength, msg);
+    printf(isLIR ? " %*s" : " %-*s", static_cast<int>(msgLength), msg);
 
     /* Indent the node accordingly */
     if (!isLIR || hasOperands)
@@ -13351,11 +13361,7 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
 
             if (tree->OperIs(GT_RUNTIMELOOKUP))
             {
-#ifdef TARGET_64BIT
-                printf(" 0x%llx", dspPtr(tree->AsRuntimeLookup()->gtHnd));
-#else
-                printf(" 0x%x", dspPtr(tree->AsRuntimeLookup()->gtHnd));
-#endif
+                printf(" %p", dspPtr(tree->AsRuntimeLookup()->gtHnd));
 
                 switch (tree->AsRuntimeLookup()->gtHndType)
                 {
@@ -13723,7 +13729,7 @@ void Compiler::gtDispLclVar(unsigned lclNum, bool padForBiggestDisp)
 
     if (padForBiggestDisp && (charsPrinted < (int)LONGEST_COMMON_LCL_VAR_DISPLAY_LENGTH))
     {
-        printf("%*c", LONGEST_COMMON_LCL_VAR_DISPLAY_LENGTH - charsPrinted, ' ');
+        printf("%*c", static_cast<int>(LONGEST_COMMON_LCL_VAR_DISPLAY_LENGTH) - charsPrinted, ' ');
     }
 }
 
@@ -13827,7 +13833,7 @@ void Compiler::gtDispConst(GenTree* tree)
         case GT_CNS_INT:
             if (tree->IsIconHandle(GTF_ICON_STR_HDL))
             {
-                printf(" 0x%X [ICON_STR_HDL]", dspPtr(tree->AsIntCon()->IconValue()));
+                printf(" 0x%zX [ICON_STR_HDL]", static_cast<size_t>(dspPtr(tree->AsIntCon()->IconValue())));
             }
             else if (tree->IsIconHandle(GTF_ICON_OBJ_HDL))
             {
@@ -13846,23 +13852,23 @@ void Compiler::gtDispConst(GenTree* tree)
                     }
                     else
                     {
-                        printf(" 0x%llx", dspIconVal);
+                        printf(" 0x%zx", static_cast<size_t>(dspIconVal));
                     }
                 }
                 else if ((iconVal > -1000) && (iconVal < 1000))
                 {
-                    printf(" %ld", dspIconVal);
+                    printf(" %zd", dspIconVal);
                 }
 #ifdef TARGET_64BIT
                 else if ((iconVal & 0xFFFFFFFF00000000LL) != 0)
                 {
                     if (dspIconVal >= 0)
                     {
-                        printf(" 0x%llx", dspIconVal);
+                        printf(" 0x%zx", static_cast<size_t>(dspIconVal));
                     }
                     else
                     {
-                        printf(" -0x%llx", -dspIconVal);
+                        printf(" -0x%zx", static_cast<size_t>(-dspIconVal));
                     }
                 }
 #endif
@@ -13870,11 +13876,11 @@ void Compiler::gtDispConst(GenTree* tree)
                 {
                     if (dspIconVal >= 0)
                     {
-                        printf(" 0x%X", dspIconVal);
+                        printf(" 0x%zX", static_cast<size_t>(dspIconVal));
                     }
                     else
                     {
-                        printf(" -0x%X", -dspIconVal);
+                        printf(" -0x%zX", static_cast<size_t>(-dspIconVal));
                     }
                 }
 
@@ -13938,7 +13944,7 @@ void Compiler::gtDispConst(GenTree* tree)
             break;
 
         case GT_CNS_LNG:
-            printf(" 0x%016I64x", tree->AsLngCon()->gtLconVal);
+            printf(" 0x%016llx", static_cast<unsigned long long>(tree->AsLngCon()->gtLconVal));
             break;
 
         case GT_CNS_DBL:
@@ -13953,7 +13959,7 @@ void Compiler::gtDispConst(GenTree* tree)
                 uint64_t bits;
                 static_assert(sizeof(bits) == sizeof(dcon));
                 memcpy(&bits, &dcon, sizeof(dcon));
-                printf(" %#.17g(0x%llx)\n", dcon, bits);
+                printf(" %#.17g(0x%llx)\n", dcon, static_cast<unsigned long long>(bits));
             }
             else
             {
@@ -14006,17 +14012,25 @@ void Compiler::gtDispConst(GenTree* tree)
 #if defined(TARGET_XARCH)
                 case TYP_SIMD32:
                 {
-                    printf("<0x%016llx, 0x%016llx, 0x%016llx, 0x%016llx>", vecCon->gtSimdVal.u64[0],
-                           vecCon->gtSimdVal.u64[1], vecCon->gtSimdVal.u64[2], vecCon->gtSimdVal.u64[3]);
+                    printf("<0x%016llx, 0x%016llx, 0x%016llx, 0x%016llx>",
+                           static_cast<unsigned long long>(vecCon->gtSimdVal.u64[0]),
+                           static_cast<unsigned long long>(vecCon->gtSimdVal.u64[1]),
+                           static_cast<unsigned long long>(vecCon->gtSimdVal.u64[2]),
+                           static_cast<unsigned long long>(vecCon->gtSimdVal.u64[3]));
                     break;
                 }
 
                 case TYP_SIMD64:
                 {
                     printf("<0x%016llx, 0x%016llx, 0x%016llx, 0x%016llx, 0x%016llx, 0x%016llx, 0x%016llx, 0x%016llx>",
-                           vecCon->gtSimdVal.u64[0], vecCon->gtSimdVal.u64[1], vecCon->gtSimdVal.u64[2],
-                           vecCon->gtSimdVal.u64[3], vecCon->gtSimdVal.u64[4], vecCon->gtSimdVal.u64[5],
-                           vecCon->gtSimdVal.u64[6], vecCon->gtSimdVal.u64[7]);
+                           static_cast<unsigned long long>(vecCon->gtSimdVal.u64[0]),
+                           static_cast<unsigned long long>(vecCon->gtSimdVal.u64[1]),
+                           static_cast<unsigned long long>(vecCon->gtSimdVal.u64[2]),
+                           static_cast<unsigned long long>(vecCon->gtSimdVal.u64[3]),
+                           static_cast<unsigned long long>(vecCon->gtSimdVal.u64[4]),
+                           static_cast<unsigned long long>(vecCon->gtSimdVal.u64[5]),
+                           static_cast<unsigned long long>(vecCon->gtSimdVal.u64[6]),
+                           static_cast<unsigned long long>(vecCon->gtSimdVal.u64[7]));
                     break;
                 }
 
@@ -14268,6 +14282,15 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
         case GT_WASM_JEXCEPT:
             break;
 
+        case GT_CONTINUATION_MEMBER_OFFSET:
+        {
+            printf(" index=%zu ", tree->AsVal()->gtVal1);
+
+            const ContinuationMember& member = GetContinuationMember(tree->AsVal()->gtVal1);
+            member.Print();
+            break;
+        }
+
         case GT_RET_EXPR:
         {
             GenTreeCall* inlineCand = tree->AsRetExpr()->gtInlineCandidate;
@@ -14429,21 +14452,14 @@ void Compiler::gtDispTree(GenTree*                    tree,
 {
     if (tree == nullptr)
     {
-        printf(" [%08X] <NULL>\n", tree);
-        printf(""); // null string means flush
+        printf(" [%p] <NULL>\n", tree);
+        fflush(jitstdout());
         return;
     }
 
     if (indentStack == nullptr)
     {
         indentStack = new (this, CMK_DebugOnly) IndentStack(this);
-    }
-
-    if (IsUninitialized(tree))
-    {
-        /* Value used to initialize nodes */
-        printf("Uninitialized tree node!\n");
-        return;
     }
 
     if (tree->gtOper >= GT_COUNT)
@@ -15020,7 +15036,7 @@ void Compiler::gtDispTree(GenTree*                    tree,
             else
             {
                 printf("<DON'T KNOW HOW TO DISPLAY THIS NODE> :");
-                printf(""); // null string means flush
+                fflush(jitstdout());
             }
             break;
     }
@@ -16664,7 +16680,8 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
             // Clear colon flags only if the qmark itself is not conditionally executed
             if ((tree->gtFlags & GTF_COLON_COND) == 0)
             {
-                fgWalkTreePre(&op, gtClearColonCond);
+                ClearColonCondVisitor clearColonCond(this);
+                clearColonCond.WalkTree(&op, nullptr);
             }
             goto DONE_FOLD;
         }
@@ -19855,7 +19872,7 @@ void dispNodeList(GenTree* list, bool verbose)
 
         if (verbose)
         {
-            printf("%08X -> %08X -> %08X\n", last, list, next);
+            printf("%p -> %p -> %p\n", last, list, next);
         }
 
         assert(!last || last->gtNext == list);
@@ -19870,48 +19887,9 @@ void dispNodeList(GenTree* list, bool verbose)
         last = list;
         list = next;
     }
-    printf(""); // null string means flush
+    fflush(jitstdout());
 }
 #endif
-
-/*****************************************************************************
- * Callback to mark the nodes of a qmark-colon subtree that are conditionally
- * executed.
- */
-
-/* static */
-Compiler::fgWalkResult Compiler::gtMarkColonCond(GenTree** pTree, fgWalkData* data)
-{
-    assert(data->pCallbackData == nullptr);
-
-    (*pTree)->gtFlags |= GTF_COLON_COND;
-
-    return WALK_CONTINUE;
-}
-
-/*****************************************************************************
- * Callback to clear the conditionally executed flags of nodes that no longer
-   will be conditionally executed. Note that when we find another colon we must
-   stop, as the nodes below this one WILL be conditionally executed. This callback
-   is called when folding a qmark condition (ie the condition is constant).
- */
-
-/* static */
-Compiler::fgWalkResult Compiler::gtClearColonCond(GenTree** pTree, fgWalkData* data)
-{
-    GenTree* tree = *pTree;
-
-    assert(data->pCallbackData == nullptr);
-
-    if (tree->OperIs(GT_COLON))
-    {
-        // Nodes below this will be conditionally executed.
-        return WALK_SKIP_SUBTREES;
-    }
-
-    tree->gtFlags &= ~GTF_COLON_COND;
-    return WALK_CONTINUE;
-}
 
 Compiler::FindLinkData Compiler::gtFindLink(Statement* stmt, GenTree* node)
 {
@@ -19956,24 +19934,26 @@ Compiler::FindLinkData Compiler::gtFindLink(Statement* stmt, GenTree* node)
     return walker.GetResult();
 }
 
-/*****************************************************************************
- *
- *  Callback that checks if a tree node has oper type GT_CATCH_ARG
- */
-
-static Compiler::fgWalkResult gtFindCatchArg(GenTree** pTree, Compiler::fgWalkData* /* data */)
-{
-    return ((*pTree)->OperGet() == GT_CATCH_ARG) ? Compiler::WALK_ABORT : Compiler::WALK_CONTINUE;
-}
-
-/*****************************************************************************/
+//------------------------------------------------------------------------
+// gtHasCatchArg -- check if the tree contains a GT_CATCH_ARG.
+//
+// Arguments:
+//    tree - tree to examine
+//
+// Return Value:
+//    True if any subtree is a GT_CATCH_ARG; otherwise false.
+//
+// Notes:
+//    GT_CATCH_ARG sets GTF_ORDER_SIDEEFF on itself, and effect flags propagate
+//    to parents, so subtrees without the flag cannot contain one and are not
+//    descended into.
+//
 bool Compiler::gtHasCatchArg(GenTree* tree)
 {
-    if (((tree->gtFlags & GTF_ORDER_SIDEEFF) != 0) && (fgWalkTreePre(&tree, gtFindCatchArg) == WALK_ABORT))
-    {
-        return true;
-    }
-    return false;
+    auto isCatchArg = [](GenTree* tree) {
+        return tree->OperIs(GT_CATCH_ARG);
+    };
+    return gtFindNodeInTree<GTF_ORDER_SIDEEFF>(tree, isCatchArg) != nullptr;
 }
 
 //------------------------------------------------------------------------
@@ -20374,21 +20354,7 @@ bool GenTree::canBeContained() const
 bool GenTree::isContained() const
 {
     assert(OperIsLIR());
-    const bool isMarkedContained = ((gtFlags & GTF_CONTAINED) != 0);
-
-#ifdef DEBUG
-    if (!canBeContained())
-    {
-        assert(!isMarkedContained);
-    }
-
-    // if it's contained it can't be unused.
-    if (isMarkedContained)
-    {
-        assert(!IsUnusedValue());
-    }
-#endif // DEBUG
-    return isMarkedContained;
+    return (gtFlags & GTF_CONTAINED) != 0;
 }
 
 // return true if node is contained and an indir
@@ -31783,6 +31749,7 @@ bool GenTreeHWIntrinsic::OperIsEmbRoundingEnabled() const
         case NI_AVX512_FusedMultiplySubtractNegated:
         case NI_AVX512_FusedMultiplySubtractNegatedScalar:
         case NI_AVX512_FusedMultiplySubtractScalar:
+        case NI_AVX10v1_FusedMultiplyAddScalar:
         {
             return numArgs == 4;
         }
@@ -31800,6 +31767,13 @@ bool GenTreeHWIntrinsic::OperIsEmbRoundingEnabled() const
         case NI_AVX512_X64_ConvertScalarToVector128Double:
         case NI_AVX512_X64_ConvertScalarToVector128Single:
 #endif // TARGET_AMD64
+        case NI_AVX10v1_AddScalar:
+        case NI_AVX10v1_DivideScalar:
+        case NI_AVX10v1_MultiplyScalar:
+        case NI_AVX10v1_SubtractScalar:
+        case NI_AVX10v1_ConvertScalarToVector128Half:
+        case NI_AVX10v1_ConvertScalarToVector128Single:
+        case NI_AVX10v1_ConvertScalarToVector128Double:
         {
             return numArgs == 3;
         }

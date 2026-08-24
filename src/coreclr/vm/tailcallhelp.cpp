@@ -118,7 +118,6 @@ MethodDesc* TailCallHelp::GetOrLoadTailCallDispatcherMD()
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(ThrowOutOfMemory());
     }
     CONTRACTL_END;
 

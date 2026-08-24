@@ -452,7 +452,6 @@ MethodTable* ILStubCache::GetOrCreateStubMethodTable(Module* pModule)
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -666,7 +665,7 @@ MethodDesc* ILStubCache::GetStubMethodDesc(
 #ifdef _DEBUG
     CQuickBytes qbManaged;
     PrettyPrintSig(pSig,  cbSig, "*",  &qbManaged, pSigModule->GetMDImport(), NULL);
-    LOG((LF_STUBS, LL_INFO1000, "ILSTUBCACHE: ILStubCache::GetStubMethodDesc %s StubMD: %p module: %p blob: %p sig: %s\n", pszResult, pMD, pSigModule, pBlob, qbManaged.Ptr()));
+    LOG((LF_STUBS, LL_INFO1000, "ILSTUBCACHE: ILStubCache::GetStubMethodDesc %s StubMD: %p module: %p blob: %p sig: %s\n", pszResult, pMD, pSigModule, pBlob, (char*)qbManaged.Ptr()));
 #endif // _DEBUG
 #endif // DACCESS_COMPILE
 

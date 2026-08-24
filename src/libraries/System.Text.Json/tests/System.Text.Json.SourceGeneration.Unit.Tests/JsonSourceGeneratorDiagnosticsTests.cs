@@ -822,8 +822,8 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         [Fact]
         public void UnionWithCustomConverterCaseType_CompilesWithWarning()
         {
-            // A case type annotated with [JsonConverter] cannot be classified at compile time
-            // because user-defined converters can serialize as any JSON value type.
+            // User-defined converters are conservatively classified as potentially representing
+            // every JSON value type, so the object shape conflicts with the other object case.
             string source = """
                 using System.Runtime.CompilerServices;
                 using System.Text.Json;
@@ -866,7 +866,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
             var expectedDiagnostics = new DiagnosticData[]
             {
-                new(DiagnosticSeverity.Warning, unionLocation, "Union type 'MyUnion': case type 'CustomCase' is annotated with [JsonConverter] and may serialize as any JSON value type. Set JsonUnionAttribute.TypeClassifier to provide a custom classifier that can disambiguate."),
+                new(DiagnosticSeverity.Warning, unionLocation, "Union type 'MyUnion': case types 'CustomCase', 'OtherCase' all serialize as JSON value type 'Object'. Set JsonUnionAttribute.TypeClassifier to provide a custom classifier that can disambiguate."),
             };
 
             CompilationHelper.AssertEqualDiagnosticMessages(expectedDiagnostics, result.Diagnostics);

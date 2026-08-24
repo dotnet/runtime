@@ -31,6 +31,8 @@
 
 #include "virtualcallstub.h"
 #include "../debug/ee/debugger.h"
+#include "../debug/ee/walker.h"
+#include "../debug/ee/controller.h"
 #include "patchpointinfo.h"
 
 #ifdef HAVE_GCCOVER

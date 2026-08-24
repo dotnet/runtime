@@ -9,6 +9,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using System.Text;
+using System.Threading;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
@@ -27,6 +28,7 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
         }
     }
 
+    private readonly Lock _apiLock;
     private readonly Target _target;
     private readonly MethodDescHandle _methodDesc;
     private readonly TargetPointer _appDomain;
@@ -35,8 +37,10 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
         Target target,
         MethodDescHandle methodDesc,
         TargetPointer appDomain,
-        IXCLRDataMethodInstance? legacyImpl)
+        IXCLRDataMethodInstance? legacyImpl,
+        Lock apiLock)
     {
+        _apiLock = apiLock;
         _target = target;
         _methodDesc = methodDesc;
         _appDomain = appDomain;
@@ -44,10 +48,15 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
     }
 
     int IXCLRDataMethodInstance.GetTypeInstance(DacComNullableByRef<IXCLRDataTypeInstance> typeInstance)
-        => HResults.E_NOTIMPL;
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+
+        return HResults.E_NOTIMPL;
+    }
 
     int IXCLRDataMethodInstance.GetDefinition(DacComNullableByRef<IXCLRDataMethodDefinition> methodDefinition)
     {
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         int hrLocal = HResults.S_OK;
         IXCLRDataMethodDefinition? legacyMethodDefinition = null;
@@ -65,7 +74,7 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
             uint token = rts.GetMethodToken(_methodDesc);
             TargetPointer methodTable = rts.GetMethodTable(_methodDesc);
             TargetPointer module = rts.GetModule(rts.GetTypeHandle(methodTable));
-            methodDefinition.Interface = new ClrDataMethodDefinition(_target, module, token, legacyMethodDefinition);
+            methodDefinition.Interface = new ClrDataMethodDefinition(_target, module, token, legacyMethodDefinition, _apiLock);
         }
         catch (System.Exception ex)
         {
@@ -84,6 +93,7 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
 
     int IXCLRDataMethodInstance.GetTokenAndScope(uint* token, DacComNullableByRef<IXCLRDataModule> mod)
     {
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
 
         try
@@ -108,7 +118,7 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
                 TargetPointer mtAddr = rts.GetMethodTable(_methodDesc);
                 ITypeHandle mainMT = rts.GetTypeHandle(mtAddr);
                 TargetPointer module = rts.GetModule(mainMT);
-                mod.Interface = new ClrDataModule(module, _target, legacyMod);
+                mod.Interface = new ClrDataModule(module, _target, legacyMod, _apiLock);
             }
         }
         catch (System.Exception ex)
@@ -140,6 +150,7 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
 
     int IXCLRDataMethodInstance.GetName(uint flags, uint bufLen, uint* nameLen, char* nameBuf)
     {
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
 
         try
@@ -217,22 +228,43 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
     }
 
     int IXCLRDataMethodInstance.GetFlags(uint* flags)
-        => HResults.E_NOTIMPL;
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+
+        return HResults.E_NOTIMPL;
+    }
 
     int IXCLRDataMethodInstance.IsSameObject(IXCLRDataMethodInstance* method)
-        => HResults.E_NOTIMPL;
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+
+        return HResults.E_NOTIMPL;
+    }
 
     int IXCLRDataMethodInstance.GetEnCVersion(uint* version)
-        => HResults.E_NOTIMPL;
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+
+        return HResults.E_NOTIMPL;
+    }
 
     int IXCLRDataMethodInstance.GetNumTypeArguments(uint* numTypeArgs)
-        => HResults.E_NOTIMPL;
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+
+        return HResults.E_NOTIMPL;
+    }
 
     int IXCLRDataMethodInstance.GetTypeArgumentByIndex(uint index, DacComNullableByRef<IXCLRDataTypeInstance> typeArg)
-        => HResults.E_NOTIMPL;
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+
+        return HResults.E_NOTIMPL;
+    }
 
     int IXCLRDataMethodInstance.GetILOffsetsByAddress(ClrDataAddress address, uint offsetsLen, uint* offsetsNeeded, uint* ilOffsets)
     {
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
 
         try
@@ -328,6 +360,7 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
         uint* rangesNeeded,
         [In, Out, MarshalUsing(CountElementName = nameof(rangesLen))] ClrDataAddressRange[]? addressRanges)
     {
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
 
         try
@@ -422,6 +455,7 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
 
     int IXCLRDataMethodInstance.GetILAddressMap(uint mapLen, uint* mapNeeded, [In, Out, MarshalUsing(CountElementName = "mapLen")] ClrDataILAddressMap[]? maps)
     {
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
 
         try
@@ -551,6 +585,7 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
 
     int IXCLRDataMethodInstance.StartEnumExtents(ulong* handle)
     {
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -589,6 +624,7 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
 
     int IXCLRDataMethodInstance.EnumExtent(ulong* handle, ClrDataAddressRange* extent)
     {
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         EnumMethodExtents? extents = null;
         try
@@ -640,6 +676,7 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
 
     int IXCLRDataMethodInstance.EndEnumExtents(ulong handle)
     {
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         nuint legacyHandle = 0;
         try
@@ -673,6 +710,7 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
 
     int IXCLRDataMethodInstance.Request(uint reqCode, uint inBufferSize, byte* inBuffer, uint outBufferSize, byte* outBuffer)
     {
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
 
         try
@@ -716,6 +754,7 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
 
     int IXCLRDataMethodInstance.GetRepresentativeEntryAddress(ClrDataAddress* addr)
     {
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
 
         try

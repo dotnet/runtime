@@ -11,7 +11,6 @@
 #define __cgensys_h__
 
 class MethodDesc;
-class Stub;
 class Thread;
 class CrawlFrame;
 struct EE_ILEXCEPTION_CLAUSE;
