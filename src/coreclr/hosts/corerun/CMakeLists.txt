@@ -62,6 +62,10 @@ else()
     endif()
     # Static linking
     if (CLR_CMAKE_TARGET_ARCH_WASM)
+        # target_sources() is what compiles the file into corerun. The list(APPEND)
+        # cannot do that -- the target was already created from CORERUN_SOURCES above --
+        # it only updates the variable that corerun_kit_export() passes to SOURCES below,
+        # so a per-test relink rebuilds the host from the same set of sources.
         list(APPEND CORERUN_SOURCES ./wasm/pinvoke_override.cpp)
         target_sources(corerun PRIVATE ./wasm/pinvoke_override.cpp)
         target_include_directories(corerun PRIVATE ./wasm/)
