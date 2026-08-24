@@ -58,6 +58,11 @@ For markdown (`.md`) files, ensure there is no trailing whitespace at the end of
 - **A push to an open PR re-runs its CI matrix** — dozens of jobs, over a hundred for broad changes. For anything non-trivial, validate locally rather than using CI to find out whether it builds, and batch fixes into one push. Branches with no PR trigger nothing, as do changes confined to `**.md`, `docs/*`, or `.github/*`.
 - **Treat a reported case as a sample, not a list.** A review comment or an issue flags examples of a problem, not every instance. Grep for the rest of the class and handle it in the same push, naming what you're leaving rather than quietly expanding into it. Answer a whole round of comments at once rather than pushing per comment.
 
+### Agent Merge / CI check resolution
+
+- **Forbidden workflow action: rerunning failed CI as part of Agent Merge.** Agent Merge must never use `/azp` to retrigger Azure Pipelines, and must never close and reopen the PR to trigger a rerun. This is forbidden unless the user explicitly requests it.
+- **Never use reruns to determine whether a failure is unrelated to the PR.** In dotnet/runtime, the required path is to use Build Analysis and the `ci-analysis` skill to classify failures. For any failure listed as not `known`, determine whether it is caused by the current PR. If it is caused by the PR, fix it in the PR. If it is not caused by the PR, use the `create-kbe` skill to open or update a `Known Build Error` issue instead of retriggering CI.
+
 When NOT running under CCA, for commits and pushes:
 
 - Never squash and force push unless explicitly instructed. Always push incremental commits on top of previous PR changes.

@@ -228,6 +228,8 @@
              Link="ProductionCode\Common\System\Net\StreamBuffer.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\CompositeMLDsaAlgorithmTests.cs"
              Link="CommonTest\System\Security\Cryptography\CompositeMLDsaAlgorithmTests.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\CompositeMLKemAlgorithmTests.cs"
+             Link="CommonTest\System\Security\Cryptography\CompositeMLKemAlgorithmTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\MLDsaAlgorithmTests.cs"
              Link="CommonTest\System\Security\Cryptography\MLDsaAlgorithmTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\MLKemAlgorithmTests.cs"
@@ -312,6 +314,16 @@
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\CompositeMLDsa\CompositeMLDsaTestsBase.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\CompositeMLDsa\CompositeMLDsaMockImplementation.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\CompositeMLDsa\CompositeMLDsaMockImplementation.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\CompositeMLKem\CompositeMLKemContractTests.cs"
+             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\CompositeMLKem\CompositeMLKemContractTests.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\CompositeMLKem\CompositeMLKemFactoryTests.cs"
+             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\CompositeMLKem\CompositeMLKemFactoryTests.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\CompositeMLKem\CompositeMLKemMockImplementation.cs"
+             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\CompositeMLKem\CompositeMLKemMockImplementation.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\CompositeMLKem\CompositeMLKemTestData.cs"
+             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\CompositeMLKem\CompositeMLKemTestData.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\CompositeMLKem\CompositeMLKemTestHelpers.cs"
+             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\CompositeMLKem\CompositeMLKemTestHelpers.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\DES\DESCipherTests.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\DES\DESCipherTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\DES\DESCipherOneShotTests.cs"
