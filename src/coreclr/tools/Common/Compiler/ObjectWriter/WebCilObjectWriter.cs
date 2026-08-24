@@ -20,23 +20,6 @@ using CodeDataLayout = CodeDataLayoutMode.CodeDataLayout;
 
 namespace ILCompiler.ObjectWriter
 {
-    internal class PaddingHelper
-    {
-        private byte[] _padding;
-        public PaddingHelper(int n, byte padByte = 0)
-        {
-            _padding = new byte[n];
-            _padding.AsSpan().Fill(padByte);
-        }
-
-        public void PadStream(Stream s, int n)
-        {
-            ArgumentOutOfRangeException.ThrowIfGreaterThan(n, _padding.Length);
-            ArgumentOutOfRangeException.ThrowIfLessThan(n, 0);
-            s.Write(_padding, 0, n);
-        }
-    }
-
     /// <summary>
     /// WebCIL object file format writer.
     /// </summary>
@@ -91,7 +74,7 @@ namespace ILCompiler.ObjectWriter
                 return;
             }
 
-            section.MinAlignment = Math.Max(section.MinAlignment, alignment);
+            section.UpdateAlignment(alignment);
         }
 
 #if READYTORUN
@@ -164,33 +147,37 @@ namespace ILCompiler.ObjectWriter
         /// </summary>
         private static void AssignWebcilSectionVirtualAddresses(WebcilSection[] webcilSections)
         {
-            uint sizeOfHeaders = (uint)WebcilEncoder.HeaderEncodeSize(WebcilVersion.Version1) + (uint)(webcilSections.Length * WebcilEncoder.SectionHeaderEncodeSize());
-            uint pointerToRawData = (uint)AlignmentHelper.AlignUp((int)sizeOfHeaders, (int)WebcilSectionAlignment);
-            uint virtualAddress = pointerToRawData;
+            int sizeOfHeaders = WebcilEncoder.HeaderEncodeSize(WebcilVersion.Version1) + (webcilSections.Length * WebcilEncoder.SectionHeaderEncodeSize());
+            int firstSectionAlignment = webcilSections.Length == 0
+                ? WebcilSectionAlignment
+                : webcilSections[0].Alignment;
+            int pointerToRawData = AlignmentHelper.AlignUp(sizeOfHeaders, firstSectionAlignment);
 
             for (int i = 0; i < webcilSections.Length; i++)
             {
                 WebcilSection webcilSection = webcilSections[i];
-                Debug.Assert(BitOperations.IsPow2(webcilSection.MinAlignment) && BitOperations.IsPow2(WebcilSectionAlignment) &&
-                    WebcilSectionAlignment >= webcilSection.MinAlignment);
+                Debug.Assert(BitOperations.IsPow2(webcilSection.Alignment));
 
-                uint rawSectionSize = (uint)webcilSection.ContentReadStream.Length;
-                uint alignedSectionSize = (uint)AlignmentHelper.AlignUp((int)rawSectionSize, (int)WebcilSectionAlignment);
+                int nextSectionAlignment = i + 1 == webcilSections.Length
+                    ? WebcilSectionAlignment
+                    : webcilSections[i + 1].Alignment;
+                int sectionEnd = checked(pointerToRawData + (int)webcilSection.ContentReadStream.Length);
+                int alignedSectionEnd = AlignmentHelper.AlignUp(sectionEnd, nextSectionAlignment);
+                int alignedSectionSize = alignedSectionEnd - pointerToRawData;
 
                 // Webcil files are flat-mapped, since (for example) there is no uninitialized data which is expanded on load.
                 // As a result, the virtual size is the same as the aligned raw size (including padding), and
                 // the pointer to raw data for each section is also the same as the virtual address.
-                uint virtualSize = alignedSectionSize;
+                uint virtualSize = (uint)alignedSectionSize;
                 WebcilSectionHeader sectionHeader = new WebcilSectionHeader(
                     virtualSize: virtualSize,
-                    virtualAddress: virtualAddress,
-                    sizeOfRawData: alignedSectionSize,
-                    pointerToRawData: pointerToRawData
+                    virtualAddress: (uint)pointerToRawData,
+                    sizeOfRawData: (uint)alignedSectionSize,
+                    pointerToRawData: (uint)pointerToRawData
                 );
                 webcilSection.Header = sectionHeader;
 
-                pointerToRawData += alignedSectionSize;
-                virtualAddress += virtualSize;
+                pointerToRawData = alignedSectionEnd;
             }
         }
 
@@ -407,7 +394,7 @@ namespace ILCompiler.ObjectWriter
             BinaryPrimitives.WriteUInt32LittleEndian(lengthBuffer, (uint)webcilPayloadSegment.RawContentSize);
             BinaryPrimitives.WriteUInt32LittleEndian(lengthBuffer.AsSpan().Slice(4), (uint)MethodCount);
             WasmByteArrayDataSegment webcilSizeSegment = new WasmByteArrayDataSegment(lengthBuffer, new Utf8String("webcilCount"),
-                WasmDataSegmentType.Passive, null);
+                WasmDataSegmentType.Passive, null, WebcilSectionAlignment);
 
             // Create combined data section and emit
             WasmDataSection dataSection = new WasmDataSection([webcilSizeSegment, webcilPayloadSegment], new Utf8String("data"), contentAlign: 4);
