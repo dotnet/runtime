@@ -33,8 +33,6 @@ void InitJITAllocationHelpers()
 {
     STANDARD_VM_CONTRACT;
 
-    _ASSERTE(g_SystemInfo.dwNumberOfProcessors != 0);
-
     // Allocation helpers, faster but non-logging
     if (!(TrackAllocationsEnabled() || LoggingOn(LF_GCALLOC, LL_INFO10)))
     {

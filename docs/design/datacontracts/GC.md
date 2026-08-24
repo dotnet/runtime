@@ -294,7 +294,7 @@ public readonly record struct GCHeapSegmentInfo(
 | `GCHighestAddress` | `pointer` | Highest GC address as recorded by the VM/GC interface |
 | `GCIdentifiers` | `string` | CSV string containing identifiers of the GC. Current values are "server", "workstation", "regions", and "segments" |
 | `GCLowestAddress` | `pointer` | Lowest GC address as recorded by the VM/GC interface |
-| `GlobalAllocContext` | `pointer` | Optional. Pointer to the global EEAllocContext. Absent in runtimes which only allocate out of thread allocation contexts |
+| `GlobalAllocContext` | `pointer` | Pointer to the global EEAllocContext. Only available in runtimes that allocate out of a global allocation context instead of thread allocation contexts. |
 | `GlobalFreeHugeRegions` | `pointer` | Pointer to the global free huge region list |
 | `GlobalMechanismsLength` | `uint32` | Number of counters in the global GC mechanisms array |
 | `GlobalRegionsToDecommit` | `pointer` | Pointer to the global regions-to-decommit array |
