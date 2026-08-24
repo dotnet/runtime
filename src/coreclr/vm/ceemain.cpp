@@ -2001,7 +2001,6 @@ void ContractRegressionCheckInner()
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         LOADS_TYPE(CLASS_LOAD_BEGIN);
         CANNOT_TAKE_LOCK;
     }
@@ -2035,13 +2034,11 @@ void ContractRegressionCheck()
         // B#564831 (which left a huge swath of contracts silently disabled for over six months)
         PERMANENT_CONTRACT_VIOLATION(ThrowsViolation
                                    | GCViolation
-                                   | FaultViolation
                                    | LoadsTypeViolation
                                    | TakesLockViolation
                                    , ReasonContractInfrastructure
                                     );
         {
-            FAULT_NOT_FATAL();
             ContractRegressionCheckInner();
         }
     }

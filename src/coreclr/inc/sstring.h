@@ -889,12 +889,6 @@ typedef InlineSString<2 * 260> LongPathString;
 #define THROWS_UNLESS_BOTH_NORMALIZED(s) \
     if (IsNormalized() && s.IsNormalized()) NOTHROW; else THROWS
 
-#define FAULTS_UNLESS_NORMALIZED(stmt) \
-    if (IsNormalized()) FORBID_FAULT; else INJECT_FAULT(stmt)
-
-#define FAULTS_UNLESS_BOTH_NORMALIZED(s, stmt) \
-    if (IsNormalized() && s.IsNormalized()) FORBID_FAULT; else INJECT_FAULT(stmt)
-
 // ================================================================================
 // Inline definitions
 // ================================================================================

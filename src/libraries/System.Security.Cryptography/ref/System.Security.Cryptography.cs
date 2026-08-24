@@ -672,6 +672,89 @@ namespace System.Security.Cryptography
         protected override bool TryExportPkcs8PrivateKeyCore(System.Span<byte> destination, out int bytesWritten) { throw null; }
         protected override bool VerifyDataCore(System.ReadOnlySpan<byte> data, System.ReadOnlySpan<byte> context, System.ReadOnlySpan<byte> signature) { throw null; }
     }
+    [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+    public abstract partial class CompositeMLKem : System.IDisposable
+    {
+        protected CompositeMLKem(System.Security.Cryptography.CompositeMLKemAlgorithm algorithm) { }
+        public System.Security.Cryptography.CompositeMLKemAlgorithm Algorithm { get { throw null; } }
+        public byte[] Decapsulate(byte[] ciphertext) { throw null; }
+        public void Decapsulate(System.ReadOnlySpan<byte> ciphertext, System.Span<byte> sharedSecret) { }
+        protected abstract void DecapsulateCore(System.ReadOnlySpan<byte> ciphertext, System.Span<byte> sharedSecret);
+        public void Dispose() { }
+        protected virtual void Dispose(bool disposing) { }
+        public void Encapsulate(out byte[] ciphertext, out byte[] sharedSecret) { throw null; }
+        public void Encapsulate(System.Span<byte> ciphertext, System.Span<byte> sharedSecret) { }
+        protected abstract void EncapsulateCore(System.Span<byte> ciphertext, System.Span<byte> sharedSecret);
+        public byte[] ExportDecapsulationKey() { throw null; }
+        public int ExportDecapsulationKey(System.Span<byte> destination) { throw null; }
+        protected abstract int ExportDecapsulationKeyCore(System.Span<byte> destination);
+        public byte[] ExportEncapsulationKey() { throw null; }
+        public int ExportEncapsulationKey(System.Span<byte> destination) { throw null; }
+        protected abstract int ExportEncapsulationKeyCore(System.Span<byte> destination);
+        public byte[] ExportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<byte> passwordBytes, System.Security.Cryptography.PbeParameters pbeParameters) { throw null; }
+        public byte[] ExportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<char> password, System.Security.Cryptography.PbeParameters pbeParameters) { throw null; }
+        public byte[] ExportEncryptedPkcs8PrivateKey(string password, System.Security.Cryptography.PbeParameters pbeParameters) { throw null; }
+        public string ExportEncryptedPkcs8PrivateKeyPem(System.ReadOnlySpan<byte> passwordBytes, System.Security.Cryptography.PbeParameters pbeParameters) { throw null; }
+        public string ExportEncryptedPkcs8PrivateKeyPem(System.ReadOnlySpan<char> password, System.Security.Cryptography.PbeParameters pbeParameters) { throw null; }
+        public string ExportEncryptedPkcs8PrivateKeyPem(string password, System.Security.Cryptography.PbeParameters pbeParameters) { throw null; }
+        public byte[] ExportPkcs8PrivateKey() { throw null; }
+        public string ExportPkcs8PrivateKeyPem() { throw null; }
+        public byte[] ExportSubjectPublicKeyInfo() { throw null; }
+        public string ExportSubjectPublicKeyInfoPem() { throw null; }
+        public static System.Security.Cryptography.CompositeMLKem GenerateKey(System.Security.Cryptography.CompositeMLKemAlgorithm algorithm) { throw null; }
+        public static System.Security.Cryptography.CompositeMLKem ImportDecapsulationKey(System.Security.Cryptography.CompositeMLKemAlgorithm algorithm, byte[] source) { throw null; }
+        public static System.Security.Cryptography.CompositeMLKem ImportDecapsulationKey(System.Security.Cryptography.CompositeMLKemAlgorithm algorithm, System.ReadOnlySpan<byte> source) { throw null; }
+        public static System.Security.Cryptography.CompositeMLKem ImportEncapsulationKey(System.Security.Cryptography.CompositeMLKemAlgorithm algorithm, byte[] source) { throw null; }
+        public static System.Security.Cryptography.CompositeMLKem ImportEncapsulationKey(System.Security.Cryptography.CompositeMLKemAlgorithm algorithm, System.ReadOnlySpan<byte> source) { throw null; }
+        public static System.Security.Cryptography.CompositeMLKem ImportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<byte> passwordBytes, System.ReadOnlySpan<byte> source) { throw null; }
+        public static System.Security.Cryptography.CompositeMLKem ImportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<char> password, System.ReadOnlySpan<byte> source) { throw null; }
+        public static System.Security.Cryptography.CompositeMLKem ImportEncryptedPkcs8PrivateKey(string password, byte[] source) { throw null; }
+        public static System.Security.Cryptography.CompositeMLKem ImportFromEncryptedPem(System.ReadOnlySpan<char> source, System.ReadOnlySpan<byte> passwordBytes) { throw null; }
+        public static System.Security.Cryptography.CompositeMLKem ImportFromEncryptedPem(System.ReadOnlySpan<char> source, System.ReadOnlySpan<char> password) { throw null; }
+        public static System.Security.Cryptography.CompositeMLKem ImportFromEncryptedPem(string source, byte[] passwordBytes) { throw null; }
+        public static System.Security.Cryptography.CompositeMLKem ImportFromEncryptedPem(string source, string password) { throw null; }
+        public static System.Security.Cryptography.CompositeMLKem ImportFromPem(System.ReadOnlySpan<char> source) { throw null; }
+        public static System.Security.Cryptography.CompositeMLKem ImportFromPem(string source) { throw null; }
+        public static System.Security.Cryptography.CompositeMLKem ImportPkcs8PrivateKey(byte[] source) { throw null; }
+        public static System.Security.Cryptography.CompositeMLKem ImportPkcs8PrivateKey(System.ReadOnlySpan<byte> source) { throw null; }
+        public static System.Security.Cryptography.CompositeMLKem ImportSubjectPublicKeyInfo(byte[] source) { throw null; }
+        public static System.Security.Cryptography.CompositeMLKem ImportSubjectPublicKeyInfo(System.ReadOnlySpan<byte> source) { throw null; }
+        public static bool IsAlgorithmSupported(System.Security.Cryptography.CompositeMLKemAlgorithm algorithm) { throw null; }
+        public bool TryExportDecapsulationKey(System.Span<byte> destination, out int bytesWritten) { throw null; }
+        public bool TryExportEncapsulationKey(System.Span<byte> destination, out int bytesWritten) { throw null; }
+        public bool TryExportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<byte> passwordBytes, System.Security.Cryptography.PbeParameters pbeParameters, System.Span<byte> destination, out int bytesWritten) { throw null; }
+        public bool TryExportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<char> password, System.Security.Cryptography.PbeParameters pbeParameters, System.Span<byte> destination, out int bytesWritten) { throw null; }
+        public bool TryExportEncryptedPkcs8PrivateKey(string password, System.Security.Cryptography.PbeParameters pbeParameters, System.Span<byte> destination, out int bytesWritten) { throw null; }
+        public bool TryExportPkcs8PrivateKey(System.Span<byte> destination, out int bytesWritten) { throw null; }
+        protected abstract bool TryExportPkcs8PrivateKeyCore(System.Span<byte> destination, out int bytesWritten);
+        public bool TryExportSubjectPublicKeyInfo(System.Span<byte> destination, out int bytesWritten) { throw null; }
+    }
+    [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+    public sealed partial class CompositeMLKemAlgorithm : System.IEquatable<System.Security.Cryptography.CompositeMLKemAlgorithm>
+    {
+        internal CompositeMLKemAlgorithm() { }
+        public int CiphertextSizeInBytes { get { throw null; } }
+        public static System.Security.Cryptography.CompositeMLKemAlgorithm MLKem1024WithECDiffieHellmanBrainpoolP384r1 { get { throw null; } }
+        public static System.Security.Cryptography.CompositeMLKemAlgorithm MLKem1024WithECDiffieHellmanP384 { get { throw null; } }
+        public static System.Security.Cryptography.CompositeMLKemAlgorithm MLKem1024WithECDiffieHellmanP521 { get { throw null; } }
+        public static System.Security.Cryptography.CompositeMLKemAlgorithm MLKem1024WithRsaOaep3072 { get { throw null; } }
+        public static System.Security.Cryptography.CompositeMLKemAlgorithm MLKem1024WithX448 { get { throw null; } }
+        public static System.Security.Cryptography.CompositeMLKemAlgorithm MLKem768WithECDiffieHellmanBrainpoolP256r1 { get { throw null; } }
+        public static System.Security.Cryptography.CompositeMLKemAlgorithm MLKem768WithECDiffieHellmanP256 { get { throw null; } }
+        public static System.Security.Cryptography.CompositeMLKemAlgorithm MLKem768WithECDiffieHellmanP384 { get { throw null; } }
+        public static System.Security.Cryptography.CompositeMLKemAlgorithm MLKem768WithRsaOaep2048 { get { throw null; } }
+        public static System.Security.Cryptography.CompositeMLKemAlgorithm MLKem768WithRsaOaep3072 { get { throw null; } }
+        public static System.Security.Cryptography.CompositeMLKemAlgorithm MLKem768WithRsaOaep4096 { get { throw null; } }
+        public static System.Security.Cryptography.CompositeMLKemAlgorithm MLKem768WithX25519 { get { throw null; } }
+        public string Name { get { throw null; } }
+        public int SharedSecretSizeInBytes { get { throw null; } }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
+        public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] System.Security.Cryptography.CompositeMLKemAlgorithm? other) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public static bool operator ==(System.Security.Cryptography.CompositeMLKemAlgorithm? left, System.Security.Cryptography.CompositeMLKemAlgorithm? right) { throw null; }
+        public static bool operator !=(System.Security.Cryptography.CompositeMLKemAlgorithm? left, System.Security.Cryptography.CompositeMLKemAlgorithm? right) { throw null; }
+        public override string ToString() { throw null; }
+    }
     public partial class CryptoConfig
     {
         public CryptoConfig() { }

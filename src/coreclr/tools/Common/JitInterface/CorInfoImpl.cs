@@ -2440,37 +2440,6 @@ namespace Internal.JitInterface
             return result;
         }
 
-        /// <summary>
-        /// Managed implementation of CEEInfo::getClassAlignmentRequirementStatic
-        /// </summary>
-        public static int GetClassAlignmentRequirementStatic(DefType type)
-        {
-            int alignment = type.Context.Target.PointerSize;
-
-            if (type is MetadataType metadataType && !metadataType.IsAutoLayout)
-            {
-                if (metadataType.IsSequentialLayout ||
-                    MarshalUtils.IsBlittableType(metadataType))
-                {
-                    alignment = metadataType.InstanceFieldAlignment.AsInt;
-                }
-            }
-            if (type.Context.Target.SupportsAlign8 &&
-                alignment < 8 && type.RequiresAlign8())
-            {
-                // If the structure contains 64-bit primitive fields and the platform requires 8-byte alignment for
-                // such fields then make sure we return at least 8-byte alignment. Note that it's technically possible
-                // to create unmanaged APIs that take unaligned structures containing such fields and this
-                // unconditional alignment bump would cause us to get the calling convention wrong on platforms such
-                // as ARM. If we see such cases in the future we'd need to add another control (such as an alignment
-                // property for the StructLayout attribute or a marshaling directive attribute for p/invoke arguments)
-                // that allows more precise control. For now we'll go with the likely scenario.
-                alignment = 8;
-            }
-
-            return alignment;
-        }
-
         private Dictionary<DefType, bool> _doubleAlignHeuristicCache = new Dictionary<DefType, bool>();
 
         //*******************************************************************************
@@ -2532,7 +2501,7 @@ namespace Internal.JitInterface
                 }
             }
 
-            return (uint)GetClassAlignmentRequirementStatic(type);
+            return (uint)CompilerTypeSystemContext.GetClassAlignmentRequirementStatic(type);
         }
 
         private int MarkGcField(byte* gcPtrs, CorInfoGCType gcType)
@@ -3054,6 +3023,9 @@ namespace Internal.JitInterface
 
                 case CorInfoClassId.CLASSID_RUNTIME_TYPE:
                     return ObjectToHandle(_compilation.TypeSystemContext.SystemModule.GetKnownType("System"u8, "RuntimeType"u8));
+
+                case CorInfoClassId.CLASSID_NUMERICS_VECTORT:
+                    return ObjectToHandle(_compilation.TypeSystemContext.SystemModule.GetKnownType("System.Numerics"u8, "Vector`1"u8));
 
                 default:
                     throw new NotImplementedException();
