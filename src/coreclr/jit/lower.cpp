@@ -5233,7 +5233,7 @@ struct LowerFieldListRegisterInfo
     }
 };
 
-#if defined(TARGET_XARCH)
+#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
 static bool IsFloatPairFieldListRegister(GenTreeFieldList::Use* use,
                                          unsigned               regStart,
                                          unsigned               regEnd,
@@ -5254,7 +5254,7 @@ static bool IsFloatPairFieldListRegister(GenTreeFieldList::Use* use,
     GenTreeFieldList::Use* nextUse = secondUse->GetNext();
     return (nextUse == nullptr) || (nextUse->GetOffset() >= regEnd);
 }
-#endif // TARGET_XARCH
+#endif // TARGET_XARCH && FEATURE_HW_INTRINSICS
 
 //----------------------------------------------------------------------------------------------
 // LowerRetFieldList:
@@ -5429,11 +5429,11 @@ bool Lowering::IsFieldListCompatibleWithRegisters(GenTreeFieldList*   fieldList,
             return false;
         }
 
-#if defined(TARGET_XARCH)
+#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
         bool supportsFloatPairInsertion = IsFloatPairFieldListRegister(use, regStart, regEnd, regType);
 #else
         bool supportsFloatPairInsertion = false;
-#endif // TARGET_XARCH
+#endif // TARGET_XARCH && FEATURE_HW_INTRINSICS
 
         do
         {
@@ -5530,7 +5530,7 @@ void Lowering::LowerFieldListToFieldListOfRegisters(GenTreeFieldList*   fieldLis
 
         GenTree* fieldListPrev = fieldList->gtPrev;
 
-#if defined(TARGET_XARCH)
+#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
         if (IsFloatPairFieldListRegister(use, regStart, regEnd, regType))
         {
             GenTreeFieldList::Use* secondUse = use->GetNext();
@@ -5551,7 +5551,7 @@ void Lowering::LowerFieldListToFieldListOfRegisters(GenTreeFieldList*   fieldLis
 
             continue;
         }
-#endif // TARGET_XARCH
+#endif // TARGET_XARCH && FEATURE_HW_INTRINSICS
         do
         {
             unsigned fieldStart = use->GetOffset();
