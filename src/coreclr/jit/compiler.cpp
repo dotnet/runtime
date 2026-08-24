@@ -4601,10 +4601,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         DoPhase(this, PHASE_COMPUTE_DOMINATORS, &Compiler::fgComputeDominators);
     }
 
-#ifdef DEBUG
-    fgDebugCheckLinks();
-#endif
-
     // Decide the kind of code we want to generate. Done here, after the second
     // round of empty-EH removal above, so that EH eliminated post-morph doesn't
     // force fully-interruptible codegen / a frame pointer.
