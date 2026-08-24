@@ -33,6 +33,7 @@ namespace System.Numerics
 
         // Scanning and slicing starts paying for itself at 32 skipped limbs.
         private const int AddSubtractZeroLimbThreshold = 32;
+        private const int Pow7CombinationThreshold = 384;
 
         /// <summary>
         /// Maximum number of limbs in a <see cref="BigInteger"/>. Restricts allocations to ~256MB,
@@ -1275,6 +1276,25 @@ namespace System.Numerics
             return remainder;
         }
 
+        private static void ShiftLeftInPlace(Span<nuint> bits, int shift)
+        {
+            int length = BigIntegerCalculator.ActualLength(bits);
+            int digitShift = Math.DivRem(shift, BigIntegerCalculator.BitsPerLimb, out int smallShift);
+            bits[..length].CopyTo(bits[digitShift..]);
+            bits[..digitShift].Clear();
+
+            if (smallShift != 0)
+            {
+                Span<nuint> shiftedBits = bits.Slice(digitShift, length);
+                BigIntegerCalculator.LeftShiftSelf(shiftedBits, smallShift, out nuint carry);
+
+                if (carry != 0)
+                {
+                    bits[digitShift + length] = carry;
+                }
+            }
+        }
+
         public static BigInteger ModPow(BigInteger value, BigInteger exponent, BigInteger modulus)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(exponent.Sign, nameof(exponent));
@@ -1396,10 +1416,228 @@ namespace System.Numerics
                     return (exponent & 1) != 0 ? value : s_one;
                 }
 
-                int size = BigIntegerCalculator.PowBound(power, 1);
+                nuint magnitude = NumericsHelpers.Abs(value._sign);
+                int shift = BitOperations.TrailingZeroCount(magnitude);
+                nuint oddMagnitude = magnitude >> shift;
+                nuint remainingMagnitude = oddMagnitude;
+                int powerOfThree = BigIntegerCalculator.ExtractFactorPower(
+                    ref remainingMagnitude, 3, BigIntegerCalculator.Pow3FactorizationPowers);
+                int powerOfFive = BigIntegerCalculator.ExtractFactorPower(
+                    ref remainingMagnitude, 5, BigIntegerCalculator.Pow5FactorizationPowers);
+                int powerOfSeven = BigIntegerCalculator.ExtractFactorPower(
+                    ref remainingMagnitude, 7, BigIntegerCalculator.Pow7FactorizationPowers);
+
+                ReadOnlySpan<int> powerIndices = default;
+                ReadOnlySpan<nuint> powers = default;
+                int powerTableStartIndex = 0;
+                nuint tableBase = 0;
+
+                if (remainingMagnitude == 1 && powerOfThree != 0 && powerOfFive == 0 && powerOfSeven == 0)
+                {
+                    tableBase = 3;
+                    powerIndices = BigIntegerCalculator.Pow3TableIndices;
+                    powers = BigIntegerCalculator.Pow3Table;
+                    powerTableStartIndex = BigIntegerCalculator.Pow3TableStartIndex;
+                }
+                else if (remainingMagnitude == 1 && powerOfThree == 0 && powerOfFive != 0 && powerOfSeven == 0)
+                {
+                    tableBase = 5;
+                    powerIndices = BigIntegerCalculator.Pow5TableIndices;
+                    powers = BigIntegerCalculator.Pow5Table;
+                    powerTableStartIndex = BigIntegerCalculator.Pow5TableStartIndex;
+                }
+                else if (remainingMagnitude == 1 && powerOfThree == 0 && powerOfFive == 0 && powerOfSeven != 0)
+                {
+                    tableBase = 7;
+                    powerIndices = BigIntegerCalculator.Pow7TableIndices;
+                    powers = BigIntegerCalculator.Pow7Table;
+                    powerTableStartIndex = BigIntegerCalculator.Pow7TableStartIndex;
+                }
+
+                int primeFactorCount = (powerOfThree != 0 ? 1 : 0)
+                    + (powerOfFive != 0 ? 1 : 0)
+                    + (powerOfSeven != 0 ? 1 : 0);
+                bool usePowerTable = !powers.IsEmpty;
+                bool useMultiplePowerTables = remainingMagnitude == 1
+                    && primeFactorCount == 2
+                    && (powerOfSeven == 0 || exponent >= Pow7CombinationThreshold);
+                nuint tablePower = usePowerTable
+                    ? checked(power * (uint)(powerOfThree + powerOfFive + powerOfSeven))
+                    : 0;
+
+                (ulong LowerBound, ulong UpperBound) bitLengthBounds = default;
+
+                if (usePowerTable || useMultiplePowerTables)
+                {
+                    bitLengthBounds = BigIntegerCalculator.GetPowBitLengthBounds(
+                        powerOfThree, powerOfFive, powerOfSeven, shift, exponent);
+
+                    if (((bitLengthBounds.LowerBound + (uint)BigIntegerCalculator.BitsPerLimb - 1)
+                        / (uint)BigIntegerCalculator.BitsPerLimb) > (uint)MaxLength)
+                    {
+                        ThrowHelper.ThrowOverflowException();
+                    }
+                }
+
+                if (magnitude == 10 && power <= 1_024 && BitOperations.IsPow2(power))
+                {
+                    int powerIndex = BitOperations.Log2(power);
+
+                    if (powerIndex >= BigIntegerCalculator.Pow10BigNumTableStartIndex)
+                    {
+                        return new BigInteger(BigIntegerCalculator.GetPow10Power(powerIndex), negative: false);
+                    }
+                }
+
+                if (usePowerTable && tablePower <= 1_024 && BitOperations.IsPow2(tablePower))
+                {
+                    int powerIndex = BitOperations.Log2(tablePower);
+
+                    if (powerIndex >= powerTableStartIndex)
+                    {
+                        ReadOnlySpan<nuint> exactBits = BigIntegerCalculator.GetPower(
+                            powerIndices,
+                            powers,
+                            powerIndex - powerTableStartIndex);
+                        BigInteger exactPower = exactBits.Length == 1 && exactBits[0] <= int.MaxValue
+                            ? new BigInteger((int)exactBits[0])
+                            : new BigInteger(exactBits, negative: false);
+
+                        if (shift != 0)
+                        {
+                            exactPower <<= checked(shift * exponent);
+                        }
+
+                        return value._sign < 0 && (exponent & 1) != 0 ? -exactPower : exactPower;
+                    }
+                }
+
+                int size;
+
+                if (usePowerTable || useMultiplePowerTables)
+                {
+                    ulong finalSize = (bitLengthBounds.UpperBound + (uint)BigIntegerCalculator.BitsPerLimb - 1)
+                        / (uint)BigIntegerCalculator.BitsPerLimb;
+                    Debug.Assert(finalSize <= (uint)MaxLength + 1);
+                    size = checked((int)finalSize + 1);
+                }
+                else
+                {
+                    size = BigIntegerCalculator.PowBound(power, 1);
+                }
+
                 Span<nuint> bits = RentedBuffer.Create(size, out RentedBuffer bitsBuffer);
 
-                BigIntegerCalculator.Pow(NumericsHelpers.Abs(value._sign), power, bits);
+                if (usePowerTable)
+                {
+                    BigIntegerCalculator.Pow(
+                        tableBase,
+                        powerTableStartIndex,
+                        powerIndices,
+                        powers,
+                        tablePower,
+                        bits);
+
+                    if (shift != 0)
+                    {
+                        ShiftLeftInPlace(bits, checked(shift * exponent));
+                    }
+                }
+                else if (useMultiplePowerTables)
+                {
+                    nuint firstBase;
+                    int firstPower;
+                    int firstTableStartIndex;
+                    ReadOnlySpan<int> firstPowerIndices;
+                    ReadOnlySpan<nuint> firstPowers;
+
+                    if (powerOfThree != 0)
+                    {
+                        firstBase = 3;
+                        firstPower = powerOfThree;
+                        firstTableStartIndex = BigIntegerCalculator.Pow3TableStartIndex;
+                        firstPowerIndices = BigIntegerCalculator.Pow3TableIndices;
+                        firstPowers = BigIntegerCalculator.Pow3Table;
+                    }
+                    else
+                    {
+                        firstBase = 5;
+                        firstPower = powerOfFive;
+                        firstTableStartIndex = BigIntegerCalculator.Pow5TableStartIndex;
+                        firstPowerIndices = BigIntegerCalculator.Pow5TableIndices;
+                        firstPowers = BigIntegerCalculator.Pow5Table;
+                    }
+
+                    nuint secondBase = powerOfSeven != 0 ? 7u : 5u;
+                    int secondPower = powerOfSeven != 0 ? powerOfSeven : powerOfFive;
+                    int secondTableStartIndex = powerOfSeven != 0
+                        ? BigIntegerCalculator.Pow7TableStartIndex
+                        : BigIntegerCalculator.Pow5TableStartIndex;
+                    ReadOnlySpan<int> secondPowerIndices = powerOfSeven != 0
+                        ? BigIntegerCalculator.Pow7TableIndices
+                        : BigIntegerCalculator.Pow5TableIndices;
+                    ReadOnlySpan<nuint> secondPowers = powerOfSeven != 0
+                        ? BigIntegerCalculator.Pow7Table
+                        : BigIntegerCalculator.Pow5Table;
+
+                    nuint firstExponent = checked(power * (uint)firstPower);
+                    nuint secondExponent = checked(power * (uint)secondPower);
+                    ulong firstBitLength = BigIntegerCalculator.GetPowBitLengthBounds(
+                        firstBase == 3 ? 1 : 0,
+                        firstBase == 5 ? 1 : 0,
+                        0,
+                        0,
+                        checked(exponent * firstPower)).UpperBound;
+                    ulong secondBitLength = BigIntegerCalculator.GetPowBitLengthBounds(
+                        0,
+                        secondBase == 5 ? 1 : 0,
+                        secondBase == 7 ? 1 : 0,
+                        0,
+                        checked(exponent * secondPower)).UpperBound;
+                    int firstSize = checked((int)((firstBitLength
+                        + (uint)BigIntegerCalculator.BitsPerLimb - 1) / (uint)BigIntegerCalculator.BitsPerLimb) + 1);
+                    int secondSize = checked((int)((secondBitLength
+                        + (uint)BigIntegerCalculator.BitsPerLimb - 1) / (uint)BigIntegerCalculator.BitsPerLimb) + 1);
+
+                    Span<nuint> firstBits = RentedBuffer.Create(firstSize, out RentedBuffer firstBuffer);
+                    BigIntegerCalculator.Pow(
+                        firstBase,
+                        firstTableStartIndex,
+                        firstPowerIndices,
+                        firstPowers,
+                        firstExponent,
+                        firstBits);
+
+                    Span<nuint> secondBits = RentedBuffer.Create(secondSize, out RentedBuffer secondBuffer);
+                    BigIntegerCalculator.Pow(
+                        secondBase,
+                        secondTableStartIndex,
+                        secondPowerIndices,
+                        secondPowers,
+                        secondExponent,
+                        secondBits);
+
+                    int firstLength = BigIntegerCalculator.ActualLength(firstBits);
+                    int secondLength = BigIntegerCalculator.ActualLength(secondBits);
+                    int productLength = firstLength + secondLength;
+                    BigIntegerCalculator.Multiply(
+                        firstBits[..firstLength],
+                        secondBits[..secondLength],
+                        bits[..productLength]);
+
+                    if (shift != 0)
+                    {
+                        ShiftLeftInPlace(bits, checked(shift * exponent));
+                    }
+
+                    secondBuffer.Dispose();
+                    firstBuffer.Dispose();
+                }
+                else
+                {
+                    BigIntegerCalculator.Pow(magnitude, power, bits);
+                }
+
                 result = new BigInteger(bits, value._sign < 0 && (exponent & 1) != 0);
                 bitsBuffer.Dispose();
             }
