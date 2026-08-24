@@ -15,6 +15,9 @@ jobs:
     name: Sync Code
     runs-on: windows-latest
     steps:
+    - name: Enable Git long paths
+      shell: pwsh
+      run: git config --global core.longpaths true
     - name: Checkout aspnetcore
       uses: actions/checkout@v7
       with:

@@ -208,6 +208,36 @@ public func AppleCryptoNative_AesGcmDecrypt(
         aad: aad);
 }
 
+@_silgen_name("AppleCryptoNative_AesKeyWrapEncrypt")
+@available(macOS 12.0, iOS 15.0, tvOS 15.0, macCatalyst 15.0, *)
+public func AppleCryptoNative_AesKeyWrapEncrypt(
+    key: UnsafeBufferPointer<UInt8>,
+    plaintext: UnsafeBufferPointer<UInt8>,
+    ciphertext: UnsafeMutableBufferPointer<UInt8>
+) throws -> Int32 {
+    let result = try AES.KeyWrap.wrap(
+        SymmetricKey(data: plaintext),
+        using: SymmetricKey(data: key))
+
+    return Int32(result.copyBytes(to: ciphertext))
+}
+
+@_silgen_name("AppleCryptoNative_AesKeyWrapDecrypt")
+@available(macOS 12.0, iOS 15.0, tvOS 15.0, macCatalyst 15.0, *)
+public func AppleCryptoNative_AesKeyWrapDecrypt(
+    key: UnsafeBufferPointer<UInt8>,
+    ciphertext: UnsafeBufferPointer<UInt8>,
+    plaintext: UnsafeMutableBufferPointer<UInt8>
+) throws -> Int32 {
+    let result = try AES.KeyWrap.unwrap(
+        ciphertext,
+        using: SymmetricKey(data: key))
+
+    return result.withUnsafeBytes {
+        Int32($0.copyBytes(to: plaintext))
+    }
+}
+
 @_silgen_name("AppleCryptoNative_IsAuthenticationFailure")
 public func AppleCryptoNative_IsAuthenticationFailure(error: Error) -> Bool {
     if let error = error as? CryptoKitError {

@@ -26,22 +26,20 @@
 #include "../binder/inc/assemblybindercommon.hpp"
 #include "../binder/inc/applicationcontext.hpp"
 
-HRESULT  AssemblySpec::Bind(AppDomain *pAppDomain, BINDER_SPACE::Assembly** ppAssembly, SString* pDiagnosticInfo)
+HRESULT  AssemblySpec::Bind(BINDER_SPACE::Assembly** ppAssembly, SString* pDiagnosticInfo)
 {
     CONTRACTL
     {
         INSTANCE_CHECK;
         STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(ppAssembly));
-        PRECONDITION(CheckPointer(pAppDomain));
         PRECONDITION(IsCoreLib() == FALSE); // This should never be called for CoreLib (explicit loading)
     }
     CONTRACTL_END;
 
     HRESULT hr=S_OK;
 
-    // Have a default binding context setup
-    AssemblyBinder *pBinder = GetBinderFromParentAssembly(pAppDomain);
+    AssemblyBinder *pBinder = GetInitialBinder();
 
     ReleaseHolder<BINDER_SPACE::Assembly> pPrivAsm;
     _ASSERTE(pBinder != NULL);

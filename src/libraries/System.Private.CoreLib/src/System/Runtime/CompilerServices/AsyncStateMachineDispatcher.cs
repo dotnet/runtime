@@ -257,6 +257,8 @@ namespace System.Runtime.CompilerServices
         ulong DispatcherId { get; }
     }
 
+    // Diagnostic tooling depends on this type name (together with the MoveNext method name) when classifying
+    // async callstack frames.
     internal sealed class AsyncStateMachineDispatcher : Task<VoidTaskResult>, IAsyncStateMachineBox, IAsyncStateMachineDispatcher
     {
         private IAsyncStateMachineBox? _inner;
@@ -279,6 +281,8 @@ namespace System.Runtime.CompilerServices
 
         internal sealed override void ExecuteDirectly(Thread? threadPoolThread) => MoveNext();
 
+        [StackTraceHidden]
+        // Diagnostic tooling depends on this name when classifying async callstack frames.
         public unsafe void MoveNext()
         {
             IAsyncStateMachineBox? inner = _inner;
