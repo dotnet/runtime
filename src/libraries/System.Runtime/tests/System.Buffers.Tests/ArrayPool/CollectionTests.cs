@@ -76,8 +76,8 @@ namespace System.Buffers.ArrayPool.Tests
         private static bool IsStressModeEnabledAndRemoteExecutorSupported => TestEnvironment.IsStressModeEnabled && RemoteExecutor.IsSupported;
 
         private MethodInfo? PressureMethod =>
-            Type.GetType("System.Buffers.Utilities, System.Private.CoreLib")
-                ?.GetMethod("GetMemoryPressure", BindingFlags.Static | BindingFlags.NonPublic, Type.EmptyTypes);
+            Type.GetType("System.Buffers.Utilities, System.Private.CoreLib", throwOnError: true)
+                .GetMethod("GetMemoryPressure", BindingFlags.Static | BindingFlags.NonPublic, Type.EmptyTypes);
 
         // ThreadLocalIsCollectedUnderHighPressure only runs under DOTNET_TEST_STRESS=1, so without
         // this, the private API it reflects on could change without anyone noticing.
