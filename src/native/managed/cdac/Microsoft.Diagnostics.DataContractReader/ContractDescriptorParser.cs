@@ -19,39 +19,33 @@ public partial class ContractDescriptorParser
     // data_descriptor.md uses a distinguished property name to indicate the size of a type
     public const string TypeDescriptorSizeSigil = "!";
 
+    private static readonly JsonReaderOptions s_readerOptions = new()
+    {
+        AllowTrailingCommas = true,
+        CommentHandling = JsonCommentHandling.Skip,
+    };
+
+    private delegate TValue ReadValue<TValue>(ref Utf8JsonReader reader);
+
     /// <summary>
     ///  Parses the "compact" representation of a contract descriptor.
     /// </summary>
     public static ContractDescriptor? ParseCompact(ReadOnlySpan<byte> json)
     {
-        try
-        {
-            return ParseCompactCore(json);
-        }
-        catch (JsonException ex) when (ex.GetType() != typeof(JsonException))
-        {
-            throw new JsonException(ex.Message, ex);
-        }
-    }
-
-    private static ContractDescriptor? ParseCompactCore(ReadOnlySpan<byte> json)
-    {
-        var reader = new Utf8JsonReader(
-            json,
-            new JsonReaderOptions
-            {
-                AllowTrailingCommas = true,
-                CommentHandling = JsonCommentHandling.Skip,
-            });
+        Utf8JsonReader reader = new(json, s_readerOptions);
 
         if (!reader.Read())
             throw new JsonException();
         if (reader.TokenType == JsonTokenType.Null)
+        {
+            if (reader.Read())
+                throw new JsonException();
             return null;
+        }
         if (reader.TokenType != JsonTokenType.StartObject)
             throw new JsonException();
 
-        var descriptor = new ContractDescriptor();
+        ContractDescriptor descriptor = new();
         while (reader.Read())
         {
             if (reader.TokenType == JsonTokenType.EndObject)
@@ -74,16 +68,16 @@ public partial class ContractDescriptorParser
                     descriptor.Baseline = ReadNullableString(ref reader);
                     break;
                 case "contracts":
-                    descriptor.Contracts = ReadStringDictionary(ref reader);
+                    descriptor.Contracts = ReadDictionary(ref reader, ReadString);
                     break;
                 case "types":
-                    descriptor.Types = ReadTypeDictionary(ref reader);
+                    descriptor.Types = ReadDictionary(ref reader, ReadTypeDescriptor);
                     break;
                 case "globals":
-                    descriptor.Globals = ReadGlobalDictionary(ref reader);
+                    descriptor.Globals = ReadDictionary(ref reader, ReadGlobalDescriptor);
                     break;
                 case "subDescriptors":
-                    descriptor.SubDescriptors = ReadGlobalDictionary(ref reader);
+                    descriptor.SubDescriptors = ReadDictionary(ref reader, ReadGlobalDescriptor);
                     break;
                 default:
                     reader.Skip();
@@ -136,52 +130,10 @@ public partial class ContractDescriptorParser
         public string? StringValue { get; set; }
     }
 
-    private static Dictionary<string, string>? ReadStringDictionary(ref Utf8JsonReader reader)
+    private static string ReadString(ref Utf8JsonReader reader)
     {
-        if (reader.TokenType == JsonTokenType.Null)
-            return null;
-        if (reader.TokenType != JsonTokenType.StartObject)
-            throw new JsonException();
-
-        var values = new Dictionary<string, string>();
-        while (reader.Read())
-        {
-            if (reader.TokenType == JsonTokenType.EndObject)
-                return values;
-            if (reader.TokenType != JsonTokenType.PropertyName)
-                throw new JsonException();
-
-            string name = reader.GetString() ?? throw new JsonException();
-            ReadNext(ref reader);
-            string value = reader.TokenType == JsonTokenType.String
-                ? reader.GetString() ?? throw new JsonException()
-                : throw new JsonException();
-            values[name] = value;
-        }
-
-        throw new JsonException();
-    }
-
-    private static Dictionary<string, TypeDescriptor>? ReadTypeDictionary(ref Utf8JsonReader reader)
-    {
-        if (reader.TokenType == JsonTokenType.Null)
-            return null;
-        if (reader.TokenType != JsonTokenType.StartObject)
-            throw new JsonException();
-
-        var types = new Dictionary<string, TypeDescriptor>();
-        while (reader.Read())
-        {
-            if (reader.TokenType == JsonTokenType.EndObject)
-                return types;
-            if (reader.TokenType != JsonTokenType.PropertyName)
-                throw new JsonException();
-
-            string name = reader.GetString() ?? throw new JsonException();
-            ReadNext(ref reader);
-            types[name] = ReadTypeDescriptor(ref reader);
-        }
-
+        if (reader.TokenType == JsonTokenType.String)
+            return reader.GetString() ?? throw new JsonException();
         throw new JsonException();
     }
 
@@ -194,7 +146,7 @@ public partial class ContractDescriptorParser
             throw new JsonException();
 
         uint? size = null;
-        var fields = new Dictionary<string, FieldDescriptor>();
+        Dictionary<string, FieldDescriptor> fields = new();
         while (reader.Read())
         {
             if (reader.TokenType == JsonTokenType.EndObject)
@@ -243,24 +195,26 @@ public partial class ContractDescriptorParser
         return new FieldDescriptor { Type = type, Offset = offset };
     }
 
-    private static Dictionary<string, GlobalDescriptor>? ReadGlobalDictionary(ref Utf8JsonReader reader)
+    private static Dictionary<string, TValue>? ReadDictionary<TValue>(
+        ref Utf8JsonReader reader,
+        ReadValue<TValue> readValue)
     {
         if (reader.TokenType == JsonTokenType.Null)
             return null;
         if (reader.TokenType != JsonTokenType.StartObject)
             throw new JsonException();
 
-        var globals = new Dictionary<string, GlobalDescriptor>();
+        Dictionary<string, TValue> values = [];
         while (reader.Read())
         {
             if (reader.TokenType == JsonTokenType.EndObject)
-                return globals;
+                return values;
             if (reader.TokenType != JsonTokenType.PropertyName)
                 throw new JsonException();
 
             string name = reader.GetString() ?? throw new JsonException();
             ReadNext(ref reader);
-            globals[name] = ReadGlobalDescriptor(ref reader);
+            values[name] = readValue(ref reader);
         }
 
         throw new JsonException();
@@ -401,7 +355,7 @@ public partial class ContractDescriptorParser
         }
         if (reader.TokenType == JsonTokenType.String)
         {
-            var s = reader.GetString();
+            string? s = reader.GetString();
             if (s == null)
             {
                 value = 0u;
@@ -440,7 +394,7 @@ public partial class ContractDescriptorParser
         }
         if (reader.TokenType == JsonTokenType.String)
         {
-            var s = reader.GetString();
+            string? s = reader.GetString();
             if (s == null)
             {
                 value = 0;

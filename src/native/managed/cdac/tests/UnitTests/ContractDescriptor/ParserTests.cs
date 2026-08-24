@@ -65,9 +65,14 @@ public class ParserTests
     [Fact]
     public void RejectsTrailingJson()
     {
-        byte[] json = "{}{}"u8.ToArray();
+        byte[][] invalidJson =
+        [
+            "{}{}"u8.ToArray(),
+            "null{}"u8.ToArray(),
+        ];
 
-        Assert.Throws<JsonException>(() => ContractDescriptorParser.ParseCompact(json));
+        foreach (byte[] json in invalidJson)
+            Assert.ThrowsAny<JsonException>(() => ContractDescriptorParser.ParseCompact(json));
     }
 
     [Fact]
