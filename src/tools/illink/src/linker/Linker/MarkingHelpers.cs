@@ -32,7 +32,7 @@ namespace Mono.Linker
             MarkExportedTypeTarget(exportedType, origin);
         }
 
-        public void MarkExportedTypeTarget(ExportedType exportedType, in MessageOrigin origin)
+        internal void MarkExportedTypeTarget(ExportedType exportedType, in MessageOrigin origin)
         {
             if (_context.TryResolve(exportedType) is not TypeDefinition type)
                 return;
