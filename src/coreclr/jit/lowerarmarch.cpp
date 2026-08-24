@@ -1519,7 +1519,7 @@ GenTree* Lowering::TryLowerSveConvertVectorToMask(GenTreeHWIntrinsic* node)
     }
     else
     {
-        node->SetUnusedValue();
+        op2->SetUnusedValue();
     }
 
     BlockRange().Remove(node->Op(1));
