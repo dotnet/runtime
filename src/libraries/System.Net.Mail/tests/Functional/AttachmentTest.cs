@@ -103,11 +103,119 @@ namespace System.Net.Mail.Tests
         [Fact]
         public void NameEncoding()
         {
-            Attachment attach = Attachment.CreateAttachmentFromString("test", "attachment-name");
-            Assert.Null(attach.NameEncoding);
-            Attachment a = new Attachment(new MemoryStream(), "myname");
+            Attachment a;
+
+            a = Attachment.CreateAttachmentFromString("test", "attachment-name");
             Assert.Null(a.NameEncoding);
-            a = new Attachment(new MemoryStream(), "myname\u3067");
+
+            a = new Attachment(new MemoryStream(), "attachmentname");
+            Assert.Null(a.NameEncoding);
+
+            a = new Attachment(new MemoryStream(), "attachmentname\u3067");
+            Assert.Null(a.NameEncoding);
+        }
+
+        [Fact]
+        public void NameParsingAndEncodingDetection()
+        {
+            Attachment a;
+
+            // smoke test
+            a = new Attachment(new MemoryStream(), "=?ISO-8859-1?Q?attachmentname?=");
+            Assert.Equal("attachmentname", a.Name);
+            Assert.Equal(a.NameEncoding, Encoding.Latin1);
+
+            // lower case charset
+            a = new Attachment(new MemoryStream(), "=?iso-8859-1?Q?attachmentname?=");
+            Assert.Equal("attachmentname", a.Name);
+            Assert.Equal(a.NameEncoding, Encoding.Latin1);
+
+            // Q encoding
+            a = new Attachment(new MemoryStream(), "=?ISO-8859-1?Q?attachment=20name?=");
+            Assert.Equal("attachment name", a.Name);
+            Assert.Equal(a.NameEncoding, Encoding.Latin1);
+
+            // Q encoding (lowercase)
+            a = new Attachment(new MemoryStream(), "=?ISO-8859-1?q?attachment=20name?=");
+            Assert.Equal("attachment name", a.Name);
+            Assert.Equal(a.NameEncoding, Encoding.Latin1);
+
+            // B encoding
+            a = new Attachment(new MemoryStream(), "=?ISO-8859-1?B?YXR0YWNobWVudCBuYW1l?=");
+            Assert.Equal("attachment name", a.Name);
+            Assert.Equal(a.NameEncoding, Encoding.Latin1);
+
+            // B encoding (lowercase)
+            a = new Attachment(new MemoryStream(), "=?ISO-8859-1?b?YXR0YWNobWVudCBuYW1l?=");
+            Assert.Equal("attachment name", a.Name);
+            Assert.Equal(a.NameEncoding, Encoding.Latin1);
+
+            // space alternate
+            a = new Attachment(new MemoryStream(), "=?ISO-8859-1?q?attachment_name?=");
+            Assert.Equal("attachment name", a.Name);
+            Assert.Equal(a.NameEncoding, Encoding.Latin1);
+
+            // multiple encoded-words
+            a = new Attachment(new MemoryStream(), "=?ISO-8859-1?Q?attachment=20?= =?ISO-8859-1?Q?name?=");
+            Assert.Equal("attachment name", a.Name);
+            Assert.Equal(Encoding.Latin1, a.NameEncoding);
+
+            // multi whitespace between encoded-words
+            a = new Attachment(new MemoryStream(), "=?ISO-8859-1?Q?attachment=20?=    =?ISO-8859-1?Q?name?=");
+            Assert.Equal("attachment name", a.Name);
+            Assert.Equal(Encoding.Latin1, a.NameEncoding);
+
+            // multi tab whitespace between encoded-words
+            a = new Attachment(new MemoryStream(), "=?ISO-8859-1?Q?attachment=20?= \t   =?ISO-8859-1?Q?name?=");
+            Assert.Equal("attachment name", a.Name);
+            Assert.Equal(Encoding.Latin1, a.NameEncoding);
+
+            // multi new-line whitespace between encoded-words
+            a = new Attachment(new MemoryStream(), "=?ISO-8859-1?Q?attachment=20?= \r\n   =?ISO-8859-1?Q?name?=");
+            Assert.Equal("attachment name", a.Name);
+            Assert.Equal(Encoding.Latin1, a.NameEncoding);
+
+            // multiple different encodings
+            a = new Attachment(new MemoryStream(), "=?ISO-8859-1?Q?attachment=20?= =?ISO-8859-2?Q?name?=");
+            Assert.Equal("attachment name", a.Name);
+            Assert.Null(a.NameEncoding);
+        }
+
+        [Theory]
+        [InlineData("=?Q?foo?=")] // missing charset
+        [InlineData("=?XXXX?Q?foo?=")] // non existing encoding
+        [InlineData("=?ISO-8859-1?foo?=")] // missing encoding
+        [InlineData("=?ISO-8859-1?Q?foo?")] // missing end =
+        [InlineData("=?ISO-8859-1?Q?foo")] // missing whole end
+        [InlineData("=?ISO-8859-1?B?YXR0YWNobWV@@@@@@@@udCBuYW1l?=")] // broken base64
+        [InlineData("=?ISO?8859-1?Q?foo_bar?=")] // prohibited char in charset
+        [InlineData("=?ISO(8859-1?Q?foo_bar?=")] // prohibited char in charset
+        [InlineData("=?ISO<8859-1?Q?foo_bar?=")] // prohibited char in charset
+        [InlineData("=?ISO@8859-1?Q?foo_bar?=")] // prohibited char in charset
+        [InlineData("=?ISO,8859-1?Q?foo_bar?=")] // prohibited char in charset
+        [InlineData("=?ISO;8859-1?Q?foo_bar?=")] // prohibited char in charset
+        [InlineData("=?ISO:8859-1?Q?foo_bar?=")] // prohibited char in charset
+        [InlineData("=?ISO/8859-1?Q?foo_bar?=")] // prohibited char in charset
+        [InlineData("=?ISO[8859-1?Q?foo_bar?=")] // prohibited char in charset
+        [InlineData("=?ISO.8859-1?Q?foo_bar?=")] // prohibited char in charset
+        [InlineData("=?ISO=8859-1?Q?foo_bar?=")] // prohibited char in charset
+        [InlineData("=?ISO\"8859-1?Q?foo_bar?=")] // prohibited char in charset
+        [InlineData("=?ISO-8859-1?Q??foo_bar?=")] // prohibited char in encoding
+        [InlineData("=?ISO-8859-1?Q(?foo_bar?=")] // prohibited char in encoding
+        [InlineData("=?ISO-8859-1?Q<?foo_bar?=")] // prohibited char in encoding
+        [InlineData("=?ISO-8859-1?Q@?foo_bar?=")] // prohibited char in encoding
+        [InlineData("=?ISO-8859-1?Q,?foo_bar?=")] // prohibited char in encoding
+        [InlineData("=?ISO-8859-1?Q;?foo_bar?=")] // prohibited char in encoding
+        [InlineData("=?ISO-8859-1?Q:?foo_bar?=")] // prohibited char in encoding
+        [InlineData("=?ISO-8859-1?Q/?foo_bar?=")] // prohibited char in encoding
+        [InlineData("=?ISO-8859-1?Q[?foo_bar?=")] // prohibited char in encoding
+        [InlineData("=?ISO-8859-1?Q.?foo_bar?=")] // prohibited char in encoding
+        [InlineData("=?ISO-8859-1?Q=?foo_bar?=")] // prohibited char in encoding
+        [InlineData("=?ISO-8859-1?Q\"?foo_bar?=")] // prohibited char in encoding
+        public void NameParsingAndEncodingDetectionBadInputs(string attachmentName)
+        {
+            Attachment a = new Attachment(new MemoryStream(), attachmentName);
+            Assert.Equal(attachmentName, a.Name);
             Assert.Null(a.NameEncoding);
         }
 
