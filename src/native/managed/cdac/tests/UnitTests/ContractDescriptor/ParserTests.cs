@@ -20,7 +20,6 @@ public class ParserTests
         Assert.Null(descriptor.Baseline);
         Assert.Null(descriptor.Contracts);
         Assert.Null(descriptor.Types);
-        Assert.Null(descriptor.Extras);
     }
     [Fact]
     public void ParsesTrivialContract()
@@ -40,11 +39,10 @@ public class ParserTests
         Assert.Empty(descriptor.Contracts);
         Assert.Empty(descriptor.Types);
         Assert.Empty(descriptor.Globals);
-        Assert.Null(descriptor.Extras);
     }
 
     [Fact]
-    public void ParsesExtensionData()
+    public void IgnoresUnknownProperties()
     {
         ReadOnlySpan<byte> json = """
         {
@@ -58,9 +56,10 @@ public class ParserTests
         ContractDescriptorParser.ContractDescriptor descriptor = ContractDescriptorParser.ParseCompact(json);
 
         Assert.Equal(1, descriptor.Version);
-        Assert.Equal(2, descriptor.Extras["unknownObject"].GetProperty("value").GetInt32());
-        Assert.Equal(2, descriptor.Extras["unknownArray"].GetArrayLength());
-        Assert.Equal("value", descriptor.Extras["unknownString"].GetString());
+        Assert.Null(descriptor.Baseline);
+        Assert.Null(descriptor.Contracts);
+        Assert.Null(descriptor.Types);
+        Assert.Null(descriptor.Globals);
     }
 
     [Fact]

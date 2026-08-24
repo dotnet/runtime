@@ -86,11 +86,7 @@ public partial class ContractDescriptorParser
                     descriptor.SubDescriptors = ReadGlobalDictionary(ref reader);
                     break;
                 default:
-                    descriptor.Extras ??= [];
-                    using (JsonDocument extra = JsonDocument.ParseValue(ref reader))
-                    {
-                        descriptor.Extras[propertyName] = extra.RootElement.Clone();
-                    }
+                    reader.Skip();
                     break;
             }
         }
@@ -109,8 +105,6 @@ public partial class ContractDescriptorParser
         public Dictionary<string, GlobalDescriptor>? Globals { get; set; }
 
         public Dictionary<string, GlobalDescriptor>? SubDescriptors { get; set; }
-
-        public Dictionary<string, JsonElement>? Extras { get; set; }
 
         public override string ToString()
         {
