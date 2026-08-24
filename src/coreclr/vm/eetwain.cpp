@@ -1270,7 +1270,10 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
 #else // !FEATURE_VARARGS
     // The GC info format can still describe a vararg method, but ConvToJitSig rejects vararg
     // signatures on this target, so no vararg method can ever be compiled here.
-    _ASSERTE(!gcInfoDecoder.GetIsVarArg());
+    if (gcInfoDecoder.GetIsVarArg())
+    {
+        PORTABILITY_ASSERT("EECodeManager::EnumGcRefs varargs");
+    }
 #endif // FEATURE_VARARGS
 
     return true;

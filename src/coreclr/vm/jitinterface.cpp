@@ -4093,7 +4093,7 @@ CORINFO_CLASS_HANDLE CEEInfo::getBuiltinClass(CorInfoClassId classId)
 #else // !FEATURE_VARARGS
         // Only the vararg intrinsics ask for this class, and ConvToJitSig rejects vararg
         // signatures before the JIT can import one.
-        _ASSERTE(!"CLASSID_ARGUMENT_HANDLE is unreachable without FEATURE_VARARGS");
+        PORTABILITY_ASSERT("CEEInfo::getBuiltinClass CLASSID_ARGUMENT_HANDLE");
 #endif // FEATURE_VARARGS
         break;
     case CLASSID_STRING:
@@ -6274,7 +6274,7 @@ CORINFO_VARARGS_HANDLE CEEInfo::getVarArgsHandle(CORINFO_SIG_INFO *sig,
 #else // !FEATURE_VARARGS
     // The JIT can only ask for a vararg cookie after importing a vararg signature, and
     // ConvToJitSig rejects those on this target.
-    _ASSERTE(!"getVarArgsHandle is unreachable without FEATURE_VARARGS");
+    PORTABILITY_ASSERT("CEEInfo::getVarArgsHandle");
 #endif // FEATURE_VARARGS
 
     EE_TO_JIT_TRANSITION();

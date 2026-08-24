@@ -5522,6 +5522,11 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetVarArgSig(CORDB_ADDRESS VASigC
 {
     DD_ENTER_MAY_THROW;
 
+    _ASSERTE(pArgBase != NULL);
+    _ASSERTE(pRetVal != NULL);
+    *pArgBase = (CORDB_ADDRESS)NULL;
+    *pRetVal = TargetBuffer();
+
 #ifndef FEATURE_VARARGS
     // Varargs are not supported on this target, so no vararg frame can exist for the
     // right side to have found a VASigCookie on.
@@ -5530,10 +5535,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetVarArgSig(CORDB_ADDRESS VASigC
     HRESULT hr = S_OK;
     EX_TRY
     {
-
-        _ASSERTE(pArgBase != NULL);
-        *pArgBase = (CORDB_ADDRESS)NULL;
-
         // First, read the VASigCookie pointer.
         TADDR taVASigCookie = (TADDR)NULL;
         SafeReadStructOrThrow(VASigCookieAddr, &taVASigCookie);
