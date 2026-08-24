@@ -928,10 +928,7 @@ Dictionary::PopulateEntry(
                         {
                             FieldDesc * pFDDummy = NULL;
 
-                            // For DeclaringTypeHandleFromMethodSlot the type referenced by the token is needed to compute
-                            // the exact instantiation of the type which declares the method, so ask for the actual type.
-                            MemberLoader::GetDescFromMemberRef(pZapSigContext->pInfoModule, TokenFromRid(rid, mdtMemberRef), &pMethod, &pFDDummy, NULL, FALSE, &ownerType,
-                                                               fDeclaringTypeHandleFromMethod /* actualTypeRequired */);
+                            MemberLoader::GetDescFromMemberRef(pZapSigContext->pInfoModule, TokenFromRid(rid, mdtMemberRef), &pMethod, &pFDDummy, NULL, FALSE, &ownerType);
                             _ASSERTE(pMethod != NULL && pFDDummy == NULL);
                         }
                         else
@@ -1038,12 +1035,16 @@ Dictionary::PopulateEntry(
                 // The method may be declared on a base type of the type referenced by the token, and the MethodDesc
                 // found for it may belong to a canonical instantiation of that base type, so walk the parent chain of
                 // the (exact) type from the token to recover the exact declaring type.
-                MethodTable * pDeclaringMT = pMethod->GetMethodTable();
-                if (pOwnerMT != NULL)
+                MethodTable * pDeclaringMT;
+                if (pMethod->IsArray())
                 {
-                    MethodTable * pExactDeclaringMT = pOwnerMT->GetMethodTableMatchingParentClass(pDeclaringMT);
-                    if (pExactDeclaringMT != NULL)
-                        pDeclaringMT = pExactDeclaringMT;
+                    pDeclaringMT = pOwnerMT;
+                }
+                else
+                {
+                    pDeclaringMT = pMethod->GetExactDeclaringType(pOwnerMT);
+                    if (pDeclaringMT == NULL)
+                        COMPlusThrowHR(COR_E_TYPELOAD);
                 }
 
                 pDeclaringMT->EnsureInstanceActive();

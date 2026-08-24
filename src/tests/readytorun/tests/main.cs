@@ -281,6 +281,7 @@ public class Program
         TestMovedGenericVirtualMethodSharedGeneric<object, WeakReference>();
     }
 
+#if TEST_DECLARING_TYPE_HANDLE
     static void TestDeclaringTypeHandle()
     {
         TestDirectDeclaringTypeHandle<byte>();
@@ -297,7 +298,7 @@ public class Program
 
         var movedMethod = new Func<Type>(instance.MovedToBaseClass<V>);
         Assert.AreEqual(movedMethod(), typeof(V));
-        AssertDeclaringType(movedMethod.Method.DeclaringType, typeof(int), typeof(string[]));
+        Assert.AreEqual(movedMethod.Method.DeclaringType, GetExpectedDeclaringType(instance.GetType()));
 
         // A non-generic method is encoded as a MemberRef. The static call needs the declaring type as its hidden
         // instantiation argument, so this covers a standalone DeclaringTypeHandle lookup using a MemberRef.
@@ -316,7 +317,7 @@ public class Program
 
         var movedMethod = new Func<Type>(instance.MovedToBaseClass<V>);
         Assert.AreEqual(movedMethod(), typeof(V));
-        AssertDeclaringType(movedMethod.Method.DeclaringType, typeof(U), typeof(T[]));
+        Assert.AreEqual(movedMethod.Method.DeclaringType, GetExpectedDeclaringType(instance.GetType()));
 
         // The static non-generic method requires the same dictionary lookup for its hidden instantiation argument,
         // but its method is encoded directly as a MemberRef.
@@ -325,14 +326,12 @@ public class Program
         Assert.AreEqual(staticMethodTypes[1], typeof(T[]));
     }
 
-    static void AssertDeclaringType(Type declaringType, Type firstTypeArgument, Type secondTypeArgument)
+    static Type GetExpectedDeclaringType(Type instanceType)
     {
-        Assert.AreEqual(declaringType.Name, "DeclaringTypeHandleIntermediate`2");
-
-        Type[] typeArguments = declaringType.GetGenericArguments();
-        Assert.AreEqual(typeArguments[0], firstTypeArgument);
-        Assert.AreEqual(typeArguments[1], secondTypeArgument);
+        Type baseType = instanceType.BaseType;
+        return baseType == typeof(object) ? instanceType : baseType;
     }
+#endif
 
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     static void TestGenericNonVirtualMethod()
@@ -621,8 +620,12 @@ public class Program
         TestGenericVirtualMethod();
         Console.WriteLine("TestMovedGenericVirtualMethod");
         TestMovedGenericVirtualMethod();
+#if TEST_DECLARING_TYPE_HANDLE
+        // mainv1 has no moved method, while mainv2 can inline the V1 implementation. Only mainv3 compiles the V1
+        // callsite against V2 without cross-module inlining, which exercises these runtime declaring-type fixups.
         Console.WriteLine("TestDeclaringTypeHandle");
         TestDeclaringTypeHandle();
+#endif
         Console.WriteLine("TestGenericNonVirtualMethod");
         TestGenericNonVirtualMethod();
 

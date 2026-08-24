@@ -8,8 +8,8 @@
     <!-- https://github.com/dotnet/runtime/issues/73954 -->
     <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
     <!-- This test does not enable cross module inlining, so there are no cross module inlined methods to validate. -->
-    <DefineConstants>$(DefineConstants);NO_CROSS_MODULE_INLINING</DefineConstants>
-    <!-- This test launches crossgen2 with dotnet, so we would need a non-sanitzed jitinterface library. To simplify our infrastructure, we'll instead skip this test. -->
+    <DefineConstants>$(DefineConstants);NO_CROSS_MODULE_INLINING;TEST_DECLARING_TYPE_HANDLE</DefineConstants>
+    <!-- This test launches crossgen2 with dotnet, so we would need a non-sanitized jitinterface library. To simplify our infrastructure, we'll instead skip this test. -->
     <CLRTestTargetUnsupported Condition="'$(EnableNativeSanitizers)' != ''">true</CLRTestTargetUnsupported>
     <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' == 'wasm'">true</CLRTestTargetUnsupported>
   </PropertyGroup>

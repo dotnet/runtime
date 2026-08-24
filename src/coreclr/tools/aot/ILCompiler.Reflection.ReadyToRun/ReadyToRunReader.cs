@@ -243,7 +243,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         public int ComponentAssemblyIndexOffset => (ComponentAssemblyIndicesStartAtTwo ? 2 : 1);
 
         /// <summary>
-        /// Starting with R2R version 26.2, READYTORUN_FIXUP_DeclaringTypeHandle is followed by a method
+        /// Starting with R2R version 27, READYTORUN_FIXUP_DeclaringTypeHandle is followed by a method
         /// signature and resolves to the type declaring that method. In earlier versions (emitted only by
         /// crossgen1) it was followed by the declaring type signature and then the type from the token.
         /// </summary>
@@ -252,7 +252,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             get
             {
                 EnsureHeader();
-                return _readyToRunHeader.MajorVersion > 26 || (_readyToRunHeader.MajorVersion == 26 && _readyToRunHeader.MinorVersion >= 2);
+                return _readyToRunHeader.MajorVersion >= 27;
             }
         }
 

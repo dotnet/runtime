@@ -1462,7 +1462,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     }
                     else
                     {
-                        // Images predating R2R version 26.2 encode the declaring type followed by the type
+                        // Images predating R2R version 27 encode the declaring type followed by the type
                         // named by the token.
                         ParseType(builder);
                         builder.Append(" of ");

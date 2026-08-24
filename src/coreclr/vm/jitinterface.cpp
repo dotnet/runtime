@@ -14415,12 +14415,17 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             TypeHandle thOwner;
             MethodDesc * pMethod = ZapSig::DecodeMethod(currentModule, pInfoModule, pBlob, &thOwner);
 
-            MethodTable * pDeclaringMT = pMethod->GetMethodTable();
-            if (!thOwner.IsNull() && !thOwner.IsTypeDesc())
+            MethodTable * pOwnerMT = thOwner.GetMethodTable();
+            MethodTable * pDeclaringMT;
+            if (pMethod->IsArray())
             {
-                MethodTable * pExactDeclaringMT = thOwner.AsMethodTable()->GetMethodTableMatchingParentClass(pDeclaringMT);
-                if (pExactDeclaringMT != NULL)
-                    pDeclaringMT = pExactDeclaringMT;
+                pDeclaringMT = pOwnerMT;
+            }
+            else
+            {
+                pDeclaringMT = pMethod->GetExactDeclaringType(pOwnerMT);
+                if (pDeclaringMT == NULL)
+                    COMPlusThrowHR(COR_E_TYPELOAD);
             }
 
             if (currentModule->IsReadyToRun())
