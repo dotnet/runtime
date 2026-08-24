@@ -481,7 +481,6 @@ enum CorInfoHelpFunc
 
     /* Miscellaneous */
 
-    CORINFO_HELP_PINVOKE_CALLI,         // Indirect pinvoke call
     CORINFO_HELP_TAILCALL,              // Perform a tail call
 
     CORINFO_HELP_GETCURRENTMANAGEDTHREADID,
@@ -633,9 +632,10 @@ enum CorInfoWasmType
 
 enum CorInfoTypeWithMod
 {
-    CORINFO_TYPE_MASK            = 0x3F,        // lower 6 bits are type mask
-    CORINFO_TYPE_MOD_PINNED      = 0x40,        // can be applied to CLASS, or BYREF to indicate pinned
-    CORINFO_TYPE_MOD_COPY_WITH_HELPER = 0x80    // can be applied to VALUECLASS to indicate 'needs helper to copy'
+    CORINFO_TYPE_MASK                     = 0x3F,  // lower 6 bits are type mask
+    CORINFO_TYPE_MOD_PINNED               = 0x40,  // can be applied to CLASS, or BYREF to indicate pinned
+    CORINFO_TYPE_MOD_COPY_WITH_HELPER     = 0x80,  // can be applied to VALUECLASS to indicate 'needs helper to copy'
+    CORINFO_TYPE_MOD_SECRET_STUB_ARGUMENT = 0x100, // can be applied to NATIVEINT to indicate the secret stub argument
 };
 
 inline CorInfoType strip(CorInfoTypeWithMod val) {
@@ -938,6 +938,7 @@ enum CorInfoClassId
     CLASSID_STRING,
     CLASSID_ARGUMENT_HANDLE,
     CLASSID_RUNTIME_TYPE,
+    CLASSID_NUMERICS_VECTORT,
 };
 
 enum CorInfoInline
@@ -3392,12 +3393,6 @@ public:
             CORINFO_CONST_LOOKUP *  pLookup
             ) = 0;
 
-    // Generate a cookie based on the signature to pass to CORINFO_HELP_PINVOKE_CALLI
-    virtual void* GetCookieForPInvokeCalliSig(
-            CORINFO_SIG_INFO*   szMetaSig,
-            void**              ppIndirection = NULL
-            ) = 0;
-
     // Generate a cookie based on the signature to pass to INTOP_CALLI in the interpreter.
     virtual void* GetCookieForInterpreterCalliSig(
             CORINFO_SIG_INFO*   szMetaSig) = 0;
@@ -3541,6 +3536,8 @@ public:
         ) = 0;
 
     // Optionally, convert calli to regular method call. This is for PInvoke argument marshalling.
+    // On success, pResolvedToken->hMethod and pResolvedToken->hClass are set to the method
+    // and class that should be called instead.
     virtual bool convertPInvokeCalliToCall(
             CORINFO_RESOLVED_TOKEN *    pResolvedToken,
             bool                        fMustConvert

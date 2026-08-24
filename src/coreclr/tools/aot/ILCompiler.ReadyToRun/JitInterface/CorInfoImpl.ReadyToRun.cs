@@ -3335,7 +3335,33 @@ namespace Internal.JitInterface
 
         private bool convertPInvokeCalliToCall(ref CORINFO_RESOLVED_TOKEN pResolvedToken, bool mustConvert)
         {
-            throw new NotImplementedException();
+            var methodIL = (MethodIL)HandleToObject((void*)pResolvedToken.tokenScope);
+            var signature = (MethodSignature)methodIL.GetObject((int)pResolvedToken.token);
+
+            switch (signature.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask)
+            {
+                case MethodSignatureFlags.None:
+                case MethodSignatureFlags.CallingConventionVarargs:
+                    // Not an unmanaged call site.
+                    return false;
+            }
+
+            CorInfoCallConvExtension unmanagedCallConv = GetUnmanagedCallConv(signature, out _);
+
+            // ReadyToRun has no way to refer to the marshalling stub the runtime creates for an unmanaged
+            // calli, so the JIT has to expand the call site inline. Everything it cannot expand - a call site
+            // where an inline P/Invoke frame is not allowed, a calling convention the JIT refuses to inline,
+            // an unmanaged signature carrying an instance 'this', or a signature that needs marshalling -
+            // leaves the method to the runtime JIT.
+            if (mustConvert ||
+                !signature.IsStatic || signature.IsExplicitThis ||
+                unmanagedCallConv is CorInfoCallConvExtension.Fastcall or CorInfoCallConvExtension.FastcallMemberFunction ||
+                Marshaller.IsMarshallingRequired(signature, Array.Empty<ParameterMetadata>(), ((MetadataType)methodIL.OwningMethod.OwningType).Module))
+            {
+                throw new RequiresRuntimeJitException($"{MethodBeingCompiled} -> {nameof(convertPInvokeCalliToCall)}");
+            }
+
+            return false;
         }
 
         private int SizeOfPInvokeTransitionFrame => ReadyToRunRuntimeConstants.READYTORUN_PInvokeTransitionFrameSizeInPointerUnits * PointerSize;

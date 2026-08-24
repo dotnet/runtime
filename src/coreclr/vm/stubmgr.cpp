@@ -1749,11 +1749,9 @@ BOOL ILStubManager::TraceManager(Thread *thread,
     }
     else if (pStubMD->IsPInvokeCalliStub())
     {
-        // This is unmanaged CALLI stub, the argument is the target
+        // The native target is passed in REG_SECRET_STUB_PARAM, which is the hidden argument register.
         target = (PCODE)arg;
-
-        LOG((LF_CORDB, LL_INFO10000, "ILSM::TraceManager: Unmanaged CALLI case %p\n",
-             reinterpret_cast<void*>(target)));
+        LOG((LF_CORDB, LL_INFO10000, "ILSM::TraceManager: Unmanaged CALLI case %p\n", reinterpret_cast<void*>(target)));
         trace->InitForUnmanaged(target);
     }
     else if (pStubMD->IsStepThroughStub())
@@ -2005,7 +2003,7 @@ BOOL CLRToCOMStubManager::TraceManager(Thread *thread,
 
 #endif // FEATURE_COMINTEROP
 
-// This is used to recognize VarargPInvokeStub, and GenericPInvokeCalliHelper.
+// This is used to recognize VarargPInvokeStub.
 
 #ifndef DACCESS_COMPILE
 
@@ -2052,12 +2050,6 @@ BOOL InteropDispatchStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
     {
         return true;
     }
-
-    if (stubStartAddress == GetEEFuncEntryPoint(GenericPInvokeCalliHelper))
-    {
-        return true;
-    }
-
 #endif // !DACCESS_COMPILE
     return false;
 }
@@ -2116,19 +2108,6 @@ BOOL InteropDispatchStubManager::TraceManager(Thread *thread,
         PCODE target = (PCODE)pNMD->GetPInvokeTarget();
 
         LOG((LF_CORDB, LL_INFO10000, "IDSM::TraceManager: Vararg P/Invoke case %p\n",
-             reinterpret_cast<void*>(target)));
-        trace->InitForUnmanaged(target);
-#endif //defined(TARGET_ARM64) && defined(__APPLE__)
-    }
-    else if (stubIP == GetEEFuncEntryPoint(GenericPInvokeCalliHelper))
-    {
-#if defined(TARGET_ARM64) && defined(__APPLE__)
-        //On ARM64 Mac, we cannot put a breakpoint inside of GenericPInvokeCalliHelper
-        LOG((LF_CORDB, LL_INFO10000, "IDSM::TraceManager: Skipping on arm64-macOS\n"));
-        return FALSE;
-#else
-        PCODE target = (PCODE)arg;
-        LOG((LF_CORDB, LL_INFO10000, "IDSM::TraceManager: Unmanaged CALLI case %p\n",
              reinterpret_cast<void*>(target)));
         trace->InitForUnmanaged(target);
 #endif //defined(TARGET_ARM64) && defined(__APPLE__)
