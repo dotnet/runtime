@@ -207,6 +207,27 @@ namespace Microsoft.Interop
                         }
                         break;
 
+                    case ErrorHandlingLocation.HiddenReturnValue:
+                        int hiddenReturnIndex = infos.Count - 1;
+                        TypePositionInfo hiddenReturnInfo = infos[hiddenReturnIndex];
+                        if (hiddenReturnInfo.ManagedType == SpecialTypeInfo.Void)
+                        {
+                            infos[hiddenReturnIndex] = hiddenReturnInfo with { NativeIndex = TypePositionInfo.UnsetIndex };
+                        }
+                        else
+                        {
+                            // Match the COM ABI transformation: keep the value in the managed return
+                            // position while moving it to a final out parameter in the native signature.
+                            infos[hiddenReturnIndex] = hiddenReturnInfo with
+                            {
+                                RefKind = RefKind.Out,
+                                NativeIndex = method.Parameters.Length,
+                            };
+                        }
+
+                        infos.Add(CreateInjectedErrorInfo(TypePositionInfo.ReturnIndex));
+                        break;
+
                     case ErrorHandlingLocation.LastParameter:
                         int lastParameterIndex = infos.Count - 2;
                         if (infos.Count > 1

@@ -31,7 +31,7 @@ namespace Microsoft.Interop
                 || attribute.ConstructorArguments.Length != 2
                 || attribute.ConstructorArguments[0].Value is not INamedTypeSymbol marshallerType
                 || attribute.ConstructorArguments[1].Value is not int locationValue
-                || locationValue is < (int)ErrorHandlingLocation.ReturnValue or > (int)ErrorHandlingLocation.SystemError)
+                || locationValue is < (int)ErrorHandlingLocation.ReturnValue or > (int)ErrorHandlingLocation.HiddenReturnValue)
             {
                 return null;
             }

@@ -13,6 +13,7 @@ namespace System.Runtime.InteropServices
         ReturnValue = 0,
         LastParameter = 1,
         SystemError = 2,
+        HiddenReturnValue = 3,
     }
 
     [AttributeUsage(AttributeTargets.Method)]
@@ -156,6 +157,15 @@ namespace LibraryImportGenerator.IntegrationTests
             public static partial void SystemErrorBeforeOutput(
                 int error,
                 [MarshalUsing(typeof(TrackedOutputMarshaller))] out TrackedOutput output);
+
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "return_error")]
+            [ErrorHandler(typeof(CustomErrorMarshaller), ErrorLocation.HiddenReturnValue)]
+            public static partial void HandleHiddenReturnError(int error);
+
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "return_error_with_hidden_return")]
+            [ErrorHandler(typeof(CustomErrorMarshaller), ErrorLocation.HiddenReturnValue)]
+            [return: MarshalUsing(typeof(TrackedOutputMarshaller))]
+            public static partial TrackedOutput HiddenReturnValue(int error);
         }
     }
 
@@ -246,6 +256,29 @@ namespace LibraryImportGenerator.IntegrationTests
 
             Assert.Equal(-4, exception.Error);
             Assert.True(CleanupInputMarshaller.FreeCalled);
+        }
+
+        [Fact]
+        public void HiddenReturnValueWithVoidManagedReturnHandlesNativeReturnError()
+        {
+            NativeExportsNE.ErrorHandling.HandleHiddenReturnError(0);
+            CustomErrorException exception = Assert.Throws<CustomErrorException>(
+                () => NativeExportsNE.ErrorHandling.HandleHiddenReturnError(-5));
+            Assert.Equal(-5, exception.Error);
+        }
+
+        [Fact]
+        public void HiddenReturnValueMovesManagedReturnToNativeOutParameter()
+        {
+            TrackedOutputMarshaller.ConvertToManagedCalled = false;
+            Assert.Equal(new TrackedOutput(42), NativeExportsNE.ErrorHandling.HiddenReturnValue(0));
+            Assert.True(TrackedOutputMarshaller.ConvertToManagedCalled);
+
+            TrackedOutputMarshaller.ConvertToManagedCalled = false;
+            CustomErrorException exception = Assert.Throws<CustomErrorException>(
+                () => NativeExportsNE.ErrorHandling.HiddenReturnValue(-5));
+            Assert.Equal(-5, exception.Error);
+            Assert.False(TrackedOutputMarshaller.ConvertToManagedCalled);
         }
     }
 }

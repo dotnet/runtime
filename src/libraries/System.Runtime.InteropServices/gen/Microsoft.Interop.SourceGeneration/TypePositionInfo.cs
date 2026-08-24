@@ -141,6 +141,7 @@ namespace Microsoft.Interop
         ReturnValue = 0,
         LastParameter = 1,
         SystemError = 2,
+        HiddenReturnValue = 3,
     }
 
     public sealed record ErrorHandlingInfo(

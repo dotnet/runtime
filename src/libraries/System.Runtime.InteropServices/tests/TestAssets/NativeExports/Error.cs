@@ -69,6 +69,13 @@ namespace NativeExports
             return *input == 42 ? error : -1;
         }
 
+        [UnmanagedCallersOnly(EntryPoint = "return_error_with_hidden_return")]
+        public static int ReturnErrorWithHiddenReturn(int error, int* value)
+        {
+            *value = 42;
+            return error;
+        }
+
         [UnmanagedCallersOnly(EntryPoint = "set_output_and_error_out")]
         public static void SetOutputAndErrorOut(int error, int* output, int* errorValue)
         {
