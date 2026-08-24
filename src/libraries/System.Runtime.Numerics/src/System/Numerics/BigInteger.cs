@@ -947,6 +947,13 @@ namespace System.Numerics
 
             Debug.Assert(divisor._bits is not null);
 
+            if (TryGetPowerOfTwoExponent(divisor, out int powerOfTwoExponent))
+            {
+                BigInteger quotient = DivideByPowerOfTwo(dividend, divisor, powerOfTwoExponent);
+                remainder = RemainderByPowerOfTwo(dividend, powerOfTwoExponent);
+                return quotient;
+            }
+
             if (dividend._bits.Length < divisor._bits.Length)
             {
                 remainder = dividend;
@@ -1046,6 +1053,26 @@ namespace System.Numerics
 
         public static BigInteger GreatestCommonDivisor(BigInteger left, BigInteger right)
         {
+            if (left.IsZero)
+            {
+                return Abs(right);
+            }
+
+            if (right.IsZero)
+            {
+                return Abs(left);
+            }
+
+            if (TryGetPowerOfTwoExponent(left, out int powerOfTwoExponent))
+            {
+                return CreatePowerOfTwo(Math.Min(powerOfTwoExponent, GetTrailingZeroCount(right)), negative: false);
+            }
+
+            if (TryGetPowerOfTwoExponent(right, out powerOfTwoExponent))
+            {
+                return CreatePowerOfTwo(Math.Min(powerOfTwoExponent, GetTrailingZeroCount(left)), negative: false);
+            }
+
             bool trivialLeft = left._bits is null;
             bool trivialRight = right._bits is null;
 
@@ -1123,9 +1150,131 @@ namespace System.Numerics
             return left.CompareTo(right) <= 0 ? left : right;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool TryGetPowerOfTwoExponent(BigInteger value, out int exponent)
+        {
+            if (value._bits is null)
+            {
+                nuint magnitude = NumericsHelpers.Abs(value._sign);
+                if (!BitOperations.IsPow2(magnitude))
+                {
+                    exponent = 0;
+                    return false;
+                }
+
+                exponent = BitOperations.TrailingZeroCount(magnitude);
+                return true;
+            }
+
+            ReadOnlySpan<nuint> bits = value._bits;
+
+            if (bits[0] != 0)
+            {
+                if (bits.Length == 1 && BitOperations.IsPow2(bits[0]))
+                {
+                    exponent = BitOperations.TrailingZeroCount(bits[0]);
+                    return true;
+                }
+
+                exponent = 0;
+                return false;
+            }
+
+            if (!BitOperations.IsPow2(bits[^1]))
+            {
+                exponent = 0;
+                return false;
+            }
+
+            int nonZeroIndex = bits.IndexOfAnyExcept((nuint)0);
+            if (nonZeroIndex != bits.Length - 1)
+            {
+                exponent = 0;
+                return false;
+            }
+
+            exponent = checked((nonZeroIndex * BigIntegerCalculator.BitsPerLimb)
+                + BitOperations.TrailingZeroCount(bits[^1]));
+            return true;
+        }
+
+        private static BigInteger CreatePowerOfTwo(int exponent, bool negative)
+        {
+            BigInteger result = s_one << exponent;
+            return negative ? -result : result;
+        }
+
+        private static BigInteger DivideByPowerOfTwo(BigInteger dividend, BigInteger divisor, int exponent)
+        {
+            bool negative = (dividend._sign < 0) != (divisor._sign < 0);
+            BigInteger magnitude = dividend._sign < 0 ? -dividend : dividend;
+            BigInteger quotient = magnitude >> exponent;
+            return negative ? -quotient : quotient;
+        }
+
+        private static BigInteger RemainderByPowerOfTwo(BigInteger dividend, int exponent)
+        {
+            Debug.Assert(dividend._bits is not null);
+
+            if (exponent == 0)
+            {
+                return s_zero;
+            }
+
+            ReadOnlySpan<nuint> dividendBits = dividend._bits;
+            int bitsPerLimb = BigIntegerCalculator.BitsPerLimb;
+            int topBits = bitsPerLimb - BitOperations.LeadingZeroCount(dividendBits[^1]);
+            long bitLength = ((long)dividendBits.Length - 1) * bitsPerLimb + topBits;
+            if (exponent >= bitLength)
+            {
+                return dividend;
+            }
+
+            int limbCount = Math.DivRem(exponent, bitsPerLimb, out int partialBits);
+            if (partialBits == 0)
+            {
+                return new BigInteger(dividendBits[..limbCount], dividend._sign < 0);
+            }
+
+            Span<nuint> bits = RentedBuffer.Create(limbCount + 1, out RentedBuffer bitsBuffer);
+            dividendBits[..(limbCount + 1)].CopyTo(bits);
+            bits[^1] &= nuint.MaxValue >> (bitsPerLimb - partialBits);
+            BigInteger remainder = new(bits, dividend._sign < 0);
+            bitsBuffer.Dispose();
+            return remainder;
+        }
+
         public static BigInteger ModPow(BigInteger value, BigInteger exponent, BigInteger modulus)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(exponent.Sign, nameof(exponent));
+
+            if (TryGetPowerOfTwoExponent(value, out int valueExponent)
+                && TryGetPowerOfTwoExponent(modulus, out int modulusExponent))
+            {
+                if (modulusExponent == 0)
+                {
+                    return s_zero;
+                }
+
+                if (exponent.IsZero)
+                {
+                    return s_one;
+                }
+
+                if (valueExponent == 0)
+                {
+                    return value._sign < 0 && !exponent.IsEven ? s_minusOne : s_one;
+                }
+
+                int maximumExponent = (modulusExponent - 1) / valueExponent;
+                if (exponent > maximumExponent)
+                {
+                    return s_zero;
+                }
+
+                int resultExponent = valueExponent * (int)exponent;
+                return CreatePowerOfTwo(resultExponent, value._sign < 0 && !exponent.IsEven);
+            }
 
             bool trivialValue = value._bits is null;
             bool trivialExponent = exponent._bits is null;
@@ -1188,6 +1337,17 @@ namespace System.Numerics
                 return value;
             }
 
+            if (TryGetPowerOfTwoExponent(value, out int powerOfTwoExponent))
+            {
+                int resultExponent = checked(powerOfTwoExponent * exponent);
+                return CreatePowerOfTwo(resultExponent, value._sign < 0 && (exponent & 1) != 0);
+            }
+
+            if (value.IsZero)
+            {
+                return value;
+            }
+
             bool trivialValue = value._bits is null;
 
             nuint power = NumericsHelpers.Abs(exponent);
@@ -1203,11 +1363,6 @@ namespace System.Numerics
                 if (value._sign == -1)
                 {
                     return (exponent & 1) != 0 ? value : s_one;
-                }
-
-                if (value._sign == 0)
-                {
-                    return value;
                 }
 
                 int size = BigIntegerCalculator.PowBound(power, 1);
@@ -3027,10 +3182,27 @@ namespace System.Numerics
                 : Add(left._bits, left._sign, right._bits, right._sign);
         }
 
-        public static BigInteger operator *(BigInteger left, BigInteger right) =>
-            left._bits is null && right._bits is null
-                ? (BigInteger)((long)left._sign * right._sign)
-                : Multiply(left._bits, left._sign, right._bits, right._sign);
+        public static BigInteger operator *(BigInteger left, BigInteger right)
+        {
+            if (left._bits is null && right._bits is null)
+            {
+                return (BigInteger)((long)left._sign * right._sign);
+            }
+
+            if (TryGetPowerOfTwoExponent(left, out int exponent))
+            {
+                BigInteger result = right << exponent;
+                return left._sign < 0 ? -result : result;
+            }
+
+            if (TryGetPowerOfTwoExponent(right, out exponent))
+            {
+                BigInteger result = left << exponent;
+                return right._sign < 0 ? -result : result;
+            }
+
+            return Multiply(left._bits, left._sign, right._bits, right._sign);
+        }
 
         private static BigInteger Multiply(ReadOnlySpan<nuint> left, int leftSign, ReadOnlySpan<nuint> right, int rightSign)
         {
@@ -3123,6 +3295,11 @@ namespace System.Numerics
 
             Debug.Assert(dividend._bits is not null && divisor._bits is not null);
 
+            if (TryGetPowerOfTwoExponent(divisor, out int powerOfTwoExponent))
+            {
+                return DivideByPowerOfTwo(dividend, divisor, powerOfTwoExponent);
+            }
+
             if (dividend._bits.Length < divisor._bits.Length)
             {
                 return s_zero;
@@ -3166,6 +3343,11 @@ namespace System.Numerics
             }
 
             Debug.Assert(dividend._bits is not null && divisor._bits is not null);
+
+            if (TryGetPowerOfTwoExponent(divisor, out int powerOfTwoExponent))
+            {
+                return RemainderByPowerOfTwo(dividend, powerOfTwoExponent);
+            }
 
             if (dividend._bits.Length < divisor._bits.Length)
             {
@@ -3747,27 +3929,30 @@ namespace System.Numerics
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TrailingZeroCount(TSelf)" />
         public static BigInteger TrailingZeroCount(BigInteger value)
         {
+            return GetTrailingZeroCount(value);
+        }
+
+        private static int GetTrailingZeroCount(BigInteger value)
+        {
             if (value._bits is null)
             {
                 return int.TrailingZeroCount(value._sign);
             }
 
-            ulong result = 0;
-
             // Both positive values and their two's-complement negative representation will share the same TrailingZeroCount,
             // so the sign of value does not matter and both cases can be handled in the same way
 
             nuint part = value._bits[0];
+            int zeroLimbCount = 0;
 
             for (int i = 1; (part == 0) && (i < value._bits.Length); i++)
             {
                 part = value._bits[i];
-                result += (uint)BigIntegerCalculator.BitsPerLimb;
+                zeroLimbCount++;
             }
 
-            result += (ulong)BitOperations.TrailingZeroCount(part);
-
-            return result;
+            return checked((zeroLimbCount * BigIntegerCalculator.BitsPerLimb)
+                + BitOperations.TrailingZeroCount(part));
         }
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TryReadBigEndian(ReadOnlySpan{byte}, bool, out TSelf)" />
