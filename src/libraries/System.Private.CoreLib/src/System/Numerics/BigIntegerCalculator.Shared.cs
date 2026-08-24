@@ -16,6 +16,7 @@ namespace System.Numerics
     // into System.Runtime.Numerics.
     internal static partial class BigIntegerCalculator
     {
+        /// <summary>Maximum length of a shifted single-limb divisor after complete zero limbs are removed.</summary>
         private const int ShiftedDivisorMaxReducedLength = 2;
 
         /// <summary>Number of bits per native-width limb: 32 on 32-bit, 64 on 64-bit.</summary>
