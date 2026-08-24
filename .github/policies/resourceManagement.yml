@@ -794,6 +794,19 @@ configuration:
             assignMentionees: False
       - if:
         - hasLabel:
+            label: area-ReadyToRun
+        then:
+        - mentionUsers:
+            mentionees:
+            - agocke
+            - dotnet/crossgen-contrib
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
             label: area-Single-File
         then:
         - mentionUsers:
