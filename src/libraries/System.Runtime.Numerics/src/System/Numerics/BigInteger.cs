@@ -3069,9 +3069,19 @@ namespace System.Numerics
                 : bits[^1] >> (BigIntegerCalculator.BitsPerLimb - smallShift);
 
             nuint[] z;
+            if (digitShift > MaxLength - bits.Length)
+            {
+                ThrowHelper.ThrowOverflowException();
+            }
+
             int zLength = bits.Length + digitShift;
             if (over != 0)
             {
+                if (zLength == MaxLength)
+                {
+                    ThrowHelper.ThrowOverflowException();
+                }
+
                 z = new nuint[++zLength];
                 z[^1] = over;
             }
@@ -3115,10 +3125,20 @@ namespace System.Numerics
                     return new BigInteger(value >= 0 ? (int)r : -(int)r, null);
                 }
 
+                if (digitShift >= MaxLength)
+                {
+                    ThrowHelper.ThrowOverflowException();
+                }
+
                 rgu = new nuint[digitShift + 1];
             }
             else
             {
+                if (digitShift >= MaxLength - 1)
+                {
+                    ThrowHelper.ThrowOverflowException();
+                }
+
                 rgu = new nuint[digitShift + 2];
                 rgu[^1] = over;
             }
