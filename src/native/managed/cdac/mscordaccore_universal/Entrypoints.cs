@@ -463,7 +463,7 @@ internal static class Entrypoints
             allocVirtual,
             [Contracts.CoreCLRContracts.Register]);
 
-        Contracts.CoreCLRContracts.ValidateForDataAccess(target);
+        Contracts.CoreCLRContracts.ValidateForDataAccess(target, apiLock);
 
         object? legacyImpl = legacyImplPtr != IntPtr.Zero
             ? ComInterfaceMarshaller<ISOSDacInterface>.ConvertToManaged((void*)legacyImplPtr)

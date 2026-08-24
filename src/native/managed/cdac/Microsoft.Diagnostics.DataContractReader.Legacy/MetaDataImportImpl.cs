@@ -141,7 +141,9 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
             return HResults.S_OK;
         }
 
-        return HResults.E_NOTIMPL;
+        if (pulCount is not null)
+            *pulCount = 0;
+        return HResults.E_INVALIDARG;
     }
 
     int IMetaDataImport.ResetEnum(nint hEnum, uint ulPos)
