@@ -3798,7 +3798,13 @@ PTR_LoaderAllocator AppDomain::GetLoaderAllocator()
 
 //------------------------------------------------------------------------
 UINT32 AppDomain::GetTypeID(PTR_MethodTable pMT) {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     return m_typeIDMap.GetTypeID(pMT, true);
 }

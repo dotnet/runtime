@@ -4040,12 +4040,15 @@ MethodDescChunk::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 //*******************************************************************************
 MethodDesc *MethodDesc::GetInterfaceMD()
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
         INSTANCE_CHECK;
         PRECONDITION(!IsInterface());
-    } CONTRACTL_END;
+    }
+    CONTRACTL_END;
     MethodTable *pMT = GetMethodTable();
     return pMT->ReverseInterfaceMDLookup(GetSlot());
 }
