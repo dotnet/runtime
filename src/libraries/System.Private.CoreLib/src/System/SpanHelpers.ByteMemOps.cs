@@ -11,6 +11,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace System
 {
@@ -25,6 +26,14 @@ namespace System
 #endif
         private const nuint ZeroMemoryNativeThreshold = 1024;
 
+        // The platform's forward memmove ('rep movsb' on x86) loses most of its throughput when the source
+        // and the destination are less than a cache line apart, which is exactly what a shift by a single
+        // array element looks like. Copy those overlapping buffers ourselves instead.
+        private const nuint MemmoveOverlappedNativeMinDistance = 64;
+
+        // Largest block handed to the platform's memmove when the buffers overlap: big enough for it to
+        // amortize its own set-up cost, small enough to keep it away from non-temporal stores.
+        private const nuint MemmoveOverlappedNativeChunk = 32 * 1024;
 
 #if HAS_CUSTOM_BLOCKS
         [StructLayout(LayoutKind.Sequential, Size = 16)]
@@ -235,12 +244,146 @@ namespace System
                 return;
             }
 
+            // 'dest' below 'src' means the data is shifted towards the start of the buffer, which is by
+            // far the most common overlapping shape (List<T>.RemoveAt/RemoveRange, Queue<T>, overlapping
+            // Span<T>.CopyTo, ...). Such a copy can run in strictly ascending order, which lets us pick a
+            // better strategy than blindly handing it to the platform's memmove. Shifts towards the end of
+            // the buffer keep using memmove, whose backward copy loop doesn't have the problems below.
+            if ((nuint)Unsafe.ByteOffset(ref dest, ref src) < len)
+            {
+                MemmoveOverlappedForward(ref dest, ref src, len);
+                return;
+            }
+
         PInvoke:
             // Implicit nullchecks
             Debug.Assert(len > 0);
             _ = Unsafe.ReadUnaligned<byte>(ref dest);
             _ = Unsafe.ReadUnaligned<byte>(ref src);
             MemmoveNative(ref dest, ref src, len);
+        }
+
+        // Copies overlapping buffers where 'dest' is at a lower address than 'src', i.e. the data is
+        // shifted towards the start of the buffer. Both of the platform memmove's problems with this
+        // shape come from it being tuned for disjoint buffers, so we route around them here.
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void MemmoveOverlappedForward(ref byte dest, ref byte src, nuint len)
+        {
+            Debug.Assert(len > 0);
+
+            nuint distance = (nuint)Unsafe.ByteOffset(ref dest, ref src);
+
+            // A forward 'rep movsb' loses most of its throughput when it has to feed itself, i.e. when the
+            // two buffers are less than a cache line apart - which is precisely a shift by one element. And
+            // below the cut-off the non-overlapping paths use, the QCall costs more than the copy itself.
+            // Targets that never call into the platform's memmove (MemmoveNativeThreshold is unbounded
+            // there) consequently always take this path, just like their non-overlapping copies do.
+            if (Vector128.IsHardwareAccelerated &&
+                (len <= MemmoveNativeThreshold || distance < MemmoveOverlappedNativeMinDistance))
+            {
+                CopyForwardVectorized(ref dest, ref src, len);
+                return;
+            }
+
+            // Implicit nullchecks
+            _ = Unsafe.ReadUnaligned<byte>(ref dest);
+            _ = Unsafe.ReadUnaligned<byte>(ref src);
+
+            // Large copies make memmove switch to non-temporal stores, which is exactly wrong here: the
+            // lines it pushes out of the cache are the ones the rest of the copy is about to read back.
+            // Feeding it one chunk at a time keeps it on its cached - and far faster - copy loop. Walking
+            // the chunks from the start is safe because 'dest' trails 'src'.
+            while (len > MemmoveOverlappedNativeChunk)
+            {
+                MemmoveNative(ref dest, ref src, MemmoveOverlappedNativeChunk);
+                dest = ref Unsafe.Add(ref dest, MemmoveOverlappedNativeChunk);
+                src = ref Unsafe.Add(ref src, MemmoveOverlappedNativeChunk);
+                len -= MemmoveOverlappedNativeChunk;
+            }
+
+            MemmoveNative(ref dest, ref src, len);
+        }
+
+        // Copies 'src' to 'dest' in strictly ascending order, so a byte is always read before the copy can
+        // overwrite it. That also rules out the "copy a final block anchored at the end of the buffer"
+        // trick the non-overlapping paths use - that block may already have been rewritten by then.
+        private static void CopyForwardVectorized(ref byte dest, ref byte src, nuint len)
+        {
+            Debug.Assert(Vector128.IsHardwareAccelerated);
+
+            // The blocks are addressed off 'dest'/'src' with constant offsets rather than off a running
+            // index so that targets with load/store-pair instructions can fold them (arm64 'ldp'/'stp').
+            if (Vector256.IsHardwareAccelerated)
+            {
+                while (len >= 128)
+                {
+                    // All of the blocks are loaded before any of them is stored, so a store can never
+                    // clobber source bytes that this iteration still has to read.
+                    Vector256<byte> block0 = Vector256.LoadUnsafe(ref src);
+                    Vector256<byte> block1 = Vector256.LoadUnsafe(ref src, 32);
+                    Vector256<byte> block2 = Vector256.LoadUnsafe(ref src, 64);
+                    Vector256<byte> block3 = Vector256.LoadUnsafe(ref src, 96);
+                    Vector256.StoreUnsafe(block0, ref dest);
+                    Vector256.StoreUnsafe(block1, ref dest, 32);
+                    Vector256.StoreUnsafe(block2, ref dest, 64);
+                    Vector256.StoreUnsafe(block3, ref dest, 96);
+                    dest = ref Unsafe.Add(ref dest, 128);
+                    src = ref Unsafe.Add(ref src, 128);
+                    len -= 128;
+                }
+
+                while (len >= 32)
+                {
+                    Vector256.StoreUnsafe(Vector256.LoadUnsafe(ref src), ref dest);
+                    dest = ref Unsafe.Add(ref dest, 32);
+                    src = ref Unsafe.Add(ref src, 32);
+                    len -= 32;
+                }
+            }
+            else
+            {
+                while (len >= 64)
+                {
+                    Vector128<byte> block0 = Vector128.LoadUnsafe(ref src);
+                    Vector128<byte> block1 = Vector128.LoadUnsafe(ref src, 16);
+                    Vector128<byte> block2 = Vector128.LoadUnsafe(ref src, 32);
+                    Vector128<byte> block3 = Vector128.LoadUnsafe(ref src, 48);
+                    Vector128.StoreUnsafe(block0, ref dest);
+                    Vector128.StoreUnsafe(block1, ref dest, 16);
+                    Vector128.StoreUnsafe(block2, ref dest, 32);
+                    Vector128.StoreUnsafe(block3, ref dest, 48);
+                    dest = ref Unsafe.Add(ref dest, 64);
+                    src = ref Unsafe.Add(ref src, 64);
+                    len -= 64;
+                }
+            }
+
+            // Drain the remainder with progressively smaller blocks, each one picking up exactly where the
+            // previous one ended. Every block is a single load followed by a single store, so no partial
+            // block can be written before the bytes it overlaps have been read.
+            while (len >= 16)
+            {
+                Vector128.StoreUnsafe(Vector128.LoadUnsafe(ref src), ref dest);
+                dest = ref Unsafe.Add(ref dest, 16);
+                src = ref Unsafe.Add(ref src, 16);
+                len -= 16;
+            }
+
+            while (len >= 4)
+            {
+                Unsafe.WriteUnaligned(ref dest, Unsafe.ReadUnaligned<uint>(ref src));
+                dest = ref Unsafe.Add(ref dest, 4);
+                src = ref Unsafe.Add(ref src, 4);
+                len -= 4;
+            }
+
+            while (len != 0)
+            {
+                dest = src;
+                dest = ref Unsafe.Add(ref dest, 1);
+                src = ref Unsafe.Add(ref src, 1);
+                len--;
+            }
         }
 
         // Non-inlinable wrapper around the QCall that avoids polluting the fast path
