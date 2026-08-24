@@ -81,7 +81,7 @@ extends:
                 eq(variables['isRollingBuild'], true))
 
       #
-      # Build Libraries with all configurations including analyzers and linker
+      # Build CoreLib and Libraries with all configurations including analyzers and linker
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -92,8 +92,8 @@ extends:
           - windows_x64
           - osx_arm64
           jobParameters:
-            nameSuffix: Libraries_AnalyzersLinker
-            buildArgs: -subset libs -restore -build -pack -c $(_BuildConfig) /p:RunAnalyzersInBuild=true /p:RunILLinkInBuild=true
+            nameSuffix: CoreLib_Libraries_AnalyzersLinker
+            buildArgs: -subset clr.corelib+libs -restore -build -pack -c $(_BuildConfig) /p:RunAnalyzersInBuild=true /p:RunILLinkInBuild=true
             timeoutInMinutes: 120
             condition:
               or(
@@ -101,7 +101,7 @@ extends:
                 eq(variables['isRollingBuild'], true))
 
       #
-      # Build CoreCLR CoreLib and tools with analyzers and linker
+      # Build tools with analyzers and linker
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -110,8 +110,8 @@ extends:
           platforms:
           - linux_x64_dev_innerloop
           jobParameters:
-            nameSuffix: CoreClr_Tools_AnalyzersLinker
-            buildArgs: -subset clr.corelib+tools -c $(_BuildConfig) /p:RunAnalyzersInBuild=true /p:RunILLinkInBuild=true
+            nameSuffix: Tools_AnalyzersLinker
+            buildArgs: -subset tools -c $(_BuildConfig) /p:RunAnalyzersInBuild=true /p:RunILLinkInBuild=true
             timeoutInMinutes: 120
             condition:
               or(
