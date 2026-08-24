@@ -11,6 +11,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace System
 {
@@ -28,7 +29,7 @@ namespace System
 #if (TARGET_AMD64 || TARGET_ARM64) && !MONO
         // Blocks are copied with a constant-length Memmove, which the JIT expands into "load the whole
         // block into registers, then store it" - correct for any overlap. 64 bytes fits its unrolling
-        // budget on every target here, and bounds re-entry: a block-sized call skips the loop below and
+        // budget on every target here, and bounds re-entry: a block-sized call skips the loops below and
         // is finished by the tail, which never calls Memmove back.
         private const nuint OverlappedBlockSize = 64;
 
@@ -37,6 +38,15 @@ namespace System
 
         // Past this the platform memmove's backward loop beats a managed descending one.
         private const nuint OverlappedBackwardThreshold = 256;
+
+#if TARGET_ARM64
+        // What makes the platform memmove worth replacing for long forward copies is 'rep movsb', which
+        // is x86-only: arm64 uses a plain vector loop that has no such cliff and is well tuned, so past
+        // this size it wins. Below it the P/Invoke is still the dominant cost and we come out ahead.
+        private const nuint OverlappedForwardThreshold = 1024;
+#else
+        private const nuint OverlappedForwardThreshold = nuint.MaxValue;
+#endif
 #endif
 
 #if HAS_CUSTOM_BLOCKS
@@ -255,17 +265,28 @@ namespace System
             // collapses when the buffers are less than a cache line apart, and the non-temporal stores it
             // uses for large copies evict the lines the rest of the copy reads back. Its backward loop has
             // neither problem, so long right shifts are left to it.
-            if ((nuint)Unsafe.ByteOffset(ref dest, ref src) < len)
+            //
+            // Gated on SIMD being available, which is what the blocks below are expanded into. It folds
+            // away under the JIT, R2R and AOT; it is only false in the interpreter-only mode, where the
+            // blocks would each cost a call and the platform memmove is the better deal.
+            if (Vector128.IsHardwareAccelerated)
             {
-                // dest is below src, so copying upwards never overwrites a byte we still have to read.
-                CopyOverlappedForward(ref dest, ref src, len);
-                return;
-            }
-
-            if (len <= OverlappedBackwardThreshold)
-            {
-                CopyOverlappedBackward(ref dest, ref src, len);
-                return;
+                if ((nuint)Unsafe.ByteOffset(ref dest, ref src) < len)
+                {
+                    // dest is below src, so copying upwards never overwrites a byte we still have to read.
+                    // Note the 'else': once we know the buffers overlap this way, a length over the
+                    // threshold has to fall through to the platform memmove, not to the backward copy.
+                    if (len <= OverlappedForwardThreshold)
+                    {
+                        CopyOverlappedForward(ref dest, ref src, len);
+                        return;
+                    }
+                }
+                else if (len <= OverlappedBackwardThreshold)
+                {
+                    CopyOverlappedBackward(ref dest, ref src, len);
+                    return;
+                }
             }
 #endif
 
@@ -299,6 +320,31 @@ namespace System
                     dest = ref Unsafe.Add(ref dest, head);
                     src = ref Unsafe.Add(ref src, head);
                     len -= head;
+                }
+            }
+
+            // Take the widest block the JIT will still expand: its budget is four vector registers, so
+            // 256 bytes under AVX512 and 128 under AVX2. Wider blocks mean fewer loop iterations, and
+            // fewer boundaries where one block's store and the next block's load share a cache line,
+            // which is what a tight overlap is sensitive to. arm64 tops out at the 64-byte loop below.
+            if (Vector512.IsHardwareAccelerated)
+            {
+                while (len > 256)
+                {
+                    Memmove(ref dest, ref src, 256);
+                    dest = ref Unsafe.Add(ref dest, 256);
+                    src = ref Unsafe.Add(ref src, 256);
+                    len -= 256;
+                }
+            }
+            else if (Vector256.IsHardwareAccelerated)
+            {
+                while (len > 128)
+                {
+                    Memmove(ref dest, ref src, 128);
+                    dest = ref Unsafe.Add(ref dest, 128);
+                    src = ref Unsafe.Add(ref src, 128);
+                    len -= 128;
                 }
             }
 
