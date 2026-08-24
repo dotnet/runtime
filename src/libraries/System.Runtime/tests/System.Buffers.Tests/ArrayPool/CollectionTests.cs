@@ -75,16 +75,16 @@ namespace System.Buffers.ArrayPool.Tests
 
         private static bool IsStressModeEnabledAndRemoteExecutorSupported => TestEnvironment.IsStressModeEnabled && RemoteExecutor.IsSupported;
 
-        private static readonly MethodInfo? s_pressureMethod =
+        private MethodInfo? PressureMethod =>
             Type.GetType("System.Buffers.Utilities, System.Private.CoreLib")
                 ?.GetMethod("GetMemoryPressure", BindingFlags.Static | BindingFlags.NonPublic, Type.EmptyTypes);
 
         // ThreadLocalIsCollectedUnderHighPressure only runs under DOTNET_TEST_STRESS=1, so without
-        // this, the private API it reflects on could change without anything noticing.
+        // this, the private API it reflects on could change without anyone noticing.
         [Fact]
         public void MemoryPressureHelperIsAvailable()
         {
-            Assert.NotNull(s_pressureMethod);
+            Assert.NotNull(PressureMethod);
         }
 
         // This test can cause problems for other tests run in parallel (from other assemblies) as
@@ -106,7 +106,8 @@ namespace System.Buffers.ArrayPool.Tests
                 const int AllocSize = 1024 * 1024 * 64;
                 int PageSize = Environment.SystemPageSize;
 
-                object highPressure = Enum.Parse(s_pressureMethod.ReturnType, "High");
+                MethodInfo pressureMethod = PressureMethod;
+                object highPressure = Enum.Parse(pressureMethod.ReturnType, "High");
 
                 do
                 {
@@ -119,7 +120,7 @@ namespace System.Buffers.ArrayPool.Tests
                     }
 
                     GC.Collect(2);
-                } while (!highPressure.Equals(s_pressureMethod.Invoke(null, null)));
+                } while (!highPressure.Equals(pressureMethod.Invoke(null, null)));
 
                 GC.WaitForPendingFinalizers();
 
