@@ -574,6 +574,32 @@ namespace System.Numerics.Tests
             Assert.Equal(expectedSquare, BigInteger.Pow(run, 2));
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
+        public void MultiplyShiftedLimbRunFallsBackWhenAccumulatorWouldOverflow()
+        {
+            const int RunLength = 8;
+            const int Shift = 17;
+            const int BitsPerLimb = 64;
+            BigInteger repeatedLimb = new BigInteger((ulong)(nuint.MaxValue / 2));
+            BigInteger repunit = ((BigInteger.One << (RunLength * BitsPerLimb)) - 1)
+                / ((BigInteger.One << BitsPerLimb) - 1);
+            BigInteger run = (repeatedLimb * repunit) << Shift;
+            BigInteger other = MakePositive(16, new Random(5_250));
+            BigInteger expected = BigInteger.Zero;
+            BigInteger expectedSquare = BigInteger.Zero;
+
+            for (int i = 0; i < RunLength; i++)
+            {
+                int shift = (i * BitsPerLimb) + Shift;
+                expected += (other * repeatedLimb) << shift;
+                expectedSquare += (run * repeatedLimb) << shift;
+            }
+
+            Assert.Equal(expected, other * run);
+            Assert.Equal(expected, run * other);
+            Assert.Equal(expectedSquare, BigInteger.Pow(run, 2));
+        }
+
         [Fact]
         public void MultiplyLimbRunCandidateFallsBackWhenLimbsDiffer()
         {

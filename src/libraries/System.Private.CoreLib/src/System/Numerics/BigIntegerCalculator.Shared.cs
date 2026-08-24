@@ -162,21 +162,6 @@ namespace System.Numerics
             remaining[remaining.Length - 1] >>= shift;
         }
 
-        internal static bool TryGetPowerOfTwoExponent(ReadOnlySpan<nuint> value, out int exponent)
-        {
-            Debug.Assert(!value.IsEmpty);
-
-            int nonZeroIndex = value[0] == 0 ? value.IndexOfAnyExcept((nuint)0) : 0;
-            if (nonZeroIndex != value.Length - 1 || !BitOperations.IsPow2(value[^1]))
-            {
-                exponent = 0;
-                return false;
-            }
-
-            exponent = (nonZeroIndex * BitsPerLimb) + BitOperations.TrailingZeroCount(value[^1]);
-            return true;
-        }
-
         internal static void DivideByPowerOfTwo(ReadOnlySpan<nuint> left, int exponent, Span<nuint> quotient)
         {
             int limbShift = Math.DivRem(exponent, BitsPerLimb, out int smallShift);
@@ -195,20 +180,6 @@ namespace System.Numerics
                 nuint upper = (i + 1 < source.Length) ? source[i + 1] : 0;
                 quotient[i] = (source[i] >> smallShift) | (upper << backShift);
             }
-        }
-
-        internal static void RemainderByPowerOfTwo(Span<nuint> left, int exponent)
-        {
-            int limbShift = Math.DivRem(exponent, BitsPerLimb, out int smallShift);
-            int remainderLength = limbShift;
-
-            if (smallShift != 0)
-            {
-                left[limbShift] &= nuint.MaxValue >> (BitsPerLimb - smallShift);
-                remainderLength++;
-            }
-
-            left[remainderLength..].Clear();
         }
 
         /// <summary>
@@ -1668,13 +1639,6 @@ namespace System.Numerics
             if (right.Length - rightOffset <= ShiftedDivisorMaxReducedLength)
             {
                 DivideGrammarSchool(left[rightOffset..], right[rightOffset..], quotient);
-                return;
-            }
-
-            if (TryGetPowerOfTwoExponent(right, out int exponent))
-            {
-                DivideByPowerOfTwo(left, exponent, quotient);
-                RemainderByPowerOfTwo(left, exponent);
                 return;
             }
 
