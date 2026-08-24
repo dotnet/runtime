@@ -20,8 +20,6 @@ The Native AOT toolchain can be currently built for Linux (x64/arm32/arm64), mac
 
 Once you build the repo, you can use the produced binaries in one of four ways specified below ("Using built binaries", "Building packages", "Convenience Visual Studio "repro" project", "Running tests").
 
-### Cross-compiling
-
 The native AOT compiler is a cross-compiler, however the default clr.aot subset passed to build[.cmd|.sh] will only build a flavor that can target the architecture of ILC itself. To build other codegen backends and enable crossbuilding, replace `clr.aot` with `clr.aot+clr.alljits` in the build script invocation.
 
 ### Using built binaries
