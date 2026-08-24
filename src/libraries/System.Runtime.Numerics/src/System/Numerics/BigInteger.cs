@@ -31,6 +31,9 @@ namespace System.Numerics
         /// <summary>Splits a shift by int.MinValue into two shifts to avoid negation overflow (-int.MinValue overflows int).</summary>
         private const int MinIntSplitShift = int.MaxValue - BitsPerUInt32 + 1;
 
+        // Scanning and slicing starts paying for itself at 32 skipped limbs.
+        private const int AddSubtractZeroLimbThreshold = 32;
+
         /// <summary>
         /// Maximum number of limbs in a <see cref="BigInteger"/>. Restricts allocations to ~256MB,
         /// supporting almost 646,456,974 digits.
@@ -954,7 +957,13 @@ namespace System.Numerics
                 return quotient;
             }
 
-            if (dividend._bits.Length < divisor._bits.Length)
+            int commonOffset = dividend._bits[0] == 0 && divisor._bits[0] == 0
+                ? GetCommonLimbOffset(dividend._bits, divisor._bits)
+                : 0;
+            ReadOnlySpan<nuint> dividendBits = dividend._bits.AsSpan(commonOffset);
+            ReadOnlySpan<nuint> divisorBits = divisor._bits.AsSpan(commonOffset);
+
+            if (dividendBits.Length < divisorBits.Length)
             {
                 remainder = dividend;
                 return s_zero;
@@ -964,10 +973,14 @@ namespace System.Numerics
                 int size = dividend._bits.Length;
                 Span<nuint> rest = RentedBuffer.Create(size, out RentedBuffer restBuffer);
 
-                size = dividend._bits.Length - divisor._bits.Length + 1;
+                size = dividendBits.Length - divisorBits.Length + 1;
                 Span<nuint> quotient = RentedBuffer.Create(size, out RentedBuffer quotientBuffer);
 
-                BigIntegerCalculator.Divide(dividend._bits, divisor._bits, quotient, rest);
+                BigIntegerCalculator.Divide(
+                    dividendBits,
+                    divisorBits,
+                    quotient,
+                    rest.Slice(commonOffset, dividendBits.Length));
 
                 remainder = new(rest, dividend._sign < 0);
                 BigInteger result = new(quotient, (dividend._sign < 0) ^ (divisor._sign < 0));
@@ -1098,13 +1111,24 @@ namespace System.Numerics
             }
 
             Debug.Assert(left._bits is not null && right._bits is not null);
-
-            return BigIntegerCalculator.Compare(left._bits, right._bits) < 0
-                ? GreatestCommonDivisor(right._bits, left._bits)
-                : GreatestCommonDivisor(left._bits, right._bits);
+            return GreatestCommonDivisor(left._bits, right._bits);
         }
 
-        private static BigInteger GreatestCommonDivisor(ReadOnlySpan<nuint> leftBits, ReadOnlySpan<nuint> rightBits)
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static BigInteger GreatestCommonDivisor(nuint[] leftBits, nuint[] rightBits)
+        {
+            int commonOffset = leftBits[0] == 0 && rightBits[0] == 0
+                ? GetCommonLimbOffset(leftBits, rightBits)
+                : 0;
+            ReadOnlySpan<nuint> reducedLeft = leftBits.AsSpan(commonOffset);
+            ReadOnlySpan<nuint> reducedRight = rightBits.AsSpan(commonOffset);
+
+            return BigIntegerCalculator.Compare(reducedLeft, reducedRight) < 0
+                ? GreatestCommonDivisor(reducedRight, reducedLeft, commonOffset)
+                : GreatestCommonDivisor(reducedLeft, reducedRight, commonOffset);
+        }
+
+        private static BigInteger GreatestCommonDivisor(ReadOnlySpan<nuint> leftBits, ReadOnlySpan<nuint> rightBits, int resultOffset)
         {
             Debug.Assert(BigIntegerCalculator.Compare(leftBits, rightBits) >= 0);
 
@@ -1130,11 +1154,18 @@ namespace System.Numerics
             }
             else
             {
-                Span<nuint> bits = RentedBuffer.Create(leftBits.Length, out RentedBuffer bitsBuffer);
+                Span<nuint> bits = RentedBuffer.Create(leftBits.Length + resultOffset, out RentedBuffer bitsBuffer);
 
-                BigIntegerCalculator.Gcd(leftBits, rightBits, bits);
+                BigIntegerCalculator.Gcd(leftBits, rightBits, bits[resultOffset..]);
                 result = new BigInteger(bits, negative: false);
                 bitsBuffer.Dispose();
+
+                return result;
+            }
+
+            if (resultOffset != 0)
+            {
+                result <<= checked(resultOffset * BigIntegerCalculator.BitsPerLimb);
             }
 
             return result;
@@ -2048,6 +2079,15 @@ namespace System.Numerics
 
             Debug.Assert(!(trivialLeft && trivialRight), "Trivial cases should be handled on the caller operator");
 
+            if (leftBits.Length > AddSubtractZeroLimbThreshold
+                && rightBits.Length > AddSubtractZeroLimbThreshold
+                && leftBits[0] == 0
+                && rightBits[0] == 0
+                && TryAddWithCommonLimbOffset(leftBits, leftSign, rightBits, out BigInteger fastResult))
+            {
+                return fastResult;
+            }
+
             BigInteger result;
 
             if (trivialLeft)
@@ -2117,6 +2157,15 @@ namespace System.Numerics
 
             Debug.Assert(!(trivialLeft && trivialRight), "Trivial cases should be handled on the caller operator");
 
+            if (leftBits.Length > AddSubtractZeroLimbThreshold
+                && rightBits.Length > AddSubtractZeroLimbThreshold
+                && leftBits[0] == 0
+                && rightBits[0] == 0
+                && TrySubtractWithCommonLimbOffset(leftBits, leftSign, rightBits, out BigInteger fastResult))
+            {
+                return fastResult;
+            }
+
             BigInteger result;
 
             if (trivialLeft)
@@ -2163,6 +2212,81 @@ namespace System.Numerics
             }
 
             return result;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static int GetLimbOffset(ReadOnlySpan<nuint> bits)
+        {
+            int offset = bits[0] == 0 ? bits.IndexOfAnyExcept((nuint)0) : 0;
+            Debug.Assert(offset >= 0);
+            return offset;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static int GetCommonLimbOffset(ReadOnlySpan<nuint> leftBits, ReadOnlySpan<nuint> rightBits)
+        {
+            return Math.Min(GetLimbOffset(leftBits), GetLimbOffset(rightBits));
+        }
+
+        private static bool TryAddWithCommonLimbOffset(
+            ReadOnlySpan<nuint> leftBits,
+            int leftSign,
+            ReadOnlySpan<nuint> rightBits,
+            out BigInteger result)
+        {
+            int commonOffset = GetCommonLimbOffset(leftBits, rightBits);
+            if (commonOffset < AddSubtractZeroLimbThreshold)
+            {
+                result = default;
+                return false;
+            }
+
+            ReadOnlySpan<nuint> reducedLeft = leftBits[commonOffset..];
+            ReadOnlySpan<nuint> reducedRight = rightBits[commonOffset..];
+            int size = Math.Max(leftBits.Length, rightBits.Length) + 1;
+            Span<nuint> bits = RentedBuffer.Create(size, out RentedBuffer bitsBuffer);
+            Span<nuint> reducedBits = bits[commonOffset..];
+
+            if (reducedLeft.Length < reducedRight.Length)
+            {
+                BigIntegerCalculator.Add(reducedRight, reducedLeft, reducedBits);
+            }
+            else
+            {
+                BigIntegerCalculator.Add(reducedLeft, reducedRight, reducedBits);
+            }
+
+            result = new BigInteger(bits, leftSign < 0);
+            bitsBuffer.Dispose();
+            return true;
+        }
+
+        private static bool TrySubtractWithCommonLimbOffset(
+            ReadOnlySpan<nuint> leftBits,
+            int leftSign,
+            ReadOnlySpan<nuint> rightBits,
+            out BigInteger result)
+        {
+            int commonOffset = GetCommonLimbOffset(leftBits, rightBits);
+            if (commonOffset < AddSubtractZeroLimbThreshold)
+            {
+                result = default;
+                return false;
+            }
+
+            ReadOnlySpan<nuint> reducedLeft = leftBits[commonOffset..];
+            ReadOnlySpan<nuint> reducedRight = rightBits[commonOffset..];
+            int compare = BigIntegerCalculator.Compare(reducedLeft, reducedRight);
+            ReadOnlySpan<nuint> large = compare < 0 ? reducedRight : reducedLeft;
+            ReadOnlySpan<nuint> small = compare < 0 ? reducedLeft : reducedRight;
+            int size = Math.Max(leftBits.Length, rightBits.Length);
+            Span<nuint> bits = RentedBuffer.Create(size, out RentedBuffer bitsBuffer);
+
+            BigIntegerCalculator.Subtract(large, small, bits.Slice(commonOffset, large.Length));
+
+            result = new BigInteger(bits, compare < 0 ? leftSign >= 0 : leftSign < 0);
+            bitsBuffer.Dispose();
+            return true;
         }
 
         //
@@ -3300,16 +3424,22 @@ namespace System.Numerics
                 return DivideByPowerOfTwo(dividend, divisor, powerOfTwoExponent);
             }
 
-            if (dividend._bits.Length < divisor._bits.Length)
+            int commonOffset = dividend._bits[0] == 0 && divisor._bits[0] == 0
+                ? GetCommonLimbOffset(dividend._bits, divisor._bits)
+                : 0;
+            ReadOnlySpan<nuint> dividendBits = dividend._bits.AsSpan(commonOffset);
+            ReadOnlySpan<nuint> divisorBits = divisor._bits.AsSpan(commonOffset);
+
+            if (dividendBits.Length < divisorBits.Length)
             {
                 return s_zero;
             }
             else
             {
-                int size = dividend._bits.Length - divisor._bits.Length + 1;
+                int size = dividendBits.Length - divisorBits.Length + 1;
                 Span<nuint> quotient = RentedBuffer.Create(size, out RentedBuffer quotientBuffer);
 
-                BigIntegerCalculator.Divide(dividend._bits, divisor._bits, quotient);
+                BigIntegerCalculator.Divide(dividendBits, divisorBits, quotient);
                 BigInteger result = new(quotient, (dividend._sign < 0) ^ (divisor._sign < 0));
 
                 quotientBuffer.Dispose();
@@ -3349,7 +3479,13 @@ namespace System.Numerics
                 return RemainderByPowerOfTwo(dividend, powerOfTwoExponent);
             }
 
-            if (dividend._bits.Length < divisor._bits.Length)
+            int commonOffset = dividend._bits[0] == 0 && divisor._bits[0] == 0
+                ? GetCommonLimbOffset(dividend._bits, divisor._bits)
+                : 0;
+            ReadOnlySpan<nuint> dividendBits = dividend._bits.AsSpan(commonOffset);
+            ReadOnlySpan<nuint> divisorBits = divisor._bits.AsSpan(commonOffset);
+
+            if (dividendBits.Length < divisorBits.Length)
             {
                 return dividend;
             }
@@ -3357,7 +3493,10 @@ namespace System.Numerics
             int size = dividend._bits.Length;
             Span<nuint> bits = RentedBuffer.Create(size, out RentedBuffer bitsBuffer);
 
-            BigIntegerCalculator.Remainder(dividend._bits, divisor._bits, bits);
+            BigIntegerCalculator.Remainder(
+                dividendBits,
+                divisorBits,
+                bits.Slice(commonOffset, dividendBits.Length));
             BigInteger result = new(bits, dividend._sign < 0);
 
             bitsBuffer.Dispose();
