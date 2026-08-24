@@ -213,28 +213,6 @@ namespace System.Numerics
             }
         }
 
-        public static void Multiply(ReadOnlySpan<nuint> left, nuint right, Span<nuint> bits)
-        {
-            Debug.Assert(bits.Length == left.Length + 1);
-            // Skipped low limbs are not written.
-            Debug.Assert(!bits.ContainsAnyExcept(0u));
-
-            if (!left.IsEmpty && left[0] == 0)
-            {
-                int offset = left.IndexOfAnyExcept((nuint)0);
-                if (offset < 0 || right == 0)
-                {
-                    return;
-                }
-
-                Multiply(left[offset..], right, bits[offset..]);
-                return;
-            }
-
-            nuint carry = Mul1(bits, left, right);
-            bits[left.Length] = carry;
-        }
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Multiply(ReadOnlySpan<nuint> left, ReadOnlySpan<nuint> right, Span<nuint> bits)
         {
