@@ -11,6 +11,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace System
 {
@@ -46,7 +47,10 @@ namespace System
         private struct Block64 {}
 #endif // HAS_CUSTOM_BLOCKS
 
+        // Too big to be worth inlining: it burns a lot of the caller's budget, and keeping the call is also
+        // what lets the JIT unroll it when the length is constant.
         [Intrinsic] // Unrolled for small constant lengths
+        [MethodImpl(MethodImplOptions.NoInlining)]
         internal static void Memmove(ref byte dest, ref byte src, nuint len)
         {
             // P/Invoke into the native version when the buffers are overlapping.
@@ -291,6 +295,30 @@ namespace System
                     dest = ref Unsafe.Add(ref dest, head);
                     src = ref Unsafe.Add(ref src, head);
                     len -= head;
+                }
+            }
+
+            // The JIT unrolls a constant-length Memmove up to four vector registers wide, so take the widest
+            // block it will still expand. Bigger blocks also mean fewer boundaries where a store and the
+            // next block's load land in the same cache line, which is what a tight overlap is sensitive to.
+            if (Vector512.IsHardwareAccelerated)
+            {
+                while (len > 256)
+                {
+                    Memmove(ref dest, ref src, 256);
+                    dest = ref Unsafe.Add(ref dest, 256);
+                    src = ref Unsafe.Add(ref src, 256);
+                    len -= 256;
+                }
+            }
+            else if (Vector256.IsHardwareAccelerated)
+            {
+                while (len > 128)
+                {
+                    Memmove(ref dest, ref src, 128);
+                    dest = ref Unsafe.Add(ref dest, 128);
+                    src = ref Unsafe.Add(ref src, 128);
+                    len -= 128;
                 }
             }
 
