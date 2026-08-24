@@ -134,7 +134,7 @@ namespace System.Net.Security.Tests
             await TestHelper.PingPong(client, server);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.SupportsTls13))]
         public async Task Read_ExactlyFiveByteTlsRecord_DetectedAsCompleteFrame()
         {
             // Regression test: a TLS record that is exactly the 5-byte header with a
@@ -142,6 +142,12 @@ namespace System.Net.Security.Tests
             // frame. Previously EnsureFullTlsFrameAsync only recomputed the frame size once
             // more than HeaderSize bytes were buffered, so such a record left SslStream
             // waiting forever for a sixth byte that never arrives.
+            //
+            // The scenario is pinned to TLS 1.3: a zero-length application_data record cannot
+            // be decrypted (there is no room for the AEAD tag), so once framing recognizes the
+            // complete 5-byte frame the read fails fast. Under TLS 1.2 a zero-length record is
+            // a legal empty fragment that decrypts to zero bytes and is skipped, which would
+            // make even the fixed code read again and mask the framing behavior under test.
             (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
 
             ZeroLengthRecordInjectingStream clientStream = new(stream1);
@@ -150,6 +156,7 @@ namespace System.Net.Security.Tests
 
             SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions
             {
+                EnabledSslProtocols = SslProtocols.Tls13,
                 CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
                 ServerCertificateContext = _certificates.CreateSslStreamCertificateContext(),
                 RemoteCertificateValidationCallback = (sender, cert, chain, errors) => true,
@@ -158,6 +165,7 @@ namespace System.Net.Security.Tests
             SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions
             {
                 TargetHost = Guid.NewGuid().ToString("N"),
+                EnabledSslProtocols = SslProtocols.Tls13,
                 CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
                 RemoteCertificateValidationCallback = (sender, cert, chain, errors) => true,
             };
