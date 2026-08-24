@@ -39,8 +39,7 @@ namespace Microsoft.Interop
             {
                 foreach (TypePositionInfo typeInfo in ElementTypeInformation)
                 {
-                    if (typeInfo.ManagedIndex != TypePositionInfo.UnsetIndex
-                        && typeInfo.ManagedIndex != TypePositionInfo.ReturnIndex)
+                    if (!TypePositionInfo.IsSpecialIndex(typeInfo.ManagedIndex))
                     {
                         yield return Parameter(Identifier(typeInfo.InstanceIdentifier))
                             .WithType(typeInfo.ManagedType.Syntax)
@@ -59,7 +58,18 @@ namespace Microsoft.Interop
             CodeEmitOptions options,
             Assembly generatorInfoAssembly)
         {
-            ImmutableArray<TypePositionInfo> typeInfos = GenerateTypeInformation(method, marshallingInfoParser, env);
+            return Create(method, marshallingInfoParser, env, options, generatorInfoAssembly, errorHandlingInfo: null);
+        }
+
+        public static SignatureContext Create(
+            IMethodSymbol method,
+            MarshallingInfoParser marshallingInfoParser,
+            StubEnvironment env,
+            CodeEmitOptions options,
+            Assembly generatorInfoAssembly,
+            ErrorHandlingInfo? errorHandlingInfo)
+        {
+            ImmutableArray<TypePositionInfo> typeInfos = GenerateTypeInformation(method, marshallingInfoParser, env, errorHandlingInfo);
 
             ImmutableArray<AttributeListSyntax>.Builder additionalAttrs = ImmutableArray.CreateBuilder<AttributeListSyntax>();
 
@@ -101,7 +111,8 @@ namespace Microsoft.Interop
         private static ImmutableArray<TypePositionInfo> GenerateTypeInformation(
             IMethodSymbol method,
             MarshallingInfoParser marshallingInfoParser,
-            StubEnvironment env)
+            StubEnvironment env,
+            ErrorHandlingInfo? errorHandlingInfo)
         {
             // When the underlying method is a property accessor, bare attributes on the property declaration
             // (e.g. `[MarshalUsing(typeof(X))] string Prop { get; set; }`) land on the property symbol and
@@ -151,7 +162,92 @@ namespace Microsoft.Interop
 
             typeInfos.Add(retTypeInfo);
 
+            if (errorHandlingInfo is not null)
+            {
+                ApplyErrorHandlingInfo(typeInfos, errorHandlingInfo);
+            }
+
             return typeInfos.ToImmutable();
+
+            void ApplyErrorHandlingInfo(ImmutableArray<TypePositionInfo>.Builder infos, ErrorHandlingInfo errorInfo)
+            {
+                TypePositionInfo CreateInjectedErrorInfo(int nativeIndex)
+                {
+                    return new TypePositionInfo(errorInfo.ManagedType, errorInfo.MarshallingInfo)
+                    {
+                        InstanceIdentifier = "__error",
+                        RefKind = nativeIndex == TypePositionInfo.ReturnIndex ? RefKind.None : RefKind.Out,
+                        ManagedIndex = TypePositionInfo.ErrorIndex,
+                        NativeIndex = nativeIndex,
+                        IsErrorHandlingPosition = true,
+                        ErrorHandlingLocation = errorInfo.Location,
+                    };
+                }
+
+                bool MatchesManagedType(TypePositionInfo info) => info.ManagedType == errorInfo.ManagedType;
+
+                switch (errorInfo.Location)
+                {
+                    case ErrorHandlingLocation.ReturnValue:
+                        int returnIndex = infos.Count - 1;
+                        TypePositionInfo returnInfo = infos[returnIndex];
+                        if (MatchesManagedType(returnInfo))
+                        {
+                            infos[returnIndex] = returnInfo with
+                            {
+                                MarshallingAttributeInfo = errorInfo.MarshallingInfo,
+                                IsErrorHandlingPosition = true,
+                                ErrorHandlingLocation = errorInfo.Location,
+                            };
+                        }
+                        else if (returnInfo.ManagedType == SpecialTypeInfo.Void)
+                        {
+                            infos[returnIndex] = returnInfo with { NativeIndex = TypePositionInfo.UnsetIndex };
+                            infos.Add(CreateInjectedErrorInfo(TypePositionInfo.ReturnIndex));
+                        }
+                        break;
+
+                    case ErrorHandlingLocation.LastParameter:
+                        int lastParameterIndex = infos.Count - 2;
+                        if (infos.Count > 1
+                            && infos[lastParameterIndex] is { RefKind: RefKind.Out or RefKind.Ref } lastParameter
+                            && MatchesManagedType(lastParameter))
+                        {
+                            infos[lastParameterIndex] = lastParameter with
+                            {
+                                MarshallingAttributeInfo = errorInfo.MarshallingInfo,
+                                IsErrorHandlingPosition = true,
+                                ErrorHandlingLocation = errorInfo.Location,
+                            };
+                        }
+                        else
+                        {
+                            infos.Add(CreateInjectedErrorInfo(method.Parameters.Length));
+                        }
+                        break;
+
+                    case ErrorHandlingLocation.SystemError:
+                        int systemErrorParameterIndex = infos.Count - 2;
+                        if (errorInfo.ManagedType != SpecialTypeInfo.Int32
+                            && infos.Count > 1
+                            && infos[systemErrorParameterIndex] is { RefKind: RefKind.Out } systemErrorParameter
+                            && MatchesManagedType(systemErrorParameter))
+                        {
+                            infos[systemErrorParameterIndex] = systemErrorParameter with
+                            {
+                                NativeIndex = TypePositionInfo.UnsetIndex,
+                                MarshallingAttributeInfo = errorInfo.MarshallingInfo,
+                                IsErrorHandlingPosition = true,
+                                ErrorHandlingLocation = errorInfo.Location,
+                            };
+                        }
+                        else
+                        {
+                            infos.Add(CreateInjectedErrorInfo(TypePositionInfo.UnsetIndex));
+                        }
+                        break;
+                }
+            }
         }
 
         private static ImmutableArray<AttributeData> MergeAccessorAndPropertyAttributes(

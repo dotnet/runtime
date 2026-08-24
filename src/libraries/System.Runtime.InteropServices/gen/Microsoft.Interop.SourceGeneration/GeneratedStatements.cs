@@ -95,6 +95,12 @@ namespace Microsoft.Interop
             ImmutableArray<StatementSyntax>.Builder statementsToUpdate = ImmutableArray.CreateBuilder<StatementSyntax>();
             foreach (IBoundMarshallingGenerator marshaller in marshallers.SignatureMarshallers)
             {
+                if (marshaller.TypeInfo.IsErrorHandlingPosition
+                    && context.CurrentStage is StubIdentifierContext.Stage.UnmarshalCapture or StubIdentifierContext.Stage.Unmarshal)
+                {
+                    continue;
+                }
+
                 statementsToUpdate.AddRange(marshaller.Generate(context));
             }
 
