@@ -114,8 +114,6 @@ public abstract class ArrayRecord : SerializationRecord
 
     internal abstract (AllowedRecordTypes allowed, PrimitiveType primitiveType) GetAllowedRecordType();
 
-    // Every record represents a single value, except for the Multiple Null Records which represent more than one null.
-    // When nulls are allowed, Multiple Null Records are permitted and the record count is not expected to match the total element count.
     private protected void CheckExpectedRecordCount(List<SerializationRecord> records, bool allowNulls)
     {
         if (!allowNulls && ArrayInfo.FlattenedLength != records.Count)
