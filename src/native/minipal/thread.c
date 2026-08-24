@@ -10,6 +10,13 @@
 #define _DARWIN_C_SOURCE
 #endif
 
+#if defined(__APPLE__) && !defined(_DARWIN_C_SOURCE)
+// Apple's <pthread.h> hides the non-portable pthread_threadid_np/pthread_setname_np
+// declarations when _XOPEN_SOURCE/_POSIX_C_SOURCE is defined (as the Mono build does),
+// unless _DARWIN_C_SOURCE is defined before including it.
+#define _DARWIN_C_SOURCE
+#endif
+
 #include "thread.h"
 
 #include <stdint.h>
