@@ -31,6 +31,8 @@ schedules:
 
 variables:
   - template: /eng/pipelines/common/variables.yml
+  - name: enableHelixJobMonitor
+    value: true
   - template: /eng/pipelines/helix-platforms.yml
 
 extends:
@@ -39,6 +41,11 @@ extends:
     stages:
     - stage: Build
       jobs:
+      - template: /eng/common/core-templates/job/helix-job-monitor.yml
+        parameters:
+          helixAccessToken: $(HelixApiAccessToken)
+          timeoutInMinutes: 540
+          allowNoHelixJobs: true
 
       #
       # Debug builds
@@ -170,6 +177,7 @@ extends:
           helixQueueGroup: ci
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           jobParameters:
+            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
             testGroup: outerloop
             liveLibrariesBuildConfig: Release
             unifiedArtifactsName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
@@ -186,6 +194,7 @@ extends:
           helixQueueGroup: ci
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           jobParameters:
+            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
             testGroup: outerloop
             liveLibrariesBuildConfig: Release
             unifiedArtifactsName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
@@ -210,6 +219,7 @@ extends:
           helixQueueGroup: ci
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           jobParameters:
+            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
             testGroup: outerloop
             readyToRun: true
             displayNameArgs: R2R_CG2

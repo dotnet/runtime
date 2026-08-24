@@ -48,7 +48,6 @@ void EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::Destroy()
     {
         WRAPPER(THROWS);
         WRAPPER(GC_NOTRIGGER);
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -81,7 +80,6 @@ void EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::ClearHashTable()
     {
         WRAPPER(THROWS);
         WRAPPER(GC_NOTRIGGER);
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -122,7 +120,6 @@ void EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::EmptyHashTable()
     {
         WRAPPER(THROWS);
         WRAPPER(GC_NOTRIGGER);
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -159,7 +156,6 @@ BOOL EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::Init(DWORD dwNumBucke
     {
         WRAPPER(NOTHROW);
         WRAPPER(GC_NOTRIGGER);
-        INJECT_FAULT(return FALSE;);
 
 #ifndef DACCESS_COMPILE
         PRECONDITION(m_pVolatileBucketTable.Load() == NULL && "EEHashTable::Init() called twice.");
@@ -211,7 +207,6 @@ void EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::InsertValue(KeyType p
     {
         WRAPPER(THROWS);
         WRAPPER(GC_NOTRIGGER);
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
 
@@ -257,7 +252,6 @@ void EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::InsertKeyAsValue(KeyT
     {
         WRAPPER(THROWS);
         WRAPPER(GC_NOTRIGGER);
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
 
@@ -302,7 +296,6 @@ BOOL EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::DeleteValue(KeyType p
     {
         WRAPPER(THROWS);
         WRAPPER(GC_NOTRIGGER);
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -353,7 +346,6 @@ BOOL EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::GetValue(KeyType pKey
     {
         WRAPPER(THROWS);
         WRAPPER(GC_NOTRIGGER);
-        FORBID_FAULT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END
@@ -378,7 +370,6 @@ BOOL EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::GetValue(KeyType pKey
     {
         WRAPPER(THROWS);
         WRAPPER(GC_NOTRIGGER);
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -448,7 +439,6 @@ EEHashEntry_t *EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::FindItem(Ke
     {
         WRAPPER(THROWS);
         WRAPPER(GC_NOTRIGGER);
-        FORBID_FAULT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END
@@ -463,7 +453,6 @@ EEHashEntry_t *EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::FindItem(Ke
     {
         WRAPPER(THROWS);
         WRAPPER(GC_NOTRIGGER);
-        FORBID_FAULT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END
@@ -579,7 +568,6 @@ BOOL EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::GrowHashTable()
     {
         WRAPPER(THROWS);
         WRAPPER(GC_NOTRIGGER);
-        INJECT_FAULT(return FALSE;);
     }
     CONTRACTL_END
 
@@ -698,7 +686,6 @@ void EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::
     {
         WRAPPER(THROWS);
         WRAPPER(GC_NOTRIGGER);
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -719,7 +706,6 @@ BOOL EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::
     {
         WRAPPER(THROWS);
         WRAPPER(GC_NOTRIGGER);
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -763,7 +749,6 @@ KeyType EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::
     {
         WRAPPER(THROWS);
         WRAPPER(GC_NOTRIGGER);
-        FORBID_FAULT;
     }
     CONTRACTL_END
 

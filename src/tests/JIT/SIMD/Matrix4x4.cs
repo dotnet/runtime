@@ -4,16 +4,12 @@ using System;
 using System.Numerics;
 using Xunit;
 
+namespace SIMDTests.Matrix4x4Tests;
+
 public class Matrix4x4Test
 {
     private const int Pass = 100;
     private const int Fail = -1;
-
-    public static bool IsInterpreterExceptCoreClrBrowser =>
-        TestLibrary.Utilities.IsCoreClrInterpreter &&
-        (!OperatingSystem.IsBrowser() ||
-         TestLibrary.Utilities.IsMonoRuntime ||
-         TestLibrary.Utilities.IsNativeAot);
 
     public static int Matrix4x4CreateScaleCenterTest3()
     {
@@ -37,7 +33,6 @@ public class Matrix4x4Test
         return returnVal;
     }
 
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/123104", typeof(Matrix4x4Test), nameof(IsInterpreterExceptCoreClrBrowser))]
     [Fact]
     public static int TestEntryPoint()
     {

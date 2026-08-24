@@ -6,6 +6,13 @@
     <!-- Ignore nullable warnings on .NET Framework -->
     <NoWarn Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETFramework'">$(NoWarn),CS8604,CS8602</NoWarn>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <!-- Emit into stable, version-independent folder names instead of the TFM so the package layout and its
+         consumers don't need updating whenever the .NET Core TFM bumps. -->
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <OutputPath Condition="'$(TargetFramework)' == '$(NetCoreAppToolCurrent)'">$(OutputPath)net\</OutputPath>
+    <OutputPath Condition="'$(NetFrameworkToolCurrent)' != '' and '$(TargetFramework)' == '$(NetFrameworkToolCurrent)'">$(OutputPath)netframework\</OutputPath>
+    <IntermediateOutputPath Condition="'$(TargetFramework)' == '$(NetCoreAppToolCurrent)'">$(IntermediateOutputPath)net\</IntermediateOutputPath>
+    <IntermediateOutputPath Condition="'$(NetFrameworkToolCurrent)' != '' and '$(TargetFramework)' == '$(NetFrameworkToolCurrent)'">$(IntermediateOutputPath)netframework\</IntermediateOutputPath>
   </PropertyGroup>
 
   <ItemGroup>
@@ -26,14 +33,12 @@
   <!-- GetFilesToPackage assists to place `MonoAOTCompiler.dll` in a NuGet package in Microsoft.NET.Runtime.MonoAOTCompiler.Task.pkgproj for external use -->
   <Target Name="GetFilesToPackage" Returns="@(FilesToPackage)">
     <ItemGroup>
-      <_PublishFramework Remove="@(_PublishFramework)" />
-      <_PublishFramework Include="$(TargetFrameworks)" />
-
-      <FilesToPackage Include="$(OutputPath)%(_PublishFramework.Identity)\$(AssemblyName).dll" TargetPath="tasks\%(_PublishFramework.Identity)" />
-      <FilesToPackage Include="$(OutputPath)%(_PublishFramework.Identity)\$(AssemblyName).pdb" TargetPath="tasks\%(_PublishFramework.Identity)" />
+      <FilesToPackage Include="$(OutputPath)net\$(AssemblyName).dll" TargetPath="tasks\net" />
+      <FilesToPackage Include="$(OutputPath)net\$(AssemblyName).pdb" TargetPath="tasks\net" />
 
       <!-- For .NETFramework we need all the dependent assemblies too, so copy from the publish folder -->
-      <FilesToPackage Include="$(OutputPath)$(NetFrameworkToolCurrent)\*.dll*" TargetPath="tasks\$(NetFrameworkToolCurrent)" />
+      <FilesToPackage Condition="'$(NetFrameworkToolCurrent)' != ''" Include="$(OutputPath)netframework\*.dll*" TargetPath="tasks\netframework" />
+      <FilesToPackage Condition="'$(NetFrameworkToolCurrent)' != ''" Include="$(OutputPath)netframework\$(AssemblyName).pdb" TargetPath="tasks\netframework" />
     </ItemGroup>
   </Target>
 

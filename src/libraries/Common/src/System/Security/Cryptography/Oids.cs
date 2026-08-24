@@ -154,6 +154,19 @@ namespace System.Security.Cryptography
         internal const string MLDsa87WithRSA4096PssPreHashSha512 = "1.3.6.1.5.5.7.6.53";
         internal const string MLDsa87WithECDsaP521PreHashSha512 = "1.3.6.1.5.5.7.6.54";
 
+        internal const string MLKem768WithRsaOaep2048Sha3_256 = "1.3.6.1.5.5.7.6.55";
+        internal const string MLKem768WithRsaOaep3072Sha3_256 = "1.3.6.1.5.5.7.6.56";
+        internal const string MLKem768WithRsaOaep4096Sha3_256 = "1.3.6.1.5.5.7.6.57";
+        internal const string MLKem768WithX25519Sha3_256 = "1.3.6.1.5.5.7.6.58";
+        internal const string MLKem768WithECDiffieHellmanP256Sha3_256 = "1.3.6.1.5.5.7.6.59";
+        internal const string MLKem768WithECDiffieHellmanP384Sha3_256 = "1.3.6.1.5.5.7.6.60";
+        internal const string MLKem768WithECDiffieHellmanBrainpoolP256r1Sha3_256 = "1.3.6.1.5.5.7.6.61";
+        internal const string MLKem1024WithRsaOaep3072Sha3_256 = "1.3.6.1.5.5.7.6.62";
+        internal const string MLKem1024WithECDiffieHellmanP384Sha3_256 = "1.3.6.1.5.5.7.6.63";
+        internal const string MLKem1024WithECDiffieHellmanBrainpoolP384r1Sha3_256 = "1.3.6.1.5.5.7.6.64";
+        internal const string MLKem1024WithX448Sha3_256 = "1.3.6.1.5.5.7.6.65";
+        internal const string MLKem1024WithECDiffieHellmanP521Sha3_256 = "1.3.6.1.5.5.7.6.66";
+
         // PKCS#7
         internal const string NoSignature = "1.3.6.1.5.5.7.6.2";
 

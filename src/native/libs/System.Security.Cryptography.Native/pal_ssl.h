@@ -557,7 +557,6 @@ PALEXPORT void CryptoNative_SslCtxSetDefaultOcspCallback(SSL_CTX* ctx);
 Sets ciphers (< TLS 1.3) and cipher suites (TLS 1.3) on the SSL_CTX
 */
 PALEXPORT int32_t CryptoNative_SslCtxSetCiphers(SSL_CTX* ctx, const char* cipherList, const char* cipherSuites);
-PALEXPORT int32_t CryptoNative_SetCiphers(SSL* ssl, const char* cipherList, const char* cipherSuites);
 
 /*
 Determines if TLS 1.3 is supported by this OpenSSL implementation

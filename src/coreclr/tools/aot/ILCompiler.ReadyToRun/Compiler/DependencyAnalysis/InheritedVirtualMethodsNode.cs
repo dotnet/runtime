@@ -75,62 +75,69 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 result.Add(new CombinedDependencyListEntry(implNode, factory.VirtualMethodUse(decl), "Virtual method"));
             }
 
-            // Interface method path: for each interface implemented by this type,
-            // compile the implementation if the interface method slot is used.
-            DefType[] runtimeInterfaces = defType.RuntimeInterfaces;
-            DefType defTypeDefinition = (DefType)defType.GetTypeDefinition();
-            DefType[] definitionRuntimeInterfaces = defTypeDefinition.RuntimeInterfaces;
-
-            for (int interfaceIndex = 0; interfaceIndex < runtimeInterfaces.Length; interfaceIndex++)
+            try
             {
-                DefType interfaceType = runtimeInterfaces[interfaceIndex];
-                DefType definitionInterfaceType = definitionRuntimeInterfaces[interfaceIndex];
+                // Interface method path: for each interface implemented by this type,
+                // compile the implementation if the interface method slot is used.
+                DefType[] runtimeInterfaces = defType.RuntimeInterfaces;
+                DefType defTypeDefinition = (DefType)defType.GetTypeDefinition();
+                DefType[] definitionRuntimeInterfaces = defTypeDefinition.RuntimeInterfaces;
 
-                foreach (MethodDesc interfaceMethod in interfaceType.EnumAllVirtualSlots())
+                for (int interfaceIndex = 0; interfaceIndex < runtimeInterfaces.Length; interfaceIndex++)
                 {
-                    // GVMs handled in GVMDependenciesNode. SVMs handled at call site.
-                    if (interfaceMethod.HasInstantiation || interfaceMethod.Signature.IsStatic)
-                        continue;
+                    DefType interfaceType = runtimeInterfaces[interfaceIndex];
+                    DefType definitionInterfaceType = definitionRuntimeInterfaces[interfaceIndex];
 
-                    MethodDesc interfaceMethodDefinition = interfaceMethod;
-                    if (interfaceType != definitionInterfaceType)
-                        interfaceMethodDefinition = factory.TypeSystemContext.GetMethodForInstantiatedType(
-                            interfaceMethodDefinition.GetTypicalMethodDefinition(),
-                            (InstantiatedType)definitionInterfaceType);
-
-                    MethodDesc implMethod = defTypeDefinition.InstantiateAsOpen().ResolveInterfaceMethodTarget(interfaceMethodDefinition);
-                    if (implMethod is null)
+                    foreach (MethodDesc interfaceMethod in interfaceType.EnumAllVirtualSlots())
                     {
-                        // The method might be implemented through a default interface method
-                        var resolution = defTypeDefinition.InstantiateAsOpen().ResolveInterfaceMethodToDefaultImplementationOnType(interfaceMethodDefinition, out implMethod);
-                        if (resolution != DefaultInterfaceMethodResolution.DefaultImplementation)
-                        {
-                            implMethod = null;
-                        }
-                    }
+                        // GVMs handled in GVMDependenciesNode. SVMs handled at call site.
+                        if (interfaceMethod.HasInstantiation || interfaceMethod.Signature.IsStatic)
+                            continue;
 
-                    if (implMethod is not null)
-                    {
-                        implMethod = implMethod.InstantiateSignature(defType.Instantiation, Instantiation.Empty);
+                        MethodDesc interfaceMethodDefinition = interfaceMethod;
+                        if (interfaceType != definitionInterfaceType)
+                            interfaceMethodDefinition = factory.TypeSystemContext.GetMethodForInstantiatedType(
+                                interfaceMethodDefinition.GetTypicalMethodDefinition(),
+                                (InstantiatedType)definitionInterfaceType);
 
-                        if (implMethod.IsVirtual && !implMethod.IsFinal && !implMethod.OwningType.IsInterface)
+                        MethodDesc implMethod = defTypeDefinition.InstantiateAsOpen().ResolveInterfaceMethodTarget(interfaceMethodDefinition);
+                        if (implMethod is null)
                         {
-                            // The interface resolves to a virtual method that can be overridden.
-                            // Mark the class virtual slot as used so the class path compiles the
-                            // actual final target (which may be an override further down the hierarchy).
-                            result.Add(new CombinedDependencyListEntry(factory.VirtualMethodUse(implMethod), factory.VirtualMethodUse(interfaceMethod), "Interface method"));
-                        }
-                        else
-                        {
-                            MethodDesc canonImpl = implMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
-                            DependencyNodeCore<NodeFactory> implNode = GetVirtualMethodImplNode(factory, canonImpl);
-                            if (implNode is not null)
+                            // The method might be implemented through a default interface method
+                            var resolution = defTypeDefinition.InstantiateAsOpen().ResolveInterfaceMethodToDefaultImplementationOnType(interfaceMethodDefinition, out implMethod);
+                            if (resolution != DefaultInterfaceMethodResolution.DefaultImplementation)
                             {
-                                result.Add(new CombinedDependencyListEntry(implNode, factory.VirtualMethodUse(interfaceMethod), "Interface method"));
+                                implMethod = null;
+                            }
+                        }
+
+                        if (implMethod is not null)
+                        {
+                            implMethod = implMethod.InstantiateSignature(defType.Instantiation, Instantiation.Empty);
+
+                            if (implMethod.IsVirtual && !implMethod.IsFinal && !implMethod.OwningType.IsInterface)
+                            {
+                                // The interface resolves to a virtual method that can be overridden.
+                                // Mark the class virtual slot as used so the class path compiles the
+                                // actual final target (which may be an override further down the hierarchy).
+                                result.Add(new CombinedDependencyListEntry(factory.VirtualMethodUse(implMethod), factory.VirtualMethodUse(interfaceMethod), "Interface method"));
+                            }
+                            else
+                            {
+                                MethodDesc canonImpl = implMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                                DependencyNodeCore<NodeFactory> implNode = GetVirtualMethodImplNode(factory, canonImpl);
+                                if (implNode is not null)
+                                {
+                                    result.Add(new CombinedDependencyListEntry(implNode, factory.VirtualMethodUse(interfaceMethod), "Interface method"));
+                                }
                             }
                         }
                     }
                 }
+            }
+            catch (TypeSystemException)
+            {
+                // TODO: https://github.com/dotnet/runtime/issues/132338 - Gate this recovery on --resilient and report a warning.
             }
 
             return result;
