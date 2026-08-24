@@ -8,6 +8,8 @@ function libCoreRunFactory() {
         "$ENV",
         "$FS",
         "corerun_shutdown",
+        "__stack_pointer",
+        "__async_continuation",
         "$UTF8ToString"
     ];
     if (LibraryManager.library.$NODEFS) {
@@ -30,6 +32,16 @@ function libCoreRunFactory() {
                 }
 
                 ENV["DOTNET_SYSTEM_GLOBALIZATION_INVARIANT"] = "true";
+
+                if (ENVIRONMENT_IS_NODE) {
+                    const original_proc_exit = _proc_exit;
+                    _proc_exit = (code) => {
+                        if (!keepRuntimeAlive()) {
+                            process.exit(code);
+                        }
+                        return original_proc_exit(code);
+                    };
+                }
             },
         },
         $CORERUN__postset: "CORERUN.selfInitialize()",
@@ -55,7 +67,7 @@ function libCoreRunFactory() {
                 let value = 0;
                 let shift = 0;
 
-                for (;;) {
+                for (; ;) {
                     if (offset >= limit) {
                         throw new RangeError("Unexpected end of input while reading ULEB128");
                     }
@@ -178,7 +190,15 @@ function libCoreRunFactory() {
             } catch (e) {
                 return false;
             }
-            const wasmModule = new WebAssembly.Module(wasmBytes);
+            let wasmModule;
+            try {
+                wasmModule = new WebAssembly.Module(wasmBytes);
+            } catch (e) {
+                const errorMessage = e instanceof Error ? e.message : String(e);
+                console.error("Failed to construct WebAssembly module for Webcil image:", { wasmPath, errorMessage });
+                return false;
+            }
+
             const tableStartIndex = wasmTable.length;
 
             var payloadSize = 0;
@@ -195,7 +215,14 @@ function libCoreRunFactory() {
                 console.error("Webcil payload size is 0; cannot load image");
                 return false;
             }
-            wasmTable.grow(tableSize);
+
+            try {
+                wasmTable.grow(tableSize);
+            } catch (e) {
+                const errorMessage = e instanceof Error ? e.message : String(e);
+                console.error("Failed to grow WebAssembly table for Webcil image:", { wasmPath, errorMessage });
+                return false;
+            }
 
             var payloadPtr = 0;
             var wasmInstance;
@@ -205,15 +232,32 @@ function libCoreRunFactory() {
                 if (_posix_memalign(ptrPtr, 16, payloadSize)) {
                     throw new Error("posix_memalign failed for Webcil payload");
                 }
+                if (typeof (wasmExports.__stack_pointer) === "undefined") {
+                    throw new Error("__stack_pointer was not preserved by the linker or optimizer");
+                }
+                if (typeof (wasmExports.__coreclr_wasm_rtlrestorecontext_tag) === "undefined") {
+                    throw new Error("__coreclr_wasm_rtlrestorecontext_tag was not preserved by the linker or optimizer");
+                }
+                if (typeof (wasmExports.__async_continuation) === "undefined") {
+                    throw new Error("__async_continuation was not preserved by the linker or optimizer");
+                }
                 payloadPtr = HEAPU32[ptrPtr >>> 2 >>> 0];
                 wasmInstance = new WebAssembly.Instance(wasmModule, {
                     webcil: {
                         memory: wasmMemory,
                         stackPointer: wasmExports.__stack_pointer,
+                        rtlRestoreContextTag: wasmExports.__coreclr_wasm_rtlrestorecontext_tag,
                         table: wasmTable,
                         tableBase: new WebAssembly.Global({ value: "i32", mutable: false }, tableStartIndex),
-                        imageBase: new WebAssembly.Global({ value: "i32", mutable: false }, payloadPtr)
-                    }});
+                        imageBase: new WebAssembly.Global({ value: "i32", mutable: false }, payloadPtr),
+                        // Runtime-async continuation return value, shared with the runtime module.
+                        asyncContinuation: wasmExports.__async_continuation
+                    }
+                });
+            } catch (e) {
+                const errorMessage = e instanceof Error ? e.message : String(e);
+                console.error("Failed to construct WebAssembly instance for Webcil image:", { wasmPath, errorMessage });
+                return false;
             } finally {
                 stackRestore(sp);
             }

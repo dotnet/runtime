@@ -12,7 +12,7 @@
 #ifdef DEBUG
 void hashBvNode::dump()
 {
-    printf("base: %d { ", baseIndex);
+    printf("base: %llu { ", (unsigned long long)baseIndex);
     this->foreachBit(pBit);
     printf("}\n");
 }
@@ -115,29 +115,6 @@ bool hashBvNode::belongsIn(indexType index)
     return true;
 }
 
-int countBitsInWord(unsigned int bits)
-{
-    // In-place adder tree: perform 16 1-bit adds, 8 2-bit adds,
-    // 4 4-bit adds, 2 8=bit adds, and 1 16-bit add.
-    bits = ((bits >> 1) & 0x55555555) + (bits & 0x55555555);
-    bits = ((bits >> 2) & 0x33333333) + (bits & 0x33333333);
-    bits = ((bits >> 4) & 0x0F0F0F0F) + (bits & 0x0F0F0F0F);
-    bits = ((bits >> 8) & 0x00FF00FF) + (bits & 0x00FF00FF);
-    bits = ((bits >> 16) & 0x0000FFFF) + (bits & 0x0000FFFF);
-    return (int)bits;
-}
-
-int countBitsInWord(uint64_t bits)
-{
-    bits = ((bits >> 1) & 0x5555555555555555) + (bits & 0x5555555555555555);
-    bits = ((bits >> 2) & 0x3333333333333333) + (bits & 0x3333333333333333);
-    bits = ((bits >> 4) & 0x0F0F0F0F0F0F0F0F) + (bits & 0x0F0F0F0F0F0F0F0F);
-    bits = ((bits >> 8) & 0x00FF00FF00FF00FF) + (bits & 0x00FF00FF00FF00FF);
-    bits = ((bits >> 16) & 0x0000FFFF0000FFFF) + (bits & 0x0000FFFF0000FFFF);
-    bits = ((bits >> 32) & 0x00000000FFFFFFFF) + (bits & 0x00000000FFFFFFFF);
-    return (int)bits;
-}
-
 int hashBvNode::countBits()
 {
     int result = 0;
@@ -146,7 +123,7 @@ int hashBvNode::countBits()
     {
         elemType bits = elements[i];
 
-        result += countBitsInWord(bits);
+        result += BitOperations::PopCount(bits);
 
         result += (int)bits;
     }
@@ -622,7 +599,7 @@ void hashBv::dump()
         {
             printf(" ");
         }
-        printf("%d", index);
+        printf("%llu", (unsigned long long)index);
         first = false;
         return HbvWalk::Continue;
     });
@@ -641,11 +618,11 @@ void hashBv::dumpFancy()
         {
             if (last_0 + 1 != last_1)
             {
-                printf(" %d-%d", last_0 + 1, last_1);
+                printf(" %llu-%llu", (unsigned long long)(last_0 + 1), (unsigned long long)last_1);
             }
             else
             {
-                printf(" %d", last_1);
+                printf(" %llu", (unsigned long long)last_1);
             }
             last_0 = index - 1;
         }
@@ -657,11 +634,11 @@ void hashBv::dumpFancy()
     // Print the last one
     if (last_0 + 1 != last_1)
     {
-        printf(" %d-%d", last_0 + 1, last_1);
+        printf(" %llu-%llu", (unsigned long long)(last_0 + 1), (unsigned long long)last_1);
     }
     else
     {
-        printf(" %d", last_1);
+        printf(" %llu", (unsigned long long)last_1);
     }
 
     printf("}\n");
@@ -1820,7 +1797,7 @@ void hashBv::InorderTraverseTwo(hashBv* other, dualNodeAction a)
 #ifdef DEBUG
 void SimpleDumpNode(hashBvNode* n)
 {
-    printf("base: %d\n", n->baseIndex);
+    printf("base: %llu\n", (unsigned long long)n->baseIndex);
 }
 
 void DumpNode(hashBvNode* n)
@@ -1833,7 +1810,7 @@ void SimpleDumpDualNode(hashBv* a, hashBv* b, hashBvNode* n, hashBvNode* m)
     printf("nodes: ");
     if (n)
     {
-        printf("%d,", n->baseIndex);
+        printf("%llu,", (unsigned long long)n->baseIndex);
     }
     else
     {
@@ -1841,7 +1818,7 @@ void SimpleDumpDualNode(hashBv* a, hashBv* b, hashBvNode* n, hashBvNode* m)
     }
     if (m)
     {
-        printf("%d\n", m->baseIndex);
+        printf("%llu\n", (unsigned long long)m->baseIndex);
     }
     else
     {

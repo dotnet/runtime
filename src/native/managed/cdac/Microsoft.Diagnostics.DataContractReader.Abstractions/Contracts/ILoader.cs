@@ -6,15 +6,7 @@ using System.Collections.Generic;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-public readonly struct ModuleHandle
-{
-    public ModuleHandle(TargetPointer address)
-    {
-        Address = address;
-    }
-
-    public TargetPointer Address { get; }
-}
+public readonly record struct ModuleHandle(TargetPointer Address);
 
 [Flags]
 public enum ModuleFlags
@@ -33,6 +25,7 @@ public enum DebuggerAssemblyControlFlags : uint
     DACF_NONE = 0x00,
     DACF_ALLOW_JIT_OPTS = 0x02,
     DACF_ENC_ENABLED = 0x08,
+    DACF_IGNORE_PDBS = 0x20,
     DACF_CONTROL_FLAGS_MASK = 0x2E,
 }
 
@@ -41,6 +34,20 @@ public enum ClrModifiableAssemblies : uint
     Unset = 0,
     None = 1,
     Debug = 2,
+}
+
+public enum LoaderAllocatorHeapType
+{
+    Unknown,
+    LowFrequencyHeap,
+    HighFrequencyHeap,
+    StaticsHeap,
+    ExecutableHeap,
+    FixupPrecodeHeap,
+    NewStubPrecodeHeap,
+    DynamicHelpersStubHeap,
+    IndcellHeap,
+    CacheEntryHeap,
 }
 
 [Flags]
@@ -64,14 +71,18 @@ public enum AssemblyIterationFlags
     IncludeCollected = 0x00000080, // Include all collectible assemblies that have been collected
 }
 
-public record struct ModuleLookupTables(
-    TargetPointer FieldDefToDesc,
-    TargetPointer ManifestModuleReferences,
-    TargetPointer MemberRefToDesc,
-    TargetPointer MethodDefToDesc,
-    TargetPointer TypeDefToMethodTable,
-    TargetPointer TypeRefToMethodTable,
-    TargetPointer MethodDefToILCodeVersioningState);
+public enum ModuleLookupMapKind
+{
+    FieldDefToDesc,
+    ManifestModuleReferences,
+    MemberRefToDesc,
+    MethodDefToDesc,
+    TypeDefToMethodTable,
+    TypeRefToMethodTable,
+    MethodDefToILCodeVersioningState,
+}
+
+public readonly record struct LoaderHeapBlock(TargetPointer Address, TargetNUInt Size);
 
 public interface ILoader : IContract
 {
@@ -82,6 +93,7 @@ public interface ILoader : IContract
     IEnumerable<ModuleHandle> GetModuleHandles(TargetPointer appDomain, AssemblyIterationFlags iterationFlags) => throw new NotImplementedException();
     TargetPointer GetRootAssembly() => throw new NotImplementedException();
     string GetAppDomainFriendlyName() => throw new NotImplementedException();
+    TargetPointer GetAppDomain() => throw new NotImplementedException();
     TargetPointer GetModule(ModuleHandle handle) => throw new NotImplementedException();
     TargetPointer GetAssembly(ModuleHandle handle) => throw new NotImplementedException();
     TargetPointer GetPEAssembly(ModuleHandle handle) => throw new NotImplementedException();
@@ -95,28 +107,32 @@ public interface ILoader : IContract
     bool IsProbeExtensionResultValid(ModuleHandle handle) => throw new NotImplementedException();
     ModuleFlags GetFlags(ModuleHandle handle) => throw new NotImplementedException();
     bool IsReadyToRun(ModuleHandle handle) => throw new NotImplementedException();
-    bool TryGetSimpleName(ModuleHandle handle, out string simpleName) => throw new NotImplementedException();
+    string GetSimpleName(ModuleHandle handle) => throw new NotImplementedException();
     string GetPath(ModuleHandle handle) => throw new NotImplementedException();
     string GetFileName(ModuleHandle handle) => throw new NotImplementedException();
+    bool GetFileHeadersInfo(ModuleHandle handle, out uint timeStamp, out uint imageSize) => throw new NotImplementedException();
     TargetPointer GetLoaderAllocator(ModuleHandle handle) => throw new NotImplementedException();
     TargetPointer GetILBase(ModuleHandle handle) => throw new NotImplementedException();
     TargetPointer GetAssemblyLoadContext(ModuleHandle handle) => throw new NotImplementedException();
-    ModuleLookupTables GetLookupTables(ModuleHandle handle) => throw new NotImplementedException();
-    TargetPointer GetModuleLookupMapElement(TargetPointer table, uint token, out TargetNUInt flags) => throw new NotImplementedException();
-    IEnumerable<(TargetPointer, uint)> EnumerateModuleLookupMap(TargetPointer table) => throw new NotImplementedException();
+    TargetPointer GetModuleLookupMapBase(ModuleHandle module, ModuleLookupMapKind kind) => throw new NotImplementedException();
+    TargetPointer GetModuleLookupMapElement(ModuleHandle module, ModuleLookupMapKind kind, uint token, out TargetNUInt flags) => throw new NotImplementedException();
+    TargetPointer LookupMemberRefAsMethod(ModuleHandle handle, uint token) => throw new NotImplementedException();
+    IEnumerable<(TargetPointer Value, uint Token)> EnumerateModuleLookupMap(ModuleHandle module, ModuleLookupMapKind kind) => throw new NotImplementedException();
     bool IsCollectible(ModuleHandle handle) => throw new NotImplementedException();
     bool IsDynamic(ModuleHandle handle) => throw new NotImplementedException();
+    bool IsModuleMapped(ModuleHandle handle) => throw new NotImplementedException();
     bool IsAssemblyLoaded(ModuleHandle handle) => throw new NotImplementedException();
 
     TargetPointer GetGlobalLoaderAllocator() => throw new NotImplementedException();
     TargetPointer GetSystemAssembly() => throw new NotImplementedException();
     TargetPointer GetHighFrequencyHeap(TargetPointer loaderAllocatorPointer) => throw new NotImplementedException();
     TargetPointer GetLowFrequencyHeap(TargetPointer loaderAllocatorPointer) => throw new NotImplementedException();
-    TargetPointer GetStubHeap(TargetPointer loaderAllocatorPointer) => throw new NotImplementedException();
     TargetPointer GetILHeader(ModuleHandle handle, uint token) => throw new NotImplementedException();
     TargetPointer GetObjectHandle(TargetPointer loaderAllocatorPointer) => throw new NotImplementedException();
     TargetPointer GetDynamicIL(ModuleHandle handle, uint token) => throw new NotImplementedException();
-    IReadOnlyDictionary<string, TargetPointer> GetLoaderAllocatorHeaps(TargetPointer loaderAllocatorPointer) => throw new NotImplementedException();
+
+    IEnumerable<LoaderHeapBlock> EnumerateLoaderHeapBlocks(TargetPointer loaderHeap) => throw new NotImplementedException();
+    IReadOnlyDictionary<LoaderAllocatorHeapType, TargetPointer> GetLoaderAllocatorHeaps(TargetPointer loaderAllocatorPointer) => throw new NotImplementedException();
 
     DebuggerAssemblyControlFlags GetDebuggerInfoBits(ModuleHandle handle) => throw new NotImplementedException();
     void SetDebuggerInfoBits(ModuleHandle handle, DebuggerAssemblyControlFlags newBits) => throw new NotImplementedException();

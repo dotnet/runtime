@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
-using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.IO.Compression
@@ -25,7 +24,7 @@ namespace System.IO.Compression
                 _encoder.Flush(destination, out bytesWritten);
 
             public override void Dispose() => _encoder.Dispose();
-            public override void Reset() => throw new NotSupportedException();
+            public override void Reset() => _encoder.Reset();
         }
 
         public class DeflateDecoderAdapter : DecoderAdapter
@@ -41,7 +40,7 @@ namespace System.IO.Compression
                 _decoder.Decompress(source, destination, out bytesConsumed, out bytesWritten);
 
             public override void Dispose() => _decoder.Dispose();
-            public override void Reset() => throw new NotSupportedException();
+            public override void Reset() => _decoder.Reset();
         }
 
         protected override EncoderAdapter CreateEncoder() =>
@@ -67,30 +66,5 @@ namespace System.IO.Compression
 
         protected override long GetMaxCompressedLength(long inputSize) =>
             DeflateEncoder.GetMaxCompressedLength(inputSize);
-
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-        [InlineData(0u)]
-        [InlineData(1u)]
-        [InlineData(8u)]
-        [InlineData(9u)]
-        [InlineData(100u)]
-        [InlineData(1_000u)]
-        [InlineData(10_000u)]
-        [InlineData(100_000u)]
-        [InlineData(1_000_000u)]
-        [InlineData(10_000_000u)]
-        [InlineData(100_000_000u)]
-        [InlineData(1_000_000_000u)]
-        [InlineData((uint)int.MaxValue)]
-        public void GetMaxCompressedLength_MatchesNativeCompressBound(uint inputLength)
-        {
-            long managed = DeflateEncoder.GetMaxCompressedLength(inputLength);
-            long native = (long)NativeCompressBound(inputLength);
-
-            Assert.Equal(native, managed);
-        }
-
-        [LibraryImport("System.IO.Compression.Native", EntryPoint = "CompressionNative_CompressBound")]
-        private static partial uint NativeCompressBound(uint sourceLen);
     }
 }

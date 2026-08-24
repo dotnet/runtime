@@ -56,7 +56,7 @@ public:
     BOOL IsFieldCall()
     {
         LIMITED_METHOD_CONTRACT;
-        return (m_flags & enum_IsFieldCall);
+        return m_flags & enum_IsFieldCall;
     }
 
     BOOL IsMethodCall()
@@ -68,16 +68,16 @@ public:
     // is field getter
     BOOL IsFieldGetter()
     {
-        CONTRACT (BOOL)
+        CONTRACTL
         {
             NOTHROW;
             GC_NOTRIGGER;
             MODE_ANY;
             PRECONDITION(IsFieldCall());
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
-        RETURN (m_flags & enum_IsGetter);
+        return m_flags & enum_IsGetter;
     }
 
     BOOL IsNativeR4RetVal()
@@ -137,35 +137,33 @@ public:
     // get method desc
     MethodDesc* GetMethodDesc()
     {
-        CONTRACT (MethodDesc*)
+        CONTRACTL
         {
             NOTHROW;
             GC_NOTRIGGER;
             MODE_ANY;
             PRECONDITION(!IsFieldCall());
             PRECONDITION(CheckPointer(m_pMD));
-            POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
-        RETURN m_pMD;
+        return m_pMD;
     }
 
     // get interface method desc
     MethodDesc* GetInterfaceMethodDesc()
     {
-        CONTRACT (MethodDesc *)
+        CONTRACTL
         {
             NOTHROW;
             GC_NOTRIGGER;
             MODE_ANY;
             PRECONDITION(!IsFieldCall());
-            POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
             SUPPORTS_DAC;
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
-        RETURN m_pInterfaceMD;
+        return m_pInterfaceMD;
     }
 
     // get interface method desc if non-NULL, class method desc otherwise
@@ -184,18 +182,17 @@ public:
     // get field desc
     FieldDesc* GetFieldDesc()
     {
-        CONTRACT (FieldDesc*)
+        CONTRACTL
         {
             NOTHROW;
             GC_NOTRIGGER;
             MODE_ANY;
             PRECONDITION(IsFieldCall());
             PRECONDITION(CheckPointer(m_pFD));
-            POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
-        RETURN m_pFD;
+        return m_pFD;
     }
 
     // get module
@@ -216,7 +213,7 @@ public:
     // get slot number for the method
     unsigned GetSlot()
     {
-        CONTRACT (unsigned)
+        CONTRACTL
         {
             NOTHROW;
             GC_NOTRIGGER;
@@ -224,39 +221,23 @@ public:
             PRECONDITION(IsMethodCall());
             PRECONDITION(CheckPointer(m_pMD));
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
-        RETURN m_pMD->GetSlot();
+        return m_pMD->GetSlot();
     }
 
-    // get num stack bytes to pop
-    UINT16 GetNumStackBytes()
+    //get call sig
+    PCCOR_SIGNATURE GetSig(DWORD *pcbSigSize = NULL)
     {
         CONTRACTL
         {
             NOTHROW;
             GC_NOTRIGGER;
             MODE_ANY;
-            PRECONDITION(m_flags & enum_NativeInfoInitialized);
-            SUPPORTS_DAC;
-        }
-        CONTRACTL_END;
-
-        return m_StackBytes;
-    }
-
-    //get call sig
-    PCCOR_SIGNATURE GetSig(DWORD *pcbSigSize = NULL)
-    {
-        CONTRACT (PCCOR_SIGNATURE)
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            MODE_ANY;
             PRECONDITION(IsMethodCall());
             PRECONDITION(CheckPointer(m_pMD));
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
         PCCOR_SIGNATURE pSig;
         DWORD cbSigSize;
@@ -268,7 +249,7 @@ public:
             *pcbSigSize = cbSigSize;
         }
 
-        RETURN pSig;
+        return pSig;
     }
 
     PCODE CreateCOMToCLRStub(DWORD dwStubFlags, MethodDesc **ppStubMD);
@@ -292,29 +273,27 @@ private:
 
     PCODE m_pILStub;        // IL stub for COM to CLR call, invokes GetCallMethodDesc()
 
-    // Platform specific data needed for efficient IL stub invocation:
 #ifdef TARGET_X86
-    union
-    {
-        struct
-        {
-            // Index of the stack slot that gets stuffed into EDX when calling the stub.
-            UINT16  m_wSourceSlotEDX;
-
-            // Number of stack slots expected by the IL stub.
-            UINT16  m_wStubStackSlotCount;
-        };
-        // Combination of m_wSourceSlotEDX and m_wStubStackSlotCount for atomic updates.
-        UINT32 m_dwSlotInfo;
-    };
-
-    // This is an array of m_wStubStackSlotCount numbers where each element is the offset
-    // on the source stack where the particular stub stack slot should be copied from.
-    UINT16  *m_pwStubStackSlotOffsets;
-#endif // TARGET_X86
-
     // Number of stack bytes pushed by the unmanaged caller.
     UINT16  m_StackBytes;
+
+public:
+    // get num stack bytes to pop
+    UINT16 GetNumStackBytes()
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_NOTRIGGER;
+            MODE_ANY;
+            PRECONDITION(m_flags & enum_NativeInfoInitialized);
+            SUPPORTS_DAC;
+        }
+        CONTRACTL_END;
+
+        return m_StackBytes;
+    }
+#endif // TARGET_X86
 };
 
 extern "C" void ComCallPreStub();

@@ -70,8 +70,12 @@ export interface DotnetHostBuilder {
     withResourceLoader(loadBootResource?: LoadBootResourceCallback): DotnetHostBuilder;
     /**
      * Downloads all the assets but doesn't create the runtime instance.
+     * @param httpCacheOnly If true, resources are only fetched into the browser HTTP cache
+     *   and discarded. A subsequent create() call will re-fetch from cache and do full init.
+     *   If false (default), resources are downloaded and loaded into WASM memory, so that
+     *   a subsequent create() call only needs to initialize the managed runtime.
      */
-    download(): Promise<void>;
+    download(httpCacheOnly?: boolean): Promise<void>;
     /**
      * Starts the runtime and returns promise of the API object.
      */
@@ -205,7 +209,6 @@ export interface Assets {
     lazyAssembly?: AssemblyAsset[];
     corePdb?: PdbAsset[];
     pdb?: PdbAsset[];
-    jsModuleWorker?: JsAsset[];
     jsModuleDiagnostics?: JsAsset[];
     jsModuleNative: JsAsset[];
     jsModuleRuntime: JsAsset[];
@@ -218,7 +221,6 @@ export interface Assets {
     modulesAfterConfigLoaded?: JsAsset[];
     modulesAfterRuntimeReady?: JsAsset[];
     extensions?: ResourceExtensions;
-    coreVfs?: VfsAsset[];
     vfs?: VfsAsset[];
 }
 export type Asset = {
@@ -249,6 +251,20 @@ export type AssemblyAsset = Asset & {
     virtualPath: string;
     name: string;
     hash?: string | null | "";
+};
+export type WebcilAsset = AssemblyAsset & {
+    /**
+     * The size in bytes of the Webcil payload to allocate. Present for every Webcil-in-wasm
+     * assembly; the runtime uses it to instantiate the image without buffering its bytes or parsing
+     * the wasm data section.
+     */
+    payloadSize?: number;
+    /**
+     * For ReadyToRun (R2R) webcil-in-wasm images only: the number of table entries the module needs.
+     * The runtime grows the indirect-call table by this amount before instantiation. Absent for
+     * plain (non-R2R) webcil.
+     */
+    tableSize?: number;
 };
 export type PdbAsset = Asset & {
     virtualPath: string;
@@ -356,10 +372,6 @@ export type SingleAssetBehaviors =
      * The javascript module for loader.
      */
     | "js-module-dotnet"
-    /**
-     * The javascript module for threads.
-     */
-    | "js-module-threads"
     /**
      * The javascript module for diagnostic server and client.
      */

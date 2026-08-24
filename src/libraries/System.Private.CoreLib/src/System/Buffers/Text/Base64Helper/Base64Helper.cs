@@ -13,10 +13,9 @@ namespace System.Buffers.Text
     internal static partial class Base64Helper
     {
         [Conditional("DEBUG")]
-        [RequiresUnsafe]
         internal static unsafe void AssertRead<TVector>(byte* src, byte* srcStart, int srcLength)
         {
-            int vectorElements = Unsafe.SizeOf<TVector>();
+            int vectorElements = sizeof(TVector);
             byte* readEnd = src + vectorElements;
             byte* srcEnd = srcStart + srcLength;
 
@@ -28,10 +27,9 @@ namespace System.Buffers.Text
         }
 
         [Conditional("DEBUG")]
-        [RequiresUnsafe]
         internal static unsafe void AssertWrite<TVector>(byte* dest, byte* destStart, int destLength)
         {
-            int vectorElements = Unsafe.SizeOf<TVector>();
+            int vectorElements = sizeof(TVector);
             byte* writeEnd = dest + vectorElements;
             byte* destEnd = destStart + destLength;
 
@@ -43,10 +41,9 @@ namespace System.Buffers.Text
         }
 
         [Conditional("DEBUG")]
-        [RequiresUnsafe]
         internal static unsafe void AssertRead<TVector>(ushort* src, ushort* srcStart, int srcLength)
         {
-            int vectorElements = Unsafe.SizeOf<TVector>();
+            int vectorElements = sizeof(TVector);
             ushort* readEnd = src + vectorElements;
             ushort* srcEnd = srcStart + srcLength;
 
@@ -58,10 +55,9 @@ namespace System.Buffers.Text
         }
 
         [Conditional("DEBUG")]
-        [RequiresUnsafe]
         internal static unsafe void AssertWrite<TVector>(ushort* dest, ushort* destStart, int destLength)
         {
-            int vectorElements = Unsafe.SizeOf<TVector>();
+            int vectorElements = sizeof(TVector);
             ushort* writeEnd = dest + vectorElements;
             ushort* destEnd = destStart + destLength;
 
@@ -71,96 +67,6 @@ namespace System.Buffers.Text
                 Debug.Fail($"Write for {typeof(TVector)} is not within safe bounds. destIndex: {destIndex}, destLength: {destLength}");
             }
         }
-
-#if NET8_0
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool VectorContainsNonAsciiChar(Vector128<ushort> utf16Vector)
-        {
-            // prefer architecture specific intrinsic as they offer better perf
-            if (Sse2.IsSupported)
-            {
-                if (Sse41.IsSupported)
-                {
-                    Vector128<ushort> asciiMaskForTestZ = Vector128.Create((ushort)0xFF80);
-                    // If a non-ASCII bit is set in any WORD of the vector, we have seen non-ASCII data.
-                    return !Sse41.TestZ(utf16Vector.AsInt16(), asciiMaskForTestZ.AsInt16());
-                }
-                else
-                {
-                    Vector128<ushort> asciiMaskForAddSaturate = Vector128.Create((ushort)0x7F80);
-                    // The operation below forces the 0x8000 bit of each WORD to be set iff the WORD element
-                    // has value >= 0x0800 (non-ASCII). Then we'll treat the vector as a BYTE vector in order
-                    // to extract the mask. Reminder: the 0x0080 bit of each WORD should be ignored.
-                    return (Sse2.MoveMask(Sse2.AddSaturate(utf16Vector, asciiMaskForAddSaturate).AsByte()) & 0b_1010_1010_1010_1010) != 0;
-                }
-            }
-            else if (AdvSimd.Arm64.IsSupported)
-            {
-                // First we pick four chars, a larger one from all four pairs of adjecent chars in the vector.
-                // If any of those four chars has a non-ASCII bit set, we have seen non-ASCII data.
-                Vector128<ushort> maxChars = AdvSimd.Arm64.MaxPairwise(utf16Vector, utf16Vector);
-                return (maxChars.AsUInt64().ToScalar() & 0xFF80FF80FF80FF80) != 0;
-            }
-            else
-            {
-                const ushort asciiMask = ushort.MaxValue - 127; // 0xFF80
-                Vector128<ushort> zeroIsAscii = utf16Vector & Vector128.Create(asciiMask);
-                // If a non-ASCII bit is set in any WORD of the vector, we have seen non-ASCII data.
-                return zeroIsAscii != Vector128<ushort>.Zero;
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static Vector128<byte> ExtractAsciiVector(Vector128<ushort> vectorFirst, Vector128<ushort> vectorSecond)
-        {
-            // Narrows two vectors of words [ w7 w6 w5 w4 w3 w2 w1 w0 ] and [ w7' w6' w5' w4' w3' w2' w1' w0' ]
-            // to a vector of bytes [ b7 ... b0 b7' ... b0'].
-
-            // prefer architecture specific intrinsic as they don't perform additional AND like Vector128.Narrow does
-            if (Sse2.IsSupported)
-            {
-                return Sse2.PackUnsignedSaturate(vectorFirst.AsInt16(), vectorSecond.AsInt16());
-            }
-            else if (AdvSimd.Arm64.IsSupported)
-            {
-                return AdvSimd.Arm64.UnzipEven(vectorFirst.AsByte(), vectorSecond.AsByte());
-            }
-            else if (PackedSimd.IsSupported)
-            {
-                return PackedSimd.ConvertNarrowingSaturateUnsigned(vectorFirst.AsInt16(), vectorSecond.AsInt16());
-            }
-            else
-            {
-                return Vector128.Narrow(vectorFirst, vectorSecond);
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool VectorContainsNonAsciiChar(Vector256<ushort> utf16Vector)
-        {
-            if (Avx.IsSupported)
-            {
-                Vector256<ushort> asciiMaskForTestZ = Vector256.Create((ushort)0xFF80);
-                return !Avx.TestZ(utf16Vector.AsInt16(), asciiMaskForTestZ.AsInt16());
-            }
-            else
-            {
-                const ushort asciiMask = ushort.MaxValue - 127; // 0xFF80
-                Vector256<ushort> zeroIsAscii = utf16Vector & Vector256.Create(asciiMask);
-                // If a non-ASCII bit is set in any WORD of the vector, we have seen non-ASCII data.
-                return zeroIsAscii != Vector256<ushort>.Zero;
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool VectorContainsNonAsciiChar(Vector512<ushort> utf16Vector)
-        {
-            const ushort asciiMask = ushort.MaxValue - 127; // 0xFF80
-            Vector512<ushort> zeroIsAscii = utf16Vector & Vector512.Create(asciiMask);
-            // If a non-ASCII bit is set in any WORD of the vector, we have seen non-ASCII data.
-            return zeroIsAscii != Vector512<ushort>.Zero;
-        }
-#endif
 
         [DoesNotReturn]
         internal static void ThrowUnreachableException()
@@ -182,22 +88,15 @@ namespace System.Buffers.Text
             int GetMaxSrcLength(int srcLength, int destLength);
             int GetMaxEncodedLength(int srcLength);
             uint GetInPlaceDestinationLength(int encodedLength, int leftOver);
-            [RequiresUnsafe]
             unsafe void EncodeOneOptionallyPadTwo(byte* oneByte, T* dest, ref byte encodingMap);
-            [RequiresUnsafe]
             unsafe void EncodeTwoOptionallyPadOne(byte* oneByte, T* dest, ref byte encodingMap);
-            [RequiresUnsafe]
             unsafe void EncodeThreeAndWrite(byte* threeBytes, T* destination, ref byte encodingMap);
             int IncrementPadTwo { get; }
             int IncrementPadOne { get; }
 #if NET
-            [RequiresUnsafe]
             unsafe void StoreVector512ToDestination(T* dest, T* destStart, int destLength, Vector512<byte> str);
-            [RequiresUnsafe]
             unsafe void StoreVector256ToDestination(T* dest, T* destStart, int destLength, Vector256<byte> str);
-            [RequiresUnsafe]
             unsafe void StoreVector128ToDestination(T* dest, T* destStart, int destLength, Vector128<byte> str);
-            [RequiresUnsafe]
             unsafe void StoreArmVector128x4ToDestination(T* dest, T* destStart, int destLength, Vector128<byte> res1,
                 Vector128<byte> res2, Vector128<byte> res3, Vector128<byte> res4);
 #endif // NET
@@ -241,19 +140,13 @@ namespace System.Buffers.Text
                 Vector256<sbyte> lutShift,
                 Vector256<sbyte> shiftForUnderscore,
                 out Vector256<sbyte> result);
-            [RequiresUnsafe]
             unsafe bool TryLoadVector512(T* src, T* srcStart, int sourceLength, out Vector512<sbyte> str);
-            [RequiresUnsafe]
             unsafe bool TryLoadAvxVector256(T* src, T* srcStart, int sourceLength, out Vector256<sbyte> str);
-            [RequiresUnsafe]
             unsafe bool TryLoadVector128(T* src, T* srcStart, int sourceLength, out Vector128<byte> str);
-            [RequiresUnsafe]
             unsafe bool TryLoadArmVector128x4(T* src, T* srcStart, int sourceLength,
                 out Vector128<byte> str1, out Vector128<byte> str2, out Vector128<byte> str3, out Vector128<byte> str4);
 #endif // NET
-            [RequiresUnsafe]
             unsafe int DecodeFourElements(T* source, ref sbyte decodingMap);
-            [RequiresUnsafe]
             unsafe int DecodeRemaining(T* srcEnd, ref sbyte decodingMap, long remaining, out uint t2, out uint t3);
             int IndexOfAnyExceptWhiteSpace(ReadOnlySpan<T> span);
             OperationStatus DecodeWithWhiteSpaceBlockwiseWrapper<TTBase64Decoder>(TTBase64Decoder decoder, ReadOnlySpan<T> source,

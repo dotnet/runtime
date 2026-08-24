@@ -10,8 +10,8 @@ using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using ILVerify;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Mono.Linker.Tests.Extensions;
+using Xunit;
 
 namespace Mono.Linker.Tests.TestCasesRunner.ILVerification;
 

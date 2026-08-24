@@ -110,12 +110,14 @@
 #endif // !TARGET_UNIX
 
 #define BEGIN_QCALL                      \
+    INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(GetThread()->GetFrame()) \
     INSTALL_MANAGED_EXCEPTION_DISPATCHER \
     INSTALL_UNWIND_AND_CONTINUE_HANDLER
 
 #define END_QCALL                         \
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER \
-    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER
+    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER \
+    UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME
 
 #define QCALL_CHECK             \
     THROWS;                     \
@@ -194,10 +196,22 @@ public:
     {
         Object** m_ppObject;
 
+        bool IsNull() const
+        {
+            LIMITED_METHOD_CONTRACT;
+            return *m_ppObject == NULL;
+        }
+
         OBJECTREF Get()
         {
             LIMITED_METHOD_CONTRACT;
             return ObjectToOBJECTREF(*m_ppObject);
+        }
+
+        Object** GetObjectPointer() const
+        {
+            LIMITED_METHOD_CONTRACT;
+            return m_ppObject;
         }
 
 #ifndef DACCESS_COMPILE

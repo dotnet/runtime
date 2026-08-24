@@ -147,7 +147,6 @@
 #include "eventtrace.h"
 #include "corhost.h"
 #include "binder.h"
-#include "olevariant.h"
 #include "comcallablewrapper.h"
 #include "../dlls/mscorrc/resource.h"
 #include "util.hpp"
@@ -176,6 +175,10 @@
 
 #include "stringarraylist.h"
 #include "stubhelpers.h"
+#include "pregeneratedstringthunks.h"
+#ifdef TARGET_WASM
+#include "wasm/helpers.hpp"
+#endif
 
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
@@ -191,9 +194,7 @@
 #include "profilinghelper.h"
 #endif // PROFILING_SUPPORTED
 
-#ifdef FEATURE_PERFMAP
 #include "perfmap.h"
-#endif
 
 #include "diagnosticserveradapter.h"
 #include "eventpipeadapter.h"
@@ -206,6 +207,10 @@
 #ifdef FEATURE_GDBJIT
 #include "gdbjit.h"
 #endif // FEATURE_GDBJIT
+
+#ifdef FEATURE_INPROC_CRASHREPORT
+#include "crashreportstackwalker.h"
+#endif // FEATURE_INPROC_CRASHREPORT
 
 #include "genanalysis.h"
 
@@ -674,6 +679,16 @@ void EEStartupHelper()
         OnStackReplacementManager::StaticInitialize();
         MethodTable::InitMethodDataCache();
 
+        InitializePregeneratedStringThunkHash();
+
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        InitializePendingThunkResolutionLock();
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+
+#ifdef TARGET_WASM
+        InitializeWasmThunkCaches();
+#endif // TARGET_WASM
+
 #ifdef TARGET_UNIX
         ExecutableAllocator::InitPreferredRange();
 #else
@@ -699,9 +714,13 @@ void EEStartupHelper()
         PAL_SetShutdownCallback(EESocketCleanupHelper);
 #endif // TARGET_UNIX
 
-#ifdef HOST_ANDROID
+#if defined(HOST_ANDROID) || defined(HOST_IOS) || defined(HOST_TVOS) || defined(HOST_MACCATALYST)
         PAL_SetLogManagedCallstackForSignalCallback(EEPolicy::LogManagedCallstackForSignal);
-#endif // HOST_ANDROID
+#endif
+
+#ifdef FEATURE_INPROC_CRASHREPORT
+        CrashReportConfigure();
+#endif // FEATURE_INPROC_CRASHREPORT
 
 #ifdef STRESS_LOG
         if (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_StressLog, g_pConfig->StressLog()) != 0) {
@@ -756,8 +775,6 @@ void EEStartupHelper()
 #ifndef TARGET_UNIX
         IfFailGoLog(EnsureRtlFunctions());
 #endif // !TARGET_UNIX
-
-        UnwindInfoTable::Initialize();
 
         // Fire the runtime information ETW event
         ETW::InfoLog::RuntimeInformation(ETW::InfoLog::InfoStructs::Normal);
@@ -960,17 +977,16 @@ void EEStartupHelper()
         // This should be done before assemblies/modules are loaded into it (i.e. SystemDomain::Init)
         // and after its OK to switch GC modes and synchronize for sending events to the debugger.
         // @dbgtodo  synchronization: this can probably be simplified in V3
-        LOG((LF_CORDB | LF_SYNC | LF_STARTUP, LL_INFO1000, "EEStartup: adding default domain 0x%x\n",
+        LOG((LF_CORDB | LF_SYNC | LF_STARTUP, LL_INFO1000, "EEStartup: adding default domain %p\n",
              SystemDomain::System()->DefaultDomain()));
         SystemDomain::System()->PublishAppDomainAndInformDebugger(SystemDomain::System()->DefaultDomain());
 #endif
 
 #ifdef HAVE_GCCOVER
         MethodDesc::Init();
-        if (CdacStress::IsEnabled())
-        {
-            CdacStress::Initialize();
-        }
+#endif
+#ifdef CDAC_STRESS
+        CdacStressPolicy::Initialize();
 #endif
 
         Assembly::Initialize();
@@ -997,8 +1013,8 @@ void EEStartupHelper()
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
         // retrieve configured max size for the mini-metadata buffer (defaults to 64KB)
         g_MiniMetaDataBuffMaxSize = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_MiniMdBufferCapacity);
-        // align up to GetOsPageSize(), with a maximum of 1 MB
-        g_MiniMetaDataBuffMaxSize = (DWORD) min(ALIGN_UP(g_MiniMetaDataBuffMaxSize, GetOsPageSize()), (DWORD)(1024 * 1024));
+        // align up to minipal_getpagesize(), with a maximum of 1 MB
+        g_MiniMetaDataBuffMaxSize = (DWORD) min(ALIGN_UP(g_MiniMetaDataBuffMaxSize, minipal_getpagesize()), (DWORD)(1024 * 1024));
         // allocate the buffer. this is never touched while the process is running, so it doesn't
         // contribute to the process' working set. it is needed only as a "shadow" for a mini-metadata
         // buffer that will be set up and reported / updated in the Watson process (the
@@ -1252,8 +1268,8 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
         // Indicate the EE is the shut down phase.
         InterlockedOr((LONG*)&g_fEEShutDown, ShutDown_Start);
 
-#ifdef HAVE_GCCOVER
-        CdacStress::Shutdown();
+#ifdef CDAC_STRESS
+        CdacStressPolicy::Shutdown();
 #endif
 
         if (!IsAtProcessExit() && !g_fFastExitProcess)
@@ -1985,7 +2001,6 @@ void ContractRegressionCheckInner()
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         LOADS_TYPE(CLASS_LOAD_BEGIN);
         CANNOT_TAKE_LOCK;
     }
@@ -2019,13 +2034,11 @@ void ContractRegressionCheck()
         // B#564831 (which left a huge swath of contracts silently disabled for over six months)
         PERMANENT_CONTRACT_VIOLATION(ThrowsViolation
                                    | GCViolation
-                                   | FaultViolation
                                    | LoadsTypeViolation
                                    | TakesLockViolation
                                    , ReasonContractInfrastructure
                                     );
         {
-            FAULT_NOT_FATAL();
             ContractRegressionCheckInner();
         }
     }

@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
@@ -142,7 +142,7 @@ namespace System.IO
         /// Writes a rune to the text stream.
         /// </summary>
         /// <param name="value">The rune to write to the text stream.</param>
-        public virtual void Write(Rune value)
+        public virtual unsafe void Write(Rune value)
         {
             // Convert value to span
             ReadOnlySpan<char> valueChars = value.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
@@ -377,7 +377,7 @@ namespace System.IO
         /// Writes a rune followed by a line terminator to the text stream.
         /// </summary>
         /// <param name="value">The rune to write to the text stream.</param>
-        public virtual void WriteLine(Rune value)
+        public virtual unsafe void WriteLine(Rune value)
         {
             // Convert value to span
             ReadOnlySpan<char> valueChars = value.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
@@ -597,7 +597,7 @@ namespace System.IO
         /// </summary>
         /// <param name="value">The rune to write to the text stream.</param>
         /// <returns>A task that represents the asynchronous write operation.</returns>
-        public virtual Task WriteAsync(Rune value)
+        public virtual unsafe Task WriteAsync(Rune value)
         {
             ReadOnlySpan<char> valueChars = value.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
 
@@ -691,7 +691,7 @@ namespace System.IO
         /// </summary>
         /// <param name="value">The rune to write to the text stream.</param>
         /// <returns>A task that represents the asynchronous write operation.</returns>
-        public virtual Task WriteLineAsync(Rune value)
+        public virtual unsafe Task WriteLineAsync(Rune value)
         {
             ReadOnlySpan<char> valueChars = value.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
 

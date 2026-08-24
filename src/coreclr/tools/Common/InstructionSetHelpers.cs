@@ -11,6 +11,7 @@ using ILCompiler;
 using Internal.TypeSystem;
 
 using InstructionSet = Internal.JitInterface.InstructionSet;
+using InstructionSetFlags = Internal.JitInterface.InstructionSetFlags;
 
 namespace System.CommandLine
 {
@@ -31,7 +32,10 @@ namespace System.CommandLine
 
             if ((targetArchitecture == TargetArchitecture.X86) || (targetArchitecture == TargetArchitecture.X64))
             {
-                if (isReadyToRun && targetOS != TargetOS.OSX && targetOS != TargetOS.MacCatalyst)
+                bool isAppleOS = targetOS is TargetOS.OSX or TargetOS.MacCatalyst
+                    or TargetOS.iOSSimulator or TargetOS.tvOSSimulator;
+
+                if (isReadyToRun && !isAppleOS)
                 {
                     // ReadyToRun can presume AVX2, BMI1, BMI2, F16C, FMA, LZCNT, and MOVBE
                     instructionSetSupportBuilder.AddSupportedInstructionSet("x86-64-v3");
@@ -83,13 +87,12 @@ namespace System.CommandLine
                 {
                     // We require armv8-a everywhere
                     instructionSetSupportBuilder.AddSupportedInstructionSet("armv8-a");
-
-                    if (targetOS == TargetOS.Windows)
-                    {
-                        // However, Windows also requires LSE
-                        instructionSetSupportBuilder.AddSupportedInstructionSet("lse");
-                    }
                 }
+            }
+            else if (targetArchitecture == TargetArchitecture.Wasm32)
+            {
+                instructionSetSupportBuilder.AddSupportedInstructionSet("base");
+                instructionSetSupportBuilder.AddSupportedInstructionSet("simd128");
             }
 
             bool throttleAvx512 = false;
@@ -282,6 +285,7 @@ namespace System.CommandLine
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx10v1");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx10v2");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avxvnniint_v512");
+                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avxvnni_v512");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx512vp2intersect");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("aes_v512");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("gfni_v512");
@@ -343,6 +347,36 @@ namespace System.CommandLine
                 optimisticInstructionSet,
                 InstructionSetSupportBuilder.GetNonSpecifiableInstructionSetsForArch(targetArchitecture),
                 targetArchitecture);
+        }
+
+        // Produces an InstructionSetSupport where the instruction sets are fixed at compile time: every
+        // specifiable instruction set that is not already supported is marked explicitly unsupported, and the
+        // supported sets are also treated as optimistic. This is used for targets without runtime code generation
+        // (for example Apple mobile and WASM), where the pre-compiled code must hard code its ISA usage because
+        // there is no JIT to recover from an instruction set mismatch.
+        public static InstructionSetSupport GetFixedInstructionSetSupport(InstructionSetSupport instructionSetSupport)
+        {
+            InstructionSetFlags unsupportedInstructionSets = instructionSetSupport.ExplicitlyUnsupportedFlags;
+            foreach (var instructionSetInfo in InstructionSetFlags.ArchitectureToValidInstructionSets(instructionSetSupport.Architecture))
+            {
+                if (instructionSetInfo.Specifiable &&
+                    !instructionSetSupport.IsInstructionSetSupported(instructionSetInfo.InstructionSet))
+                {
+                    unsupportedInstructionSets.AddInstructionSet(instructionSetInfo.InstructionSet);
+                }
+            }
+            unsupportedInstructionSets.ExpandInstructionSetByReverseImplication(instructionSetSupport.Architecture);
+            unsupportedInstructionSets.Set64BitInstructionSetVariants(instructionSetSupport.Architecture);
+
+            if (instructionSetSupport.Architecture is TargetArchitecture.X86 or TargetArchitecture.ARM)
+                unsupportedInstructionSets.Set64BitInstructionSetVariantsUnconditionally(instructionSetSupport.Architecture);
+
+            return new InstructionSetSupport(
+                instructionSetSupport.SupportedFlags,
+                unsupportedInstructionSets,
+                instructionSetSupport.SupportedFlags,
+                instructionSetSupport.NonSpecifiableFlags,
+                instructionSetSupport.Architecture);
         }
     }
 }

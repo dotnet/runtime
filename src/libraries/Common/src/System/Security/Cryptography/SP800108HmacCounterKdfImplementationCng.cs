@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -85,7 +85,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        internal override void DeriveBytes(ReadOnlySpan<char> label, ReadOnlySpan<char> context, Span<byte> destination)
+        internal override unsafe void DeriveBytes(ReadOnlySpan<char> label, ReadOnlySpan<char> context, Span<byte> destination)
         {
             using (Utf8DataEncoding labelData = new Utf8DataEncoding(label, stackalloc byte[CharToBytesStackBufferSize]))
             using (Utf8DataEncoding contextData = new Utf8DataEncoding(context, stackalloc byte[CharToBytesStackBufferSize]))
@@ -109,7 +109,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        internal static void DeriveBytesOneShot(
+        internal static unsafe void DeriveBytesOneShot(
             ReadOnlySpan<byte> key,
             HashAlgorithmName hashAlgorithm,
             ReadOnlySpan<char> label,

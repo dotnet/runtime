@@ -99,7 +99,7 @@ namespace System.Runtime.InteropServices
         /// </remarks>
         private static unsafe T ReadValueSlow<T>(object ptr, int ofs, Func<IntPtr, int, T> readValueHelper)
         {
-            // Consumers of this method are documented to throw AccessViolationException on any AV
+            // Compatibility: null input to these obsolete APIs throws AccessViolationException.
             if (ptr is null)
             {
                 throw new AccessViolationException();
@@ -110,8 +110,7 @@ namespace System.Runtime.InteropServices
                 (int)AsAnyMarshaler.AsAnyFlags.IsAnsi |
                 (int)AsAnyMarshaler.AsAnyFlags.IsBestFit;
 
-            MngdNativeArrayMarshaler.MarshalerState nativeArrayMarshalerState = default;
-            AsAnyMarshaler marshaler = new AsAnyMarshaler(new IntPtr(&nativeArrayMarshalerState));
+            AsAnyMarshaler marshaler = new(ptr, Flags);
 
             IntPtr pNativeHome = IntPtr.Zero;
 
@@ -165,7 +164,7 @@ namespace System.Runtime.InteropServices
         /// </summary>
         private static unsafe void WriteValueSlow<T>(object ptr, int ofs, T val, Action<IntPtr, int, T> writeValueHelper)
         {
-            // Consumers of this method are documented to throw AccessViolationException on any AV
+            // Compatibility: null input to these obsolete APIs throws AccessViolationException.
             if (ptr is null)
             {
                 throw new AccessViolationException();
@@ -177,8 +176,7 @@ namespace System.Runtime.InteropServices
                 (int)AsAnyMarshaler.AsAnyFlags.IsAnsi |
                 (int)AsAnyMarshaler.AsAnyFlags.IsBestFit;
 
-            MngdNativeArrayMarshaler.MarshalerState nativeArrayMarshalerState = default;
-            AsAnyMarshaler marshaler = new AsAnyMarshaler(new IntPtr(&nativeArrayMarshalerState));
+            AsAnyMarshaler marshaler = new(ptr, Flags);
 
             IntPtr pNativeHome = IntPtr.Zero;
 
@@ -202,15 +200,17 @@ namespace System.Runtime.InteropServices
         /// The last platform invoke error corresponds to the error set by either the most recent platform
         /// invoke that was configured to set the last error or a call to <see cref="SetLastPInvokeError(int)" />.
         /// </remarks>
+        /// <safety>Reads the current thread's last platform-invoke error code and returns it by value; it takes no arguments and dereferences no caller-supplied memory.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern int GetLastPInvokeError();
+        public static extern safe int GetLastPInvokeError();
 
         /// <summary>
         /// Set the last platform invoke error on the current thread
         /// </summary>
         /// <param name="error">Error to set</param>
+        /// <safety>Stores the supplied error code into the current thread's platform-invoke error state; it takes only an integer value and dereferences no memory.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void SetLastPInvokeError(int error);
+        public static extern safe void SetLastPInvokeError(int error);
 
         private static void PrelinkCore(MethodInfo m)
         {
@@ -219,7 +219,7 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentException(SR.Argument_MustBeRuntimeMethodInfo, nameof(m));
             }
 
-            InternalPrelink(((IRuntimeMethodInfo)rmi).Value);
+            InternalPrelink(IRuntimeMethodInfo.GetValue(rmi));
             GC.KeepAlive(rmi);
         }
 
@@ -229,10 +229,11 @@ namespace System.Runtime.InteropServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern /* struct _EXCEPTION_POINTERS* */ IntPtr GetExceptionPointers();
 
+        /// <safety>Returns the current structured-exception code as an integer computed by the runtime; it takes no arguments and dereferences no caller-supplied memory.</safety>
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("GetExceptionCode() may be unavailable in future releases.")]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern int GetExceptionCode();
+        public static extern safe int GetExceptionCode();
 
         internal sealed class LayoutTypeMarshalerMethods : RuntimeType.IGenericCacheEntry<LayoutTypeMarshalerMethods>
         {
@@ -240,22 +241,22 @@ namespace System.Runtime.InteropServices
             private static MemberInfo ConvertToManagedMethod => field ??= typeof(BoxedLayoutTypeMarshaler<>).GetMethod(nameof(BoxedLayoutTypeMarshaler<object>.ConvertToManaged), BindingFlags.Public | BindingFlags.Static)!;
             private static MemberInfo FreeMethod => field ??= typeof(BoxedLayoutTypeMarshaler<>).GetMethod(nameof(BoxedLayoutTypeMarshaler<object>.Free), BindingFlags.Public | BindingFlags.Static)!;
 
-            private unsafe delegate void ConvertToUnmanagedDelegate(object obj, byte* native, int nativeSize, ref CleanupWorkListElement? cleanupWorkList);
+            private unsafe delegate void ConvertToUnmanagedDelegate(object obj, byte* native, ref CleanupWorkListElement? cleanupWorkList);
             private unsafe delegate void ConvertToManagedDelegate(object obj, byte* native, ref CleanupWorkListElement? cleanupWorkList);
-            private unsafe delegate void FreeDelegate(object? obj, byte* native, int nativeSize, ref CleanupWorkListElement? cleanupWorkList);
+            private unsafe delegate void FreeDelegate(object? obj, byte* native, ref CleanupWorkListElement? cleanupWorkList);
 
             private readonly ConvertToUnmanagedDelegate _convertToUnmanaged;
             private readonly ConvertToManagedDelegate _convertToManaged;
             private readonly FreeDelegate _free;
 
-            private readonly int _nativeSize;
+            private readonly bool _isBlittable;
 
-            internal LayoutTypeMarshalerMethods(Type instantiatedType, int nativeSize)
+            internal LayoutTypeMarshalerMethods(Type instantiatedType, bool isBlittable)
             {
                 _convertToUnmanaged = ((MethodInfo)instantiatedType.GetMemberWithSameMetadataDefinitionAs(ConvertToUnmanagedMethod)).CreateDelegate<ConvertToUnmanagedDelegate>();
                 _convertToManaged = ((MethodInfo)instantiatedType.GetMemberWithSameMetadataDefinitionAs(ConvertToManagedMethod)).CreateDelegate<ConvertToManagedDelegate>();
                 _free = ((MethodInfo)instantiatedType.GetMemberWithSameMetadataDefinitionAs(FreeMethod)).CreateDelegate<FreeDelegate>();
-                _nativeSize = nativeSize;
+                _isBlittable = isBlittable;
             }
 
             public unsafe void ConvertToManaged(object obj, byte* native)
@@ -265,12 +266,17 @@ namespace System.Runtime.InteropServices
 
             public unsafe void ConvertToUnmanaged(object obj, byte* native, ref CleanupWorkListElement? cleanupWorkList)
             {
-                _convertToUnmanaged(obj, native, _nativeSize, ref cleanupWorkList);
+                _convertToUnmanaged(obj, native, ref cleanupWorkList);
             }
 
             public unsafe void Free(byte* native)
             {
-                _free(null, native, _nativeSize, ref Unsafe.NullRef<CleanupWorkListElement?>());
+                // For blittable types, FreeCore is a no-op and there are no native sub-structures to free.
+                // Calling NativeMemory.Clear on a potentially invalid pointer (e.g., in Marshal.DestroyStructure tests)
+                // would cause a fault, so we skip cleanup entirely for blittable types.
+                if (_isBlittable)
+                    return;
+                _free(null, native, ref Unsafe.NullRef<CleanupWorkListElement?>());
             }
 
             internal static LayoutTypeMarshalerMethods GetMarshalMethodsForType(RuntimeType t)
@@ -281,11 +287,11 @@ namespace System.Runtime.InteropServices
             [RequiresDynamicCode("Marshalling code for the object might not be available.")]
             public static LayoutTypeMarshalerMethods Create(RuntimeType type)
             {
-                if (!HasLayout(new QCallTypeHandle(ref type), out _, out int size))
+                if (!HasLayout(new QCallTypeHandle(ref type), out bool isBlittable, out _))
                     throw new ArgumentException(SR.Argument_MustHaveLayoutOrBeBlittable, nameof(type));
 
                 Type instantiatedMarshaler = typeof(BoxedLayoutTypeMarshaler<>).MakeGenericType([type]);
-                return new LayoutTypeMarshalerMethods(instantiatedMarshaler, size);
+                return new LayoutTypeMarshalerMethods(instantiatedMarshaler, isBlittable);
             }
 
             public static ref LayoutTypeMarshalerMethods? GetStorageRef(RuntimeType.CompositeCacheEntry compositeEntry)
@@ -637,8 +643,9 @@ namespace System.Runtime.InteropServices
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_CleanupUnusedObjectsInCurrentContext")]
         private static partial void InternalCleanupUnusedObjectsInCurrentContext();
 
+        /// <safety>Returns a Boolean computed from runtime COM-cleanup state; it takes no arguments and dereferences no caller-supplied memory.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern bool AreComObjectsAvailableForCleanup();
+        public static extern safe bool AreComObjectsAvailableForCleanup();
 
         /// <summary>
         /// Checks if the object is classic COM component.
@@ -1055,7 +1062,6 @@ namespace System.Runtime.InteropServices
 
 #if DEBUG // Used for testing in Checked or Debug
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetIsInCooperativeGCModeFunctionPointer")]
-        [RequiresUnsafe]
         internal static unsafe partial delegate* unmanaged<int> GetIsInCooperativeGCModeFunctionPointer();
 #endif
     }

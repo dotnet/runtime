@@ -38,7 +38,6 @@ namespace System.Runtime.InteropServices.Java
         /// runtime code when cross-reference marking is required.
         /// Additionally, this callback must be implemented in unmanaged code.
         /// </remarks>
-        [RequiresUnsafe]
         public static unsafe void Initialize(delegate* unmanaged<MarkCrossReferencesArgs*, void> markCrossReferences)
         {
             ArgumentNullException.ThrowIfNull(markCrossReferences);
@@ -63,7 +62,6 @@ namespace System.Runtime.InteropServices.Java
         /// <returns>A <see cref="GCHandle"/> that represents the allocated reference-tracking handle.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="obj"/> is null.</exception>
         /// <exception cref="PlatformNotSupportedException">The runtime or platform does not support Java cross-reference marshalling.</exception>
-        [RequiresUnsafe]
         public static unsafe GCHandle CreateReferenceTrackingHandle(object obj, void* context)
         {
             ArgumentNullException.ThrowIfNull(obj);
@@ -82,7 +80,6 @@ namespace System.Runtime.InteropServices.Java
         /// The returned pointer is the exact value that was originally provided as
         /// the context parameter when the handle was created.
         /// </remarks>
-        [RequiresUnsafe]
         public static unsafe void* GetContext(GCHandle obj)
         {
             IntPtr handle = GCHandle.ToIntPtr(obj);
@@ -103,7 +100,6 @@ namespace System.Runtime.InteropServices.Java
         /// <param name="crossReferences">A pointer to the structure containing cross-reference information produced during marking.</param>
         /// <param name="unreachableObjectHandles">A span of <see cref="GCHandle"/> values that were determined to be unreachable from the native side.</param>
         /// <exception cref="PlatformNotSupportedException">The runtime or platform does not support Java cross-reference marshalling.</exception>
-        [RequiresUnsafe]
         public static unsafe void FinishCrossReferenceProcessing(
             MarkCrossReferencesArgs* crossReferences,
             ReadOnlySpan<GCHandle> unreachableObjectHandles)

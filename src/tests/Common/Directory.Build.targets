@@ -10,6 +10,8 @@
 
   <Import Project="$(RepoRoot)eng/liveBuilds.targets" />
   <Import Project="$(RepositoryEngineeringDir)toolAot.targets" />
+  <Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" Condition="'$(UseBootstrap)' == 'true'" />
+  <Import Project="$(RepoRoot)eng/liveILLink.targets" Condition="'$(UseBootstrap)' == 'true'" />
 
   <PropertyGroup>
     <GCStressDependsOnCoreDisTools>false</GCStressDependsOnCoreDisTools>
@@ -70,11 +72,11 @@
 
         <!-- Wasm App Builder builds as part of tasks, using the corresponding TasksConfiguration -->
         <RunTimeDependencyCopyLocal
-          Include="$(ArtifactsBinDir)\WasmAppBuilder\$(TasksConfiguration)\$(NetCoreAppToolCurrent)\**"
+          Include="$(WasmAppBuilderDir)**"
           TargetDir="WasmAppBuilder/"/>
 
         <RunTimeDependencyCopyLocal
-          Include="$(ArtifactsBinDir)\MonoTargetsTasks\$(TasksConfiguration)\$(NetCoreAppToolCurrent)\publish\**"
+          Include="$(MonoTargetsTasksDir)publish\**"
           TargetDir="WasmAppBuilder/"/>
 
         <RunTimeDependencyCopyLocal

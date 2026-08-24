@@ -1,345 +1,340 @@
-﻿// Copyright (c) .NET Foundation and contributors. All rights reserved.
+// Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Microsoft.DotNet.XUnitExtensions;
 using Mono.Linker.Tests.TestCasesRunner;
+using Xunit;
 
 namespace Mono.Linker.Tests.TestCases
 {
-    [TestClass]
     public class All
     {
-        [TestMethod]
-        [DynamicData(nameof(TestDatabase.AdvancedTests), typeof(TestDatabase))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.AdvancedTests), MemberType = typeof(TestDatabase))]
         public void AdvancedTests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestMethod]
-        [DynamicData(nameof(TestDatabase.AttributeDebuggerTests), typeof(TestDatabase))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.AttributeDebuggerTests), MemberType = typeof(TestDatabase))]
         public void AttributesDebuggerTests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestMethod]
-        [DynamicData(nameof(TestDatabase.AttributesStructLayoutTests), typeof(TestDatabase))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.AttributesStructLayoutTests), MemberType = typeof(TestDatabase))]
         public void AttributesStructLayoutTests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestMethod]
-        [DynamicData(nameof(TestDatabase.AttributeTests), typeof(TestDatabase))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.AttributeTests), MemberType = typeof(TestDatabase))]
         public void AttributesTests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestMethod]
-        [DynamicData(nameof(TestDatabase.BCLFeaturesTests), typeof(TestDatabase))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.BCLFeaturesTests), MemberType = typeof(TestDatabase))]
         public void BCLFeaturesTests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestMethod]
-        [DynamicData(nameof(TestDatabase.BasicTests), typeof(TestDatabase))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.BasicTests), MemberType = typeof(TestDatabase))]
         public void BasicTests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestMethod]
-        [DynamicData(nameof(TestDatabase.CodegenAnnotationTests), typeof(TestDatabase))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.CodegenAnnotationTests), MemberType = typeof(TestDatabase))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp, "These tests are not valid when trimming .NET Core")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "These tests are not valid when trimming .NET Framework")]
         public void CodegenAnnotationTests(TestCase testCase)
         {
-            if (Environment.OSVersion.Platform == PlatformID.Win32NT)
-                Assert.Inconclusive("These tests are not valid when trimming .NET Framework");
-
-#if NET
-            Assert.Inconclusive("These tests are not valid when trimming .NET Core");
-#endif
             Run(testCase);
         }
 
-        [TestMethod]
-        [DynamicData(nameof(TestDatabase.CommandLineTests), typeof(TestDatabase))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.CommandLineTests), MemberType = typeof(TestDatabase))]
         public void CommandLineTests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestMethod]
-        [DynamicData(nameof(TestDatabase.ComponentModelTests), typeof(TestDatabase))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.ComponentModelTests), MemberType = typeof(TestDatabase))]
         public void ComponentModelTests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestMethod]
-        [DynamicData(nameof(TestDatabase.CoreLinkTests), typeof(TestDatabase))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.CoreLinkTests), MemberType = typeof(TestDatabase))]
         public void CoreLinkTests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestMethod]
-        [DynamicData(nameof(TestDatabase.CppCLITests), typeof(TestDatabase))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.CppCLITests), MemberType = typeof(TestDatabase))]
         public void CppCLITests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestMethod]
-        [DynamicData(nameof(TestDatabase.DataFlowTests), typeof(TestDatabase))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.DataFlowTests), MemberType = typeof(TestDatabase))]
         public void DataFlowTests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestMethod]
-        [DynamicData(nameof(TestDatabase.DynamicDependenciesTests), typeof(TestDatabase))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.DynamicDependenciesTests), MemberType = typeof(TestDatabase))]
         public void DynamicDependenciesTests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestMethod]
-        [DynamicData(nameof(TestDatabase.ExtensibilityTests), typeof(TestDatabase))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.ExtensibilityTests), MemberType = typeof(TestDatabase))]
         public void ExtensibilityTests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestMethod]
-        [DynamicData(nameof(TestDatabase.FeatureSettingsTests), typeof(TestDatabase))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.FeatureSettingsTests), MemberType = typeof(TestDatabase))]
         public void FeatureSettingsTests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestMethod]
-        [DynamicData(nameof(TestDatabase.FunctionPointersTests), typeof(TestDatabase))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.FunctionPointersTests), MemberType = typeof(TestDatabase))]
         public void FunctionPointerTests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestMethod]
-        [DynamicData(nameof(TestDatabase.GenericsTests), typeof(TestDatabase))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.GenericsTests), MemberType = typeof(TestDatabase))]
         public void GenericsTests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestMethod]
-        [DynamicData(nameof(TestDatabase.InheritanceAbstractClassTests), typeof(TestDatabase))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.InheritanceAbstractClassTests), MemberType = typeof(TestDatabase))]
         public void InheritanceAbstractClassTests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestMethod]
-        [DynamicData(nameof(TestDatabase.InheritanceComplexTests), typeof(TestDatabase))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.InheritanceComplexTests), MemberType = typeof(TestDatabase))]
         public void InheritanceComplexTests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestMethod]
-        [DynamicData(nameof(TestDatabase.InheritanceInterfaceTests), typeof(TestDatabase))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.InheritanceInterfaceTests), MemberType = typeof(TestDatabase))]
         public void InheritanceInterfaceTests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestMethod]
-        [DynamicData(nameof(TestDatabase.InheritanceVirtualMethodsTests), typeof(TestDatabase))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.InheritanceVirtualMethodsTests), MemberType = typeof(TestDatabase))]
         public void InheritanceVirtualMethodsTests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestMethod]
-        [DynamicData(nameof(TestDatabase.InlineArrayTests), typeof(TestDatabase))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.InlineArrayTests), MemberType = typeof(TestDatabase))]
         public void InlineArrayTests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestMethod]
-        [DynamicData(nameof(TestDatabase.InteropTests), typeof(TestDatabase))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.InteropTests), MemberType = typeof(TestDatabase))]
         public void InteropTests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestMethod]
-        [DynamicData(nameof(TestDatabase.LibrariesTests), typeof(TestDatabase))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.LibrariesTests), MemberType = typeof(TestDatabase))]
         public void LibrariesTests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestMethod]
-        [DynamicData(nameof(TestDatabase.LinkAttributesTests), typeof(TestDatabase))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.LinkAttributesTests), MemberType = typeof(TestDatabase))]
         public void LinkAttributesTests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestMethod]
-        [DynamicData(nameof(TestDatabase.LoggingTests), typeof(TestDatabase))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.LoggingTests), MemberType = typeof(TestDatabase))]
         public void LoggingTests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestMethod]
-        [DynamicData(nameof(TestDatabase.PreserveDependenciesTests), typeof(TestDatabase))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.PreserveDependenciesTests), MemberType = typeof(TestDatabase))]
         public void PreserveDependenciesTests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestMethod]
-        [DynamicData(nameof(TestDatabase.ReferencesTests), typeof(TestDatabase))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.ReferencesTests), MemberType = typeof(TestDatabase))]
         public void ReferencesTests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestMethod]
-        [DynamicData(nameof(TestDatabase.ReflectionTests), typeof(TestDatabase))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.ReflectionTests), MemberType = typeof(TestDatabase))]
         public void ReflectionTests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestMethod]
-        [DynamicData(nameof(TestDatabase.RequiresCapabilityTests), typeof(TestDatabase))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.RequiresCapabilityTests), MemberType = typeof(TestDatabase))]
         public void RequiresCapabilityTests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestMethod]
-        [DynamicData(nameof(TestDatabase.ResourcesTests), typeof(TestDatabase))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.ResourcesTests), MemberType = typeof(TestDatabase))]
         public void ResourcesTests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestMethod]
-        [DynamicData(nameof(TestDatabase.SealerTests), typeof(TestDatabase))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.SealerTests), MemberType = typeof(TestDatabase))]
         public void SealerTests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestMethod]
-        [DynamicData(nameof(TestDatabase.SerializationTests), typeof(TestDatabase))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.SerializationTests), MemberType = typeof(TestDatabase))]
         public void SerializationTests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestMethod]
-        [DynamicData(nameof(TestDatabase.SingleFileTests), typeof(TestDatabase))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.SingleFileTests), MemberType = typeof(TestDatabase))]
         public void SingleFileTests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestMethod]
-        [DynamicData(nameof(TestDatabase.StaticsTests), typeof(TestDatabase))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.StaticsTests), MemberType = typeof(TestDatabase))]
         public void StaticsTests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestMethod]
-        [DynamicData(nameof(TestDatabase.SubstitutionsTests), typeof(TestDatabase))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.SubstitutionsTests), MemberType = typeof(TestDatabase))]
         public void SubstitutionsTests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestMethod]
-        [DynamicData(nameof(TestDatabase.SymbolsTests), typeof(TestDatabase))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.SymbolsTests), MemberType = typeof(TestDatabase))]
         public void SymbolsTests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestMethod]
-        [DynamicData(nameof(TestDatabase.TestFrameworkTests), typeof(TestDatabase))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.TestFrameworkTests), MemberType = typeof(TestDatabase))]
         public void TestFrameworkTests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestMethod]
-        [DynamicData(nameof(TestDatabase.TopLevelStatementsTests), typeof(TestDatabase))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.TopLevelStatementsTests), MemberType = typeof(TestDatabase))]
         public void TopLevelStatementsTests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestMethod]
-        [DynamicData(nameof(TestDatabase.TracingTests), typeof(TestDatabase))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.TracingTests), MemberType = typeof(TestDatabase))]
         public void TracingTests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestMethod]
-        [DynamicData(nameof(TestDatabase.TypeForwardingTests), typeof(TestDatabase))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.TypeForwardingTests), MemberType = typeof(TestDatabase))]
         public void TypeForwardingTests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestMethod]
-        [DynamicData(nameof(TestDatabase.UnreachableBlockTests), typeof(TestDatabase))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.UnreachableBlockTests), MemberType = typeof(TestDatabase))]
         public void UnreachableBlockTests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestMethod]
-        [DynamicData(nameof(TestDatabase.UnreachableBodyTests), typeof(TestDatabase))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.UnreachableBodyTests), MemberType = typeof(TestDatabase))]
         public void UnreachableBodyTests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestMethod]
-        [DynamicData(nameof(TestDatabase.WarningsTests), typeof(TestDatabase))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.WarningsTests), MemberType = typeof(TestDatabase))]
         public void WarningsTests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestMethod]
-        [DynamicData(nameof(TestDatabase.XmlTests), typeof(TestDatabase))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.XmlTests), MemberType = typeof(TestDatabase))]
         public void XmlTests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestMethod]
-        [DynamicData(nameof(TestDatabase.LinqExpressionsTests), typeof(TestDatabase))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.LinqExpressionsTests), MemberType = typeof(TestDatabase))]
         public void LinqExpressionsTests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestMethod]
-        [DynamicData(nameof(TestDatabase.MetadataTests), typeof(TestDatabase))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.MetadataTests), MemberType = typeof(TestDatabase))]
         public void MetadataTests(TestCase testCase)
         {
             Run(testCase);

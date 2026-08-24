@@ -761,9 +761,9 @@ namespace System.Diagnostics
         private static long ReadCounterValue(int counterType, ReadOnlySpan<byte> data)
         {
             if ((counterType & PerfCounterOptions.NtPerfCounterSizeLarge) != 0)
-                return MemoryMarshal.Read<long>(data);
+                return BitConverter.ToInt64(data);
             else
-                return MemoryMarshal.Read<int>(data);
+                return BitConverter.ToInt32(data);
         }
 
         private enum ValueId

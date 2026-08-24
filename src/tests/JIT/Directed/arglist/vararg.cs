@@ -1070,6 +1070,34 @@ namespace NativeVarargTest
         /// <summary>
         /// Given an input set create an arglist to pass to a vararg callee.
         ///
+        /// The callee will pass the RuntimeArgumentHandle to another method,
+        /// which will then loop over the arguments, compute the sum and
+        /// return the value.
+        ///
+        /// Do a quick check on the value returned, and return whether they
+        /// are equal.
+        ///
+        /// </summary>
+        /// <param name="expectedValues"></param>
+        /// <returns>bool</returns>
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool TestPassingRuntimeArgumentHandleManaged(int[] expectedValues)
+        {
+            Debug.Assert(expectedValues.Length == 4);
+            int expectedSum = ManagedNativeVarargTests.TestPassingRuntimeArgumentHandle(expectedValues.Length, __arglist(expectedValues[0], expectedValues[1], expectedValues[2], expectedValues[3]));
+
+            int sum = 0;
+            for (int i = 0; i < expectedValues.Length; ++i)
+            {
+                sum += expectedValues[i];
+            }
+
+            return sum == expectedSum;
+        }
+
+        /// <summary>
+        /// Given an input set create an arglist to pass to a vararg callee.
+        ///
         /// The callee will simply loop over the arguments, compute the sum
         /// then return the value.
         ///
@@ -4558,6 +4586,7 @@ namespace NativeVarargTest
             m_testCount = 0;
 
             success = ReportFailure(TestPassingIntsManaged(new int[] { 100, 299, -100, 50 }), "TestPassingIntsManaged(new int[] { 100, 299, -100, 50 })", success, 30);
+            success = ReportFailure(TestPassingRuntimeArgumentHandleManaged(new int[] { 100, 299, -100, 50 }), "TestPassingRuntimeArgumentHandleManaged(new int[] { 100, 299, -100, 50 })", success, 157);
 
             TestFour16ByteStructs();
 

@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
@@ -21,15 +22,83 @@ namespace Microsoft.Win32.SafeHandles
         // by the OS, which terminates all child processes in the job.
         private static readonly Lazy<Interop.Kernel32.SafeJobHandle> s_killOnParentExitJob = new(CreateKillOnParentExitJob);
 
+        // When the process was started with StartSuspended, this holds the main thread handle
+        // so that Resume() can call ResumeThread on it. The handle is closed when the SafeProcessHandle is disposed.
+        private IntPtr _mainThreadHandle;
+
+        /// <summary>
+        /// Gets the process ID.
+        /// </summary>
+        public int ProcessId
+        {
+            get
+            {
+                Validate();
+
+                if (field == -1)
+                {
+                    field = Interop.Kernel32.GetProcessId(this);
+                }
+
+                return field;
+            }
+            private set;
+        } = -1;
+
+        /// <summary>
+        /// Gets or sets a value indicating whether the process has been terminated due to timeout or cancellation.
+        /// </summary>
+        private bool Canceled { get; set; }
+
         protected override bool ReleaseHandle()
         {
+            IntPtr threadHandle = Interlocked.Exchange(ref _mainThreadHandle, IntPtr.Zero);
+            if (threadHandle != IntPtr.Zero)
+            {
+                Interop.Kernel32.CloseHandle(threadHandle);
+            }
+
             return Interop.Kernel32.CloseHandle(handle);
+        }
+
+        private static bool TryOpenCore(int processId, [NotNullWhen(true)] out SafeProcessHandle? processHandle, out int lastError)
+        {
+            const int desiredAccess = Interop.Advapi32.ProcessOptions.PROCESS_QUERY_LIMITED_INFORMATION
+                | Interop.Advapi32.ProcessOptions.SYNCHRONIZE
+                | Interop.Advapi32.ProcessOptions.PROCESS_TERMINATE;
+
+            SafeProcessHandle safeHandle = Interop.Kernel32.OpenProcess(desiredAccess, inherit: false, processId);
+
+            if (safeHandle.IsInvalid)
+            {
+                int error = Marshal.GetLastPInvokeError();
+                safeHandle.Dispose();
+
+                if (error == Interop.Errors.ERROR_ACCESS_DENIED)
+                {
+                    ThrowOpenProcessAccessDeniedException(processId);
+                }
+
+                if (error == Interop.Errors.ERROR_NOT_FOUND || error == Interop.Errors.ERROR_INVALID_PARAMETER)
+                {
+                    lastError = error;
+                    processHandle = null;
+                    return false;
+                }
+
+                throw new Win32Exception(error);
+            }
+
+            lastError = 0;
+            safeHandle.ProcessId = processId;
+            processHandle = safeHandle;
+            return true;
         }
 
         private static unsafe Interop.Kernel32.SafeJobHandle CreateKillOnParentExitJob()
         {
             Interop.Kernel32.JOBOBJECT_EXTENDED_LIMIT_INFORMATION limitInfo = default;
-            limitInfo.BasicLimitInformation.LimitFlags = Interop.Kernel32.JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
+            limitInfo.BasicLimitInformation.LimitFlags = Interop.Kernel32.JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE | Interop.Kernel32.JOB_OBJECT_LIMIT_BREAKAWAY_OK;
 
             Interop.Kernel32.SafeJobHandle jobHandle = Interop.Kernel32.CreateJobObjectW(IntPtr.Zero, IntPtr.Zero);
             if (jobHandle.IsInvalid || !Interop.Kernel32.SetInformationJobObject(
@@ -122,6 +191,8 @@ namespace Microsoft.Win32.SafeHandles
                 if (startInfo.CreateNoWindow) creationFlags |= Interop.Advapi32.StartupInfoOptions.CREATE_NO_WINDOW;
                 if (startInfo.CreateNewProcessGroup) creationFlags |= Interop.Advapi32.StartupInfoOptions.CREATE_NEW_PROCESS_GROUP;
                 if (startInfo.StartDetached) creationFlags |= Interop.Advapi32.StartupInfoOptions.DETACHED_PROCESS;
+                bool startSuspended = startInfo.StartSuspended;
+                if (startSuspended) creationFlags |= Interop.Advapi32.StartupInfoOptions.CREATE_SUSPENDED;
 
                 // set up the environment block parameter
                 string? environmentBlock = null;
@@ -259,7 +330,16 @@ namespace Microsoft.Win32.SafeHandles
                     // assign it to the job object and then resume the thread.
                     if (killOnParentExit && logon)
                     {
-                        AssignJobAndResumeThread(processInfo.hThread, procSH);
+                        // Assign to the job. Resume the thread only if the user didn't request StartSuspended.
+                        AssignJobAndResumeThread(processInfo.hThread, procSH, resume: !startSuspended);
+                    }
+
+                    if (startSuspended && !IsInvalidHandle(processInfo.hThread))
+                    {
+                        // Store the main thread handle so that Resume() can use it later.
+                        // The handle will be closed either in Resume() or in ReleaseHandle().
+                        procSH._mainThreadHandle = processInfo.hThread;
+                        processInfo.hThread = IntPtr.Zero; // Prevent the finally block from closing it.
                     }
                 }
 
@@ -329,6 +409,78 @@ namespace Microsoft.Win32.SafeHandles
             Debug.Assert(!procSH.IsInvalid);
             procSH.ProcessId = (int)processInfo.dwProcessId;
             return procSH;
+        }
+
+        internal static unsafe SafeProcessHandle StartWithCallback(ProcessStartInfo startInfo, SafeFileHandle stdinHandle, SafeFileHandle stdoutHandle, SafeFileHandle stderrHandle,
+            Func<WindowsProcessStartArguments, nint> callback)
+        {
+            ValueStringBuilder commandLine = new(stackalloc char[256]);
+            ProcessUtils.BuildCommandLine(startInfo, ref commandLine);
+            commandLine.NullTerminate();
+            SafeProcessHandle procSH = new SafeProcessHandle();
+
+            string? environmentBlock = null;
+            if (startInfo._environmentVariables != null)
+            {
+                environmentBlock = ProcessUtils.GetEnvironmentVariablesBlock(startInfo._environmentVariables!);
+            }
+
+            nint stdin = -1, stdout = -1, stderr = -1;
+            bool stdinRefAdded = false, stdoutRefAdded = false, stderrRefAdded = false;
+
+            // Acquire the process lock to avoid accidental handle inheritance issues.
+            ProcessUtils.s_processStartLock.EnterWriteLock();
+
+            try
+            {
+                ProcessUtils.DuplicateAsInheritableIfNeeded(stdinHandle, ref stdin, ref stdinRefAdded);
+                ProcessUtils.DuplicateAsInheritableIfNeeded(stdoutHandle, ref stdout, ref stdoutRefAdded);
+                ProcessUtils.DuplicateAsInheritableIfNeeded(stderrHandle, ref stderr, ref stderrRefAdded);
+
+                fixed (char* commandLinePtr = &commandLine.GetPinnableReference())
+                fixed (char* environmentBlockPtr = environmentBlock)
+                {
+                    WindowsProcessStartArguments args = new(commandLinePtr, environmentBlockPtr, stdin, stdout, stderr, startInfo);
+
+                    nint processHandle = callback(args);
+                    if (IsInvalidHandle(processHandle))
+                    {
+                        throw new ArgumentException(SR.Argument_InvalidProcessHandle, nameof(callback));
+                    }
+
+                    Marshal.InitHandle(procSH, processHandle);
+                    return procSH;
+                }
+            }
+            catch
+            {
+                procSH.Dispose();
+                throw;
+            }
+            finally
+            {
+                // If the provided handle was inheritable, just release the reference we added.
+                // Otherwise if we created a valid duplicate, close it.
+
+                if (stdinRefAdded)
+                    stdinHandle.DangerousRelease();
+                else if (!IsInvalidHandle(stdin))
+                    Interop.Kernel32.CloseHandle(stdin);
+
+                if (stdoutRefAdded)
+                    stdoutHandle.DangerousRelease();
+                else if (!IsInvalidHandle(stdout))
+                    Interop.Kernel32.CloseHandle(stdout);
+
+                if (stderrRefAdded)
+                    stderrHandle.DangerousRelease();
+                else if (!IsInvalidHandle(stderr))
+                    Interop.Kernel32.CloseHandle(stderr);
+
+                ProcessUtils.s_processStartLock.ExitWriteLock();
+
+                commandLine.Dispose();
+            }
         }
 
         private static unsafe SafeProcessHandle StartWithShellExecute(ProcessStartInfo startInfo)
@@ -598,7 +750,7 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
-        private static void AssignJobAndResumeThread(IntPtr hThread, SafeProcessHandle procSH)
+        private static void AssignJobAndResumeThread(IntPtr hThread, SafeProcessHandle procSH, bool resume)
         {
             Debug.Assert(!IsInvalidHandle(hThread), "Thread handle must be valid for suspended process.");
 
@@ -609,7 +761,7 @@ namespace Microsoft.Win32.SafeHandles
                     throw new Win32Exception(Marshal.GetLastWin32Error());
                 }
 
-                if (Interop.Kernel32.ResumeThread(hThread) == 0xFFFFFFFF)
+                if (resume && Interop.Kernel32.ResumeThread(hThread) == 0xFFFFFFFF)
                 {
                     throw new Win32Exception(Marshal.GetLastWin32Error());
                 }
@@ -622,7 +774,66 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
-        private int GetProcessIdCore() => Interop.Kernel32.GetProcessId(this);
+        private void ResumeCore()
+        {
+            if (_mainThreadHandle == IntPtr.Zero)
+            {
+                throw new InvalidOperationException(SR.ProcessNotStartedSuspended);
+            }
+
+            if (Interop.Kernel32.ResumeThread(_mainThreadHandle) == 0xFFFFFFFF)
+            {
+                throw new Win32Exception(Marshal.GetLastWin32Error());
+            }
+        }
+
+        private ProcessExitStatus WaitForExitCore()
+        {
+            using Interop.Kernel32.ProcessWaitHandle processWaitHandle = new(this);
+            processWaitHandle.WaitOne(Timeout.Infinite);
+
+            return GetExitStatus();
+        }
+
+        private bool TryWaitForExitCore(int milliseconds, [NotNullWhen(true)] out ProcessExitStatus? exitStatus)
+        {
+            using Interop.Kernel32.ProcessWaitHandle processWaitHandle = new(this);
+            if (!processWaitHandle.WaitOne(milliseconds))
+            {
+                exitStatus = null;
+                return false;
+            }
+
+            exitStatus = GetExitStatus();
+            return true;
+        }
+
+        private ProcessExitStatus WaitForExitOrKillOnTimeoutCore(int milliseconds)
+        {
+            using Interop.Kernel32.ProcessWaitHandle processWaitHandle = new(this);
+            if (!processWaitHandle.WaitOne(milliseconds))
+            {
+#pragma warning disable CA1416 // PosixSignal.SIGKILL is supported on Windows via SignalCore
+                Canceled = true;
+                SignalCore(PosixSignal.SIGKILL);
+#pragma warning restore CA1416
+                processWaitHandle.WaitOne(Timeout.Infinite);
+            }
+
+            return GetExitStatus();
+        }
+
+        private Interop.Kernel32.ProcessWaitHandle GetWaitHandle() => new(this);
+
+        private ProcessExitStatus GetExitStatus()
+        {
+            if (!Interop.Kernel32.GetExitCodeProcess(this, out int exitCode))
+            {
+                throw new Win32Exception();
+            }
+
+            return new ProcessExitStatus(exitCode, Canceled);
+        }
 
         private bool SignalCore(PosixSignal signal)
         {

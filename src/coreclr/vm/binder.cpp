@@ -19,10 +19,9 @@
 #include "dllimport.h"
 #include "clrvarargs.h"
 #include "sigbuilder.h"
-#include "olevariant.h"
 #include "configuration.h"
 #include "conditionalweaktable.h"
-#include "interoplibinterface_comwrappers.h"
+#include "interoplibinterface.h"
 #include "assemblynative.hpp"
 
 //
@@ -50,7 +49,6 @@ PTR_MethodTable CoreLibBinder::LookupClassLocal(BinderClassID id)
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(ThrowOutOfMemory());
 
         PRECONDITION(id != CLASS__NIL);
         PRECONDITION(id <= m_cClasses);
@@ -128,7 +126,6 @@ MethodDesc * CoreLibBinder::LookupMethodLocal(BinderMethodID id)
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(ThrowOutOfMemory());
 
         PRECONDITION(id != METHOD__NIL);
         PRECONDITION(id <= m_cMethods);
@@ -187,7 +184,6 @@ FieldDesc * CoreLibBinder::LookupFieldLocal(BinderFieldID id)
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(ThrowOutOfMemory());
 
         PRECONDITION(id != FIELD__NIL);
         PRECONDITION(id <= m_cFields);
@@ -217,7 +213,6 @@ NOINLINE PTR_MethodTable CoreLibBinder::LookupClassIfExist(BinderClassID id)
     {
         GC_NOTRIGGER;
         NOTHROW;
-        FORBID_FAULT;
         MODE_ANY;
 
         PRECONDITION(id != CLASS__NIL);
@@ -253,7 +248,6 @@ Signature CoreLibBinder::GetSignature(LPHARDCODEDMETASIG pHardcodedSig)
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
         MODE_ANY;
     }
     CONTRACTL_END
@@ -283,7 +277,6 @@ Signature CoreLibBinder::GetTargetSignature(LPHARDCODEDMETASIG pHardcodedSig)
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
         MODE_ANY;
     }
     CONTRACTL_END
@@ -298,7 +291,6 @@ Signature CoreLibBinder::GetSignatureLocal(LPHARDCODEDMETASIG pHardcodedSig)
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
         MODE_ANY;
     }
     CONTRACTL_END
@@ -464,7 +456,6 @@ const BYTE* CoreLibBinder::ConvertSignature(LPHARDCODEDMETASIG pHardcodedSig, co
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
         MODE_ANY;
     }
     CONTRACTL_END
@@ -506,7 +497,6 @@ void CoreLibBinder::TriggerGCUnderStress()
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(ThrowOutOfMemory());
     }
     CONTRACTL_END;
 

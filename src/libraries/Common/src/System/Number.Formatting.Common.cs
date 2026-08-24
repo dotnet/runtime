@@ -17,40 +17,93 @@ namespace System
         private const int DefaultPrecisionExponentialFormat = 6;
 
         private const int MaxUInt32DecDigits = 10;
-        private const string PosNumberFormat = "#";
 
-        private static readonly string[] s_posCurrencyFormats =
-        [
-            "$#", "#$", "$ #", "# $"
-        ];
+        private static ReadOnlySpan<byte> GetCurrencyFormat(bool isNegative, int index)
+        {
+            if (isNegative)
+            {
+                return index switch
+                {
+                    0 => "($#)"u8,
+                    1 => "-$#"u8,
+                    2 => "$-#"u8,
+                    3 => "$#-"u8,
+                    4 => "(#$)"u8,
+                    5 => "-#$"u8,
+                    6 => "#-$"u8,
+                    7 => "#$-"u8,
+                    8 => "-# $"u8,
+                    9 => "-$ #"u8,
+                    10 => "# $-"u8,
+                    11 => "$ #-"u8,
+                    12 => "$ -#"u8,
+                    13 => "#- $"u8,
+                    14 => "($ #)"u8,
+                    15 => "(# $)"u8,
+                    16 => "$- #"u8,
+                    _ => throw new UnreachableException(),
+                };
+            }
 
-        private static readonly string[] s_negCurrencyFormats =
-        [
-            "($#)", "-$#", "$-#", "$#-",
-            "(#$)", "-#$", "#-$", "#$-",
-            "-# $", "-$ #", "# $-", "$ #-",
-            "$ -#", "#- $", "($ #)", "(# $)",
-            "$- #"
-        ];
+            return index switch
+            {
+                0 => "$#"u8,
+                1 => "#$"u8,
+                2 => "$ #"u8,
+                3 => "# $"u8,
+                _ => throw new UnreachableException(),
+            };
+        }
 
-        private static readonly string[] s_posPercentFormats =
-        [
-            "# %", "#%", "%#", "% #"
-        ];
+        private static ReadOnlySpan<byte> GetPercentFormat(bool isNegative, int index)
+        {
+            if (isNegative)
+            {
+                return index switch
+                {
+                    0 => "-# %"u8,
+                    1 => "-#%"u8,
+                    2 => "-%#"u8,
+                    3 => "%-#"u8,
+                    4 => "%#-"u8,
+                    5 => "#-%"u8,
+                    6 => "#%-"u8,
+                    7 => "-% #"u8,
+                    8 => "# %-"u8,
+                    9 => "% #-"u8,
+                    10 => "% -#"u8,
+                    11 => "#- %"u8,
+                    _ => throw new UnreachableException(),
+                };
+            }
 
-        private static readonly string[] s_negPercentFormats =
-        [
-            "-# %", "-#%", "-%#",
-            "%-#", "%#-",
-            "#-%", "#%-",
-            "-% #", "# %-", "% #-",
-            "% -#", "#- %"
-        ];
+            return index switch
+            {
+                0 => "# %"u8,
+                1 => "#%"u8,
+                2 => "%#"u8,
+                3 => "% #"u8,
+                _ => throw new UnreachableException(),
+            };
+        }
 
-        private static readonly string[] s_negNumberFormats =
-        [
-            "(#)", "-#", "- #", "#-", "# -",
-        ];
+        private static ReadOnlySpan<byte> GetNumberFormat(bool isNegative, int index)
+        {
+            if (!isNegative)
+            {
+                return "#"u8;
+            }
+
+            return index switch
+            {
+                0 => "(#)"u8,
+                1 => "-#"u8,
+                2 => "- #"u8,
+                3 => "#-"u8,
+                4 => "# -"u8,
+                _ => throw new UnreachableException(),
+            };
+        }
 
         internal static char ParseFormatSpecifier(ReadOnlySpan<char> format, out int digits)
         {
@@ -435,7 +488,7 @@ namespace System
                 }
                 else
                 {
-                    if (number.Kind != NumberBufferKind.FloatingPoint)
+                    if (number.Kind is not (NumberBufferKind.FloatingPoint or NumberBufferKind.DecimalIeee754))
                     {
                         // The integer types don't have a concept of -0 and decimal always format -0 as 0
                         number.IsNegative = false;
@@ -464,7 +517,7 @@ namespace System
             // Adjust represents the number of characters over the formatting e.g. format string is "0000" and you are trying to
             // format 100000 (6 digits). Means adjust will be 2. On the other hand if you are trying to format 10 adjust will be
             // -2 and we'll need to fixup these digits with 0 padding if we have 0 formatting as in this example.
-            Span<int> thousandsSepPos = stackalloc int[4];
+            Span<int> thousandsSepPos = [0, 0, 0, 0];
             int thousandsSepCtr = -1;
 
             if (thousandSeps)
@@ -517,7 +570,15 @@ namespace System
                 }
             }
 
-            if (number.IsNegative && (section == 0) && (number.Scale != 0))
+            // A dedicated negative section (the portion after the first ';') is responsible for
+            // emitting the sign of negative values. When a negative value rounds to zero -- or is
+            // negative zero -- it can fall back to the first section (for example -0.001 or -0.0
+            // with "+0.00;-0.00"). In that case the first section already contains the caller's
+            // desired representation and we must not emit an extra sign, which would otherwise
+            // produce output such as "-+0.00". This only matters when 'section == 0', so
+            // 'HasNegativeSection' is evaluated lazily behind that check to avoid an extra format
+            // scan on the common path where the negative section is used directly ('section != 0').
+            if (number.IsNegative && (section == 0) && (number.Scale != 0) && !HasNegativeSection(format))
             {
                 vlb.Append(info.NegativeSignTChar<TChar>());
             }
@@ -705,7 +766,7 @@ namespace System
                 }
             }
 
-            if (number.IsNegative && (section == 0) && (number.Scale == 0) && (vlb.Length > 0))
+            if (number.IsNegative && (section == 0) && (number.Scale == 0) && (vlb.Length > 0) && !HasNegativeSection(format))
             {
                 vlb.Insert(0, info.NegativeSignTChar<TChar>());
             }
@@ -715,23 +776,23 @@ namespace System
         {
             Debug.Assert(sizeof(TChar) is sizeof(char) or sizeof(byte));
 
-            string fmt = number.IsNegative ?
-                s_negCurrencyFormats[info.CurrencyNegativePattern] :
-                s_posCurrencyFormats[info.CurrencyPositivePattern];
+            ReadOnlySpan<byte> fmt = GetCurrencyFormat(
+                number.IsNegative,
+                number.IsNegative ? info.CurrencyNegativePattern : info.CurrencyPositivePattern);
 
-            foreach (char ch in fmt)
+            foreach (byte ch in fmt)
             {
                 switch (ch)
                 {
-                    case '#':
+                    case (byte)'#':
                         FormatFixed(ref vlb, ref number, nMaxDigits, info.CurrencyGroupSizes(), info.CurrencyDecimalSeparatorTChar<TChar>(), info.CurrencyGroupSeparatorTChar<TChar>());
                         break;
 
-                    case '-':
+                    case (byte)'-':
                         vlb.Append(info.NegativeSignTChar<TChar>());
                         break;
 
-                    case '$':
+                    case (byte)'$':
                         vlb.Append(info.CurrencySymbolTChar<TChar>());
                         break;
 
@@ -885,19 +946,17 @@ namespace System
         {
             Debug.Assert(sizeof(TChar) is sizeof(char) or sizeof(byte));
 
-            string fmt = number.IsNegative ?
-                s_negNumberFormats[info.NumberNegativePattern] :
-                PosNumberFormat;
+            ReadOnlySpan<byte> fmt = GetNumberFormat(number.IsNegative, info.NumberNegativePattern);
 
-            foreach (char ch in fmt)
+            foreach (byte ch in fmt)
             {
                 switch (ch)
                 {
-                    case '#':
+                    case (byte)'#':
                         FormatFixed(ref vlb, ref number, nMaxDigits, info.NumberGroupSizes(), info.NumberDecimalSeparatorTChar<TChar>(), info.NumberGroupSeparatorTChar<TChar>());
                         break;
 
-                    case '-':
+                    case (byte)'-':
                         vlb.Append(info.NegativeSignTChar<TChar>());
                         break;
 
@@ -1012,23 +1071,23 @@ namespace System
         {
             Debug.Assert(sizeof(TChar) is sizeof(char) or sizeof(byte));
 
-            string fmt = number.IsNegative ?
-                s_negPercentFormats[info.PercentNegativePattern] :
-                s_posPercentFormats[info.PercentPositivePattern];
+            ReadOnlySpan<byte> fmt = GetPercentFormat(
+                number.IsNegative,
+                number.IsNegative ? info.PercentNegativePattern : info.PercentPositivePattern);
 
-            foreach (char ch in fmt)
+            foreach (byte ch in fmt)
             {
                 switch (ch)
                 {
-                    case '#':
+                    case (byte)'#':
                         FormatFixed(ref vlb, ref number, nMaxDigits, info.PercentGroupSizes(), info.PercentDecimalSeparatorTChar<TChar>(), info.PercentGroupSeparatorTChar<TChar>());
                         break;
 
-                    case '-':
+                    case (byte)'-':
                         vlb.Append(info.NegativeSignTChar<TChar>());
                         break;
 
-                    case '%':
+                    case (byte)'%':
                         vlb.Append(info.PercentSymbolTChar<TChar>());
                         break;
 
@@ -1077,7 +1136,7 @@ namespace System
 
             if (i == 0)
             {
-                if (number.Kind != NumberBufferKind.FloatingPoint)
+                if (number.Kind is not (NumberBufferKind.FloatingPoint or NumberBufferKind.DecimalIeee754))
                 {
                     // The integer types don't have a concept of -0 and decimal always format -0 as 0
                     number.IsNegative = false;
@@ -1112,6 +1171,30 @@ namespace System
                     return false;
                 }
 
+                if (numberKind == NumberBufferKind.DecimalIeee754)
+                {
+                    // The buffer holds the exact coefficient, so a '5' followed by nothing but zeros is a
+                    // true tie rather than an artifact of a truncated expansion. IEEE 754 §5.12.1 requires
+                    // the conversion to be correctly rounded under the applicable rounding-direction
+                    // attribute, which is roundTiesToEven.
+
+                    if (digit != '5')
+                    {
+                        return digit > '5';
+                    }
+
+                    for (int j = i + 1; dig[j] != '\0'; j++)
+                    {
+                        if (dig[j] != '0')
+                        {
+                            return true;
+                        }
+                    }
+
+                    // A tie with no preceding digit rounds toward the implicit leading zero, which is even.
+                    return (i > 0) && (((dig[i - 1] - '0') & 1) != 0);
+                }
+
                 // Values greater than or equal to 5 should round up, otherwise we round down. The IEEE
                 // 754 spec actually dictates that ties (exactly 5) should round to the nearest even number
                 // but that can have undesired behavior for custom numeric format strings. This probably
@@ -1121,6 +1204,11 @@ namespace System
                 return digit >= '5';
             }
         }
+
+        // A distinct negative section always begins after the first ';', so its offset is > 0.
+        // FindSection returns 0 both for the first section and when no such section exists, so a
+        // non-zero result reliably indicates the format defines a dedicated negative section.
+        private static bool HasNegativeSection(ReadOnlySpan<char> format) => FindSection(format, 1) != 0;
 
         private static unsafe int FindSection(ReadOnlySpan<char> format, int section)
         {

@@ -210,6 +210,28 @@ namespace System.Diagnostics.Tests
             });
         }
 
+        [Fact]
+        public void EnvironmentVariableContainingNull_ThrowsArgumentException()
+        {
+            const string InvalidKey = "Name\0Suffix";
+            const string InvalidValue = "Value\0Suffix";
+            ProcessStartInfo psi = new ProcessStartInfo();
+            IDictionary environment = (IDictionary)psi.Environment;
+            ICollection<KeyValuePair<string, string>> environmentCollection = psi.Environment;
+
+            AssertExtensions.Throws<ArgumentException>("key", () => psi.Environment[InvalidKey] = "value");
+            AssertExtensions.Throws<ArgumentException>("key", () => environment[InvalidKey] = "value");
+            AssertExtensions.Throws<ArgumentException>("key", () => psi.Environment.Add(InvalidKey, "value"));
+            AssertExtensions.Throws<ArgumentException>("key", () => environmentCollection.Add(new KeyValuePair<string, string>(InvalidKey, "value")));
+            AssertExtensions.Throws<ArgumentException>("key", () => environment.Add(InvalidKey, "value"));
+
+            AssertExtensions.Throws<ArgumentException>("value", () => psi.Environment["key"] = InvalidValue);
+            AssertExtensions.Throws<ArgumentException>("value", () => environment["key"] = InvalidValue);
+            AssertExtensions.Throws<ArgumentException>("value", () => psi.Environment.Add("key", InvalidValue));
+            AssertExtensions.Throws<ArgumentException>("value", () => environmentCollection.Add(new KeyValuePair<string, string>("key", InvalidValue)));
+            AssertExtensions.Throws<ArgumentException>("value", () => environment.Add("key", InvalidValue));
+        }
+
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestSetEnvironmentOnChildProcess()
         {
@@ -391,8 +413,7 @@ namespace System.Diagnostics.Tests
             // To mimic this behaviour, we can't use Environment.SetEnvironmentVariable here as it's case-insensitive on Windows.
             // We also can't use p.StartInfo.Environment as it's comparer is set to OrdinalIgnoreCAse.
             // But we can overwrite it using reflection to mimic the CreateProcess behaviour and avoid having this test call CreateProcess directly.
-            p.StartInfo.Environment
-                .GetType()
+            Type.GetType("System.Collections.Specialized.DictionaryWrapper, System.Diagnostics.Process")!
                 .GetField("_contents", Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Instance)
                 .SetValue(p.StartInfo.Environment, envVars);
 

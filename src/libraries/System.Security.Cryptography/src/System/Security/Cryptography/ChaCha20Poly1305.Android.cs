@@ -30,7 +30,7 @@ namespace System.Security.Cryptography
             Interop.Crypto.CipherSetNonceLength(_ctxHandle, NonceSizeInBytes);
         }
 
-        private void EncryptCore(
+        private unsafe void EncryptCore(
             ReadOnlySpan<byte> nonce,
             ReadOnlySpan<byte> plaintext,
             Span<byte> ciphertext,

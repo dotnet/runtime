@@ -43,8 +43,6 @@ void AsyncContinuationsManager::NotifyUnloadingClasses()
 #endif // PROFILING_SUPPORTED
 }
 
-static EEClass* volatile g_singletonContinuationEEClass;
-
 EEClass* AsyncContinuationsManager::GetOrCreateSingletonSubContinuationEEClass()
 {
     if (g_singletonContinuationEEClass != NULL)
@@ -277,7 +275,6 @@ EEHashEntry_t* ContinuationLayoutKeyHashTableHelper::AllocateEntry(ContinuationL
     {
         WRAPPER(THROWS);
         WRAPPER(GC_NOTRIGGER);
-        INJECT_FAULT(return FALSE;);
     }
     CONTRACTL_END
 
@@ -387,11 +384,6 @@ DWORD ContinuationLayoutKeyHashTableHelper::Hash(ContinuationLayoutKey key)
     }
 
     return dwHash;
-}
-
-void ContinuationLayoutKeyHashTableHelper::ReplaceKey(EEHashEntry_t *pEntry, ContinuationLayoutKey newKey)
-{
-    memcpy(pEntry->Key, &newKey, sizeof(ContinuationLayoutKey));
 }
 
 #endif

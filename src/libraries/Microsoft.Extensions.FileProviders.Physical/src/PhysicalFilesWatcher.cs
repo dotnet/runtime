@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.Versioning;
@@ -34,12 +35,27 @@ namespace Microsoft.Extensions.FileProviders.Physical
         private readonly object _fileWatcherLock = new();
         private readonly string _root;
         private readonly ExclusionFilters _filters;
+        // True when the FileSystemWatcher watches a strict ancestor of _root (rather than _root
+        // itself). In that case IncludeSubdirectories must always be true so that events occurring
+        // inside _root (which is below the FSW's watched path) are observed.
+        private readonly bool _fileWatcherIsAboveRoot;
+        // Number of currently registered tokens whose pattern requires watching subdirectories.
+        // Maintained as tokens are added and removed so we don't iterate the lookups when
+        // re-evaluating IncludeSubdirectories.
+        private int _subdirectoryRequiringTokenCount;
 
         // A single non-recursive watcher used when _root does not exist.
         // Watches for _root to be created, then enables the main FileSystemWatcher.
         private PendingCreationWatcher? _rootCreationWatcher;
         private readonly object _rootCreationWatcherLock = new();
         private bool _rootWasUnavailable;
+
+        // The last Error reported by the FileSystemWatcher that could indicate a persistent failure,
+        // remembered until a change is successfully delivered (see OnFileSystemEntryChange). Guarded by
+        // _errorLock. Used to detect the same error occurring again with no progress in between, like a
+        // file system that can't be watched (for example, a network share or a WSL path accessed from Windows).
+        private Exception? _lastError;
+        private readonly object _errorLock = new();
 
         private Timer? _timer;
         private bool _timerInitialized;
@@ -111,10 +127,15 @@ namespace Microsoft.Extensions.FileProviders.Physical
                     {
                         throw new ArgumentException(SR.Format(SR.FileSystemWatcherPathError, watcherFullPath, _root), nameof(fileSystemWatcher));
                     }
+
+                    // If the FSW watches an ancestor of _root, every event of interest occurs
+                    // in a subdirectory from the FSW's perspective, so subdirectory watching
+                    // is required to observe any of them.
+                    _fileWatcherIsAboveRoot = !watcherFullPath.Equals(_root, StringComparison.OrdinalIgnoreCase) &&
+                        _root.StartsWith(watcherFullPath, StringComparison.OrdinalIgnoreCase);
                 }
 
                 _fileWatcher = fileSystemWatcher;
-                _fileWatcher.IncludeSubdirectories = true;
                 _fileWatcher.Created += OnChanged;
                 _fileWatcher.Changed += OnChanged;
                 _fileWatcher.Renamed += OnRenamed;
@@ -189,8 +210,16 @@ namespace Microsoft.Extensions.FileProviders.Physical
             {
                 var cancellationTokenSource = new CancellationTokenSource();
                 var cancellationChangeToken = new CancellationChangeToken(cancellationTokenSource.Token);
-                tokenInfo = new ChangeTokenInfo(cancellationTokenSource, cancellationChangeToken);
-                tokenInfo = _filePathTokenLookup.GetOrAdd(filePath, tokenInfo);
+                var newTokenInfo = new ChangeTokenInfo(cancellationTokenSource, cancellationChangeToken);
+                tokenInfo = _filePathTokenLookup.GetOrAdd(filePath, newTokenInfo);
+
+                // GetOrAdd may not have actually added our entry if another thread won the race.
+                // Compare by reference to detect whether our entry was the one stored.
+                if (ReferenceEquals(tokenInfo.TokenSource, cancellationTokenSource) &&
+                    FilePathRequiresSubdirectories(filePath))
+                {
+                    Interlocked.Increment(ref _subdirectoryRequiringTokenCount);
+                }
             }
 
             IChangeToken changeToken = tokenInfo.ChangeToken;
@@ -227,8 +256,14 @@ namespace Microsoft.Extensions.FileProviders.Physical
                 var cancellationChangeToken = new CancellationChangeToken(cancellationTokenSource.Token);
                 var matcher = new Matcher(StringComparison.OrdinalIgnoreCase);
                 matcher.AddInclude(pattern);
-                tokenInfo = new ChangeTokenInfo(cancellationTokenSource, cancellationChangeToken, matcher);
-                tokenInfo = _wildcardTokenLookup.GetOrAdd(pattern, tokenInfo);
+                var newTokenInfo = new ChangeTokenInfo(cancellationTokenSource, cancellationChangeToken, matcher);
+                tokenInfo = _wildcardTokenLookup.GetOrAdd(pattern, newTokenInfo);
+
+                if (ReferenceEquals(tokenInfo.TokenSource, cancellationTokenSource) &&
+                    WildcardRequiresSubdirectories(pattern))
+                {
+                    Interlocked.Increment(ref _subdirectoryRequiringTokenCount);
+                }
             }
 
             IChangeToken changeToken = tokenInfo.ChangeToken;
@@ -346,21 +381,87 @@ namespace Microsoft.Extensions.FileProviders.Physical
         [SupportedOSPlatform("maccatalyst")]
         private void OnError(object sender, ErrorEventArgs e)
         {
+            Exception? error = e.GetException();
+
+            // An InternalBufferOverflowException means the watcher is still functioning but dropped
+            // events, so consumers must rescan; a DirectoryNotFoundException means the watched directory
+            // was deleted or moved, which is a real change the root-creation watcher recovers from. Both
+            // must always be reported, and both count as progress that clears any remembered error.
+            if (error is InternalBufferOverflowException or DirectoryNotFoundException)
+            {
+                ClearLastError();
+            }
+            else if (error is not null)
+            {
+                lock (_errorLock)
+                {
+                    if (_lastError is not null && IsSameError(_lastError, error))
+                    {
+                        // The same error recurred with no change delivered in between, so the file
+                        // system can't be watched. Don't cancel tokens: doing so would likely re-create tokens
+                        // and re-enable the watcher, looping until the stack overflows. The watcher is
+                        // still re-enabled on the next request, so if the condition later clears it can
+                        // resume watching.
+                        return;
+                    }
+
+                    _lastError = error;
+                }
+            }
+            else
+            {
+                // The Error carried no exception (only reachable through a custom FileSystemWatcher).
+                // Report it like any other error, but leave the remembered-error state untouched.
+            }
+
             // Notify all cache entries on error.
-            CancelAll(_filePathTokenLookup);
-            CancelAll(_wildcardTokenLookup);
+            CancelAll(_filePathTokenLookup, FilePathRequiresSubdirectories);
+            CancelAll(_wildcardTokenLookup, WildcardRequiresSubdirectories);
 
             TryDisableFileSystemWatcher();
 
-            static void CancelAll(ConcurrentDictionary<string, ChangeTokenInfo> tokens)
+            void CancelAll(ConcurrentDictionary<string, ChangeTokenInfo> tokens, Func<string, bool> requiresSubdirectories)
             {
                 foreach (KeyValuePair<string, ChangeTokenInfo> entry in tokens)
                 {
                     if (tokens.TryRemove(entry.Key, out ChangeTokenInfo matchInfo))
                     {
+                        if (requiresSubdirectories(entry.Key))
+                        {
+                            Interlocked.Decrement(ref _subdirectoryRequiringTokenCount);
+                        }
+
                         CancelToken(matchInfo);
                     }
                 }
+            }
+        }
+
+        // Two errors are considered the same when they have the same type and OS error code. That's a
+        // strong signal of a persistent condition (for example the same failure for an unwatchable
+        // volume), while genuinely distinct failures keep being reported. Win32Exception carries the
+        // code in NativeErrorCode (its HResult is a constant); other exceptions, such as the IOExceptions
+        // built from errno on Unix, carry it in HResult.
+        private static bool IsSameError(Exception a, Exception b)
+        {
+            if (a.GetType() != b.GetType())
+            {
+                return false;
+            }
+
+            if (a is Win32Exception win32A && b is Win32Exception win32B)
+            {
+                return win32A.NativeErrorCode == win32B.NativeErrorCode;
+            }
+
+            return a.HResult == b.HResult;
+        }
+
+        private void ClearLastError()
+        {
+            lock (_errorLock)
+            {
+                _lastError = null;
             }
         }
 
@@ -388,6 +489,13 @@ namespace Microsoft.Extensions.FileProviders.Physical
                 {
                     return;
                 }
+
+                // A relevant change was delivered, which proves the watcher is working, so forget any
+                // remembered error; a later identical error then starts over rather than being treated
+                // as a persistent recurrence. This should run only for changes inside _root that aren't
+                // excluded, so unrelated events don't reset the detection while an unwatchable-root
+                // error loop is in progress.
+                ClearLastError();
 
                 string relativePath = fullPath.Substring(_root.Length);
                 ReportChangeForMatchedEntries(relativePath);
@@ -418,6 +526,11 @@ namespace Microsoft.Extensions.FileProviders.Physical
             bool matched = false;
             if (_filePathTokenLookup.TryRemove(path, out ChangeTokenInfo matchInfo))
             {
+                if (FilePathRequiresSubdirectories(path))
+                {
+                    Interlocked.Decrement(ref _subdirectoryRequiringTokenCount);
+                }
+
                 CancelToken(matchInfo);
                 matched = true;
             }
@@ -428,6 +541,11 @@ namespace Microsoft.Extensions.FileProviders.Physical
                 if (matchResult.HasMatches &&
                     _wildcardTokenLookup.TryRemove(wildCardEntry.Key, out matchInfo))
                 {
+                    if (WildcardRequiresSubdirectories(wildCardEntry.Key))
+                    {
+                        Interlocked.Decrement(ref _subdirectoryRequiringTokenCount);
+                    }
+
                     CancelToken(matchInfo);
                     matched = true;
                 }
@@ -491,6 +609,14 @@ namespace Microsoft.Extensions.FileProviders.Physical
                         // Perf: Turn off the file monitoring if no files or directories to monitor.
                         _fileWatcher.EnableRaisingEvents = false;
                     }
+                    else if (_fileWatcher.IncludeSubdirectories &&
+                        !_fileWatcherIsAboveRoot &&
+                        Volatile.Read(ref _subdirectoryRequiringTokenCount) == 0)
+                    {
+                        // Perf: Some tokens were removed and none of the remaining ones require
+                        // subdirectory watching, so we can stop recursing.
+                        _fileWatcher.IncludeSubdirectories = false;
+                    }
                 }
             }
 
@@ -527,20 +653,20 @@ namespace Microsoft.Extensions.FileProviders.Physical
 
                 if (!_filePathTokenLookup.IsEmpty || !_wildcardTokenLookup.IsEmpty)
                 {
-                    bool rootExists = Directory.Exists(_root);
-
-                    // On some platforms (e.g., Linux), FileSystemWatcher currently does not
-                    // invoke OnError when the watched directory is deleted, so we don't disable
-                    // the FSW and start root watcher at that point.
-                    // Detect and handle this opportunistically now.
-                    if (_fileWatcher.EnableRaisingEvents && !rootExists)
+                    // Only enable recursive subdirectory watching when at least one registered
+                    // pattern actually references a subdirectory. This avoids creating an inotify
+                    // watch descriptor on every descendant directory on Linux when only root-level files
+                    // (e.g. appsettings.json) are being monitored.
+                    bool needsSubdirectories = _fileWatcherIsAboveRoot ||
+                        Volatile.Read(ref _subdirectoryRequiringTokenCount) > 0;
+                    if (_fileWatcher.IncludeSubdirectories != needsSubdirectories)
                     {
-                        _fileWatcher.EnableRaisingEvents = false;
+                        _fileWatcher.IncludeSubdirectories = needsSubdirectories;
                     }
 
                     if (!_fileWatcher.EnableRaisingEvents)
                     {
-                        if (!rootExists)
+                        if (!Directory.Exists(_root))
                         {
                             needsRootWatcher = true;
                             _rootWasUnavailable = true;
@@ -577,6 +703,20 @@ namespace Microsoft.Extensions.FileProviders.Physical
                                 }
                             }
                         }
+                    }
+                    else if (!Directory.Exists(_root))
+                    {
+                        // The watcher still reports EnableRaisingEvents == true, but _root has been
+                        // deleted out from under it. When the watched directory is deleted, the OS
+                        // watch is torn down (on Linux the inotify watch is bound to the deleted
+                        // directory's inode, so recreating the directory will not resurrect it), yet
+                        // EnableRaisingEvents is only reset once OnError runs TryDisableFileSystemWatcher.
+                        // If a token is (re)registered before that happens, we would otherwise leave a
+                        // dead watcher in place and never observe the root being recreated. Tear down
+                        // the stale watch and fall back to watching for the root to reappear.
+                        _fileWatcher.EnableRaisingEvents = false;
+                        needsRootWatcher = true;
+                        _rootWasUnavailable = true;
                     }
                 }
             }
@@ -654,6 +794,18 @@ namespace Microsoft.Extensions.FileProviders.Physical
                 // This can only happen on .NET Framework with the ThrowExceptionIfDisposedCancellationTokenSource compat switch on.
             }
         }
+
+        // Patterns are normalized to use forward slashes. A file path token references a single
+        // file, so it requires subdirectory watching only when the path is in a subdirectory
+        // (i.e. contains '/').
+        private static bool FilePathRequiresSubdirectories(string normalizedFilePath) =>
+            normalizedFilePath.Contains('/');
+
+        // A wildcard pattern requires subdirectory watching when it explicitly references a
+        // subdirectory (contains '/') or uses the recursive globbing wildcard '**'. A simple
+        // wildcard like '*' or '*.json' only matches entries directly in the root directory.
+        private static bool WildcardRequiresSubdirectories(string normalizedPattern) =>
+            normalizedPattern.Contains('/') || normalizedPattern.Contains("**");
 
         private static string NormalizePath(string filter) => filter.Replace('\\', '/');
 

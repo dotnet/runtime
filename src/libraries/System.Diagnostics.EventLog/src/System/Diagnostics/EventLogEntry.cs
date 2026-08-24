@@ -247,7 +247,7 @@ namespace System.Diagnostics
         {
             get
             {
-                return beginningOfTime.AddSeconds(IntFrom(dataBuf, bufOffset + FieldOffsets.TIMEGENERATED)).ToLocalTime();
+                return DateTime.UnixEpoch.AddSeconds(IntFrom(dataBuf, bufOffset + FieldOffsets.TIMEGENERATED)).ToLocalTime();
             }
         }
 
@@ -258,7 +258,7 @@ namespace System.Diagnostics
         {
             get
             {
-                return beginningOfTime.AddSeconds(IntFrom(dataBuf, bufOffset + FieldOffsets.TIMEWRITTEN)).ToLocalTime();
+                return DateTime.UnixEpoch.AddSeconds(IntFrom(dataBuf, bufOffset + FieldOffsets.TIMEWRITTEN)).ToLocalTime();
             }
         }
 
@@ -475,7 +475,5 @@ namespace System.Diagnostics
             internal const int DATAOFFSET = 52;
             internal const int RAWDATA = 56;
         }
-
-        private static readonly DateTime beginningOfTime = new DateTime(1970, 1, 1, 0, 0, 0);
     }
 }

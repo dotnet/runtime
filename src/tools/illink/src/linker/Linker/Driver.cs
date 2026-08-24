@@ -44,6 +44,7 @@ using ILCompiler;
 using ILogger = ILCompiler.ILogWriter;
 using DependencyNode = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>;
 using AssemblyRootNode = ILCompiler.DependencyAnalysis.AssemblyRootNode;
+using TrimmingDescriptorNode = ILCompiler.DependencyAnalysis.TrimmingDescriptorNode;
 #else
 using Mono.Cecil;
 using Mono.Linker.Steps;
@@ -772,7 +773,9 @@ namespace Mono.Linker
                                 return -1;
                             }
 
-#if !ILTRIM
+#if ILTRIM
+                            inputs.Add(new TrimmingDescriptorNode(xmlFile));
+#else
                             inputs.Add(new ResolveFromXmlStep(File.OpenRead(xmlFile), xmlFile));
 #endif
                             continue;
@@ -1620,9 +1623,9 @@ namespace Mono.Linker
             p.AppendStep(new ValidateVirtualMethodAnnotationsStep());
             p.AppendStep(new ProcessWarningsStep());
             p.AppendStep(new OutputWarningSuppressions());
+            p.AppendStep(new CodeRewriterStep());
             p.AppendStep(new SweepStep());
             p.AppendStep(new CheckSuppressionsDispatcher());
-            p.AppendStep(new CodeRewriterStep());
             p.AppendStep(new CleanStep());
             p.AppendStep(new RegenerateGuidStep());
             p.AppendStep(new OutputStep());

@@ -13,6 +13,7 @@
 #include "../gc/env/gcenv.ee.h"
 #include "threadsuspend.h"
 #include "interoplibinterface.h"
+#include "exinfo.h"
 
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
@@ -52,14 +53,14 @@ void GCToEEInterface::SuspendEE(SUSPEND_REASON reason)
         g_pDebugInterface->SuspendForGarbageCollectionCompleted();
 }
 
-void GCToEEInterface::RestartEE(bool bFinishedGC)
+void GCToEEInterface::RestartEE(bool bUnused)
 {
     WRAPPER_NO_CONTRACT;
 
     if (g_pDebugInterface)
         g_pDebugInterface->ResumeForGarbageCollectionStarted();
 
-    ThreadSuspend::RestartEE(bFinishedGC, TRUE);
+    ThreadSuspend::RestartEE(true /* SuspendSucceeded */);
 }
 
 VOID GCToEEInterface::SyncBlockCacheWeakPtrScan(HANDLESCANPROC scanProc, uintptr_t lp1, uintptr_t lp2)
@@ -199,10 +200,23 @@ static void ScanStackRoots(Thread * pThread, promote_func* fn, ScanContext* sc)
     }
 
     GCFrame* pGCFrame = pThread->GetGCFrame();
-    while (pGCFrame != GCFRAME_TOP)
+    while (pGCFrame != NULL)
     {
         pGCFrame->GcScanRoots(fn, sc);
         pGCFrame = pGCFrame->PtrNextFrame();
+    }
+
+    // Scan the ExInfo chain for exception objects held by direct pointer.
+    // Superseded ExInfo objects may live in logically dead parts of the stack
+    // that the normal GC stackwalk skips (e.g., when one exception dispatch
+    // supersedes a previous one). We keep them alive for post-mortem debugging
+    // and SOS. This mirrors NativeAOT's GcScanRootsWorker (thread.cpp:569-573).
+    PTR_ExInfo pExInfo = pThread->GetExceptionState()->GetCurrentExceptionTracker();
+    while (pExInfo != NULL)
+    {
+        PTR_PTR_Object pRef = dac_cast<PTR_PTR_Object>(&pExInfo->m_exception);
+        fn(pRef, sc, 0);
+        pExInfo = pExInfo->GetPreviousExceptionTracker();
     }
 }
 
@@ -405,6 +419,22 @@ void GCToEEInterface::TriggerClientBridgeProcessing(MarkCrossReferencesArgs* arg
 
 #ifdef FEATURE_JAVAMARSHAL
     Interop::TriggerClientBridgeProcessing(args);
+#endif // FEATURE_JAVAMARSHAL
+}
+
+bool GCToEEInterface::IsClientBridgeProcessingActive()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+#ifdef FEATURE_JAVAMARSHAL
+    return Interop::IsGCBridgeActive();
+#else
+    return false;
 #endif // FEATURE_JAVAMARSHAL
 }
 
@@ -864,7 +894,7 @@ void GCToEEInterface::DiagUpdateGenerationBounds()
 
 void GCToEEInterface::DiagGCEnd(size_t index, int gen, int reason, bool fConcurrent)
 {
-#ifdef GC_PROFILING
+#if defined(GC_PROFILING) || defined(PERFTRACING_DISABLE_THREADS)
     // We were only doing generation bounds and GC finish callback for non concurrent GCs so
     // I am keeping that behavior to not break profilers. But if BasicGC monitoring is enabled
     // we will do these for all GCs.
@@ -872,7 +902,9 @@ void GCToEEInterface::DiagGCEnd(size_t index, int gen, int reason, bool fConcurr
     {
         GCProfileWalkHeap(false);
     }
+#endif // defined(GC_PROFILING) || defined(PERFTRACING_DISABLE_THREADS)
 
+#ifdef GC_PROFILING
     if (CORProfilerTrackBasicGC() || (!fConcurrent && CORProfilerTrackGC()))
     {
         DiagUpdateGenerationBounds();
@@ -1064,7 +1096,7 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
         {
             assert(!args->is_runtime_suspended &&
                 "if runtime was suspended in patching routines then it was in running state at beginning");
-            ThreadSuspend::RestartEE(FALSE, TRUE);
+            ThreadSuspend::RestartEE(true /* SuspendSucceeded */);
         }
         return; // unlike other branches we have already done cleanup so bailing out here
 
@@ -1165,7 +1197,7 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
     {
         assert(!args->is_runtime_suspended &&
             "if runtime was suspended in patching routines then it was in running state at beginning");
-        ThreadSuspend::RestartEE(FALSE, TRUE);
+        ThreadSuspend::RestartEE(true /* SuspendSucceeded */);
     }
 }
 
@@ -1570,7 +1602,7 @@ namespace
         ThreadStubArguments args;
         args.Argument = argument;
         args.ThreadStart = threadStart;
-        args.Thread = INVALID_HANDLE_VALUE;
+        args.Thread = NULL;
 #ifdef __APPLE__
         args.name = name;
 #endif //__APPLE__
@@ -1603,7 +1635,7 @@ namespace
         };
 
         args.Thread = Thread::CreateUtilityThread(Thread::StackSize_Medium, threadStub, &args, name);
-        if (args.Thread == INVALID_HANDLE_VALUE)
+        if (args.Thread == NULL)
         {
             args.ThreadStartedEvent.CloseEvent();
             return false;

@@ -18,7 +18,6 @@ set(CORDBEE_SOURCES_DAC_AND_WKS
 set(CORDBEE_HEADERS_DAC_AND_WKS
   controller.h
   controller.inl
-  datatest.h
   debugger.h
   debugger.inl
   executioncontrol.h
@@ -57,7 +56,7 @@ if(FEATURE_INTERPRETER)
 endif(FEATURE_INTERPRETER)
 
 if (CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_I386)
-  list(APPEND CORDBEE_SOURCES_WKS ${ARCH_SOURCES_DIR}/debuggerregdisplayhelper.cpp)
+  list(APPEND CORDBEE_SOURCES_WKS ${ARCH_SOURCES_DIR}/regdisplayhelper.cpp)
 endif ()
 
 convert_to_absolute_path(CORDBEE_SOURCES_DAC ${CORDBEE_SOURCES_DAC})

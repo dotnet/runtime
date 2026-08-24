@@ -10,9 +10,7 @@
 #include "comdelegate.h"
 #include <dn-stdio.h>
 
-#ifdef FEATURE_PERFMAP
 #include "perfmap.h"
-#endif
 
 #ifndef DACCESS_COMPILE
 
@@ -100,11 +98,23 @@ struct CachedIndirectionCellBlockListNode
 
 BYTE* GenerateDispatchStubCellEntryMethodDesc(LoaderAllocator *pLoaderAllocator, TypeHandle ownerType, MethodDesc *pMD, LCGMethodResolver *pResolver)
 {
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
     return GenerateDispatchStubCellEntrySlot(pLoaderAllocator, ownerType, pMD->GetSlot(), pResolver);
 }
 
 BYTE* GenerateDispatchStubCellEntrySlot(LoaderAllocator *pLoaderAllocator, TypeHandle ownerType, int methodSlot, LCGMethodResolver *pResolver)
 {
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
     VirtualCallStubManager * pMgr = pLoaderAllocator->GetVirtualCallStubManager();
 
     DispatchToken token = VirtualCallStubManager::GetTokenFromOwnerAndSlot(ownerType, methodSlot);
@@ -157,7 +167,6 @@ void VirtualCallStubManager::StartupLogging()
     {
         NOTHROW;
         GC_TRIGGERS;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -165,7 +174,6 @@ void VirtualCallStubManager::StartupLogging()
 
     EX_TRY
     {
-        FAULT_NOT_FATAL(); // We handle filecreation problems locally
         SString str;
         str.Printf("StubLog_%d.log", GetCurrentProcessId());
         if (fopen_lp(&g_hStubLogFile, str.GetUnicode(), W("wb")) != 0)
@@ -188,7 +196,6 @@ void VirtualCallStubManager::LoggingDump()
     {
         NOTHROW;
         GC_TRIGGERS;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -398,7 +405,6 @@ void VirtualCallStubManager::ResetCache()
     {
         NOTHROW;
         GC_TRIGGERS;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -417,6 +423,10 @@ void VirtualCallStubManager::ResetCache()
     // Go through each cache entry and if the cache element there is in
     // the cache entry heap of the manager being deleted, then we just
     // set the cache entry to empty.
+#ifdef CHAIN_LOOKUP
+    // Serialize cache chain unlinking against concurrent insert/promote writers.
+    CrstHolder lh(g_resolveCache->GetWriteLock());
+#endif
     DispatchCache::Iterator it(g_resolveCache);
     while (it.IsValid())
     {
@@ -430,7 +440,6 @@ void VirtualCallStubManager::Init(LoaderAllocator *pLoaderAllocator)
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
     } CONTRACTL_END;
 
     m_loaderAllocator   = pLoaderAllocator;
@@ -495,12 +504,12 @@ void VirtualCallStubManager::Init(LoaderAllocator *pLoaderAllocator)
     //
     // Align up all of the commit and reserve sizes
     //
-    indcell_heap_reserve_size        = (DWORD) ALIGN_UP(indcell_heap_reserve_size,     GetOsPageSize());
-    indcell_heap_commit_size         = (DWORD) ALIGN_UP(indcell_heap_commit_size,      GetOsPageSize());
+    indcell_heap_reserve_size        = (DWORD) ALIGN_UP(indcell_heap_reserve_size,     minipal_getpagesize());
+    indcell_heap_commit_size         = (DWORD) ALIGN_UP(indcell_heap_commit_size,      minipal_getpagesize());
 
 #ifdef FEATURE_VIRTUAL_STUB_DISPATCH
-    cache_entry_heap_reserve_size    = (DWORD) ALIGN_UP(cache_entry_heap_reserve_size, GetOsPageSize());
-    cache_entry_heap_commit_size     = (DWORD) ALIGN_UP(cache_entry_heap_commit_size,  GetOsPageSize());
+    cache_entry_heap_reserve_size    = (DWORD) ALIGN_UP(cache_entry_heap_reserve_size, minipal_getpagesize());
+    cache_entry_heap_commit_size     = (DWORD) ALIGN_UP(cache_entry_heap_commit_size,  minipal_getpagesize());
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
 
     BYTE * initReservedMem = NULL;
@@ -520,17 +529,17 @@ void VirtualCallStubManager::Init(LoaderAllocator *pLoaderAllocator)
             DWORD dwWastedReserveMemSize = dwTotalReserveMemSize - dwTotalReserveMemSizeCalc;
             if (dwWastedReserveMemSize != 0)
             {
-                DWORD cWastedPages = dwWastedReserveMemSize / GetOsPageSize();
+                DWORD cWastedPages = dwWastedReserveMemSize / minipal_getpagesize();
 
                 // Split the wasted pages over the 2 LoaderHeaps that we allocate as part of a VirtualCallStubManager
                 DWORD cPagesPerHeap = cWastedPages / 2;
                 DWORD cPagesRemainder = cWastedPages % 2; // We'll throw this at the cache entry heap
 
-                indcell_heap_reserve_size += cPagesPerHeap * GetOsPageSize();
+                indcell_heap_reserve_size += cPagesPerHeap * minipal_getpagesize();
 #ifdef FEATURE_VIRTUAL_STUB_DISPATCH
-                cache_entry_heap_reserve_size += (cPagesPerHeap + cPagesRemainder) * GetOsPageSize();
+                cache_entry_heap_reserve_size += (cPagesPerHeap + cPagesRemainder) * minipal_getpagesize();
 #else
-                indcell_heap_reserve_size += (cPagesPerHeap + cPagesRemainder) * GetOsPageSize();
+                indcell_heap_reserve_size += (cPagesPerHeap + cPagesRemainder) * minipal_getpagesize();
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
             }
 
@@ -552,15 +561,15 @@ void VirtualCallStubManager::Init(LoaderAllocator *pLoaderAllocator)
     }
     else
     {
-        indcell_heap_reserve_size        = GetOsPageSize();
-        indcell_heap_commit_size         = GetOsPageSize();
+        indcell_heap_reserve_size        = minipal_getpagesize();
+        indcell_heap_commit_size         = minipal_getpagesize();
 
 #ifdef FEATURE_VIRTUAL_STUB_DISPATCH
-        cache_entry_heap_reserve_size    = GetOsPageSize();
-        cache_entry_heap_commit_size     = GetOsPageSize();
+        cache_entry_heap_reserve_size    = minipal_getpagesize();
+        cache_entry_heap_commit_size     = minipal_getpagesize();
 #else
         // If we don't support VSD, use a slightly bigger heap size to avoid wasting memory
-        indcell_heap_reserve_size        = 2 * GetOsPageSize();
+        indcell_heap_reserve_size        = 2 * minipal_getpagesize();
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
 
 #ifdef _DEBUG
@@ -672,7 +681,6 @@ VirtualCallStubManager::~VirtualCallStubManager()
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     } CONTRACTL_END;
 
     LogStats();
@@ -681,6 +689,10 @@ VirtualCallStubManager::~VirtualCallStubManager()
     // Go through each cache entry and if the cache element there is in
     // the cache entry heap of the manager being deleted, then we just
     // set the cache entry to empty.
+#ifdef CHAIN_LOOKUP
+    // Serialize cache chain unlinking against concurrent insert/promote writers.
+    CrstHolder lh(g_resolveCache->GetWriteLock());
+#endif
     DispatchCache::Iterator it(g_resolveCache);
     while (it.IsValid())
     {
@@ -789,7 +801,6 @@ void VirtualCallStubManager::LogFinalStats()
     {
         NOTHROW;
         GC_TRIGGERS;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -816,7 +827,6 @@ void VirtualCallStubManager::ReclaimAll()
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
 #ifdef FEATURE_VIRTUAL_STUB_DISPATCH
     /* @todo: if/when app domain unloading is supported,
@@ -884,7 +894,6 @@ VirtualCallStubManager *VirtualCallStubManager::FindStubManager(PCODE stubAddres
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         SUPPORTS_DAC;
     } CONTRACTL_END
 
@@ -924,7 +933,6 @@ BOOL VirtualCallStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
     SUPPORTS_DAC;
 
     // Forwarded to from RangeSectionStubManager
@@ -959,7 +967,6 @@ BOOL VirtualCallStubManager::TraceManager(Thread *thread,
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
 
@@ -975,7 +982,7 @@ BOOL VirtualCallStubManager::TraceManager(Thread *thread,
     Object *pObj = StubManagerHelpers::GetThisPtr(pContext);
 
     // Call common trace code.
-    return (TraceResolver(pObj, token, trace));
+    return TraceResolver(pObj, token, trace);
 }
 
 #ifndef DACCESS_COMPILE
@@ -986,8 +993,7 @@ DispatchToken VirtualCallStubManager::GetTokenFromOwnerAndSlot(TypeHandle ownerT
     {
         THROWS;
         GC_TRIGGERS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
+        MODE_PREEMPTIVE;
     }
     CONTRACTL_END
 
@@ -1009,10 +1015,9 @@ PCODE VirtualCallStubManager::GetCallStub(TypeHandle ownerType, MethodDesc *pMD)
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
-        MODE_ANY;
+        MODE_PREEMPTIVE;
         PRECONDITION(CheckPointer(pMD));
         PRECONDITION(!pMD->IsInterface() || ownerType.GetMethodTable()->HasSameTypeDefAs(pMD->GetMethodTable()));
-        INJECT_FAULT(COMPlusThrowOM(););
     } CONTRACTL_END;
 
     DispatchToken token = GetTokenFromOwnerAndSlot(ownerType, pMD->GetSlot());
@@ -1023,13 +1028,11 @@ PCODE VirtualCallStubManager::GetCallStub(TypeHandle ownerType, MethodDesc *pMD)
 //find or create a stub
 PCODE VirtualCallStubManager::GetCallStub(DispatchToken token)
 {
-    CONTRACT (PCODE) {
+    CONTRACTL {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
-        POSTCONDITION(RETVAL != NULL);
-    } CONTRACT_END;
+    } CONTRACTL_END;
 
     GCX_COOP(); // This is necessary for BucketTable synchronization
 
@@ -1043,7 +1046,19 @@ PCODE VirtualCallStubManager::GetCallStub(DispatchToken token)
     {
         if ((stub = (PCODE)(lookups->Find(&probeL))) == CALL_STUB_EMPTY_ENTRY)
         {
-            LookupHolder *pLookupHolder = GenerateLookupStub(addrOfResolver, token.To_SIZE_T());
+            LookupHolder *pLookupHolder;
+            bool reenteredCooperativeGCMode = PerfMap::IsEnabled();
+            {
+                GCX_MAYBE_PREEMP(reenteredCooperativeGCMode);
+                pLookupHolder = GenerateLookupStub(addrOfResolver, token.To_SIZE_T());
+            }
+
+            if (reenteredCooperativeGCMode)
+            {
+                // The prober may have been invalidated by reentering cooperative GC mode, reset it
+                BOOL success = lookups->SetUpProber(token.To_SIZE_T(), 0, &probeL);
+                _ASSERTE(success);
+            }
             stub = (PCODE) (lookups->Add((size_t)(pLookupHolder->stub()->entryPoint()), &probeL));
         }
     }
@@ -1051,18 +1066,17 @@ PCODE VirtualCallStubManager::GetCallStub(DispatchToken token)
     _ASSERTE(stub != CALL_STUB_EMPTY_ENTRY);
     stats.site_counter++;
 
-    RETURN (stub);
+    _ASSERTE(stub != 0);
+    return stub;
 }
 
 PCODE VirtualCallStubManager::GetVTableCallStub(DWORD slot)
 {
-    CONTRACT(PCODE) {
+    CONTRACTL {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
-        POSTCONDITION(RETVAL != NULL);
-    } CONTRACT_END;
+    } CONTRACTL_END;
 
     GCX_COOP(); // This is necessary for BucketTable synchronization
 
@@ -1074,24 +1088,35 @@ PCODE VirtualCallStubManager::GetVTableCallStub(DWORD slot)
     {
         if ((stub = (PCODE)(vtableCallers->Find(&probe))) == CALL_STUB_EMPTY_ENTRY)
         {
-            VTableCallHolder *pHolder = GenerateVTableCallStub(slot);
+            VTableCallHolder *pHolder;
+
+            bool reenteredCooperativeGCMode = PerfMap::IsEnabled();
+            {
+                GCX_MAYBE_PREEMP(reenteredCooperativeGCMode);
+                pHolder = GenerateVTableCallStub(slot);
+            }
+
+            if (reenteredCooperativeGCMode)
+            {
+                // The prober may have been invalidated by reentering cooperative GC mode, reset it
+                BOOL success = vtableCallers->SetUpProber(DispatchToken::CreateDispatchToken(slot).To_SIZE_T(), 0, &probe);
+                _ASSERTE(success);
+            }
             stub = (PCODE)(vtableCallers->Add((size_t)(pHolder->stub()->entryPoint()), &probe));
         }
     }
 
     _ASSERTE(stub != CALL_STUB_EMPTY_ENTRY);
-    RETURN(stub);
+    return stub;
 }
 
 VTableCallHolder* VirtualCallStubManager::GenerateVTableCallStub(DWORD slot)
 {
-    CONTRACT(VTableCallHolder*) {
+    CONTRACTL {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
-        POSTCONDITION(RETVAL != NULL);
-    } CONTRACT_END;
+    } CONTRACTL_END;
 
     //allocate from the requisite heap and copy the template over it.
     size_t vtableHolderSize = VTableCallHolder::GetHolderSize(slot);
@@ -1107,11 +1132,9 @@ VTableCallHolder* VirtualCallStubManager::GenerateVTableCallStub(DWORD slot)
     LOG((LF_STUBS, LL_INFO10000, "GenerateVTableCallStub for slot " FMT_ADDR "at" FMT_ADDR "\n",
         DBG_ADDR(slot), DBG_ADDR(pHolder->stub())));
 
-#ifdef FEATURE_PERFMAP
     PerfMap::LogStubs(__FUNCTION__, "GenerateVTableCallStub", (PCODE)pHolder->stub(), pHolder->stub()->size(), PerfMapStubType::IndividualWithinBlock);
-#endif
 
-    RETURN(pHolder);
+    return pHolder;
 }
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
 
@@ -1138,13 +1161,11 @@ BYTE* GetStubIndirectionCell(BYTE** pBlocksStart, UINT32 index, UINT32 sizeOfInd
 
 BYTE *VirtualCallStubManager::GenerateStubIndirection(PCODE target, DispatchToken token, BOOL fUseRecycledCell /* = FALSE*/ )
 {
-    CONTRACT (BYTE*) {
+    CONTRACTL {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(target != NULL);
-        POSTCONDITION(CheckPointer(RETVAL));
-    } CONTRACT_END;
+    } CONTRACTL_END;
 
     _ASSERTE(UseCachedInterfaceDispatch() || isStubStatic(target));
 
@@ -1215,7 +1236,7 @@ BYTE *VirtualCallStubManager::GenerateStubIndirection(PCODE target, DispatchToke
         *((PCODE *)ret) = target;
     )
 
-    RETURN ret;
+    return ret;
 }
 
 #ifdef FEATURE_VIRTUAL_STUB_DISPATCH
@@ -1228,7 +1249,6 @@ ResolveCacheElem *VirtualCallStubManager::GetResolveCacheElem(void *pMT,
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
 
@@ -1265,7 +1285,6 @@ size_t VirtualCallStubManager::GetTokenFromStub(PCODE stub, T_CONTEXT *pContext)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -1304,7 +1323,6 @@ size_t VirtualCallStubManager::GetTokenFromStubQuick(VirtualCallStubManager * pM
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -1361,7 +1379,6 @@ ResolveCacheElem* __fastcall VirtualCallStubManager::PromoteChainEntry(ResolveCa
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         PRECONDITION(CheckPointer(pElem));
     } CONTRACTL_END;
 
@@ -1377,7 +1394,6 @@ PCODE CachedInterfaceDispatchResolveWorker(StubCallSite* pCallSite, OBJECTREF *p
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(protectedObj != NULL);
         PRECONDITION(*protectedObj != NULL);
         PRECONDITION(IsProtectedByGCFrame(protectedObj));
@@ -1412,7 +1428,6 @@ extern "C" PCODE CID_VirtualOpenDelegateDispatchWorker(TransitionBlock * pTransi
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(CheckPointer(pTransitionBlock));
         MODE_COOPERATIVE;
     } CONTRACTL_END;
@@ -1436,24 +1451,32 @@ extern "C" PCODE CID_VirtualOpenDelegateDispatchWorker(TransitionBlock * pTransi
     if (pObj == NULL) {
         pSDFrame->SetForNullReferenceException();
         pSDFrame->Push(CURRENT_THREAD);
+        INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(pSDFrame);
         INSTALL_MANAGED_EXCEPTION_DISPATCHER;
         INSTALL_UNWIND_AND_CONTINUE_HANDLER;
         COMPlusThrow(kNullReferenceException);
         UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
         UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+        UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
         _ASSERTE(!"Throw returned");
     }
 
-    MethodDesc *pTargetMD = COMDelegate::GetMethodDescForOpenVirtualDelegate(delegateObj);
+    MethodDesc *pTargetMD = COMDelegate::GetMethodDescForOpenVirtualDelegate((DELEGATEREF)delegateObj);
     pSDFrame->SetFunction(pTargetMD);
 
     pSDFrame->Push(CURRENT_THREAD);
+    INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(pSDFrame);
     INSTALL_MANAGED_EXCEPTION_DISPATCHER;
     INSTALL_UNWIND_AND_CONTINUE_HANDLER;
 
     GCStress<vsd_on_resolve>::MaybeTriggerAndProtect(pObj);
 
-    DispatchToken token = VirtualCallStubManager::GetTokenFromOwnerAndSlot(TypeHandle(pTargetMD->GetMethodTable()), pTargetMD->GetSlot());
+    DispatchToken token;
+    
+    {
+        GCX_PREEMP();
+        token = VirtualCallStubManager::GetTokenFromOwnerAndSlot(TypeHandle(pTargetMD->GetMethodTable()), pTargetMD->GetSlot());
+    }
     target = CachedInterfaceDispatchResolveWorker(NULL, protectedObj, token);
 
 #if _DEBUG
@@ -1466,6 +1489,7 @@ extern "C" PCODE CID_VirtualOpenDelegateDispatchWorker(TransitionBlock * pTransi
 
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
     UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+    UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
     pSDFrame->Pop(CURRENT_THREAD);
 
     return target;
@@ -1489,7 +1513,6 @@ extern "C" PCODE CID_ResolveWorker(TransitionBlock * pTransitionBlock,
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(CheckPointer(pTransitionBlock));
         MODE_COOPERATIVE;
     } CONTRACTL_END;
@@ -1516,11 +1539,13 @@ extern "C" PCODE CID_ResolveWorker(TransitionBlock * pTransitionBlock,
     if (pObj == NULL) {
         pSDFrame->SetForNullReferenceException();
         pSDFrame->Push(CURRENT_THREAD);
+        INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(pSDFrame);
         INSTALL_MANAGED_EXCEPTION_DISPATCHER;
         INSTALL_UNWIND_AND_CONTINUE_HANDLER;
         COMPlusThrow(kNullReferenceException);
         UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
         UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+        UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
         _ASSERTE(!"Throw returned");
     }
 
@@ -1537,6 +1562,7 @@ extern "C" PCODE CID_ResolveWorker(TransitionBlock * pTransitionBlock,
     pSDFrame->SetRepresentativeSlot(pRepresentativeMT, representativeToken.GetSlotNumber());
 
     pSDFrame->Push(CURRENT_THREAD);
+    INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(pSDFrame);
     INSTALL_MANAGED_EXCEPTION_DISPATCHER;
     INSTALL_UNWIND_AND_CONTINUE_HANDLER;
 
@@ -1554,6 +1580,7 @@ extern "C" PCODE CID_ResolveWorker(TransitionBlock * pTransitionBlock,
 
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
     UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+    UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
     pSDFrame->Pop(CURRENT_THREAD);
 
     return target;
@@ -1584,7 +1611,6 @@ PCODE VSD_ResolveWorker(TransitionBlock * pTransitionBlock,
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(CheckPointer(pTransitionBlock));
         MODE_COOPERATIVE;
     } CONTRACTL_END;
@@ -1613,11 +1639,13 @@ PCODE VSD_ResolveWorker(TransitionBlock * pTransitionBlock,
     if (pObj == NULL) {
         pSDFrame->SetForNullReferenceException();
         pSDFrame->Push(CURRENT_THREAD);
+        INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(pSDFrame);
         INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX;
         INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
         COMPlusThrow(kNullReferenceException);
         UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(propagateExceptionToNativeCode);
         UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(propagateExceptionToNativeCode);
+        UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
         _ASSERTE(!"Throw returned");
     }
 
@@ -1653,6 +1681,7 @@ PCODE VSD_ResolveWorker(TransitionBlock * pTransitionBlock,
     pSDFrame->SetRepresentativeSlot(pRepresentativeMT, representativeToken.GetSlotNumber());
     pSDFrame->Push(CURRENT_THREAD);
 
+    INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(pSDFrame);
     INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX;
     INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
 
@@ -1692,6 +1721,8 @@ PCODE VSD_ResolveWorker(TransitionBlock * pTransitionBlock,
 
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(propagateExceptionToNativeCode);
     UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(propagateExceptionToNativeCode);
+    UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
+
     pSDFrame->Pop(CURRENT_THREAD);
 
     return target;
@@ -1703,7 +1734,6 @@ PCODE VSD_ResolveWorkerForInterfaceLookupSlot(TransitionBlock * pTransitionBlock
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(CheckPointer(pTransitionBlock));
         MODE_COOPERATIVE;
     } CONTRACTL_END;
@@ -1729,16 +1759,19 @@ PCODE VSD_ResolveWorkerForInterfaceLookupSlot(TransitionBlock * pTransitionBlock
 
     if (pObj == NULL) {
         pSDFrame->Push(CURRENT_THREAD);
+        INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(pSDFrame);
         INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX;
         INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
         COMPlusThrow(kNullReferenceException);
         UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(propagateExceptionToNativeCode);
         UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(propagateExceptionToNativeCode);
+        UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
         _ASSERTE(!"Throw returned");
     }
 
     pSDFrame->Push(CURRENT_THREAD);
 
+    INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(pSDFrame);
     INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX;
     INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
 
@@ -1777,6 +1810,8 @@ PCODE VSD_ResolveWorkerForInterfaceLookupSlot(TransitionBlock * pTransitionBlock
 
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(propagateExceptionToNativeCode);
     UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(propagateExceptionToNativeCode);
+    UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
+
     pSDFrame->Pop(CURRENT_THREAD);
 
     return target;
@@ -1788,7 +1823,6 @@ void VirtualCallStubManager::BackPatchWorkerStatic(PCODE returnAddress, TADDR si
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         ENTRY_POINT;
         PRECONDITION(returnAddress != NULL);
     } CONTRACTL_END
@@ -1827,7 +1861,6 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(protectedObj != NULL);
         PRECONDITION(*protectedObj != NULL);
         PRECONDITION(IsProtectedByGCFrame(protectedObj));
@@ -2046,14 +2079,24 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
                             }
 #endif // TARGET_X86 && !UNIX_X86_ABI
 
-                            pResolveHolder = GenerateResolveStub(pResolverFcn,
-                                                             pBackPatchFcn,
-                                                             token.To_SIZE_T()
+                            bool reenteredCooperativeGCMode = PerfMap::IsEnabled();
+                            {
+                                GCX_MAYBE_PREEMP(reenteredCooperativeGCMode);
+                                pResolveHolder = GenerateResolveStub(pResolverFcn,
+                                                                pBackPatchFcn,
+                                                                token.To_SIZE_T()
 #if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
-                                                             , stackArgumentsSize
+                                                                 , stackArgumentsSize
 #endif
                                                              );
+                            }
 
+                            if (reenteredCooperativeGCMode)
+                            {
+                                // The prober may have been invalidated by reentering cooperative GC mode, reset it
+                                BOOL success = resolvers->SetUpProber(token.To_SIZE_T(), 0, &probeR);
+                                _ASSERTE(success);
+                            }
                             // Add the resolve entrypoint into the cache.
                             //@TODO: Can we store a pointer to the holder rather than the entrypoint?
                             resolvers->Add((size_t)(pResolveHolder->stub()->resolveEntryPoint()), &probeR);
@@ -2087,9 +2130,12 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
                             if (addrOfDispatch == CALL_STUB_EMPTY_ENTRY)
                             {
                                 PCODE addrOfFail = pResolveHolder->stub()->failEntryPoint();
-                                bool reenteredCooperativeGCMode = false;
-                                pDispatchHolder = GenerateDispatchStub(
-                                    target, addrOfFail, objectType, token.To_SIZE_T(), &reenteredCooperativeGCMode);
+                                bool reenteredCooperativeGCMode = PerfMap::IsEnabled();
+                                {
+                                    GCX_MAYBE_PREEMP(reenteredCooperativeGCMode);
+                                    pDispatchHolder = GenerateDispatchStub(
+                                        target, addrOfFail, objectType, token.To_SIZE_T(), &reenteredCooperativeGCMode);
+                                }
                                 if (reenteredCooperativeGCMode)
                                 {
                                     // The prober may have been invalidated by reentering cooperative GC mode, reset it
@@ -2200,9 +2246,12 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
                                     // so we may have to create it now
                                     ResolveHolder* pResolveHolder = ResolveHolder::FromResolveEntry(pCallSite->GetSiteTarget());
                                     PCODE addrOfFail = pResolveHolder->stub()->failEntryPoint();
-                                    bool reenteredCooperativeGCMode = false;
-                                    pDispatchHolder = GenerateDispatchStub(
-                                        target, addrOfFail, objectType, token.To_SIZE_T(), &reenteredCooperativeGCMode);
+                                    bool reenteredCooperativeGCMode = PerfMap::IsEnabled();
+                                    {
+                                        GCX_MAYBE_PREEMP(reenteredCooperativeGCMode);
+                                        pDispatchHolder = GenerateDispatchStub(
+                                            target, addrOfFail, objectType, token.To_SIZE_T(), &reenteredCooperativeGCMode);
+                                    }
                                     if (reenteredCooperativeGCMode)
                                     {
                                         // The prober may have been invalidated by reentering cooperative GC mode, reset it
@@ -2440,26 +2489,26 @@ VirtualCallStubManager::Resolver(
 // Given a contract, return true if the contract represents a slot on the target.
 BOOL VirtualCallStubManager::IsClassToken(DispatchToken token)
 {
-    CONTRACT (BOOL) {
+    CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-    } CONTRACT_END;
-    RETURN (token.IsThisToken());
+    } CONTRACTL_END;
+    return token.IsThisToken();
 }
 
 //----------------------------------------------------------------------------
 // Given a contract, return true if the contract represents an interface, false if just a slot.
 BOOL VirtualCallStubManager::IsInterfaceToken(DispatchToken token)
 {
-    CONTRACT (BOOL) {
+    CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-    } CONTRACT_END;
+    } CONTRACTL_END;
     BOOL ret = token.IsTypedToken();
     // For now, only interfaces have typed dispatch tokens.
     CONSISTENCY_CHECK(!ret || CheckPointer(AppDomain::GetCurrentDomain()->LookupType(token.GetTypeID())));
     CONSISTENCY_CHECK(!ret || AppDomain::GetCurrentDomain()->LookupType(token.GetTypeID())->IsInterface());
-    RETURN (ret);
+    return ret;
 }
 
 #ifndef DACCESS_COMPILE
@@ -2470,13 +2519,12 @@ VirtualCallStubManager::GetRepresentativeMethodDescFromToken(
     DispatchToken token,
     MethodTable * pMT)
 {
-    CONTRACT (MethodDesc *) {
+    CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
         PRECONDITION(CheckPointer(pMT));
-        POSTCONDITION(CheckPointer(RETVAL));
-    } CONTRACT_END;
+    } CONTRACTL_END;
 
     // This is called in a context where managed references on the stack may not be fully protected,
     // so garbage collection must be forbidden here.
@@ -2489,7 +2537,7 @@ VirtualCallStubManager::GetRepresentativeMethodDescFromToken(
         token = DispatchToken::CreateDispatchToken(token.GetSlotNumber());
     }
     CONSISTENCY_CHECK(token.IsThisToken());
-    RETURN (pMT->GetMethodDescForSlot_NoThrow(token.GetSlotNumber()));
+    return pMT->GetMethodDescForSlot_NoThrow(token.GetSlotNumber());
 }
 
 //----------------------------------------------------------------------------
@@ -2564,7 +2612,6 @@ VirtualCallStubManager::GetTarget(
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(CheckPointer(pMT));
     } CONTRACTL_END
 
@@ -2635,7 +2682,6 @@ VirtualCallStubManager::TraceResolver(
         THROWS;
         GC_TRIGGERS;
         PRECONDITION(CheckPointer(pObj, NULL_OK));
-        INJECT_FAULT(COMPlusThrowOM(););
     } CONTRACTL_END
 
     // If someone is trying to step into a stub dispatch call on a null object,
@@ -2682,7 +2728,6 @@ void VirtualCallStubManager::BackPatchWorker(StubCallSite* pCallSite)
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     } CONTRACTL_END
 
     PCODE callSiteTarget = pCallSite->GetSiteTarget();
@@ -2721,7 +2766,6 @@ void VirtualCallStubManager::BackPatchSite(StubCallSite* pCallSite, PCODE stub)
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         PRECONDITION(stub != NULL);
         PRECONDITION(CheckPointer(pCallSite));
         PRECONDITION(pCallSite->GetSiteTarget() != NULL);
@@ -2783,17 +2827,14 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStub(PCODE            ad
                                                              size_t           dispatchToken,
                                                              bool *           pMayHaveReenteredCooperativeGCMode)
 {
-    CONTRACT (DispatchHolder*) {
+    CONTRACTL {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(addrOfCode != NULL);
         PRECONDITION(addrOfFail != NULL);
         PRECONDITION(CheckPointer(pMTExpected));
         PRECONDITION(pMayHaveReenteredCooperativeGCMode != nullptr);
-        PRECONDITION(!*pMayHaveReenteredCooperativeGCMode);
-        POSTCONDITION(CheckPointer(RETVAL));
-    } CONTRACT_END;
+    } CONTRACTL_END;
 
     size_t dispatchHolderSize = sizeof(DispatchHolder);
 
@@ -2802,7 +2843,7 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStub(PCODE            ad
     if (m_fShouldAllocateLongJumpDispatchStubs
         INDEBUG(|| g_pConfig->ShouldGenerateLongJumpDispatchStub()))
     {
-        RETURN GenerateDispatchStubLong(addrOfCode,
+        return GenerateDispatchStubLong(addrOfCode,
                                         addrOfFail,
                                         pMTExpected,
                                         dispatchToken,
@@ -2820,7 +2861,7 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStub(PCODE            ad
     if (!DispatchHolder::CanShortJumpDispatchStubReachFailTarget(addrOfFail, (LPCBYTE)holder))
     {
         m_fShouldAllocateLongJumpDispatchStubs = TRUE;
-        RETURN GenerateDispatchStub(addrOfCode, addrOfFail, pMTExpected, dispatchToken, pMayHaveReenteredCooperativeGCMode);
+        return GenerateDispatchStub(addrOfCode, addrOfFail, pMTExpected, dispatchToken, pMayHaveReenteredCooperativeGCMode);
     }
 #endif
 
@@ -2854,11 +2895,9 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStub(PCODE            ad
     LOG((LF_STUBS, LL_INFO10000, "GenerateDispatchStub for token" FMT_ADDR "and pMT" FMT_ADDR "at" FMT_ADDR "\n",
                                  DBG_ADDR(dispatchToken), DBG_ADDR(pMTExpected), DBG_ADDR(holder->stub())));
 
-#ifdef FEATURE_PERFMAP
     PerfMap::LogStubs(__FUNCTION__, "GenerateDispatchStub", (PCODE)holder->stub(), holder->stub()->size(), PerfMapStubType::IndividualWithinBlock);
-#endif
 
-    RETURN (holder);
+    return holder;
 }
 
 #ifdef TARGET_AMD64
@@ -2872,17 +2911,14 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStubLong(PCODE          
                                                                  size_t           dispatchToken,
                                                                  bool *           pMayHaveReenteredCooperativeGCMode)
 {
-    CONTRACT (DispatchHolder*) {
+    CONTRACTL {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(addrOfCode != NULL);
         PRECONDITION(addrOfFail != NULL);
         PRECONDITION(CheckPointer(pMTExpected));
         PRECONDITION(pMayHaveReenteredCooperativeGCMode != nullptr);
-        PRECONDITION(!*pMayHaveReenteredCooperativeGCMode);
-        POSTCONDITION(CheckPointer(RETVAL));
-    } CONTRACT_END;
+    } CONTRACTL_END;
 
     //allocate from the requisite heap and copy the template over it.
     size_t dispatchHolderSize = DispatchHolder::GetHolderSize(DispatchStub::e_TYPE_LONG);
@@ -2915,11 +2951,9 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStubLong(PCODE          
     LOG((LF_STUBS, LL_INFO10000, "GenerateDispatchStub for token" FMT_ADDR "and pMT" FMT_ADDR "at" FMT_ADDR "\n",
                                  DBG_ADDR(dispatchToken), DBG_ADDR(pMTExpected), DBG_ADDR(holder->stub())));
 
-#ifdef FEATURE_PERFMAP
     PerfMap::LogStubs(__FUNCTION__, "GenerateDispatchStub", (PCODE)holder->stub(), holder->stub()->size(), PerfMapStubType::IndividualWithinBlock);
-#endif
 
-    RETURN (holder);
+    return holder;
 }
 #endif
 
@@ -2936,16 +2970,14 @@ ResolveHolder *VirtualCallStubManager::GenerateResolveStub(PCODE            addr
 #endif
                                                            )
 {
-    CONTRACT (ResolveHolder*) {
+    CONTRACTL {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(addrOfResolver != NULL);
 #if defined(TARGET_X86)
         PRECONDITION(addrOfPatcher != NULL);
 #endif
-        POSTCONDITION(CheckPointer(RETVAL));
-    } CONTRACT_END;
+    } CONTRACTL_END;
 
     _ASSERTE(addrOfResolver);
 
@@ -3013,11 +3045,9 @@ ResolveHolder *VirtualCallStubManager::GenerateResolveStub(PCODE            addr
     LOG((LF_STUBS, LL_INFO10000, "GenerateResolveStub  for token" FMT_ADDR "at" FMT_ADDR "\n",
                                  DBG_ADDR(dispatchToken), DBG_ADDR(holder->stub())));
 
-#ifdef FEATURE_PERFMAP
     PerfMap::LogStubs(__FUNCTION__, "GenerateResolveStub", (PCODE)holder->stub(), holder->stub()->size(), PerfMapStubType::IndividualWithinBlock);
-#endif
 
-    RETURN (holder);
+    return holder;
 }
 
 //----------------------------------------------------------------------------
@@ -3025,13 +3055,11 @@ ResolveHolder *VirtualCallStubManager::GenerateResolveStub(PCODE            addr
 */
 LookupHolder *VirtualCallStubManager::GenerateLookupStub(PCODE addrOfResolver, size_t dispatchToken)
 {
-    CONTRACT (LookupHolder*) {
+    CONTRACTL {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(addrOfResolver != NULL);
-        POSTCONDITION(CheckPointer(RETVAL));
-    } CONTRACT_END;
+    } CONTRACTL_END;
 
     //allocate from the requisite heap and copy the template over it.
     LookupHolder * holder     = (LookupHolder*) (void*) lookup_heap->AllocAlignedMem(sizeof(LookupHolder), CODE_SIZE_ALIGN);
@@ -3046,11 +3074,9 @@ LookupHolder *VirtualCallStubManager::GenerateLookupStub(PCODE addrOfResolver, s
     LOG((LF_STUBS, LL_INFO10000, "GenerateLookupStub   for token" FMT_ADDR "at" FMT_ADDR "\n",
                                  DBG_ADDR(dispatchToken), DBG_ADDR(holder->stub())));
 
-#ifdef FEATURE_PERFMAP
     PerfMap::LogStubs(__FUNCTION__, "GenerateLookupStub", (PCODE)holder->stub(), holder->stub()->size(), PerfMapStubType::IndividualWithinBlock);
-#endif
 
-    RETURN (holder);
+    return holder;
 }
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
 
@@ -3067,7 +3093,6 @@ ResolveCacheElem *VirtualCallStubManager::GenerateResolveCacheElem(void *addrOfC
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(pMayHaveReenteredCooperativeGCMode != nullptr);
         PRECONDITION(!*pMayHaveReenteredCooperativeGCMode);
     }
@@ -3076,8 +3101,12 @@ ResolveCacheElem *VirtualCallStubManager::GenerateResolveCacheElem(void *addrOfC
     CONSISTENCY_CHECK(CheckPointer(pMTExpected));
 
     //allocate from the requisite heap and set the appropriate fields
-    ResolveCacheElem *e = (ResolveCacheElem*) (void*)
+    ResolveCacheElem *e;
+    {
+        GCX_NOTRIGGER();
+        e = (ResolveCacheElem*) (void*)
         cache_entry_heap->AllocAlignedMem(sizeof(ResolveCacheElem), CODE_SIZE_ALIGN);
+    }
 
     e->pMT    = pMTExpected;
     e->token  = token;
@@ -3164,7 +3193,6 @@ void VirtualCallStubManager::LogStats()
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     // Our Init routine assignes all fields atomically so testing one field should suffice to
     // test whehter the Init succeeded.
@@ -3246,7 +3274,6 @@ void Prober::InitProber(size_t key1, size_t key2, size_t* table)
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     } CONTRACTL_END
 
     _ASSERTE(table);
@@ -3263,7 +3290,6 @@ size_t Prober::Find()
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     } CONTRACTL_END
 
     size_t entry;
@@ -3297,7 +3323,6 @@ size_t Prober::Add(size_t newEntry)
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     } CONTRACTL_END
 
     size_t entry;
@@ -3373,7 +3398,6 @@ size_t FastTable::Add(size_t entry, Prober* probe)
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     } CONTRACTL_END
 
     size_t result = probe->Add(entry);
@@ -3401,7 +3425,6 @@ BOOL BucketTable::GetMoreSpace(const Prober* p)
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE; // This is necessary for synchronization with BucketTable::Reclaim
-        INJECT_FAULT(COMPlusThrowOM(););
     } CONTRACTL_END;
 
     //get ahold of the current bucket
@@ -3495,7 +3518,6 @@ void BucketTable::Reclaim()
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -3564,7 +3586,6 @@ BOOL BucketTable::SetUpProber(size_t keyA, size_t keyB, Prober *prober)
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE; // This is necessary for synchronization with BucketTable::Reclaim
-        INJECT_FAULT(COMPlusThrowOM(););
     } CONTRACTL_END;
 
     // The buckets[index] table starts off initialized to all CALL_STUB_EMPTY_ENTRY
@@ -3620,7 +3641,6 @@ size_t BucketTable::Add(size_t entry, Prober* probe)
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE; // This is necessary for synchronization with BucketTable::Reclaim
-        INJECT_FAULT(COMPlusThrowOM(););
     } CONTRACTL_END
 
     FastTable* table = (FastTable*)(probe->items());
@@ -3657,7 +3677,6 @@ DispatchCache::DispatchCache()
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END
 
@@ -3719,7 +3738,6 @@ BOOL DispatchCache::Insert(ResolveCacheElem* elem, InsertKind insertKind)
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
-        FORBID_FAULT;
         PRECONDITION(insertKind != IK_NONE);
     } CONTRACTL_END;
 
@@ -3836,7 +3854,6 @@ void DispatchCache::PromoteChainEntry(ResolveCacheElem* elem)
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     } CONTRACTL_END;
 
     CrstHolder lh(&m_writeLock);
@@ -4070,7 +4087,7 @@ BOOL VirtualCallStubManagerIterator::Next()
         m_pCurMgr = m_pCurMgr->m_pNext;
     }
 
-    return (m_pCurMgr != NULL);
+    return m_pCurMgr != NULL;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////
@@ -4232,7 +4249,6 @@ MethodDesc *VirtualCallStubManagerManager::Entry2MethodDesc(
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
 

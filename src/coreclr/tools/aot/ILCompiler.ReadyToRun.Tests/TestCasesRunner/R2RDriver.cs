@@ -30,11 +30,9 @@ internal enum Crossgen2Option
 {
     Composite,
     InputBubble,
-    ObjectFormat,
     HotColdSplitting,
     Optimize,
-    TargetArch,
-    TargetOS,
+    StripILBodies,
 }
 
 internal static class Crossgen2OptionsExtensions
@@ -58,11 +56,9 @@ internal static class Crossgen2OptionsExtensions
     {
         Crossgen2Option.Composite => $"--composite",
         Crossgen2Option.InputBubble => $"--input-bubble",
-        Crossgen2Option.ObjectFormat => $"--object-format",
         Crossgen2Option.HotColdSplitting => $"--hot-cold-splitting",
         Crossgen2Option.Optimize => $"--optimize",
-        Crossgen2Option.TargetArch => $"--target-arch",
-        Crossgen2Option.TargetOS => $"--target-os",
+        Crossgen2Option.StripILBodies => $"--strip-il-bodies",
         _ => throw new ArgumentOutOfRangeException(nameof(kind)),
     };
 }
@@ -85,29 +81,23 @@ internal sealed class R2RDriver
 {
     private static readonly TimeSpan ProcessTimeout = TimeSpan.FromMinutes(2);
     private readonly ITestOutputHelper _output;
-    private readonly TestPaths _paths;
 
-    public R2RDriver(ITestOutputHelper output, TestPaths paths)
+    public R2RDriver(ITestOutputHelper output)
     {
         _output = output;
-        _paths = paths;
-
-        if (!File.Exists(_paths.Crossgen2Exe))
-            throw new FileNotFoundException($"crossgen2 executable not found at {_paths.Crossgen2Exe}");
     }
 
     /// <summary>
-    /// Runs crossgen2 with the given arguments.
+    /// Runs the crossgen2 that compiles for this build's target RID with the given arguments.
     /// </summary>
     public R2RCompilationResult Compile(List<string> args)
     {
-        var fullArgs = new List<string>(args);
-        return RunCrossgen2(fullArgs);
+        return RunCrossgen2(TestPaths.Crossgen2Exe, new List<string>(args));
     }
 
-    private R2RCompilationResult RunCrossgen2(List<string> crossgen2Args)
+    private R2RCompilationResult RunCrossgen2(string crossgen2Exe, List<string> crossgen2Args)
     {
-        var psi = new ProcessStartInfo(_paths.Crossgen2Exe, crossgen2Args)
+        var psi = new ProcessStartInfo(crossgen2Exe, crossgen2Args)
         {
             RedirectStandardOutput = true,
             RedirectStandardError = true,
@@ -121,7 +111,7 @@ internal sealed class R2RDriver
             psi.Environment[envVar] = null;
         }
 
-        string commandLine = $"{_paths.Crossgen2Exe} {string.Join(" ", crossgen2Args)}";
+        string commandLine = $"{crossgen2Exe} {string.Join(" ", crossgen2Args)}";
         _output.WriteLine($"  crossgen2 command: {commandLine}");
 
         using var process = Process.Start(psi)!;
@@ -144,6 +134,7 @@ internal sealed class R2RDriver
         if (process.ExitCode != 0)
         {
             _output.WriteLine($"  crossgen2 FAILED (exit code {process.ExitCode})");
+            _output.WriteLine(stdout);
             _output.WriteLine(stderr);
         }
 

@@ -1,6 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <!-- https://github.com/dotnet/runtime/issues/126862 -->
+    <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
+    <EnableAotAnalyzer>false</EnableAotAnalyzer>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AttributeInheritanceTests.cs" />
@@ -12,6 +15,7 @@
     <Compile Include="CustomModuleTests.cs" />
     <Compile Include="CustomParameterInfoTests.cs" />
     <Compile Include="CustomPropertyInfoTests.cs" />
+    <Compile Include="CustomReflectionContext.Examples.cs" />
     <Compile Include="CustomReflectionContextTests.cs" />
     <Compile Include="CustomTypeTests.cs" />
     <Compile Include="ExtendedAssemblyTests.cs" />

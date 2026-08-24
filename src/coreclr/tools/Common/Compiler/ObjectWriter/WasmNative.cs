@@ -72,6 +72,17 @@ namespace ILCompiler.ObjectWriter
         Count = 0x05 // Not actually part of the spec; used for counting kinds
     }
 
+    /// <summary>
+    /// WebAssembly export descriptor kinds per the specification.
+    /// </summary>
+    internal enum WasmExportKind : byte
+    {
+        Function = 0x00,
+        Table = 0x01,
+        Memory = 0x02,
+        Global = 0x03,
+    }
+
     public class WasmGlobalImportType : WasmImportType
     {
         WasmValueType _valueType;
@@ -161,6 +172,30 @@ namespace ILCompiler.ObjectWriter
             return (int)size;
         }
 
+        public override int EncodeRelocationCount() => 0;
+        public override int EncodeRelocations(Span<Relocation> buffer) => 0;
+    }
+
+    public class WasmTagImportType : WasmImportType
+    {
+        // Exception tag attribute: 0 means an exception tag.
+        private const byte ExceptionAttribute = 0x00;
+
+        private readonly int _typeIndex;
+
+        public WasmTagImportType(int typeIndex) : base(WasmExternalKind.Tag)
+        {
+            _typeIndex = typeIndex;
+        }
+
+        public override int Encode(Span<byte> buffer)
+        {
+            buffer[0] = ExceptionAttribute;
+
+            return 1 + DwarfHelper.WriteULEB128(buffer.Slice(1), (ulong)_typeIndex);
+        }
+
+        public override int EncodeSize() => 1 + (int)DwarfHelper.SizeOfULEB128((ulong)_typeIndex);
         public override int EncodeRelocationCount() => 0;
         public override int EncodeRelocations(Span<Relocation> buffer) => 0;
     }

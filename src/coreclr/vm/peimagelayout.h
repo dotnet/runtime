@@ -57,6 +57,10 @@ public:
 
 public:
 #ifndef DACCESS_COMPILE
+#ifdef TARGET_WASM
+    // One-time initialization of the lock guarding webcil relocation de-duplication.
+    static void Startup();
+#endif // TARGET_WASM
     static PEImageLayout* CreateFromByteArray(PEImage* pOwner, const BYTE* array, COUNT_T size);
 #ifndef TARGET_UNIX
     static PEImageLayout* CreateFromHMODULE(HMODULE hModule,PEImage* pOwner);
@@ -77,9 +81,7 @@ public:
     void ApplyBaseRelocations(bool relocationMustWriteCopy);
 
 #ifdef FEATURE_WEBCIL
-// TODO-WASM: These can be removed very soon, and we can fetch this from the webcil header itself
-    void SetTableBaseOffset(SSIZE_T tableBaseOffset) { m_tableBaseOffset = tableBaseOffset; }
-    SSIZE_T GetTableBaseOffset() const { return m_tableBaseOffset; }
+    SSIZE_T GetTableBaseOffset() const;
 #endif
 
     // ------------------------------------------------------------
@@ -244,7 +246,6 @@ protected:
     PEDecoder m_peDecoder;
 #ifdef FEATURE_WEBCIL
     WebcilDecoder m_webcilDecoder;
-    SSIZE_T m_tableBaseOffset;
 #endif
 
 public:

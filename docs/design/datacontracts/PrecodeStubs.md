@@ -7,54 +7,61 @@ This contract provides support for examining [precode](../coreclr/botr/method-de
 ```csharp
     // Gets a pointer to the MethodDesc for a given stub entrypoint
     TargetPointer GetMethodDescFromStubAddress(TargetCodePointer entryPoint);
+
+    // Given an interior address within a precode stub and the kind of stub (StubPrecode or FixupPrecode),
+    // computes the entry point of the precode.
+    TargetPointer GetPrecodeEntryPointFromInteriorAddress(TargetCodePointer interiorAddress, bool isFixupPrecode);
+
+    // If the code pointer is an interpreter precode, returns the actual interpreter
+    // code address (ByteCodeAddr). Otherwise returns the original address unchanged.
+    // Mirrors GetInterpreterCodeFromInterpreterPrecodeIfPresent in native code (precode.cpp).
+    TargetCodePointer GetInterpreterCodeFromInterpreterPrecodeIfPresent(TargetCodePointer entryPoint);
 ```
 
-## Version 1, 2, and 3
+## Version 1
 
-Data descriptors used:
-| Data Descriptor Name | Field | Meaning |
-| --- | --- | --- |
-| PrecodeMachineDescriptor | OffsetOfPrecodeType | See `ReadPrecodeType` (Version 1 and 2 only) |
-| PrecodeMachineDescriptor | ShiftOfPrecodeType | See `ReadPrecodeType`  (Version 1 and 2 only) |
-| PrecodeMachineDescriptor | ReadWidthOfPrecodeType | See `ReadPrecodeType`  (Version 1 and 2 only) |
-| PrecodeMachineDescriptor | StubCodePageSize | Size of a precode code page (in bytes) |
-| PrecodeMachineDescriptor | CodePointerToInstrPointerMask | mask to apply to code pointers to get an address (see arm32 note)
-| PrecodeMachineDescriptor | StubPrecodeType | precode sort byte for stub precodes |
-| PrecodeMachineDescriptor | HasPInvokeImportPrecode | 1 if platform supports PInvoke precode stubs |
-| PrecodeMachineDescriptor | PInvokeImportPrecodeType |  precode sort byte for PInvoke precode stubs, if supported |
-| PrecodeMachineDescriptor | HasFixupPrecode | 1 if platform supports fixup precode stubs |
-| PrecodeMachineDescriptor | FixupPrecodeType | precode sort byte for fixup precode stubs, if supported |
-| PrecodeMachineDescriptor | ThisPointerRetBufPrecodeType | precode sort byte for this pointer ret buf precodes |
-| PrecodeMachineDescriptor | FixupStubPrecodeSize | Byte size of `FixupBytes` and `FixupIgnoredBytes` (Version 3 only) |
-| PrecodeMachineDescriptor | FixupBytes | Assembly code of a FixupStub (Version 3 only) |
-| PrecodeMachineDescriptor | FixupIgnoredBytes | Bytes to ignore of when comparing `FixupBytes` to an actual block of memory in the target process. (Version 3 only) |
-| PrecodeMachineDescriptor | StubPrecodeSize | Byte size of `StubBytes` and `StubIgnoredBytes` (Version 3 only) |
-| PrecodeMachineDescriptor | StubBytes | Assembly code of a StubPrecode (Version 3 only) |
-| PrecodeMachineDescriptor | StubIgnoredBytes | Bytes to ignore of when comparing `StubBytes` to an actual block of memory in the target process. (Version 3 only) |
-| PrecodeMachineDescriptor | FixupCodeOffset | Offset of second entrypoint into a `FixupStub` (Present in data for Version 3 and above only.) |
-| PrecodeMachineDescriptor | InterpreterPrecodeType | precode sort byte for the entrypoint into the interpreter (Version 3 only) |
-| PrecodeMachineDescriptor | UMEntryPrecodeType | precode sort byte for the entrypoint into the UMEntry thunk (Version 3 only) |
-| PrecodeMachineDescriptor | DynamicHelperPrecodeType | precode sort byte for the entrypoint into a dynamic helper (Version 3 only) |
-| StubPrecodeData | MethodDesc | pointer to the MethodDesc associated with this stub precode (Version 1 only) |
-| StubPrecodeData | SecretParam | pointer to the MethodDesc associated with this stub precode or a second stub data pointer for other types (Version 2 only) |
-| StubPrecodeData | Type | precise sort of stub precode |
-| FixupPrecodeData | MethodDesc | pointer to the MethodDesc associated with this fixup precode |
-| ThisPtrRetBufPrecodeData | MethodDesc | pointer to the MethodDesc associated with the ThisPtrRetBufPrecode (Version 2 only) |
+<!-- BEGIN GENERATED: usage contract=PrecodeStubs version=c1 -->
+### Data descriptors used
 
-arm32 note: the `CodePointerToInstrPointerMask` is used to convert IP values that may include an arm Thumb bit (for example extracted from disassembling a call instruction or from a snapshot of the registers) into an address.  On other architectures applying the mask is a no-op.
+| Data Descriptor | Field | Type | Meaning |
+| --- | --- | --- | --- |
+| `FixupPrecodeData` | `MethodDesc` | `pointer` | pointer to the MethodDesc associated with this fixup precode |
+| `InterpByteCodeStart` | `Method` | `pointer` | pointer to the InterpMethod associated with the bytecode |
+| `InterpMethod` | `MethodDesc` | `pointer` | pointer to the MethodDesc for the interpreted method |
+| `InterpreterPrecodeData` | `ByteCodeAddr` | `pointer` | pointer to the InterpByteCodeStart for the interpreter bytecode |
+| `PrecodeMachineDescriptor` | `DynamicHelperPrecodeType` | `uint8` | Precode type byte for a dynamic helper precode |
+| `PrecodeMachineDescriptor` | `FixupBytes` | `uint8[]` | Assembly code of a FixupStub |
+| `PrecodeMachineDescriptor` | `FixupIgnoredBytes` | `uint8[]` | Bytes to ignore when comparing FixupBytes to an actual block of memory in the target process. |
+| `PrecodeMachineDescriptor` | `FixupStubPrecodeSize` | `uint8` | Byte size of FixupBytes and FixupIgnoredBytes |
+| `PrecodeMachineDescriptor` | `InterpreterPrecodeType` | `uint8` | Precode type byte for an interpreter precode |
+| `PrecodeMachineDescriptor` | `PInvokeImportPrecodeType` | `uint8` | Precode type byte for a P/Invoke import precode |
+| `PrecodeMachineDescriptor` | `StubBytes` | `uint8[]` | Assembly code of a StubPrecode |
+| `PrecodeMachineDescriptor` | `StubCodePageSize` | `uint32` | Size of a precode code page (in bytes) |
+| `PrecodeMachineDescriptor` | `StubIgnoredBytes` | `uint8[]` | Bytes to ignore when comparing StubBytes to an actual block of memory in the target process. |
+| `PrecodeMachineDescriptor` | `StubPrecodeSize` | `uint8` | Byte size of StubBytes and StubIgnoredBytes |
+| `PrecodeMachineDescriptor` | `StubPrecodeType` | `uint8` | precode sort byte for stub precodes |
+| `PrecodeMachineDescriptor` | `ThisPointerRetBufPrecodeType` | `uint8` | Precode type byte for a this-pointer return-buffer precode |
+| `PrecodeMachineDescriptor` | `UMEntryPrecodeType` | `uint8` | Precode type byte for a UMEntry precode |
+| `StubPrecodeData` | `SecretParam` | `pointer` | pointer to the MethodDesc associated with this stub precode or a second stub data pointer for other types |
+| `StubPrecodeData` | `Type` | `uint8` | precise sort of stub precode |
+| `ThisPtrRetBufPrecodeData` | `MethodDesc` | `pointer` | pointer to the MethodDesc associated with the ThisPtrRetBufPrecode |
 
+### Global variables used
 
-Global variables used:
-| Global Name | Type | Purpose |
-| --- | --- | --- |
-| PrecodeMachineDescriptor | pointer | address of the `PrecodeMachineDescriptor` data |
+_None._
 
-Contracts used:
+### Contracts used
+
 | Contract Name |
 | --- |
 | `PlatformMetadata` |
+<!-- END GENERATED: usage contract=PrecodeStubs version=c1 -->
 
-### Determining the precode type (Version 3)
+The `CodePointerToInstrPointerMask` converts IP values that may include an arm Thumb bit
+(for example, extracted from disassembling a call instruction or from a snapshot of the
+registers) into an address. On other architectures applying the mask is a no-op.
+
+### Determining the precode type
 ``` csharp
     private bool ReadBytesAndCompare(TargetPointer instrAddress, byte[] expectedBytePattern, byte[] bytesToIgnore)
     {
@@ -114,77 +121,6 @@ Contracts used:
             return KnownPrecodeType.Fixup;
         }
         return null;
-    }
-```
-
-### Determining the precode type (Version 1 and 2)
-
-An initial approximation of the precode type relies on a particular pattern at a known offset from the precode entrypoint.
-The precode type is expected to be encoded as an immediate. On some platforms the value is spread over multiple instruction bytes and may need to be right-shifted.
-
-```csharp
-    private byte ReadPrecodeType(TargetPointer instrPointer)
-    {
-        if (MachineDescriptor.ReadWidthOfPrecodeType == 1)
-        {
-            byte precodeType = _target.Read<byte>(instrPointer + MachineDescriptor.OffsetOfPrecodeType);
-            return (byte)(precodeType >> MachineDescriptor.ShiftOfPrecodeType);
-        }
-        else if (MachineDescriptor.ReadWidthOfPrecodeType == 2)
-        {
-            ushort precodeType = _target.Read<ushort>(instrPointer + MachineDescriptor.OffsetOfPrecodeType);
-            return (byte)(precodeType >> MachineDescriptor.ShiftOfPrecodeType);
-        }
-        else
-        {
-            throw new InvalidOperationException($"Invalid precode type width {MachineDescriptor.ReadWidthOfPrecodeType}");
-        }
-    }
-```
-
-After the initial precode type is determined, for stub precodes a refined precode type is extracted from the stub precode data.
-
-```csharp
-    private KnownPrecodeType? TryGetKnownPrecodeType(TargetPointer instrAddress)
-    {
-        // We get the precode type in two phases:
-        // 1. Read the precode type from the intruction address.
-        // 2. If it's "stub", look at the stub data and get the actual precode type - it could be stub,
-        //    but it could also be a pinvoke precode
-        // precode.h Precode::GetType()
-        byte approxPrecodeType = ReadPrecodeType(instrAddress);
-        byte exactPrecodeType;
-        if (approxPrecodeType == MachineDescriptor.StubPrecodeType)
-        {
-            // get the actual type from the StubPrecodeData
-            Data.StubPrecodeData stubPrecodeData = GetStubPrecodeData(instrAddress);
-            exactPrecodeType = stubPrecodeData.Type;
-        }
-        else
-        {
-            exactPrecodeType = approxPrecodeType;
-        }
-
-        if (exactPrecodeType == MachineDescriptor.StubPrecodeType)
-        {
-            return KnownPrecodeType.Stub;
-        }
-        else if (MachineDescriptor.PInvokeImportPrecodeType is byte ndType && exactPrecodeType == ndType)
-        {
-            return KnownPrecodeType.PInvokeImport;
-        }
-        else if (MachineDescriptor.FixupPrecodeType is byte fixupType && exactPrecodeType == fixupType)
-        {
-            return KnownPrecodeType.Fixup;
-        }
-        else if (MachineDescriptor.ThisPointerRetBufPrecodeType is byte thisPtrRetBufType && exactPrecodeType == thisPtrRetBufType)
-        {
-            return KnownPrecodeType.ThisPtrRetBuf;
-        }
-        else
-        {
-            return null;
-        }
     }
 ```
 
@@ -259,6 +195,22 @@ After the initial precode type is determined, for stub precodes a refined precod
         }
     }
 
+    // Resolves MethodDesc for interpreter precodes by following
+    // the InterpreterPrecodeData -> InterpByteCodeStart -> InterpMethod -> MethodDesc chain.
+    internal sealed class InterpreterPrecode : ValidPrecode
+    {
+        internal InterpreterPrecode(TargetPointer instrPointer) : base(instrPointer, KnownPrecodeType.Interpreter) { }
+
+        internal override TargetPointer GetMethodDesc(Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor)
+        {
+            TargetPointer dataAddr = InstrPointer + precodeMachineDescriptor.StubCodePageSize;
+            Data.InterpreterPrecodeData precodeData = target.ProcessedData.GetOrAdd<Data.InterpreterPrecodeData>(dataAddr);
+            Data.InterpByteCodeStart byteCodeStart = target.ProcessedData.GetOrAdd<Data.InterpByteCodeStart>(precodeData.ByteCodeAddr);
+            Data.InterpMethod interpMethod = target.ProcessedData.GetOrAdd<Data.InterpMethod>(byteCodeStart.Method);
+            return interpMethod.MethodDesc;
+        }
+    }
+
     internal TargetPointer CodePointerReadableInstrPointer(TargetCodePointer codePointer)
     {
         // Mask off the thumb bit, if we're on arm32, to get the actual instruction pointer
@@ -282,6 +234,8 @@ After the initial precode type is determined, for stub precodes a refined precod
                     return new PInvokeImportPrecode(instrPointer);
                 case KnownPrecodeType.ThisPtrRetBuf:
                     return new ThisPtrRetBufPrecode(instrPointer);
+                case KnownPrecodeType.Interpreter:
+                    return new InterpreterPrecode(instrPointer);
                 default:
                     break;
             }
@@ -294,5 +248,61 @@ After the initial precode type is determined, for stub precodes a refined precod
         ValidPrecode precode = GetPrecodeFromEntryPoint(entryPoint);
 
         return precode.GetMethodDesc(_target, MachineDescriptor);
+    }
+
+    // Returns the interpreter bytecode address if the entry point is an interpreter precode,
+    // otherwise returns the original entry point unchanged.
+    // This method never throws - on any failure, the original address is returned.
+    TargetCodePointer IPrecodeStubs.GetInterpreterCodeFromInterpreterPrecodeIfPresent(TargetCodePointer entryPoint)
+    {
+        try
+        {
+            TargetPointer instrPointer = CodePointerReadableInstrPointer(entryPoint);
+            if (!IsAlignedInstrPointer(instrPointer))
+                return entryPoint;
+
+            if (TryGetKnownPrecodeType(instrPointer) is not KnownPrecodeType.Interpreter)
+                return entryPoint;
+
+            TargetPointer dataAddr = instrPointer + MachineDescriptor.StubCodePageSize;
+            Data.InterpreterPrecodeData precodeData = // read InterpreterPrecodeData at dataAddr
+            if (precodeData.ByteCodeAddr == TargetPointer.Null)
+                return entryPoint;
+
+            return new TargetCodePointer(precodeData.ByteCodeAddr);
+        }
+        catch
+        {
+            return entryPoint;
+        }
+    }
+```
+
+### `GetPrecodeEntryPointFromInteriorAddress`
+
+Given an interior address within a precode stub and the kind of stub (StubPrecode or FixupPrecode),
+computes the entry point of the precode.
+
+```csharp
+    TargetPointer IPrecodeStubs.GetPrecodeEntryPointFromInteriorAddress(TargetCodePointer interiorAddress, bool isFixupPrecode)
+    {
+        TargetPointer instrPointer = CodePointerReadableInstrPointer(interiorAddress);
+
+        uint stubSize;
+        if (isFixupPrecode)
+        {
+            stubSize = MachineDescriptor.FixupStubPrecodeSize;
+        }
+        else
+        {
+            stubSize = MachineDescriptor.StubPrecodeSize;
+        }
+
+        ulong pageMask = MachineDescriptor.StubCodePageSize - 1;
+        ulong pageBase = instrPointer.Value & ~pageMask;
+        ulong offset = instrPointer.Value - pageBase;
+        ulong entryPointAddress = pageBase + (offset / stubSize) * stubSize;
+
+        return new TargetPointer(entryPointAddress);
     }
 ```

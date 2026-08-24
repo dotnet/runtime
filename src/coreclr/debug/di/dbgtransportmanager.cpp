@@ -7,7 +7,64 @@
 
 #ifdef FEATURE_DBGIPC_TRANSPORT_DI
 
+#ifdef HOST_UNIX
+#include <errno.h>
+#include <signal.h>
+#include <sys/wait.h>
+#include <unistd.h>
+#endif // HOST_UNIX
+
 DbgTransportTarget g_DbgTransportTarget{};
+
+#ifdef HOST_UNIX
+// Polling interval for the per-process exit poller thread.
+static const useconds_t s_processExitPollIntervalUsec = 250 * 1000;
+
+// Polls the target PID for exit. waitpid is identity-stable for child processes; kill is a
+// best-effort fallback for non-children and can race PID reuse.
+/* static */
+void *DbgTransportTarget::ProcessExitPollerThread(void *arg)
+{
+    ProcessEntry *entry = static_cast<ProcessEntry *>(arg);
+
+    while (!entry->m_fStopPoller)
+    {
+        bool exited = false;
+
+        int status;
+        pid_t r;
+        do
+        {
+            r = waitpid(entry->m_dwPID, &status, WNOHANG);
+        } while (r == -1 && errno == EINTR);
+
+        if (r == (pid_t)entry->m_dwPID)
+        {
+            exited = WIFEXITED(status) || WIFSIGNALED(status);
+        }
+        else if (r == -1 && errno == ECHILD)
+        {
+            int killResult;
+            do
+            {
+                killResult = kill(entry->m_dwPID, 0);
+            } while (killResult == -1 && errno == EINTR);
+
+            exited = killResult == -1 && errno == ESRCH;
+        }
+
+        if (exited)
+        {
+            entry->m_hProcessExited->Set();
+            break;
+        }
+
+        usleep(s_processExitPollIntervalUsec);
+    }
+
+    return nullptr;
+}
+#endif // HOST_UNIX
 
 DbgTransportTarget::DbgTransportTarget()
     : m_pProcessList{}
@@ -18,7 +75,9 @@ DbgTransportTarget::DbgTransportTarget()
 // Initialization routine called only by the DbgTransportManager.
 HRESULT DbgTransportTarget::Init()
 {
-    m_sLock.Init("DbgTransportTarget Lock", RSLock::cLockFlat, RSLock::LL_DBG_TRANSPORT_TARGET_LOCK);
+    // The Unix loader does not invoke DbgDllMain DLL_PROCESS_DETACH for mscordbi at process exit,
+    // so Shutdown() may never run. Mark the lock as allowing leak to skip the destructor assert.
+    m_sLock.Init("DbgTransportTarget Lock", RSLock::cLockFlat | RSLock::cLockAllowLeak, RSLock::LL_DBG_TRANSPORT_TARGET_LOCK);
 
     return S_OK;
 }
@@ -46,7 +105,7 @@ void DbgTransportTarget::Shutdown()
 // on for process termination.
 HRESULT DbgTransportTarget::GetTransportForProcess(const ProcessDescriptor  *pProcessDescriptor,
                                                    DbgTransportSession     **ppTransport,
-                                                   HANDLE                   *phProcessHandle)
+                                                   WaitHandle             **ppProcessHandle)
 {
     RSLockHolder lock(&m_sLock);
     HRESULT hr = S_OK;
@@ -68,6 +127,24 @@ HRESULT DbgTransportTarget::GetTransportForProcess(const ProcessDescriptor  *pPr
        }
 
 
+       // Probe the process to make sure it exists, then create a waitable that becomes signaled
+       // on process exit. Windows uses the process handle itself; Unix uses a latch set by
+       // a poller thread.
+#ifdef HOST_UNIX
+       if (kill(dwPID, 0) != 0)
+       {
+           transport->Shutdown();
+           return (errno == ESRCH) ? E_INVALIDARG : E_FAIL;
+       }
+
+       WaitLatch *pProcessExited = new (nothrow) WaitLatch();
+       if ((pProcessExited == NULL) || !pProcessExited->IsValid())
+       {
+           delete pProcessExited;
+           transport->Shutdown();
+           return E_FAIL;
+       }
+#else // HOST_UNIX
        HANDLE hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, dwPID);
        if (hProcess == NULL)
        {
@@ -75,19 +152,43 @@ HRESULT DbgTransportTarget::GetTransportForProcess(const ProcessDescriptor  *pPr
            return HRESULT_FROM_GetLastError();
        }
 
+       NativeHandle *pProcessExited = new (nothrow) NativeHandle(hProcess);
+       bool allocationFailed = pProcessExited == nullptr;
+       DWORD error = GetLastError();
+       CloseHandle(hProcess);
+       if (allocationFailed || !pProcessExited->IsValid())
+       {
+           delete pProcessExited;
+           transport->Shutdown();
+           return allocationFailed ? E_OUTOFMEMORY : HRESULT_FROM_WIN32(error);
+       }
+#endif // HOST_UNIX
+
+       newEntry->m_dwPID = dwPID;
+       newEntry->m_hProcessExited = pProcessExited;
+#ifdef HOST_UNIX
+       newEntry->m_fStopPoller = false;
+       newEntry->m_fPollerStarted = false;
+
+       if (pthread_create(&newEntry->m_pollerThread, nullptr, &ProcessExitPollerThread, newEntry.GetValue()) != 0)
+       {
+           transport->Shutdown();
+           return E_FAIL;
+       }
+       newEntry->m_fPollerStarted = true;
+#endif // HOST_UNIX
+
        // Initialize it (this immediately starts the remote connection process).
-       hr = transport->Init(*pProcessDescriptor, hProcess);
+       hr = transport->Init(*pProcessDescriptor, *pProcessExited);
        if (FAILED(hr))
        {
            transport->Shutdown();
-           CloseHandle(hProcess);
+           // ProcessEntry destructor stops the poller and releases the waitable.
            return hr;
        }
 
        entry = newEntry;
        newEntry.SuppressRelease();
-       entry->m_dwPID = dwPID;
-       entry->m_hProcess = hProcess;
        entry->m_transport = transport;
        transport.SuppressRelease();
        entry->m_cProcessRef = 0;
@@ -100,18 +201,15 @@ HRESULT DbgTransportTarget::GetTransportForProcess(const ProcessDescriptor  *pPr
     entry->m_cProcessRef++;
     _ASSERTE(entry->m_cProcessRef > 0);
     _ASSERTE(entry->m_transport != NULL);
-    _ASSERTE((intptr_t)entry->m_hProcess > 0);
+    _ASSERTE(entry->m_hProcessExited->IsValid());
 
     *ppTransport = entry->m_transport;
-    if (!DuplicateHandle(GetCurrentProcess(),
-                         entry->m_hProcess,
-                         GetCurrentProcess(),
-                         phProcessHandle,
-                         0,      // ignored since we are going to pass DUPLICATE_SAME_ACCESS
-                         FALSE,
-                         DUPLICATE_SAME_ACCESS))
+    *ppProcessHandle = new (nothrow) WaitHandle(*entry->m_hProcessExited);
+    if ((*ppProcessHandle == nullptr) || !(*ppProcessHandle)->IsValid())
     {
-        return HRESULT_FROM_GetLastError();
+        delete *ppProcessHandle;
+        *ppProcessHandle = nullptr;
+        return E_FAIL;
     }
 
     return hr;
@@ -137,7 +235,7 @@ void DbgTransportTarget::ReleaseTransport(DbgTransportSession *pTransport)
 
         _ASSERTE(entry->m_cProcessRef > 0);
         _ASSERTE(entry->m_transport != NULL);
-        _ASSERTE((intptr_t)entry->m_hProcess > 0);
+        _ASSERTE(entry->m_hProcessExited->IsValid());
 
         if (entry->m_transport == pTransport)
         {
@@ -160,55 +258,43 @@ void DbgTransportTarget::ReleaseTransport(DbgTransportSession *pTransport)
     pTransport->Shutdown();
 }
 
-HRESULT DbgTransportTarget::CreateProcess(LPCWSTR lpApplicationName,
-                          LPCWSTR lpCommandLine,
-                          LPSECURITY_ATTRIBUTES lpProcessAttributes,
-                          LPSECURITY_ATTRIBUTES lpThreadAttributes,
-                          BOOL bInheritHandles,
-                          DWORD dwCreationFlags,
-                          LPVOID lpEnvironment,
-                          LPCWSTR lpCurrentDirectory,
-                          LPSTARTUPINFOW lpStartupInfo,
-                          LPPROCESS_INFORMATION lpProcessInformation)
-{
-
-    BOOL result = WszCreateProcess(lpApplicationName,
-                                   lpCommandLine,
-                                   lpProcessAttributes,
-                                   lpThreadAttributes,
-                                   bInheritHandles,
-                                   dwCreationFlags,
-                                   lpEnvironment,
-                                   lpCurrentDirectory,
-                                   lpStartupInfo,
-                                   lpProcessInformation);
-
-    if (!result)
-    {
-        return HRESULT_FROM_GetLastError();
-    }
-
-    return S_OK;
-}
-
 // Kill the process identified by PID.
 void DbgTransportTarget::KillProcess(DWORD dwPID)
 {
+#ifdef HOST_UNIX
+    kill(dwPID, SIGKILL);
+#else
     HANDLE hProcess = OpenProcess(PROCESS_TERMINATE, FALSE, dwPID);
     if (hProcess != NULL)
     {
         TerminateProcess(hProcess, 0);
         CloseHandle(hProcess);
     }
+#endif
 }
 
 DbgTransportTarget::ProcessEntry::~ProcessEntry()
 {
-    CloseHandle(m_hProcess);
-    m_hProcess = NULL;
+#ifdef HOST_UNIX
+    if (m_fPollerStarted)
+    {
+        m_fStopPoller = true;
+        pthread_join(m_pollerThread, nullptr);
+        m_fPollerStarted = false;
+    }
+#endif // HOST_UNIX
 
-    m_transport->Shutdown();
-    m_transport = NULL;
+    if (m_hProcessExited != NULL)
+    {
+        delete m_hProcessExited;
+        m_hProcessExited = NULL;
+    }
+
+    if (m_transport != NULL)
+    {
+        m_transport->Shutdown();
+        m_transport = NULL;
+    }
 }
 
 // Locate a process entry by PID. Assumes the lock is already held.

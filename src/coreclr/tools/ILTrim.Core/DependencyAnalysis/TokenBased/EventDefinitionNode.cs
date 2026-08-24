@@ -40,6 +40,9 @@ namespace ILCompiler.DependencyAnalysis
 
             CustomAttributeNode.AddDependenciesDueToCustomAttributes(ref dependencies, factory, _module, eventDef.GetCustomAttributes());
 
+            // Unlike properties, we root ALL accessor methods when an event is kept.
+            // If you can subscribe to an event, you must be able to unsubscribe — keeping
+            // only add without remove would break runtime semantics.
             EventAccessors accessors = eventDef.GetAccessors();
             if (!accessors.Adder.IsNil)
                 dependencies.Add(factory.MethodDefinition(_module, accessors.Adder), "Event adder");

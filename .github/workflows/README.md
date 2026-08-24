@@ -6,13 +6,13 @@ Please make sure to include the @dotnet/runtime-infrastructure group as a review
 
 For workflows that are triggered by pull requests, refer to GitHub's documentation for the `pull_request` and `pull_request_target` events. The `pull_request_target` event is the more common use case in this repository as it runs the workflow in the context of the target branch instead of in the context of the pull request's fork or branch. However, workflows that need to consume the contents of the pull request need to use the `pull_request` event. There are security considerations with each of the events though.
 
-Most workflows are intended to run only in the `dotnet/runtime` repository and not in forks. To force workflow jobs to be skipped in forks, each job should apply an `if` statement that checks the repository name or owner. Either approach works, but checking only the repository owner allows the workflow to run in copies or forks within the dotnet org.
+Most workflows are intended to run only in the `dotnet/runtime` repository and not in forks. To force workflow jobs to be skipped in forks, each job should apply an `if` statement that checks the repository's fork property or owner. Either approach works, but checking only the repository owner allows the workflow to run in copies or forks within the dotnet org.
 
 ```yaml
 jobs:
   job-1:
     # Do not run this job in forks
-    if: github.repository == 'dotnet/runtime'
+    if: ${{ !github.event.repository.fork }}
 
   job-2:
     # Do not run this job in forks outside the dotnet org
@@ -20,3 +20,5 @@ jobs:
 ```
 
 Refer to GitHub's [Workflows in forked repositories](https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows#workflows-in-forked-repositories) and [pull_request_target](https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows#pull_request_target) documentation for more information.
+
+Agentic workflow safe outputs sanitize posted bodies and [remove agent-provided HTML/XML comments](https://github.github.com/gh-aw/reference/safe-outputs/#text-sanitization-allowed-domains-allowed-github-references). Do not use HTML comments as machine-readable markers or persisted state. Prefer schema-validated `safe-outputs.data` when the output supports it and another fenced JSON block is compatible with downstream consumers; otherwise use stable visible fields. See [the repository agentic-workflow guidance](../agents/agentic-workflows.agent.md#repository-specific-requirements-safe-output-data) for authoring and migration requirements.

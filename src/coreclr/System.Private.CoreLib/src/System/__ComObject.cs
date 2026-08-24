@@ -110,7 +110,6 @@ namespace System
         }
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe void ReleaseAllData(__ComObject* pComObject, Exception* pException)
         {
             try

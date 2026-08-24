@@ -28,8 +28,10 @@ namespace Microsoft.VisualBasic.Tests
             Assert.Equal(0, errObj.HelpContext);
             Assert.Equal("", errObj.HelpFile);
             Assert.Equal("", errObj.Source);
+#if NET
             Marshal.SetLastPInvokeError(42);
             Assert.Equal(42, errObj.LastDllError);
+#endif
             Assert.Equal(0, errObj.Number);
             Assert.Equal("", errObj.Description);
             Assert.Null(errObj.GetException());

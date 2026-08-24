@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -159,7 +159,7 @@ namespace System.Globalization
         /// <see langword="true"/> if <paramref name="value"/> is a sortable Unicode scalar
         /// value; otherwise, <see langword="false"/>.
         /// </returns>
-        public static bool IsSortable(Rune value)
+        public static unsafe bool IsSortable(Rune value)
         {
             Span<char> valueAsUtf16 = stackalloc char[Rune.MaxUtf16CharsPerRune];
             int charCount = value.EncodeToUtf16(valueAsUtf16);
@@ -627,7 +627,6 @@ namespace System.Globalization
             return matched;
         }
 
-        [RequiresUnsafe]
         private unsafe bool StartsWithCore(ReadOnlySpan<char> source, ReadOnlySpan<char> prefix, CompareOptions options, int* matchLengthPtr) =>
             GlobalizationMode.UseNls ?
                 NlsStartsWith(source, prefix, options, matchLengthPtr) :
@@ -776,7 +775,6 @@ namespace System.Globalization
             return IsSuffix(source, suffix, CompareOptions.None);
         }
 
-        [RequiresUnsafe]
         private unsafe bool EndsWithCore(ReadOnlySpan<char> source, ReadOnlySpan<char> suffix, CompareOptions options, int* matchLengthPtr) =>
             GlobalizationMode.UseNls ?
                 NlsEndsWith(source, suffix, options, matchLengthPtr) :
@@ -1033,7 +1031,7 @@ namespace System.Globalization
         /// <exception cref="ArgumentException">
         /// <paramref name="options"/> contains an unsupported combination of flags.
         /// </exception>
-        public int IndexOf(ReadOnlySpan<char> source, Rune value, CompareOptions options = CompareOptions.None)
+        public unsafe int IndexOf(ReadOnlySpan<char> source, Rune value, CompareOptions options = CompareOptions.None)
         {
             Span<char> valueAsUtf16 = stackalloc char[Rune.MaxUtf16CharsPerRune];
             int charCount = value.EncodeToUtf16(valueAsUtf16);
@@ -1045,7 +1043,6 @@ namespace System.Globalization
         /// Caller needs to ensure <paramref name="matchLengthPtr"/> is non-null and points
         /// to a valid address. This method will validate <paramref name="options"/>.
         /// </summary>
-        [RequiresUnsafe]
         private unsafe int IndexOf(ReadOnlySpan<char> source, ReadOnlySpan<char> value, int* matchLengthPtr, CompareOptions options, bool fromBeginning)
         {
             Debug.Assert(matchLengthPtr != null);
@@ -1111,7 +1108,6 @@ namespace System.Globalization
             return retVal;
         }
 
-        [RequiresUnsafe]
         private unsafe int IndexOfCore(ReadOnlySpan<char> source, ReadOnlySpan<char> target, CompareOptions options, int* matchLengthPtr, bool fromBeginning) =>
             GlobalizationMode.UseNls ?
                 NlsIndexOfCore(source, target, options, matchLengthPtr, fromBeginning) :

@@ -13,7 +13,7 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.NativeRebuild.Tests
 {
-    [TestCategory("native")]
+    [TestCategory("native"), TestCategory("mono")]
     public class FlagsChangeRebuildTests : NativeRebuildTestsBase
     {
         public FlagsChangeRebuildTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)

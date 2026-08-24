@@ -1,1 +1,5 @@
-<Project />
+<Project>
+  <PropertyGroup Condition="'$(RuntimeFlavor)' == '' and '$(RUNTIME_FLAVOR_FOR_TESTS)' != ''">
+    <RuntimeFlavor>$(RUNTIME_FLAVOR_FOR_TESTS)</RuntimeFlavor>
+  </PropertyGroup>
+</Project>

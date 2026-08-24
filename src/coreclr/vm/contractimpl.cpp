@@ -61,7 +61,7 @@ UINT32 TypeIDMap::LookupTypeID(PTR_MethodTable pMT)
         if (GetThread()->PreemptiveGCDisabled()) { GC_NOTRIGGER; } else { GC_TRIGGERS; }
     } CONTRACTL_END;
 
-    UINT32 id = (UINT32) m_mtMap.LookupValue((UPTR)dac_cast<TADDR>(pMT), 0);
+    UINT32 id = (UINT32) m_mtMap.LookupValueByUniqueKey((UPTR)dac_cast<TADDR>(pMT));
 
     return id;
 }
@@ -76,7 +76,7 @@ PTR_MethodTable TypeIDMap::LookupType(UINT32 id)
         PRECONDITION(id <= TypeIDProvider::MAX_TYPE_ID);
     } CONTRACTL_END;
 
-    UPTR ret = m_idMap.LookupValue((UPTR)id, 0);
+    UPTR ret = m_idMap.LookupValueByUniqueKey((UPTR)id);
     if (ret == static_cast<UPTR>(INVALIDENTRY))
         return NULL;
 
@@ -269,7 +269,6 @@ DispatchMapBuilderNode * DispatchMapBuilder::NewEntry()
     CONTRACTL {
         THROWS;
         GC_NOTRIGGER;
-        INJECT_FAULT(COMPlusThrowOM());
     } CONTRACTL_END;
 
     return new (m_pAllocator) DispatchMapBuilderNode();
@@ -312,7 +311,6 @@ DispatchMap::CreateEncodedMapping(
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pMapBuilder));
         PRECONDITION(CheckPointer(pAllocator));
         PRECONDITION(CheckPointer(ppbMap));
@@ -673,7 +671,6 @@ DispatchMapEntry * DispatchMap::Iterator::Entry()
         MODE_ANY;
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
         PRECONDITION(IsValid());
     } CONTRACTL_END;
 */

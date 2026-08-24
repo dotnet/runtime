@@ -1,13 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 
+using Internal.IL;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
+
+using Mono.Linker;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -98,6 +102,49 @@ namespace ILCompiler.DependencyAnalysis
                 dependencies.Add(factory.ConstructedType((EcmaType)method.OwningType), "Type with a kept constructor");
             }
 
+            // TODO-SIZE: Property/event metadata is not strictly necessary for accessor method calls —
+            // it's only needed for reflection and debugger scenarios. We could skip keeping property/event
+            // rows when we know they won't be accessed via reflection, producing smaller output.
+            if ((methodDef.Attributes & MethodAttributes.SpecialName) != 0)
+            {
+                TypeDefinition declaringTypeDef = reader.GetTypeDefinition(declaringType);
+                foreach (PropertyDefinitionHandle propertyHandle in declaringTypeDef.GetProperties())
+                {
+                    PropertyAccessors propertyAccessors = reader.GetPropertyDefinition(propertyHandle).GetAccessors();
+                    if (propertyAccessors.Getter == Handle || propertyAccessors.Setter == Handle)
+                    {
+                        dependencies.Add(factory.PropertyDefinition(_module, propertyHandle), "Owning property of accessor method");
+                        break;
+                    }
+                }
+                foreach (EventDefinitionHandle eventHandle in declaringTypeDef.GetEvents())
+                {
+                    EventAccessors eventAccessors = reader.GetEventDefinition(eventHandle).GetAccessors();
+                    if (eventAccessors.Adder == Handle || eventAccessors.Remover == Handle || eventAccessors.Raiser == Handle)
+                    {
+                        dependencies.Add(factory.EventDefinition(_module, eventHandle), "Owning event of accessor method");
+                        break;
+                    }
+                }
+            }
+
+            var ecmaOwningType = (EcmaType)_module.GetObject(declaringType);
+            if (ecmaOwningType.IsDelegate)
+            {
+                ReadOnlySpan<byte> methodPairName = default;
+                if (reader.StringComparer.Equals(methodDef.Name, "BeginInvoke"))
+                    methodPairName = "EndInvoke"u8;
+                else if (reader.StringComparer.Equals(methodDef.Name, "EndInvoke"))
+                    methodPairName = "BeginInvoke"u8;
+
+                if (methodPairName.Length > 0)
+                {
+                    var pairMethod = ecmaOwningType.GetMethod(methodPairName, null) as EcmaMethod;
+                    if (pairMethod != null)
+                        dependencies.Add(factory.MethodDefinition(_module, pairMethod.Handle), "Delegate BeginInvoke/EndInvoke pair");
+                }
+            }
+
             return dependencies;
         }
 
@@ -128,6 +175,8 @@ namespace ILCompiler.DependencyAnalysis
             EcmaType ecmaType = (EcmaType)_module.GetObject(methodDef.GetDeclaringType());
             MethodBodyNode bodyNode = writeContext.Factory.MethodBody(_module, Handle);
             int bodyOffset = bodyNode.Marked
+                || !writeContext.Factory.Settings.Optimizations.IsEnabled(CodeOptimizations.UnreachableBodies, _module.Assembly.GetName().Name)
+                || !IsWorthConvertingToThrow(methodDef)
                 ? bodyNode.Write(writeContext)
                 : writeContext.WriteUnreachableMethodBody(Handle, _module);
 
@@ -155,6 +204,31 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             return outputHandle;
+        }
+
+        private bool IsWorthConvertingToThrow(MethodDefinition methodDef)
+        {
+            // Some bodies are cheaper size-wise to preserve as-is than to convert to a throw.
+            const int EmptyBodyLength = 0; // No IL body.
+            const int RetOnlyBodyLength = 1; // ret
+            const int NopRetBodyLength = 2; // nop; ret
+
+            int rva = methodDef.RelativeVirtualAddress;
+            if (rva == 0)
+                return false;
+
+            BlobReader ilReader = _module.PEReader.GetMethodBody(rva).GetILReader();
+            int ilLength = ilReader.Length;
+            if (ilLength == EmptyBodyLength)
+                return false;
+
+            if (ilLength == RetOnlyBodyLength)
+                return ilReader.ReadByte() != (byte)ILOpcode.ret;
+
+            if (ilLength == NopRetBodyLength)
+                return ilReader.ReadByte() != (byte)ILOpcode.nop || ilReader.ReadByte() != (byte)ILOpcode.ret;
+
+            return true;
         }
 
         public override string ToString()

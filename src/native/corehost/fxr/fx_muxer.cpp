@@ -63,6 +63,70 @@ namespace
 
         g_context_initializing_cv.notify_all();
     }
+
+    // Try to load and invoke the AOT-ed SDK from the resolved SDK directory.
+    // Returns true if the AOT entry point was found and invoked, with the result in exit_code.
+    // Returns false if the AOT library is not available or cannot be used.
+    bool try_invoke_aot_sdk(
+        const host_startup_info_t& host_info,
+        const pal::string_t& sdk_dir,
+        const pal::string_t& sdk_root,
+        int argc,
+        const pal::char_t* argv[],
+        int* exit_code)
+    {
+        pal::string_t sdk_aot_path(sdk_dir);
+        append_path(&sdk_aot_path, LIB_FILE_NAME_X("dotnet-aot"));
+        if (!pal::file_exists(sdk_aot_path))
+            return false;
+
+        trace::verbose(_X("Found AOT-ed SDK [%s]"), sdk_aot_path.c_str());
+
+        pal::dll_t aot_dll = nullptr;
+        if (!pal::load_library(&sdk_aot_path, &aot_dll))
+            return false;
+
+        // See docs/design/features/sharedfx-lookup.md#sdk-search
+        typedef int (__stdcall *dotnet_execute_fn)(
+            const pal::char_t* host_path,
+            const pal::char_t* dotnet_root,
+            const pal::char_t* sdk_dir,
+            const pal::char_t* hostfxr_path,
+            int argc,
+            const pal::char_t** argv);
+
+        auto dotnet_execute = reinterpret_cast<dotnet_execute_fn>(pal::get_symbol(aot_dll, "dotnet_execute"));
+        if (dotnet_execute == nullptr)
+        {
+            trace::info(_X("AOT-ed SDK [%s] does not contain 'dotnet_execute' entry point."), sdk_aot_path.c_str());
+            pal::unload_library(aot_dll);
+            return false;
+        }
+
+        pal::string_t hostfxr_path;
+        if (!pal::get_own_module_path(&hostfxr_path))
+        {
+            trace::info(_X("Failed to determine hostfxr path."));
+            pal::unload_library(aot_dll);
+            return false;
+        }
+
+        const pal::char_t* dotnet_root = sdk_root.empty()
+            ? host_info.dotnet_root.c_str()
+            : sdk_root.c_str();
+
+        trace::info(_X("Using AOT-ed SDK=[%s]"), sdk_aot_path.c_str());
+
+        *exit_code = dotnet_execute(
+            host_info.host_path.c_str(),
+            dotnet_root,
+            sdk_dir.c_str(),
+            hostfxr_path.c_str(),
+            argc - 1, // skip 'dotnet' (first argument)
+            argv + 1);
+
+        return true;
+    }
 }
 
 int load_hostpolicy(
@@ -311,27 +375,8 @@ namespace
             return host_mode_t::apphost;
         }
 
-        if (coreclr_exists_in_dir(host_info.dotnet_root))
-        {
-            // Detect between standalone apphost or legacy split mode (specifying --depsfile and --runtimeconfig)
-
-            pal::string_t deps_in_dotnet_root = host_info.dotnet_root;
-            pal::string_t deps_filename = host_info.get_app_name() + _X(".deps.json");
-            append_path(&deps_in_dotnet_root, deps_filename.c_str());
-            bool deps_exists = pal::file_exists(deps_in_dotnet_root);
-
-            trace::info(_X("Detecting mode... CoreCLR present in dotnet root [%s] and checking if [%s] file present=[%d]"),
-                host_info.dotnet_root.c_str(), deps_filename.c_str(), deps_exists);
-
-            // Name of runtimeconfig file; since no path is included here the check is in the current working directory
-            pal::string_t config_in_cwd = host_info.get_app_name() + _X(".runtimeconfig.json");
-
-            return (deps_exists || !pal::file_exists(config_in_cwd)) && pal::file_exists(host_info.app_path) ? host_mode_t::apphost : host_mode_t::split_fx;
-        }
-
         if (pal::file_exists(host_info.app_path))
         {
-            // Framework-dependent apphost
             return host_mode_t::apphost;
         }
 
@@ -458,19 +503,10 @@ namespace
                 pal::getenv(_X("DOTNET_ADDITIONAL_DEPS"), &additional_deps_serialized);
             }
 
-            // If invoking using FX dotnet.exe, use own directory.
-            if (mode == host_mode_t::split_fx)
+            rc = fx_resolver_t::resolve_frameworks_for_app(host_info.dotnet_root, override_settings, app_config, fx_definitions, mode == host_mode_t::muxer ? app_candidate.c_str() : host_info.host_path.c_str());
+            if (rc != StatusCode::Success)
             {
-                auto fx = new fx_definition_t(app_config.get_frameworks()[0].get_fx_name(), host_info.dotnet_root, pal::string_t(), pal::string_t());
-                fx_definitions.push_back(std::unique_ptr<fx_definition_t>(fx));
-            }
-            else
-            {
-                rc = fx_resolver_t::resolve_frameworks_for_app(host_info.dotnet_root, override_settings, app_config, fx_definitions, mode == host_mode_t::muxer ? app_candidate.c_str() : host_info.host_path.c_str());
-                if (rc != StatusCode::Success)
-                {
-                    return rc;
-                }
+                return rc;
             }
         }
 
@@ -1116,6 +1152,18 @@ int fx_muxer_t::handle_cli(
         resolver.print_resolution_error(host_info.dotnet_root, _X("      "));
 
         return StatusCode::SdkResolveFailure;
+    }
+
+    // Try to use the AOT-ed SDK if available in the resolved SDK directory
+    int aot_exit_code;
+    if (try_invoke_aot_sdk(host_info, sdk_dotnet, sdk_root, argc, argv, &aot_exit_code))
+    {
+        if (pal::strcasecmp(_X("--info"), argv[1]) == 0)
+        {
+            command_line::print_muxer_info(host_info.dotnet_root, resolver.global_file(), aot_exit_code == 0 /*skip_sdk_info_output*/);
+        }
+
+        return aot_exit_code;
     }
 
     append_path(&sdk_dotnet, SDK_DOTNET_DLL);

@@ -26,6 +26,7 @@
 #include "callhelpers.h"
 #include "appdomain.hpp"
 #include "appdomain.inl"
+#include "threadstatics.h"
 
 #ifndef TARGET_UNIX
 #include "utilcode.h"
@@ -420,38 +421,10 @@ extern "C" INT32 QCALLTYPE ThreadNative_GetThreadState(QCall::ThreadHandle threa
     if (state & Thread::TS_AbortRequested)
         res |= ThreadNative::ThreadAbortRequested;
 
-    if (state & Thread::TS_Interruptible)
+    if (state & Thread::TS_WaitSleepJoin)
         res |= ThreadNative::ThreadWaitSleepJoin;
 
     return res;
-}
-
-extern "C" void QCALLTYPE ThreadNative_SetWaitSleepJoinState(QCall::ThreadHandle thread)
-{
-    CONTRACTL
-    {
-        QCALL_CHECK_NO_GC_TRANSITION;
-        PRECONDITION(thread != NULL);
-    }
-    CONTRACTL_END;
-
-    // Set the state bits.
-    thread->SetThreadState(Thread::TS_Interruptible);
-    thread->SetThreadStateNC(Thread::TSNC_DebuggerSleepWaitJoin);
-}
-
-extern "C" void QCALLTYPE ThreadNative_ClearWaitSleepJoinState(QCall::ThreadHandle thread)
-{
-    CONTRACTL
-    {
-        QCALL_CHECK_NO_GC_TRANSITION;
-        PRECONDITION(thread != NULL);
-    }
-    CONTRACTL_END;
-
-    // Clear the state bits.
-    thread->ResetThreadState(Thread::TS_Interruptible);
-    thread->ResetThreadStateNC(Thread::TSNC_DebuggerSleepWaitJoin);
 }
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
@@ -544,14 +517,17 @@ extern "C" HANDLE QCALLTYPE ThreadNative_GetOSHandle(QCall::ThreadHandle t)
     HANDLE currentHandle = t->GetThreadHandle();
     if (currentHandle != INVALID_HANDLE_VALUE)
     {
-        DuplicateHandle(
+        if (!DuplicateHandle(
             GetCurrentProcess(),
             currentHandle,
             GetCurrentProcess(),
             &retVal,
             0,
             FALSE,
-            DUPLICATE_SAME_ACCESS);
+            DUPLICATE_SAME_ACCESS))
+        {
+            COMPlusThrowWin32();
+        }
     }
 
     END_QCALL;
@@ -630,7 +606,9 @@ FCIMPL1(void, ThreadNative::Finalize, ThreadBaseObject* pThisUNSAFE)
         }
 
         thread->SetThreadState(Thread::TS_Finalized);
+#ifdef FEATURE_MULTITHREADING
         Thread::SetCleanupNeededForFinalizedThread();
+#endif // FEATURE_MULTITHREADING
     }
 }
 FCIMPLEND
@@ -722,6 +700,18 @@ FCIMPL0(INT32, ThreadNative::GetOptimalMaxSpinWaitsPerSpinIteration)
 }
 FCIMPLEND
 
+// Returns the address of the current thread's ThreadLocalData (&t_ThreadStatics). Used on wasm to break
+// the thread-static bootstrap recursion in Thread.GetThreadStaticsBase (see the managed counterpart).
+#ifdef TARGET_WASM
+FCIMPL0(void*, ThreadNative::GetThreadStaticsBaseNative)
+{
+    FCALL_CONTRACT;
+
+    return (void*)&t_ThreadStatics;
+}
+FCIMPLEND
+#endif // TARGET_WASM
+
 extern "C" void QCALLTYPE ThreadNative_SpinWait(INT32 iterations)
 {
     FCALL_CONTRACT;
@@ -753,13 +743,13 @@ extern "C" void QCALLTYPE ThreadNative_Interrupt(QCall::ThreadHandle thread)
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE ThreadNative_CheckForPendingInterrupt(QCall::ThreadHandle thread)
+extern "C" void QCALLTYPE ThreadNative_CheckForPendingInterrupt()
 {
     QCALL_CONTRACT;
 
     BEGIN_QCALL;
 
-    thread->HandleThreadInterrupt();
+    GetThread()->HandleThreadInterrupt();
 
     END_QCALL;
 }
@@ -831,7 +821,7 @@ FCIMPL0(FC_BOOL_RET, ThreadNative::CurrentThreadIsFinalizerThread)
 }
 FCIMPLEND
 
-FCIMPL1(OBJECTHANDLE, Monitor_GetLockHandleIfExists, Object* pObj)
+FCIMPL1(OBJECTHANDLE, ObjectHeader_GetLockHandleIfExists, Object* pObj)
 {
     FCALL_CONTRACT;
 
@@ -845,7 +835,7 @@ FCIMPL1(OBJECTHANDLE, Monitor_GetLockHandleIfExists, Object* pObj)
 }
 FCIMPLEND
 
-extern "C" void QCALLTYPE Monitor_GetOrCreateLockObject(QCall::ObjectHandleOnStack obj, QCall::ObjectHandleOnStack lockObj)
+extern "C" void QCALLTYPE ObjectHeader_GetOrCreateLockObject(QCall::ObjectHandleOnStack obj, QCall::ObjectHandleOnStack lockObj)
 {
     QCALL_CONTRACT;
 
@@ -859,22 +849,6 @@ extern "C" void QCALLTYPE Monitor_GetOrCreateLockObject(QCall::ObjectHandleOnSta
 
     END_QCALL;
 }
-
-FCIMPL1(ObjHeader::HeaderLockResult, ObjHeader_AcquireThinLock, Object* obj)
-{
-    FCALL_CONTRACT;
-
-    return obj->GetHeader()->AcquireHeaderThinLock(GetThread());
-}
-FCIMPLEND
-
-FCIMPL1(ObjHeader::HeaderLockResult, ObjHeader_ReleaseThinLock, Object* obj)
-{
-    FCALL_CONTRACT;
-
-    return obj->GetHeader()->ReleaseHeaderThinLock(GetThread());
-}
-FCIMPLEND
 
 extern "C" INT32 QCALLTYPE ThreadNative_ReentrantWaitAny(BOOL alertable, INT32 timeout, INT32 count, HANDLE *handles)
 {

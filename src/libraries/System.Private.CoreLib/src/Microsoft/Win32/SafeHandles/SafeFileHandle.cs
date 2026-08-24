@@ -9,6 +9,8 @@ namespace Microsoft.Win32.SafeHandles
     {
         private string? _path;
         private int _cachedFileType = -1;
+        // not using bool? as it's not thread safe
+        private NullableBool _canSeek /* = NullableBool.Undefined */;
 
         /// <summary>
         /// Creates an anonymous pipe.
@@ -39,6 +41,25 @@ namespace Microsoft.Win32.SafeHandles
         }
 
         internal string? Path => _path;
+
+        internal bool CanSeek
+        {
+            get
+            {
+                if (IsClosed)
+                {
+                    return false;
+                }
+
+                NullableBool canSeek = _canSeek;
+                if (canSeek == NullableBool.Undefined)
+                {
+                    _canSeek = canSeek = GetCanSeekCore() ? NullableBool.True : NullableBool.False;
+                }
+
+                return canSeek == NullableBool.True;
+            }
+        }
 
         /// <summary>
         /// Gets the type of the file that this handle represents.

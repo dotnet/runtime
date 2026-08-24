@@ -64,7 +64,7 @@ namespace System.Composition.TypedParts
             // Exports with metadata may be matched via metadata constraints.
             // It should be possible to do this more aggressively by changing the way
             // exports are stored.
-            if (!forKey.Any(x => x.Metadata.Any()))
+            if (!forKey.Any(x => x.Metadata.Count > 0))
             {
                 // Allow some garbage to be collected
                 _discoveredParts.Remove(contract);

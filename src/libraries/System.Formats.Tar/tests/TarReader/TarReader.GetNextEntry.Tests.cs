@@ -10,6 +10,8 @@ namespace System.Formats.Tar.Tests
 {
     public class TarReader_GetNextEntry_Tests : TarTestsBase
     {
+        private const int MaxMetadataBlockSize = 1024 * 1024;
+
         [Fact]
         public void MalformedArchive_TooSmall()
         {
@@ -42,6 +44,19 @@ namespace System.Formats.Tar.Tests
 
             using TarReader reader = new TarReader(empty);
             Assert.Null(reader.GetNextEntry());
+        }
+
+        [Fact]
+        public void MalformedArchive_SizeFieldExceedsStreamLength_CopyData()
+        {
+            using MemoryStream malformed = new MemoryStream();
+            // Header declares a huge size, but no actual data follows it in the stream.
+            WriteRawTarHeader(malformed, "file.txt", mode: 0, uid: 0, gid: 0,
+                size: long.MaxValue / 512, mtime: 0, typeflag: '0', linkname: string.Empty);
+            malformed.Seek(0, SeekOrigin.Begin);
+
+            using TarReader reader = new TarReader(malformed);
+            Assert.Throws<InvalidDataException>(() => reader.GetNextEntry(copyData: true));
         }
 
 
@@ -623,6 +638,71 @@ namespace System.Formats.Tar.Tests
             Assert.Equal(longLinkTarget, entry.LinkName);
             Assert.Equal(TarEntryType.SymbolicLink, entry.EntryType);
             Assert.Null(reader2.GetNextEntry());
+        }
+
+        [Theory]
+        [InlineData("PaxExtendedAttributes", MaxMetadataBlockSize - 100)]
+        [InlineData("GnuLongPath", MaxMetadataBlockSize)]
+        [InlineData("GnuLongLink", MaxMetadataBlockSize)]
+        public void MetadataBlock_UnderMaxSize_Succeeds(string metadataType, int size)
+        {
+            using MemoryStream archive = new MemoryStream();
+            WriteMetadataEntry(archive, metadataType, size);
+
+            archive.Seek(0, SeekOrigin.Begin);
+            using TarReader reader = new TarReader(archive);
+            Assert.NotNull(reader.GetNextEntry());
+        }
+
+        [Theory]
+        [InlineData("PaxExtendedAttributes", MaxMetadataBlockSize)]
+        [InlineData("GnuLongPath", MaxMetadataBlockSize + 1)]
+        [InlineData("GnuLongLink", MaxMetadataBlockSize + 1)]
+        public void MetadataBlock_ExceedsMaxSize_Throws(string metadataType, int size)
+        {
+            using MemoryStream archive = new MemoryStream();
+            WriteMetadataEntry(archive, metadataType, size);
+
+            archive.Seek(0, SeekOrigin.Begin);
+            using TarReader reader = new TarReader(archive);
+            Assert.Throws<InvalidOperationException>(() => reader.GetNextEntry());
+        }
+
+        // Writes a TAR entry with metadata of the specified size.
+        // For GNU types, size is the on-disk block size (string length = size - 1 for null terminator).
+        // For PAX, size is the extended attribute value length; the total block will be
+        // slightly larger due to framing overhead (length prefixes, key names, default attributes).
+        private static void WriteMetadataEntry(MemoryStream archive, string metadataType, int size)
+        {
+            switch (metadataType)
+            {
+                case "PaxExtendedAttributes":
+                    var extendedAttributes = new Dictionary<string, string>
+                    {
+                        ["bigkey"] = new string('x', size)
+                    };
+                    using (TarWriter paxWriter = new TarWriter(archive, TarEntryFormat.Pax, leaveOpen: true))
+                    {
+                        paxWriter.WriteEntry(new PaxTarEntry(TarEntryType.RegularFile, "test.txt", extendedAttributes));
+                    }
+                    break;
+
+                case "GnuLongPath":
+                    using (TarWriter gnuPathWriter = new TarWriter(archive, TarEntryFormat.Gnu, leaveOpen: true))
+                    {
+                        gnuPathWriter.WriteEntry(new GnuTarEntry(TarEntryType.RegularFile, new string('a', size - 1)));
+                    }
+                    break;
+
+                case "GnuLongLink":
+                    using (TarWriter gnuLinkWriter = new TarWriter(archive, TarEntryFormat.Gnu, leaveOpen: true))
+                    {
+                        GnuTarEntry entry = new GnuTarEntry(TarEntryType.SymbolicLink, "test.txt");
+                        entry.LinkName = new string('a', size - 1);
+                        gnuLinkWriter.WriteEntry(entry);
+                    }
+                    break;
+            }
         }
     }
 }

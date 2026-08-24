@@ -3,6 +3,7 @@
 
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
+using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
@@ -14,8 +15,9 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 public class DacDbiDebuggerDumpTests : DumpTestBase
 {
     protected override string DebuggeeName => "BasicThreads";
+    protected override string DumpType => "full";
 
-    private DacDbiImpl CreateDacDbi() => new DacDbiImpl(Target, legacyObj: null);
+    private DacDbiImpl CreateDacDbi() => new DacDbiImpl(Target, legacyObj: null, new());
 
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
@@ -44,30 +46,6 @@ public class DacDbiDebuggerDumpTests : DumpTestBase
 
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
-    public unsafe void GetDefinesBitField_Succeeds(TestConfiguration config)
-    {
-        InitializeDumpTest(config);
-        DacDbiImpl dbi = CreateDacDbi();
-
-        uint defines;
-        int hr = dbi.GetDefinesBitField(&defines);
-        Assert.Equal(System.HResults.S_OK, hr);
-    }
-
-    [ConditionalTheory]
-    [MemberData(nameof(TestConfigurations))]
-    public unsafe void GetMDStructuresVersion_Succeeds(TestConfiguration config)
-    {
-        InitializeDumpTest(config);
-        DacDbiImpl dbi = CreateDacDbi();
-
-        uint version;
-        int hr = dbi.GetMDStructuresVersion(&version);
-        Assert.Equal(System.HResults.S_OK, hr);
-    }
-
-    [ConditionalTheory]
-    [MemberData(nameof(TestConfigurations))]
     public unsafe void MetadataUpdatesApplied_Succeeds(TestConfiguration config)
     {
         InitializeDumpTest(config);
@@ -90,37 +68,8 @@ public class DacDbiDebuggerDumpTests : DumpTestBase
         int hr = dbi.IsLeftSideInitialized(&dbiResult);
         Assert.Equal(System.HResults.S_OK, hr);
 
-        bool contractResult = Target.Contracts.Debugger.TryGetDebuggerData(out _);
-        Assert.Equal(contractResult, dbiResult != Interop.BOOL.FALSE);
+        bool contractResult = Target.Contracts.Debugger.TryGetDebuggerData(out Contracts.DebuggerData data);
+        Assert.Equal(contractResult && data.IsLeftSideInitialized, dbiResult != Interop.BOOL.FALSE);
     }
 
-    [ConditionalTheory]
-    [MemberData(nameof(TestConfigurations))]
-    public unsafe void GetDefinesBitField_CrossValidateWithContract(TestConfiguration config)
-    {
-        InitializeDumpTest(config);
-        DacDbiImpl dbi = CreateDacDbi();
-
-        uint dbiResult;
-        int hr = dbi.GetDefinesBitField(&dbiResult);
-        Assert.Equal(System.HResults.S_OK, hr);
-
-        Assert.True(Target.Contracts.Debugger.TryGetDebuggerData(out Contracts.DebuggerData data));
-        Assert.Equal(data.DefinesBitField, dbiResult);
-    }
-
-    [ConditionalTheory]
-    [MemberData(nameof(TestConfigurations))]
-    public unsafe void GetMDStructuresVersion_CrossValidateWithContract(TestConfiguration config)
-    {
-        InitializeDumpTest(config);
-        DacDbiImpl dbi = CreateDacDbi();
-
-        uint dbiResult;
-        int hr = dbi.GetMDStructuresVersion(&dbiResult);
-        Assert.Equal(System.HResults.S_OK, hr);
-
-        Assert.True(Target.Contracts.Debugger.TryGetDebuggerData(out Contracts.DebuggerData data));
-        Assert.Equal(data.MDStructuresVersion, dbiResult);
-    }
 }

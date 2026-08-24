@@ -45,7 +45,7 @@ namespace System.Formats.Asn1
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
         ///   the method.
         /// </exception>
-        public static DateTimeOffset ReadGeneralizedTime(
+        public static unsafe DateTimeOffset ReadGeneralizedTime(
             ReadOnlySpan<byte> source,
             AsnEncodingRules ruleSet,
             out int bytesConsumed,

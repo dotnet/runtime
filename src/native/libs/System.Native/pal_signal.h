@@ -83,6 +83,14 @@ PALEXPORT void SystemNative_DisablePosixSignalHandling(int signalCode);
  */
 PALEXPORT void SystemNative_HandleNonCanceledPosixSignal(int32_t signalCode);
 
+/**
+ * Converts a native signal code to PosixSignal.
+ *
+ * Returns true if the signal code was mapped to a known PosixSignal.
+ * Returns false if the signal is not in the known set (posixSignal is set to the raw signal code).
+ */
+bool TryConvertSignalCodeToPosixSignal(int signalCode, PosixSignal* posixSignal);
+
 typedef void (*ConsoleSigTtouHandler)(void);
 
 /**

@@ -10,6 +10,7 @@ using System.Runtime.CompilerServices;
 #if NET
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.Wasm;
 using System.Runtime.Intrinsics.X86;
 #endif
 
@@ -20,7 +21,6 @@ namespace System.Text.Unicode
         // On method return, pInputBufferRemaining and pOutputBufferRemaining will both point to where
         // the next byte would have been consumed from / the next char would have been written to.
         // inputLength in bytes, outputCharsRemaining in chars.
-        [RequiresUnsafe]
         public static OperationStatus TranscodeToUtf16(byte* pInputBuffer, int inputLength, char* pOutputBuffer, int outputCharsRemaining, out byte* pInputBufferRemaining, out char* pOutputBufferRemaining)
         {
             Debug.Assert(inputLength >= 0, "Input length must not be negative.");
@@ -839,7 +839,6 @@ namespace System.Text.Unicode
         // On method return, pInputBufferRemaining and pOutputBufferRemaining will both point to where
         // the next char would have been consumed from / the next byte would have been written to.
         // inputLength in chars, outputBytesRemaining in bytes.
-        [RequiresUnsafe]
         public static OperationStatus TranscodeToUtf8(char* pInputBuffer, int inputLength, byte* pOutputBuffer, int outputBytesRemaining, out char* pInputBufferRemaining, out byte* pOutputBufferRemaining)
         {
             const int CharsPerDWord = sizeof(uint) / sizeof(char);
@@ -886,7 +885,7 @@ namespace System.Text.Unicode
 #if NET
             Vector128<short> nonAsciiUtf16DataMask;
 
-            if (Sse41.X64.IsSupported || (AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian))
+            if (Sse41.X64.IsSupported || (AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian) || PackedSimd.IsSupported)
             {
                 nonAsciiUtf16DataMask = Vector128.Create(unchecked((short)0xFF80)); // mask of non-ASCII bits in a UTF-16 char
             }
@@ -946,7 +945,7 @@ namespace System.Text.Unicode
                     uint minElementsRemaining = (uint)Math.Min(inputCharsRemaining, outputBytesRemaining);
 
 #if NET
-                    if (Sse41.X64.IsSupported || (AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian))
+                    if (Sse41.X64.IsSupported || (AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian) || PackedSimd.IsSupported)
                     {
                         // Try reading and writing 8 elements per iteration.
                         uint maxIters = minElementsRemaining / 8;
@@ -984,6 +983,17 @@ namespace System.Text.Unicode
                                 // narrow and write
                                 Sse2.StoreScalar((ulong*)pOutputBuffer /* unaligned */, Sse2.PackUnsignedSaturate(utf16Data, utf16Data).AsUInt64());
                             }
+                            else if (PackedSimd.IsSupported)
+                            {
+                                if ((utf16Data & nonAsciiUtf16DataMask) != Vector128<short>.Zero)
+                                {
+                                    goto LoopTerminatedDueToNonAsciiDataInVectorLocal;
+                                }
+
+                                // narrow and write low 8 bytes
+                                Vector128<byte> narrowed = PackedSimd.ConvertNarrowingSaturateUnsigned(utf16Data, utf16Data);
+                                Unsafe.WriteUnaligned<ulong>(pOutputBuffer, narrowed.AsUInt64().ToScalar());
+                            }
                             else
                             {
                                 // We explicitly recheck each IsSupported query to ensure that the trimmer can see which paths are live/dead
@@ -1016,6 +1026,11 @@ namespace System.Text.Unicode
                             else if (Sse2.IsSupported)
                             {
                                 Unsafe.WriteUnaligned(pOutputBuffer, Sse2.ConvertToUInt32(Sse2.PackUnsignedSaturate(utf16Data, utf16Data).AsUInt32()));
+                            }
+                            else if (PackedSimd.IsSupported)
+                            {
+                                Vector128<byte> narrowed = PackedSimd.ConvertNarrowingSaturateUnsigned(utf16Data, utf16Data);
+                                Unsafe.WriteUnaligned<uint>(pOutputBuffer, narrowed.AsUInt32().ToScalar());
                             }
                             else
                             {
@@ -1059,6 +1074,11 @@ namespace System.Text.Unicode
                             else if (Sse2.IsSupported)
                             {
                                 Unsafe.WriteUnaligned(pOutputBuffer, Sse2.ConvertToUInt32(Sse2.PackUnsignedSaturate(utf16Data, utf16Data).AsUInt32()));
+                            }
+                            else if (PackedSimd.IsSupported)
+                            {
+                                Vector128<byte> narrowed = PackedSimd.ConvertNarrowingSaturateUnsigned(utf16Data, utf16Data);
+                                Unsafe.WriteUnaligned<uint>(pOutputBuffer, narrowed.AsUInt32().ToScalar());
                             }
                             else
                             {

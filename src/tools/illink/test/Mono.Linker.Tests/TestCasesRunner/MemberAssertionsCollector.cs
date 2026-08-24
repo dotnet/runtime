@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Mono.Cecil;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Extensions;
 
@@ -27,12 +26,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
             return results;
         }
 
-        public static IEnumerable<TestDataRow<(IMemberDefinition, CustomAttribute)>> GetMemberAssertionsData(Type type)
+        public static IEnumerable<object[]> GetMemberAssertionsData(Type type)
         {
-            return GetMemberAssertions(type).Select(v =>
-            {
-                return new TestDataRow<(IMemberDefinition, CustomAttribute)>((v.member, v.ca));
-            });
+            return GetMemberAssertions(type).Select(v => new object[] { v.member, v.ca });
         }
 
         private static bool IsMemberAssertion(TypeReference attributeType)

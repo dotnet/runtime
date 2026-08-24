@@ -46,5 +46,15 @@ namespace System.Diagnostics
             string msg = SR.Format(SR.ErrorStartingProcess, fileName, directoryForException, errorMessage);
             return new Win32Exception(errorCode, msg);
         }
+
+        internal static int ToTimeoutMilliseconds(TimeSpan timeout)
+        {
+            long totalMilliseconds = (long)timeout.TotalMilliseconds;
+
+            ArgumentOutOfRangeException.ThrowIfLessThan(totalMilliseconds, -1, nameof(timeout));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(totalMilliseconds, int.MaxValue, nameof(timeout));
+
+            return (int)totalMilliseconds;
+        }
     }
 }

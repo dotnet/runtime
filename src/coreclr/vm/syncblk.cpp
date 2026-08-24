@@ -254,7 +254,7 @@ inline
 BOOL  SyncBlockCache::CardSetP (size_t card)
 {
     WRAPPER_NO_CONTRACT;
-    return ( m_EphemeralBitmap [ CardWord (card) ] & (1 << CardBit (card)));
+    return  m_EphemeralBitmap [ CardWord (card) ] & (1 << CardBit (card));
 }
 
 inline
@@ -282,11 +282,9 @@ void SyncBlockCache::Init()
 {
     CONTRACTL
     {
-        CONSTRUCTOR_CHECK;
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -448,7 +446,6 @@ void SyncBlockCache::Start()
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -524,8 +521,8 @@ void    SyncBlockCache::InsertCleanupSyncBlock(SyncBlock* psb)
     // we don't need to lock here
     //EnterCacheLock();
 
-    psb->m_Link.m_pNext = m_pCleanupBlockList;
-    m_pCleanupBlockList = &psb->m_Link;
+    psb->m_pNext = m_pCleanupBlockList;
+    m_pCleanupBlockList = psb;
 
     // we don't need a lock here
     //LeaveCacheLock();
@@ -542,7 +539,7 @@ SyncBlock* SyncBlockCache::GetNextCleanupSyncBlock()
     if (m_pCleanupBlockList)
     {
         // get the actual sync block pointer
-        psb = (SyncBlock *) (((BYTE *) m_pCleanupBlockList) - offsetof(SyncBlock, m_Link));
+        psb = m_pCleanupBlockList;
         m_pCleanupBlockList = m_pCleanupBlockList->m_pNext;
     }
     return psb;
@@ -555,7 +552,6 @@ SyncBlock *SyncBlockCache::GetNextFreeSyncBlock()
 {
     CONTRACTL
     {
-        INJECT_FAULT(COMPlusThrowOM());
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
@@ -567,7 +563,7 @@ SyncBlock *SyncBlockCache::GetNextFreeSyncBlock()
 #endif
 
     SyncBlock       *psb;
-    SLink           *plst = m_FreeBlockList;
+    SyncBlock       *plst = m_FreeBlockList;
 
     m_ActiveCount++;
 
@@ -579,7 +575,7 @@ SyncBlock *SyncBlockCache::GetNextFreeSyncBlock()
         m_FreeCount--;
 
         // get the actual sync block pointer
-        psb = (SyncBlock *) (((BYTE *) plst) - offsetof(SyncBlock, m_Link));
+        psb = plst;
 
         return psb;
     }
@@ -612,7 +608,6 @@ void SyncBlockCache::Grow()
         THROWS;
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -649,7 +644,6 @@ void SyncBlockCache::Grow()
         //! From here on, we assume that we will succeed and start doing global side-effects.
         //! Any operation that could fail must occur before this point.
         CANNOTTHROWCOMPLUSEXCEPTION();
-        FAULT_FORBID();
 
         newSyncTable.SuppressRelease();
         newBitMap.SuppressRelease();
@@ -706,7 +700,6 @@ DWORD SyncBlockCache::NewSyncBlockSlot(Object *obj)
         THROWS;
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
     _ASSERTE(m_CacheLock.OwnedByCurrentThread()); // GetSyncBlock takes the lock, make sure no one else does.
@@ -765,7 +758,6 @@ void SyncBlockCache::DeleteSyncBlock(SyncBlock *psb)
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -816,15 +808,14 @@ void    SyncBlockCache::DeleteSyncBlockMemory(SyncBlock *psb)
         INSTANCE_CHECK;
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
     m_ActiveCount--;
     m_FreeCount++;
 
-    psb->m_Link.m_pNext = m_FreeBlockList;
-    m_FreeBlockList = &psb->m_Link;
+    psb->m_pNext = m_FreeBlockList;
+    m_FreeBlockList = psb;
 
 }
 
@@ -847,8 +838,8 @@ void SyncBlockCache::GCDeleteSyncBlock(SyncBlock *psb)
     m_ActiveCount--;
     m_FreeCount++;
 
-    psb->m_Link.m_pNext = m_FreeBlockList;
-    m_FreeBlockList = &psb->m_Link;
+    psb->m_pNext = m_FreeBlockList;
+    m_FreeBlockList = psb;
 }
 
 void SyncBlockCache::GCWeakPtrScan(HANDLESCANPROC scanProc, uintptr_t lp1, uintptr_t lp2)
@@ -1061,7 +1052,9 @@ BOOL SyncBlockCache::GCWeakPtrScanElement (int nb, HANDLESCANPROC scanProc, LPAR
 #ifdef VERIFY_HEAP
         if (g_pConfig->GetHeapVerifyLevel () & EEConfig::HEAPVERIFY_SYNCBLK)
         {
-            STRESS_LOG3 (LF_GC | LF_SYNC, LL_INFO100000, "scanning syncblk[%d, %p, %p]\n", nb, (size_t)SyncTableEntry::GetSyncTableEntry()[nb].m_SyncBlock, (size_t)*keyv);
+              STRESS_LOG3 (LF_GC | LF_SYNC, LL_INFO100000, "scanning syncblk[%d, %p, %p]\n", nb,
+                           (void*)(size_t)SyncTableEntry::GetSyncTableEntry()[nb].m_SyncBlock,
+                           (void*)(size_t)*keyv);
         }
 #endif
 
@@ -1072,7 +1065,8 @@ BOOL SyncBlockCache::GCWeakPtrScanElement (int nb, HANDLESCANPROC scanProc, LPAR
 #ifdef VERIFY_HEAP
             if (g_pConfig->GetHeapVerifyLevel () & EEConfig::HEAPVERIFY_SYNCBLK)
             {
-                STRESS_LOG3 (LF_GC | LF_SYNC, LL_INFO100000, "freeing syncblk[%d, %p, %p]\n", nb, (size_t)pSB, (size_t)*keyv);
+                  STRESS_LOG3 (LF_GC | LF_SYNC, LL_INFO100000, "freeing syncblk[%d, %p, %p]\n", nb,
+                               (void*)(size_t)pSB, (void*)(size_t)*keyv);
             }
 #endif
 
@@ -1297,7 +1291,7 @@ void DumpSyncBlockCache()
             descrip = buffer;
         }
         if (dumpSBStyle < 2)
-            LogSpewAlways("[%4.4d]: %zx %s\n", nb, oref, descrip);
+            LogSpewAlways("[%4.4d]: %p %s\n", nb, (void*)oref, descrip);
         else if (dumpSBStyle == 2)
             LogSpewAlways("[%4.4d]: %s\n", nb, descrip);
     }
@@ -1422,7 +1416,6 @@ DWORD ObjHeader::GetSyncBlockIndex()
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -1490,12 +1483,7 @@ BOOL ObjHeader::Validate (BOOL bVerifySyncBlkIndex)
     {
         if (!GCHeapUtilities::IsGCInProgress () && !GCHeapUtilities::GetGCHeap()->IsConcurrentGCInProgress ())
         {
-#ifdef FEATURE_BASICFREEZE
             ASSERT_AND_CHECK (GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(obj));
-#else //FEATURE_BASICFREEZE
-            _ASSERTE(!"Reserve bit not cleared");
-            return FALSE;
-#endif //FEATURE_BASICFREEZE
         }
     }
 
@@ -1557,16 +1545,14 @@ typedef Wrapper<SyncBlock*, DoNothing<SyncBlock*>, VoidDeleteSyncBlockMemory, 0>
 // get the sync block for an existing object
 SyncBlock *ObjHeader::GetSyncBlock()
 {
-    CONTRACT(SyncBlock *)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     PTR_SyncBlock syncBlock = GetBaseObject()->PassiveGetSyncBlock();
     DWORD      indx = 0;
@@ -1579,7 +1565,7 @@ SyncBlock *ObjHeader::GetSyncBlock()
         PTR_SyncTableEntry pEntries(SyncTableEntry::GetSyncTableEntry());
         _ASSERTE(pEntries[GetHeaderSyncBlockIndex()].m_Object == GetBaseObject());
 #endif // _DEBUG
-        RETURN syncBlock;
+        return syncBlock;
     }
 
     //Need to get it from the cache
@@ -1589,7 +1575,9 @@ SyncBlock *ObjHeader::GetSyncBlock()
         //Try one more time
         syncBlock = GetBaseObject()->PassiveGetSyncBlock();
         if (syncBlock)
-            RETURN syncBlock;
+            {
+                return syncBlock;
+            }
 
         SyncBlockMemoryHolder syncBlockMemoryHolder(SyncBlockCache::GetSyncBlockCache()->GetNextFreeSyncBlock());
         syncBlock = syncBlockMemoryHolder;
@@ -1608,8 +1596,6 @@ SyncBlock *ObjHeader::GetSyncBlock()
             //! NewSyncBlockSlot has side-effects that we don't have backout for - thus, that must be the last
             //! failable operation called.
             CANNOTTHROWCOMPLUSEXCEPTION();
-            FAULT_FORBID();
-
 
             syncBlockMemoryHolder.SuppressRelease();
 
@@ -1663,7 +1649,7 @@ SyncBlock *ObjHeader::GetSyncBlock()
         // SyncBlockCache::LockHolder goes out of scope here
     }
 
-    RETURN syncBlock;
+    return syncBlock;
 }
 
 // ***************************************************************************
@@ -1832,7 +1818,7 @@ BOOL SyncBlock::TryGetLockInfo(DWORD *pThreadId, DWORD *pRecursionLevel)
         *pThreadId = threadId;
         *pRecursionLevel = (m_thinLock & SBLK_MASK_LOCK_RECLEVEL) >> SBLK_RECLEVEL_SHIFT;
 
-        return (threadId != 0);
+        return threadId != 0;
     }
     else
     {
@@ -1854,4 +1840,3 @@ void ObjHeader::IllegalAlignPad()
     _ASSERTE(m_alignpad == 0);
 }
 #endif // HOST_64BIT && _DEBUG
-

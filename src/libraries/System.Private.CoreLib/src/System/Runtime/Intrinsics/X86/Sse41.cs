@@ -296,7 +296,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPMOVSXBW xmm1 {k1}{z}, m64</para>
         ///   <para>The native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector128<short> ConvertToVector128Int16(sbyte* address) => ConvertToVector128Int16(address);
 
         /// <summary>
@@ -305,7 +304,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPMOVZXBW xmm1 {k1}{z}, m64</para>
         ///   <para>The native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector128<short> ConvertToVector128Int16(byte* address) => ConvertToVector128Int16(address);
 
         /// <summary>
@@ -314,7 +312,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPMOVSXBD xmm1 {k1}{z}, m32</para>
         ///   <para>The native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector128<int> ConvertToVector128Int32(sbyte* address) => ConvertToVector128Int32(address);
 
         /// <summary>
@@ -323,7 +320,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPMOVZXBD xmm1 {k1}{z}, m32</para>
         ///   <para>The native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector128<int> ConvertToVector128Int32(byte* address) => ConvertToVector128Int32(address);
 
         /// <summary>
@@ -332,7 +328,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPMOVSXWD xmm1 {k1}{z}, m64</para>
         ///   <para>The native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector128<int> ConvertToVector128Int32(short* address) => ConvertToVector128Int32(address);
 
         /// <summary>
@@ -341,7 +336,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPMOVZXWD xmm1 {k1}{z}, m64</para>
         ///   <para>The native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector128<int> ConvertToVector128Int32(ushort* address) => ConvertToVector128Int32(address);
 
         /// <summary>
@@ -350,7 +344,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPMOVSXBQ xmm1 {k1}{z}, m16</para>
         ///   <para>The native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector128<long> ConvertToVector128Int64(sbyte* address) => ConvertToVector128Int64(address);
 
         /// <summary>
@@ -359,7 +352,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPMOVZXBQ xmm1 {k1}{z}, m16</para>
         ///   <para>The native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector128<long> ConvertToVector128Int64(byte* address) => ConvertToVector128Int64(address);
 
         /// <summary>
@@ -368,7 +360,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPMOVSXWQ xmm1 {k1}{z}, m32</para>
         ///   <para>The native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector128<long> ConvertToVector128Int64(short* address) => ConvertToVector128Int64(address);
 
         /// <summary>
@@ -377,7 +368,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPMOVZXWQ xmm1 {k1}{z}, m32</para>
         ///   <para>The native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector128<long> ConvertToVector128Int64(ushort* address) => ConvertToVector128Int64(address);
 
         /// <summary>
@@ -386,7 +376,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPMOVSXDQ xmm1 {k1}{z}, m64</para>
         ///   <para>The native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector128<long> ConvertToVector128Int64(int* address) => ConvertToVector128Int64(address);
 
         /// <summary>
@@ -395,7 +384,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPMOVZXDQ xmm1 {k1}{z}, m64</para>
         ///   <para>The native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector128<long> ConvertToVector128Int64(uint* address) => ConvertToVector128Int64(address);
 
         /// <summary>
@@ -512,7 +500,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>   MOVNTDQA xmm1, m128</para>
         ///   <para>  VMOVNTDQA xmm1, m128</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector128<sbyte> LoadAlignedVector128NonTemporal(sbyte* address) => LoadAlignedVector128NonTemporal(address);
 
         /// <summary>
@@ -520,7 +507,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>   MOVNTDQA xmm1, m128</para>
         ///   <para>  VMOVNTDQA xmm1, m128</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector128<byte> LoadAlignedVector128NonTemporal(byte* address) => LoadAlignedVector128NonTemporal(address);
 
         /// <summary>
@@ -528,7 +514,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>   MOVNTDQA xmm1, m128</para>
         ///   <para>  VMOVNTDQA xmm1, m128</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector128<short> LoadAlignedVector128NonTemporal(short* address) => LoadAlignedVector128NonTemporal(address);
 
         /// <summary>
@@ -536,7 +521,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>   MOVNTDQA xmm1, m128</para>
         ///   <para>  VMOVNTDQA xmm1, m128</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector128<ushort> LoadAlignedVector128NonTemporal(ushort* address) => LoadAlignedVector128NonTemporal(address);
 
         /// <summary>
@@ -544,7 +528,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>   MOVNTDQA xmm1, m128</para>
         ///   <para>  VMOVNTDQA xmm1, m128</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector128<int> LoadAlignedVector128NonTemporal(int* address) => LoadAlignedVector128NonTemporal(address);
 
         /// <summary>
@@ -552,7 +535,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>   MOVNTDQA xmm1, m128</para>
         ///   <para>  VMOVNTDQA xmm1, m128</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector128<uint> LoadAlignedVector128NonTemporal(uint* address) => LoadAlignedVector128NonTemporal(address);
 
         /// <summary>
@@ -560,7 +542,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>   MOVNTDQA xmm1, m128</para>
         ///   <para>  VMOVNTDQA xmm1, m128</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector128<long> LoadAlignedVector128NonTemporal(long* address) => LoadAlignedVector128NonTemporal(address);
 
         /// <summary>
@@ -568,7 +549,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>   MOVNTDQA xmm1, m128</para>
         ///   <para>  VMOVNTDQA xmm1, m128</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector128<ulong> LoadAlignedVector128NonTemporal(ulong* address) => LoadAlignedVector128NonTemporal(address);
 
         /// <summary>

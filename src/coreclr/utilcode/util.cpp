@@ -255,7 +255,7 @@ namespace
         _ASSERTE(wszDllPath != nullptr);
 
         // We've got the name of the DLL to load, so load it.
-        HModuleHolder hDll = WszLoadLibrary(wszDllPath, nullptr, GetLoadWithAlteredSearchPathFlag());
+        HModuleHolder hDll{ WszLoadLibrary(wszDllPath, nullptr, GetLoadWithAlteredSearchPathFlag()) };
         if (hDll == nullptr)
             return HRESULT_FROM_GetLastError();
 
@@ -267,10 +267,10 @@ namespace
         // Call the function to get a class object for the rclsid and riid passed in.
         IfFailRet(dllGetClassObject(rclsid, riid, ppv));
 
-        hDll.SuppressRelease();
+        HMODULE hLoadedDll = hDll.Detach();
 
         if (phmodDll != nullptr)
-            *phmodDll = hDll.GetValue();
+            *phmodDll = hLoadedDll;
 
         return hr;
     }
@@ -334,26 +334,15 @@ HRESULT FakeCoCreateInstanceEx(REFCLSID       rclsid,
     // necessary object.
     IfFailRet(classFactory->CreateInstance(NULL, riid, ppv));
 
-    hDll.SuppressRelease();
+    HMODULE hLoadedDll = hDll.Detach();
 
     if (phmodDll != NULL)
     {
-        *phmodDll = hDll.GetValue();
+        *phmodDll = hLoadedDll;
     }
 
     return hr;
 }
-
-#ifdef _DEBUG
-static DWORD ShouldInjectFaultInRange()
-{
-    static DWORD fInjectFaultInRange = 99;
-
-    if (fInjectFaultInRange == 99)
-        fInjectFaultInRange = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_InjectFault) & 0x40);
-    return fInjectFaultInRange;
-}
-#endif
 
 // Reserves free memory within the range [pMinAddr..pMaxAddr] using
 // ClrVirtualQuery to find free memory and ClrVirtualAlloc to reserve it.
@@ -442,7 +431,6 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
     //
     BYTE *   tryAddr            = (BYTE *)ALIGN_UP((BYTE *)pMinAddr, VIRTUAL_ALLOC_RESERVE_GRANULARITY);
     bool     virtualQueryFailed = false;
-    bool     faultInjected      = false;
     unsigned virtualQueryCount  = 0;
 
     // Now scan memory and try to find a free block of the size requested.
@@ -475,15 +463,6 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
                 // return pResult
                 break;
             }
-
-#ifdef _DEBUG
-            if (ShouldInjectFaultInRange())
-            {
-                // return nullptr (failure)
-                faultInjected = true;
-                break;
-            }
-#endif // _DEBUG
 
             // On UNIX we can also fail if our request size 'dwSize' is larger than 64K and
             // and our tryAddr is pointing at a small MEM_FREE region (smaller than 'dwSize')
@@ -519,11 +498,6 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
         if (virtualQueryFailed)
         {
             STRESS_LOG0(LF_JIT, LL_INFO100, "Additional reason: VirtualQuery operation failed.\n");
-        }
-
-        if (faultInjected)
-        {
-            STRESS_LOG0(LF_JIT, LL_INFO100, "Additional reason: fault injected.\n");
         }
     }
 
@@ -962,6 +936,7 @@ int GetCurrentProcessCpuCount()
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
         CANNOT_TAKE_LOCK;
     }
     CONTRACTL_END;
@@ -1084,36 +1059,6 @@ DWORD_PTR GetCurrentProcessCpuMask()
 #endif
 }
 #endif // HOST_WINDOWS
-
-uint32_t GetOsPageSizeUncached()
-{
-    SYSTEM_INFO sysInfo;
-    ::GetSystemInfo(&sysInfo);
-    return sysInfo.dwAllocationGranularity ? sysInfo.dwAllocationGranularity : 0x1000;
-}
-
-namespace
-{
-    Volatile<uint32_t> g_pageSize = 0;
-}
-
-uint32_t GetOsPageSize()
-{
-#ifdef HOST_UNIX
-    size_t result = g_pageSize.LoadWithoutBarrier();
-
-    if(!result)
-    {
-        result = GetOsPageSizeUncached();
-
-        g_pageSize.StoreWithoutBarrier(result);
-    }
-
-    return result;
-#else
-    return 0x1000;
-#endif
-}
 
 //=============================================================================
 // AssemblyNamesList
@@ -2140,6 +2085,49 @@ void PutArm64Rel12(UINT32 * pCode, INT32 imm12)
 }
 
 //*****************************************************************************
+//  Extract the 12-bit page offset from an LDR instruction (unsigned immediate).
+//  For a 64-bit LDR the encoded immediate is scaled by 8 bytes.
+//*****************************************************************************
+INT32 GetArm64Rel12Ldr(UINT32 * pCode)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    UINT32 ldrInstr = *pCode;
+
+    // 21-10 contains the scaled immediate. Mask 12 bits and shift by 10 bits.
+    INT32 scaledImm12 = (INT32)(ldrInstr & 0x003FFC00) >> 10;
+
+    // Scale back to a byte offset (multiply by 8).
+    return scaledImm12 << 3;
+}
+
+//*****************************************************************************
+//  Deposit the PC-Relative page offset 'imm12' into an LDR instruction (unsigned
+//  immediate). For a 64-bit LDR the immediate represents offset/8 (scaled by 8).
+//*****************************************************************************
+void PutArm64Rel12Ldr(UINT32 * pCode, INT32 imm12)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    // Verify that we got a valid offset that is aligned to 8 bytes.
+    _ASSERTE(FitsInRel12(imm12));
+    _ASSERTE((imm12 & 7) == 0);
+
+    UINT32 ldrInstr = *pCode;
+    // Check ldr opcode: 1111 1001 0100 .... (LDR 64-bit, unsigned immediate)
+    _ASSERTE((ldrInstr & 0xFFC00000) == 0xF9400000);
+
+    INT32 scaledImm12 = imm12 >> 3;       // scale the offset by the access size (8)
+
+    ldrInstr &= 0xFFC003FF;               // keep bits 31-22, 9-0
+    ldrInstr |= (scaledImm12 << 10);      // Occupy 21-10.
+
+    *pCode = ldrInstr;                    // write the assembled instruction
+
+    _ASSERTE(GetArm64Rel12Ldr(pCode) == imm12);
+}
+
+//*****************************************************************************
 //  Extract the PC-Relative page address and page offset from pcalau12i+add/ld
 //*****************************************************************************
 INT64 GetLoongArch64PC12(UINT32 * pCode)
@@ -2291,105 +2279,24 @@ void PutRiscV64AuipcCombo(UINT32 * pCode, INT64 offset, bool isStype)
     INT32 hi20 = INT32(offset - lo12);
     _ASSERTE(INT64(lo12) + INT64(hi20) == offset);
 
-    _ASSERTE(GetRiscV64AuipcCombo(pCode, isStype) == 0);
-    pCode[0] |= hi20;
-    int bottomBitsPos = isStype ? 7 : 20;
-    pCode[1] |= (lo12 >> 5) << 25; // top 7 bits are in the same spot
-    pCode[1] |= (lo12 & 0x1F) << bottomBitsPos;
+    // Replace existing immediate bits because RISC-V relocation placeholders may already carry addends.
+    pCode[0] &= 0x00000FFF;
+    pCode[0] |= hi20 & 0xFFFFF000;
+
+    UINT32 lo12Bits = UINT32(lo12) & 0xFFF;
+    if (isStype)
+    {
+        pCode[1] &= 0x01FFF07F;
+        pCode[1] |= (lo12Bits & 0xFE0) << 20;
+        pCode[1] |= (lo12Bits & 0x01F) << 7;
+    }
+    else
+    {
+        pCode[1] &= 0x000FFFFF;
+        pCode[1] |= lo12Bits << 20;
+    }
+
     _ASSERTE(GetRiscV64AuipcCombo(pCode, isStype) == offset);
-}
-
-//======================================================================
-// This function returns true, if it can determine that the instruction pointer
-// refers to a code address that belongs in the range of the given image.
-BOOL IsIPInModule(PTR_VOID pModuleBaseAddress, PCODE ip)
-{
-    STATIC_CONTRACT_LEAF;
-    SUPPORTS_DAC;
-
-    struct Param
-    {
-        PTR_VOID pModuleBaseAddress;
-        PCODE ip;
-        BOOL fRet;
-    } param;
-    param.pModuleBaseAddress = pModuleBaseAddress;
-    param.ip = ip;
-    param.fRet = FALSE;
-
-// UNIXTODO: implement a proper version for PAL
-#ifdef HOST_WINDOWS
-    PAL_TRY(Param *, pParam, &param)
-    {
-        PTR_BYTE pBase = dac_cast<PTR_BYTE>(pParam->pModuleBaseAddress);
-
-        PTR_IMAGE_DOS_HEADER pDOS = NULL;
-        PTR_IMAGE_NT_HEADERS pNT  = NULL;
-        USHORT cbOptHdr;
-        PCODE baseAddr;
-
-        //
-        // First, must validate the format of the PE headers to make sure that
-        // the fields we're interested in using exist in the image.
-        //
-
-        // Validate the DOS header.
-        pDOS = PTR_IMAGE_DOS_HEADER(pBase);
-        if (pDOS->e_magic != VAL16(IMAGE_DOS_SIGNATURE) ||
-            pDOS->e_lfanew == 0)
-        {
-            goto lDone;
-        }
-
-        // Validate the NT header
-        pNT = PTR_IMAGE_NT_HEADERS(pBase + VAL32(pDOS->e_lfanew));
-
-        if (pNT->Signature != VAL32(IMAGE_NT_SIGNATURE))
-        {
-            goto lDone;
-        }
-
-        // Validate that the optional header is large enough to contain the fields
-        // we're interested, namely IMAGE_OPTIONAL_HEADER::SizeOfImage. The reason
-        // we don't just check that SizeOfOptionalHeader == IMAGE_SIZEOF_NT_OPTIONAL_HEADER
-        // is due to VSW443590, which states that the extensibility of this structure
-        // is such that it is possible to include only a portion of the optional header.
-        cbOptHdr = pNT->FileHeader.SizeOfOptionalHeader;
-
-        // Check that the magic field is contained by the optional header and set to the correct value.
-        if (cbOptHdr < (offsetof(IMAGE_OPTIONAL_HEADER, Magic) + sizeofmember(IMAGE_OPTIONAL_HEADER, Magic)) ||
-            pNT->OptionalHeader.Magic != VAL16(IMAGE_NT_OPTIONAL_HDR_MAGIC))
-        {
-            goto lDone;
-        }
-
-        // Check that the SizeOfImage is contained by the optional header.
-        if (cbOptHdr < (offsetof(IMAGE_OPTIONAL_HEADER, SizeOfImage) + sizeofmember(IMAGE_OPTIONAL_HEADER, SizeOfImage)))
-        {
-            goto lDone;
-        }
-
-        //
-        // The real check
-        //
-
-        baseAddr = dac_cast<PCODE>(pBase);
-        if ((pParam->ip < baseAddr) || (pParam->ip >= (baseAddr + VAL32(pNT->OptionalHeader.SizeOfImage))))
-        {
-            goto lDone;
-        }
-
-        pParam->fRet = TRUE;
-
-lDone: ;
-    }
-    PAL_EXCEPT (EXCEPTION_EXECUTE_HANDLER)
-    {
-    }
-    PAL_ENDTRY
-#endif // HOST_WINDOWS
-
-    return param.fRet;
 }
 
 namespace Clr
@@ -2399,7 +2306,7 @@ namespace Util
 #ifdef HOST_WINDOWS
     // Struct used to scope suspension of client impersonation for the current thread.
     // https://learn.microsoft.com/windows/desktop/secauthz/client-impersonation
-    class SuspendImpersonation
+    class SuspendImpersonation final
     {
     public:
         SuspendImpersonation()
@@ -2423,11 +2330,14 @@ namespace Util
         ~SuspendImpersonation()
         {
             if (_token != nullptr)
+            {
                 ::SetThreadToken(nullptr, _token);
+                ::CloseHandle(_token);
+            }
         }
 
     private:
-        HandleHolder _token;
+        HANDLE _token;
     };
 
     struct ProcessIntegrityResult

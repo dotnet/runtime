@@ -85,6 +85,11 @@ namespace System.Reflection.Runtime.TypeInfos
             return GenericTypeDefinitionTypeInfo.ToType();
         }
 
+        public sealed override Type? GetNullableUnderlyingType() =>
+            GenericTypeDefinitionTypeInfo.ToType() == typeof(Nullable<>)
+                ? _key.GenericTypeArguments[0].ToType()
+                : null;
+
         public sealed override Guid GUID
         {
             get

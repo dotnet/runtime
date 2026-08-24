@@ -129,6 +129,8 @@ public:
 
 #endif // #ifndef DACCESS_COMPILE
 
+    virtual BOOL IsIPInModule(PTR_VOID pModuleBaseAddress, PCODE ip) = 0;
+
     virtual PCODE GetNativeCodeStartAddress(PCODE address) = 0;
 
     virtual MethodDesc *GetNativeCodeMethodDesc(const PCODE address) = 0;
@@ -259,8 +261,6 @@ public:
 
 #ifndef DACCESS_COMPILE
 
-    virtual COR_ILMETHOD* MethodDescGetILHeader(MethodDesc *pFD) = 0;
-
     virtual void MarkDebuggerAttached(void) = 0;
 
     virtual void MarkDebuggerUnattached(void) = 0;
@@ -315,9 +315,6 @@ public:
 #endif // #ifndef DACCESS_COMPILE
 
 #ifndef DACCESS_COMPILE
-
-    virtual void DebuggerModifyingLogSwitch (int iNewLevel,
-                                             const WCHAR *pLogSwitchName) = 0;
 
     virtual HRESULT SetIPFromSrcToDst(Thread *pThread,
                           SLOT addrStart,

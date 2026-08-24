@@ -434,7 +434,7 @@ enum BasicBlockFlags : uint64_t
     BBF_BACKWARD_JUMP                  = MAKE_BBFLAG(23), // BB is surrounded by a backward jump/switch arc
     BBF_BACKWARD_JUMP_SOURCE           = MAKE_BBFLAG(24), // Block is a source of a backward jump
     BBF_BACKWARD_JUMP_TARGET           = MAKE_BBFLAG(25), // Block is a target of a backward jump
-    BBF_PATCHPOINT                     = MAKE_BBFLAG(26), // Block is a patchpoint
+    BBF_OSR_PATCHPOINT                 = MAKE_BBFLAG(26), // Block is a patchpoint
     BBF_PARTIAL_COMPILATION_PATCHPOINT = MAKE_BBFLAG(27), // Block is a partial compilation patchpoint
     BBF_HAS_HISTOGRAM_PROFILE          = MAKE_BBFLAG(28), // BB contains a call needing a histogram profile
     BBF_TAILCALL_SUCCESSOR             = MAKE_BBFLAG(29), // BB has pred that has potential tail call
@@ -447,6 +447,8 @@ enum BasicBlockFlags : uint64_t
     BBF_ASYNC_RESUMPTION               = MAKE_BBFLAG(36), // Block is a resumption block in an async method
     BBF_CATCH_RESUMPTION               = MAKE_BBFLAG(37), // Block is a resumption from a catch
     BBF_THROW_HELPER                   = MAKE_BBFLAG(38), // Block is a call to a throw helper
+    BBF_STALE_PREDICATE                = MAKE_BBFLAG(39), // Block's branch condition VN only describes flow that
+                                                         // actually passes through the block (set/used by RBO)
 
     // The following are sets of flags.
 
@@ -1436,9 +1438,13 @@ public:
 
     union
     {
-        unsigned bbStkTempsOut;          // base# for output stack temps
-        int      bbHistogramSchemaIndex; // schema index for histogram instrumentation
+        unsigned bbStkTempsOut;                // base# for output stack temps
+        int      bbHandleHistogramSchemaIndex; // schema index for handle (class/method) histogram instrumentation
     };
+
+    int bbValueHistogramSchemaIndex; // schema index for value histogram instrumentation
+                                     // Placed here so it consumes the existing tail padding before
+                                     // bbTryIndex/bbHndIndex without growing BasicBlock.
 
 #define MAX_XCPTN_INDEX (USHRT_MAX - 1)
 

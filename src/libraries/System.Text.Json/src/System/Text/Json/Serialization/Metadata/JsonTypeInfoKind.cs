@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 namespace System.Text.Json.Serialization.Metadata
@@ -23,6 +23,10 @@ namespace System.Text.Json.Serialization.Metadata
         /// <summary>
         /// Type is serialized as a dictionary with key/value pair entries.
         /// </summary>
-        Dictionary = 3
+        Dictionary = 3,
+        /// <summary>
+        /// Type is serialized as a union with a closed set of case types.
+        /// </summary>
+        Union = 4
     }
 }

@@ -912,12 +912,22 @@ void CodeGen::genArm64EmitterUnitTestsGeneral()
     theEmitter->emitIns_R_R(INS_rev, EA_8BYTE, REG_R4, REG_R15);
     theEmitter->emitIns_R_R(INS_rev16, EA_8BYTE, REG_R5, REG_R0);
     theEmitter->emitIns_R_R(INS_rev32, EA_8BYTE, REG_R6, REG_R1);
+    if (m_compiler->compIsaSupportedDebugOnly(InstructionSet_Cssc))
+    {
+        theEmitter->emitIns_R_R(INS_cnt, EA_8BYTE, REG_R7, REG_R2); // FEAT_CSSC
+        theEmitter->emitIns_R_R(INS_ctz, EA_8BYTE, REG_R8, REG_R3); // FEAT_CSSC
+    }
 
-    theEmitter->emitIns_R_R(INS_cls, EA_4BYTE, REG_R7, REG_R2);
-    theEmitter->emitIns_R_R(INS_clz, EA_4BYTE, REG_R8, REG_R3);
-    theEmitter->emitIns_R_R(INS_rbit, EA_4BYTE, REG_R9, REG_R4);
-    theEmitter->emitIns_R_R(INS_rev, EA_4BYTE, REG_R10, REG_R5);
-    theEmitter->emitIns_R_R(INS_rev16, EA_4BYTE, REG_R11, REG_R6);
+    theEmitter->emitIns_R_R(INS_cls, EA_4BYTE, REG_R9, REG_R4);
+    theEmitter->emitIns_R_R(INS_clz, EA_4BYTE, REG_R10, REG_R5);
+    theEmitter->emitIns_R_R(INS_rbit, EA_4BYTE, REG_R11, REG_R6);
+    theEmitter->emitIns_R_R(INS_rev, EA_4BYTE, REG_R12, REG_R7);
+    theEmitter->emitIns_R_R(INS_rev16, EA_4BYTE, REG_R13, REG_R8);
+    if (m_compiler->compIsaSupportedDebugOnly(InstructionSet_Cssc))
+    {
+        theEmitter->emitIns_R_R(INS_cnt, EA_4BYTE, REG_R14, REG_R9);  // FEAT_CSSC
+        theEmitter->emitIns_R_R(INS_ctz, EA_4BYTE, REG_R15, REG_R10); // FEAT_CSSC
+    }
 
     //
     // R_I
@@ -9140,23 +9150,101 @@ void CodeGen::genArm64EmitterUnitTestsPac()
 
     genDefineTempLabel(genCreateTempLabel());
 
+    // IF_BR_0A
+    theEmitter->emitIns(INS_retaa); // RETAA
+    theEmitter->emitIns(INS_retab); // RETAB
+
     // IF_PC_0A
     theEmitter->emitIns(INS_autia1716); // AUTIA1716
     theEmitter->emitIns(INS_autiasp);   // AUTIASP
+    theEmitter->emitIns(INS_autib1716); // AUTIB1716
+    theEmitter->emitIns(INS_autibsp);   // AUTIBSP
+    theEmitter->emitIns(INS_autibz);    // AUTIBZ
     theEmitter->emitIns(INS_autiaz);    // AUTIAZ
     theEmitter->emitIns(INS_pacia1716); // PACIA1716
     theEmitter->emitIns(INS_paciasp);   // PACIASP
     theEmitter->emitIns(INS_paciaz);    // PACIAZ
+    theEmitter->emitIns(INS_pacib1716); // PACIB1716
+    theEmitter->emitIns(INS_pacibsp);   // PACIBSP
+    theEmitter->emitIns(INS_pacibz);    // PACIBZ
     theEmitter->emitIns(INS_xpaclri);   // XPACLRI
 
     // IF_PC_1A
     theEmitter->emitIns_R(INS_autiza, EA_8BYTE, REG_R1); // AUTIZA <Xd>
+    theEmitter->emitIns_R(INS_autizb, EA_8BYTE, REG_R2); // AUTIZB <Xd>
     theEmitter->emitIns_R(INS_paciza, EA_8BYTE, REG_R8); // PACIZA <Xd>
+    theEmitter->emitIns_R(INS_pacizb, EA_8BYTE, REG_R9); // PACIZB <Xd>
     theEmitter->emitIns_R(INS_xpacd, EA_8BYTE, REG_R10); // XPACD <Xd>
     theEmitter->emitIns_R(INS_xpaci, EA_8BYTE, REG_R12); // XPACI <Xd>
 
     // IF_PC_2A
     theEmitter->emitIns_R_R(INS_autia, EA_8BYTE, REG_R20, REG_SP); // AUTIA <Xd>, <Xn|SP>
+    theEmitter->emitIns_R_R(INS_autib, EA_8BYTE, REG_R21, REG_SP); // AUTIB <Xd>, <Xn|SP>
     theEmitter->emitIns_R_R(INS_pacia, EA_8BYTE, REG_R27, REG_SP); // PACIA <Xd>, <Xn|SP>
+    theEmitter->emitIns_R_R(INS_pacib, EA_8BYTE, REG_R28, REG_SP); // PACIB <Xd>, <Xn|SP>
+}
+
+//-----------------------------------------------------------------------------
+// genArm64EmitterUnitTestsFp16: Emit the scalar half-precision (FEAT_FP16)
+// floating-point instructions used to accelerate `System.Half`, so their
+// encodings and disassembly can be verified.
+//
+void CodeGen::genArm64EmitterUnitTestsFp16()
+{
+    emitter* theEmitter = GetEmitter();
+
+    genDefineTempLabel(genCreateTempLabel());
+
+    // IF_DV_3D: scalar half-precision, two source registers
+    theEmitter->emitIns_R_R_R(INS_fadd, EA_2BYTE, REG_V0, REG_V1, REG_V2);      // FADD   Hd, Hn, Hm
+    theEmitter->emitIns_R_R_R(INS_fsub, EA_2BYTE, REG_V3, REG_V4, REG_V5);      // FSUB   Hd, Hn, Hm
+    theEmitter->emitIns_R_R_R(INS_fmul, EA_2BYTE, REG_V6, REG_V7, REG_V8);      // FMUL   Hd, Hn, Hm
+    theEmitter->emitIns_R_R_R(INS_fdiv, EA_2BYTE, REG_V9, REG_V10, REG_V11);    // FDIV   Hd, Hn, Hm
+    theEmitter->emitIns_R_R_R(INS_fnmul, EA_2BYTE, REG_V12, REG_V13, REG_V14);  // FNMUL  Hd, Hn, Hm
+    theEmitter->emitIns_R_R_R(INS_fmax, EA_2BYTE, REG_V15, REG_V16, REG_V17);   // FMAX   Hd, Hn, Hm
+    theEmitter->emitIns_R_R_R(INS_fmin, EA_2BYTE, REG_V18, REG_V19, REG_V20);   // FMIN   Hd, Hn, Hm
+    theEmitter->emitIns_R_R_R(INS_fmaxnm, EA_2BYTE, REG_V21, REG_V22, REG_V23); // FMAXNM Hd, Hn, Hm
+    theEmitter->emitIns_R_R_R(INS_fminnm, EA_2BYTE, REG_V24, REG_V25, REG_V26); // FMINNM Hd, Hn, Hm
+    theEmitter->emitIns_R_R_R(INS_fabd, EA_2BYTE, REG_V27, REG_V28, REG_V29);   // FABD   Hd, Hn, Hm
+
+    // IF_DV_2G: scalar half-precision, one source register
+    theEmitter->emitIns_R_R(INS_fsqrt, EA_2BYTE, REG_V0, REG_V1);     // FSQRT   Hd, Hn
+    theEmitter->emitIns_R_R(INS_frinta, EA_2BYTE, REG_V2, REG_V3);    // FRINTA  Hd, Hn
+    theEmitter->emitIns_R_R(INS_frinti, EA_2BYTE, REG_V4, REG_V5);    // FRINTI  Hd, Hn
+    theEmitter->emitIns_R_R(INS_frintm, EA_2BYTE, REG_V6, REG_V7);    // FRINTM  Hd, Hn
+    theEmitter->emitIns_R_R(INS_frintn, EA_2BYTE, REG_V8, REG_V9);    // FRINTN  Hd, Hn
+    theEmitter->emitIns_R_R(INS_frintp, EA_2BYTE, REG_V10, REG_V11);  // FRINTP  Hd, Hn
+    theEmitter->emitIns_R_R(INS_frintx, EA_2BYTE, REG_V12, REG_V13);  // FRINTX  Hd, Hn
+    theEmitter->emitIns_R_R(INS_frintz, EA_2BYTE, REG_V14, REG_V15);  // FRINTZ  Hd, Hn
+    theEmitter->emitIns_R_R(INS_frecpe, EA_2BYTE, REG_V16, REG_V17);  // FRECPE  Hd, Hn
+    theEmitter->emitIns_R_R(INS_frsqrte, EA_2BYTE, REG_V18, REG_V19); // FRSQRTE Hd, Hn
+
+    // IF_DV_2K: scalar half-precision compare
+    theEmitter->emitIns_R_R(INS_fcmp, EA_2BYTE, REG_V0, REG_V1);  // FCMP   Hn, Hm
+    theEmitter->emitIns_R_R(INS_fcmpe, EA_2BYTE, REG_V2, REG_V3); // FCMPE  Hn, Hm
+
+    // IF_DV_4A: scalar half-precision fused multiply-add
+    theEmitter->emitIns_R_R_R_R(INS_fmadd, EA_2BYTE, REG_V0, REG_V1, REG_V2, REG_V3);      // FMADD  Hd, Hn, Hm, Ha
+    theEmitter->emitIns_R_R_R_R(INS_fmsub, EA_2BYTE, REG_V4, REG_V5, REG_V6, REG_V7);      // FMSUB  Hd, Hn, Hm, Ha
+    theEmitter->emitIns_R_R_R_R(INS_fnmadd, EA_2BYTE, REG_V8, REG_V9, REG_V10, REG_V11);   // FNMADD Hd, Hn, Hm, Ha
+    theEmitter->emitIns_R_R_R_R(INS_fnmsub, EA_2BYTE, REG_V12, REG_V13, REG_V14, REG_V15); // FNMSUB Hd, Hn, Hm, Ha
+
+    // IF_DV_2J: convert between half and single/double
+    theEmitter->emitIns_R_R(INS_fcvt, EA_4BYTE, REG_V0, REG_V1, INS_OPTS_H_TO_S); // FCVT   Sd, Hn
+    theEmitter->emitIns_R_R(INS_fcvt, EA_8BYTE, REG_V2, REG_V3, INS_OPTS_H_TO_D); // FCVT   Dd, Hn
+    theEmitter->emitIns_R_R(INS_fcvt, EA_2BYTE, REG_V4, REG_V5, INS_OPTS_S_TO_H); // FCVT   Hd, Sn
+    theEmitter->emitIns_R_R(INS_fcvt, EA_2BYTE, REG_V6, REG_V7, INS_OPTS_D_TO_H); // FCVT   Hd, Dn
+
+    // IF_DV_2H: convert half to integer (truncating toward zero)
+    theEmitter->emitIns_R_R(INS_fcvtzs, EA_4BYTE, REG_R0, REG_V1, INS_OPTS_H_TO_4BYTE); // FCVTZS Wd, Hn
+    theEmitter->emitIns_R_R(INS_fcvtzs, EA_8BYTE, REG_R2, REG_V3, INS_OPTS_H_TO_8BYTE); // FCVTZS Xd, Hn
+    theEmitter->emitIns_R_R(INS_fcvtzu, EA_4BYTE, REG_R4, REG_V5, INS_OPTS_H_TO_4BYTE); // FCVTZU Wd, Hn
+    theEmitter->emitIns_R_R(INS_fcvtzu, EA_8BYTE, REG_R6, REG_V7, INS_OPTS_H_TO_8BYTE); // FCVTZU Xd, Hn
+
+    // IF_DV_2I: convert integer to half
+    theEmitter->emitIns_R_R(INS_scvtf, EA_2BYTE, REG_V0, REG_R1, INS_OPTS_4BYTE_TO_H); // SCVTF  Hd, Wn
+    theEmitter->emitIns_R_R(INS_scvtf, EA_2BYTE, REG_V2, REG_R3, INS_OPTS_8BYTE_TO_H); // SCVTF  Hd, Xn
+    theEmitter->emitIns_R_R(INS_ucvtf, EA_2BYTE, REG_V4, REG_R5, INS_OPTS_4BYTE_TO_H); // UCVTF  Hd, Wn
+    theEmitter->emitIns_R_R(INS_ucvtf, EA_2BYTE, REG_V6, REG_R7, INS_OPTS_8BYTE_TO_H); // UCVTF  Hd, Xn
 }
 #endif // defined(TARGET_ARM64) && defined(DEBUG)

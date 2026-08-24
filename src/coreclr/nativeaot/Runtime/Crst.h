@@ -15,7 +15,6 @@ enum CrstType
 {
     CrstHandleTable,
     CrstAllocHeap,
-    CrstInterfaceDispatchGlobalLists,
     CrstStressLog,
     CrstRestrictedCallouts,
     CrstGcStressControl,
@@ -39,7 +38,6 @@ class CrstStatic
 {
 public:
     void Init(CrstType eType, CrstFlags eFlags = CRST_DEFAULT);
-    bool InitNoThrow(CrstType eType, CrstFlags eFlags = CRST_DEFAULT) { Init(eType, eFlags); return true; }
     void Destroy();
     void Enter() { CrstStatic::Enter(this); }
     void Leave() { CrstStatic::Leave(this); }

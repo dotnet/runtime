@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <StringResourcesPath>$(MSBuildProjectDirectory)\..\src\Resources\Strings.resx</StringResourcesPath>
@@ -39,10 +39,14 @@
     <Compile Include="ProcessThreadTests.cs" />
     <Compile Include="ProcessWaitingTests.cs" />
     <Compile Include="RemotelyInvokable.cs" />
+    <Compile Include="RunTests.cs" />
     <Compile Include="StartAndForget.cs" />
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="SafeProcessHandleTests.cs" />
+    <Compile Include="StartSuspendedTests.cs" />
+    <Compile Include="ProcessOpenTests.cs" />
     <Compile Include="KillOnParentExitTests.cs" />
+    <Compile Include="WaitForExitStatusTests.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="ProcessHandlesTests.Windows.cs" />
@@ -74,8 +78,6 @@
              Link="Common\Interop\Windows\Kernel32\Interop.SetConsoleCtrlHandler.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetFinalPathNameByHandle.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.GetFinalPathNameByHandle.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.ResumeThread.cs"
-             Link="Common\Interop\Windows\Kernel32\Interop.ResumeThread.cs" />
     <!-- Helpers -->
     <Compile Include="$(CommonTestPath)TestUtilities\System\WindowsTestFileShare.cs" Link="Common\TestUtilities\System\WindowsTestFileShare.cs" />
   </ItemGroup>
@@ -98,6 +100,8 @@
              Link="Common\Interop\Unix\System.Native\Interop.PosixSignal.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Stat.cs"
              Link="Common\Interop\Unix\System.Native\Interop.Stat.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Errors.cs"
+             Link="Common\Interop\Windows\Interop.Errors.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'android' or '$(TargetPlatformIdentifier)' == 'maccatalyst'">
     <Compile Include="ProcessTests.Mobile.cs" />

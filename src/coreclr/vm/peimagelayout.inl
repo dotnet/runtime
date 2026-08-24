@@ -11,17 +11,15 @@
 
 inline void PEImageLayout::AddRef()
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         PRECONDITION(m_refCount>0 && m_refCount < COUNT_T_MAX);
         NOTHROW;
         GC_NOTRIGGER;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     InterlockedIncrement(&m_refCount);
-
-    RETURN;
 }
 
 inline ULONG PEImageLayout::Release()
@@ -31,7 +29,6 @@ inline ULONG PEImageLayout::Release()
         DESTRUCTOR_CHECK;
         NOTHROW;
         MODE_ANY;
-        FORBID_FAULT;
     }
     CONTRACTL_END;
 
@@ -65,9 +62,6 @@ inline PEImageLayout::~PEImageLayout()
 inline PEImageLayout::PEImageLayout()
     : m_refCount(1)
     , m_format(FORMAT_PE)
-#ifdef FEATURE_WEBCIL
-    , m_tableBaseOffset(0)
-#endif
     , m_pOwner(NULL)
 {
     LIMITED_METHOD_CONTRACT;
@@ -278,6 +272,18 @@ inline BOOL PEImageLayout::HasBaseRelocations() const
     LIMITED_METHOD_DAC_CONTRACT;
     DECODER_DISPATCH(HasBaseRelocations())
 }
+
+#ifdef FEATURE_WEBCIL
+inline SSIZE_T PEImageLayout::GetTableBaseOffset() const
+{
+    WRAPPER_NO_CONTRACT;
+    if (IsWebcilFormat())
+    {
+        return m_webcilDecoder.GetTableBaseOffset();
+    }
+    return 0;
+}
+#endif
 
 inline const void *PEImageLayout::GetPreferredBase() const
 {
@@ -579,7 +585,7 @@ inline IMAGE_COR_VTABLEFIXUP *PEImageLayout::GetVTableFixups(COUNT_T *pCount) co
 inline BOOL PEImageLayout::IsNativeMachineFormat() const
 {
     WRAPPER_NO_CONTRACT;
-    PE_OR_WEBCIL(IsNativeMachineFormat(), FALSE)
+    PE_OR_WEBCIL(IsNativeMachineFormat(), TRUE)
 }
 
 inline BOOL PEImageLayout::IsI386() const
@@ -628,19 +634,19 @@ inline PTR_CVOID PEImageLayout::GetNativeManifestMetadata(COUNT_T *pSize) const
 inline BOOL PEImageLayout::IsComponentAssembly() const
 {
     WRAPPER_NO_CONTRACT;
-    PE_OR_WEBCIL(IsComponentAssembly(), FALSE)
+    DECODER_DISPATCH(IsComponentAssembly())
 }
 
 inline BOOL PEImageLayout::HasReadyToRunHeader() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    PE_OR_WEBCIL(HasReadyToRunHeader(), FALSE)
+    DECODER_DISPATCH(HasReadyToRunHeader())
 }
 
 inline READYTORUN_HEADER *PEImageLayout::GetReadyToRunHeader() const
 {
     WRAPPER_NO_CONTRACT;
-    PE_OR_WEBCIL(GetReadyToRunHeader(), NULL)
+    DECODER_DISPATCH(GetReadyToRunHeader())
 }
 
 inline BOOL PEImageLayout::HasNativeEntryPoint() const

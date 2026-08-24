@@ -10,9 +10,6 @@
     <TypeSystemPath>$(ToolsCommonPath)TypeSystem\</TypeSystemPath>
     <DefineConstants>$(DefineConstants);ILTRIM</DefineConstants>
   </PropertyGroup>
-  <ItemGroup>
-    <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataVersion)" />
-  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="../aot/ILCompiler.DependencyAnalysisFramework/ILCompiler.DependencyAnalysisFramework.csproj" />
@@ -51,6 +48,7 @@
     <Compile Include="..\aot\ILCompiler.Compiler\Compiler\DescriptorMarker.cs" Link="Shared\DescriptorMarker.cs"/>
     <Compile Include="..\aot\ILCompiler.Compiler\Compiler\DependencyAnalysis\ObjectGetTypeCalledNode.cs" Link="DependencyAnalysis\ObjectGetTypeCalledNode.cs" />
     <Compile Include="..\aot\ILCompiler.Compiler\Compiler\DependencyAnalysis\ObjectGetTypeFlowDependenciesNode.cs" Link="DependencyAnalysis\ObjectGetTypeFlowDependenciesNode.cs" />
+    <Compile Include="..\aot\ILCompiler.Compiler\Compiler\DependencyAnalysis\TrimmingDescriptorNode.cs" Link="DependencyAnalysis\TrimmingDescriptorNode.cs" />
   </ItemGroup>
 
   <!-- ILCompiler.Compiler shared extension method files -->

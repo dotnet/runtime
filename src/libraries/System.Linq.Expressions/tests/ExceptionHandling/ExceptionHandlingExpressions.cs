@@ -224,6 +224,7 @@ namespace System.Linq.Expressions.Tests
 
         [Theory, ClassData(typeof(CompilationTypes))]
         [ActiveIssue("https://github.com/mono/mono/issues/14925", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/128164", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void ExpressionsUnwrapeExternallyThrownRuntimeWrappedException(bool useInterpreter)
         {
             ParameterExpression exRWE = Expression.Variable(typeof(RuntimeWrappedException));
@@ -1583,6 +1584,59 @@ namespace System.Linq.Expressions.Tests
 
             CatchBlock e7 = Expression.Catch(Expression.Parameter(typeof(Exception), "ex"), Expression.Empty(), Expression.Constant(true));
             Assert.Equal("catch (Exception ex) { ... }", e7.ToString());
+        }
+
+        // A user-defined boolean type with op_True/op_False and bitwise operators, used to
+        // exercise the conditional logical operators (OrElse/AndAlso). Defined locally so the
+        // required operators are not trimmed away (e.g. under NativeAOT), which would otherwise
+        // make the runtime lookup of op_True/op_False fail.
+        public sealed class UserBool
+        {
+            public bool Value { get; }
+
+            public UserBool(bool value) => Value = value;
+
+            public static readonly UserBool True = new UserBool(true);
+            public static readonly UserBool False = new UserBool(false);
+
+            public static bool operator true(UserBool b) => b.Value;
+            public static bool operator false(UserBool b) => !b.Value;
+
+            public static UserBool operator &(UserBool x, UserBool y) => new UserBool(x.Value && y.Value);
+            public static UserBool operator |(UserBool x, UserBool y) => new UserBool(x.Value || y.Value);
+
+            public override bool Equals(object obj) => obj is UserBool other && other.Value == Value;
+            public override int GetHashCode() => Value.GetHashCode();
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public void TryCatchInOrElse(bool useInterpreter)
+        {
+            var expr = Expression.Lambda<Func<UserBool>>(
+                Expression.OrElse(
+                    Expression.Constant(UserBool.True),
+                    Expression.TryCatch(
+                        Expression.Constant(UserBool.True),
+                        Expression.Catch(
+                            typeof(TestException),
+                            Expression.Constant(UserBool.False)))));
+            var func = expr.Compile(useInterpreter);
+            Assert.Equal(UserBool.True, func());
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public void TryCatchInAndAlso(bool useInterpreter)
+        {
+            var expr = Expression.Lambda<Func<UserBool>>(
+                Expression.AndAlso(
+                    Expression.Constant(UserBool.True),
+                    Expression.TryCatch(
+                        Expression.Constant(UserBool.True),
+                        Expression.Catch(
+                            typeof(TestException),
+                            Expression.Constant(UserBool.False)))));
+            var func = expr.Compile(useInterpreter);
+            Assert.Equal(UserBool.True, func());
         }
     }
 }

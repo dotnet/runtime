@@ -15,6 +15,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma hdrstop
 #endif
 
+#include <inttypes.h>
+
 #if defined(TARGET_LOONGARCH64)
 
 /*****************************************************************************/
@@ -119,7 +121,15 @@ inline bool emitter::emitInsMayWriteToGCReg(instruction ins)
 {
     assert(ins != INS_invalid);
     // NOTE: please reference the file "instrsloongarch64.h" for details !!!
-    return (INS_mov <= ins) && (ins <= INS_jirl) ? true : false;
+    return (((INS_mov <= ins) && (ins <= INS_jirl)) || (ins == INS_movfcsr2gr) || (ins == INS_movcf2gr)
+#ifdef FEATURE_SIMD
+            || ((INS_vpickve2gr_d <= ins) && (ins <= INS_vpickve2gr_wu)) ||
+            ((INS_vpickve2gr_h <= ins) && (ins <= INS_vpickve2gr_bu)) ||
+            ((INS_xvpickve2gr_d <= ins) && (ins <= INS_xvpickve2gr_wu))
+#endif
+                )
+               ? true
+               : false;
 }
 
 bool emitter::emitInsWritesToLclVarStackLoc(instrDesc* id)
@@ -1257,7 +1267,7 @@ void emitter::emitIns_R_R_I(
         code |= (reg2 & 0x1f) << 5;  // rj
         code |= (imm & 0xfff) << 10; // si12
     }
-    else if (((INS_vinsgr2vr_d <= ins) && (ins <= INS_vreplvei_d)) || (INS_xvrepl128vei_d == ins))
+    else if (((INS_vinsgr2vr_d <= ins) && (ins <= INS_vpickve2gr_du)) || (INS_xvrepl128vei_d == ins))
     {
 #ifdef DEBUG
         if (INS_vinsgr2vr_d == ins)
@@ -1282,7 +1292,7 @@ void emitter::emitIns_R_R_I(
         code |= (reg2 & 0x1f) << 5;
         code |= (imm & 0x1) << 10; // ui1
     }
-    else if (((INS_vinsgr2vr_w <= ins) && (ins <= INS_vreplvei_w)) ||
+    else if (((INS_vpickve2gr_w <= ins) && (ins <= INS_vreplvei_w)) ||
              ((INS_xvinsve0_d <= ins) && (ins <= INS_xvpickve2gr_du)))
     {
 #ifdef DEBUG
@@ -1328,7 +1338,8 @@ void emitter::emitIns_R_R_I(
         code |= (reg2 & 0x1f) << 5; // xj/vj/rj
         code |= (imm & 0x3) << 10;  // ui2
     }
-    else if (((INS_vslli_b <= ins) && (ins <= INS_vreplvei_h)) || ((INS_xvslli_b <= ins) && (ins <= INS_xvsat_bu)))
+    else if (((INS_vslli_b <= ins) && (ins <= INS_vpickve2gr_hu)) ||
+             ((INS_xvpickve2gr_w <= ins) && (ins <= INS_xvsat_bu)))
     {
 #ifdef DEBUG
         if ((INS_vinsgr2vr_h == ins) || (INS_xvinsgr2vr_w == ins))
@@ -1356,7 +1367,7 @@ void emitter::emitIns_R_R_I(
         code |= (reg2 & 0x1f) << 5; // vj(xj)
         code |= (imm & 0x7) << 10;  // ui3
     }
-    else if (((INS_vslli_h <= ins) && (ins <= INS_vreplvei_b)) || ((INS_xvslli_h <= ins) && (ins <= INS_xvsat_hu)))
+    else if (((INS_vpickve2gr_b <= ins) && (ins <= INS_vreplvei_b)) || ((INS_xvslli_h <= ins) && (ins <= INS_xvsat_hu)))
     {
 #ifdef DEBUG
         if (INS_vinsgr2vr_b == ins)
@@ -1364,12 +1375,7 @@ void emitter::emitIns_R_R_I(
             assert(isVectorRegister(reg1));      // vd/xd
             assert(isGeneralRegisterOrR0(reg2)); // rj
         }
-        else if (INS_vpickve2gr_b == ins)
-        {
-            assert(isGeneralRegisterOrR0(reg1)); // rd
-            assert(isVectorRegister(reg2));      // vj/xj
-        }
-        else if (INS_vpickve2gr_bu == ins)
+        else if ((INS_vpickve2gr_b == ins) || (INS_vpickve2gr_bu == ins))
         {
             assert(isGeneralRegisterOrR0(reg1)); // rd
             assert(isVectorRegister(reg2));      // vj/xj
@@ -2165,6 +2171,50 @@ void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNu
     appendToCurIG(id);
 }
 
+//--------------------------------------------------------------------
+// emitIns_R_L: Emit an instruction with a label operand.
+//
+// Arguments:
+//   ins - The instruction
+//   attr - Size of the instruction
+//   dst - Instruction group
+//   reg - Register destination
+//
+void emitter::emitIns_R_L(instruction ins, emitAttr attr, insGroup* dst, regNumber reg)
+{
+    assert(dst != nullptr);
+
+    // if for reloc!  2-ins:
+    //   pcaddu12i reg, offset-hi20
+    //   addi_d  reg, reg, offset-lo12
+    //
+    // else:  3-ins:
+    //   lu12i_w r21, addr_bits[31:12]
+    //   ori     reg, r21, addr_bits[11:0]
+    //   lu32i_d reg, addr_bits[50:32]
+
+    instrDesc* id = emitNewInstr(attr);
+
+    id->idIns(ins);
+    id->idInsOpt(INS_OPTS_RL);
+    id->idAddr()->iiaIGlabel = dst;
+    id->idSetIsBound(); // Mark as bound since we already have the target insGroup directly
+
+    if (m_compiler->opts.compReloc)
+    {
+        id->idSetIsDspReloc();
+        id->idCodeSize(8);
+    }
+    else
+    {
+        id->idCodeSize(12);
+    }
+
+    id->idReg1(reg);
+
+    appendToCurIG(id);
+}
+
 void emitter::emitIns_J_R(instruction ins, emitAttr attr, BasicBlock* dst, regNumber reg)
 {
     NYI_LOONGARCH64("emitIns_J_R-----unimplemented/unused on LOONGARCH64 yet----");
@@ -2415,12 +2465,6 @@ void emitter::emitIns_Call(const EmitCallParams& params)
         printf("\n");
     }
 #endif
-
-    /* Managed RetVal: emit sequence point for the call */
-    if (m_compiler->opts.compDbgInfo && params.debugInfo.GetLocation().IsValid())
-    {
-        codeGen->genIPmappingAdd(IPmappingDscKind::Normal, params.debugInfo, false);
-    }
 
     /*
         We need to allocate the appropriate instruction descriptor based
@@ -2783,9 +2827,6 @@ void emitter::emitJumpDistBind()
     UNATIVE_OFFSET adjIG;
     UNATIVE_OFFSET adjSJ;
     insGroup*      lstIG;
-#ifdef DEBUG
-    insGroup* prologIG = emitPrologIG;
-#endif // DEBUG
 
     // NOTE:
     //  bit0 of isLinkingEnd_LA: indicating whether updating the instrDescJmp's size with the type INS_OPTS_J;
@@ -2840,8 +2881,7 @@ AGAIN:
         assert(lastSJ == nullptr || lastIG != jmp->idjIG || lastSJ->idjOffs < (jmp->idjOffs + adjSJ));
         lastSJ = (lastIG == jmp->idjIG) ? jmp : nullptr;
 
-        assert(lastIG == nullptr || lastIG->igNum <= jmp->idjIG->igNum || jmp->idjIG == prologIG ||
-               emitNxtIGnum > unsigned(0xFFFF)); // igNum might overflow
+        assert(lastIG == nullptr || lastIG->IsBeforeOrEqual(jmp->idjIG) || emitIGisInProlog(jmp->idjIG));
         lastIG = jmp->idjIG;
 #endif // DEBUG
 
@@ -2870,8 +2910,8 @@ AGAIN:
 #ifdef DEBUG
                     if (EMITVERBOSE)
                     {
-                        printf("Adjusted offset of " FMT_BB " from %04X to %04X\n", lstIG->igNum, lstIG->igOffs,
-                               lstIG->igOffs + adjIG);
+                        printf("Adjusted offset of " FMT_BB " from %04X to %04X\n", lstIG->GetDisplayId(),
+                               lstIG->igOffs, lstIG->igOffs + adjIG);
                     }
 #endif // DEBUG
                     lstIG->igOffs += adjIG;
@@ -2955,7 +2995,7 @@ AGAIN:
 
         srcEncodingOffs = srcInstrOffs + ssz; // Encoding offset of relative offset for small branch
 
-        if (jmpIG->igNum < tgtIG->igNum)
+        if (jmpIG->IsBefore(tgtIG))
         {
             /* Forward jump */
 
@@ -2993,7 +3033,7 @@ AGAIN:
             }
             if (EMITVERBOSE)
             {
-                printf("Estimate of fwd jump [%08X/%03u]: %04X -> %04X = %04X\n", dspPtr(jmp),
+                printf("Estimate of fwd jump [%p/%03u]: %04X -> %04X = %04X\n", (void*)dspPtr(jmp),
                        jmp->idDebugOnlyInfo()->idNum, srcInstrOffs, dstOffs, jmpDist);
             }
 #endif // DEBUG_EMIT
@@ -3081,7 +3121,7 @@ AGAIN:
             }
             if (EMITVERBOSE)
             {
-                printf("Estimate of bwd jump [%08X/%03u]: %04X -> %04X = %04X\n", dspPtr(jmp),
+                printf("Estimate of bwd jump [%p/%03u]: %04X -> %04X = %04X\n", (void*)dspPtr(jmp),
                        jmp->idDebugOnlyInfo()->idNum, srcInstrOffs, dstOffs, jmpDist);
             }
 #endif // DEBUG_EMIT
@@ -3156,7 +3196,7 @@ AGAIN:
 #ifdef DEBUG
             if (EMITVERBOSE)
             {
-                printf("Adjusted offset of " FMT_BB " from %04X to %04X\n", lstIG->igNum, lstIG->igOffs,
+                printf("Adjusted offset of " FMT_BB " from %04X to %04X\n", lstIG->GetDisplayId(), lstIG->igOffs,
                        lstIG->igOffs + adjIG);
             }
 #endif // DEBUG
@@ -3546,8 +3586,14 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             //   ori     reg, r21, addr_bits[11:0]
             //   lu32i_d reg, addr_bits[50:32]
 
-            insGroup* tgtIG          = (insGroup*)emitCodeGetCookie(id->idAddr()->iiaBBlabel);
-            id->idAddr()->iiaIGlabel = tgtIG;
+            if (!id->idIsBound())
+            {
+                insGroup* tgtIG          = (insGroup*)emitCodeGetCookie(id->idAddr()->iiaBBlabel);
+                id->idAddr()->iiaIGlabel = tgtIG;
+                id->idSetIsBound();
+            }
+
+            insGroup* tgtIG = id->idAddr()->iiaIGlabel;
 
             regNumber reg1 = id->idReg1();
             assert(isGeneralRegister(reg1));
@@ -3897,6 +3943,12 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             assert(!"JitBreakEmitOutputInstr reached");
         }
     }
+
+    // Output any delta in GC info.
+    if (EMIT_GC_VERBOSE || m_compiler->opts.disasmWithGC)
+    {
+        emitDispGCInfoDelta();
+    }
 #endif
 
     /* All instructions are expected to generate code */
@@ -3994,7 +4046,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
 #ifdef DEBUG
     if (m_compiler->opts.disAddr)
     {
-        printf("  0x%llx", insAdr);
+        printf("  %p", (void*)insAdr);
     }
 
     printf("  ");
@@ -4068,9 +4120,10 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
             }
             else if (ins == INS_jirl)
             {
-                printf("%s, %s, 0x%lx\n", RegNames[regd], RegNames[regj], offs16);
+                printf("%s, %s, 0x%x\n", RegNames[regd], RegNames[regj], offs16);
             }
-            else if ((unsigned)(addr - emitCodeBlock) < emitPrologIG->igSize) // only for prolog
+            // only for prolog
+            else if (emitPrologEndPos.Valid() && ((unsigned)(addr - emitCodeBlock) < emitPrologEndPos.CodeOffset(this)))
             {
                 if (offs16 < 0)
                 {
@@ -4083,7 +4136,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
             }
             else
             {
-                printf("%s, %s, 0x%llx\n", RegNames[regj], RegNames[regd], (int64_t)insAdr + offs16);
+                printf("%s, %s, 0x%" PRIx64 "\n", RegNames[regj], RegNames[regd], (int64_t)insAdr + offs16);
             }
             return;
         }
@@ -4091,7 +4144,8 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
         {
             tmp = (((code >> 10) & 0xffff) | ((code & 0x1f) << 16)) << 11;
             tmp >>= 9;
-            if ((unsigned)(addr - emitCodeBlock) < emitPrologIG->igSize) // only for prolog
+            // only for prolog
+            if (emitPrologEndPos.Valid() && ((unsigned)(addr - emitCodeBlock) < emitPrologEndPos.CodeOffset(this)))
             {
                 tmp >>= 2;
                 if (tmp < 0)
@@ -4105,7 +4159,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
             }
             else
             {
-                printf("%s, 0x%llx\n", RegNames[regj], (int64_t)insAdr + tmp);
+                printf("%s, 0x%" PRIx64 "\n", RegNames[regj], (int64_t)insAdr + tmp);
             }
             return;
         }
@@ -4120,7 +4174,8 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                 methodName = m_compiler->eeGetMethodFullName((CORINFO_METHOD_HANDLE)id->idDebugOnlyInfo()->idMemCookie);
                 printf("# %s\n", methodName);
             }
-            else if ((unsigned)(addr - emitCodeBlock) < emitPrologIG->igSize) // only for prolog
+            // only for prolog
+            else if (emitPrologEndPos.Valid() && ((unsigned)(addr - emitCodeBlock) < emitPrologEndPos.CodeOffset(this)))
             {
                 tmp >>= 2;
                 if (tmp < 0)
@@ -4134,7 +4189,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
             }
             else
             {
-                printf("0x%llx\n", (int64_t)insAdr + tmp);
+                printf("0x%" PRIx64 "\n", (int64_t)insAdr + tmp);
             }
             return;
         }
@@ -4212,7 +4267,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
         {
             int offs21 = (((code >> 10) & 0xffff) | ((code & 0x1f) << 16)) << 11;
             offs21 >>= 9;
-            printf("fcc%d, 0x%llx\n", (code >> 5) & 0x7, (int64_t)insAdr + offs21);
+            printf("fcc%d, 0x%" PRIx64 "\n", (code >> 5) & 0x7, (int64_t)insAdr + offs21);
             return;
         }
         case DF_F_GR:
@@ -5206,7 +5261,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
     result.insThroughput       = PERFSCORE_THROUGHPUT_ILLEGAL;
     result.insLatency          = PERFSCORE_LATENCY_ILLEGAL;
-    result.insMemoryAccessKind = PERFSCORE_MEMORY_NONE;
+    result.insMemoryAccessKind = PerfScoreMemoryAccessKind::None;
 
     // Calculate merge emit instructions cost.
     unsigned CombinedInsCnt = id->idCodeSize() / sizeof(code_t);
@@ -5223,7 +5278,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             }
             else // ins == load
             {    // pcaddu12i + load or lu12i.w + lu32i.d + load
-                result.insMemoryAccessKind = PERFSCORE_MEMORY_READ;
+                result.insMemoryAccessKind = PerfScoreMemoryAccessKind::Read;
                 result.insThroughput       = (CombinedInsCnt == 2) ? PERFSCORE_THROUGHPUT_4C : PERFSCORE_THROUGHPUT_7C;
                 if ((INS_ld_b <= ins) && (ins <= INS_ld_wu))
                 {
@@ -5272,9 +5327,10 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         }
         else if (id->idInsOpt() == INS_OPTS_RELOC)
         { // pcalau12i + (addi.d or ld.d)
-            result.insLatency          = id->idIsCnsReloc() ? PERFSCORE_LATENCY_2C : PERFSCORE_LATENCY_5C;
-            result.insThroughput       = id->idIsCnsReloc() ? PERFSCORE_THROUGHPUT_6C : PERFSCORE_THROUGHPUT_4C;
-            result.insMemoryAccessKind = id->idIsCnsReloc() ? PERFSCORE_MEMORY_NONE : PERFSCORE_MEMORY_READ;
+            result.insLatency    = id->idIsCnsReloc() ? PERFSCORE_LATENCY_2C : PERFSCORE_LATENCY_5C;
+            result.insThroughput = id->idIsCnsReloc() ? PERFSCORE_THROUGHPUT_6C : PERFSCORE_THROUGHPUT_4C;
+            result.insMemoryAccessKind =
+                id->idIsCnsReloc() ? PerfScoreMemoryAccessKind::None : PerfScoreMemoryAccessKind::Read;
         }
         else
         {
@@ -5290,12 +5346,13 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
     {
         if (emitInsIsLoad(ins))
         {
-            result.insMemoryAccessKind = emitInsIsStore(ins) ? PERFSCORE_MEMORY_READ_WRITE : PERFSCORE_MEMORY_READ;
+            result.insMemoryAccessKind =
+                emitInsIsStore(ins) ? PerfScoreMemoryAccessKind::ReadWrite : PerfScoreMemoryAccessKind::Read;
         }
         else
         {
             assert(emitInsIsStore(ins));
-            result.insMemoryAccessKind = PERFSCORE_MEMORY_WRITE;
+            result.insMemoryAccessKind = PerfScoreMemoryAccessKind::Write;
         }
     }
 

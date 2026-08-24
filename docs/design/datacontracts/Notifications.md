@@ -1,6 +1,6 @@
 # Contract Notifications
 
-This contract is for debugger notifications.
+This contract is for decoding debugger notifications raised by the runtime.
 
 ## APIs of contract
 
@@ -14,16 +14,27 @@ void SetGcNotification(int condemnedGeneration);
 bool TryParseNotification(ReadOnlySpan<TargetPointer> exceptionInformation, out NotificationData? notification);
 ```
 
+Management of the JIT code-notification allowlist is a separate contract, see
+[CodeNotifications](CodeNotifications.md).
+
 ## Version 1
 
-Data descriptors used: none
+<!-- BEGIN GENERATED: usage contract=Notifications version=c1 -->
+### Data descriptors used
 
-Global variables used:
-| Global Name | Type | Purpose |
+_None._
+
+### Global variables used
+
+| Global | Type | Meaning |
 | --- | --- | --- |
-| `GcNotificationFlags` | TargetPointer | Global flag for storing GC notification data |
+| `GcNotificationFlags` | `pointer` | Global flag for storing GC notification data |
 
-Contracts used: none
+### Contracts used
+
+_None._
+<!-- END GENERATED: usage contract=Notifications version=c1 -->
+
 
 ``` csharp
 public enum GcEventType

@@ -3,27 +3,27 @@
 
 using System.Collections.Generic;
 
-
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class HandleTableMap : IData<HandleTableMap>
+[CdacType(nameof(DataType.HandleTableMap))]
+internal sealed partial class HandleTableMap : IData<HandleTableMap>
 {
-    static HandleTableMap IData<HandleTableMap>.Create(Target target, TargetPointer address)
-        => new HandleTableMap(target, address);
+    [Field] public partial TargetPointer Next { get; }
+    [CustomInit(nameof(InitBucketsPtr))] public partial IReadOnlyList<TargetPointer> BucketsPtr { get; }
 
-    public HandleTableMap(Target target, TargetPointer address)
+    [DataDescriptorDependency(nameof(BucketsPtr), "pointer")]
+    private partial IReadOnlyList<TargetPointer> InitBucketsPtr(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.HandleTableMap);
         TargetPointer bucketsPtr = target.ReadPointerField(address, type, nameof(BucketsPtr));
         uint arrayLength = target.ReadGlobal<uint>(Constants.Globals.InitialHandleTableArraySize);
+        List<TargetPointer> buckets = new((int)arrayLength);
         for (int i = 0; i < arrayLength; i++)
         {
             TargetPointer bucketPtr = target.ReadPointer(bucketsPtr + (ulong)(i * target.PointerSize));
-            BucketsPtr.Add(bucketPtr);
+            buckets.Add(bucketPtr);
         }
-        Next = target.ReadPointerField(address, type, nameof(Next));
-    }
 
-    public List<TargetPointer> BucketsPtr { get; init; } = new List<TargetPointer>();
-    public TargetPointer Next { get; init; }
+        return buckets;
+    }
 }

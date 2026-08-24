@@ -16,7 +16,6 @@ namespace Internal.Runtime.InteropServices
         /// </summary>
         /// <param name="pCxtInt">Pointer to a <see cref="ComActivationContextInternal"/> instance</param>
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe int GetClassFactoryForTypeInternal(ComActivationContextInternal* pCxtInt)
             => throw new PlatformNotSupportedException();
 
@@ -25,7 +24,6 @@ namespace Internal.Runtime.InteropServices
         /// </summary>
         /// <param name="pCxtInt">Pointer to a <see cref="ComActivationContextInternal"/> instance</param>
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe int RegisterClassForTypeInternal(ComActivationContextInternal* pCxtInt)
             => throw new PlatformNotSupportedException();
 
@@ -34,7 +32,6 @@ namespace Internal.Runtime.InteropServices
         /// </summary>
         /// <param name="pCxtInt">Pointer to a <see cref="ComActivationContextInternal"/> instance</param>
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe int UnregisterClassForTypeInternal(ComActivationContextInternal* pCxtInt)
             => throw new PlatformNotSupportedException();
     }

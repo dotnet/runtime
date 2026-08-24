@@ -159,7 +159,7 @@ namespace System.Buffers.Text
         /// <returns>>A byte array which contains the result of the decoding operation.</returns>
         /// <exception cref="FormatException"><paramref name="source"/> contains an invalid Base64Url character,
         /// more than two padding characters, or a non white space character among the padding characters.</exception>
-        public static byte[] DecodeFromUtf8(ReadOnlySpan<byte> source)
+        public static unsafe byte[] DecodeFromUtf8(ReadOnlySpan<byte> source)
         {
             int upperBound = GetMaxDecodedLength(source.Length);
             byte[]? rented = null;
@@ -257,7 +257,7 @@ namespace System.Buffers.Text
         /// <returns>A byte array which contains the result of the decoding operation.</returns>
         /// <exception cref="FormatException"><paramref name="source"/> contains a invalid Base64Url character,
         /// more than two padding characters, or a non white space character among the padding characters.</exception>
-        public static byte[] DecodeFromChars(ReadOnlySpan<char> source)
+        public static unsafe byte[] DecodeFromChars(ReadOnlySpan<char> source)
         {
             int upperBound = GetMaxDecodedLength(source.Length);
             byte[]? rented = null;
@@ -445,36 +445,30 @@ namespace System.Buffers.Text
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            [RequiresUnsafe]
             public unsafe bool TryLoadVector512(byte* src, byte* srcStart, int sourceLength, out Vector512<sbyte> str) =>
                 default(Base64DecoderByte).TryLoadVector512(src, srcStart, sourceLength, out str);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             [CompExactlyDependsOn(typeof(Avx2))]
-            [RequiresUnsafe]
             public unsafe bool TryLoadAvxVector256(byte* src, byte* srcStart, int sourceLength, out Vector256<sbyte> str) =>
                 default(Base64DecoderByte).TryLoadAvxVector256(src, srcStart, sourceLength, out str);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            [RequiresUnsafe]
             public unsafe bool TryLoadVector128(byte* src, byte* srcStart, int sourceLength, out Vector128<byte> str) =>
                 default(Base64DecoderByte).TryLoadVector128(src, srcStart, sourceLength, out str);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
-            [RequiresUnsafe]
             public unsafe bool TryLoadArmVector128x4(byte* src, byte* srcStart, int sourceLength,
                 out Vector128<byte> str1, out Vector128<byte> str2, out Vector128<byte> str3, out Vector128<byte> str4) =>
                 default(Base64DecoderByte).TryLoadArmVector128x4(src, srcStart, sourceLength, out str1, out str2, out str3, out str4);
 #endif // NET
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            [RequiresUnsafe]
             public unsafe int DecodeFourElements(byte* source, ref sbyte decodingMap) =>
                 default(Base64DecoderByte).DecodeFourElements(source, ref decodingMap);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            [RequiresUnsafe]
             public unsafe int DecodeRemaining(byte* srcEnd, ref sbyte decodingMap, long remaining, out uint t2, out uint t3) =>
                 default(Base64DecoderByte).DecodeRemaining(srcEnd, ref decodingMap, remaining, out t2, out t3);
 
@@ -536,36 +530,30 @@ namespace System.Buffers.Text
                 default(Base64UrlDecoderByte).TryDecode256Core(str, hiNibbles, maskSlashOrUnderscore, lutLow, lutHigh, lutShift, shiftForUnderscore, out result);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            [RequiresUnsafe]
             public unsafe bool TryLoadVector512(ushort* src, ushort* srcStart, int sourceLength, out Vector512<sbyte> str) =>
                 default(Base64DecoderChar).TryLoadVector512(src, srcStart, sourceLength, out str);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             [CompExactlyDependsOn(typeof(Avx2))]
-            [RequiresUnsafe]
             public unsafe bool TryLoadAvxVector256(ushort* src, ushort* srcStart, int sourceLength, out Vector256<sbyte> str) =>
                 default(Base64DecoderChar).TryLoadAvxVector256(src, srcStart, sourceLength, out str);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            [RequiresUnsafe]
             public unsafe bool TryLoadVector128(ushort* src, ushort* srcStart, int sourceLength, out Vector128<byte> str) =>
                 default(Base64DecoderChar).TryLoadVector128(src, srcStart, sourceLength, out str);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
-            [RequiresUnsafe]
             public unsafe bool TryLoadArmVector128x4(ushort* src, ushort* srcStart, int sourceLength,
                 out Vector128<byte> str1, out Vector128<byte> str2, out Vector128<byte> str3, out Vector128<byte> str4) =>
                 default(Base64DecoderChar).TryLoadArmVector128x4(src, srcStart, sourceLength, out str1, out str2, out str3, out str4);
 #endif // NET
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            [RequiresUnsafe]
             public unsafe int DecodeFourElements(ushort* source, ref sbyte decodingMap) =>
                 default(Base64DecoderChar).DecodeFourElements(source, ref decodingMap);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            [RequiresUnsafe]
             public unsafe int DecodeRemaining(ushort* srcEnd, ref sbyte decodingMap, long remaining, out uint t2, out uint t3) =>
                 default(Base64DecoderChar).DecodeRemaining(srcEnd, ref decodingMap, remaining, out t2, out t3);
 

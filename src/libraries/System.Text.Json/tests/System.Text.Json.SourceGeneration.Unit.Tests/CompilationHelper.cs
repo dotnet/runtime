@@ -200,6 +200,14 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 {
                     public CompilerFeatureRequiredAttribute(string featureName) { }
                 }
+
+                internal interface IUnion
+                {
+                    object Value { get; }
+                }
+
+                [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, AllowMultiple = false, Inherited = false)]
+                internal sealed class UnionAttribute : Attribute { }
             }
             """;
 #endif
@@ -263,6 +271,33 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                         public string Description { get; set; }
                         public DateTimeOffset StartDate { get; set; }
                         public DateTimeOffset EndDate { get; set; }
+                    }
+                }
+                """;
+
+            return CreateCompilation(source);
+        }
+
+        public static Compilation CreateReferencedExperimentalPocoWithPolyfillCompilation()
+        {
+            string source = """
+                namespace System.Diagnostics.CodeAnalysis
+                {
+                    [System.AttributeUsage(System.AttributeTargets.All)]
+                    public sealed class ExperimentalAttribute : System.Attribute
+                    {
+                        public ExperimentalAttribute(string diagnosticId) { DiagnosticId = diagnosticId; }
+                        public string DiagnosticId { get; }
+                        public string UrlFormat { get; set; } = "";
+                    }
+                }
+
+                namespace ReferencedAssembly
+                {
+                    [System.Diagnostics.CodeAnalysis.Experimental("EXP_TEST")]
+                    public class ExperimentalPocoFromLib
+                    {
+                        public int Value { get; set; }
                     }
                 }
                 """;

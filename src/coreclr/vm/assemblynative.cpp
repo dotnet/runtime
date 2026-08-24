@@ -93,18 +93,10 @@ extern "C" void QCALLTYPE AssemblyNative_InternalLoad(NativeAssemblyNameParts* p
         spec.SetParentAssembly(pRefAssembly);
 
     // Have we been passed the reference to the binder against which this load should be triggered?
-    // If so, then use it to set the fallback load context binder.
+    // If so, then bind against it instead of the requesting assembly's load context.
     if (pBinder != NULL)
     {
-        spec.SetFallbackBinderForRequestingAssembly(pBinder);
-        spec.SetPreferFallbackBinder();
-    }
-    else if (pRefAssembly != NULL)
-    {
-        // If the requesting assembly has Fallback LoadContext binder available,
-        // then set it up in the AssemblySpec.
-        PEAssembly *pRefAssemblyManifestFile = pRefAssembly->GetPEAssembly();
-        spec.SetFallbackBinderForRequestingAssembly(pRefAssemblyManifestFile->GetFallbackBinder());
+        spec.SetExplicitBinder(pBinder);
     }
 
     Assembly *pAssembly = spec.LoadAssembly(FILE_LOADED, fThrowOnFileNotFound);
@@ -121,14 +113,13 @@ extern "C" void QCALLTYPE AssemblyNative_InternalLoad(NativeAssemblyNameParts* p
 /* static */
 Assembly* AssemblyNative::LoadFromPEImage(AssemblyBinder* pBinder, PEImage *pImage, bool excludeAppPaths)
 {
-    CONTRACT(Assembly*)
+    CONTRACTL
     {
         STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pBinder));
         PRECONDITION(pImage != NULL);
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     Assembly *pLoadedAssembly = NULL;
     ReleaseHolder<BINDER_SPACE::Assembly> pAssembly;
@@ -145,19 +136,42 @@ Assembly* AssemblyNative::LoadFromPEImage(AssemblyBinder* pBinder, PEImage *pIma
 
     HRESULT hr = S_OK;
     PTR_AppDomain pCurDomain = GetAppDomain();
-    hr = pBinder->BindUsingPEImage(pImage, excludeAppPaths, &pAssembly);
+    ReleaseHolder<BINDER_SPACE::Assembly> pExistingAssembly;
+    hr = pBinder->BindUsingPEImage(pImage, excludeAppPaths, &pAssembly, &pExistingAssembly);
 
     if (hr != S_OK)
     {
         StackSString name;
         spec.GetDisplayName(0, name);
-        if (hr == COR_E_FILELOAD)
+        if (pExistingAssembly != nullptr)
         {
-            // Give a more specific message for the case when we found the assembly with the same name already loaded.
-            // Show the assembly name, since we know the error is about the assembly name.
+            // We have the existing assembly - extract its details for the error message.
+            StackSString simpleName;
+            spec.GetName(simpleName);
+
+            PathString loadedAssemblyName;
+            pExistingAssembly->GetAssemblyName()->GetDisplayName(loadedAssemblyName, BINDER_SPACE::AssemblyName::INCLUDE_VERSION | BINDER_SPACE::AssemblyName::INCLUDE_PUBLIC_KEY_TOKEN);
+            PathString loadedAssemblyPath{ pExistingAssembly->GetPEImage()->GetPath() };
+
+            StackSString errorString;
+            SString format;
+            if (!loadedAssemblyPath.IsEmpty())
+            {
+                format.LoadResource(IDS_HOST_ASSEMBLY_RESOLVER_ASSEMBLY_ALREADY_LOADED_WITH_VERSION_AND_PATH);
+                errorString.FormatMessage(FORMAT_MESSAGE_FROM_STRING, format.GetUnicode(), 0, 0, simpleName, loadedAssemblyName, loadedAssemblyPath);
+            }
+            else
+            {
+                format.LoadResource(IDS_HOST_ASSEMBLY_RESOLVER_ASSEMBLY_ALREADY_LOADED_WITH_VERSION);
+                errorString.FormatMessage(FORMAT_MESSAGE_FROM_STRING, format.GetUnicode(), 0, 0, simpleName, loadedAssemblyName);
+            }
+            COMPlusThrowHR(hr, IDS_EE_FILELOAD_ERROR_GENERIC, name.GetUnicode(), errorString.GetUnicode());
+        }
+        else if (hr == COR_E_FILELOAD)
+        {
             StackSString errorString;
             errorString.LoadResource(IDS_HOST_ASSEMBLY_RESOLVER_ASSEMBLY_ALREADY_LOADED_IN_CONTEXT);
-            COMPlusThrow(kFileLoadException, IDS_EE_FILELOAD_ERROR_GENERIC, name, errorString);
+            COMPlusThrowHR(hr, IDS_EE_FILELOAD_ERROR_GENERIC, name.GetUnicode(), errorString.GetUnicode());
         }
         else
         {
@@ -167,13 +181,13 @@ Assembly* AssemblyNative::LoadFromPEImage(AssemblyBinder* pBinder, PEImage *pIma
         }
     }
 
-    PEAssemblyHolder pPEAssembly(PEAssembly::Open(pAssembly->GetPEImage(), pAssembly));
-    bindOperation.SetResult(pPEAssembly.GetValue());
+    PEAssemblyHolder pPEAssembly(PEAssembly::Open(pAssembly));
+    bindOperation.SetResult(pPEAssembly);
 
-    RETURN pCurDomain->LoadAssembly(&spec, pPEAssembly, FILE_LOADED);
+    return pCurDomain->LoadAssembly(&spec, pPEAssembly, FILE_LOADED);
 }
 
-extern "C" void QCALLTYPE AssemblyNative_LoadFromPath(INT_PTR ptrNativeAssemblyBinder, LPCWSTR pwzILPath, LPCWSTR pwzNIPath, QCall::ObjectHandleOnStack retLoadedAssembly)
+extern "C" void QCALLTYPE AssemblyNative_LoadFromPath(INT_PTR ptrNativeAssemblyBinder, LPCWSTR pwzILPath, QCall::ObjectHandleOnStack retLoadedAssembly)
 {
     QCALL_CONTRACT;
 
@@ -191,7 +205,9 @@ extern "C" void QCALLTYPE AssemblyNative_LoadFromPath(INT_PTR ptrNativeAssemblyB
 
     if (pwzILPath != NULL)
     {
-        pILImage = PEImage::OpenImage(pwzILPath);
+        pILImage = PEImage::OpenImage(pwzILPath,
+            MDInternalImport_Default,
+            AssemblyProbeExtension::Probe(SString{ SString::Literal, pwzILPath }));
 
         // Need to verify that this is a valid CLR assembly.
         if (!pILImage->CheckILFormat())
@@ -1339,7 +1355,7 @@ extern "C" void QCALLTYPE AssemblyNative_TraceAssemblyResolveHandlerInvoked(LPCW
 }
 
 // static
-extern "C" void QCALLTYPE AssemblyNative_TraceAssemblyLoadFromResolveHandlerInvoked(LPCWSTR assemblyName, bool isTrackedAssembly, LPCWSTR requestingAssemblyPath, LPCWSTR requestedAssemblyPath)
+extern "C" void QCALLTYPE AssemblyNative_TraceAssemblyLoadFromResolveHandlerInvoked(LPCWSTR assemblyName, BOOL isTrackedAssembly, LPCWSTR requestingAssemblyPath, LPCWSTR requestedAssemblyPath)
 {
     QCALL_CONTRACT;
 
@@ -1383,7 +1399,6 @@ extern "C" void QCALLTYPE AssemblyNative_ApplyUpdate(
     _ASSERTE(ilDeltaLength > 0);
 
 #ifdef FEATURE_METADATA_UPDATER
-    GCX_COOP();
     {
         if (CORDebuggerAttached())
         {

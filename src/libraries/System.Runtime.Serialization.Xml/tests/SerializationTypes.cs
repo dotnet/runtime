@@ -370,6 +370,27 @@ namespace SerializationTypes
         public byte[] ByteArray { get; set; }
     }
 
+    public class TypeWithBuiltInTypedMembers
+    {
+        public string StringMember;
+        public int IntMember;
+        public int? NullableIntMember;
+        public List<string> ListMember;
+        public int[] ArrayMember;
+    }
+
+    public class TypeWithNullableBuiltInTypedMembers
+    {
+        [XmlElement(IsNullable = true)]
+        public string StringMember;
+
+        public int? NullableIntMember;
+
+        public int[] ArrayMember;
+
+        public List<string> ListMember;
+    }
+
     public class TypeA
     {
         public string Name;
@@ -977,6 +998,36 @@ namespace SerializationTypes
         {
             return Foo != DefaultFoo;
         }
+    }
+
+    public class BaseTypeWithShouldSerializeMethod
+    {
+        public string Foo { get; set; } = "default";
+
+        [System.Xml.Serialization.XmlAttribute]
+        public string Bar { get; set; } = "default";
+
+        public bool ShouldSerializeFoo()
+        {
+            return Foo != "default";
+        }
+
+        public bool ShouldSerializeBar()
+        {
+            return Bar != "default";
+        }
+    }
+
+    public class DerivedTypeWithInheritedShouldSerialize : BaseTypeWithShouldSerializeMethod
+    {
+    }
+
+    public class TypeWithFieldBackedSpecifiedMember
+    {
+        public string Foo { get; set; }
+
+        [System.Xml.Serialization.XmlIgnore]
+        public bool FooSpecified;
     }
 
     public class KnownTypesThroughConstructorWithArrayProperties

@@ -35,6 +35,22 @@ export function verifyEnvironment () {
 }
 
 export async function detect_features_and_polyfill (module: DotnetModuleInternal): Promise<void> {
+    if (ENVIRONMENT_IS_SHELL) {
+        if (typeof globalThis.atob !== "function") {
+            const b64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+            globalThis.atob = (input) => {
+                const str = String(input).replace(/=+$/, "");
+                let output = "";
+                for (let bc = 0, bs = 0, i = 0; i < str.length; i++) {
+                    const c = b64.indexOf(str.charAt(i));
+                    if (c === -1) continue;
+                    bs = bc % 4 ? bs * 64 + c : c;
+                    if (bc++ % 4) output += String.fromCharCode(255 & (bs >> ((-2 * bc) & 6)));
+                }
+                return output;
+            };
+        }
+    }
     if (ENVIRONMENT_IS_NODE) {
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore:

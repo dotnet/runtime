@@ -26,7 +26,7 @@ namespace System.Net.Sockets
             PreferInlineCompletions = 16,
             IsSocket = 32,
             IsDisconnected = 64,
-#if SYSTEM_NET_SOCKETS_APPLE_PLATFROM
+#if SYSTEM_NET_SOCKETS_APPLE_PLATFORM
             TfoEnabled = 128
 #endif
         }
@@ -60,7 +60,16 @@ namespace System.Net.Sockets
         internal bool PreferInlineCompletions
         {
             get => (_flags & Flags.PreferInlineCompletions) != 0;
-            set => SetFlag(Flags.PreferInlineCompletions, value);
+            set
+            {
+                SetFlag(Flags.PreferInlineCompletions, value);
+
+                if (value != SocketAsyncEngine.InlineSocketCompletionsEnabled)
+                {
+                    // Tell the event loop that it can no longer assume the process-wide default.
+                    SocketAsyncEngine.OnInlineCompletionsOverride();
+                }
+            }
         }
 
         // (ab)use Socket class for performing async I/O on non-socket fds.
@@ -70,7 +79,7 @@ namespace System.Net.Sockets
             set => SetFlag(Flags.IsSocket, value);
         }
 
-#if SYSTEM_NET_SOCKETS_APPLE_PLATFROM
+#if SYSTEM_NET_SOCKETS_APPLE_PLATFORM
         internal bool TfoEnabled
         {
             get => (_flags & Flags.TfoEnabled) != 0;
@@ -98,7 +107,7 @@ namespace System.Net.Sockets
             target.DualMode = DualMode;
             target.ExposedHandleOrUntrackedConfiguration = ExposedHandleOrUntrackedConfiguration;
             target.IsSocket = IsSocket;
-#if SYSTEM_NET_SOCKETS_APPLE_PLATFROM
+#if SYSTEM_NET_SOCKETS_APPLE_PLATFORM
             target.TfoEnabled = TfoEnabled;
 #endif
         }

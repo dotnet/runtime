@@ -10,6 +10,7 @@
 #include "common.h"
 #include <limits>
 
+#include <inttypes.h>
 #include "stubgen.h"
 #include "jitinterface.h"
 #include "ilstubcache.h"
@@ -175,14 +176,15 @@ void ILCodeStream::Emit(ILInstrEnum instr, INT16 iStackDelta, UINT_PTR uArg)
     pInstrBuffer[idxCurInstr].iStackDelta = iStackDelta;
     pInstrBuffer[idxCurInstr].uArg = uArg;
 
-    if(m_buildingEHClauses.GetCount() > 0)
+    if(m_pOwner->m_pBuildingEHClauseStack != NULL)
     {
-        ILStubEHClauseBuilder& clause = m_buildingEHClauses[m_buildingEHClauses.GetCount() - 1];
+        ILStubEHClauseBuilder& clause = *m_pOwner->m_pBuildingEHClauseStack;
 
         if (clause.tryBeginLabel != NULL && clause.tryEndLabel != NULL &&
              clause.handlerBeginLabel != NULL && clause.kind == ILStubEHClause::kTypedCatch)
         {
-            if (clause.handlerBeginLabel->m_idxLabeledInstruction == idxCurInstr)
+            if (clause.handlerBeginLabel->m_pCodeStreamOfLabel == this &&
+                clause.handlerBeginLabel->m_idxLabeledInstruction == idxCurInstr)
             {
                 // Catch clauses start with an exception on the stack
                 pInstrBuffer[idxCurInstr].iStackDelta++;
@@ -529,11 +531,11 @@ ILStubLinker::LogILInstruction(
         case ShortInlineVar:
         case ShortInlineI:
         case InlineI:
-            strArgument.Printf("0x%p", pInstruction->uArg);
+            strArgument.Printf("0x%zx", (size_t)pInstruction->uArg);
             break;
 
         case InlineI8:
-            strArgument.Printf("0x%llx", (uint64_t)pInstruction->uArg);
+            strArgument.Printf("0x%" PRIx64, (uint64_t)pInstruction->uArg);
             break;
 
         case InlineMethod:
@@ -545,7 +547,7 @@ ILStubLinker::LogILInstruction(
         case InlineTok:
             // No token value when we dump IL for ETW
             if (pDumpILStubCode == NULL)
-                strArgument.Printf("0x%08p", pInstruction->uArg);
+                strArgument.Printf("0x%08zx", (size_t)pInstruction->uArg);
 
             // Dump to szTokenNameBuffer if logging, otherwise dump to szArgumentBuffer to avoid an extra space because we are omitting the token
             _ASSERTE(FitsIn<mdToken>(pInstruction->uArg));
@@ -803,10 +805,10 @@ size_t ILStubLinker::Link(UINT* puMaxStack)
     UINT            uMaxStack = 0;
     DEBUG_STMT(bool fStackUnderflow = false);
 
+    _ASSERTE(m_pBuildingEHClauseStack == NULL);
+
     while (pCurrentStream)
     {
-        _ASSERTE(pCurrentStream->m_buildingEHClauses.GetCount() == 0);
-
         if (pCurrentStream->m_pqbILInstructions)
         {
             ILInstruction* pInstrBuffer = (ILInstruction*)pCurrentStream->m_pqbILInstructions->Ptr();
@@ -848,52 +850,69 @@ size_t ILStubLinker::Link(UINT* puMaxStack)
 
 size_t ILStubLinker::GetNumEHClauses()
 {
-    size_t result = 0;
-    for (ILCodeStream* stream = m_pCodeStreamList; stream; stream = stream->m_pNextStream)
+    size_t count = 0;
+    for (ILStubEHClauseBuilder* pCurrent = m_pFinishedEHClauseHead; pCurrent != NULL; pCurrent = pCurrent->next)
     {
-        result += stream->m_finishedEHClauses.GetCount();
+        count++;
     }
-
-    return result;
+    return count;
 }
 
 void ILStubLinker::WriteEHClauses(COR_ILMETHOD_SECT_EH* pSect)
 {
-    unsigned int clauseIndex = 0;
-    for (ILCodeStream* stream = m_pCodeStreamList; stream; stream = stream->m_pNextStream)
+    COUNT_T i = 0;
+    for (ILStubEHClauseBuilder* pCurrent = m_pFinishedEHClauseHead; pCurrent != NULL; pCurrent = pCurrent->next, i++)
     {
-        const SArray<ILStubEHClauseBuilder>& clauses = stream->m_finishedEHClauses;
-        for (COUNT_T i = 0; i < clauses.GetCount(); i++)
+        const ILStubEHClauseBuilder& builder = *pCurrent;
+
+        CorExceptionFlag flags;
+        switch (builder.kind)
         {
-            const ILStubEHClauseBuilder& builder = clauses[i];
-
-            CorExceptionFlag flags;
-            switch (builder.kind)
-            {
-            case ILStubEHClause::kTypedCatch: flags = COR_ILEXCEPTION_CLAUSE_NONE; break;
-            case ILStubEHClause::kFinally: flags = COR_ILEXCEPTION_CLAUSE_FINALLY; break;
-            default: UNREACHABLE_MSG("unexpected EH clause kind");
-            }
-
-            size_t tryBegin = builder.tryBeginLabel->GetCodeOffset();
-            size_t tryEnd = builder.tryEndLabel->GetCodeOffset();
-            size_t handlerBegin = builder.handlerBeginLabel->GetCodeOffset();
-            size_t handlerEnd = builder.handlerEndLabel->GetCodeOffset();
-
-            IMAGE_COR_ILMETHOD_SECT_EH_CLAUSE_FAT& clause = pSect->Fat.Clauses[clauseIndex];
-            clause.Flags = flags;
-            clause.TryOffset = static_cast<DWORD>(tryBegin);
-            clause.TryLength = static_cast<DWORD>(tryEnd - tryBegin);
-            clause.HandlerOffset = static_cast<DWORD>(handlerBegin);
-            clause.HandlerLength = static_cast<DWORD>(handlerEnd - handlerBegin);
-            clause.ClassToken = builder.typeToken;
-
-            clauseIndex++;
+        case ILStubEHClause::kTypedCatch: flags = COR_ILEXCEPTION_CLAUSE_NONE; break;
+        case ILStubEHClause::kFinally: flags = COR_ILEXCEPTION_CLAUSE_FINALLY; break;
+        default: UNREACHABLE_MSG("unexpected EH clause kind");
         }
+
+        size_t tryBegin = builder.tryBeginLabel->GetCodeOffset();
+        size_t tryEnd = builder.tryEndLabel->GetCodeOffset();
+        size_t handlerBegin = builder.handlerBeginLabel->GetCodeOffset();
+        size_t handlerEnd = builder.handlerEndLabel->GetCodeOffset();
+
+        IMAGE_COR_ILMETHOD_SECT_EH_CLAUSE_FAT& clause = pSect->Fat.Clauses[i];
+        clause.Flags = flags;
+        clause.TryOffset = static_cast<DWORD>(tryBegin);
+        clause.TryLength = static_cast<DWORD>(tryEnd - tryBegin);
+        clause.HandlerOffset = static_cast<DWORD>(handlerBegin);
+        clause.HandlerLength = static_cast<DWORD>(handlerEnd - handlerBegin);
+        clause.ClassToken = builder.typeToken;
     }
 
     pSect->Fat.Kind = CorILMethod_Sect_EHTable | CorILMethod_Sect_FatFormat;
-    pSect->Fat.DataSize = COR_ILMETHOD_SECT_EH_FAT::Size(clauseIndex);
+    pSect->Fat.DataSize = COR_ILMETHOD_SECT_EH_FAT::Size(i);
+}
+
+ILStubEHClause ILStubLinker::GetEHClause(size_t index)
+{
+    ILStubEHClauseBuilder* pCurrent = m_pFinishedEHClauseHead;
+    for (size_t i = 0; i < index; i++)
+    {
+        _ASSERTE(pCurrent != NULL);
+        pCurrent = pCurrent->next;
+    }
+    _ASSERTE(pCurrent != NULL);
+    const ILStubEHClauseBuilder& builder = *pCurrent;
+
+    ILStubEHClause clause{};
+    clause.kind = builder.kind;
+    clause.dwTryBeginOffset = static_cast<DWORD>(builder.tryBeginLabel->GetCodeOffset());
+    DWORD tryEnd = static_cast<DWORD>(builder.tryEndLabel->GetCodeOffset());
+    clause.cbTryLength = tryEnd - clause.dwTryBeginOffset;
+    clause.dwHandlerBeginOffset = static_cast<DWORD>(builder.handlerBeginLabel->GetCodeOffset());
+    DWORD handlerEnd = static_cast<DWORD>(builder.handlerEndLabel->GetCodeOffset());
+    clause.cbHandlerLength = handlerEnd - clause.dwHandlerBeginOffset;
+    clause.dwTypeToken = builder.typeToken;
+
+    return clause;
 }
 
 #ifdef _DEBUG
@@ -1072,17 +1091,23 @@ LPCSTR ILCodeStream::GetStreamDescription(ILStubLinker::CodeStreamType streamTyp
 
 void ILCodeStream::BeginTryBlock()
 {
-    ILStubEHClauseBuilder& clause = *m_buildingEHClauses.Append();
-    memset(&clause, 0, sizeof(ILStubEHClauseBuilder));
-    clause.kind = ILStubEHClause::kNone;
-    clause.tryBeginLabel = NewCodeLabel();
-    EmitLabel(clause.tryBeginLabel);
+    ILStubEHClauseBuilder* pClause = new ILStubEHClauseBuilder();
+    pClause->kind = ILStubEHClause::kNone;
+    pClause->tryBeginLabel = NULL;
+    pClause->tryEndLabel = NULL;
+    pClause->handlerBeginLabel = NULL;
+    pClause->handlerEndLabel = NULL;
+    pClause->typeToken = 0;
+    pClause->next = m_pOwner->m_pBuildingEHClauseStack;
+    m_pOwner->m_pBuildingEHClauseStack = pClause;
+    pClause->tryBeginLabel = NewCodeLabel();
+    EmitLabel(pClause->tryBeginLabel);
 }
 
 void ILCodeStream::EndTryBlock()
 {
-    _ASSERTE(m_buildingEHClauses.GetCount() > 0);
-    ILStubEHClauseBuilder& clause = m_buildingEHClauses[m_buildingEHClauses.GetCount() - 1];
+    _ASSERTE(m_pOwner->m_pBuildingEHClauseStack != NULL);
+    ILStubEHClauseBuilder& clause = *m_pOwner->m_pBuildingEHClauseStack;
 
     _ASSERTE(clause.tryBeginLabel != NULL && clause.tryEndLabel == NULL);
     clause.tryEndLabel = NewCodeLabel();
@@ -1091,10 +1116,13 @@ void ILCodeStream::EndTryBlock()
 
 void ILCodeStream::BeginHandler(DWORD kind, DWORD typeToken)
 {
-    _ASSERTE(m_buildingEHClauses.GetCount() > 0);
-    ILStubEHClauseBuilder& clause = m_buildingEHClauses[m_buildingEHClauses.GetCount() - 1];
+    _ASSERTE(m_pOwner->m_pBuildingEHClauseStack != NULL);
+    ILStubEHClauseBuilder& clause = *m_pOwner->m_pBuildingEHClauseStack;
 
-    _ASSERTE(clause.tryBeginLabel != NULL && clause.tryEndLabel != NULL &&
+    // tryEndLabel may not be set yet when the handler begins on a different
+    // code stream than the try body (e.g. PInvoke cleanup finally).
+    // It must be set before the handler ends.
+    _ASSERTE(clause.tryBeginLabel != NULL &&
              clause.handlerBeginLabel == NULL && clause.kind == ILStubEHClause::kNone);
 
     clause.kind = kind;
@@ -1105,8 +1133,9 @@ void ILCodeStream::BeginHandler(DWORD kind, DWORD typeToken)
 
 void ILCodeStream::EndHandler(DWORD kind)
 {
-    _ASSERTE(m_buildingEHClauses.GetCount() > 0);
-    ILStubEHClauseBuilder& clause = m_buildingEHClauses[m_buildingEHClauses.GetCount() - 1];
+    _ASSERTE(m_pOwner->m_pBuildingEHClauseStack != NULL);
+    ILStubEHClauseBuilder* pClause = m_pOwner->m_pBuildingEHClauseStack;
+    ILStubEHClauseBuilder& clause = *pClause;
 
     _ASSERTE(clause.tryBeginLabel != NULL && clause.tryEndLabel != NULL &&
              clause.handlerBeginLabel != NULL && clause.handlerEndLabel == NULL &&
@@ -1115,8 +1144,18 @@ void ILCodeStream::EndHandler(DWORD kind)
     clause.handlerEndLabel = NewCodeLabel();
     EmitLabel(clause.handlerEndLabel);
 
-    m_finishedEHClauses.Append(clause);
-    m_buildingEHClauses.SetCount(m_buildingEHClauses.GetCount() - 1);
+    // Move from building stack to finished list
+    m_pOwner->m_pBuildingEHClauseStack = pClause->next;
+    pClause->next = NULL;
+    if (m_pOwner->m_pFinishedEHClauseTail != NULL)
+    {
+        m_pOwner->m_pFinishedEHClauseTail->next = pClause;
+    }
+    else
+    {
+        m_pOwner->m_pFinishedEHClauseHead = pClause;
+    }
+    m_pOwner->m_pFinishedEHClauseTail = pClause;
 }
 
 void ILCodeStream::BeginCatchBlock(int token)
@@ -1950,38 +1989,11 @@ void ILCodeStream::EmitLoadNullPtr()
     EmitCONV_I();
 }
 
-void ILCodeStream::EmitArgIteratorCreateAndLoad()
-{
-    STANDARD_VM_CONTRACT;
-
-    //
-    // we insert the ArgIterator in the same spot that the VASigCookie will go for sanity
-    //
-    LocalDesc   aiLoc(CoreLibBinder::GetClass(CLASS__ARG_ITERATOR));
-    int         aiLocNum;
-
-    aiLocNum = NewLocal(aiLoc);
-
-    EmitLDLOCA(aiLocNum);
-    EmitDUP();
-    EmitARGLIST();
-    EmitLoadNullPtr();
-    EmitCALL(METHOD__ARG_ITERATOR__CTOR2, 2, 0);
-
-    aiLoc.ElementType[0]    = ELEMENT_TYPE_BYREF;
-    aiLoc.ElementType[1]    = ELEMENT_TYPE_INTERNAL;
-    aiLoc.cbType            = 2;
-    aiLoc.InternalToken     = CoreLibBinder::GetClass(CLASS__ARG_ITERATOR);
-
-    SetStubTargetArgType(&aiLoc, false);
-}
-
 DWORD ILStubLinker::NewLocal(CorElementType typ)
 {
     CONTRACTL
     {
         STANDARD_VM_CHECK;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -2003,9 +2015,13 @@ void StubSigBuilder::EnsureEnoughQuickBytes(size_t cbToAppend)
     STANDARD_VM_CONTRACT;
 
     SIZE_T cbBuffer = m_qbSigBuffer.Size();
-    if ((m_cbSig + cbToAppend) >= cbBuffer)
+    if ((cbBuffer - m_cbSig) < cbToAppend)
     {
-        m_qbSigBuffer.ReSizeThrows(2 * cbBuffer);
+        SIZE_T cbNew = max((SIZE_T)(m_cbSig + cbToAppend), 2 * cbBuffer);
+        // Detect integer overflow
+        if ((cbNew - m_cbSig) < cbToAppend)
+            COMPlusThrowHR(COR_E_OVERFLOW);
+        m_qbSigBuffer.ReSizeThrows(cbNew);
         m_pbSigCursor = ((BYTE*)m_qbSigBuffer.Ptr()) + m_cbSig;
     }
 }
@@ -2015,7 +2031,6 @@ DWORD StubSigBuilder::Append(LocalDesc* pLoc)
     CONTRACTL
     {
         STANDARD_VM_CHECK;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pLoc));
     }
     CONTRACTL_END;
@@ -2490,13 +2505,15 @@ ILStubLinker::ILStubLinker(Module* pStubSigModule, const Signature &signature, S
     m_cbCurrentCompressedSigLen(1),
     m_nLocals(0),
     m_fHasThis(false),
-    m_pMD(pMD)
+    m_pMD(pMD),
+    m_pBuildingEHClauseStack(NULL),
+    m_pFinishedEHClauseHead(NULL),
+    m_pFinishedEHClauseTail(NULL)
 {
     CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END
 
@@ -2630,6 +2647,7 @@ ILStubLinker::~ILStubLinker()
     CONTRACTL_END;
     DeleteCodeLabels();
     DeleteCodeStreams();
+    DeleteEHClauses();
 }
 
 void ILStubLinker::DeleteCodeLabels()
@@ -2673,6 +2691,36 @@ void ILStubLinker::DeleteCodeStreams()
         delete pDeleteMe;
     }
     m_pCodeStreamList = NULL;
+}
+
+void ILStubLinker::DeleteEHClauses()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        MODE_ANY;
+        GC_TRIGGERS;
+    }
+    CONTRACTL_END;
+
+    ILStubEHClauseBuilder* pCurrent = m_pBuildingEHClauseStack;
+    while (pCurrent)
+    {
+        ILStubEHClauseBuilder* pDeleteMe = pCurrent;
+        pCurrent = pCurrent->next;
+        delete pDeleteMe;
+    }
+    m_pBuildingEHClauseStack = NULL;
+
+    pCurrent = m_pFinishedEHClauseHead;
+    while (pCurrent)
+    {
+        ILStubEHClauseBuilder* pDeleteMe = pCurrent;
+        pCurrent = pCurrent->next;
+        delete pDeleteMe;
+    }
+    m_pFinishedEHClauseHead = NULL;
+    m_pFinishedEHClauseTail = NULL;
 }
 
 void ILStubLinker::ClearCodeStreams()
@@ -3338,6 +3386,7 @@ void ILStubLinker::ClearCode()
 
     DeleteCodeLabels();
     ClearCodeStreams();
+    DeleteEHClauses();
 }
 
 void ILStubLinker::SetStubMethodDesc(MethodDesc* pMD)

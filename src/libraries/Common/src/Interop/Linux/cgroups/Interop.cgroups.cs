@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
@@ -379,7 +379,7 @@ internal static partial class Interop
         /// <param name="subsystem">The subsystem, e.g. "memory".</param>
         /// <param name="path">The found path, or null if it couldn't be found.</param>
         /// <returns>true if a cgroup path for the subsystem is found.</returns>
-        internal static bool TryFindCGroupPathForSubsystem(CGroupVersion cgroupVersion, string procCGroupFilePath, string subsystem, [NotNullWhen(true)] out string? path)
+        internal static unsafe bool TryFindCGroupPathForSubsystem(CGroupVersion cgroupVersion, string procCGroupFilePath, string subsystem, [NotNullWhen(true)] out string? path)
         {
             if (File.Exists(procCGroupFilePath))
             {

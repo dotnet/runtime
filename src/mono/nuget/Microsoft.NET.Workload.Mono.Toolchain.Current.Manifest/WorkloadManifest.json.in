@@ -10,6 +10,7 @@
         "Microsoft.NET.Runtime.WebAssembly.Sdk.${NetVersion}",
         "Microsoft.NET.Sdk.WebAssembly.Pack.${NetVersion}",
         "Microsoft.NETCore.App.Runtime.Mono.${NetVersion}.browser-wasm",
+        "Microsoft.NETCore.App.Runtime.${NetVersion}.browser-wasm",
         "Microsoft.NETCore.App.Runtime.AOT.Cross.${NetVersion}.browser-wasm"
       ],
       "extends": [ "microsoft-net-runtime-mono-tooling", "microsoft-net-sdk-emscripten" ],
@@ -456,6 +457,13 @@
       "version": "${PackageVersion}",
       "alias-to": {
         "any": "Microsoft.NETCore.App.Runtime.Mono.browser-wasm"
+      }
+    },
+    "Microsoft.NETCore.App.Runtime.${NetVersion}.browser-wasm" : {
+      "kind": "framework",
+      "version": "${PackageVersion}",
+      "alias-to": {
+        "any": "Microsoft.NETCore.App.Runtime.browser-wasm"
       }
     },
     "Microsoft.NETCore.App.Runtime.Mono.multithread.${NetVersion}.browser-wasm" : {

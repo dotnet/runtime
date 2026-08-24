@@ -3,34 +3,18 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class HeapSegment : IData<HeapSegment>
+[CdacType(nameof(DataType.HeapSegment))]
+internal sealed partial class HeapSegment : IData<HeapSegment>
 {
-    static HeapSegment IData<HeapSegment>.Create(Target target, TargetPointer address) => new HeapSegment(target, address);
-    public HeapSegment(Target target, TargetPointer address)
-    {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.HeapSegment);
+    [Field] public partial TargetPointer Allocated { get; }
+    [Field] public partial TargetPointer Committed { get; }
+    [Field] public partial TargetPointer Reserved { get; }
+    [Field] public partial TargetPointer Used { get; }
+    [Field] public partial TargetPointer Mem { get; }
+    [Field] public partial TargetNUInt Flags { get; }
+    [Field] public partial TargetPointer Next { get; }
+    [Field] public partial TargetPointer BackgroundAllocated { get; }
 
-        Allocated = target.ReadPointerField(address, type, nameof(Allocated));
-        Committed = target.ReadPointerField(address, type, nameof(Committed));
-        Reserved = target.ReadPointerField(address, type, nameof(Reserved));
-        Used = target.ReadPointerField(address, type, nameof(Used));
-        Mem = target.ReadPointerField(address, type, nameof(Mem));
-        Flags = target.ReadNUIntField(address, type, nameof(Flags));
-        Next = target.ReadPointerField(address, type, nameof(Next));
-        BackgroundAllocated = target.ReadPointerField(address, type, nameof(BackgroundAllocated));
-
-        // Field only exists in MULTIPLE_HEAPS builds
-        if (type.Fields.ContainsKey(nameof(Heap)))
-            Heap = target.ReadPointerField(address, type, nameof(Heap));
-    }
-
-    public TargetPointer Allocated { get; }
-    public TargetPointer Committed { get; }
-    public TargetPointer Reserved { get; }
-    public TargetPointer Used { get; }
-    public TargetPointer Mem { get; }
-    public TargetNUInt Flags { get; }
-    public TargetPointer Next { get; }
-    public TargetPointer BackgroundAllocated { get; }
-    public TargetPointer? Heap { get; }
+    // Field only exists in MULTIPLE_HEAPS builds
+    [Field] public partial TargetPointer? Heap { get; }
 }

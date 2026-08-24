@@ -6,31 +6,38 @@ using System.Diagnostics;
 
 namespace System.Text.RegularExpressions
 {
-    /// <summary>
-    /// Represents the results from a single regular expression match.
-    /// </summary>
+    /// <summary>Represents the results from a single regular expression match.</summary>
     /// <remarks>
-    /// Match is the result class for a regex search.
-    /// It returns the location, length, and substring for
-    /// the entire match as well as every captured group.
-    ///
-    /// Match is also used during the search to keep track of each capture for each group.  This is
-    /// done using the "_matches" array.  _matches[x] represents an array of the captures for group x.
-    /// This array consists of start and length pairs, and may have empty entries at the end.  _matchcount[x]
-    /// stores how many captures a group has.  Note that _matchcount[x]*2 is the length of all the valid
-    /// values in _matches.  _matchcount[x]*2-2 is the Start of the last capture, and _matchcount[x]*2-1 is the
-    /// Length of the last capture
-    ///
-    /// For example, if group 2 has one capture starting at position 4 with length 6,
-    /// _matchcount[2] == 1
-    /// _matches[2][0] == 4
-    /// _matches[2][1] == 6
-    ///
-    /// Values in the _matches array can also be negative.  This happens when using the balanced match
-    /// construct, "(?&lt;start-end&gt;...)".  When the "end" group matches, a capture is added for both the "start"
-    /// and "end" groups.  The capture added for "start" receives the negative values, and these values point to
-    /// the next capture to be balanced.  They do NOT point to the capture that "end" just balanced out.  The negative
-    /// values are indices into the _matches array transformed by the formula -3-x.  This formula also untransforms.
+    /// <para>
+    /// The <see cref="Match"/> class is immutable and has no public constructor. An instance of the
+    /// <see cref="Match"/> class is returned by the <see cref="Regex.Match(string)"/> method and
+    /// represents the first pattern match in a string. Subsequent matches are represented by
+    /// <see cref="Match"/> objects returned by the <see cref="Match.NextMatch"/> method. In addition, a
+    /// <see cref="MatchCollection"/> object that consists of zero, one, or more <see cref="Match"/>
+    /// objects is returned by the <see cref="Regex.Matches(string)"/> method.
+    /// </para>
+    /// <para>
+    /// If the <see cref="Regex.Matches(string)"/> method fails to match a regular expression pattern in
+    /// an input string, it returns an empty <see cref="MatchCollection"/> object. You can then use a
+    /// <see langword="foreach"/> construct to iterate over the collection.
+    /// </para>
+    /// <para>
+    /// If the <see cref="Regex.Match(string)"/> method fails to match the regular expression pattern, it
+    /// returns a <see cref="Match"/> object that is equal to <see cref="Match.Empty"/>. You can use the
+    /// <see cref="Group.Success"/> property to determine whether the match was successful.
+    /// </para>
+    /// <para>
+    /// If a pattern match is successful, the <see cref="Capture.Value"/> property contains the matched
+    /// substring, the <see cref="Capture.Index"/> property indicates the zero-based starting position of
+    /// the matched substring in the input string, and the <see cref="Capture.Length"/> property indicates
+    /// the length of the matched substring in the input string.
+    /// </para>
+    /// <para>
+    /// Because a single match can involve multiple capturing groups, <see cref="Match"/> has a
+    /// <see cref="Groups"/> property that returns the <see cref="GroupCollection"/>. The
+    /// <see cref="Match"/> instance itself is equivalent to the first object in the collection, at
+    /// <c>Match.Groups[0]</c>, which represents the entire match.
+    /// </para>
     /// </remarks>
     public class Match : Group
     {
@@ -59,7 +66,12 @@ namespace System.Text.RegularExpressions
             _balancing = false;
         }
 
-        /// <summary>Returns an empty Match object.</summary>
+        /// <summary>Gets the empty match. All failed matches return this empty match.</summary>
+        /// <value>An empty match.</value>
+        /// <remarks>
+        /// This property should not be used to determine if a match is successful. Instead, use the
+        /// <see cref="Group.Success"/> property.
+        /// </remarks>
         public static Match Empty { get; } = new Match(null, 1, string.Empty, 0);
 
         internal void Reset(string? text, int textLength)
@@ -88,13 +100,64 @@ namespace System.Text.RegularExpressions
         /// </remarks>
         internal bool FoundMatch => _matchcount[0] > 0;
 
+        /// <summary>
+        /// Gets a collection of groups matched by the regular expression.
+        /// </summary>
+        /// <value>The character groups matched by the pattern.</value>
+        /// <remarks>
+        /// <para>
+        /// A regular expression pattern can include subexpressions, which are defined by enclosing a
+        /// portion of the regular expression pattern in parentheses. Every such subexpression forms a
+        /// group. The <see cref="Groups"/> property provides access to information about those
+        /// subexpression matches. For example, the regular expression pattern <c>(\d{3})-(\d{3}-\d{4})</c>,
+        /// which matches North American telephone numbers, has two subexpressions. The first consists of
+        /// the area code, which composes the first three digits of the telephone number. This group is
+        /// captured by the first set of parentheses, <c>(\d{3})</c>. The second consists of the
+        /// individual telephone number, which composes the last seven digits of the telephone number.
+        /// This group is captured by the second set of parentheses, <c>(\d{3}-\d{4})</c>.
+        /// </para>
+        /// <para>
+        /// The <see cref="GroupCollection"/> object returned by the <see cref="Groups"/> property always
+        /// has at least one member. If the regular expression engine cannot find any matches in a
+        /// particular input string, the single <see cref="Group"/> object in the collection has its
+        /// <c>Group.Success</c> property set to <see langword="false"/> and its <c>Group.Value</c>
+        /// property set to <see cref="string.Empty"/>.
+        /// </para>
+        /// <para>
+        /// If the collection has more than one member, the first item in the collection is the same as
+        /// the <see cref="Match"/> object (the entire match). Each subsequent member represents a
+        /// captured group, if the regular expression includes capturing groups. Groups can be accessed by
+        /// their integer index or, for named groups, by name.
+        /// </para>
+        /// </remarks>
         public virtual GroupCollection Groups => _groupcoll ??= new GroupCollection(this, null);
 
         /// <summary>
-        /// Returns a new Match with the results for the next match, starting
-        /// at the position at which the last match ended (at the character beyond the last
-        /// matched character).
+        /// Returns a new <see cref="Match"/> object with the results for the next match, starting at the
+        /// position at which the last match ended (at the character after the last matched character).
         /// </summary>
+        /// <returns>The next regular expression match.</returns>
+        /// <remarks>
+        /// <para>
+        /// This method is similar to calling <see cref="Regex.Match(string, int)"/> again and passing
+        /// <c>Index + Length</c> as the new starting position.
+        /// </para>
+        /// <para>
+        /// This method does not modify the current instance. Instead, it returns a new
+        /// <see cref="Match"/> object that contains information about the next match.
+        /// </para>
+        /// <para>
+        /// Attempting to retrieve the next match may throw a <see cref="RegexMatchTimeoutException"/> if
+        /// a time-out value for matching operations is in effect and the attempt to find the next match
+        /// exceeds that time-out interval.
+        /// </para>
+        /// <para>
+        /// When attempting to match a regular expression pattern against an empty match, the regular
+        /// expression engine will advance one character in the input string before retrying the match, to
+        /// avoid an infinite loop. Callers should not assume that each match will advance by at least one
+        /// position, since zero-width matches are possible.
+        /// </para>
+        /// </remarks>
         public Match NextMatch()
         {
             Regex? r = _regex;
@@ -105,10 +168,31 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>
-        /// Returns the expansion of the passed replacement pattern. For
-        /// example, if the replacement pattern is ?$1$2?, Result returns the concatenation
-        /// of Group(1).ToString() and Group(2).ToString().
+        /// Returns the expansion of the passed replacement pattern. For example, if the replacement
+        /// pattern is <c>$1$2</c>, <see cref="Result"/> returns the concatenation of
+        /// <c>Groups[1].Value</c> and <c>Groups[2].Value</c>.
         /// </summary>
+        /// <param name="replacement">The replacement pattern to use.</param>
+        /// <returns>The expanded version of the <paramref name="replacement"/> parameter.</returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="replacement"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="NotSupportedException">Expansion is not allowed for this pattern.</exception>
+        /// <remarks>
+        /// <para>
+        /// Whereas the <see cref="Regex.Replace(string, string)"/> method replaces all matches in an
+        /// input string with a specified replacement pattern, the <see cref="Result"/> method replaces a
+        /// single match with a specified replacement pattern. Because it operates on an individual match,
+        /// it is also possible to perform processing on the matched string before you call the
+        /// <see cref="Result"/> method.
+        /// </para>
+        /// <para>
+        /// The <paramref name="replacement"/> parameter is a standard regular expression replacement
+        /// pattern. It can consist of literal characters and regular expression substitutions. For more
+        /// information, see
+        /// <see href="https://github.com/dotnet/docs/blob/main/docs/standard/base-types/substitutions-in-regular-expressions.md">Substitutions</see>.
+        /// </para>
+        /// </remarks>
         public virtual string Result(string replacement)
         {
             if (replacement is null)
@@ -141,9 +225,14 @@ namespace System.Text.RegularExpressions
             GroupToStringImpl(_matchcount.Length - 1);
 
         /// <summary>
-        /// Returns a Match instance equivalent to the one supplied that is safe to share
+        /// Returns a <see cref="Match"/> instance equivalent to the one supplied that is safe to share
         /// between multiple threads.
         /// </summary>
+        /// <param name="inner">The input <see cref="Match"/> object.</param>
+        /// <returns>A regular expression <see cref="Match"/> object.</returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="inner"/> is <see langword="null"/>.
+        /// </exception>
         public static Match Synchronized(Match inner)
         {
             if (inner is null)

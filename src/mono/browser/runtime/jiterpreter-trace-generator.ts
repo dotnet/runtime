@@ -1617,6 +1617,27 @@ export function generateWasmBody (
                 break;
             }
 
+            case MintOpcode.MINT_SCALEB:
+            case MintOpcode.MINT_SCALEBF: {
+                // Math.ScaleB / MathF.ScaleB. Signature is (double, int) -> double
+                // and (float, int) -> float, so we can't go through mathIntrinsicTable
+                // (which assumes a uniform float-only shape). Mirror the FMA special
+                // case instead and call libm scalbn / scalbnf directly.
+                const isF32 = (opcode === MintOpcode.MINT_SCALEBF),
+                    loadOp = isF32 ? WasmOpcode.f32_load : WasmOpcode.f64_load,
+                    storeOp = isF32 ? WasmOpcode.f32_store : WasmOpcode.f64_store;
+
+                builder.local("pLocals");
+
+                append_ldloc(builder, getArgU16(ip, 2), loadOp);
+                append_ldloc(builder, getArgU16(ip, 3), WasmOpcode.i32_load);
+
+                builder.callImport(isF32 ? "scalbnf" : "scalbn");
+
+                append_stloc_tail(builder, getArgU16(ip, 1), storeOp);
+                break;
+            }
+
             default:
                 if (
                     (
@@ -1689,7 +1710,7 @@ export function generateWasmBody (
                 } else if (
                     // math intrinsics
                     (opcode >= MintOpcode.MINT_ASIN) &&
-                    (opcode <= MintOpcode.MINT_MAXF)
+                    (opcode <= MintOpcode.MINT_COPYSIGNF)
                 ) {
                     if (!emit_math_intrinsic(builder, ip, opcode))
                         ip = abort;
@@ -4001,6 +4022,20 @@ function emit_simd_4 (builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrin
             append_ldloc(builder, getArgU16(ip, 4), WasmOpcode.PREFIX_simd, WasmSimdOpcode.v128_load);
             append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.PREFIX_simd, WasmSimdOpcode.v128_load);
             builder.appendSimd(WasmSimdOpcode.v128_bitselect);
+            append_simd_store(builder, ip);
+            return true;
+        case SimdIntrinsic4.V128_R4_MULTIPLY_ADD_ESTIMATE:
+            builder.local("pLocals");
+            append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.PREFIX_simd, WasmSimdOpcode.v128_load);
+            append_ldloc(builder, getArgU16(ip, 3), WasmOpcode.PREFIX_simd, WasmSimdOpcode.v128_load);
+            if (runtimeHelpers.featureWasmRelaxedSimd) {
+                append_ldloc(builder, getArgU16(ip, 4), WasmOpcode.PREFIX_simd, WasmSimdOpcode.v128_load);
+                builder.appendSimd(WasmSimdOpcode.f32x4_relaxed_madd);
+            } else {
+                builder.appendSimd(WasmSimdOpcode.f32x4_mul);
+                append_ldloc(builder, getArgU16(ip, 4), WasmOpcode.PREFIX_simd, WasmSimdOpcode.v128_load);
+                builder.appendSimd(WasmSimdOpcode.f32x4_add);
+            }
             append_simd_store(builder, ip);
             return true;
         case SimdIntrinsic4.ShuffleD1: {

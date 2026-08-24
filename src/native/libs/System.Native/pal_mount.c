@@ -34,7 +34,7 @@
 #endif // __HAIKU__
 
 // Android does not define MNTOPT_RO
-#ifndef MNTOPT_RO
+#if !defined(MNTOPT_RO) && (HAVE_SYS_MNTENT_H || HAVE_MNTENT_H)
 #define MNTOPT_RO "r"
 #endif
 #endif

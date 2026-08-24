@@ -312,12 +312,6 @@ public:
     bool ExpandModulesOnLoad(void) const { LIMITED_METHOD_CONTRACT; return fExpandAllOnLoad; }
 #endif //_DEBUG
 
-#ifdef TEST_DATA_CONSISTENCY
-    // get the value of fTestDataConsistency, which controls whether we test that we can correctly detect
-    // held locks in DAC builds. This is determined by an environment variable.
-    inline bool TestDataConsistency() const { LIMITED_METHOD_DAC_CONTRACT; return fTestDataConsistency; }
-#endif
-
 #ifdef _DEBUG
 
     unsigned SuspendThreadDeadlockTimeoutMs() const
@@ -372,9 +366,7 @@ public:
         GCSTRESS_INSTR_JIT          = 4,    // GC on every allowable JITed instr
         GCSTRESS_INSTR_NGEN         = 8,    // GC on every allowable NGEN instr
         GCSTRESS_UNIQUE             = 16,   // GC only on a unique stack trace
-        GCSTRESS_CDAC               = 32,   // Verify cDAC GC references at stress points
 
-        // Excludes cDAC stress as it is fundamentally different from the other stress modes
         GCSTRESS_ALLSTRESS          = GCSTRESS_ALLOC | GCSTRESS_TRANSITION | GCSTRESS_INSTR_JIT | GCSTRESS_INSTR_NGEN,
     };
 
@@ -443,16 +435,6 @@ public:
 
     DWORD GetHostTestThreadAbort() const {LIMITED_METHOD_CONTRACT; return testThreadAbort;}
 
-#define INJECTFAULT_LOADERHEAP      0x1
-#define INJECTFAULT_GCHEAP          0x2
-#define INJECTFAULT_SO              0x4
-#define INJECTFAULT_GMHEAP          0x8
-#define INJECTFAULT_DYNAMICCODEHEAP 0x10
-#define INJECTFAULT_MAPVIEWOFFILE   0x20
-#define INJECTFAULT_JITHEAP         0x40
-
-    DWORD ShouldInjectFault(DWORD faultType) const {LIMITED_METHOD_CONTRACT; return fShouldInjectFault & faultType;}
-
 #endif
 
 #ifdef FEATURE_INTERPRETER
@@ -479,14 +461,6 @@ private: //----------------------------------------------------------------
     unsigned fPInvokeRestoreEsp;  // -1=Default, 0=Never, Else=Always
 
     LPUTF8 pszBreakOnClassLoad;         // Halt just before loading this class
-
-#ifdef TEST_DATA_CONSISTENCY
-    bool fTestDataConsistency;         // true if we are testing locks for data consistency in the debugger--
-                                       // If a lock is held during inspection, we assume the data under the lock
-                                       // is inconsistent. We have a special code path for testing this
-                                       // which we will follow if this is set. The value is determined by
-                                       // the environment variable TestDataConsistency
-#endif
 
     bool   m_fInteropValidatePinnedObjects; // After returning from a M->U interop call, validate GC heap around objects pinned by IL stubs.
     bool   m_fInteropLogArguments; // Log all pinned arguments passed to an interop call
@@ -601,7 +575,6 @@ private: //----------------------------------------------------------------
 #endif // _DEBUG
 
 #ifdef _DEBUG
-    DWORD fShouldInjectFault;
     DWORD testThreadAbort;
 #endif
 

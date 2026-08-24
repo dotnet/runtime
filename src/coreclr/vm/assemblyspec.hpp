@@ -51,14 +51,11 @@ enum NotificationStatus
 class AssemblySpec  : public BaseAssemblySpec
 {
   private:
-    AppDomain       *m_pAppDomain;
     Assembly  *m_pParentAssembly;
 
-    // Contains the reference to the fallback load context associated with RefEmitted assembly requesting the load of another assembly (static or dynamic)
-    AssemblyBinder *m_pFallbackBinder;
-
-    // Flag to indicate if we should prefer the fallback load context binder for binding or not.
-    bool m_fPreferFallbackBinder;
+    // The initial binder to use when the caller explicitly provided a load context for this load.
+    // When set, it takes precedence over the binder of the parent assembly as the initial binder.
+    AssemblyBinder *m_pExplicitBinder;
 
     HRESULT InitializeSpecInternal(mdToken kAssemblyRefOrDef,
                                    IMDInternalImport *pImport,
@@ -73,32 +70,16 @@ class AssemblySpec  : public BaseAssemblySpec
 
   public:
 
-#ifndef DACCESS_COMPILE
-    AssemblySpec() : m_pAppDomain(::GetAppDomain())
+    AssemblySpec()
     {
         LIMITED_METHOD_CONTRACT;
         m_pParentAssembly = NULL;
-
-        m_pFallbackBinder = NULL;
-        m_fPreferFallbackBinder = false;
-
+        m_pExplicitBinder = NULL;
     }
-#endif //!DACCESS_COMPILE
-
-    AssemblySpec(AppDomain *pAppDomain) : m_pAppDomain(pAppDomain)
-    {
-        LIMITED_METHOD_CONTRACT
-        m_pParentAssembly = NULL;
-
-        m_pFallbackBinder = NULL;
-        m_fPreferFallbackBinder = false;
-
-    }
-
 
     Assembly* GetParentAssembly();
 
-    AssemblyBinder* GetBinderFromParentAssembly(AppDomain *pDomain);
+    AssemblyBinder* GetInitialBinder();
 
     bool HasParentAssembly()
     { WRAPPER_NO_CONTRACT; return GetParentAssembly() != NULL; }
@@ -139,32 +120,18 @@ class AssemblySpec  : public BaseAssemblySpec
         m_pParentAssembly = pAssembly;
     }
 
-    void SetFallbackBinderForRequestingAssembly(AssemblyBinder *pFallbackBinder)
-    {
-       LIMITED_METHOD_CONTRACT;
-
-        m_pFallbackBinder = pFallbackBinder;
-    }
-
-    AssemblyBinder* GetFallbackBinderForRequestingAssembly()
+    void SetExplicitBinder(AssemblyBinder *pBinder)
     {
         LIMITED_METHOD_CONTRACT;
 
-        return m_pFallbackBinder;
+        m_pExplicitBinder = pBinder;
     }
 
-    void SetPreferFallbackBinder()
+    AssemblyBinder* GetExplicitBinder()
     {
         LIMITED_METHOD_CONTRACT;
 
-        m_fPreferFallbackBinder = true;
-    }
-
-    bool GetPreferFallbackBinder()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return m_fPreferFallbackBinder;
+        return m_pExplicitBinder;
     }
 
     // Note that this method does not clone the fields!
@@ -181,10 +148,7 @@ class AssemblySpec  : public BaseAssemblySpec
         BaseAssemblySpec::CopyFrom(pSource);
 
         SetParentAssembly(pSource->GetParentAssembly());
-
-        // Copy the details of the fallback load context binder
-        SetFallbackBinderForRequestingAssembly(pSource->GetFallbackBinderForRequestingAssembly());
-        m_fPreferFallbackBinder = pSource->GetPreferFallbackBinder();
+        SetExplicitBinder(pSource->GetExplicitBinder());
     }
 
     HRESULT CheckFriendAssemblyName();
@@ -193,8 +157,8 @@ class AssemblySpec  : public BaseAssemblySpec
                       mdAssemblyRef *pToken);
 
     HRESULT Bind(
-        AppDomain* pAppDomain,
-        BINDER_SPACE::Assembly** ppAssembly);
+        BINDER_SPACE::Assembly** ppAssembly,
+        SString* pDiagnosticInfo = NULL);
 
     Assembly *LoadAssembly(FileLoadLevel targetLevel,
                            BOOL fThrowOnFileNotFound = TRUE);
@@ -212,33 +176,6 @@ class AssemblySpec  : public BaseAssemblySpec
 
     // Initialize an AssemblyName managed object based on the specified assemblyName
     static void InitializeAssemblyNameRef(_In_ BINDER_SPACE::AssemblyName* assemblyName, _Out_ ASSEMBLYNAMEREF* assemblyNameRef);
-
-  public:
-    AppDomain *GetAppDomain()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pAppDomain;
-    }
-
-    inline HRESULT SetContentType(AssemblyContentType type)
-    {
-        LIMITED_METHOD_CONTRACT;
-        if (type == AssemblyContentType_Default)
-        {
-            m_dwFlags = (m_dwFlags & ~afContentType_Mask) | afContentType_Default;
-            return S_OK;
-        }
-        else if (type == AssemblyContentType_WindowsRuntime)
-        {
-            // WinRT assemblies are not supported as direct references.
-            return COR_E_PLATFORMNOTSUPPORTED;
-        }
-        else
-        {
-            _ASSERTE(!"Unexpected content type.");
-            return E_UNEXPECTED;
-        }
-    }
 };
 
 #define INITIAL_ASM_SPEC_HASH_SIZE 7
@@ -263,6 +200,8 @@ class AssemblySpecBindingCache
         inline Assembly* GetAssembly(){ LIMITED_METHOD_CONTRACT; return m_pAssembly; };
         inline void SetAssembly(Assembly* pAssembly){ LIMITED_METHOD_CONTRACT; m_pAssembly = pAssembly; };
         inline PEAssembly* GetFile(){ LIMITED_METHOD_CONTRACT; return m_pPEAssembly;};
+        inline Assembly* GetParentAssembly(){ LIMITED_METHOD_CONTRACT; return m_spec.GetParentAssembly(); };
+        inline void ClearParentAssembly(){ LIMITED_METHOD_CONTRACT; m_spec.SetParentAssembly(NULL); };
         inline BOOL IsError(){ LIMITED_METHOD_CONTRACT; return (m_exceptionType!=EXTYPE_NONE);};
 
         // bound to the file, but failed later
@@ -409,6 +348,7 @@ class AssemblySpecBindingCache
 
     Assembly *LookupAssembly(AssemblySpec *pSpec, BOOL fThrow=TRUE);
     PEAssembly *LookupFile(AssemblySpec *pSpec, BOOL fThrow = TRUE);
+    void GetParentAssemblyMap(MapSHash<Assembly*, Assembly*> &parentMap);
 
     BOOL StoreAssembly(AssemblySpec *pSpec, Assembly *pAssembly);
     BOOL StorePEAssembly(AssemblySpec *pSpec, PEAssembly *pPEAssembly);
