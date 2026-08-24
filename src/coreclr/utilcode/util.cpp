@@ -907,16 +907,18 @@ BOOL CPUGroupInfo::GetCPUGroupRange(WORD group_number, WORD* group_begin, WORD* 
 
 #ifdef HOST_WINDOWS
 #ifdef SELF_NO_HOST
-static Volatile<BOOL> g_fInitializedGlobalSystemInfo = FALSE;
+static INIT_ONCE g_globalSystemInfoInitOnce = INIT_ONCE_STATIC_INIT;
 SYSTEM_INFO g_SystemInfo;
+
+static BOOL CALLBACK InitializeGlobalSystemInfoOnce(PINIT_ONCE /*initOnce*/, PVOID /*parameter*/, PVOID* /*context*/)
+{
+    GetSystemInfo(&g_SystemInfo);
+    return TRUE;
+}
 
 static void InitializeGlobalSystemInfo()
 {
-    if (!g_fInitializedGlobalSystemInfo)
-    {
-        GetSystemInfo(&g_SystemInfo);
-        g_fInitializedGlobalSystemInfo = TRUE;
-    }
+    InitOnceExecuteOnce(&g_globalSystemInfoInitOnce, InitializeGlobalSystemInfoOnce, NULL, NULL);
 }
 #else
 extern SYSTEM_INFO g_SystemInfo;
