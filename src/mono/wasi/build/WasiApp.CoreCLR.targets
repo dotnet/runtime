@@ -142,7 +142,6 @@
       <_WasiPInvokeModules Include="libSystem.Native" />
       <_WasiPInvokeModules Include="libSystem.IO.Compression.Native" />
       <_WasiPInvokeModules Include="libSystem.Globalization.Native" Condition="'$(InvariantGlobalization)' != 'true'" />
-      <_WasiIgnoredPInvokeModules Include="libSystem.Globalization.Native" Condition="'$(InvariantGlobalization)' == 'true'" />
     </ItemGroup>
 
     <!-- crossgen2 has the type system that knows the wasm ABI, so it generates the helpers itself.
@@ -176,7 +175,6 @@
       <_WasiInteropGeneratorArg Include="--generate-portable-callhelpers" />
       <_WasiInteropGeneratorArg Include="$(_WasiRelinkObjDir)" />
       <_WasiInteropGeneratorArg Include="--directpinvoke;%(_WasiPInvokeModules.Identity)" Condition="'%(_WasiPInvokeModules.Identity)' != ''" />
-      <_WasiInteropGeneratorArg Include="--ignored-directpinvoke;%(_WasiIgnoredPInvokeModules.Identity)" Condition="'%(_WasiIgnoredPInvokeModules.Identity)' != ''" />
       <_WasiInteropGeneratorArg Include="@(_WasiManagedAssemblies->'%(FullPath)')" />
     </ItemGroup>
 

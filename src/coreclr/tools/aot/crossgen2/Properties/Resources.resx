@@ -291,9 +291,6 @@
   <data name="DirectPInvokeOption" xml:space="preserve">
     <value>Name of a statically linked native module P/Invokes may resolve against</value>
   </data>
-  <data name="IgnoredDirectPInvokeOption" xml:space="preserve">
-    <value>Name of a native module to leave out of the generated P/Invoke table</value>
-  </data>
   <data name="GeneratePortableCallHelpersRequiresWasmTarget" xml:space="preserve">
     <value>--generate-portable-callhelpers requires --targetarch wasm together with --targetos browser or --targetos wasi</value>
   </data>

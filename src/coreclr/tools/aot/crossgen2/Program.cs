@@ -322,7 +322,6 @@ namespace ILCompiler
                 {
                     OutputDirectory = _generatePortableCallHelpers,
                     PInvokeModules = Get(_command.DirectPInvoke),
-                    IgnoredPInvokeModules = Get(_command.IgnoredDirectPInvoke),
                     // The normalized name, so that platform attributes match regardless of how
                     // --targetos was spelled on the command line.
                     TargetOS = targetOS.ToString().ToLowerInvariant(),

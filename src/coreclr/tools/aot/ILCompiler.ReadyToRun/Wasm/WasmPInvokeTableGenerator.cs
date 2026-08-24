@@ -18,22 +18,17 @@ namespace ILCompiler.Wasm
     /// </summary>
     internal sealed class WasmPInvokeTableGenerator(WasmInteropLogger log)
     {
-        public void EmitPInvokeTable(TextWriter w, IEnumerable<string> pinvokeModules, IEnumerable<string> ignoredPInvokeModules, List<WasmPInvoke> pinvokes)
+        public void EmitPInvokeTable(TextWriter w, IEnumerable<string> pinvokeModules, List<WasmPInvoke> pinvokes)
         {
-            var ignoredModules = new HashSet<string>(ignoredPInvokeModules, StringComparer.Ordinal);
+            // Modules an unresolved P/Invoke has already been reported for, so each is logged once.
+            var skippedModules = new HashSet<string>(StringComparer.Ordinal);
             var modules = new SortedDictionary<string, string>(StringComparer.Ordinal);
             foreach (string module in pinvokeModules)
-            {
-                if (!ignoredModules.Contains(module))
-                    modules[module] = module;
-            }
-
-            foreach (string module in ignoredModules.OrderBy(module => module, StringComparer.Ordinal))
-                log.Verbose($"Ignoring PInvoke module {module}");
+                modules[module] = module;
 
             foreach (WasmPInvoke pinvoke in pinvokes)
             {
-                if (modules.ContainsKey(pinvoke.Module) || ignoredModules.Contains(pinvoke.Module))
+                if (modules.ContainsKey(pinvoke.Module) || skippedModules.Contains(pinvoke.Module))
                     continue;
 
                 // Handle special modules, and add them to the list of modules otherwise, skip them
@@ -52,13 +47,13 @@ namespace ILCompiler.Wasm
                 }
                 else if (pinvoke.Module != "QCall")
                 {
-                    // Unresolved module: not statically linked, ignored, [WasmImportLinkage], "*" or QCall.
+                    // Unresolved module: not statically linked, [WasmImportLinkage], "*" or QCall.
                     // Skip it and throw at runtime if it is ever called, which is what Mono does too.
                     // Deliberately not a warning: assemblies routinely carry P/Invokes for platforms they
                     // are not running on - a NuGet package with Windows and Linux entry points, say - and
                     // those are never reached on wasm. P/Invoke resolution failure is a runtime condition,
                     // so reporting it at build time produces false positives that have to be suppressed.
-                    if (ignoredModules.Add(pinvoke.Module))
+                    if (skippedModules.Add(pinvoke.Module))
                         log.Verbose($"Skipping unresolved PInvoke module '{pinvoke.Module}' for method '{pinvoke.Method.OwningType}::{pinvoke.Method.Name.ToString()}' (not statically linked on wasm; will throw if called).");
                 }
             }
