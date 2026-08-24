@@ -340,13 +340,10 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
     if (opcode == CEE_CALLI)
     {
-        if (IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+        if (info.compCompHnd->convertPInvokeCalliToCall(pResolvedToken, !impCanPInvokeInlineCallSite(compCurBB)))
         {
-            if (info.compCompHnd->convertPInvokeCalliToCall(pResolvedToken, !impCanPInvokeInlineCallSite(compCurBB)))
-            {
-                eeGetCallInfo(pResolvedToken, nullptr, CORINFO_CALLINFO_ALLOWINSTPARAM, callInfo);
-                return impImportCall(CEE_CALL, pResolvedToken, nullptr, nullptr, prefixFlags, callInfo, rawILOffset);
-            }
+            eeGetCallInfo(pResolvedToken, nullptr, CORINFO_CALLINFO_ALLOWINSTPARAM, callInfo);
+            return impImportCall(CEE_CALL, pResolvedToken, nullptr, nullptr, prefixFlags, callInfo, rawILOffset);
         }
 
         /* Get the call site sig */
@@ -935,20 +932,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         impPopArgsForUnmanagedCall(call->AsCall(), sig, &swiftErrorNode);
 
         goto DONE;
-    }
-    else if ((opcode == CEE_CALLI) && ((sig->callConv & CORINFO_CALLCONV_MASK) != CORINFO_CALLCONV_DEFAULT) &&
-             ((sig->callConv & CORINFO_CALLCONV_MASK) != CORINFO_CALLCONV_VARARG))
-    {
-        void*                pCookie;
-        void*                cookie       = info.compCompHnd->GetCookieForPInvokeCalliSig(sig, &pCookie);
-        CORINFO_CONST_LOOKUP cookieLookup = eeConvertToLookup(cookie, pCookie);
-        call->AsCall()->gtCallCookie      = new (getAllocator(CMK_ASTNode)) CORINFO_CONST_LOOKUP(cookieLookup);
-
-        if (canTailCall)
-        {
-            canTailCall             = false;
-            szCanTailCallFailReason = "PInvoke calli";
-        }
     }
 
     if (sig->isAsyncCall())
@@ -3427,11 +3410,9 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 {
                     CORINFO_CLASS_HANDLE typeArgHnd;
                     CorInfoType          simdBaseJitType;
-                    unsigned             simdSize;
 
                     typeArgHnd      = info.compCompHnd->getTypeInstantiationArgument(clsHnd, 0);
                     simdBaseJitType = info.compCompHnd->getTypeForPrimitiveNumericClass(typeArgHnd);
-                    simdSize        = info.compCompHnd->getClassSize(clsHnd);
 
                     switch (simdBaseJitType)
                     {
@@ -3448,15 +3429,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                         case CORINFO_TYPE_NATIVEINT:
                         case CORINFO_TYPE_NATIVEUINT:
                         {
-                            var_types      simdBaseType = JitType2PreciseVarType(simdBaseJitType);
-                            unsigned       elementSize  = genTypeSize(simdBaseType);
-                            GenTreeIntCon* countNode    = gtNewIconNode(simdSize / elementSize, TYP_INT);
-
-#if defined(FEATURE_SIMD)
-                            countNode->gtFlags |= GTF_ICON_SIMD_COUNT;
-#endif // FEATURE_SIMD
-
-                            return countNode;
+                            return evalVectorCount(clsHnd, JitType2PreciseVarType(simdBaseJitType));
                         }
 
                         default:
@@ -7328,7 +7301,7 @@ void Compiler::impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call)
 
     struct SigParamInfo
     {
-        CorInfoType          CorType;
+        CorInfoTypeWithMod   CorType;
         CORINFO_CLASS_HANDLE ClassHandle;
     };
 
@@ -7340,13 +7313,29 @@ void Compiler::impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call)
     // JIT-EE interface only allows us to iterate the signature forwards. We
     // will collect the needed information here and at the same time notify the
     // EE that the signature types need to be loaded.
-    CORINFO_ARG_LIST_HANDLE sigArg = sig->args;
+    CORINFO_ARG_LIST_HANDLE sigArg                = sig->args;
+    bool                    hasSecretStubArgument = false;
     for (unsigned i = 0; i < sig->numArgs; i++)
     {
-        params[i].CorType = strip(info.compCompHnd->getArgType(sig, sigArg, &params[i].ClassHandle));
+        params[i].CorType   = info.compCompHnd->getArgType(sig, sigArg, &params[i].ClassHandle);
+        CorInfoType corType = strip(params[i].CorType);
 
-        if (params[i].CorType != CORINFO_TYPE_CLASS && params[i].CorType != CORINFO_TYPE_BYREF &&
-            params[i].CorType != CORINFO_TYPE_PTR)
+        if ((params[i].CorType & CORINFO_TYPE_MOD_SECRET_STUB_ARGUMENT) != 0)
+        {
+            if (corType != CORINFO_TYPE_NATIVEINT)
+            {
+                BADCODE("SecretStubArgument modifier must be applied to a native int parameter");
+            }
+
+            if (hasSecretStubArgument)
+            {
+                BADCODE("Duplicate SecretStubArgument modifier");
+            }
+
+            hasSecretStubArgument = true;
+        }
+
+        if (corType != CORINFO_TYPE_CLASS && corType != CORINFO_TYPE_BYREF && corType != CORINFO_TYPE_PTR)
         {
             CORINFO_CLASS_HANDLE argRealClass = info.compCompHnd->getArgClass(sig, sigArg);
             if (argRealClass != nullptr)
@@ -7381,7 +7370,7 @@ void Compiler::impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call)
         typeInfo   ti      = se.seTypeInfo;
         GenTree*   argNode = se.val;
 
-        var_types            jitSigType = JITtype2varType(params[i - 1].CorType);
+        var_types            jitSigType = JITtype2varType(strip(params[i - 1].CorType));
         CORINFO_CLASS_HANDLE classHnd   = params[i - 1].ClassHandle;
 
         if (!impCheckImplicitArgumentCoercion(jitSigType, argNode->TypeGet()))
@@ -7436,6 +7425,16 @@ void Compiler::impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call)
             {
                 arg = arg.WellKnown(WellKnownArg::ThisPointer);
             }
+        }
+
+        if ((params[i - 1].CorType & CORINFO_TYPE_MOD_SECRET_STUB_ARGUMENT) != 0)
+        {
+            if (arg.WellKnownArg != WellKnownArg::None)
+            {
+                BADCODE("SecretStubArgument modifier conflicts with another special argument");
+            }
+
+            arg = arg.WellKnown(WellKnownArg::SecretStubParam);
         }
 
         call->gtArgs.PushFront(this, arg);
@@ -7667,8 +7666,6 @@ void Compiler::impCheckForPInvokeCall(
         }
 
         unmanagedCallConv = info.compCompHnd->getUnmanagedCallConv(nullptr, sig, &suppressGCTransition);
-
-        assert(!call->gtCallCookie);
     }
 
     if (suppressGCTransition)
@@ -7691,13 +7688,11 @@ void Compiler::impCheckForPInvokeCall(
     }
     optNativeCallCount++;
 
-    if (methHnd == nullptr && (IsTargetAbi(CORINFO_NATIVEAOT_ABI) ||
-                               (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB) && !compIsForInlining())))
+    if (methHnd == nullptr)
     {
-        // PInvoke CALLI in NativeAOT ABI must be always inlined. Non-inlineable CALLI cases have been
-        // converted to regular method calls earlier using convertPInvokeCalliToCall.
-
-        // PInvoke CALLI in IL stubs must be inlined
+        // PInvoke CALLI must always be inlined. Call sites that cannot be inlined have been converted
+        // to a call to a marshalling stub earlier using convertPInvokeCalliToCall, or, in ReadyToRun,
+        // have aborted the compilation of this method.
     }
     else if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB) && IsReadyToRun())
     {
@@ -8991,17 +8986,6 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*            call,
     if (compCurBB->isRunRarely() || opts.OptimizationDisabled())
     {
         JITDUMP("NOT Marking call [%06u] as guarded devirtualization candidate -- rare / dbg / minopts\n",
-                dspTreeID(call));
-        return;
-    }
-
-    // CT_INDIRECT calls may use the cookie, bail if so...
-    //
-    // If transforming these provides a benefit, we could save this off in the same way
-    // we save the stub address below.
-    if ((call->gtCallType == CT_INDIRECT) && (call->AsCall()->gtCallCookie != nullptr))
-    {
-        JITDUMP("NOT Marking call [%06u] as guarded devirtualization candidate -- CT_INDIRECT with cookie\n",
                 dspTreeID(call));
         return;
     }
@@ -11971,7 +11955,7 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                                 }
                             }
 
-                            uint32_t size = getVectorTByteLength();
+                            uint32_t size = getCompileTimeVectorTByteLength();
 #ifdef TARGET_ARM64
                             assert((size == 16) || (size == SIZE_UNKNOWN));
 #else
@@ -13395,6 +13379,31 @@ GenTree* Compiler::impUnsupportedNamedIntrinsic(unsigned              helper,
     {
         return nullptr;
     }
+}
+
+//-------------------------------------------------------------------------
+// evalVectorCount: Evaluate the Count property of a vector intrinsic class using
+//                  EE metadata.
+//
+// Arguments:
+//     vectorHandle -- handle to the vector class to query for size
+//     simdBaseType -- base type, whose size to use as the divisor
+//
+// Returns:
+//     The number of elements in the vector with this base type, expressed as a constant
+//     signed integer IR node.
+GenTree* Compiler::evalVectorCount(CORINFO_CLASS_HANDLE vectorHandle, var_types simdBaseType)
+{
+    unsigned simdSize = info.compCompHnd->getClassSize(vectorHandle);
+
+    unsigned       elementSize = genTypeSize(simdBaseType);
+    GenTreeIntCon* countNode   = gtNewIconNode(simdSize / elementSize, TYP_INT);
+
+#if defined(FEATURE_SIMD)
+    countNode->gtFlags |= GTF_ICON_SIMD_COUNT;
+#endif // FEATURE_SIMD
+
+    return countNode;
 }
 
 //------------------------------------------------------------------------

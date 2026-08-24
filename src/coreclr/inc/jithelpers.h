@@ -216,8 +216,6 @@
     DYNAMICJITHELPER(CORINFO_HELP_PROF_FCN_TAILCALL, JIT_ProfilerEnterLeaveTailcallStub, METHOD__NIL)
 
     // Miscellaneous
-    JITHELPER(CORINFO_HELP_PINVOKE_CALLI,       GenericPInvokeCalliHelper, METHOD__NIL)
-
 #if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
     JITHELPER(CORINFO_HELP_TAILCALL,            JIT_TailCall,             METHOD__NIL)
 #else

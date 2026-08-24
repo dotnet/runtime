@@ -5881,9 +5881,6 @@ struct GenTreeCall final : public GenTree
 
     union
     {
-        // The serialized CALLI unmanaged call (CT_INDIRECT) cookie; reified into argument IR in morph
-        CORINFO_CONST_LOOKUP* gtCallCookie;
-
         // gtInlineCandidateInfo is only used when inlining methods
         InlineCandidateInfo* gtInlineCandidateInfo;
         // gtInlineCandidateInfoList is used when we have more than one GDV candidate

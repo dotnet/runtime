@@ -4096,6 +4096,9 @@ CORINFO_CLASS_HANDLE CEEInfo::getBuiltinClass(CorInfoClassId classId)
     case CLASSID_RUNTIME_TYPE:
         result = CORINFO_CLASS_HANDLE(g_pRuntimeTypeClass);
         break;
+    case CLASSID_NUMERICS_VECTORT:
+        result = CORINFO_CLASS_HANDLE(CoreLibBinder::GetClass(CLASS__VECTORT));
+        break;
     default:
         _ASSERTE(!"NYI: unknown classId");
         break;
@@ -4959,10 +4962,16 @@ CorInfoIsAccessAllowedResult CEEInfo::canAccessClass(
     return isAccessAllowed;
 }
 
-//---------------------------------------------------------------------------------------
-// Given a method descriptor ftnHnd, extract signature information into sigInfo
-// Obtain (representative) instantiation information from ftnHnd's owner class
-//@GENERICSVER: added explicit owner parameter
+static void setILStubSigFlag(MethodDesc* method, CORINFO_SIG_INFO* sig)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    if (method->IsILStub())
+    {
+        sig->flags |= CORINFO_SIGFLAG_IL_STUB;
+    }
+}
+
 // Internal version without JIT-EE transition
 static void getMethodSigInternal(
     CORINFO_METHOD_HANDLE ftnHnd,
@@ -4985,6 +4994,8 @@ static void getMethodSigInternal(
         &context,
         CONV_TO_JITSIG_FLAGS_NONE,
         sigRet);
+
+    setILStubSigFlag(ftn, sigRet);
 
     //@GENERICS:
     // Shared generic methods and shared methods on generic structs take an extra argument representing their instantiation
@@ -6648,6 +6659,13 @@ DWORD CEEInfo::getMethodAttribsInternal (CORINFO_METHOD_HANDLE ftn)
         /* Function marked as not inlineable */
         result |= CORINFO_FLG_DONT_INLINE;
     }
+    else if (pMD->IsILStub())
+    {
+        // IL stubs have no metadata and their IL is only materialized while the stub itself is
+        // being compiled, so they can never be inlined into their callers. Reporting this here
+        // keeps the JIT from asking for the stub's IL (see code:CEEInfo::canInline).
+        result |= CORINFO_FLG_DONT_INLINE;
+    }
     // AggressiveInlining only makes sense for IL methods.
     else if (pMD->IsIL() && IsMiAggressiveInlining(ilMethodImplAttribs))
     {
@@ -7755,6 +7773,8 @@ COR_ILMETHOD_DECODER* CEEInfo::getMethodInfoWorker(
         &context,
         CONV_TO_JITSIG_FLAGS_NONE,
         &methInfo->args);
+
+    setILStubSigFlag(ftn, &methInfo->args);
 
     // Shared generic or static per-inst methods and shared methods on generic structs
     // take an extra argument representing their instantiation
@@ -9751,6 +9771,37 @@ CorInfoTypeWithMod CEEInfo::getArgType (
 
     Module* pModule = GetModule(sig->scope);
 
+    // SecretStubArgument should only be present on IL stubs. Avoid searching every argument
+    // signature for it when compiling other methods.
+    if ((sig->flags & CORINFO_SIGFLAG_IL_STUB) != 0)
+    {
+        Module* modifierModule = nullptr;
+        mdToken modifierToken  = mdTokenNil;
+        if (ptr.HasCustomModifier(
+                pModule,
+                "System.Runtime.CompilerServices.SecretStubArgument",
+                ELEMENT_TYPE_CMOD_REQD,
+                &modifierModule,
+                &modifierToken))
+        {
+            TypeHandle secretStubArgument = CoreLibBinder::GetClass(CLASS__SECRET_STUB_ARGUMENT);
+            TypeHandle modifierType = ClassLoader::LoadTypeDefOrRefThrowing(
+                modifierModule,
+                modifierToken,
+                ClassLoader::ThrowIfNotFound,
+                ClassLoader::PermitUninstDefOrRef);
+            if (modifierType == secretStubArgument)
+            {
+                result = CorInfoTypeWithMod(result | CORINFO_TYPE_MOD_SECRET_STUB_ARGUMENT);
+            }
+        }
+    }
+    else
+    {
+        _ASSERTE(!ptr.HasCustomModifier(
+            pModule, "System.Runtime.CompilerServices.SecretStubArgument", ELEMENT_TYPE_CMOD_REQD));
+    }
+
     if (ptr.HasCustomModifier(pModule, "Microsoft.VisualC.NeedsCopyConstructorModifier", ELEMENT_TYPE_CMOD_REQD) ||
         ptr.HasCustomModifier(pModule, "System.Runtime.CompilerServices.IsCopyConstructed", ELEMENT_TYPE_CMOD_REQD))
     {
@@ -10191,17 +10242,6 @@ bool CEEInfo::pInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, CORINFO_SI
     EE_TO_JIT_TRANSITION();
 
     return result;
-}
-
-/*********************************************************************/
-// Generate a cookie based on the signature that would needs to be passed
-// to CORINFO_HELP_PINVOKE_CALLI
-LPVOID CEEInfo::GetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig,
-                                            void **ppIndirection)
-{
-    WRAPPER_NO_CONTRACT;
-
-    return getVarArgsHandle(szMetaSig, NULL, ppIndirection);
 }
 
 // Check any constraints on method type arguments
@@ -15484,9 +15524,100 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub(void** entryPoint)
     return CORINFO_METHOD_HANDLE(result);
 }
 
+//---------------------------------------------------------------------------------------
+//
+// Optionally converts an unmanaged calli call site into a call to an IL stub that performs
+// the argument marshalling and the managed/native transition.
+//
+// The IL stub is created (and cached in the IL stub cache by signature) and JIT-compiled here.
+// Compiling it before returning its MethodDesc ensures that calls can directly target its code
+// without entering a prestub that uses the secret stub parameter register.
+//
+// Arguments:
+//    pResolvedToken - the token of the calli call site. Only token, tokenScope and
+//                     tokenContext are valid on entry. On success, hMethod and hClass
+//                     are filled in with the IL stub and its owning class.
+//    fMustConvert   - true if the JIT cannot emit an inline P/Invoke at this call site and
+//                     therefore requires the conversion.
+//
+// Return Value:
+//    true if the call site was converted to a call to an IL stub.
+//
 bool CEEInfo::convertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN * pResolvedToken, bool fMustConvert)
 {
-    return false;
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    bool result = false;
+
+    JIT_TO_EE_TRANSITION();
+
+    CORINFO_MODULE_HANDLE scopeHnd = pResolvedToken->tokenScope;
+
+    SigPointer sig{};
+    bool canConvert = true;
+
+    if (IsDynamicScope(scopeHnd))
+    {
+        // The calli that dispatches to the unmanaged target inside a marshalling stub is the
+        // P/Invoke itself and must stay inline. Those call sites always use
+        // TOKEN_ILSTUB_TARGET_SIG, and their IL is owned either by an IL stub MethodDesc or,
+        // for a plain P/Invoke, directly by the PInvokeMethodDesc.
+        if (pResolvedToken->token == (mdToken)TOKEN_ILSTUB_TARGET_SIG)
+        {
+            canConvert = false;
+        }
+        else
+        {
+            sig = GetDynamicResolver(scopeHnd)->ResolveSignature(pResolvedToken->token);
+        }
+    }
+    else
+    {
+        Module* pModule = (Module*)scopeHnd;
+
+        PCCOR_SIGNATURE pSig = NULL;
+        uint32_t cbSig = 0;
+        IfFailThrow(pModule->GetMDImport()->GetSigFromToken(
+            (mdSignature)pResolvedToken->token,
+            (ULONG*)&cbSig,
+            &pSig));
+        sig = SigPointer{ pSig, cbSig };
+    }
+
+    if (canConvert)
+    {
+        PCCOR_SIGNATURE pSig;
+        uint32_t cbSig;
+        sig.GetSignature(&pSig, &cbSig);
+
+        SigTypeContext typeContext;
+        GetTypeContext(pResolvedToken->tokenContext, &typeContext);
+
+        MethodDesc* pStubMD = PInvoke::CreateCalliILStub(
+            GetModule(scopeHnd),
+            Signature(pSig, cbSig),
+            &typeContext,
+            fMustConvert);
+
+        if (pStubMD != NULL)
+        {
+            PCODE pCode = JitILStub(pStubMD);
+            pStubMD->SetCodeEntryPoint(pCode);
+
+            TypeHandle stubType(pStubMD->GetMethodTable());
+            pResolvedToken->hClass = CORINFO_CLASS_HANDLE(stubType.AsPtr());
+            pResolvedToken->hMethod = (CORINFO_METHOD_HANDLE)pStubMD;
+            result = true;
+        }
+    }
+
+    EE_TO_JIT_TRANSITION();
+
+    return result;
 }
 
 void CEEInfo::updateEntryPointForTailCall(CORINFO_CONST_LOOKUP* entryPoint)
