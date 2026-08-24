@@ -43,7 +43,15 @@ public sealed unsafe partial class SOSDacImpl
 
     private readonly ulong _rcwMask = 1UL;
 
+    // The native DAC owns the cDAC host and passes itself here. Keep the wrapper rooted for
+    // the lifetime of this object even when release builds do not use it for comparisons.
+    private readonly object? _legacyLifetime;
+
     private readonly ISOSDacInterface? _legacyImpl;
+    private readonly ISOSDacInterface13? _legacyImpl13;
+    private readonly IXCLRDataProcess? _legacyProcess;
+
+#if DEBUG
     private readonly ISOSDacInterface2? _legacyImpl2;
     private readonly ISOSDacInterface3? _legacyImpl3;
     private readonly ISOSDacInterface4? _legacyImpl4;
@@ -55,20 +63,20 @@ public sealed unsafe partial class SOSDacImpl
     private readonly ISOSDacInterface10? _legacyImpl10;
     private readonly ISOSDacInterface11? _legacyImpl11;
     private readonly ISOSDacInterface12? _legacyImpl12;
-    private readonly ISOSDacInterface13? _legacyImpl13;
     private readonly ISOSDacInterface14? _legacyImpl14;
     private readonly ISOSDacInterface15? _legacyImpl15;
     private readonly ISOSDacInterface16? _legacyImpl16;
-    private readonly IXCLRDataProcess? _legacyProcess;
     private readonly IXCLRDataProcess2? _legacyProcess2;
-    private readonly ICLRDataEnumMemoryRegions? _legacyEnumMemory;
+#endif
 
     public SOSDacImpl(Target target, object? legacyObj, Lock apiLock)
     {
         _apiLock = apiLock;
         _target = target;
+        _legacyLifetime = legacyObj;
 
-        // Get all the interfaces for delegating to the legacy DAC
+#if DEBUG
+        // Get all the interfaces used to compare cDAC behavior with the legacy DAC.
         if (legacyObj is not null)
         {
             _legacyImpl = legacyObj as ISOSDacInterface;
@@ -90,9 +98,12 @@ public sealed unsafe partial class SOSDacImpl
 
             _legacyProcess = legacyObj as IXCLRDataProcess;
             _legacyProcess2 = legacyObj as IXCLRDataProcess2;
-
-            _legacyEnumMemory = legacyObj as ICLRDataEnumMemoryRegions;
         }
+#else
+        _legacyImpl = null;
+        _legacyImpl13 = null;
+        _legacyProcess = null;
+#endif
     }
 
     #region ISOSDacInterface
@@ -3188,17 +3199,23 @@ public sealed unsafe partial class SOSDacImpl
     int ISOSDacInterface.GetModule(ClrDataAddress addr, DacComNullableByRef<IXCLRDataModule> mod)
     {
         using Lock.Scope scope = _apiLock.EnterScope();
+        if (addr == 0 || mod.IsNullRef)
+            return HResults.E_INVALIDARG;
+
+        int hrLocal = HResults.S_OK;
         IXCLRDataModule? legacyModule = null;
         if (_legacyImpl is not null)
         {
             DacComNullableByRef<IXCLRDataModule> legacyOut = new(isNullRef: false);
-            int hr = _legacyImpl.GetModule(addr, legacyOut);
-            if (hr < 0)
-                return hr;
-            legacyModule = legacyOut.Interface;
+            hrLocal = _legacyImpl.GetModule(addr, legacyOut);
+            if (hrLocal >= 0)
+                legacyModule = legacyOut.Interface;
         }
 
         mod.Interface = new ClrDataModule(addr.ToTargetPointer(_target), _target, legacyModule, _apiLock);
+
+        if (_legacyImpl is not null)
+            Debug.ValidateHResult(HResults.S_OK, hrLocal);
 
         return HResults.S_OK;
     }
@@ -6876,9 +6893,11 @@ public sealed unsafe partial class SOSDacImpl
         using Lock.Scope scope = _apiLock.EnterScope();
         _target.Flush(FlushScope.All);
 
-        // As long as any part of cDAC falls back to the legacy DAC, we need to propagate the Flush call
         if (_legacyImpl13 is not null)
-            return _legacyImpl13.LockedFlush();
+        {
+            int hrLocal = _legacyImpl13.LockedFlush();
+            Debug.ValidateHResult(HResults.S_OK, hrLocal);
+        }
 
         return HResults.S_OK;
     }

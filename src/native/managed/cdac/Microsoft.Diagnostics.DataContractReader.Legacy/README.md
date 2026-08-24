@@ -59,23 +59,17 @@ int ISOSDacInterface8.ExampleMethod(uint* pResult)
 - **Debug cross-validation**: In `#if DEBUG`, call the legacy implementation (if
   available) and assert the results match. This catches discrepancies during testing.
 
-### Legacy delegation placement
+### Legacy comparison state
 
-Some cDAC methods create child objects (e.g., `ClrDataMethodInstance`,
-`ClrDataFrame`) that delegate certain operations to a legacy counterpart. This is
-a temporary implementation workaround to let us create the cDAC incrementally that
-should be removed before cDAC ships to customers. In these cases, the legacy call
-that obtains the counterpart **must be outside `#if DEBUG`**, because the result is
-used functionally, not just for validation.
+cDAC APIs do not fall back to the legacy DAC. APIs without a cDAC implementation
+return `E_NOTIMPL`.
 
-For example, `EnumMethodInstanceByAddress` passes `legacyMethod` to
-`ClrDataMethodInstance`, which delegates `GetTokenAndScope` and other calls to it.
-If the legacy enumeration only runs inside `#if DEBUG`, those delegated calls fail
-in Release builds.
-
-**Rule of thumb**: if a legacy call's result is stored and passed to another
-object, keep it outside `#if DEBUG`. Only the assertion that compares
-HResults/values belongs inside `#if DEBUG`.
+Some stateful validation paths create a corresponding legacy enumeration or child
+object and keep it in sync with the cDAC object. These legacy objects are used only
+to compare results; their failures and return values must not determine cDAC
+behavior. Legacy interfaces and comparison state are initialized only in Debug builds;
+Release builds retain the fallback interface only as an opaque lifetime root. The
+assertions that compare HResults and values belong inside `#if DEBUG`.
 
 ### Sized-buffer protocol
 

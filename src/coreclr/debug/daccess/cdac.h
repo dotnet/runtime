@@ -49,7 +49,7 @@ public:
         return m_module != NULL && m_cdac_handle != 0;
     }
 
-    void CreateSosInterface(IUnknown** sos);
+    int CreateSosInterface(IUnknown** sos);
     void CreateDacDbiInterface(IUnknown** dbi);
 
 private:
