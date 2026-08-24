@@ -34,15 +34,25 @@
       <NativeCMakeArg Include="-cmakeargs &quot;-DCMAKE_BUILD_RUNTIME_CONFIGURATION=$(RuntimeConfiguration)&quot;" />
       <NativeCMakeArg Include="-cmakeargs &quot;-DCMAKE_BUILD_RUNTIME_FLAVOR=$(RuntimeFlavor)&quot;" />
   </ItemGroup>
-  <!-- Memory settings baked into the prebuilt browserhost link. These are the single source of
-       truth: they are passed to the browserhost CMake build here, and emitted as the
-       runtime-pack defaults in BrowserWasmApp.CoreCLR.Generated.props (see corehost.proj) so the
-       per-app relink can detect when a project overrides them. -->
+  <!-- Settings baked into the prebuilt browserhost link. These are also consumed by the app
+       relink targets, so keep the BrowserHost names distinct from app-facing properties. -->
   <PropertyGroup Condition="'$(TargetsBrowser)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">
+    <BrowserHostInvariantGlobalization Condition="'$(BrowserHostInvariantGlobalization)' == ''">false</BrowserHostInvariantGlobalization>
+    <BrowserHostInvariantTimezone Condition="'$(BrowserHostInvariantTimezone)' == ''">false</BrowserHostInvariantTimezone>
+    <BrowserHostEnableDiagnostics Condition="'$(BrowserHostEnableDiagnostics)' == ''">false</BrowserHostEnableDiagnostics>
     <BrowserHostInitialHeapSize Condition="'$(BrowserHostInitialHeapSize)' == ''">33554432</BrowserHostInitialHeapSize>
     <BrowserHostMaximumHeapSize Condition="'$(BrowserHostMaximumHeapSize)' == ''">2147483648</BrowserHostMaximumHeapSize>
     <BrowserHostStackSize Condition="'$(BrowserHostStackSize)' == ''">2MB</BrowserHostStackSize>
   </PropertyGroup>
+
+  <ItemGroup Condition="'$(TargetsBrowser)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">
+    <_CoreCLRPropertyThatTriggersRelinking Include="InvariantGlobalization" RuntimePackValue="$(BrowserHostInvariantGlobalization)" />
+    <_CoreCLRPropertyThatTriggersRelinking Include="InvariantTimezone" RuntimePackValue="$(BrowserHostInvariantTimezone)" />
+    <_CoreCLRPropertyThatTriggersRelinking Include="EnableDiagnostics" RuntimePackValue="$(BrowserHostEnableDiagnostics)" />
+    <_CoreCLRPropertyThatTriggersRelinking Include="WasmInitialHeapSize" RuntimePackValue="$(BrowserHostInitialHeapSize)" />
+    <_CoreCLRPropertyThatTriggersRelinking Include="EmccMaximumHeapSize" RuntimePackValue="$(BrowserHostMaximumHeapSize)" />
+    <_CoreCLRPropertyThatTriggersRelinking Include="EmccStackSize" RuntimePackValue="$(BrowserHostStackSize)" />
+  </ItemGroup>
 
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">
       <NativeCMakeArg Include="-cmakeargs &quot;-DCMAKE_BROWSERHOST_INITIAL_MEMORY=$(BrowserHostInitialHeapSize)&quot;" />

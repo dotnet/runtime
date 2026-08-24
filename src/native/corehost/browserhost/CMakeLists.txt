@@ -34,9 +34,9 @@ install(TARGETS BrowserHost-Static DESTINATION sharedFramework COMPONENT runtime
 set(DOTNET_PROJECT_NAME "browserhost")
 
 # Memory settings are supplied by eng/native.wasm.targets so that the values baked into
-# dotnet.native.wasm and the runtime-pack defaults emitted for the per-app relink
-# (BrowserWasmApp.CoreCLR.Generated.props) cannot drift apart. Fail loudly rather than
-# silently linking with different values than the ones advertised to app builds.
+# dotnet.native.wasm and the runtime-pack defaults consumed by the per-app relink
+# (BrowserHost* properties in native.wasm.targets) cannot drift apart. Fail loudly
+# rather than silently linking with different values than the ones advertised to app builds.
 foreach (_browserhost_required_setting
          CMAKE_BROWSERHOST_INITIAL_MEMORY
          CMAKE_BROWSERHOST_MAXIMUM_MEMORY

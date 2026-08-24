@@ -195,13 +195,6 @@
     <MicrosoftNetCoreAppRuntimePackRidLibTfmDir>$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRuntimePackRidDir)', 'lib', '$(NetCoreAppCurrent)'))</MicrosoftNetCoreAppRuntimePackRidLibTfmDir>
     <MicrosoftNetCoreAppRuntimePackNativeDir>$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRuntimePackRidDir)', 'native'))</MicrosoftNetCoreAppRuntimePackNativeDir>
 
-    <!-- Generated .props carrying the values baked into the prebuilt browser-wasm CoreCLR runtime
-         pack over to the per-app native relink. Produced by src/native/corehost/corehost.proj,
-         packaged by src/mono/nuget/Microsoft.NET.Runtime.WebAssembly.Sdk, and imported by
-         src/mono/browser/build/BrowserWasmApp.CoreCLR.targets. -->
-    <BrowserWasmCoreCLRGeneratedPropsFileName>BrowserWasmApp.CoreCLR.Generated.props</BrowserWasmCoreCLRGeneratedPropsFileName>
-    <BrowserWasmCoreCLRGeneratedPropsDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsObjDir)', 'browser-wasm-coreclr'))</BrowserWasmCoreCLRGeneratedPropsDir>
-    <BrowserWasmCoreCLRGeneratedPropsPath>$(BrowserWasmCoreCLRGeneratedPropsDir)$(BrowserWasmCoreCLRGeneratedPropsFileName)</BrowserWasmCoreCLRGeneratedPropsPath>
   </PropertyGroup>
 
   <PropertyGroup>

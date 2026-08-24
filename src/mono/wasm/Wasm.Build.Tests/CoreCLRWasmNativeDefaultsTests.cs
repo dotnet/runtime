@@ -10,10 +10,10 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.Tests
 {
-    // Covers the generated BrowserWasmApp.CoreCLR.Generated.props contract: a property whose value
-    // differs from the one baked into the runtime pack must force a native relink, and an explicit
-    // WasmBuildNative=false in that situation must fail the build rather than silently produce an
-    // app whose configuration does not match the prebuilt dotnet.native.wasm.
+    // Covers the static native.wasm.targets contract: a property whose value differs from the one
+    // baked into the runtime pack must force a native relink, and an explicit WasmBuildNative=false
+    // in that situation must fail the build rather than silently produce an app whose configuration
+    // does not match the prebuilt dotnet.native.wasm.
     [TestCategory("workload")]
     public class CoreCLRWasmNativeDefaultsTests : WasmTemplateTestsBase
     {
