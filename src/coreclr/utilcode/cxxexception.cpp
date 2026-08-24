@@ -142,6 +142,11 @@ Exception *GetExceptionFromCxxException()
         {
             ThrowHR(COR_E_EXCEPTION);
         }
+        catch (...)
+        {
+            _ASSERTE_ALL_BUILDS(!"Only exceptions derived from std::exception should be thrown in CoreCLR.");
+            ThrowHR(COR_E_EXCEPTION);
+        }
     }
     catch (Exception *runtimeException)
     {
