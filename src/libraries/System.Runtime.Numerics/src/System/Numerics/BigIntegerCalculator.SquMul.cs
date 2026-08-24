@@ -29,6 +29,21 @@ namespace System.Numerics
             Debug.Assert(bits.Length == value.Length + value.Length);
             Debug.Assert(!bits.ContainsAnyExcept(0u));
 
+            if (value.Length >= 4
+                && (value.Length >= 8 || value[0] == 1 || value[0] == nuint.MaxValue)
+                && IsRepeatedLimbCandidate(value)
+                && TryMultiplyRepeatedLimb(value, value, bits))
+            {
+                return;
+            }
+
+            if (nint.Size == 8
+                && value.Length >= 8
+                && TryMultiplyShiftedRepeatedLimbOperands(value, value, bits))
+            {
+                return;
+            }
+
             if (!value.IsEmpty && value[0] == 0)
             {
                 int offset = value.IndexOfAnyExcept((nuint)0);
@@ -175,6 +190,12 @@ namespace System.Numerics
                     {
                         UInt128 carry = 0;
                         nuint v = value[i];
+
+                        if (v == 0)
+                        {
+                            continue;
+                        }
+
                         for (int j = 0; j < i; j++)
                         {
                             UInt128 digit1 = (UInt128)(ulong)bits[i + j] + carry;
@@ -197,6 +218,12 @@ namespace System.Numerics
                     {
                         ulong carry = 0;
                         nuint v = value[i];
+
+                        if (v == 0)
+                        {
+                            continue;
+                        }
+
                         for (int j = 0; j < i; j++)
                         {
                             ulong digit1 = bits[i + j] + carry;
@@ -242,6 +269,19 @@ namespace System.Numerics
                 }
 
                 Multiply(left[leftOffset..], right[rightOffset..], bits[(leftOffset + rightOffset)..]);
+                return;
+            }
+
+            if ((IsRepeatedLimbCandidate(right)
+                    && TryMultiplyRepeatedLimb(left, right, bits))
+                || (IsRepeatedLimbCandidate(left)
+                    && TryMultiplyRepeatedLimb(right, left, bits)))
+            {
+                return;
+            }
+
+            if (nint.Size == 8 && TryMultiplyShiftedRepeatedLimbOperands(left, right, bits))
+            {
                 return;
             }
 
