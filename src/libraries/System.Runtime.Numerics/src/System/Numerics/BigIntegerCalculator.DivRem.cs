@@ -91,7 +91,12 @@ namespace System.Numerics
             Span<nuint> remainder)
         {
             Debug.Assert(left.Length >= 16);
+            Debug.Assert(right.Length >= 1);
+            Debug.Assert(left.Length >= right.Length);
+            Debug.Assert(quotient.Length == left.Length - right.Length + 1);
+            Debug.Assert(remainder.Length == left.Length);
             Debug.Assert(right[0] == 0 || right[0] == nuint.MaxValue);
+            Debug.Assert(!remainder.Overlaps(left));
 
             InitializeForDebug(quotient);
             InitializeForDebug(remainder);
@@ -126,23 +131,26 @@ namespace System.Numerics
             Span<nuint> quotient)
         {
             Debug.Assert(left.Length >= 16);
+            Debug.Assert(right.Length >= 1);
+            Debug.Assert(left.Length >= right.Length);
+            Debug.Assert(quotient.Length == left.Length - right.Length + 1);
             Debug.Assert(right[0] == 0 || right[0] == nuint.MaxValue);
 
             InitializeForDebug(quotient);
-            Span<nuint> leftCopy = BigInteger.RentedBuffer.Create(
-                left.Length, out BigInteger.RentedBuffer leftCopyBuffer);
-            left.CopyTo(leftCopy);
 
             if (right[0] == nuint.MaxValue
-                && TryDivideMersenne(leftCopy, right, quotient, default, remainderAliasesLeft: false))
+                && TryDivideMersenne(left, right, quotient, default, remainderAliasesLeft: false))
             {
-                leftCopyBuffer.Dispose();
                 return;
             }
 
             if (right.Length < DivideBurnikelZieglerThreshold
                 || left.Length - right.Length < DivideBurnikelZieglerThreshold)
             {
+                Span<nuint> leftCopy = BigInteger.RentedBuffer.Create(
+                    left.Length, out BigInteger.RentedBuffer leftCopyBuffer);
+                left.CopyTo(leftCopy);
+
                 if (right[0] == 0)
                 {
                     DivideGrammarSchoolSpecial(leftCopy, right, quotient);
@@ -155,7 +163,6 @@ namespace System.Numerics
                 return;
             }
 
-            leftCopyBuffer.Dispose();
             Divide(left, right, quotient);
         }
 
@@ -165,13 +172,16 @@ namespace System.Numerics
             Span<nuint> remainder)
         {
             Debug.Assert(left.Length >= 16);
+            Debug.Assert(right.Length >= 1);
+            Debug.Assert(left.Length >= right.Length);
+            Debug.Assert(remainder.Length == left.Length);
             Debug.Assert(right[0] == 0 || right[0] == nuint.MaxValue);
+            Debug.Assert(!remainder.Overlaps(left));
 
             InitializeForDebug(remainder);
-            left.CopyTo(remainder);
 
             if (right[0] == nuint.MaxValue
-                && TryDivideMersenne(remainder, right, default, remainder, remainderAliasesLeft: true))
+                && TryDivideMersenne(left, right, default, remainder, remainderAliasesLeft: false))
             {
                 return;
             }
@@ -179,6 +189,8 @@ namespace System.Numerics
             if (right.Length < DivideBurnikelZieglerThreshold
                 || left.Length - right.Length < DivideBurnikelZieglerThreshold)
             {
+                left.CopyTo(remainder);
+
                 if (right[0] == 0)
                 {
                     DivideGrammarSchoolSpecial(remainder, right, default);
