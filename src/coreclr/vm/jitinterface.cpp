@@ -1952,7 +1952,6 @@ unsigned CEEInfo::getClassAlignmentRequirementStatic(TypeHandle clsHnd)
             result = pInfo->GetAlignmentRequirement();
         }
     }
-
 #ifdef FEATURE_64BIT_ALIGNMENT
     if (result < 8 && pMT->RequiresAlign8())
     {
@@ -2016,7 +2015,6 @@ static bool IsSimdIntrinsicType(MethodTable* pMT)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     }
     CONTRACTL_END;
 
@@ -4097,6 +4095,9 @@ CORINFO_CLASS_HANDLE CEEInfo::getBuiltinClass(CorInfoClassId classId)
         break;
     case CLASSID_RUNTIME_TYPE:
         result = CORINFO_CLASS_HANDLE(g_pRuntimeTypeClass);
+        break;
+    case CLASSID_NUMERICS_VECTORT:
+        result = CORINFO_CLASS_HANDLE(CoreLibBinder::GetClass(CLASS__VECTORT));
         break;
     default:
         _ASSERTE(!"NYI: unknown classId");
@@ -10965,7 +10966,6 @@ bool CEEInfo::runWithErrorTrap(void (*function)(void*), void* param)
     bool success = true;
 
     GCX_COOP();
-    DebuggerU2MCatchHandlerFrame catchFrame(true /* catchesAllExceptions */);
 
     EX_TRY
     {
@@ -10978,8 +10978,6 @@ bool CEEInfo::runWithErrorTrap(void (*function)(void*), void* param)
         RethrowTerminalExceptions();
     }
     EX_END_CATCH
-
-    catchFrame.Pop();
 
     return success;
 }

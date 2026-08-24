@@ -549,6 +549,7 @@ namespace Internal.JitInterface
         CLASSID_STRING,
         CLASSID_ARGUMENT_HANDLE,
         CLASSID_RUNTIME_TYPE,
+        CLASSID_NUMERICS_VECTORT,
     }
     public enum CorInfoInline
     {

@@ -2449,12 +2449,12 @@ namespace Internal.JitInterface
 
             if (type is MetadataType metadataType && !metadataType.IsAutoLayout)
             {
-                if (metadataType.IsSequentialLayout || MarshalUtils.IsBlittableType(metadataType))
+                if (metadataType.IsSequentialLayout ||
+                    MarshalUtils.IsBlittableType(metadataType))
                 {
                     alignment = metadataType.InstanceFieldAlignment.AsInt;
                 }
             }
-
             if (type.Context.Target.SupportsAlign8 &&
                 alignment < 8 && type.RequiresAlign8())
             {
@@ -3054,6 +3054,9 @@ namespace Internal.JitInterface
 
                 case CorInfoClassId.CLASSID_RUNTIME_TYPE:
                     return ObjectToHandle(_compilation.TypeSystemContext.SystemModule.GetKnownType("System"u8, "RuntimeType"u8));
+
+                case CorInfoClassId.CLASSID_NUMERICS_VECTORT:
+                    return ObjectToHandle(_compilation.TypeSystemContext.SystemModule.GetKnownType("System.Numerics"u8, "Vector`1"u8));
 
                 default:
                     throw new NotImplementedException();

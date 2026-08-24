@@ -11,85 +11,81 @@ Written in 2006, by:
 # Contents
 
 * [1 Why you must read this document](#1)
-    - [1.1 Rules of the Code](#1.1)
-    - [1.2 How do I &lt;insert common task&gt;?](#1.2)
+  * [1.1 Rules of the Code](#1.1)
+  * [1.2 How do I &lt;insert common task&gt;?](#1.2)
 * [2 Rules of the Code (Unmanaged)](#2)
-    - [2.1 Is your code GC-safe?](#2.1)
-        - [2.1.1 How GC holes are created](#2.1.1)
-        - [2.1.2 Your First GC hole](#2.1.2)
-        - [2.1.3 Use GCPROTECT\_BEGIN to keep your references up to date](#2.1.3)
-        - [2.1.4 Don't do nonlocal returns from within GCPROTECT blocks](#2.1.4)
-        - [2.1.5 Do not GCPROTECT the same location twice](#2.1.5)
-        - [2.1.6 Protecting multiple OBJECTREF's](#2.1.6)
-        - [2.1.7 Use OBJECTHANDLES for non-scoped protection](#2.1.7)
-        - [2.1.8 Use the right GC Mode – Preemptive vs. Cooperative](#2.1.8)
-        - [2.1.9 Use OBJECTREF to refer to object references as it does automatic sanity checking](#2.1.9)
-        - [2.1.10 How to know if a function can trigger a GC](#2.1.10)
-            - [2.1.10.1 GC\_NOTRIGGER/TRIGGERSGC on a scope](#2.1.10.1)
-    - [2.2 Are you using holders to track your resources?](#2.2)
-        - [2.2.1 What are holders and why are they important?](#2.2.1)
-        - [2.2.2 An example of holder usage:](#2.2.2)
-        - [2.2.3 Common Features of Holders](#2.2.3)
-        - [2.2.4 Where do I find a holder?](#2.2.4)
-        - [2.2.5 Can I bake my own holder?](#2.2.5)
-        - [2.2.6 What if my backout code throws an exception?](#2.2.6)
-        - [2.2.7 Pay attention to holder initialization semantics](#2.2.7)
-        - [2.2.8 Some generally useful prebaked holders](#2.2.8)
-            - [2.2.8.1 New'ed memory](#2.2.8.1)
-            - [2.2.8.2 New'ed array](#2.2.8.2)
-            - [2.2.8.3 COM Interface Holder](#2.2.8.3)
-            - [2.2.8.4 Critical Section Holder](#2.2.8.4)
-    - [2.3 Does your code follow our OOM rules?](#2.3)
-        - [2.3.1 What is OOM and why is it important?](#2.3.1)
-        - [2.3.2 Documenting where OOM's can happen](#2.3.2)
-            - [2.3.2.1 Functions that handle OOM's internally](#2.3.2.1)
-            - [2.3.2.2 OOM state control outside of contracts](#2.3.2.2)
-            - [2.3.2.3 Remember...](#2.3.2.3)
-    - [2.4 Are you using SString and/or the safe string manipulation functions?](#2.4)
-        - [2.4.1 SString](#2.4.1)
-    - [2.5 Are you using safemath.h for pointer and memory size allocations?](#2.5)
-    - [2.6 Are you using the right type of Critical Section?](#2.6)
-        - [2.6.1 Use only the official synchronization mechanisms](#2.6.1)
-        - [2.6.2 Using Crsts](#2.6.2)
-        - [2.6.3 Creating Crsts](#2.6.3)
-        - [2.6.4 Entering and Leaving Crsts](#2.6.4)
-        - [2.6.5 Other Crst Operations](#2.6.5)
-        - [2.6.6 Advice on picking a level for your Crst](#2.6.6)
-        - [2.6.7 Can waiting on a Crst generate an exception?](#2.6.7)
-        - [2.6.8 CRITSECT\_UNSAFE Flags](#2.6.8)
-        - [2.6.9 Bypassing leveling (CRSTUNORDEREDnordered)](#2.6.9)
-        - [2.6.10 So what are the prerequisites and side-effects of entering a Crst?](#2.6.10)
-        - [2.6.11 Using Events and Waitable Handles](#2.6.11)
-        - [2.6.12 Do not get clever with "lockless" reader-writer data structures](#2.6.12)
-        - [2.6.13 Yes, your thread could be running non-preemptively!](#2.6.13)
-        - [2.6.14 Dos and Don'ts for Synchronization](#2.6.14)
-    - [2.7 Are you making hidden assumptions about the order of memory writes?](#2.7)
-    - [2.8 Is your code compatible with managed debugging?](#2.8)
-    - [2.9 Does your code work on 64-bit?](#2.9)
-        - [2.9.1 Primitive Types](#2.9.1)
-    - [2.10 Does your function declare a CONTRACT?](#2.10)
-        - [2.10.1 What can be said in a contract?](#2.10.1)
-            - [2.10.1.1 THROWS/NOTHROW](#2.10.1.1)
-            - [2.10.1.2 INJECT\_FAULT(handler-stmt)/FORBID\_FAULT](#2.10.1.2)
-            - [2.10.1.3 GC\_TRIGGERS/GC\_NOTRIGGER](#2.10.1.3)
-            - [2.10.1.4 MODE\_PREEMPTIVE/ MODE\_COOPERATIVE/ MODE\_ANY](#2.10.1.4)
-            - [2.10.1.5 LOADS\_TYPE(loadlevel)](#2.10.1.5)
-            - [2.10.1.6 CAN\_TAKE\_LOCK / CANNOT\_TAKE\_LOCK](#2.10.1.6)
-            - [2.10.1.7 EE\_THREAD\_REQUIRED / EE\_THREAD\_NOT\_REQUIRED](#2.10.1.7)
-            - [2.10.1.8 PRECONDITION(expr)](#2.10.1.8)
-            - [2.10.1.9 POSTCONDITION(expr)](#2.10.1.9)
-        - [2.10.2 Is order important?](#2.10.2)
-        - [2.10.3 Using the right form of contract](#2.10.3)
-        - [2.10.4 When is it safe to use a runtime contract?](#2.10.4)
-        - [2.10.5 Do not make unscoped changes to the ClrDebugState](#2.10.5)
-        - [2.10.6 For more details...](#2.10.6)
-    - [2.11 Using standard headers](#2.11)
-        - [2.11.1 Do not use wchar\_t](#2.11.1)
-        - [2.11.2 C++ Standard-defined exceptions](#2.11.2)
-        - [2.11.3 Do not use getenv on Unix platforms](#2.11.3)
-        - [2.11.4 Restrictions on C++ Standard Library types](#2.11.4)
-            - [2.11.4.1 C++ Standard Library APIs that are legal to call in `MODE_COOPERATIVE`](#2.11.4.1)
-    - [2.12 Is your code DAC compliant?](#2.12)
+  * [2.1 Is your code GC-safe?](#2.1)
+    * [2.1.1 How GC holes are created](#2.1.1)
+    * [2.1.2 Your First GC hole](#2.1.2)
+    * [2.1.3 Use GCPROTECT_BEGIN to keep your references up to date](#2.1.3)
+    * [2.1.4 Don't do nonlocal returns from within GCPROTECT blocks](#2.1.4)
+    * [2.1.5 Do not GCPROTECT the same location twice](#2.1.5)
+    * [2.1.6 Protecting multiple OBJECTREF's](#2.1.6)
+    * [2.1.7 Use OBJECTHANDLES for non-scoped protection](#2.1.7)
+    * [2.1.8 Use the right GC Mode – Preemptive vs. Cooperative](#2.1.8)
+    * [2.1.9 Use OBJECTREF to refer to object references as it does automatic sanity checking](#2.1.9)
+    * [2.1.10 How to know if a function can trigger a GC](#2.1.10)
+      * [2.1.10.1 GC_NOTRIGGER/TRIGGERSGC on a scope](#2.1.10.1)
+  * [2.2 Are you using holders to track your resources?](#2.2)
+    * [2.2.1 What are holders and why are they important?](#2.2.1)
+    * [2.2.2 An example of holder usage:](#2.2.2)
+    * [2.2.3 Common Features of Holders](#2.2.3)
+    * [2.2.4 Where do I find a holder?](#2.2.4)
+    * [2.2.5 Can I bake my own holder?](#2.2.5)
+    * [2.2.6 What if my backout code throws an exception?](#2.2.6)
+    * [2.2.7 Pay attention to holder initialization semantics](#2.2.7)
+    * [2.2.8 Some generally useful prebaked holders](#2.2.8)
+      * [2.2.8.1 New'ed memory](#2.2.8.1)
+      * [2.2.8.2 New'ed array](#2.2.8.2)
+      * [2.2.8.3 COM Interface Holder](#2.2.8.3)
+      * [2.2.8.4 Critical Section Holder](#2.2.8.4)
+  * [2.3 Does your code follow our OOM rules?](#2.3)
+    * [2.3.1 What is OOM and why is it important?](#2.3.1)
+    * [2.3.2 Handling OOM failures](#2.3.2)
+  * [2.4 Are you using SString and/or the safe string manipulation functions?](#2.4)
+    * [2.4.1 SString](#2.4.1)
+  * [2.5 Are you using safemath.h for pointer and memory size allocations?](#2.5)
+  * [2.6 Are you using the right type of Critical Section?](#2.6)
+    * [2.6.1 Use only the official synchronization mechanisms](#2.6.1)
+    * [2.6.2 Using Crsts](#2.6.2)
+    * [2.6.3 Creating Crsts](#2.6.3)
+    * [2.6.4 Entering and Leaving Crsts](#2.6.4)
+    * [2.6.5 Other Crst Operations](#2.6.5)
+    * [2.6.6 Advice on picking a level for your Crst](#2.6.6)
+    * [2.6.7 Can waiting on a Crst generate an exception?](#2.6.7)
+    * [2.6.8 CRITSECT_UNSAFE Flags](#2.6.8)
+    * [2.6.9 Bypassing leveling (CRSTUNORDEREDnordered)](#2.6.9)
+    * [2.6.10 So what are the prerequisites and side-effects of entering a Crst?](#2.6.10)
+    * [2.6.11 Using Events and Waitable Handles](#2.6.11)
+    * [2.6.12 Do not get clever with "lockless" reader-writer data structures](#2.6.12)
+    * [2.6.13 Yes, your thread could be running non-preemptively!](#2.6.13)
+    * [2.6.14 Dos and Don'ts for Synchronization](#2.6.14)
+  * [2.7 Are you making hidden assumptions about the order of memory writes?](#2.7)
+  * [2.8 Is your code compatible with managed debugging?](#2.8)
+  * [2.9 Does your code work on 64-bit?](#2.9)
+    * [2.9.1 Primitive Types](#2.9.1)
+  * [2.10 Does your function declare a CONTRACT?](#2.10)
+    * [2.10.1 What can be said in a contract?](#2.10.1)
+      * [2.10.1.1 THROWS/NOTHROW](#2.10.1.1)
+      * [2.10.1.2 GC_TRIGGERS/GC_NOTRIGGER](#2.10.1.2)
+      * [2.10.1.3 MODE_PREEMPTIVE/ MODE_COOPERATIVE/ MODE_ANY](#2.10.1.3)
+      * [2.10.1.4 LOADS_TYPE(loadlevel)](#2.10.1.4)
+      * [2.10.1.5 CAN_TAKE_LOCK / CANNOT_TAKE_LOCK](#2.10.1.5)
+      * [2.10.1.6 EE_THREAD_REQUIRED / EE_THREAD_NOT_REQUIRED](#2.10.1.6)
+      * [2.10.1.7 PRECONDITION(expr)](#2.10.1.7)
+      * [2.10.1.8 POSTCONDITION(expr)](#2.10.1.8)
+    * [2.10.2 Is order important?](#2.10.2)
+    * [2.10.3 Using the right form of contract](#2.10.3)
+    * [2.10.4 When is it safe to use a runtime contract?](#2.10.4)
+    * [2.10.5 Do not make unscoped changes to the ClrDebugState](#2.10.5)
+    * [2.10.6 For more details...](#2.10.6)
+  * [2.11 Using standard headers](#2.11)
+    * [2.11.1 Do not use wchar_t](#2.11.1)
+    * [2.11.2 C++ Standard-defined exceptions](#2.11.2)
+    * [2.11.3 Do not use getenv on Unix platforms](#2.11.3)
+    * [2.11.4 Restrictions on C++ Standard Library types](#2.11.4)
+      * [2.11.4.1 C++ Standard Library APIs that are legal to call in `MODE_COOPERATIVE`](#2.11.4.1)
+  * [2.12 Is your code DAC compliant?](#2.12)
 
 # <a name="1"></a>1 Why you must read this document
 
@@ -139,7 +135,7 @@ To do its job, the GC must be told about every reference to every GC object. The
 
 Armed with this information, the GC can find all objects directly referenced from outside the GC heap. These objects may in turn, reference other objects – which in turn reference other objects and so on. By following these references, the GC finds all reachable ("live") objects. All other objects are, by definition, unreachable and therefore discarded. After that, the GC may move the surviving objects to reduce memory fragmentation. If it does this, it must, of course, update all existing references to the moved object.
 
-Any time a new object is allocated, a GC may occur. GC can also be explicitly requested by calling the GarbageCollect function directly. GC's do not happen asynchronously outside these events but since other running threads can trigger GC's, your thread must act as if GC's *are* asynchronous unless you take specific steps to synchronize with the GC. More on that later.
+Any time a new object is allocated, a GC may occur. GC can also be explicitly requested by calling the GarbageCollect function directly. GC's do not happen asynchronously outside these events but since other running threads can trigger GC's, your thread must act as if GC's _are_ asynchronous unless you take specific steps to synchronize with the GC. More on that later.
 
 A GC hole occurs when code inside the CLR creates a reference to a GC object, neglects to tell the GC about that reference, performs some operation that directly or indirectly triggers a GC, then tries to use the original reference. At this point, the reference points to garbage memory and the CLR will either read out a wrong value or corrupt whatever that reference is pointing to.
 
@@ -219,7 +215,7 @@ The following is illegal and will cause some sort of crash:
 
 It'd be nice if the GC was robust enough to ignore the second, unnecessary GCPROTECT but I've been assured many times that this isn't possible.
 
-Don't confuse the reference with a copy of the reference. It's not illegal to protect the same reference twice. What is illegal is protecting the same *copy* of the reference twice. Hence, the following is legal:
+Don't confuse the reference with a copy of the reference. It's not illegal to protect the same reference twice. What is illegal is protecting the same _copy_ of the reference twice. Hence, the following is legal:
 
 	OBJECTREF a = AllocateObject(...);
 	GCPROTECT_BEGIN(a);
@@ -443,13 +439,13 @@ A GC_NOTRIGGER function cannot:
 
 [1] With one exception: GCX_COOP (which effects a preemp->coop->preemp roundtrip) is permitted. The rationale is that GCX_COOP becomes a NOP if the thread was cooperative to begin with so it's safe to allow this (and necessary to avoid some awkward code in our product.)
 
-**Note that for GC to be truly prevented, the caller must also ensure that the thread is in cooperative mode.** Otherwise, all the precautions above are in vain since any other thread can start a GC at any time. Given that, you might be wondering why cooperative mode is not part of the definition of GC\_NOTRIGGER. In fact, there is a third thread state called GC\_FORBID which is exactly that: GC\_NOTRIGGER plus forced cooperative mode. As its name implies, GC\_FORBID *guarantees* that no GC will occur on any thread.
+**Note that for GC to be truly prevented, the caller must also ensure that the thread is in cooperative mode.** Otherwise, all the precautions above are in vain since any other thread can start a GC at any time. Given that, you might be wondering why cooperative mode is not part of the definition of GC_NOTRIGGER. In fact, there is a third thread state called GC_FORBID which is exactly that: GC_NOTRIGGER plus forced cooperative mode. As its name implies, GC_FORBID _guarantees_ that no GC will occur on any thread.
 
 Why do we use GC_NOTRIGGERS rather than GC_FORBID? Because forcing every function to choose between GC_TRIGGERS and GC_FORBID is too inflexible given that some callers don't actually care about GC. Consider a simple class member function that returns the value of a field. How should it be declared? If you choose GC_TRIGGERS, then the function cannot be legally called from a GC_NOTRIGGER function even though this is perfectly safe. If you choose GC_FORBID, then every caller must switch to cooperative mode to invoke the function just to prevent an assert. Thus, GC_NOTRIGGER was created as a middle ground and has become far more pervasive and useful than GC_FORBID. Callers who actually need GC stopped will have put themselves in cooperative mode anyway and in those cases, GC_NOTRIGGER actually becomes GC_FORBID. Callers who don't care can just call the function and not worry about modes.
 
 **Note:** There is no GC_FORBID keyword defined for contracts but you can simulate it by combining GC_NOTRIGGER and MODE_COOPERATIVE.
 
-**Important:** The notrigger thread state is implemented as a counter rather than boolean. This is unfortunate as this should not be necessary and exposes us to nasty ref-counting style bugs. What is important is that contracts intentionally do not support unscoped trigger/notrigger transitions. That is, a GC\_NOTRIGGER inside a contract will **increment** the thread's notrigger count on entry to the function but on exit, **it will not decrement the count , instead it will restore the count from a saved value.** Thus, any *net* changes in the trigger state caused within the body of the function will be wiped out. This is good unless your function was designed to make a net change to the trigger state. If you have such a need, you'll just have to work around it somehow because we actively discourage such things in the first place. Ideally, we'd love to replace that counter with a Boolean at sometime.
+**Important:** The notrigger thread state is implemented as a counter rather than boolean. This is unfortunate as this should not be necessary and exposes us to nasty ref-counting style bugs. What is important is that contracts intentionally do not support unscoped trigger/notrigger transitions. That is, a GC_NOTRIGGER inside a contract will **increment** the thread's notrigger count on entry to the function but on exit, **it will not decrement the count , instead it will restore the count from a saved value.** Thus, any _net_ changes in the trigger state caused within the body of the function will be wiped out. This is good unless your function was designed to make a net change to the trigger state. If you have such a need, you'll just have to work around it somehow because we actively discourage such things in the first place. Ideally, we'd love to replace that counter with a Boolean at sometime.
 
 #### <a name="2.1.10.1"></a>2.1.10.1 GC_NOTRIGGER/TRIGGERSGC on a scope
 
@@ -471,7 +467,7 @@ One difference between the standalone TRIGGERSGC and the contract GC_TRIGGERS: t
 
 The CLR team has coined the name **holder** to refer to the infrastructure that encapsulates the common grunt work of writing robust **backout code**. **Backout code** is code that deallocates resources or restores CLR data structure consistency when we abort an operation due to an error or an asynchronous event. Oftentimes, the same backout code will execute in non-error paths for resources allocated for use of a single scope, but error-time backout is still needed even for longer lived resources.
 
-Way back in V1, error paths were *ad-hoc.* Typically, they flowed through "fail:" labels where the backout code was accumulated.
+Way back in V1, error paths were _ad-hoc._ Typically, they flowed through "fail:" labels where the backout code was accumulated.
 
 Due to the no-compromise robustness requirements that the CLR Hosting model (with SQL Server as the initial customer) imposed on us in the .NET Framework v2 release, we have since become much more formal about backout. One reason is that we like to write backout that will execute if you leave the scope because of an exception. We also want to centralize policy regarding exceptions occurring inside backout. Finally, we want an infrastructure that will discourage developer errors from introducing backout bugs in the first place.
 
@@ -579,7 +575,7 @@ Often, you can avoid failures in backout code by designing a better data structu
 
 ### <a name="2.2.7"></a>2.2.7 Pay attention to holder initialization semantics
 
-Holders consistently release on destruction – that's their whole purpose. Sadly, we are not so consistent when it comes the initialization semantics. Some holders, such as the Crst holder, do an implicit Acquire on initialization. Others, such as the ComHolder do not (initializing a ComHolder does *not* do an AddRef.) The BaseHolder class constructor leaves it up to the holder designer to make the choice. This is an easy source of bugs so pay attention to this.
+Holders consistently release on destruction – that's their whole purpose. Sadly, we are not so consistent when it comes the initialization semantics. Some holders, such as the Crst holder, do an implicit Acquire on initialization. Others, such as the ComHolder do not (initializing a ComHolder does _not_ do an AddRef.) The BaseHolder class constructor leaves it up to the holder designer to make the choice. This is an easy source of bugs so pay attention to this.
 
 ### <a name="2.2.8"></a>2.2.8 Some generally useful prebaked holders
 
@@ -641,76 +637,12 @@ This means that:
 
 - Any operation that fails due to an OOM must allow future retries. This means any changes to global data structures must be rolled back and OOM exceptions cannot be cached.
 - OOM failures must be distinguishable from other error results. OOM's must never be transformed into some other error code. Doing so may cause some operations to cache the error and return the same error on each retry.
-- Every function must declare whether or not it can generate an OOM error. We cannot write OOM-safe code if we have no way to know what calls can generate OOM's. This declaration is done by the INJECT_FAULT and FORBID_FAULT contract annotations.
 
-### <a name="2.3.2"></a>2.3.2 Documenting where OOM's can happen
+### <a name="2.3.2"></a>2.3.2 Handling OOM failures
 
-Sometimes, a code sequence requires that no opportunities for OOM occur. Backout code is the most common example. This can become hard to maintain if the code calls out to other functions. Because of this, it is very important that every function document in its contract whether or not it can fail due to OOM. We do this using the (poorly named) INJECT_FAULT and FORBID_FAULT annotations.
+Treat every allocation as capable of failing unless the called API explicitly documents otherwise. Code that mutates shared state must remain retryable after an OOM, typically by using holders or another backout mechanism to defer committing changes until all required allocations succeed.
 
-To document that a function *can* fail due to OOM:
-
-**Runtime-based (preferred)**
-
-	void AllocateThingie()
-	{
-	    CONTRACTL
-	    {
-	        INJECT_FAULT(COMPlusThrowOM(););
-	    }
-	    CONTRACTL_END
-	}
-
-**Static**
-
-	void AllocateThingie()
-	{
-	    STATIC_CONTRACT_FAULT;
-	}
-
-To document that a function *cannot* fail due to OOM:
-
-**Runtime-based (preferred)**
-
-	BOOL IsARedObject()
-	{
-	    CONTRACTL
-	    {
-	        FORBID_FAULT;
-	    }
-	    CONTRACTL_END
-	}
-
-**Static**
-
-	BOOL IsARedObject()
-	{
-	    STATIC_CONTRACT_FORBID_FAULT;
-	}
-
-INJECT_FAULT()'s argument is the code that executes when the function reports an OOM. Typically this is to throw an OOM exception or return E_OUTOFMEMORY. The original intent for this was for our OOM fault injection test harness to insert simulated OOM's at this point and execute this line. At the moment, this argument is ignored but we may still employ this fault injection idea in the future so please code it appropriately.
-
-The CLR asserts if you invoke an INJECT_FAULT function under the scope of a FORBID_FAULT. All our allocation functions, including the C++ new operator, are declared INJECT_FAULT.
-
-#### <a name="2.3.2.1"></a>2.3.2.1 Functions that handle OOM's internally
-
-Sometimes, a function handles an internal OOM without needing to notify the caller. For example, perhaps the additional memory was used to implement an internal cache but your function can still do its job without it. Or perhaps the function is a logging function in which case, it can silently NOP – the caller doesn't care. In such cases, wrap the allocation in the FAULT_NOT_FATAL holder which temporarily lifts the FORBID_FAULT state.
-
-	{
-	    FAULT_NOT_FATAL();
-	    pv = new Foo();
-	}
-
-FAULT_NOT_FATAL() is almost identical to a CONTRACT_VIOLATION() but the name indicates that it is by design, not a bug. It is analogous to TRY/CATCH for exceptions.
-
-#### <a name="2.3.2.2"></a>2.3.2.2 OOM state control outside of contracts
-
-If you wish to set the OOM state for a scope rather than a function, use the FAULT_FORBID() holder. To test the current state, use the ARE_FAULTS_FORBIDDEN() predicate.
-
-#### <a name="2.3.2.3"></a>2.3.2.3 Remember...
-
-- Do not use INJECT_FAULT to indicate the possibility of non-OOM errors such as entries not existing in a hash table or a COM object not supporting an interface. INJECT_FAULT indicates OOM errors and no other type.
-- Be very suspicious if your INJECT_FAULT() argument is anything other than throwing an OOM exception or returning E_OUTOFMEMORY. OOM errors must be distinguishable from other types of errors so if you're merely returning NULL without indicating the type of error, you'd better be a simple memory allocator or some other function that will never fail for any reason other than an OOM.
-- THROWS and INJECT_FAULT correlate strongly but are independent. A NOTHROW/INJECT_FAULT combo might indicate a function that returns HRESULTs including E_OUTOFMEMORY. A THROWS/FORBID_FAULT however indicates a function that can throw an exception but not an OutOfMemoryException. While theoretically possible, such a contract is probably a bug.
+If an allocation is optional, such as memory used only for a cache or diagnostics, handle its failure explicitly and leave the surrounding operation in a valid state. Otherwise, propagate the OOM without converting it to an unrelated error.
 
 ## <a name="2.4"></a>2.4 Are you using SString and/or the safe string manipulation functions?
 
@@ -758,7 +690,7 @@ The source of the bug is clear. The code should have checked if adding SIZE_OF_H
 
 We have now standardized on an infrastructure for performing overflow-safe arithmetic on key operations such as calculating allocation sizes. This infrastructure lives in [clr\src\inc\safemath.h][safemath.h].
 
-The *safe* version of the above code follows:
+The _safe_ version of the above code follows:
 
 	#include "safemath.h"
 
@@ -776,12 +708,12 @@ As you can see, the transformation consists of the following:
 
 - Replace the raw C++ integer type with the "S_" version.
 - Do the arithmetic as usual.
-- Call IsOverflow() on the *final* result to see if an overflow occurred anytime during the calculations. It's not necessary to check intermediate results if multiple arithmetic operations are chained. [Safemath.h][safemath.h] will propagate the overflow state through the entire chain of operations.
+- Call IsOverflow() on the _final_ result to see if an overflow occurred anytime during the calculations. It's not necessary to check intermediate results if multiple arithmetic operations are chained. [Safemath.h][safemath.h] will propagate the overflow state through the entire chain of operations.
 - If IsOverflow() returned false, then call Value() on the final result to get the raw integer back. Otherwise, there's no value to be returned – invoke your error handling code.
 
 As you'd expect, Value() asserts if IsOverflow() is true.
 
-As you might *not* expect, Value() also asserts if you never called IsOverflow() to check – whether or not the result actually overflowed. This guarantees you won't forget the IsOverflow() check. If you didn't check, Value() won't give you the result.
+As you might _not_ expect, Value() also asserts if you never called IsOverflow() to check – whether or not the result actually overflowed. This guarantees you won't forget the IsOverflow() check. If you didn't check, Value() won't give you the result.
 
 Currently, the "S_" types are available only for unsigned ints and SIZE_T. Check in [safemath.h][safemath.h] for what's currently defined. Also, only addition and multiplication are supported although other operations could be added if needed.
 
@@ -822,7 +754,7 @@ Make sure you aren't using events to build the equivalent of a critical section.
 
 The Crst class ([crst.h][crst.h]) is a replacement for the standard Win32 CRITICAL_SECTION. It has all the properties and features of a CRITICAL_SECTION, plus a few extra nice features. We should be using Crst's pretty much everywhere we need a lock in the CLR.
 
-Crst's are also used to implement our locking hierarchy. Every Crst is placed into a numbered group, or *level*. A thread can only request a Crst whose level is lower than any Crst currently held by the thread. I.e., if a thread currently holds a level 3 Crst, it can try to enter a level 2 Crst, but not a level 4 Crst, nor a different level 3 Crst. This prevents the cyclic dependencies that lead to deadlocks.
+Crst's are also used to implement our locking hierarchy. Every Crst is placed into a numbered group, or _level_. A thread can only request a Crst whose level is lower than any Crst currently held by the thread. I.e., if a thread currently holds a level 3 Crst, it can try to enter a level 2 Crst, but not a level 4 Crst, nor a different level 3 Crst. This prevents the cyclic dependencies that lead to deadlocks.
 
 We used to assign levels manually, but this leads to problems when it comes time to add a new Crst type or modify an existing one. Since the assignment of levels essentially flattens the dependencies between Crst types into one linear sequence we have lost information on which Crst types really depend on each other (i.e. which types ever interact by being acquired simultaneously on one thread and in which order). This made it hard to determine where to rank a new lock in the sequence.
 
@@ -965,15 +897,15 @@ Under no circumstances may you use CRST_UNSAFE_SAMELEVEL for a non-host-breakabl
 
 CrstUnordered (used in rules inside CrstTypes.def) is a special level that says that the lock does not participate in any of the leveling required for deadlock avoidance. This is the most heinous of the ways you can construct a Crst. Though there are still some uses of this in the CLR, it should be avoided by any means possible.
 
-### <a name="2.6.10"></a>2.6.10 So what *are* the prerequisites and side-effects of entering a Crst?
+### <a name="2.6.10"></a>2.6.10 So what _are_ the prerequisites and side-effects of entering a Crst?
 
 The following matrix lists the effective contract and side-effects of entering a crst for all combinations of CRST_HOST_BREAKABLE and CRST_UNSAFE_\* flags. The SAMELEVEL flag has no effect on any of these parameters.
 
-|  | Default | CRST\_HOST\_BREAKABLE |
-| --- | --- | --- |
-| Default | NOTHROW<br>FORBID\_FAULT<br>GC\_TRIGGERS<br>MODE\_ANY<br>(switches thread to preemptive) | THROWS<br>INJECT\_FAULT<br>GC\_TRIGGERS<br>MODE\_ANY<br>(switches thread to preemptive) |
-| CRST\_UNSAFE\_COOPGC | NOTHROW<br>FORBID\_FAULT<br>GC\_NOTRIGGER<br>MODE\_COOP<br>(puts thread in GCNoTrigger mode) | THROWS<br>INJECT\_FAULT<br>GC\_NOTRIGGER<br>MODE\_COOP<br>(puts thread in GCNoTrigger mode) |
-| CRST\_UNSAFE\_ANYMODE | NOTHROW<br>FORBID\_FAULT<br>GC\_NOTRIGGER<br>MODE\_ANY<br>(puts thread in GCNoTrigger mode) | THROWS<br>INJECT\_FAULT<br>GC\_NOTRIGGER<br>MODE\_ANY<br>(puts thread in GCNoTrigger mode) |
+|                     | Default                                                            | CRST_HOST_BREAKABLE                                                   |
+| ------------------- | ------------------------------------------------------------------ | --------------------------------------------------------------------- |
+| Default             | NOTHROW<br>GC_TRIGGERS<br>MODE_ANY<br>(switches thread to preemptive)    | THROWS<br>GC_TRIGGERS<br>MODE_ANY<br>(switches thread to preemptive)     |
+| CRST_UNSAFE_COOPGC  | NOTHROW<br>GC_NOTRIGGER<br>MODE_COOP<br>(puts thread in GCNoTrigger mode) | THROWS<br>GC_NOTRIGGER<br>MODE_COOP<br>(puts thread in GCNoTrigger mode) |
+| CRST_UNSAFE_ANYMODE | NOTHROW<br>GC_NOTRIGGER<br>MODE_ANY<br>(puts thread in GCNoTrigger mode)  | THROWS<br>GC_NOTRIGGER<br>MODE_ANY<br>(puts thread in GCNoTrigger mode)  |
 
 ### <a name="2.6.11"></a>2.6.11 Using Events and Waitable Handles
 
@@ -1094,7 +1026,6 @@ Here is a typical contract:
 	    CONTRACTL
 	    {
 	        THROWS;                                     // This function may throw
-	        INJECT_FAULT(COMPlusThrowOM());             // This function may fail due to OOM
 	        GC_TRIGGERS;                                // This function may trigger a GC
 	        MODE_COOPERATIVE;                           // Must be in GC-cooperative mode to call
 	        CAN_TAKE_LOCK;                              // This function may take a Crst, spinlock, etc.
@@ -1111,7 +1042,7 @@ There are several flavors of contracts. This example shows the most common type 
 
 At runtime (on a checked build), the contract does the following:
 
-At the start of Foo(), it validates that it's safe to throw, safe to generate an out of memory error, safe to trigger gc, that the GC mode is cooperative, and that your preconditions are true.
+At the start of Foo(), it validates that it's safe to throw, safe to trigger gc, that the GC mode is cooperative, and that your preconditions are true.
 
 On a retail build, CONTRACT expands to nothing.
 
@@ -1123,27 +1054,23 @@ As you can see, a contract is a laundry list of "items" that either assert some 
 
 Declares whether an exception can be thrown out of this function. Declaring **NOTHROW** puts the thread in a NOTHROW state for the duration of the function call. You will get an assert if you throw an exception or call a function declared THROWS. An EX_TRY/EX_CATCH construct however will lift the NOTHROW state for the duration of the TRY body.
 
-#### <a name="2.10.1.2"></a>2.10.1.2 INJECT\_FAULT(*handler-stmt*)/FORBID\_FAULT
-
-This is a poorly named item. INJECT_FAULT declares that the function can **fail** due to an out of memory (OOM) condition. FORBID_FAULT means that the function promises never to fail due to OOM. FORBID_FAULT puts the thread in a FORBID_FAULT state for the duration of the function call. You will get an assert if you allocate memory (even with the C++ new operator) or call a function declared INJECT_FAULT.
-
-#### <a name="2.10.1.3"></a>2.10.1.3 GC_TRIGGERS/GC_NOTRIGGER
+#### <a name="2.10.1.2"></a>2.10.1.2 GC_TRIGGERS/GC_NOTRIGGER
 
 Declares whether the function is allowed to trigger a GC. GC_NOTRIGGER puts the thread in a NOTRIGGER state where any call to a GC_TRIGGERS function will assert.
 
 **Observation:** THROWS does not necessarily imply GC_TRIGGERS. COMPlusThrow does not trigger GC.
 
-#### <a name="2.10.1.4"></a>2.10.1.4 MODE_PREEMPTIVE/ MODE_COOPERATIVE/ MODE_ANY
+#### <a name="2.10.1.3"></a>2.10.1.3 MODE_PREEMPTIVE/ MODE_COOPERATIVE/ MODE_ANY
 
 This item asserts that the thread is in a particular mode or declares that the function is mode-agnostic. It does not change the state of the thread in any way.
 
-#### <a name="2.10.1.5"></a>2.10.1.5 LOADS\_TYPE(*loadlevel*)
+#### <a name="2.10.1.4"></a>2.10.1.4 LOADS_TYPE(_loadlevel_)
 
 This item asserts that the function may invoke the loader and cause a type to loaded up to (and including) the indicated loadlevel. Valid load levels are taken from ClassLoadLevel enumerationin [classLoadLevel.h](https://github.com/dotnet/runtime/blob/main/src/coreclr/vm/classloadlevel.h).
 
 The CLR asserts if any attempt is made to load a type past the current limit set by LOADS_TYPE. A call to any function that has a LOADS_TYPE contract is treated as an attempt to load a type up to that limit.
 
-#### <a name="2.10.1.6"></a>2.10.1.6 CAN_TAKE_LOCK / CANNOT_TAKE_LOCK
+#### <a name="2.10.1.5"></a>2.10.1.5 CAN_TAKE_LOCK / CANNOT_TAKE_LOCK
 
 These declare whether a function or callee takes any kind of EE or user lock: Crst, SpinLock, readerwriter, clr critical section, or even your own home-grown spin lock (e.g., ExecutionManager::IncrementReader).
 
@@ -1162,7 +1089,7 @@ In TLS we keep track of the current intent (whether to lock), and actual reality
     - Remembers stack of lock pointers for diagnosis
   - ASSERT_NO_EE_LOCKS_HELD(): Handy way for you to verify no locks are held right now on this thread (i.e., lock count == 0)
 
-#### <a name="2.10.1.7"></a>2.10.1.7 EE_THREAD_REQUIRED / EE_THREAD_NOT_REQUIRED
+#### <a name="2.10.1.6"></a>2.10.1.6 EE_THREAD_REQUIRED / EE_THREAD_NOT_REQUIRED
 
 These declare whether a function or callee deals with the case "GetThread() == NULL".
 
@@ -1212,13 +1139,13 @@ You should only use BEGIN/END_GETTHREAD_ALLOWED(_IN_NO_THROW_REGION) if:
 
 If the latter is true, it's generally best to push BEGIN/END_GETTHREAD_ALLOWED down the callee chain so all callers benefit.
 
-#### <a name="2.10.1.8"></a>2.10.1.8 PRECONDITION(*expr*)
+#### <a name="2.10.1.7"></a>2.10.1.7 PRECONDITION(_expr_)
 
 This is pretty self-explanatory. It is basically an **_ASSERTE.** Both _ASSERTE's and PRECONDITIONS are used widely in the codebase. The expression can evaluate to either a Boolean or a Check.
 
-#### <a name="2.10.1.9"></a>2.10.1.9 POSTCONDITION(*expr*)
+#### <a name="2.10.1.8"></a>2.10.1.8 POSTCONDITION(_expr_)
 
-This is an expression that's tested on a *normal* function exit. It will not be tested if an exception is thrown out of the function. Postconditions can access the function's locals provided that the locals were declared at the top level scope of the function. C++ objects will not have been destructed yet.
+This is an expression that's tested on a _normal_ function exit. It will not be tested if an exception is thrown out of the function. Postconditions can access the function's locals provided that the locals were declared at the top level scope of the function. C++ objects will not have been destructed yet.
 
 Because of the limitations of our macro infrastructure, this item imposes some syntactic ugliness into the function. More on this below.
 
@@ -1231,10 +1158,11 @@ Preconditions and postconditions will execute in the order declared. The "intrin
 Contracts come in several forms:
 
 - CONTRACTL: This is the most common type. It does runtime checks as well as being visible to the static scanner. It is suitable for all runtime contracts except those that use postconditions. When in doubt, use this form.
+- STANDARD_VM_CONTRACT: The recommended default for ordinary EE code. It is a CONTRACTL containing THROWS, GC_TRIGGERS, and MODE_PREEMPTIVE. Use an explicit CONTRACTL instead when a function needs different annotations or additional checks.
 - CONTRACT(returntype): This is an uglier version that's needed if you include a POSTCONDITION. You must supply the correct function return type for this form and it cannot be "void" (use CONTRACT_VOID instead.) You must also use the special RETURN macro rather than the normal return keyword.
 - CONTRACT_VOID: Use this if you need a postcondition and the return type is void. CONTRACT(void) will not work.
 - STATIC_CONTRACT_\*: This form generates no runtime code but still emits the hidden tags visible to the static contract scanner. Use this only if checked build perf would suffer greatly by putting a runtime contract there or if for some technical reason, the runtime-based contract is not possible..
-- LIMITED_METHOD_CONTRACT: A static contract equivalent to NOTHROW/GC_NOTRIGGER/FORBID_FAULT/MODE_ANY/CANNOT_TAKE_LOCK. Use this form only for trivial one-liner functions. Remember it does not do runtime checks so it should not be used for complex functions.
+- LIMITED_METHOD_CONTRACT: A static contract equivalent to NOTHROW/GC_NOTRIGGER/MODE_ANY/CANNOT_TAKE_LOCK. Use this form only for trivial one-liner functions. Remember it does not do runtime checks so it should not be used for complex functions.
 - WRAPPER_NO_CONTRACT: A static no-op contract for functions that trivially wrap another. This was invented back when we didn't have static contracts and we now wish it hadn't been invented. Please don't use this in new code.
 
 ### <a name="2.10.4"></a>2.10.4 When is it safe to use a runtime contract?
@@ -1252,7 +1180,7 @@ You cannot use runtime contracts if:
 
 The ClrDebugState is the per-thread data structure that houses all of the flag bits set and tested by contracts (i.e. NOTHROW, NOTRIGGER.). You should never modify this data directly. Always go through contracts or the specific holders (such as GCX_NOTRIGGER.)
 
-This data is meant to be changed in a scoped manner only. In particular, the CONTRACT destructor always restores the *entire* ClrDebugState from a copy saved on function entry. This means that any net changes made by the function body itself will be wiped out when the function exits via local *or* non-local control. The same caveat is true for holders such as GCX\_NOTRIGGER.
+This data is meant to be changed in a scoped manner only. In particular, the CONTRACT destructor always restores the _entire_ ClrDebugState from a copy saved on function entry. This means that any net changes made by the function body itself will be wiped out when the function exits via local _or_ non-local control. The same caveat is true for holders such as GCX_NOTRIGGER.
 
 ### <a name="2.10.6"></a>2.10.6 For more details...
 

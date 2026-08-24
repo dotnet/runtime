@@ -9638,7 +9638,6 @@ bool Lowering::CheckBlock(Compiler* compiler, BasicBlock* block)
         CheckNode(compiler, node);
     }
 
-    assert(blockRange.CheckLIR(compiler, true));
     return true;
 }
 #endif

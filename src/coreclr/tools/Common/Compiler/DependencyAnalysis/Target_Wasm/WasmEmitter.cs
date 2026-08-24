@@ -30,7 +30,7 @@ namespace ILCompiler.DependencyAnalysis.Wasm
 
             Relocation[] relocs = new Relocation[FunctionBody.EncodeRelocationCount()];
             FunctionBody.EncodeRelocations(relocs.AsSpan());
-    
+
             return new ObjectNode.ObjectData(encodedThunk, relocs, 1, new ISymbolDefinitionNode[] { symbolDefinitionNode });
 #else
             return default(ObjectNode.ObjectData);
