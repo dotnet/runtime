@@ -84,7 +84,7 @@ namespace System.Net.Mime
                 }
 
                 string charSet = subStrings[1];
-                bool base64Encoding = (subStrings[2] == "B");
+                bool base64Encoding = (subStrings[2] == "B" || subStrings[2] == "b");
                 byte[] buffer = Encoding.ASCII.GetBytes(subStrings[3]);
                 int newLength;
 
