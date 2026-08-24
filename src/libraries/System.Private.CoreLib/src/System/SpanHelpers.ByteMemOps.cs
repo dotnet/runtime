@@ -26,14 +26,9 @@ namespace System
 #endif
         private const nuint ZeroMemoryNativeThreshold = 1024;
 
-        // The platform's forward memmove ('rep movsb' on x86) loses most of its throughput when the source
-        // and the destination are less than a cache line apart, which is exactly what a shift by a single
-        // array element looks like. Copy those overlapping buffers ourselves instead.
-        private const nuint MemmoveOverlappedNativeMinDistance = 64;
-
-        // Largest block handed to the platform's memmove when the buffers overlap: big enough for it to
-        // amortize its own set-up cost, small enough to keep it away from non-temporal stores.
-        private const nuint MemmoveOverlappedNativeChunk = 32 * 1024;
+        // Copy size at which aligning the destination of an overlapping copy starts to pay for the extra
+        // leading block. Below it the alignment prologue costs more than the misaligned stores it avoids.
+        private const nuint MemmoveOverlappedAlignThreshold = 2048;
 
 #if HAS_CUSTOM_BLOCKS
         [StructLayout(LayoutKind.Sequential, Size = 16)]
@@ -246,12 +241,15 @@ namespace System
 
             // 'dest' below 'src' means the data is shifted towards the start of the buffer, which is by
             // far the most common overlapping shape (List<T>.RemoveAt/RemoveRange, Queue<T>, overlapping
-            // Span<T>.CopyTo, ...). Such a copy can run in strictly ascending order, which lets us pick a
-            // better strategy than blindly handing it to the platform's memmove. Shifts towards the end of
-            // the buffer keep using memmove, whose backward copy loop doesn't have the problems below.
-            if ((nuint)Unsafe.ByteOffset(ref dest, ref src) < len)
+            // Span<T>.CopyTo, ...). Such a copy can run in strictly ascending order, so we do it ourselves
+            // rather than handing it to the platform's memmove, whose forward copy loop is tuned for
+            // disjoint buffers: 'rep movsb' collapses when the two buffers are less than a cache line
+            // apart, and the non-temporal stores it switches to for large copies push out exactly the
+            // lines the rest of the copy is about to read back. Shifts towards the end of the buffer keep
+            // using memmove, whose backward copy loop doesn't have either problem.
+            if (Vector128.IsHardwareAccelerated && (nuint)Unsafe.ByteOffset(ref dest, ref src) < len)
             {
-                MemmoveOverlappedForward(ref dest, ref src, len);
+                CopyForwardVectorized(ref dest, ref src, len);
                 return;
             }
 
@@ -263,53 +261,51 @@ namespace System
             MemmoveNative(ref dest, ref src, len);
         }
 
-        // Copies overlapping buffers where 'dest' is at a lower address than 'src', i.e. the data is
-        // shifted towards the start of the buffer. Both of the platform memmove's problems with this
-        // shape come from it being tuned for disjoint buffers, so we route around them here.
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static void MemmoveOverlappedForward(ref byte dest, ref byte src, nuint len)
-        {
-            Debug.Assert(len > 0);
-
-            nuint distance = (nuint)Unsafe.ByteOffset(ref dest, ref src);
-
-            // A forward 'rep movsb' loses most of its throughput when it has to feed itself, i.e. when the
-            // two buffers are less than a cache line apart - which is precisely a shift by one element. And
-            // below the cut-off the non-overlapping paths use, the QCall costs more than the copy itself.
-            // Targets that never call into the platform's memmove (MemmoveNativeThreshold is unbounded
-            // there) consequently always take this path, just like their non-overlapping copies do.
-            if (Vector128.IsHardwareAccelerated &&
-                (len <= MemmoveNativeThreshold || distance < MemmoveOverlappedNativeMinDistance))
-            {
-                CopyForwardVectorized(ref dest, ref src, len);
-                return;
-            }
-
-            // Implicit nullchecks
-            _ = Unsafe.ReadUnaligned<byte>(ref dest);
-            _ = Unsafe.ReadUnaligned<byte>(ref src);
-
-            // Large copies make memmove switch to non-temporal stores, which is exactly wrong here: the
-            // lines it pushes out of the cache are the ones the rest of the copy is about to read back.
-            // Feeding it one chunk at a time keeps it on its cached - and far faster - copy loop. Walking
-            // the chunks from the start is safe because 'dest' trails 'src'.
-            while (len > MemmoveOverlappedNativeChunk)
-            {
-                MemmoveNative(ref dest, ref src, MemmoveOverlappedNativeChunk);
-                dest = ref Unsafe.Add(ref dest, MemmoveOverlappedNativeChunk);
-                src = ref Unsafe.Add(ref src, MemmoveOverlappedNativeChunk);
-                len -= MemmoveOverlappedNativeChunk;
-            }
-
-            MemmoveNative(ref dest, ref src, len);
-        }
-
         // Copies 'src' to 'dest' in strictly ascending order, so a byte is always read before the copy can
         // overwrite it. That also rules out the "copy a final block anchored at the end of the buffer"
         // trick the non-overlapping paths use - that block may already have been rewritten by then.
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static void CopyForwardVectorized(ref byte dest, ref byte src, nuint len)
         {
+            Debug.Assert(len > 0);
             Debug.Assert(Vector128.IsHardwareAccelerated);
+
+            // Align the destination. An unaligned store costs more than an unaligned load, and an
+            // overlapping copy can only ever have one of the two aligned. The leading bytes have to be
+            // copied ascending as well, so unlike the non-overlapping paths this can't be done with a
+            // single oversized leading block - that block would read source bytes it just overwrote.
+            if (len >= MemmoveOverlappedAlignThreshold)
+            {
+                nuint head = 64 - Unsafe.OpportunisticMisalignment(ref dest, 64);
+                if (head != 64)
+                {
+                    len -= head;
+
+                    while (head >= 16)
+                    {
+                        Vector128.StoreUnsafe(Vector128.LoadUnsafe(ref src), ref dest);
+                        dest = ref Unsafe.Add(ref dest, 16);
+                        src = ref Unsafe.Add(ref src, 16);
+                        head -= 16;
+                    }
+
+                    while (head >= 4)
+                    {
+                        Unsafe.WriteUnaligned(ref dest, Unsafe.ReadUnaligned<uint>(ref src));
+                        dest = ref Unsafe.Add(ref dest, 4);
+                        src = ref Unsafe.Add(ref src, 4);
+                        head -= 4;
+                    }
+
+                    while (head != 0)
+                    {
+                        dest = src;
+                        dest = ref Unsafe.Add(ref dest, 1);
+                        src = ref Unsafe.Add(ref src, 1);
+                        head--;
+                    }
+                }
+            }
 
             // The blocks are addressed off 'dest'/'src' with constant offsets rather than off a running
             // index so that targets with load/store-pair instructions can fold them (arm64 'ldp'/'stp').
