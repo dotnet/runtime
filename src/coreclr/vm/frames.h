@@ -2010,15 +2010,13 @@ class DebuggerU2MCatchHandlerFrame : public Frame
 {
 public:
 #ifndef DACCESS_COMPILE
-    DebuggerU2MCatchHandlerFrame(bool catchesAllExceptions) : Frame(FrameIdentifier::DebuggerU2MCatchHandlerFrame),
-                                                              m_catchesAllExceptions(catchesAllExceptions)
+    DebuggerU2MCatchHandlerFrame() : Frame(FrameIdentifier::DebuggerU2MCatchHandlerFrame)
     {
         WRAPPER_NO_CONTRACT;
         Frame::Push();
     }
 
-    DebuggerU2MCatchHandlerFrame(Thread * pThread, bool catchesAllExceptions) : Frame(FrameIdentifier::DebuggerU2MCatchHandlerFrame),
-                                                                                m_catchesAllExceptions(catchesAllExceptions)
+    DebuggerU2MCatchHandlerFrame(Thread * pThread) : Frame(FrameIdentifier::DebuggerU2MCatchHandlerFrame)
     {
         WRAPPER_NO_CONTRACT;
         Frame::Push(pThread);
@@ -2039,15 +2037,6 @@ public:
     }
 #endif // DACCESS_COMPILE
 
-    bool CatchesAllExceptions()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return m_catchesAllExceptions;
-    }
-
-private:
-    // The catch handled marked by the DebuggerU2MCatchHandlerFrame catches all exceptions.
-    bool m_catchesAllExceptions;
 };
 
 // Frame for the Reverse PInvoke (i.e. UnmanagedCallersOnlyAttribute).
@@ -2089,23 +2078,26 @@ public:
     MethodDesc *GetFunction_Impl()
     {
         WRAPPER_NO_CONTRACT;
-        if (FrameHasActiveCall(this) && HasFunction())
-            // Mask off marker bits
-            return PTR_MethodDesc((dac_cast<TADDR>(m_Datum) & ~(sizeof(TADDR) - 1)));
-        else
+        if (!FrameHasActiveCall(this))
+        {
             return NULL;
-    }
+        }
 
-    BOOL HasFunction()
-    {
-        WRAPPER_NO_CONTRACT;
+        TADDR datum = dac_cast<TADDR>(m_Datum) & ~(TADDR)InlinedCallFrameMarker::Mask;
 
-#ifdef HOST_64BIT
-        // See code:GenericPInvokeCalliHelper
-        return ((m_Datum != NULL) && !(dac_cast<TADDR>(m_Datum) & 0x1));
-#else // HOST_64BIT
-        return ((dac_cast<TADDR>(m_Datum) & ~0xffff) != 0);
-#endif // HOST_64BIT
+#ifdef TARGET_X86
+        if ((datum & ~0xffff) == 0)
+        {
+            return NULL;
+        }
+#else
+        if (datum == 0)
+        {
+            return NULL;
+        }
+#endif
+
+        return PTR_MethodDesc(datum);
     }
 
     // Retrieves the return address into the code that called out
@@ -2151,13 +2143,9 @@ public:
 
     void UpdateRegDisplay_Impl(const PREGDISPLAY, bool updateFloats = false);
 
-    // m_Datum contains PInvokeMethodDesc ptr or
-    // - on 64 bit host: CALLI target address (if lowest bit is set)
-    // - on windows x86 host: argument stack size (if value is <64k)
-    // When m_Datum contains PInvokeMethodDesc ptr, then on other than windows x86 host
-    // - bit 1 set indicates invoking new exception handling helpers
-    // - bit 2 indicates CallCatchFunclet or CallFinallyFunclet
-    // See code:HasFunction.
+    // m_Datum contains a PInvokeMethodDesc pointer, except on x86 where it may instead
+    // contain the outgoing argument stack size for vararg and CALLI stubs.
+    // Low bits may carry InlinedCallFrameMarker values.
     PTR_PInvokeMethodDesc   m_Datum;
 
     // X86: ESP after pushing the outgoing arguments, and just before calling
@@ -2464,7 +2452,7 @@ public:
 
     void GcScanRoots_Impl(promote_func *fn, ScanContext* sc)
     {
-        fn(dac_cast<PTR_PTR_Object>(dac_cast<TADDR>(&m_continuation)), sc, 0);
+        fn(GetContinuationPtr(), sc, 0);
     }
 
     void SetContinuation(OBJECTREF continuation)
@@ -2482,7 +2470,7 @@ public:
     PTR_PTR_Object GetContinuationPtr()
     {
         LIMITED_METHOD_CONTRACT;
-        return dac_cast<PTR_PTR_Object>(dac_cast<TADDR>(&m_continuation));
+        return dac_cast<PTR_PTR_Object>(PTR_HOST_MEMBER_TADDR(InterpreterFrame, this, m_continuation));
     }
 private:
     // The last known topmost interpreter frame in the InterpExecMethod belonging to

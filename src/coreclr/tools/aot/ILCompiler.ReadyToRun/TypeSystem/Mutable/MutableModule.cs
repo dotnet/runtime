@@ -132,7 +132,20 @@ namespace Internal.TypeSystem.Ecma
                     s_assemblyNameFromTypeLookups.AddOrUpdate(module, lookupTable);
                 }
 
-                return lookupTable[type];
+                if (lookupTable.TryGetValue(type, out string assemblyName))
+                {
+                    return assemblyName;
+                }
+
+                // Some producers encode type map custom attributes without emitting matching TypeRef rows
+                // for the referenced types. In that case, fall back to the target type's defining assembly.
+                if (module is EcmaModule ecmaModule && type.Module is EcmaModule targetTypeModule)
+                {
+                    string targetAssemblyName = targetTypeModule.Assembly.GetName().Name;
+                    return targetAssemblyName;
+                }
+
+                throw new KeyNotFoundException($"Unable to resolve an assembly reference from module '{module}' to type '{type}'.");
             }
         }
 

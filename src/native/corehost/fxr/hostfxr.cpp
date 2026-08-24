@@ -31,17 +31,17 @@ SHARED_API int HOSTFXR_CALLTYPE hostfxr_main_bundle_startupinfo(const int argc, 
 {
     trace_hostfxr_entry_point(_X("hostfxr_main_bundle_startupinfo"));
 
+    if (host_path == nullptr || dotnet_root == nullptr || app_path == nullptr || dotnet_root[0] == _X('\0'))
+    {
+        trace::error(_X("Invalid startup info: host_path, dotnet_root, and app_path should not be null."));
+        return StatusCode::InvalidArgFailure;
+    }
+
     StatusCode bundleStatus = bundle::info_t::process_bundle(host_path, app_path, bundle_header_offset);
     if (bundleStatus != StatusCode::Success)
     {
         trace::error(_X("A fatal error occurred while processing application bundle"));
         return bundleStatus;
-    }
-
-    if (host_path == nullptr || dotnet_root == nullptr || app_path == nullptr)
-    {
-        trace::error(_X("Invalid startup info: host_path, dotnet_root, and app_path should not be null."));
-        return StatusCode::InvalidArgFailure;
     }
 
     host_startup_info_t startup_info(host_path, dotnet_root, app_path);
@@ -53,7 +53,7 @@ SHARED_API int HOSTFXR_CALLTYPE hostfxr_main_startupinfo(const int argc, const p
 {
     trace_hostfxr_entry_point(_X("hostfxr_main_startupinfo"));
 
-    if (host_path == nullptr || dotnet_root == nullptr || app_path == nullptr)
+    if (host_path == nullptr || dotnet_root == nullptr || app_path == nullptr || dotnet_root[0] == _X('\0'))
     {
         trace::error(_X("Invalid startup info: host_path, dotnet_root, and app_path should not be null."));
         return StatusCode::InvalidArgFailure;
@@ -75,8 +75,7 @@ SHARED_API int HOSTFXR_CALLTYPE hostfxr_main(const int argc, const pal::char_t* 
 
 // [OBSOLETE] Replaced by hostfxr_resolve_sdk2
 //
-// Determines the directory location of the SDK accounting for
-// global.json and multi-level lookup policy.
+// Determines the directory location of the SDK accounting for global.json.
 //
 // Invoked via MSBuild SDK resolver to locate SDK props and targets
 // from an msbuild other than the one bundled by the CLI.
@@ -86,9 +85,6 @@ SHARED_API int HOSTFXR_CALLTYPE hostfxr_main(const int argc, const pal::char_t* 
 //      The main directory where SDKs are located in sdk\[version]
 //      sub-folders. Pass the directory of a dotnet executable to
 //      mimic how that executable would search in its own directory.
-//      It is also valid to pass nullptr or empty, in which case
-//      multi-level lookup can still search other locations if
-//      it has not been disabled by the user's environment.
 //
 //    working_dir
 //      The directory where the search for global.json (which can
@@ -437,7 +433,7 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_get_dotnet_environment_info(
     }
 
     std::vector<framework_info> framework_infos;
-    framework_info::get_all_framework_infos(dotnet_dir, nullptr, /*disable_multilevel_lookup*/ true, /*include_disabled_versions*/ false, &framework_infos);
+    framework_info::get_all_framework_infos(dotnet_dir, nullptr, /*include_disabled_versions*/ false, &framework_infos);
 
     std::vector<hostfxr_dotnet_environment_framework_info> environment_framework_infos;
     std::vector<pal::string_t> framework_versions;

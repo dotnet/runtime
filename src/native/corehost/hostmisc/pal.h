@@ -16,6 +16,19 @@
 #include <string.h>
 #include <stdio.h>
 
+#if defined(TARGET_SUNOS)
+  // Ensure character traits have been processed safely before we intercept the identifier
+  #if defined(__cplusplus)
+    #include <locale>
+    #include <cctype>
+  #else
+    #include <ctype.h>
+  #endif
+
+  // Undefine the system bitmask before defining this project _X macro
+  #undef _X
+#endif
+
 #if defined(_WIN32)
 typedef wchar_t pal_char_t;
 #ifdef __cplusplus
@@ -558,9 +571,6 @@ namespace pal
 
     // Returns the default install location for a given platform for the specified architecture
     bool get_default_installation_dir_for_arch(architecture arch, string_t* recv);
-
-    // Returns the global locations to search for SDK/Frameworks - used when multi-level lookup is enabled
-    bool get_global_dotnet_dirs(std::vector<string_t>* recv);
 
     bool get_default_breadcrumb_store(string_t* recv);
     bool is_path_rooted(const string_t& path);

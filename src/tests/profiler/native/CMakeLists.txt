@@ -19,6 +19,7 @@ set(SOURCES
     gcskipobjectsallocatedbyclasscallbackprofiler/gcskipobjectsallocatedbyclasscallbackprofiler.cpp
     getappdomainstaticaddress/getappdomainstaticaddress.cpp
     handlesprofiler/handlesprofiler.cpp
+    ijw/ijwprofiler.cpp
     inlining/inlining.cpp
     metadatagetdispenser/metadatagetdispenser.cpp
     moduleload/moduleload.cpp
@@ -29,6 +30,8 @@ set(SOURCES
     rejitprofiler/ilrewriter.cpp
     rejitprofiler/sigparse.cpp
     releaseondetach/releaseondetach.cpp
+    runtimeasyncapis/runtimeasyncapisprofiler.cpp
+    runtimeasynctypes/runtimeasynctypesprofiler.cpp
     transitions/transitions.cpp
     profiler.def
     profiler.cpp
@@ -50,7 +53,7 @@ if(NOT WIN32)
 endif(NOT WIN32)
 
 # add the executable
-add_library(Profiler SHARED ${SOURCES})
+add_library(Profiler ${TEST_LIB_TYPE} ${SOURCES})
 
 if(WIN32)
 	set(DEPENDENCIES Advapi32.lib oleaut32.lib Ole32.lib)
