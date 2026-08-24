@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Immutable;
 using System.CommandLine;
-using System.CommandLine.Parsing;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection.Metadata;
