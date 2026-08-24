@@ -4224,6 +4224,43 @@ static bool MethodSignatureContainsGenericVariables(SigParser& sp)
 }
 
 //==========================================================================
+// Computes the module that should own runtime artifacts (VASigCookies, CALLI IL stubs)
+// created for the given standalone signature.
+//
+// The generic context is stripped if it is not actually used by the signature. This is
+// necessary for both:
+// - Performance: allows more sharing of the created artifacts
+// - Functionality: built-in runtime marshalling is disallowed for generic signatures
+//==========================================================================
+Module* Module::GetLoaderModuleForSignature(Signature signature, SigTypeContext* pTypeContext)
+{
+    CONTRACTL
+    {
+        INSTANCE_CHECK;
+        STANDARD_VM_CHECK;
+        PRECONDITION(CheckPointer(pTypeContext));
+    }
+    CONTRACTL_END;
+
+    SigParser sigParser = signature.CreateSigParser();
+
+    if (pTypeContext->IsEmpty())
+    {
+        // The method signature should not contain any generic variables if the generic context is not provided.
+        _ASSERTE(!MethodSignatureContainsGenericVariables(sigParser));
+        return this;
+    }
+
+    if (!MethodSignatureContainsGenericVariables(sigParser))
+    {
+        *pTypeContext = SigTypeContext();
+        return this;
+    }
+
+    return ClassLoader::ComputeLoaderModuleWorker(this, mdTokenNil, pTypeContext->m_classInst, pTypeContext->m_methodInst);
+}
+
+//==========================================================================
 // Enregisters a VASig.
 //==========================================================================
 VASigCookie *Module::GetVASigCookie(Signature vaSignature, const SigTypeContext* typeContext)
@@ -4235,34 +4272,10 @@ VASigCookie *Module::GetVASigCookie(Signature vaSignature, const SigTypeContext*
     }
     CONTRACTL_END;
 
-    SigTypeContext emptyContext;
+    SigTypeContext localContext = *typeContext;
+    Module* pLoaderModule = GetLoaderModuleForSignature(vaSignature, &localContext);
 
-    Module* pLoaderModule = this;
-    if (!typeContext->IsEmpty())
-    {
-        // Strip the generic context if it is not actually used by the signature. It is nececessary for both:
-        // - Performance: allow more sharing of vasig cookies
-        // - Functionality: built-in runtime marshalling is disallowed for generic signatures
-        SigParser sigParser = vaSignature.CreateSigParser();
-        if (MethodSignatureContainsGenericVariables(sigParser))
-        {
-            pLoaderModule = ClassLoader::ComputeLoaderModuleWorker(this, mdTokenNil, typeContext->m_classInst, typeContext->m_methodInst);
-        }
-        else
-        {
-            typeContext = &emptyContext;
-        }
-    }
-    else
-    {
-#ifdef _DEBUG
-        // The method signature should not contain any generic variables if the generic context is not provided.
-        SigParser sigParser = vaSignature.CreateSigParser();
-        _ASSERTE(!MethodSignatureContainsGenericVariables(sigParser));
-#endif
-    }
-
-    VASigCookie *pCookie = GetVASigCookieWorker(this, pLoaderModule, vaSignature, typeContext);
+    VASigCookie *pCookie = GetVASigCookieWorker(this, pLoaderModule, vaSignature, &localContext);
 
     return pCookie;
 }
