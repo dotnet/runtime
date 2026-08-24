@@ -187,7 +187,7 @@ public class ServerGCDumpTests : DumpTestBase
         IGC gcContract = Target.Contracts.GC;
 
         IReadOnlyList<GCMemoryRegionData> regions = gcContract.GetGCFreeRegions();
-        Assert.NotNull(regions);
+        Assert.NotEmpty(regions);
         Assert.All(regions, region =>
         {
             Assert.NotEqual(TargetPointer.Null, region.Start);
