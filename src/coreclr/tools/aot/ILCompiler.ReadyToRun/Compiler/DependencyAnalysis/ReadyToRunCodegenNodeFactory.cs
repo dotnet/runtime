@@ -136,6 +136,31 @@ namespace ILCompiler.DependencyAnalysis
             return _localMethodCache.GetOrAdd(method);
         }
 
+        public static bool CanPrecompileUnboxingStub(MethodDesc targetMethod)
+        {
+            // Runtime generated generic unbox stubs are not shared. Using the shared version
+            // produced by R2R seems to require more work.
+            if (targetMethod.RequiresInstMethodDescArg())
+                return false;
+
+            // TODO See comment in UnboxingThunk.EmitIL
+            if (targetMethod.IsAsyncCall())
+                return false;
+
+            return true;
+        }
+
+        public MethodWithGCInfo UnboxingStub(MethodDesc targetMethod)
+        {
+            Debug.Assert(CompilationModuleGroup.ContainsMethodBody(targetMethod, false));
+            Debug.Assert(CanPrecompileUnboxingStub(targetMethod));
+            ModuleDesc ownerModule = ((MetadataType)targetMethod.GetTypicalMethodDefinition().OwningType).Module;
+            MethodDesc thunk = targetMethod.IsSharedByGenericInstantiations && !targetMethod.HasInstantiation
+                ? TypeSystemContext.GetSpecialUnboxingThunk(targetMethod, ownerModule)
+                : TypeSystemContext.GetUnboxingThunk(targetMethod, ownerModule);
+            return _localMethodCache.GetOrAdd(thunk);
+        }
+
         private NodeCache<TypeDesc, AllMethodsOnTypeNode> _allMethodsOnType;
 
         public AllMethodsOnTypeNode AllMethodsOnType(TypeDesc type)

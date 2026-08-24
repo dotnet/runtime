@@ -162,6 +162,15 @@ namespace ILCompiler.DependencyAnalysis
 
                                 MethodDesc canonImpl = implementingMethodInstantiation.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
+#if READYTORUN
+                                if (!implementingMethodInstantiation.Signature.IsStatic
+                                    && canonImpl.OwningType.IsValueType
+                                    && NodeFactory.CanPrecompileUnboxingStub(canonImpl))
+                                {
+                                    dynamicDependencies.Add(new CombinedDependencyListEntry(factory.UnboxingStub(canonImpl), null, "Unboxing thunk for interface GVM"));
+                                }
+#endif
+
                                 // Static virtuals cannot be further overridden so this is an impl use. Otherwise it's a virtual slot use.
                                 if (implementingMethodInstantiation.Signature.IsStatic)
                                 {

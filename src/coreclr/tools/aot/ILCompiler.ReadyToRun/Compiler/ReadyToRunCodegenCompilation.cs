@@ -752,8 +752,8 @@ namespace ILCompiler
                         if (method.IsAsyncCall() && shouldBeCompiled)
                             AddNecessaryAsyncReferences(method);
 
-                        if (method.IsCompilerGeneratedILBodyForAsync() && shouldBeCompiled)
-                            EnsureAsyncThunkTokensAreAvailable(method);
+                        if ((method.IsCompilerGeneratedILBodyForAsync() || ((CompilerTypeSystemContext)method.Context).IsUnboxingThunk(method)) && shouldBeCompiled)
+                            EnsureGeneratedILTokensAreAvailable(method);
 
                         if (!_nodeFactory.CompilationModuleGroup.VersionsWithMethodBody(method))
                             EnsureInstantiationReferencesArePresentForExternalMethod(method);
@@ -792,9 +792,9 @@ namespace ILCompiler
                 _nodeFactory.GenerateHotColdMap(_dependencyGraph);
             }
 
-            void EnsureAsyncThunkTokensAreAvailable(MethodDesc method)
+            void EnsureGeneratedILTokensAreAvailable(MethodDesc method)
             {
-                if (!method.IsCompilerGeneratedILBodyForAsync())
+                if (!method.IsCompilerGeneratedILBodyForAsync() && !((CompilerTypeSystemContext)method.Context).IsUnboxingThunk(method))
                     return;
                 MethodIL il = _methodILCache.ILProvider.GetMethodIL(method);
                 if (il is null)

@@ -1095,6 +1095,13 @@ static bool SigMatchesMethodDesc(MethodDesc* pMD, SigPointer &sig, ModuleBase * 
     if (sigIsAsync != pMD->IsAsyncVariantMethod())
         return false;
 
+    // Unboxing stubs share the metadata token, owner type and instantiation of the method they
+    // wrap, and Crossgen2 deliberately keys them into the same hashtable bucket. This flag is the
+    // only thing that distinguishes the two entries.
+    bool sigIsUnboxingStub = (methodFlags & ENCODE_METHOD_SIG_UnboxingStub) != 0;
+    if (sigIsUnboxingStub != (bool)pMD->IsUnboxingStub())
+        return false;
+
     _ASSERTE((methodFlags & ENCODE_METHOD_SIG_SlotInsteadOfToken) == 0);
     _ASSERTE(((methodFlags & (ENCODE_METHOD_SIG_MemberRefToken | ENCODE_METHOD_SIG_UpdateContext)) == 0) ||
              ((methodFlags & (ENCODE_METHOD_SIG_MemberRefToken | ENCODE_METHOD_SIG_UpdateContext)) == (ENCODE_METHOD_SIG_MemberRefToken | ENCODE_METHOD_SIG_UpdateContext)));
@@ -1331,9 +1338,12 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
     ETW::MethodLog::GetR2RGetEntryPointStart(pMD);
 
     uint offset;
-    // Async variants are stored in the instance methods table
+    // Async variants and unboxing stubs are stored in the instance methods table. Unboxing stubs
+    // go there even for non-generic types, because they share a metadata token with the method
+    // they wrap and so cannot be found through the method-def indexed table.
     if (pMD->HasClassOrMethodInstantiation()
-        || pMD->IsAsyncVariantMethod())
+        || pMD->IsAsyncVariantMethod()
+        || pMD->IsUnboxingStub())
     {
         if (m_instMethodEntryPoints.IsNull())
             goto done;
