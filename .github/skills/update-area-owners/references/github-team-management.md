@@ -10,9 +10,10 @@ directory, then report both paths.
 
 The generated scripts must:
 
-- default to `dotnet/runtime` and the `dotnet` organization;
-- support `-WhatIf`/`--dry-run` and require an explicit confirmation before
-  mutating operations;
+- default repository association operations to `dotnet/runtime` in the
+  `dotnet` organization;
+- default to dry-run and require an explicit `--apply`/`-Apply` confirmation
+  before mutating operations;
 - use the authenticated `gh` CLI and never accept or print a token;
 - use `set -euo pipefail` in Bash and `$ErrorActionPreference = 'Stop'` in
   PowerShell;
@@ -55,8 +56,9 @@ slug is lower-kebab-case (`area-system-example`).
 Create a unique directory, for example:
 
 ```text
-<session-files>/update-<area>.sh
-<session-files>/update-<area>.ps1
+<session-files>/update-system-example/
+  update-system-example.sh
+  update-system-example.ps1
 ```
 
 The two scripts must contain the same operations and target values. Include:

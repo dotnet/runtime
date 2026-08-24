@@ -142,9 +142,11 @@ Produce a compact before/after table for each area. Include:
 - references that are intentionally left unchanged and why.
 
 For a new routed area, add the label to the outer list and add an inner route.
-For a label rename, change both policy occurrences and the Markdown row in one
-change. For a lead-only change, do not add the lead to policy mentionees unless
-the request also changes notifications.
+For a label rename performed externally, change both repository policy
+occurrences and the Markdown row in one change after the GitHub label has been
+renamed. This skill must not rename the GitHub label itself. For a lead-only
+change, do not add the lead to policy mentionees unless the request also
+changes notifications.
 
 For owner changes, distinguish:
 
@@ -204,7 +206,7 @@ The final report must include:
 2. areas and scenarios handled;
 3. generated script paths, when applicable;
 4. exact permissions required for the listed team operations;
-6. validation results and any unresolved external state.
+5. validation results and any unresolved external state.
 
 ## Output discipline
 
