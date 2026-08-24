@@ -45,20 +45,28 @@ namespace System.Runtime.Loader
         internal static extern bool IsTracingEnabled();
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_TraceResolvingHandlerInvoked", StringMarshalling = StringMarshalling.Utf16)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool TraceResolvingHandlerInvoked(string assemblyName, string handlerName, string? alcName, string? resultAssemblyName, string? resultAssemblyPath, out QCallExceptionStatus qcallException);
+        private static partial void TraceResolvingHandlerInvoked(string assemblyName, string handlerName, string? alcName, string? resultAssemblyName, string? resultAssemblyPath, out QCallExceptionStatus qcallException);
+
+        internal static void TraceResolvingHandlerInvoked(string assemblyName, string handlerName, string? alcName, string? resultAssemblyName, string? resultAssemblyPath)
+            => TraceResolvingHandlerInvoked(assemblyName, handlerName, alcName, resultAssemblyName, resultAssemblyPath, out _);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_TraceAssemblyResolveHandlerInvoked", StringMarshalling = StringMarshalling.Utf16)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool TraceAssemblyResolveHandlerInvoked(string assemblyName, string handlerName, string? resultAssemblyName, string? resultAssemblyPath, out QCallExceptionStatus qcallException);
+        private static partial void TraceAssemblyResolveHandlerInvoked(string assemblyName, string handlerName, string? resultAssemblyName, string? resultAssemblyPath, out QCallExceptionStatus qcallException);
+
+        internal static void TraceAssemblyResolveHandlerInvoked(string assemblyName, string handlerName, string? resultAssemblyName, string? resultAssemblyPath)
+            => TraceAssemblyResolveHandlerInvoked(assemblyName, handlerName, resultAssemblyName, resultAssemblyPath, out _);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_TraceAssemblyLoadFromResolveHandlerInvoked", StringMarshalling = StringMarshalling.Utf16)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool TraceAssemblyLoadFromResolveHandlerInvoked(string assemblyName, [MarshalAs(UnmanagedType.Bool)] bool isTrackedAssembly, string requestingAssemblyPath, string? requestedAssemblyPath, out QCallExceptionStatus qcallException);
+        private static partial void TraceAssemblyLoadFromResolveHandlerInvoked(string assemblyName, [MarshalAs(UnmanagedType.Bool)] bool isTrackedAssembly, string requestingAssemblyPath, string? requestedAssemblyPath, out QCallExceptionStatus qcallException);
+
+        internal static void TraceAssemblyLoadFromResolveHandlerInvoked(string assemblyName, bool isTrackedAssembly, string requestingAssemblyPath, string? requestedAssemblyPath)
+            => TraceAssemblyLoadFromResolveHandlerInvoked(assemblyName, isTrackedAssembly, requestingAssemblyPath, requestedAssemblyPath, out _);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_TraceSatelliteSubdirectoryPathProbed", StringMarshalling = StringMarshalling.Utf16)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool TraceSatelliteSubdirectoryPathProbed(string filePath, int hResult, out QCallExceptionStatus qcallException);
+        private static partial void TraceSatelliteSubdirectoryPathProbed(string filePath, int hResult, out QCallExceptionStatus qcallException);
+
+        internal static void TraceSatelliteSubdirectoryPathProbed(string filePath, int hResult)
+            => TraceSatelliteSubdirectoryPathProbed(filePath, hResult, out _);
 
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         private RuntimeAssembly InternalLoadFromPath(string? assemblyPath)

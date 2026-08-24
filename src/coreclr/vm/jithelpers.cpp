@@ -318,7 +318,7 @@ __declspec(selectany)
 #endif // _MSC_VER
 PLATFORM_THREAD_LOCAL ThreadLocalData t_ThreadStatics;
 
-extern "C" void QCALLTYPE GetThreadStaticsByMethodTable(QCall::ByteRefOnStack refHandle, MethodTable* pMT, bool gcStatic, QCallExceptionStatus* qcallError)
+extern "C" void QCALLTYPE GetThreadStaticsByMethodTable(QCall::ByteRefOnStack refHandle, MethodTable* pMT, BOOL gcStatic, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -339,7 +339,7 @@ extern "C" void QCALLTYPE GetThreadStaticsByMethodTable(QCall::ByteRefOnStack re
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE GetThreadStaticsByIndex(QCall::ByteRefOnStack refHandle, uint32_t staticBlockIndex, bool gcStatic, QCallExceptionStatus* qcallError)
+extern "C" void QCALLTYPE GetThreadStaticsByIndex(QCall::ByteRefOnStack refHandle, uint32_t staticBlockIndex, BOOL gcStatic, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 

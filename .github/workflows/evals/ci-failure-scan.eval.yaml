@@ -59,6 +59,10 @@ stimuli:
 
       Outer-loop pipelines have failing `main` builds essentially all the time, so search across defs, starting with 154 and then other outer-loop defs, until you find a real one. Do not give up and do not fabricate. Keep all scratch state under /tmp.
 
+    rubric:
+      - |
+       The emitted `./out/kbe.md` conforms to the static Known Build Error format. It has a `[ci-scan] ` title naming exactly one failure shape with no run-specific IDs, the `Known Build Error` label plus exactly one of `blocking-clean-ci` or `blocking-clean-ci-optional`, the three body sections, a collapsed `KBE authoring guidance (ci-failure-scan)` block, and exactly one fenced json block with all four keys where exactly one of ErrorMessage or ErrorPattern is a non-empty specific substring rather than a bare identifier and the other is `""`. The Build Information section cites a concrete real build id. After the JSON, it has a collapsed `Agentic workflow metadata (ci-failure-scan)` block identifying the `kbe-verification` artifact and a positive verified match count.
+
     graders:
       - type: file-matches
         config:
@@ -99,19 +103,18 @@ stimuli:
         name: fetched-real-failing-build
         config:
           required:
-            - name: '^bash$'
+            - name: '^(bash|powershell)$'
               command: 'dev\.azure\.com/dnceng-public/public/_apis/build/builds'
 
       - type: tool-calls
         name: searched-existing-kbe
         config:
           required:
-            - name: '^bash$'
+            - name: '^(bash|powershell)$'
               command: 'gh (search|issue)'
 
       - type: prompt
         name: kbe-format-conformant
         config:
           scoring: binary
-          prompt: |
-            Read ./out/kbe.md. Pass only if it conforms to the static Known Build Error format. It needs a `[ci-scan] ` title naming exactly one failure shape with no run-specific IDs, the `Known Build Error` label plus exactly one of `blocking-clean-ci` or `blocking-clean-ci-optional`, the three body sections, a collapsed `KBE authoring guidance (ci-failure-scan)` block, and exactly one fenced json block with all four keys where exactly one of ErrorMessage or ErrorPattern is a non-empty specific substring rather than a bare identifier and the other is `""`. The Build Information section must cite a concrete real build id. After the JSON, it needs a collapsed `Agentic workflow metadata (ci-failure-scan)` block identifying the `kbe-verification` artifact and a positive verified match count. Otherwise fail.
+          evidence: [trajectory, diff]

@@ -449,6 +449,15 @@ namespace System.Runtime.CompilerServices
             return GetMethodTable(obj)->HasComponentSize;
         }
 
+        // Returns true iff the type of the object requires finalization,
+        // which includes a finalizer inherited from a base type.
+        internal static unsafe bool ObjectHasFinalizer(object obj)
+        {
+            bool hasFinalizer = GetMethodTable(obj)->HasFinalizer;
+            GC.KeepAlive(obj); // Keep MethodTable alive
+            return hasFinalizer;
+        }
+
         /// <summary>
         /// Boxes a given value using an input <see cref="MethodTable"/> to determine its type.
         /// </summary>

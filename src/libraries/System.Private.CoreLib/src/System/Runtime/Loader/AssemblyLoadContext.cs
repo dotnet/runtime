@@ -679,13 +679,7 @@ namespace System.Runtime.Loader
                         handler.Method.DeclaringType is Type declaringType ? $"{declaringType.FullName}.{handler.Method.Name}" : handler.Method.Name,
                         this != Default ? ToString() : Name,
                         resolvedAssembly?.FullName,
-                        resolvedAssembly != null && !resolvedAssembly.IsDynamic ? resolvedAssembly.Location : null
-#if CORECLR
-#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-                        , out _
-#pragma warning restore SA1001, SA1113, SA1115
-#endif
-                    );
+                        resolvedAssembly != null && !resolvedAssembly.IsDynamic ? resolvedAssembly.Location : null);
                 }
 #endif // CORECLR
                 if (resolvedAssembly != null)
@@ -781,13 +775,7 @@ namespace System.Runtime.Loader
                         name,
                         handler.Method.DeclaringType is Type declaringType ? $"{declaringType.FullName}.{handler.Method.Name}" : handler.Method.Name,
                         asm?.FullName,
-                        asm != null && !asm.IsDynamic ? asm.Location : null
-#if CORECLR
-#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-                        , out _
-#pragma warning restore SA1001, SA1113, SA1115
-#endif
-                    );
+                        asm != null && !asm.IsDynamic ? asm.Location : null);
                 }
 #endif // CORECLR
                 RuntimeAssembly? ret = GetRuntimeAssembly(asm);
@@ -950,13 +938,7 @@ namespace System.Runtime.Loader
 #if CORECLR
                 if (IsTracingEnabled())
                 {
-                    TraceSatelliteSubdirectoryPathProbed(assemblyPath, HResults.COR_E_FILENOTFOUND
-#if CORECLR
-#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-                        , out _
-#pragma warning restore SA1001, SA1113, SA1115
-#endif
-                    );
+                    TraceSatelliteSubdirectoryPathProbed(assemblyPath, HResults.COR_E_FILENOTFOUND);
                 }
 #endif // CORECLR
                 assemblyPath = Path.Combine(parentDirectory, assemblyName.CultureName!.ToLowerInvariant(), $"{assemblyName.Name}.dll");
@@ -967,13 +949,7 @@ namespace System.Runtime.Loader
 #if CORECLR
             if (IsTracingEnabled())
             {
-                TraceSatelliteSubdirectoryPathProbed(assemblyPath, exists ? HResults.S_OK : HResults.COR_E_FILENOTFOUND
-#if CORECLR
-#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-                    , out _
-#pragma warning restore SA1001, SA1113, SA1115
-#endif
-                );
+                TraceSatelliteSubdirectoryPathProbed(assemblyPath, exists ? HResults.S_OK : HResults.COR_E_FILENOTFOUND);
             }
 #endif // CORECLR
 

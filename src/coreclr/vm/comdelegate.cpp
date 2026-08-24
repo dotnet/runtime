@@ -887,7 +887,6 @@ static PCODE SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMeth)
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -950,7 +949,6 @@ static PCODE GetVirtualCallStub(MethodDesc *method, TypeHandle scopeType)
         THROWS;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        INJECT_FAULT(COMPlusThrowOM()); // from MetaSig::SizeOfArgStack
     }
     CONTRACTL_END;
 
@@ -1261,7 +1259,6 @@ LPVOID COMDelegate::ConvertToCallback(OBJECTREF pDelegateObj)
         GC_TRIGGERS;
         MODE_COOPERATIVE;
 
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 

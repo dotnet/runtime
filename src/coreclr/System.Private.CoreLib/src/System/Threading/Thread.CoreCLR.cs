@@ -39,25 +39,9 @@ namespace System.Threading
         internal WaitSubsystem.ThreadWaitInfo? _waitInfo;
 #endif
 
-        /*=========================================================================
-        ** The base implementation of Thread is all native.  The following fields
-        ** should never be used in the C# code.  They are here to define the proper
-        ** space so the thread object may be allocated.  DON'T CHANGE THESE UNLESS
-        ** YOU MODIFY ThreadBaseObject in vm\object.h
-        =========================================================================*/
-#pragma warning disable CA1823, 169 // These fields are not used from managed.
-        // IntPtrs need to be together, and before ints, because IntPtrs are 64-bit
-        // fields on 64-bit platforms, where they will be sorted together.
-
-        private IntPtr _DONT_USE_InternalThread; // Pointer
-        private int _priority; // INT32
-
-        // The following field is required for interop with the VS Debugger
-        // Prior to making any changes to this field, please reach out to the VS Debugger
-        // team to make sure that your changes are not going to prevent the debugger
-        // from working.
-        private int _managedThreadId; // INT32
-#pragma warning restore CA1823, 169
+        private IntPtr _DONT_USE_InternalThread;
+        private int _priority;
+        private int _managedThreadId; // Debugger depends on the exact name of this field.
 
         // This is used for a quick check on thread pool threads after running a work item to determine if the name, background
         // state, or priority were changed by the work item, and if so to reset it. Other threads may also change some of those,
@@ -318,29 +302,21 @@ namespace System.Threading
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_GetThreadState")]
         private static partial int GetThreadState(ThreadHandle t);
 
-        internal void SetWaitSleepJoinState()
+        internal unsafe void SetWaitSleepJoinState()
         {
             // This method is called when the thread is about to enter a wait, sleep, or join state.
             // It sets the state in the native layer to indicate that the thread is waiting.
-            SetWaitSleepJoinState(GetNativeHandle());
-            GC.KeepAlive(this);
+            NativeThread* nativeThread = GetNativeThreadForCurrentThread();
+            Interlocked.Or(ref nativeThread->m_State, NativeThread.ThreadState.TS_WaitSleepJoin);
         }
 
-        internal void ClearWaitSleepJoinState()
+        internal unsafe void ClearWaitSleepJoinState()
         {
             // This method is called when the thread is no longer in a wait, sleep, or join state.
             // It clears the state in the native layer to indicate that the thread is no longer waiting.
-            ClearWaitSleepJoinState(GetNativeHandle());
-            GC.KeepAlive(this);
+            NativeThread* nativeThread = GetNativeThreadForCurrentThread();
+            Interlocked.And(ref nativeThread->m_State, ~NativeThread.ThreadState.TS_WaitSleepJoin);
         }
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_SetWaitSleepJoinState")]
-        [SuppressGCTransition]
-        private static partial void SetWaitSleepJoinState(ThreadHandle t);
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_ClearWaitSleepJoinState")]
-        [SuppressGCTransition]
-        private static partial void ClearWaitSleepJoinState(ThreadHandle t);
 
         /// <summary>
         /// An unstarted thread can be marked to indicate that it will host a
@@ -615,29 +591,26 @@ namespace System.Threading
         internal static unsafe partial int ReentrantWaitAny([MarshalAs(UnmanagedType.Bool)] bool alertable, int timeout, int count, IntPtr* handles, out QCallExceptionStatus qcallException);
 
         internal static void CheckForPendingInterrupt()
-        {
-            CheckForPendingInterrupt(CurrentThread.GetNativeHandle(), out _);
-            GC.KeepAlive(CurrentThread);
-        }
+            => CheckForPendingInterrupt(out _);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_CheckForPendingInterrupt")]
-        private static partial void CheckForPendingInterrupt(ThreadHandle t, out QCallExceptionStatus qcallException);
+        private static partial void CheckForPendingInterrupt(out QCallExceptionStatus qcallException);
 
-        [StructLayout(LayoutKind.Sequential)]
-        private struct NativeThreadClass
+        private unsafe NativeThread* GetNativeThreadForCurrentThread()
         {
-            public NativeThreadState m_State;
+            Debug.Assert(this == CurrentThread);
+            return (NativeThread*)_DONT_USE_InternalThread;
         }
 
-        private enum NativeThreadState
+        [StructLayout(LayoutKind.Sequential)]
+        private struct NativeThread
         {
-            None = 0,
-            TS_AbortRequested = 0x00000001, // Abort the thread
-            TS_DebugSuspendPending = 0x00000008, // Is the debugger suspending threads?
-            TS_GCOnTransitions = 0x00000010, // Force a GC on stub transitions (GCStress only)
+            public ThreadState m_State;
 
-            // We require (and assert) that the following bits are less than 0x100.
-            TS_CatchAtSafePoint = (TS_AbortRequested | TS_DebugSuspendPending | TS_GCOnTransitions),
-        };
+            internal enum ThreadState
+            {
+                TS_WaitSleepJoin = 0x02000000, // Thread is waiting, sleeping or joining
+            }
+        }
     }
 }

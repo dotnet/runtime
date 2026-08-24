@@ -434,7 +434,6 @@ set(VM_HEADERS_WKS
     dllimport.h
     dllimportcallback.h
     eeconfig.h
-    eecontract.h
     eepolicy.h
     eeprofinterfaces.h
     eeprofinterfaces.inl
