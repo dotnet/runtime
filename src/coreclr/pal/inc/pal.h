@@ -232,9 +232,9 @@ PAL_TerminateEx(
     int exitCode);
 
 /// <summary>
-/// This function aborts the process without running PAL shutdown or crash reporting.
-/// On signal-based platforms, it restores the pre-PAL SIGABRT disposition and
-/// unblocks SIGABRT on the current thread before aborting.
+/// Aborts the process without invoking PAL shutdown or PAL crash reporting.
+/// On POSIX signal-based platforms, restores the SIGABRT disposition saved
+/// by PAL and unblocks SIGABRT on the current thread before calling abort().
 /// </summary>
 PALIMPORT
 PAL_NORETURN
