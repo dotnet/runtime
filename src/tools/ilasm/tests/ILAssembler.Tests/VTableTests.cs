@@ -185,5 +185,31 @@ namespace ILAssembler.Tests
             Assert.Contains("Method1", methodNames);
             Assert.Contains("Method2", methodNames);
         }
+
+        [Fact]
+        public void VtfixupDecl_DeterministicOutput_IsByteIdentical()
+        {
+            string source = """
+                .assembly test { }
+                .assembly extern mscorlib { }
+                .data VT = int32(0)
+                .vtfixup [1] int32 fromunmanaged at VT
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public static void ExportedMethod() cil managed
+                    {
+                        .vtentry 1 : 1
+                        .export [1]
+                        ret
+                    }
+                }
+                """;
+            var options = new Options { Deterministic = true };
+
+            ImmutableArray<byte> firstImage = DocumentCompilerTestHelpers.Compile(source, options);
+            ImmutableArray<byte> secondImage = DocumentCompilerTestHelpers.Compile(source, options);
+
+            Assert.Equal<byte>(firstImage, secondImage);
+        }
     }
 }

@@ -175,7 +175,7 @@ namespace ILAssembler
             }
 
             BlobBuilder ilStream = new();
-            _entityRegistry.WriteContentTo(_metadataBuilder, ilStream, _mappedFieldDataNames);
+            Blob mvidFixup = _entityRegistry.WriteContentTo(_metadataBuilder, ilStream, _mappedFieldDataNames, _options.Deterministic);
             MetadataRootBuilder rootBuilder = new(_metadataBuilder, _options.MetadataVersion);
 
             // Compute metadata size from the MetadataSizes
@@ -228,6 +228,10 @@ namespace ILAssembler
             // Build debug directory if we have any debug info
             DebugDirectoryBuilder? debugDirectoryBuilder = BuildDebugDirectory(entryPoint, out int debugDataSize);
 
+            Func<IEnumerable<Blob>, BlobContentId>? deterministicIdProvider = _options.Deterministic
+                ? content => GetDeterministicPeContentId(content, mvidFixup)
+                : null;
+
             // Use custom PE builder if we have vtable fixups, exports, or data label reference fixups
             if (_vtableFixups.Count > 0 || exports.Count > 0 || _mappedFieldDataReferenceFixups.Count > 0)
             {
@@ -249,6 +253,7 @@ namespace ILAssembler
                     debugDirectoryBuilder: debugDirectoryBuilder,
                     entryPoint: entryPoint,
                     flags: corFlags,
+                    deterministicIdProvider: deterministicIdProvider,
                     vtableFixups: vtableFixupInfos,
                     exports: exports.ToImmutable(),
                     mappedFieldDataOffsets: _mappedFieldDataNames,
@@ -266,19 +271,6 @@ namespace ILAssembler
                 standardCorFlags |= CorFlags.Prefers32Bit;
             }
 
-            // Deterministic ID provider for reproducible builds
-            Func<IEnumerable<Blob>, BlobContentId>? deterministicIdProvider = _options.Deterministic
-                ? content =>
-                {
-                    using var hash = IncrementalHash.CreateHash(System.Security.Cryptography.HashAlgorithmName.SHA256);
-                    foreach (var blob in content)
-                    {
-                        hash.AppendData(blob.GetBytes());
-                    }
-                    return BlobContentId.FromHash(hash.GetHashAndReset());
-                }
-                : null;
-
             ManagedPEBuilder standardBuilder = new(
                 header,
                 rootBuilder,
@@ -291,6 +283,25 @@ namespace ILAssembler
                 deterministicIdProvider: deterministicIdProvider);
 
             return (_diagnostics.ToImmutable(), standardBuilder);
+        }
+
+        private static BlobContentId GetDeterministicPeContentId(IEnumerable<Blob> content, Blob mvidFixup)
+        {
+            BlobContentId contentId = GetDeterministicContentId(content);
+            new BlobWriter(mvidFixup).WriteGuid(contentId.Guid);
+
+            return contentId;
+        }
+
+        private static BlobContentId GetDeterministicContentId(IEnumerable<Blob> content)
+        {
+            using IncrementalHash hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+            foreach (Blob blob in content)
+            {
+                hash.AppendData(blob.GetBytes());
+            }
+
+            return BlobContentId.FromHash(hash.GetHashAndReset());
         }
 
         private ImmutableArray<VTableExportPEBuilder.VTableFixupInfo> BuildVTableFixupInfos()
@@ -362,12 +373,16 @@ namespace ILAssembler
             // Get row counts from main metadata for the portable PDB
             var typeSystemRowCounts = _metadataBuilder.GetRowCounts();
 
+            Func<IEnumerable<Blob>, BlobContentId> pdbIdProvider = _options.Deterministic
+                ? GetDeterministicContentId
+                : _ => new BlobContentId(Guid.NewGuid(), 0x04030201);
+
             // Create the portable PDB
             var pdbBuilder = new PortablePdbBuilder(
                 _pdbBuilder,
                 typeSystemRowCounts,
                 entryPoint,
-                idProvider: content => new BlobContentId(Guid.NewGuid(), 0x04030201));
+                idProvider: pdbIdProvider);
 
             var pdbBlob = new BlobBuilder();
             var pdbContentId = pdbBuilder.Serialize(pdbBlob);

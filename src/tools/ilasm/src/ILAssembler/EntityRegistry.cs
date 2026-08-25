@@ -92,7 +92,7 @@ namespace ILAssembler
             return Array.Empty<EntityBase>();
         }
 
-        public void WriteContentTo(MetadataBuilder builder, BlobBuilder ilStream, IReadOnlyDictionary<string, int> mappedFieldDataNames)
+        public Blob WriteContentTo(MetadataBuilder builder, BlobBuilder ilStream, IReadOnlyDictionary<string, int> mappedFieldDataNames, bool deterministic)
         {
             // Set the assembly handle early since DeclarativeSecurityAttribute needs it
             // The assembly definition handle is always row 1 (there's only ever one assembly per module)
@@ -227,7 +227,20 @@ namespace ILAssembler
 
             // Now that we've recorded all of the entities that wouldn't have had handles before,
             // we can start writing out the content of the entities.
-            builder.AddModule(0, Module.Name is null ? default : builder.GetOrAddString(Module.Name), builder.GetOrAddGuid(Guid.NewGuid()), default, default);
+            Blob mvidFixup = default;
+            GuidHandle mvid;
+            if (deterministic)
+            {
+                ReservedBlob<GuidHandle> reservedMvid = builder.ReserveGuid();
+                mvid = reservedMvid.Handle;
+                mvidFixup = reservedMvid.Content;
+            }
+            else
+            {
+                mvid = builder.GetOrAddGuid(Guid.NewGuid());
+            }
+
+            builder.AddModule(0, Module.Name is null ? default : builder.GetOrAddString(Module.Name), mvid, default, default);
 
             // Emit every recorded TypeRef row. All TypeRefs are recorded in ResolveTypeReferences
             // (in PseudoHandle order), even when they resolved to a local TypeDef, matching native
@@ -639,6 +652,8 @@ namespace ILAssembler
                     (GenericParameterHandle)constraint.Owner!.Handle,
                     constraint.BaseType.Handle);
             }
+
+            return mvidFixup;
 
             static FieldDefinitionHandle GetFieldHandleForList(IReadOnlyList<EntityBase> list, IReadOnlyList<EntityBase> listOwner, Func<EntityBase, IReadOnlyList<EntityBase>> getList, int ownerIndex)
                 => (FieldDefinitionHandle)GetHandleForList(list, listOwner, getList, ownerIndex, TableIndex.Field);
