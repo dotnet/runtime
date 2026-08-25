@@ -64,6 +64,15 @@
     <_ExeExt Condition="$([MSBuild]::IsOSPlatform('windows'))">.exe</_ExeExt>
   </PropertyGroup>
 
+  <!-- EmccInitialHeapSize is the documented browser property (src/mono/browser/README.md) and
+       EmccTotalMemory is its legacy alias; the Mono path collapses both into WasmInitialHeapSize
+       (BrowserWasmApp.targets). Do the same here at evaluation time so the relink registry in
+       native.wasm.targets compares the effective value and the emcc link below uses it. -->
+  <PropertyGroup Condition="'$(IsBrowserWasmProject)' == 'true'">
+    <EmccInitialHeapSize Condition="'$(EmccInitialHeapSize)' == ''">$(EmccTotalMemory)</EmccInitialHeapSize>
+    <WasmInitialHeapSize Condition="'$(WasmInitialHeapSize)' == ''">$(EmccInitialHeapSize)</WasmInitialHeapSize>
+  </PropertyGroup>
+
   <!-- Diagnostics: transform Mono-style WasmPerformanceInstrumentation property into CoreCLR env vars.
        Input format: "all,interval=0" or "N:Namespace" or "all" (Mono convention)
        Output: DOTNET_WasmPerformanceInstrumentation=<MethodSet filter> ('all' mapped to '*')

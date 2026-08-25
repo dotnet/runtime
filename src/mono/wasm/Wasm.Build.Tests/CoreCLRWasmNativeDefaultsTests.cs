@@ -39,6 +39,12 @@ namespace Wasm.Build.Tests
             { "<InvariantTimezone>true</InvariantTimezone>", true },
             { "<EnableDiagnostics>true</EnableDiagnostics>", true },
             { "<WasmInitialHeapSize>67108864</WasmInitialHeapSize>", true },
+            // EmccInitialHeapSize is the documented browser property and EmccTotalMemory its legacy
+            // alias; both must be normalized into WasmInitialHeapSize before the registry compares.
+            { "<EmccInitialHeapSize>67108864</EmccInitialHeapSize>", true },
+            { "<EmccTotalMemory>67108864</EmccTotalMemory>", true },
+            { "<EmccInitialHeapSize>33554432</EmccInitialHeapSize>", false },
+            { "<EmccTotalMemory>33554432</EmccTotalMemory>", false },
             { "<EmccMaximumHeapSize>1073741824</EmccMaximumHeapSize>", true },
             // memory values matching the runtime pack must not relink
             { "<WasmInitialHeapSize>33554432</WasmInitialHeapSize>", false },
