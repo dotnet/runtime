@@ -366,17 +366,15 @@ extends:
             targetArch: wasm
             # Compile in composite mode so the whole framework is one version bubble and
             # generic instantiations over types from other assemblies (most importantly
-            # CoreLib) get compiled instead of being skipped as cross-bubble. Measured
-            # locally over the equivalent x64 shared framework: 93,077 -> 123,347 contexts
-            # (+33%), and the merged MCH is smaller (1000 MB -> 677 MB).
+            # CoreLib) get compiled instead of being skipped as cross-bubble. Measured on
+            # this collection: 82,870 -> 109,684 contexts (+32%).
             crossgen2Composite: true
             # Keep the collection partitioned. Each work item roots only its own partition
             # but takes the rest of the framework as unrooted bubble inputs, so every
             # partition still gets the full version bubble; the redundant work between
-            # partitions is deduplicated by the merge step. Measured locally on x64: one
-            # 5 MB partition takes 95s, so five in parallel is about the same wall time as
-            # the 5m31s single-partition run, while a failed partition costs 1/5 of the
-            # collection instead of all of it.
+            # partitions is deduplicated by the merge step (177,230 contexts collected,
+            # 109,684 kept). That costs CPU rather than coverage, and keeps a failed
+            # partition from losing the whole collection. Work items ran 1-2 minutes each.
             maxPartitionSizeMB: 5
 
       - template: /eng/pipelines/common/platform-matrix.yml
