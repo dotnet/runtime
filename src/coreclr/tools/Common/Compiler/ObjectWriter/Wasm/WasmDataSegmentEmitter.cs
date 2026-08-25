@@ -15,9 +15,9 @@ namespace ILCompiler.ObjectWriter
     /// </summary>
     internal sealed class WasmDataSegmentEmitter : SectionDataEmitter, IWasmDataSegment
     {
-        private static readonly WasmInstructionGroup s_zeroOffset = new([I32.Const(0)]);
         private int _alignment = 1;
         private int _padding;
+        private int _memoryOffset;
 
         public WasmDataSegmentEmitter(
             Stream contents,
@@ -28,9 +28,9 @@ namespace ILCompiler.ObjectWriter
         }
 
         public int Alignment => _alignment;
-        public int HeaderSize => WasmDataSegmentEncoding.GetHeaderSize(WasmDataSegmentType.Active, s_zeroOffset);
+        public int HeaderSize => WasmDataSegmentEncoding.GetHeaderSize(WasmDataSegmentType.Active, GetMemoryOffsetInitExpr());
         public int RawContentSize => (int)ContentReadStream.Length;
-        public void SetPadding(int value) => _padding = value;
+        public WasmDataSegmentType SegmentType => WasmDataSegmentType.Active;
 
         public void UpdateAlignment(int alignment)
         {
@@ -46,7 +46,7 @@ namespace ILCompiler.ObjectWriter
             int headerSize = WasmDataSegmentEncoding.EncodeHeader(
                 headerBuffer,
                 WasmDataSegmentType.Active,
-                s_zeroOffset,
+                GetMemoryOffsetInitExpr(),
                 RawContentSize + _padding);
             Debug.Assert(headerSize == HeaderSize);
             outputFileStream.Write(headerBuffer);
@@ -56,6 +56,22 @@ namespace ILCompiler.ObjectWriter
             WasmDataSegmentEncoding.EmitPadding(outputFileStream, _padding);
 
             return EncodeSize();
+        }
+
+        public void SetMemoryOffset(int offset)
+        {
+            _memoryOffset = offset;
+        }
+
+        private WasmInstructionGroup GetMemoryOffsetInitExpr()
+        {
+            return new WasmInstructionGroup([I32.Const(_memoryOffset)]);
+        }
+
+        public int GetMemoryAddressOfOffset(int offsetInSegment)
+        {
+            Debug.Assert(offsetInSegment >= 0 && offsetInSegment <= RawContentSize);
+            return _memoryOffset + offsetInSegment;
         }
     }
 }

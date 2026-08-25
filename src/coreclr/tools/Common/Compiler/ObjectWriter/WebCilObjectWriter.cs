@@ -394,7 +394,7 @@ namespace ILCompiler.ObjectWriter
             BinaryPrimitives.WriteUInt32LittleEndian(lengthBuffer, (uint)webcilPayloadSegment.RawContentSize);
             BinaryPrimitives.WriteUInt32LittleEndian(lengthBuffer.AsSpan().Slice(4), (uint)MethodCount);
             WasmByteArrayDataSegment webcilSizeSegment = new WasmByteArrayDataSegment(lengthBuffer, new Utf8String("webcilCount"),
-                WasmDataSegmentType.Passive, null, WebcilSectionAlignment);
+                WasmDataSegmentType.Passive, WebcilSectionAlignment);
 
             // Create combined data section and emit
             WasmDataSection dataSection = new WasmDataSection([webcilSizeSegment, webcilPayloadSegment], new Utf8String("data"), contentAlign: 4);

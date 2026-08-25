@@ -54,7 +54,7 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        public void SetPadding(int value) => _padding = value;
+        public WasmDataSegmentType SegmentType => WasmDataSegmentType.Passive;
 
         public int EncodeSize() => HeaderSize + RawContentSize + _padding;
 
@@ -94,6 +94,13 @@ namespace ILCompiler.ObjectWriter
             WasmDataSegmentEncoding.EmitPadding(outputFileStream, _padding);
 
             return EncodeSize();
+        }
+
+        public void SetMemoryOffset(int offset) { }
+        public int GetMemoryAddressOfOffset(int offsetInSegment)
+        {
+            Debug.Assert(offsetInSegment >= 0 && offsetInSegment <= RawContentSize);
+            return offsetInSegment;
         }
     }
 }
