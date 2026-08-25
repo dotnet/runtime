@@ -1,3 +1,12 @@
+# Profiler tests launch a second corerun process and load the profiler as a shared library, and
+# WebAssembly has neither process creation nor dynamic loading, so none of them can run there
+# (the managed side is CLRTestTargetUnsupported in ../Directory.Build.props). This directory is
+# picked up unconditionally by the recursive add_subdirectory globber in src/tests/CMakeLists.txt,
+# so it must exclude itself rather than compile 30+ sources nothing will ever link.
+if (CLR_CMAKE_TARGET_ARCH_WASM)
+    return()
+endif()
+
 project(Profiler)
 
 set(SOURCES
