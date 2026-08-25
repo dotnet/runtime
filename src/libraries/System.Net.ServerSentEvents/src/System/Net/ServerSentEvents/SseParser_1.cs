@@ -485,12 +485,11 @@ namespace System.Net.ServerSentEvents
             ShiftOrGrowLineBufferIfNecessary();
 
             int offset = _lineOffset + _lineLength;
-            int count = _lineBuffer.Length - offset;
             int bytesRead = _stream.Read(
 #if NET
-                _lineBuffer.AsSpan(offset, count));
+                _lineBuffer.AsSpan(offset));
 #else
-                _lineBuffer, offset, count);
+                _lineBuffer, offset, _lineBuffer.Length - offset);
 #endif
 
             if (bytesRead > 0)
