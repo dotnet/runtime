@@ -702,9 +702,14 @@ namespace System.Net.Tests
             }
         }
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
-        public async Task Read_ChunkSizeWithWhitespace_ThrowsHttpListenerException()
+        [Theory]
+        [InlineData("5 ")]
+        [InlineData(" 5")]
+        [InlineData(" 5 ")]
+        [InlineData("5\t")]
+        [InlineData("\t5")]
+        [InlineData("5 ;foo=bar")]
+        public async Task Read_ChunkSizeWithWhitespace_BodyIsNotDelivered(string chunkSizeLine)
         {
             using (Socket client = _factory.GetConnectedSocket())
             {
@@ -714,7 +719,7 @@ namespace System.Net.Tests
                     $"Host: {listeningUri.Host}\r\n" +
                     "Transfer-Encoding: chunked\r\n" +
                     "\r\n" +
-                    "5 \r\n" +
+                    $"{chunkSizeLine}\r\n" +
                     "Hello\r\n" +
                     "0\r\n" +
                     "\r\n";
@@ -722,8 +727,22 @@ namespace System.Net.Tests
                 await client.SendAsync(Encoding.ASCII.GetBytes(request));
                 HttpListenerContext context = await _listener.GetContextAsync();
 
+                // The chunk size is malformed, so the body must never be surfaced to the application.
+                // The managed implementation rejects it while reading the body, while http.sys may
+                // instead terminate the request without handing back any data.
                 byte[] buffer = new byte[5];
-                await Assert.ThrowsAsync<HttpListenerException>(() => context.Request.InputStream.ReadAsync(buffer, 0, buffer.Length));
+                int bytesRead = 0;
+                Exception exception = await Record.ExceptionAsync(async () =>
+                    bytesRead = await ReadLengthAsync(context.Request.InputStream, buffer, 0, buffer.Length));
+
+                if (exception is null)
+                {
+                    Assert.Equal(0, bytesRead);
+                }
+                else
+                {
+                    Assert.IsType<HttpListenerException>(exception);
+                }
             }
         }
     }
