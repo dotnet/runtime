@@ -22,7 +22,7 @@ namespace System.Net.ServerSentEvents
 
         /// <summary>Gets or sets the maximum buffer size requested from the underlying allocator, or -1 to use the default limit</summary>
         /// <exception cref="ArgumentOutOfRangeException">The value set is less than -1.</exception>
-        /// <remarks>Values below an internal minimum are treated as that minimum. If the underlying memory allocator provides more memory than requested, the parser will use all of it.</remarks>
+        /// <remarks>The limit is enforced on a best-effort basis. The permitted memory consumption may be several times higher than the configured limit.</remarks>
         public int MaxBufferSize
         {
             get => _maxBufferSize;

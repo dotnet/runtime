@@ -314,29 +314,7 @@ namespace System.Net.ServerSentEvents
                 }
                 else if (_lineLength == _lineBuffer.Length)
                 {
-                    int newLength;
-                    try
-                    {
-                        newLength = checked(_lineBuffer.Length * 2);
-                    }
-                    catch (OverflowException)
-                    {
-                        newLength = int.MaxValue;
-                    }
-
-                    if (newLength > _maxBufferSize)
-                    {
-                        newLength = _maxBufferSize;
-                    }
-
-                    if (newLength > _lineBuffer.Length)
-                    {
-                        GrowBuffer(ref _lineBuffer, newLength);
-                    }
-                    else
-                    {
-                        throw new InvalidDataException(SR.InvalidDataException_SseExceededMaxLength);
-                    }
+                    GrowBuffer(ref _lineBuffer, () => checked(_lineBuffer.Length + 1));
                 }
             }
 
@@ -423,20 +401,7 @@ namespace System.Net.ServerSentEvents
                 }
 
                 // We need to copy the data from the line buffer to the data buffer. Make sure there's enough room.
-                int newLength;
-                try
-                {
-                    newLength = checked(_dataLength + _lineLength + 1);
-                }
-                catch (OverflowException)
-                {
-                    throw new InvalidDataException(SR.InvalidDataException_SseExceededMaxLength);
-                }
-
-                if (_dataBuffer is null || newLength > _dataBuffer.Length)
-                {
-                    GrowBuffer(ref _dataBuffer, newLength);
-                }
+                GrowBuffer(ref _dataBuffer, () => checked(_dataLength + _lineLength + 1));
 
                 // Append a newline if there's already content in the buffer.
                 // Then copy the field value to the data buffer
@@ -521,11 +486,6 @@ namespace System.Net.ServerSentEvents
 
             int offset = _lineOffset + _lineLength;
             int count = _lineBuffer.Length - offset;
-            if (count == 0)
-            {
-                throw new InvalidDataException(SR.InvalidDataException_SseExceededMaxLength);
-            }
-
             int bytesRead = _stream.Read(
 #if NET
                 _lineBuffer.AsSpan(offset, count));
@@ -552,12 +512,6 @@ namespace System.Net.ServerSentEvents
             ShiftOrGrowLineBufferIfNecessary();
 
             int offset = _lineOffset + _lineLength;
-            int count = _lineBuffer.Length - offset;
-            if (count == 0)
-            {
-                throw new InvalidDataException(SR.InvalidDataException_SseExceededMaxLength);
-            }
-
             int bytesRead = await _stream.ReadAsync(_lineBuffer.AsMemory(offset), cancellationToken).ConfigureAwait(false);
 
             if (bytesRead > 0)
@@ -589,15 +543,52 @@ namespace System.Net.ServerSentEvents
         }
 
         /// <summary>Grows the buffer, returning the existing one to the ArrayPool and renting an ArrayPool replacement.</summary>
-        private void GrowBuffer([NotNull] ref byte[]? buffer, int minimumLength)
+        /// <param name="buffer">The buffer to extend on input; the newly extended buffer on output.</param>
+        /// <param name="checkedRequiredLength">A lambda that computes the required buffer length using checked operations.</param>
+        private void GrowBuffer([NotNull] ref byte[]? buffer, Func<int> checkedRequiredLength)
         {
-            if (minimumLength > _maxBufferSize)
+            int currentSize = buffer?.Length ?? 0;
+            int prefferedGrowth;
+            try
+            {
+                prefferedGrowth = checked(currentSize * 2);
+            }
+            catch (OverflowException)
+            {
+                prefferedGrowth = int.MaxValue;
+            }
+            if (prefferedGrowth < DefaultArrayPoolRentSize)
+            {
+                prefferedGrowth = DefaultArrayPoolRentSize;
+            }
+            if (prefferedGrowth > _maxBufferSize)
+            {
+                prefferedGrowth = _maxBufferSize;
+            }
+
+            int requestedGrowth;
+            try
+            {
+                requestedGrowth = checkedRequiredLength();
+            }
+            catch (OverflowException)
+            {
+                throw new InvalidDataException(SR.InvalidDataException_SseExceededMaxLength);
+            }
+            if (requestedGrowth > _maxBufferSize)
             {
                 throw new InvalidDataException(SR.InvalidDataException_SseExceededMaxLength);
             }
 
+            int actualGrowth = Math.Max(prefferedGrowth, requestedGrowth);
+
+            if (buffer is not null && currentSize > actualGrowth)
+            {
+                return;
+            }
+
             byte[]? toReturn = buffer;
-            buffer = ArrayPool<byte>.Shared.Rent(Math.Max(minimumLength, DefaultArrayPoolRentSize));
+            buffer = ArrayPool<byte>.Shared.Rent(actualGrowth);
             if (toReturn is not null)
             {
                 Array.Copy(toReturn, buffer, toReturn.Length);
