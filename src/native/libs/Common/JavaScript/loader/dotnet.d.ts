@@ -340,68 +340,68 @@ interface LoadingResource {
     url: string;
     response: Promise<Response>;
 }
-type SingleAssetBehaviors = 
-/**
- * The binary of the .NET runtime.
- */
-"dotnetwasm"
-/**
- * The javascript module for loader.
- */
- | "js-module-dotnet"
-/**
- * The javascript module for diagnostic server and client.
- */
- | "js-module-diagnostics"
-/**
- * The javascript module for runtime.
- */
- | "js-module-runtime"
-/**
- * The javascript module for emscripten.
- */
- | "js-module-native"
-/**
- * Typically dotnet.boot.js
- */
- | "manifest"
-/**
- * The debugging symbols
- */
- | "symbols";
-type AssetBehaviors = SingleAssetBehaviors | 
-/**
- * Load asset as a managed resource assembly.
- */
-"resource"
-/**
- * Load asset as a managed assembly.
- */
- | "assembly"
-/**
- * Load asset as a managed debugging information.
- */
- | "pdb"
-/**
- * Store asset into the native heap.
- */
- | "heap"
-/**
- * Load asset as an ICU data archive.
- */
- | "icu"
-/**
- * Load asset into the virtual filesystem (for fopen, File.Open, etc).
- */
- | "vfs"
-/**
- * The javascript module that came from nuget package .
- */
- | "js-module-library-initializer"
-/**
- * Managed assembly packaged as Webcil v 1.0
- */
- | "webcil";
+type SingleAssetBehaviors =
+    /**
+     * The binary of the .NET runtime.
+     */
+    "dotnetwasm"
+    /**
+     * The javascript module for loader.
+     */
+    | "js-module-dotnet"
+    /**
+     * The javascript module for diagnostic server and client.
+     */
+    | "js-module-diagnostics"
+    /**
+     * The javascript module for runtime.
+     */
+    | "js-module-runtime"
+    /**
+     * The javascript module for emscripten.
+     */
+    | "js-module-native"
+    /**
+     * Typically dotnet.boot.js
+     */
+    | "manifest"
+    /**
+     * The debugging symbols
+     */
+    | "symbols";
+type AssetBehaviors = SingleAssetBehaviors |
+    /**
+     * Load asset as a managed resource assembly.
+     */
+    "resource"
+    /**
+     * Load asset as a managed assembly.
+     */
+    | "assembly"
+    /**
+     * Load asset as a managed debugging information.
+     */
+    | "pdb"
+    /**
+     * Store asset into the native heap.
+     */
+    | "heap"
+    /**
+     * Load asset as an ICU data archive.
+     */
+    | "icu"
+    /**
+     * Load asset into the virtual filesystem (for fopen, File.Open, etc).
+     */
+    | "vfs"
+    /**
+     * The javascript module that came from nuget package .
+     */
+    | "js-module-library-initializer"
+    /**
+     * Managed assembly packaged as Webcil v 1.0
+     */
+    | "webcil";
 declare const enum GlobalizationMode {
     /**
      * Load sharded ICU data.
@@ -633,6 +633,12 @@ type DiagnosticsAPIType = {
      * It could be converted for Visual Studio using `dotnet-gcdump convert`.
      */
     collectGcDump: (options?: DiagnosticCommandOptions) => Promise<Uint8Array[]>;
+    /**
+     * creates a startup PGO trace file (method list, and block counts when the interpreter is instrumented).
+     * The trace stops and downloads automatically after `durationSeconds` (default 10s).
+     * Convert it with `dotnet-pgo create-mibc --trace xxx.nettrace ...` to drive a profile-guided crossgen2 build.
+     */
+    collectPgoTrace: (options?: DiagnosticCommandOptions) => Promise<Uint8Array[]>;
     /**
      * changes DOTNET_DiagnosticPorts and makes a new connection to WebSocket on that URL.
      */

@@ -662,6 +662,12 @@ export type DiagnosticsAPIType = {
      */
     collectGcDump: (options?: DiagnosticCommandOptions) => Promise<Uint8Array[]>;
     /**
+     * creates a startup PGO trace file (method list, and block counts when the interpreter is instrumented).
+     * The trace stops and downloads automatically after `durationSeconds` (default 10s).
+     * Convert it with `dotnet-pgo create-mibc --trace xxx.nettrace ...` to drive a profile-guided crossgen2 build.
+     */
+    collectPgoTrace: (options?: DiagnosticCommandOptions) => Promise<Uint8Array[]>;
+    /**
      * changes DOTNET_DiagnosticPorts and makes a new connection to WebSocket on that URL.
      */
     connectDSRouter(url: string): void;
