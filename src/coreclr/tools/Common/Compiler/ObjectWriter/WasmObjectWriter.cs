@@ -33,6 +33,7 @@ namespace ILCompiler.ObjectWriter
             { ObjectNodeSection.WasmTypeSection, WasmSectionType.Type },
             { ObjectNodeSection.WasmCodeSection, WasmSectionType.Code },
             { WasmObjectNodeSection.DataCountSection, WasmSectionType.DataCount },
+            { WasmObjectNodeSection.DataSection, WasmSectionType.Data },
         };
 
         // Sections emitted before data segments.
@@ -43,11 +44,13 @@ namespace ILCompiler.ObjectWriter
             WasmObjectNodeSection.FunctionSection.Name,
             WasmObjectNodeSection.TableSection.Name,
             WasmObjectNodeSection.MemorySection.Name,
+            // Tag section (unused)
             WasmObjectNodeSection.GlobalSection.Name,
             WasmObjectNodeSection.ExportSection.Name,
             WasmObjectNodeSection.ElementSection.Name,
             WasmObjectNodeSection.DataCountSection.Name,
             ObjectNodeSection.WasmCodeSection.Name,
+            WasmObjectNodeSection.DataSection.Name,
         ];
 
         private protected readonly Dictionary<string, WasmGlobal> _definedGlobals = new();
