@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+from dataclasses import dataclass
 import json
 import os
 import re
@@ -12,6 +13,7 @@ import urllib.parse
 import urllib.request
 import uuid
 from pathlib import Path
+from typing import Callable
 
 
 OUTPUT_ROOT = Path("/tmp/gh-aw/agent")
@@ -466,6 +468,68 @@ def _helix_work_items_url(job_id: str) -> str:
     )
 
 
+def _azdo_timeline_url(build_id: int) -> str:
+    return (
+        f"https://{AZDO_HOST}{AZDO_PATH_PREFIX}builds/{build_id}/timeline"
+        "?api-version=7.1"
+    )
+
+
+def _azdo_log_url(build_id: int, log_id: int) -> str:
+    return (
+        f"https://{AZDO_HOST}{AZDO_PATH_PREFIX}builds/{build_id}/logs/{log_id}"
+        "?api-version=7.1"
+    )
+
+
+@dataclass(frozen=True)
+class _RequestSpec:
+    argument_names: tuple[str, ...]
+    url_builder: Callable[..., str]
+    allowed_families: set[str]
+    limit: int
+    suffixes: tuple[str, ...]
+
+
+_REQUEST_SPECS = {
+    "azdo-builds": _RequestSpec(
+        ("definition", "top", "skip"),
+        _azdo_builds_url,
+        {"azdo"},
+        JSON_LIMIT,
+        (".json",),
+    ),
+    "azdo-timeline": _RequestSpec(
+        ("build_id",),
+        _azdo_timeline_url,
+        {"azdo"},
+        JSON_LIMIT,
+        (".json",),
+    ),
+    "azdo-log": _RequestSpec(
+        ("build_id", "log_id"),
+        _azdo_log_url,
+        {"azdo"},
+        LOG_LIMIT,
+        (".log", ".txt"),
+    ),
+    "helix-work-items": _RequestSpec(
+        ("job_id",),
+        _helix_work_items_url,
+        {"helix-work-items"},
+        JSON_LIMIT,
+        (".json",),
+    ),
+}
+
+
+def _request_from_spec(args: argparse.Namespace, spec: _RequestSpec) -> bytes:
+    arguments = (getattr(args, name) for name in spec.argument_names)
+    return _request_bytes(
+        spec.url_builder(*arguments), spec.allowed_families, spec.limit
+    )
+
+
 def _json_items(payload: bytes) -> list[dict]:
     try:
         document = json.loads(payload)
@@ -519,44 +583,16 @@ def _console_url(payload: bytes, work_item: str) -> str:
 
 
 def _run(args: argparse.Namespace) -> None:
-    if args.command == "azdo-builds":
-        data = _request_bytes(
-            _azdo_builds_url(args.definition, args.top, args.skip), {"azdo"}, JSON_LIMIT
-        )
-        _write_output(data, args.output, (".json",))
-    elif args.command == "azdo-timeline":
-        url = (
-            f"https://{AZDO_HOST}{AZDO_PATH_PREFIX}builds/{args.build_id}/timeline"
-            "?api-version=7.1"
-        )
-        _write_output(
-            _request_bytes(url, {"azdo"}, JSON_LIMIT), args.output, (".json",)
-        )
-    elif args.command == "azdo-log":
-        url = (
-            f"https://{AZDO_HOST}{AZDO_PATH_PREFIX}builds/{args.build_id}/logs/"
-            f"{args.log_id}?api-version=7.1"
-        )
-        _write_output(
-            _request_bytes(url, {"azdo"}, LOG_LIMIT), args.output, (".log", ".txt")
-        )
-    elif args.command == "helix-work-items":
-        data = _request_bytes(
-            _helix_work_items_url(args.job_id), {"helix-work-items"}, JSON_LIMIT
-        )
-        _write_output(data, args.output, (".json",))
-    elif args.command == "helix-console":
-        work_items = _request_bytes(
-            _helix_work_items_url(args.job_id), {"helix-work-items"}, JSON_LIMIT
-        )
+    if args.command == "helix-console":
+        work_items = _request_from_spec(args, _REQUEST_SPECS["helix-work-items"])
         console_url = _console_url(work_items, args.work_item)
-        _write_output(
-            _request_bytes(console_url, {"helix-console"}, LOG_LIMIT),
-            args.output,
-            (".log", ".txt"),
-        )
+        data = _request_bytes(console_url, {"helix-console"}, LOG_LIMIT)
+        suffixes = (".log", ".txt")
     else:
-        raise AssertionError(f"unhandled command: {args.command}")
+        spec = _REQUEST_SPECS[args.command]
+        data = _request_from_spec(args, spec)
+        suffixes = spec.suffixes
+    _write_output(data, args.output, suffixes)
 
 
 def _parser() -> argparse.ArgumentParser:

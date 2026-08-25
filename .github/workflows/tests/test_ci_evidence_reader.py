@@ -7,6 +7,7 @@ import tempfile
 import unittest
 import urllib.error
 from pathlib import Path
+from unittest import mock
 
 
 SCRIPT = Path(__file__).parents[1] / "ci-evidence-reader"
@@ -223,6 +224,123 @@ class RequestBehaviorTests(unittest.TestCase):
             ci_evidence_reader._request_bytes(
                 self.url, {"azdo"}, 10, FakeOpener(error=error)
             )
+
+
+class CommandDispatchTests(unittest.TestCase):
+    def test_direct_commands_use_their_request_specs(self):
+        cases = (
+            (
+                ["azdo-builds", "--definition", "999", "--output", "/tmp/builds.json"],
+                ci_evidence_reader._azdo_builds_url(999),
+                {"azdo"},
+                ci_evidence_reader.JSON_LIMIT,
+                (".json",),
+            ),
+            (
+                [
+                    "azdo-timeline",
+                    "--build-id",
+                    "123",
+                    "--output",
+                    "/tmp/timeline.json",
+                ],
+                ci_evidence_reader._azdo_timeline_url(123),
+                {"azdo"},
+                ci_evidence_reader.JSON_LIMIT,
+                (".json",),
+            ),
+            (
+                [
+                    "azdo-log",
+                    "--build-id",
+                    "123",
+                    "--log-id",
+                    "456",
+                    "--output",
+                    "/tmp/log.log",
+                ],
+                ci_evidence_reader._azdo_log_url(123, 456),
+                {"azdo"},
+                ci_evidence_reader.LOG_LIMIT,
+                (".log", ".txt"),
+            ),
+            (
+                [
+                    "helix-work-items",
+                    "--job-id",
+                    "00000000-0000-0000-0000-000000000000",
+                    "--output",
+                    "/tmp/work-items.json",
+                ],
+                ci_evidence_reader._helix_work_items_url(
+                    "00000000-0000-0000-0000-000000000000"
+                ),
+                {"helix-work-items"},
+                ci_evidence_reader.JSON_LIMIT,
+                (".json",),
+            ),
+        )
+
+        for command, url, families, limit, suffixes in cases:
+            with self.subTest(command=command[0]):
+                args = ci_evidence_reader._parser().parse_args(command)
+                with (
+                    mock.patch.object(
+                        ci_evidence_reader, "_request_bytes", return_value=b"payload"
+                    ) as request,
+                    mock.patch.object(ci_evidence_reader, "_write_output") as write,
+                ):
+                    ci_evidence_reader._run(args)
+                request.assert_called_once_with(url, families, limit)
+                write.assert_called_once_with(b"payload", args.output, suffixes)
+
+    def test_helix_console_resolves_then_reads_console(self):
+        job_id = "00000000-0000-0000-0000-000000000000"
+        args = ci_evidence_reader._parser().parse_args(
+            [
+                "helix-console",
+                "--job-id",
+                job_id,
+                "--work-item",
+                "runtime-tests",
+                "--output",
+                "/tmp/console.log",
+            ]
+        )
+        console_url = (
+            "https://helixre107v0xdeko0k025g8.blob.core.windows.net/"
+            "dotnet-runtime/job/console.1.log?helixlogtype=result"
+        )
+        with (
+            mock.patch.object(
+                ci_evidence_reader,
+                "_request_bytes",
+                side_effect=[b"work-items", b"console"],
+            ) as request,
+            mock.patch.object(
+                ci_evidence_reader, "_console_url", return_value=console_url
+            ) as resolve_console,
+            mock.patch.object(ci_evidence_reader, "_write_output") as write,
+        ):
+            ci_evidence_reader._run(args)
+
+        request.assert_has_calls(
+            [
+                mock.call(
+                    ci_evidence_reader._helix_work_items_url(job_id),
+                    {"helix-work-items"},
+                    ci_evidence_reader.JSON_LIMIT,
+                ),
+                mock.call(
+                    console_url, {"helix-console"}, ci_evidence_reader.LOG_LIMIT
+                ),
+            ]
+        )
+        self.assertEqual(request.call_count, 2)
+        resolve_console.assert_called_once_with(b"work-items", "runtime-tests")
+        write.assert_called_once_with(
+            b"console", args.output, (".log", ".txt")
+        )
 
 
 class HelixTraversalTests(unittest.TestCase):
