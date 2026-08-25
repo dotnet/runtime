@@ -44,6 +44,9 @@ Copyright (c) .NET Foundation. All rights reserved.
            Text="PublishReadyToRunComposite is not supported for CoreCLR browser-wasm; only non-composite (per-assembly) R2R images are supported." />
     <Error Condition="'$(PublishReadyToRun)' == 'true' and '$(PublishReadyToRunContainerFormat)' != 'wasm'"
            Text="PublishReadyToRunContainerFormat '$(PublishReadyToRunContainerFormat)' is not supported for CoreCLR browser-wasm; only 'wasm' is supported." />
+    <!-- CPU sampling observes only interpreted frames, so R2R (native wasm) methods are missing from traces until #130521. -->
+    <Error Condition="'$(PublishReadyToRun)' == 'true' and '$(WasmPerformanceInstrumentation)' != ''"
+           Text="WasmPerformanceInstrumentation is not supported together with PublishReadyToRun on CoreCLR browser-wasm. See https://github.com/dotnet/runtime/issues/130521." />
     <PropertyGroup>
       <_WasmRuntimePackR2RDir Condition="'$(_WasmRuntimePackR2RDir)' == '' and '$(_RuntimePackNativeDir)' != ''">$([MSBuild]::NormalizeDirectory('$(_RuntimePackNativeDir)', 'r2r'))</_WasmRuntimePackR2RDir>
     </PropertyGroup>
