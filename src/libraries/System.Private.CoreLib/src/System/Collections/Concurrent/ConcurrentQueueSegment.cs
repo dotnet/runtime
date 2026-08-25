@@ -165,8 +165,8 @@ namespace System.Collections.Concurrent
                     // this one that are available, but we need to dequeue in order.  So before declaring
                     // failure and that the segment is empty, we check the tail to see if we're actually
                     // empty or if we're just waiting for items in flight or after this one to become available.
-                    bool frozen = _frozenForEnqueues;
-                    int currentTail = Volatile.Read(ref _headAndTail.Tail);
+                    bool frozen = Volatile.Read(ref _frozenForEnqueues);
+                    int currentTail = _headAndTail.Tail;
                     if (currentTail - currentHead <= 0 || (frozen && (currentTail - FreezeOffset - currentHead <= 0)))
                     {
                         item = default;
@@ -234,8 +234,8 @@ namespace System.Collections.Concurrent
                     // this one that are available, but we need to peek in order.  So before declaring
                     // failure and that the segment is empty, we check the tail to see if we're actually
                     // empty or if we're just waiting for items in flight or after this one to become available.
-                    bool frozen = _frozenForEnqueues;
-                    int currentTail = Volatile.Read(ref _headAndTail.Tail);
+                    bool frozen = Volatile.Read(ref _frozenForEnqueues);
+                    int currentTail = _headAndTail.Tail;
                     if (currentTail - currentHead <= 0 || (frozen && (currentTail - FreezeOffset - currentHead <= 0)))
                     {
                         result = default;
