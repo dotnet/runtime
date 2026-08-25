@@ -53,9 +53,6 @@ ASMCONSTANTS_C_ASSERT(ASM_ELEMENT_TYPE_R8 == ELEMENT_TYPE_R8);
 #define METHODDESC_REGNUM                    10
 #define METHODDESC_REGISTER                 r10
 
-#define PINVOKE_CALLI_TARGET_REGNUM          10
-#define PINVOKE_CALLI_TARGET_REGISTER       r10
-
 #define PINVOKE_CALLI_SIGTOKEN_REGNUM        11
 #define PINVOKE_CALLI_SIGTOKEN_REGISTER     r11
 
@@ -224,18 +221,6 @@ ASMCONSTANTS_C_ASSERT(SIZEOF__InterfaceInfo_t
                     == sizeof(InterfaceInfo_t));
 
 ASMCONSTANTS_C_ASSERT(MethodTableAuxiliaryData::enum_flag_Initialized == 0x1);
-
-#define                OFFSETOF__DynamicStaticsInfo__m_pMethodTable 0x10
-ASMCONSTANTS_C_ASSERT(OFFSETOF__DynamicStaticsInfo__m_pMethodTable
-                    == offsetof(DynamicStaticsInfo, m_pMethodTable));
-
-#define                OFFSETOF__DynamicStaticsInfo__m_pNonGCStatics 0x8
-ASMCONSTANTS_C_ASSERT(OFFSETOF__DynamicStaticsInfo__m_pNonGCStatics
-                    == offsetof(DynamicStaticsInfo, m_pNonGCStatics));
-
-#define                OFFSETOF__DynamicStaticsInfo__m_pGCStatics 0
-ASMCONSTANTS_C_ASSERT(OFFSETOF__DynamicStaticsInfo__m_pGCStatics
-                    == offsetof(DynamicStaticsInfo, m_pGCStatics));
 
 #define               OFFSETOF__VASigCookie__pPInvokeILStub     0x8
 ASMCONSTANTS_C_ASSERT(OFFSETOF__VASigCookie__pPInvokeILStub
