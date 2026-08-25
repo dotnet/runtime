@@ -50,7 +50,7 @@ namespace Wasm.Build.Tests
             { "<WasmPerformanceInstrumentation>all</WasmPerformanceInstrumentation>", true },
         };
 
-        [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+        [Theory]
         [MemberData(nameof(PropertiesThatTriggerRelinking))]
         public void PropertyDifferentFromRuntimePackTriggersRelinking(string extraProperties, bool expectWasmBuildNative)
         {
@@ -60,7 +60,7 @@ namespace Wasm.Build.Tests
             Assert.Contains($"** WasmBuildNative: '{(expectWasmBuildNative ? "true" : "")}'", line);
         }
 
-        [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+        [Theory]
         [InlineData("<InvariantGlobalization>true</InvariantGlobalization>")]
         [InlineData("<InvariantTimezone>true</InvariantTimezone>")]
         public void ExplicitWasmBuildNativeFalseWithMismatchErrors(string extraProperties)
@@ -74,7 +74,7 @@ namespace Wasm.Build.Tests
             Assert.Contains("but WasmBuildNative is already set to 'false'", output);
         }
 
-        [ConditionalFact(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+        [Fact]
         public void ExplicitWasmBuildNativeFalseWithoutMismatchIsAllowed()
         {
             string? line = BuildAndGetWasmBuildNativeLine(
@@ -89,7 +89,7 @@ namespace Wasm.Build.Tests
         // Mirrors the Mono path's WithNativeReference test: a project that references a native
         // object file always needs a relink to embed it, regardless of whether any tracked
         // property differs from the runtime pack.
-        [ConditionalFact(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+        [Fact]
         public void NativeFileReferenceTriggersRelinking()
         {
             string nativeLibPath = Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", "native-lib.o");
