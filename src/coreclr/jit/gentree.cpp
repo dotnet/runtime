@@ -2513,6 +2513,23 @@ CorInfoHelpFunc GenTreeCall::GetHelperNum() const
     return IsHelperCall() ? Compiler::eeGetHelperNum(gtCallMethHnd) : CORINFO_HELP_UNDEF;
 }
 
+//-------------------------------------------------------------------------
+// CallExceptions: Get the exception set this call may throw.
+//
+// Return Value:
+//     A bit set of exceptions this call may throw.
+//
+ExceptionSetFlags GenTreeCall::CallExceptions() const
+{
+    CorInfoHelpFunc helper = GetHelperNum();
+    if (helper == CORINFO_HELP_UNDEF)
+    {
+        return ExceptionSetFlags::UnknownException;
+    }
+
+    return Compiler::s_helperCallProperties.ThrownExceptions(helper);
+}
+
 //--------------------------------------------------------------------------
 // Equals: Check if 2 CALL nodes are equal.
 //
@@ -8753,14 +8770,8 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
             return ExceptionSetFlags::None;
 
         case GT_CALL:
-            CorInfoHelpFunc helper;
-            helper = AsCall()->GetHelperNum();
-            if (helper == CORINFO_HELP_UNDEF)
-            {
-                return ExceptionSetFlags::UnknownException;
-            }
+            return AsCall()->CallExceptions();
 
-            return Compiler::s_helperCallProperties.ThrownExceptions(helper);
         case GT_LOCKADD:
         case GT_XAND:
         case GT_XORR:
@@ -10149,6 +10160,11 @@ GenTreeCall* Compiler::gtNewCallNode(gtCallTypes           callType,
         node->ClearInlineInfo();
     }
     node->gtReturnType = type;
+
+    if (node->CallExceptions() != ExceptionSetFlags::None)
+    {
+        node->gtFlags |= GTF_EXCEPT;
+    }
 
 #ifdef FEATURE_READYTORUN
     node->gtEntryPoint.addr       = nullptr;

@@ -4450,6 +4450,10 @@ void Compiler::impAnnotateFieldIndir(GenTreeIndir* indir)
         if (addr->IsInstance() && addr->GetFldObj()->OperIs(GT_LCL_ADDR))
         {
             indir->gtFlags &= ~GTF_GLOB_REF;
+            if (indir->OperIsStore())
+            {
+                indir->gtFlags |= indir->Data()->gtFlags & GTF_GLOB_REF;
+            }
         }
         else
         {
@@ -7776,13 +7780,13 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 type = genActualType(op1->TypeGet());
                 op1  = gtNewOperNode(oper, type, op1, op2);
+                if (op1->OperRequiresCallFlag(this))
+                {
+                    op1->gtFlags |= GTF_CALL;
+                }
 
                 // Fold result, if possible.
                 op1 = gtFoldExpr(op1);
-                if (op1->OperIs(GT_LSH, GT_RSH, GT_RSZ))
-                {
-                    gtUpdateNodeSideEffects(op1);
-                }
 
                 impPushOnStack(op1, tiRetVal);
                 break;
@@ -10103,8 +10107,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 op1 = (lclTyp == TYP_STRUCT) ? gtNewStoreBlkNode(layout, op1, op2, indirFlags)->AsIndir()
                                              : gtNewStoreIndNode(lclTyp, op1, op2, indirFlags);
                 impAnnotateFieldIndir(op1->AsIndir());
-                // Annotation may clear GTF_GLOB_REF inherited from the data.
-                op1->gtFlags |= op2->gtFlags & GTF_GLOB_REF;
 
                 if (varTypeIsStruct(op1))
                 {
@@ -11958,6 +11960,7 @@ bool Compiler::impWrapTopOfStackInAwait()
     }
 
     awaitCall->gtArgs.PushFront(this, taskArg);
+    awaitCall->gtFlags |= taskArg.Node->gtFlags & GTF_ALL_EFFECT;
 
     NewCallArg asyncContArg = NewCallArg::Primitive(gtNewNull()).WellKnown(WellKnownArg::AsyncContinuation);
 
@@ -11972,6 +11975,7 @@ bool Compiler::impWrapTopOfStackInAwait()
         }
 
         instArg = NewCallArg::Primitive(instArgTree).WellKnown(WellKnownArg::InstParam);
+        awaitCall->gtFlags |= instArg.Node->gtFlags & GTF_ALL_EFFECT;
     }
 
     if (Target::g_tgtArgOrder == Target::ARG_ORDER_R2L)
@@ -11998,6 +12002,12 @@ bool Compiler::impWrapTopOfStackInAwait()
     callInfo.methodFlags       = info.compCompHnd->getMethodAttribs(awaitMethod);
     impMarkInlineCandidate(awaitCall, contextHandle, &callInfo, compInlineContext);
 
+    GenTree* toPush = awaitCall;
+    if (varTypeIsStruct(callRetType))
+    {
+        toPush = impFixupCallStructReturn(awaitCall, awaitSig.retTypeClass);
+    }
+
     AsyncCallInfo* asyncInfo = new (this, CMK_Async) AsyncCallInfo;
 
     bool const hasContextHandling =
@@ -12007,6 +12017,16 @@ bool Compiler::impWrapTopOfStackInAwait()
     if (!hasContextHandling)
     {
         asyncInfo->IsTailAwait = !compIsForInlining() || impInlineInfo->iciCall->GetAsyncInfo().IsTailAwait;
+
+#if FEATURE_TAILCALL_OPT
+        // We intentionally do not consult with the EE and canTailCall because
+        // this is us introducing a call as an implementation detail and not a
+        // user-introduced call.
+        if (asyncInfo->IsTailAwait && opts.compTailCallOpt && opts.OptimizationEnabled())
+        {
+            awaitCall->gtCallMoreFlags |= GTF_CALL_M_IMPLICIT_TAILCALL;
+        }
+#endif
 
         awaitCall->SetIsAsync(asyncInfo);
     }
@@ -12026,31 +12046,6 @@ bool Compiler::impWrapTopOfStackInAwait()
         // frame depth, which lives in the async call info.
         awaitCall->SetIsAsync(asyncInfo);
         impInheritAsyncContextsFromInliner(awaitCall);
-    }
-
-    gtUpdateNodeSideEffects(awaitCall);
-
-    // Struct-return fixup may spill the call, so finalize its async effects first.
-    GenTree* toPush = awaitCall;
-    if (varTypeIsStruct(callRetType))
-    {
-        toPush = impFixupCallStructReturn(awaitCall, awaitSig.retTypeClass);
-    }
-
-#if FEATURE_TAILCALL_OPT
-    // Set this after struct-return fixup so it does not suppress the existing multi-reg spill.
-    // We intentionally do not consult with the EE and canTailCall because
-    // this is us introducing a call as an implementation detail and not a
-    // user-introduced call.
-    if (!hasContextHandling && asyncInfo->IsTailAwait && opts.compTailCallOpt && opts.OptimizationEnabled())
-    {
-        awaitCall->gtCallMoreFlags |= GTF_CALL_M_IMPLICIT_TAILCALL;
-    }
-#endif
-
-    if (toPush != awaitCall)
-    {
-        gtUpdateNodeSideEffects(toPush);
     }
 
     if (awaitCall->IsInlineCandidate())

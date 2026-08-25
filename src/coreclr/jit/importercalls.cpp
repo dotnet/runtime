@@ -561,7 +561,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
                     call = gtNewIndCallNode(stubAddr, callRetTyp, di);
 
-                    call->gtFlags |= GTF_EXCEPT | (stubAddr->gtFlags & GTF_ALL_EFFECT);
+                    call->gtFlags |= stubAddr->gtFlags & GTF_ALL_EFFECT;
                     call->gtFlags |= GTF_CALL_VIRT_STUB;
 
 #ifdef TARGET_X86
@@ -573,8 +573,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 else
                 {
                     // The stub address is known at compile time
-                    call = gtNewCallNode(CT_USER_FUNC, callInfo->hMethod, callRetTyp, di);
-                    call->gtFlags |= GTF_EXCEPT;
+                    call                               = gtNewCallNode(CT_USER_FUNC, callInfo->hMethod, callRetTyp, di);
                     call->AsCall()->gtStubCallStubAddr = callInfo->stubLookup.constLookup.addr;
                     call->gtFlags |= GTF_CALL_VIRT_STUB;
                     assert(callInfo->stubLookup.constLookup.accessType != IAT_PPVALUE &&
@@ -605,7 +604,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 assert(!(mflags & CORINFO_FLG_STATIC)); // can't call a static method
                 assert(!(clsFlags & CORINFO_FLG_VALUECLASS));
                 call = gtNewCallNode(CT_USER_FUNC, callInfo->hMethod, callRetTyp, di);
-                call->gtFlags |= GTF_EXCEPT;
                 call->gtFlags |= GTF_CALL_VIRT_VTABLE;
 
                 if (opts.OptimizationEnabled())
@@ -678,7 +676,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
                 // Now make an indirect call through the function pointer
                 call->AsCall()->gtControlExpr = fptr;
-                call->gtFlags |= GTF_EXCEPT | (fptr->gtFlags & GTF_ALL_EFFECT);
+                call->gtFlags |= fptr->gtFlags & GTF_ALL_EFFECT;
 
                 if (needsFatPointerHandling)
                 {
@@ -734,7 +732,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             {
                 // This is for a non-virtual, non-interface etc. call
                 call = gtNewCallNode(CT_USER_FUNC, callInfo->hMethod, callRetTyp, di);
-                call->gtFlags |= GTF_EXCEPT;
 
                 // We remove the nullcheck for the GetType call intrinsic.
                 // TODO-CQ: JIT64 does not introduce the null check for many more helper calls
@@ -779,7 +776,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 fptr = gtNewLclvNode(lclNum, TYP_I_IMPL);
 
                 call = gtNewIndCallNode(fptr, callRetTyp, di);
-                call->gtFlags |= GTF_EXCEPT | (fptr->gtFlags & GTF_ALL_EFFECT);
+                call->gtFlags |= fptr->gtFlags & GTF_ALL_EFFECT;
                 if (callInfo->nullInstanceCheck)
                 {
                     call->gtFlags |= GTF_CALL_NULLCHECK;
@@ -2224,7 +2221,7 @@ GenTreeCall* Compiler::impImportIndirectCall(CORINFO_SIG_INFO* sig, const DebugI
 
     GenTreeCall* call = gtNewIndCallNode(fptr, callRetTyp, di);
 
-    call->gtFlags |= GTF_EXCEPT | (fptr->gtFlags & GTF_ALL_EFFECT);
+    call->gtFlags |= fptr->gtFlags & GTF_ALL_EFFECT;
 #ifdef UNIX_X86_ABI
     call->gtFlags &= ~GTF_CALL_POP_ARGS;
 #endif
@@ -7089,7 +7086,7 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
 
                 GenTree* fallback =
                     new (this, GT_INTRINSIC) GenTreeIntrinsic(retType, op1Dup, intrinsic, method R2RARG(*entryPoint));
-                gtUpdateNodeSideEffects(fallback);
+                fallback->gtFlags |= GTF_CALL;
                 GenTree*      cond  = gtNewOperNode(GT_LT, TYP_INT, op1, gtNewZeroConNode(isLong ? TYP_LONG : TYP_INT));
                 GenTreeColon* colon = gtNewColonNode(retType, fallback, result);
                 GenTreeQmark* qmark = gtNewQmarkNode(retType, cond, colon);
@@ -8022,6 +8019,8 @@ void Compiler::impInheritAsyncContextsFromInliner(GenTreeCall* call)
     GenTree* resumedDefNode = gtCloneExpr(resumedDefArg->GetNode());
     GenTree* execNode       = gtCloneExpr(execArg->GetNode());
     GenTree* syncNode       = gtCloneExpr(syncArg->GetNode());
+    call->gtFlags |=
+        (resumedUseNode->gtFlags | resumedDefNode->gtFlags | execNode->gtFlags | syncNode->gtFlags) & GTF_ALL_EFFECT;
     call->gtArgs.PushFront(this, NewCallArg::Primitive(syncNode).WellKnown(WellKnownArg::AsyncSynchronizationContext));
     call->gtArgs.PushFront(this, NewCallArg::Primitive(execNode).WellKnown(WellKnownArg::AsyncExecutionContext));
     call->gtArgs.PushFront(this, NewCallArg::Primitive(resumedUseNode).WellKnown(WellKnownArg::AsyncResumedUse));
@@ -8054,7 +8053,9 @@ void Compiler::impInheritAsyncContextsFromInliner(GenTreeCall* call)
             continue;
         }
 
-        call->gtArgs.PushBack(this, NewCallArg::Primitive(gtCloneExpr(arg.GetNode())).WellKnown(wka));
+        GenTree* argNode = gtCloneExpr(arg.GetNode());
+        call->gtArgs.PushBack(this, NewCallArg::Primitive(argNode).WellKnown(wka));
+        call->gtFlags |= argNode->gtFlags & GTF_ALL_EFFECT;
     }
 
     // This call ends up in the same frame as the inlining call, so it hands off through
