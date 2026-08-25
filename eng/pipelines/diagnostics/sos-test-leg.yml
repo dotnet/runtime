@@ -1,7 +1,5 @@
 # sos-test-leg.yml -- wraps the matrix + job + dep + artifact download +
-# standard postBuildSteps pattern used by the SOS-style test legs (cDAC,
-# cDAC_verify, DAC) that run on windows_x64. Each of those legs
-# only differs in its `name` and `dacMode` value.
+# standard postBuildSteps pattern used by the cDAC SOS test leg on windows_x64.
 #
 # AzDO tasks workaround:
 #   PublishTestResults v2.270.0 garbles parameterized xUnit test names

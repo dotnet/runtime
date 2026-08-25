@@ -5,7 +5,7 @@
 
   <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
   <PropertyGroup>
-    <AssemblyName>$(LibPrefix)mscordaccore_collector</AssemblyName>
+    <AssemblyName>$(LibPrefix)mscordaccore</AssemblyName>
     <UseNativeLibPrefix>false</UseNativeLibPrefix>
     <TargetFramework>$(CDacTfm)</TargetFramework>
     <RootNamespace>Microsoft.Diagnostics.DataContractReader.DumpCollect</RootNamespace>
@@ -18,7 +18,7 @@
 
   <!-- Custom Windows Version Resource is required. -->
   <PropertyGroup Condition="'$(TargetsWindows)' == 'true'">
-    <Win32Resource>$(IntermediateOutputPath)mscordaccore_collector.version.res</Win32Resource>
+    <Win32Resource>$(IntermediateOutputPath)mscordaccore.version.res</Win32Resource>
   </PropertyGroup>
 
   <ItemGroup>

@@ -3,10 +3,9 @@
 # Pipeline overview:
 #
 #   SOSTests           windows_x64 Release. One shared coreclr+libs build (-c Debug
-#                      -rc release -lc release -clrinterpreter) consumed by 3 SOS
-#                      legs that run on top of it: cDAC, cDAC_verify, DAC.
-#                      Each leg sets testInterpreter: true so interpreter coverage
-#                      is exercised inline (no separate Interpreter leg).
+#                      -rc release -lc release -clrinterpreter) consumed by the
+#                      cDAC SOS leg. The leg sets testInterpreter: true so
+#                      interpreter coverage is exercised inline.
 #
 #   CdacUnitTests      linux_x64 Debug. Builds + tests the cDAC managed-side
 #                      UnitTests + DataGeneratorTests projects (tools.cdactests
@@ -116,13 +115,13 @@ extends:
     stages:
 
     # ----------------------------------------------------------------------
-    # SOS tests: shared windows_x64 build + 3 SOS legs that consume it.
+    # SOS tests: shared windows_x64 build + cDAC SOS leg.
     # ----------------------------------------------------------------------
     - stage: SOSTests
       jobs:
       # Shared coreclr+libs+host+packs build. -clrinterpreter compiles
-      # FEATURE_INTERPRETER into the Release CoreCLR so the SOS legs below
-      # (which all set testInterpreter: true via sos-test-leg.yml) get
+      # FEATURE_INTERPRETER into the Release CoreCLR so the SOS leg below
+      # gets interpreter coverage through sos-test-leg.yml
       # interpreter coverage without needing a separate Checked drop
       # (see review on dotnet/runtime#127840 -- -clrinterpreter enables
       # the interpreter in Release too).
@@ -167,27 +166,12 @@ extends:
                 artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_cdac
                 displayName: cDAC Assets
 
-      # SOS test legs: each depends on the shared build above. Differ only in
-      # name (artifact namespace) and the cDAC/DAC load mode.
-
       # cDAC: the runtime-under-test's own standalone cDAC (mscordaccore_universal) loaded through SOS's
       # standard cDAC hosting path (overlaying the freshly built cDAC next to sos.dll).
       - template: /eng/pipelines/diagnostics/sos-test-leg.yml
         parameters:
           name: cDAC
           dacMode: cdac
-
-      # cDAC_verify: the in-box DAC hosts the cDAC contract reader without fallback,
-      # while still verifying against the legacy DAC.
-      - template: /eng/pipelines/diagnostics/sos-test-leg.yml
-        parameters:
-          name: cDAC_verify
-          dacMode: cdacverify
-
-      - template: /eng/pipelines/diagnostics/sos-test-leg.yml
-        parameters:
-          name: DAC
-          dacMode: dac
 
     # ----------------------------------------------------------------------
     # cDAC managed-side unit tests + DataGenerator tests. Standalone, no
@@ -236,12 +220,9 @@ extends:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: release
           platforms: ${{ parameters.cdacDumpPlatforms }}
-          variables:
-          - name: _UseCdacDumpCollectProvider
-            value: $[and(eq(variables['osGroup'], 'windows'), or(eq(variables['archType'], 'x64'), eq(variables['archType'], 'x86')))]
           jobParameters:
             nameSuffix: CdacBuild
-            buildArgs: -s clr+libs+tools.cdac+tools.cdacdumptests+tools.cdacstresstests -c $(_BuildConfig) -rc checked -lc $(_BuildConfig) /p:SkipDumpVersions=net10.0 /p:UseCdacDumpCollectProvider=$(_UseCdacDumpCollectProvider)
+            buildArgs: -s clr+libs+tools.cdac+tools.cdacdumptests+tools.cdacstresstests -c $(_BuildConfig) -rc checked -lc $(_BuildConfig) /p:SkipDumpVersions=net10.0 /p:UseCdacDumpCollectProvider=true
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 180
             postBuildSteps:

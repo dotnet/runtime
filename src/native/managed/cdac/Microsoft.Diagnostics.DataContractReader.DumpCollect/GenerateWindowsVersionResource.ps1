@@ -59,7 +59,7 @@ foreach ($includeDirectory in $sdkIncludeDirectories) {
 
 $outputDirectory = Split-Path -Parent $outputPath
 [System.IO.Directory]::CreateDirectory($outputDirectory) | Out-Null
-$resourceSource = Join-Path $outputDirectory 'mscordaccore_collector.version.rc'
+$resourceSource = Join-Path $outputDirectory 'mscordaccore.version.rc'
 $numericVersion = $versionParts -join ','
 
 $resourceContents = @"
@@ -79,11 +79,11 @@ BEGIN
         BLOCK "040904B0"
         BEGIN
             VALUE "CompanyName", "$(Escape-ResourceString $companyName)"
-            VALUE "FileDescription", "mscordaccore_collector"
+            VALUE "FileDescription", "mscordaccore"
             VALUE "FileVersion", "$(Escape-ResourceString $fileVersion)"
-            VALUE "InternalName", "mscordaccore_collector.dll"
+            VALUE "InternalName", "mscordaccore.dll"
             VALUE "LegalCopyright", "$(Escape-ResourceString $legalCopyright)"
-            VALUE "OriginalFilename", "mscordaccore_collector.dll"
+            VALUE "OriginalFilename", "mscordaccore.dll"
             VALUE "ProductName", "$(Escape-ResourceString $productName)"
             VALUE "ProductVersion", "$(Escape-ResourceString $productVersion)"
         END

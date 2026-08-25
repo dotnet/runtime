@@ -89,6 +89,10 @@ else()
 endif(CLR_CMAKE_HOST_OSX)
 target_link_libraries(createdump_static PRIVATE minipal)
 
+if(CLR_DUMP_COLLECT_PROVIDER_PATH)
+    target_compile_definitions(createdump_static PRIVATE CDAC_DUMP_COLLECTOR)
+endif()
+
     add_executable_clr(createdump
         main.cpp
         createdumppal.cpp
@@ -98,6 +102,9 @@ target_link_libraries(createdump_static PRIVATE minipal)
         PRIVATE
         createdump_static
         corguids
+        coreclrminipal
+        coreclrpal
+        coreclrpal_dac
         dbgutil
         ${CMAKE_DL_LIBS}
     )

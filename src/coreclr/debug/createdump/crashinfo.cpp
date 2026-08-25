@@ -23,6 +23,7 @@ CrashInfo::CrashInfo(const CreateDumpOptions& options) :
     m_crashThread(options.CrashThread),
     m_signal(options.Signal),
     m_exceptionRecord(options.ExceptionRecord),
+    m_contractDescriptorAddress(0),
     m_moduleInfos(&ModuleInfoCompare),
     m_mainModule(nullptr),
     m_cbModuleMappings(0),
@@ -354,12 +355,14 @@ CrashInfo::InitializeDAC(DumpType dumpType)
         printf_error("InitializeDAC: CLRDataCreateInstance(ICLRDataEnumMemoryRegions) FAILED %s (%08x)\n", GetHResultString(hr), hr);
         goto exit;
     }
+#ifndef CDAC_DUMP_COLLECTOR
     hr = pfnCLRDataCreateInstance(__uuidof(IXCLRDataProcess), dataTarget, (void**)&m_pClrDataProcess);
     if (FAILED(hr))
     {
         printf_error("InitializeDAC: CLRDataCreateInstance(IXCLRDataProcess) FAILED %s (%08x)\n", GetHResultString(hr), hr);
         goto exit;
     }
+#endif
     result = true;
 exit:
     return result;

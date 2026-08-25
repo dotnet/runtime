@@ -64,7 +64,7 @@
       <_CoreClrBuildArg Condition="'$(BuildSubdirectory)' != ''" Include="-subdir $(BuildSubdirectory)" />
       <_CoreClrBuildArg Include="-cmakeargs &quot;-DCLR_DOTNET_HOST_PATH='$(DOTNET_HOST_PATH)'&quot;" />
       <_CoreClrBuildArg Condition="'$(HasCdacBuildTool)' == 'true'" Include="-cmakeargs &quot;-DCDAC_BUILD_TOOL_BINARY_PATH=$(RuntimeBinDir)cdac-build-tool\cdac-build-tool.dll&quot;" />
-      <_CoreClrBuildArg Condition="'$(HasCdacDumpCollectProvider)' == 'true'" Include="-cmakeargs &quot;-DCLR_DUMP_COLLECT_PROVIDER_PATH=$(RuntimeBinDir)mscordaccore_collector.dll&quot;" />
+      <_CoreClrBuildArg Condition="'$(HasCdacDumpCollectProvider)' == 'true'" Include="-cmakeargs &quot;-DCLR_DUMP_COLLECT_PROVIDER_PATH=$(RuntimeBinDir)$(LibPrefix)mscordaccore$(LibSuffix)&quot;" />
       <_CoreClrBuildArg Condition="'$(FeatureXplatEventSource)' == 'false'" Include="-cmakeargs &quot;-DFEATURE_EVENTSOURCE_XPLAT=0&quot;" />
       <_CoreClrBuildArg Condition="'$(FeatureInterpreter)' == 'true'" Include="-cmakeargs &quot;-DFEATURE_INTERPRETER=1&quot;" />
       <_CoreClrBuildArg Condition="'$(FeatureDynamicCodeCompiled)' == 'true' or '$(FeatureDynamicCodeCompiled)' == ''" Include="-cmakeargs &quot;-DFEATURE_DYNAMIC_CODE_COMPILED=1&quot;" />
