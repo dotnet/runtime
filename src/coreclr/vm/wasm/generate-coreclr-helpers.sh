@@ -99,13 +99,22 @@ run_generator() {
 }
 
 # Modules the runtime links statically; a P/Invoke into any of them resolves to a direct call.
-pinvoke_modules=(
-    libSystem.Native
-    libSystem.Native.Browser
-    libSystem.IO.Compression.Native
-    libSystem.Globalization.Native
-    libSystem.Runtime.InteropServices.JavaScript.Native
-)
+# Read from the list the runtime tests' corerun relink imports, so the two cannot be edited apart.
+pinvoke_modules_file="$repo_root/eng/wasm/WasmPInvokeModules.props"
+if [[ ! -f "$pinvoke_modules_file" ]]; then
+    echo "Error: P/Invoke module list not found at: $pinvoke_modules_file" >&2
+    exit 1
+fi
+
+pinvoke_modules=()
+while IFS= read -r module; do
+    pinvoke_modules+=("$module")
+done < <(sed -n 's/.*<WasmCoreClrFrameworkPInvokeModule Include="\([^"]*\)".*/\1/p' "$pinvoke_modules_file")
+
+if [[ ${#pinvoke_modules[@]} -eq 0 ]]; then
+    echo "Error: no WasmCoreClrFrameworkPInvokeModule entries found in: $pinvoke_modules_file" >&2
+    exit 1
+fi
 
 # The generator lives in crossgen2 and uses its type system to compute the wasm ABI. Generation
 # does not load the JIT, so the host-targeting crossgen2 answers wasm questions correctly. Its

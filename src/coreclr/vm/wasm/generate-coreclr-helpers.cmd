@@ -81,11 +81,22 @@ cd /d "%repo_root%"
 set crossgen2=%repo_root%\artifacts\bin\coreclr\windows.x64.%configuration%\crossgen2\crossgen2.dll
 
 :: Modules the runtime links statically; a P/Invoke into any of them resolves to a direct call.
-set pinvoke_module_args=--directpinvoke libSystem.Native ^
- --directpinvoke libSystem.Native.Browser ^
- --directpinvoke libSystem.IO.Compression.Native ^
- --directpinvoke libSystem.Globalization.Native ^
- --directpinvoke libSystem.Runtime.InteropServices.JavaScript.Native
+:: Read from the list the runtime tests' corerun relink imports, so the two cannot be edited apart.
+set "pinvoke_modules_file=%repo_root%\eng\wasm\WasmPInvokeModules.props"
+if not exist "%pinvoke_modules_file%" (
+    echo Error: P/Invoke module list not found at: %pinvoke_modules_file%
+    exit /b 1
+)
+
+set "pinvoke_module_args="
+for /f tokens^=2^ delims^=^" %%M in ('findstr /c:"WasmCoreClrFrameworkPInvokeModule Include=" "%pinvoke_modules_file%"') do (
+    set "pinvoke_module_args=!pinvoke_module_args! --directpinvoke %%M"
+)
+
+if not defined pinvoke_module_args (
+    echo Error: no WasmCoreClrFrameworkPInvokeModule entries found in: %pinvoke_modules_file%
+    exit /b 1
+)
 
 :: Resolve scan paths (allow overrides).
 if not "%browser_scan_path_override%"=="" (

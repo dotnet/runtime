@@ -27,19 +27,18 @@ Each run emits three files into the output directory:
 ## The P/Invoke module list
 
 Only the framework native libraries the runtime links statically get an entry in the generated
-P/Invoke table. Three places have to agree on that list:
+P/Invoke table. These scripts read that list from
+[`eng/wasm/WasmPInvokeModules.props`](../../../../eng/wasm/WasmPInvokeModules.props), which
+`CLRTest.WasmCorerun.targets` imports too when it links a test-specific corerun, so the checked-in
+tables and the tests' own cannot be edited apart.
 
-- [`eng/wasm/WasmPInvokeModules.props`](../../../../eng/wasm/WasmPInvokeModules.props), which
-  `CLRTest.WasmCorerun.targets` reads when it links a test-specific corerun and regenerates
-  equivalent tables of its own.
-- The `pinvoke_modules` list these scripts pass as `--directpinvoke`, which produces the
-  checked-in tables here.
-- `BrowserWasmApp.CoreCLR.targets`, which ships in the WebAssembly workload and is evaluated
-  inside the user's SDK, where the props file does not exist.
+`BrowserWasmApp.CoreCLR.targets` keeps a copy of the list on purpose: it ships in the WebAssembly
+workload and is evaluated inside the user's SDK, where the props file does not exist. That copy has
+to be updated alongside the props file.
 
-Adding a module means updating all three, rerunning these scripts, and committing the regenerated
-files in the same change. A module missing from one of them surfaces as a `DllNotFoundException`
-at run time rather than as a build failure.
+Adding a module means editing both, rerunning these scripts, and committing the regenerated files
+in the same change. A module missing from one of them surfaces as a `DllNotFoundException` at run
+time rather than as a build failure.
 
 ## What needs to be built first
 
