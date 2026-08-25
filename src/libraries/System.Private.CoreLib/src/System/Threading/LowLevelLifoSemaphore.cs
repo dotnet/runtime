@@ -17,8 +17,10 @@ namespace System.Threading
     {
         // The spin count is chosen to be in the range of typical thread wake latency and some additional overhead,
         // all assuming a single spin is calibrated to around 35 nanoseconds.
-        // The thread wake latency commonly measures at 2-10 microsecond (year 2026) and unlikely to drastically change.
-        private const int DefaultSemaphoreSpinCountLimit = 256;
+        // The thread wake latency commonly measures at ~10 microsecond (year 2026) and unlikely to drastically change.
+        // But since the wakes are LIFO, the spin needs to survive additional overhead (we will need to take a lock, unlink the thread).
+        // So we limit the spin to about 35 microseconds.
+        private const int DefaultSemaphoreSpinCountLimit = 1024;
         // The cooldown roughly serves as detection that the thread did not spend time being blocked.
         // If it woke in under 4 microseconds, it was likely a fast/trivial wake without blocking.
         private const int DefaultWakeCooldown = 4;
