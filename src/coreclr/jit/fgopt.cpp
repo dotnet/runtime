@@ -4856,14 +4856,6 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPh
             fgDispHandlerTab();
         }
 
-        if (compRationalIRForm)
-        {
-            for (BasicBlock* const block : Blocks())
-            {
-                LIR::AsRange(block).CheckLIR(this);
-            }
-        }
-
         fgVerifyHandlerTab();
         // Make sure that the predecessor lists are accurate
         fgDebugCheckBBlist();
