@@ -31,6 +31,7 @@
     <WasmEnableExceptionHandling>true</WasmEnableExceptionHandling>
     <WasmEnableSIMD>true</WasmEnableSIMD>
     <WasmClang>emcc</WasmClang>
+    <WasmWarnOnUnresolvedPInvokeModules Condition="'$(WasmWarnOnUnresolvedPInvokeModules)' == ''">true</WasmWarnOnUnresolvedPInvokeModules>
 
     <_WasmDefaultFlags>-fwasm-exceptions -sWASM_LEGACY_EXCEPTIONS=0 -msimd128</_WasmDefaultFlags>
 
@@ -677,6 +678,7 @@
       InterpToNativeOutputPath="$(_WasmInterpToNativeTablePath)"
       CacheFilePath="$(_WasmM2NCachePath)"
       TargetOS="browser"
+      WarnOnUnresolvedPInvokeModules="$(WasmWarnOnUnresolvedPInvokeModules)"
       IsLibraryMode="$(_IsLibraryMode)">
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </ManagedToNativeGenerator>
