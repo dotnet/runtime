@@ -535,7 +535,13 @@ void CompressDebugInfo::CompressBoundaries(
     IN OUT NibbleWriter             *pWriter
 )
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     _ASSERTE(pWriter != NULL);
     _ASSERTE((pMap == NULL) == (cMap == 0));
@@ -901,7 +907,8 @@ PTR_BYTE CompressDebugInfo::Compress(
     )
 {
     CONTRACTL {
-        STANDARD_VM_CHECK;
+        THROWS; // compression routines throw
+        MODE_ANY;
         PRECONDITION((iOffsetMapping == 0) == (pOffsetMapping == NULL));
         PRECONDITION((iNativeVarInfo == 0) == (pNativeVarInfo == NULL));
         PRECONDITION((iInlineTree == 0) || (pInlineTree != NULL));

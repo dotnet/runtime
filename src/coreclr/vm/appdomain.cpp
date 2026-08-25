@@ -2832,7 +2832,8 @@ BOOL AppDomain::RemoveFileFromCache(PEAssembly * pPEAssembly)
 {
     CONTRACTL
     {
-        STANDARD_VM_CHECK;
+        GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(CheckPointer(pPEAssembly));
     }
     CONTRACTL_END;

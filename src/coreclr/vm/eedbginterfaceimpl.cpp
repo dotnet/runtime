@@ -655,7 +655,9 @@ MethodDesc *EEDbgInterfaceImpl::LoadMethodDef(Module* pModule,
 {
     CONTRACTL
     {
-        STANDARD_VM_CHECK;
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(CheckPointer(pModule));
     }
     CONTRACTL_END;
@@ -821,7 +823,9 @@ TypeHandle EEDbgInterfaceImpl::LoadClass(Module *pModule,
 {
     CONTRACTL
     {
-        STANDARD_VM_CHECK;
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(CheckPointer(pModule));
     }
     CONTRACTL_END;
@@ -839,7 +843,9 @@ TypeHandle EEDbgInterfaceImpl::LoadInstantiation(Module *pModule,
 {
     CONTRACTL
     {
-        STANDARD_VM_CHECK;
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(CheckPointer(pModule));
     }
     CONTRACTL_END;
@@ -851,7 +857,13 @@ TypeHandle EEDbgInterfaceImpl::LoadArrayType(CorElementType et,
                                              TypeHandle elemtype,
                                              unsigned rank)
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     if (elemtype.IsNull())
         return TypeHandle();
@@ -862,7 +874,13 @@ TypeHandle EEDbgInterfaceImpl::LoadArrayType(CorElementType et,
 TypeHandle EEDbgInterfaceImpl::LoadPointerOrByrefType(CorElementType et,
                                                       TypeHandle elemtype)
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     return ClassLoader::LoadPointerOrByrefTypeThrowing(et, elemtype);
 }
@@ -870,7 +888,13 @@ TypeHandle EEDbgInterfaceImpl::LoadPointerOrByrefType(CorElementType et,
 TypeHandle EEDbgInterfaceImpl::LoadFnptrType(TypeHandle *inst,
                                              DWORD ntypars)
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     /* @TODO : CALLCONV? */
     return ClassLoader::LoadFnptrTypeThrowing(0, ntypars, inst);
@@ -878,7 +902,13 @@ TypeHandle EEDbgInterfaceImpl::LoadFnptrType(TypeHandle *inst,
 
 TypeHandle EEDbgInterfaceImpl::LoadElementType(CorElementType et)
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     MethodTable *m = CoreLibBinder::GetElementType(et);
 
@@ -1222,7 +1252,13 @@ HRESULT EEDbgInterfaceImpl::SetIPFromSrcToDst(Thread *pThread,
                                               void *pDji,
                                               EHRangeTree *pEHRT)
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     return ::SetIPFromSrcToDst(pThread,
                                addrStart,

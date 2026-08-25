@@ -312,7 +312,9 @@ DispatchMap::CreateEncodedMapping(
     UINT32 *             pcbMap)
 {
     CONTRACTL {
-        STANDARD_VM_CHECK;
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(CheckPointer(pMapBuilder));
         PRECONDITION(CheckPointer(pAllocator));
         PRECONDITION(CheckPointer(ppbMap));

@@ -82,7 +82,8 @@ static HRESULT ParseCaValue(
         PRECONDITION(CheckPointer(pCaArg));
         PRECONDITION(CheckPointer(pCaParam));
         PRECONDITION(CheckPointer(pCaValueArrayFactory));
-        STANDARD_VM_CHECK;
+        THROWS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -207,7 +208,8 @@ static HRESULT ParseCaNamedArgs(
     CONTRACTL {
         PRECONDITION(CheckPointer(pCaValueArrayFactory));
         PRECONDITION(CheckPointer(pAssembly));
-        STANDARD_VM_CHECK;
+        THROWS;
+        MODE_ANY;
     } CONTRACTL_END;
 
     HRESULT hr = S_OK;

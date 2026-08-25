@@ -429,7 +429,13 @@ static void ConvToJitSig(
     ConvToJitSigFlags     flags,
     CORINFO_SIG_INFO *    sigRet)
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     uint32_t sigRetFlags = 0;
 
@@ -11162,7 +11168,13 @@ void CEECodeGenInfo::NibbleMapSet()
 /*********************************************************************/
 void CEEJitInfo::WriteCode(EECodeGenManager * jitMgr)
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     WriteCodeBytes();
     // Now that the code header was written to the final location, publish the code via the nibble map
@@ -11519,7 +11531,13 @@ void CInterpreterJitInfo::WriteCodeBytes()
 
 void CInterpreterJitInfo::WriteCode(EECodeGenManager * jitMgr)
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     WriteCodeBytes();
     // Now that the code header was written to the final location, publish the code via the nibble map
@@ -13015,7 +13033,13 @@ static CorJitResult invokeCompileMethod(EECodeGenManager *jitMgr,
 
 /* static */ CORJIT_FLAGS CEEInfo::GetBaseCompileFlags(MethodDesc * ftn)
 {
-     STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     //
     // Figure out the code quality flags

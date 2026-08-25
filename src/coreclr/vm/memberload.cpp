@@ -130,7 +130,9 @@ void MemberLoader::GetDescFromMemberRef(ModuleBase * pModule,
 {
     CONTRACTL
     {
-        STANDARD_VM_CHECK;
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(TypeFromToken(MemberRef) == mdtMemberRef);
         PRECONDITION(ppMD != NULL && *ppMD == NULL);
         PRECONDITION(ppFD != NULL && *ppFD == NULL);
@@ -440,7 +442,9 @@ MethodDesc * MemberLoader::GetMethodDescFromMemberRefAndType(ModuleBase * pModul
 {
     CONTRACTL
     {
-        STANDARD_VM_CHECK;
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(TypeFromToken(MemberRef) == mdtMemberRef);
     }
     CONTRACTL_END;
@@ -509,7 +513,9 @@ FieldDesc * MemberLoader::GetFieldDescFromMemberRefAndType(ModuleBase * pModule,
 {
     CONTRACTL
     {
-        STANDARD_VM_CHECK;
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(TypeFromToken(MemberRef) == mdtMemberRef);
     }
     CONTRACTL_END;
@@ -561,7 +567,9 @@ MethodDesc* MemberLoader::GetMethodDescFromMethodDef(Module *pModule,
 {
     CONTRACTL
     {
-        STANDARD_VM_CHECK;
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(TypeFromToken(MethodDef) == mdtMethodDef);
     }
     CONTRACTL_END;
@@ -640,7 +648,9 @@ FieldDesc* MemberLoader::GetFieldDescFromFieldDef(Module *pModule,
 {
     CONTRACTL
     {
-        STANDARD_VM_CHECK;
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(TypeFromToken(fieldDef) == mdtFieldDef);
     }
     CONTRACTL_END;
@@ -711,7 +721,9 @@ MemberLoader::GetMethodDescFromMemberDefOrRefOrSpec(
 {
     CONTRACTL
     {
-        STANDARD_VM_CHECK;
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(CheckPointer(pModule));
     }
     CONTRACTL_END;
@@ -785,7 +797,9 @@ MethodDesc * MemberLoader::GetMethodDescFromMethodSpec(Module * pModule,
 {
     CONTRACTL
     {
-        STANDARD_VM_CHECK;
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(TypeFromToken(MethodSpec) == mdtMethodSpec);
         PRECONDITION(ppTH != NULL && ppTH->IsNull());
         PRECONDITION(!((ppTypeSig == NULL) ^ (pcbTypeSig == NULL)));
@@ -884,7 +898,9 @@ MemberLoader::GetMethodDescFromMethodDef(
 {
     CONTRACTL
     {
-        STANDARD_VM_CHECK;
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(CheckPointer(pModule));
         PRECONDITION(TypeFromToken(MethodDef) == mdtMethodDef);
     }
@@ -920,7 +936,13 @@ FieldDesc* MemberLoader::GetFieldDescFromMemberDefOrRef(
     BOOL strictMetadataChecks  // Normally true - reflection is the one exception.  Throw an exception if no generic method args given for a generic field, otherwise return the 'generic' instantiation
     )
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     FieldDesc * pFD = NULL;
     MethodDesc * pMD = NULL;
@@ -1199,7 +1221,9 @@ MethodDesc *
 MemberLoader::FindMethodForInterfaceSlot(MethodTable * pMT, MethodTable *pInterface, WORD slotNum)
 {
     CONTRACTL {
-        STANDARD_VM_CHECK;
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(CheckPointer(pInterface));
         PRECONDITION(pInterface->IsInterface());
         PRECONDITION(slotNum < pInterface->GetNumVirtuals());
