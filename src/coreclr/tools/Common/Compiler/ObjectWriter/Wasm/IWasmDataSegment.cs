@@ -37,11 +37,18 @@ namespace ILCompiler.ObjectWriter
         /// </summary>
         int Alignment { get; }
 
+        WasmDataSegmentType SegmentType { get; }
+
         /// <summary>
-        /// Sets the padding after the content of the segment to ensure that following segments are aligned properly.
-        /// The padding should be included in IWasmEmittable.EncodeSize() and IWasmEmittable.EmitToStream(), but not RawContentSize.
+        /// For active segments, sets the offset of the segment in linear memory. For passive segments, this is a no-op.
         /// </summary>
-        void SetPadding(int value);
+        void SetMemoryOffset(int offset);
+
+        /// <summary>
+        /// Gets the offset of the segment in linear memory when loaded.
+        /// For passive segments, returns <paramref name="offsetInSegment"/>
+        /// </summary>
+        int GetMemoryAddressOfOffset(int offsetInSegment);
     }
 
     internal static class WasmDataSegmentEncoding
