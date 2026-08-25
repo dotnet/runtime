@@ -441,7 +441,14 @@ HRESULT CordbValue::InternalCreateHandle(CorDebugHandleType      handleType,
 
 
     // Create the ICorDebugHandleValue object
-    RSInitHolder<CordbHandleValue> pHandle(new (nothrow) CordbHandleValue(m_appdomain, m_type, handleType) );
+    HRESULT hr = S_OK;
+    RSInitHolder<CordbHandleValue> pHandle;
+    EX_TRY
+    {
+        pHandle.Assign(new (nothrow) CordbHandleValue(m_appdomain, m_type, handleType));
+    }
+    EX_CATCH_HRESULT(hr);
+    IfFailRet(hr);
 
     if (pHandle == NULL)
     {
@@ -462,7 +469,7 @@ HRESULT CordbValue::InternalCreateHandle(CorDebugHandleType      handleType,
     event.CreateHandle.handleType = handleType;
 
     // Note: two-way event here...
-    HRESULT hr = process->SendIPCEvent(&event, sizeof(DebuggerIPCEvent));
+    hr = process->SendIPCEvent(&event, sizeof(DebuggerIPCEvent));
     hr = WORST_HR(hr, event.hr);
 
     if (SUCCEEDED(hr))
@@ -980,19 +987,20 @@ HRESULT CordbReferenceValue::SetValue(CORDB_ADDRESS address)
     _ASSERTE((m_type != NULL) ||
              (!m_valueHome.ObjHandleIsNull() && (m_info.objRef == (CORDB_ADDRESS)NULL)));
 
-    IDacDbiInterface::TargetInfo targetInfo;
-    IfFailRet(GetProcess()->GetTargetInfo(&targetInfo));
-    // If the target is 32-bit, we can't set a reference to a value that doesn't fit in 32 bits.
-    if ((targetInfo.pointerSize == sizeof(ULONG32)) && (address > UINT32_MAX))
-    {
-        return E_INVALIDARG;
-    }
+    IDacDbiInterface::TargetInfo targetInfo = {};
 
-	EX_TRY
-	{
+    EX_TRY
+    {
+        IfFailThrow(GetProcess()->GetTargetInfo(&targetInfo));
+        // If the target is 32-bit, we can't set a reference to a value that doesn't fit in 32 bits.
+        if ((targetInfo.pointerSize == sizeof(ULONG32)) && (address > UINT32_MAX))
+        {
+            ThrowHR(E_INVALIDARG);
+        }
+
         m_valueHome.m_pHome->SetValue(MemoryRange(&address, targetInfo.pointerSize), m_type); // throws
-	}
-	EX_CATCH_HRESULT(hr);
+    }
+    EX_CATCH_HRESULT(hr);
 
     if (SUCCEEDED(hr))
     {
