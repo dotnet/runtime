@@ -212,8 +212,12 @@
   <!--
     Generates the per-class Helix work item list consumed by src/libraries/sendtohelix-browser.targets,
     so that adding a test class is enough to get it running on Helix.
+
+    This has to run before ZipTestArchive, because $(BundleDir) is $(OutDir) for this project and
+    ZipTestArchive deletes it once the archive is created in CI. AfterTargets="Build" covers the
+    local case where ArchiveTests is not set and ZipTestArchive never runs.
   -->
-  <Target Name="GenerateHelixJobsList" AfterTargets="Build">
+  <Target Name="GenerateHelixJobsList" AfterTargets="Build" BeforeTargets="ZipTestArchive">
     <ItemGroup>
       <!--
         The lane that fans out per class always runs with these categories filtered out (see
