@@ -548,23 +548,18 @@ namespace System.Net.ServerSentEvents
         private void GrowBuffer([NotNull] ref byte[]? buffer, Func<int> checkedRequiredLength)
         {
             int currentSize = buffer?.Length ?? 0;
-            int prefferedGrowth;
+
+            int preferredGrowth;
             try
             {
-                prefferedGrowth = checked(currentSize * 2);
+                preferredGrowth = checked(currentSize * 2);
             }
             catch (OverflowException)
             {
-                prefferedGrowth = int.MaxValue;
+                preferredGrowth = int.MaxValue;
             }
-            if (prefferedGrowth < DefaultArrayPoolRentSize)
-            {
-                prefferedGrowth = DefaultArrayPoolRentSize;
-            }
-            if (prefferedGrowth > _maxBufferSize)
-            {
-                prefferedGrowth = _maxBufferSize;
-            }
+            preferredGrowth = Math.Min(preferredGrowth, _maxBufferSize);
+            preferredGrowth = Math.Max(preferredGrowth, DefaultArrayPoolRentSize);
 
             int requestedGrowth;
             try
@@ -575,17 +570,17 @@ namespace System.Net.ServerSentEvents
             {
                 throw new InvalidDataException(SR.InvalidDataException_SseExceededMaxLength);
             }
+            if (buffer is not null && currentSize > requestedGrowth)
+            {
+                return;
+            }
             if (requestedGrowth > _maxBufferSize)
             {
                 throw new InvalidDataException(SR.InvalidDataException_SseExceededMaxLength);
             }
 
-            int actualGrowth = Math.Max(prefferedGrowth, requestedGrowth);
+            int actualGrowth = Math.Max(preferredGrowth, requestedGrowth);
 
-            if (buffer is not null && currentSize > actualGrowth)
-            {
-                return;
-            }
 
             byte[]? toReturn = buffer;
             buffer = ArrayPool<byte>.Shared.Rent(actualGrowth);
