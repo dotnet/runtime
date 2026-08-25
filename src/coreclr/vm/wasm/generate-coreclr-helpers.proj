@@ -46,6 +46,8 @@
       <_TargetOS>%(_WasmCallHelperTarget.Identity)</_TargetOS>
       <_ScanPath>%(_WasmCallHelperTarget.ScanPath)</_ScanPath>
       <_OutputDir>$(MSBuildThisFileDirectory)$(_TargetOS)/</_OutputDir>
+      <_ResponseFileDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsObjDir)', 'wasm-callhelpers', '$(_TargetOS)'))</_ResponseFileDir>
+      <_ResponseFile>$(_ResponseFileDir)generate-coreclr-helpers.rsp</_ResponseFile>
     </PropertyGroup>
 
     <Error Condition="!Exists('$(_Crossgen2Path)')"
@@ -58,11 +60,34 @@
     <Message Importance="High" Text="[$(_TargetOS)] Scan path: $(_ScanPath)" />
     <Message Importance="High" Text="[$(_TargetOS)] Output path: $(_OutputDir)" />
 
-    <MakeDir Directories="$(_OutputDir)" />
+    <MakeDir Directories="$(_OutputDir);$(_ResponseFileDir)" />
 
-    <!-- The scan glob is quoted so crossgen2 expands it. Passing the files individually would
-         blow the Windows command-line limit on a framework-sized closure. -->
-    <Exec Command="&quot;$(DOTNET_HOST_PATH)&quot; &quot;$(_Crossgen2Path)&quot; --targetos $(_TargetOS) --targetarch wasm --generate-portable-callhelpers &quot;$(_OutputDir)&quot; @(WasmCoreClrFrameworkPInvokeModule->'--directpinvoke %(Identity)', ' ') &quot;$(_ScanPath)*.dll&quot;"
+    <ItemGroup>
+      <_ScanAssembly Remove="@(_ScanAssembly)" />
+      <_ScanAssembly Include="$(_ScanPath)*.dll" />
+    </ItemGroup>
+
+    <Error Condition="'@(_ScanAssembly)' == ''"
+           Text="No assemblies to scan were found in $(_ScanPath)." />
+
+    <!-- One token per line: that is how crossgen2 reads a response file. Going through a response
+         file rather than the command line keeps a framework-sized closure off it, and leaves the
+         exact invocation on disk to look at when a regenerated table is not what was expected. -->
+    <ItemGroup>
+      <_GeneratorArg Remove="@(_GeneratorArg)" />
+      <_GeneratorArg Include="--targetos" />
+      <_GeneratorArg Include="$(_TargetOS)" />
+      <_GeneratorArg Include="--targetarch" />
+      <_GeneratorArg Include="wasm" />
+      <_GeneratorArg Include="--generate-portable-callhelpers" />
+      <_GeneratorArg Include="$(_OutputDir)" />
+      <_GeneratorArg Include="--directpinvoke;%(WasmCoreClrFrameworkPInvokeModule.Identity)" />
+      <_GeneratorArg Include="@(_ScanAssembly->'%(FullPath)')" />
+    </ItemGroup>
+
+    <WriteLinesToFile File="$(_ResponseFile)" Lines="@(_GeneratorArg)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+
+    <Exec Command="&quot;$(DOTNET_HOST_PATH)&quot; &quot;$(_Crossgen2Path)&quot; &quot;@$(_ResponseFile)&quot;"
           WorkingDirectory="$(RepoRoot)" />
   </Target>
 

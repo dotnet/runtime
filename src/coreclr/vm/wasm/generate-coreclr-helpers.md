@@ -12,6 +12,10 @@ type system to compute the wasm ABI layout of the structs that cross the boundar
 Keeping the scan paths, the crossgen2 lookup and the module list in the project rather than in the
 scripts means they are stated once instead of once per shell language.
 
+Each run leaves the exact generator invocation in a response file under
+`artifacts/obj/wasm-callhelpers/<target os>/generate-coreclr-helpers.rsp`, which is the first thing
+to look at when a regenerated table is not what was expected.
+
 The relink targets for browser and wasi apps run the same crossgen2 mode over the app's own
 assembly closure, so these checked-in files and a relinked app are produced by one code path.
 
