@@ -284,8 +284,7 @@ namespace System
                             break;
                         }
                     }
-
-                    if (IsWhite(ch))
+                    else
                     {
                         index++;
                     }
