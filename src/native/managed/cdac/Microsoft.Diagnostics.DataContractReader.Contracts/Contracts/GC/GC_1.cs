@@ -292,15 +292,8 @@ internal struct GC_1 : IGC
 
     void IGC.GetGlobalAllocationContext(out TargetPointer allocPtr, out TargetPointer allocLimit)
     {
-        // Runtimes which never allocate out of a global allocation context do not export the global.
-        if (!_target.TryReadGlobalPointer(Constants.Globals.GlobalAllocContext, out TargetPointer? globalAllocContextAddress))
-        {
-            allocPtr = TargetPointer.Null;
-            allocLimit = TargetPointer.Null;
-            return;
-        }
-
-        Data.EEAllocContext eeAllocContext = _target.ProcessedData.GetOrAdd<Data.EEAllocContext>(globalAllocContextAddress.Value);
+        TargetPointer globalAllocContextAddress = _target.ReadGlobalPointer(Constants.Globals.GlobalAllocContext);
+        Data.EEAllocContext eeAllocContext = _target.ProcessedData.GetOrAdd<Data.EEAllocContext>(globalAllocContextAddress);
         allocPtr = eeAllocContext.GCAllocationContext.Pointer;
         allocLimit = eeAllocContext.GCAllocationContext.Limit;
     }

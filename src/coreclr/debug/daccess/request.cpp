@@ -5498,10 +5498,9 @@ HRESULT ClrDataAccess::GetGlobalAllocationContext(
     }
 
     SOSDacEnter();
-    // The runtime does not allocate out of a global allocation context - every allocation goes
-    // through a thread allocation context. Report an empty context.
-    *allocPtr = (CLRDATA_ADDRESS)0;
-    *allocLimit = (CLRDATA_ADDRESS)0;
+    gc_alloc_context global_alloc_context = ((ee_alloc_context)g_global_alloc_context).m_GCAllocContext;
+    *allocPtr = (CLRDATA_ADDRESS)global_alloc_context.alloc_ptr;
+    *allocLimit = (CLRDATA_ADDRESS)global_alloc_context.alloc_limit;
     SOSDacLeave();
     return hr;
 }

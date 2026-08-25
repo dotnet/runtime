@@ -147,6 +147,14 @@ GPTR_DECL(uint8_t,g_highest_address);
 GPTR_DECL(uint32_t,g_card_table);
 GVAL_DECL(GCHeapType, g_heap_type);
 
+// Unused by the runtime - every allocation goes through a thread allocation context. This global
+// is kept, permanently zeroed, as the backing storage for the GlobalAllocContext global that
+// version c1 of the GC data contract requires; dropping it would break diagnostic tools written
+// against that contract. Zero reads back as an empty allocation context, which is what this
+// runtime always has, so the DAC, the cDAC and SOS all keep reporting a consistent (empty)
+// result. It can go away the next time the GC contract takes a breaking change.
+GVAL_DECL(ee_alloc_context, g_global_alloc_context);
+
 #ifndef DACCESS_COMPILE
 }
 #endif // !DACCESS_COMPILE
