@@ -13,10 +13,6 @@ using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    /// <summary>
-    /// Represents a NativeAOT runtime generic dictionary lookup helper.
-    /// "ReadyToRun" refers to the JIT helper ABI used to request the lookup, not to the ReadyToRun compiler.
-    /// </summary>
     public abstract partial class ReadyToRunGenericHelperNode : AssemblyStubNode, INodeWithRuntimeDeterminedDependencies
     {
         private readonly ReadyToRunHelperId _id;
