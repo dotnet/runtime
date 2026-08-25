@@ -1062,7 +1062,7 @@ namespace System.Security.Cryptography.Xml
             byte[] hashValue = GetC14NDigest(macAlg);
             SignedXmlDebugLog.LogVerifySignedInfo(this, macAlg, hashValue, m_signature.SignatureValue);
 
-            return m_signature.SignatureValue.AsSpan().SequenceEqual(hashValue.AsSpan(0, m_signature.SignatureValue.Length));
+            return CryptographicEquals(m_signature.SignatureValue, hashValue);
         }
 
         private static XmlElement? GetSingleReferenceTarget(XmlDocument document, string idAttributeName, string idValue)

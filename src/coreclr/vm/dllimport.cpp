@@ -86,6 +86,7 @@ StubSigDesc::StubSigDesc(MethodDesc* pMD, const Signature& sig, Module* pModule,
         NOTHROW;
         GC_NOTRIGGER;
         SUPPORTS_DAC;
+        PRECONDITION(pMD != NULL);
         PRECONDITION(!sig.IsEmpty());
         PRECONDITION(pModule != NULL);
     }
@@ -96,58 +97,16 @@ StubSigDesc::StubSigDesc(MethodDesc* pMD, const Signature& sig, Module* pModule,
     m_sig = sig;
     m_pModule = pModule;
 
-    if (pMD != NULL)
-    {
-        _ASSERTE(!pMD->IsAsyncMethod());
-        m_tkMethodDef = pMD->GetMemberDef();
-        SigTypeContext::InitTypeContext(pMD, &m_typeContext);
-        m_pMetadataModule = pMD->GetModule();
-        m_pLoaderModule = pLoaderModule == NULL ? pMD->GetLoaderModule() : pLoaderModule;   // Used for ILStubCache selection and MethodTable creation.
-    }
-    else
-    {
-        m_tkMethodDef = mdMethodDefNil;
-        m_pMetadataModule = m_pModule;
-        m_pLoaderModule = pLoaderModule == NULL ? m_pModule : pLoaderModule;
-    }
+    _ASSERTE(!pMD->IsAsyncMethod());
+    m_tkMethodDef = pMD->GetMemberDef();
+    SigTypeContext::InitTypeContext(pMD, &m_typeContext);
+    m_pMetadataModule = pMD->GetModule();
+    m_pLoaderModule = pLoaderModule == NULL ? pMD->GetLoaderModule() : pLoaderModule;   // Used for ILStubCache selection and MethodTable creation.
 
     INDEBUG(InitDebugNames());
 }
 
-StubSigDesc::StubSigDesc(MethodTable* pMT, const Signature& sig, Module* pModule)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        SUPPORTS_DAC;
-        PRECONDITION(!sig.IsEmpty());
-        PRECONDITION(pModule != NULL);
-    }
-    CONTRACTL_END;
-
-    m_pMD = nullptr;
-    m_pMT = pMT;
-    m_sig = sig;
-    m_pModule = pModule;
-
-    m_tkMethodDef = mdMethodDefNil;
-
-    if (pMT != NULL)
-    {
-        SigTypeContext::InitTypeContext(pMT, &m_typeContext);
-        m_pMetadataModule = pMT->GetModule();
-        m_pLoaderModule = pMT->GetLoaderModule();
-    }
-    else
-    {
-        m_pLoaderModule = m_pModule;
-    }
-
-    INDEBUG(InitDebugNames());
-}
-
-StubSigDesc::StubSigDesc(const Signature& sig, Module* pModule)
+StubSigDesc::StubSigDesc(const Signature& sig, Module* pModule, Module* pLoaderModule)
 {
     CONTRACTL
     {
@@ -165,7 +124,7 @@ StubSigDesc::StubSigDesc(const Signature& sig, Module* pModule)
     m_pModule = pModule;
     m_tkMethodDef = mdMethodDefNil;
     m_pMetadataModule = m_pModule;
-    m_pLoaderModule = m_pModule;
+    m_pLoaderModule = pLoaderModule == NULL ? m_pModule : pLoaderModule;
 
     INDEBUG(InitDebugNames());
 }
@@ -238,6 +197,15 @@ public:
         m_fSetLastError = fSetLastError;
     }
 
+    // Records a failure that must be reported when the stub is called instead of while it is being
+    // generated. Marshaling still runs, but FinishEmit discards its output and emits only the throw.
+    void SetInteropExceptionInfo(RuntimeExceptionKind kind, UINT resID)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        m_slIL.SetInteropExceptionInfo(kind, resID);
+    }
+
     // We use three stub linkers to generate IL stubs.  The pre linker is the main one.  It does all the marshaling and
     // then calls the target method.  The post return linker is only used to unmarshal the return value after we return
     // from the target method.  The post linker handles all the unmarshaling for by ref arguments and clean-up.  It
@@ -256,6 +224,12 @@ public:
         WRAPPER_NO_CONTRACT;
         m_slIL.Begin(dwStubFlags);
         _ASSERTE(m_dwStubFlags == dwStubFlags);
+    }
+
+    void SetCalliTargetArgIndex(UINT uArgIdx)
+    {
+        WRAPPER_NO_CONTRACT;
+        m_slIL.SetCalliTargetArgIndex(uArgIdx);
     }
 
     virtual void MarshalReturn(MarshalInfo* pInfo, int argOffset)
@@ -447,6 +421,31 @@ public:
         memcpyNoGCRefs((void *)pNewSig, pNewSigBuffer, cbNewSig);
 
         pStubMD->AsDynamicMethodDesc()->SetStoredMethodSig(pNewSig, cbNewSig);
+    }
+
+    void FinalizeStubSignatures(MethodDesc* pStubMD)
+    {
+        STANDARD_VM_CONTRACT;
+
+        if (SF_IsReverseStub(m_dwStubFlags))
+        {
+            // If we're in a Reverse stub, the target signature we've built
+            // is the signature of the stub, and the current signature of the stub
+            // is the target signature. We need to swap them.
+            SwapStubSignatures(pStubMD);
+        }
+        else if (pStubMD->IsDynamicMethod())
+        {
+            // If we're not in a Reverse stub, the signatures are correct,
+            // but we need to convert the signature into a module-independent form
+            // if our signature is not backed by metadata.
+            ConvertMethodDescSigToModuleIndependentSig(pStubMD);
+        }
+        else
+        {
+            // Otherwise, our "stub" MD should be the real method desc with a metadata-based signature.
+            _ASSERTE(!pStubMD->HasStoredSig());
+        }
     }
 
     virtual void EmitInvokeTarget(MethodDesc* pTargetMD, MethodDesc* pStubMD)
@@ -653,8 +652,7 @@ public:
         // Notify the profiler of call out of the runtime
         if (CORProfilerTrackTransitions()
             && !SF_SkipTransitionNotify(m_dwStubFlags)
-            && !SF_IsReverseCOMStub(m_dwStubFlags)
-            && !SF_IsReverseDelegateStub(m_dwStubFlags))
+            && SF_IsForwardStub(m_dwStubFlags))
         {
             dwMethodDescLocalNum = m_slIL.EmitProfilerBeginTransitionCallback(pcsDispatch, m_dwStubFlags);
             _ASSERTE(dwMethodDescLocalNum != (DWORD)-1);
@@ -756,7 +754,14 @@ public:
 
         CORJIT_FLAGS jitFlags(CORJIT_FLAGS::CORJIT_FLAG_IL_STUB);
 
-        if (m_slIL.HasInteropParamExceptionInfo())
+        if (m_slIL.HasInteropExceptionInfo())
+        {
+            // This code will not use the secret parameter, so we do not
+            // tell the JIT to bother with it.
+            m_slIL.ClearCode();
+            m_slIL.GenerateInteropException(pcsMarshal);
+        }
+        else if (m_slIL.HasInteropParamExceptionInfo())
         {
             // This code will not use the secret parameter, so we do not
             // tell the JIT to bother with it.
@@ -772,10 +777,10 @@ public:
             // Forward delegate stubs get all the context they need in 'this' so they
             // don't use the secret parameter.
         }
-        else if (SF_IsForwardPInvokeStub(m_dwStubFlags)
-                && !SF_IsCALLIStub(m_dwStubFlags) && !SF_IsVarArgStub(m_dwStubFlags))
+        else if (SF_IsForwardPInvokeStub(m_dwStubFlags) && !SF_IsVarArgStub(m_dwStubFlags))
         {
-            // Regular PInvokes don't use the secret parameter
+            // Regular PInvokes and unmanaged CALLI stubs don't use the secret parameter.
+            // Unmanaged CALLI stubs receive the native target as their last argument.
         }
         else
         {
@@ -783,23 +788,7 @@ public:
             jitFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_PUBLISH_SECRET_PARAM);
         }
 
-        if (SF_IsReverseStub(m_dwStubFlags))
-        {
-            // If we're in a Reverse stub, the target signature we've built
-            // is the signature of the stub, and the current signature of the stub
-            // is the target signature. We need to swap them.
-            SwapStubSignatures(pStubMD);
-        }
-        else
-        {
-            // If we're not in a Reverse stub, the signatures are correct,
-            // but we need to convert the signature into a module-independent form
-            // if our signature is not backed by metadata.
-            if (pStubMD->IsDynamicMethod())
-            {
-                ConvertMethodDescSigToModuleIndependentSig(pStubMD);
-            }
-        }
+        FinalizeStubSignatures(pStubMD);
 
         if (hasTryCatchExceptionHandler)
         {
@@ -842,8 +831,8 @@ public:
             PrettyPrintSig(pManagedSig, cManagedSig, "*",  &qbManaged, pStubMD->GetMDImport(), NULL);
             PrettyPrintSig(pILHeader->LocalVarSig, pILHeader->cbLocalVarSig, NULL, &qbLocal,   pIMDI, NULL);
 
-            LOG((LF_STUBS, LL_INFO1000, "incoming managed sig: %p: %s\n", pManagedSig, qbManaged.Ptr()));
-            LOG((LF_STUBS, LL_INFO1000, "locals sig:           %p: %s\n", pILHeader->LocalVarSig, qbLocal.Ptr()));
+            LOG((LF_STUBS, LL_INFO1000, "incoming managed sig: %p: %s\n", pManagedSig, (const char*)qbManaged.Ptr()));
+            LOG((LF_STUBS, LL_INFO1000, "locals sig:           %p: %s\n", pILHeader->LocalVarSig, (const char*)qbLocal.Ptr()));
 
             if (cleanupTryFinally.cbHandlerLength != 0)
             {
@@ -1062,7 +1051,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         if (flags & flag)
         {
-            LOG((facility, level, str));
+            LOG((facility, level, "%s", str));
         }
     }
 
@@ -1124,12 +1113,11 @@ public:
 
     PCCOR_SIGNATURE GetStubTargetMethodSig()
     {
-        CONTRACT(PCCOR_SIGNATURE)
+        CONTRACTL
         {
             STANDARD_VM_CHECK;
-            POSTCONDITION(CheckPointer(RETVAL, NULL_NOT_OK));
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
         BYTE *pb;
 
@@ -1145,7 +1133,7 @@ public:
             pb = (BYTE*)m_qbNativeFnSigBuffer.Ptr();
         }
 
-        RETURN pb;
+        return pb;
     }
 
     DWORD
@@ -1865,7 +1853,10 @@ PInvokeStubLinker::PInvokeStubLinker(
     m_dwRetValLocalNum(-1),
     m_ErrorResID(-1),
     m_ErrorParamIdx(-1),
+    m_ExceptionKind(kLastException),
+    m_ExceptionResID(-1),
     m_iLCIDParamIdx(iLCIDParamIdx),
+    m_uCalliTargetArgIdx(0),
     m_dwStubFlags(dwStubFlags)
 {
     STANDARD_VM_CONTRACT;
@@ -1915,6 +1906,13 @@ void PInvokeStubLinker::SetCallingConvention(CorInfoCallConvExtension unmngCallC
     {
         SetStubTargetCallingConv(unmngCallConv);
     }
+}
+
+void PInvokeStubLinker::SetCalliTargetArgIndex(UINT uArgIdx)
+{
+    LIMITED_METHOD_CONTRACT;
+    _ASSERTE(SF_IsCALLIStub(m_dwStubFlags));
+    m_uCalliTargetArgIdx = uArgIdx;
 }
 
 void PInvokeStubLinker::EmitSetArgMarshalIndex(ILCodeStream* pcsEmit, UINT uArgIdx)
@@ -2059,6 +2057,39 @@ void PInvokeStubLinker::GenerateInteropParamException(ILCodeStream* pcsEmit)
     pcsEmit->EmitTHROW();
 }
 
+void PInvokeStubLinker::SetInteropExceptionInfo(RuntimeExceptionKind kind, UINT resID)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    // only keep the first one
+    if (HasInteropExceptionInfo())
+    {
+        return;
+    }
+
+    m_ExceptionKind = kind;
+    m_ExceptionResID = resID;
+}
+
+bool PInvokeStubLinker::HasInteropExceptionInfo()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    return m_ExceptionResID != (UINT)-1;
+}
+
+void PInvokeStubLinker::GenerateInteropException(ILCodeStream* pcsEmit)
+{
+    STANDARD_VM_CONTRACT;
+
+    pcsEmit->EmitLDC(static_cast<int>(m_ExceptionKind));
+    pcsEmit->EmitLDC(m_ExceptionResID);
+    pcsEmit->EmitCALL(METHOD__STUBHELPERS__THROW_INTEROP_EXCEPTION, 2, 0);
+
+    pcsEmit->EmitLDNULL();
+    pcsEmit->EmitTHROW();
+}
+
 #ifdef FEATURE_COMINTEROP
 DWORD PInvokeStubLinker::GetTargetInterfacePointerLocalNum()
 {
@@ -2098,7 +2129,7 @@ BOOL PInvokeStubLinker::IsCleanupNeeded()
 {
     LIMITED_METHOD_CONTRACT;
 
-    return (m_fHasCleanupCode || IsCleanupWorkListSetup());
+    return m_fHasCleanupCode || IsCleanupWorkListSetup();
 }
 
 BOOL PInvokeStubLinker::IsExceptionCleanupNeeded()
@@ -2347,10 +2378,10 @@ void PInvokeStubLinker::DoPInvoke(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
     {
         if (SF_IsDelegateStub(dwStubFlags)) // delegate invocation
         {
-            // get the delegate unmanaged target - we call a helper instead of just grabbing
-            // the _methodPtrAux field because we may need to intercept the call for host, etc.
+            int tokDelegate_methodPtrAux = pcsEmit->GetToken(CoreLibBinder::GetField(FIELD__DELEGATE__METHOD_PTR_AUX));
+
             pcsEmit->EmitLoadThis();
-            pcsEmit->EmitCALL(METHOD__STUBHELPERS__GET_DELEGATE_TARGET, 1, 1);
+            pcsEmit->EmitLDFLD(tokDelegate_methodPtrAux);
         }
 #ifdef FEATURE_COMINTEROP
         else if (SF_IsCOMStub(dwStubFlags))
@@ -2362,14 +2393,9 @@ void PInvokeStubLinker::DoPInvoke(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
 #endif // FEATURE_COMINTEROP
         else if (SF_IsCALLIStub(dwStubFlags)) // unmanaged CALLI
         {
-            // for managed-to-unmanaged CALLI that requires marshaling, the target is passed
-            // as the secret argument to the stub by GenericPInvokeCalliHelper (asmhelpers.asm)
-            EmitLoadStubContext(pcsEmit, dwStubFlags);
-#ifdef TARGET_64BIT
-            // the secret arg has been shifted to left and ORed with 1 (see code:GenericPInvokeCalliHelper)
-            pcsEmit->EmitLDC(1);
-            pcsEmit->EmitSHR_UN();
-#endif // TARGET_64BIT
+            // For managed-to-unmanaged CALLI that requires marshaling, the JIT passes the native
+            // target as the last argument of the stub (see code:CEEInfo::convertPInvokeCalliToCall).
+            pcsEmit->EmitLDARG(m_uCalliTargetArgIdx);
         }
         else if (SF_IsVarArgStub(dwStubFlags)) // vararg P/Invoke
         {
@@ -2443,8 +2469,8 @@ void PInvokeStubLinker::EmitLogNativeArgument(ILCodeStream* pslILEmit, DWORD dwP
 
     if (SF_IsCALLIStub(m_dwStubFlags))
     {
-        // get the secret argument via intrinsic
-        pslILEmit->EmitCALL(METHOD__STUBHELPERS__GET_STUB_CONTEXT, 0, 1);
+        // The native target is passed as the last argument of the stub.
+        pslILEmit->EmitLDARG(m_uCalliTargetArgIdx);
     }
     else
     {
@@ -2928,14 +2954,13 @@ void PInvokeStaticSigInfo::DllImportInit(
 #if !defined (TARGET_UNIX)
 static LPBYTE FollowIndirect(LPBYTE pTarget)
 {
-    CONTRACT(LPBYTE)
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     LPBYTE pRet = NULL;
 
@@ -2962,7 +2987,7 @@ static LPBYTE FollowIndirect(LPBYTE pTarget)
     }
     EX_END_CATCH
 
-    RETURN pRet;
+    return pRet;
 }
 #endif // !TARGET_UNIX
 
@@ -3469,6 +3494,12 @@ BOOL PInvoke::MarshalingRequired(
                     return TRUE;
                 }
 
+                if (hndArgType.GetMethodTable()->IsDecimalFloatingPointOrHasDecimalFloatingPointFields())
+                {
+                    // Decimal32/Decimal64/Decimal128 cannot be marshalled by value at this time
+                    return TRUE;
+                }
+
                 // When the runtime runtime marshalling system is disabled, we don't support
                 // any types that contain gc pointers, but all "unmanaged" types are treated as blittable
                 // as long as they aren't auto-layout and don't have any auto-layout fields.
@@ -3578,6 +3609,7 @@ static MarshalInfo::MarshalType DoMarshalReturnValue(MetaSig&           msig,
                                                      CorNativeLinkType  nlType,
                                                      CorNativeLinkFlags nlFlags,
                                                      UINT               argidx,  // this is used for reverse pinvoke hresult swapping
+                                                     int                numArgs, // number of marshaled arguments
                                                      ILStubState*         pss,
                                                      int                argOffset,
                                                      DWORD              dwStubFlags,
@@ -3623,7 +3655,7 @@ static MarshalInfo::MarshalType DoMarshalReturnValue(MetaSig&           msig,
                                 nlFlags,
                                 FALSE,
                                 argidx,
-                                msig.NumFixedArgs(),
+                                numArgs,
                                 SF_IsBestFit(dwStubFlags),
                                 SF_IsThrowOnUnmappableChar(dwStubFlags),
                                 TRUE,
@@ -3812,6 +3844,16 @@ static COR_ILMETHOD_DECODER* CreatePInvokeStubWorker(
 
     int numArgs = msig.NumFixedArgs();
 
+    if (SF_IsCALLIStub(dwStubFlags))
+    {
+        // The last argument of an unmanaged CALLI stub is the native target, which the JIT
+        // supplies from the top of the evaluation stack at the original calli site. It is not
+        // part of the native signature, so exclude it from marshaling.
+        _ASSERTE(numArgs > 0);
+        numArgs--;
+        pss->SetCalliTargetArgIndex((UINT)numArgs);
+    }
+
     // thiscall must have at least one parameter (the "this")
     if (fThisCall && numArgs == 0)
         COMPlusThrow(kMarshalDirectiveException, IDS_EE_NDIRECT_BADNATL_THISCALL);
@@ -3940,6 +3982,7 @@ static COR_ILMETHOD_DECODER* CreatePInvokeStubWorker(
                             nlType,
                             nlFlags,
                             argidx,
+                            numArgs,
                             pss,
                             argOffset,
                             dwStubFlags,
@@ -4110,7 +4153,14 @@ bool StructMarshalStubs::TryGenerateStructMarshallingMethod(MethodDesc* pMD, Dyn
 
     MethodTable* pStructMT = pMD->GetClassInstantiation()[0].GetMethodTable();
 
-    _ASSERTE(pStructMT->IsValueType());
+    if (!pStructMT->IsValueType())
+    {
+        // StructureMarshaler<T> is only valid for value types. If T is a reference type,
+        // gracefully fall back to the managed IL implementation rather than asserting.
+        // This can happen when tools call PrepareMethod on generic instantiations with a
+        // reference type as the type argument.
+        return false;
+    }
 
     if (pStructMT->IsBlittable() || pStructMT->IsEnum())
     {
@@ -4444,7 +4494,7 @@ namespace
         bool& bILStubCreator,
         MethodDesc* pLastMD)
     {
-        CONTRACT(MethodDesc*)
+        CONTRACTL
         {
             STANDARD_VM_CHECK;
 
@@ -4452,9 +4502,8 @@ namespace
             PRECONDITION(!pParams->m_sig.IsEmpty());
             PRECONDITION(CheckPointer(pParams->m_pModule));
             PRECONDITION(CheckPointer(pTargetMD, NULL_OK));
-            POSTCONDITION(CheckPointer(RETVAL));
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
         MethodDesc*     pMD;
 
@@ -4472,7 +4521,7 @@ namespace
                                         bILStubCreator,
                                         pLastMD);
 
-        RETURN pMD;
+        return pMD;
     }
 
     void RemoveILStubCacheEntry(PInvokeStubParameters* pParams, ILStubHashBlob* pHashParams)
@@ -4539,7 +4588,12 @@ static void CreatePInvokeStubAccessMetadata(
             unmgdCallConv == CorInfoCallConvExtension::Fastcall ||
             unmgdCallConv == CorInfoCallConvExtension::FastcallMemberFunction)
         {
-            COMPlusThrow(kTypeLoadException, IDS_INVALID_PINVOKE_CALLCONV);
+            // For an unmanaged CALLI stub the caller has already recorded this so that it is
+            // reported when the stub is called - see code:TryGetCalliStubCallConv.
+            if (!SF_IsCALLIStub(*pdwStubFlags))
+            {
+                COMPlusThrow(kTypeLoadException, IDS_INVALID_PINVOKE_CALLCONV);
+            }
         }
     }
 
@@ -4810,7 +4864,7 @@ void PInvoke::CalculateStackArgumentSize(PInvokeMethodDesc* pMD)
 // of the stub method
 HRESULT FindPredefinedILStubMethod(MethodDesc *pTargetMD, DWORD dwStubFlags, MethodDesc **ppRetStubMD)
 {
-    CONTRACT(HRESULT)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
@@ -4819,7 +4873,7 @@ HRESULT FindPredefinedILStubMethod(MethodDesc *pTargetMD, DWORD dwStubFlags, Met
         PRECONDITION(CheckPointer(ppRetStubMD));
         PRECONDITION(*ppRetStubMD == NULL);
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     HRESULT hr;
 
@@ -4856,11 +4910,11 @@ HRESULT FindPredefinedILStubMethod(MethodDesc *pTargetMD, DWORD dwStubFlags, Met
                 &cbBytes);
 
             if (FAILED(hr))
-                RETURN hr;
+                return hr;
             // GetCustomAttribute returns S_FALSE when it cannot find the attribute but nothing fails...
             // Translate that to E_FAIL
             else if (hr == S_FALSE)
-                RETURN E_FAIL;
+                return E_FAIL;
         }
         else
         {
@@ -4872,14 +4926,14 @@ HRESULT FindPredefinedILStubMethod(MethodDesc *pTargetMD, DWORD dwStubFlags, Met
             if (pInterfaceMD)
             {
                 hr = FindPredefinedILStubMethod(pInterfaceMD, dwStubFlags, ppRetStubMD);
-                RETURN hr;
+                return hr;
             }
             else
-                RETURN E_FAIL;
+                return E_FAIL;
         }
     }
     else
-        RETURN E_FAIL;
+        return E_FAIL;
 
     //
     // Parse the attribute
@@ -5074,7 +5128,7 @@ HRESULT FindPredefinedILStubMethod(MethodDesc *pTargetMD, DWORD dwStubFlags, Met
 
     *ppRetStubMD = pStubMD;
 
-    RETURN S_OK;
+    return S_OK;
 }
 #endif // FEATURE_COMINTEROP
 
@@ -5112,11 +5166,6 @@ namespace
             CONTRACTL_END;
 
             RemoveILStubCacheEntry();
-        }
-
-        inline bool CreatedTheAssociatedPublishedStubMD()
-        {
-            return m_bILStubCreator;
         }
 
         inline void GetStubMethodDesc()
@@ -5168,6 +5217,10 @@ namespace
         bool                             m_bILStubCreator;     // Only the creator can remove the ILStub from the Cache
     };  //ILStubCreatorHelper
 
+    // The signature in pSigDesc can have stack-local lifetime.
+    // We will always copy the signature to a heap-allocated buffer with the required lifetime.
+    // See ILStubState::FinalizeStubSignatures.
+    // The stub MethodDescs created here are always DynamicMethodDescs.
     MethodDesc* CreateInteropILStub(
                             ILStubState*             pss,
                             StubSigDesc*             pSigDesc,
@@ -5176,18 +5229,16 @@ namespace
                             CorInfoCallConvExtension unmgdCallConv,
                             int                      nParamTokens,
                             mdParamDef*              pParamTokenArray,
-                            int                      iLCIDArg,
-                            bool*                    pGeneratedNewStub = nullptr
+                            int                      iLCIDArg
                             )
     {
-        CONTRACT(MethodDesc*)
+        CONTRACTL
         {
             STANDARD_VM_CHECK;
 
             PRECONDITION(CheckPointer(pSigDesc));
-            POSTCONDITION(CheckPointer(RETVAL));
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
 
         ///////////////////////////////
@@ -5226,7 +5277,7 @@ namespace
             // This cannot be done during NGEN/PEVerify (in PASSIVE_DOMAIN) so I've moved it here
             pStubMD->EnsureActive();
 
-            RETURN pStubMD;
+            return pStubMD;
         }
 #endif // FEATURE_COMINTEROP
 
@@ -5308,7 +5359,7 @@ namespace
                             {
                                 pStubMD = ilStubCreatorHelper.GetStubMD();
 
-                                pEntry.Assign(ListLockEntry::Find(pILStubLock, pStubMD, "il stub gen lock"));
+                                pEntry = ListLockEntry::Find(pILStubLock, pStubMD, "il stub gen lock");
                                 pEntryLock.Assign(pEntry, FALSE);
 
                                 // We have the entry lock we need to use, so we can release the global lock.
@@ -5383,7 +5434,9 @@ namespace
                                     if (SF_IsCALLIStub(dwStubFlags)
                                         && PInvoke::MarshalingRequired(NULL, pStubMD->GetSigPointer(), pSigDesc->m_pModule, &pSigDesc->m_typeContext))
                                     {
-                                        COMPlusThrow(kMarshalDirectiveException, IDS_EE_BADMARSHAL_GENERICS_RESTRICTION);
+                                        // The stub is created while the calli's caller is jitted, so report
+                                        // this when the stub is called instead of failing that compilation.
+                                        pss->SetInteropExceptionInfo(kMarshalDirectiveException, IDS_EE_BADMARSHAL_GENERICS_RESTRICTION);
                                     }
                                     // We don't want to support generic varargs, so block it
                                     else if (SF_IsVarArgStub(dwStubFlags))
@@ -5414,28 +5467,6 @@ namespace
                         // Link the MethodDesc onto the method table with the lock taken
                         AddMethodDescChunkWithLockTaken(&params, pStubMD);
                     }
-                }
-            }
-
-            // Callers use the new stub indicator to distinguish between 1) the case where a new stub
-            // MD was generated during this call and 2) the case where this function attached to a stub
-            // MD that was generated by some other call (either a call that completed earlier or a call
-            // on a racing thread). In particular, reliably detecting case (1) is crucial because it is
-            // the only case where this call permanently publishes a new stub MD into the cache,
-            // meaning it is the only case where the caller cannot safely free any allocations (such as
-            // a signature buffer) which the stub MD might reference.
-            //
-            // Set the indicator if and only if the stub MD that will be imminiently returned to the
-            // caller was created by the code above (and will therefore become a permanent member of
-            // the cache when the SuppressRelease occurs below). Note that, in the presence of racing
-            // threads, the current call may or may not have carried out IL generation for the stub;
-            // the only important thing is whether the current call was the one that created the stub
-            // MD earlier on.
-            if (ilStubCreatorHelper.CreatedTheAssociatedPublishedStubMD())
-            {
-                if (pGeneratedNewStub)
-                {
-                    *pGeneratedNewStub = true;
                 }
             }
 
@@ -5473,8 +5504,9 @@ namespace
         }
 #endif // defined(TARGET_X86)
 
-        RETURN pStubMD;
+        return pStubMD;
     }
+
 }
 
 MethodDesc* PInvoke::CreateCLRToNativeILStub(
@@ -5484,14 +5516,13 @@ MethodDesc* PInvoke::CreateCLRToNativeILStub(
                 CorInfoCallConvExtension unmgdCallConv,
                 DWORD                    dwStubFlags) // PInvokeStubFlags
 {
-    CONTRACT(MethodDesc*)
+    CONTRACTL
     {
         STANDARD_VM_CHECK;
 
         PRECONDITION(CheckPointer(pSigDesc));
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     int         iLCIDArg = 0;
     int         numArgs = 0;
@@ -5546,7 +5577,7 @@ MethodDesc* PInvoke::CreateCLRToNativeILStub(
                 pParamTokenArray,
                 iLCIDArg);
 
-    RETURN pStubMD;
+    return pStubMD;
 }
 
 #ifdef FEATURE_COMINTEROP
@@ -5558,7 +5589,7 @@ MethodDesc* PInvoke::CreateFieldAccessILStub(
                 DWORD              dwStubFlags, // PInvokeStubFlags
                 FieldDesc*         pFD)
 {
-    CONTRACT(MethodDesc*)
+    CONTRACTL
     {
         STANDARD_VM_CHECK;
 
@@ -5566,9 +5597,8 @@ MethodDesc* PInvoke::CreateFieldAccessILStub(
         PRECONDITION(CheckPointer(pModule));
         PRECONDITION(CheckPointer(pFD, NULL_OK));
         PRECONDITION(SF_IsFieldGetterStub(dwStubFlags) || SF_IsFieldSetterStub(dwStubFlags));
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     int numArgs = (SF_IsFieldSetterStub(dwStubFlags) ? 1 : 0);
     int numParamTokens = numArgs + 1;
@@ -5619,7 +5649,7 @@ MethodDesc* PInvoke::CreateFieldAccessILStub(
                 pParamTokenArray,
                 -1);
 
-    RETURN pStubMD;
+    return pStubMD;
 }
 #endif // FEATURE_COMINTEROP
 
@@ -5627,15 +5657,14 @@ MethodDesc* PInvoke::CreateFieldAccessILStub(
 
 MethodDesc* PInvoke::CreateLayoutClassMarshalILStub(MethodTable* pMT, MarshalOperation operation)
 {
-    CONTRACT(MethodDesc*)
+    CONTRACTL
     {
         STANDARD_VM_CHECK;
 
         PRECONDITION(CheckPointer(pMT));
         PRECONDITION(!pMT->IsValueType());
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     // void (ref byte managedData, byte* nativeData, ref CleanupWorkListElement cwl)
     FunctionSigBuilder sigBuilder;
@@ -5681,7 +5710,7 @@ MethodDesc* PInvoke::CreateLayoutClassMarshalILStub(MethodTable* pMT, MarshalOpe
 
     szMetaSig.SuppressRelease();
 
-    RETURN pStubMD;
+    return pStubMD;
 }
 
 #endif // DACCESS_COMPILE
@@ -5712,15 +5741,14 @@ namespace
     {
         // GetProcAddress cannot be called while preemptive GC is disabled.
         // It requires the OS to take the loader lock.
-        CONTRACT(LPVOID)
+        CONTRACTL
         {
             STANDARD_VM_CHECK;
             PRECONDITION(CheckPointer(pMD));
-            POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
-        RETURN pMD->FindEntryPoint(hMod);
+        return pMD->FindEntryPoint(hMod);
     }
 
     //---------------------------------------------------------
@@ -5796,21 +5824,20 @@ namespace
 
 PCODE PInvoke::GetStubForILStub(MethodDesc* pManagedMD, MethodDesc** ppStubMD, DWORD dwStubFlags)
 {
-    CONTRACT(PCODE)
+    CONTRACTL
     {
         STANDARD_VM_CHECK;
 
         PRECONDITION(CheckPointer(pManagedMD));
-        POSTCONDITION(RETVAL != NULL);
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     CONSISTENCY_CHECK(*ppStubMD == NULL);
 
     PInvokeStaticSigInfo sigInfo(pManagedMD);
     *ppStubMD = PInvoke::CreateCLRToNativeILStub(&sigInfo, dwStubFlags, pManagedMD);
 
-    RETURN JitILStub(*ppStubMD);
+    return JitILStub(*ppStubMD);
 }
 
 PCODE PInvoke::GetStubForILStub(PInvokeMethodDesc* pNMD, MethodDesc** ppStubMD, DWORD dwStubFlags)
@@ -5925,14 +5952,14 @@ PCODE JitILStub(MethodDesc* pStubMD)
 
 PCODE GetStubForInteropMethod(MethodDesc* pMD, DWORD dwStubFlags)
 {
-    CONTRACT(PCODE)
+    CONTRACTL
     {
         STANDARD_VM_CHECK;
 
         PRECONDITION(CheckPointer(pMD));
         PRECONDITION(pMD->IsPInvoke() || pMD->IsCLRToCOMCall() || pMD->IsEEImpl() || pMD->IsIL());
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     PCODE                   pStub = (PCODE)NULL;
     MethodDesc*             pStubMD = NULL;
@@ -5976,7 +6003,7 @@ PCODE GetStubForInteropMethod(MethodDesc* pMD, DWORD dwStubFlags)
         EnsureComStarted();
     }
 
-    RETURN pStub;
+    return pStub;
 }
 
 VOID PInvokeMethodDesc::SetPInvokeTarget(LPVOID pTarget)
@@ -6033,10 +6060,10 @@ EXTERN_C void* PInvokeImportWorker(PInvokeMethodDesc* pMD)
 }
 
 //===========================================================================
-//  Support for Pinvoke Calli instruction
+//  Support for vararg Pinvoke and the Pinvoke Calli instruction
 //
 //===========================================================================
-static void GetILStubForCalli(VASigCookie* pVASigCookie, MethodDesc* pMD)
+static void GetILStubForVarargPInvoke(VASigCookie* pVASigCookie, MethodDesc* pMD)
 {
     CONTRACTL
     {
@@ -6045,7 +6072,8 @@ static void GetILStubForCalli(VASigCookie* pVASigCookie, MethodDesc* pMD)
         ENTRY_POINT;
         MODE_ANY;
         PRECONDITION(CheckPointer(pVASigCookie));
-        PRECONDITION(CheckPointer(pMD, NULL_OK));
+        PRECONDITION(CheckPointer(pMD));
+        PRECONDITION(pMD->IsPInvoke());
     }
     CONTRACTL_END;
 
@@ -6063,78 +6091,18 @@ static void GetILStubForCalli(VASigCookie* pVASigCookie, MethodDesc* pMD)
 
     GCX_PREEMP();
 
-    Signature signature = pVASigCookie->signature;
-    CorInfoCallConvExtension unmgdCallConv = CorInfoCallConvExtension::Managed;
+    _ASSERTE(!pMD->IsAsyncMethod());
 
-    DWORD dwStubFlags = PINVOKESTUB_FL_BESTFIT;
+    DWORD dwStubFlags = PINVOKESTUB_FL_BESTFIT | PINVOKESTUB_FL_CONVSIGASVARARG;
 
-    if (pMD == NULL)
-    {
-        dwStubFlags |= PINVOKESTUB_FL_UNMANAGED_CALLI;
+    // vararg P/Invoke must be cdecl
+    CorInfoCallConvExtension unmgdCallConv = CorInfoCallConvExtension::C;
 
-        // need to convert the CALLI signature to stub signature with managed calling convention
-        BYTE callConv = MetaSig::GetCallingConvention(signature);
+    PInvokeStaticSigInfo sigInfo(pMD);
+    CorNativeLinkFlags nlFlags = sigInfo.GetLinkFlags();
+    CorNativeLinkType nlType = sigInfo.GetCharSet();
 
-        // Unmanaged calling convention indicates modopt should be read
-        if (callConv != IMAGE_CEE_CS_CALLCONV_UNMANAGED)
-        {
-            unmgdCallConv = (CorInfoCallConvExtension)callConv;
-        }
-        else
-        {
-            CallConvBuilder builder;
-            UINT errorResID;
-            HRESULT hr = CallConv::TryGetUnmanagedCallingConventionFromModOpt(GetScopeHandle(pVASigCookie->pModule), signature.GetRawSig(), signature.GetRawSigLen(), &builder, &errorResID);
-            if (FAILED(hr))
-                COMPlusThrowHR(hr, errorResID);
-
-            unmgdCallConv = builder.GetCurrentCallConv();
-            if (unmgdCallConv == CallConvBuilder::UnsetValue)
-            {
-                unmgdCallConv = CallConv::GetDefaultUnmanagedCallingConvention();
-            }
-
-            if (builder.IsCurrentCallConvModSet(CallConvBuilder::CALL_CONV_MOD_SUPPRESSGCTRANSITION))
-            {
-                dwStubFlags |= PINVOKESTUB_FL_SUPPRESSGCTRANSITION;
-            }
-        }
-
-        LoaderHeap *pHeap = pVASigCookie->pLoaderModule->GetLoaderAllocator()->GetHighFrequencyHeap();
-        PCOR_SIGNATURE new_sig = (PCOR_SIGNATURE)(void *)pHeap->AllocMem(S_SIZE_T(signature.GetRawSigLen()));
-        CopyMemory(new_sig, signature.GetRawSig(), signature.GetRawSigLen());
-
-        // make the stub IMAGE_CEE_CS_CALLCONV_DEFAULT
-        *new_sig &= ~IMAGE_CEE_CS_CALLCONV_MASK;
-        *new_sig |= IMAGE_CEE_CS_CALLCONV_DEFAULT;
-
-        signature = Signature(new_sig, signature.GetRawSigLen());
-    }
-    else
-    {
-        _ASSERTE(pMD->IsPInvoke());
-        dwStubFlags |= PINVOKESTUB_FL_CONVSIGASVARARG;
-
-        // vararg P/Invoke must be cdecl
-        unmgdCallConv = CorInfoCallConvExtension::C;
-    }
-
-    mdMethodDef md = mdMethodDefNil;
-    CorNativeLinkFlags nlFlags = nlfNone;
-    CorNativeLinkType nlType = nltAnsi;
-
-    if (pMD != NULL)
-    {
-        _ASSERTE(pMD->IsPInvoke());
-        _ASSERTE(!pMD->IsAsyncMethod());
-        PInvokeStaticSigInfo sigInfo(pMD);
-
-        md = pMD->GetMemberDef();
-        nlFlags = sigInfo.GetLinkFlags();
-        nlType  = sigInfo.GetCharSet();
-    }
-
-    StubSigDesc sigDesc(pMD, signature, pVASigCookie->pModule, pVASigCookie->pLoaderModule);
+    StubSigDesc sigDesc(pMD, pVASigCookie->signature, pVASigCookie->pModule, pVASigCookie->pLoaderModule);
     sigDesc.InitTypeContext(pVASigCookie->classInst, pVASigCookie->methodInst);
 
     MethodDesc* pStubMD = PInvoke::CreateCLRToNativeILStub(&sigDesc,
@@ -6152,6 +6120,275 @@ static void GetILStubForCalli(VASigCookie* pVASigCookie, MethodDesc* pMD)
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
     UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
     UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
+}
+
+// Build the managed signature of the IL stub that implements an unmanaged CALLI call site.
+//
+// The stub signature is the call site signature with a managed (default) calling convention
+// and an extra trailing native int parameter that carries the unmanaged target. A required
+// SecretStubArgument modifier on that parameter tells the JIT to pass it in the secret stub
+// register.
+//
+// The calling convention of the call site is not part of this signature. It does not need to be:
+// the IL stub cache keys on it separately through PInvokeStubHashBlob::m_unmgdCallConv and
+// PInvokeStubHashBlob::m_StubFlags, so call sites that differ only in calling convention or in
+// SuppressGCTransition still get distinct stubs.
+//
+// A call site with an instance 'this' cannot be described by any unmanaged calling convention and
+// is rejected, but the rejection is reported when the stub is called. That requires a stub the JIT
+// can call, so the 'this' becomes an explicit leading native int parameter and the stub pops the
+// call site correctly.
+static void BuildCalliILStubSignature(
+    const Signature& calliSignature,
+    SigBuilder* pSigBuilder)
+{
+    STANDARD_VM_CONTRACT;
+
+    SigParser sigParser = calliSignature.CreateSigParser();
+
+    uint32_t callConv;
+    IfFailThrow(sigParser.GetCallingConvInfo(&callConv));
+
+    // Only signatures that describe a standalone method signature get here.
+    _ASSERTE((callConv & IMAGE_CEE_CS_CALLCONV_GENERIC) == 0);
+
+    bool hasImplicitThis = (callConv & IMAGE_CEE_CS_CALLCONV_HASTHIS) != 0 &&
+                           (callConv & IMAGE_CEE_CS_CALLCONV_EXPLICITTHIS) == 0;
+
+    uint32_t numArgs;
+    IfFailThrow(sigParser.GetData(&numArgs));
+
+    pSigBuilder->AppendByte(IMAGE_CEE_CS_CALLCONV_DEFAULT);
+    pSigBuilder->AppendData(numArgs + (hasImplicitThis ? 2 : 1));
+
+    // The return type, copied verbatim.
+    PCCOR_SIGNATURE pRetTypeStart = sigParser.GetPtr();
+    IfFailThrow(sigParser.SkipExactlyOne());
+    PCCOR_SIGNATURE pRetTypeEnd = sigParser.GetPtr();
+    pSigBuilder->AppendBlob((PVOID)pRetTypeStart, (DWORD)(pRetTypeEnd - pRetTypeStart));
+
+    // The instance pointer, if the call site has an implicit 'this', ahead of the declared parameters.
+    // For EXPLICITTHIS signatures the this parameter is already part of numArgs, so no extra parameter
+    // is added.
+    if (hasImplicitThis)
+    {
+        pSigBuilder->AppendElementType(ELEMENT_TYPE_I);
+    }
+
+    // The declared parameters, copied verbatim.
+    PCCOR_SIGNATURE pArgsStart = sigParser.GetPtr();
+    for (uint32_t i = 0; i < numArgs; i++)
+    {
+        IfFailThrow(sigParser.SkipExactlyOne());
+    }
+    PCCOR_SIGNATURE pArgsEnd = sigParser.GetPtr();
+    pSigBuilder->AppendBlob((PVOID)pArgsStart, (DWORD)(pArgsEnd - pArgsStart));
+
+    // The unmanaged target is marked so the JIT passes it in the secret stub register.
+    TypeHandle secretStubArgument = CoreLibBinder::GetClass(CLASS__SECRET_STUB_ARGUMENT);
+    pSigBuilder->AppendElementType(ELEMENT_TYPE_CMOD_INTERNAL);
+    pSigBuilder->AppendByte(1);
+    pSigBuilder->AppendPointer(secretStubArgument.AsPtr());
+    pSigBuilder->AppendElementType(ELEMENT_TYPE_I);
+}
+
+// A failure detected while classifying an unmanaged CALLI call site. It is reported when the stub
+// is called rather than while the caller is being jitted, so it is carried alongside a usable
+// calling convention that lets stub creation run to completion.
+struct CalliStubDeferredError
+{
+    RuntimeExceptionKind Kind = kLastException;
+    UINT                 ResID = 0;
+
+    bool IsSet() const { LIMITED_METHOD_CONTRACT; return Kind != kLastException; }
+
+    void Set(RuntimeExceptionKind kind, UINT resID)
+    {
+        LIMITED_METHOD_CONTRACT;
+        // Only keep the first one.
+        if (!IsSet())
+        {
+            Kind = kind;
+            ResID = resID;
+        }
+    }
+};
+
+// Determines the unmanaged calling convention of an unmanaged CALLI call site and the
+// corresponding stub flags. Returns false if the signature does not describe a P/Invoke.
+//
+// A signature that describes a P/Invoke the runtime cannot express records the failure in
+// *pError and still returns a usable calling convention, so that a stub can be created to report
+// it when it is called. Only a signature that is not a standalone method signature at all - one
+// the stub signature cannot even be built from - throws.
+static bool TryGetCalliStubCallConv(
+    Module* pModule,
+    const Signature& calliSignature,
+    CorInfoCallConvExtension* pUnmgdCallConv,
+    DWORD* pdwStubFlags,
+    CalliStubDeferredError* pError)
+{
+    STANDARD_VM_CONTRACT;
+
+    SigParser sigParser = calliSignature.CreateSigParser();
+    uint32_t rawCallConv;
+    IfFailThrow(sigParser.GetCallingConvInfo(&rawCallConv));
+
+    switch (rawCallConv & IMAGE_CEE_CS_CALLCONV_MASK)
+    {
+        case IMAGE_CEE_CS_CALLCONV_C:
+        case IMAGE_CEE_CS_CALLCONV_STDCALL:
+        case IMAGE_CEE_CS_CALLCONV_THISCALL:
+        case IMAGE_CEE_CS_CALLCONV_FASTCALL:
+            *pUnmgdCallConv = (CorInfoCallConvExtension)(rawCallConv & IMAGE_CEE_CS_CALLCONV_MASK);
+            break;
+
+        case IMAGE_CEE_CS_CALLCONV_UNMANAGED:
+        {
+            // The unmanaged calling convention is encoded in modopts.
+            CallConvBuilder builder;
+            UINT errorResID;
+            HRESULT hr = CallConv::TryGetUnmanagedCallingConventionFromModOpt(GetScopeHandle(pModule), calliSignature.GetRawSig(), calliSignature.GetRawSigLen(), &builder, &errorResID);
+
+            CorInfoCallConvExtension unmgdCallConv;
+            if (FAILED(hr))
+            {
+                // Report the failure the same way COMPlusThrowHR(hr, errorResID) would have:
+                // the exception kind comes from the HRESULT, not from the parser's failure mode.
+                pError->Set(EEException::GetKindFromHR(hr), errorResID);
+                unmgdCallConv = CallConv::GetDefaultUnmanagedCallingConvention();
+            }
+            else
+            {
+                unmgdCallConv = builder.GetCurrentCallConv();
+                if (unmgdCallConv == CallConvBuilder::UnsetValue)
+                {
+                    unmgdCallConv = CallConv::GetDefaultUnmanagedCallingConvention();
+                }
+
+                if (builder.IsCurrentCallConvModSet(CallConvBuilder::CALL_CONV_MOD_SUPPRESSGCTRANSITION))
+                {
+                    *pdwStubFlags |= PINVOKESTUB_FL_SUPPRESSGCTRANSITION;
+                }
+            }
+
+            *pUnmgdCallConv = unmgdCallConv;
+            break;
+        }
+
+        case IMAGE_CEE_CS_CALLCONV_DEFAULT:
+        case IMAGE_CEE_CS_CALLCONV_VARARG:
+        case IMAGE_CEE_CS_CALLCONV_NATIVEVARARG:
+        case IMAGE_CEE_CS_CALLCONV_ASYNC:
+            // Managed call sites - including the runtime-internal native-vararg and async
+            // conventions used by IL stubs - are not P/Invokes.
+            return false;
+
+        default:
+            // Not a method signature at all, so no stub signature can be built from it.
+            COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+    }
+
+    if ((rawCallConv & IMAGE_CEE_CS_CALLCONV_GENERIC) != 0)
+    {
+        // An unmanaged standalone signature is never generic, and its argument count is not where
+        // the stub signature builder expects it, so no stub can be built from it either.
+        COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+    }
+
+    // An unmanaged call site carrying an instance 'this' is not expressible as a stub, and the JIT
+    // cannot emit it inline either. Reject it the same way a P/Invoke declared on an instance method
+    // is rejected - see code:CreatePInvokeStubAccessMetadata. Note that a native member function is
+    // expressed as a static signature whose first parameter is the 'this' pointer, so this only
+    // rejects signatures that no calling convention can describe.
+    if ((rawCallConv & (IMAGE_CEE_CS_CALLCONV_HASTHIS | IMAGE_CEE_CS_CALLCONV_EXPLICITTHIS)) != 0)
+    {
+        pError->Set(kInvalidProgramException, VLDTR_E_FMD_PINVOKENOTSTATIC);
+    }
+
+    // The JIT refuses to emit these inline, and stub creation cannot express them either.
+    if (*pUnmgdCallConv == CorInfoCallConvExtension::Managed ||
+        *pUnmgdCallConv == CorInfoCallConvExtension::Fastcall ||
+        *pUnmgdCallConv == CorInfoCallConvExtension::FastcallMemberFunction)
+    {
+        pError->Set(kTypeLoadException, IDS_INVALID_PINVOKE_CALLCONV);
+    }
+
+    return true;
+}
+
+MethodDesc* PInvoke::CreateCalliILStub(
+    Module* pModule,
+    const Signature& calliSignature,
+    const SigTypeContext* pTypeContext,
+    bool fMustCreate)
+{
+    CONTRACTL
+    {
+        STANDARD_VM_CHECK;
+        PRECONDITION(CheckPointer(pModule));
+        PRECONDITION(CheckPointer(pTypeContext));
+    }
+    CONTRACTL_END;
+
+    DWORD dwStubFlags = PINVOKESTUB_FL_BESTFIT | PINVOKESTUB_FL_UNMANAGED_CALLI;
+    CorInfoCallConvExtension unmgdCallConv;
+    CalliStubDeferredError deferredError;
+    if (!TryGetCalliStubCallConv(pModule, calliSignature, &unmgdCallConv, &dwStubFlags, &deferredError))
+        return NULL;
+
+    // The generic context is stripped if the signature does not actually use it. That is
+    // required for correctness: built-in runtime marshalling is disallowed for generic
+    // signatures, and it also lets the stub be shared across instantiations.
+    SigTypeContext typeContext = *pTypeContext;
+    Module* pLoaderModule = pModule->GetLoaderModuleForSignature(calliSignature, &typeContext);
+
+    // If no marshaling is needed and nothing is wrong with the call site, let the caller emit the
+    // unmanaged call inline unless it explicitly asked for a stub.
+    if (!fMustCreate
+        && !deferredError.IsSet()
+        && !PInvoke::MarshalingRequired(NULL, calliSignature.CreateSigPointer(), pModule, &typeContext))
+    {
+        return NULL;
+    }
+
+    SigBuilder sigBuilder;
+    BuildCalliILStubSignature(calliSignature, &sigBuilder);
+
+    DWORD cbStubSig;
+    PCCOR_SIGNATURE pStubSig = (PCCOR_SIGNATURE)sigBuilder.GetSignature(&cbStubSig);
+
+    StubSigDesc sigDesc(Signature((PCCOR_SIGNATURE)(BYTE*)pStubSig, cbStubSig), pModule, pLoaderModule);
+    sigDesc.InitTypeContext(typeContext.m_classInst, typeContext.m_methodInst);
+
+    int iLCIDArg = 0;
+    int numArgs = 0;
+    CreatePInvokeStubAccessMetadata(&sigDesc, unmgdCallConv, &dwStubFlags, &iLCIDArg, &numArgs);
+
+    int numParamTokens = numArgs + 1;
+    mdParamDef* pParamTokenArray = (mdParamDef*)_alloca(numParamTokens * sizeof(mdParamDef));
+    CollateParamTokens(pModule->GetMDImport(), sigDesc.m_tkMethodDef, numArgs, pParamTokenArray);
+
+    PInvoke_ILStubState stubState(pModule, sigDesc.m_sig, &sigDesc.m_typeContext, dwStubFlags, unmgdCallConv, iLCIDArg, NULL);
+
+    if (deferredError.IsSet())
+    {
+        // The call site cannot be marshaled. Generate a stub whose body throws so that the failure
+        // is reported when the call site executes rather than while its caller is jitted.
+        stubState.SetInteropExceptionInfo(deferredError.Kind, deferredError.ResID);
+    }
+
+    MethodDesc* pStubMD = CreateInteropILStub(
+        &stubState,
+        &sigDesc,
+        nltAnsi,
+        nlfNone,
+        unmgdCallConv,
+        numParamTokens,
+        pParamTokenArray,
+        iLCIDArg);
+
+    return pStubMD;
 }
 
 EXTERN_C void STDCALL VarargPInvokeStubWorker(TransitionBlock* pTransitionBlock, VASigCookie *pVASigCookie, MethodDesc *pMD)
@@ -6177,34 +6414,7 @@ EXTERN_C void STDCALL VarargPInvokeStubWorker(TransitionBlock* pTransitionBlock,
     _ASSERTE(pVASigCookie == pFrame->GetVASigCookie());
     _ASSERTE(pMD == pFrame->GetFunction());
 
-    GetILStubForCalli(pVASigCookie, pMD);
-
-    pFrame->Pop(CURRENT_THREAD);
-}
-
-EXTERN_C void STDCALL GenericPInvokeCalliStubWorker(TransitionBlock * pTransitionBlock, VASigCookie * pVASigCookie, PCODE pUnmanagedTarget)
-{
-    PreserveLastErrorHolder preserveLastError;
-
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_MODE_COOPERATIVE;
-    STATIC_CONTRACT_ENTRY_POINT;
-
-    MAKE_CURRENT_THREAD_AVAILABLE();
-
-#ifdef _DEBUG
-    Thread::ObjectRefFlush(CURRENT_THREAD);
-#endif
-
-    PInvokeCalliFrame frame(pTransitionBlock, pVASigCookie, pUnmanagedTarget);
-    PInvokeCalliFrame * pFrame = &frame;
-
-    pFrame->Push(CURRENT_THREAD);
-
-    _ASSERTE(pVASigCookie == pFrame->GetVASigCookie());
-
-    GetILStubForCalli(pVASigCookie, NULL);
+    GetILStubForVarargPInvoke(pVASigCookie, pMD);
 
     pFrame->Pop(CURRENT_THREAD);
 }

@@ -14,15 +14,21 @@ ToHexChar(unsigned value)
 }
 
 void
-SignalSafeJsonWriter::Init(
-    SignalSafeJsonOutputCallback outputCallback,
-    void* outputContext)
+SignalSafeJsonWriter::SetOutputSink(
+    const SignalSafeJsonOutputSink& sink)
 {
     m_pos = 0;
     m_commaNeeded = false;
     m_writeFailed = false;
-    m_outputCallback = outputCallback;
-    m_outputContext = outputContext;
+    m_sink = sink;
+}
+
+const SignalSafeJsonOutputSink&
+SignalSafeJsonWriter::DropAllOutputSink()
+{
+    // A null callback discards output and reports success.
+    static const SignalSafeJsonOutputSink s_dropAllSink(nullptr, nullptr);
+    return s_dropAllSink;
 }
 
 bool
@@ -114,7 +120,7 @@ SignalSafeJsonWriter::Flush()
         return true;
     }
 
-    if (m_outputCallback != nullptr && !m_outputCallback(m_buffer, m_pos, m_outputContext))
+    if (!m_sink.Write(m_buffer, m_pos))
     {
         m_writeFailed = true;
         return false;

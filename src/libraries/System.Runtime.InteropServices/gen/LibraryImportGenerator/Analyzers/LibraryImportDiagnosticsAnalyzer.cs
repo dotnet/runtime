@@ -39,6 +39,7 @@ namespace Microsoft.Interop.Analyzers
                 GeneratorDiagnostics.MarshallingAttributeConfigurationNotSupported,
                 GeneratorDiagnostics.CannotForwardToDllImport,
                 GeneratorDiagnostics.RequiresAllowUnsafeBlocks,
+                GeneratorDiagnostics.RequiresExplicitSafetyModifier,
                 GeneratorDiagnostics.UnnecessaryParameterMarshallingInfo,
                 GeneratorDiagnostics.UnnecessaryReturnMarshallingInfo,
                 GeneratorDiagnostics.SizeOfInCollectionMustBeDefinedAtCallOutParam,
@@ -175,6 +176,8 @@ namespace Microsoft.Interop.Analyzers
 
             // Note: RequiresAllowUnsafeBlocks is reported once per compilation in Initialize method
 
+            ReportMissingExplicitSafetyModifier(context, method, libraryImportAttr);
+
             // Calculate stub information and collect diagnostics
             var diagnostics = CalculateDiagnostics(methodSyntax, method, libraryImportAttr, env, options, context.CancellationToken);
 
@@ -191,6 +194,39 @@ namespace Microsoft.Interop.Analyzers
                     context.ReportDiagnostic(diagnostic.ToDiagnostic());
                 }
             }
+        }
+
+        /// <summary>
+        /// Requires an explicit <c>safe</c> or <c>unsafe</c> modifier on every method with
+        /// <c>LibraryImportAttribute</c> when the updated memory safety rules are enabled.
+        /// </summary>
+        /// <remarks>
+        /// The compiler only requires the modifier when the generated implementing part is <c>extern</c>, which
+        /// depends on whether the signature needs marshalling. That is an implementation detail of the generator,
+        /// so the requirement is enforced for every shape to keep the contract stable.
+        /// </remarks>
+        private static void ReportMissingExplicitSafetyModifier(SymbolAnalysisContext context, IMethodSymbol method, AttributeData libraryImportAttr)
+        {
+            // The generator never copies LibraryImportAttribute onto the implementing part, so the attribute
+            // application always points at the declaration the user authored.
+            if (libraryImportAttr.ApplicationSyntaxReference is not { } attributeReference
+                || !attributeReference.SyntaxTree.UseUpdatedMemorySafetyRules)
+            {
+                return;
+            }
+
+            if (attributeReference.GetSyntax(context.CancellationToken).FirstAncestorOrSelf<MethodDeclarationSyntax>() is not { } declaration
+                || declaration.Modifiers.HasExplicitSafetyModifier)
+            {
+                return;
+            }
+
+            context.ReportDiagnostic(
+                DiagnosticInfo.Create(
+                    GeneratorDiagnostics.RequiresExplicitSafetyModifier,
+                    declaration.Identifier.GetLocation(),
+                    method.Name)
+                .ToDiagnostic());
         }
 
         private static ImmutableArray<DiagnosticInfo> CalculateDiagnostics(

@@ -32,7 +32,6 @@ public:
 
     FCDECL0(static void,            SetLastError            );
     FCDECL0(static void,            ClearLastError          );
-    FCDECL1(static void*,           GetDelegateTarget,      DelegateObject *pThisUNSAFE);
 
     FCDECL2(static void,            LogPinnedArgument, MethodDesc *localDesc, Object *nativeArg);
     FCDECL1(static DWORD,           CalcVaListSize, VARARGS *varargs);
@@ -58,6 +57,7 @@ extern "C" void QCALLTYPE InterfaceMarshaler_ValidateComVisibilityForIUnknown(IU
 #endif
 
 extern "C" void QCALLTYPE StubHelpers_ThrowInteropParamException(INT resID, INT paramIdx);
+extern "C" void QCALLTYPE StubHelpers_ThrowInteropException(INT exceptionKind, INT resID);
 
 extern "C" void QCALLTYPE StubHelpers_MarshalToManagedVaList(va_list va, VARARGS* pArgIterator);
 extern "C" void QCALLTYPE StubHelpers_MarshalToUnmanagedVaList(va_list va, DWORD cbVaListSize, const VARARGS* pArgIterator);

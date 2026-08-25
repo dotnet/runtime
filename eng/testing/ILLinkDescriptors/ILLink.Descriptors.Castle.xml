@@ -7,6 +7,9 @@
     <type fullname="Castle.DynamicProxy.Internal.InterfaceMethodWithoutTargetInvocation" />
   </assembly>
   <assembly fullname="Moq">
+    <!-- Moq creates awaitable factories (e.g. TaskFactory`1) with Activator.CreateInstance
+         when supplying default return values for mocked async members. -->
+    <namespace fullname="Moq.Async" />
     <type fullname="Moq.Internals.InterfaceProxy">
       <method signature="System.Void .ctor()" />
     </type>

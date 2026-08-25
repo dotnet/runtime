@@ -5,6 +5,7 @@
     <_BuildNativeTargetOS Condition="'$(TargetsLinuxBionic)' == 'true'">linux-bionic</_BuildNativeTargetOS>
     <HasCdacBuildTool Condition="'$(ClrFullNativeBuild)' == 'true' or '$(ClrRuntimeSubset)' == 'true' or '$(ClrDebugSubset)' == 'true' or '$(ClrCrossComponentsSubset)' == 'true' or '$(ClrNativeAotSubset)' == 'true'">true</HasCdacBuildTool>
     <BuildRuntimeDependsOnTargets>GetPgoDataPackagePath</BuildRuntimeDependsOnTargets>
+    <BuildRuntimeDependsOnTargets Condition="'$(EnableSourceControlManagerQueries)' == 'true'">$(BuildRuntimeDependsOnTargets);InitializeSourceControlInformationFromSourceControlManager</BuildRuntimeDependsOnTargets>
     <BuildRuntimeDependsOnTargets Condition="'$(TargetsBrowser)' == 'true'">AcquireEmscriptenSdk;$(BuildRuntimeDependsOnTargets);GenerateEmccExports</BuildRuntimeDependsOnTargets>
     <BuildRuntimeDependsOnTargets Condition="'$(TargetsWasi)' == 'true'">AcquireWasiSdk;$(BuildRuntimeDependsOnTargets)</BuildRuntimeDependsOnTargets>
   </PropertyGroup>
@@ -57,6 +58,7 @@
       <_CoreClrBuildArg Condition="'$(FeatureXplatEventSource)' == 'false'" Include="-cmakeargs &quot;-DFEATURE_EVENTSOURCE_XPLAT=0&quot;" />
       <_CoreClrBuildArg Condition="'$(FeatureInterpreter)' == 'true'" Include="-cmakeargs &quot;-DFEATURE_INTERPRETER=1&quot;" />
       <_CoreClrBuildArg Condition="'$(FeatureDynamicCodeCompiled)' == 'true' or '$(FeatureDynamicCodeCompiled)' == ''" Include="-cmakeargs &quot;-DFEATURE_DYNAMIC_CODE_COMPILED=1&quot;" />
+      <_CoreClrBuildArg Include="-cmakeargs &quot;-DCLI_CMAKE_COMMIT_HASH=$([MSBuild]::ValueOrDefault('$(SourceRevisionId)', 'N/A'))&quot;" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(CxxStandardLibrary)' != ''">

@@ -228,27 +228,15 @@ namespace System
             return OpenMethodResolver.ResolveMethod(_extraFunctionPointerOrData, thisObject);
         }
 
-        internal bool IsDynamicDelegate() => GetThunk(MulticastThunk) == IntPtr.Zero;
-
         [DebuggerGuidedStepThroughAttribute]
         protected virtual object? DynamicInvokeImpl(object?[]? args)
         {
-            if (IsDynamicDelegate())
-            {
-                // DynamicDelegate case
-                object? result = ((Func<object?[]?, object?>)_helperObject)(args);
-                DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
-                return result;
-            }
-            else
-            {
-                DynamicInvokeInfo dynamicInvokeInfo = ReflectionAugments.GetDelegateDynamicInvokeInfo(GetType());
+            DynamicInvokeInfo dynamicInvokeInfo = ReflectionAugments.GetDelegateDynamicInvokeInfo(GetType());
 
-                object? result = dynamicInvokeInfo.Invoke(_target, _methodPtr,
-                    args, binderBundle: null, wrapInTargetInvocationException: true);
-                DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
-                return result;
-            }
+            object? result = dynamicInvokeInfo.Invoke(_target, _methodPtr,
+                args, binderBundle: null, wrapInTargetInvocationException: true);
+            DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
+            return result;
         }
 
         protected virtual MethodInfo GetMethodImpl()
@@ -491,9 +479,6 @@ namespace System
             // Verify that the types are the same...
             if (!InternalEqualTypes(this, d))
                 throw new ArgumentException(SR.Arg_DlgtTypeMis);
-
-            if (IsDynamicDelegate())
-                throw new InvalidOperationException();
 
             int followCount = 1;
             Wrapper[]? followList = d._helperObject as Wrapper[];
