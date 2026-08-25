@@ -7,7 +7,7 @@ extern int createdump_main(const int argc, const char* argv[]);
 extern bool InitializePAL();
 extern void UninitializePAL(int exitCode);
 
-#if defined(HOST_ARM64)
+#if defined(HOST_ARM64) && !defined(HOST_UNIX)
 // Flag to check if atomics feature is available on
 // the machine
 bool g_arm64_atomics_present = false;

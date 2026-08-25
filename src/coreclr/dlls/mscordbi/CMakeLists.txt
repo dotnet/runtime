@@ -97,6 +97,7 @@ if(CLR_CMAKE_HOST_WIN32)
 elseif(CLR_CMAKE_HOST_UNIX)
 
     if(CLR_DUMP_COLLECT_PROVIDER_PATH)
+        target_compile_definitions(mscordbi PRIVATE MSCORDBI_LINKS_PRIVATE_PAL)
         list(APPEND COREDBI_LIBRARIES
             mscorrc
             coreclrpal

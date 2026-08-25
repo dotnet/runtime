@@ -11,6 +11,7 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpCollect;
 
 internal sealed class DumpCreator
 {
+    private const int MaxSyncBlocks = 1_000_000;
     private const int MaxThreads = 1_000_000;
 
     private readonly Target _target;
@@ -241,8 +242,20 @@ internal sealed class DumpCreator
         }
 
         TargetPointer cleanup = syncBlock.GetSyncBlockFromCleanupList();
-        while (cleanup != TargetPointer.Null)
-            cleanup = syncBlock.GetNextSyncBlock(cleanup);
+        TraverseTargetLinkedList(cleanup, syncBlock.GetNextSyncBlock);
+    }
+
+    internal static void TraverseTargetLinkedList(
+        TargetPointer current,
+        Func<TargetPointer, TargetPointer> getNext)
+    {
+        HashSet<TargetPointer> visited = [];
+        for (int i = 0;
+             current != TargetPointer.Null && i < MaxSyncBlocks && visited.Add(current);
+             i++)
+        {
+            current = getNext(current);
+        }
     }
 
     private void EnumerateStressLog()

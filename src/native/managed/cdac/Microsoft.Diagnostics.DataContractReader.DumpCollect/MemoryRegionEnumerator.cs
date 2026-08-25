@@ -26,7 +26,14 @@ internal sealed unsafe partial class MemoryRegionEnumerator(
 
         try
         {
-            var emitter = new MemoryRegionEmitter((nint)callback);
+            uint pointerSize;
+            int hr = dataTarget.GetPointerSize(&pointerSize);
+            if (hr < 0)
+                return hr;
+            if (pointerSize is not sizeof(uint) and not sizeof(ulong))
+                return HResults.E_FAIL;
+
+            var emitter = new MemoryRegionEmitter((nint)callback, pointerSize);
             ContractDescriptorTarget target = CreateTarget(emitter);
             bool includeHeap =
                 clrFlags is CLRDataEnumMemoryFlags.CLRDATA_ENUM_MEM_HEAP or CLRDataEnumMemoryFlags.CLRDATA_ENUM_MEM_HEAP2
@@ -100,7 +107,7 @@ internal sealed unsafe partial class MemoryRegionEnumerator(
     }
 }
 
-internal sealed unsafe class MemoryRegionEmitter(nint callback)
+internal sealed unsafe class MemoryRegionEmitter(nint callback, uint pointerSize)
 {
     private static readonly Guid s_callback2Iid = new("3721A26F-8B91-4D98-A388-DB17B356FADB");
 
@@ -123,7 +130,7 @@ internal sealed unsafe class MemoryRegionEmitter(nint callback)
         while (size != 0)
         {
             uint chunkSize = (uint)Math.Min(size, uint.MaxValue);
-            int hr = _enumMemoryRegion(callback, address, chunkSize);
+            int hr = _enumMemoryRegion(callback, ToClrDataAddress(address), chunkSize);
             if (hr == HResults.COR_E_OPERATIONCANCELED)
                 Marshal.ThrowExceptionForHR(hr);
 
@@ -171,7 +178,11 @@ internal sealed unsafe class MemoryRegionEmitter(nint callback)
                 (delegate* unmanaged[MemberFunction]<nint, ulong, uint, byte*, int>)(*(nint**)callback2)[4];
             fixed (byte* bufferPointer = buffer)
             {
-                hr = updateMemoryRegion(callback2, address, (uint)buffer.Length, bufferPointer);
+                hr = updateMemoryRegion(
+                    callback2,
+                    ToClrDataAddress(address),
+                    (uint)buffer.Length,
+                    bufferPointer);
             }
 
             if (hr < 0)
@@ -187,4 +198,6 @@ internal sealed unsafe class MemoryRegionEmitter(nint callback)
         }
     }
 
+    internal ulong ToClrDataAddress(ulong address) =>
+        pointerSize == sizeof(uint) ? (ulong)(long)(int)address : address;
 }
