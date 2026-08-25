@@ -77,7 +77,6 @@ namespace System.Net
         private State _state;
         private readonly StringBuilder _saved;
         private bool _sawCR;
-        private bool _gotit;
         private int _trailerState;
         private readonly List<Chunk> _chunks;
 
@@ -150,7 +149,6 @@ namespace System.Net
 
                 _saved.Length = 0;
                 _sawCR = false;
-                _gotit = false;
             }
 
             if (_state == State.Body && offset < size)
@@ -177,7 +175,6 @@ namespace System.Net
 
                 _saved.Length = 0;
                 _sawCR = false;
-                _gotit = false;
             }
 
             if (offset < size)
@@ -255,11 +252,7 @@ namespace System.Net
                 if (_sawCR && c == '\n')
                     break;
 
-                if (c == ' ')
-                    _gotit = true;
-
-                if (!_gotit)
-                    _saved.Append(c);
+                _saved.Append(c);
 
                 if (_saved.Length > 20)
                     ThrowProtocolViolation("chunk size too long.");
@@ -274,7 +267,7 @@ namespace System.Net
                 {
                     if (_saved.Length > 0)
                     {
-                        _chunkSize = int.Parse(RemoveChunkExtension(_saved.ToString()), NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+                        _chunkSize = int.Parse(RemoveChunkExtension(_saved.ToString()), NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture);
                     }
                 }
                 catch (Exception)
@@ -288,7 +281,7 @@ namespace System.Net
             _chunkRead = 0;
             try
             {
-                _chunkSize = int.Parse(RemoveChunkExtension(_saved.ToString()), NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+                _chunkSize = int.Parse(RemoveChunkExtension(_saved.ToString()), NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture);
             }
             catch (Exception)
             {

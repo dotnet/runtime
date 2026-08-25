@@ -701,5 +701,30 @@ namespace System.Net.Tests
                 Assert.Throws<HttpListenerException>(() => context.Request.InputStream.Read(buffer, 0, buffer.Length));
             }
         }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public async Task Read_ChunkSizeWithWhitespace_ThrowsHttpListenerException()
+        {
+            using (Socket client = _factory.GetConnectedSocket())
+            {
+                Uri listeningUri = new Uri(_factory.ListeningUrl);
+                string request =
+                    $"POST {listeningUri.PathAndQuery} HTTP/1.1\r\n" +
+                    $"Host: {listeningUri.Host}\r\n" +
+                    "Transfer-Encoding: chunked\r\n" +
+                    "\r\n" +
+                    "5 \r\n" +
+                    "Hello\r\n" +
+                    "0\r\n" +
+                    "\r\n";
+
+                await client.SendAsync(Encoding.ASCII.GetBytes(request));
+                HttpListenerContext context = await _listener.GetContextAsync();
+
+                byte[] buffer = new byte[5];
+                await Assert.ThrowsAsync<HttpListenerException>(() => context.Request.InputStream.ReadAsync(buffer, 0, buffer.Length));
+            }
+        }
     }
 }
