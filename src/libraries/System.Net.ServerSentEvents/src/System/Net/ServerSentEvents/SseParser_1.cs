@@ -314,7 +314,7 @@ namespace System.Net.ServerSentEvents
                 }
                 else if (_lineLength == _lineBuffer.Length)
                 {
-                    GrowBuffer(ref _lineBuffer, () => checked(_lineBuffer.Length + 1));
+                    GrowBuffer(ref _lineBuffer, (uint)_lineBuffer.Length + 1);
                 }
             }
 
@@ -401,7 +401,7 @@ namespace System.Net.ServerSentEvents
                 }
 
                 // We need to copy the data from the line buffer to the data buffer. Make sure there's enough room.
-                GrowBuffer(ref _dataBuffer, () => checked(_dataLength + _lineLength + 1));
+                GrowBuffer(ref _dataBuffer, (uint)_dataLength + (uint)_lineLength + 1);
 
                 // Append a newline if there's already content in the buffer.
                 // Then copy the field value to the data buffer
@@ -543,46 +543,31 @@ namespace System.Net.ServerSentEvents
 
         /// <summary>Grows the buffer, returning the existing one to the ArrayPool and renting an ArrayPool replacement.</summary>
         /// <param name="buffer">The buffer to extend on input; the newly extended buffer on output.</param>
-        /// <param name="checkedRequiredLength">A lambda that computes the required buffer length using checked operations.</param>
-        private void GrowBuffer([NotNull] ref byte[]? buffer, Func<int> checkedRequiredLength)
+        /// <param name="minimumSize">A lambda that computes the required buffer length using checked operations.</param>
+        private void GrowBuffer([NotNull] ref byte[]? buffer, uint minimumSize)
         {
             int currentSize = buffer?.Length ?? 0;
 
-            int preferredGrowth;
-            try
-            {
-                preferredGrowth = checked(currentSize * 2);
-            }
-            catch (OverflowException)
-            {
-                preferredGrowth = int.MaxValue;
-            }
-            preferredGrowth = Math.Min(preferredGrowth, _maxBufferSize);
-            preferredGrowth = Math.Max(preferredGrowth, DefaultArrayPoolRentSize);
+            uint prefferedSize = (uint)currentSize * 2;
+            prefferedSize = Math.Min(prefferedSize, (uint)_maxBufferSize);
+            prefferedSize = Math.Max(prefferedSize, DefaultArrayPoolRentSize);
+            Debug.Assert(prefferedSize < int.MaxValue);
 
-            int requestedGrowth;
-            try
-            {
-                requestedGrowth = checkedRequiredLength();
-            }
-            catch (OverflowException)
+            if (minimumSize > _maxBufferSize)
             {
                 throw new InvalidDataException(SR.InvalidDataException_SseExceededMaxLength);
             }
-            if (buffer is not null && currentSize > requestedGrowth)
+            Debug.Assert(minimumSize < int.MaxValue);
+
+            if (buffer is not null && currentSize > minimumSize)
             {
                 return;
             }
-            if (requestedGrowth > _maxBufferSize)
-            {
-                throw new InvalidDataException(SR.InvalidDataException_SseExceededMaxLength);
-            }
 
-            int actualGrowth = Math.Max(preferredGrowth, requestedGrowth);
-
+            int rentedSize = Math.Max((int)prefferedSize, (int)minimumSize);
 
             byte[]? toReturn = buffer;
-            buffer = ArrayPool<byte>.Shared.Rent(actualGrowth);
+            buffer = ArrayPool<byte>.Shared.Rent(rentedSize);
             if (toReturn is not null)
             {
                 Array.Copy(toReturn, buffer, toReturn.Length);
