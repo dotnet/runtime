@@ -16,6 +16,13 @@
 
 HRESULT CreateMDReadWriteLock(minipal_rwlock **ppLock)
 {
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
     minipal_rwlock *pLock = new (nothrow) minipal_rwlock;
     IfNullRet(pLock);
 
@@ -31,6 +38,13 @@ HRESULT CreateMDReadWriteLock(minipal_rwlock **ppLock)
 
 void DestroyMDReadWriteLock(minipal_rwlock *pLock)
 {
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
     if (pLock != NULL)
     {
         minipal_rwlock_destroy(pLock);
@@ -1392,10 +1406,10 @@ void CMDReadWriteLock::UnlockWrite()
 } // CMDReadWriteLock::UnlockWrite
 
 #ifdef _DEBUG
-void CMDReadWriteLock::Debug_DetachMiniMd(CMiniMdRW *pMiniMd)
+void CMDReadWriteLock::Debug_DetachMiniMd()
 {
     _ASSERTE(m_fLockedForWrite);
-    _ASSERTE(m_pMiniMd == pMiniMd);
+    _ASSERTE(m_pMiniMd != NULL);
 
     if (m_pLock != NULL)
     {

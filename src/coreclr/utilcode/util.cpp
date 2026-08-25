@@ -905,8 +905,7 @@ BOOL CPUGroupInfo::GetCPUGroupRange(WORD group_number, WORD* group_begin, WORD* 
 }
 #endif // HOST_WINDOWS
 
-#ifdef HOST_WINDOWS
-#ifdef SELF_NO_HOST
+#if defined(HOST_WINDOWS) && defined(SELF_NO_HOST)
 static INIT_ONCE g_globalSystemInfoInitOnce = INIT_ONCE_STATIC_INIT;
 SYSTEM_INFO g_SystemInfo;
 
@@ -922,8 +921,7 @@ static void InitializeGlobalSystemInfo()
 }
 #else
 extern SYSTEM_INFO g_SystemInfo;
-#endif // SELF_NO_HOST
-#endif // HOST_WINDOWS
+#endif // SELF_NO_HOST && HOST_WINDOWS
 
 int GetTotalProcessorCount()
 {

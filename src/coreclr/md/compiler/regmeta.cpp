@@ -1333,7 +1333,7 @@ ErrExit:
             // of the APIs were ever called then we can safely delete.
             CLiteWeightStgdbRW* pStgdb = m_pStgdbFreeList;
             m_pStgdbFreeList = m_pStgdbFreeList->m_pNextStgdb;
-            INDEBUG(lockHolder.Debug_DetachMiniMd(&pStgdb->m_MiniMd);)
+            INDEBUG(lockHolder.Debug_DetachMiniMd();)
             delete pStgdb;
         }
 

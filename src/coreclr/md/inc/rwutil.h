@@ -325,7 +325,7 @@ public:
     void UnlockWrite();
     HRESULT ConvertReadLockToWriteLock();
 #ifdef _DEBUG
-    void Debug_DetachMiniMd(CMiniMdRW *pMiniMd);
+    void Debug_DetachMiniMd();
 #endif // _DEBUG
 private:
     bool            m_fLockedForRead;
