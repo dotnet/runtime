@@ -723,6 +723,10 @@ disable_holding_lock (
 			// Log the process information event.
 			log_process_info_event (ep_event_source_get ());
 
+			// Give the runtime a chance to emit any pending end-of-session data (e.g. block-count
+			// PGO) while the session's providers are still enabled and its buffers are still live.
+			ep_rt_session_stopping ();
+
 			// Disable session tracing.
 			config_enable_disable (ep_config_get (), session, provider_callback_data_queue, false);
 

@@ -658,6 +658,16 @@ ep_rt_notify_profiler_provider_created (EventPipeProvider *provider)
 #endif // !DACCESS_COMPILE && PROFILING_SUPPORTED
 }
 
+static
+inline
+void
+ep_rt_session_stopping (void)
+{
+    STATIC_CONTRACT_NOTHROW;
+    extern void ep_rt_coreclr_session_stopping (void);
+    ep_rt_coreclr_session_stopping ();
+}
+
 /*
  * Arrays.
  */
