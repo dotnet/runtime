@@ -26,9 +26,6 @@
     <ProjectReference Include="..\ILCompiler.MetadataTransform\ILCompiler.MetadataTransform.csproj" />
     <ProjectReference Include="..\ILCompiler.RyuJit\ILCompiler.RyuJit.csproj" />
     <ProjectReference Include="..\ILCompiler.TypeSystem\ILCompiler.TypeSystem.csproj" />
-    <ProjectReference Include="..\ILCompiler\ILCompiler_inbuild.csproj" ReferenceOutputAssembly="false">
-      <SetConfiguration Condition="'$(Configuration)' != '$(CoreCLRConfiguration)'">Configuration=$(CoreCLRConfiguration)</SetConfiguration>
-    </ProjectReference>
 
     <ProjectReference Include="..\..\..\nativeaot\Test.CoreLib\src\Test.CoreLib.csproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
@@ -46,22 +43,5 @@
     <Compile Include="DependencyGraphTests.cs" />
     <Compile Include="DevirtualizationTests.cs" />
     <Compile Include="SwiftLoweringTests.cs" />
-    <Compile Include="WasmSingleMethodTests.cs" />
-  </ItemGroup>
-
-  <PropertyGroup>
-    <_NativeAotWasmTestSupported Condition="('$(BuildArchitecture)' == 'x64' or '$(BuildArchitecture)' == 'arm64') and ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'arm64')">true</_NativeAotWasmTestSupported>
-  </PropertyGroup>
-
-  <ItemGroup>
-    <RuntimeHostConfigurationOption Include="NativeAotWasmTest.IsSupported">
-      <Value>$(_NativeAotWasmTestSupported)</Value>
-    </RuntimeHostConfigurationOption>
-    <RuntimeHostConfigurationOption Include="NativeAotWasmTest.BuildArchitecture">
-      <Value>$(BuildArchitecture)</Value>
-    </RuntimeHostConfigurationOption>
-    <RuntimeHostConfigurationOption Include="NativeAotWasmTest.CoreCLRArtifactsDir">
-      <Value>$(CoreCLRArtifactsPath)</Value>
-    </RuntimeHostConfigurationOption>
   </ItemGroup>
 </Project>
