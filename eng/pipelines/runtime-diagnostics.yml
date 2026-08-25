@@ -133,7 +133,7 @@ extends:
           platforms:
           - windows_x64
           jobParameters:
-            buildArgs: -s clr+libs+tools.cdac+host+packs -c Debug -rc $(_BuildConfig) -lc $(_BuildConfig) -clrinterpreter
+            buildArgs: -s clr+libs+tools.cdac+host+packs -c Debug -rc $(_BuildConfig) -lc $(_BuildConfig) -clrinterpreter /p:UseCdacDumpCollectProvider=true
             nameSuffix: AllSubsets_CoreCLR
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 360
@@ -236,9 +236,12 @@ extends:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: release
           platforms: ${{ parameters.cdacDumpPlatforms }}
+          variables:
+          - name: _UseCdacDumpCollectProvider
+            value: $[and(eq(variables['osGroup'], 'windows'), or(eq(variables['archType'], 'x64'), eq(variables['archType'], 'x86')))]
           jobParameters:
             nameSuffix: CdacBuild
-            buildArgs: -s clr+libs+tools.cdac+tools.cdacdumptests+tools.cdacstresstests -c $(_BuildConfig) -rc checked -lc $(_BuildConfig) /p:SkipDumpVersions=net10.0
+            buildArgs: -s clr+libs+tools.cdac+tools.cdacdumptests+tools.cdacstresstests -c $(_BuildConfig) -rc checked -lc $(_BuildConfig) /p:SkipDumpVersions=net10.0 /p:UseCdacDumpCollectProvider=$(_UseCdacDumpCollectProvider)
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 180
             postBuildSteps:
