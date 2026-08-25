@@ -484,6 +484,46 @@ namespace System.Numerics.Tests
             Assert.Equal(a * a, BigInteger.Pow(a, 2));
         }
 
+        public static IEnumerable<object[]> SparseLimbCounts()
+        {
+            for (int limbCount = 4; limbCount < 32; limbCount++)
+            {
+                yield return new object[] { limbCount };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(SparseLimbCounts))]
+        public void MultiplySparseLimbOperands(int sparseLength)
+        {
+            int bitsPerLimb = nint.Size * 8;
+            BigInteger sparse = BigInteger.Zero;
+            BigInteger other = BigInteger.Zero;
+            BigInteger expected = BigInteger.Zero;
+
+            for (int i = 0; i <= sparseLength; i++)
+            {
+                nuint limb = nuint.MaxValue - (nuint)((i * 2) + 1);
+                other += (BigInteger)limb << (i * bitsPerLimb);
+            }
+
+            for (int i = 0; i < sparseLength; i++)
+            {
+                nuint limb = (i & 3) switch
+                {
+                    1 => 0,
+                    2 => 1,
+                    _ => nuint.MaxValue - (nuint)(i + 17),
+                };
+                int shift = i * bitsPerLimb;
+                sparse += (BigInteger)limb << shift;
+                expected += (other * limb) << shift;
+            }
+
+            Assert.Equal(expected, other * sparse);
+            Assert.Equal(expected, sparse * other);
+        }
+
         [Theory]
         [InlineData(4, 3, 1, 0)]
         [InlineData(4, 8, 2, 0)]
