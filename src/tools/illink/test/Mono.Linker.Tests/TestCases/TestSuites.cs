@@ -69,7 +69,7 @@ namespace Mono.Linker.Tests.TestCases
 
         [ConditionalTheory]
         [MemberData(nameof(TestDatabase.FunctionPointersTests), MemberType = typeof(TestDatabase))]
-        public void FunctionPointerTests(TestCase testCase)
+        public void FunctionPointersTests(TestCase testCase)
         {
             Run(testCase);
         }

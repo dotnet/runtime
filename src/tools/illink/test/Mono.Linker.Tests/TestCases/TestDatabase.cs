@@ -1,6 +1,7 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -11,7 +12,10 @@ namespace Mono.Linker.Tests.TestCases
 {
     public static class TestDatabase
     {
-        private static TestCase[] _cachedAllCases;
+        private static readonly Lazy<TestCase[]> s_allCases = new(() => CreateCollector()
+            .Collect()
+            .OrderBy(c => c.DisplayName)
+            .ToArray());
 
         public static IEnumerable<object[]> AdvancedTests()
         {
@@ -283,12 +287,7 @@ namespace Mono.Linker.Tests.TestCases
 
         static IEnumerable<TestCase> AllCases()
         {
-            _cachedAllCases ??= CreateCollector()
-                    .Collect()
-                    .OrderBy(c => c.DisplayName)
-                    .ToArray();
-
-            return _cachedAllCases;
+            return s_allCases.Value;
         }
 
         static IEnumerable<object[]> TestCasesBySuiteName(string suiteName)
