@@ -21,6 +21,8 @@ namespace ILCompiler.Wasm
         public void EmitPInvokeTable(TextWriter w, IEnumerable<string> pinvokeModules, List<WasmPInvoke> pinvokes)
         {
             // Modules an unresolved P/Invoke has already been reported for, so each is logged once.
+            // Only the logging is suppressed: a module a later P/Invoke does resolve - through
+            // [WasmImportLinkage], say - still has to make it into the table.
             var skippedModules = new HashSet<string>(StringComparer.Ordinal);
             var modules = new SortedDictionary<string, string>(StringComparer.Ordinal);
             foreach (string module in pinvokeModules)
@@ -34,7 +36,7 @@ namespace ILCompiler.Wasm
 
             foreach (WasmPInvoke pinvoke in pinvokes)
             {
-                if (modules.ContainsKey(pinvoke.Module) || skippedModules.Contains(pinvoke.Module))
+                if (modules.ContainsKey(pinvoke.Module))
                     continue;
 
                 // A static archive is named libFoo.a, so the module list - built from the file names
