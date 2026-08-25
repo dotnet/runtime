@@ -32,7 +32,14 @@ internal static class Program
     public struct SmallStruct { public int X; public int Y; }
     public struct LargeStruct { public long A; public long B; public long C; public long D; }
 
-    public class SimpleClass { public int Value; public string? Name; }
+    public class SimpleClass
+    {
+        [ThreadStatic]
+        public static int ThreadValue;
+
+        public int Value;
+        public string? Name;
+    }
 
     public enum Color
     {
@@ -43,6 +50,7 @@ internal static class Program
 
     private static void Main()
     {
+        SimpleClass.ThreadValue = 1234;
         PrimitiveVars(42, 3.14, true, 'Z', (byte)0xFF, (short)-1, 123456789L, 2.5f);
     }
 

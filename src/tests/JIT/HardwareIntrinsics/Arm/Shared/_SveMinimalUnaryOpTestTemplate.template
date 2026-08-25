@@ -430,7 +430,7 @@ namespace {Namespace}
             // In generated code, conditional select gets contained in the parent {method}. The parent uses the op when applicable and considers inactive elements as zero.
             for (var i = 0; i < Op1ElementCount; i++)
             {
-                if (mask[i] == 0)
+                if (Helpers.IsMaskInactive(mask[i]))
                 {
                     inArray[i] = 0;
                 }

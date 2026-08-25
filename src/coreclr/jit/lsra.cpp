@@ -1419,10 +1419,6 @@ PhaseStatus LinearScan::doRegisterAllocation()
 
     DBEXEC(VERBOSE, TupleStyleDump(LSRA_DUMP_POST));
 
-#ifdef DEBUG
-    m_compiler->fgDebugCheckLinks();
-#endif
-
     m_compiler->compRegAllocDone = true;
 
     // If edge resolution didn't create new blocks,
@@ -10867,7 +10863,7 @@ void LinearScan::TupleStyleDump(LsraTupleDumpMode mode)
                 assert(reg == assignedReg || varDsc->lvRegister == false);
                 if (reg != argReg)
                 {
-                    printf(getRegName(argReg));
+                    printf("%s", getRegName(argReg));
                     printf("=>");
                 }
                 printf("%s)", getRegName(reg));

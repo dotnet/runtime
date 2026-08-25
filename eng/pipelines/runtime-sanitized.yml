@@ -11,6 +11,8 @@ schedules:
 
 variables:
   - template: /eng/pipelines/common/variables.yml
+  - name: enableHelixJobMonitor
+    value: true
   - template: /eng/pipelines/helix-platforms.yml
 
 extends:
@@ -19,6 +21,12 @@ extends:
     stages:
     - stage: AddressSanitizer
       jobs:
+      - template: /eng/common/core-templates/job/helix-job-monitor.yml
+        parameters:
+          helixAccessToken: $(HelixApiAccessToken)
+          timeoutInMinutes: 540
+          allowNoHelixJobs: true
+
       #
       # Build the whole product with CoreCLR and run runtime tests with AddressSanitizer
       #
@@ -45,6 +53,7 @@ extends:
                 parameters:
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
                   scenarios:
                     - normal
                     - no_tiered_compilation
@@ -80,6 +89,7 @@ extends:
                   creator: dotnet-bot
                   testBuildArgs: nativeaot tree nativeaot
                   liveLibrariesBuildConfig: Release
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
                 parameters:
