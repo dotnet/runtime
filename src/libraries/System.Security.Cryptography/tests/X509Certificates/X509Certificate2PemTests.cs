@@ -317,7 +317,7 @@ MII
             AssertExtensions.SequenceEqual(cert.SerialNumberBytes.Span, reLoaded.SerialNumberBytes.Span);
         }
 
-        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsPqcMLKemX509Supported))]
+        [Fact]
         public static void CreateFromPem_MLKem_Pkcs8_Success()
         {
             (string CertificatePem, string PrivateKeyPem, string Thumbprint)[] cases =
@@ -379,7 +379,7 @@ MII
             }
         }
 
-        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsPqcMLKemX509Supported))]
+        [Fact]
         public static void CreateFromEncryptedPem_MLKem_Pkcs8_Success()
         {
             (string CertificatePem, string EncryptedPrivateKeyPem, string Thumbprint)[] cases =
