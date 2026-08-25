@@ -20,6 +20,11 @@
     <!-- Ensure TargetsBrowser is set so native.wasm.targets populates exported functions/methods -->
     <TargetsBrowser Condition="'$(TargetsBrowser)' == '' and '$(IsBrowserWasmProject)' == 'true'">true</TargetsBrowser>
 
+    <!-- This file is only imported when UseMonoRuntime is 'false' (see Sdk.targets), so RuntimeFlavor
+         is CoreCLR here even though app builds (unlike the runtime repo build) never set it themselves.
+         native.wasm.targets uses RuntimeFlavor to gate the CoreCLR-only relink registry. -->
+    <RuntimeFlavor Condition="'$(RuntimeFlavor)' == ''">CoreCLR</RuntimeFlavor>
+
     <!-- EH and SIMD are always enabled for CoreCLR — detect user overrides before forcing true -->
     <_CoreCLRInvalidEH Condition="'$(WasmEnableExceptionHandling)' != '' and '$(WasmEnableExceptionHandling)' != 'true'">true</_CoreCLRInvalidEH>
     <_CoreCLRInvalidSIMD Condition="'$(WasmEnableSIMD)' != '' and '$(WasmEnableSIMD)' != 'true'">true</_CoreCLRInvalidSIMD>

@@ -1,7 +1,12 @@
 <Project>
-  <Import Project="$(RepositoryEngineeringDir)AcquireEmscriptenSdk.targets" />
+  <!-- AcquireEmscriptenSdk.targets/AcquireWasiSdk.targets only exist in-tree (they live next to this
+       file under eng/, not in the packaged workload). When this file is imported from the packaged
+       Microsoft.NET.Runtime.WebAssembly.Sdk (app-level relink), $(RepositoryEngineeringDir) is unset,
+       so skip these imports rather than failing the app build. -->
+  <Import Project="$(RepositoryEngineeringDir)AcquireEmscriptenSdk.targets"
+          Condition="'$(RepositoryEngineeringDir)' != '' and Exists('$(RepositoryEngineeringDir)AcquireEmscriptenSdk.targets')" />
   <Import Project="$(RepositoryEngineeringDir)AcquireWasiSdk.targets"
-          Condition="'$(TargetsWasi)' == 'true' and Exists('$(RepositoryEngineeringDir)AcquireWasiSdk.targets')" />
+          Condition="'$(TargetsWasi)' == 'true' and '$(RepositoryEngineeringDir)' != '' and Exists('$(RepositoryEngineeringDir)AcquireWasiSdk.targets')" />
 
   <!-- These packages provide ICU and timezone data paths for the native build (CMake).
        Skip them during app-level relink (IsBrowserWasmProject) since the runtime pack

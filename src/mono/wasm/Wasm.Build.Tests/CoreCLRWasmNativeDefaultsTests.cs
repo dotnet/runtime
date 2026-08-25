@@ -46,6 +46,8 @@ namespace Wasm.Build.Tests
             // comparison is textual, so a numerically equal but differently spelled size counts as
             // a mismatch. That only costs an unnecessary relink, never a mismatched binary.
             { "<EmccStackSize>2097152</EmccStackSize>", true },
+            // a non-registry trigger: setting WasmPerformanceInstrumentation always forces a relink
+            { "<WasmPerformanceInstrumentation>all</WasmPerformanceInstrumentation>", true },
         };
 
         [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
@@ -84,10 +86,35 @@ namespace Wasm.Build.Tests
             Assert.Contains("** WasmBuildNative: 'false'", line);
         }
 
+        // Mirrors the Mono path's WithNativeReference test: a project that references a native
+        // object file always needs a relink to embed it, regardless of whether any tracked
+        // property differs from the runtime pack.
+        [ConditionalFact(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+        public void NativeFileReferenceTriggersRelinking()
+        {
+            string nativeLibPath = Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", "native-lib.o");
+            string extraItems = @$"<NativeFileReference Include=""{nativeLibPath}"" />";
+
+            string? line = BuildAndGetWasmBuildNativeLine(
+                "coreclr_native_defaults_nativeref",
+                extraProperties: "",
+                extraItems: extraItems,
+                expectSuccess: true);
+
+            Assert.NotNull(line);
+            Assert.Contains("** WasmBuildNative: 'true'", line);
+        }
+
         private string? BuildAndGetWasmBuildNativeLine(string projectPrefix, string extraProperties, bool expectSuccess)
-            => BuildAndGetOutput(projectPrefix, extraProperties, expectSuccess).line;
+            => BuildAndGetOutput(projectPrefix, extraProperties, extraItems: "", expectSuccess).line;
+
+        private string? BuildAndGetWasmBuildNativeLine(string projectPrefix, string extraProperties, string extraItems, bool expectSuccess)
+            => BuildAndGetOutput(projectPrefix, extraProperties, extraItems, expectSuccess).line;
 
         private (string output, string? line) BuildAndGetOutput(string projectPrefix, string extraProperties, bool expectSuccess)
+            => BuildAndGetOutput(projectPrefix, extraProperties, extraItems: "", expectSuccess);
+
+        private (string output, string? line) BuildAndGetOutput(string projectPrefix, string extraProperties, string extraItems, bool expectSuccess)
         {
             Configuration config = Configuration.Debug;
 
@@ -105,6 +132,7 @@ namespace Wasm.Build.Tests
                     TestAsset.WasmBasicTestApp,
                     projectPrefix,
                     extraProperties: extraProperties,
+                    extraItems: extraItems,
                     insertAtEnd: printValueTarget);
             UpdateFile(Path.Combine("Common", "Program.cs"), s_mainReturns42);
 
