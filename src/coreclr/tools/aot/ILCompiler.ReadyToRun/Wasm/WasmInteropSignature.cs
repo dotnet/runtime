@@ -76,7 +76,7 @@ namespace ILCompiler.Wasm
                 // whose alignment exceeds a stack slot, matching what WasmLowering.GetSignature emits
                 // so a type gets the same token here as it does inside a method signature.
                 Debug.Assert(type is DefType, "LowerToAbiType only returns null for aggregates");
-                char kind = CorInfoImpl.GetClassAlignmentRequirementStatic((DefType)type) > 8 ? 'A' : 'S';
+                char kind = CompilerTypeSystemContext.GetClassAlignmentRequirementStatic((DefType)type) > 8 ? 'A' : 'S';
                 return string.Create(CultureInfo.InvariantCulture, $"{kind}{type.GetElementSize().AsInt}");
             }
 
