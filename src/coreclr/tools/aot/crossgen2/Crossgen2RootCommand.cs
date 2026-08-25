@@ -164,15 +164,6 @@ namespace ILCompiler
 
         public Crossgen2RootCommand(string[] args) : base(SR.Crossgen2BannerText)
         {
-            // A compilation cannot resolve two inputs with the same simple name, so it rejects them.
-            // The call-helper generator only scans, and it is handed the app's whole bundle, which
-            // routinely carries several native files sharing a name (per-architecture payloads out
-            // of a NuGet package, say). Parsing must not fail over an ambiguity only a compilation
-            // has to settle: the generator re-expands the tokens itself and lets the first path that
-            // actually loads claim each simple name, so a native file cannot shadow a managed one.
-            InputFilePaths.CustomParser = result =>
-                Helpers.BuildPathDictionary(result.Tokens, strict: result.GetResult(GeneratePortableCallHelpers) is null);
-
             Arguments.Add(InputFilePaths);
             Options.Add(UnrootedInputFilePaths);
             Options.Add(ReferenceFilePaths);

@@ -84,6 +84,10 @@
              AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)"
              TaskFactory="TaskHostFactory"
              Condition="'$(WasmAppBuilderTasksAssemblyPath)' != ''" />
+  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.FilterManagedAssemblies"
+             AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)"
+             TaskFactory="TaskHostFactory"
+             Condition="'$(WasmAppBuilderTasksAssemblyPath)' != ''" />
 
   <!-- Fallback exported runtime methods and functions for the emcc link step.
        Used when the workload path is active and native.wasm.targets is not available.
@@ -605,10 +609,16 @@
       <_WasmPInvokeModules Include="libSystem.Runtime.InteropServices.JavaScript.Native" />
     </ItemGroup>
 
-    <!-- Managed assemblies to scan -->
+    <!-- Managed assemblies to scan. An app bundle legitimately carries native payloads named .dll -
+         per-architecture content shipped by a NuGet package is the usual case - and the generator
+         reads managed metadata, so narrow the list before handing it over. -->
     <ItemGroup>
-      <_WasmManagedAssemblies Include="@(WasmAssembliesToBundle->Distinct())" />
+      <_WasmBundledFile Include="@(WasmAssembliesToBundle->Distinct())" />
     </ItemGroup>
+
+    <FilterManagedAssemblies Assemblies="@(_WasmBundledFile)">
+      <Output TaskParameter="ManagedAssemblies" ItemName="_WasmManagedAssemblies" />
+    </FilterManagedAssemblies>
 
     <!-- Locate System.Private.CoreLib in runtime pack if not already bundled -->
     <PropertyGroup>
