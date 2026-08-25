@@ -34,7 +34,14 @@ NON_NULL_CASE:
 call int32 f()
 mkrefany int32
 refanytype
-pop
+call class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
+ldtoken int32
+call class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
+beq.s SUCCESS
+ldc.i4.m1
+ret
+
+SUCCESS:
 ldc.i4 100
 ret
 }
