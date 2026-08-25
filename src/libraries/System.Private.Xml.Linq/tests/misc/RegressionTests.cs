@@ -291,6 +291,19 @@ namespace System.Xml.Linq.Tests
             Assert.Equal(original.Value, loaded.Value);
         }
 
+        [Fact]
+        public async Task LoadAsyncChunkedTextWithBaseUriOptionCoalesces()
+        {
+            // LoadOptions.SetBaseUri routes through the ReadContentFromContainerAsync "container" code path.
+            var original = new XElement("root", string.Join("\n", Enumerable.Repeat(new string('b', 30), 80)));
+            string xml = original.ToString(SaveOptions.DisableFormatting);
+
+            using var reader = new ChunkingXmlReader(XmlReader.Create(new StringReader(xml)), chunkSize: 1);
+            XElement loaded = await XElement.LoadAsync(reader, LoadOptions.SetBaseUri, default);
+
+            Assert.Equal(original.Value, loaded.Value);
+        }
+
         [Theory]
         [InlineData(1)]
         [InlineData(7)]
