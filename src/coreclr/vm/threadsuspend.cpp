@@ -1152,7 +1152,13 @@ bool UseActivationInjection()
 HRESULT
 Thread::UserAbort(EEPolicy::ThreadAbortTypes abortType, DWORD timeout)
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS; // For GetXxxException
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     STRESS_LOG2(LF_SYNC | LF_APPDOMAIN, LL_INFO100, "UserAbort Thread %p Thread Id = %x\n", this, GetThreadId());
 

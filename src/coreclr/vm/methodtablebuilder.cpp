@@ -12031,7 +12031,13 @@ void MethodTableBuilder::VerifyVirtualMethodsImplemented(MethodTable::MethodData
 
 INT32 __stdcall IsDefined(Module *pModule, mdToken token, TypeHandle attributeClass)
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     BOOL isDefined = FALSE;
 

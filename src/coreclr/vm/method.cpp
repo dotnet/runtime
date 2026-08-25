@@ -3785,7 +3785,13 @@ BOOL MethodDesc::HasUnmanagedCallersOnlyAttribute()
 //*******************************************************************************
 BOOL MethodDesc::ShouldSuppressGCTransition()
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     MethodDesc* tgt = nullptr;
     if (IsPInvoke())
@@ -4098,7 +4104,13 @@ typedef void (*WalkValueTypeParameterFnPtr)(Module *pModule, mdToken token, Modu
 
 void MethodDesc::WalkValueTypeParameters(MethodTable *pMT, WalkValueTypeParameterFnPtr function, void *pData)
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     uint32_t numArgs = 0;
     Module *pModule = this->GetModule();
@@ -4180,7 +4192,13 @@ PrecodeType MethodDesc::GetPrecodeType()
 #ifndef DACCESS_COMPILE
 void MethodDesc::PrepareForUseAsADependencyOfANativeImageWorker()
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     // This function ensures that a method is ready for use as a dependency of a native image
     // The current requirement is only that valuetypes can be resolved to their type defs as much

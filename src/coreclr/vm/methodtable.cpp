@@ -4475,7 +4475,13 @@ struct DoFullyLoadLocals
 #if defined(FEATURE_TYPEEQUIVALENCE) && !defined(DACCESS_COMPILE)
 static void CheckForEquivalenceAndFullyLoadType(Module *pModule, mdToken token, Module *pDefModule, mdToken defToken, const SigParser *ptr, SigTypeContext *pTypeContext, void *pData)
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     SigPointer sigPtr(*ptr);
 
@@ -5154,7 +5160,9 @@ MethodTable::FindEncodedMapDispatchEntry(
     CONTRACTL {
         // NOTE: LookupDispatchMapType may or may not throw. Currently, it
         // should never throw because lazy interface restore is disabled.
-        STANDARD_VM_CHECK;
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
         INSTANCE_CHECK;
         PRECONDITION(CheckPointer(pEntry));
         PRECONDITION(typeID != TYPE_ID_THIS_CLASS);
@@ -5261,7 +5269,9 @@ BOOL MethodTable::FindDispatchEntryForCurrentType(UINT32 typeID,
                                                   DispatchMapEntry *pEntry)
 {
     CONTRACTL {
-        STANDARD_VM_CHECK;
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
         INSTANCE_CHECK;
         PRECONDITION(CheckPointer(pEntry));
         PRECONDITION(typeID != TYPE_ID_THIS_CLASS);
@@ -5724,7 +5734,9 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
 {
     CONTRACTL {
         INSTANCE_CHECK;
-        STANDARD_VM_CHECK;
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(CheckPointer(pInterfaceMD));
         PRECONDITION(CheckPointer(pInterfaceMT));
         PRECONDITION(CheckPointer(ppDefaultMethod));
@@ -8475,7 +8487,13 @@ MethodTable::TryResolveConstraintMethodApprox(
     MethodDesc * pInterfaceMD,
     BOOL *       pfForceUseRuntimeLookup)   // = NULL
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     if (pInterfaceMD->IsStatic())
     {

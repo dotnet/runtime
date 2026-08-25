@@ -169,7 +169,9 @@ void BaseAssemblySpec::Init(SString& assemblyDisplayName)
     CONTRACTL
     {
         INSTANCE_CHECK;
-        STANDARD_VM_CHECK;
+        GC_TRIGGERS;
+        THROWS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 

@@ -1580,7 +1580,13 @@ BOOL Assembly::GetResource(LPCSTR szName, DWORD *cbResource,
                              PBYTE *pbInMemoryResource, Assembly** pAssemblyRef,
                              LPCSTR *szFileName, DWORD *dwLocation)
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     BOOL result = GetPEAssembly()->GetResource(szName, cbResource,
                                                 pbInMemoryResource, pAssemblyRef,
@@ -1945,7 +1951,9 @@ void Assembly::SetError(Exception *ex)
         PRECONDITION(!IsError());
         PRECONDITION(ex != NULL);
         INSTANCE_CHECK;
-        STANDARD_VM_CHECK;
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 

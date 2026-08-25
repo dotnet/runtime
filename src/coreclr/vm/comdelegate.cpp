@@ -1873,7 +1873,9 @@ void COMDelegate::ThrowIfInvalidUnmanagedCallersOnlyUsage(MethodDesc* pMD)
 {
     CONTRACTL
     {
-        STANDARD_VM_CHECK;
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(pMD != NULL);
         PRECONDITION(pMD->HasUnmanagedCallersOnlyAttribute());
     }

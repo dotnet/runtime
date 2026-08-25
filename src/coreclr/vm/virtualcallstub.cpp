@@ -1154,7 +1154,9 @@ BYTE* GetStubIndirectionCell(BYTE** pBlocksStart, UINT32 index, UINT32 sizeOfInd
 BYTE *VirtualCallStubManager::GenerateStubIndirection(PCODE target, DispatchToken token, BOOL fUseRecycledCell /* = FALSE*/ )
 {
     CONTRACTL {
-        STANDARD_VM_CHECK;
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(target != NULL);
     } CONTRACTL_END;
 
@@ -2904,7 +2906,9 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStubLong(PCODE          
                                                                  bool *           pMayHaveReenteredCooperativeGCMode)
 {
     CONTRACTL {
-        STANDARD_VM_CHECK;
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(addrOfCode != NULL);
         PRECONDITION(addrOfFail != NULL);
         PRECONDITION(CheckPointer(pMTExpected));
@@ -3047,7 +3051,9 @@ ResolveHolder *VirtualCallStubManager::GenerateResolveStub(PCODE            addr
 LookupHolder *VirtualCallStubManager::GenerateLookupStub(PCODE addrOfResolver, size_t dispatchToken)
 {
     CONTRACTL {
-        STANDARD_VM_CHECK;
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(addrOfResolver != NULL);
     } CONTRACTL_END;
 

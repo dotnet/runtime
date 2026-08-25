@@ -3823,7 +3823,13 @@ VOID ETW::LoaderLog::SendDomainEvent(DWORD dwEventOptions, LPCWSTR wszFriendlyNa
 /********************************************************/
 VOID ETW::EnumerationLog::SendThreadRundownEvent()
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
 #ifndef DACCESS_COMPILE
     Thread *pThread = NULL;
@@ -3848,7 +3854,13 @@ VOID ETW::EnumerationLog::SendThreadRundownEvent()
 /********************************************************/
 VOID ETW::EnumerationLog::SendGCRundownEvent()
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     if (GCHeapUtilities::IsGCHeapInitialized())
     {
@@ -4352,7 +4364,13 @@ VOID ETW::MethodLog::SendMethodJitStartEvent(
     SString *methodName,
     SString *methodSignature)
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     Module *pModule = NULL;
     Module *pLoaderModule = NULL; // This must not be used except for getting the ModuleID
@@ -4951,7 +4969,13 @@ VOID ETW::MethodLog::SendHelperEvent(ULONGLONG ullHelperStartAddress, ULONG ulHe
 /****************************************************************************/
 VOID ETW::MethodLog::SendEventsForNgenMethods(Module *pModule, DWORD dwEventOptions)
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     if (!pModule)
         return;

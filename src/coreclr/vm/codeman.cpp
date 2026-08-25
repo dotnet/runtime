@@ -266,7 +266,13 @@ void UnwindInfoTable::UnRegister()
 //
 void UnwindInfoTable::AddToUnwindInfoTable(PT_RUNTIME_FUNCTION data, int count)
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     if (m_registrationFailed)
         return;
@@ -301,7 +307,9 @@ LONG UnwindInfoTable::FlushPendingEntriesUnderGate()
 {
     CONTRACTL
     {
-        STANDARD_VM_CHECK;
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(m_flushInProgress != 0);
     }
     CONTRACTL_END;
@@ -437,7 +445,13 @@ LONG UnwindInfoTable::FlushPendingEntriesUnderGate()
 /*****************************************************************************/
 void UnwindInfoTable::FlushPendingEntries(LONG waitForSeq)
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     // This thread attempts to become the sole flusher for this table by taking
     // the flush gate. If it wins, publish the pending entries and signal waiters.
@@ -6959,7 +6973,13 @@ StubCodeBlockKind ReadyToRunJitManager::GetStubCodeBlockKind(RangeSection * pRan
 TypeHandle ReadyToRunJitManager::ResolveEHClause(EE_ILEXCEPTION_CLAUSE* pEHClause,
                                               CrawlFrame* pCf)
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     _ASSERTE(NULL != pCf);
     _ASSERTE(NULL != pEHClause);

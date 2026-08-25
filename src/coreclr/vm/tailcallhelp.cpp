@@ -114,7 +114,13 @@ struct TailCallInfo
 static MethodDesc* s_tailCallDispatcherMD;
 MethodDesc* TailCallHelp::GetOrLoadTailCallDispatcherMD()
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     if (s_tailCallDispatcherMD == NULL)
         s_tailCallDispatcherMD = CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__DISPATCH_TAILCALLS);

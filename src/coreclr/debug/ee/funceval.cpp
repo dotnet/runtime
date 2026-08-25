@@ -230,7 +230,13 @@ inline static void GetAndSetLiteralValue(LPVOID pDst, CorElementType dstType, LP
 //
 static void ValidateFuncEvalReturnType(DebuggerIPCE_FuncEvalType evalType, MethodTable * pMT)
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     if (pMT == g_pStringClass)
     {
@@ -469,7 +475,12 @@ static SIZE_T GetRegisterValue(DebuggerEval *pDE, CorDebugRegister reg, CORDB_AD
 //
 static void SetRegisterValue(DebuggerEval *pDE, CorDebugRegister reg, CORDB_ADDRESS regAddr, SIZE_T newValue)
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     // Check whether the register address is the marker value for a register in a non-leaf frame.
     // If so, then we can't update the register.  Throw an exception to communicate this error.
@@ -1649,7 +1660,13 @@ static void GCProtectAllPassedArgs(DebuggerEval *pDE,
  */
 void ResolveFuncEvalGenericArgInfo(DebuggerEval *pDE)
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     DebuggerIPCE_TypeArgData *firstdata = pDE->GetTypeArgData();
     unsigned int nGenericArgs = pDE->m_genericArgsCount;
