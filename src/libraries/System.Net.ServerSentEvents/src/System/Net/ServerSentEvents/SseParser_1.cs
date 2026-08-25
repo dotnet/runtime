@@ -559,7 +559,7 @@ namespace System.Net.ServerSentEvents
             }
             Debug.Assert(minimumSize < int.MaxValue);
 
-            if (buffer is not null && currentSize > minimumSize)
+            if (buffer is not null && currentSize >= minimumSize)
             {
                 return;
             }
