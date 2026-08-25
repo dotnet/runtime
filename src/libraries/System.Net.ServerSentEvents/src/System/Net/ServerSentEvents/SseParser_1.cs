@@ -318,7 +318,7 @@ namespace System.Net.ServerSentEvents
                 }
             }
 
-            // Storage avalaible for at least one byte
+            // Storage available for at least one byte
             Debug.Assert(_lineOffset + _lineLength < _lineBuffer.Length);
         }
 

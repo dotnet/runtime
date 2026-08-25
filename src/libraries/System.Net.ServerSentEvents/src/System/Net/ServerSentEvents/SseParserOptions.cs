@@ -21,7 +21,7 @@ namespace System.Net.ServerSentEvents
         public SseItemParser<T> ItemParser { get; }
 
         /// <summary>Gets or sets the maximum buffer size requested from the underlying allocator, or -1 to use the default limit.</summary>
-        /// <exception cref="ArgumentOutOfRangeException">The value set is less than -1 or greater then Array.MaxLength.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">The value set is less than -1 or greater than Array.MaxLength.</exception>
         /// <remarks>The limit is enforced on a best-effort basis. The permitted memory consumption may be several times higher than the configured limit.</remarks>
         public int MaxBufferSize
         {
