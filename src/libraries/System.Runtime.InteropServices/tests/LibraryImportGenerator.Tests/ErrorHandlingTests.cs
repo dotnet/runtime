@@ -12,8 +12,7 @@ namespace System.Runtime.InteropServices
     {
         ReturnValue = 0,
         LastParameter = 1,
-        SystemError = 2,
-        HiddenReturnValue = 3,
+        HiddenReturnValue = 2,
     }
 
     [AttributeUsage(AttributeTargets.Method)]
@@ -29,7 +28,6 @@ namespace LibraryImportGenerator.IntegrationTests
 {
     internal readonly record struct CustomError(int Value);
     internal readonly record struct CleanupInput(int Value);
-    internal readonly record struct SystemError(int Value);
     internal readonly record struct TrackedOutput(int Value);
 
     internal sealed class CustomErrorException(int error) : Exception
@@ -50,22 +48,6 @@ namespace LibraryImportGenerator.IntegrationTests
             }
 
             return new CustomError(error);
-        }
-    }
-
-    [CustomMarshaller(typeof(SystemError), MarshalMode.Default, typeof(SystemErrorMarshaller))]
-    internal static class SystemErrorMarshaller
-    {
-        public static int ConvertToUnmanaged(SystemError error) => error.Value;
-
-        public static SystemError ConvertToManaged(int error)
-        {
-            if (error < 0)
-            {
-                throw new CustomErrorException(error);
-            }
-
-            return new SystemError(error);
         }
     }
 
@@ -126,14 +108,6 @@ namespace LibraryImportGenerator.IntegrationTests
             [ErrorHandler(typeof(CustomErrorMarshaller), ErrorLocation.LastParameter)]
             public static partial void InjectedErrorParameter();
 
-            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "set_error")]
-            [ErrorHandler(typeof(SystemErrorMarshaller), ErrorLocation.SystemError)]
-            public static partial void HandleSystemError(int error, byte shouldSetError);
-
-            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "set_error")]
-            [ErrorHandler(typeof(SystemErrorMarshaller), ErrorLocation.SystemError)]
-            public static partial void ReturnSystemError(int error, byte shouldSetError, out SystemError errorValue);
-
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "return_error_with_output")]
             [ErrorHandler(typeof(CustomErrorMarshaller), ErrorLocation.ReturnValue)]
             public static partial void ReturnErrorBeforeOutput(
@@ -149,12 +123,6 @@ namespace LibraryImportGenerator.IntegrationTests
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "set_output_and_error_out")]
             [ErrorHandler(typeof(CustomErrorMarshaller), ErrorLocation.LastParameter)]
             public static partial void LastParameterErrorBeforeOutput(
-                int error,
-                [MarshalUsing(typeof(TrackedOutputMarshaller))] out TrackedOutput output);
-
-            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "set_error_with_output")]
-            [ErrorHandler(typeof(SystemErrorMarshaller), ErrorLocation.SystemError)]
-            public static partial void SystemErrorBeforeOutput(
                 int error,
                 [MarshalUsing(typeof(TrackedOutputMarshaller))] out TrackedOutput output);
 
@@ -207,26 +175,9 @@ namespace LibraryImportGenerator.IntegrationTests
             NativeExportsNE.ErrorHandling.InjectedErrorParameter();
         }
 
-        [Fact]
-        public void SystemErrorCanBeHandledWithoutManagedOutput()
-        {
-            NativeExportsNE.ErrorHandling.HandleSystemError(0, shouldSetError: 1);
-            CustomErrorException exception = Assert.Throws<CustomErrorException>(
-                () => NativeExportsNE.ErrorHandling.HandleSystemError(-2, shouldSetError: 1));
-            Assert.Equal(-2, exception.Error);
-        }
-
-        [Fact]
-        public void SystemErrorCanBeObservedThroughLastOutParameter()
-        {
-            NativeExportsNE.ErrorHandling.ReturnSystemError(42, shouldSetError: 1, out SystemError error);
-            Assert.Equal(new SystemError(42), error);
-        }
-
         [Theory]
         [InlineData(0)]
         [InlineData(1)]
-        [InlineData(2)]
         public void ErrorHandlingPrecedesOtherOutMarshalling(int location)
         {
             TrackedOutputMarshaller.ConvertToManagedCalled = false;
@@ -237,8 +188,6 @@ namespace LibraryImportGenerator.IntegrationTests
                     () => NativeExportsNE.ErrorHandling.ReturnErrorBeforeOutput(-3, out _)),
                 1 => Assert.Throws<CustomErrorException>(
                     () => NativeExportsNE.ErrorHandling.LastParameterErrorBeforeOutput(-3, out _)),
-                2 => Assert.Throws<CustomErrorException>(
-                    () => NativeExportsNE.ErrorHandling.SystemErrorBeforeOutput(-3, out _)),
                 _ => throw new ArgumentOutOfRangeException(nameof(location)),
             };
 

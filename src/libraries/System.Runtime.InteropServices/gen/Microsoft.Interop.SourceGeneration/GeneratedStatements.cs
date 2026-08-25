@@ -18,6 +18,7 @@ namespace Microsoft.Interop
         public ImmutableArray<FixedStatementSyntax> Pin { get; init; }
         public ImmutableArray<StatementSyntax> PinnedMarshal { get; init; }
         public StatementSyntax InvokeStatement { get; init; }
+        public ImmutableArray<StatementSyntax> ErrorUnmarshal { get; init; }
         public ImmutableArray<StatementSyntax> Unmarshal { get; init; }
         public ImmutableArray<StatementSyntax> NotifyForSuccessfulInvoke { get; init; }
         public ImmutableArray<StatementSyntax> GuaranteedUnmarshal { get; init; }
@@ -35,6 +36,8 @@ namespace Microsoft.Interop
                 Pin = GenerateStatementsForStubContext(marshallers, context with { CurrentStage = StubIdentifierContext.Stage.Pin }).Cast<FixedStatementSyntax>().ToImmutableArray(),
                 PinnedMarshal = GenerateStatementsForStubContext(marshallers, context with { CurrentStage = StubIdentifierContext.Stage.PinnedMarshal }),
                 InvokeStatement = EmptyStatement(),
+                ErrorUnmarshal = GenerateStatementsForStubContext(marshallers, context with { CurrentStage = StubIdentifierContext.Stage.UnmarshalCapture }, errorHandlingOnly: true)
+                            .AddRange(GenerateStatementsForStubContext(marshallers, context with { CurrentStage = StubIdentifierContext.Stage.Unmarshal }, errorHandlingOnly: true)),
                 Unmarshal = GenerateStatementsForStubContext(marshallers, context with { CurrentStage = StubIdentifierContext.Stage.UnmarshalCapture })
                             .AddRange(GenerateStatementsForStubContext(marshallers, context with { CurrentStage = StubIdentifierContext.Stage.Unmarshal })),
                 NotifyForSuccessfulInvoke = GenerateStatementsForStubContext(marshallers, context with { CurrentStage = StubIdentifierContext.Stage.NotifyForSuccessfulInvoke }),
@@ -90,13 +93,16 @@ namespace Microsoft.Interop
             };
         }
 
-        private static ImmutableArray<StatementSyntax> GenerateStatementsForStubContext(BoundGenerators marshallers, StubIdentifierContext context)
+        private static ImmutableArray<StatementSyntax> GenerateStatementsForStubContext(
+            BoundGenerators marshallers,
+            StubIdentifierContext context,
+            bool errorHandlingOnly = false)
         {
             ImmutableArray<StatementSyntax>.Builder statementsToUpdate = ImmutableArray.CreateBuilder<StatementSyntax>();
             foreach (IBoundMarshallingGenerator marshaller in marshallers.SignatureMarshallers)
             {
-                if (marshaller.TypeInfo.IsErrorHandlingPosition
-                    && context.CurrentStage is StubIdentifierContext.Stage.UnmarshalCapture or StubIdentifierContext.Stage.Unmarshal)
+                if (context.CurrentStage is StubIdentifierContext.Stage.UnmarshalCapture or StubIdentifierContext.Stage.Unmarshal
+                    && marshaller.TypeInfo.IsErrorHandlingPosition != errorHandlingOnly)
                 {
                     continue;
                 }

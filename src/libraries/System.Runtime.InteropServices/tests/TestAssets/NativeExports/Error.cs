@@ -83,13 +83,6 @@ namespace NativeExports
             *errorValue = error;
         }
 
-        [UnmanagedCallersOnly(EntryPoint = "set_error_with_output")]
-        public static void SetErrorWithOutput(int error, int* output)
-        {
-            *output = 42;
-            SetLastError(error);
-        }
-
         [UnmanagedCallersOnly(EntryPoint = "set_error_return_string")]
         public static ushort* SetErrorReturnString(int error, byte shouldSetError, ushort* errorString)
         {

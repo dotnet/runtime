@@ -17,8 +17,13 @@ namespace Microsoft.Interop
             {
                 if (candidate.AttributeClass?.ToDisplayString() == TypeNames.ErrorHandlerAttribute)
                 {
+                    if (attribute is not null)
+                    {
+                        diagnostics.ReportConfigurationNotSupported(candidate, nameof(TypeNames.ErrorHandlerAttribute));
+                        return null;
+                    }
+
                     attribute = candidate;
-                    break;
                 }
             }
 
@@ -33,6 +38,7 @@ namespace Microsoft.Interop
                 || attribute.ConstructorArguments[1].Value is not int locationValue
                 || locationValue is < (int)ErrorHandlingLocation.ReturnValue or > (int)ErrorHandlingLocation.HiddenReturnValue)
             {
+                diagnostics.ReportConfigurationNotSupported(attribute, nameof(TypeNames.ErrorHandlerAttribute));
                 return null;
             }
 

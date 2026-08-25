@@ -180,7 +180,6 @@ namespace Microsoft.Interop
                         ManagedIndex = TypePositionInfo.ErrorIndex,
                         NativeIndex = nativeIndex,
                         IsErrorHandlingPosition = true,
-                        ErrorHandlingLocation = errorInfo.Location,
                     };
                 }
 
@@ -197,7 +196,6 @@ namespace Microsoft.Interop
                             {
                                 MarshallingAttributeInfo = errorInfo.MarshallingInfo,
                                 IsErrorHandlingPosition = true,
-                                ErrorHandlingLocation = errorInfo.Location,
                             };
                         }
                         else if (returnInfo.ManagedType == SpecialTypeInfo.Void)
@@ -238,7 +236,6 @@ namespace Microsoft.Interop
                             {
                                 MarshallingAttributeInfo = errorInfo.MarshallingInfo,
                                 IsErrorHandlingPosition = true,
-                                ErrorHandlingLocation = errorInfo.Location,
                             };
                         }
                         else
@@ -247,26 +244,6 @@ namespace Microsoft.Interop
                         }
                         break;
 
-                    case ErrorHandlingLocation.SystemError:
-                        int systemErrorParameterIndex = infos.Count - 2;
-                        if (errorInfo.ManagedType != SpecialTypeInfo.Int32
-                            && infos.Count > 1
-                            && infos[systemErrorParameterIndex] is { RefKind: RefKind.Out } systemErrorParameter
-                            && MatchesManagedType(systemErrorParameter))
-                        {
-                            infos[systemErrorParameterIndex] = systemErrorParameter with
-                            {
-                                NativeIndex = TypePositionInfo.UnsetIndex,
-                                MarshallingAttributeInfo = errorInfo.MarshallingInfo,
-                                IsErrorHandlingPosition = true,
-                                ErrorHandlingLocation = errorInfo.Location,
-                            };
-                        }
-                        else
-                        {
-                            infos.Add(CreateInjectedErrorInfo(TypePositionInfo.UnsetIndex));
-                        }
-                        break;
                 }
             }
         }

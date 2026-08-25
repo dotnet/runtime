@@ -46,20 +46,14 @@ namespace Microsoft.Interop
                 AppendVariableDeclarations(variables, marshallers.NativeReturnMarshaller, context, initializeToDefault: initializeDeclarations);
             }
 
-            if (marshallers.HasErrorHandler)
+            foreach (IBoundMarshallingGenerator errorMarshaller in marshallers.SignatureMarshallers)
             {
-                IBoundMarshallingGenerator errorMarshaller = marshallers.ErrorHandlerMarshaller;
                 TypePositionInfo errorInfo = errorMarshaller.TypeInfo;
-                (string managed, string native) = context.GetIdentifiers(errorInfo);
-
-                if (errorInfo.ManagedIndex == TypePositionInfo.ErrorIndex && !errorInfo.IsNativeReturnPosition)
+                if (errorInfo is { IsErrorHandlingPosition: true, ManagedIndex: TypePositionInfo.ErrorIndex }
+                    && !errorInfo.IsNativeReturnPosition)
                 {
+                    string managed = context.GetIdentifiers(errorInfo).managed;
                     variables.Add(Declare(errorInfo.ManagedType.Syntax, managed, initializeDeclarations));
-                }
-
-                if (errorInfo.NativeIndex == TypePositionInfo.UnsetIndex && errorMarshaller.UsesNativeIdentifier)
-                {
-                    variables.Add(Declare(errorMarshaller.NativeType.Syntax, native, initializeDeclarations));
                 }
             }
 
