@@ -15,8 +15,8 @@ struct TypeRefData;
 struct TargetBuffer;
 struct ModuleInfo;
 struct DacThreadAllocInfo;
-struct NativeVarData;
-struct SequencePoints;
+struct NativeVarInfo;
+struct OffsetMapping;
 struct Debugger_STRData;
 struct NativeCodeFunctionData;
 struct FieldData;
@@ -144,6 +144,8 @@ typedef void (*FP_RCW_INTERFACE_CALLBACK)(CORDB_ADDRESS itfPtr, CALLBACK_DATA pU
 typedef void (*FP_EXCEPTION_STACK_FRAME_CALLBACK)(VMPTR_AppDomain vmAppDomain, VMPTR_Assembly vmAssembly, CORDB_ADDRESS ip, mdMethodDef methodDef, BOOL isLastForeignExceptionFrame, CALLBACK_DATA pUserData);
 typedef void (*FP_ASYNC_LOCAL_CALLBACK)(AsyncLocalData *pLocal, CALLBACK_DATA pUserData);
 typedef void (*FP_FIELDDATA_CALLBACK)(struct FieldData * pFieldData, CALLBACK_DATA pUserData);
+typedef void (*FP_NATIVEVARINFO_CALLBACK)(struct NativeVarInfo * pVarInfo, CALLBACK_DATA pUserData);
+typedef void (*FP_SEQUENCEPOINT_CALLBACK)(struct OffsetMapping * pMapping, CALLBACK_DATA pUserData);
 
 
 //
@@ -194,6 +196,7 @@ interface IDacDbiInterface : IUnknown
 {
     // Initialization
     HRESULT FlushCache();
+    HRESULT Destroy();
     HRESULT DacSetTargetConsistencyChecks([in] BOOL fEnableAsserts);
 
     // Process State
@@ -265,8 +268,10 @@ interface IDacDbiInterface : IUnknown
         [in] VMPTR_MethodDesc vmMethodDesc,
         [in] CORDB_ADDRESS startAddress,
         [in] BOOL fCodeAvailable,
-        [out] struct NativeVarData * pNativeVarData,
-        [out] struct SequencePoints * pSequencePoints);
+        [out] ULONG32 * pFixedArgCount,
+        [in] FP_NATIVEVARINFO_CALLBACK fpVarInfoCallback,
+        [in] FP_SEQUENCEPOINT_CALLBACK fpSeqPointCallback,
+        [in] CALLBACK_DATA pUserData);
 
     // Context and Stack Walking
     HRESULT GetManagedStoppedContext([in] VMPTR_Thread vmThread, [out] VMPTR_CONTEXT * pRetVal);
@@ -342,7 +347,7 @@ interface IDacDbiInterface : IUnknown
     HRESULT GetTypedByRefInfo([in] CORDB_ADDRESS pTypedByRef, [out] CORDB_ADDRESS * pObjRef, [out] struct DebuggerIPCE_BasicTypeData * pTypedByRefType);
     HRESULT GetStringData([in] CORDB_ADDRESS objectAddress, [out] UINT * pLength, [out] UINT * pOffsetToStringBase);
     HRESULT GetArrayData([in] CORDB_ADDRESS objectAddress, [out] BOOL * pIsValidArray, [out] struct DacDbiArrayInfo * pArrayInfo);
-    HRESULT GetBasicObjectInfo([in] CORDB_ADDRESS objectAddress, [out] BOOL * pIsValidRef, [out] UINT * pObjSize, [out] UINT * pObjOffsetToVars, [out] struct DebuggerIPCE_ExpandedTypeData * pObjTypeData);
+    HRESULT GetBasicObjectInfo([in] CORDB_ADDRESS objectAddress, [out] BOOL * pIsValidRef, [out] UINT * pObjSize, [out] UINT * pObjOffsetToVars, [in, out] struct DebuggerIPCE_ExpandedTypeData * pObjTypeData);
 
     // Debugger Control Block
     HRESULT GetDebuggerControlBlockAddress([out] CORDB_ADDRESS * pRetVal);
@@ -395,13 +400,9 @@ interface IDacDbiInterface : IUnknown
     HRESULT GetGCHeapInformation([out] COR_HEAPINFO * pHeapInfo);
 
     // PE File
-    HRESULT GetPEFileMDInternalRW([in] VMPTR_PEAssembly vmPEAssembly, [out] TADDR * pAddrMDInternalRW);
+    HRESULT HasReadWriteMetadata([in] VMPTR_PEAssembly vmPEAssembly, [out] BOOL * pHasReadWriteMetadata);
 
     HRESULT AreOptimizationsDisabled([in] VMPTR_Module vmModule, [in] mdMethodDef methodTk, [out] BOOL * pOptimizationsDisabled);
-
-    // Defines
-    HRESULT GetDefinesBitField([out] ULONG32 * pDefines);
-    HRESULT GetMDStructuresVersion([out] ULONG32 * pMDStructuresVersion);
 
     // Code Versioning (FEATURE_CODE_VERSIONING only)
     HRESULT GetActiveRejitILCodeVersionNode([in] VMPTR_Module vmModule, [in] mdMethodDef methodTk, [out] VMPTR_ILCodeVersionNode * pVmILCodeVersionNode);
@@ -430,7 +431,7 @@ interface IDacDbiInterface : IUnknown
     // Async and Continuations
     HRESULT ParseContinuation(
         [in] CORDB_ADDRESS continuationAddress,
-        [out] PCODE * pDiagnosticIP,
+        [out] CORDB_ADDRESS * pDiagnosticIP,
         [out] CORDB_ADDRESS * pNextContinuation,
         [out] UINT32 * pState);
     HRESULT EnumerateAsyncLocals([in] VMPTR_MethodDesc vmMethod, [in] CORDB_ADDRESS codeAddr, [in] UINT32 state, [in] FP_ASYNC_LOCAL_CALLBACK fpCallback, [in] CALLBACK_DATA pUserData);
@@ -440,4 +441,7 @@ interface IDacDbiInterface : IUnknown
 
     // Returns the target's processor architecture and OS family.
     HRESULT GetTargetInfo([out] struct TargetInfo * pTargetInfo);
+
+    HRESULT GetReadWriteMetadataSize([in] VMPTR_Module vmModule, [out] ULONG32 * pSize);
+    HRESULT FillReadWriteMetadata([in] VMPTR_Module vmModule, [out] BYTE * pBuffer, [in] ULONG32 cbBuffer);
 };

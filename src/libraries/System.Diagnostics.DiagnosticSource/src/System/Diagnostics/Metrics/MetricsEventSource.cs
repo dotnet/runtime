@@ -775,11 +775,7 @@ namespace System.Diagnostics.Metrics
 
                     if (spec.Equals("scale", StringComparison.OrdinalIgnoreCase))
                     {
-#if NET
                         if (!int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int s) || s < -11 || s > 20)
-#else
-                        if (!int.TryParse(value.ToString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out int s) || s < -11 || s > 20)
-#endif // NET
                         {
                             Parent.Message($"Invalid scale value: {specString}");
                             continue;
@@ -791,11 +787,7 @@ namespace System.Diagnostics.Metrics
                     }
                     else if (spec.Equals("maxBuckets", StringComparison.OrdinalIgnoreCase))
                     {
-#if NET
                         if (!int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out int m) || m < 2)
-#else
-                        if (!int.TryParse(value.ToString(), NumberStyles.None, CultureInfo.InvariantCulture, out int m) || m < 2)
-#endif // NET
                         {
                             Parent.Message($"Invalid maxBuckets value: {specString}");
                             continue;

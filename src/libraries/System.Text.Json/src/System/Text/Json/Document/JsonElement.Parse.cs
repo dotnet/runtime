@@ -49,7 +49,7 @@ namespace System.Text.Json
             bool ret = JsonDocument.TryParseValue(ref reader, out JsonDocument? document, shouldThrow: true, useArrayPools: false);
 
             Debug.Assert(ret, "TryParseValue returned false with shouldThrow: true.");
-            Debug.Assert(document != null, "null document returned with shouldThrow: true.");
+            Debug.Assert(document is not null, "null document returned with shouldThrow: true.");
             return document.RootElement;
         }
 
@@ -63,7 +63,7 @@ namespace System.Text.Json
                 allowDuplicateProperties: allowDuplicateProperties);
 
             Debug.Assert(ret, "TryParseValue returned false with shouldThrow: true.");
-            Debug.Assert(document != null, "null document returned with shouldThrow: true.");
+            Debug.Assert(document is not null, "null document returned with shouldThrow: true.");
             return document.RootElement;
         }
 

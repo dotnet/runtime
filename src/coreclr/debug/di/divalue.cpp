@@ -822,7 +822,7 @@ CordbReferenceValue::~CordbReferenceValue()
 {
     DTOR_ENTRY(this);
 
-    LOG((LF_CORDB,LL_EVERYTHING,"CRV::~CRV: this:0x%x\n",this));
+    LOG((LF_CORDB,LL_EVERYTHING,"CRV::~CRV: this:0x%p\n",this));
 
     _ASSERTE(IsNeutered());
 } // CordbReferenceValue::~CordbReferenceValue
@@ -2759,7 +2759,7 @@ HRESULT CordbObjectValue::GetFunctionHelper(ICorDebugFunction **ppFunction)
         IfFailThrow(pDAC->GetNativeCodeInfo(functionAssembly, functionMethodDef, &nativeCodeForDelFunc));
 
         RSSmartPtr<CordbModule> funcModule(GetAppDomain()->LookupOrCreateModule(functionAssembly));
-        func.Assign(funcModule->LookupOrCreateFunction(functionMethodDef, nativeCodeForDelFunc.encVersion));
+        func.Assign(funcModule->LookupOrCreateFunction(functionMethodDef, (SIZE_T)nativeCodeForDelFunc.encVersion));
     }
 
     *ppFunction = static_cast<ICorDebugFunction*> (func.GetValue());

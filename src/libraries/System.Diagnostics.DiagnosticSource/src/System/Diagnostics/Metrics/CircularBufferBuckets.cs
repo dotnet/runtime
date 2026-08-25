@@ -283,11 +283,7 @@ namespace System.Diagnostics.Metrics
         {
             if (_trait is not null)
             {
-#if NET
                 Array.Clear(_trait);
-#else
-                Array.Clear(_trait, 0, _trait.Length);
-#endif
             }
 
             _begin = 0;

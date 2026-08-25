@@ -23,6 +23,7 @@ namespace System.IO.Compression
         public DeflateDecoder() { }
         public System.Buffers.OperationStatus Decompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesConsumed, out int bytesWritten) { throw null; }
         public void Dispose() { }
+        public void Reset() { }
         public static bool TryDecompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
     public sealed partial class DeflateEncoder : System.IDisposable
@@ -35,6 +36,7 @@ namespace System.IO.Compression
         public void Dispose() { }
         public System.Buffers.OperationStatus Flush(System.Span<byte> destination, out int bytesWritten) { throw null; }
         public static long GetMaxCompressedLength(long inputLength) { throw null; }
+        public void Reset() { }
         public static bool TryCompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
         public static bool TryCompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten, int quality) { throw null; }
         public static bool TryCompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten, int quality, int windowLog2) { throw null; }
@@ -80,6 +82,7 @@ namespace System.IO.Compression
         public GZipDecoder() { }
         public System.Buffers.OperationStatus Decompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesConsumed, out int bytesWritten) { throw null; }
         public void Dispose() { }
+        public void Reset() { }
         public static bool TryDecompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
     public sealed partial class GZipEncoder : System.IDisposable
@@ -92,6 +95,7 @@ namespace System.IO.Compression
         public void Dispose() { }
         public System.Buffers.OperationStatus Flush(System.Span<byte> destination, out int bytesWritten) { throw null; }
         public static long GetMaxCompressedLength(long inputLength) { throw null; }
+        public void Reset() { }
         public static bool TryCompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
         public static bool TryCompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten, int quality) { throw null; }
         public static bool TryCompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten, int quality, int windowLog2) { throw null; }
@@ -145,6 +149,8 @@ namespace System.IO.Compression
         public static System.Threading.Tasks.Task<System.IO.Compression.ZipArchive> CreateAsync(System.IO.Stream stream, System.IO.Compression.ZipArchiveMode mode, bool leaveOpen, System.Text.Encoding? entryNameEncoding, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public System.IO.Compression.ZipArchiveEntry CreateEntry(string entryName) { throw null; }
         public System.IO.Compression.ZipArchiveEntry CreateEntry(string entryName, System.IO.Compression.CompressionLevel compressionLevel) { throw null; }
+        public System.IO.Compression.ZipArchiveEntry CreateEntry(string entryName, System.IO.Compression.CompressionLevel compressionLevel, System.ReadOnlySpan<char> password, System.IO.Compression.ZipEncryptionMethod encryptionMethod) { throw null; }
+        public System.IO.Compression.ZipArchiveEntry CreateEntry(string entryName, System.ReadOnlySpan<char> password, System.IO.Compression.ZipEncryptionMethod encryptionMethod) { throw null; }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         public System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
@@ -164,6 +170,7 @@ namespace System.IO.Compression
         public int ExternalAttributes { get { throw null; } set { } }
         public string FullName { get { throw null; } }
         public bool IsEncrypted { get { throw null; } }
+        public System.IO.Compression.ZipEncryptionMethod EncryptionMethod { get { throw null; } }
         public System.DateTimeOffset LastWriteTime { get { throw null; } set { } }
         public long Length { get { throw null; } }
         public string Name { get { throw null; } }
@@ -171,9 +178,13 @@ namespace System.IO.Compression
         public ushort VersionMadeBy { get { throw null; } }
         public void Delete() { }
         public System.IO.Stream Open() { throw null; }
-        public System.IO.Stream Open(FileAccess access) { throw null; }
-        public System.Threading.Tasks.Task<System.IO.Stream> OpenAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public System.IO.Stream Open(System.IO.FileAccess access) { throw null; }
+        public System.IO.Stream Open(System.IO.FileAccess access, System.ReadOnlySpan<char> password) { throw null; }
+        public System.IO.Stream Open(System.ReadOnlySpan<char> password) { throw null; }
+        public System.Threading.Tasks.Task<System.IO.Stream> OpenAsync(System.IO.FileAccess access, System.ReadOnlySpan<char> password, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public System.Threading.Tasks.Task<System.IO.Stream> OpenAsync(System.IO.FileAccess access, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public System.Threading.Tasks.Task<System.IO.Stream> OpenAsync(System.ReadOnlySpan<char> password, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public System.Threading.Tasks.Task<System.IO.Stream> OpenAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public override string ToString() { throw null; }
     }
     public enum ZipArchiveMode
@@ -187,6 +198,15 @@ namespace System.IO.Compression
         Stored = 0,
         Deflate = 8,
         Deflate64 = 9,
+    }
+    public enum ZipEncryptionMethod
+    {
+        Unknown = -1,
+        None = 0,
+        ZipCrypto = 1,
+        Aes128 = 2,
+        Aes192 = 3,
+        Aes256 = 4,
     }
     public sealed partial class ZLibCompressionOptions
     {
@@ -211,6 +231,7 @@ namespace System.IO.Compression
         public ZLibDecoder() { }
         public System.Buffers.OperationStatus Decompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesConsumed, out int bytesWritten) { throw null; }
         public void Dispose() { }
+        public void Reset() { }
         public static bool TryDecompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
     public sealed partial class ZLibEncoder : System.IDisposable
@@ -223,6 +244,7 @@ namespace System.IO.Compression
         public void Dispose() { }
         public System.Buffers.OperationStatus Flush(System.Span<byte> destination, out int bytesWritten) { throw null; }
         public static long GetMaxCompressedLength(long inputLength) { throw null; }
+        public void Reset() { }
         public static bool TryCompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
         public static bool TryCompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten, int quality) { throw null; }
         public static bool TryCompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten, int quality, int windowLog2) { throw null; }

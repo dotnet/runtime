@@ -1718,9 +1718,6 @@ EXTERN_C DWORD_PTR STDCALL CallEHFilterFunclet(Object *pThrowable, TADDR FP, UIN
 typedef DWORD_PTR (HandlerFn)(UINT_PTR uStackFrame, Object* pExceptionObj);
 #else
 typedef TADDR HandlerFn;
-TADDR GetWasmFramePointerFromStackPointer(TADDR sp);
-TADDR GetWasmEstablishingFramePointerFromTerminator(TADDR sp);
-
 DWORD_PTR CallFuncletWithThrowable(UINT_PTR pFuncletToInvoke, TADDR fp, Object *pThrowable, UINT_PTR *pFuncletCallerSP);
 DWORD_PTR CallFuncletWithoutThrowable(UINT_PTR pFuncletToInvoke, TADDR fp, UINT_PTR *pFuncletCallerSP);
 #endif // TARGET_WASM
@@ -1752,34 +1749,8 @@ DWORD_PTR EECodeManager::CallFunclet(OBJECTREF throwable, void* pHandler, REGDIS
     UINT_PTR *pFuncletCallerSP = &(pExInfo->m_csfEHClause.SP);
 
 #ifdef TARGET_WASM
-    TADDR wasmFramePointer = GetWasmFramePointerFromStackPointer(GetSP(pRD->pCurrentContext));
-    // A handler that is lexically nested inside a funclet (e.g. a catch inside a finally) must
-    // run with the enclosing METHOD frame as its establishing frame.
-    if (pExInfo->m_frameIter.m_crawl.IsFunclet())
-    {
-        T_CONTEXT walkCtx = *(pRD->pCurrentContext);
-        for (;;)
-        {
-            UnwindStackFrame(&walkCtx);
-            EECodeInfo ci(dac_cast<PCODE>(GetIP(&walkCtx)));
-            if (!ci.IsValid())
-            {
-                // The funclet was invoked by the VM through CallFuncletWith[out]Throwable, so native
-                // unwinding terminates at that synthetic frame before reaching the method's own frame.
-                // Recover the establishing (method) frame pointer the helper stored next to the
-                // TERMINATE_R2R_STACK_WALK marker.
-                wasmFramePointer = GetWasmEstablishingFramePointerFromTerminator(GetSP(&walkCtx));
-                break;
-            }
-            if (!ci.IsFunclet())
-            {
-                // The funclet executes within the method's own native frame, which we reached directly
-                // by unwinding (no intervening CallFunclet helper frame).
-                wasmFramePointer = GetWasmFramePointerFromStackPointer(GetSP(&walkCtx));
-                break;
-            }
-        }
-    }
+    TADDR wasmFramePointer = GetFP(pRD->pCurrentContext);
+    _ASSERTE(wasmFramePointer != 0);
     TADDR handlerFnIndex = CastHandlerFn(pfnHandler);
     if (throwable != NULL)
     {
@@ -1825,7 +1796,8 @@ void EECodeManager::ResumeAfterCatch(CONTEXT *pContext, size_t targetSSP, bool f
 
     if (uAbortAddr)
     {
-        STRESS_LOG2(LF_EH, LL_INFO10, "Thread abort in progress, resuming under control: IP=%p, SP=%p\n", dwResumePC, GetSP(pContext));
+        STRESS_LOG2(LF_EH, LL_INFO10, "Thread abort in progress, resuming under control: IP=%p, SP=%p\n",
+                (void*)dwResumePC, (void*)GetSP(pContext));
 
         // The dwResumePC is passed to the THROW_CONTROL_FOR_THREAD_FUNCTION ASM helper so that
         // it can establish it as its return address and native stack unwinding can work properly.
@@ -1847,7 +1819,8 @@ void EECodeManager::ResumeAfterCatch(CONTEXT *pContext, size_t targetSSP, bool f
     }
     else
     {
-        STRESS_LOG2(LF_EH, LL_INFO100, "Resuming after exception at IP=%p, SP=%p\n", GetIP(pContext), GetSP(pContext));
+        STRESS_LOG2(LF_EH, LL_INFO100, "Resuming after exception at IP=%p, SP=%p\n", (void*)GetIP(pContext),
+                    (void*)GetSP(pContext));
     }
 
     ClrRestoreNonvolatileContext(pContext, targetSSP);

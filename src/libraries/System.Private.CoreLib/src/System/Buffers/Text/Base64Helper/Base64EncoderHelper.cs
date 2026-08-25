@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 #if NET
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.Wasm;
 using System.Runtime.Intrinsics.X86;
 #endif
 
@@ -71,7 +72,7 @@ namespace System.Buffers.Text
                     }
 
                     end = srcMax - 16;
-                    if ((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) && BitConverter.IsLittleEndian && (end >= src))
+                    if ((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported) && BitConverter.IsLittleEndian && (end >= src))
                     {
                         Vector128Encode(encoder, ref src, ref dest, end, maxSrcLength, destLength, srcBytes, destBytes);
 
@@ -441,6 +442,7 @@ namespace System.Buffers.Text
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Ssse3))]
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         private static unsafe void Vector128Encode<TBase64Encoder, T>(TBase64Encoder encoder, ref byte* srcBytes, ref T* destBytes, byte* srcEnd, int sourceLength, int destLength, byte* srcStart, T* destStart)
             where TBase64Encoder : IBase64Encoder<T>
             where T : unmanaged
@@ -504,6 +506,13 @@ namespace System.Buffers.Text
                     Vector128<ushort> even = Vector128.ShiftRightLogical(AdvSimd.Arm64.UnzipEven(t0.AsUInt16(), t0.AsUInt16()), 10);
                     t1 = AdvSimd.Arm64.ZipLow(even, odd);
                 }
+                else if (PackedSimd.IsSupported)
+                {
+                    // MultiplyHigh by {2^6, 2^10} is a right shift of the even u16 lanes by 10 and the odd lanes by 6.
+                    Vector128<ushort> shr6 = Vector128.ShiftRightLogical(t0.AsUInt16(), 6);
+                    Vector128<ushort> shr10 = Vector128.ShiftRightLogical(t0.AsUInt16(), 10);
+                    t1 = Vector128.ConditionalSelect(Vector128.Create(0x0000FFFFu).AsUInt16(), shr10, shr6);
+                }
                 else
                 {
                     // We explicitly recheck each IsSupported query to ensure that the trimmer can see which paths are live/dead
@@ -547,6 +556,10 @@ namespace System.Buffers.Text
                 else if (AdvSimd.IsSupported)
                 {
                     indices = AdvSimd.SubtractSaturate(str.AsByte(), const51);
+                }
+                else if (PackedSimd.IsSupported)
+                {
+                    indices = PackedSimd.SubtractSaturate(str.AsByte(), const51);
                 }
                 else
                 {

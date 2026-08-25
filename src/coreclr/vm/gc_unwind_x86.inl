@@ -556,7 +556,7 @@ inline size_t GetSizeOfFrameHeaderForEnC(MethodDesc* pMD, hdrInfo * info)
                         info->localloc +
                         info->genericsContext + // For CORINFO_GENERICS_CTXT_FROM_PARAMTYPEARG
                         ((info->syncStartOffset != INVALID_SYNC_OFFSET) ? 1 : 0) + // Is this method synchronized
-                        (pMD->RequiresAsyncContextSaveAndRestore() ? 3 : 0) + // Does this method save thread + async contexts?
+                        (pMD->RequiresAsyncContextSaveAndRestore() ? 4 : 0) + // Does this method save indicator + thread + async contexts?
                         1; // for ebpFrame
     return position * sizeof(TADDR);
 }

@@ -3114,6 +3114,14 @@ mono_jit_search_all_backends_for_jit_info (MonoMethod *method, MonoJitInfo **out
 	return code;
 }
 
+static gpointer
+get_method_code_start (MonoMethod *method)
+{
+	MonoJitInfo *ji = NULL;
+	gpointer code = mono_jit_search_all_backends_for_jit_info (method, &ji);
+	return ji ? mono_jit_info_get_code_start (ji) : code;
+}
+
 gpointer
 mono_jit_find_compiled_method_with_jit_info (MonoMethod *method, MonoJitInfo **ji)
 {
@@ -4716,6 +4724,7 @@ mini_init (const char *filename)
 	callbacks.get_weak_field_indexes = mono_aot_get_weak_field_indexes;
 #endif
 	callbacks.find_jit_info_in_aot = mono_aot_find_jit_info;
+	callbacks.get_method_code_start = get_method_code_start;
 	callbacks.metadata_update_published = mini_invalidate_transformed_interp_methods;
 	callbacks.interp_jit_info_foreach = mini_interp_jit_info_foreach;
 	callbacks.interp_sufficient_stack = mini_interp_sufficient_stack;
@@ -5105,6 +5114,7 @@ register_icalls (void)
 	register_icall (mono_helper_ldstr, mono_icall_sig_object_ptr_int, FALSE);
 	register_icall (mono_helper_ldstr_mscorlib, mono_icall_sig_object_int, FALSE);
 	register_icall (mono_helper_newobj_mscorlib, mono_icall_sig_object_int, FALSE);
+	register_icall (mono_helper_box_nullable, mono_icall_sig_object_ptr_ptr, FALSE);
 	register_icall (mono_value_copy_internal, mono_icall_sig_void_ptr_ptr_ptr, FALSE);
 	register_icall (mono_object_castclass_unbox, mono_icall_sig_object_object_ptr, FALSE);
 	register_icall (mono_break, mono_icall_sig_void, TRUE);

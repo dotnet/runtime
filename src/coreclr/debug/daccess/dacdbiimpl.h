@@ -24,9 +24,11 @@ DLLEXPORT
 DacDbiInterfaceInstance(
     ICorDebugDataTarget * pTarget,
     CORDB_ADDRESS baseAddress,
+    CLRDATA_ADDRESS contractDescriptorAddress,
     IDacDbiInterface::IAllocator * pAllocator,
     IDacDbiInterface::IMetaDataLookup * pMetaDataLookup,
-    IDacDbiInterface ** ppInterface);
+    IDacDbiInterface ** ppInterface,
+    IUnknown ** ppLegacyDac);
 
 //---------------------------------------------------------------------------------------
 //
@@ -69,6 +71,8 @@ public:
     // Flush the DAC cache. This should be called when target memory changes.
     HRESULT STDMETHODCALLTYPE FlushCache();
 
+    HRESULT STDMETHODCALLTYPE Destroy();
+
     // enable or disable DAC target consistency checks
     HRESULT STDMETHODCALLTYPE DacSetTargetConsistencyChecks(BOOL fEnableAsserts);
 
@@ -102,7 +106,7 @@ public:
 
 
     // Initialize the native/IL sequence points and native var info for a function.
-    HRESULT STDMETHODCALLTYPE GetNativeCodeSequencePointsAndVarInfo(VMPTR_MethodDesc vmMethodDesc, CORDB_ADDRESS startAddress, BOOL fCodeAvailable, OUT NativeVarData * pNativeVarData, OUT SequencePoints * pSequencePoints);
+    HRESULT STDMETHODCALLTYPE GetNativeCodeSequencePointsAndVarInfo(VMPTR_MethodDesc vmMethodDesc, CORDB_ADDRESS startAddress, BOOL fCodeAvailable, OUT ULONG32 * pFixedArgCount, FP_NATIVEVARINFO_CALLBACK fpVarInfoCallback, FP_SEQUENCEPOINT_CALLBACK fpSeqPointCallback, CALLBACK_DATA pUserData);
 
     HRESULT STDMETHODCALLTYPE IsThreadSuspendedOrHijacked(VMPTR_Thread vmThread, OUT BOOL * pResult);
 
@@ -132,45 +136,37 @@ public:
     HRESULT STDMETHODCALLTYPE GetTypeLayout(CORDB_ADDRESS id, COR_TYPE_LAYOUT *pLayout);
     HRESULT STDMETHODCALLTYPE GetArrayLayout(CORDB_ADDRESS id, COR_ARRAY_LAYOUT *pLayout);
     HRESULT STDMETHODCALLTYPE GetGCHeapInformation(OUT COR_HEAPINFO * pHeapInfo);
-    HRESULT STDMETHODCALLTYPE GetPEFileMDInternalRW(VMPTR_PEAssembly vmPEAssembly, OUT TADDR* pAddrMDInternalRW);
+    HRESULT STDMETHODCALLTYPE HasReadWriteMetadata(VMPTR_PEAssembly vmPEAssembly, OUT BOOL* pHasReadWriteMetadata);
 #ifdef FEATURE_CODE_VERSIONING
     HRESULT STDMETHODCALLTYPE GetActiveRejitILCodeVersionNode(VMPTR_Module vmModule, mdMethodDef methodTk, OUT VMPTR_ILCodeVersionNode* pVmILCodeVersionNode);
+    HRESULT STDMETHODCALLTYPE GetEnCILCodeAndSig(VMPTR_Module vmModule, mdMethodDef methodTk, SIZE_T enCVersion, OUT TargetBuffer * pCodeInfo, OUT mdSignature * pLocalSigToken);
     HRESULT STDMETHODCALLTYPE GetNativeCodeVersionNode(VMPTR_MethodDesc vmMethod, CORDB_ADDRESS codeStartAddress, OUT VMPTR_NativeCodeVersionNode* pVmNativeCodeVersionNode);
     HRESULT STDMETHODCALLTYPE GetILCodeVersionNode(VMPTR_NativeCodeVersionNode vmNativeCodeVersionNode, VMPTR_ILCodeVersionNode* pVmILCodeVersionNode);
     HRESULT STDMETHODCALLTYPE GetILCodeVersionNodeData(VMPTR_ILCodeVersionNode vmILCodeVersionNode, DacSharedReJitInfo* pData);
 #endif // FEATURE_CODE_VERSIONING
     HRESULT STDMETHODCALLTYPE AreOptimizationsDisabled(VMPTR_Module vmModule, mdMethodDef methodTk, OUT BOOL* pOptimizationsDisabled);
-    HRESULT STDMETHODCALLTYPE GetDefinesBitField(ULONG32 *pDefines);
-    HRESULT STDMETHODCALLTYPE GetMDStructuresVersion(ULONG32* pMDStructuresVersion);
     HRESULT STDMETHODCALLTYPE EnableGCNotificationEvents(BOOL fEnable);
     HRESULT STDMETHODCALLTYPE GetAssemblyFromModule(VMPTR_Module vmModule, OUT VMPTR_Assembly *pvmAssembly);
     HRESULT STDMETHODCALLTYPE ParseContinuation(CORDB_ADDRESS continuationAddress,
-                                              OUT PCODE *pDiagnosticIP,
+                                              OUT CORDB_ADDRESS *pDiagnosticIP,
                                               OUT CORDB_ADDRESS *pNextContinuation,
                                               OUT UINT32 *pState);
     HRESULT STDMETHODCALLTYPE EnumerateAsyncLocals(VMPTR_MethodDesc vmMethod, CORDB_ADDRESS codeAddr, UINT32 state, FP_ASYNC_LOCAL_CALLBACK fpCallback, CALLBACK_DATA pUserData);
     HRESULT STDMETHODCALLTYPE GetGenericArgTokenIndex(VMPTR_MethodDesc vmMethod, OUT UINT32* pIndex);
 
     HRESULT STDMETHODCALLTYPE GetTargetInfo(OUT TargetInfo * pTargetInfo);
+    HRESULT STDMETHODCALLTYPE GetReadWriteMetadataSize(VMPTR_Module vmModule, OUT ULONG32 * pSize);
+    HRESULT STDMETHODCALLTYPE FillReadWriteMetadata(VMPTR_Module vmModule, BYTE * pBuffer, ULONG32 cbBuffer);
 
 private:
+    void SerializeReadWriteMetadata(Module * pModule, BYTE ** ppBlob, ULONG32 * pcbBlob);
+
     void TypeHandleToExpandedTypeInfoImpl(AreValueTypesBoxed              boxed,
                                        TypeHandle                      typeHandle,
                                        DebuggerIPCE_ExpandedTypeData * pTypeInfo);
 
     // Get the number of fixed arguments to a function, i.e., the explicit args and the "this" pointer.
     SIZE_T GetArgCount(MethodDesc * pMD);
-
-    // Get locations and code offsets for local variables and arguments in a function
-    void GetNativeVarData(MethodDesc *    pMethodDesc,
-                          CORDB_ADDRESS   startAddr,
-                          SIZE_T          fixedArgCount,
-                          NativeVarData * pVarInfo);
-
-    // Get the native/IL sequence points for a function
-    void GetSequencePoints(MethodDesc *    pMethodDesc,
-                           CORDB_ADDRESS    startAddr,
-                           SequencePoints * pNativeMap);
 
 public:
 //----------------------------------------------------------------------------------
@@ -866,8 +862,8 @@ private:
                            VMPTR_MethodDesc vmMethodDesc,
                            mdMethodDef      mdMethod,
                            CORDB_ADDRESS    pNativeStartAddress,
-                           SIZE_T *         pLatestEnCVersion,
-                           SIZE_T *         pJittedInstanceEnCVersion = NULL);
+                           ULONG64 *        pLatestEnCVersion,
+                           ULONG64 *        pJittedInstanceEnCVersion = NULL);
 
     // @dbgtodo - This method should be removed once CordbFunctionBreakpoint and SetIP are moved OOP.
     void SetDJIPointer(Module *                   pModule,
