@@ -27,26 +27,15 @@ namespace System
         private const nuint ZeroMemoryNativeThreshold = 1024;
 
 #if (TARGET_AMD64 || TARGET_ARM64) && !MONO
-        // Blocks are copied with a constant-length Memmove, which the JIT expands into "load the whole
-        // block into registers, then store it" - correct for any overlap. 64 bytes fits its unrolling
-        // budget on every target here, and bounds re-entry: a block-sized call skips the loops below and
-        // is finished by the tail, which never calls Memmove back.
+        // Blocks are copied with a constant-length Memmove, which the JIT unrolls into "load the whole
+        // block into registers, then store it" - which is what makes a block correct under any overlap.
         private const nuint OverlappedBlockSize = 64;
 
-        // Aligning the destination only pays for the extra leading block on larger copies.
-        private const nuint OverlappedAlignThreshold = 2048;
-
-        // Past this the platform memmove's backward loop beats a managed descending one.
-        private const nuint OverlappedBackwardThreshold = 256;
-
 #if TARGET_ARM64
-        // What makes the platform memmove worth replacing for long forward copies is 'rep movsb', which
-        // is x86-only: arm64 uses a plain vector loop that has no such cliff and is well tuned, so past
-        // this size it wins. Below it the P/Invoke is still the dominant cost and we come out ahead.
+        // arm64 has no 'rep movsb' cliff and its platform memmove is well tuned, so past this it wins.
         private const nuint OverlappedForwardThreshold = 1024;
 #else
-        // ulong rather than nuint because nuint.MaxValue is not a compile-time constant, same as
-        // MemmoveNativeThreshold above. The comparison widens to ulong and folds away.
+        // ulong because nuint.MaxValue is not a compile-time constant; the comparison folds away.
         private const ulong OverlappedForwardThreshold = ulong.MaxValue;
 #endif
 #endif
@@ -262,33 +251,13 @@ namespace System
             }
 
 #if (TARGET_AMD64 || TARGET_ARM64) && !MONO
-            // We're better off here than calling the platform memmove: for short copies the P/Invoke alone
-            // costs more than the copy, and its forward loop is tuned for disjoint buffers - 'rep movsb'
-            // collapses when the buffers are less than a cache line apart, and the non-temporal stores it
-            // uses for large copies evict the lines the rest of the copy reads back. Its backward loop has
-            // neither problem, so long right shifts are left to it.
-            //
-            // Gated on SIMD being available, which is what the blocks below are expanded into. It folds
-            // away under the JIT, R2R and AOT; it is only false in the interpreter-only mode, where the
-            // blocks would each cost a call and the platform memmove is the better deal.
-            if (Vector128.IsHardwareAccelerated)
+            // Handle left shifts in managed code under the threshold. 
+            // Right shifts had no issues on all tested platforms with the platform memmove.
+            if (Vector128.IsHardwareAccelerated &&
+                len <= OverlappedForwardThreshold && (nuint)Unsafe.ByteOffset(ref dest, ref src) < len)
             {
-                if ((nuint)Unsafe.ByteOffset(ref dest, ref src) < len)
-                {
-                    // dest is below src, so copying upwards never overwrites a byte we still have to read.
-                    // Note the 'else': once we know the buffers overlap this way, a length over the
-                    // threshold has to fall through to the platform memmove, not to the backward copy.
-                    if (len <= OverlappedForwardThreshold)
-                    {
-                        CopyOverlappedForward(ref dest, ref src, len);
-                        return;
-                    }
-                }
-                else if (len <= OverlappedBackwardThreshold)
-                {
-                    CopyOverlappedBackward(ref dest, ref src, len);
-                    return;
-                }
+                CopyOverlappedForward(ref dest, ref src, len);
+                return;
             }
 #endif
 
@@ -297,23 +266,30 @@ namespace System
             Debug.Assert(len > 0);
             _ = Unsafe.ReadUnaligned<byte>(ref dest);
             _ = Unsafe.ReadUnaligned<byte>(ref src);
+#if !MONO
+            // The GC transition costs more than a copy this size. Bounded by the same chunk
+            // BulkMoveWithWriteBarrier uses: that is how long the GC can be held off waiting for us.
+            if (len <= Buffer.BulkMoveWithWriteBarrierChunk)
+            {
+                MemmoveNativeNoGCTransition(ref dest, ref src, len);
+                return;
+            }
+#endif
             MemmoveNative(ref dest, ref src, len);
         }
 
 #if (TARGET_AMD64 || TARGET_ARM64) && !MONO
-        // Every step below either is a constant-length Memmove, which the JIT expands so that the whole
-        // block is loaded before any of it is stored, or a single load feeding a single store, where the
-        // data dependency does the same for one register's worth. Steps then run in strictly ascending,
-        // non-overlapping order, so a store can never reach a source byte a later step has to read. That
-        // also rules out the trailing "block anchored at the end of the buffer" shortcut the
-        // non-overlapping paths use - those bytes may already have been rewritten.
+        // Each step loads everything it writes before it writes any of it - either a constant-length
+        // Memmove the JIT unrolls, or a single load feeding a single store. Steps then run in ascending,
+        // non-overlapping order, so a store never reaches a source byte a later step still has to read.
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static void CopyOverlappedForward(ref byte dest, ref byte src, nuint len)
         {
             Debug.Assert(len > 0);
 
-            // Only one of the two can be aligned, and an unaligned store costs more than an unaligned load.
-            if (len >= OverlappedAlignThreshold)
+            // Align the destination - only one side can be, and stores suffer more than loads. Worth the
+            // extra leading block only on larger copies.
+            if (len >= 2048)
             {
                 nuint head = 64 - Unsafe.OpportunisticMisalignment(ref dest, 64);
                 if (head != 64)
@@ -325,10 +301,10 @@ namespace System
                 }
             }
 
-            // Take the widest block the JIT will still expand: its budget is four vector registers, so
-            // 256 bytes under AVX512 and 128 under AVX2. Wider blocks mean fewer loop iterations, and
-            // fewer boundaries where one block's store and the next block's load share a cache line,
-            // which is what a tight overlap is sensitive to. arm64 tops out at the 64-byte loop below.
+            // The widest block the JIT still unrolls: its budget is four vector registers, so 256 bytes
+            // under AVX512 and 128 under AVX2. Wider blocks mean fewer boundaries where one block's
+            // store and the next one's load share a cache line, which a tight overlap is sensitive to.
+            // arm64 tops out at the 64-byte loop below.
             if (Vector512.IsHardwareAccelerated)
             {
                 while (len > 256)
@@ -361,24 +337,9 @@ namespace System
             CopyOverlappedForwardTail(ref dest, ref src, len);
         }
 
-        // Mirror image: steps run in strictly descending order, walking down from the end.
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static void CopyOverlappedBackward(ref byte dest, ref byte src, nuint len)
-        {
-            Debug.Assert(len > 0);
-
-            while (len > OverlappedBlockSize)
-            {
-                len -= OverlappedBlockSize;
-                Memmove(ref Unsafe.Add(ref dest, len), ref Unsafe.Add(ref src, len), OverlappedBlockSize);
-            }
-
-            CopyOverlappedBackwardTail(ref dest, ref src, len);
-        }
-
-        // Finishes at most OverlappedBlockSize bytes, ascending. Deliberately doesn't call Memmove - this
-        // is where a block the JIT didn't expand comes back around, so calling it again is what recursion
-        // would look like. One step per set bit of len, so the steps tile the range without overlapping.
+        // Finishes at most OverlappedBlockSize bytes, ascending. Must not call Memmove: a block the JIT
+        // didn't unroll lands back here, so calling it again is what recursion would look like. One step
+        // per set bit of len, so the steps tile the range without overlapping.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void CopyOverlappedForwardTail(ref byte dest, ref byte src, nuint len)
         {
@@ -414,38 +375,6 @@ namespace System
                 dest = src;
             }
         }
-
-        // Mirror image: the steps tile the range from the end downwards.
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void CopyOverlappedBackwardTail(ref byte dest, ref byte src, nuint len)
-        {
-            Debug.Assert(len <= OverlappedBlockSize);
-
-            while (len >= 16)
-            {
-                len -= 16;
-                Unsafe.WriteUnaligned(ref Unsafe.Add(ref dest, len), Unsafe.ReadUnaligned<Block16>(ref Unsafe.Add(ref src, len)));
-            }
-            if ((len & 8) != 0)
-            {
-                len -= 8;
-                Unsafe.WriteUnaligned(ref Unsafe.Add(ref dest, len), Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref src, len)));
-            }
-            if ((len & 4) != 0)
-            {
-                len -= 4;
-                Unsafe.WriteUnaligned(ref Unsafe.Add(ref dest, len), Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref src, len)));
-            }
-            if ((len & 2) != 0)
-            {
-                len -= 2;
-                Unsafe.WriteUnaligned(ref Unsafe.Add(ref dest, len), Unsafe.ReadUnaligned<ushort>(ref Unsafe.Add(ref src, len)));
-            }
-            if ((len & 1) != 0)
-            {
-                dest = src;
-            }
-        }
 #endif
 
         // Non-inlinable wrapper around the QCall that avoids polluting the fast path
@@ -460,6 +389,19 @@ namespace System
             }
         }
 
+#if !MONO
+        // Inlinable: a SuppressGCTransition call sets up no P/Invoke frame, and the JIT emits the GC poll.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe void MemmoveNativeNoGCTransition(ref byte dest, ref byte src, nuint len)
+        {
+            fixed (byte* pDest = &dest)
+            fixed (byte* pSrc = &src)
+            {
+                memmoveNoGCTransition(pDest, pSrc, len);
+            }
+        }
+#endif
+
 #if MONO
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe void memmove(void* dest, void* src, nuint len);
@@ -468,6 +410,12 @@ namespace System
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "memmove")]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         private static unsafe partial void* memmove(void* dest, void* src, nuint len);
+
+        // Same entry point; the attribute can only be applied per declaration.
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "memmove")]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        private static unsafe partial void* memmoveNoGCTransition(void* dest, void* src, nuint len);
 #pragma warning restore CS3016
 #endif
 
