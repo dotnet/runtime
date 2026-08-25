@@ -31,18 +31,6 @@ namespace Tracing.Tests.RundownValidation
         {
         }
 
-        [Event(1)]
-        public void JumpStubAllocationStart()
-        {
-            WriteEvent(1);
-        }
-
-        [Event(2)]
-        public void JumpStubAllocationStop()
-        {
-            WriteEvent(2);
-        }
-
         [Event(3)]
         public void JumpStubCollectionStart()
         {
@@ -69,15 +57,7 @@ namespace Tracing.Tests.RundownValidation
         {
             if (Environment.GetEnvironmentVariable(LcgJumpStubChildEnvironmentVariable) == "1")
             {
-                RundownValidationEventSource.Log.JumpStubAllocationStart();
-                try
-                {
-                    GenerateLcgJumpStubActivity();
-                }
-                finally
-                {
-                    RundownValidationEventSource.Log.JumpStubAllocationStop();
-                }
+                GenerateLcgJumpStubActivity();
 
                 RundownValidationEventSource.Log.JumpStubCollectionStart();
                 try
@@ -242,17 +222,13 @@ namespace Tracing.Tests.RundownValidation
             for (int i = 0; i < orderedEvents.Length; i++)
             {
                 HelperEvent helperEvent = orderedEvents[i];
-                if (unchecked((ulong)helperEvent.MethodId) != helperEvent.StartAddress ||
-                    helperEvent.ModuleId != 0 ||
-                    helperEvent.Size == 0 ||
-                    helperEvent.MethodToken != 0)
+                if (!ValidateHelperEvent(helperEvent))
                 {
                     return false;
                 }
 
                 ulong endAddress = helperEvent.StartAddress + (uint)helperEvent.Size;
-                if (endAddress <= helperEvent.StartAddress ||
-                    (i + 1 < orderedEvents.Length && endAddress > orderedEvents[i + 1].StartAddress))
+                if (i + 1 < orderedEvents.Length && endAddress > orderedEvents[i + 1].StartAddress)
                 {
                     return false;
                 }
@@ -261,19 +237,55 @@ namespace Tracing.Tests.RundownValidation
             return true;
         }
 
+        private static bool ValidateHelperEvent(HelperEvent helperEvent)
+        {
+            if (unchecked((ulong)helperEvent.MethodId) != helperEvent.StartAddress ||
+                helperEvent.ModuleId != 0 ||
+                helperEvent.Size == 0 ||
+                helperEvent.MethodToken != 0)
+            {
+                return false;
+            }
+
+            return helperEvent.StartAddress + (uint)helperEvent.Size > helperEvent.StartAddress;
+        }
+
         private static bool HaveMatchingStubBlocks(List<HelperEvent> liveStubBlocks, List<HelperEvent> rundownStubBlocks)
         {
             return liveStubBlocks.Any(live =>
                 rundownStubBlocks.Any(rundown => AreMatchingStubBlocks(live, rundown)));
         }
 
-        private static bool HaveMatchingUnloadForEveryLoad(
+        private static bool HaveMatchingLoadForEveryUnload(
             List<HelperEvent> loadedStubBlocks,
             List<HelperEvent> unloadedStubBlocks)
         {
-            return loadedStubBlocks.Count != 0 &&
-                loadedStubBlocks.All(load =>
-                    unloadedStubBlocks.Any(unload => AreMatchingStubBlocks(load, unload)));
+            if (unloadedStubBlocks.Count == 0)
+            {
+                return false;
+            }
+
+            var unmatchedLoads = new List<HelperEvent>(loadedStubBlocks);
+            foreach (HelperEvent unload in unloadedStubBlocks.OrderBy(e => e.TimeStampRelativeMSec))
+            {
+                if (!ValidateHelperEvent(unload))
+                {
+                    return false;
+                }
+
+                int matchingLoadIndex = unmatchedLoads.FindLastIndex(load =>
+                    load.TimeStampRelativeMSec <= unload.TimeStampRelativeMSec &&
+                    ValidateHelperEvent(load) &&
+                    AreMatchingStubBlocks(load, unload));
+                if (matchingLoadIndex < 0)
+                {
+                    return false;
+                }
+
+                unmatchedLoads.RemoveAt(matchingLoadIndex);
+            }
+
+            return true;
         }
 
         private static bool AreMatchingStubBlocks(HelperEvent first, HelperEvent second)
@@ -420,8 +432,6 @@ namespace Tracing.Tests.RundownValidation
 
                 var loadedJumpStubBlocks = new List<HelperEvent>();
                 var unloadedJumpStubBlocks = new List<HelperEvent>();
-                double allocationStart = double.NaN;
-                double allocationStop = double.NaN;
                 double collectionStart = double.NaN;
                 double collectionStop = double.NaN;
                 using (var source = new EventPipeEventSource(tracePath))
@@ -433,15 +443,7 @@ namespace Tracing.Tests.RundownValidation
                             return;
                         }
 
-                        if (eventData.EventName == "JumpStubAllocation/Start")
-                        {
-                            allocationStart = eventData.TimeStampRelativeMSec;
-                        }
-                        else if (eventData.EventName == "JumpStubAllocation/Stop")
-                        {
-                            allocationStop = eventData.TimeStampRelativeMSec;
-                        }
-                        else if (eventData.EventName == "JumpStubCollection/Start")
+                        if (eventData.EventName == "JumpStubCollection/Start")
                         {
                             collectionStart = eventData.TimeStampRelativeMSec;
                         }
@@ -459,15 +461,11 @@ namespace Tracing.Tests.RundownValidation
                     source.Process();
                 }
 
-                List<HelperEvent> allocatedJumpStubBlocks =
-                    GetEventsInRange(loadedJumpStubBlocks, allocationStart, allocationStop);
                 List<HelperEvent> reclaimedJumpStubBlocks =
                     GetEventsInRange(unloadedJumpStubBlocks, collectionStart, collectionStop);
-                Logger.logger.Log("LCG jump-stub loads: " + allocatedJumpStubBlocks.Count);
+                Logger.logger.Log("LCG jump-stub loads: " + loadedJumpStubBlocks.Count);
                 Logger.logger.Log("LCG jump-stub unloads: " + reclaimedJumpStubBlocks.Count);
-                return ValidateHelperEvents(allocatedJumpStubBlocks) &&
-                    ValidateHelperEvents(reclaimedJumpStubBlocks) &&
-                    HaveMatchingUnloadForEveryLoad(allocatedJumpStubBlocks, reclaimedJumpStubBlocks)
+                return HaveMatchingLoadForEveryUnload(loadedJumpStubBlocks, reclaimedJumpStubBlocks)
                     ? 100
                     : -1;
             }

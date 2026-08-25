@@ -82,6 +82,7 @@ class CrawlFrame;
 class IExecutionControl;
 struct EE_ILEXCEPTION;
 struct EE_ILEXCEPTION_CLAUSE;
+struct JumpStubBlockHeader;
 typedef struct
 {
     unsigned iCurrentPos;
@@ -2068,6 +2069,7 @@ public:
     void NibbleMapSet(HeapList * pHp, TADDR pCode, size_t codeSize);
     void AddToCleanupList(HostCodeHeap* pCodeHeap);
     bool TryFreeHostCodeHeapMemory(HostCodeHeap* pCodeHeap, void* codeStart);
+    bool TryFreeJumpStubBlock(HostCodeHeap* pCodeHeap, JumpStubBlockHeader* pJumpStubBlock);
     CodeHeapIterator GetCodeHeapIterator(LoaderAllocator* pLoaderAllocatorFilter = NULL);
 
 private:

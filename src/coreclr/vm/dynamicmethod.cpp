@@ -1028,7 +1028,7 @@ bool LCGMethodResolver::TryDestroyCodeHeapMemory()
 
             HostCodeHeap *pHeap = current->GetHostCodeHeap();
             LOG((LF_BCL, LL_INFO1000, "Level3 - Resolver {0x%p} - Release reference to heap {%p, vt(0x%zx)} \n", current, pHeap, *(size_t*)pHeap));
-            if (!pHeap->GetJitManager()->TryFreeHostCodeHeapMemory(pHeap, current))
+            if (!pHeap->GetJitManager()->TryFreeJumpStubBlock(pHeap, current))
             {
                 // We were unable to destroy this code heap memory.
                 // Update the JumpStub cache in place so clean-up can be done later.

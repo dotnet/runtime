@@ -4260,28 +4260,40 @@ bool EECodeGenManager::TryFreeHostCodeHeapMemory(HostCodeHeap* pCodeHeap, void* 
         return false;
     }
 
-#if defined(FEATURE_EVENT_TRACE) && !defined(DACCESS_COMPILE)
-    CodeHeader* pCodeHeader = (CodeHeader*)((BYTE*)codeStart - sizeof(CodeHeader));
-    if (pCodeHeader->IsStubCodeBlock())
+    FreeHostCodeHeapMemoryWorker(pCodeHeap, codeStart);
+    return true;
+}
+
+bool EECodeGenManager::TryFreeJumpStubBlock(HostCodeHeap* pCodeHeap, JumpStubBlockHeader* pJumpStubBlock)
+{
+    CONTRACTL
     {
-        StubCodeBlockKind kind = pCodeHeader->GetStubCodeBlockKind();
-        _ASSERTE(kind == STUB_CODE_BLOCK_JUMPSTUB);
-        if (kind == STUB_CODE_BLOCK_JUMPSTUB)
-        {
-            JumpStubBlockHeader* jumpStubBlock = (JumpStubBlockHeader*)codeStart;
-            size_t blockSize = jumpStubBlock->GetBlockSize();
-            if (FitsInU4(blockSize))
-            {
-                ETW::MethodLog::HelperDestroyed(
-                    reinterpret_cast<ULONGLONG>(codeStart),
-                    static_cast<ULONG>(blockSize),
-                    GetStubCodeBlockKindStringW(kind));
-            }
-        }
+        NOTHROW;
+        GC_NOTRIGGER;
+        PRECONDITION(pCodeHeap != NULL);
+        PRECONDITION(pJumpStubBlock != NULL);
+    }
+    CONTRACTL_END;
+
+    CrstHolder ch(&m_CodeHeapLock);
+    if (m_iteratorCount != 0)
+    {
+        // If we are in the middle of an enumeration, we cannot destroy code heap memory.
+        return false;
+    }
+
+#if defined(FEATURE_EVENT_TRACE) && !defined(DACCESS_COMPILE)
+    size_t blockSize = pJumpStubBlock->GetBlockSize();
+    if (FitsInU4(blockSize))
+    {
+        ETW::MethodLog::HelperDestroyed(
+            reinterpret_cast<ULONGLONG>(pJumpStubBlock),
+            static_cast<ULONG>(blockSize),
+            GetStubCodeBlockKindStringW(STUB_CODE_BLOCK_JUMPSTUB));
     }
 #endif // FEATURE_EVENT_TRACE && !DACCESS_COMPILE
 
-    FreeHostCodeHeapMemoryWorker(pCodeHeap, codeStart);
+    FreeHostCodeHeapMemoryWorker(pCodeHeap, pJumpStubBlock);
     return true;
 }
 

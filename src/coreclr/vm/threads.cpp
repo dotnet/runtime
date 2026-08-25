@@ -1171,15 +1171,8 @@ void InitThreadManagerTracingData()
     ReportCopiedWriteBarriersToPerfMap();
 
 #ifdef FEATURE_EVENT_TRACE
-    EnumerateCopiedWriteBarriers([](PCODE address, size_t size, const char*, LPCWSTR name)
-    {
-        _ASSERTE(FitsInU4(size));
-        ETW::MethodLog::SendCopiedWriteBarrierEvent(
-            address,
-            static_cast<ULONG>(size),
-            name,
-            ETW::EnumerationLog::EnumerationStructs::JitMethodLoad);
-    });
+    ReportCopiedWriteBarriersToEventTracing(
+        ETW::EnumerationLog::EnumerationStructs::JitMethodLoad);
 #endif // FEATURE_EVENT_TRACE
 #endif // !FEATURE_PORTABLE_HELPERS
 }
