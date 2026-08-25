@@ -1,0 +1,69 @@
+<!--
+  Regenerates the checked-in CoreCLR WebAssembly call helpers under this directory.
+
+  Driven by generate-coreclr-helpers.sh / .cmd, which only parse arguments and hand the work
+  here, so the module list, the crossgen2 lookup and the scan paths are expressed once instead
+  of once per shell language. See generate-coreclr-helpers.md.
+
+  Properties:
+    Configuration     Debug (default), Release or Checked. Has to match the configuration the
+                      scanned assemblies were built in.
+    BrowserScanPath   Overrides the browser scan path.
+    WasiScanPath      Overrides the wasi scan path.
+-->
+<Project Sdk="Microsoft.Build.NoTargets">
+
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+  </PropertyGroup>
+
+  <!-- The framework P/Invoke modules, shared with the runtime tests' corerun relink so the
+       checked-in tables and the ones the tests generate cannot be edited apart. -->
+  <Import Project="$(RepositoryEngineeringDir)wasm\WasmPInvokeModules.props" />
+
+  <PropertyGroup>
+    <!-- The generator uses crossgen2's type system to compute the wasm ABI but never loads the
+         JIT, so the crossgen2 built for the host answers wasm questions correctly. -->
+    <_Crossgen2Path>$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'coreclr', '$(HostOS).$(BuildArchitecture).$(Configuration)', 'crossgen2', 'crossgen2.dll'))</_Crossgen2Path>
+    <_TesthostDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'testhost'))</_TesthostDir>
+    <_FrameworkVersion>$(MajorVersion).$(MinorVersion).0</_FrameworkVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <_WasmCallHelperTarget Include="browser">
+      <ScanPath Condition="'$(BrowserScanPath)' != ''">$([MSBuild]::EnsureTrailingSlash('$(BrowserScanPath)'))</ScanPath>
+      <ScanPath Condition="'$(BrowserScanPath)' == ''">$(_TesthostDir)$(NetCoreAppCurrent)-browser-$(Configuration)-wasm/shared/Microsoft.NETCore.App/$(_FrameworkVersion)/</ScanPath>
+    </_WasmCallHelperTarget>
+    <_WasmCallHelperTarget Include="wasi">
+      <ScanPath Condition="'$(WasiScanPath)' != ''">$([MSBuild]::EnsureTrailingSlash('$(WasiScanPath)'))</ScanPath>
+      <ScanPath Condition="'$(WasiScanPath)' == ''">$(_TesthostDir)$(NetCoreAppCurrent)-wasi-$(Configuration)-wasm/shared/Microsoft.NETCore.App/$(_FrameworkVersion)/</ScanPath>
+    </_WasmCallHelperTarget>
+  </ItemGroup>
+
+  <!-- Batched over _WasmCallHelperTarget: one crossgen2 run per wasm flavor. -->
+  <Target Name="GenerateCallHelpers" Outputs="%(_WasmCallHelperTarget.Identity)">
+    <PropertyGroup>
+      <_TargetOS>%(_WasmCallHelperTarget.Identity)</_TargetOS>
+      <_ScanPath>%(_WasmCallHelperTarget.ScanPath)</_ScanPath>
+      <_OutputDir>$(MSBuildThisFileDirectory)$(_TargetOS)/</_OutputDir>
+    </PropertyGroup>
+
+    <Error Condition="!Exists('$(_Crossgen2Path)')"
+           Text="crossgen2 was not found at $(_Crossgen2Path). Build the clr subset first: ./build.sh clr -c $(Configuration)" />
+    <Error Condition="!Exists('$(_ScanPath)')"
+           Text="Scan path for $(_TargetOS) does not exist: $(_ScanPath). Build the runtime first: ./build.sh clr+libs -os $(_TargetOS) -c $(Configuration)" />
+    <Error Condition="'@(WasmCoreClrFrameworkPInvokeModule)' == ''"
+           Text="No WasmCoreClrFrameworkPInvokeModule entries were found in $(RepositoryEngineeringDir)wasm/WasmPInvokeModules.props." />
+
+    <Message Importance="High" Text="[$(_TargetOS)] Scan path: $(_ScanPath)" />
+    <Message Importance="High" Text="[$(_TargetOS)] Output path: $(_OutputDir)" />
+
+    <MakeDir Directories="$(_OutputDir)" />
+
+    <!-- The scan glob is quoted so crossgen2 expands it. Passing the files individually would
+         blow the Windows command-line limit on a framework-sized closure. -->
+    <Exec Command="&quot;$(DOTNET_HOST_PATH)&quot; &quot;$(_Crossgen2Path)&quot; --targetos $(_TargetOS) --targetarch wasm --generate-portable-callhelpers &quot;$(_OutputDir)&quot; @(WasmCoreClrFrameworkPInvokeModule->'--directpinvoke %(Identity)', ' ') &quot;$(_ScanPath)*.dll&quot;"
+          WorkingDirectory="$(RepoRoot)" />
+  </Target>
+
+</Project>

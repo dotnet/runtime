@@ -62,84 +62,22 @@ echo "Repo root: $repo_root"
 
 cd "$repo_root"
 
-# Run the generator for a given target OS.
-# Arguments: <target_os> <scan_path> <output_dir>
-run_generator() {
-    local target_os="$1"
-    local scan_path="$2"
-    local output_dir="$3"
+# The scan paths, the crossgen2 lookup and the P/Invoke module list all live in the project next
+# to this script, so they are not restated here and in the .cmd.
+args=(
+    build "$script_dir/generate-coreclr-helpers.proj"
+    -t:GenerateCallHelpers
+    "-p:Configuration=$configuration"
+)
 
-    if [[ ! -d "$scan_path" ]]; then
-        echo "Error: Scan path for $target_os does not exist: $scan_path"
-        echo "Please build the runtime first using: ./build.sh clr+libs -os $target_os -c $configuration"
-        exit 1
-    fi
-
-    if [[ ! -f "$crossgen2" ]]; then
-        echo "Error: crossgen2 was not found at: $crossgen2"
-        echo "Please build the clr subset first using: ./build.sh clr -c $configuration"
-        exit 1
-    fi
-
-    echo "[$target_os] Scan path: $scan_path"
-    echo "[$target_os] Output path: $output_dir"
-    echo "Running generator for $target_os..."
-
-    local args=(
-        --targetos "$target_os"
-        --targetarch wasm
-        --generate-portable-callhelpers "$output_dir"
-    )
-    local module
-    for module in "${pinvoke_modules[@]}"; do
-        args+=(--directpinvoke "$module")
-    done
-
-    ./dotnet.sh "$crossgen2" "${args[@]}" "$scan_path"*.dll
-}
-
-# Modules the runtime links statically; a P/Invoke into any of them resolves to a direct call.
-# Read from the list the runtime tests' corerun relink imports, so the two cannot be edited apart.
-pinvoke_modules_file="$repo_root/eng/wasm/WasmPInvokeModules.props"
-if [[ ! -f "$pinvoke_modules_file" ]]; then
-    echo "Error: P/Invoke module list not found at: $pinvoke_modules_file" >&2
-    exit 1
-fi
-
-pinvoke_modules=()
-while IFS= read -r module; do
-    pinvoke_modules+=("$module")
-done < <(sed -n 's/.*<WasmCoreClrFrameworkPInvokeModule Include="\([^"]*\)".*/\1/p' "$pinvoke_modules_file")
-
-if [[ ${#pinvoke_modules[@]} -eq 0 ]]; then
-    echo "Error: no WasmCoreClrFrameworkPInvokeModule entries found in: $pinvoke_modules_file" >&2
-    exit 1
-fi
-
-# The generator lives in crossgen2 and uses its type system to compute the wasm ABI. Generation
-# does not load the JIT, so the host-targeting crossgen2 answers wasm questions correctly. Its
-# configuration has to match the one the scanned assemblies came from.
-crossgen2="$repo_root/artifacts/bin/coreclr/$(uname -s | tr '[:upper:]' '[:lower:]').$(uname -m).$configuration/crossgen2/crossgen2.dll"
-case "$(uname -s)" in
-    Darwin) crossgen2="${crossgen2/darwin./osx.}" ;;
-esac
-crossgen2="${crossgen2/aarch64./arm64.}"
-crossgen2="${crossgen2/x86_64./x64.}"
-
-# Resolve scan paths (allow overrides).
 if [[ -n "$browser_scan_path_override" ]]; then
-    browser_scan_path="$browser_scan_path_override"
-else
-    browser_scan_path="$repo_root/artifacts/bin/testhost/net11.0-browser-$configuration-wasm/shared/Microsoft.NETCore.App/11.0.0/"
+    args+=("-p:BrowserScanPath=$browser_scan_path_override")
 fi
 
 if [[ -n "$wasi_scan_path_override" ]]; then
-    wasi_scan_path="$wasi_scan_path_override"
-else
-    wasi_scan_path="$repo_root/artifacts/bin/testhost/net11.0-wasi-$configuration-wasm/shared/Microsoft.NETCore.App/11.0.0/"
+    args+=("-p:WasiScanPath=$wasi_scan_path_override")
 fi
 
-run_generator "browser" "$browser_scan_path" "$repo_root/src/coreclr/vm/wasm/browser/"
-run_generator "wasi" "$wasi_scan_path" "$repo_root/src/coreclr/vm/wasm/wasi/"
+./dotnet.sh "${args[@]}"
 
 echo "Done!"

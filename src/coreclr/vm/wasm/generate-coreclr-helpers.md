@@ -2,11 +2,15 @@
 
 The `generate-coreclr-helpers.cmd` (Windows) and `generate-coreclr-helpers.sh` (Linux/macOS)
 scripts in this directory regenerate the checked-in CoreCLR call-helper source files used by the
-WebAssembly runtime. They run crossgen2 in `--generate-portable-callhelpers` mode, which scans the managed
-framework assemblies and emits the native P/Invoke, reverse-P/Invoke, and interpreter-to-managed
-call helpers. The generator lives in
+WebAssembly runtime. They parse their arguments and hand the work to
+`generate-coreclr-helpers.proj` next to them, which runs crossgen2 in
+`--generate-portable-callhelpers` mode over the managed framework assemblies to emit the native
+P/Invoke, reverse-P/Invoke, and interpreter-to-managed call helpers. The generator lives in
 [`ILCompiler.ReadyToRun/Wasm`](../../tools/aot/ILCompiler.ReadyToRun/Wasm) so it can use crossgen2's
 type system to compute the wasm ABI layout of the structs that cross the boundary.
+
+Keeping the scan paths, the crossgen2 lookup and the module list in the project rather than in the
+scripts means they are stated once instead of once per shell language.
 
 The relink targets for browser and wasi apps run the same crossgen2 mode over the app's own
 assembly closure, so these checked-in files and a relinked app are produced by one code path.
@@ -27,7 +31,7 @@ Each run emits three files into the output directory:
 ## The P/Invoke module list
 
 Only the framework native libraries the runtime links statically get an entry in the generated
-P/Invoke table. These scripts read that list from
+P/Invoke table. `generate-coreclr-helpers.proj` imports that list from
 [`eng/wasm/WasmPInvokeModules.props`](../../../../eng/wasm/WasmPInvokeModules.props), which
 `CLRTest.WasmCorerun.targets` imports too when it links a test-specific corerun, so the checked-in
 tables and the tests' own cannot be edited apart.
