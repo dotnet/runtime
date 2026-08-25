@@ -58,20 +58,9 @@ class UrlValidationTests(unittest.TestCase):
             url,
         )
 
-    def test_rejects_unlisted_definition(self):
+    def test_accepts_any_positive_definition(self):
         url = ci_evidence_reader._azdo_builds_url(999)
-        with self.assertRaises(ci_evidence_reader.TransportError):
-            ci_evidence_reader._validate_url(url, {"azdo"})
-
-    def test_definition_allowlist_matches_workflow_table(self):
-        workflow = Path(__file__).parents[1] / "ci-failure-scan.md"
-        expected = {
-            int(line.split("|")[2].strip())
-            for line in workflow.read_text(encoding="utf-8").splitlines()
-            if line.startswith("| ") and line.count("|") >= 3
-            and line.split("|")[2].strip().isdigit()
-        }
-        self.assertEqual(tuple(sorted(expected)), ci_evidence_reader.DEFINITION_IDS)
+        ci_evidence_reader._validate_url(url, {"azdo"})
 
     def test_rejects_invalid_top_and_skip(self):
         for top in (1, 24, 26, 100):

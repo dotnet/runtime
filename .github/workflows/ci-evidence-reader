@@ -19,44 +19,6 @@ TIMEOUT_SECONDS = 30
 JSON_LIMIT = 16 * 1024 * 1024
 LOG_LIMIT = 64 * 1024 * 1024
 CHUNK_SIZE = 64 * 1024
-DEFINITION_IDS = (
-    108,
-    109,
-    110,
-    111,
-    112,
-    113,
-    114,
-    115,
-    116,
-    117,
-    118,
-    119,
-    120,
-    123,
-    124,
-    134,
-    136,
-    137,
-    138,
-    140,
-    141,
-    144,
-    145,
-    146,
-    150,
-    153,
-    154,
-    155,
-    159,
-    160,
-    230,
-    235,
-    265,
-    309,
-    316,
-    330,
-)
 ALLOWED_SKIPS = (0, 10, 20, 30, 40)
 AZDO_HOST = "dev.azure.com"
 AZDO_PATH_PREFIX = "/dnceng-public/public/_apis/build/"
@@ -161,17 +123,16 @@ def _validate_azdo_url(parts: urllib.parse.SplitResult, query: dict[str, str]) -
         if set(query) != expected_keys:
             raise TransportError("unexpected Azure DevOps build-list query parameters")
         try:
-            definition = int(query["definitions"])
+            definition = _positive_int(query["definitions"])
             top = int(query["$top"])
-        except ValueError as error:
+        except (ValueError, argparse.ArgumentTypeError) as error:
             raise TransportError("invalid Azure DevOps build-list query") from error
         try:
             skip = int(query["$skip"])
         except ValueError as error:
             raise TransportError("invalid Azure DevOps build-list query") from error
         if (
-            definition not in DEFINITION_IDS
-            or top != 25
+            top != 25
             or skip not in ALLOWED_SKIPS
         ):
             raise TransportError("Azure DevOps build-list query is outside permitted bounds")
@@ -449,15 +410,6 @@ def _positive_int(value: str) -> int:
     return parsed
 
 
-def _definition_id(value: str) -> int:
-    parsed = _positive_int(value)
-    if parsed not in DEFINITION_IDS:
-        raise argparse.ArgumentTypeError(
-            f"must be one of: {', '.join(str(item) for item in DEFINITION_IDS)}"
-        )
-    return parsed
-
-
 def _top(value: str) -> int:
     try:
         parsed = int(value)
@@ -614,7 +566,7 @@ def _parser() -> argparse.ArgumentParser:
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     builds = subparsers.add_parser("azdo-builds")
-    builds.add_argument("--definition", required=True, type=_definition_id)
+    builds.add_argument("--definition", required=True, type=_positive_int)
     builds.add_argument("--top", type=_top, default=25)
     builds.add_argument("--skip", type=_skip, default=0)
     builds.add_argument("--output", required=True)
