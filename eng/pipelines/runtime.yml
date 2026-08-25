@@ -50,7 +50,7 @@ pr:
 variables:
   - template: /eng/pipelines/common/variables.yml
   - name: enableHelixJobMonitor
-    value: false
+    value: true
   - template: /eng/pipelines/helix-platforms.yml
 
 extends:
@@ -71,6 +71,7 @@ extends:
           parameters:
             helixAccessToken: $(HelixApiAccessToken)
             timeoutInMinutes: 540
+            testResultUploadParallelism: 48
             # Some path-filtered builds intentionally submit no Helix jobs.
             allowNoHelixJobs: true
 
