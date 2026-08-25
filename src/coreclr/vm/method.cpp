@@ -381,7 +381,6 @@ LPCUTF8 MethodDesc::GetName()
     {
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS; // MethodImpl::FindMethodDesc can throw.
         GC_NOTRIGGER;
-        FORBID_FAULT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
@@ -498,7 +497,6 @@ void MethodDesc::GetSig(PCCOR_SIGNATURE *ppSig, DWORD *pcSig)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END
@@ -551,7 +549,6 @@ void MethodDesc::GetSigFromMetadata(IMDInternalImport * importer,
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END
@@ -765,7 +762,6 @@ DWORD MethodDesc::GetNumGenericMethodArgs()
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         CANNOT_TAKE_LOCK;
         SUPPORTS_DAC;
     }
@@ -810,7 +806,6 @@ Instantiation MethodDesc::GetExactClassInstantiation(TypeHandle possibleObjType)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END
@@ -861,7 +856,6 @@ Instantiation MethodDesc::LoadMethodInstantiation()
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
 
@@ -880,7 +874,6 @@ BOOL MethodDesc::ContainsGenericVariables()
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -1200,7 +1193,6 @@ ULONG MethodDesc::GetRVA()
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         SUPPORTS_DAC;
         PRECONDITION((IsIL() && MayHaveILHeader()) ||
             (IsPInvoke() && ((PInvokeMethodDesc*)this)->IsEarlyBound()));
@@ -1354,7 +1346,6 @@ ReturnKind MethodDesc::GetReturnKind()
     {
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -1471,7 +1462,6 @@ WORD MethodDesc::GetComSlot()
     {
         THROWS;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         PRECONDITION(!IsAsyncMethod());
     }
     CONTRACTL_END
@@ -1596,7 +1586,6 @@ Module *MethodDesc::GetModule() const
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
     SUPPORTS_DAC;
 
     MethodTable* pMT = GetMethodDescChunk()->GetMethodTable();
@@ -1774,7 +1763,6 @@ MethodDesc* MethodDesc::LoadTypicalMethodDefinition()
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
 
@@ -1875,7 +1863,6 @@ MethodDesc* MethodDesc::StripMethodInstantiation()
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -1896,7 +1883,6 @@ MethodDescChunk *MethodDescChunk::CreateChunk(LoaderHeap *pHeap, DWORD methodDes
     {
         THROWS;
         GC_NOTRIGGER;
-        INJECT_FAULT(ThrowOutOfMemory());
 
         PRECONDITION(CheckPointer(pHeap));
         PRECONDITION(CheckPointer(pInitialMT));
@@ -2180,7 +2166,6 @@ PCODE MethodDesc::GetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags /*
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END
 
@@ -2233,7 +2218,6 @@ PCODE MethodDesc::TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END
 
@@ -2641,7 +2625,6 @@ MethodImpl *MethodDesc::GetMethodImpl()
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         PRECONDITION(HasMethodImplSlot());
         SUPPORTS_DAC;
     }
@@ -2774,8 +2757,6 @@ void MethodDesc::CheckRestore(ClassLoadLevel level)
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_FAULT;
-
     if (!GetMethodTable()->IsFullyLoaded())
     {
         if (GetClassification() == mcInstantiated)
@@ -3567,7 +3548,6 @@ BOOL PInvokeMethodDesc::TryGetResolvedPInvokeTarget(_In_ PInvokeMethodDesc* pMD,
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(CheckPointer(pMD));
         PRECONDITION(CheckPointer(ndirectTarget));
     }
@@ -3766,7 +3746,6 @@ void PInvokeMethodDesc::InitEarlyBoundPInvokeTarget()
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
 
@@ -3798,7 +3777,6 @@ BOOL MethodDesc::HasUnmanagedCallersOnlyAttribute()
     {
         THROWS;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     }
     CONTRACTL_END;
 
@@ -3826,7 +3804,6 @@ BOOL MethodDesc::ShouldSuppressGCTransition()
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -3867,7 +3844,6 @@ void CLRToCOMCallMethodDesc::InitComEventCallInfo()
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END
 
@@ -4114,7 +4090,6 @@ REFLECTMETHODREF MethodDesc::AllocateStubMethodInfo()
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
         MODE_COOPERATIVE;
     }
     CONTRACTL_END;

@@ -269,7 +269,6 @@ DispatchMapBuilderNode * DispatchMapBuilder::NewEntry()
     CONTRACTL {
         THROWS;
         GC_NOTRIGGER;
-        INJECT_FAULT(COMPlusThrowOM());
     } CONTRACTL_END;
 
     return new (m_pAllocator) DispatchMapBuilderNode();
@@ -312,7 +311,6 @@ DispatchMap::CreateEncodedMapping(
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pMapBuilder));
         PRECONDITION(CheckPointer(pAllocator));
         PRECONDITION(CheckPointer(ppbMap));
@@ -673,7 +671,6 @@ DispatchMapEntry * DispatchMap::Iterator::Entry()
         MODE_ANY;
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
         PRECONDITION(IsValid());
     } CONTRACTL_END;
 */
