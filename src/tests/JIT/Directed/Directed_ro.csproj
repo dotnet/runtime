@@ -105,6 +105,7 @@
     <MergedWrapperProjectReference Include="rvastatics\rvastatic4.ilproj" />
     <MergedWrapperProjectReference Include="rvastatics\rvastatic5.ilproj" />
     <MergedWrapperProjectReference Include="StructABI\EmptyStructs.csproj" />
+    <MergedWrapperProjectReference Include="StructABI\FieldListFloatInsertion.csproj" />
     <MergedWrapperProjectReference Include="StructABI\StructABI.csproj" />
     <MergedWrapperProjectReference Include="tailcall\more_tailcalls.ilproj" />
     <MergedWrapperProjectReference Include="tailcall\tailcall.ilproj" />
