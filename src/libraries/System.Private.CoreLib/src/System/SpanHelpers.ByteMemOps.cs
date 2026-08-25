@@ -251,7 +251,7 @@ namespace System
             }
 
 #if (TARGET_AMD64 || TARGET_ARM64) && !MONO
-            // Handle left shifts in managed code under the threshold. 
+            // Handle left shifts in managed code under the threshold.
             // Right shifts had no issues on all tested platforms with the platform memmove.
             if (Vector128.IsHardwareAccelerated &&
                 len <= OverlappedForwardThreshold && (nuint)Unsafe.ByteOffset(ref dest, ref src) < len)
@@ -267,8 +267,7 @@ namespace System
             _ = Unsafe.ReadUnaligned<byte>(ref dest);
             _ = Unsafe.ReadUnaligned<byte>(ref src);
 #if !MONO
-            // The GC transition costs more than a copy this size. Bounded by the same chunk
-            // BulkMoveWithWriteBarrier uses: that is how long the GC can be held off waiting for us.
+            // Skip the GC transition for small copies.
             if (len <= Buffer.BulkMoveWithWriteBarrierChunk)
             {
                 MemmoveNativeNoGCTransition(ref dest, ref src, len);
@@ -287,8 +286,8 @@ namespace System
         {
             Debug.Assert(len > 0);
 
-            // Align the destination - only one side can be, and stores suffer more than loads. Worth the
-            // extra leading block only on larger copies.
+            // Align the destination - only one side can be, and stores suffer more than loads.
+            // Worth the extra leading block only on larger copies.
             if (len >= 2048)
             {
                 nuint head = 64 - Unsafe.OpportunisticMisalignment(ref dest, 64);
