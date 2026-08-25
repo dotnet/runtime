@@ -41,13 +41,14 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
     [Theory]
     [InlineData(Configuration.Debug, false)]
     [InlineData(Configuration.Release, false)]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/132410", typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
     public async Task BlazorEventPipeTestWithCpuSamples(Configuration config, bool aot)
     {
+        // force no R2R until https://github.com/dotnet/runtime/issues/130521
         string extraProperties = @"
                 <WasmPerformanceInstrumentation>all,interval=0</WasmPerformanceInstrumentation>
                 <EnableDiagnostics>true</EnableDiagnostics>
                 <WasmDebugLevel>0</WasmDebugLevel>
+                <PublishReadyToRun>false</PublishReadyToRun>
                 <WBTDevServer>true</WBTDevServer>
             ";
 
