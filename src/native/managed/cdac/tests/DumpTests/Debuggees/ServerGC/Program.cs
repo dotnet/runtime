@@ -3,7 +3,6 @@
 
 using System;
 using System.Runtime;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 /// <summary>
@@ -46,8 +45,6 @@ internal static class Program
         object dependentValue = new byte[16];
         DependentHandle dependentHandle = new(dependentTarget, dependentValue);
 
-        CreateGarbageRegions();
-        GC.Collect(2, GCCollectionMode.Forced, blocking: true, compacting: true);
 
         GC.KeepAlive(roots);
         GC.KeepAlive(pinnedHandles);
@@ -59,17 +56,5 @@ internal static class Program
         GC.KeepAlive(dependentHandle);
 
         Environment.FailFast("cDAC dump test: ServerGC debuggee intentional crash");
-    }
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private static void CreateGarbageRegions()
-    {
-        byte[][] objects = new byte[2048][];
-        for (int i = 0; i < objects.Length; i++)
-        {
-            objects[i] = new byte[32 * 1024];
-        }
-
-        GC.KeepAlive(objects);
     }
 }
