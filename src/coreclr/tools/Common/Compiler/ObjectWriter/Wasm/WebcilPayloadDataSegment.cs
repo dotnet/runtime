@@ -17,7 +17,6 @@ namespace ILCompiler.ObjectWriter
         private readonly WebcilHeader _header;
         private readonly WebcilSection[] _sections;
         private readonly int _alignment;
-        private int _padding;
 
         public WebcilPayloadDataSegment(
             WebcilHeader header,
@@ -56,7 +55,7 @@ namespace ILCompiler.ObjectWriter
 
         public WasmDataSegmentType SegmentType => WasmDataSegmentType.Passive;
 
-        public int EncodeSize() => HeaderSize + RawContentSize + _padding;
+        public int EncodeSize() => HeaderSize + RawContentSize;
 
         public int EmitToStream(Stream outputFileStream)
         {
@@ -65,7 +64,7 @@ namespace ILCompiler.ObjectWriter
                 headerBuffer,
                 WasmDataSegmentType.Passive,
                 initExpr: null,
-                RawContentSize + _padding);
+                RawContentSize);
             Debug.Assert(headerSize == HeaderSize);
             outputFileStream.Write(headerBuffer);
 
@@ -91,7 +90,6 @@ namespace ILCompiler.ObjectWriter
             WasmDataSegmentEncoding.EmitPadding(
                 outputFileStream,
                 (int)(payloadEnd - outputFileStream.Position));
-            WasmDataSegmentEncoding.EmitPadding(outputFileStream, _padding);
 
             return EncodeSize();
         }

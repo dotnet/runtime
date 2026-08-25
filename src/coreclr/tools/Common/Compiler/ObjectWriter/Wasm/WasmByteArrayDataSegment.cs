@@ -19,7 +19,6 @@ namespace ILCompiler.ObjectWriter
         private int _memoryOffset;
         private readonly byte[] _contents;
         private readonly WasmDataSegmentType _type;
-        private int _padding;
 
         public WasmByteArrayDataSegment(
             byte[] contents,
@@ -40,7 +39,7 @@ namespace ILCompiler.ObjectWriter
         public Utf8String Name { get; }
         public int Alignment { get; }
         public int HeaderSize => WasmDataSegmentEncoding.GetHeaderSize(_type, GetInitExpr());
-        public int ContentSize => _contents.Length + _padding;
+        public int ContentSize => _contents.Length;
         public int RawContentSize => _contents.Length;
         public WasmDataSegmentType SegmentType => _type;
 
@@ -58,9 +57,8 @@ namespace ILCompiler.ObjectWriter
             outputFileStream.Write(headerBuffer);
 
             outputFileStream.Write(_contents);
-            WasmDataSegmentEncoding.EmitPadding(outputFileStream, _padding);
 
-            return headerSize + _contents.Length + _padding;
+            return headerSize + _contents.Length;
         }
         private WasmInstructionGroup GetInitExpr() => _type == WasmDataSegmentType.Active ? new WasmInstructionGroup([I32.Const(_memoryOffset)]) : null;
 

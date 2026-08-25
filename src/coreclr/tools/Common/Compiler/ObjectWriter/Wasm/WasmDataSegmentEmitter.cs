@@ -16,7 +16,6 @@ namespace ILCompiler.ObjectWriter
     internal sealed class WasmDataSegmentEmitter : SectionDataEmitter, IWasmDataSegment
     {
         private int _alignment = 1;
-        private int _padding;
         private int _memoryOffset;
 
         public WasmDataSegmentEmitter(
@@ -38,7 +37,7 @@ namespace ILCompiler.ObjectWriter
             _alignment = Math.Max(_alignment, alignment);
         }
 
-        public override int EncodeSize() => HeaderSize + RawContentSize + _padding;
+        public override int EncodeSize() => HeaderSize + RawContentSize;
 
         public override int EmitToStream(Stream outputFileStream)
         {
@@ -47,13 +46,12 @@ namespace ILCompiler.ObjectWriter
                 headerBuffer,
                 WasmDataSegmentType.Active,
                 GetMemoryOffsetInitExpr(),
-                RawContentSize + _padding);
+                RawContentSize);
             Debug.Assert(headerSize == HeaderSize);
             outputFileStream.Write(headerBuffer);
 
             ContentReadStream.Position = 0;
             ContentReadStream.CopyTo(outputFileStream);
-            WasmDataSegmentEncoding.EmitPadding(outputFileStream, _padding);
 
             return EncodeSize();
         }
