@@ -3678,12 +3678,6 @@ void Compiler::fgDebugCheckFlagsHelper(GenTree* tree, GenTreeFlags actualFlags, 
 //
 void Compiler::fgDebugCheckNodeLinks(BasicBlock* block, Statement* stmt)
 {
-    // LIR blocks are checked using BasicBlock::CheckLIR().
-    if (block->IsLIR())
-    {
-        LIR::AsRange(block).CheckLIR(this);
-        // TODO: return?
-    }
 
     assert(fgNodeThreading != NodeThreading::None);
 
@@ -3937,7 +3931,7 @@ void Compiler::fgDebugCheckLinks()
     {
         if (block->IsLIR())
         {
-            LIR::AsRange(block).CheckLIR(this);
+            LIR::AsRange(block).CheckLIR(this, hasFlag(activePhaseChecks, PhaseChecks::CHECK_LIR_UNUSED_VALUES));
         }
         else
         {
@@ -3945,7 +3939,6 @@ void Compiler::fgDebugCheckLinks()
         }
     }
 
-    fgDebugCheckNodesUniqueness();
     fgDebugCheckSsa();
 }
 

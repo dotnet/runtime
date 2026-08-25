@@ -399,53 +399,6 @@ LOCAL_LABEL(GoCallVarargWorker):
     jmp C_FUNC(VarargPInvokeStub)
 NESTED_END VarargPInvokeStub, _TEXT
 
-// ==========================================================================
-// Invoked for marshaling-required unmanaged CALLI calls as a stub.
-// EAX       - the unmanaged target
-// ECX, EDX  - arguments
-// EBX       - the VASigCookie
-//
-LEAF_ENTRY GenericPInvokeCalliHelper, _TEXT
-
-    cmp     dword ptr [ebx + VASigCookie__StubOffset], 0
-    jz      LOCAL_LABEL(GoCallCalliWorker)
-
-    // Stub is already prepared, just jump to it
-    jmp     dword ptr [ebx + VASigCookie__StubOffset]
-
-LOCAL_LABEL(GoCallCalliWorker):
-    //
-    // call the stub generating worker
-    // target ptr in EAX, VASigCookie ptr in EBX
-    //
-
-    STUB_PROLOG
-
-    mov         esi, esp
-
-    // save target
-    push        eax
-
-    #define STACK_ALIGN_PADDING 4
-    sub         esp, STACK_ALIGN_PADDING    // pass stack aligned to 0x10
-    push        eax                         // unmanaged target
-    push        ebx                         // pVaSigCookie (first stack argument)
-    push        esi                         // pTransitionBlock
-
-    CHECK_STACK_ALIGNMENT
-    call        C_FUNC(GenericPInvokeCalliStubWorker)
-    add         esp, STACK_ALIGN_PADDING    // restore alignment, callee pop args
-    #undef STACK_ALIGN_PADDING
-
-    // restore target
-    pop     eax
-
-    STUB_EPILOG
-
-    // jump back to the helper - this time it won't come back here as the stub already exists
-    jmp C_FUNC(GenericPInvokeCalliHelper)
-LEAF_END GenericPInvokeCalliHelper, _TEXT
-
 #ifdef FEATURE_READYTORUN
 NESTED_ENTRY DynamicHelperArgsStub, _TEXT, NoHandler
     .cfi_def_cfa_offset 16
