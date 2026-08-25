@@ -187,6 +187,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
         {
             var coreLibDir = (string)AppContext.GetData("Mono.Linker.Tests.CoreCLRArtifactsPath")!;
             var libDir = (string)AppContext.GetData("Mono.Linker.Tests.MicrosoftNetCoreAppRuntimePackDirectory")!;
+            // coreLibDir is searched first so its copy of an assembly (e.g. System.Private.CoreLib) wins
+            // if the same assembly also exists in libDir.
+            var seenAssemblyNames = new HashSet<string>();
             foreach (var assembly in Directory.EnumerateFiles(coreLibDir).Concat(Directory.EnumerateFiles(libDir)))
             {
                 if (Path.GetExtension(assembly) != ".dll")
@@ -194,9 +197,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
                 var assemblyName = Path.GetFileNameWithoutExtension(assembly);
                 if (assemblyName.Contains("Native"))
                     continue;
-                if (assemblyName.StartsWith("Microsoft") ||
+                if ((assemblyName.StartsWith("Microsoft") ||
                     assemblyName.StartsWith("System") ||
-                    assemblyName == "mscorlib" || assemblyName == "netstandard")
+                    assemblyName == "mscorlib" || assemblyName == "netstandard") &&
+                    seenAssemblyNames.Add(assemblyName))
                     yield return assembly.ToNPath();
             }
         }
