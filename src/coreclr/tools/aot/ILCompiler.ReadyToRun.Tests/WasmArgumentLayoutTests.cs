@@ -280,7 +280,7 @@ public class WasmArgumentLayoutTests
         Assert.Equal(8, alignedEight.InstanceFieldAlignment.AsInt);
         Assert.Equal(32, autoLayout.InstanceFieldSize.AsInt);
         Assert.Equal(16, autoLayout.InstanceFieldAlignment.AsInt);
-        Assert.Equal(8, CorInfoImpl.GetClassAlignmentRequirementStatic(autoLayout));
+        Assert.Equal(8, CompilerTypeSystemContext.GetClassAlignmentRequirementStatic(autoLayout));
 
         MethodSignature autoLayoutSignature = MakeProbeSignature(context, autoLayout);
         MethodSignature alignedEightSignature = MakeProbeSignature(context, alignedEight);

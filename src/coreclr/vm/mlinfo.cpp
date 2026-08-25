@@ -2081,6 +2081,14 @@ VOID MarshalInfo::EmitOrThrowInteropParamException(PInvokeStubLinker* psl, BOOL 
     }
 #endif // FEATURE_COMINTEROP
 
+    // An unmanaged CALLI stub is created while the calli's caller is being jitted, so its failures
+    // have to be reported when the stub is called rather than failing that compilation.
+    if (SF_IsCALLIStub(psl->GetStubFlags()))
+    {
+        psl->SetInteropParamExceptionInfo(resID, paramIdx);
+        return;
+    }
+
     ThrowInteropParamException(resID, paramIdx);
 }
 

@@ -57,6 +57,7 @@ extern "C" QCallExceptionStatus QCALLTYPE InterfaceMarshaler_ValidateComVisibili
 #endif
 
 extern "C" QCallExceptionStatus QCALLTYPE StubHelpers_ThrowInteropParamException(INT resID, INT paramIdx);
+extern "C" QCallExceptionStatus QCALLTYPE StubHelpers_ThrowInteropException(INT exceptionKind, INT resID);
 
 extern "C" QCallExceptionStatus QCALLTYPE StubHelpers_MarshalToManagedVaList(va_list va, VARARGS* pArgIterator);
 extern "C" QCallExceptionStatus QCALLTYPE StubHelpers_MarshalToUnmanagedVaList(va_list va, DWORD cbVaListSize, const VARARGS* pArgIterator);

@@ -2191,6 +2191,10 @@ namespace System.StubHelpers
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_ThrowInteropParamException")]
         internal static safe partial void ThrowInteropParamException(int resID, int paramIdx);
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_ThrowInteropException")]
+        internal static partial void ThrowInteropException(int exceptionKind, int resID);
+
         internal static IntPtr AddToCleanupList(ref CleanupWorkListElement? pCleanupWorkList, SafeHandle handle)
         {
             SafeHandleCleanupWorkListElement element = new SafeHandleCleanupWorkListElement(handle);
