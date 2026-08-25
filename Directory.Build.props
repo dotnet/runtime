@@ -156,6 +156,13 @@
     <WasmAppBuilderTasksAssemblyPath>$([MSBuild]::NormalizePath('$(WasmAppBuilderDir)', 'WasmAppBuilder.dll'))</WasmAppBuilderTasksAssemblyPath>
     <WasmBuildTasksAssemblyPath>$([MSBuild]::NormalizePath('$(WasmBuildTasksDir)', 'WasmBuildTasks.dll'))</WasmBuildTasksAssemblyPath>
     <WasmAppHostDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WasmAppHost', 'wasm', '$(Configuration)'))</WasmAppHostDir>
+    <!-- Wasm.Build.Tests generates this at build time by scanning its own test assembly, and
+         sendtohelix-browser.targets reads it to fan the tests out into per-class Helix work items.
+         The flavor is normalized because the pipeline spells $(RuntimeFlavor) differently ('Mono'
+         when building, 'mono' when sending to Helix) and this ends up in a file name. -->
+    <_WasmBuildTestsJobsListFlavor Condition="'$(RuntimeFlavor)' == 'CoreCLR'">coreclr</_WasmBuildTestsJobsListFlavor>
+    <_WasmBuildTestsJobsListFlavor Condition="'$(_WasmBuildTestsJobsListFlavor)' == ''">mono</_WasmBuildTestsJobsListFlavor>
+    <WasmBuildTestsJobsListFile>$([MSBuild]::NormalizePath('$(ArtifactsObjDir)', 'Wasm.Build.Tests', 'BuildWasmAppsJobsList.$(_WasmBuildTestsJobsListFlavor).txt'))</WasmBuildTestsJobsListFile>
     <WorkloadBuildTasksAssemblyPath>$([MSBuild]::NormalizePath('$(WorkloadBuildTasksDir)', 'WorkloadBuildTasks.dll'))</WorkloadBuildTasksAssemblyPath>
     <LibraryBuilderTasksAssemblyPath>$([MSBuild]::NormalizePath('$(LibraryBuilderDir)', 'LibraryBuilder.dll'))</LibraryBuilderTasksAssemblyPath>
     <MonoAOTCompilerTasksAssemblyPath>$([MSBuild]::NormalizePath('$(MonoAOTCompilerDir)', 'MonoAOTCompiler.dll'))</MonoAOTCompilerTasksAssemblyPath>
