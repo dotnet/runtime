@@ -28,6 +28,12 @@ namespace Mono.Linker.Tests.TestCases
             return TestCasesBySuiteName("Attributes");
         }
 
+        public static IEnumerable<object[]> AttributeTestsShard(int shardIndex, int shardCount)
+        {
+            return TestCasesBySuiteName("Attributes")
+                .Where((_, index) => index % shardCount == shardIndex);
+        }
+
         public static IEnumerable<object[]> AttributesStructLayoutTests()
         {
             return TestCasesBySuiteName("Attributes.StructLayout");
@@ -73,6 +79,12 @@ namespace Mono.Linker.Tests.TestCases
             return TestCasesBySuiteName("DataFlow");
         }
 
+        public static IEnumerable<object[]> DataFlowTestsShard(int shardIndex, int shardCount)
+        {
+            return TestCasesBySuiteName("DataFlow")
+                .Where((_, index) => index % shardCount == shardIndex);
+        }
+
         public static IEnumerable<object[]> DynamicDependenciesTests()
         {
             return TestCasesBySuiteName("DynamicDependencies");
@@ -111,6 +123,12 @@ namespace Mono.Linker.Tests.TestCases
         public static IEnumerable<object[]> InheritanceInterfaceTests()
         {
             return TestCasesBySuiteName("Inheritance.Interfaces");
+        }
+
+        public static IEnumerable<object[]> InheritanceInterfaceTestsShard(int shardIndex, int shardCount)
+        {
+            return TestCasesBySuiteName("Inheritance.Interfaces")
+                .Where((_, index) => index % shardCount == shardIndex);
         }
 
         public static IEnumerable<object[]> InheritanceVirtualMethodsTests()
