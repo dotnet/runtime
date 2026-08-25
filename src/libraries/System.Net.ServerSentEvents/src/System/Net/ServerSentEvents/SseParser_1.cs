@@ -542,8 +542,6 @@ namespace System.Net.ServerSentEvents
         }
 
         /// <summary>Grows the buffer, returning the existing one to the ArrayPool and renting an ArrayPool replacement.</summary>
-        /// <param name="buffer">The buffer to extend on input; the newly extended buffer on output.</param>
-        /// <param name="minimumSize">A lambda that computes the required buffer length using checked operations.</param>
         private void GrowBuffer([NotNull] ref byte[]? buffer, uint minimumSize)
         {
             int currentSize = buffer?.Length ?? 0;
