@@ -10,7 +10,10 @@ being generated.
     manifests for `wasm-tools*`, but does not have the workload installed.
     Typically installed in `artifacts/bin/dotnet-none`.
 
-- On CI, both workload, and no-workload cases are tested
+- On CI, both workload, and no-workload cases are tested, for both the Mono and
+  the CoreCLR runtime flavor. The `wasm-tools` workload supports both flavors, so
+  the two flavors run the same two lanes; only the set of test classes differs
+  (see `eng/testing/scenarios/BuildWasmAppsJobsList*.txt`).
 
 - Running:
 

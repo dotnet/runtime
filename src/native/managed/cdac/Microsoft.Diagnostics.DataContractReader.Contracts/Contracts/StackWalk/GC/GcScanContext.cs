@@ -37,9 +37,9 @@ internal class GcScanContext
         _gc = target.Contracts.GC;
         _rts = target.Contracts.RuntimeTypeSystem;
         _cache = new LinearReadCache(target);
-        _numComponentsOffsetArray = (uint)target.GetTypeInfo(DataType.Array).Fields[Constants.FieldNames.Array.NumComponents].Offset;
-        _numComponentsOffsetString = (uint)target.GetTypeInfo(DataType.String).Fields["m_StringLength"].Offset;
-        _methodTableOffset = (ulong)target.GetTypeInfo(DataType.Object).Fields["m_pMethTab"].Offset;
+        _numComponentsOffsetArray = (uint)Data.Array.GetNumComponentsOffset(target);
+        _numComponentsOffsetString = (uint)Data.String.GetStringLengthOffset(target);
+        _methodTableOffset = (ulong)Data.Object.GetMethodTableOffset(target);
         _objectToMethodTableUnmask = target.ReadGlobal<byte>(Constants.Globals.ObjectToMethodTableUnmask);
     }
 
@@ -171,7 +171,7 @@ internal class GcScanContext
         size = 0;
         try
         {
-            TypeHandle handle = _rts.GetTypeHandle(mt);
+            ITypeHandle handle = _rts.GetTypeHandle(mt);
             ulong baseSize = _rts.GetBaseSize(handle);
             uint componentSize = _rts.GetComponentSize(handle);
             uint numComponentsOffset = 0;

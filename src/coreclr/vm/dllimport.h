@@ -17,8 +17,7 @@ struct StubSigDesc
 public:
     StubSigDesc(MethodDesc* pMD);
     StubSigDesc(MethodDesc*  pMD, const Signature& sig, Module* pModule, Module* pLoaderModule = NULL);
-    StubSigDesc(MethodTable* pMT, const Signature& sig, Module* pModule);
-    StubSigDesc(const Signature& sig, Module* pModule);
+    StubSigDesc(const Signature& sig, Module* pModule, Module* pLoaderModule = NULL);
 
     MethodDesc        *m_pMD;
     MethodTable       *m_pMT;
@@ -126,6 +125,16 @@ public:
                     CorNativeLinkFlags       nlFlags,
                     CorInfoCallConvExtension unmgdCallConv,
                     DWORD                    dwStubFlags); // PInvokeStubFlags
+
+    // Creates the IL stub that marshals an unmanaged calli call site described by
+    // calliSignature. Returns NULL if the call site does not describe an unmanaged call, or if
+    // no marshaling is required and fMustCreate is false (in which case the caller - the JIT -
+    // can emit the unmanaged call inline instead).
+    static MethodDesc* CreateCalliILStub(
+                    Module*                  pModule,
+                    const Signature&         calliSignature,
+                    const SigTypeContext*    pTypeContext,
+                    bool                     fMustCreate);
 
     static COR_ILMETHOD_DECODER* CreatePInvokeMethodIL(
                     PInvokeMethodDesc* pMD,
@@ -461,6 +470,9 @@ public:
 
     void    SetCallingConvention(CorInfoCallConvExtension unmngCallConv, BOOL fIsVarArg);
 
+    // For unmanaged CALLI stubs, the native target is passed in as the last argument of the stub.
+    void    SetCalliTargetArgIndex(UINT uArgIdx);
+
     void    Begin(DWORD dwStubFlags);
     void    End(DWORD dwStubFlags);
     void    DoPInvoke(ILCodeStream *pcsEmit, DWORD dwStubFlags, MethodDesc * pStubMD);
@@ -491,6 +503,19 @@ public:
 
     void    SetInteropParamExceptionInfo(UINT resID, UINT paramIdx);
     bool    HasInteropParamExceptionInfo();
+
+    // Records an interop failure that is not tied to a single parameter and that must be reported
+    // when the stub is called rather than while it is being generated. The stub body becomes a
+    // single throw - see code:PInvokeStubLinker::GenerateInteropException.
+    void    SetInteropExceptionInfo(RuntimeExceptionKind kind, UINT resID);
+    bool    HasInteropExceptionInfo();
+    void    GenerateInteropException(ILCodeStream* pcsEmit);
+
+    DWORD   GetStubFlags() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_dwStubFlags;
+    }
     bool    TargetHasThis()
     {
         return m_targetHasThis == TRUE;
@@ -557,7 +582,10 @@ protected:
 
     UINT                m_ErrorResID;
     UINT                m_ErrorParamIdx;
+    RuntimeExceptionKind m_ExceptionKind;
+    UINT                m_ExceptionResID;
     int                 m_iLCIDParamIdx;
+    UINT                m_uCalliTargetArgIdx;
 
     DWORD               m_dwStubFlags;
 };

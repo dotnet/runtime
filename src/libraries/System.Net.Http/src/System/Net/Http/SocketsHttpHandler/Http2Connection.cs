@@ -81,9 +81,6 @@ namespace System.Net.Http
 
         private const int MaxStreamId = int.MaxValue;
 
-        // Temporary workaround for request burst handling on connection start.
-        internal const int InitialMaxConcurrentStreams = 100;
-
         private static ReadOnlySpan<byte> Http2ConnectionPreface => "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n"u8;
 
 #if DEBUG
@@ -134,9 +131,11 @@ namespace System.Net.Http
         private long _nextPingRequestTimestamp;
         private long _keepAlivePingTimeoutTimestamp;
         private volatile KeepAliveState _keepAliveState;
+        /// <summary>Set once <see cref="SetupAsync"/> completes. Until then, no keep alive PINGs are sent.</summary>
+        private bool _setupComplete;
 
-        public Http2Connection(HttpConnectionPool pool, Stream stream, Activity? connectionSetupActivity, IPEndPoint? remoteEndPoint)
-            : base(pool, connectionSetupActivity, remoteEndPoint)
+        public Http2Connection(HttpConnectionPool pool, Stream stream, Activity? connectionSetupActivity, IPEndPoint? remoteEndPoint, long connectionId)
+            : base(pool, connectionId, connectionSetupActivity, remoteEndPoint)
         {
             _stream = stream;
 
@@ -175,6 +174,10 @@ namespace System.Net.Http
             }
 
             if (NetEventSource.Log.IsEnabled()) TraceConnection(_stream);
+
+            // Register with the pool before doing anything that may tear the connection down,
+            // so that the pool can run keep alive ping logic for the whole lifetime of the connection.
+            pool.AddHttp2ConnectionForHeartBeat(this);
 
             static long TimeSpanToMs(TimeSpan value)
             {
@@ -270,6 +273,9 @@ namespace System.Net.Http
             {
                 _ = ProcessOutgoingFramesAsync();
             }
+
+            // The connection is now able to write frames, so it may start sending keep alive PINGs.
+            _setupComplete = true;
         }
 
         private void Shutdown()
@@ -861,7 +867,14 @@ namespace System.Net.Http
                     switch ((SettingId)settingId)
                     {
                         case SettingId.MaxConcurrentStreams:
-                            _pool._lastSeenHttp2MaxConcurrentStreams = settingValue;
+                            // Only memorize the value for future connections if it's lower than what we're
+                            // configured to start with. SocketsHttpHandler.InitialHttp2MaxConcurrentStreams
+                            // acts as the upper bound for what every new connection starts with.
+                            if (settingValue < _pool.Settings._initialHttp2MaxConcurrentStreams)
+                            {
+                                _pool._lastSeenHttp2MaxConcurrentStreams = settingValue;
+                            }
+
                             ChangeMaxConcurrentStreams(settingValue);
                             maxConcurrentStreamsReceived = true;
                             break;
@@ -1353,8 +1366,27 @@ namespace System.Net.Http
         {
             Debug.Assert(!_pool.HasSyncObjLock);
 
-            if (_shutdown)
+            if (!_setupComplete)
+            {
+                // The connection is still being established. It can't send PINGs yet, and a server that
+                // never completes the handshake is the connect timeout's responsibility, not ours.
                 return;
+            }
+
+            if (_shutdown)
+            {
+                // The connection is shutting down (e.g. we received a GOAWAY frame), but it may still be
+                // processing existing requests. Keep sending PINGs while it does, as that's the only way
+                // to detect that the server became unresponsive. Once the last stream completes, the
+                // connection is torn down and unregistered from the pool, so we'll stop being called.
+                lock (SyncObject)
+                {
+                    if (_streamsInUse == 0)
+                    {
+                        return;
+                    }
+                }
+            }
 
             try
             {
@@ -1913,6 +1945,8 @@ namespace System.Net.Http
             // ProcessIncomingFramesAsync and ProcessOutgoingFramesAsync respectively, and those methods are
             // responsible for returning the buffers.
 
+            _pool.RemoveHttp2ConnectionFromHeartBeat(this);
+
             MarkConnectionAsClosed();
         }
 
@@ -2043,6 +2077,8 @@ namespace System.Net.Http
 
         public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
+            request.ConnectionId = Id;
+
             Debug.Assert(async);
             Debug.Assert(!_pool.HasSyncObjLock);
             if (NetEventSource.Log.IsEnabled()) Trace($"Sending request: {request}");
