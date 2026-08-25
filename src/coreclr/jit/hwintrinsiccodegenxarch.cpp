@@ -2884,6 +2884,24 @@ void CodeGen::genX86BaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
 }
 
 //------------------------------------------------------------------------
+// ClearUnusedMaskBits: Zeroes up to 8 bits of the mask register, for small lane counts
+//
+// Arguments:
+//    maskReg - The mask register to clear the unused bits of
+//    count   - The number of live lanes in the mask, which must be less than 8
+//
+void CodeGen::ClearUnusedMaskBits(regNumber maskReg, uint32_t count)
+{
+    assert((count == 2) || (count == 4));
+    assert(emitter::isMaskReg(maskReg));
+
+    emitter* emit = GetEmitter();
+
+    emit->emitIns_R_R_I(INS_kshiftlb, EA_8BYTE, maskReg, maskReg, (int8_t)(8 - count));
+    emit->emitIns_R_R_I(INS_kshiftrb, EA_8BYTE, maskReg, maskReg, (int8_t)(8 - count));
+}
+
+//------------------------------------------------------------------------
 // genAvxFamilyIntrinsic: Generates the code for an AVX/AVX2/AVX512 hardware intrinsic node
 //
 // Arguments:
@@ -3424,6 +3442,15 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
             assert(emitter::isMaskReg(op1Reg));
 
             emit->emitIns_R_R(ins, EA_8BYTE, targetReg, op1Reg);
+
+            if (count < 8)
+            {
+                // Emit shifts to clear bits N to 7 for 2-bit or 4-bit NotMask.
+                // There is no 2 or 4-bit knot*.  Normally not an issue, but would cause wrong codegen
+                // if k is used in a kmovb+POPCNT for example.
+
+                ClearUnusedMaskBits(targetReg, count);
+            }
             break;
         }
 
@@ -3626,6 +3653,13 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
 
             // Use EA_32BYTE to ensure the VEX.L bit gets set
             emit->emitIns_R_R_R(ins, EA_32BYTE, targetReg, op1Reg, op2Reg);
+
+            if (count < 8)
+            {
+                // Same issue here as with knotb/NI_AVX512_NotMask above.
+
+                ClearUnusedMaskBits(targetReg, count);
+            }
             break;
         }
 

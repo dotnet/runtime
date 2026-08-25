@@ -20,3 +20,4 @@ steps:
       osGroup: ${{ parameters.osGroup }}
       archType: ${{ parameters.archType }}
       shouldContinueOnError: ${{ parameters.continueOnError }}
+      publishTestResults: true
