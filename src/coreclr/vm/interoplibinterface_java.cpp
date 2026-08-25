@@ -134,9 +134,8 @@ void Interop::FinishCrossReferenceProcessing(
     ReleaseGCBridgeArgumentsWorker(args);
 }
 
-extern "C" BOOL QCALLTYPE JavaMarshal_Initialize(
-    _In_ void* markCrossReferences,
-    QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE JavaMarshal_Initialize(
+    _In_ void* markCrossReferences, BOOL* pReturnValue)
 {
     QCALL_CONTRACT;
     _ASSERTE(markCrossReferences != NULL);
@@ -158,15 +157,14 @@ extern "C" BOOL QCALLTYPE JavaMarshal_Initialize(
         }
     }
 
-    END_QCALL;
+    *pReturnValue = success;
 
-    return success;
+    END_QCALL;
 }
 
-extern "C" void* QCALLTYPE JavaMarshal_CreateReferenceTrackingHandle(
+extern "C" QCallExceptionStatus QCALLTYPE JavaMarshal_CreateReferenceTrackingHandle(
     _In_ QCall::ObjectHandleOnStack obj,
-    _In_ void* context,
-    QCallExceptionStatus* qcallError)
+    _In_ void* context, void** pReturnValue)
 {
     QCALL_CONTRACT;
 
@@ -177,16 +175,15 @@ extern "C" void* QCALLTYPE JavaMarshal_CreateReferenceTrackingHandle(
     GCX_COOP();
     instHandle = GetAppDomain()->CreateCrossReferenceHandle(obj.Get(), context);
 
-    END_QCALL;
+    *pReturnValue = (void*)instHandle;
 
-    return (void*)instHandle;
+    END_QCALL;
 }
 
-extern "C" void QCALLTYPE JavaMarshal_FinishCrossReferenceProcessing(
+extern "C" QCallExceptionStatus QCALLTYPE JavaMarshal_FinishCrossReferenceProcessing(
     _In_ MarkCrossReferencesArgs *crossReferences,
     _In_ size_t length,
-    _In_ void* unreachableObjectHandles,
-    QCallExceptionStatus* qcallError)
+    _In_ void* unreachableObjectHandles)
 {
     QCALL_CONTRACT;
     _ASSERTE(crossReferences->ComponentCount >= 0);

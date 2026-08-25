@@ -102,11 +102,6 @@ namespace System.Runtime.Loader
             var thisHandle = GCHandle.Alloc(this, IsCollectible ? GCHandleType.WeakTrackResurrection : GCHandleType.Normal);
             var thisHandlePtr = GCHandle.ToIntPtr(thisHandle);
             _nativeAssemblyLoadContext = InitializeAssemblyLoadContext(thisHandlePtr, representsTPALoadContext, isCollectible
-#if CORECLR
-#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-                , out _
-#pragma warning restore SA1001, SA1113, SA1115
-#endif
             );
 
             // Add this instance to the list of alive ALC
@@ -156,11 +151,6 @@ namespace System.Runtime.Loader
                     // The underlying code will transform the original weak handle
                     // created by InitializeLoadContext to a strong handle
                     PrepareForAssemblyLoadContextRelease(_nativeAssemblyLoadContext, thisStrongHandlePtr
-#if CORECLR
-#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-                        , out _
-#pragma warning restore SA1001, SA1113, SA1115
-#endif
                     );
 
                     _state = InternalState.Unloading;

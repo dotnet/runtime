@@ -45,11 +45,6 @@ namespace System.Diagnostics.Tracing
             await Task.Yield();
 
             EventPipeInternal.Disable(sessionID
-#if CORECLR
-#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-                , out _
-#pragma warning restore SA1001, SA1113, SA1115
-#endif
             );
         }
     }

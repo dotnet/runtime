@@ -480,7 +480,7 @@ namespace System.Runtime.InteropServices
             static ManagedObjectWrapperHolder()
             {
 #if CORECLR
-                RegisterIsRootedCallback(out _);
+                RegisterIsRootedCallback();
 #else
                 RegisterIsRootedCallback();
 #endif

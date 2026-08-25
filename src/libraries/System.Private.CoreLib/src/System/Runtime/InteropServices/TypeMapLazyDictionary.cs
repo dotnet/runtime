@@ -80,7 +80,10 @@ namespace System.Runtime.InteropServices
             public int StringLen2;
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeMapLazyDictionary_ProcessAttributes")]
+#if CORECLR
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
+#endif
+                [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeMapLazyDictionary_ProcessAttributes")]
         private static unsafe partial void ProcessAttributes(
             QCallAssembly assembly,
             QCallTypeHandle groupType,
@@ -89,29 +92,20 @@ namespace System.Runtime.InteropServices
             delegate* unmanaged<CallbackContext*, Interop.BOOL> newPrecachedExternalTypeMap,
             delegate* unmanaged<CallbackContext*, Interop.BOOL> newPrecachedProxyTypeMap,
             CallbackContext* context
-#if CORECLR
-#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-            , out QCallExceptionStatus qcallException
-#pragma warning restore SA1001, SA1113, SA1115
-#endif
         );
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeMapLazyDictionary_FindPrecachedExternalTypeMapEntry", StringMarshalling = StringMarshalling.Utf8)]
+#if CORECLR
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
+#endif
+                [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeMapLazyDictionary_FindPrecachedExternalTypeMapEntry", StringMarshalling = StringMarshalling.Utf8)]
         private static unsafe partial IntPtr FindPrecachedExternalTypeMapEntry(QCallModule module, QCallTypeHandle groupType, string key
-#if CORECLR
-#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-            , out QCallExceptionStatus qcallException
-#pragma warning restore SA1001, SA1113, SA1115
-#endif
         );
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeMapLazyDictionary_FindPrecachedProxyTypeMapEntry")]
-        private static unsafe partial IntPtr FindPrecachedProxyTypeMapEntry(QCallModule module, QCallTypeHandle groupType, QCallTypeHandle type
 #if CORECLR
-#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-            , out QCallExceptionStatus qcallException
-#pragma warning restore SA1001, SA1113, SA1115
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
 #endif
+                [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeMapLazyDictionary_FindPrecachedProxyTypeMapEntry")]
+        private static unsafe partial IntPtr FindPrecachedProxyTypeMapEntry(QCallModule module, QCallTypeHandle groupType, QCallTypeHandle type
         );
 
         public ref struct Utf16SharedBuffer
@@ -283,11 +277,6 @@ namespace System.Runtime.InteropServices
                 &NewPrecachedExternalTypeMap,
                 &NewPrecachedProxyTypeMap,
                 &context
-#if CORECLR
-#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-                , out _
-#pragma warning restore SA1001, SA1113, SA1115
-#endif
             );
 
             // If an exception was thrown during the processing of
@@ -434,11 +423,6 @@ namespace System.Runtime.InteropServices
             protected override bool TryGetOrLoadTypeFromPreCachedDictionary(RuntimeModule module, string key, [NotNullWhen(true)] out Type? type)
             {
                 IntPtr handle = FindPrecachedExternalTypeMapEntry(new QCallModule(ref module), new QCallTypeHandle(ref _groupType), key
-#if CORECLR
-#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-                    , out _
-#pragma warning restore SA1001, SA1113, SA1115
-#endif
                 );
                 type = RuntimeTypeHandle.GetRuntimeTypeFromHandleMaybeNull(handle);
                 return type != null;
@@ -515,11 +499,6 @@ namespace System.Runtime.InteropServices
             {
                 RuntimeType rtKey = (RuntimeType)key;
                 IntPtr handle = FindPrecachedProxyTypeMapEntry(new QCallModule(ref module), new QCallTypeHandle(ref _groupType), new QCallTypeHandle(ref rtKey)
-#if CORECLR
-#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-                    , out _
-#pragma warning restore SA1001, SA1113, SA1115
-#endif
                 );
                 type = RuntimeTypeHandle.GetRuntimeTypeFromHandleMaybeNull(handle);
                 return type != null;

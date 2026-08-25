@@ -18,17 +18,19 @@ namespace System
     {
         internal static bool IsSystemDrawingColor(Type type) => type.FullName == "System.Drawing.Color"; // Matches the behavior of IsTypeRefOrDef
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Variant_ConvertValueTypeToRecord")]
-        private static partial void ConvertValueTypeToRecord(ObjectHandleOnStack obj, out ComVariant pOle, out QCallExceptionStatus qcallException);
+        private static partial void ConvertValueTypeToRecord(ObjectHandleOnStack obj, out ComVariant pOle);
 
         internal static ComVariant GetIUnknownOrIDispatchFromObject(object? obj)
         {
-            IntPtr pUnk = GetIUnknownOrIDispatchForObject(ObjectHandleOnStack.Create(ref obj), out bool isIDispatch, out _);
+            IntPtr pUnk = GetIUnknownOrIDispatchForObject(ObjectHandleOnStack.Create(ref obj), out bool isIDispatch);
             return ComVariant.CreateRaw(isIDispatch ? VarEnum.VT_DISPATCH : VarEnum.VT_UNKNOWN, pUnk);
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetIUnknownOrIDispatchForObject")]
-        private static partial IntPtr GetIUnknownOrIDispatchForObject(ObjectHandleOnStack o, [MarshalAs(UnmanagedType.Bool)] out bool isIDispatch, out QCallExceptionStatus qcallException);
+        private static partial IntPtr GetIUnknownOrIDispatchForObject(ObjectHandleOnStack o, [MarshalAs(UnmanagedType.Bool)] out bool isIDispatch);
 
         private static object? GetObjectFromIUnknown(IntPtr pUnk)
         {
@@ -170,7 +172,7 @@ namespace System
                 // Enums handled by IConvertible case
 
                 case ValueType:
-                    ConvertValueTypeToRecord(ObjectHandleOnStack.Create(ref o), out pOle, out _);
+                    ConvertValueTypeToRecord(ObjectHandleOnStack.Create(ref o), out pOle);
                     break;
 
                 // SafeHandle's or CriticalHandle's cannot be stored in VARIANT's.

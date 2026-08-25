@@ -26,9 +26,10 @@ namespace System.Reflection
         // This field is set by the VM to atomically transfer the ownership to the managed loader allocator
         internal IntPtr m_nativeLoaderAllocator;
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "LoaderAllocator_Destroy")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static partial bool Destroy(IntPtr nativeLoaderAllocator, out QCallExceptionStatus qcallException);
+        private static partial bool Destroy(IntPtr nativeLoaderAllocator);
 
         ~LoaderAllocatorScout()
         {
@@ -36,7 +37,7 @@ namespace System.Reflection
                 return;
 
             // Destroy returns false if the managed LoaderAllocator is still alive.
-            if (!Destroy(m_nativeLoaderAllocator, out _))
+            if (!Destroy(m_nativeLoaderAllocator))
             {
                 // Somebody might have been holding a reference on us via weak handle.
                 // We will keep trying. It will be hopefully released eventually.

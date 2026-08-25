@@ -36,10 +36,11 @@ namespace System.Runtime.InteropServices
             // CoreCLR doesn't have GC callbacks, but we do need to register the GC handle set with the runtime for enumeration
             // during GC.
             GCHandleSet handleSet = s_referenceTrackerNativeObjectWrapperCache;
-            RegisterNativeObjectWrapperCache(ObjectHandleOnStack.Create(ref handleSet), out _);
+            RegisterNativeObjectWrapperCache(ObjectHandleOnStack.Create(ref handleSet));
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TrackerObjectManager_RegisterNativeObjectWrapperCache")]
-        private static partial void RegisterNativeObjectWrapperCache(ObjectHandleOnStack nativeObjectWrapperCache, out QCallExceptionStatus qcallException);
+        private static partial void RegisterNativeObjectWrapperCache(ObjectHandleOnStack nativeObjectWrapperCache);
     }
 }

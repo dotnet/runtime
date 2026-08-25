@@ -450,7 +450,7 @@ bool GetVersionResilientILCodeHashCode(MethodDesc *pMD, const COR_ILMETHOD_DECOD
     return true;
 }
 
-extern "C" INT32 QCALLTYPE VersionResilientHashCode_TypeHashCode(QCall::TypeHandle pTypeHandle, QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE VersionResilientHashCode_TypeHashCode(QCall::TypeHandle pTypeHandle, INT32* pReturnValue)
 {
     QCALL_CONTRACT;
 
@@ -460,9 +460,9 @@ extern "C" INT32 QCALLTYPE VersionResilientHashCode_TypeHashCode(QCall::TypeHand
 
     hashCode = GetVersionResilientTypeHashCode(pTypeHandle.AsTypeHandle());
 
-    END_QCALL;
+    *pReturnValue = hashCode;
 
-    return hashCode;
+    END_QCALL;
 }
 
 #endif // DACCESS_COMPILE

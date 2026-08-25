@@ -320,11 +320,12 @@ namespace System.Runtime.CompilerServices
         }
 
 #if !NATIVEAOT
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AsyncHelpers_AddContinuationToExInternal")]
-        private static unsafe partial void AddContinuationToExInternal(void* diagnosticIP, ObjectHandleOnStack ex, out QCallExceptionStatus qcallException);
+        private static unsafe partial void AddContinuationToExInternal(void* diagnosticIP, ObjectHandleOnStack ex);
 
         internal static unsafe void AddContinuationToExInternal(void* diagnosticIP, Exception e)
-            => AddContinuationToExInternal(diagnosticIP, ObjectHandleOnStack.Create(ref e), out _);
+            => AddContinuationToExInternal(diagnosticIP, ObjectHandleOnStack.Create(ref e));
 #endif
 
         private static unsafe Continuation AllocContinuation(Continuation prevContinuation, MethodTable* contMT)

@@ -333,8 +333,9 @@ namespace System.Reflection
         }
         #endregion
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MetadataImport_Enum")]
-        private static unsafe partial void Enum(IntPtr scope, int type, int parent, ref int length, int* shortResult, ObjectHandleOnStack longResult, out QCallExceptionStatus qcallException);
+        private static unsafe partial void Enum(IntPtr scope, int type, int parent, ref int length, int* shortResult, ObjectHandleOnStack longResult);
 
         public unsafe void Enum(MetadataTokenType type, int parent, out MetadataEnumResult result)
         {
@@ -342,7 +343,7 @@ namespace System.Reflection
             int length = MetadataEnumResult.SmallIntArrayLength;
             fixed (int* p = &result._smallResult.e)
             {
-                Enum(m_metadataImport2, (int)type, parent, ref length, p, ObjectHandleOnStack.Create(ref result._largeResult), out _);
+                Enum(m_metadataImport2, (int)type, parent, ref length, p, ObjectHandleOnStack.Create(ref result._largeResult));
             }
             result._length = length;
         }

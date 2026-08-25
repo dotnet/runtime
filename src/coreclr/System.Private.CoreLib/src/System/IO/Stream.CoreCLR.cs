@@ -9,9 +9,10 @@ namespace System.IO
 {
     public abstract unsafe partial class Stream
     {
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Stream_HasOverriddenSlow")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static partial bool HasOverriddenSlow(MethodTable* pMT, [MarshalAs(UnmanagedType.Bool)] bool isRead, out QCallExceptionStatus qcallException);
+        private static partial bool HasOverriddenSlow(MethodTable* pMT, [MarshalAs(UnmanagedType.Bool)] bool isRead);
 
         private bool HasOverriddenBeginEndRead()
         {
@@ -24,7 +25,7 @@ namespace System.IO
 
             [MethodImpl(MethodImplOptions.NoInlining)]
             static bool HasOverriddenReadSlow(MethodTable* pMT)
-                => HasOverriddenSlow(pMT, isRead: true, out _);
+                => HasOverriddenSlow(pMT, isRead: true);
         }
 
         private bool HasOverriddenBeginEndWrite()
@@ -38,7 +39,7 @@ namespace System.IO
 
             [MethodImpl(MethodImplOptions.NoInlining)]
             static bool HasOverriddenWriteSlow(MethodTable* pMT)
-                => HasOverriddenSlow(pMT, isRead: false, out _);
+                => HasOverriddenSlow(pMT, isRead: false);
         }
     }
 }

@@ -673,7 +673,7 @@ namespace System.Reflection.Emit
                     return;
                 }
 
-                RuntimeMethodHandle.Destroy(m_methodHandle, out _);
+                RuntimeMethodHandle.Destroy(m_methodHandle);
             }
         }
 

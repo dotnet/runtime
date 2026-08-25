@@ -82,7 +82,7 @@ FCIMPLEND
 
 // Given an exception object, this method will mark its stack trace as frozen and return it to the caller.
 // Frozen stack traces are immutable, when a thread attempts to add a frame to it, the stack trace is cloned first.
-extern "C" void QCALLTYPE ExceptionNative_GetFrozenStackTrace(QCall::ObjectHandleOnStack exception, QCall::ObjectHandleOnStack ret, QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE ExceptionNative_GetFrozenStackTrace(QCall::ObjectHandleOnStack exception, QCall::ObjectHandleOnStack ret)
 {
     QCALL_CONTRACT;
 
@@ -312,7 +312,7 @@ FCIMPLEND
 // our locks within CER's to avoid this problem - just use the CLR's
 // unmanaged resources.
 //
-extern "C" void QCALLTYPE ExceptionNative_GetMessageFromNativeResources(ExceptionMessageKind kind, QCall::StringHandleOnStack retMesg, QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE ExceptionNative_GetMessageFromNativeResources(ExceptionMessageKind kind, QCall::StringHandleOnStack retMesg)
 {
     QCALL_CONTRACT;
 
@@ -359,7 +359,7 @@ extern "C" void QCALLTYPE ExceptionNative_GetMessageFromNativeResources(Exceptio
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE ExceptionNative_GetMethodFromStackTrace(QCall::ObjectHandleOnStack stacktrace, QCall::ObjectHandleOnStack retMethodInfo, QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE ExceptionNative_GetMethodFromStackTrace(QCall::ObjectHandleOnStack stacktrace, QCall::ObjectHandleOnStack retMethodInfo)
 {
     QCALL_CONTRACT;
 
@@ -400,11 +400,10 @@ extern "C" void QCALLTYPE ExceptionNative_GetMethodFromStackTrace(QCall::ObjectH
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE ExceptionNative_ThrowAmbiguousResolutionException(
+extern "C" QCallExceptionStatus QCALLTYPE ExceptionNative_ThrowAmbiguousResolutionException(
     MethodTable* pTargetClass,
     MethodTable* pInterfaceMT,
-    MethodDesc* pInterfaceMD,
-    QCallExceptionStatus* qcallError)
+    MethodDesc* pInterfaceMD)
 {
     QCALL_CONTRACT;
 
@@ -415,11 +414,10 @@ extern "C" void QCALLTYPE ExceptionNative_ThrowAmbiguousResolutionException(
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE ExceptionNative_ThrowEntryPointNotFoundException(
+extern "C" QCallExceptionStatus QCALLTYPE ExceptionNative_ThrowEntryPointNotFoundException(
     MethodTable* pTargetClass,
     MethodTable* pInterfaceMT,
-    MethodDesc* pInterfaceMD,
-    QCallExceptionStatus* qcallError)
+    MethodDesc* pInterfaceMD)
 {
     QCALL_CONTRACT;
 
@@ -430,7 +428,7 @@ extern "C" void QCALLTYPE ExceptionNative_ThrowEntryPointNotFoundException(
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE ExceptionNative_ThrowMethodAccessException(MethodDesc* caller, MethodDesc* callee, QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE ExceptionNative_ThrowMethodAccessException(MethodDesc* caller, MethodDesc* callee)
 {
     QCALL_CONTRACT;
 
@@ -443,7 +441,7 @@ extern "C" void QCALLTYPE ExceptionNative_ThrowMethodAccessException(MethodDesc*
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE ExceptionNative_ThrowFieldAccessException(MethodDesc* caller, FieldDesc* callee, QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE ExceptionNative_ThrowFieldAccessException(MethodDesc* caller, FieldDesc* callee)
 {
     QCALL_CONTRACT;
 
@@ -456,7 +454,7 @@ extern "C" void QCALLTYPE ExceptionNative_ThrowFieldAccessException(MethodDesc* 
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE ExceptionNative_ThrowClassAccessException(MethodDesc* caller, EnregisteredTypeHandle callee, QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE ExceptionNative_ThrowClassAccessException(MethodDesc* caller, EnregisteredTypeHandle callee)
 {
     QCALL_CONTRACT;
 
@@ -587,7 +585,7 @@ FCIMPL0(FC_BOOL_RET, GCInterface::CancelFullGCNotification)
 }
 FCIMPLEND
 
-extern "C" int QCALLTYPE GCInterface_WaitForFullGCApproach(int millisecondsTimeout, QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE GCInterface_WaitForFullGCApproach(int millisecondsTimeout, int* pReturnValue)
 {
     QCALL_CONTRACT;
 
@@ -600,12 +598,12 @@ extern "C" int QCALLTYPE GCInterface_WaitForFullGCApproach(int millisecondsTimeo
     DWORD dwMilliseconds = ((millisecondsTimeout == -1) ? INFINITE : millisecondsTimeout);
     result = GCHeapUtilities::GetGCHeap()->WaitForFullGCApproach(dwMilliseconds);
 
-    END_QCALL;
+    *pReturnValue = result;
 
-    return result;
+    END_QCALL;
 }
 
-extern "C" int QCALLTYPE GCInterface_WaitForFullGCComplete(int millisecondsTimeout, QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE GCInterface_WaitForFullGCComplete(int millisecondsTimeout, int* pReturnValue)
 {
     QCALL_CONTRACT;
 
@@ -618,9 +616,9 @@ extern "C" int QCALLTYPE GCInterface_WaitForFullGCComplete(int millisecondsTimeo
     DWORD dwMilliseconds = ((millisecondsTimeout == -1) ? INFINITE : millisecondsTimeout);
     result = GCHeapUtilities::GetGCHeap()->WaitForFullGCComplete(dwMilliseconds);
 
-    END_QCALL;
+    *pReturnValue = result;
 
-    return result;
+    END_QCALL;
 }
 
 /*================================GetGenerationInternal=================================
@@ -672,7 +670,7 @@ FCIMPL2(int, GCInterface::CollectionCount, INT32 generation, INT32 getSpecialGCC
 }
 FCIMPLEND
 
-extern "C" int QCALLTYPE GCInterface_StartNoGCRegion(INT64 totalSize, BOOL lohSizeKnown, INT64 lohSize, BOOL disallowFullBlockingGC, QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE GCInterface_StartNoGCRegion(INT64 totalSize, BOOL lohSizeKnown, INT64 lohSize, BOOL disallowFullBlockingGC, int* pReturnValue)
 {
     QCALL_CONTRACT;
 
@@ -687,12 +685,12 @@ extern "C" int QCALLTYPE GCInterface_StartNoGCRegion(INT64 totalSize, BOOL lohSi
                                                   (ULONGLONG)lohSize,
                                                   !!disallowFullBlockingGC);
 
-    END_QCALL;
+    *pReturnValue = retVal;
 
-    return retVal;
+    END_QCALL;
 }
 
-extern "C" int QCALLTYPE GCInterface_EndNoGCRegion(QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE GCInterface_EndNoGCRegion(int* pReturnValue)
 {
     QCALL_CONTRACT;
 
@@ -702,9 +700,9 @@ extern "C" int QCALLTYPE GCInterface_EndNoGCRegion(QCallExceptionStatus* qcallEr
 
     retVal = GCHeapUtilities::GetGCHeap()->EndNoGCRegion();
 
-    END_QCALL;
+    *pReturnValue = retVal;
 
-    return retVal;
+    END_QCALL;
 }
 
 FCIMPL0(int, GCInterface::GetLastGCPercentTimeInGC)
@@ -729,7 +727,7 @@ FCIMPLEND
 **Arguments: None
 **Exceptions: None
 ==============================================================================*/
-extern "C" INT64 QCALLTYPE GCInterface_GetTotalMemory(QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE GCInterface_GetTotalMemory(INT64* pReturnValue)
 {
     QCALL_CONTRACT;
 
@@ -740,9 +738,9 @@ extern "C" INT64 QCALLTYPE GCInterface_GetTotalMemory(QCallExceptionStatus* qcal
     GCX_COOP();
     iRetVal = (INT64) GCHeapUtilities::GetGCHeap()->GetTotalBytesInUse();
 
-    END_QCALL;
+    *pReturnValue = iRetVal;
 
-    return iRetVal;
+    END_QCALL;
 }
 
 /*==============================Collect=========================================
@@ -751,7 +749,7 @@ extern "C" INT64 QCALLTYPE GCInterface_GetTotalMemory(QCallExceptionStatus* qcal
 **Arguments: args->generation:  The maximum generation to collect
 **Exceptions: Argument exception if args->generation is < 0 or > GetMaxGeneration();
 ==============================================================================*/
-extern "C" void QCALLTYPE GCInterface_Collect(INT32 generation, INT32 mode, CLR_BOOL lowMemoryPressure, QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE GCInterface_Collect(INT32 generation, INT32 mode, CLR_BOOL lowMemoryPressure)
 {
     QCALL_CONTRACT;
 
@@ -768,7 +766,7 @@ extern "C" void QCALLTYPE GCInterface_Collect(INT32 generation, INT32 mode, CLR_
     END_QCALL;
 }
 
-extern "C" void* QCALLTYPE GCInterface_GetNextFinalizableObject(QCall::ObjectHandleOnStack pObj, QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE GCInterface_GetNextFinalizableObject(QCall::ObjectHandleOnStack pObj, void** pReturnValue)
 {
     QCALL_CONTRACT;
 
@@ -800,9 +798,9 @@ extern "C" void* QCALLTYPE GCInterface_GetNextFinalizableObject(QCall::ObjectHan
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
     }
 
-    END_QCALL;
+    *pReturnValue = (void*)funcPtr;
 
-    return (void*)funcPtr;
+    END_QCALL;
 }
 
 /*==========================WaitForPendingFinalizers============================
@@ -810,7 +808,7 @@ extern "C" void* QCALLTYPE GCInterface_GetNextFinalizableObject(QCall::ObjectHan
 **Arguments: None
 **Exceptions: None
 ==============================================================================*/
-extern "C" void QCALLTYPE GCInterface_WaitForPendingFinalizers(QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE GCInterface_WaitForPendingFinalizers()
 {
     QCALL_CONTRACT;
 
@@ -877,7 +875,7 @@ FCIMPLEND
 **           ret -> The allocated array.
 **Exceptions: IDS_EE_ARRAY_DIMENSIONS_EXCEEDED when size is too large. OOM if can't allocate.
 ==============================================================================*/
-extern "C" void QCALLTYPE GCInterface_AllocateNewArray(void* typeHandlePtr, INT32 length, INT32 flags, QCall::ObjectHandleOnStack ret, QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE GCInterface_AllocateNewArray(void* typeHandlePtr, INT32 length, INT32 flags, QCall::ObjectHandleOnStack ret)
 {
     QCALL_CONTRACT;
     _ASSERTE(typeHandlePtr != NULL);
@@ -927,7 +925,7 @@ FCIMPL0(INT64, GCInterface::GetTotalAllocatedBytesApproximate)
 }
 FCIMPLEND;
 
-extern "C" INT64 QCALLTYPE GCInterface_GetTotalAllocatedBytesPrecise(QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE GCInterface_GetTotalAllocatedBytesPrecise(INT64* pReturnValue)
 {
     INT64 allocated = 0;
 
@@ -953,9 +951,9 @@ extern "C" INT64 QCALLTYPE GCInterface_GetTotalAllocatedBytesPrecise(QCallExcept
 
     ThreadSuspend::RestartEE(true /* SuspendSucceeded */);
 
-    END_QCALL;
+    *pReturnValue = allocated;
 
-    return allocated;
+    END_QCALL;
 }
 
 
@@ -965,7 +963,7 @@ extern "C" INT64 QCALLTYPE GCInterface_GetTotalAllocatedBytesPrecise(QCallExcept
 **Arguments: args-> pointer to section, size of section
 **Exceptions: None
 ==============================================================================*/
-extern "C" void* QCALLTYPE GCInterface_RegisterFrozenSegment(void* pSection, SIZE_T sizeSection, QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE GCInterface_RegisterFrozenSegment(void* pSection, SIZE_T sizeSection, void** pReturnValue)
 {
     QCALL_CONTRACT;
 
@@ -987,9 +985,9 @@ extern "C" void* QCALLTYPE GCInterface_RegisterFrozenSegment(void* pSection, SIZ
 
     retVal = (void*)GCHeapUtilities::GetGCHeap()->RegisterFrozenSegment(&seginfo);
 
-    END_QCALL;
+    *pReturnValue = retVal;
 
-    return retVal;
+    END_QCALL;
 }
 
 /*===============================UnregisterFrozenSegment===============================
@@ -998,7 +996,7 @@ extern "C" void* QCALLTYPE GCInterface_RegisterFrozenSegment(void* pSection, SIZ
 **Arguments: args-> segment handle
 **Exceptions: None
 ==============================================================================*/
-extern "C" void QCALLTYPE GCInterface_UnregisterFrozenSegment(void* segment, QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE GCInterface_UnregisterFrozenSegment(void* segment)
 {
     QCALL_CONTRACT;
 
@@ -1034,7 +1032,7 @@ FCIMPLEND
 **Arguments: Object of interest
 **Exceptions: None
 ==============================================================================*/
-extern "C" void QCALLTYPE GCInterface_ReRegisterForFinalize(QCall::ObjectHandleOnStack pObj, QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE GCInterface_ReRegisterForFinalize(QCall::ObjectHandleOnStack pObj)
 {
     QCALL_CONTRACT;
 
@@ -1092,7 +1090,7 @@ FORCEINLINE UINT64 GCInterface::InterlockedSub(UINT64 *pMinuend, UINT64 subtrahe
     return newMemValue;
 }
 
-extern "C" void QCALLTYPE GCInterface_AddMemoryPressure(UINT64 bytesAllocated, QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE GCInterface_AddMemoryPressure(UINT64 bytesAllocated)
 {
     QCALL_CONTRACT;
 
@@ -1101,7 +1099,7 @@ extern "C" void QCALLTYPE GCInterface_AddMemoryPressure(UINT64 bytesAllocated, Q
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE GCInterface_EnumerateConfigurationValues(void* configurationContext, EnumerateConfigurationValuesCallback callback, QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE GCInterface_EnumerateConfigurationValues(void* configurationContext, EnumerateConfigurationValuesCallback callback)
 {
     QCALL_CONTRACT;
 
@@ -1129,7 +1127,7 @@ void GCInterface::EnumerateConfigurationValues(void* configurationContext, Enume
 GCHeapHardLimitInfo g_gcHeapHardLimitInfo;
 bool g_gcHeapHardLimitInfoSpecified = false;
 
-extern "C" int QCALLTYPE GCInterface_RefreshMemoryLimit(GCHeapHardLimitInfo heapHardLimitInfo, QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE GCInterface_RefreshMemoryLimit(GCHeapHardLimitInfo heapHardLimitInfo, int* pReturnValue)
 {
     QCALL_CONTRACT;
 
@@ -1139,9 +1137,9 @@ extern "C" int QCALLTYPE GCInterface_RefreshMemoryLimit(GCHeapHardLimitInfo heap
     g_gcHeapHardLimitInfo = heapHardLimitInfo;
     g_gcHeapHardLimitInfoSpecified = true;
     result = GCInterface::RefreshMemoryLimit();
-    END_QCALL;
+    *pReturnValue = result;
 
-    return result;
+    END_QCALL;
 }
 
 int GCInterface::RefreshMemoryLimit()
@@ -1157,15 +1155,16 @@ int GCInterface::RefreshMemoryLimit()
     return GCHeapUtilities::GetGCHeap()->RefreshMemoryLimit();
 }
 
-extern "C" enable_no_gc_region_callback_status QCALLTYPE GCInterface_EnableNoGCRegionCallback(NoGCRegionCallbackFinalizerWorkItem* callback, INT64 totalSize, QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE GCInterface_EnableNoGCRegionCallback(NoGCRegionCallbackFinalizerWorkItem* callback, INT64 totalSize, enable_no_gc_region_callback_status* pReturnValue)
 {
     enable_no_gc_region_callback_status status = enable_no_gc_region_callback_status::succeed;
     QCALL_CONTRACT;
 
     BEGIN_QCALL;
     status = GCInterface::EnableNoGCRegionCallback(callback, totalSize);
+    *pReturnValue = status;
+
     END_QCALL;
-    return status;
 }
 
 enable_no_gc_region_callback_status GCInterface::EnableNoGCRegionCallback(NoGCRegionCallbackFinalizerWorkItem* callback, INT64 totalSize)
@@ -1181,16 +1180,16 @@ enable_no_gc_region_callback_status GCInterface::EnableNoGCRegionCallback(NoGCRe
     return GCHeapUtilities::GetGCHeap()->EnableNoGCRegionCallback(callback, totalSize);
 }
 
-extern "C" uint64_t QCALLTYPE GCInterface_GetGenerationBudget(int generation, QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE GCInterface_GetGenerationBudget(int generation, uint64_t* pReturnValue)
 {
     uint64_t result = 0;
     QCALL_CONTRACT;
 
     BEGIN_QCALL;
     result = GCInterface::GetGenerationBudget(generation);
-    END_QCALL;
+    *pReturnValue = result;
 
-    return result;
+    END_QCALL;
 }
 
 uint64_t GCInterface::GetGenerationBudget(int generation)
@@ -1330,7 +1329,7 @@ void GCInterface::AddMemoryPressure(UINT64 bytesAllocated)
     }
 }
 
-extern "C" void QCALLTYPE GCInterface_RemoveMemoryPressure(UINT64 bytesAllocated, QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE GCInterface_RemoveMemoryPressure(UINT64 bytesAllocated)
 {
     QCALL_CONTRACT;
 
@@ -1414,7 +1413,7 @@ NOINLINE void GCInterface::GarbageCollectModeAny(int generation)
 //
 // EnvironmentNative
 //
-extern "C" VOID QCALLTYPE Environment_Exit(INT32 exitcode, QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE Environment_Exit(INT32 exitcode)
 {
     QCALL_CONTRACT;
 
@@ -1452,7 +1451,7 @@ FCIMPL0(INT32, EnvironmentNative::GetExitCode)
 }
 FCIMPLEND
 
-extern "C" INT32 QCALLTYPE Environment_GetProcessorCount(QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE Environment_GetProcessorCount(INT32* pReturnValue)
 {
     QCALL_CONTRACT;
 
@@ -1462,9 +1461,9 @@ extern "C" INT32 QCALLTYPE Environment_GetProcessorCount(QCallExceptionStatus* q
 
     processorCount = GetCurrentProcessCpuCount();
 
-    END_QCALL;
+    *pReturnValue = processorCount;
 
-    return processorCount;
+    END_QCALL;
 }
 
 struct FindFailFastCallerStruct {
@@ -1501,7 +1500,7 @@ static StackWalkAction FindFailFastCallerCallback(CrawlFrame* frame, VOID* data)
 
 static thread_local int8_t alreadyFailing = 0;
 
-extern "C" void QCALLTYPE Environment_FailFast(QCall::StackCrawlMarkHandle mark, PCWSTR message, QCall::ObjectHandleOnStack exception, PCWSTR errorSource, QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE Environment_FailFast(QCall::StackCrawlMarkHandle mark, PCWSTR message, QCall::ObjectHandleOnStack exception, PCWSTR errorSource)
 {
     QCALL_CONTRACT;
 
@@ -1576,7 +1575,7 @@ extern "C" void QCALLTYPE Environment_FailFast(QCall::StackCrawlMarkHandle mark,
 //
 // ObjectNative
 //
-extern "C" INT32 QCALLTYPE ObjectNative_GetHashCodeSlow(QCall::ObjectHandleOnStack objHandle, QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE ObjectNative_GetHashCodeSlow(QCall::ObjectHandleOnStack objHandle, INT32* pReturnValue)
 {
     QCALL_CONTRACT;
 
@@ -1589,9 +1588,9 @@ extern "C" INT32 QCALLTYPE ObjectNative_GetHashCodeSlow(QCall::ObjectHandleOnSta
     _ASSERTE(objHandle.Get() != NULL);
     idx = objHandle.Get()->GetHashCodeEx();
 
-    END_QCALL;
+    *pReturnValue = idx;
 
-    return idx;
+    END_QCALL;
 }
 
 FCIMPL1(INT32, ObjectNative::TryGetHashCode, Object* obj)
@@ -1627,7 +1626,7 @@ FCIMPL2(FC_BOOL_RET, ObjectNative::ContentEquals, Object *pThisRef, Object *pCom
 }
 FCIMPLEND
 
-extern "C" void QCALLTYPE ObjectNative_AllocateUninitializedClone(QCall::ObjectHandleOnStack objHandle, QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE ObjectNative_AllocateUninitializedClone(QCall::ObjectHandleOnStack objHandle)
 {
     QCALL_CONTRACT;
 
@@ -1843,7 +1842,7 @@ BOOL CanCompareBitsOrUseFastGetHashCode(MethodTable* mt)
     return canCompareBitsOrUseFastGetHashCode;
 }
 
-extern "C" BOOL QCALLTYPE MethodTable_CanCompareBitsOrUseFastGetHashCode(MethodTable* mt, QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE MethodTable_CanCompareBitsOrUseFastGetHashCode(MethodTable* mt, BOOL* pReturnValue)
 {
     QCALL_CONTRACT;
 
@@ -1856,9 +1855,9 @@ extern "C" BOOL QCALLTYPE MethodTable_CanCompareBitsOrUseFastGetHashCode(MethodT
 
     ret = CanCompareBitsOrUseFastGetHashCode(mt);
 
-    END_QCALL;
+    *pReturnValue = ret;
 
-    return ret;
+    END_QCALL;
 }
 
 enum ValueTypeHashCodeStrategy
@@ -1962,7 +1961,7 @@ static ValueTypeHashCodeStrategy GetHashCodeStrategy(MethodTable* mt, QCall::Obj
     return ret;
 }
 
-extern "C" INT32 QCALLTYPE ValueType_GetHashCodeStrategy(MethodTable* mt, QCall::ObjectHandleOnStack objHandle, UINT32* fieldOffset, UINT32* fieldSize, MethodTable** fieldMT, QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE ValueType_GetHashCodeStrategy(MethodTable* mt, QCall::ObjectHandleOnStack objHandle, UINT32* fieldOffset, UINT32* fieldSize, MethodTable** fieldMT, INT32* pReturnValue)
 {
     QCALL_CONTRACT;
 
@@ -1975,9 +1974,9 @@ extern "C" INT32 QCALLTYPE ValueType_GetHashCodeStrategy(MethodTable* mt, QCall:
 
     ret = GetHashCodeStrategy(mt, objHandle, fieldOffset, fieldSize, fieldMT);
 
-    END_QCALL;
+    *pReturnValue = ret;
 
-    return ret;
+    END_QCALL;
 }
 
 FCIMPL1(UINT32, MethodTableNative::GetNumInstanceFieldBytes, MethodTable* mt)
@@ -2023,7 +2022,7 @@ FCIMPL1(OBJECTHANDLE, MethodTableNative::GetLoaderAllocatorHandle, MethodTable *
 }
 FCIMPLEND
 
-extern "C" BOOL QCALLTYPE MethodTable_AreTypesEquivalent(MethodTable* mta, MethodTable* mtb, QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE MethodTable_AreTypesEquivalent(MethodTable* mta, MethodTable* mtb, BOOL* pReturnValue)
 {
     QCALL_CONTRACT;
 
@@ -2033,12 +2032,12 @@ extern "C" BOOL QCALLTYPE MethodTable_AreTypesEquivalent(MethodTable* mta, Metho
 
     bResult = mta->IsEquivalentTo(mtb);
 
-    END_QCALL;
+    *pReturnValue = bResult;
 
-    return bResult;
+    END_QCALL;
 }
 
-extern "C" BOOL QCALLTYPE TypeHandle_CanCastTo_NoCacheLookup(void* fromTypeHnd, void* toTypeHnd, QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE TypeHandle_CanCastTo_NoCacheLookup(void* fromTypeHnd, void* toTypeHnd, BOOL* pReturnValue)
 {
     QCALL_CONTRACT;
 
@@ -2063,9 +2062,9 @@ extern "C" BOOL QCALLTYPE TypeHandle_CanCastTo_NoCacheLookup(void* fromTypeHnd, 
         ret = fromTH.AsMethodTable()->CanCastTo(toTH.AsMethodTable(), NULL);
     }
 
-    END_QCALL;
+    *pReturnValue = ret;
 
-    return ret;
+    END_QCALL;
 }
 
 extern "C" INT32 QCALLTYPE TypeHandle_GetCorElementType(void* typeHnd)
@@ -2096,7 +2095,7 @@ static bool HasOverriddenStreamMethod(MethodTable* streamMT, MethodTable* pMT, W
     return NonVirtualEntry2MethodDesc(actual) != NonVirtualEntry2MethodDesc(base);
 }
 
-extern "C" BOOL QCALLTYPE Stream_HasOverriddenSlow(MethodTable* pMT, BOOL isRead, QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE Stream_HasOverriddenSlow(MethodTable* pMT, BOOL isRead, BOOL* pReturnValue)
 {
     QCALL_CONTRACT;
     _ASSERTE(pMT != NULL);
@@ -2117,7 +2116,7 @@ extern "C" BOOL QCALLTYPE Stream_HasOverriddenSlow(MethodTable* pMT, BOOL isRead
     writeOverride = HasOverriddenStreamMethod(pStreamMT, pMT, slotBeginWrite) || HasOverriddenStreamMethod(pStreamMT, pMT, slotEndWrite);
     pMT->GetAuxiliaryDataForWrite()->SetStreamOverrideState(readOverride, writeOverride);
 
-    END_QCALL;
+    *pReturnValue = isRead ? readOverride : writeOverride;
 
-    return isRead ? readOverride : writeOverride;
+    END_QCALL;
 }

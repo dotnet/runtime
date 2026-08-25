@@ -12,8 +12,9 @@ namespace System.Runtime.CompilerServices;
 [DebuggerStepThrough]
 internal static unsafe partial class GenericsHelpers
 {
+    [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
     [LibraryImport(RuntimeHelpers.QCall)]
-    private static partial IntPtr GenericHandleWorker(IntPtr pMD, IntPtr pMT, IntPtr signature, uint dictionaryIndexAndSlot, IntPtr pModule, out QCallExceptionStatus qcallException);
+    private static partial IntPtr GenericHandleWorker(IntPtr pMD, IntPtr pMT, IntPtr signature, uint dictionaryIndexAndSlot, IntPtr pModule);
 
     public struct GenericHandleArgs
     {
@@ -25,24 +26,24 @@ internal static unsafe partial class GenericsHelpers
     [DebuggerHidden]
     public static IntPtr Method(IntPtr methodHnd, IntPtr signature)
     {
-        return GenericHandleWorker(methodHnd, IntPtr.Zero, signature, 0xFFFFFFFF, IntPtr.Zero, out _);
+        return GenericHandleWorker(methodHnd, IntPtr.Zero, signature, 0xFFFFFFFF, IntPtr.Zero);
     }
 
     [DebuggerHidden]
     public static IntPtr MethodWithSlotAndModule(IntPtr methodHnd, GenericHandleArgs * pArgs)
     {
-        return GenericHandleWorker(methodHnd, IntPtr.Zero, pArgs->signature, pArgs->dictionaryIndexAndSlot, pArgs->module, out _);
+        return GenericHandleWorker(methodHnd, IntPtr.Zero, pArgs->signature, pArgs->dictionaryIndexAndSlot, pArgs->module);
     }
 
     [DebuggerHidden]
     public static IntPtr Class(IntPtr classHnd, IntPtr signature)
     {
-        return GenericHandleWorker(IntPtr.Zero, classHnd, signature, 0xFFFFFFFF, IntPtr.Zero, out _);
+        return GenericHandleWorker(IntPtr.Zero, classHnd, signature, 0xFFFFFFFF, IntPtr.Zero);
     }
 
     [DebuggerHidden]
     public static IntPtr ClassWithSlotAndModule(IntPtr classHnd, GenericHandleArgs * pArgs)
     {
-        return GenericHandleWorker(IntPtr.Zero, classHnd, pArgs->signature, pArgs->dictionaryIndexAndSlot, pArgs->module, out _);
+        return GenericHandleWorker(IntPtr.Zero, classHnd, pArgs->signature, pArgs->dictionaryIndexAndSlot, pArgs->module);
     }
 }

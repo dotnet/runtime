@@ -11,8 +11,9 @@ namespace Internal.Runtime.CompilerHelpers
     internal static unsafe partial class ThrowHelpers
     {
         [DoesNotReturn]
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ExceptionNative_ThrowAmbiguousResolutionException")]
-        private static partial void ThrowAmbiguousResolutionException(MethodTable* targetType, MethodTable* interfaceType, void* methodDesc, out QCallExceptionStatus qcallException);
+        private static partial void ThrowAmbiguousResolutionException(MethodTable* targetType, MethodTable* interfaceType, void* methodDesc);
 
         [DoesNotReturn]
         [DebuggerHidden]
@@ -21,12 +22,13 @@ namespace Internal.Runtime.CompilerHelpers
             void* interfaceType,    // MethodTable*
             void* targetType)       // MethodTable*
         {
-            ThrowAmbiguousResolutionException((MethodTable*)targetType, (MethodTable*)interfaceType, method, out _);
+            ThrowAmbiguousResolutionException((MethodTable*)targetType, (MethodTable*)interfaceType, method);
         }
 
         [DoesNotReturn]
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ExceptionNative_ThrowEntryPointNotFoundException")]
-        private static partial void ThrowEntryPointNotFoundException(MethodTable* targetType, MethodTable* interfaceType, void* methodDesc, out QCallExceptionStatus qcallException);
+        private static partial void ThrowEntryPointNotFoundException(MethodTable* targetType, MethodTable* interfaceType, void* methodDesc);
 
         [DoesNotReturn]
         [DebuggerHidden]
@@ -35,12 +37,13 @@ namespace Internal.Runtime.CompilerHelpers
             void* interfaceType,    // MethodTable*
             void* targetType)       // MethodTable*
         {
-            ThrowEntryPointNotFoundException((MethodTable*)targetType, (MethodTable*)interfaceType, method, out _);
+            ThrowEntryPointNotFoundException((MethodTable*)targetType, (MethodTable*)interfaceType, method);
         }
 
         [DoesNotReturn]
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ExceptionNative_ThrowMethodAccessException")]
-        private static partial void ThrowMethodAccessExceptionInternal(void* caller, void* callee, out QCallExceptionStatus qcallException);
+        private static partial void ThrowMethodAccessExceptionInternal(void* caller, void* callee);
 
         // implementation of CORINFO_HELP_METHOD_ACCESS_EXCEPTION
         [DoesNotReturn]
@@ -49,12 +52,13 @@ namespace Internal.Runtime.CompilerHelpers
             void* caller,   // MethodDesc*
             void* callee)   // MethodDesc*
         {
-            ThrowMethodAccessExceptionInternal(caller, callee, out _);
+            ThrowMethodAccessExceptionInternal(caller, callee);
         }
 
         [DoesNotReturn]
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ExceptionNative_ThrowFieldAccessException")]
-        private static partial void ThrowFieldAccessExceptionInternal(void* caller, void* callee, out QCallExceptionStatus qcallException);
+        private static partial void ThrowFieldAccessExceptionInternal(void* caller, void* callee);
 
         // implementation of CORINFO_HELP_FIELD_ACCESS_EXCEPTION
         [DoesNotReturn]
@@ -63,12 +67,13 @@ namespace Internal.Runtime.CompilerHelpers
             void* caller,   // MethodDesc*
             void* callee)   // FieldDesc*
         {
-            ThrowFieldAccessExceptionInternal(caller, callee, out _);
+            ThrowFieldAccessExceptionInternal(caller, callee);
         }
 
         [DoesNotReturn]
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ExceptionNative_ThrowClassAccessException")]
-        private static partial void ThrowClassAccessExceptionInternal(void* caller, void* callee, out QCallExceptionStatus qcallException);
+        private static partial void ThrowClassAccessExceptionInternal(void* caller, void* callee);
 
         // implementation of CORINFO_HELP_CLASS_ACCESS_EXCEPTION
         [DoesNotReturn]
@@ -77,7 +82,7 @@ namespace Internal.Runtime.CompilerHelpers
             void* caller,   // MethodDesc*
             void* callee)   // Type handle
         {
-            ThrowClassAccessExceptionInternal(caller, callee, out _);
+            ThrowClassAccessExceptionInternal(caller, callee);
         }
     }
 }

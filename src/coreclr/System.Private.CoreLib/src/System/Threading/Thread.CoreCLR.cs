@@ -57,8 +57,16 @@ namespace System.Threading
 
         private Thread() { }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern Exception GetAndClearQCallException();
+        internal static Exception GetQCallSpecialException(nint status)
+        {
+            Exception? exception = null;
+            GetQCallSpecialException(status, ObjectHandleOnStack.Create(ref exception));
+            return exception!;
+        }
+
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_GetQCallSpecialException")]
+        private static partial void GetQCallSpecialException(nint status, ObjectHandleOnStack exception);
 
         public int ManagedThreadId
         {
@@ -87,7 +95,7 @@ namespace System.Threading
                 fixed (char* pThreadName = _name)
                 {
                     Exception? exception = null;
-                    if (StartInternal(GetNativeHandle(), _startHelper?._maxStackSize ?? 0, _priority, _isThreadPool ? Interop.BOOL.TRUE : Interop.BOOL.FALSE, pThreadName, ObjectHandleOnStack.Create(ref exception), out _) == Interop.BOOL.FALSE)
+                    if (StartInternal(GetNativeHandle(), _startHelper?._maxStackSize ?? 0, _priority, _isThreadPool ? Interop.BOOL.TRUE : Interop.BOOL.FALSE, pThreadName, ObjectHandleOnStack.Create(ref exception)) == Interop.BOOL.FALSE)
                     {
                         throw new ThreadStartException(exception);
                     }
@@ -95,8 +103,9 @@ namespace System.Threading
             }
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_Start")]
-        private static unsafe partial Interop.BOOL StartInternal(ThreadHandle t, int stackSize, int priority, Interop.BOOL isThreadPool, char* pThreadName, ObjectHandleOnStack exception, out QCallExceptionStatus qcallException);
+        private static unsafe partial Interop.BOOL StartInternal(ThreadHandle t, int stackSize, int priority, Interop.BOOL isThreadPool, char* pThreadName, ObjectHandleOnStack exception);
 
         [UnmanagedCallersOnly]
         private static unsafe void StartCallback(Thread* pThread)
@@ -145,30 +154,33 @@ namespace System.Threading
             }
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_YieldThread")]
-        private static partial Interop.BOOL YieldInternal(out QCallExceptionStatus qcallException);
+        private static partial Interop.BOOL YieldInternal();
 
-        public static bool Yield() => YieldInternal(out _) != Interop.BOOL.FALSE;
+        public static bool Yield() => YieldInternal() != Interop.BOOL.FALSE;
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static Thread InitializeCurrentThread()
         {
             Thread? thread = null;
-            GetCurrentThread(ObjectHandleOnStack.Create(ref thread), out _);
+            GetCurrentThread(ObjectHandleOnStack.Create(ref thread));
             return t_currentThread = thread!;
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_GetCurrentThread")]
-        private static partial void GetCurrentThread(ObjectHandleOnStack thread, out QCallExceptionStatus qcallException);
+        private static partial void GetCurrentThread(ObjectHandleOnStack thread);
 
         private void Initialize()
         {
             Thread _this = this;
-            Initialize(ObjectHandleOnStack.Create(ref _this), out _);
+            Initialize(ObjectHandleOnStack.Create(ref _this));
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_Initialize")]
-        private static partial void Initialize(ObjectHandleOnStack thread, out QCallExceptionStatus qcallException);
+        private static partial void Initialize(ObjectHandleOnStack thread);
 
         /// <summary>Clean up the thread when it goes away.</summary>
         ~Thread() => InternalFinalize(); // Delegate to the unmanaged portion.
@@ -178,12 +190,13 @@ namespace System.Threading
 
         private void ThreadNameChanged(string? value)
         {
-            InformThreadNameChange(GetNativeHandle(), value, value?.Length ?? 0, out _);
+            InformThreadNameChange(GetNativeHandle(), value, value?.Length ?? 0);
             GC.KeepAlive(this);
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_InformThreadNameChange", StringMarshalling = StringMarshalling.Utf16)]
-        private static partial void InformThreadNameChange(ThreadHandle t, string? name, int len, out QCallExceptionStatus qcallException);
+        private static partial void InformThreadNameChange(ThreadHandle t, string? name, int len);
 
         /// <summary>Returns true if the thread has been started and is not dead.</summary>
         public bool IsAlive => (ThreadState & (ThreadState.Unstarted | ThreadState.Stopped | ThreadState.Aborted)) == 0;
@@ -212,7 +225,7 @@ namespace System.Threading
                     throw new ThreadStateException(SR.ThreadState_Dead_State);
                 }
 
-                SetIsBackground(GetNativeHandle(), value ? Interop.BOOL.TRUE : Interop.BOOL.FALSE, out _);
+                SetIsBackground(GetNativeHandle(), value ? Interop.BOOL.TRUE : Interop.BOOL.FALSE);
                 GC.KeepAlive(this);
                 if (!value)
                 {
@@ -225,8 +238,9 @@ namespace System.Threading
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_GetIsBackground")]
         private static partial Interop.BOOL GetIsBackground(ThreadHandle t);
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_SetIsBackground")]
-        private static partial void SetIsBackground(ThreadHandle t, Interop.BOOL value, out QCallExceptionStatus qcallException);
+        private static partial void SetIsBackground(ThreadHandle t, Interop.BOOL value);
 
         /// <summary>Returns true if the thread is a threadpool thread.</summary>
         public bool IsThreadPoolThread
@@ -253,9 +267,10 @@ namespace System.Threading
             }
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_SetPriority")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static partial void SetPriority(ObjectHandleOnStack thread, int priority, out QCallExceptionStatus qcallException);
+        private static partial void SetPriority(ObjectHandleOnStack thread, int priority);
 
         /// <summary>Returns the priority of the thread.</summary>
         public ThreadPriority Priority
@@ -271,13 +286,14 @@ namespace System.Threading
             set
             {
                 Thread _this = this;
-                SetPriority(ObjectHandleOnStack.Create(ref _this), (int)value, out _);
+                SetPriority(ObjectHandleOnStack.Create(ref _this), (int)value);
                 _mayNeedResetForThreadPool = true;
             }
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_GetCurrentOSThreadId")]
-        private static partial ulong GetCurrentOSThreadId(out QCallExceptionStatus qcallException);
+        private static partial ulong GetCurrentOSThreadId();
 
         /// <summary>
         /// Return the thread state as a consistent set of bits.  This is more
@@ -323,16 +339,18 @@ namespace System.Threading
         /// single-threaded or multi-threaded apartment.
         /// </summary>
 #if FEATURE_COMINTEROP_APARTMENT_SUPPORT
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_GetApartmentState")]
-        private static partial int GetApartmentState(ObjectHandleOnStack t, out QCallExceptionStatus qcallException);
+        private static partial int GetApartmentState(ObjectHandleOnStack t);
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_SetApartmentState")]
-        private static partial int SetApartmentState(ObjectHandleOnStack t, int state, out QCallExceptionStatus qcallException);
+        private static partial int SetApartmentState(ObjectHandleOnStack t, int state);
 
         public ApartmentState GetApartmentState()
         {
             Thread _this = this;
-            return (ApartmentState)GetApartmentState(ObjectHandleOnStack.Create(ref _this), out _);
+            return (ApartmentState)GetApartmentState(ObjectHandleOnStack.Create(ref _this));
         }
 
         private bool SetApartmentStateUnchecked(ApartmentState state, bool throwOnError)
@@ -341,7 +359,7 @@ namespace System.Threading
             lock (this) // This lock is only needed when the this is not the current thread.
             {
                 Thread _this = this;
-                retState = (ApartmentState)SetApartmentState(ObjectHandleOnStack.Create(ref _this), (int)state, out _);
+                retState = (ApartmentState)SetApartmentState(ObjectHandleOnStack.Create(ref _this), (int)state);
             }
 
             // Special case where we pass in Unknown and get back MTA.
@@ -415,21 +433,23 @@ namespace System.Threading
 #if TARGET_UNIX || TARGET_BROWSER || TARGET_WASI
             WaitSubsystem.Interrupt(this);
 #else
-            Interrupt(GetNativeHandle(), out _);
+            Interrupt(GetNativeHandle());
             GC.KeepAlive(this);
 #endif
         }
 
 #if TARGET_WINDOWS
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_Interrupt")]
-        private static partial void Interrupt(ThreadHandle t, out QCallExceptionStatus qcallException);
+        private static partial void Interrupt(ThreadHandle t);
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_GetOSHandle")]
-        private static partial SafeWaitHandle GetOSHandle(ThreadHandle t, out QCallExceptionStatus qcallException);
+        private static partial SafeWaitHandle GetOSHandle(ThreadHandle t);
 
         private SafeWaitHandle GetJoinHandle()
         {
-            SafeWaitHandle handle = GetOSHandle(GetNativeHandle(), out _);
+            SafeWaitHandle handle = GetOSHandle(GetNativeHandle());
             GC.KeepAlive(this);
             return handle;
         }
@@ -587,14 +607,13 @@ namespace System.Threading
             }
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_ReentrantWaitAny")]
-        internal static unsafe partial int ReentrantWaitAny([MarshalAs(UnmanagedType.Bool)] bool alertable, int timeout, int count, IntPtr* handles, out QCallExceptionStatus qcallException);
+        internal static unsafe partial int ReentrantWaitAny([MarshalAs(UnmanagedType.Bool)] bool alertable, int timeout, int count, IntPtr* handles);
 
-        internal static void CheckForPendingInterrupt()
-            => CheckForPendingInterrupt(out _);
-
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_CheckForPendingInterrupt")]
-        private static partial void CheckForPendingInterrupt(out QCallExceptionStatus qcallException);
+        internal static partial void CheckForPendingInterrupt();
 
         private unsafe NativeThread* GetNativeThreadForCurrentThread()
         {

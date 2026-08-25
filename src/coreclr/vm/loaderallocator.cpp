@@ -757,7 +757,7 @@ BOOL LoaderAllocator::Destroy(QCall::LoaderAllocatorHandle pLoaderAllocator)
     return FALSE;
 } // LoaderAllocator::Destroy
 
-extern "C" BOOL QCALLTYPE LoaderAllocator_Destroy(QCall::LoaderAllocatorHandle pLoaderAllocator, QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE LoaderAllocator_Destroy(QCall::LoaderAllocatorHandle pLoaderAllocator, BOOL* pReturnValue)
 {
     QCALL_CONTRACT;
 
@@ -767,9 +767,9 @@ extern "C" BOOL QCALLTYPE LoaderAllocator_Destroy(QCall::LoaderAllocatorHandle p
 
     ret = LoaderAllocator::Destroy(pLoaderAllocator);
 
-    END_QCALL;
+    *pReturnValue = ret;
 
-    return ret;
+    END_QCALL;
 }
 
 #define MAX_LOADERALLOCATOR_HANDLE 0x40000000

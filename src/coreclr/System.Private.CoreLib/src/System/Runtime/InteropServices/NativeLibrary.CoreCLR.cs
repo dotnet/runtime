@@ -16,17 +16,16 @@ namespace System.Runtime.InteropServices
                               new QCallAssembly(ref rtAsm),
                               searchPath.HasValue,
                               (uint)searchPath.GetValueOrDefault(),
-                              throwOnError,
-                              out _);
+                              throwOnError);
         }
 
         /// External functions that implement the NativeLibrary interface
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "NativeLibrary_LoadByName", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial IntPtr LoadByName(string libraryName, QCallAssembly callingAssembly,
                                                  [MarshalAs(UnmanagedType.Bool)] bool hasDllImportSearchPathFlag, uint dllImportSearchPathFlag,
-                                                 [MarshalAs(UnmanagedType.Bool)] bool throwOnError,
-                                                 out QCallExceptionStatus qcallException);
+                                                 [MarshalAs(UnmanagedType.Bool)] bool throwOnError);
 
         [UnmanagedCallersOnly]
         private static unsafe IntPtr LoadLibraryCallbackStub(char* pLibraryName, Assembly* pAssembly, bool hasDllImportSearchPathFlags, uint dllImportSearchPathFlags, Exception* pException)

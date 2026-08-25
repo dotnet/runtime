@@ -42,11 +42,6 @@ namespace System.Diagnostics.Tracing
         {
             // Get the ID of the runtime provider so that it can be used as a filter when processing events.
             m_RuntimeProviderID = EventPipeInternal.GetProvider(NativeRuntimeEventSource.EventSourceName
-#if CORECLR
-#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-                , out _
-#pragma warning restore SA1001, SA1113, SA1115
-#endif
             );
         }
 
@@ -119,11 +114,6 @@ namespace System.Diagnostics.Tracing
             unsafe
             {
                 if (!EventPipeInternal.GetSessionInfo(sessionID, &sessionInfo
-#if CORECLR
-#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-                    , out _
-#pragma warning restore SA1001, SA1113, SA1115
-#endif
                 ))
                 {
                     Debug.Fail("GetSessionInfo returned false.");
@@ -155,11 +145,6 @@ namespace System.Diagnostics.Tracing
             Debug.Assert(sessionID != 0);
             m_dispatchTaskCancellationSource.Cancel();
             EventPipeInternal.SignalSession(sessionID
-#if CORECLR
-#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-                , out _
-#pragma warning restore SA1001, SA1113, SA1115
-#endif
             );
             Volatile.Write(ref m_sessionID, 0);
         }
@@ -173,11 +158,6 @@ namespace System.Diagnostics.Tracing
 
                 // Get the next event.
                 while (!token.IsCancellationRequested && EventPipeInternal.GetNextEvent(sessionID, &instanceData
-#if CORECLR
-#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-                    , out _
-#pragma warning restore SA1001, SA1113, SA1115
-#endif
                 ))
                 {
                     eventsReceived = true;

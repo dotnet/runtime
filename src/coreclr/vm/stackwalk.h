@@ -40,7 +40,7 @@ namespace AsmOffsetsAsserts
     class AsmOffsets;
 };
 
-extern "C" void QCALLTYPE AppendExceptionStackFrame(QCall::ObjectHandleOnStack exceptionObj, SIZE_T ip, SIZE_T sp, int flags, ExInfo *pExInfo, QCallExceptionStatus* qcallError);
+extern "C" QCallExceptionStatus QCALLTYPE AppendExceptionStackFrame(QCall::ObjectHandleOnStack exceptionObj, SIZE_T ip, SIZE_T sp, int flags, ExInfo *pExInfo);
 
 class CrawlFrame
 {
@@ -403,7 +403,7 @@ private:
     friend class EECodeManager;
     friend class StackFrameIterator;
     friend struct ExInfo;
-    friend void QCALLTYPE AppendExceptionStackFrame(QCall::ObjectHandleOnStack exceptionObj, SIZE_T ip, SIZE_T sp, int flags, ExInfo *pExInfo, QCallExceptionStatus* qcallError);
+    friend QCallExceptionStatus QCALLTYPE AppendExceptionStackFrame(QCall::ObjectHandleOnStack exceptionObj, SIZE_T ip, SIZE_T sp, int flags, ExInfo *pExInfo);
 
     bool              isFrameless;
     bool              isFirst;

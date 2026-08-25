@@ -21,24 +21,21 @@ namespace System.Runtime.InteropServices.ObjectiveC
             System.StubHelpers.StubHelpers.SetPendingExceptionObject(exception);
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ObjCMarshal_TrySetGlobalMessageSendCallback")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool TrySetGlobalMessageSendCallback(
             MessageSendFunction msgSendFunction,
-            IntPtr func,
-            out QCallExceptionStatus qcallException);
+            IntPtr func);
 
-        private static bool TrySetGlobalMessageSendCallback(MessageSendFunction msgSendFunction, IntPtr func)
-            => TrySetGlobalMessageSendCallback(msgSendFunction, func, out _);
-
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ObjCMarshal_TryInitializeReferenceTracker")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static unsafe partial bool TryInitializeReferenceTracker(
             delegate* unmanaged<void> beginEndCallback,
             delegate* unmanaged<IntPtr, int> isReferencedCallback,
             delegate* unmanaged<IntPtr, void> trackedObjectEnteredFinalization,
-            ObjectHandleOnStack objectTrackingInfoTable,
-            out QCallExceptionStatus qcallException);
+            ObjectHandleOnStack objectTrackingInfoTable);
 
         private static unsafe bool TryInitializeReferenceTracker(
             delegate* unmanaged<void> beginEndCallback,
@@ -52,18 +49,18 @@ namespace System.Runtime.InteropServices.ObjectiveC
                 beginEndCallback,
                 isReferencedCallback,
                 trackedObjectEnteredFinalization,
-                ObjectHandleOnStack.Create(ref objects),
-                out _);
+                ObjectHandleOnStack.Create(ref objects));
             Debug.Assert(object.ReferenceEquals(objects, s_objects));
 
             return result;
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ObjCMarshal_AllocateReferenceTrackingHandle")]
-        private static partial IntPtr AllocateReferenceTrackingHandle(ObjectHandleOnStack obj, out QCallExceptionStatus qcallException);
+        private static partial IntPtr AllocateReferenceTrackingHandle(ObjectHandleOnStack obj);
 
         private static IntPtr AllocateReferenceTrackingHandle(object obj)
-            => AllocateReferenceTrackingHandle(ObjectHandleOnStack.Create(ref obj), out _);
+            => AllocateReferenceTrackingHandle(ObjectHandleOnStack.Create(ref obj));
 
         private static unsafe bool IsTrackedReferenceWithFinalizer(object obj)
             => RuntimeHelpers.GetMethodTable(obj)->IsTrackedReferenceWithFinalizer;

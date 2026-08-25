@@ -13,11 +13,12 @@ namespace Internal
     /// </summary>
     internal static partial class VersionResilientHashCode
     {
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "VersionResilientHashCode_TypeHashCode")]
-        private static partial int TypeHashCode(QCallTypeHandle typeHandle, out QCallExceptionStatus qcallException);
+        private static partial int TypeHashCode(QCallTypeHandle typeHandle);
 
         public static int TypeHashCode(RuntimeType type)
-            => TypeHashCode(new QCallTypeHandle(ref type), out _);
+            => TypeHashCode(new QCallTypeHandle(ref type));
 
         private static int NameHashCode(string s1, string s2)
             => NameHashCode(System.Text.Encoding.UTF8.GetBytes(s1), System.Text.Encoding.UTF8.GetBytes(s2));

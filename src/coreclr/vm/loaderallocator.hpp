@@ -960,7 +960,7 @@ struct cdac_data<LoaderAllocator>
 
 typedef VPTR(LoaderAllocator) PTR_LoaderAllocator;
 
-extern "C" BOOL QCALLTYPE LoaderAllocator_Destroy(QCall::LoaderAllocatorHandle pLoaderAllocator, QCallExceptionStatus* qcallError);
+extern "C" QCallExceptionStatus QCALLTYPE LoaderAllocator_Destroy(QCall::LoaderAllocatorHandle pLoaderAllocator, BOOL* pReturnValue);
 
 class GlobalLoaderAllocator : public LoaderAllocator
 {

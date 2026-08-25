@@ -9,10 +9,9 @@
 #include "nativelibrarynative.h"
 
 // static
-extern "C" INT_PTR QCALLTYPE NativeLibrary_LoadByName(LPCWSTR name, QCall::AssemblyHandle callingAssembly,
+extern "C" QCallExceptionStatus QCALLTYPE NativeLibrary_LoadByName(LPCWSTR name, QCall::AssemblyHandle callingAssembly,
                                                          BOOL hasDllImportSearchPathFlag, DWORD dllImportSearchPathFlag,
-                                                         BOOL throwOnError,
-                                                         QCallExceptionStatus* qcallError)
+                                                         BOOL throwOnError, INT_PTR* pReturnValue)
 {
     QCALL_CONTRACT;
 
@@ -22,7 +21,7 @@ extern "C" INT_PTR QCALLTYPE NativeLibrary_LoadByName(LPCWSTR name, QCall::Assem
 
     handle = NativeLibrary::LoadLibraryByName(name, callingAssembly, hasDllImportSearchPathFlag, dllImportSearchPathFlag, throwOnError);
 
-    END_QCALL;
+    *pReturnValue = reinterpret_cast<INT_PTR>(handle);
 
-    return reinterpret_cast<INT_PTR>(handle);
+    END_QCALL;
 }

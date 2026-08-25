@@ -39,9 +39,10 @@
 // class Foo
 // {
 //
-//  // All QCalls that use BEGIN_QCALL must have a final QCallExceptionStatus out parameter.
+//  // All QCalls that use BEGIN_QCALL must use the hidden return value error handler.
+//  [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
 //  [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "FooNative_Bar", StringMarshalling = StringMarshalling.Utf16)]
-//  private static partial bool Bar(int flags, string inString, StringHandleOnStack retString, out QCallExceptionStatus qcallException);
+//  private static partial bool Bar(int flags, string inString, StringHandleOnStack retString);
 //
 //  // Many QCalls have a thin managed wrapper around them to expose them to the world in more meaningful way.
 //  public string Bar(int flags)
@@ -50,7 +51,7 @@
 //
 //      // The strings are returned from QCalls by taking address
 //      // of a local variable using JitHelpers.GetStringHandleOnStack method
-//      if (!Bar(flags, this.Id, StringHandleOnStack.Create(ref retString), out _))
+//      if (!Bar(flags, this.Id, StringHandleOnStack.Create(ref retString)))
 //          FatalError();
 //
 //      return retString;
@@ -65,7 +66,8 @@
 // The entrypoints of all QCalls has to be registered in tables in vm\qcallentrypoints.cpp using the DllImportEntry macro,
 // For example: DllImportEntry(FooNative_Bar)
 //
-// extern "C" BOOL QCALLTYPE FooNative_Bar(int flags, LPCWSTR wszString, QCall::StringHandleOnStack retString, QCallExceptionStatus* qcallError)
+// extern "C" QCallExceptionStatus QCALLTYPE FooNative_Bar(
+//     int flags, LPCWSTR wszString, QCall::StringHandleOnStack retString, BOOL* pReturnValue)
 // {
 //      // All QCalls should have QCALL_CONTRACT. It is alias for THROWS; GC_TRIGGERS; MODE_PREEMPTIVE.
 //      QCALL_CONTRACT;
@@ -75,10 +77,6 @@
 //      //     QCALL_CHECK;
 //      //     PRECONDITION(wszString != NULL);
 //      // } CONTRACTL_END;
-//
-//      // The only line between QCALL_CONTRACT and BEGIN_QCALL
-//      // should be the return value declaration if there is one.
-//      BOOL retVal = FALSE;
 //
 //      // The body has to be enclosed in BEGIN_QCALL/END_QCALL macro. It is necessary to make the exception handling work.
 //      BEGIN_QCALL;
@@ -95,11 +93,9 @@
 //      retString.Set(L"Hello");
 //
 //      // You can not return from inside of BEGIN_QCALL/END_QCALL. The return value has to be passed out in helper variable.
-//      retVal = TRUE;
+//      *pReturnValue = TRUE;
 //
 //      END_QCALL;
-//
-//      return retVal;
 // }
 
 
@@ -110,13 +106,15 @@
 #endif // !TARGET_UNIX
 
 #define BEGIN_QCALL                      \
-    qcallError->SetNoException();        \
+    QCallExceptionStatus qcallExceptionStatus = 0; \
+    QCallExceptionStatus* qcallError = &qcallExceptionStatus; \
     INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(GetThread()->GetFrame()) \
     INSTALL_MANAGED_EXCEPTION_CAPTURE_DISPATCHER
 
 #define END_QCALL                         \
     UNINSTALL_MANAGED_EXCEPTION_CAPTURE_DISPATCHER \
-    UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME
+    UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME \
+    return qcallExceptionStatus
 
 #define QCALL_CHECK             \
     THROWS;                     \

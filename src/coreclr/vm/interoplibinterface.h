@@ -67,24 +67,22 @@ using OBJC_TRACKING_INFO_REF = DPTR(ObjcTrackingInformationObject);
 #endif
 
 
-extern "C" BOOL QCALLTYPE ObjCMarshal_TryInitializeReferenceTracker(
+extern "C" QCallExceptionStatus QCALLTYPE ObjCMarshal_TryInitializeReferenceTracker(
     _In_ ObjCMarshalNative::BeginEndCallback beginEndCallback,
     _In_ ObjCMarshalNative::IsReferencedCallback isReferencedCallback,
     _In_ ObjCMarshalNative::EnteredFinalizationCallback trackedObjectEnteredFinalization,
-    _In_ QCall::ObjectHandleOnStack objectTrackingInfoTable,
-    QCallExceptionStatus* qcallError);
+    _In_ QCall::ObjectHandleOnStack objectTrackingInfoTable, BOOL* pReturnValue);
 
-extern "C" void* QCALLTYPE ObjCMarshal_AllocateReferenceTrackingHandle(_In_ QCall::ObjectHandleOnStack obj, QCallExceptionStatus* qcallError);
+extern "C" QCallExceptionStatus QCALLTYPE ObjCMarshal_AllocateReferenceTrackingHandle(_In_ QCall::ObjectHandleOnStack obj, void** pReturnValue);
 
 extern "C" void QCALLTYPE ObjCMarshal_GetOrCreateReferenceTrackingMemory(
     _In_ QCall::ObjectHandleOnStack obj,
     _Out_ int* memInSizeT,
     _Outptr_ void** mem);
 
-extern "C" BOOL QCALLTYPE ObjCMarshal_TrySetGlobalMessageSendCallback(
+extern "C" QCallExceptionStatus QCALLTYPE ObjCMarshal_TrySetGlobalMessageSendCallback(
     _In_ ObjCMarshalNative::MessageSendFunction msgSendFunction,
-    _In_ void* fptr,
-    QCallExceptionStatus* qcallError);
+    _In_ void* fptr, BOOL* pReturnValue);
 
 #endif // FEATURE_OBJCMARSHAL
 
@@ -96,20 +94,17 @@ public: // GC interaction
         _In_ MarkCrossReferencesArgs* args);
 };
 
-extern "C" BOOL QCALLTYPE JavaMarshal_Initialize(
-    _In_ void* markCrossReferences,
-    QCallExceptionStatus* qcallError);
+extern "C" QCallExceptionStatus QCALLTYPE JavaMarshal_Initialize(
+    _In_ void* markCrossReferences, BOOL* pReturnValue);
 
-extern "C" void* QCALLTYPE JavaMarshal_CreateReferenceTrackingHandle(
+extern "C" QCallExceptionStatus QCALLTYPE JavaMarshal_CreateReferenceTrackingHandle(
     _In_ QCall::ObjectHandleOnStack obj,
-    _In_ void* context,
-    QCallExceptionStatus* qcallError);
+    _In_ void* context, void** pReturnValue);
 
-extern "C" void QCALLTYPE JavaMarshal_FinishCrossReferenceProcessing(
+extern "C" QCallExceptionStatus QCALLTYPE JavaMarshal_FinishCrossReferenceProcessing(
     _In_ MarkCrossReferencesArgs *crossReferences,
     _In_ size_t length,
-    _In_ void* unreachableObjectHandles,
-    QCallExceptionStatus* qcallError);
+    _In_ void* unreachableObjectHandles);
 
 extern "C" BOOL QCALLTYPE JavaMarshal_GetContext(
     _In_ OBJECTHANDLE handle,

@@ -400,30 +400,32 @@ namespace System.Reflection
                 throwOnError: throwOnError, ignoreCase: ignoreCase);
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeModule_GetFullyQualifiedName")]
-        private static partial void GetFullyQualifiedName(QCallModule module, StringHandleOnStack retString, out QCallExceptionStatus qcallException);
+        private static partial void GetFullyQualifiedName(QCallModule module, StringHandleOnStack retString);
 
         [RequiresAssemblyFiles(UnknownStringMessageInRAF)]
         internal string GetFullyQualifiedName()
         {
             string? fullyQualifiedName = null;
             RuntimeModule thisAsLocal = this;
-            GetFullyQualifiedName(new QCallModule(ref thisAsLocal), new StringHandleOnStack(ref fullyQualifiedName), out _);
+            GetFullyQualifiedName(new QCallModule(ref thisAsLocal), new StringHandleOnStack(ref fullyQualifiedName));
             return fullyQualifiedName!;
         }
 
         [RequiresAssemblyFiles(UnknownStringMessageInRAF)]
         public override string FullyQualifiedName => GetFullyQualifiedName();
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeModule_GetTypes")]
-        private static partial void GetTypes(QCallModule module, ObjectHandleOnStack retTypes, ObjectHandleOnStack retExceptions, out QCallExceptionStatus qcallException);
+        private static partial void GetTypes(QCallModule module, ObjectHandleOnStack retTypes, ObjectHandleOnStack retExceptions);
 
         internal RuntimeType[] GetDefinedTypes()
         {
             RuntimeType[]? types = null;
             Exception[]? exceptions = null;
             RuntimeModule thisAsLocal = this;
-            GetTypes(new QCallModule(ref thisAsLocal), ObjectHandleOnStack.Create(ref types), ObjectHandleOnStack.Create(ref exceptions), out _);
+            GetTypes(new QCallModule(ref thisAsLocal), ObjectHandleOnStack.Create(ref types), ObjectHandleOnStack.Create(ref exceptions));
 
             if (exceptions is not null)
                 throw new ReflectionTypeLoadException(types, exceptions, SR.ReflectionTypeLoad_LoadFailed);
@@ -481,8 +483,9 @@ namespace System.Reflection
             return RuntimeType.GetMethods(bindingFlags);
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeModule_GetScopeName")]
-        private static partial void GetScopeName(QCallModule module, StringHandleOnStack retString, out QCallExceptionStatus qcallException);
+        private static partial void GetScopeName(QCallModule module, StringHandleOnStack retString);
 
         public override string ScopeName
         {
@@ -490,7 +493,7 @@ namespace System.Reflection
             {
                 string? scopeName = null;
                 RuntimeModule thisAsLocal = this;
-                GetScopeName(new QCallModule(ref thisAsLocal), new StringHandleOnStack(ref scopeName), out _);
+                GetScopeName(new QCallModule(ref thisAsLocal), new StringHandleOnStack(ref scopeName));
                 return scopeName!;
             }
         }

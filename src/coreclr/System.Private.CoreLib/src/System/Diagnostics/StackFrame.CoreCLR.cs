@@ -56,8 +56,9 @@ namespace System.Diagnostics
         private static bool AppendStackFrameWithoutMethodBase(StringBuilder sb) => false;
 #pragma warning restore IDE0060
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StackFrame_GetMethodDescFromNativeIP")]
-        private static partial RuntimeMethodHandleInternal GetMethodDescFromNativeIP(IntPtr ip, out QCallExceptionStatus qcallException);
+        private static partial RuntimeMethodHandleInternal GetMethodDescFromNativeIP(IntPtr ip);
 
         /// <summary>
         /// Returns the MethodBase instance for the managed code IP address.
@@ -68,7 +69,7 @@ namespace System.Diagnostics
         /// <returns>MethodBase instance for the method or null if IP not found</returns>
         internal static MethodBase? GetMethodFromNativeIP(IntPtr ip)
         {
-            RuntimeMethodHandleInternal method = GetMethodDescFromNativeIP(ip, out _);
+            RuntimeMethodHandleInternal method = GetMethodDescFromNativeIP(ip);
 
             if (method.Value == IntPtr.Zero)
                 return null;

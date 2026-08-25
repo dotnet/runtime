@@ -118,8 +118,9 @@ namespace System.Runtime
             }
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_Abort")]
-        private static partial void AbortThread(ThreadHandle thread, out QCallExceptionStatus qcallException);
+        private static partial void AbortThread(ThreadHandle thread);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_ResetAbort")]
         [SuppressGCTransition]
@@ -142,7 +143,7 @@ namespace System.Runtime
                 try
                 {
                     // Abort the thread executing the action (which may be the current thread).
-                    AbortThread(_thread.GetNativeHandle(), out _);
+                    AbortThread(_thread.GetNativeHandle());
                 }
                 finally
                 {

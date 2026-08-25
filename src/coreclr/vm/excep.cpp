@@ -4718,7 +4718,7 @@ static BOOL GetManagedFormatStringForResourceID(UINT32 resId, SString & converte
 //==========================================================================
 // Private helper for TypeLoadException.
 //==========================================================================
-extern "C" void QCALLTYPE GetTypeLoadExceptionMessage(UINT32 resId, QCall::StringHandleOnStack retString, QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE GetTypeLoadExceptionMessage(UINT32 resId, QCall::StringHandleOnStack retString)
 {
     QCALL_CONTRACT;
 
@@ -4737,7 +4737,7 @@ extern "C" void QCALLTYPE GetTypeLoadExceptionMessage(UINT32 resId, QCall::Strin
 // Private helper for FileLoadException and FileNotFoundException.
 //==========================================================================
 
-extern "C" void QCALLTYPE GetFileLoadExceptionMessage(UINT32 hr, QCall::StringHandleOnStack retString, QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE GetFileLoadExceptionMessage(UINT32 hr, QCall::StringHandleOnStack retString)
 {
     QCALL_CONTRACT;
 
@@ -4753,7 +4753,7 @@ extern "C" void QCALLTYPE GetFileLoadExceptionMessage(UINT32 hr, QCall::StringHa
 //==========================================================================
 // Private helper for FileLoadException and FileNotFoundException.
 //==========================================================================
-extern "C" void QCALLTYPE FileLoadException_GetMessageForHR(UINT32 hresult, QCall::StringHandleOnStack retString, QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE FileLoadException_GetMessageForHR(UINT32 hresult, QCall::StringHandleOnStack retString)
 {
     QCALL_CONTRACT;
 
@@ -6659,7 +6659,7 @@ void UnwindAndContinueRethrowHelperInsideQcallCatch(
     // cases where the last thrown object is NULL.
     OBJECTREF orThrowable = CLRException::GetThrowableFromException(pException);
     CONSISTENCY_CHECK(orThrowable != NULL);
-    pQCallException->SetThrowable(orThrowable);
+    SetQCallExceptionStatusThrowable(pQCallException, orThrowable);
 }
 
 #ifdef TARGET_UNIX
@@ -6672,7 +6672,7 @@ void CaptureQCallExceptionFromPALException(PAL_SEHException& exception, QCallExc
     GCX_COOP();
 
     OBJECTREF throwable = ExInfo::CreateThrowable(exception.GetExceptionRecord(), FALSE);
-    pQCallException->SetThrowable(throwable);
+    SetQCallExceptionStatusThrowable(pQCallException, throwable);
 }
 #endif
 

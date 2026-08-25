@@ -1651,7 +1651,7 @@ namespace System
                     else
                     {
                         RuntimeType type = m_runtimeType;
-                        RuntimeTypeHandle.GetGenericTypeDefinition(new QCallTypeHandle(ref type), ObjectHandleOnStack.Create(ref genericDefinition), out _);
+                        RuntimeTypeHandle.GetGenericTypeDefinition(new QCallTypeHandle(ref type), ObjectHandleOnStack.Create(ref genericDefinition));
                     }
                     return _genericTypeDefinition = genericDefinition;
                 }
@@ -3407,15 +3407,16 @@ namespace System
                 else
 #endif // FEATURE_COMINTEROP
                 {
-                    GetGuid(th.AsMethodTable(), &result, out _);
+                    GetGuid(th.AsMethodTable(), &result);
                 }
                 GC.KeepAlive(this); // Ensure TypeHandle remains alive.
                 return result;
             }
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ReflectionInvocation_GetGuid")]
-        private static unsafe partial void GetGuid(MethodTable* pMT, Guid* result, out QCallExceptionStatus qcallException);
+        private static unsafe partial void GetGuid(MethodTable* pMT, Guid* result);
 
 #if FEATURE_COMINTEROP
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -3423,11 +3424,12 @@ namespace System
         {
             Debug.Assert(type.IsGenericCOMObjectImpl());
             Debug.Assert(result is not null);
-            GetComObjectGuid(ObjectHandleOnStack.Create(ref type), result, out _);
+            GetComObjectGuid(ObjectHandleOnStack.Create(ref type), result);
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ReflectionInvocation_GetComObjectGuid")]
-        private static unsafe partial void GetComObjectGuid(ObjectHandleOnStack type, Guid* result, out QCallExceptionStatus qcallException);
+        private static unsafe partial void GetComObjectGuid(ObjectHandleOnStack type, Guid* result);
 #endif // FEATURE_COMINTEROP
 
         protected override unsafe bool IsValueTypeImpl()
@@ -4136,6 +4138,7 @@ namespace System
         #endregion
 
 #if FEATURE_COMINTEROP
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ReflectionInvocation_InvokeDispMethod")]
         private static partial void InvokeDispMethod(
             ObjectHandleOnStack type,
@@ -4146,8 +4149,7 @@ namespace System
             ObjectHandleOnStack byrefModifiers,
             int lcid,
             ObjectHandleOnStack namedParameters,
-            ObjectHandleOnStack result,
-            out QCallExceptionStatus qcallException);
+            ObjectHandleOnStack result);
 
         private object InvokeDispMethod(
             string name,
@@ -4169,8 +4171,7 @@ namespace System
                 ObjectHandleOnStack.Create(ref byrefModifiers),
                 culture,
                 ObjectHandleOnStack.Create(ref namedParameters),
-                ObjectHandleOnStack.Create(ref result),
-                out _);
+                ObjectHandleOnStack.Create(ref result));
             return result!;
         }
 
@@ -4368,9 +4369,10 @@ namespace System
     #region Library
     internal readonly unsafe partial struct MdUtf8String
     {
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MdUtf8String_EqualsCaseInsensitive")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static partial bool EqualsCaseInsensitive(void* szLhs, void* szRhs, int cSz, out QCallExceptionStatus qcallException);
+        private static partial bool EqualsCaseInsensitive(void* szLhs, void* szRhs, int cSz);
 
         private readonly byte* m_pStringHeap;        // This is the raw UTF8 string.
         private readonly int m_StringHeapByteLength;
@@ -4418,7 +4420,7 @@ namespace System
             }
             else
             {
-                return (m_StringHeapByteLength == 0) || EqualsCaseInsensitive(s.m_pStringHeap, m_pStringHeap, m_StringHeapByteLength, out _);
+                return (m_StringHeapByteLength == 0) || EqualsCaseInsensitive(s.m_pStringHeap, m_pStringHeap, m_StringHeapByteLength);
             }
         }
 

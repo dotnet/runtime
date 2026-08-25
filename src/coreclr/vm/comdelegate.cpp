@@ -970,9 +970,8 @@ static PCODE GetVirtualCallStub(MethodDesc *method, TypeHandle scopeType)
         );
 }
 
-extern "C" BOOL QCALLTYPE Delegate_BindToMethodName(MethodTable* pDelegateMT, MethodTable *pTargetMT,
-    QCall::TypeHandle pMethodType, LPCUTF8 pszMethodName, DelegateBindingFlags flags, QCall::ObjectHandleOnStack targetParameter, BindToMethodDetails *pBindToMethodDetails,
-    QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE Delegate_BindToMethodName(MethodTable* pDelegateMT, MethodTable *pTargetMT,
+    QCall::TypeHandle pMethodType, LPCUTF8 pszMethodName, DelegateBindingFlags flags, QCall::ObjectHandleOnStack targetParameter, BindToMethodDetails *pBindToMethodDetails, BOOL* pReturnValue)
 {
     QCALL_CONTRACT;
 
@@ -1071,14 +1070,13 @@ extern "C" BOOL QCALLTYPE Delegate_BindToMethodName(MethodTable* pDelegateMT, Me
         ;
 
 
-    END_QCALL;
+    *pReturnValue = pMatchingMethod != NULL;
 
-    return pMatchingMethod != NULL;
+    END_QCALL;
 }
 
-extern "C" BOOL QCALLTYPE Delegate_BindToMethodInfo(MethodTable* pDelegateMT, MethodTable *pTargetMT,
-    MethodDesc * method, QCall::TypeHandle pMethodType, DelegateBindingFlags flags, QCall::ObjectHandleOnStack targetParameter, BindToMethodDetails *pBindToMethodDetails,
-    QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE Delegate_BindToMethodInfo(MethodTable* pDelegateMT, MethodTable *pTargetMT,
+    MethodDesc * method, QCall::TypeHandle pMethodType, DelegateBindingFlags flags, QCall::ObjectHandleOnStack targetParameter, BindToMethodDetails *pBindToMethodDetails, BOOL* pReturnValue)
 {
     QCALL_CONTRACT;
 
@@ -1130,9 +1128,9 @@ extern "C" BOOL QCALLTYPE Delegate_BindToMethodInfo(MethodTable* pDelegateMT, Me
         result = FALSE;
     }
 
-    END_QCALL;
+    *pReturnValue = result;
 
-    return result;
+    END_QCALL;
 }
 
 // This method is called (in the late bound case only) once a target method has been decided on. All the consistency checks
@@ -1527,7 +1525,7 @@ MethodDesc* COMDelegate::GetILStubMethodDesc(EEImplMethodDesc* pDelegateMD, DWOR
     return PInvoke::CreateCLRToNativeILStub(&sigInfo, dwStubFlags, pDelegateMD);
 }
 
-extern "C" void QCALLTYPE Delegate_InitializeVirtualCallStub(QCall::ObjectHandleOnStack d, PCODE method, QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE Delegate_InitializeVirtualCallStub(QCall::ObjectHandleOnStack d, PCODE method)
 {
     QCALL_CONTRACT;
 
@@ -1547,7 +1545,7 @@ extern "C" void QCALLTYPE Delegate_InitializeVirtualCallStub(QCall::ObjectHandle
     END_QCALL;
 }
 
-extern "C" PCODE QCALLTYPE Delegate_AdjustTarget(MethodTable* pMTTarg, PCODE method, QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE Delegate_AdjustTarget(MethodTable* pMTTarg, PCODE method, PCODE* pReturnValue)
 {
     QCALL_CONTRACT;
 
@@ -1578,9 +1576,9 @@ extern "C" PCODE QCALLTYPE Delegate_AdjustTarget(MethodTable* pMTTarg, PCODE met
         method = pCorrectedMethod->GetMultiCallableAddrOfCode();
     }
 
-    END_QCALL;
+    *pReturnValue = method;
 
-    return method;
+    END_QCALL;
 }
 
 uint32_t MethodDescToNumFixedArgs(MethodDesc *pMD)
@@ -1605,7 +1603,7 @@ uint32_t MethodDescToNumFixedArgs(MethodDesc *pMD)
 // This is the single constructor for all Delegates. The compiler
 // doesn't provide an implementation of the Delegate constructor. We
 // provide that implementation through a QCall call to this method.
-extern "C" void QCALLTYPE Delegate_Construct(MethodTable* pDelegateMT, MethodTable* pTargetMT, PCODE method, BindToMethodDetails *pBindToMethodDetails, QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE Delegate_Construct(MethodTable* pDelegateMT, MethodTable* pTargetMT, PCODE method, BindToMethodDetails *pBindToMethodDetails)
 {
     QCALL_CONTRACT;
 
@@ -1908,7 +1906,7 @@ void COMDelegate::ThrowIfInvalidUnmanagedCallersOnlyUsage(MethodDesc* pMD)
 }
 
 // This method will get the MethodInfo for a delegate
-extern "C" void QCALLTYPE Delegate_CreateMethodInfo(MethodDesc* methodDesc, QCall::ObjectHandleOnStack retMethodInfo, QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE Delegate_CreateMethodInfo(MethodDesc* methodDesc, QCall::ObjectHandleOnStack retMethodInfo)
 {
     QCALL_CONTRACT;
 
@@ -1923,7 +1921,7 @@ extern "C" void QCALLTYPE Delegate_CreateMethodInfo(MethodDesc* methodDesc, QCal
     END_QCALL;
 }
 
-extern "C" MethodDesc* QCALLTYPE Delegate_GetMethodDesc(QCall::ObjectHandleOnStack instance, QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE Delegate_GetMethodDesc(QCall::ObjectHandleOnStack instance, MethodDesc** pReturnValue)
 {
     QCALL_CONTRACT;
 
@@ -1935,9 +1933,9 @@ extern "C" MethodDesc* QCALLTYPE Delegate_GetMethodDesc(QCall::ObjectHandleOnSta
 
     pMD = COMDelegate::GetMethodDesc(instance.Get());
 
-    END_QCALL;
+    *pReturnValue = pMD;
 
-    return pMD;
+    END_QCALL;
 }
 
 FCIMPL1(MethodDesc*, COMDelegate::GetInvokeMethod, MethodTable* pDelegateMT)
@@ -1961,7 +1959,7 @@ FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, MethodTable* pDelegateMT)
 }
 FCIMPLEND
 
-extern "C" PCODE QCALLTYPE Delegate_GetMulticastInvokeSlow(MethodTable* pDelegateMT, QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE Delegate_GetMulticastInvokeSlow(MethodTable* pDelegateMT, PCODE* pReturnValue)
 {
     QCALL_CONTRACT;
     _ASSERTE(pDelegateMT != NULL);
@@ -2081,9 +2079,9 @@ extern "C" PCODE QCALLTYPE Delegate_GetMulticastInvokeSlow(MethodTable* pDelegat
         pStub = delegateEEClass->m_pMultiCastInvokeStub;
     }
 
-    END_QCALL;
+    *pReturnValue = pStub;
 
-    return pStub;
+    END_QCALL;
 }
 
 static bool IsLocationAssignable(TypeHandle fromHandle, TypeHandle toHandle, bool relaxedMatch, bool fromHandleIsBoxed)

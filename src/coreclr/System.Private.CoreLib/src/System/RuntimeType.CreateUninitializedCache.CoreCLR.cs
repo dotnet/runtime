@@ -69,19 +69,18 @@ namespace System
 
                 GetCreateUninitializedInfo(
                     new QCallTypeHandle(ref rt),
-                    &pfnAllocatorTemp, &vAllocatorFirstArgTemp,
-                    out _);
+                    &pfnAllocatorTemp, &vAllocatorFirstArgTemp);
 
                 pfnAllocator = pfnAllocatorTemp;
                 vAllocatorFirstArg = vAllocatorFirstArgTemp;
             }
 
+            [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
             [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ReflectionSerialization_GetCreateUninitializedObjectInfo")]
             private static partial void GetCreateUninitializedInfo(
                 QCallTypeHandle type,
                 delegate*<void*, object>* ppfnAllocator,
-                void** pvAllocatorFirstArg,
-                out QCallExceptionStatus qcallException);
+                void** pvAllocatorFirstArg);
         }
     }
 }

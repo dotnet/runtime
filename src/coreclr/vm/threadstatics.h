@@ -90,7 +90,6 @@ struct ThreadLocalData
     PTR_Object pNonCollectibleTlsArrayData;
     DPTR(OBJECTHANDLE) pCollectibleTlsArrayData; // Points at the Thread local array data.
     PTR_Thread pThread; // This starts the region of ThreadLocalData which is referenceable by TLSIndexType::DirectOnThreadLocalData
-    PTR_Object pQCallException; // This is used to store an exception that is thrown in a QCall, so that it can be rethrown in managed code. It is stored here because this is the only place that is guaranteed to be allocated for the lifetime of the thread, and it is not used for anything else.
     uint32_t managedThreadId;
     PTR_InFlightTLSData pInFlightData; // Points at the in-flight TLS data (TLS data that exists before the class constructor finishes running)
     BYTE ExtendedDirectThreadLocalTLSData[EXTENDED_DIRECT_THREAD_LOCAL_SIZE];

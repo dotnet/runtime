@@ -193,7 +193,7 @@ extern LONG InternalUnhandledExceptionFilter_Worker(PEXCEPTION_POINTERS pExcepti
 
 VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable);
 
-struct QCallExceptionStatus;
+typedef UINT_PTR QCallExceptionStatus;
 
 #if defined(DACCESS_COMPILE)
 
@@ -204,19 +204,12 @@ struct QCallExceptionStatus;
 #define UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX
 #else // DACCESS_COMPILE
 
-struct QCallExceptionStatus
-{
-private:
-    INT32 m_exceptionPending;
+constexpr QCallExceptionStatus QCallOutOfMemoryException = 1;
+constexpr QCallExceptionStatus QCallStackOverflowException = 2;
 
-public:
-    void SetNoException()
-    {
-        m_exceptionPending = 0;
-    }
+void SetQCallExceptionStatusThrowable(QCallExceptionStatus* pStatus, OBJECTREF throwable);
 
-    void SetThrowable(OBJECTREF throwable);
-};
+static_assert(sizeof(QCallExceptionStatus) == sizeof(void*));
 
 void UnwindAndContinueRethrowHelperInsideCatch(Frame* pEntryFrame, Exception* pException);
 void UnwindAndContinueRethrowHelperInsideQcallCatch(

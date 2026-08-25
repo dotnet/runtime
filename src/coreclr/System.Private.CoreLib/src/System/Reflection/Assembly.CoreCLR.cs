@@ -54,13 +54,14 @@ namespace System.Reflection
             return RuntimeAssembly.InternalLoad(assemblyRef, ref stackMark, AssemblyLoadContext.CurrentContextualReflectionContext);
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetExecutingAssembly")]
-        private static partial void GetExecutingAssemblyNative(StackCrawlMarkHandle stackMark, ObjectHandleOnStack retAssembly, out QCallExceptionStatus qcallException);
+        private static partial void GetExecutingAssemblyNative(StackCrawlMarkHandle stackMark, ObjectHandleOnStack retAssembly);
 
         internal static RuntimeAssembly GetExecutingAssembly(ref StackCrawlMark stackMark)
         {
             RuntimeAssembly? retAssembly = null;
-            GetExecutingAssemblyNative(new StackCrawlMarkHandle(ref stackMark), ObjectHandleOnStack.Create(ref retAssembly), out _);
+            GetExecutingAssemblyNative(new StackCrawlMarkHandle(ref stackMark), ObjectHandleOnStack.Create(ref retAssembly));
             return retAssembly!;
         }
 
@@ -85,13 +86,14 @@ namespace System.Reflection
             return GetExecutingAssembly(ref stackMark);
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetEntryAssembly")]
-        private static partial void GetEntryAssemblyNative(ObjectHandleOnStack retAssembly, out QCallExceptionStatus qcallException);
+        private static partial void GetEntryAssemblyNative(ObjectHandleOnStack retAssembly);
 
         private static RuntimeAssembly? GetEntryAssemblyInternal()
         {
             RuntimeAssembly? entryAssembly = null;
-            GetEntryAssemblyNative(ObjectHandleOnStack.Create(ref entryAssembly), out _);
+            GetEntryAssemblyNative(ObjectHandleOnStack.Create(ref entryAssembly));
             return entryAssembly;
         }
 

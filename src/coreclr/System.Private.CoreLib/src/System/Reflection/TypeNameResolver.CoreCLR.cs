@@ -197,8 +197,9 @@ namespace System.Reflection
             return assembly;
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "UnsafeAccessors_ResolveGenericParamToTypeHandle")]
-        private static partial IntPtr ResolveGenericParamToTypeHandle(IntPtr unsafeAccessorMethod, [MarshalAs(UnmanagedType.Bool)] bool isMethodParam, uint paramIndex, out QCallExceptionStatus qcallException);
+        private static partial IntPtr ResolveGenericParamToTypeHandle(IntPtr unsafeAccessorMethod, [MarshalAs(UnmanagedType.Bool)] bool isMethodParam, uint paramIndex);
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "TypeNameResolver.GetType is marked as RequiresUnreferencedCode.")]
@@ -269,7 +270,7 @@ namespace System.Reflection
                         }
 
                         Debug.Assert(_unsafeAccessorMethod != IntPtr.Zero);
-                        IntPtr typeHandle = ResolveGenericParamToTypeHandle(_unsafeAccessorMethod, isMethodParam, paramIndex, out _);
+                        IntPtr typeHandle = ResolveGenericParamToTypeHandle(_unsafeAccessorMethod, isMethodParam, paramIndex);
                         if (typeHandle == IntPtr.Zero)
                         {
                             throw new TypeLoadException(SR.Format(SR.TypeLoad_ResolveType, escapedTypeName), typeName: escapedTypeName);

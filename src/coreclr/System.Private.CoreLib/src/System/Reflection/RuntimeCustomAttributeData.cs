@@ -1705,8 +1705,7 @@ namespace System.Reflection
             bool result = RuntimeMethodHandle.IsCAVisibleFromDecoratedType(new QCallTypeHandle(ref attributeTypeHandle),
                                                                     ctorWithParameters is not null ? IRuntimeMethodInfo.GetValue(ctorWithParameters) : RuntimeMethodHandleInternal.EmptyHandle,
                                                                     new QCallTypeHandle(ref parentTypeHandle),
-                                                                    new QCallModule(ref decoratedModule),
-                                                                    out _) != Interop.BOOL.FALSE;
+                                                                    new QCallModule(ref decoratedModule)) != Interop.BOOL.FALSE;
 
             GC.KeepAlive(ctorWithParameters);
             return result;
@@ -1861,6 +1860,7 @@ namespace System.Reflection
             return result != 0;
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "CustomAttribute_CreateCustomAttributeInstance")]
         private static partial void CreateCustomAttributeInstance(
             QCallModule pModule,
@@ -1869,8 +1869,7 @@ namespace System.Reflection
             ref IntPtr ppBlob,
             IntPtr pEndBlob,
             out int pcNamedArgs,
-            ObjectHandleOnStack instance,
-            out QCallExceptionStatus qcallException);
+            ObjectHandleOnStack instance);
 
         private static object CreateCustomAttributeInstance(RuntimeModule module, RuntimeType type, IRuntimeMethodInfo ctor, ref IntPtr blob, IntPtr blobEnd, out int namedArgs)
         {
@@ -1887,11 +1886,11 @@ namespace System.Reflection
                 ref blob,
                 blobEnd,
                 out namedArgs,
-                ObjectHandleOnStack.Create(ref result),
-                out _);
+                ObjectHandleOnStack.Create(ref result));
             return result!;
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "CustomAttribute_CreatePropertyOrFieldData", StringMarshalling = StringMarshalling.Utf16)]
         private static partial void CreatePropertyOrFieldData(
             QCallModule pModule,
@@ -1900,8 +1899,7 @@ namespace System.Reflection
             StringHandleOnStack name,
             [MarshalAs(UnmanagedType.Bool)] out bool bIsProperty,
             ObjectHandleOnStack type,
-            ObjectHandleOnStack value,
-            out QCallExceptionStatus qcallException);
+            ObjectHandleOnStack value);
 
         private static void GetPropertyOrFieldData(
             RuntimeModule module, ref IntPtr blobStart, IntPtr blobEnd, out string name, out bool isProperty, out RuntimeType? type, out object? value)
@@ -1921,8 +1919,7 @@ namespace System.Reflection
                 new StringHandleOnStack(ref nameLocal),
                 out isProperty,
                 ObjectHandleOnStack.Create(ref typeLocal),
-                ObjectHandleOnStack.Create(ref valueLocal),
-                out _);
+                ObjectHandleOnStack.Create(ref valueLocal));
             name = nameLocal!;
             type = typeLocal;
             value = valueLocal;

@@ -35,11 +35,6 @@ namespace System.Diagnostics.Tracing
                     if (!eventsReceived)
                     {
                         EventPipeInternal.WaitForSessionSignal(sessionID, Timeout.Infinite
-#if CORECLR
-#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-                            , out _
-#pragma warning restore SA1001, SA1113, SA1115
-#endif
                         );
                     }
 
@@ -58,11 +53,6 @@ namespace System.Diagnostics.Tracing
             // Disable the old session. This can happen asynchronously since we aren't using the old session
             // anymore.
             EventPipeInternal.Disable(sessionID
-#if CORECLR
-#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-                , out _
-#pragma warning restore SA1001, SA1113, SA1115
-#endif
             );
         }
     }

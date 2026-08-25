@@ -170,7 +170,7 @@ namespace System.Reflection
 
                     nameParts.SetVersion(parts._version, defaultValue: ushort.MaxValue);
 
-                    InitializeAssemblySpec(&nameParts, pAssemblySpec, out _);
+                    InitializeAssemblySpec(&nameParts, pAssemblySpec);
                 }
             }
             catch (Exception ex)
@@ -192,7 +192,8 @@ namespace System.Reflection
             }
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyName_InitializeAssemblySpec")]
-        private static unsafe partial void InitializeAssemblySpec(NativeAssemblyNameParts* pAssemblyNameParts, void* pAssemblySpec, out QCallExceptionStatus qcallException);
+        private static unsafe partial void InitializeAssemblySpec(NativeAssemblyNameParts* pAssemblyNameParts, void* pAssemblySpec);
     }
 }

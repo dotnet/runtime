@@ -11,8 +11,9 @@ namespace System
 {
     public abstract partial class Enum
     {
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Enum_GetValuesAndNames")]
-        private static partial void GetEnumValuesAndNames(QCallTypeHandle enumType, ObjectHandleOnStack values, ObjectHandleOnStack names, Interop.BOOL getNames, out QCallExceptionStatus qcallException);
+        private static partial void GetEnumValuesAndNames(QCallTypeHandle enumType, ObjectHandleOnStack values, ObjectHandleOnStack names, Interop.BOOL getNames);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe CorElementType InternalGetCorElementType(RuntimeType rt)
@@ -111,8 +112,7 @@ namespace System
                     new QCallTypeHandle(ref type),
                     ObjectHandleOnStack.Create(ref values),
                     ObjectHandleOnStack.Create(ref names),
-                    getNames ? Interop.BOOL.TRUE : Interop.BOOL.FALSE,
-                    out _);
+                    getNames ? Interop.BOOL.TRUE : Interop.BOOL.FALSE);
 
                 Debug.Assert(values!.GetType() == typeof(TStorage[]));
 

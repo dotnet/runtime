@@ -36,15 +36,16 @@ namespace System.Reflection
             return RuntimeType.GetMethodBase(declaringType.GetRuntimeType(), handle.GetMethodInfo());
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MethodBase_GetCurrentMethod")]
-        private static partial RuntimeMethodHandleInternal GetCurrentMethod(StackCrawlMarkHandle stackMark, out QCallExceptionStatus qcallException);
+        private static partial RuntimeMethodHandleInternal GetCurrentMethod(StackCrawlMarkHandle stackMark);
 
         [RequiresUnreferencedCode("Metadata for the method might be incomplete or removed")]
         [DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static MethodBase? GetCurrentMethod()
         {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            RuntimeMethodHandleInternal methodHandle = GetCurrentMethod(new StackCrawlMarkHandle(ref stackMark), out _);
+            RuntimeMethodHandleInternal methodHandle = GetCurrentMethod(new StackCrawlMarkHandle(ref stackMark));
             return methodHandle.IsNullHandle() ? null : RuntimeType.GetMethodBase(null, methodHandle);
         }
         #endregion

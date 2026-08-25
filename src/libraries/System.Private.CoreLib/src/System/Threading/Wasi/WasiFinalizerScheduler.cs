@@ -21,34 +21,24 @@ namespace System.Threading
         // event-loop drain is a no-op here.
         internal static void DrainIfPending() { }
 #else
+#if CORECLR
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
+#endif
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "WasiFinalizer_TryClearPending")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool TryClearPendingFinalization(
-#if CORECLR
-            out QCallExceptionStatus qcallException
-#endif
-        );
+        internal static partial bool TryClearPendingFinalization();
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "WasiFinalizer_RunWorker")]
-        internal static partial void ExecuteFinalizationCallback(
 #if CORECLR
-            out QCallExceptionStatus qcallException
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
 #endif
-        );
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "WasiFinalizer_RunWorker")]
+        internal static partial void ExecuteFinalizationCallback();
 
         internal static void DrainIfPending()
         {
-            if (TryClearPendingFinalization(
-#if CORECLR
-                out _
-#endif
-            ))
+            if (TryClearPendingFinalization())
             {
-                ExecuteFinalizationCallback(
-#if CORECLR
-                    out _
-#endif
-                );
+                ExecuteFinalizationCallback();
             }
         }
 #endif

@@ -14,4 +14,4 @@ int GetVersionResilientModuleHashCode(Module* pModule);
 
 bool GetVersionResilientILCodeHashCode(MethodDesc *pMD, const COR_ILMETHOD_DECODER* header, int* hashCode, unsigned* ilSize);
 
-extern "C" INT32 QCALLTYPE VersionResilientHashCode_TypeHashCode(QCall::TypeHandle pTypeHandle, QCallExceptionStatus* qcallError);
+extern "C" QCallExceptionStatus QCALLTYPE VersionResilientHashCode_TypeHashCode(QCall::TypeHandle pTypeHandle, INT32* pReturnValue);

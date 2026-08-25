@@ -6,18 +6,45 @@
 
 
 #include "common.h"
-#include "threadstatics.h"
 
-void QCallExceptionStatus::SetThrowable(OBJECTREF throwable)
+void SetQCallExceptionStatusThrowable(QCallExceptionStatus* pStatus, OBJECTREF throwable)
 {
-    LIMITED_METHOD_CONTRACT;
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
 
     _ASSERTE(throwable != NULL);
-    _ASSERTE(m_exceptionPending == 0);
+    _ASSERTE(*pStatus == 0);
 
-    _ASSERTE(t_ThreadStatics.pQCallException == NULL);
-    t_ThreadStatics.pQCallException = OBJECTREFToObject(throwable);
-    VolatileStore(&m_exceptionPending, 1);
+    MethodTable* exceptionType = throwable->GetMethodTable();
+    if (exceptionType == g_pOutOfMemoryExceptionClass)
+    {
+        *pStatus = QCallOutOfMemoryException;
+        return;
+    }
+
+    if (exceptionType == g_pStackOverflowExceptionClass)
+    {
+        *pStatus = QCallStackOverflowException;
+        return;
+    }
+
+    OBJECTHANDLE exceptionHandle = GetAppDomain()->GetHandleStore()->CreateHandleOfType(
+        OBJECTREFToObject(throwable),
+        HNDTYPE_DEFAULT);
+    if (exceptionHandle == NULL)
+    {
+        *pStatus = QCallOutOfMemoryException;
+        return;
+    }
+
+    DiagHandleCreated(exceptionHandle, throwable);
+    _ASSERTE(reinterpret_cast<UINT_PTR>(exceptionHandle) > QCallStackOverflowException);
+    *pStatus = reinterpret_cast<UINT_PTR>(exceptionHandle);
 }
 
 //

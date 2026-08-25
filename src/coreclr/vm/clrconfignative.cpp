@@ -8,7 +8,7 @@
 #include "clrconfignative.h"
 #include <configuration.h>
 
-extern "C" BOOL QCALLTYPE ClrConfig_GetConfigBoolValue(LPCWSTR name, BOOL *exist, QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE ClrConfig_GetConfigBoolValue(LPCWSTR name, BOOL *exist, BOOL* pReturnValue)
 {
     QCALL_CONTRACT;
 
@@ -21,6 +21,7 @@ extern "C" BOOL QCALLTYPE ClrConfig_GetConfigBoolValue(LPCWSTR name, BOOL *exist
         *exist = TRUE;
         retValue = Configuration::GetKnobBooleanValue(name, FALSE);
     }
+    *pReturnValue = (retValue);
+
     END_QCALL;
-    return(retValue);
 }

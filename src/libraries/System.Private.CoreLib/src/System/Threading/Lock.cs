@@ -876,7 +876,7 @@ namespace System.Threading
                     // already being constructed earlier in the stack on the same thread, it would return the default value
                     // here. Initialize s_isSingleProcessor first, as it may be used by other initialization afterwards.
 #if CORECLR
-                    s_isSingleProcessor = Environment.GetProcessorCount(out _) == 1;
+                    s_isSingleProcessor = Environment.GetProcessorCount() == 1;
 #else
                     s_isSingleProcessor = Environment.GetProcessorCount() == 1;
 #endif

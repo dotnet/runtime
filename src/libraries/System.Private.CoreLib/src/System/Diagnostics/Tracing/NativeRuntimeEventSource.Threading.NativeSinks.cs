@@ -81,11 +81,6 @@ namespace System.Diagnostics.Tracing
         {
             Debug.Assert(IsEnabled(EventLevel.Informational, Keywords.ContentionKeyword));
             LogContentionLockCreated(LockID, AssociatedObjectID, ClrInstanceID
-#if CORECLR
-#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-                , out _
-#pragma warning restore SA1001, SA1113, SA1115
-#endif
             );
         }
 
@@ -108,11 +103,6 @@ namespace System.Diagnostics.Tracing
         {
             Debug.Assert(IsEnabled(EventLevel.Informational, Keywords.ContentionKeyword));
             LogContentionStart(ContentionFlags, ClrInstanceID, LockID, AssociatedObjectID, LockOwnerThreadID
-#if CORECLR
-#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-                , out _
-#pragma warning restore SA1001, SA1113, SA1115
-#endif
             );
         }
 
@@ -133,11 +123,6 @@ namespace System.Diagnostics.Tracing
         {
             Debug.Assert(IsEnabled(EventLevel.Informational, Keywords.ContentionKeyword));
             LogContentionStop(ContentionFlags, ClrInstanceID, DurationNs
-#if CORECLR
-#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-                , out _
-#pragma warning restore SA1001, SA1113, SA1115
-#endif
             );
         }
 
@@ -155,11 +140,6 @@ namespace System.Diagnostics.Tracing
             if (IsEnabled(EventLevel.Informational, Keywords.ThreadingKeyword))
             {
                 LogThreadPoolWorkerThreadStart(ActiveWorkerThreadCount, RetiredWorkerThreadCount, ClrInstanceID
-#if CORECLR
-#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-                    , out _
-#pragma warning restore SA1001, SA1113, SA1115
-#endif
                 );
             }
         }
@@ -173,11 +153,6 @@ namespace System.Diagnostics.Tracing
             if (IsEnabled(EventLevel.Informational, Keywords.ThreadingKeyword))
             {
                 LogThreadPoolWorkerThreadStop(ActiveWorkerThreadCount, RetiredWorkerThreadCount, ClrInstanceID
-#if CORECLR
-#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-                    , out _
-#pragma warning restore SA1001, SA1113, SA1115
-#endif
                 );
             }
         }
@@ -192,11 +167,6 @@ namespace System.Diagnostics.Tracing
             if (IsEnabled(EventLevel.Informational, Keywords.ThreadingKeyword))
             {
                 LogThreadPoolWorkerThreadWait(ActiveWorkerThreadCount, RetiredWorkerThreadCount, ClrInstanceID
-#if CORECLR
-#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-                    , out _
-#pragma warning restore SA1001, SA1113, SA1115
-#endif
                 );
             }
         }
@@ -211,11 +181,6 @@ namespace System.Diagnostics.Tracing
                 return;
             }
             LogThreadPoolWorkerThreadAdjustmentSample(Throughput, ClrInstanceID
-#if CORECLR
-#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-                , out _
-#pragma warning restore SA1001, SA1113, SA1115
-#endif
             );
         }
 
@@ -231,11 +196,6 @@ namespace System.Diagnostics.Tracing
                 return;
             }
             LogThreadPoolWorkerThreadAdjustmentAdjustment(AverageThroughput, NewWorkerThreadCount, Reason, ClrInstanceID
-#if CORECLR
-#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-                , out _
-#pragma warning restore SA1001, SA1113, SA1115
-#endif
             );
         }
 
@@ -258,11 +218,6 @@ namespace System.Diagnostics.Tracing
                 return;
             }
             LogThreadPoolWorkerThreadAdjustmentStats(Duration, Throughput, ThreadWave, ThroughputWave, ThroughputErrorEstimate, AverageThroughputErrorEstimate, ThroughputRatio, Confidence, NewControlSetting, NewThreadWaveMagnitude, ClrInstanceID
-#if CORECLR
-#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-                , out _
-#pragma warning restore SA1001, SA1113, SA1115
-#endif
             );
         }
 
@@ -274,11 +229,6 @@ namespace System.Diagnostics.Tracing
             ushort ClrInstanceID = DefaultClrInstanceId)
         {
             LogThreadPoolIOEnqueue(NativeOverlapped, Overlapped, MultiDequeues, ClrInstanceID
-#if CORECLR
-#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-                , out _
-#pragma warning restore SA1001, SA1113, SA1115
-#endif
             );
         }
 
@@ -321,11 +271,6 @@ namespace System.Diagnostics.Tracing
             ushort ClrInstanceID = DefaultClrInstanceId)
         {
             LogThreadPoolIODequeue(NativeOverlapped, Overlapped, ClrInstanceID
-#if CORECLR
-#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-                , out _
-#pragma warning restore SA1001, SA1113, SA1115
-#endif
             );
         }
 
@@ -366,11 +311,6 @@ namespace System.Diagnostics.Tracing
                 return;
             }
             LogThreadPoolWorkingThreadCount(Count, ClrInstanceID
-#if CORECLR
-#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-                , out _
-#pragma warning restore SA1001, SA1113, SA1115
-#endif
             );
         }
 
@@ -398,11 +338,6 @@ namespace System.Diagnostics.Tracing
             ushort ClrInstanceID = DefaultClrInstanceId)
         {
             LogThreadPoolIOPack(NativeOverlapped, Overlapped, ClrInstanceID
-#if CORECLR
-#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-                , out _
-#pragma warning restore SA1001, SA1113, SA1115
-#endif
             );
         }
 
@@ -418,11 +353,6 @@ namespace System.Diagnostics.Tracing
             if (IsEnabled(EventLevel.Informational, Keywords.ThreadingKeyword))
             {
                 LogThreadPoolMinMaxThreads(MinWorkerThreads, MaxWorkerThreads, MinIOCompletionThreads, MaxIOCompletionThreads, ClrInstanceID
-#if CORECLR
-#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-                    , out _
-#pragma warning restore SA1001, SA1113, SA1115
-#endif
                 );
             }
         }
@@ -435,11 +365,6 @@ namespace System.Diagnostics.Tracing
         {
             Debug.Assert(IsEnabled(EventLevel.Verbose, Keywords.WaitHandleKeyword));
             LogWaitHandleWaitStart(WaitSource, AssociatedObjectID, ClrInstanceID
-#if CORECLR
-#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-                , out _
-#pragma warning restore SA1001, SA1113, SA1115
-#endif
             );
         }
 
@@ -455,11 +380,6 @@ namespace System.Diagnostics.Tracing
         {
             Debug.Assert(IsEnabled(EventLevel.Verbose, Keywords.WaitHandleKeyword));
             LogWaitHandleWaitStop(ClrInstanceID
-#if CORECLR
-#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-                , out _
-#pragma warning restore SA1001, SA1113, SA1115
-#endif
             );
         }
     }

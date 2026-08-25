@@ -313,7 +313,7 @@ FCIMPLEND
 
 #include <optdefault.h>
 
-extern "C" IUnknown* QCALLTYPE StubHelpers_GetCOMIPFromRCWSlow(QCall::ObjectHandleOnStack pSrc, MethodDesc* pMD, void** ppTarget, BOOL* pfNeedsRelease, QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE StubHelpers_GetCOMIPFromRCWSlow(QCall::ObjectHandleOnStack pSrc, MethodDesc* pMD, void** ppTarget, BOOL* pfNeedsRelease, IUnknown** pReturnValue)
 {
     QCALL_CONTRACT;
     _ASSERTE(pMD != NULL);
@@ -355,12 +355,12 @@ extern "C" IUnknown* QCALLTYPE StubHelpers_GetCOMIPFromRCWSlow(QCall::ObjectHand
 
     GCPROTECT_END();
 
-    END_QCALL;
+    *pReturnValue = pIntf;
 
-    return pIntf;
+    END_QCALL;
 }
 
-extern "C" void QCALLTYPE ObjectMarshaler_ConvertToNative(QCall::ObjectHandleOnStack pSrcUNSAFE, VARIANT* pDest, QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE ObjectMarshaler_ConvertToNative(QCall::ObjectHandleOnStack pSrcUNSAFE, VARIANT* pDest)
 {
     QCALL_CONTRACT;
 
@@ -385,7 +385,7 @@ extern "C" void QCALLTYPE ObjectMarshaler_ConvertToNative(QCall::ObjectHandleOnS
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE ObjectMarshaler_ConvertToManaged(VARIANT* pSrc, QCall::ObjectHandleOnStack retObject, QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE ObjectMarshaler_ConvertToManaged(VARIANT* pSrc, QCall::ObjectHandleOnStack retObject)
 {
     QCALL_CONTRACT;
 
@@ -407,7 +407,7 @@ extern "C" void QCALLTYPE ObjectMarshaler_ConvertToManaged(VARIANT* pSrc, QCall:
 }
 
 #include <optsmallperfcritical.h>
-extern "C" IUnknown* QCALLTYPE InterfaceMarshaler_ConvertToNative(QCall::ObjectHandleOnStack pObjUNSAFE, MethodTable* pItfMT, MethodTable* pClsMT, DWORD dwFlags, QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE InterfaceMarshaler_ConvertToNative(QCall::ObjectHandleOnStack pObjUNSAFE, MethodTable* pItfMT, MethodTable* pClsMT, DWORD dwFlags, IUnknown** pReturnValue)
 {
     QCALL_CONTRACT;
 
@@ -426,12 +426,12 @@ extern "C" IUnknown* QCALLTYPE InterfaceMarshaler_ConvertToNative(QCall::ObjectH
 
     GCPROTECT_END();
 
-    END_QCALL;
+    *pReturnValue = pIntf;
 
-    return pIntf;
+    END_QCALL;
 }
 
-extern "C" void QCALLTYPE InterfaceMarshaler_ConvertToManaged(IUnknown** ppUnk, MethodTable* pItfMT, MethodTable* pClsMT, DWORD dwFlags, QCall::ObjectHandleOnStack retObject, QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE InterfaceMarshaler_ConvertToManaged(IUnknown** ppUnk, MethodTable* pItfMT, MethodTable* pClsMT, DWORD dwFlags, QCall::ObjectHandleOnStack retObject)
 {
     QCALL_CONTRACT;
 
@@ -454,7 +454,7 @@ extern "C" void QCALLTYPE InterfaceMarshaler_ConvertToManaged(IUnknown** ppUnk, 
 }
 #include <optdefault.h>
 
-extern "C" void QCALLTYPE InterfaceMarshaler_GetObjectForComCallableWrapperIUnknown(IUnknown* unk, QCall::ObjectHandleOnStack retObject, QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE InterfaceMarshaler_GetObjectForComCallableWrapperIUnknown(IUnknown* unk, QCall::ObjectHandleOnStack retObject)
 {
     QCALL_CONTRACT;
 
@@ -467,7 +467,7 @@ extern "C" void QCALLTYPE InterfaceMarshaler_GetObjectForComCallableWrapperIUnkn
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE InterfaceMarshaler_ValidateComVisibilityForIUnknown(IUnknown* unk, QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE InterfaceMarshaler_ValidateComVisibilityForIUnknown(IUnknown* unk)
 {
     QCALL_CONTRACT;
 
@@ -493,7 +493,7 @@ FCIMPL0(void, StubHelpers::ClearLastError)
 }
 FCIMPLEND
 
-extern "C" void QCALLTYPE StubHelpers_ThrowInteropParamException(INT resID, INT paramIdx, QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE StubHelpers_ThrowInteropParamException(INT resID, INT paramIdx)
 {
     QCALL_CONTRACT;
 
@@ -503,7 +503,7 @@ extern "C" void QCALLTYPE StubHelpers_ThrowInteropParamException(INT resID, INT 
 }
 
 #ifdef PROFILING_SUPPORTED
-extern "C" void* QCALLTYPE StubHelpers_ProfilerBeginTransitionCallback(MethodDesc* pTargetMD, QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE StubHelpers_ProfilerBeginTransitionCallback(MethodDesc* pTargetMD, void** pReturnValue)
 {
     PreserveLastErrorHolder preserveLastError;
 
@@ -513,12 +513,12 @@ extern "C" void* QCALLTYPE StubHelpers_ProfilerBeginTransitionCallback(MethodDes
 
     ProfilerManagedToUnmanagedTransitionMD(pTargetMD, COR_PRF_TRANSITION_CALL);
 
-    END_QCALL;
+    *pReturnValue = pTargetMD;
 
-    return pTargetMD;
+    END_QCALL;
 }
 
-extern "C" void QCALLTYPE StubHelpers_ProfilerEndTransitionCallback(MethodDesc* pTargetMD, QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE StubHelpers_ProfilerEndTransitionCallback(MethodDesc* pTargetMD)
 {
     PreserveLastErrorHolder preserveLastError;
 
@@ -532,7 +532,7 @@ extern "C" void QCALLTYPE StubHelpers_ProfilerEndTransitionCallback(MethodDesc* 
 }
 #endif // PROFILING_SUPPORTED
 
-extern "C" void QCALLTYPE StubHelpers_MarshalToManagedVaList(va_list va, VARARGS* pArgIterator, QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE StubHelpers_MarshalToManagedVaList(va_list va, VARARGS* pArgIterator)
 {
     QCALL_CONTRACT;
 
@@ -541,7 +541,7 @@ extern "C" void QCALLTYPE StubHelpers_MarshalToManagedVaList(va_list va, VARARGS
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE StubHelpers_MarshalToUnmanagedVaList(va_list va, DWORD cbVaListSize, const VARARGS* pArgIterator, QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE StubHelpers_MarshalToUnmanagedVaList(va_list va, DWORD cbVaListSize, const VARARGS* pArgIterator)
 {
     QCALL_CONTRACT;
 
@@ -550,7 +550,7 @@ extern "C" void QCALLTYPE StubHelpers_MarshalToUnmanagedVaList(va_list va, DWORD
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE StubHelpers_ValidateObject(QCall::ObjectHandleOnStack pObj, MethodDesc *pMD, QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE StubHelpers_ValidateObject(QCall::ObjectHandleOnStack pObj, MethodDesc *pMD)
 {
     QCALL_CONTRACT;
 
@@ -581,15 +581,14 @@ extern "C" void QCALLTYPE StubHelpers_ValidateObject(QCall::ObjectHandleOnStack 
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE StubHelpers_ValidateByref(void *pByref, MethodDesc *pMD, QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE StubHelpers_ValidateByref(void *pByref, MethodDesc *pMD)
 {
     QCALL_CONTRACT;
 
     // Skip byref if is not pointing inside managed heap
     if (!GCHeapUtilities::GetGCHeap()->IsHeapPointer(pByref))
     {
-        qcallError->SetNoException();
-        return;
+        return QCallExceptionStatus();
     }
 
     BEGIN_QCALL;
@@ -670,7 +669,7 @@ FCIMPL1(DWORD, StubHelpers::CalcVaListSize, VARARGS *varargs)
 }
 FCIMPLEND
 
-extern "C" void QCALLTYPE StubHelpers_MulticastDebuggerTraceHelper(QCall::ObjectHandleOnStack element, INT32 count, QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE StubHelpers_MulticastDebuggerTraceHelper(QCall::ObjectHandleOnStack element, INT32 count)
 {
     QCALL_CONTRACT;
 
@@ -683,7 +682,7 @@ extern "C" void QCALLTYPE StubHelpers_MulticastDebuggerTraceHelper(QCall::Object
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE StubHelpers_CreateLayoutClassMarshalStubs(QCall::TypeHandle th, PCODE* pConvertToUnmanaged, PCODE* pConvertToManaged, PCODE* pFree, QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE StubHelpers_CreateLayoutClassMarshalStubs(QCall::TypeHandle th, PCODE* pConvertToUnmanaged, PCODE* pConvertToManaged, PCODE* pFree)
 {
     QCALL_CONTRACT;
 

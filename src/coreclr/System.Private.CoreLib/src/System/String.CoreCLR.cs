@@ -22,23 +22,25 @@ namespace System
             return FastAllocateString(TypeHandle.TypeHandleOf<string>().AsMethodTable(), length);
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "String_Intern")]
-        private static partial void Intern(StringHandleOnStack src, out QCallExceptionStatus qcallException);
+        private static partial void Intern(StringHandleOnStack src);
 
         public static string Intern(string str)
         {
             ArgumentNullException.ThrowIfNull(str);
-            Intern(new StringHandleOnStack(ref str!), out _);
+            Intern(new StringHandleOnStack(ref str!));
             return str;
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "String_IsInterned")]
-        private static partial void IsInterned(StringHandleOnStack src, out QCallExceptionStatus qcallException);
+        private static partial void IsInterned(StringHandleOnStack src);
 
         public static string? IsInterned(string str)
         {
             ArgumentNullException.ThrowIfNull(str);
-            IsInterned(new StringHandleOnStack(ref str!), out _);
+            IsInterned(new StringHandleOnStack(ref str!));
             return str;
         }
 

@@ -315,7 +315,7 @@ public:
 
 // For qcallentrypoints.cpp
 
-extern "C" void QCALLTYPE MultiCoreJIT_InternalSetProfileRoot(_In_z_ LPCWSTR directoryPath, QCallExceptionStatus* qcallError);
-extern "C" void QCALLTYPE MultiCoreJIT_InternalStartProfile(_In_z_ LPCWSTR wszProfile, INT_PTR ptrNativeAssemblyBinder, QCallExceptionStatus* qcallError);
+extern "C" QCallExceptionStatus QCALLTYPE MultiCoreJIT_InternalSetProfileRoot(_In_z_ LPCWSTR directoryPath);
+extern "C" QCallExceptionStatus QCALLTYPE MultiCoreJIT_InternalStartProfile(_In_z_ LPCWSTR wszProfile, INT_PTR ptrNativeAssemblyBinder);
 
 #endif // __MULTICORE_JIT_H__

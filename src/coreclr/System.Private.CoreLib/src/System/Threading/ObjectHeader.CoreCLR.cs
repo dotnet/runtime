@@ -80,7 +80,7 @@ namespace System.Threading
 #pragma warning disable CS9216 // A value of type 'System.Threading.Lock' converted to a different type will use likely unintended monitor-based locking in 'lock' statement.
                 object lockObj = new Lock();
 #pragma warning restore CS9216
-                GetOrCreateLockObject(ObjectHandleOnStack.Create(ref obj), ObjectHandleOnStack.Create(ref lockObj), out _);
+                GetOrCreateLockObject(ObjectHandleOnStack.Create(ref obj), ObjectHandleOnStack.Create(ref lockObj));
                 return (Lock)lockObj!;
             }
         }
@@ -88,8 +88,9 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern IntPtr GetLockHandleIfExists(object obj);
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ObjectHeader_GetOrCreateLockObject")]
-        private static partial void GetOrCreateLockObject(ObjectHandleOnStack obj, ObjectHandleOnStack lockObj, out QCallExceptionStatus qcallException);
+        private static partial void GetOrCreateLockObject(ObjectHandleOnStack obj, ObjectHandleOnStack lockObj);
 
         //
         // A few words about spinning choices:

@@ -79,12 +79,13 @@ namespace System
                 return pAuxData->CanCompareBitsOrUseFastGetHashCode;
             }
 
-            return CanCompareBitsOrUseFastGetHashCodeHelper(pMT, out _);
+            return CanCompareBitsOrUseFastGetHashCodeHelper(pMT);
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MethodTable_CanCompareBitsOrUseFastGetHashCode")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static unsafe partial bool CanCompareBitsOrUseFastGetHashCodeHelper(MethodTable* pMT, out QCallExceptionStatus qcallException);
+        private static unsafe partial bool CanCompareBitsOrUseFastGetHashCodeHelper(MethodTable* pMT);
 
         /*=================================GetHashCode==================================
         **Action: Our algorithm for returning the hashcode is a little bit complex.  We look
@@ -120,7 +121,7 @@ namespace System
             else
             {
                 object thisRef = this;
-                switch (GetHashCodeStrategy(pMT, ObjectHandleOnStack.Create(ref thisRef), out uint fieldOffset, out uint fieldSize, out MethodTable* fieldMT, out _))
+                switch (GetHashCodeStrategy(pMT, ObjectHandleOnStack.Create(ref thisRef), out uint fieldOffset, out uint fieldSize, out MethodTable* fieldMT))
                 {
                     case ValueTypeHashCodeStrategy.ReferenceField:
                         hashCode.Add(Unsafe.As<byte, object>(ref Unsafe.AddByteOffset(ref rawData, fieldOffset)).GetHashCode());
@@ -162,10 +163,10 @@ namespace System
             ValueTypeOverride,
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ValueType_GetHashCodeStrategy")]
         private static unsafe partial ValueTypeHashCodeStrategy GetHashCodeStrategy(
-            MethodTable* pMT, ObjectHandleOnStack objHandle, out uint fieldOffset, out uint fieldSize, out MethodTable* fieldMT,
-            out QCallExceptionStatus qcallException);
+            MethodTable* pMT, ObjectHandleOnStack objHandle, out uint fieldOffset, out uint fieldSize, out MethodTable* fieldMT);
 
         public override string? ToString()
         {

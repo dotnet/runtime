@@ -38,7 +38,7 @@
 //    Else if a native debugger is attached, this should send a native break event (kernel32!DebugBreak)
 //    Else, this should invoke Watson.
 //
-extern "C" void QCALLTYPE DebugDebugger_Break(QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE DebugDebugger_Break()
 {
     QCALL_CONTRACT;
 
@@ -81,7 +81,7 @@ extern "C" void QCALLTYPE DebugDebugger_Break(QCallExceptionStatus* qcallError)
 
     END_QCALL;
 #else
-    qcallError->SetNoException();
+    return QCallExceptionStatus();
 #endif // DEBUGGING_SUPPORTED
 }
 
@@ -291,10 +291,9 @@ static void GetStackFrames(DebugStackTrace::GetStackFramesData *pData)
     }
 }
 
-extern "C" void QCALLTYPE AsyncHelpers_AddContinuationToExInternal(
+extern "C" QCallExceptionStatus QCALLTYPE AsyncHelpers_AddContinuationToExInternal(
     void* diagnosticIP,
-    QCall::ObjectHandleOnStack exception,
-    QCallExceptionStatus* qcallError)
+    QCall::ObjectHandleOnStack exception)
 {
     QCALL_CONTRACT;
 
@@ -319,11 +318,10 @@ extern "C" void QCALLTYPE AsyncHelpers_AddContinuationToExInternal(
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE StackTrace_GetStackFramesInternal(
+extern "C" QCallExceptionStatus QCALLTYPE StackTrace_GetStackFramesInternal(
     QCall::ObjectHandleOnStack stackFrameHelper,
     BOOL fNeedFileInfo,
-    QCall::ObjectHandleOnStack exception,
-    QCallExceptionStatus* qcallError)
+    QCall::ObjectHandleOnStack exception)
 {
     QCALL_CONTRACT;
 
@@ -826,7 +824,7 @@ extern "C" void QCALLTYPE StackTrace_GetStackFramesInternal(
     END_QCALL;
 }
 
-extern "C" MethodDesc* QCALLTYPE StackFrame_GetMethodDescFromNativeIP(LPVOID ip, QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE StackFrame_GetMethodDescFromNativeIP(LPVOID ip, MethodDesc** pReturnValue)
 {
     QCALL_CONTRACT;
 
@@ -843,9 +841,9 @@ extern "C" MethodDesc* QCALLTYPE StackFrame_GetMethodDescFromNativeIP(LPVOID ip,
         pResult = codeInfo.GetMethodDesc();
     }
 
-    END_QCALL;
+    *pReturnValue = pResult;
 
-    return pResult;
+    END_QCALL;
 }
 
 struct StrongHandleHolderTraits final
@@ -865,7 +863,7 @@ using StrongHandleHolder = LifetimeHolder<StrongHandleHolderTraits>;
 // receives a custom notification object from the target and sends it to the RS via
 // code:Debugger::SendCustomDebuggerNotification
 // Argument: dataUNSAFE - a pointer the custom notification object being sent
-extern "C" void QCALLTYPE DebugDebugger_CustomNotification(QCall::ObjectHandleOnStack data, QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE DebugDebugger_CustomNotification(QCall::ObjectHandleOnStack data)
 {
     QCALL_CONTRACT;
 
@@ -873,8 +871,7 @@ extern "C" void QCALLTYPE DebugDebugger_CustomNotification(QCall::ObjectHandleOn
     // Send notification only if the debugger is attached
     if (!CORDebuggerAttached())
     {
-        qcallError->SetNoException();
-        return;
+        return QCallExceptionStatus();
     }
 
     BEGIN_QCALL;
@@ -901,7 +898,7 @@ extern "C" void QCALLTYPE DebugDebugger_CustomNotification(QCall::ObjectHandleOn
 
     END_QCALL;
 #else
-    qcallError->SetNoException();
+    return QCallExceptionStatus();
 #endif // DEBUGGING_SUPPORTED
 }
 

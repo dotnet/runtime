@@ -66,11 +66,6 @@ namespace System.Threading
                 {
                     Debug.Assert(!waitAll);
                     result = Thread.ReentrantWaitAny(true, millisecondsTimeout, numHandles, pHandles
-#if CORECLR
-#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-                        , out _
-#pragma warning restore SA1001, SA1113, SA1115
-#endif
                     );
                 }
                 else

@@ -203,8 +203,6 @@ void ScanThreadStaticRoots(Thread* pThread, promote_func* fn, ScanContext* sc)
     // Report non-collectible object array
     fn(&pThreadLocalData->pNonCollectibleTlsArrayData, sc, 0);
 
-    // Report qcall exception object
-    fn(&pThreadLocalData->pQCallException, sc, 0);
 }
 #endif // DACCESS_COMPILE
 

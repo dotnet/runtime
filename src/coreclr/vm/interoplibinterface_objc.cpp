@@ -24,12 +24,11 @@ namespace
     ObjCMarshalNative::EnteredFinalizationCallback g_TrackedObjectEnteredFinalizationCallback;
 }
 
-extern "C" BOOL QCALLTYPE ObjCMarshal_TryInitializeReferenceTracker(
+extern "C" QCallExceptionStatus QCALLTYPE ObjCMarshal_TryInitializeReferenceTracker(
     _In_ ObjCMarshalNative::BeginEndCallback beginEndCallback,
     _In_ ObjCMarshalNative::IsReferencedCallback isReferencedCallback,
     _In_ ObjCMarshalNative::EnteredFinalizationCallback trackedObjectEnteredFinalization,
-    _In_ QCall::ObjectHandleOnStack objectTrackingInfoTable,
-    QCallExceptionStatus* qcallError)
+    _In_ QCall::ObjectHandleOnStack objectTrackingInfoTable, BOOL* pReturnValue)
 {
     QCALL_CONTRACT;
     _ASSERTE(beginEndCallback != NULL
@@ -56,12 +55,12 @@ extern "C" BOOL QCALLTYPE ObjCMarshal_TryInitializeReferenceTracker(
         }
     }
 
-    END_QCALL;
+    *pReturnValue = success;
 
-    return success;
+    END_QCALL;
 }
 
-extern "C" void* QCALLTYPE ObjCMarshal_AllocateReferenceTrackingHandle(_In_ QCall::ObjectHandleOnStack obj, QCallExceptionStatus* qcallError)
+extern "C" QCallExceptionStatus QCALLTYPE ObjCMarshal_AllocateReferenceTrackingHandle(_In_ QCall::ObjectHandleOnStack obj, void** pReturnValue)
 {
     QCALL_CONTRACT;
 
@@ -74,9 +73,9 @@ extern "C" void* QCALLTYPE ObjCMarshal_AllocateReferenceTrackingHandle(_In_ QCal
     GCX_COOP();
     instHandle = GetAppDomain()->CreateTypedHandle(obj.Get(), HNDTYPE_REFCOUNTED);
 
-    END_QCALL;
+    *pReturnValue = (void*)instHandle;
 
-    return (void*)instHandle;
+    END_QCALL;
 }
 
 namespace
@@ -120,10 +119,9 @@ namespace
     }
 }
 
-extern "C" BOOL QCALLTYPE ObjCMarshal_TrySetGlobalMessageSendCallback(
+extern "C" QCallExceptionStatus QCALLTYPE ObjCMarshal_TrySetGlobalMessageSendCallback(
     _In_ ObjCMarshalNative::MessageSendFunction msgSendFunction,
-    _In_ void* fptr,
-    QCallExceptionStatus* qcallError)
+    _In_ void* fptr, BOOL* pReturnValue)
 {
     QCALL_CONTRACT;
 
@@ -138,9 +136,9 @@ extern "C" BOOL QCALLTYPE ObjCMarshal_TrySetGlobalMessageSendCallback(
     if (success && FALSE == InterlockedCompareExchange((LONG*)&s_msgSendOverridden, TRUE, FALSE))
         PInvokeOverride::SetPInvokeOverride(&MessageSendPInvokeOverride, PInvokeOverride::Source::ObjectiveCInterop);
 
-    END_QCALL;
+    *pReturnValue = success ? TRUE : FALSE;
 
-    return success ? TRUE : FALSE;
+    END_QCALL;
 }
 
 namespace

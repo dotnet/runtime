@@ -27,7 +27,7 @@ namespace System
         protected internal unsafe object MemberwiseClone()
         {
             object clone = this;
-            RuntimeHelpers.AllocateUninitializedClone(ObjectHandleOnStack.Create(ref clone), out _);
+            RuntimeHelpers.AllocateUninitializedClone(ObjectHandleOnStack.Create(ref clone));
             Debug.Assert(clone != this);
 
             // copy contents of "this" to the clone

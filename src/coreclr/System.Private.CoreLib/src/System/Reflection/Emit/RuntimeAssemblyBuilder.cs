@@ -112,13 +112,13 @@ namespace System.Reflection.Emit
 
         #region DefineDynamicAssembly
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AppDomain_CreateDynamicAssembly")]
         private static unsafe partial void CreateDynamicAssembly(ObjectHandleOnStack assemblyLoadContext,
                                                                  NativeAssemblyNameParts* pAssemblyName,
                                                                  AssemblyHashAlgorithm hashAlgId,
                                                                  AssemblyBuilderAccess access,
-                                                                 ObjectHandleOnStack retAssembly,
-                                                                 out QCallExceptionStatus qcallException);
+                                                                 ObjectHandleOnStack retAssembly);
 
         private static unsafe RuntimeAssembly CreateDynamicAssembly(AssemblyLoadContext assemblyLoadContext, AssemblyName name, AssemblyBuilderAccess access)
         {
@@ -146,8 +146,7 @@ namespace System.Reflection.Emit
                                   &nameParts,
                                   name.HashAlgorithm,
                                   access,
-                                  ObjectHandleOnStack.Create(ref retAssembly),
-                                  out _);
+                                  ObjectHandleOnStack.Create(ref retAssembly));
 #pragma warning restore SYSLIB0037
             }
 

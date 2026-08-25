@@ -12,11 +12,12 @@ namespace System
     {
         internal static bool GetBoolValue(string switchName, out bool exist)
         {
-            return GetConfigBoolValue(switchName, out exist, out _);
+            return GetConfigBoolValue(switchName, out exist);
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ClrConfig_GetConfigBoolValue", StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static partial bool GetConfigBoolValue(string configSwitchName, [MarshalAs(UnmanagedType.Bool)] out bool exist, out QCallExceptionStatus qcallException);
+        private static partial bool GetConfigBoolValue(string configSwitchName, [MarshalAs(UnmanagedType.Bool)] out bool exist);
     }
 }

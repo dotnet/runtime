@@ -15,129 +15,105 @@ namespace System.Diagnostics.Tracing
         //
         // These PInvokes are used by the configuration APIs to interact with EventPipe.
         //
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_Enable")]
+#if CORECLR
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
+#endif
+                [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_Enable")]
         private static unsafe partial ulong Enable(
             char* outputFile,
             EventPipeSerializationFormat format,
             uint circularBufferSizeInMB,
             EventPipeProviderConfigurationNative* providers,
             uint numProviders
-#if CORECLR
-#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-            , out QCallExceptionStatus qcallException
-#pragma warning restore SA1001, SA1113, SA1115
-#endif
         );
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_Disable")]
-        internal static partial void Disable(ulong sessionID
 #if CORECLR
-#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-            , out QCallExceptionStatus qcallException
-#pragma warning restore SA1001, SA1113, SA1115
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
 #endif
+                [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_Disable")]
+        internal static partial void Disable(ulong sessionID
         );
 
         //
         // These PInvokes are used by EventSource to interact with the EventPipe.
         //
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_CreateProvider", StringMarshalling = StringMarshalling.Utf16)]
+#if CORECLR
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
+#endif
+                [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_CreateProvider", StringMarshalling = StringMarshalling.Utf16)]
         internal static unsafe partial IntPtr CreateProvider(string providerName,
             delegate* unmanaged<byte*, int, byte, long, long, Interop.Advapi32.EVENT_FILTER_DESCRIPTOR*, void*, void> callbackFunc,
             void* callbackContext
-#if CORECLR
-#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-            , out QCallExceptionStatus qcallException
-#pragma warning restore SA1001, SA1113, SA1115
-#endif
         );
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_DefineEvent")]
+#if CORECLR
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
+#endif
+                [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_DefineEvent")]
         internal static unsafe partial IntPtr DefineEvent(IntPtr provHandle, uint eventID, long keywords, uint eventVersion, uint level, void *pMetadata, uint metadataLength
-#if CORECLR
-#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-            , out QCallExceptionStatus qcallException
-#pragma warning restore SA1001, SA1113, SA1115
-#endif
         );
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_GetProvider", StringMarshalling = StringMarshalling.Utf16)]
+#if CORECLR
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
+#endif
+                [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_GetProvider", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial IntPtr GetProvider(string providerName
-#if CORECLR
-#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-            , out QCallExceptionStatus qcallException
-#pragma warning restore SA1001, SA1113, SA1115
-#endif
         );
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_DeleteProvider")]
+#if CORECLR
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
+#endif
+                [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_DeleteProvider")]
         internal static partial void DeleteProvider(IntPtr provHandle
-#if CORECLR
-#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-            , out QCallExceptionStatus qcallException
-#pragma warning restore SA1001, SA1113, SA1115
-#endif
         );
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_EventActivityIdControl")]
+#if CORECLR
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
+#endif
+                [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_EventActivityIdControl")]
         internal static partial int EventActivityIdControl(uint controlCode, ref Guid activityId
-#if CORECLR
-#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-            , out QCallExceptionStatus qcallException
-#pragma warning restore SA1001, SA1113, SA1115
-#endif
         );
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_WriteEventData")]
-        internal static unsafe partial void WriteEventData(IntPtr eventHandle, EventProvider.EventData* pEventData, uint dataCount, Guid* activityId, Guid* relatedActivityId
 #if CORECLR
-#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-            , out QCallExceptionStatus qcallException
-#pragma warning restore SA1001, SA1113, SA1115
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
 #endif
+                [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_WriteEventData")]
+        internal static unsafe partial void WriteEventData(IntPtr eventHandle, EventProvider.EventData* pEventData, uint dataCount, Guid* activityId, Guid* relatedActivityId
         );
 
         //
         // These PInvokes are used as part of the EventPipeEventDispatcher.
         //
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_GetSessionInfo")]
+#if CORECLR
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
+#endif
+                [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_GetSessionInfo")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool GetSessionInfo(ulong sessionID, EventPipeSessionInfo* pSessionInfo
-#if CORECLR
-#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-            , out QCallExceptionStatus qcallException
-#pragma warning restore SA1001, SA1113, SA1115
-#endif
         );
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_GetNextEvent")]
+#if CORECLR
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
+#endif
+                [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_GetNextEvent")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool GetNextEvent(ulong sessionID, EventPipeEventInstanceData* pInstance
-#if CORECLR
-#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-            , out QCallExceptionStatus qcallException
-#pragma warning restore SA1001, SA1113, SA1115
-#endif
         );
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_SignalSession")]
+#if CORECLR
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
+#endif
+                [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_SignalSession")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool SignalSession(ulong sessionID
-#if CORECLR
-#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-            , out QCallExceptionStatus qcallException
-#pragma warning restore SA1001, SA1113, SA1115
-#endif
         );
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_WaitForSessionSignal")]
+#if CORECLR
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
+#endif
+                [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_WaitForSessionSignal")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool WaitForSessionSignal(ulong sessionID, int timeoutMs
-#if CORECLR
-#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-            , out QCallExceptionStatus qcallException
-#pragma warning restore SA1001, SA1113, SA1115
-#endif
         );
 #else
 #pragma warning disable IDE0060
