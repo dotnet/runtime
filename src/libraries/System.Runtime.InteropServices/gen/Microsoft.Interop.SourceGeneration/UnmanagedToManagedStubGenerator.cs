@@ -123,6 +123,7 @@ namespace Microsoft.Interop
 
             List<StatementSyntax> tryStatements =
             [
+                .. statements.ErrorUnmarshal,
                 .. statements.GuaranteedUnmarshal,
                 .. statements.Unmarshal,
                 statements.InvokeStatement,

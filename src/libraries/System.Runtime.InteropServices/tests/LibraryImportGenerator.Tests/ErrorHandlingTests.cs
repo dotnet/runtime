@@ -51,6 +51,39 @@ namespace LibraryImportGenerator.IntegrationTests
         }
     }
 
+    [CustomMarshaller(typeof(CustomError), MarshalMode.ManagedToUnmanagedOut, typeof(StatefulErrorMarshaller.Marshaller))]
+    internal static class StatefulErrorMarshaller
+    {
+        public struct Marshaller
+        {
+            private int _error;
+
+            public static bool FromUnmanagedCalled { get; set; }
+            public static bool ToManagedCalled { get; set; }
+
+            public void FromUnmanaged(int error)
+            {
+                FromUnmanagedCalled = true;
+                _error = error;
+            }
+
+            public CustomError ToManaged()
+            {
+                ToManagedCalled = true;
+                if (_error < 0)
+                {
+                    throw new CustomErrorException(_error);
+                }
+
+                return new CustomError(_error);
+            }
+
+            public void Free()
+            {
+            }
+        }
+    }
+
     [CustomMarshaller(typeof(CleanupInput), MarshalMode.ManagedToUnmanagedIn, typeof(CleanupInputMarshaller))]
     internal static class CleanupInputMarshaller
     {
@@ -111,6 +144,12 @@ namespace LibraryImportGenerator.IntegrationTests
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "return_error_with_output")]
             [ErrorHandler(typeof(CustomErrorMarshaller), ErrorLocation.ReturnValue)]
             public static partial void ReturnErrorBeforeOutput(
+                int error,
+                [MarshalUsing(typeof(TrackedOutputMarshaller))] out TrackedOutput output);
+
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "return_error_with_output")]
+            [ErrorHandler(typeof(StatefulErrorMarshaller), ErrorLocation.ReturnValue)]
+            public static partial CustomError StatefulReturnErrorBeforeOutput(
                 int error,
                 [MarshalUsing(typeof(TrackedOutputMarshaller))] out TrackedOutput output);
 
@@ -205,6 +244,22 @@ namespace LibraryImportGenerator.IntegrationTests
 
             Assert.Equal(-4, exception.Error);
             Assert.True(CleanupInputMarshaller.FreeCalled);
+        }
+
+        [Fact]
+        public void ErrorUnmarshalStagesRunBeforeOtherOutMarshalling()
+        {
+            StatefulErrorMarshaller.Marshaller.FromUnmanagedCalled = false;
+            StatefulErrorMarshaller.Marshaller.ToManagedCalled = false;
+            TrackedOutputMarshaller.ConvertToManagedCalled = false;
+
+            CustomErrorException exception = Assert.Throws<CustomErrorException>(
+                () => NativeExportsNE.ErrorHandling.StatefulReturnErrorBeforeOutput(-5, out _));
+
+            Assert.Equal(-5, exception.Error);
+            Assert.True(StatefulErrorMarshaller.Marshaller.FromUnmanagedCalled);
+            Assert.True(StatefulErrorMarshaller.Marshaller.ToManagedCalled);
+            Assert.False(TrackedOutputMarshaller.ConvertToManagedCalled);
         }
 
         [Fact]
