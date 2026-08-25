@@ -33,6 +33,7 @@
 
 import argparse
 import os
+import re
 import shutil
 import stat
 
@@ -420,14 +421,25 @@ def stage_runtime_pack_assemblies(runtime_pack_rid_directory, dst_directory):
     if not os.path.isdir(lib_directory):
         raise RuntimeError("Cannot find runtime pack lib directory " + lib_directory)
 
-    # There is normally exactly one target framework directory (e.g. `net11.0`); find it
-    # rather than hardcoding a version that changes every release.
+    # There is normally exactly one target framework directory (e.g. `net11.0`). Find it
+    # rather than hardcoding a version that changes every release, and if the pack ever
+    # grows more than one, pick the highest deterministically. Staging all of them is not
+    # an option: the assemblies would collide on simple name, which crossgen2 rejects.
     tfm_directories = [os.path.join(lib_directory, name) for name in sorted(os.listdir(lib_directory))
                        if os.path.isdir(os.path.join(lib_directory, name))]
-    if len(tfm_directories) != 1:
-        raise RuntimeError("Expected exactly one target framework directory under {0}, found {1}".format(
-            lib_directory, len(tfm_directories)))
-    tfm_directory = tfm_directories[0]
+    if len(tfm_directories) == 0:
+        raise RuntimeError("Cannot find a target framework directory under " + lib_directory)
+
+    def tfm_sort_key(tfm_path):
+        """ Sort `netX.Y` highest, and anything unrecognized below all of them. """
+        match = re.fullmatch(r"net(\d+)\.(\d+)", os.path.basename(tfm_path))
+        return (1, int(match.group(1)), int(match.group(2))) if match else (0, 0, 0)
+
+    tfm_directories.sort(key=tfm_sort_key)
+    tfm_directory = tfm_directories[-1]
+    if len(tfm_directories) > 1:
+        print("Found {0} target framework directories under {1}; using {2}".format(
+            len(tfm_directories), lib_directory, os.path.basename(tfm_directory)))
 
     corelib_path = os.path.join(runtime_pack_rid_directory, "native", "System.Private.CoreLib.dll")
     if not os.path.isfile(corelib_path):
