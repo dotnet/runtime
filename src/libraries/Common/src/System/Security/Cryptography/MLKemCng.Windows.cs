@@ -133,12 +133,43 @@ namespace System.Security.Cryptography
 
             if (CngPkcs8.AllowsOnlyEncryptedExport(_key))
             {
-                // Windows ncrypt does not yet give us an encrypted PKCS#8 export. For now, we have to throw an exception
-                // indicating the seed is not extractable.
-                throw new CryptographicException(SR.Cryptography_KeyNotExtractable);
-            }
+                ExportKeyWithEncryptedOnlyExport(
+                    static (ref readonly mlKemPrivateKeyAsn, algorithm, destination) =>
+                    {
+                        ReadOnlySpan<byte> seedValue = default;
+                        bool hasSeed = false;
 
-            ExportKey(KeyBlobMagicNumber.BCRYPT_MLKEM_PRIVATE_SEED_MAGIC, destination);
+                        if (mlKemPrivateKeyAsn.HasSeed)
+                        {
+                            hasSeed = true;
+                            seedValue = mlKemPrivateKeyAsn.Seed;
+                        }
+                        else if (mlKemPrivateKeyAsn.HasBoth)
+                        {
+                            hasSeed = true;
+                            seedValue = mlKemPrivateKeyAsn.Both.Seed;
+                        }
+
+                        if (hasSeed)
+                        {
+                            if (seedValue.Length != algorithm.PrivateSeedSizeInBytes)
+                            {
+                                throw new CryptographicException(SR.Argument_PrivateSeedWrongSizeForAlgorithm);
+                            }
+
+                            seedValue.CopyTo(destination);
+                            return;
+                        }
+
+                        throw new CryptographicException(SR.Cryptography_NotValidPrivateKey);
+                    },
+                    Algorithm,
+                    destination);
+            }
+            else
+            {
+                ExportKey(KeyBlobMagicNumber.BCRYPT_MLKEM_PRIVATE_SEED_MAGIC, destination);
+            }
         }
 
         /// <inheritdoc/>
@@ -149,12 +180,58 @@ namespace System.Security.Cryptography
 
             if (CngPkcs8.AllowsOnlyEncryptedExport(_key))
             {
-                // Windows ncrypt does not yet give us an encrypted PKCS#8 export. For now, we have to throw an exception
-                // indicating the key is not extractable.
-                throw new CryptographicException(SR.Cryptography_KeyNotExtractable);
-            }
+                ExportKeyWithEncryptedOnlyExport(static (ref readonly mlKemPrivateKeyAsn, algorithm, destination) =>
+                {
+                    ReadOnlySpan<byte> decapsulationKeyValue = default;
+                    bool hasDecapsulationKey = false;
 
-            ExportKey(KeyBlobMagicNumber.BCRYPT_MLKEM_PRIVATE_MAGIC, destination);
+                    if (mlKemPrivateKeyAsn.HasExpandedKey)
+                    {
+                        hasDecapsulationKey = true;
+                        decapsulationKeyValue = mlKemPrivateKeyAsn.ExpandedKey;
+                    }
+                    else if (mlKemPrivateKeyAsn.HasBoth)
+                    {
+                        hasDecapsulationKey = true;
+                        decapsulationKeyValue = mlKemPrivateKeyAsn.Both.ExpandedKey;
+                    }
+
+                    if (hasDecapsulationKey)
+                    {
+                        if (decapsulationKeyValue.Length != algorithm.DecapsulationKeySizeInBytes)
+                        {
+                            throw new CryptographicException(SR.Argument_PrivateKeyWrongSizeForAlgorithm);
+                        }
+
+                        decapsulationKeyValue.CopyTo(destination);
+                        return;
+                    }
+
+                    if (mlKemPrivateKeyAsn.HasSeed)
+                    {
+                        ReadOnlySpan<byte> seedValue = mlKemPrivateKeyAsn.Seed;
+
+                        if (seedValue.Length != algorithm.PrivateSeedSizeInBytes)
+                        {
+                            throw new CryptographicException(SR.Argument_PrivateSeedWrongSizeForAlgorithm);
+                        }
+
+                        using (MLKem cloned = MLKemImplementation.ImportPrivateSeedImpl(algorithm, seedValue))
+                        {
+                            cloned.ExportDecapsulationKey(destination);
+                            return;
+                        }
+                    }
+
+                    throw new CryptographicException(SR.Cryptography_NotValidPrivateKey);
+                },
+                Algorithm,
+                destination);
+            }
+            else
+            {
+                ExportKey(KeyBlobMagicNumber.BCRYPT_MLKEM_PRIVATE_MAGIC, destination);
+            }
         }
 
         /// <inheritdoc/>
@@ -169,41 +246,34 @@ namespace System.Security.Cryptography
         /// <inheritdoc/>
         protected override bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten)
         {
-            // Windows ncrypt does not yet have functional PKCS#8 exports. For now, try exporting it as a seed or
-            // decapsulation key.
-            if (CngPkcs8.AllowsOnlyEncryptedExport(_key))
-            {
-                throw new CryptographicException(SR.Cryptography_KeyNotExtractable);
-            }
+            bool encryptedOnlyExport = CngPkcs8.AllowsOnlyEncryptedExport(_key);
 
-            // Since Windows does not have a PKCS#8 export yet, try exporting the seed, and if that fails, the
-            // decapsulation key. If that fails, then we cannot export the key. When native PKCS#8 export is available
-            // this will use that instead.
-            try
+            if (encryptedOnlyExport)
             {
-                return MLKemPkcs8.TryExportPkcs8PrivateKey(
-                    this,
-                    hasSeed: true,
-                    hasDecapsulationKey: true,
-                    destination,
-                    out bytesWritten);
-            }
-            catch (CryptographicException)
-            {
+                ArraySegment<byte> pkcs8 = GetRentedPkcs8ForEncryptedOnlyExport();
+
                 try
                 {
-                    return MLKemPkcs8.TryExportPkcs8PrivateKey(
-                        this,
-                        hasSeed: false,
-                        hasDecapsulationKey: true,
-                        destination,
-                        out bytesWritten);
+                    if (destination.Length < pkcs8.Count)
+                    {
+                        bytesWritten = 0;
+                        return false;
+                    }
+
+                    bytesWritten = pkcs8.Count;
+                    pkcs8.AsSpan().CopyTo(destination);
+                    return true;
                 }
-                catch (CryptographicException)
+                finally
                 {
-                    throw new CryptographicException(SR.Cryptography_KeyNotExtractable);
+                    CryptoPool.Return(pkcs8);
                 }
             }
+
+            return _key.TryExportKeyBlob(
+                Interop.NCrypt.NCRYPT_PKCS8_PRIVATE_KEY_BLOB,
+                destination,
+                out bytesWritten);
         }
 
         /// <inheritdoc/>
@@ -277,6 +347,51 @@ namespace System.Security.Cryptography
                     pin.Dispose();
                     CryptoPool.Return(buffer, clearSize: 0); // Manually cleared above.
                 }
+            }
+        }
+
+        private delegate void KeySelectorFunc(
+            ref readonly ValueMLKemPrivateKeyAsn mlKemPrivateKeyAsn,
+            MLKemAlgorithm algorithm,
+            Span<byte> destination);
+
+        private void ExportKeyWithEncryptedOnlyExport(KeySelectorFunc keySelector, MLKemAlgorithm algorithm, Span<byte> destination)
+        {
+            ArraySegment<byte> pkcs8 = GetRentedPkcs8ForEncryptedOnlyExport();
+
+            try
+            {
+                ReadOnlySpan<byte> privateKey = KeyFormatHelper.ReadPkcs8([Algorithm.Oid], pkcs8.AsSpan(), out _);
+                scoped ValueMLKemPrivateKeyAsn mlKemPrivateKeyAsn;
+
+                try
+                {
+                    ValueMLKemPrivateKeyAsn.Decode(privateKey, AsnEncodingRules.BER, out mlKemPrivateKeyAsn);
+                }
+                catch (AsnContentException e)
+                {
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+                }
+
+                keySelector(ref mlKemPrivateKeyAsn, algorithm, destination);
+            }
+            finally
+            {
+                CryptoPool.Return(pkcs8);
+            }
+        }
+
+        private ArraySegment<byte> GetRentedPkcs8ForEncryptedOnlyExport()
+        {
+            const string TemporaryExportPassword = "DotnetExportPhrase";
+            byte[] exported = _key.ExportPkcs8KeyBlob(TemporaryExportPassword, 1);
+
+            using (PinAndClear.Track(exported))
+            {
+                return KeyFormatHelper.DecryptPkcs8(
+                    TemporaryExportPassword,
+                    exported,
+                    out _);
             }
         }
     }
