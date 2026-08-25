@@ -346,20 +346,16 @@ namespace System
             return RuntimeAugments.StackTraceCallbacksIfAvailable?.TryGetDiagnosticMethodInfoFromStartAddress(functionPointer);
         }
 
-        // V2 api: Creates open or closed delegates to static or instance methods - relaxed signature checking allowed.
         public static Delegate CreateDelegate(Type type, object? firstArgument, MethodInfo method, bool throwOnBindFailure) =>
             ReflectionAugments.CreateDelegate(type, firstArgument, method, throwOnBindFailure);
 
-        // V1 api: Creates open delegates to static or instance methods - relaxed signature checking allowed.
         public static Delegate CreateDelegate(Type type, MethodInfo method, bool throwOnBindFailure) =>
             ReflectionAugments.CreateDelegate(type, method, throwOnBindFailure);
 
-        // V1 api: Creates closed delegates to instance methods only, relaxed signature checking disallowed.
         [RequiresUnreferencedCode("The target method might be removed")]
         public static Delegate CreateDelegate(Type type, object target, string method, bool ignoreCase, bool throwOnBindFailure) =>
             ReflectionAugments.CreateDelegate(type, target, method, ignoreCase, throwOnBindFailure);
 
-        // V1 api: Creates open delegates to static methods only, relaxed signature checking disallowed.
         public static Delegate CreateDelegate(Type type, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.AllMethods)] Type target, string method, bool ignoreCase, bool throwOnBindFailure) =>
             ReflectionAugments.CreateDelegate(type, target, method, ignoreCase, throwOnBindFailure);
 
@@ -481,7 +477,9 @@ namespace System
 
             // Those delegate kinds with thunks put themselves into the _target, so we can't
             // blindly compare the _target fields for equality.
-            return ReferenceEquals(ReferenceEquals(_target, this) ? other : _target, other._target);
+            // Check if both delegates have themselves there then.
+            object target = ReferenceEquals(_target, this) ? other : _target;
+            return ReferenceEquals(target, other._target);
         }
 
         public sealed override unsafe int GetHashCode()
@@ -502,15 +500,11 @@ namespace System
                 return HashCode.Combine((nuint)methodTable, nativeFunctionPointerWrapper.NativeFunctionPointer);
             }
 
-            int hashCode = HashCode.Combine((nuint)methodTable,
+            return HashCode.Combine((nuint)methodTable,
                 RuntimeHelpers.GetHashCode(_helperObject),
                 FunctionPointerOps.GetHashCode(_extraFunctionPointerOrData),
-                FunctionPointerOps.GetHashCode(_methodPtr));
-            if (!ReferenceEquals(_target, this))
-            {
-                hashCode += RuntimeHelpers.GetHashCode(_target) * 33;
-            }
-            return hashCode;
+                FunctionPointerOps.GetHashCode(_methodPtr),
+                ReferenceEquals(_target, this) ? RuntimeHelpers.GetHashCode(_target) : 0);
         }
     }
 }

@@ -23,15 +23,12 @@ namespace System
         /// <value>true if the <see cref="Delegate"/> has a single invocation target.</value>
         public partial bool HasSingleTarget { get; }
 
-        // V2 api: Creates open or closed delegates to static or instance methods - relaxed signature checking allowed.
         public static Delegate CreateDelegate(Type type, object? firstArgument, MethodInfo method) =>
             CreateDelegate(type, firstArgument, method, throwOnBindFailure: true)!;
 
-        // V1 api: Creates open delegates to static or instance methods - relaxed signature checking allowed.
         public static Delegate CreateDelegate(Type type, MethodInfo method) =>
             CreateDelegate(type, method, throwOnBindFailure: true)!;
 
-        // V1 api: Creates closed delegates to instance methods only, relaxed signature checking disallowed.
         [RequiresUnreferencedCode("The target method might be removed")]
         public static Delegate CreateDelegate(Type type, object target, string method) =>
             CreateDelegate(type, target, method, ignoreCase: false, throwOnBindFailure: true)!;
@@ -39,7 +36,6 @@ namespace System
         public static Delegate CreateDelegate(Type type, object target, string method, bool ignoreCase) =>
             CreateDelegate(type, target, method, ignoreCase, throwOnBindFailure: true)!;
 
-        // V1 api: Creates open delegates to static methods only, relaxed signature checking disallowed.
         public static Delegate CreateDelegate(Type type, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.AllMethods)] Type target, string method) =>
             CreateDelegate(type, target, method, ignoreCase: false, throwOnBindFailure: true)!;
         public static Delegate CreateDelegate(Type type, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.AllMethods)] Type target, string method, bool ignoreCase) =>
@@ -224,7 +220,7 @@ namespace System
             Debug.Assert(delegateType != typeof(Delegate));
             Debug.Assert(delegateType != typeof(MulticastDelegate));
 
-            MethodInfo? invoke = delegateType.GetMethod("Invoke", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            MethodInfo? invoke = delegateType.GetMethod("Invoke", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly);
             Debug.Assert(invoke is not null);
 
             return invoke;

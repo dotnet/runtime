@@ -205,17 +205,13 @@ namespace System.Runtime.CompilerServices
             Debug.Assert(a is not null);
             Debug.Assert(b is not null);
 
-#if MONO
-            // Mono doesn't have MethodTables nor Equivalence
-            return a.GetType() == b.GetType();
-#else
+#if FEATURE_TYPEEQUIVALENCE
             MethodTable* pMTa = GetMethodTable(a);
             MethodTable* pMTb = GetMethodTable(b);
 
             if (pMTa == pMTb)
                 return true;
 
-#if FEATURE_TYPEEQUIVALENCE
             bool ret = pMTa->HasTypeEquivalence && pMTb->HasTypeEquivalence &&
                        // only use QCall to check the type equivalence scenario
                        AreTypesEquivalent(pMTa, pMTb);
@@ -225,9 +221,8 @@ namespace System.Runtime.CompilerServices
 
             return ret;
 #else
-            return false;
+            return a.GetType() == b.GetType();
 #endif // FEATURE_TYPEEQUIVALENCE
-#endif
         }
     }
 }
