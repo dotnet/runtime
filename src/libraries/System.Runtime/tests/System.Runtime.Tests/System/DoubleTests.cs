@@ -1906,6 +1906,46 @@ namespace System.Tests
             AssertExtensions.Equal(+expectedResult, double.RadiansToDegrees(+value), allowedVariance);
         }
 
+        // Both conversions are correctly rounded, so these compare bits rather than allowing a
+        // variance. The inputs are the ones that pick a path or a sign the bulk data cannot reach:
+        // zero, the subnormal range where the middle term underflows, the cutoffs at either end,
+        // and an overflow. The last two are the inputs whose exact product lands closest to a
+        // rounding midpoint anywhere in the domain, at 2^-55.58 and 2^-55.99 ulp, so they are what
+        // a form carrying too few bits gets wrong first.
+        [Theory]
+        [InlineData(0x0000_0000_0000_0000, 0x0000_0000_0000_0000, 0x0000_0000_0000_0000)] // 0
+        [InlineData(0x0000_0000_0000_0001, 0x0000_0000_0000_0000, 0x0000_0000_0000_0039)] // Epsilon
+        [InlineData(0x0010_0000_0000_0000, 0x0000_477D_1A89_4A75, 0x006C_A5DC_1A63_C1F8)] // MinNormal
+        [InlineData(0x031F_FFFF_FFFF_FFFF, 0x02C1_DF46_A252_9D39, 0x037C_A5DC_1A63_C1F7)] // RadiansToDegreesMin - 1 ulp
+        [InlineData(0x0320_0000_0000_0000, 0x02C1_DF46_A252_9D39, 0x037C_A5DC_1A63_C1F8)] // RadiansToDegreesMin
+        [InlineData(0x03EF_FFFF_FFFF_FFFF, 0x0391_DF46_A252_9D39, 0x044C_A5DC_1A63_C1F7)] // DegreesToRadiansMin - 1 ulp
+        [InlineData(0x03F0_0000_0000_0000, 0x0391_DF46_A252_9D39, 0x044C_A5DC_1A63_C1F8)] // DegreesToRadiansMin
+        [InlineData(0x7F91_DF46_A252_9D38, 0x7F33_F6A1_DB14_1FB8, 0x7FEF_FFFF_FFFF_FFFE)] // RadiansToDegreesMax - 1 ulp
+        [InlineData(0x7F91_DF46_A252_9D39, 0x7F33_F6A1_DB14_1FB9, 0x7FF0_0000_0000_0000)] // RadiansToDegreesMax
+        [InlineData(0x7FEF_FFFF_FFFF_FFFF, 0x7F91_DF46_A252_9D39, 0x7FF0_0000_0000_0000)] // MaxValue
+        [InlineData(0x7FF0_0000_0000_0000, 0x7FF0_0000_0000_0000, 0x7FF0_0000_0000_0000)] // PositiveInfinity
+        [InlineData(0x3FF9_6BDF_4AA9_CD3B, 0x3F9C_655C_F14D_66CB, 0x4056_C226_7343_95AC)] // closest to a midpoint anywhere for DegreesToRadians
+        [InlineData(0x3FFD_B0FB_3010_78BE, 0x3FA0_9530_51C1_CB1B, 0x405A_94C0_9279_849F)] // closest to a midpoint anywhere for RadiansToDegrees
+        public static void DegreesToRadiansRadiansToDegreesEdgeTest(ulong valueBits, ulong degreesToRadiansBits, ulong radiansToDegreesBits)
+        {
+            const ulong SignMask = 0x8000_0000_0000_0000;
+
+            double value = BitConverter.UInt64BitsToDouble(valueBits);
+            double degreesToRadians = BitConverter.UInt64BitsToDouble(degreesToRadiansBits);
+            double radiansToDegrees = BitConverter.UInt64BitsToDouble(radiansToDegreesBits);
+
+            AssertExtensions.Equal(degreesToRadians, double.DegreesToRadians(value));
+            AssertExtensions.Equal(radiansToDegrees, double.RadiansToDegrees(value));
+
+            // Negating flips only the sign bit, which pins the sign of a zero result
+            double negativeValue = BitConverter.UInt64BitsToDouble(valueBits ^ SignMask);
+            double negativeDegreesToRadians = BitConverter.UInt64BitsToDouble(degreesToRadiansBits ^ SignMask);
+            double negativeRadiansToDegrees = BitConverter.UInt64BitsToDouble(radiansToDegreesBits ^ SignMask);
+
+            AssertExtensions.Equal(negativeDegreesToRadians, double.DegreesToRadians(negativeValue));
+            AssertExtensions.Equal(negativeRadiansToDegrees, double.RadiansToDegrees(negativeValue));
+        }
+
         public static IEnumerable<object[]> TryParsePartial_TestData()
         {
             // Basic floating point parsing with trailing invalid characters

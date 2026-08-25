@@ -937,7 +937,6 @@ PTR_COR_ILMETHOD ILCodeVersion::GetIL() const
     {
         THROWS; //GetILHeader throws
         GC_NOTRIGGER;
-        FORBID_FAULT;
         MODE_ANY;
     }
     CONTRACTL_END

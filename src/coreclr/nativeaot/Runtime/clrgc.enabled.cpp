@@ -43,7 +43,7 @@ BOOL g_gcEventTracingInitialized = FALSE;
 
 void InitializeGCEventLock()
 {
-    g_eventStashLock.InitNoThrow(CrstGcEvent);
+    g_eventStashLock.Init(CrstGcEvent);
 }
 
 HRESULT InitializeStandaloneGC();
