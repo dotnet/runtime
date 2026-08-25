@@ -546,10 +546,10 @@ namespace System.Net.ServerSentEvents
         {
             int currentSize = buffer?.Length ?? 0;
 
-            uint prefferedSize = (uint)currentSize * 2;
-            prefferedSize = Math.Min(prefferedSize, (uint)_maxBufferSize);
-            prefferedSize = Math.Max(prefferedSize, DefaultArrayPoolRentSize);
-            Debug.Assert(prefferedSize < int.MaxValue);
+            uint preferedSize = (uint)currentSize * 2;
+            preferedSize = Math.Min(preferedSize, (uint)_maxBufferSize);
+            preferedSize = Math.Max(preferedSize, DefaultArrayPoolRentSize);
+            Debug.Assert(preferedSize < int.MaxValue);
 
             if (minimumSize > _maxBufferSize)
             {
@@ -562,7 +562,7 @@ namespace System.Net.ServerSentEvents
                 return;
             }
 
-            int rentedSize = Math.Max((int)prefferedSize, (int)minimumSize);
+            int rentedSize = Math.Max((int)preferedSize, (int)minimumSize);
 
             byte[]? toReturn = buffer;
             buffer = ArrayPool<byte>.Shared.Rent(rentedSize);
