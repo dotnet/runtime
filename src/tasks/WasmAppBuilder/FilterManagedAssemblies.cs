@@ -11,10 +11,12 @@ using Microsoft.Build.Utilities;
 namespace Microsoft.WebAssembly.Build.Tasks;
 
 /// <summary>
-/// Narrows a bundle's files down to the managed assemblies.
+/// Narrows a bundle's files down to the managed assemblies the interop generator can scan.
 /// An app bundle legitimately carries native payloads named <c>.dll</c> - per-architecture content
 /// shipped by a NuGet package is the usual case - and the tools that read managed metadata cannot
-/// be handed those.
+/// be handed those. It can also carry several managed files sharing a simple name, satellite
+/// assemblies for different cultures being the common case, and the type system holds a single
+/// module per simple name, so only the first of those is worth scanning.
 /// </summary>
 public class FilterManagedAssemblies : Task
 {
@@ -27,6 +29,7 @@ public class FilterManagedAssemblies : Task
     public override bool Execute()
     {
         List<ITaskItem> managedAssemblies = new(Assemblies.Length);
+        Dictionary<string, string> claimedSimpleNames = new(Assemblies.Length, StringComparer.OrdinalIgnoreCase);
 
         foreach (ITaskItem assembly in Assemblies)
         {
@@ -55,6 +58,16 @@ public class FilterManagedAssemblies : Task
                 continue;
             }
 
+            // Unmanaged files are already gone, so a native payload can never claim a simple name
+            // ahead of the managed assembly that shares it.
+            string simpleName = Path.GetFileNameWithoutExtension(path);
+            if (claimedSimpleNames.TryGetValue(simpleName, out string? claimedPath))
+            {
+                Log.LogMessage(MessageImportance.Low, $"Skipping {path}, '{simpleName}' is already provided by {claimedPath}.");
+                continue;
+            }
+
+            claimedSimpleNames.Add(simpleName, path);
             managedAssemblies.Add(assembly);
         }
 

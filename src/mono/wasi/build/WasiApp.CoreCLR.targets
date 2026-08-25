@@ -21,6 +21,8 @@
        WasmAppRuntimeFlavor=Mono default. -->
   <Import Project="$(MSBuildThisFileDirectory)WasiApp.targets" />
 
+  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.FilterManagedAssemblies" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
+
   <PropertyGroup>
     <WasmAppRuntimeFlavor>CoreCLR</WasmAppRuntimeFlavor>
     <UseMonoRuntime>false</UseMonoRuntime>
@@ -135,14 +137,20 @@
     <Error Condition="!Exists('$(_WasiHttpWorldWit)')"
            Text="WasiHttpWorld_component_type.wit not found at $(_WasiHttpWorldWit)." />
 
-    <!-- 1. Generate the per-app callhelper tables over the bundled managed closure. -->
+    <!-- 1. Generate the per-app callhelper tables over the bundled managed closure.
+         The bundle can carry native payloads named .dll, and the generator reads managed
+         metadata, so narrow the list the same way the browser targets do. -->
     <ItemGroup>
-      <_WasiManagedAssemblies Include="$(WasmAppDir)managed\*.dll" />
+      <_WasiBundledFile Include="$(WasmAppDir)managed\*.dll" />
 
       <_WasiPInvokeModules Include="libSystem.Native" />
       <_WasiPInvokeModules Include="libSystem.IO.Compression.Native" />
       <_WasiPInvokeModules Include="libSystem.Globalization.Native" Condition="'$(InvariantGlobalization)' != 'true'" />
     </ItemGroup>
+
+    <FilterManagedAssemblies Assemblies="@(_WasiBundledFile)">
+      <Output TaskParameter="ManagedAssemblies" ItemName="_WasiManagedAssemblies" />
+    </FilterManagedAssemblies>
 
     <!-- crossgen2 has the type system that knows the wasm ABI, so it generates the helpers itself.
          Generation does not load the JIT, so a host-targeting crossgen2 answers wasm questions
