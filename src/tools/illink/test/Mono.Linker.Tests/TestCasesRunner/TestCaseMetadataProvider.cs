@@ -185,8 +185,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
         public virtual IEnumerable<NPath> GetExtraLinkerReferences()
         {
-            var netcoreappDir = Path.GetDirectoryName(typeof(object).Assembly.Location);
-            foreach (var assembly in Directory.EnumerateFiles(netcoreappDir))
+            var nativeDir = (string)AppContext.GetData("Mono.Linker.Tests.MicrosoftNetCoreAppRuntimePackNativeDirectory")!;
+            var libDir = (string)AppContext.GetData("Mono.Linker.Tests.MicrosoftNetCoreAppRuntimePackDirectory")!;
+            foreach (var assembly in Directory.EnumerateFiles(nativeDir).Concat(Directory.EnumerateFiles(libDir)))
             {
                 if (Path.GetExtension(assembly) != ".dll")
                     continue;

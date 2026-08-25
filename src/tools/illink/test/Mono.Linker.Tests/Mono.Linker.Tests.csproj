@@ -37,6 +37,12 @@
     <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.ArtifactsBinDir">
       <Value>$(ArtifactsBinDir)</Value>
     </RuntimeHostConfigurationOption>
+    <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.MicrosoftNetCoreAppRuntimePackDirectory">
+      <Value>$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)</Value>
+    </RuntimeHostConfigurationOption>
+    <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.MicrosoftNetCoreAppRuntimePackNativeDirectory">
+      <Value>$(MicrosoftNetCoreAppRuntimePackNativeDir)</Value>
+    </RuntimeHostConfigurationOption>
     <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.LinkerTestDir">
       <Value>$(LinkerTestDir)</Value>
     </RuntimeHostConfigurationOption>

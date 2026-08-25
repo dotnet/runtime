@@ -8,8 +8,6 @@ using Mono.Linker.Tests.Cases.Expectations.Assertions;
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
     [ExpectedNoWarnings]
-    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026", Justification = "Applying DAM PublicMethods on an array (from a string-based type name) will mark Array.Initialize which has RUC on it")]
-    [KeptAttributeAttribute(typeof(UnconditionalSuppressMessageAttribute))]
     public class ApplyTypeAnnotations
     {
         public static void Main()
@@ -188,6 +186,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         [Kept]
         [KeptAttributeAttribute(typeof(UnconditionalSuppressMessageAttribute))]
         [UnconditionalSuppressMessage("test", "IL3050", Justification = "The test applies DAM on System.Array, which contains CreateInstance method which has RDC on it.")]
+        [ExpectedWarning("IL2026", "Array.Initialize")]
         static void TestFromStringConstantWithGeneric()
         {
             RequireCombinationOnString("Mono.Linker.Tests.Cases.DataFlow.ApplyTypeAnnotations+FromStringConstantWithGeneric`1["

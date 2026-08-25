@@ -62,6 +62,9 @@
     <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.MicrosoftNetCoreAppRuntimePackDirectory">
       <Value>$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)</Value>
     </RuntimeHostConfigurationOption>
+    <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.MicrosoftNetCoreAppRuntimePackNativeDirectory">
+      <Value>$(MicrosoftNetCoreAppRuntimePackNativeDir)</Value>
+    </RuntimeHostConfigurationOption>
     <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.Configuration">
       <Value>$(Configuration)</Value>
     </RuntimeHostConfigurationOption>
