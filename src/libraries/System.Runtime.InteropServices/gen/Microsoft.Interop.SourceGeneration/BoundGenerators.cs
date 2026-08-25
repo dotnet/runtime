@@ -30,6 +30,7 @@ namespace Microsoft.Interop
             IBoundMarshallingGenerator managedReturnMarshaller = defaultBoundGenerator;
             IBoundMarshallingGenerator nativeReturnMarshaller = defaultBoundGenerator;
             IBoundMarshallingGenerator managedExceptionMarshaller = defaultBoundGenerator;
+            IBoundMarshallingGenerator errorHandlerMarshaller = defaultBoundGenerator;
             TypePositionInfo? managedExceptionInfo = null;
 
             foreach (TypePositionInfo argType in elementTypeInfo)
@@ -46,6 +47,11 @@ namespace Microsoft.Interop
                 IBoundMarshallingGenerator generator = CreateGenerator(argType, generatorResolver);
 
                 signatureMarshallers.Add(generator);
+                if (argType.IsErrorHandlingPosition)
+                {
+                    Debug.Assert(errorHandlerMarshaller == defaultBoundGenerator);
+                    errorHandlerMarshaller = generator;
+                }
                 if (argType.IsManagedReturnPosition)
                 {
                     Debug.Assert(managedReturnMarshaller == defaultBoundGenerator);
@@ -156,6 +162,7 @@ namespace Microsoft.Interop
                 ManagedReturnMarshaller = managedReturnMarshaller,
                 NativeReturnMarshaller = nativeReturnMarshaller,
                 ManagedExceptionMarshaller = managedExceptionMarshaller,
+                ErrorHandlerMarshaller = errorHandlerMarshaller,
             };
 
             static IEnumerable<(bool IsManagedIndex, int Index)> GetInfoDependencies(TypePositionInfo info)
@@ -185,6 +192,16 @@ namespace Microsoft.Interop
             IBoundMarshallingGenerator CreateGenerator(TypePositionInfo p, IMarshallingGeneratorResolver factory)
             {
                 ResolvedGenerator generator = factory.Create(p, context);
+                if (generator.IsResolvedWithoutErrors
+                    && p is { IsErrorHandlingPosition: true, ErrorHandlingLocation: ErrorHandlingLocation.SystemError }
+                    && generator.Generator.NativeType != SpecialTypeInfo.Int32)
+                {
+                    generator = ResolvedGenerator.NotSupported(p, context, new(p)
+                    {
+                        NotSupportedDetails = SR.MarshallerInOverlappingNativePositionMustMatchNativeType
+                    });
+                }
+
                 generatorDiagnostics.AddRange(generator.Diagnostics);
                 return generator.IsResolvedWithoutErrors ? generator.Generator : fallbackGenerator.Bind(p, context);
             }
@@ -195,6 +212,8 @@ namespace Microsoft.Interop
         public IBoundMarshallingGenerator NativeReturnMarshaller { get; private init; }
 
         public IBoundMarshallingGenerator ManagedExceptionMarshaller { get; private init; }
+
+        public IBoundMarshallingGenerator ErrorHandlerMarshaller { get; private init; }
 
         public ImmutableArray<IBoundMarshallingGenerator> SignatureMarshallers { get; private init; }
 
@@ -220,6 +239,8 @@ namespace Microsoft.Interop
         public bool IsUnmanagedVoidReturn => NativeReturnMarshaller.TypeInfo.ManagedType == SpecialTypeInfo.Void;
 
         public bool HasManagedExceptionMarshaller => !ManagedExceptionMarshaller.IsForwarder();
+
+        public bool HasErrorHandler => !ErrorHandlerMarshaller.IsForwarder();
 
         /// <summary>
         /// Validate that the resolved generator resolves to the same native type.

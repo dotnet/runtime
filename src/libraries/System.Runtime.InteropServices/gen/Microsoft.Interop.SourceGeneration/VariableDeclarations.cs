@@ -24,7 +24,7 @@ namespace Microsoft.Interop
                 if (info.IsManagedReturnPosition)
                     continue;
 
-                if (info.RefKind == RefKind.Out)
+                if (info.RefKind == RefKind.Out && info.ManagedIndex != TypePositionInfo.ErrorIndex)
                 {
                     initializations.Add(MarshallerHelpers.DefaultInit(info, context));
                 }
@@ -44,6 +44,23 @@ namespace Microsoft.Interop
             {
                 // Declare variables for invoke return value
                 AppendVariableDeclarations(variables, marshallers.NativeReturnMarshaller, context, initializeToDefault: initializeDeclarations);
+            }
+
+            if (marshallers.HasErrorHandler)
+            {
+                IBoundMarshallingGenerator errorMarshaller = marshallers.ErrorHandlerMarshaller;
+                TypePositionInfo errorInfo = errorMarshaller.TypeInfo;
+                (string managed, string native) = context.GetIdentifiers(errorInfo);
+
+                if (errorInfo.ManagedIndex == TypePositionInfo.ErrorIndex && !errorInfo.IsNativeReturnPosition)
+                {
+                    variables.Add(Declare(errorInfo.ManagedType.Syntax, managed, initializeDeclarations));
+                }
+
+                if (errorInfo.NativeIndex == TypePositionInfo.UnsetIndex && errorMarshaller.UsesNativeIdentifier)
+                {
+                    variables.Add(Declare(errorMarshaller.NativeType.Syntax, native, initializeDeclarations));
+                }
             }
 
             return new VariableDeclarations

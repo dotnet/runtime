@@ -89,6 +89,7 @@ namespace Microsoft.Interop
             }
 
             NoMarshallingRequired = !setLastError
+                && !_marshallers.HasErrorHandler
                 && _marshallers.ManagedNativeSameReturn
                 && noMarshallingNeeded;
         }
@@ -109,12 +110,14 @@ namespace Microsoft.Interop
         public BlockSyntax GenerateStubBody(string targetIdentifier)
         {
             GeneratedStatements statements = GeneratedStatements.Create(_marshallers, StubCodeContext.DefaultManagedToNativeStub, _context, IdentifierName(targetIdentifier));
+            IBoundMarshallingGenerator? errorMarshaller = _marshallers.HasErrorHandler ? _marshallers.ErrorHandlerMarshaller : null;
+            bool capturesSystemError = errorMarshaller?.TypeInfo.ErrorHandlingLocation == ErrorHandlingLocation.SystemError;
             bool shouldInitializeVariables = !statements.GuaranteedUnmarshal.IsEmpty || !statements.CleanupCallerAllocated.IsEmpty || !statements.CleanupCalleeAllocated.IsEmpty;
             VariableDeclarations declarations = VariableDeclarations.GenerateDeclarationsForManagedToUnmanaged(_marshallers, _context, shouldInitializeVariables);
 
             List<StatementSyntax> setupStatements = [];
 
-            if (_setLastError)
+            if (_setLastError || capturesSystemError)
             {
                 // Declare variable for last error
                 setupStatements.Add(Declare(
@@ -135,7 +138,7 @@ namespace Microsoft.Interop
             List<StatementSyntax> tryStatements = [.. statements.Marshal];
 
             BlockSyntax fixedBlock = Block(statements.PinnedMarshal);
-            if (_setLastError)
+            if (_setLastError || capturesSystemError)
             {
                 StatementSyntax clearLastError = MarshallerHelpers.CreateClearLastSystemErrorStatement(SuccessErrorCode);
 
@@ -150,6 +153,26 @@ namespace Microsoft.Interop
             tryStatements.Add(statements.Pin.NestFixedStatements(fixedBlock));
 
             tryStatements.AddRange(statements.NotifyForSuccessfulInvoke);
+
+            if (capturesSystemError)
+            {
+                tryStatements.Add(ExpressionStatement(
+                    AssignmentExpression(
+                        SyntaxKind.SimpleAssignmentExpression,
+                        IdentifierName(_context.GetIdentifiers(errorMarshaller!.TypeInfo).native),
+                        IdentifierName(LastErrorIdentifier))));
+            }
+
+            if (_setLastError && errorMarshaller is not null)
+            {
+                tryStatements.Add(MarshallerHelpers.CreateSetLastPInvokeErrorStatement(LastErrorIdentifier));
+            }
+
+            if (errorMarshaller is not null)
+            {
+                tryStatements.AddRange(errorMarshaller.Generate(_context with { CurrentStage = StubIdentifierContext.Stage.UnmarshalCapture }));
+                tryStatements.AddRange(errorMarshaller.Generate(_context with { CurrentStage = StubIdentifierContext.Stage.Unmarshal }));
+            }
 
             // <invokeSucceeded> = true;
             if (!(statements.GuaranteedUnmarshal.IsEmpty && statements.CleanupCalleeAllocated.IsEmpty))
