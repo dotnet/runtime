@@ -535,8 +535,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
                 return next;
             }
 
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) ||        \
-    defined(TARGET_WASM)
+#if TARGET_MASKS_SHIFTS
             // These targets mask the rotate amount implicitly, so strip a redundant
             // AND(amount, mask) before lowering the rotate.
             TryRemoveShiftRotateMask(node->AsOp());
@@ -563,7 +562,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
                 return next;
             }
 
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if TARGET_MASKS_SHIFTS
             LowerShift(node->AsOp());
 #else
             ContainCheckShiftRotate(node->AsOp());
@@ -8232,7 +8231,7 @@ bool Lowering::TryLowerConstIntUDivOrUMod(GenTreeOp* divMod)
     }
 
     // TODO-ARM-CQ: Currently there's no GT_MULHI for ARM32
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if TARGET_HAS_MULHI
     if (!m_compiler->opts.MinOpts() && (divisorValue >= 3))
     {
         size_t magic;
@@ -8540,7 +8539,7 @@ bool Lowering::TryLowerConstIntDivOrMod(GenTree* node, GenTree** nextNode)
             return false;
         }
 
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if TARGET_HAS_MULHI
         ssize_t magic;
         int     shift;
 
@@ -8885,7 +8884,7 @@ void Lowering::TryRemoveShiftRotateMask(GenTreeOp* op)
 //    shift - the shift node (GT_LSH, GT_RSH or GT_RSZ)
 //
 // Notes:
-//    Remove unnecessary shift count masking, xarch shift instructions
+//    Remove unnecessary shift count masking, shift instructions on some targets
 //    mask the shift count to 5 bits (or 6 bits for 64 bit operations).
 //
 void Lowering::LowerShift(GenTreeOp* shift)
