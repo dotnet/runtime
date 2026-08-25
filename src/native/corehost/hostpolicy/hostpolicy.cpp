@@ -75,9 +75,17 @@ namespace
                         assert(path != g_context->tpa_paths.end());
 
                         const char* directory = path->second.directory;
-                        size_t directoryLength = strlen(directory);
-                        assert(directoryLength != 0 && directory[directoryLength - 1] == static_cast<char>(DIR_SEPARATOR));
-                        trace::verbose(_X("TPA entry %hs = %hs%hs"), name, directory, path->second.file_name.c_str());
+                        assert(directory[0] != '\0' && directory[strlen(directory) - 1] == static_cast<char>(DIR_SEPARATOR));
+
+                        pal::string_t name_str;
+                        pal::string_t directory_str;
+                        pal::string_t file_name_str;
+                        if (pal::clr_palstring(name, &name_str)
+                            && pal::clr_palstring(directory, &directory_str)
+                            && pal::clr_palstring(path->second.file_name.c_str(), &file_name_str))
+                        {
+                            trace::verbose(_X("TPA entry %s = %s%s"), name_str.c_str(), directory_str.c_str(), file_name_str.c_str());
+                        }
                     }
                 }
             }

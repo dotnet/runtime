@@ -31,8 +31,7 @@ namespace
             if (!value.empty())
                 value.push_back(static_cast<char>(PATH_SEPARATOR));
 
-            size_t directory_length = strlen(path->second.directory);
-            assert(directory_length != 0 && path->second.directory[directory_length - 1] == static_cast<char>(DIR_SEPARATOR));
+            assert(path->second.directory[0] != '\0' && path->second.directory[strlen(path->second.directory) - 1] == static_cast<char>(DIR_SEPARATOR));
             value.append(path->second.directory);
             value.append(path->second.file_name);
         }
