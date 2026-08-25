@@ -26,10 +26,27 @@ namespace ILCompiler.Wasm
             foreach (string module in pinvokeModules)
                 modules[module] = module;
 
+            // What actually gets linked in, captured before the scan below starts adding to modules.
+            // The lib-prefix fallback has to resolve against this rather than against modules, or an
+            // alias could be derived from another alias, or from a module that is only imported for
+            // [WasmImportLinkage] and has no archive behind it at all.
+            var linkedModules = new HashSet<string>(modules.Keys, StringComparer.Ordinal);
+
             foreach (WasmPInvoke pinvoke in pinvokes)
             {
                 if (modules.ContainsKey(pinvoke.Module) || skippedModules.Contains(pinvoke.Module))
                     continue;
+
+                // A static archive is named libFoo.a, so the module list - built from the file names
+                // of what gets linked in - carries "libFoo", while the managed side spells the
+                // [DllImport] "Foo", the name it would use on Windows. That is also the name the
+                // runtime resolver looks up, so accept it as naming the same module.
+                if (linkedModules.Contains($"lib{pinvoke.Module}"))
+                {
+                    modules.Add(pinvoke.Module, pinvoke.Module);
+                    log.Verbose($"Adding module {pinvoke.Module} for statically linked lib{pinvoke.Module}");
+                    continue;
+                }
 
                 // Handle special modules, and add them to the list of modules otherwise, skip them
                 // and throw an exception at runtime if they are called.

@@ -24,6 +24,23 @@ Each run emits three files into the output directory:
 - `callhelpers-reverse.cpp`
 - `callhelpers-interp-to-managed.cpp`
 
+## The P/Invoke module list
+
+Only the framework native libraries the runtime links statically get an entry in the generated
+P/Invoke table. Three places have to agree on that list:
+
+- [`eng/wasm/WasmPInvokeModules.props`](../../../../eng/wasm/WasmPInvokeModules.props), which
+  `CLRTest.WasmCorerun.targets` reads when it links a test-specific corerun and regenerates
+  equivalent tables of its own.
+- The `pinvoke_modules` list these scripts pass as `--directpinvoke`, which produces the
+  checked-in tables here.
+- `BrowserWasmApp.CoreCLR.targets`, which ships in the WebAssembly workload and is evaluated
+  inside the user's SDK, where the props file does not exist.
+
+Adding a module means updating all three, rerunning these scripts, and committing the regenerated
+files in the same change. A module missing from one of them surfaces as a `DllNotFoundException`
+at run time rather than as a build failure.
+
 ## What needs to be built first
 
 The generator scans the **managed framework assemblies** in the `testhost` folder produced by a

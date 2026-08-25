@@ -498,6 +498,7 @@ static const Entry s_QCall[] =
     DllImportEntry(StubHelpers_CreateCustomMarshaler)
     DllImportEntry(StubHelpers_CreateLayoutClassMarshalStubs)
     DllImportEntry(StubHelpers_ThrowInteropParamException)
+    DllImportEntry(StubHelpers_ThrowInteropException)
     DllImportEntry(StubHelpers_MarshalToManagedVaList)
     DllImportEntry(StubHelpers_MarshalToUnmanagedVaList)
     DllImportEntry(StubHelpers_ValidateObject)

@@ -75,11 +75,7 @@
     <WasmEnvironmentVariable Condition="'$(_WasmPerfInstInterval)' != ''" Include="DOTNET_EventPipeThreadSamplingRate" Value="$(_WasmPerfInstInterval)" />
   </ItemGroup>
 
-  <!-- Derive Emscripten paths from EMSDK_PATH when workload paths are not set -->
-  <Import Project="$(MSBuildThisFileDirectory)EmSdkRepo.Defaults.props"
-          Condition="'$(EMSDK_PATH)' != '' and '$(EmscriptenSdkToolsPath)' == ''" />
-
-  <!-- Task declarations -->
+  <!-- Task declarations: Both tasks live in WasmAppBuilder.dll -->
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.EmccCompile"
              AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)"
              TaskFactory="TaskHostFactory"
@@ -146,6 +142,11 @@
        (MSBuild last-definition-wins), so the in-tree list is always authoritative. -->
   <Import Project="$(RepositoryEngineeringDir)native.wasm.targets"
           Condition="'$(RepositoryEngineeringDir)' != '' and Exists('$(RepositoryEngineeringDir)native.wasm.targets')" />
+
+  <!-- Derive Emscripten paths from EMSDK_PATH when workload paths are not set. Must come after
+       native.wasm.targets, which imports AcquireEmscriptenSdk.targets that sets EMSDK_PATH in-tree. -->
+  <Import Project="$(MSBuildThisFileDirectory)EmSdkRepo.Defaults.props"
+          Condition="'$(EMSDK_PATH)' != '' and '$(EmscriptenSdkToolsPath)' == ''" />
 
   <!-- Allow running/debugging from VS -->
   <ItemGroup>
@@ -614,6 +615,16 @@
          reads managed metadata, so narrow the list before handing it over. -->
     <ItemGroup>
       <_WasmBundledFile Include="@(WasmAssembliesToBundle->Distinct())" />
+    </ItemGroup>
+
+    <!-- With R2R the published .dll are webcil-in-wasm images MetadataLoadContext can't parse; scan the
+         trimmed IL (same closure crossgen used) instead. Gated on the linker dir only, because the nested
+         WasmNestedPublishApp build where this runs doesn't carry PublishReadyToRun. Remapped ahead of the
+         filter below, which reads PE headers and cannot make sense of webcil either. -->
+    <ItemGroup Condition="'$(IntermediateLinkDir)' != ''">
+      <_WasmBundledFileR2RRemap Include="@(_WasmBundledFile)" Condition="Exists('$(IntermediateLinkDir)%(FileName)%(Extension)')" />
+      <_WasmBundledFile Remove="@(_WasmBundledFileR2RRemap)" />
+      <_WasmBundledFile Include="@(_WasmBundledFileR2RRemap->'$(IntermediateLinkDir)%(FileName)%(Extension)')" />
     </ItemGroup>
 
     <FilterManagedAssemblies Assemblies="@(_WasmBundledFile)">
