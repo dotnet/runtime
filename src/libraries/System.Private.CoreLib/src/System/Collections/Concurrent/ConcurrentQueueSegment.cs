@@ -98,8 +98,10 @@ namespace System.Collections.Concurrent
         {
             if (!_frozenForEnqueues) // flag used to ensure we don't increase the Tail more than once if frozen more than once
             {
-                _frozenForEnqueues = true;
+                // Bump the Tail before setting the flag, as TryDequeue reads the flag and then
+                // the Tail: a set flag must guarantee that the Tail read includes the FreezeOffset.
                 Interlocked.Add(ref _headAndTail.Tail, FreezeOffset);
+                _frozenForEnqueues = true;
             }
         }
 
