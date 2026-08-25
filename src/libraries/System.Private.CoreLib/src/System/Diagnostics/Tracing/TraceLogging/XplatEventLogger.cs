@@ -35,13 +35,7 @@ namespace System.Diagnostics.Tracing
         {
             try
             {
-                if (!initializedPersistentListener && XplatEventLogger.IsEventSourceLoggingEnabled(
-#if CORECLR
-#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-                    out _
-#pragma warning restore SA1001, SA1113, SA1115
-#endif
-                ))
+                if (!initializedPersistentListener && XplatEventLogger.IsEventSourceLoggingEnabled())
                 {
                     initializedPersistentListener = true;
                     return new XplatEventLogger();
