@@ -78,6 +78,19 @@ internal static class NativeCommandLine
                 continue;
             }
 
+            if (optionName.Length < 3)
+            {
+                // System.CommandLine splits attached values before validating option arity, so
+                // reject malformed short options here instead of treating the value as an input file.
+                if (value is not null && !IsValidModernShortOptionValue(arg[0], optionName, value))
+                {
+                    throw new ArgumentException($"Invalid native option '{arg}'.");
+                }
+
+                result.Add(arg);
+                continue;
+            }
+
             string? normalizedOption;
             if (optionName.StartsWith("ARM64", StringComparison.OrdinalIgnoreCase))
             {
@@ -96,7 +109,7 @@ internal static class NativeCommandLine
             {
                 throw new ArgumentException($"Invalid native option '{arg}'.");
             }
-            else if (optionName.Length >= 3)
+            else
             {
                 string prefix = optionName[..3];
                 if (prefix.Equals("RES", StringComparison.OrdinalIgnoreCase))
@@ -106,10 +119,6 @@ internal static class NativeCommandLine
                 }
 
                 s_options.TryGetValue(prefix, out normalizedOption);
-            }
-            else
-            {
-                normalizedOption = null;
             }
 
             if (normalizedOption is null)
@@ -182,6 +191,11 @@ internal static class NativeCommandLine
 
         return true;
     }
+
+    private static bool IsValidModernShortOptionValue(char prefix, string optionName, string value) =>
+        prefix == '-' &&
+        (optionName is "I" or "k" or "o" ||
+         optionName is "O" or "g" or "q" && bool.TryParse(value, out _));
 
     private static string NormalizeDebugMode(string value)
     {

@@ -245,6 +245,40 @@ public class CommandLineTests
     }
 
     [Theory]
+    [InlineData("-I:include")]
+    [InlineData("-k:key.snk")]
+    [InlineData("-o:output.exe")]
+    public void ModernShortValueOption_WithAttachedValueIsPreserved(string argument)
+    {
+        Assert.Equal(
+            [argument],
+            NativeCommandLine.Normalize([argument], allowSlashOptions: false));
+    }
+
+    [Theory]
+    [InlineData("-g:false")]
+    [InlineData("-O:false")]
+    [InlineData("-q:true")]
+    public void ModernShortBooleanOption_WithBooleanValueIsPreserved(string argument)
+    {
+        Assert.Equal(
+            [argument],
+            NativeCommandLine.Normalize([argument], allowSlashOptions: false));
+    }
+
+    [Theory]
+    [InlineData("-g:opt", false)]
+    [InlineData("-O=x.exe", false)]
+    [InlineData("-O:x.exe", false)]
+    [InlineData("-q:value", false)]
+    [InlineData("/O:x.exe", true)]
+    public void ShortOption_RejectsInvalidAttachedValue(string argument, bool allowSlashOptions)
+    {
+        Assert.Throws<ArgumentException>(
+            () => NativeCommandLine.Normalize([argument], allowSlashOptions));
+    }
+
+    [Theory]
     [InlineData("-OU")]
     [InlineData("-unknown")]
     [InlineData("input.il")]
