@@ -398,17 +398,17 @@ void CodeGen::genFnEpilog(BasicBlock* block)
     {
         if (block->IsLast() || m_compiler->bbIsFuncletBeg(block->Next()))
         {
-            genEmitFunctionEnd(/* emitTerminalUnreachable */ false);
+            instGen(INS_end);
         }
         return;
     }
 
     // TODO-WASM: shadow stack maintenance
-    // Close the root function before the first funclet starts. Other returns
-    // within the root function leave the remaining root blocks reachable.
+    // TODO-WASM: we need to handle the end-of-function case if we reach the end of a codegen for a function
+    // and do NOT have an epilog. In those cases we currently will not emit an end instruction.
     if (block->IsLast() || m_compiler->bbIsFuncletBeg(block->Next()))
     {
-        genEmitFunctionEnd(/* emitTerminalUnreachable */ false);
+        instGen(INS_end);
     }
     else
     {
@@ -3220,7 +3220,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     if (target != nullptr)
     {
         // Codegen should have already evaluated our target node (last) and pushed it onto the stack,
-        // ready for call_indirect. Consume it.
+        //  ready for call_indirect. Consume it.
         genConsumeReg(target);
 
         params.callType = EC_INDIR_R;
@@ -3358,7 +3358,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
 
     params.wasmSignature = m_compiler->info.compCompHnd->getWasmTypeSymbol(types, typeCount);
 
-    if (helperIsManaged)
+    if (helperIsManaged && m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PORTABLE_ENTRY_POINTS))
     {
         // Push PEP onto the stack because we are calling a managed helper that expects it as the last parameter.
         // The helper function address is the address of an indirection cell, so we load from the cell to get the PEP
