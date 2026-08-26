@@ -113,10 +113,7 @@ typedef DWORD (WINAPI *PTHREAD_START_ROUTINE)(void* lpThreadParameter);
   #pragma intrinsic(__dmb)
   #define MemoryBarrier() { __dmb(_ARM64_BARRIER_SY); }
 
- #elif defined(HOST_BROWSER)
-  #define YieldProcessor()
-  #define MemoryBarrier __sync_synchronize
-#elif defined(HOST_AMD64)
+ #elif defined(HOST_AMD64)
 
   extern "C" void
   _mm_pause (
@@ -190,6 +187,11 @@ typedef DWORD (WINAPI *PTHREAD_START_ROUTINE)(void* lpThreadParameter);
  #define YieldProcessor() asm volatile( ".word 0x0100000f");
  #define MemoryBarrier __sync_synchronize
 #endif // __riscv
+
+#ifdef HOST_BROWSER
+  #define YieldProcessor()
+  #define MemoryBarrier __sync_synchronize
+#endif // HOST_BROWSER
 
 #endif // _MSC_VER
 
@@ -379,8 +381,6 @@ inline void* ALIGN_DOWN(void* ptr, size_t alignment)
 #define STATIC_CONTRACT_GC_NOTRIGGER
 #define STATIC_CONTRACT_MODE_COOPERATIVE
 #define CONTRACTL
-#define CONTRACT(_expr)
-#define CONTRACT_VOID
 #define THROWS
 #define NOTHROW
 #define INSTANCE_CHECK
@@ -390,14 +390,10 @@ inline void* ALIGN_DOWN(void* ptr, size_t alignment)
 #define GC_NOTRIGGER
 #define CAN_TAKE_LOCK
 #define SUPPORTS_DAC
-#define FORBID_FAULT
 #define CONTRACTL_END
 #define TRIGGERSGC()
 #define WRAPPER(_contract)
 #define DISABLED(_contract)
-#define INJECT_FAULT(_expr)
-#define INJECTFAULT_GCHEAP 0x2
-#define FAULT_NOT_FATAL()
 #define BEGIN_DEBUG_ONLY_CODE
 #define END_DEBUG_ONLY_CODE
 #define BEGIN_GETTHREAD_ALLOWED

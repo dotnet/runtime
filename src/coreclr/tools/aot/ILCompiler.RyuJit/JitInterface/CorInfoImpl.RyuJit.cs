@@ -2020,8 +2020,8 @@ namespace Internal.JitInterface
             if (!mustConvert && !IsPInvokeStubRequired(stub))
                 return false;
 
-            pResolvedToken.hMethod = ObjectToHandle(stub);
             pResolvedToken.hClass = ObjectToHandle(stub.OwningType);
+            pResolvedToken.hMethod = ObjectToHandle(stub);
             return true;
         }
 
@@ -2224,7 +2224,7 @@ namespace Internal.JitInterface
                         pResult->helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_THREADSTATIC_BASE;
                         helperId = ReadyToRunHelperId.GetThreadStaticBase;
                     }
-                    else if (!_compilation.HasLazyStaticConstructor(field.OwningType))
+                    else
                     {
                         fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_RELOCATABLE;
                         ISymbolNode baseAddr;
@@ -2239,18 +2239,10 @@ namespace Internal.JitInterface
                             baseAddr = _compilation.NodeFactory.TypeNonGCStaticsSymbol(field.OwningType);
                         }
                         pResult->fieldLookup.addr = (void*)ObjectToHandle(baseAddr);
-                    }
-                    else
-                    {
-                        if (field.HasGCStaticBase)
+
+                        if (_compilation.HasLazyStaticConstructor(field.OwningType))
                         {
-                            pResult->helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GCSTATIC_BASE;
-                            helperId = ReadyToRunHelperId.GetGCStaticBase;
-                        }
-                        else
-                        {
-                            pResult->helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE;
-                            helperId = ReadyToRunHelperId.GetNonGCStaticBase;
+                            fieldFlags |= CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_INITCLASS;
                         }
                     }
 

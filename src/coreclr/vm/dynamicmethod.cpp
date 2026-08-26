@@ -26,7 +26,6 @@ DynamicMethodTable* Module::GetDynamicMethodTable()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -53,7 +52,6 @@ void DynamicMethodTable::CreateDynamicMethodTable(DynamicMethodTable **ppLocatio
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(ppLocation));
         PRECONDITION(CheckPointer(pModule));
     }
@@ -103,7 +101,6 @@ void DynamicMethodTable::MakeMethodTable(AllocMemTracker *pamTracker)
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -144,7 +141,6 @@ void DynamicMethodTable::AddMethodsToList()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -220,7 +216,6 @@ DynamicMethodDesc* DynamicMethodTable::GetDynamicMethod(BYTE *psig, DWORD sigSiz
         THROWS;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(psig));
         PRECONDITION(sigSize > 0);
     }
@@ -321,7 +316,6 @@ HeapList* HostCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, EECodeGenMana
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -351,7 +345,6 @@ HostCodeHeap::HostCodeHeap(EECodeGenManager *pJitManager, bool isExecutable)
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -444,8 +437,6 @@ HeapList* HostCodeHeap::InitializeHeapList(CodeHeapRequestInfo *pInfo)
         pTracker = AllocMemory_NoThrow(0, JUMP_ALLOCATE_SIZE, sizeof(void*), 0);
         if (pTracker == NULL)
         {
-            // This should only ever happen with fault injection
-            _ASSERTE(g_pConfig->ShouldInjectFault(INJECTFAULT_DYNAMICCODEHEAP));
             delete pHp;
             ThrowOutOfMemory();
         }
@@ -725,16 +716,6 @@ HostCodeHeap::TrackAllocation* HostCodeHeap::AllocMemory_NoThrow(size_t header, 
         MODE_ANY;
     }
     CONTRACTL_END;
-
-#ifdef _DEBUG
-    if (g_pConfig->ShouldInjectFault(INJECTFAULT_DYNAMICCODEHEAP))
-    {
-        char *a = new (nothrow) char;
-        if (a == NULL)
-            return NULL;
-        delete a;
-    }
-#endif // _DEBUG
 
     // Skip walking the free list if the cached size of the largest block is not enough
     size_t totalRequiredSize = ALIGN_UP(sizeof(TrackAllocation) + header + size + (alignment - 1) + reserveForJumpStubs, sizeof(void*));

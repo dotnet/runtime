@@ -77,7 +77,6 @@ const CHAR * TraceDestination::DbgToString(SString & buffer)
     SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE;
 
 
-    FAULT_NOT_FATAL();
 
     EX_TRY
     {
@@ -171,7 +170,6 @@ void TraceDestination::InitForUnjittedMethod(MethodDesc * pDesc)
         {
             MethodDesc * pNewDesc = NULL;
 
-            FAULT_NOT_FATAL();
 
 
 #ifndef DACCESS_COMPILE
@@ -382,7 +380,6 @@ BOOL StubManager::IsSingleOwner(PCODE stubAddress, StubManager * pOwner)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
     STATIC_CONTRACT_CAN_TAKE_LOCK;         // courtesy StubManagerIterator
 
     // ensure this stubmanager owns it.
@@ -559,7 +556,6 @@ BOOL StubManager::TraceStub(PCODE stubStartAddress, TraceDestination *trace)
             if (fValid)
             {
                 SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE;
-                FAULT_NOT_FATAL();
                 SString buffer;
                 DbgWriteLog("  td=%s\n", trace->DbgToString(buffer));
             }
@@ -605,7 +601,6 @@ BOOL StubManager::FollowTrace(TraceDestination *trace)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     while (trace->GetTraceType() == TRACE_STUB)
     {
@@ -779,7 +774,6 @@ void StubManager::DbgBeginLog(TADDR addrCallInstruction, TADDR addrCallTarget)
     }
     // Now that we know we're not interop-debugging, we can safely call new.
     SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE;
-    FAULT_NOT_FATAL();
 
     {
         CrstHolder ch(&s_DbgLogCrst);
@@ -823,7 +817,6 @@ void StubManager::DbgFinishLog()
 
     // Since this is just a tool for debugging, we don't care if we call new.
     SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE;
-    FAULT_NOT_FATAL();
 
     delete s_pDbgStubManagerLog;
     s_pDbgStubManagerLog = NULL;
@@ -855,7 +848,6 @@ void StubManager::DbgWriteLog(const CHAR *format, ...)
 
     // Since this is just a tool for debugging, we don't care if we call new.
     SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE;
-    FAULT_NOT_FATAL();
 
     CrstHolder ch(&s_DbgLogCrst);
 
@@ -909,7 +901,6 @@ void StubManager::DbgGetLog(SString * pStringOut)
 
     // Since this is just a tool for debugging, we don't care if we call new.
     SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE;
-    FAULT_NOT_FATAL();
 
     CrstHolder ch(&s_DbgLogCrst);
 
@@ -1050,7 +1041,6 @@ BOOL PrecodeStubManager::DoTraceStub(PCODE stubStartAddress,
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -1376,7 +1366,6 @@ BOOL StubLinkStubManager::TraceManager(Thread *thread,
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(return FALSE;);
     }
     CONTRACTL_END
 
@@ -1476,7 +1465,6 @@ BOOL RangeSectionStubManager::DoTraceStub(PCODE stubStartAddress, TraceDestinati
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -1761,11 +1749,9 @@ BOOL ILStubManager::TraceManager(Thread *thread,
     }
     else if (pStubMD->IsPInvokeCalliStub())
     {
-        // This is unmanaged CALLI stub, the argument is the target
+        // The native target is passed in REG_SECRET_STUB_PARAM, which is the hidden argument register.
         target = (PCODE)arg;
-
-        LOG((LF_CORDB, LL_INFO10000, "ILSM::TraceManager: Unmanaged CALLI case %p\n",
-             reinterpret_cast<void*>(target)));
+        LOG((LF_CORDB, LL_INFO10000, "ILSM::TraceManager: Unmanaged CALLI case %p\n", reinterpret_cast<void*>(target)));
         trace->InitForUnmanaged(target);
     }
     else if (pStubMD->IsStepThroughStub())
@@ -1913,7 +1899,7 @@ BOOL PInvokeStubManager::DoTraceStub(PCODE stubStartAddress,
 #endif // !DACCESS_COMPILE
 }
 
-// This is used to recognize VarargPInvokeStub, and GenericPInvokeCalliHelper.
+// This is used to recognize VarargPInvokeStub.
 
 #ifndef DACCESS_COMPILE
 
@@ -1960,12 +1946,6 @@ BOOL InteropDispatchStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
     {
         return true;
     }
-
-    if (stubStartAddress == GetEEFuncEntryPoint(GenericPInvokeCalliHelper))
-    {
-        return true;
-    }
-
 #endif // !DACCESS_COMPILE
     return false;
 }
@@ -2024,19 +2004,6 @@ BOOL InteropDispatchStubManager::TraceManager(Thread *thread,
         PCODE target = (PCODE)pNMD->GetPInvokeTarget();
 
         LOG((LF_CORDB, LL_INFO10000, "IDSM::TraceManager: Vararg P/Invoke case %p\n",
-             reinterpret_cast<void*>(target)));
-        trace->InitForUnmanaged(target);
-#endif //defined(TARGET_ARM64) && defined(__APPLE__)
-    }
-    else if (stubIP == GetEEFuncEntryPoint(GenericPInvokeCalliHelper))
-    {
-#if defined(TARGET_ARM64) && defined(__APPLE__)
-        //On ARM64 Mac, we cannot put a breakpoint inside of GenericPInvokeCalliHelper
-        LOG((LF_CORDB, LL_INFO10000, "IDSM::TraceManager: Skipping on arm64-macOS\n"));
-        return FALSE;
-#else
-        PCODE target = (PCODE)arg;
-        LOG((LF_CORDB, LL_INFO10000, "IDSM::TraceManager: Unmanaged CALLI case %p\n",
              reinterpret_cast<void*>(target)));
         trace->InitForUnmanaged(target);
 #endif //defined(TARGET_ARM64) && defined(__APPLE__)
