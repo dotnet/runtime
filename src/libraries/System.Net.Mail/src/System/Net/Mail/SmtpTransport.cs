@@ -20,7 +20,10 @@ namespace System.Net.Mail
         private readonly SmtpClient _client;
         private ICredentialsByHost? _credentials;
         private bool _shouldAbort;
-        private bool _stale;
+        // Written (set true) from property setters without holding the transport lock and read
+        // from IsConnected on the send path, so it is volatile to make an invalidating
+        // configuration change reliably observable across threads without widening locking.
+        private volatile bool _stale;
 
         private bool _enableSsl;
 
