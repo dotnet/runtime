@@ -83,6 +83,7 @@ internal sealed class Program
             {
                 NoAutoInherit = Get(_command.NoAutoInherit),
                 ErrorTolerant = errorTolerant,
+                IsDll = isDll,
             };
 
             // Apply PE header overrides from command line

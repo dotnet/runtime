@@ -190,6 +190,14 @@ namespace ILAssembler
             ushort majorSubsystemVersion = _options.SubsystemVersion?.Major ?? 4;
             ushort minorSubsystemVersion = _options.SubsystemVersion?.Minor ?? 0;
             Machine machine = _options.Machine ?? Machine.I386;
+            Characteristics imageCharacteristics = Characteristics.ExecutableImage |
+                (machine is Machine.Amd64 or Machine.IA64 or Machine.Arm64 or Machine.LoongArch64 or Machine.RiscV64
+                    ? Characteristics.LargeAddressAware
+                    : Characteristics.Bit32Machine);
+            if (_options.IsDll)
+            {
+                imageCharacteristics |= Characteristics.Dll;
+            }
 
             // Build DllCharacteristics from options
             DllCharacteristics dllCharacteristics = DllCharacteristics.DynamicBase | DllCharacteristics.NxCompatible | DllCharacteristics.NoSeh | DllCharacteristics.TerminalServerAware;
@@ -217,6 +225,7 @@ namespace ILAssembler
                 majorSubsystemVersion: majorSubsystemVersion,
                 minorSubsystemVersion: minorSubsystemVersion,
                 dllCharacteristics: dllCharacteristics,
+                imageCharacteristics: imageCharacteristics,
                 sizeOfStackReserve: sizeOfStackReserve);
 
             MethodDefinitionHandle entryPoint = default;

@@ -367,6 +367,42 @@ namespace ILAssembler.Tests
             Assert.NotEqual(Guid.Empty, pdbId.Guid);
         }
 
+        [Theory]
+        [InlineData(false, Machine.I386, Characteristics.ExecutableImage | Characteristics.Bit32Machine)]
+        [InlineData(true, Machine.I386, Characteristics.ExecutableImage | Characteristics.Bit32Machine | Characteristics.Dll)]
+        [InlineData(false, Machine.Amd64, Characteristics.ExecutableImage | Characteristics.LargeAddressAware)]
+        [InlineData(true, Machine.Amd64, Characteristics.ExecutableImage | Characteristics.LargeAddressAware | Characteristics.Dll)]
+        [InlineData(false, Machine.Arm, Characteristics.ExecutableImage | Characteristics.Bit32Machine)]
+        [InlineData(false, Machine.Arm64, Characteristics.ExecutableImage | Characteristics.LargeAddressAware)]
+        public void OutputKindAndMachine_SetCoffCharacteristics(
+            bool isDll,
+            Machine machine,
+            Characteristics expected)
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly CoffCharacteristics { }
+                .method static int32 Main()
+                {
+                    ENTRYPOINT
+                    ldc.i4.0
+                    ret
+                }
+                """.Replace("ENTRYPOINT", isDll ? string.Empty : ".entrypoint");
+
+            using PEReader pe = DocumentCompilerTestHelpers.CompileAndGetReader(
+                source,
+                new Options
+                {
+                    IsDll = isDll,
+                    Machine = machine,
+                    OutputFileName = isDll ? "test.dll" : "test.exe",
+                });
+
+            Assert.Equal(expected, pe.PEHeaders.CoffHeader.Characteristics);
+            Assert.Equal(!isDll, pe.PEHeaders.IsExe);
+        }
+
 
         [Fact]
         public void SqstringAssemblyName_ParsedCorrectly()

@@ -57,5 +57,40 @@ namespace ILAssembler.Tests
             Assert.Equal(DiagnosticSeverity.Error, error.Severity);
             Assert.Equal("TLS RVA data declarations are not supported", error.Message);
         }
+
+        [Fact]
+        public void ExecutableWithMappedFieldData_HasExecutablePeHeaderAndFieldRva()
+        {
+            string source = """
+                .mscorlib
+                .assembly dataseg { }
+                .field static int8 result at ResultData
+                .data ResultData = bytearray (63)
+                .method static int32 Main()
+                {
+                    .entrypoint
+                    ldsfld int8 result
+                    ldc.i4.1
+                    add
+                    ret
+                }
+                """;
+
+            using PEReader pe = DocumentCompilerTestHelpers.CompileAndGetReader(
+                source,
+                new Options { OutputFileName = "dataseg.exe" });
+
+            Assert.True(pe.PEHeaders.IsExe);
+            Assert.Equal(
+                Characteristics.ExecutableImage | Characteristics.Bit32Machine,
+                pe.PEHeaders.CoffHeader.Characteristics);
+
+            MetadataReader reader = pe.GetMetadataReader();
+            FieldDefinition field = reader.GetFieldDefinition(MetadataTokens.FieldDefinitionHandle(1));
+            Assert.Equal(FieldAttributes.Static | FieldAttributes.HasFieldRVA, field.Attributes);
+            Assert.Equal(
+                0x63,
+                pe.GetSectionData(field.GetRelativeVirtualAddress()).GetContent(0, 1)[0]);
+        }
     }
 }
