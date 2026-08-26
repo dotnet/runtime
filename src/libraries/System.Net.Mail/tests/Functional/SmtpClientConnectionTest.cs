@@ -130,8 +130,11 @@ namespace System.Net.Mail.Tests
             switch (property)
             {
                 case ConnectionAffectingProperty.Host:
-                    // A different value that still resolves to the loopback server.
+                    // A different value that still resolves to the loopback server. The default
+                    // TargetName should follow the host so authentication uses the correct SPN.
+                    Assert.Equal("SMTPSVC/localhost", Smtp.TargetName);
                     Smtp.Host = "127.0.0.1";
+                    Assert.Equal("SMTPSVC/127.0.0.1", Smtp.TargetName);
                     break;
                 case ConnectionAffectingProperty.Credentials:
                     Smtp.Credentials = new NetworkCredential("user", "password");
@@ -144,6 +147,20 @@ namespace System.Net.Mail.Tests
             await SendMail(new MailMessage("second@example.com", "everyone@novell.com", "introduction", "hello"));
             Assert.Equal(2, Server.ConnectionCount);
             Assert.Equal("<second@example.com>", Server.MailFrom);
+        }
+
+        [Fact]
+        public async Task ChangingHost_PreservesExplicitlySetTargetName()
+        {
+            // A TargetName explicitly set by the caller must not be overwritten when the host
+            // changes, even though the default (host-derived) TargetName does follow the host.
+            Smtp.TargetName = "SMTPSVC/explicit.example.com";
+
+            await SendMail(new MailMessage("first@example.com", "everyone@novell.com", "introduction", "hello"));
+            Assert.Equal("SMTPSVC/explicit.example.com", Smtp.TargetName);
+
+            Smtp.Host = "127.0.0.1";
+            Assert.Equal("SMTPSVC/explicit.example.com", Smtp.TargetName);
         }
     }
 

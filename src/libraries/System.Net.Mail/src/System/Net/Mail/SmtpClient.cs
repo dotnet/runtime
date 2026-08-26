@@ -43,6 +43,7 @@ namespace System.Net.Mail
         private bool _inCall;
         private bool _timedOut;
         private string? _targetName;
+        private const string DefaultTargetNamePrefix = "SMTPSVC/";
         private SmtpDeliveryMethod _deliveryMethod = SmtpDeliveryMethod.Network;
         private SmtpDeliveryFormat _deliveryFormat = SmtpDeliveryFormat.SevenBit; // Non-EAI default
         private string? _pickupDirectoryLocation;
@@ -103,7 +104,7 @@ namespace System.Net.Mail
                 _port = DefaultPort;
             }
 
-            _targetName ??= "SMTPSVC/" + _host;
+            _targetName ??= DefaultTargetNamePrefix + _host;
 
             if (_clientDomain == null)
             {
@@ -162,6 +163,15 @@ namespace System.Net.Mail
 
                 if (value != _host)
                 {
+                    // If TargetName is still the default derived from the current host, keep it in
+                    // sync with the new host so Negotiate/NTLM authentication uses the correct SPN.
+                    // A TargetName explicitly set by the caller (not matching the default) is left
+                    // untouched.
+                    if (_targetName == DefaultTargetNamePrefix + _host)
+                    {
+                        _targetName = DefaultTargetNamePrefix + value;
+                    }
+
                     _host = value;
                     _servicePoint = null;
                     // The cached connection targets the previous host, so invalidate it to force
