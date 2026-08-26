@@ -1364,6 +1364,44 @@ namespace System.Numerics.Tests
 
             Assert.False(BigInteger.TryParse([(byte)'1', 0xA0, (byte)'2'], NumberStyles.AllowThousands, format, out _));
         }
+
+        [Theory]
+        [InlineData("99 +", NumberStyles.AllowTrailingSign, 99)]
+        [InlineData("99 -", NumberStyles.AllowTrailingSign, -99)]
+        [InlineData("99 $", NumberStyles.AllowCurrencySymbol, 99)]
+        public static void ParseWithWhitespacePrefixedTrailingToken(string value, NumberStyles style, int expected)
+        {
+            NumberFormatInfo format = new()
+            {
+                CurrencySymbol = " $",
+                PositiveSign = " +",
+                NegativeSign = " -"
+            };
+
+            Assert.True(BigInteger.TryParse(value, style, format, out BigInteger result));
+            Assert.Equal(expected, result);
+
+            Assert.True(BigInteger.TryParse(Encoding.UTF8.GetBytes(value), style, format, out result));
+            Assert.Equal(expected, result);
+        }
+
+        [Theory]
+        [InlineData("99 +,", NumberStyles.AllowTrailingSign)]
+        [InlineData("99 -+", NumberStyles.AllowTrailingSign)]
+        [InlineData("99 +k", NumberStyles.AllowTrailingSign)]
+        [InlineData("99 $,", NumberStyles.AllowCurrencySymbol)]
+        public static void ParseWithWhitespacePrefixedTrailingToken_Invalid(string value, NumberStyles style)
+        {
+            NumberFormatInfo format = new()
+            {
+                CurrencySymbol = " $",
+                PositiveSign = " +",
+                NegativeSign = " -"
+            };
+
+            Assert.False(BigInteger.TryParse(value, style, format, out _));
+            Assert.False(BigInteger.TryParse(Encoding.UTF8.GetBytes(value), style, format, out _));
+        }
     }
 
     [Collection(nameof(DisableParallelization))]
