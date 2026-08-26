@@ -131,25 +131,16 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .WithProperty(startupHookSupport, "false")
                 .Save();
 
-            var result = HostTestContext.BuiltDotNet.Exec(app.AppDll)
+            // Startup hooks are not executed when the StartupHookSupport
+            // feature switch is set to false.
+            HostTestContext.BuiltDotNet.Exec(app.AppDll)
                 .EnvironmentVariable(startupHookVarName, startupHookDll)
                 .CaptureStdOut()
                 .CaptureStdErr()
-                .Execute();
-
-            result
+                .Execute()
                 .Should().Pass()
+                .And.NotHaveStdOutContaining("Hello from startup hook!")
                 .And.HaveStdOutContaining("Hello World");
-
-            // Debug builds keep startup hooks available regardless of the runtime configuration.
-            if (string.Equals(HostTestContext.Configuration, "Debug", StringComparison.OrdinalIgnoreCase))
-            {
-                result.Should().HaveStdOutContaining("Hello from startup hook!");
-            }
-            else
-            {
-                result.Should().NotHaveStdOutContaining("Hello from startup hook!");
-            }
         }
 
         public class SharedTestState : IDisposable
