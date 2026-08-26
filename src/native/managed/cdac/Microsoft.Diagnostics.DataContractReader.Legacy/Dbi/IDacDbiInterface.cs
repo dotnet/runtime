@@ -939,7 +939,7 @@ public unsafe partial interface IDacDbiInterface
 
     [PreserveSig]
     int GetTargetInfo(TargetInfo* pTargetInfo);
-  
+
     [PreserveSig]
     int GetReadWriteMetadataSize(ulong vmModule, uint* pSize);
 

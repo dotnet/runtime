@@ -8362,9 +8362,11 @@ HRESULT CordbJITILFrame::GetNativeVariable(CordbType *type,
                     // corresponding CorDebugRegister.
                     hr = m_nativeFrame->GetLocalFloatingPointValue(ConvertRegNumToCorDebugRegister(pNativeVarInfo->loc.vlReg.vlrReg),
                                                                    type, ppValue);
+                    break;
                 case IDacDbiInterface::kArchLoongArch64:
                     hr = m_nativeFrame->GetLocalFloatingPointValue(pNativeVarInfo->loc.vlReg.vlrReg + REGISTER_LOONGARCH64_F0,
                                                                    type, ppValue);
+                    break;
                 case IDacDbiInterface::kArchRiscV64:
                     hr = m_nativeFrame->GetLocalFloatingPointValue(pNativeVarInfo->loc.vlReg.vlrReg + REGISTER_RISCV64_F0,
                                                        type, ppValue);
@@ -8465,8 +8467,6 @@ HRESULT CordbJITILFrame::GetNativeVariable(CordbType *type,
         break;
 
     case ICorDebugInfo::VLT_FPSTK:
-        /*
-        @TODO [Microsoft] We have to make this work!!!!!!!!!!!!!
 #if defined(TARGET_X86)
         // On x86 floating-point values (including return values) live on the x87
         // FP stack. vlfReg is the depth from the top of the stack, so add the base
@@ -8478,6 +8478,7 @@ HRESULT CordbJITILFrame::GetNativeVariable(CordbType *type,
         hr = E_NOTIMPL;
 #else
         hr = CORDBG_E_IL_VAR_NOT_AVAILABLE;
+#endif
         break;
 
     case ICorDebugInfo::VLT_FIXED_VA:

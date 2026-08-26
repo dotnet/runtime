@@ -278,10 +278,9 @@ ICorDebugValue* CordbValue::CreateHeapValue(CordbAppDomain* pAppDomain, VMPTR_Ob
 
 CordbReferenceValue* CordbValue::CreateHeapReferenceValue(CordbAppDomain* pAppDomain, VMPTR_Object vmObj)
 {
-    CORDB_ADDRESS remoteAddress = (CORDB_ADDRESS)VmPtrToCookie(vmObj);
     IDacDbiInterface::TargetInfo targetInfo;
     IfFailThrow(pAppDomain->GetProcess()->GetTargetInfo(&targetInfo));
-    MemoryRange localReferenceDescription(&remoteAddress, targetInfo.pointerSize);
+    MemoryRange localReferenceDescription(&vmObj, targetInfo.pointerSize);
     RSSmartPtr<CordbReferenceValue> pRefValue;
     IfFailThrow(CordbReferenceValue::Build(pAppDomain,
                                            NULL,
