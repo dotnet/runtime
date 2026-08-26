@@ -14,6 +14,10 @@
 #include "contract.h"
 #include "../inc/mdlog.h"
 
+#if defined(FEATURE_METADATA_IN_VM) && !defined(SELF_NO_HOST) && defined(TARGET_X86) && defined(TARGET_WINDOWS)
+#define TRACK_METADATA_CANT_STOP_COUNT
+#endif
+
 HRESULT CreateMDReadWriteLock(minipal_rwlock **ppLock)
 {
     CONTRACTL
@@ -62,8 +66,15 @@ HRESULT AcquireMDReadLock(minipal_rwlock *pLock)
     }
     CONTRACTL_END;
 
+#ifdef TRACK_METADATA_CANT_STOP_COUNT
+    IncCantStopCount();
+#endif
+
     if (!minipal_rwlock_enter_read(pLock))
     {
+#ifdef TRACK_METADATA_CANT_STOP_COUNT
+        DecCantStopCount();
+#endif
         return E_FAIL;
     }
 
@@ -81,8 +92,15 @@ HRESULT AcquireMDWriteLock(minipal_rwlock *pLock COMMA_INDEBUG(CMiniMdRW *pMiniM
     }
     CONTRACTL_END;
 
+#ifdef TRACK_METADATA_CANT_STOP_COUNT
+    IncCantStopCount();
+#endif
+
     if (!minipal_rwlock_enter_write(pLock))
     {
+#ifdef TRACK_METADATA_CANT_STOP_COUNT
+        DecCantStopCount();
+#endif
         return E_FAIL;
     }
 
@@ -106,6 +124,9 @@ void ReleaseMDReadLock(minipal_rwlock *pLock)
     CONTRACTL_END;
 
     minipal_rwlock_leave_read(pLock);
+#ifdef TRACK_METADATA_CANT_STOP_COUNT
+    DecCantStopCount();
+#endif
     EE_LOCK_RELEASED(pLock);
 }
 
@@ -125,8 +146,13 @@ void ReleaseMDWriteLock(minipal_rwlock *pLock COMMA_INDEBUG(CMiniMdRW *pMiniMd))
     }
 #endif // _DEBUG
     minipal_rwlock_leave_write(pLock);
+#ifdef TRACK_METADATA_CANT_STOP_COUNT
+    DecCantStopCount();
+#endif
     EE_LOCK_RELEASED(pLock);
 }
+
+#undef TRACK_METADATA_CANT_STOP_COUNT
 
 //*****************************************************************************
 // Helper methods

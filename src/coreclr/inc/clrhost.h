@@ -148,4 +148,36 @@ inline BOOL IsInCantAllocStressLogRegion()
     return t_CantAllocCount != 0;
 }
 
+extern thread_local size_t t_CantStopCount;
+
+// For debugging, we can track arbitrary Can't-Stop regions.
+// In V1.0, this was on the Thread object, but we need to track this for threads w/o a Thread object.
+FORCEINLINE void IncCantStopCount()
+{
+    t_CantStopCount++;
+}
+
+FORCEINLINE void DecCantStopCount()
+{
+    t_CantStopCount--;
+}
+
+typedef StateHolder<IncCantStopCount, DecCantStopCount> CantStopHolder;
+
+#ifdef _DEBUG
+// For debug-only, this can be used w/ a holder to ensure that we're keeping our CS count balanced.
+// We should never use this w/ control flow.
+inline size_t GetCantStopCount()
+{
+    return t_CantStopCount;
+}
+
+// At places where we know we're calling out to native code, we can assert that we're NOT in a CS region.
+// This is _debug only since we only use it for asserts; not for real code-flow control in a retail build.
+inline bool IsInCantStopRegion()
+{
+    return (GetCantStopCount() > 0);
+}
+#endif // _DEBUG
+
 #endif
