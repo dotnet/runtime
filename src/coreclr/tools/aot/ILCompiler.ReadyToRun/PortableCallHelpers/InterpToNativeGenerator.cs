@@ -20,7 +20,9 @@ namespace ILCompiler.PortableCallHelpers
     {
         public static void Emit(TextWriter w, IEnumerable<string> cookies)
         {
-            string[] signatures = cookies.Distinct().ToArray();
+            var unique = new HashSet<string>(cookies, StringComparer.Ordinal);
+            string[] signatures = new string[unique.Count];
+            unique.CopyTo(signatures);
             Array.Sort(signatures, StringComparer.Ordinal);
 
             // Collect unique struct return sizes so we can emit typedefs

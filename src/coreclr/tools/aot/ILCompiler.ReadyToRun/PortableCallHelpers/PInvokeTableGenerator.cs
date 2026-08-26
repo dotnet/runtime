@@ -202,7 +202,13 @@ namespace ILCompiler.PortableCallHelpers
                 // Detect possible vararg entrypoint usage, where the same entrypoint is used with
                 // different numbers of arguments.
                 int firstNumArgs = candidates[0].Method.Signature.Length;
-                return candidates.Skip(1).Any(c => c.Method.Signature.Length != firstNumArgs);
+                for (int i = 1; i < candidates.Length; i++)
+                {
+                    if (candidates[i].Method.Signature.Length != firstNumArgs)
+                        return true;
+                }
+
+                return false;
             }
 
             static string ListRefs(IGrouping<string, PInvokeInfo> l)
@@ -242,7 +248,7 @@ namespace ILCompiler.PortableCallHelpers
             var callbackNames = new HashSet<string>();
             var keys = new HashSet<string>();
             int callbackIndex = 0;
-            callbacks = callbacks.Order(new PInvokeCallbackComparer()).ToList();
+            callbacks.Sort(new PInvokeCallbackComparer());
             foreach (PInvokeCallback cb in callbacks)
             {
                 cb.EntrySymbol = FixedSymbolName(cb);
@@ -319,7 +325,9 @@ namespace ILCompiler.PortableCallHelpers
         {
             MethodSignature signature = pinvoke.Method.Signature;
             TypeDesc returnType = signature.ReturnType;
-            List<string> parameterTypes = ParameterTypes(signature).Select(MapType).ToList();
+            List<string> parameterTypes = [];
+            foreach (TypeDesc parameter in ParameterTypes(signature))
+                parameterTypes.Add(MapType(parameter));
 
             if (IsPassedByReference(returnType))
             {

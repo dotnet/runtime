@@ -142,9 +142,9 @@ namespace ILCompiler.PortableCallHelpers
         /// </remarks>
         private static void ConfigureCompilationGroup(ReadyToRunCompilerContext context)
         {
-            List<EcmaModule> modules = context.InputFilePaths.Keys
-                .Select(simpleName => context.GetModuleForSimpleName(simpleName))
-                .ToList();
+            List<EcmaModule> modules = new(context.InputFilePaths.Count);
+            foreach (string simpleName in context.InputFilePaths.Keys)
+                modules.Add(context.GetModuleForSimpleName(simpleName));
 
             context.SetCompilationGroup(new ReadyToRunSingleAssemblyCompilationModuleGroup(new ReadyToRunCompilationModuleGroupConfig
             {
