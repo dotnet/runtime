@@ -273,6 +273,7 @@ namespace Internal.Cryptography
             }
         }
 
+#if !BUILDING_PKCS
         // Pinning and clearing keyMaterial must be done by the caller.
         // The returned PinAndClear only applies to arrays that this method creates.
         internal static PinAndClear? TrimAndTrack(byte[] keyMaterial, int length, out byte[] trimmed)
@@ -303,7 +304,6 @@ namespace Internal.Cryptography
             }
         }
 
-#if !BUILDING_PKCS
         internal static void ThrowIfDestinationWrongLength(
             Span<byte> destination,
             int expectedLength,
