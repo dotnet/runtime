@@ -365,9 +365,8 @@ namespace System.Net.Mail
                 if (value != _targetName)
                 {
                     _targetName = value;
-                    // The target name participates in connection establishment (authentication
-                    // and TLS), so invalidate any cached connection to force a new one on the
-                    // next send.
+                    // The target name is the SPN used during authentication, so invalidate any
+                    // cached connection to force a new one on the next send.
                     _transport.InvalidateCachedConnection();
                 }
             }
