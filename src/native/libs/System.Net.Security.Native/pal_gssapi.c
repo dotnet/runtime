@@ -82,12 +82,23 @@ static gss_OID_desc gss_mech_ntlm_OID_desc = {.length = STRING_LENGTH(gss_ntlm_o
     PER_FUNCTION_BLOCK(GSS_C_NT_USER_NAME) \
     PER_FUNCTION_BLOCK(GSS_C_NT_HOSTBASED_SERVICE)
 
+// Functions that may be absent from the GSSAPI implementation. Unlike FOR_ALL_GSS_FUNCTIONS,
+// a missing symbol leaves the indirection pointer NULL instead of aborting the process, and
+// callers must check availability before use.
+#if HAVE_GSS_GET_NAME_ATTRIBUTE
+#define FOR_ALL_OPTIONAL_GSS_FUNCTIONS \
+    PER_FUNCTION_BLOCK(gss_get_name_attribute)
+#else
+#define FOR_ALL_OPTIONAL_GSS_FUNCTIONS
+#endif
+
 // define indirection pointers for all functions, like
 // static TYPEOF(gss_accept_sec_context)* gss_accept_sec_context_ptr;
 #define PER_FUNCTION_BLOCK(fn) \
 static TYPEOF(fn)* fn##_ptr;
 
 FOR_ALL_GSS_FUNCTIONS
+FOR_ALL_OPTIONAL_GSS_FUNCTIONS
 #undef PER_FUNCTION_BLOCK
 
 static void* volatile s_gssLib = NULL;
@@ -112,6 +123,9 @@ static void* volatile s_gssLib = NULL;
 #define gss_wrap(...)                       gss_wrap_ptr(__VA_ARGS__)
 #define gss_get_mic(...)                    gss_get_mic_ptr(__VA_ARGS__)
 #define gss_verify_mic(...)                 gss_verify_mic_ptr(__VA_ARGS__)
+#if HAVE_GSS_GET_NAME_ATTRIBUTE
+#define gss_get_name_attribute(...)         gss_get_name_attribute_ptr(__VA_ARGS__)
+#endif
 
 #define GSS_C_NT_USER_NAME                  (*GSS_C_NT_USER_NAME_ptr)
 #define GSS_C_NT_HOSTBASED_SERVICE          (*GSS_C_NT_HOSTBASED_SERVICE_ptr)
@@ -140,10 +154,30 @@ static int32_t ensure_gss_shim_initialized(void)
     FOR_ALL_GSS_FUNCTIONS
 #undef PER_FUNCTION_BLOCK
 
+    // Optional functions are allowed to be missing; leave the pointer NULL and let
+    // callers degrade gracefully.
+#if HAVE_GSS_GET_NAME_ATTRIBUTE
+#define PER_FUNCTION_BLOCK(fn) \
+    fn##_ptr = (TYPEOF(fn)*)dlsym(s_gssLib, #fn);
+
+    FOR_ALL_OPTIONAL_GSS_FUNCTIONS
+#undef PER_FUNCTION_BLOCK
+#endif
+
     return 0;
 }
 
 #endif // GSS_SHIM
+
+#if HAVE_GSS_GET_NAME_ATTRIBUTE
+// Reports whether gss_get_name_attribute can be called. When the GSS shim is in use the
+// symbol is resolved lazily and may be absent from the loaded library.
+#if defined(GSS_SHIM)
+#define HAS_GSS_GET_NAME_ATTRIBUTE() (gss_get_name_attribute_ptr != NULL)
+#else
+#define HAS_GSS_GET_NAME_ATTRIBUTE() (1)
+#endif
+#endif
 
 // transfers ownership of the underlying data from gssBuffer to PAL_GssBuffer
 static void NetSecurityNative_MoveBuffer(gss_buffer_t gssBuffer, PAL_GssBuffer* targetBuffer)
@@ -479,6 +513,85 @@ uint32_t NetSecurityNative_GetUser(uint32_t* minorStatus,
     }
 
     return majorStatus;
+}
+
+uint32_t NetSecurityNative_GetNameAttribute(uint32_t* minorStatus,
+                                            GssCtxId* contextHandle,
+                                            const char* attributeName,
+                                            uint32_t attributeNameLen,
+                                            int32_t* isAvailable,
+                                            int32_t* isAuthenticated,
+                                            PAL_GssBuffer* outBuffer)
+{
+    assert(minorStatus != NULL);
+    assert(contextHandle != NULL);
+    assert(attributeName != NULL);
+    assert(isAvailable != NULL);
+    assert(isAuthenticated != NULL);
+    assert(outBuffer != NULL);
+
+    *minorStatus = 0;
+    *isAvailable = 0;
+    *isAuthenticated = 0;
+    outBuffer->length = 0;
+    outBuffer->data = NULL;
+
+#if !HAVE_GSS_GET_NAME_ATTRIBUTE
+    (void)contextHandle;
+    (void)attributeName;
+    (void)attributeNameLen;
+    return GSS_S_COMPLETE;
+#else
+    if (!HAS_GSS_GET_NAME_ATTRIBUTE())
+    {
+        return GSS_S_COMPLETE;
+    }
+
+    gss_name_t srcName = GSS_C_NO_NAME;
+    uint32_t majorStatus =
+        gss_inquire_context(minorStatus, contextHandle, &srcName, NULL, NULL, NULL, NULL, NULL, NULL);
+
+    if (majorStatus == GSS_S_COMPLETE)
+    {
+        GssBuffer attribute = {.length = attributeNameLen, .value = (void*)(size_t)attributeName};
+        GssBuffer value = {.length = 0, .value = NULL};
+        GssBuffer displayValue = {.length = 0, .value = NULL};
+        int authenticated = 0;
+        int complete = 0;
+        int more = -1;
+        uint32_t ignoredMinor;
+
+        majorStatus = gss_get_name_attribute(
+            minorStatus, srcName, &attribute, &authenticated, &complete, &value, &displayValue, &more);
+
+        if (majorStatus == GSS_S_COMPLETE)
+        {
+            *isAvailable = 1;
+            *isAuthenticated = authenticated != 0 ? 1 : 0;
+
+            // Only the first value is returned. The attributes consumed by this shim are
+            // single-valued, and a mechanism reporting more of them is not something the
+            // caller can act on.
+            NetSecurityNative_MoveBuffer(&value, outBuffer);
+            gss_release_buffer(&ignoredMinor, &displayValue);
+        }
+        else if (majorStatus == GSS_S_UNAVAILABLE)
+        {
+            // The attribute is not present on this name. Absence is expected, for example
+            // when the KDC issued no PAC, so report it as success with no value.
+            *minorStatus = 0;
+            majorStatus = GSS_S_COMPLETE;
+        }
+    }
+
+    if (srcName != GSS_C_NO_NAME)
+    {
+        uint32_t ignoredMinor;
+        gss_release_name(&ignoredMinor, &srcName);
+    }
+
+    return majorStatus;
+#endif
 }
 
 uint32_t NetSecurityNative_ReleaseCred(uint32_t* minorStatus, GssCredId** credHandle)

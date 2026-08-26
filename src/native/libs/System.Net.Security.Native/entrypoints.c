@@ -15,6 +15,7 @@ static const Entry s_securityNative[] =
     DllImportEntry(NetSecurityNative_DisplayMinorStatus)
     DllImportEntry(NetSecurityNative_EnsureGssInitialized)
     DllImportEntry(NetSecurityNative_GetUser)
+    DllImportEntry(NetSecurityNative_GetNameAttribute)
     DllImportEntry(NetSecurityNative_ImportPrincipalName)
     DllImportEntry(NetSecurityNative_ImportUserName)
     DllImportEntry(NetSecurityNative_InitiateCredSpNego)

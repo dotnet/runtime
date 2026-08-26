@@ -1056,6 +1056,25 @@ else ()
         HAVE_GSS_SPNEGO_MECHANISM)
 endif ()
 
+# gss_get_name_attribute (RFC 6680 naming extensions) is optional. It is used to
+# retrieve the Kerberos PAC of the peer and is absent in some GSSAPI implementations.
+# The check must not link, because on Linux libgssapi_krb5 is loaded on demand rather
+# than linked, so only the declaration is required at build time.
+if (HAVE_GSSFW_HEADERS)
+    set (GSS_GET_NAME_ATTRIBUTE_HEADER "GSS/GSS.h")
+elseif (HAVE_HEIMDAL_HEADERS)
+    set (GSS_GET_NAME_ATTRIBUTE_HEADER "gssapi/gssapi.h")
+else ()
+    set (GSS_GET_NAME_ATTRIBUTE_HEADER "gssapi/gssapi_ext.h")
+endif ()
+
+check_c_source_compiles(
+    "
+    #include <${GSS_GET_NAME_ATTRIBUTE_HEADER}>
+    int main(void) { __typeof__(gss_get_name_attribute)* p = 0; (void)p; return 0; }
+    "
+    HAVE_GSS_GET_NAME_ATTRIBUTE)
+
 check_symbol_exists(getauxval sys/auxv.h HAVE_GETAUXVAL)
 check_include_files(crt_externs.h HAVE_CRT_EXTERNS_H)
 

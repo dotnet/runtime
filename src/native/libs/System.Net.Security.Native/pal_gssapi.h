@@ -221,6 +221,25 @@ PALEXPORT uint32_t NetSecurityNative_GetUser(uint32_t* minorStatus,
                                              PAL_GssBuffer* outBuffer);
 
 /*
+Shims gss_inquire_context and gss_get_name_attribute to retrieve a named attribute of the
+peer principal, such as "urn:mspac:logon-info" for the Kerberos PAC logon information.
+
+Name attributes are an optional GSSAPI feature (RFC 6680) and individual attributes are
+frequently absent, so neither condition is reported as an error. Both are reported by
+setting isAvailable to 0 and returning GSS_S_COMPLETE with an empty outBuffer.
+
+isAuthenticated reports whether the GSSAPI mechanism vouches for the attribute value. A
+value of 0 means the mechanism could not verify it and it must not be trusted.
+*/
+PALEXPORT uint32_t NetSecurityNative_GetNameAttribute(uint32_t* minorStatus,
+                                                      GssCtxId* contextHandle,
+                                                      const char* attributeName,
+                                                      uint32_t attributeNameLen,
+                                                      int32_t* isAvailable,
+                                                      int32_t* isAuthenticated,
+                                                      PAL_GssBuffer* outBuffer);
+
+/*
 Performs initialization of GSS shim, if necessary.
 Return value 0 indicates a success.
 */

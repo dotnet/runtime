@@ -200,6 +200,16 @@ internal static partial class Interop
             SafeGssContextHandle? acceptContextHandle,
             ref GssBuffer token);
 
+        [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint = "NetSecurityNative_GetNameAttribute")]
+        internal static unsafe partial Status GetNameAttribute(
+            out Status minorStatus,
+            SafeGssContextHandle? acceptContextHandle,
+            byte* attributeName,
+            uint attributeNameLen,
+            [MarshalAs(UnmanagedType.Bool)] out bool isAvailable,
+            [MarshalAs(UnmanagedType.Bool)] out bool isAuthenticated,
+            ref GssBuffer token);
+
         [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint = "NetSecurityNative_Wrap")]
         private static unsafe partial Status Wrap(
             out Status minorStatus,

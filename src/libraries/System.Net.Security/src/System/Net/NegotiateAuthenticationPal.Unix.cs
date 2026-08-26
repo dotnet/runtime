@@ -11,6 +11,7 @@ using System.Net.Security;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Security.Authentication.ExtendedProtection;
+using System.Security.Claims;
 using System.Security.Principal;
 using System.Text;
 using Microsoft.Win32.SafeHandles;
@@ -101,6 +102,14 @@ namespace System.Net
             private string? _spn;
             private ChannelBinding? _channelBinding;
             private readonly Interop.NetSecurityNative.PackageType _packageType;
+            private IIdentity? _remoteIdentity;
+
+            // GSSAPI name attribute holding the KERB_VALIDATION_INFO buffer of the Kerberos PAC.
+            private static ReadOnlySpan<byte> PacLogonInfoAttribute => "urn:mspac:logon-info"u8;
+
+            // Matches the issuer WindowsIdentity uses for the equivalent claims so that code
+            // examining them does not have to special case the platform.
+            private const string PacClaimIssuer = "AD AUTHORITY";
 
             public override bool IsAuthenticated => _isAuthenticated;
 
@@ -129,7 +138,11 @@ namespace System.Net
             {
                 get
                 {
-                    IIdentity? result;
+                    if (_remoteIdentity is not null)
+                    {
+                        return _remoteIdentity;
+                    }
+
                     string? name = _isServer ? null : TargetName;
                     string protocol = Package;
 
@@ -149,10 +162,90 @@ namespace System.Net
                     }
 
                     // On the client we don't have access to the remote side identity.
-                    result = new GenericIdentity(name ?? string.Empty, protocol);
+                    GenericIdentity result = new GenericIdentity(name ?? string.Empty, protocol);
+
+                    if (_isServer)
+                    {
+                        AddPacClaims(result);
+                    }
+
+                    _remoteIdentity = result;
                     return result;
                 }
             }
+
+            /// <summary>
+            /// Adds the SID claims describing the client to <paramref name="identity"/>, if the
+            /// Kerberos PAC is available and describes them.
+            /// </summary>
+            /// <remarks>
+            /// The PAC is an optional Microsoft extension to Kerberos and carries the group
+            /// membership only when issued by a KDC that models it, in practice Active Directory
+            /// or Samba. It is absent for NTLM, for KDCs that do not issue one, and for accounts
+            /// configured to suppress it, so having no claims to add is an expected outcome and
+            /// not an error.
+            /// </remarks>
+            private void AddPacClaims(GenericIdentity identity)
+            {
+                // NTLM never carries a PAC, so avoid the interop call entirely.
+                if (Package == NegotiationInfoClass.NTLM)
+                {
+                    return;
+                }
+
+                byte[]? logonInfo;
+                bool isAuthenticated;
+
+                try
+                {
+                    logonInfo = GssGetNameAttribute(_securityContext!, PacLogonInfoAttribute, out isAuthenticated);
+                }
+                catch (Interop.NetSecurityNative.GssApiException ex)
+                {
+                    // The identity is still usable without the PAC, so a failure to retrieve it
+                    // must not fail the caller.
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Failed to retrieve the PAC logon information: {ex}");
+                    return;
+                }
+
+                if (logonInfo is null)
+                {
+                    return;
+                }
+
+                // An unauthenticated attribute is one the mechanism could not verify. Populating
+                // an identity from it would let an attacker choose the claims.
+                if (!isAuthenticated)
+                {
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Ignoring an unauthenticated PAC logon information attribute.");
+                    return;
+                }
+
+                KerberosPacLogonInfo? pac = KerberosPacLogonInfo.Decode(logonInfo);
+                if (pac is null)
+                {
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Failed to decode the PAC logon information.");
+                    return;
+                }
+
+                if (pac.UserSid is not null)
+                {
+                    identity.AddClaim(CreateClaim(ClaimTypes.PrimarySid, pac.UserSid, identity));
+                }
+
+                if (pac.PrimaryGroupSid is not null)
+                {
+                    identity.AddClaim(CreateClaim(ClaimTypes.PrimaryGroupSid, pac.PrimaryGroupSid, identity));
+                }
+
+                foreach (string groupSid in pac.GroupSids)
+                {
+                    identity.AddClaim(CreateClaim(ClaimTypes.GroupSid, groupSid, identity));
+                }
+            }
+
+            private static Claim CreateClaim(string type, string value, ClaimsIdentity subject) =>
+                new Claim(type, value, ClaimValueTypes.String, PacClaimIssuer, PacClaimIssuer, subject);
 
             public override System.Security.Principal.TokenImpersonationLevel ImpersonationLevel
             {
@@ -510,6 +603,44 @@ namespace System.Net
                 {
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, ex);
                     throw new Interop.NetSecurityNative.GssApiException(Interop.NetSecurityNative.Status.GSS_S_BAD_NAME, 0);
+                }
+            }
+
+            /// <summary>
+            /// Retrieves a GSSAPI name attribute of the peer principal, returning null when the
+            /// attribute is not present or name attributes are unsupported by the mechanism.
+            /// </summary>
+            private static unsafe byte[]? GssGetNameAttribute(SafeGssContextHandle context, ReadOnlySpan<byte> attributeName, out bool isAuthenticated)
+            {
+                Interop.NetSecurityNative.GssBuffer token = default(Interop.NetSecurityNative.GssBuffer);
+                isAuthenticated = false;
+
+                try
+                {
+                    Interop.NetSecurityNative.Status status;
+                    bool isAvailable;
+
+                    fixed (byte* attributeNamePtr = attributeName)
+                    {
+                        status = Interop.NetSecurityNative.GetNameAttribute(out var minorStatus,
+                                                                           context,
+                                                                           attributeNamePtr,
+                                                                           (uint)attributeName.Length,
+                                                                           out isAvailable,
+                                                                           out isAuthenticated,
+                                                                           ref token);
+
+                        if (status != Interop.NetSecurityNative.Status.GSS_S_COMPLETE)
+                        {
+                            throw new Interop.NetSecurityNative.GssApiException(status, minorStatus);
+                        }
+                    }
+
+                    return isAvailable ? token.ToByteArray() : null;
+                }
+                finally
+                {
+                    token.Dispose();
                 }
             }
 

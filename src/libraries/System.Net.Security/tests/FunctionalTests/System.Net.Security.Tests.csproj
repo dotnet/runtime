@@ -160,6 +160,9 @@
              Link="Common\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.IsNtlmInstalled.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\KerberosPacLogonInfo.cs"
+             Link="Common\System\Net\Security\KerberosPacLogonInfo.cs" />
+    <Compile Include="KerberosPacLogonInfoTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.Net.TestData" Version="$(SystemNetTestDataVersion)" />
