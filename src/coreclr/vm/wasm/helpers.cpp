@@ -341,7 +341,7 @@ namespace
     }
 }
 
-const StringToWasmSigThunk g_wasmPortableEntryPointThunks[] = {
+const StringToPortableSigThunk g_portableEntryPointThunks[] = {
     { "Ivp", (void*)&CallInterpreter_RetVoid },
     { "Ivip", (void*)&CallInterpreter_I32_RetVoid },
     { "Iviip", (void*)&CallInterpreter_I32_I32_RetVoid },
@@ -361,7 +361,7 @@ const StringToWasmSigThunk g_wasmPortableEntryPointThunks[] = {
     { "IiiS8p", (void*)&CallInterpreter_I32_S8_RetI32 }
 };
 
-const size_t g_wasmPortableEntryPointThunksCount = sizeof(g_wasmPortableEntryPointThunks) / sizeof(g_wasmPortableEntryPointThunks[0]);
+const size_t g_portableEntryPointThunksCount = sizeof(g_portableEntryPointThunks) / sizeof(g_portableEntryPointThunks[0]);
 // -------------------------------------------------
 // END Logic that will eventually mostly be pregenerated for R2R to interpreter code END
 // -------------------------------------------------
@@ -1426,13 +1426,13 @@ namespace
         return pos;
     }
 
-    typedef StringToThunkHash StringToWasmSigThunkHash;
-    static StringToWasmSigThunkHash* thunkCache = nullptr;
-    static StringToWasmSigThunkHash* portableEntrypointThunkCache = nullptr;
+    typedef StringToThunkHash StringToPortableSigThunkHash;
+    static StringToPortableSigThunkHash* thunkCache = nullptr;
+    static StringToPortableSigThunkHash* portableEntrypointThunkCache = nullptr;
 
     InterpreterCalliCookie LookupThunk(const char* key)
     {
-        StringToWasmSigThunkHash* table = thunkCache;
+        StringToPortableSigThunkHash* table = thunkCache;
         _ASSERTE(table != nullptr && "Wasm thunk cache not initialized. Call InitializeWasmThunkCaches() at EEStartup.");
         void* thunk;
         if (table->Lookup(key, &thunk))
@@ -1447,7 +1447,7 @@ namespace
 
     void* LookupPortableEntryPointThunk(const char* key)
     {
-        StringToWasmSigThunkHash* table = portableEntrypointThunkCache;
+        StringToPortableSigThunkHash* table = portableEntrypointThunkCache;
         _ASSERTE(table != nullptr && "Wasm portable entrypoint thunk cache not initialized. Call InitializeWasmThunkCaches() at EEStartup.");
         void* thunk;
         if (table->Lookup(key, &thunk))
@@ -1651,21 +1651,21 @@ namespace
 void InitializeWasmThunkCaches()
 {
     {
-        StringToWasmSigThunkHash* newTable = new StringToWasmSigThunkHash();
-        newTable->Reallocate(g_wasmThunksCount * StringToWasmSigThunkHash::s_density_factor_denominator / StringToWasmSigThunkHash::s_density_factor_numerator + 1);
-        for (size_t i = 0; i < g_wasmThunksCount; i++)
+        StringToPortableSigThunkHash* newTable = new StringToPortableSigThunkHash();
+        newTable->Reallocate(g_portableCallHelperThunksCount * StringToPortableSigThunkHash::s_density_factor_denominator / StringToPortableSigThunkHash::s_density_factor_numerator + 1);
+        for (size_t i = 0; i < g_portableCallHelperThunksCount; i++)
         {
-            newTable->Add(g_wasmThunks[i].key, g_wasmThunks[i].value);
+            newTable->Add(g_portableCallHelperThunks[i].key, g_portableCallHelperThunks[i].value);
         }
         thunkCache = newTable;
     }
 
     {
-        StringToWasmSigThunkHash* newTable = new StringToWasmSigThunkHash();
-        newTable->Reallocate(g_wasmPortableEntryPointThunksCount * StringToWasmSigThunkHash::s_density_factor_denominator / StringToWasmSigThunkHash::s_density_factor_numerator + 1);
-        for (size_t i = 0; i < g_wasmPortableEntryPointThunksCount; i++)
+        StringToPortableSigThunkHash* newTable = new StringToPortableSigThunkHash();
+        newTable->Reallocate(g_portableEntryPointThunksCount * StringToPortableSigThunkHash::s_density_factor_denominator / StringToPortableSigThunkHash::s_density_factor_numerator + 1);
+        for (size_t i = 0; i < g_portableEntryPointThunksCount; i++)
         {
-            newTable->Add(g_wasmPortableEntryPointThunks[i].key, g_wasmPortableEntryPointThunks[i].value);
+            newTable->Add(g_portableEntryPointThunks[i].key, g_portableEntryPointThunks[i].value);
         }
         portableEntrypointThunkCache = newTable;
     }

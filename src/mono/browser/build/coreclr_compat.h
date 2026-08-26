@@ -20,7 +20,7 @@
 //   * LF_INTEROP/LL_INFO1000/LOG/PORTABILITY_ASSERT -- CoreCLR logging
 //     primitives used by pinvoke-table.cpp.
 //
-// Definitions for symbols declared by <callhelpers.hpp> (g_wasmThunks,
+// Definitions for symbols declared by <callhelpers.hpp> (g_portableCallHelperThunks,
 // g_ReverseThunks, ...) live in libcoreclr_static.a or in the same generated
 // .cpp (the generator emits the table bodies).
 

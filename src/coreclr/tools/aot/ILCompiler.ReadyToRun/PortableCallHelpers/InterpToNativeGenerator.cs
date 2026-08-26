@@ -9,7 +9,7 @@ using System.Linq;
 namespace ILCompiler.PortableCallHelpers
 {
     /// <summary>
-    /// Generates the <c>g_wasmThunks</c> array and <c>CallFunc_*</c> functions used by the CoreCLR
+    /// Generates the <c>g_portableCallHelperThunks</c> array and <c>CallFunc_*</c> functions used by the CoreCLR
     /// interpreter to call native code on wasm.
     /// </summary>
     /// <remarks>
@@ -58,7 +58,7 @@ namespace ILCompiler.PortableCallHelpers
 
             // Emit typedefs for struct return types so emcc generates the correct sret ABI
             foreach (int size in structReturnSizes)
-                w.WriteLine($"typedef struct {{ char d[{size}]; }} wasm_ret_S{size};");
+                w.WriteLine($"typedef struct {{ char d[{size}]; }} portable_callhelper_ret_S{size};");
 
             w.Write(
             """
@@ -114,11 +114,11 @@ namespace ILCompiler.PortableCallHelpers
                 $$"""
                 }
 
-                const StringToWasmSigThunk g_wasmThunks[] = {
+                const StringToPortableSigThunk g_portableCallHelperThunks[] = {
                 {{string.Join($",{w.NewLine}", signatures.Select(ThunkEntry))}}
                 };
 
-                const size_t g_wasmThunksCount = sizeof(g_wasmThunks) / sizeof(g_wasmThunks[0]);
+                const size_t g_portableCallHelperThunksCount = sizeof(g_portableCallHelperThunks) / sizeof(g_portableCallHelperThunks[0]);
 
                 """);
 
@@ -157,7 +157,7 @@ namespace ILCompiler.PortableCallHelpers
             {
                 // For struct returns, use the typedef so emcc generates the correct sret ABI
                 if (returnToken[0] == 'S' && returnToken.Length > 1)
-                    return (false, $"wasm_ret_S{InteropSignature.GetStructSize(returnToken)}");
+                    return (false, $"portable_callhelper_ret_S{InteropSignature.GetStructSize(returnToken)}");
 
                 return (returnToken == "v", InteropSignature.TokenToNativeType(returnToken));
             }
