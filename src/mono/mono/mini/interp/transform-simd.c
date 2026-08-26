@@ -198,11 +198,8 @@ static guint16 packedsimd_alias_methods [] = {
 	SN_ShiftRightLogical,
 	SN_Sqrt,
 	SN_SquareRoot,
-	// NOTE: Store/StoreUnsafe are deliberately absent. PackedSimd.Store's operands are reversed
-	//  relative to Vector128's - PackedSimd.Store(T* address, Vector128<T> source) versus
-	//  Vector128.Store(this Vector128<T> source, T* destination) - and this path only renames
-	//  the method, with emit_common_simd_epilogue assigning sregs in signature order. Aliasing
-	//  them would pass the vector where the destination address is expected and corrupt memory.
+	SN_Store,
+	SN_StoreUnsafe,
 	SN_Subtract,
 	SN_SubtractSaturate,
 	SN_Truncate,
@@ -1201,6 +1198,9 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 	const char *cmethod_name = cmethod->name;
 	int id = lookup_intrins (sri_packedsimd_methods, sizeof (sri_packedsimd_methods), cmethod_name);
 	MonoClass *vector_klass;
+	// Set when the aliased Vector128 method takes its operands in the opposite order from the
+	//  PackedSimd method we are lowering to. See SN_Store below.
+	gboolean swap_operands = FALSE;
 
 	bool is_packedsimd = strcmp (m_class_get_name (cmethod->klass), "PackedSimd") == 0;
 	if (is_packedsimd) {
@@ -1358,6 +1358,26 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 			case SN_SquareRoot:
 				cmethod_name = "Sqrt";
 				break;
+			case SN_Store:
+			case SN_StoreUnsafe:
+				// PackedSimd.Store (T* address, Vector128<T> source) takes its operands in the
+				//  opposite order from Vector128.Store (this Vector128<T> source, T* destination)
+				//  and Vector128.StoreUnsafe (this Vector128<T> source, ref T destination), so the
+				//  sregs have to be swapped once the epilogue has assigned them in signature order.
+				// The three-argument StoreUnsafe (source, destination, elementOffset) has no
+				//  PackedSimd counterpart, so leave it for managed code. Store is registered for
+				//  every element type, so also confirm the shape we are about to reorder: sregs [1]
+				//  is dereferenced as the destination address, so require it to be a raw address
+				//  (T* or ref T) rather than merely pointer-sized. Anything else falls back to
+				//  managed code, which is always correct if slower.
+				if ((csignature->param_count != 2) ||
+					(csignature->ret->type != MONO_TYPE_VOID) ||
+					!(m_type_is_byref (csignature->params [1]) ||
+					  (csignature->params [1]->type == MONO_TYPE_PTR)))
+					return FALSE;
+				swap_operands = TRUE;
+				cmethod_name = "Store";
+				break;
 			case SN_Add:
 			case SN_AddSaturate:
 			case SN_AndNot:
@@ -1418,6 +1438,12 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 
 opcode_added:
 	emit_common_simd_epilogue (td, vector_klass, csignature, vector_size, TRUE);
+	if (swap_operands) {
+		// The epilogue assigned the sregs in signature order; see SN_Store above.
+		gint32 tmp = td->last_ins->sregs [0];
+		td->last_ins->sregs [0] = td->last_ins->sregs [1];
+		td->last_ins->sregs [1] = tmp;
+	}
 	return TRUE;
 }
 
