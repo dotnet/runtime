@@ -262,7 +262,7 @@ namespace ILAssembler.Tests
         [Theory]
         [InlineData("Deterministic.dll", false, false)]
         [InlineData("Deterministic.exe", true, false)]
-        [InlineData("Deterministic.pdb.dll", false, true)]
+        [InlineData("Deterministic.dll", false, true)]
         public void ManagedIlasm_DeterministicOutput_IsByteIdentical(string outputFileName, bool executable, bool debug)
         {
             string source = """
