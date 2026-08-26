@@ -263,10 +263,10 @@ STDAPI GetMDPublicInterfaceFromInternal(
 
     // grab the write lock when we are creating the corresponding regmeta for the public interface
     _ASSERTE( pInternalImport->GetReaderWriterLock() != NULL );
-    isLockedForWrite = true;
     IfFailGo(AcquireMDWriteLock(
         pInternalImport->GetReaderWriterLock()
         COMMA_INDEBUG(static_cast<CMiniMdRW *>(pInternalImport->GetMetaModelCommon()))));
+    isLockedForWrite = true;
 
     // check again. Maybe someone else beat us to setting the public interface while we are waiting
     // for the write lock. Don't need to grab the read lock since we already have the write lock.

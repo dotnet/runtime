@@ -243,7 +243,6 @@ LOADEDMODULES::ResolveTypeRefWithLoadedModules(
             {
                 // Do not lock the TypeRef RegMeta (again), as it is already locked for read by the caller.
                 // The read-write lock may block a recursive read acquisition while a writer is waiting.
-                // Avoid taking the TypeRef RegMeta lock again because the caller already holds it for reading.
                 CMDReadWriteLock regMetaLock(
                     (pRegMeta == pTypeRefRegMeta) ? NULL : pRegMeta->GetReaderWriterLock()
                     COMMA_INDEBUG(pRegMeta->GetMiniMd()));

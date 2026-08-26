@@ -1305,7 +1305,7 @@ CMDReadWriteLock::~CMDReadWriteLock()
 
 //*********************************************************************************************************
 //
-// Used to obtain the write lock
+// Used to obtain the read lock
 //
 //*********************************************************************************************************
 HRESULT CMDReadWriteLock::LockRead()
@@ -1329,7 +1329,7 @@ HRESULT CMDReadWriteLock::LockRead()
 
 //*********************************************************************************************************
 //
-// Used to obtain the read lock
+// Used to obtain the write lock
 //
 //*********************************************************************************************************
 HRESULT CMDReadWriteLock::LockWrite()

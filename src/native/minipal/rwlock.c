@@ -14,15 +14,18 @@ bool minipal_rwlock_init(minipal_rwlock* rwlock)
 #elif HAVE_PTHREAD_RWLOCK_PREFER_WRITER_NONRECURSIVE_NP
     pthread_rwlockattr_t attributes;
     int st = pthread_rwlockattr_init(&attributes);
-    if (st != 0)
-        return false;
-
-    st = pthread_rwlockattr_setkind_np(&attributes, PTHREAD_RWLOCK_PREFER_WRITER_NONRECURSIVE_NP);
     if (st == 0)
-        st = pthread_rwlock_init(&rwlock->_impl, &attributes);
+    {
+        st = pthread_rwlockattr_setkind_np(&attributes, PTHREAD_RWLOCK_PREFER_WRITER_NONRECURSIVE_NP);
+        if (st == 0)
+            st = pthread_rwlock_init(&rwlock->_impl, &attributes);
 
-    pthread_rwlockattr_destroy(&attributes);
-    return st == 0;
+        pthread_rwlockattr_destroy(&attributes);
+        if (st == 0)
+            return true;
+    }
+
+    return pthread_rwlock_init(&rwlock->_impl, NULL) == 0;
 #else
     return pthread_rwlock_init(&rwlock->_impl, NULL) == 0;
 #endif
