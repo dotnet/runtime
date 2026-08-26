@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -171,15 +172,19 @@ namespace Microsoft.Interop
 
             void ApplyErrorHandlingInfo(ImmutableArray<TypePositionInfo>.Builder infos, ErrorHandlingInfo errorInfo)
             {
-                TypePositionInfo CreateInjectedErrorInfo(int nativeIndex)
+                TypePositionInfo CreateErrorInfo(
+                    int nativeIndex,
+                    string instanceIdentifier = "__error",
+                    bool isManagedIdentifierSynthetic = true)
                 {
                     return new TypePositionInfo(errorInfo.ManagedType, errorInfo.MarshallingInfo)
                     {
-                        InstanceIdentifier = "__error",
+                        InstanceIdentifier = instanceIdentifier,
                         RefKind = nativeIndex == TypePositionInfo.ReturnIndex ? RefKind.None : RefKind.Out,
                         ManagedIndex = TypePositionInfo.ErrorIndex,
                         NativeIndex = nativeIndex,
                         IsErrorHandlingPosition = true,
+                        IsManagedIdentifierSynthetic = isManagedIdentifierSynthetic,
                     };
                 }
 
@@ -192,16 +197,12 @@ namespace Microsoft.Interop
                         TypePositionInfo returnInfo = infos[returnIndex];
                         if (MatchesManagedType(returnInfo))
                         {
-                            infos[returnIndex] = returnInfo with
-                            {
-                                MarshallingAttributeInfo = errorInfo.MarshallingInfo,
-                                IsErrorHandlingPosition = true,
-                            };
+                            infos.Add(CreateErrorInfo(TypePositionInfo.ReturnIndex));
                         }
                         else if (returnInfo.ManagedType == SpecialTypeInfo.Void)
                         {
                             infos[returnIndex] = returnInfo with { NativeIndex = TypePositionInfo.UnsetIndex };
-                            infos.Add(CreateInjectedErrorInfo(TypePositionInfo.ReturnIndex));
+                            infos.Add(CreateErrorInfo(TypePositionInfo.ReturnIndex));
                         }
                         break;
 
@@ -223,27 +224,38 @@ namespace Microsoft.Interop
                             };
                         }
 
-                        infos.Add(CreateInjectedErrorInfo(TypePositionInfo.ReturnIndex));
+                        infos.Add(CreateErrorInfo(TypePositionInfo.ReturnIndex));
                         break;
 
                     case ErrorHandlingLocation.LastParameter:
-                        int lastParameterIndex = infos.Count - 2;
-                        if (infos.Count > 1
-                            && infos[lastParameterIndex] is { RefKind: RefKind.Out or RefKind.Ref } lastParameter
-                            && MatchesManagedType(lastParameter))
-                        {
-                            infos[lastParameterIndex] = lastParameter with
-                            {
-                                MarshallingAttributeInfo = errorInfo.MarshallingInfo,
-                                IsErrorHandlingPosition = true,
-                            };
-                        }
-                        else
-                        {
-                            infos.Add(CreateInjectedErrorInfo(method.Parameters.Length));
-                        }
+                        TypePositionInfo lastParameter = GetLastManagedParameter(infos);
+                        Debug.Assert(lastParameter is { RefKind: RefKind.Out or RefKind.Ref }
+                            && MatchesManagedType(lastParameter));
+                        infos.Add(CreateErrorInfo(
+                            lastParameter.NativeIndex,
+                            lastParameter.InstanceIdentifier,
+                            isManagedIdentifierSynthetic: false));
                         break;
 
+                    case ErrorHandlingLocation.HiddenLastParameter:
+                        infos.Add(CreateErrorInfo(method.Parameters.Length));
+                        break;
+
+                }
+
+                static TypePositionInfo GetLastManagedParameter(ImmutableArray<TypePositionInfo>.Builder infos)
+                {
+                    TypePositionInfo? lastParameter = null;
+                    foreach (TypePositionInfo info in infos)
+                    {
+                        if (!TypePositionInfo.IsSpecialIndex(info.ManagedIndex)
+                            && (lastParameter is null || info.ManagedIndex > lastParameter.ManagedIndex))
+                        {
+                            lastParameter = info;
+                        }
+                    }
+
+                    return lastParameter ?? throw new UnreachableException();
                 }
             }
         }

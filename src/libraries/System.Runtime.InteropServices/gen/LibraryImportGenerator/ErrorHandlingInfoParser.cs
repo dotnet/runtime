@@ -36,7 +36,7 @@ namespace Microsoft.Interop
                 || attribute.ConstructorArguments.Length != 2
                 || attribute.ConstructorArguments[0].Value is not INamedTypeSymbol marshallerType
                 || attribute.ConstructorArguments[1].Value is not int locationValue
-                || locationValue is < (int)ErrorHandlingLocation.ReturnValue or > (int)ErrorHandlingLocation.HiddenReturnValue)
+                || locationValue is < (int)ErrorHandlingLocation.ReturnValue or > (int)ErrorHandlingLocation.HiddenLastParameter)
             {
                 diagnostics.ReportConfigurationNotSupported(attribute, nameof(TypeNames.ErrorHandlerAttribute));
                 return null;
@@ -53,7 +53,16 @@ namespace Microsoft.Interop
                 && method.ReturnType.SpecialType != SpecialType.System_Void
                 && !SymbolEqualityComparer.Default.Equals(method.ReturnType, managedType))
             {
-                diagnostics.ReportConfigurationNotSupported(attribute, nameof(ErrorHandlingLocation.ReturnValue));
+                diagnostics.ReportConfigurationNotSupported(attribute, nameof(TypeNames.ErrorHandlerAttribute));
+                return null;
+            }
+
+            if (location == ErrorHandlingLocation.LastParameter
+                && (method.Parameters.Length == 0
+                    || method.Parameters[method.Parameters.Length - 1] is not { RefKind: RefKind.Out or RefKind.Ref } lastParameter
+                    || !SymbolEqualityComparer.Default.Equals(lastParameter.Type, managedType)))
+            {
+                diagnostics.ReportConfigurationNotSupported(attribute, nameof(TypeNames.ErrorHandlerAttribute));
                 return null;
             }
 

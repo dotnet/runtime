@@ -49,8 +49,13 @@ namespace Microsoft.Interop
             foreach (IBoundMarshallingGenerator errorMarshaller in marshallers.SignatureMarshallers)
             {
                 TypePositionInfo errorInfo = errorMarshaller.TypeInfo;
-                if (errorInfo is { IsErrorHandlingPosition: true, ManagedIndex: TypePositionInfo.ErrorIndex }
-                    && !errorInfo.IsNativeReturnPosition)
+                if (errorInfo is
+                    {
+                        IsErrorHandlingPosition: true,
+                        IsManagedIdentifierSynthetic: true,
+                        ManagedIndex: TypePositionInfo.ErrorIndex,
+                    }
+                    && !ReferenceEquals(errorMarshaller, marshallers.NativeReturnMarshaller))
                 {
                     string managed = context.GetIdentifiers(errorInfo).managed;
                     variables.Add(Declare(errorInfo.ManagedType.Syntax, managed, initializeDeclarations));

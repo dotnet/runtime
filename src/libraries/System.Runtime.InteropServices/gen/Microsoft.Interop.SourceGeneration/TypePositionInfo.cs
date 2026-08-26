@@ -73,8 +73,9 @@ namespace Microsoft.Interop
 
         public bool IsManagedReturnPosition { get => ManagedIndex == ReturnIndex; }
         public bool IsNativeReturnPosition { get => NativeIndex == ReturnIndex; }
-        public bool IsManagedExceptionPosition { get => ManagedIndex == ErrorIndex && !IsErrorHandlingPosition; }
+        public bool IsManagedExceptionPosition { get; init; }
         public bool IsErrorHandlingPosition { get; init; }
+        public bool IsManagedIdentifierSynthetic { get; init; }
 
         public int ManagedIndex { get; init; } = UnsetIndex;
         public int NativeIndex { get; init; } = UnsetIndex;
@@ -140,6 +141,7 @@ namespace Microsoft.Interop
         ReturnValue = 0,
         LastParameter = 1,
         HiddenReturnValue = 2,
+        HiddenLastParameter = 3,
     }
 
     public sealed record ErrorHandlingInfo(

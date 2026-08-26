@@ -25,6 +25,17 @@ namespace Microsoft.Interop
 
         public override (string managed, string native) GetIdentifiers(TypePositionInfo info)
         {
+            if (info is
+                {
+                    IsErrorHandlingPosition: true,
+                    IsManagedExceptionPosition: false,
+                    ManagedIndex: TypePositionInfo.ErrorIndex,
+                    NativeIndex: TypePositionInfo.ReturnIndex,
+                })
+            {
+                return (info.InstanceIdentifier, _nativeReturnIdentifier);
+            }
+
             // If the info is in the stub return position, then we need to generate a name to use
             // for both the managed and native values since there is no name in the signature for the return value.
             if (MarshallerHelpers.IsInStubReturnPosition(info, _direction))

@@ -317,7 +317,9 @@ namespace Microsoft.Interop
                     {
                         InstanceIdentifier = "__exception",
                         ManagedIndex = TypePositionInfo.ExceptionIndex,
-                        NativeIndex = TypePositionInfo.ReturnIndex
+                        NativeIndex = TypePositionInfo.ReturnIndex,
+                        IsManagedExceptionPosition = true,
+                        IsErrorHandlingPosition = true,
                     });
             }
 

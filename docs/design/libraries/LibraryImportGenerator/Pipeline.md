@@ -83,6 +83,10 @@ The stub code generator itself will handle some initial setup and variable decla
 1. `NotifyForSuccessfulInvoke`: Notify a marshaller that all stages through the "Invoke" stage were successful.
     - Used to keep alive any objects who's native representation won't keep them alive across the call.
     - Call `Generate` on the marshalling generator for every parameter.
+1. `ErrorUnmarshal`: capture and convert native error values before ordinary output values.
+    - Call `Generate` for the `UnmarshalCapture` and `Unmarshal` stages only on marshallers marked as error-handling positions.
+    - For a managed-to-unmanaged stub, run after `NotifyForSuccessfulInvoke` and before ordinary unmarshalling so an error marshaller can throw without reading potentially invalid outputs.
+    - For an unmanaged-to-managed stub, run before ordinary input unmarshalling and before invoking the managed target.
 1. `UnmarshalCapture`: capture any native out parameters to avoid memory leaks if exceptions are thrown during `Unmarshal`.
     - If the method has a non-void return, call `Generate` on the marshalling generator for the return
     - Call `Generate` on the marshalling generator for every parameter
@@ -111,6 +115,7 @@ try
         << Invoke >>
     }
     << Notify For Successful Invoke >>
+    << Error Unmarshal >>
     << Unmarshal Capture >>
     << Unmarshal >>
 }
@@ -162,6 +167,10 @@ This means that, rather than simply invoke the native method, the generated stub
 2. Invoke the native method
 3. Get the system error
 4. Set the stored error for the P/Invoke (accessible via `Marshal.GetLastWin32Error`)
+
+When an error marshaller is present, the stored P/Invoke error is restored before
+`ErrorUnmarshal` runs so custom error conversion cannot overwrite the value observed through
+`Marshal.GetLastPInvokeError`.
 
 A core requirement of this functionality is that the P/Invoke called in (2) is blittable (the purpose of the P/Invoke source generator), such that there will be no additional operations (e.g unmarshalling) after the invocation that could change the system error that is retrieved in (3). Similarly, (3) must not involve any operations before getting the system error that could change the system error. This also relies on the runtime itself handling preserving the last error (see `BEGIN/END_PRESERVE_LAST_ERROR` macros) during JIT and P/Invoke resolution.
 

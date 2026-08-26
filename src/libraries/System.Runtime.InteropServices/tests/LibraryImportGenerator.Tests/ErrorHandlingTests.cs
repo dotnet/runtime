@@ -13,6 +13,7 @@ namespace System.Runtime.InteropServices
         ReturnValue = 0,
         LastParameter = 1,
         HiddenReturnValue = 2,
+        HiddenLastParameter = 3,
     }
 
     [AttributeUsage(AttributeTargets.Method)]
@@ -48,6 +49,20 @@ namespace LibraryImportGenerator.IntegrationTests
             }
 
             return new CustomError(error);
+        }
+    }
+
+    [CustomMarshaller(typeof(CustomError), MarshalMode.Default, typeof(ObservedCustomErrorMarshaller))]
+    internal static class ObservedCustomErrorMarshaller
+    {
+        public static bool ConvertToManagedCalled { get; set; }
+
+        public static int ConvertToUnmanaged(CustomError error) => error.Value;
+
+        public static CustomError ConvertToManaged(int error)
+        {
+            ConvertToManagedCalled = true;
+            return new CustomError(error + 1000);
         }
     }
 
@@ -123,6 +138,7 @@ namespace LibraryImportGenerator.IntegrationTests
         {
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "return_error")]
             [ErrorHandler(typeof(CustomErrorMarshaller), ErrorLocation.ReturnValue)]
+            [return: MarshalUsing(typeof(ObservedCustomErrorMarshaller))]
             public static partial CustomError ReturnError(int error);
 
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "return_error")]
@@ -131,14 +147,18 @@ namespace LibraryImportGenerator.IntegrationTests
 
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "set_error_out")]
             [ErrorHandler(typeof(CustomErrorMarshaller), ErrorLocation.LastParameter)]
-            public static partial void ErrorInOutParameter(int error, out CustomError errorValue);
+            public static partial void ErrorInOutParameter(
+                int error,
+                [MarshalUsing(typeof(ObservedCustomErrorMarshaller))] out CustomError errorValue);
 
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "set_error_ref")]
             [ErrorHandler(typeof(CustomErrorMarshaller), ErrorLocation.LastParameter)]
-            public static partial void ErrorInRefParameter(int error, ref CustomError errorValue);
+            public static partial void ErrorInRefParameter(
+                int error,
+                [MarshalUsing(typeof(ObservedCustomErrorMarshaller))] ref CustomError errorValue);
 
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "set_constant_error_out")]
-            [ErrorHandler(typeof(CustomErrorMarshaller), ErrorLocation.LastParameter)]
+            [ErrorHandler(typeof(CustomErrorMarshaller), ErrorLocation.HiddenLastParameter)]
             public static partial void InjectedErrorParameter();
 
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "return_error_with_output")]
@@ -160,8 +180,8 @@ namespace LibraryImportGenerator.IntegrationTests
                 [MarshalUsing(typeof(CleanupInputMarshaller))] CleanupInput input);
 
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "set_output_and_error_out")]
-            [ErrorHandler(typeof(CustomErrorMarshaller), ErrorLocation.LastParameter)]
-            public static partial void LastParameterErrorBeforeOutput(
+            [ErrorHandler(typeof(CustomErrorMarshaller), ErrorLocation.HiddenLastParameter)]
+            public static partial void HiddenLastParameterErrorBeforeOutput(
                 int error,
                 [MarshalUsing(typeof(TrackedOutputMarshaller))] out TrackedOutput output);
 
@@ -181,7 +201,10 @@ namespace LibraryImportGenerator.IntegrationTests
         [Fact]
         public void ReturnValueCanBeObserved()
         {
-            Assert.Equal(new CustomError(42), NativeExportsNE.ErrorHandling.ReturnError(42));
+            ObservedCustomErrorMarshaller.ConvertToManagedCalled = false;
+
+            Assert.Equal(new CustomError(1042), NativeExportsNE.ErrorHandling.ReturnError(42));
+            Assert.True(ObservedCustomErrorMarshaller.ConvertToManagedCalled);
         }
 
         [Fact]
@@ -196,20 +219,46 @@ namespace LibraryImportGenerator.IntegrationTests
         [Fact]
         public void LastOutParameterCanBeObserved()
         {
+            ObservedCustomErrorMarshaller.ConvertToManagedCalled = false;
+
             NativeExportsNE.ErrorHandling.ErrorInOutParameter(42, out CustomError error);
-            Assert.Equal(new CustomError(42), error);
+            Assert.Equal(new CustomError(1042), error);
+            Assert.True(ObservedCustomErrorMarshaller.ConvertToManagedCalled);
         }
 
         [Fact]
         public void LastRefParameterCanBeObserved()
         {
+            ObservedCustomErrorMarshaller.ConvertToManagedCalled = false;
+
             CustomError error = new(1);
             NativeExportsNE.ErrorHandling.ErrorInRefParameter(42, ref error);
-            Assert.Equal(new CustomError(43), error);
+            Assert.Equal(new CustomError(1043), error);
+            Assert.True(ObservedCustomErrorMarshaller.ConvertToManagedCalled);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        public void ErrorHandlingPrecedesOverlappingValueMarshalling(int location)
+        {
+            ObservedCustomErrorMarshaller.ConvertToManagedCalled = false;
+
+            CustomErrorException exception = location switch
+            {
+                0 => Assert.Throws<CustomErrorException>(
+                    () => NativeExportsNE.ErrorHandling.ReturnError(-2)),
+                1 => Assert.Throws<CustomErrorException>(
+                    () => NativeExportsNE.ErrorHandling.ErrorInOutParameter(-2, out _)),
+                _ => throw new ArgumentOutOfRangeException(nameof(location)),
+            };
+
+            Assert.Equal(-2, exception.Error);
+            Assert.False(ObservedCustomErrorMarshaller.ConvertToManagedCalled);
         }
 
         [Fact]
-        public void LastParameterIsInjectedWhenMissing()
+        public void HiddenLastParameterIsInjected()
         {
             NativeExportsNE.ErrorHandling.InjectedErrorParameter();
         }
@@ -226,7 +275,7 @@ namespace LibraryImportGenerator.IntegrationTests
                 0 => Assert.Throws<CustomErrorException>(
                     () => NativeExportsNE.ErrorHandling.ReturnErrorBeforeOutput(-3, out _)),
                 1 => Assert.Throws<CustomErrorException>(
-                    () => NativeExportsNE.ErrorHandling.LastParameterErrorBeforeOutput(-3, out _)),
+                    () => NativeExportsNE.ErrorHandling.HiddenLastParameterErrorBeforeOutput(-3, out _)),
                 _ => throw new ArgumentOutOfRangeException(nameof(location)),
             };
 
