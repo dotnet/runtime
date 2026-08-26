@@ -31,6 +31,8 @@ resources:
 
 variables:
 - template: /eng/pipelines/common/variables.yml
+- name: enableHelixJobMonitor
+  value: true
 
 #
 # For the 'schedule' case, only wasm/jsc perf jobs are run.
@@ -53,6 +55,12 @@ extends:
     stages:
     - stage: Build
       jobs:
+
+      - template: /eng/common/core-templates/job/helix-job-monitor.yml
+        parameters:
+          helixAccessToken: $(HelixApiAccessToken)
+          timeoutInMinutes: 540
+          allowNoHelixJobs: true
 
       - template: /eng/pipelines/runtime-wasm-perf-jobs.yml@performance
         parameters:
