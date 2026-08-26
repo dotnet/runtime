@@ -161,7 +161,8 @@ namespace Microsoft.Interop
 
             tryStatements.AddRange(statements.NotifyForSuccessfulInvoke);
 
-            if (_setLastError && !statements.ErrorUnmarshal.IsEmpty)
+            if (_setLastError
+                && (!statements.ErrorUnmarshalCapture.IsEmpty || !statements.ErrorUnmarshal.IsEmpty))
             {
                 tryStatements.Add(MarshallerHelpers.CreateSetLastPInvokeErrorStatement(LastErrorIdentifier));
             }

@@ -131,6 +131,65 @@ namespace LibraryImportGenerator.IntegrationTests
         }
     }
 
+    [CustomMarshaller(typeof(CustomError), MarshalMode.ManagedToUnmanagedOut, typeof(CaptureOnlyErrorMarshaller.Marshaller))]
+    internal static class CaptureOnlyErrorMarshaller
+    {
+        public struct Marshaller
+        {
+            private int _error;
+
+            public static int LastPInvokeErrorDuringCapture { get; set; }
+
+            public void FromUnmanaged(int error)
+            {
+                _error = error;
+                LastPInvokeErrorDuringCapture = Marshal.GetLastPInvokeError();
+            }
+
+            public CustomError ToManagedFinally() => new(_error);
+
+            public void Free()
+            {
+            }
+        }
+    }
+
+    [CustomMarshaller(typeof(CustomError), MarshalMode.ManagedToUnmanagedOut, typeof(SetLastErrorObservingErrorMarshaller.Marshaller))]
+    internal static class SetLastErrorObservingErrorMarshaller
+    {
+        public struct Marshaller
+        {
+            private int _error;
+
+            public static int LastPInvokeErrorDuringCapture { get; set; }
+            public static int LastPInvokeErrorDuringConversion { get; set; }
+            public static int LastPInvokeErrorDuringFree { get; set; }
+
+            public void FromUnmanaged(int error)
+            {
+                _error = error;
+                LastPInvokeErrorDuringCapture = Marshal.GetLastPInvokeError();
+            }
+
+            public CustomError ToManaged()
+            {
+                LastPInvokeErrorDuringConversion = Marshal.GetLastPInvokeError();
+                if (_error < 0)
+                {
+                    throw new CustomErrorException(_error);
+                }
+
+                Marshal.SetLastPInvokeError(_error + 1000);
+                return new CustomError(_error);
+            }
+
+            public void Free()
+            {
+                LastPInvokeErrorDuringFree = Marshal.GetLastPInvokeError();
+            }
+        }
+    }
+
     [CustomMarshaller(typeof(CleanupInput), MarshalMode.ManagedToUnmanagedIn, typeof(CleanupInputMarshaller))]
     internal static class CleanupInputMarshaller
     {
@@ -223,6 +282,14 @@ namespace LibraryImportGenerator.IntegrationTests
             public static partial void StatefulLastParameterError(
                 int error,
                 [MarshalUsing(typeof(StatefulResultMarshaller))] out CustomError errorValue);
+
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "set_error", SetLastError = true)]
+            [ErrorHandler(typeof(CaptureOnlyErrorMarshaller), ErrorLocation.ReturnValue)]
+            public static partial void CaptureOnlyErrorObservesLastPInvokeError(int error, byte shouldSetError);
+
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "set_error", SetLastError = true)]
+            [ErrorHandler(typeof(SetLastErrorObservingErrorMarshaller), ErrorLocation.ReturnValue)]
+            public static partial void ErrorLifecycleObservesLastPInvokeError(int error, byte shouldSetError);
 
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "return_error")]
             [ErrorHandler(typeof(CustomErrorMarshaller), ErrorLocation.HiddenReturnValue)]
@@ -381,6 +448,51 @@ namespace LibraryImportGenerator.IntegrationTests
         }
 
         [Fact]
+        public void CaptureOnlyErrorMarshallerObservesLastPInvokeError()
+        {
+            const int Error = 123;
+            CaptureOnlyErrorMarshaller.Marshaller.LastPInvokeErrorDuringCapture = 0;
+
+            NativeExportsNE.ErrorHandling.CaptureOnlyErrorObservesLastPInvokeError(Error, shouldSetError: 1);
+
+            Assert.Equal(Error, CaptureOnlyErrorMarshaller.Marshaller.LastPInvokeErrorDuringCapture);
+            Assert.Equal(Error, Marshal.GetLastPInvokeError());
+        }
+
+        [Theory]
+        [InlineData(1, 123)]
+        [InlineData(0, 0)]
+        public void ErrorMarshallerLifecycleAndCallerObserveExpectedLastPInvokeError(
+            byte shouldSetError,
+            int expectedLastPInvokeError)
+        {
+            const int Error = 123;
+            ResetSetLastErrorObservations();
+
+            NativeExportsNE.ErrorHandling.ErrorLifecycleObservesLastPInvokeError(Error, shouldSetError);
+
+            Assert.Equal(expectedLastPInvokeError, SetLastErrorObservingErrorMarshaller.Marshaller.LastPInvokeErrorDuringCapture);
+            Assert.Equal(expectedLastPInvokeError, SetLastErrorObservingErrorMarshaller.Marshaller.LastPInvokeErrorDuringConversion);
+            Assert.Equal(Error + 1000, SetLastErrorObservingErrorMarshaller.Marshaller.LastPInvokeErrorDuringFree);
+            Assert.Equal(expectedLastPInvokeError, Marshal.GetLastPInvokeError());
+        }
+
+        [Fact]
+        public void ThrowingErrorMarshallerObservesLastPInvokeErrorAndRunsCleanup()
+        {
+            const int Error = -123;
+            ResetSetLastErrorObservations();
+
+            CustomErrorException exception = Assert.Throws<CustomErrorException>(
+                () => NativeExportsNE.ErrorHandling.ErrorLifecycleObservesLastPInvokeError(Error, shouldSetError: 1));
+
+            Assert.Equal(Error, exception.Error);
+            Assert.Equal(Error, SetLastErrorObservingErrorMarshaller.Marshaller.LastPInvokeErrorDuringCapture);
+            Assert.Equal(Error, SetLastErrorObservingErrorMarshaller.Marshaller.LastPInvokeErrorDuringConversion);
+            Assert.Equal(Error, SetLastErrorObservingErrorMarshaller.Marshaller.LastPInvokeErrorDuringFree);
+        }
+
+        [Fact]
         public void HiddenReturnValueWithVoidManagedReturnHandlesNativeReturnError()
         {
             NativeExportsNE.ErrorHandling.HandleHiddenReturnError(0);
@@ -401,6 +513,13 @@ namespace LibraryImportGenerator.IntegrationTests
                 () => NativeExportsNE.ErrorHandling.HiddenReturnValue(-5));
             Assert.Equal(-5, exception.Error);
             Assert.False(TrackedOutputMarshaller.ConvertToManagedCalled);
+        }
+
+        private static void ResetSetLastErrorObservations()
+        {
+            SetLastErrorObservingErrorMarshaller.Marshaller.LastPInvokeErrorDuringCapture = 0;
+            SetLastErrorObservingErrorMarshaller.Marshaller.LastPInvokeErrorDuringConversion = 0;
+            SetLastErrorObservingErrorMarshaller.Marshaller.LastPInvokeErrorDuringFree = 0;
         }
     }
 }
