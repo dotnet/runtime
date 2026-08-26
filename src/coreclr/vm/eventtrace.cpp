@@ -4980,8 +4980,8 @@ VOID ETW::MethodLog::SendEventsForNgenMethods(Module *pModule, DWORD dwEventOpti
 #endif // FEATURE_READYTORUN
 }
 
-// Called be ETW::MethodLog::SendEventsForJitMethods
-// Sends the ETW events once our caller determines whether or not rejit locks can be acquired
+// Called by ETW::MethodLog::SendEventsForJitMethods
+// Sends the ETW events for methods in the selected code heaps.
 VOID ETW::MethodLog::SendEventsForJitMethodsHelper(LoaderAllocator *pLoaderAllocatorFilter,
                                                    DWORD dwEventOptions,
                                                    BOOL fLoadOrDCStart,
@@ -5018,8 +5018,8 @@ VOID ETW::MethodLog::SendEventsForJitMethodsHelper(LoaderAllocator *pLoaderAlloc
         fGetCodeIds);
 #endif // FEATURE_INTERPRETER
 }
-// Called be ETW::MethodLog::SendEventsForJitMethods
-// Sends the ETW events once our caller determines whether or not rejit locks can be acquired
+// Called by ETW::MethodLog::SendEventsForJitMethodsHelper
+// Sends the ETW events for methods in the supplied code heap.
 VOID ETW::MethodLog::SendEventsForJitMethodsHelper2(
                                                    CodeHeapIterator heapIterator,
                                                    DWORD dwEventOptions,
@@ -5051,8 +5051,6 @@ VOID ETW::MethodLog::SendEventsForJitMethodsHelper2(
 
         // Get info relevant to the native code version. In some cases, such as collectible loader
         // allocators, we don't support code versioning so we need to short circuit the call.
-        // This also allows our caller to avoid having to pre-enter the relevant locks.
-        // see code:#TableLockHolder
         DWORD nativeCodeVersionId = 0;
         ReJITID ilCodeId = 0;
         NativeCodeVersion nativeCodeVersion;
@@ -5063,7 +5061,15 @@ VOID ETW::MethodLog::SendEventsForJitMethodsHelper2(
             if (nativeCodeVersion.IsNull())
             {
                 // The code version state may be published concurrently with rundown.
-                if (codeStart != pMD->GetNativeCodeVolatile())
+#ifndef DACCESS_COMPILE
+                PCODE nativeCode = pMD->GetNativeCodeVolatile();
+#else
+                PCODE nativeCode = pMD->GetNativeCode();
+#endif
+                TADDR mappedNativeCode = nativeCode != (PCODE)NULL
+                    ? MethodAndStartAddressToEECodeInfoPointer(pMD, nativeCode)
+                    : (TADDR)NULL;
+                if (codeStart != mappedNativeCode)
                 {
                     continue;
                 }
@@ -5166,24 +5172,6 @@ VOID ETW::MethodLog::SendEventsForJitMethods(BOOL getCodeVersionIds, LoaderAlloc
 
         BOOL fSendRichDebugInfoEvent =
             (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::JittedMethodRichDebugInfo) != 0;
-
-        // #TableLockHolder:
-        //
-        // A word about ReJitManager::TableLockHolder... As we enumerate through the functions,
-        // we may need to grab their code IDs. The ReJitManager grabs its table Crst in order to
-        // fetch these. However, several other kinds of locks are being taken during this
-        // enumeration, such as the SystemDomain lock and the CodeHeapIterator's
-        // lock. In order to avoid lock-leveling issues, we grab the appropriate ReJitManager
-        // table locks after SystemDomain and before CodeHeapIterator. In particular, we need to
-        // grab the SharedDomain's ReJitManager table lock as well as the specific AppDomain's
-        // ReJitManager table lock for the current AppDomain we're iterating. Why the SharedDomain's
-        // ReJitManager lock? For any given AppDomain we're iterating over, the MethodDescs we
-        // find may be managed by that AppDomain's ReJitManger OR the SharedDomain's ReJitManager.
-        // (This is due to generics and whether given instantiations may be shared based on their
-        // arguments.) Therefore, we proactively take the SharedDomain's ReJitManager's table
-        // lock up front, and then individually take the appropriate AppDomain's ReJitManager's
-        // table lock that corresponds to the domain or module we're currently iterating over.
-        //
 
 #ifdef FEATURE_CODE_VERSIONING
         if (getCodeVersionIds)

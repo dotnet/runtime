@@ -1288,7 +1288,7 @@ NativeCodeVersionId MethodDescVersioningState::AllocateVersionId()
 PTR_NativeCodeVersionNode MethodDescVersioningState::GetFirstVersionNode() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    return VolatileLoad(&m_pFirstVersionNode);
+    return VolatileLoadWithoutBarrier(&m_pFirstVersionNode);
 }
 
 BOOL MethodDescVersioningState::IsDefaultVersionActiveChild() const
@@ -1363,7 +1363,7 @@ ILCodeVersion ILCodeVersioningState::GetActiveVersion() const
 PTR_ILCodeVersionNode ILCodeVersioningState::GetFirstVersionNode() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    return m_pFirstVersionNode;
+    return VolatileLoadWithoutBarrier(&m_pFirstVersionNode);
 }
 
 #ifndef DACCESS_COMPILE
