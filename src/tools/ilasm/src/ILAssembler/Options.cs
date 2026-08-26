@@ -144,11 +144,6 @@ namespace ILAssembler
         public string? OutputFileName { get; set; }
 
         /// <summary>
-        /// Gets or sets a value that indicates whether the output is a DLL.
-        /// </summary>
-        public bool IsDll { get; set; }
-
-        /// <summary>
         /// Try to create output file despite errors (results may be invalid).
         /// </summary>
         public bool ErrorTolerant { get; set; }
