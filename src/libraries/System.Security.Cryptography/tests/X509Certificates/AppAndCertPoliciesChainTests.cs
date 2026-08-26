@@ -342,11 +342,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
             if (testCase.ApplicationPolicyValue is not null)
             {
+                // The managed application policy verifier doesn't take criticality into account, and
+                // Android rejects the extension if it's marked critical, so only use non-critical for the test.
                 request.CertificateExtensions.Add(
                     new X509Extension(
                         ApplicationCertPoliciesOid,
                         testCase.ApplicationPolicyValue,
-                        testCase.ApplicationPolicyCritical));
+                        critical: false));
             }
 
             DateTimeOffset notBefore = DateTimeOffset.UtcNow.AddDays(-1);
@@ -462,45 +464,44 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             AppPolicyEkuCase[] cases =
             {
                 // Baseline: EKU only (sanity, including TLS Server Auth).
-                new AppPolicyEkuCase("no restrictions; req=Server", null, null, false, ServerAuth, Ok),
-                new AppPolicyEkuCase("EKU=Server; req=Server", new[] { ServerAuth }, null, false, ServerAuth, Ok),
-                new AppPolicyEkuCase("EKU=Server; req=Client", new[] { ServerAuth }, null, false, ClientAuth, Usage),
-                new AppPolicyEkuCase("EKU=Client; req=Server", new[] { ClientAuth }, null, false, ServerAuth, Usage),
-                new AppPolicyEkuCase("EKU=Client; req=none", new[] { ClientAuth }, null, false, null, Ok),
-                new AppPolicyEkuCase("EKU=anyEKU; req=Server", new[] { AnyEku }, null, false, ServerAuth, Ok),
-                new AppPolicyEkuCase("EKU=anyEKU; req=Client", new[] { AnyEku }, null, false, ClientAuth, Ok),
-                new AppPolicyEkuCase("EKU=anyEKU,TS; req=Client", new[] { AnyEku, TimeStamp }, null, false, ClientAuth, Ok),
-                new AppPolicyEkuCase("EKU=anyPolicy(32.0); req=Server", new[] { AnyPolicy }, null, false, ServerAuth, Usage),
+                new AppPolicyEkuCase("no restrictions; req=Server", null, null, ServerAuth, Ok),
+                new AppPolicyEkuCase("EKU=Server; req=Server", new[] { ServerAuth }, null, ServerAuth, Ok),
+                new AppPolicyEkuCase("EKU=Server; req=Client", new[] { ServerAuth }, null, ClientAuth, Usage),
+                new AppPolicyEkuCase("EKU=Client; req=Server", new[] { ClientAuth }, null, ServerAuth, Usage),
+                new AppPolicyEkuCase("EKU=Client; req=none", new[] { ClientAuth }, null, null, Ok),
+                new AppPolicyEkuCase("EKU=anyEKU; req=Server", new[] { AnyEku }, null, ServerAuth, Ok),
+                new AppPolicyEkuCase("EKU=anyEKU; req=Client", new[] { AnyEku }, null, ClientAuth, Ok),
+                new AppPolicyEkuCase("EKU=anyEKU,TS; req=Client", new[] { AnyEku, TimeStamp }, null, ClientAuth, Ok),
+                new AppPolicyEkuCase("EKU=anyPolicy(32.0); req=Server", new[] { AnyPolicy }, null, ServerAuth, Usage),
 
                 // Application Policies only (no EKU): behaves like the same EKU.
-                new AppPolicyEkuCase("AppPol=Server; req=Server", null, EncPol(ServerAuth), false, ServerAuth, Ok),
-                new AppPolicyEkuCase("AppPol=Server; req=Client", null, EncPol(ServerAuth), false, ClientAuth, Usage),
-                new AppPolicyEkuCase("AppPol=anyEKU(37.0); req=Server", null, EncPol(AnyEku), false, ServerAuth, Ok),
-                new AppPolicyEkuCase("AppPol=anyEKU(37.0); req=Client", null, EncPol(AnyEku), false, ClientAuth, Ok),
-                new AppPolicyEkuCase("AppPol=anyEKU(37.0),TS; req=Server", null, EncPol(AnyEku, TimeStamp), false, ServerAuth, Ok),
-                new AppPolicyEkuCase("AppPol=anyPolicy(32.0); req=Server", null, EncPol(AnyPolicy), false, ServerAuth, Usage),
-                new AppPolicyEkuCase("AppPol=anyPolicy(32.0); req=Client", null, EncPol(AnyPolicy), false, ClientAuth, Usage),
-                new AppPolicyEkuCase("AppPol=TS,anyPolicy(32.0); req=Server", null, EncPol(TimeStamp, AnyPolicy), false, ServerAuth, Usage),
+                new AppPolicyEkuCase("AppPol=Server; req=Server", null, EncPol(ServerAuth), ServerAuth, Ok),
+                new AppPolicyEkuCase("AppPol=Server; req=Client", null, EncPol(ServerAuth), ClientAuth, Usage),
+                new AppPolicyEkuCase("AppPol=anyEKU(37.0); req=Server", null, EncPol(AnyEku), ServerAuth, Ok),
+                new AppPolicyEkuCase("AppPol=anyEKU(37.0); req=Client", null, EncPol(AnyEku), ClientAuth, Ok),
+                new AppPolicyEkuCase("AppPol=anyEKU(37.0),TS; req=Server", null, EncPol(AnyEku, TimeStamp), ServerAuth, Ok),
+                new AppPolicyEkuCase("AppPol=anyPolicy(32.0); req=Server", null, EncPol(AnyPolicy), ServerAuth, Usage),
+                new AppPolicyEkuCase("AppPol=anyPolicy(32.0); req=Client", null, EncPol(AnyPolicy), ClientAuth, Usage),
+                new AppPolicyEkuCase("AppPol=TS,anyPolicy(32.0); req=Server", null, EncPol(TimeStamp, AnyPolicy), ServerAuth, Usage),
 
                 // Conflicts: Application Policies overrides EKU entirely.
-                new AppPolicyEkuCase("EKU=Server AppPol=Client; req=Server", new[] { ServerAuth }, EncPol(ClientAuth), false, ServerAuth, Usage),
-                new AppPolicyEkuCase("EKU=Server AppPol=Client; req=Client", new[] { ServerAuth }, EncPol(ClientAuth), false, ClientAuth, Ok),
-                new AppPolicyEkuCase("EKU=Client AppPol=Server; req=Server", new[] { ClientAuth }, EncPol(ServerAuth), false, ServerAuth, Ok),
-                new AppPolicyEkuCase("EKU=Client AppPol=Server; req=Client", new[] { ClientAuth }, EncPol(ServerAuth), false, ClientAuth, Usage),
-                new AppPolicyEkuCase("EKU=anyEKU AppPol=Client; req=Server", new[] { AnyEku }, EncPol(ClientAuth), false, ServerAuth, Usage),
-                new AppPolicyEkuCase("EKU=Client AppPol=anyEKU(37.0),TS; req=Server", new[] { ClientAuth }, EncPol(AnyEku, TimeStamp), false, ServerAuth, Ok),
-                new AppPolicyEkuCase("EKU=Client AppPol=anyEKU(37.0),TS; req=Client", new[] { ClientAuth }, EncPol(AnyEku, TimeStamp), false, ClientAuth, Ok),
+                new AppPolicyEkuCase("EKU=Server AppPol=Client; req=Server", new[] { ServerAuth }, EncPol(ClientAuth), ServerAuth, Usage),
+                new AppPolicyEkuCase("EKU=Server AppPol=Client; req=Client", new[] { ServerAuth }, EncPol(ClientAuth), ClientAuth, Ok),
+                new AppPolicyEkuCase("EKU=Client AppPol=Server; req=Server", new[] { ClientAuth }, EncPol(ServerAuth), ServerAuth, Ok),
+                new AppPolicyEkuCase("EKU=Client AppPol=Server; req=Client", new[] { ClientAuth }, EncPol(ServerAuth), ClientAuth, Usage),
+                new AppPolicyEkuCase("EKU=anyEKU AppPol=Client; req=Server", new[] { AnyEku }, EncPol(ClientAuth), ServerAuth, Usage),
+                new AppPolicyEkuCase("EKU=Client AppPol=anyEKU(37.0),TS; req=Server", new[] { ClientAuth }, EncPol(AnyEku, TimeStamp), ServerAuth, Ok),
+                new AppPolicyEkuCase("EKU=Client AppPol=anyEKU(37.0),TS; req=Client", new[] { ClientAuth }, EncPol(AnyEku, TimeStamp), ClientAuth, Ok),
 
                 // Well-formed but empty Application Policies: authoritative empty set (matches nothing).
-                new AppPolicyEkuCase("AppPol=empty EKU=Server; req=Server", new[] { ServerAuth }, EncPol(), false, ServerAuth, Usage),
-                new AppPolicyEkuCase("AppPol=empty; req=none", null, EncPol(), false, null, Ok),
+                new AppPolicyEkuCase("AppPol=empty EKU=Server; req=Server", new[] { ServerAuth }, EncPol(), ServerAuth, Usage),
+                new AppPolicyEkuCase("AppPol=empty; req=none", null, EncPol(), null, Ok),
 
                 // Undecodable Application Policies: hard failure regardless of EKU / criticality / requested usage.
-                new AppPolicyEkuCase("AppPol=NULL(05 00); req=none", null, new byte[] { 0x05, 0x00 }, false, null, BadExt),
-                new AppPolicyEkuCase("AppPol=NULL(05 00) EKU=Server; req=Server", new[] { ServerAuth }, new byte[] { 0x05, 0x00 }, false, ServerAuth, BadExt),
-                new AppPolicyEkuCase("AppPol=NULL(05 00) critical EKU=Server; req=Server", new[] { ServerAuth }, new byte[] { 0x05, 0x00 }, true, ServerAuth, BadExt),
-                new AppPolicyEkuCase("AppPol=badInner EKU=Server; req=Server", new[] { ServerAuth }, new byte[] { 0x30, 0x03, 0x02, 0x01, 0x2A }, false, ServerAuth, BadExt),
-                new AppPolicyEkuCase("AppPol=truncated EKU=Server; req=Server", new[] { ServerAuth }, new byte[] { 0x30, 0x82, 0x7F, 0xFF }, false, ServerAuth, BadExt),
+                new AppPolicyEkuCase("AppPol=NULL(05 00); req=none", null, new byte[] { 0x05, 0x00 }, null, BadExt),
+                new AppPolicyEkuCase("AppPol=NULL(05 00) EKU=Server; req=Server", new[] { ServerAuth }, new byte[] { 0x05, 0x00 }, ServerAuth, BadExt),
+                new AppPolicyEkuCase("AppPol=badInner EKU=Server; req=Server", new[] { ServerAuth }, new byte[] { 0x30, 0x03, 0x02, 0x01, 0x2A }, ServerAuth, BadExt),
+                new AppPolicyEkuCase("AppPol=truncated EKU=Server; req=Server", new[] { ServerAuth }, new byte[] { 0x30, 0x82, 0x7F, 0xFF }, ServerAuth, BadExt),
             };
 
             foreach (AppPolicyEkuCase testCase in cases)
@@ -515,7 +516,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             public string Name { get; }
             public string[] EkuOids { get; }
             public byte[] ApplicationPolicyValue { get; }
-            public bool ApplicationPolicyCritical { get; }
             public string RequestedApplicationPolicyOid { get; }
             public X509ChainStatusFlags ExpectedFlags { get; }
 
@@ -527,14 +527,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 string name,
                 string[] ekuOids,
                 byte[] applicationPolicyValue,
-                bool applicationPolicyCritical,
                 string requestedApplicationPolicyOid,
                 X509ChainStatusFlags expectedFlags)
             {
                 Name = name;
                 EkuOids = ekuOids;
                 ApplicationPolicyValue = applicationPolicyValue;
-                ApplicationPolicyCritical = applicationPolicyCritical;
                 RequestedApplicationPolicyOid = requestedApplicationPolicyOid;
                 ExpectedFlags = expectedFlags;
             }
