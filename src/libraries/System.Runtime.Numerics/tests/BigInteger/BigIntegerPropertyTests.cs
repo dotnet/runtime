@@ -1136,6 +1136,8 @@ namespace System.Numerics.Tests
 
         [Theory]
         [InlineData(3, 1_025)]
+        [InlineData(3, 2_048)]
+        [InlineData(3, 2_049)]
         [InlineData(-3, 1_025)]
         [InlineData(5, 1_024)]
         [InlineData(-5, 1_025)]
