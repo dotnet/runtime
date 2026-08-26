@@ -555,7 +555,7 @@ namespace System.Net.ServerSentEvents
             {
                 throw new InvalidDataException(SR.InvalidDataException_SseExceededMaxLength);
             }
-            Debug.Assert(minimumSize < int.MaxValue);
+            Debug.Assert(minimumSize <= int.MaxValue);
 
             if (buffer is not null && currentSize >= minimumSize)
             {
