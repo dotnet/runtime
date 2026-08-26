@@ -641,7 +641,6 @@ class PInvokeStubManager : public StubManager
 
 // This is used to recognize
 //   VarargPInvokeStub()
-//   GenericPInvokeCalliHelper()
 typedef VPTR(class InteropDispatchStubManager) PTR_InteropDispatchStubManager;
 
 class InteropDispatchStubManager : public StubManager
@@ -806,6 +805,8 @@ public:
         return pContext->Lr;
 #elif defined(TARGET_ARM64)
         return pContext->Lr;
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+        return pContext->Ra;
 #else
         PORTABILITY_ASSERT("StubManagerHelpers::GetReturnAddress");
         return (TADDR)NULL;
@@ -826,6 +827,8 @@ public:
         return (TADDR)pContext->R0;
 #elif defined(TARGET_ARM64)
         return (TADDR)pContext->X0;
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+        return (TADDR)pContext->A0;
 #else
         PORTABILITY_ASSERT("StubManagerHelpers::GetFirstArg");
         return (TADDR)0;
@@ -863,6 +866,8 @@ public:
         return pContext->R12;
 #elif defined(TARGET_ARM64)
         return pContext->X12;
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+        return pContext->T2;
 #else
         PORTABILITY_ASSERT("StubManagerHelpers::GetHiddenArg");
         return (TADDR)NULL;

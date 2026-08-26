@@ -952,10 +952,6 @@ void SystemDomain::LazyInitFrozenObjectsHeap()
     }
 }
 
-extern "C" PCODE g_pGetGCStaticBase;
-PCODE g_pGetGCStaticBase;
-extern "C" PCODE g_pGetNonGCStaticBase;
-PCODE g_pGetNonGCStaticBase;
 extern "C" PCODE g_pPollGC;
 PCODE g_pPollGC;
 #if defined(TARGET_X86) && defined(TARGET_WINDOWS)
@@ -1094,8 +1090,6 @@ void SystemDomain::LoadBaseSystemClasses()
         g_pExceptionServicesInternalCallsClass = CoreLibBinder::GetClass(CLASS__EXCEPTIONSERVICES_INTERNALCALLS);
         g_pStackFrameIteratorClass = CoreLibBinder::GetClass(CLASS__STACKFRAMEITERATOR);
 
-        g_pGetGCStaticBase = CoreLibBinder::GetMethod(METHOD__STATICSHELPERS__GET_GC_STATIC)->GetMultiCallableAddrOfCode();
-        g_pGetNonGCStaticBase = CoreLibBinder::GetMethod(METHOD__STATICSHELPERS__GET_NONGC_STATIC)->GetMultiCallableAddrOfCode();
         g_pPollGC = CoreLibBinder::GetMethod(METHOD__THREAD__POLLGC)->GetMultiCallableAddrOfCode();
 #if defined(TARGET_X86) && defined(TARGET_WINDOWS)
         g_pThrowOverflowException = CoreLibBinder::GetMethod(METHOD__THROWHELPERS__THROWOVERFLOWEXCEPTION)->GetMultiCallableAddrOfCode();
