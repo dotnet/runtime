@@ -340,7 +340,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
         [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
         public static void ExportPkcs12_MLKem_Roundtrip(MLKemAlgorithm algorithm)
         {

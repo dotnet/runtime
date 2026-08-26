@@ -127,7 +127,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]
         public static void PrivateKey_FromCertificate_CanExportPrivate_MLKem()
         {
             using (X509Certificate2 cert = X509Certificate2.CreateFromPem(MLKemTestData.IetfMlKem512CertificatePem))

@@ -101,7 +101,15 @@ namespace System.Security.Cryptography.Tests
 
     public abstract class MLKemCngTests : MLKemBaseTests
     {
+        private const int NTE_NOT_SUPPORTED = unchecked((int)0x80090029);
+
         protected abstract CngExportPolicies ExportPolicies { get; }
+
+        protected override void AssertExportPkcs8FromPublicKey(Action export)
+        {
+            CryptographicException ce = Assert.ThrowsAny<CryptographicException>(export);
+            Assert.Equal(NTE_NOT_SUPPORTED, ce.HResult);
+        }
 
         public override MLKem GenerateKey(MLKemAlgorithm algorithm)
         {
