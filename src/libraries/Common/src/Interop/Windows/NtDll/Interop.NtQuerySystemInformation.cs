@@ -2,9 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 
 internal static partial class Interop
 {
+    [SupportedOSPlatform("windows")]
     internal static partial class NtDll
     {
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]

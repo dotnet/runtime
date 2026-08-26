@@ -6,6 +6,8 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 
+#pragma warning disable CA1416 // Interop is only supported on Windows; this file is compiled only for Windows.
+
 namespace System
 {
     public readonly partial struct DateTime

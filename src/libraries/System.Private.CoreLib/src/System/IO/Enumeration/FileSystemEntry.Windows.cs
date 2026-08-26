@@ -4,6 +4,8 @@
 using System;
 using System.IO;
 
+#pragma warning disable CA1416 // Interop is only supported on Windows; this file is compiled only for Windows.
+
 namespace System.IO.Enumeration
 {
     /// <summary>Provides a lower level view of <see cref="FileSystemInfo" /> to help process and filter find results.</summary>

@@ -3,9 +3,11 @@
 
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 
 internal static partial class Interop
 {
+    [SupportedOSPlatform("windows")]
     internal static partial class NtDll
     {
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]

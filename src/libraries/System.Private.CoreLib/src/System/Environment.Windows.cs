@@ -12,6 +12,8 @@ using System.Text;
 using Microsoft.Win32.SafeHandles;
 using Internal.Win32;
 
+#pragma warning disable CA1416 // Interop is only supported on Windows; this file is compiled only for Windows.
+
 namespace System
 {
     public static partial class Environment

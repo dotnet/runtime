@@ -6,6 +6,8 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Enumeration;
 
+#pragma warning disable CA1416 // Interop is only supported on Windows; this file is compiled only for Windows.
+
 namespace System.IO
 {
     public partial class FileSystemInfo
