@@ -154,21 +154,17 @@ namespace System.Security.Cryptography
 
                     try
                     {
-                        // ECPrivateKey
-                        using (writer.PushSequence())
+                        ValueECPrivateKey ecPrivateKey = new()
                         {
-                            // version
-                            writer.WriteInteger(1);
-
-                            // privateKey
-                            writer.WriteOctetString(parameters.D);
-
-                            // parameters
-                            using (writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 0, isConstructed: true)))
+                            Version = 1,
+                            PrivateKey = parameters.D,
+                            Parameters = new ValueECDomainParameters
                             {
-                                writer.WriteObjectIdentifier(_algorithm.CurveOidValue);
-                            }
-                        }
+                                Named = _algorithm.CurveOidValue,
+                            },
+                        };
+
+                        ecPrivateKey.Encode(writer);
 
                         if (!writer.TryEncode(destination, out int bytesWritten))
                         {

@@ -47,7 +47,7 @@ namespace System.Security.Cryptography.Tests
                 CompositeMLKemTestData.ExecuteComponentFunc(
                     algorithm,
                     rsa => true,
-                    ecdh => ecdh.IsSec,
+                    ecdh => ecdh.IsSecg,
                     xdh => xdh.IsX25519 && X25519DiffieHellman.IsSupported);
 
             Assert.Equal(supported, CompositeMLKem.IsAlgorithmSupported(algorithm));

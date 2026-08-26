@@ -205,7 +205,7 @@ namespace System.Security.Cryptography.Tests
 
             kem.EncapsulateCoreHook = (_, destination) =>
             {
-                destination.Fill(0xA5);
+                destination.Fill(0xFE);
                 throw expected;
             };
 
@@ -314,7 +314,7 @@ namespace System.Security.Cryptography.Tests
 
             kem.DecapsulateCoreHook = (_, destination) =>
             {
-                destination.Fill(0xA5);
+                destination.Fill(0xFE);
                 throw expected;
             };
 

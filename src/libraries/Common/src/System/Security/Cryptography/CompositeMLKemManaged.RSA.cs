@@ -34,7 +34,8 @@ namespace System.Security.Cryptography
                 {
                     rsa = RSA.Create(algorithm.KeySizeInBits);
 
-                    // RSA key generation is lazy, so we need to force it to happen eagerly.
+                    // RSA key generation is lazy, so force it to happen eagerly
+                    // to surface errors now instead of at first use.
                     _ = rsa.ExportParameters(includePrivateParameters: false);
 
                     return new RsaKem(rsa, algorithm);

@@ -54,10 +54,18 @@ namespace System.Security.Cryptography
                 //
                 //   return ss, ct
 
-                using (X25519DiffieHellman ephemeral = X25519DiffieHellman.GenerateKey())
+                try
                 {
-                    ephemeral.ExportPublicKey(ciphertext);
-                    ephemeral.DeriveRawSecretAgreement(_key, sharedSecret);
+                    using (X25519DiffieHellman ephemeral = X25519DiffieHellman.GenerateKey())
+                    {
+                        ephemeral.ExportPublicKey(ciphertext);
+                        ephemeral.DeriveRawSecretAgreement(_key, sharedSecret);
+                    }
+                }
+                catch
+                {
+                    CryptographicOperations.ZeroMemory(sharedSecret);
+                    throw;
                 }
             }
 
@@ -70,7 +78,15 @@ namespace System.Security.Cryptography
                 //
                 //   return ss
 
-                _key.DeriveRawSecretAgreement(ciphertext, sharedSecret);
+                try
+                {
+                    _key.DeriveRawSecretAgreement(ciphertext, sharedSecret);
+                }
+                catch
+                {
+                    CryptographicOperations.ZeroMemory(sharedSecret);
+                    throw;
+                }
             }
 
             internal override int ExportPublicKey(Span<byte> destination)

@@ -1101,7 +1101,7 @@
     <Compile Include="System\Security\Cryptography\CapiHelper.Unix.cs" />
     <Compile Include="System\Security\Cryptography\ChaCha20Poly1305.OpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\CompositeMLDsaImplementation.OpenSsl.cs" />
-    <Compile Include="System\Security\Cryptography\CompositeMLKemImplementation.OpenSsl.cs" />
+    <Compile Include="System\Security\Cryptography\CompositeMLKemImplementation.Managed.cs" />
     <Compile Include="System\Security\Cryptography\Cng.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\CspKeyContainerInfo.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\DESCryptoServiceProvider.Unix.cs" />
