@@ -57,7 +57,7 @@ namespace System.Collections.Concurrent.Tests
                 });
             }
 
-            Thread.Sleep(TimeSpan.FromSeconds(1));
+            Thread.Sleep(TimeSpan.FromMilliseconds(200));
             Volatile.Write(ref stop, true);
             Task.WaitAll(workers);
             snapshotter.Wait();
