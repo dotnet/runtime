@@ -6,11 +6,13 @@ using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
+using System.Runtime.Loader;
 using System.Text;
 using System.Threading.Tasks;
 using Internal.IL;
@@ -292,6 +294,19 @@ namespace ILAssembler.Tests
             ImmutableArray<byte> secondImage = DocumentCompilerTestHelpers.Compile(source, options);
 
             Assert.Equal<byte>(firstImage, secondImage);
+
+            using (var pe = new PEReader(firstImage))
+            {
+                MetadataReader reader = pe.GetMetadataReader();
+                Assert.NotEqual(Guid.Empty, reader.GetGuid(reader.GetModuleDefinition().Mvid));
+            }
+
+            var loadContext = new AssemblyLoadContext(nameof(ManagedIlasm_DeterministicOutput_IsByteIdentical), isCollectible: true);
+            using (var stream = new MemoryStream(firstImage.ToArray()))
+            {
+                Assert.Equal("Deterministic", loadContext.LoadFromStream(stream).GetName().Name);
+            }
+            loadContext.Unload();
         }
 
         [Fact]

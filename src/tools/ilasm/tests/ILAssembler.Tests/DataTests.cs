@@ -42,5 +42,20 @@ namespace ILAssembler.Tests
             Assert.Equal(DiagnosticIds.InvalidMetadataToken, error.Id);
             Assert.Equal(DiagnosticSeverity.Error, error.Severity);
         }
+
+        [Fact]
+        public void Diagnostic_UnsupportedTlsData()
+        {
+            string source = """
+                .assembly test { }
+                .data tls T_00006000 = bytearray (02)
+                """;
+
+            ImmutableArray<Diagnostic> diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(source, new Options());
+            Diagnostic error = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.UnsupportedTlsData, error.Id);
+            Assert.Equal(DiagnosticSeverity.Error, error.Severity);
+            Assert.Equal("TLS RVA data declarations are not supported", error.Message);
+        }
     }
 }

@@ -133,7 +133,7 @@ namespace ILAssembler
         private void ReportWarning(string id, string message, Antlr4.Runtime.ParserRuleContext context)
             => ReportDiagnostic(DiagnosticSeverity.Warning, id, message, context);
 
-        public (ImmutableArray<Diagnostic> Diagnostics, PEBuilder? Image) BuildImage()
+        public (ImmutableArray<Diagnostic> Diagnostics, CompilationResult? Image) BuildImage()
         {
             // Default module name to output filename if no .module directive was provided
             if (_entityRegistry.Module.Name is null && _options.OutputFileName is not null)
@@ -229,7 +229,7 @@ namespace ILAssembler
             DebugDirectoryBuilder? debugDirectoryBuilder = BuildDebugDirectory(entryPoint, out int debugDataSize);
 
             Func<IEnumerable<Blob>, BlobContentId>? deterministicIdProvider = _options.Deterministic
-                ? content => GetDeterministicPeContentId(content, mvidFixup)
+                ? GetDeterministicContentId
                 : null;
 
             // Use custom PE builder if we have vtable fixups, exports, or data label reference fixups
@@ -261,7 +261,7 @@ namespace ILAssembler
                     metadataSize: metadataSize,
                     debugDataSize: debugDataSize);
 
-                return (_diagnostics.ToImmutable(), peBuilder);
+                return (_diagnostics.ToImmutable(), new CompilationResult(peBuilder, mvidFixup));
             }
 
             // Apply CorFlags from options or directive
@@ -282,15 +282,7 @@ namespace ILAssembler
                 debugDirectoryBuilder: debugDirectoryBuilder,
                 deterministicIdProvider: deterministicIdProvider);
 
-            return (_diagnostics.ToImmutable(), standardBuilder);
-        }
-
-        private static BlobContentId GetDeterministicPeContentId(IEnumerable<Blob> content, Blob mvidFixup)
-        {
-            BlobContentId contentId = GetDeterministicContentId(content);
-            new BlobWriter(mvidFixup).WriteGuid(contentId.Guid);
-
-            return contentId;
+            return (_diagnostics.ToImmutable(), new CompilationResult(standardBuilder, mvidFixup));
         }
 
         private static BlobContentId GetDeterministicContentId(IEnumerable<Blob> content)
@@ -1892,6 +1884,7 @@ namespace ILAssembler
         }
         public GrammarResult VisitDdHead(CILParser.DdHeadContext context)
         {
+            _ = VisitTls(context.tls());
             if (context.id() is CILParser.IdContext id)
             {
                 string name = VisitId(id).Value;
@@ -2211,12 +2204,17 @@ namespace ILAssembler
 
         public static GrammarResult.String VisitDottedName(CILParser.DottedNameContext context)
         {
-            string text = context.GetText();
-            if (context.SQSTRING() is not null && text.Length >= 2 && text[0] == '\'')
+            if (context.DOTTEDNAME() is not null)
             {
-                text = text.Substring(1, text.Length - 2);
+                return new(context.GetText());
             }
-            return new(text);
+
+            return new(string.Join(
+                ".",
+                context.dottedNamePart().Select(part =>
+                    part.SQSTRING() is null
+                        ? part.GetText()
+                        : StringHelpers.ParseQuotedString(part.GetText()))));
         }
 
         GrammarResult ICILVisitor<GrammarResult>.VisitDottedNamePart(CILParser.DottedNamePartContext context) => throw new UnreachableException();
@@ -5532,8 +5530,14 @@ namespace ILAssembler
         public GrammarResult VisitTerminal(ITerminalNode node) => throw new UnreachableException();
         public GrammarResult VisitTls(CILParser.TlsContext context)
         {
-            // TODO-SRM: System.Reflection.Metadata doesn't provide APIs to point a data declaration at a TLS slot or into the IL stream.
-            // We have tests for the TLS case (CoreCLR only supports it on Win-x86), but not for the IL case.
+            if (context.GetText() == "tls")
+            {
+                ReportError(
+                    DiagnosticIds.UnsupportedTlsData,
+                    DiagnosticMessageTemplates.UnsupportedTlsData,
+                    context);
+            }
+
             return GrammarResult.SentinelValue.Result;
         }
 

@@ -214,7 +214,7 @@ internal sealed class Program
 
             // Compile
             var compiler = new DocumentCompiler();
-            var (diagnostics, peBuilder) = compiler.Compile(
+            var (diagnostics, compilationResult) = compiler.Compile(
                 documents.ToImmutable(),
                 LoadIncludedDocument,
                 LoadResource,
@@ -236,7 +236,7 @@ internal sealed class Program
             }
 
             // In error-tolerant mode, continue even with errors
-            if (peBuilder is null)
+            if (compilationResult is null)
             {
                 Console.Error.WriteLine("***** FAILURE *****");
                 return 1;
@@ -251,7 +251,7 @@ internal sealed class Program
             // Write output
             using var outputStream = File.Create(outputPath);
             var blobBuilder = new BlobBuilder();
-            peBuilder.Serialize(blobBuilder);
+            compilationResult.Serialize(blobBuilder);
             blobBuilder.WriteContentTo(outputStream);
 
             if (hasErrors)

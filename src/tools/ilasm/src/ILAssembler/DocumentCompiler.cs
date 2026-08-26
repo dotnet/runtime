@@ -5,18 +5,17 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
-using System.Reflection.PortableExecutable;
 using Antlr4.Runtime;
 
 namespace ILAssembler;
 public sealed class DocumentCompiler
 {
-    public (ImmutableArray<Diagnostic>, PEBuilder?) Compile(SourceText document, Func<string, SourceText> includedDocumentLoader, Func<string, byte[]> resourceLocator, Options options)
+    public (ImmutableArray<Diagnostic>, CompilationResult?) Compile(SourceText document, Func<string, SourceText> includedDocumentLoader, Func<string, byte[]> resourceLocator, Options options)
     {
         return Compile([document], includedDocumentLoader, resourceLocator, options);
     }
 
-    public (ImmutableArray<Diagnostic>, PEBuilder?) Compile(ImmutableArray<SourceText> documents, Func<string, SourceText> includedDocumentLoader, Func<string, byte[]> resourceLocator, Options options)
+    public (ImmutableArray<Diagnostic>, CompilationResult?) Compile(ImmutableArray<SourceText> documents, Func<string, SourceText> includedDocumentLoader, Func<string, byte[]> resourceLocator, Options options)
     {
         Dictionary<string, SourceText> loadedDocuments = new();
         ImmutableArray<Diagnostic>.Builder diagnostics = ImmutableArray.CreateBuilder<Diagnostic>();

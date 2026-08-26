@@ -407,8 +407,8 @@ id:
 	| VALUE
 	| INSTANCE
 	| SQSTRING;
-dottedName: DOTTEDNAME | ((dottedNamePart '.')* dottedNamePart) | SQSTRING;
-dottedNamePart: ID | VALUE | INSTANCE;
+dottedName: DOTTEDNAME | ((dottedNamePart '.')* dottedNamePart);
+dottedNamePart: ID | VALUE | INSTANCE | SQSTRING;
 compQstring: (QSTRING PLUS)* QSTRING;
 
 
@@ -1437,4 +1437,3 @@ manifestResDecl:
 	| '.assembly' 'extern' dottedName
 	| customAttrDecl
 	| compControl;
-

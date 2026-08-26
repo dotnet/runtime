@@ -353,6 +353,32 @@ namespace ILAssembler.Tests
             Assert.Equal("My-Assembly", reader.GetString(asmDef.Name));
         }
 
+        [Fact]
+        public void DottedName_SQStringSegmentQuotesStripped()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly tls2 { }
+                .class public auto ansi beforefieldinit 'tls'.tls2
+                    extends [mscorlib]System.Object
+                {
+                    .field public static uint8 b
+                    .method private hidebysig specialname rtspecialname static void .cctor() cil managed
+                    {
+                        ldc.i4.1
+                        stsfld uint8 'tls'.tls2::b
+                        ret
+                    }
+                }
+                """;
+
+            using PEReader pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            MetadataReader reader = pe.GetMetadataReader();
+            TypeDefinition typeDef = reader.GetTypeDefinition(MetadataTokens.TypeDefinitionHandle(2));
+            Assert.Equal("tls", reader.GetString(typeDef.Namespace));
+            Assert.Equal("tls2", reader.GetString(typeDef.Name));
+        }
+
 
         [Fact]
         public void Interface_NoImplicitBaseType()
