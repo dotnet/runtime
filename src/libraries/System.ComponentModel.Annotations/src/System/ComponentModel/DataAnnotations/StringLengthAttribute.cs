@@ -86,8 +86,6 @@ namespace System.ComponentModel.DataAnnotations
         /// </remarks>
         public override string FormatMessage([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, string name)
         {
-            ArgumentNullException.ThrowIfNull(format);
-
             return string.Format(CultureInfo.CurrentCulture, format, name, MaximumLength, MinimumLength);
         }
 

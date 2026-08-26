@@ -606,11 +606,6 @@ namespace Microsoft.Extensions.Options.Generators
             StringBuilder sb = new();
             sb.AppendLine("""        public override string FormatMessage([global::System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, string name)""");
             sb.AppendLine("        {");
-            sb.AppendLine("            if (format == null)");
-            sb.AppendLine("            {");
-            sb.AppendLine("                throw new global::System.ArgumentNullException(nameof(format));");
-            sb.AppendLine("            }");
-            sb.AppendLine();
 
             if (ensureInitialized)
             {

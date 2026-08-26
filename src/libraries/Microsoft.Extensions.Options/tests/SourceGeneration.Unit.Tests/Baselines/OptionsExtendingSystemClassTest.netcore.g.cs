@@ -218,11 +218,6 @@ namespace __OptionValidationGeneratedAttributes
                 string.Format(global::System.Globalization.CultureInfo.CurrentCulture, GetValidationErrorMessage(), name, Minimum, Maximum);
         public override string FormatMessage([global::System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, string name)
         {
-            if (format == null)
-            {
-                throw new global::System.ArgumentNullException(nameof(format));
-            }
-
             EnsureInitialized();
 
             return string.Format(global::System.Globalization.CultureInfo.CurrentCulture, format, name, Minimum, Maximum);

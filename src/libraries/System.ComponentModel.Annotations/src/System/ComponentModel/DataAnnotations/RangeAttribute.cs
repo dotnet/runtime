@@ -193,8 +193,6 @@ namespace System.ComponentModel.DataAnnotations
         /// <exception cref="InvalidOperationException">The attribute is not configured with a valid range.</exception>
         public override string FormatMessage([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, string name)
         {
-            ArgumentNullException.ThrowIfNull(format);
-
             SetupConversion();
 
             return string.Format(CultureInfo.CurrentCulture, format, name, Minimum, Maximum);

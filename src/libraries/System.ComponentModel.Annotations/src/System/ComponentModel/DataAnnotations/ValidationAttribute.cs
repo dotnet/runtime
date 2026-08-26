@@ -369,8 +369,6 @@ namespace System.ComponentModel.DataAnnotations
         /// <exception cref="FormatException"><paramref name="format" /> is not a valid composite format string.</exception>
         public virtual string FormatMessage([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, string name)
         {
-            ArgumentNullException.ThrowIfNull(format);
-
             return string.Format(CultureInfo.CurrentCulture, format, name);
         }
 

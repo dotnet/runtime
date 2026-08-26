@@ -155,7 +155,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
             yield return new object[] { new LengthAttribute(1, 2) };
             yield return new object[] { new MaxLengthAttribute(2) };
             yield return new object[] { new MinLengthAttribute(1) };
-            yield return new object[] { new RangeAttribute(typeof(int), null, null) };
+            yield return new object[] { new RangeAttribute(1, 2) };
             yield return new object[] { new RegularExpressionAttribute("pattern") };
             yield return new object[] { new StringLengthAttribute(2) };
         }

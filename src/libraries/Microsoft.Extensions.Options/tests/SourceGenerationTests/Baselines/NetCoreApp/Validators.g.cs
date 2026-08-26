@@ -2992,11 +2992,6 @@ namespace __OptionValidationGeneratedAttributes
         public override string FormatErrorMessage(string name) => string.Format(global::System.Globalization.CultureInfo.CurrentCulture, ErrorMessageString, name, OtherProperty);
         public override string FormatMessage([global::System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, string name)
         {
-            if (format == null)
-            {
-                throw new global::System.ArgumentNullException(nameof(format));
-            }
-
             return string.Format(global::System.Globalization.CultureInfo.CurrentCulture, format, name, OtherProperty);
         }
     }
@@ -3038,11 +3033,6 @@ namespace __OptionValidationGeneratedAttributes
         public override string FormatErrorMessage(string name) => string.Format(global::System.Globalization.CultureInfo.CurrentCulture, ErrorMessageString, name, Length);
         public override string FormatMessage([global::System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, string name)
         {
-            if (format == null)
-            {
-                throw new global::System.ArgumentNullException(nameof(format));
-            }
-
             return string.Format(global::System.Globalization.CultureInfo.CurrentCulture, format, name, Length);
         }
     }
@@ -3080,11 +3070,6 @@ namespace __OptionValidationGeneratedAttributes
                 string.Format(global::System.Globalization.CultureInfo.CurrentCulture, GetValidationErrorMessage(), name, Minimum, Maximum);
         public override string FormatMessage([global::System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, string name)
         {
-            if (format == null)
-            {
-                throw new global::System.ArgumentNullException(nameof(format));
-            }
-
             EnsureInitialized();
 
             return string.Format(global::System.Globalization.CultureInfo.CurrentCulture, format, name, Minimum, Maximum);
