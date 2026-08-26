@@ -76,6 +76,7 @@ namespace Microsoft.Interop
         public bool IsManagedExceptionPosition { get; init; }
         public bool IsErrorHandlingPosition { get; init; }
         public bool IsManagedIdentifierSynthetic { get; init; }
+        public bool IsNativePositionOverlapping { get; init; }
 
         public int ManagedIndex { get; init; } = UnsetIndex;
         public int NativeIndex { get; init; } = UnsetIndex;

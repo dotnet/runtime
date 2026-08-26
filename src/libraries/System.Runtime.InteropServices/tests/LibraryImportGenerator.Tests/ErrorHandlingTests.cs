@@ -169,6 +169,7 @@ namespace LibraryImportGenerator.IntegrationTests
 
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "return_error_with_output")]
             [ErrorHandler(typeof(StatefulErrorMarshaller), ErrorLocation.ReturnValue)]
+            [return: MarshalUsing(typeof(CustomErrorMarshaller))]
             public static partial CustomError StatefulReturnErrorBeforeOutput(
                 int error,
                 [MarshalUsing(typeof(TrackedOutputMarshaller))] out TrackedOutput output);

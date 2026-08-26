@@ -310,6 +310,8 @@ namespace Microsoft.Interop.JavaScript
                     ManagedIndex = TypePositionInfo.ExceptionIndex,
                     NativeIndex = signatureElements.Length, // Insert at the end of the argument list
                     RefKind = RefKind.Out, // We'll treat it as a separate out parameter.
+                    IsManagedExceptionPosition = true,
+                    IsErrorHandlingPosition = true,
                 });
 
             for (int i = 0; i < allElements.Length; i++)

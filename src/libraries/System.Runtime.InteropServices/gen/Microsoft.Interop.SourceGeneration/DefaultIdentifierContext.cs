@@ -29,6 +29,7 @@ namespace Microsoft.Interop
                 {
                     IsErrorHandlingPosition: true,
                     IsManagedExceptionPosition: false,
+                    IsNativePositionOverlapping: true,
                     ManagedIndex: TypePositionInfo.ErrorIndex,
                     NativeIndex: TypePositionInfo.ReturnIndex,
                 })

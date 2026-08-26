@@ -175,7 +175,8 @@ namespace Microsoft.Interop
                 TypePositionInfo CreateErrorInfo(
                     int nativeIndex,
                     string instanceIdentifier = "__error",
-                    bool isManagedIdentifierSynthetic = true)
+                    bool isManagedIdentifierSynthetic = true,
+                    bool isNativePositionOverlapping = false)
                 {
                     return new TypePositionInfo(errorInfo.ManagedType, errorInfo.MarshallingInfo)
                     {
@@ -185,6 +186,7 @@ namespace Microsoft.Interop
                         NativeIndex = nativeIndex,
                         IsErrorHandlingPosition = true,
                         IsManagedIdentifierSynthetic = isManagedIdentifierSynthetic,
+                        IsNativePositionOverlapping = isNativePositionOverlapping,
                     };
                 }
 
@@ -197,7 +199,9 @@ namespace Microsoft.Interop
                         TypePositionInfo returnInfo = infos[returnIndex];
                         if (MatchesManagedType(returnInfo))
                         {
-                            infos.Add(CreateErrorInfo(TypePositionInfo.ReturnIndex));
+                            infos.Add(CreateErrorInfo(
+                                TypePositionInfo.ReturnIndex,
+                                isNativePositionOverlapping: true));
                         }
                         else if (returnInfo.ManagedType == SpecialTypeInfo.Void)
                         {
@@ -234,7 +238,8 @@ namespace Microsoft.Interop
                         infos.Add(CreateErrorInfo(
                             lastParameter.NativeIndex,
                             lastParameter.InstanceIdentifier,
-                            isManagedIdentifierSynthetic: false));
+                            isManagedIdentifierSynthetic: false,
+                            isNativePositionOverlapping: true));
                         break;
 
                     case ErrorHandlingLocation.HiddenLastParameter:

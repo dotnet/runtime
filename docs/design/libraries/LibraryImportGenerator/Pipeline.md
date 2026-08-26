@@ -87,6 +87,7 @@ The stub code generator itself will handle some initial setup and variable decla
     - Call `Generate` for the `UnmarshalCapture` and `Unmarshal` stages only on marshallers marked as error-handling positions.
     - For a managed-to-unmanaged stub, run after `NotifyForSuccessfulInvoke` and before ordinary unmarshalling so an error marshaller can throw without reading potentially invalid outputs.
     - For an unmanaged-to-managed stub, run before ordinary input unmarshalling and before invoking the managed target.
+    - If error conversion throws, `CleanupCallerAllocated` still runs from the surrounding `finally`. The invocation is not marked successful, so `CleanupCalleeAllocated` is skipped rather than freeing potentially uninitialized return or `out` values.
 1. `UnmarshalCapture`: capture any native out parameters to avoid memory leaks if exceptions are thrown during `Unmarshal`.
     - If the method has a non-void return, call `Generate` on the marshalling generator for the return
     - Call `Generate` on the marshalling generator for every parameter
@@ -98,7 +99,7 @@ The stub code generator itself will handle some initial setup and variable decla
     - If this stage has any statements, put them in an if statement where the condition represents whether the call succeeded
 1. `CleanupCallerAllocated`: free any resources allocated by the caller
     - Call `Generate` on the marshalling generator for every parameter
-1. `CleanupCalleeAllocated`: if the native method succeeded, free any resources allocated by the callee (`out` parameters and return values)
+1. `CleanupCalleeAllocated`: if the native invocation and error unmarshalling succeeded, free any resources allocated by the callee (`out` parameters and return values)
     - Call `Generate` on the marshalling generator for every parameter
     - If this stage has any statements, put them in an if statement where the condition represents whether the call succeeded
 

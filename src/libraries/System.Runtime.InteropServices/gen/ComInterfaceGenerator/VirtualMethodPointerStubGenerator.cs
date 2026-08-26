@@ -302,9 +302,20 @@ namespace Microsoft.Interop
             });
             foreach (TypePositionInfo element in originalElements)
             {
-                elements.Add(element with
+                TypePositionInfo unmanagedToManagedElement = element;
+                if (unmanagedToManagedElement is { IsErrorHandlingPosition: true, IsManagedExceptionPosition: false })
                 {
-                    NativeIndex = TypePositionInfo.IncrementIndex(element.NativeIndex)
+                    unmanagedToManagedElement = unmanagedToManagedElement with
+                    {
+                        IsErrorHandlingPosition = false,
+                        IsManagedIdentifierSynthetic = false,
+                        IsNativePositionOverlapping = false,
+                    };
+                }
+
+                elements.Add(unmanagedToManagedElement with
+                {
+                    NativeIndex = TypePositionInfo.IncrementIndex(unmanagedToManagedElement.NativeIndex)
                 });
             }
 
