@@ -21,8 +21,53 @@ namespace System.Diagnostics
 
         internal static bool SupportsAtomicNonInheritablePipeCreation => Interop.Sys.IsAtomicNonInheritablePipeCreationSupported;
 
-        private static bool IsExecutable(string fullPath)
-            => Interop.Sys.Access(fullPath, Interop.Sys.AccessMode.X_OK) == 0 && !Directory.Exists(fullPath);
+        private static bool IsExecutable(ReadOnlySpan<char> fullPath)
+            => Interop.Sys.Access(fullPath, Interop.Sys.AccessMode.X_OK) == 0 && !Directory.Exists(fullPath.ToString());
+
+        internal static string? FindProgramInPath(string program)
+        {
+            string? pathEnvVar = Environment.GetEnvironmentVariable("PATH");
+            if (pathEnvVar is null)
+            {
+                return null;
+            }
+
+            ReadOnlySpan<char> pathEnvVarSpan = pathEnvVar;
+            using ValueStringBuilder pathBuilder = new(stackalloc char[256]);
+            int segmentStart = 0;
+            while (segmentStart < pathEnvVarSpan.Length)
+            {
+                int segmentLength = pathEnvVarSpan[segmentStart..].IndexOf(Path.PathSeparator);
+                if (segmentLength < 0)
+                {
+                    segmentLength = pathEnvVarSpan.Length - segmentStart;
+                }
+
+                ReadOnlySpan<char> segment = pathEnvVarSpan.Slice(segmentStart, segmentLength);
+                segmentStart += segmentLength + 1;
+
+                if (segment.IsEmpty)
+                {
+                    continue;
+                }
+
+                pathBuilder.Append(segment);
+                if (!segment.EndsWith(Path.DirectorySeparatorChar))
+                {
+                    pathBuilder.Append(Path.DirectorySeparatorChar);
+                }
+
+                pathBuilder.Append(program);
+                if (IsExecutable(pathBuilder.AsSpan()))
+                {
+                    return pathBuilder.ToString();
+                }
+
+                pathBuilder.Length = 0;
+            }
+
+            return null;
+        }
 
         internal static unsafe void EnsureInitialized()
         {
@@ -305,24 +350,41 @@ namespace System.Diagnostics
 
             // Then check the executable's directory
             string? path = Environment.ProcessPath;
-            if (path != null)
+            using ValueStringBuilder pathBuilder = new(stackalloc char[256]);
+            if (path is not null)
             {
                 try
                 {
-                    path = Path.Combine(Path.GetDirectoryName(path)!, filename);
-                    if (IsExecutable(path))
+                    string executableDirectory = Path.GetDirectoryName(path)!;
+                    pathBuilder.Append(executableDirectory);
+                    if (!executableDirectory.EndsWith(Path.DirectorySeparatorChar))
                     {
-                        return path;
+                        pathBuilder.Append(Path.DirectorySeparatorChar);
                     }
+
+                    pathBuilder.Append(filename);
+                    if (IsExecutable(pathBuilder.AsSpan()))
+                    {
+                        return pathBuilder.ToString();
+                    }
+
+                    pathBuilder.Length = 0;
                 }
                 catch (ArgumentException) { } // ignore any errors in data that may come from the exe path
             }
 
             // Then check the current directory
-            path = Path.Combine(Directory.GetCurrentDirectory(), filename);
-            if (IsExecutable(path))
+            string currentDirectory = Directory.GetCurrentDirectory();
+            pathBuilder.Append(currentDirectory);
+            if (!currentDirectory.EndsWith(Path.DirectorySeparatorChar))
             {
-                return path;
+                pathBuilder.Append(Path.DirectorySeparatorChar);
+            }
+
+            pathBuilder.Append(filename);
+            if (IsExecutable(pathBuilder.AsSpan()))
+            {
+                return pathBuilder.ToString();
             }
 
             // Then check each directory listed in the PATH environment variables
