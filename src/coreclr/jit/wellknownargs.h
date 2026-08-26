@@ -26,8 +26,6 @@ WELL_KNOWN_ARG(PInvokeFrame,                "pinv frame",     false,   false)
 WELL_KNOWN_ARG(ShiftLow,                    "shift low",      false,   false)
 WELL_KNOWN_ARG(ShiftHigh,                   "shift high",     false,   false)
 WELL_KNOWN_ARG(VirtualStubCell,             "vsd cell",       false,   true)
-WELL_KNOWN_ARG(PInvokeCookie,               "pinv cookie",    false,   true)
-WELL_KNOWN_ARG(PInvokeTarget,               "pinv tgt",       false,   true)
 WELL_KNOWN_ARG(R2RIndirectionCell,          "r2r cell",       false,   true)
 WELL_KNOWN_ARG(ValidateIndirectCallTarget,  "cfg tgt",        false,   false)
 WELL_KNOWN_ARG(DispatchIndirectCallTarget,  "cfg tgt",        false,   false)
@@ -58,6 +56,7 @@ WELL_KNOWN_ARG(AsyncResumedDef,             "resumed def",    false,   false)
 
 WELL_KNOWN_ARG(WasmShadowStackPointer,      "wasm sp",        false,   false)
 WELL_KNOWN_ARG(WasmPortableEntryPoint,      "wasm pep",       false,   false)
+WELL_KNOWN_ARG(SecretStubParam,             "secret arg",     true,    false)
 
 #undef WELL_KNOWN_ARG
 

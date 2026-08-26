@@ -24,6 +24,15 @@
     <UseMonoRuntime>true</UseMonoRuntime>
   </PropertyGroup>
 
+  <!-- In-tree R2R uses the in-build crossgen2. These two hooks must be props-time (property defaults live
+       in the CoreCLR .targets); both are inert unless PublishReadyToRun. See dotnet/runtime#121257. -->
+  <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(TargetOS)' == 'browser'">
+    <AfterMicrosoftNETSdkTargets Condition="'$(Crossgen2SdkOverrideTargetsPath)' != '' and Exists('$(Crossgen2SdkOverrideTargetsPath)')">$(AfterMicrosoftNETSdkTargets);$(Crossgen2SdkOverrideTargetsPath)</AfterMicrosoftNETSdkTargets>
+    <AfterMicrosoftNETSdkTargets>$(AfterMicrosoftNETSdkTargets);$(MSBuildThisFileDirectory)WasmApp.ReadyToRun.targets</AfterMicrosoftNETSdkTargets>
+  </PropertyGroup>
+  <Import Project="$(Crossgen2SdkOverridePropsPath)"
+          Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(TargetOS)' == 'browser' and '$(Crossgen2SdkOverridePropsPath)' != '' and Exists('$(Crossgen2SdkOverridePropsPath)')" />
+
   <PropertyGroup Condition="'$(IsTestProject)' == 'true' or '$(IsOutputTypeLibrary)' == 'true'">
     <OutputType>library</OutputType>
   </PropertyGroup>
