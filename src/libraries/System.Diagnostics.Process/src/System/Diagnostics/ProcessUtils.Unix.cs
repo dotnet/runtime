@@ -33,37 +33,44 @@ namespace System.Diagnostics
             }
 
             ReadOnlySpan<char> pathEnvVarSpan = pathEnvVar;
-            using ValueStringBuilder pathBuilder = new(stackalloc char[256]);
-            int segmentStart = 0;
-            while (segmentStart < pathEnvVarSpan.Length)
+            ValueStringBuilder pathBuilder = new(stackalloc char[256]);
+            try
             {
-                int segmentLength = pathEnvVarSpan[segmentStart..].IndexOf(Path.PathSeparator);
-                if (segmentLength < 0)
+                int segmentStart = 0;
+                while (segmentStart < pathEnvVarSpan.Length)
                 {
-                    segmentLength = pathEnvVarSpan.Length - segmentStart;
+                    int segmentLength = pathEnvVarSpan[segmentStart..].IndexOf(Path.PathSeparator);
+                    if (segmentLength < 0)
+                    {
+                        segmentLength = pathEnvVarSpan.Length - segmentStart;
+                    }
+
+                    ReadOnlySpan<char> segment = pathEnvVarSpan.Slice(segmentStart, segmentLength);
+                    segmentStart += segmentLength + 1;
+
+                    if (segment.IsEmpty)
+                    {
+                        continue;
+                    }
+
+                    pathBuilder.Append(segment);
+                    if (!segment.EndsWith(Path.DirectorySeparatorChar))
+                    {
+                        pathBuilder.Append(Path.DirectorySeparatorChar);
+                    }
+
+                    pathBuilder.Append(program);
+                    if (IsExecutable(pathBuilder.AsSpan()))
+                    {
+                        return pathBuilder.ToString();
+                    }
+
+                    pathBuilder.Length = 0;
                 }
-
-                ReadOnlySpan<char> segment = pathEnvVarSpan.Slice(segmentStart, segmentLength);
-                segmentStart += segmentLength + 1;
-
-                if (segment.IsEmpty)
-                {
-                    continue;
-                }
-
-                pathBuilder.Append(segment);
-                if (!segment.EndsWith(Path.DirectorySeparatorChar))
-                {
-                    pathBuilder.Append(Path.DirectorySeparatorChar);
-                }
-
-                pathBuilder.Append(program);
-                if (IsExecutable(pathBuilder.AsSpan()))
-                {
-                    return pathBuilder.ToString();
-                }
-
-                pathBuilder.Length = 0;
+            }
+            finally
+            {
+                pathBuilder.Dispose();
             }
 
             return null;
@@ -350,45 +357,52 @@ namespace System.Diagnostics
 
             // Then check the executable's directory
             string? path = Environment.ProcessPath;
-            using ValueStringBuilder pathBuilder = new(stackalloc char[256]);
-            if (path is not null)
+            ValueStringBuilder pathBuilder = new(stackalloc char[256]);
+            try
             {
-                try
+                if (path is not null)
                 {
-                    string executableDirectory = Path.GetDirectoryName(path)!;
-                    pathBuilder.Append(executableDirectory);
-                    if (!executableDirectory.EndsWith(Path.DirectorySeparatorChar))
+                    try
                     {
-                        pathBuilder.Append(Path.DirectorySeparatorChar);
-                    }
+                        string executableDirectory = Path.GetDirectoryName(path)!;
+                        pathBuilder.Append(executableDirectory);
+                        if (!executableDirectory.EndsWith(Path.DirectorySeparatorChar))
+                        {
+                            pathBuilder.Append(Path.DirectorySeparatorChar);
+                        }
 
-                    pathBuilder.Append(filename);
-                    if (IsExecutable(pathBuilder.AsSpan()))
-                    {
-                        return pathBuilder.ToString();
-                    }
+                        pathBuilder.Append(filename);
+                        if (IsExecutable(pathBuilder.AsSpan()))
+                        {
+                            return pathBuilder.ToString();
+                        }
 
-                    pathBuilder.Length = 0;
+                        pathBuilder.Length = 0;
+                    }
+                    catch (ArgumentException) { } // ignore any errors in data that may come from the exe path
                 }
-                catch (ArgumentException) { } // ignore any errors in data that may come from the exe path
-            }
 
-            // Then check the current directory
-            string currentDirectory = Directory.GetCurrentDirectory();
-            pathBuilder.Append(currentDirectory);
-            if (!currentDirectory.EndsWith(Path.DirectorySeparatorChar))
+                // Then check the current directory
+                string currentDirectory = Directory.GetCurrentDirectory();
+                pathBuilder.Append(currentDirectory);
+                if (!currentDirectory.EndsWith(Path.DirectorySeparatorChar))
+                {
+                    pathBuilder.Append(Path.DirectorySeparatorChar);
+                }
+
+                pathBuilder.Append(filename);
+                if (IsExecutable(pathBuilder.AsSpan()))
+                {
+                    return pathBuilder.ToString();
+                }
+
+                // Then check each directory listed in the PATH environment variables
+                return FindProgramInPath(filename);
+            }
+            finally
             {
-                pathBuilder.Append(Path.DirectorySeparatorChar);
+                pathBuilder.Dispose();
             }
-
-            pathBuilder.Append(filename);
-            if (IsExecutable(pathBuilder.AsSpan()))
-            {
-                return pathBuilder.ToString();
-            }
-
-            // Then check each directory listed in the PATH environment variables
-            return FindProgramInPath(filename);
         }
 
         /// <summary>Parses a command-line argument string into a list of arguments.</summary>
