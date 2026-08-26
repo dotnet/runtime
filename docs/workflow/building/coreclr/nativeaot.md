@@ -20,6 +20,8 @@ The Native AOT toolchain can be currently built for Linux (x64/arm32/arm64), mac
 
 Once you build the repo, you can use the produced binaries in one of four ways specified below ("Using built binaries", "Building packages", "Convenience Visual Studio "repro" project", "Running tests").
 
+The native AOT compiler is a cross-compiler, however the default clr.aot subset passed to build[.cmd|.sh] will only build a flavor that can target the architecture of ILC itself. To build other codegen backends and enable crossbuilding, replace `clr.aot` with `clr.aot+clr.alljits` in the build script invocation.
+
 ### Using built binaries
 
 In this workflow, you have a project file that you want to `dotnet publish`, but you want to use your own build of the compiler/runtime/framework. You need to be using a daily build of the .NET SDK downloaded from the dotnet/sdk repo. It's typically enough to just download the daily build ZIP file, unpack it, and make sure the unpacked directory is the first thing in your PATH. Don't forget to add a NuGet.config as specified by the dotnet/sdk repo- you'll hit restore issues otherwise.

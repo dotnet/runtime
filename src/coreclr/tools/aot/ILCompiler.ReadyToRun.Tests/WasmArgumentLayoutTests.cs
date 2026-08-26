@@ -26,8 +26,12 @@ namespace ILCompiler.ReadyToRun.Tests;
 
 /// <summary>
 /// Unit tests for the wasm argument layout crossgen2 computes. These drive the compiler's type
-/// system directly, so they need neither a wasm JIT nor a runtime to execute against.
+/// system directly, so they need neither a wasm JIT nor a runtime to execute against. They do
+/// need a wasm System.Private.CoreLib, though: the type system context they build is always a
+/// wasm one, but the corelib it reads comes from whatever the outer build targets, so on any
+/// other target they would be computing wasm layouts from the wrong assembly.
 /// </summary>
+[ConditionalClass(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
 public class WasmArgumentLayoutTests
 {
     private const string Vector128OfT = "Vector128`1";
@@ -276,7 +280,7 @@ public class WasmArgumentLayoutTests
         Assert.Equal(8, alignedEight.InstanceFieldAlignment.AsInt);
         Assert.Equal(32, autoLayout.InstanceFieldSize.AsInt);
         Assert.Equal(16, autoLayout.InstanceFieldAlignment.AsInt);
-        Assert.Equal(8, CorInfoImpl.GetClassAlignmentRequirementStatic(autoLayout));
+        Assert.Equal(8, CompilerTypeSystemContext.GetClassAlignmentRequirementStatic(autoLayout));
 
         MethodSignature autoLayoutSignature = MakeProbeSignature(context, autoLayout);
         MethodSignature alignedEightSignature = MakeProbeSignature(context, alignedEight);
@@ -548,7 +552,7 @@ public class WasmArgumentLayoutTests
     /// </summary>
     private ReadyToRunCompilerContext CreateWasmContext()
     {
-        string coreLibPath = new TestPaths(_output).SystemPrivateCoreLibPath;
+        string coreLibPath = TestPaths.SystemPrivateCoreLibPath;
         Assert.True(File.Exists(coreLibPath), $"System.Private.CoreLib.dll not found at '{coreLibPath}'");
 
         InstructionSetSupport instructionSetSupport = new(default, default, TargetArchitecture.Wasm32);

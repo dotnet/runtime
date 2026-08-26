@@ -36,6 +36,7 @@
 #include "eedbginterface.h"
 #include "dbginterface.h"
 #include "corhost.h"
+#include "debugwait.h"
 
 
 #include "corjit.h"
@@ -648,10 +649,10 @@ protected:
     // that blew its stack
     FAVORCALLBACK m_fpFavor;
     void                           *m_pFavorData;
-    HANDLE                          m_FavorReadEvent;
+    WaitEvent                      *m_FavorReadEvent;
     Crst                            m_FavorLock;
 
-    HANDLE                          m_FavorAvailableEvent;
+    WaitEvent                      *m_FavorAvailableEvent;
 };
 
 
@@ -865,8 +866,8 @@ private:
     }
     Crst * GetFavorLock()                   { return &m_favorData.m_FavorLock; }
 
-    HANDLE GetFavorReadEvent()              { return m_favorData.m_FavorReadEvent; }
-    HANDLE GetFavorAvailableEvent()         { return m_favorData.m_FavorAvailableEvent; }
+    WaitEvent *GetFavorReadEvent()      { return m_favorData.m_FavorReadEvent; }
+    WaitEvent *GetFavorAvailableEvent() { return m_favorData.m_FavorAvailableEvent; }
 
     HelperThreadFavor m_favorData;
 
@@ -891,9 +892,11 @@ private:
 #endif // FEATURE_DBGIPC_TRANSPORT_VM
 
     HANDLE                          m_thread;
+    Volatile<BOOL>                  m_helperThreadRunning;
     bool                            m_run;
 
-    HANDLE                          m_threadControlEvent;
+    WaitEvent                      *m_threadControlEvent;
+    WaitEvent                      *m_helperThreadExitedEvent;
     HANDLE                          m_helperThreadCanGoEvent;
     bool                            m_rgfInitRuntimeOffsets[IPC_TARGET_COUNT];
     bool                            m_fDetachRightSide;

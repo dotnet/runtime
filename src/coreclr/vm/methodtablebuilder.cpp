@@ -22,7 +22,6 @@ int __cdecl compareCGCDescSeries(const void *arg1, const void *arg2)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     CGCDescSeries* gcInfo1 = (CGCDescSeries*) arg1;
     CGCDescSeries* gcInfo2 = (CGCDescSeries*) arg2;
@@ -676,7 +675,6 @@ MethodTableBuilder::BuildMethodTableThrowException(
     {
         THROWS;
         GC_NOTRIGGER;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
 
@@ -9005,7 +9003,6 @@ DWORD MethodTableBuilder::GetFieldSize(FieldDesc *pFD)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
         // We should only be calling this while this class is being built.
     _ASSERTE(GetHalfBakedMethodTable() == 0);

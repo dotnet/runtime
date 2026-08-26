@@ -53,9 +53,9 @@ namespace System
             {
                 OnFirstChanceException(*pException, AppDomain.CurrentDomain);
             }
-            catch (Exception ex)
+            catch
             {
-                *pOutException = ex;
+                // The VM does not expect exceptions to propagate out of this callback
             }
         }
 

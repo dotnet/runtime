@@ -201,16 +201,6 @@ LOCAL_LABEL(RarePath):
 PINVOKE_STUB VarargPInvokeStub, VarargPInvokeGenILStub, VarargPInvokeStubWorker, r0, 0
 
 // ------------------------------------------------------------------
-// GenericPInvokeCalliHelper & GenericPInvokeCalliGenILStub
-// Helper for generic pinvoke calli instruction
-//
-// in:
-// r4 = VASigCookie*
-// r12 = Unmanaged target
-//
-PINVOKE_STUB GenericPInvokeCalliHelper, GenericPInvokeCalliGenILStub, GenericPInvokeCalliStubWorker r4, 1
-
-// ------------------------------------------------------------------
 // VarargPInvokeStub_RetBuffArg & VarargPInvokeGenILStub_RetBuffArg
 // Vararg PInvoke Stub when the method has a hidden return buffer arg
 //
