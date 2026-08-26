@@ -332,6 +332,11 @@ namespace System.Net.Mail
             }
             set
             {
+                if (_inCall)
+                {
+                    throw new InvalidOperationException(SR.SmtpInvalidOperationDuringSend);
+                }
+
                 _transport.EnableSsl = value;
             }
         }
