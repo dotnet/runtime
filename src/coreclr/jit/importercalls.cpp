@@ -9115,8 +9115,8 @@ void Compiler::impConvertToUserCallAndMarkForInlining(GenTreeCall* call)
 //
 // Notes:
 //    A direct call is cheaper than a virtual/interface call, so we keep such candidates
-//    by default. The bail-outs below mirror the call-site checks in
-//    impMarkInlineCandidateHelper; keep the two in sync.
+//    by default and only bail out where the expansion would be illegal or would cost
+//    us a better optimization.
 //
 bool Compiler::canKeepNonInlineableGdvCandidate(GenTreeCall* call)
 {
@@ -9135,17 +9135,13 @@ bool Compiler::canKeepNonInlineableGdvCandidate(GenTreeCall* call)
     }
 
     // An explicit tail call has to stay a tail call, so don't perturb its shape.
+    //
     // Implicit ones are fine: fgMorphPotentialTailCall can tail call out of the
-    // BBJ_ALWAYS blocks the expansion produces.
+    // BBJ_ALWAYS blocks the expansion produces. That includes recursive ones -
+    // the tail-recursion-to-loop transform requires a non-virtual callee, so
+    // devirtualizing here is what makes it possible in the first place.
     //
     if (call->IsTailPrefixedCall())
-    {
-        return false;
-    }
-
-    // Except recursive ones, where turning the call into a loop is more valuable.
-    //
-    if (call->IsImplicitTailCall() && gtIsRecursiveCall(call))
     {
         return false;
     }
@@ -9211,6 +9207,10 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
             {
                 if (!keepNonInlineable)
                 {
+                    JITDUMP("Revoking guarded devirtualization candidate %u of call [%06u]: target method can't be "
+                            "inlined\n",
+                            candidateId, dspTreeID(call));
+
                     call->RemoveGDVCandidateInfo(this, candidateId);
                     candidateId--;
                     continue;
