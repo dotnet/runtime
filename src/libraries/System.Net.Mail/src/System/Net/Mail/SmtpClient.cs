@@ -352,6 +352,11 @@ namespace System.Net.Mail
             get { return _targetName; }
             set
             {
+                if (_inCall)
+                {
+                    throw new InvalidOperationException(SR.SmtpInvalidOperationDuringSend);
+                }
+
                 if (value != _targetName)
                 {
                     _targetName = value;
