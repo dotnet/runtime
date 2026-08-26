@@ -335,7 +335,9 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
     <!-- One token per line: that is how crossgen2 reads a response file. -->
     <ItemGroup>
       <_WasmCorerunGeneratorArg Include="--targetos" />
-      <_WasmCorerunGeneratorArg Include="browser" />
+      <!-- This file is only imported for browser, so $(TargetOS) is that; naming it rather than
+           repeating the literal keeps the two from drifting if wasi ever links a test corerun. -->
+      <_WasmCorerunGeneratorArg Include="$(TargetOS)" />
       <_WasmCorerunGeneratorArg Include="--targetarch" />
       <_WasmCorerunGeneratorArg Include="wasm" />
       <_WasmCorerunGeneratorArg Include="--generate-portable-callhelpers" />

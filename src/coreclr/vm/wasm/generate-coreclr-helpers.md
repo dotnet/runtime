@@ -6,7 +6,7 @@ WebAssembly runtime. They parse their arguments and hand the work to
 `generate-coreclr-helpers.proj` next to them, which runs crossgen2 in
 `--generate-portable-callhelpers` mode over the managed framework assemblies to emit the native
 P/Invoke, reverse-P/Invoke, and interpreter-to-managed call helpers. The generator lives in
-[`ILCompiler.ReadyToRun/Wasm`](../../tools/aot/ILCompiler.ReadyToRun/Wasm) so it can use crossgen2's
+[`ILCompiler.ReadyToRun/PortableCallHelpers`](../../tools/aot/ILCompiler.ReadyToRun/PortableCallHelpers) so it can use crossgen2's
 type system to compute the wasm ABI layout of the structs that cross the boundary.
 
 Keeping the scan paths, the crossgen2 lookup and the module list in the project rather than in the
