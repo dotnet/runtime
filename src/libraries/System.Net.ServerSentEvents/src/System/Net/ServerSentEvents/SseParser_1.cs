@@ -100,6 +100,12 @@ namespace System.Net.ServerSentEvents
             _stream = stream;
             _itemParser = options.ItemParser;
             _maxBufferSize = options.MaxBufferSize == -1 ? DefaultMaxBufferSize : Math.Max(options.MaxBufferSize, DefaultArrayPoolRentSize);
+
+#if NET
+            _maxBufferSize = Math.Min(_maxBufferSize, Array.MaxLength);
+#else
+            _maxBufferSize = Math.Min(_maxBufferSize, 0x7FFFFFC7);
+#endif
         }
 
         /// <summary>Gets an enumerable of the server-sent events from this parser.</summary>
