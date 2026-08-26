@@ -172,6 +172,29 @@ internal sealed class DumpCreator
         if (!gc.GetGCStructuresValid())
             return;
 
+        string[] identifiers = gc.GetGCIdentifiers();
+        gc.GetGCHeapCount();
+        gc.GetMaxGeneration();
+        gc.GetGCBounds(out _, out _);
+        gc.GetCurrentGCState();
+        gc.TryGetGCDynamicAdaptationMode(out _);
+        gc.GetGlobalMechanisms();
+        gc.GetGlobalAllocationContext(out _, out _);
+
+        if (Array.IndexOf(identifiers, GCIdentifiers.Workstation) >= 0)
+        {
+            gc.GetHeapData();
+            gc.GetOomData();
+        }
+        else
+        {
+            foreach (TargetPointer heap in gc.GetGCHeaps())
+            {
+                gc.GetHeapData(heap);
+                gc.GetOomData(heap);
+            }
+        }
+
         foreach ((GCHeapSegmentInfo segment, _) in gc.EnumerateAllSegments())
         {
             if (segment.End > segment.Start)
