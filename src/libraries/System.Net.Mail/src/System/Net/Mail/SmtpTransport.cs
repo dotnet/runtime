@@ -20,6 +20,7 @@ namespace System.Net.Mail
         private readonly SmtpClient _client;
         private ICredentialsByHost? _credentials;
         private bool _shouldAbort;
+        private bool _stale;
 
         private bool _enableSsl;
 
@@ -43,7 +44,11 @@ namespace System.Net.Mail
             }
             set
             {
-                _credentials = value;
+                if (!ReferenceEquals(value, _credentials))
+                {
+                    _credentials = value;
+                    InvalidateCachedConnection();
+                }
             }
         }
 
@@ -51,7 +56,7 @@ namespace System.Net.Mail
         {
             get
             {
-                return _connection != null && _connection.IsConnected;
+                return _connection != null && _connection.IsConnected && !_stale;
             }
         }
 
@@ -63,7 +68,11 @@ namespace System.Net.Mail
             }
             set
             {
-                _enableSsl = value;
+                if (value != _enableSsl)
+                {
+                    _enableSsl = value;
+                    InvalidateCachedConnection();
+                }
             }
         }
 
@@ -89,6 +98,12 @@ namespace System.Net.Mail
         {
             lock (this)
             {
+                // Gracefully release any previously cached connection (for example one that
+                // became stale after a configuration change) before establishing a new one so
+                // its socket is not leaked. This keeps the potentially blocking shutdown work on
+                // the send path rather than in the property setters that invalidated it.
+                _connection?.ReleaseConnection();
+                _stale = false;
                 _connection = new SmtpConnection(this, _client, _credentials, _authenticationModules);
                 if (_shouldAbort)
                 {
@@ -145,6 +160,15 @@ namespace System.Net.Mail
         internal void ReleaseConnection()
         {
             _connection?.ReleaseConnection();
+        }
+
+        // Marks any cached connection as stale without performing blocking work. The connection
+        // is gracefully released and replaced the next time one is established (see
+        // GetConnectionAsync). This is called when a property that affects how the connection is
+        // established (host, port, credentials, SSL settings, target name) changes.
+        internal void InvalidateCachedConnection()
+        {
+            _stale = true;
         }
 
         internal void Abort()

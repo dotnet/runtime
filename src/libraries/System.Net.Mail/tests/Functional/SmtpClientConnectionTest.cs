@@ -9,6 +9,13 @@ using Xunit.Abstractions;
 
 namespace System.Net.Mail.Tests
 {
+    public enum ConnectionAffectingProperty
+    {
+        Host,
+        Credentials,
+        TargetName,
+    }
+
     public abstract class SmtpClientConnectionTest<TSendMethod> : LoopbackServerTestBase<TSendMethod>
         where TSendMethod : ISendMethodProvider
     {
@@ -106,8 +113,11 @@ namespace System.Net.Mail.Tests
             Assert.Equal("<first@example.com>", Server.MailFrom);
         }
 
-        [Fact]
-        public async Task ChangingHost_EstablishesNewConnection()
+        [Theory]
+        [InlineData(ConnectionAffectingProperty.Host)]
+        [InlineData(ConnectionAffectingProperty.Credentials)]
+        [InlineData(ConnectionAffectingProperty.TargetName)]
+        public async Task ChangingConnectionProperty_EstablishesNewConnection(ConnectionAffectingProperty property)
         {
             Server.ReceiveMultipleConnections = true;
 
@@ -115,9 +125,21 @@ namespace System.Net.Mail.Tests
             Assert.Equal(1, Server.ConnectionCount);
             Assert.Equal("<first@example.com>", Server.MailFrom);
 
-            // Change the host to another value that still resolves to the loopback server.
-            // The cached connection must be dropped and a new one established.
-            Smtp.Host = "127.0.0.1";
+            // Change a property that affects how the connection is established. The cached
+            // connection must be invalidated and a new one established on the next send.
+            switch (property)
+            {
+                case ConnectionAffectingProperty.Host:
+                    // A different value that still resolves to the loopback server.
+                    Smtp.Host = "127.0.0.1";
+                    break;
+                case ConnectionAffectingProperty.Credentials:
+                    Smtp.Credentials = new NetworkCredential("user", "password");
+                    break;
+                case ConnectionAffectingProperty.TargetName:
+                    Smtp.TargetName = "SMTPSVC/example.com";
+                    break;
+            }
 
             await SendMail(new MailMessage("second@example.com", "everyone@novell.com", "introduction", "hello"));
             Assert.Equal(2, Server.ConnectionCount);

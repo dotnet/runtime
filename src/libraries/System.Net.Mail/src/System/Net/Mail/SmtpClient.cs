@@ -164,9 +164,9 @@ namespace System.Net.Mail
                 {
                     _host = value;
                     _servicePoint = null;
-                    // The cached connection targets the previous host, so release it
-                    // to force a new connection to be established on the next send.
-                    _transport.ReleaseConnection();
+                    // The cached connection targets the previous host, so invalidate it to force
+                    // a new connection to be established on the next send.
+                    _transport.InvalidateCachedConnection();
                 }
             }
         }
@@ -190,9 +190,9 @@ namespace System.Net.Mail
                 {
                     _port = value;
                     _servicePoint = null;
-                    // The cached connection targets the previous port, so release it
-                    // to force a new connection to be established on the next send.
-                    _transport.ReleaseConnection();
+                    // The cached connection targets the previous port, so invalidate it to force
+                    // a new connection to be established on the next send.
+                    _transport.InvalidateCachedConnection();
                 }
             }
         }
@@ -340,7 +340,17 @@ namespace System.Net.Mail
         public string? TargetName
         {
             get { return _targetName; }
-            set { _targetName = value; }
+            set
+            {
+                if (value != _targetName)
+                {
+                    _targetName = value;
+                    // The target name participates in connection establishment (authentication
+                    // and TLS), so invalidate any cached connection to force a new one on the
+                    // next send.
+                    _transport.InvalidateCachedConnection();
+                }
+            }
         }
 
         private bool ServerSupportsEai
