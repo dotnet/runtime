@@ -112,10 +112,10 @@ namespace System.ComponentModel.DataAnnotations
         /// </returns>
         /// <remarks>
         ///     <para>
-        ///         Derived implementations must observe the supplied <paramref name="cancellationToken" /> and stop work
-        ///         promptly when cancellation is requested. The validation infrastructure awaits all started validation
-        ///         tasks before returning, so an implementation that ignores cancellation can delay failure and
-        ///         short-circuiting.
+        ///         The underlying <see cref="IsValidAsync(object, ValidationContext, CancellationToken)" /> implementation
+        ///         must observe the supplied <paramref name="cancellationToken" /> and stop work promptly when cancellation
+        ///         is requested. The validation infrastructure awaits all started validation tasks before returning, so an
+        ///         implementation that ignores cancellation can delay failure and short-circuiting.
         ///     </para>
         ///     <para>
         ///         Callers that need to bound validation time should pass a token configured to cancel after a timeout,
