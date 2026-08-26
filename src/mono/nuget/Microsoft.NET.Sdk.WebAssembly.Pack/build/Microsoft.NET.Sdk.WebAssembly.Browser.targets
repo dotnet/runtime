@@ -407,21 +407,51 @@ Copyright (c) .NET Foundation. All rights reserved.
     </ItemGroup>
   </Target>
 
+  <!-- Property NAMES whose values select what _ConvertBuildDllsToWebcil stages (a prebuilt R2R image vs
+       an IL webcil). This selection comes from properties, not files, so it is invisible to the target's
+       timestamp-based Inputs; the stamp below turns it into a file input. Add a flag here to include it.
+       Contributes to https://github.com/dotnet/runtime/issues/94595 . -->
+  <ItemGroup>
+    <_WasmWebcilStampProperty Include="_WasmEnableWebcil" />
+    <_WasmWebcilStampProperty Include="_WasmWebcilVersion" />
+    <_WasmWebcilStampProperty Include="PublishReadyToRun" />
+    <_WasmWebcilStampProperty Include="_WasmBuildPrebuiltR2RDirectory" />
+  </ItemGroup>
+
+  <!-- Writes one "name=value" line per _WasmWebcilStampProperty. WriteOnlyWhenDifferent bumps the stamp's
+       timestamp only when a value changes, invalidating _ConvertBuildDllsToWebcil so it re-stages instead
+       of leaving a stale IL/R2R webcil. Runs unconditionally (no Inputs/Outputs) so the comparison always
+       happens; the stamp file itself is the incremental gate for the convert target. -->
+  <Target Name="_WriteWasmBuildWebcilStamp"
+          DependsOnTargets="_ComputeWasmBuildCandidates"
+          Condition="'$(_WasmEnableWebcil)' == 'true'">
+    <ItemGroup>
+      <_WasmWebcilBuildStampLine Include="%(_WasmWebcilStampProperty.Identity)=$(%(_WasmWebcilStampProperty.Identity))" />
+    </ItemGroup>
+    <WriteLinesToFile File="$(IntermediateOutputPath)wasm-webcil-build.stamp"
+                      Lines="@(_WasmWebcilBuildStampLine)"
+                      Overwrite="true"
+                      WriteOnlyWhenDifferent="true" />
+    <ItemGroup>
+      <FileWrites Include="$(IntermediateOutputPath)wasm-webcil-build.stamp" />
+    </ItemGroup>
+  </Target>
+
   <!-- Convert DLL assemblies to webcil format.
        Outputs is a direct transform of the item-based Inputs, enabling MSBuild partial target
        execution: when only some DLLs change, MSBuild passes only out-of-date pairs to the
-       target body. Property inputs (project/targets/task assembly) are global dependencies —
-       if any changes, all outputs are rebuilt.
+       target body. Property inputs (project/targets/task assembly, and the webcil staging-mode
+       stamp) are global dependencies — if any changes, all outputs are rebuilt.
        Touch is needed because the task uses content comparison (MoveIfDifferent) which preserves
        old timestamps when webcil content is unchanged. Without Touch, property-triggered full
        rebuilds would loop since skipped outputs retain pre-existing timestamps. -->
   <Target Name="_ConvertBuildDllsToWebcil"
-    DependsOnTargets="_ComputeWasmBuildCandidates"
+    DependsOnTargets="_ComputeWasmBuildCandidates;_WriteWasmBuildWebcilStamp"
     Condition="'$(_WasmEnableWebcil)' == 'true'"
-    Inputs="@(_WasmDllBuildCandidates);$(MSBuildProjectFullPath);$(MSBuildThisFileFullPath);$(_WebAssemblySdkTasksAssembly)"
+    Inputs="@(_WasmDllBuildCandidates);$(IntermediateOutputPath)wasm-webcil-build.stamp;$(MSBuildProjectFullPath);$(MSBuildThisFileFullPath);$(_WebAssemblySdkTasksAssembly)"
     Outputs="@(_WasmDllBuildCandidates->'%(WebcilOutputPath)')">
 
-    <ConvertDllsToWebcil Candidates="@(_WasmDllBuildCandidates)" IntermediateOutputPath="$(_WasmBuildTmpWebcilPath)" OutputPath="$(_WasmBuildWebcilPath)" IsEnabled="$(_WasmEnableWebcil)" WebcilVersion="$(_WasmWebcilVersion)">
+    <ConvertDllsToWebcil Candidates="@(_WasmDllBuildCandidates)" IntermediateOutputPath="$(_WasmBuildTmpWebcilPath)" OutputPath="$(_WasmBuildWebcilPath)" IsEnabled="$(_WasmEnableWebcil)" WebcilVersion="$(_WasmWebcilVersion)" PrebuiltR2RDirectory="$(_WasmBuildPrebuiltR2RDirectory)">
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
       <Output TaskParameter="FileWrites" ItemName="_WasmConvertedWebcilOutputs" />
     </ConvertDllsToWebcil>
@@ -1010,7 +1040,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmPublishTmpWebcilPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'tmp-webcil', 'publish'))</_WasmPublishTmpWebcilPath>
     </PropertyGroup>
 
-    <ConvertDllsToWebcil Candidates="@(_NewWasmPublishStaticWebAssets)" IntermediateOutputPath="$(_WasmPublishTmpWebcilPath)" OutputPath="$(_WasmPublishWebcilPath)" IsEnabled="$(_WasmEnableWebcil)" WebcilVersion="$(_WasmWebcilVersion)">
+    <ConvertDllsToWebcil Candidates="@(_NewWasmPublishStaticWebAssets)" IntermediateOutputPath="$(_WasmPublishTmpWebcilPath)" OutputPath="$(_WasmPublishWebcilPath)" IsEnabled="$(_WasmEnableWebcil)" WebcilVersion="$(_WasmWebcilVersion)" PrebuiltR2RDirectory="$(_WasmPublishPrebuiltR2RDirectory)">
       <Output TaskParameter="WebcilCandidates" ItemName="_NewWebcilPublishStaticWebAssetsCandidates" />
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </ConvertDllsToWebcil>
@@ -1357,4 +1387,8 @@ Copyright (c) .NET Foundation. All rights reserved.
       <TrimmerRootAssembly Include="$(AssemblyName)" RootMode="all" />
     </ItemGroup>
   </Target>
+
+  <!-- CoreCLR browser-wasm R2R, isolated from Mono. '== false' (not '!= true'): the WasmSdk defaults UseMonoRuntime=true, so CoreCLR is the explicit opt-in. -->
+  <Import Project="$(MSBuildThisFileDirectory)Microsoft.NET.Sdk.WebAssembly.Browser.CoreCLR.targets"
+          Condition="'$(UseMonoRuntime)' == 'false'" />
 </Project>

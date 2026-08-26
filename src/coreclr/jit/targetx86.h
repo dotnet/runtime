@@ -56,6 +56,8 @@
 
 #define CSE_CONSTS               1       // Enable if we want to CSE constants
 #define LOWER_DECOMPOSE_LONGS    1       // Decompose TYP_LONG operations into (typically two) TYP_INT ones
+#define TARGET_MASKS_SHIFTS      1       // Shift and rotate instructions implicitly mask their count to the operand bit size
+#define TARGET_HAS_MULHI         1       // Supports GT_MULHI, the high bits of an NxN multiply
 #define EMIT_TRACK_STACK_DEPTH   1
 #define EMIT_GENERATE_GCINFO     1       // Track GC ref liveness in codegen and emit and generate GCInfo based on that
 

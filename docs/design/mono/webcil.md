@@ -295,3 +295,51 @@ struct IMAGE_BASE_RELOCATION {
 
 Each 2 byte word following `IMAGE_BASE_RELOCATION` is decoded as a `uint16_t` where then lower 12 bits
 indicate an offset from the `VirtualAddress` of the block, and the high 4 bits represents the relocation type.
+
+## ReadyToRun perfmap offsets
+
+When crossgen2 compiles an assembly to a ReadyToRun Webcil `.wasm` module (`--obj-format:wasm`) with
+`--perfmap --perfmap-format-version:1`, it emits a sidecar `<assembly>.ni.r2rmap` text file for native
+symbolication — the same artifact produced for PE/ELF/Mach-O R2R images. Only a small debug-directory
+entry pointing at the sidecar is embedded in the module; the method table itself is never part of the
+`.wasm` file.
+
+Unlike the ECMA-335 metadata, IL and RVA-addressed data — which live in the Webcil *payload* (data
+segment 1) — the R2R-compiled method bodies are emitted as **real WebAssembly functions in the module's
+Code section**. The perfmap therefore keys each method by its position in that Code section rather than by
+a payload RVA.
+
+### Address space
+
+Every method entry in the perfmap is a line of the form `RVA Length Name`, where:
+
+* `RVA` is the byte offset, **from the start of the `.wasm` module**, of the method's function entry in
+  the Code section (that is, the entry's LEB128 body-size prefix). It is a file offset into the wasm
+  module — not a virtual address and not a Webcil payload RVA.
+* `Length` is the size in bytes of that function entry (size prefix plus body).
+
+Code entries are laid out contiguously, so a method's `RVA + Length` is the `RVA` of the next entry in the
+Code section. The header pseudo-entries carry the target identity: OS token `8` (`Browser`) or `9`
+(`Wasi`), architecture token `7` (`Wasm`), and perfmap format version `1`.
+
+### Computing the offsets
+
+The Code section is rewritten during final module emission: the object writer LEB128-shrinks each function
+body's relocations to their minimal encoding, which changes both the entry's size prefix and the position
+of every function that follows it. The offset captured when a method is first written is therefore a
+*pre-shrink* content offset and does not match the final module layout.
+
+To produce correct addresses the writer:
+
+1. records the file offset at which the Code section's function-body content begins in the final module
+   (after the section id byte, the section size prefix, and the function-count prefix), and
+2. remaps each method's pre-shrink entry offset — and the offset of its end — to the corresponding
+   post-shrink offset, so the reported `RVA` and `Length` reflect the shrunk on-disk layout.
+
+Adding the recorded Code-section file offset to a method's post-shrink entry offset yields the `RVA` written
+to the perfmap.
+
+(**Rationale**: keying on the wasm Code-section file offset lets native profilers and tools such as
+`dotnet-trace` and PerfView correlate the offsets a WebAssembly engine reports for executing frames with
+managed method names — the same role the perfmap plays for native R2R code on other platforms. A payload
+RVA would instead point into the metadata image, which is not what executes.)
