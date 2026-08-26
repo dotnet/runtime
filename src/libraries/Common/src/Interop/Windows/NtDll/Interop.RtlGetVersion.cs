@@ -3,11 +3,15 @@
 
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+#if NET
 using System.Runtime.Versioning;
+#endif
 
 internal static partial class Interop
 {
+#if NET
     [SupportedOSPlatform("windows")]
+#endif
     internal static partial class NtDll
     {
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
