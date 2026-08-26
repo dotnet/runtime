@@ -163,18 +163,6 @@ ASMCONSTANTS_C_ASSERT(ResolveCacheElem__target == offsetof(ResolveCacheElem, tar
 ASMCONSTANTS_C_ASSERT(ResolveCacheElem__pNext == offsetof(ResolveCacheElem, pNext));
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
 
-#define                OFFSETOF__DynamicStaticsInfo__m_pMethodTable 0x10
-ASMCONSTANTS_C_ASSERT(OFFSETOF__DynamicStaticsInfo__m_pMethodTable
-                    == offsetof(DynamicStaticsInfo, m_pMethodTable));
-
-#define                OFFSETOF__DynamicStaticsInfo__m_pNonGCStatics 0x8
-ASMCONSTANTS_C_ASSERT(OFFSETOF__DynamicStaticsInfo__m_pNonGCStatics
-                    == offsetof(DynamicStaticsInfo, m_pNonGCStatics));
-
-#define                OFFSETOF__DynamicStaticsInfo__m_pGCStatics 0
-ASMCONSTANTS_C_ASSERT(OFFSETOF__DynamicStaticsInfo__m_pGCStatics
-                    == offsetof(DynamicStaticsInfo, m_pGCStatics));
-
 // For JIT_PInvokeBegin and JIT_PInvokeEnd helpers
 #define               Frame__m_Next 0x08
 ASMCONSTANTS_C_ASSERT(Frame__m_Next == offsetof(Frame, m_Next))

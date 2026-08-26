@@ -11,7 +11,7 @@
 //
 // Params :-
 // $FuncPrefix : prefix of the function name for the stub
-//                     Eg. VarargPinvoke, GenericPInvokeCalli
+//                     Eg. VarargPinvoke
 // $VASigCookieReg : register which contains the VASigCookie
 // $SaveFPArgs : "Yes" or "No" . For varidic functions FP Args are not present in FP regs
 //                        So need not save FP Args registers for vararg Pinvoke
@@ -157,14 +157,3 @@ LOCAL_LABEL(RarePath):
 // x12 = MethodDesc *
 //
 PINVOKE_STUB VarargPInvokeStub, VarargPInvokeGenILStub, VarargPInvokeStubWorker, x0, x12, 0
-
-
-// ------------------------------------------------------------------
-// GenericPInvokeCalliHelper & GenericPInvokeCalliGenILStub
-// Helper for generic pinvoke calli instruction
-//
-// in:
-// x15 = VASigCookie*
-// x12 = Unmanaged target
-//
-PINVOKE_STUB GenericPInvokeCalliHelper, GenericPInvokeCalliGenILStub, GenericPInvokeCalliStubWorker, x15, x12, 1
