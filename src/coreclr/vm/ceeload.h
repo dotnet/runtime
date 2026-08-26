@@ -1828,20 +1828,6 @@ struct ReflectionModuleHolderTraits final
 
 using ReflectionModuleHolder = LifetimeHolder<ReflectionModuleHolderTraits>;
 
-
-
-#ifdef FEATURE_VARARGS
-//----------------------------------------------------------------------
-// VASigCookieEx (used to create a fake VASigCookie for unmanaged->managed
-// calls to vararg functions. These fakes are distinguished from the
-// real thing by having a null mdVASig.
-//----------------------------------------------------------------------
-struct VASigCookieEx : public VASigCookie
-{
-    const BYTE *m_pArgs;        // pointer to first unfixed unmanaged arg
-};
-#endif // FEATURE_VARARGS
-
 // Save the command line for the current process.
 void SaveManagedCommandLine(LPCWSTR pwzAssemblyPath, int argc, LPCWSTR *argv);
 
