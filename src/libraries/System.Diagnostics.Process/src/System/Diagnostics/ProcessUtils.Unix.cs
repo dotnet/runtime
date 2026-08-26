@@ -41,6 +41,8 @@ namespace System.Diagnostics
 
         private static string? FindProgramInPath(string program, ref ValueStringBuilder pathBuilder)
         {
+            Debug.Assert(pathBuilder.Length == 0);
+
             string? pathEnvVar = Environment.GetEnvironmentVariable("PATH");
             if (pathEnvVar is null)
             {
@@ -395,6 +397,7 @@ namespace System.Diagnostics
                 }
 
                 // Then check each directory listed in the PATH environment variables
+                pathBuilder.Length = 0;
                 return FindProgramInPath(filename, ref pathBuilder);
             }
             finally
