@@ -517,7 +517,7 @@ namespace ILAssembler.Tests
                 source,
                 new Options
                 {
-                    IsDll = isDll,
+                    Dll = isDll,
                     Machine = machine,
                     OutputFileName = isDll ? "test.dll" : "test.exe",
                 });
