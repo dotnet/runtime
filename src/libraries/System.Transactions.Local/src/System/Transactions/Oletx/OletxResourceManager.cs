@@ -345,8 +345,8 @@ internal sealed class OletxResourceManager
 
     internal OletxEnlistment Reenlist(byte[] prepareInfo, IEnlistmentNotificationInternal enlistmentNotification)
     {
-        OletxTransactionOutcome outcome = OletxTransactionOutcome.NotKnownYet;
-        OletxTransactionStatus xactStatus = OletxTransactionStatus.OLETX_TRANSACTION_STATUS_NONE;
+        Interop.Xolehlp.OletxTransactionOutcome outcome = Interop.Xolehlp.OletxTransactionOutcome.NotKnownYet;
+        Interop.Xolehlp.OletxTransactionStatus xactStatus = Interop.Xolehlp.OletxTransactionStatus.OLETX_TRANSACTION_STATUS_NONE;
 
         if (prepareInfo == null)
         {
@@ -377,23 +377,23 @@ internal sealed class OletxResourceManager
             // put the enlistment on the reenlistList for later processing.
             localResourceManagerShim.Reenlist(prepareInfo, out outcome);
 
-            if (OletxTransactionOutcome.Committed == outcome)
+            if (Interop.Xolehlp.OletxTransactionOutcome.Committed == outcome)
             {
-                xactStatus = OletxTransactionStatus.OLETX_TRANSACTION_STATUS_COMMITTED;
+                xactStatus = Interop.Xolehlp.OletxTransactionStatus.OLETX_TRANSACTION_STATUS_COMMITTED;
             }
-            else if (OletxTransactionOutcome.Aborted == outcome)
+            else if (Interop.Xolehlp.OletxTransactionOutcome.Aborted == outcome)
             {
-                xactStatus = OletxTransactionStatus.OLETX_TRANSACTION_STATUS_ABORTED;
+                xactStatus = Interop.Xolehlp.OletxTransactionStatus.OLETX_TRANSACTION_STATUS_ABORTED;
             }
             else  // we must not know the outcome yet.
             {
-                xactStatus = OletxTransactionStatus.OLETX_TRANSACTION_STATUS_PREPARED;
+                xactStatus = Interop.Xolehlp.OletxTransactionStatus.OLETX_TRANSACTION_STATUS_PREPARED;
                 StartReenlistThread();
             }
         }
         catch (COMException ex) when (ex.ErrorCode == OletxHelper.XACT_E_CONNECTION_DOWN)
         {
-            xactStatus = OletxTransactionStatus.OLETX_TRANSACTION_STATUS_PREPARED;
+            xactStatus = Interop.Xolehlp.OletxTransactionStatus.OLETX_TRANSACTION_STATUS_PREPARED;
             ResourceManagerShim = null;
             StartReenlistThread();
 
@@ -596,7 +596,7 @@ internal sealed class OletxResourceManager
 
                     if (localEnlistment != null)
                     {
-                        OletxTransactionOutcome localOutcome = OletxTransactionOutcome.NotKnownYet;
+                        Interop.Xolehlp.OletxTransactionOutcome localOutcome = Interop.Xolehlp.OletxTransactionOutcome.NotKnownYet;
                         try
                         {
                             Debug.Assert(localResourceManagerShim != null, "ReenlistThread - localResourceManagerShim is null");
@@ -615,7 +615,7 @@ internal sealed class OletxResourceManager
 
                             localResourceManagerShim.Reenlist(localEnlistment.ProxyPrepareInfoByteArray, out localOutcome);
 
-                            if (localOutcome == OletxTransactionOutcome.NotKnownYet)
+                            if (localOutcome == Interop.Xolehlp.OletxTransactionOutcome.NotKnownYet)
                             {
                                 object syncRoot = localEnlistment;
                                 lock (syncRoot)
@@ -677,7 +677,7 @@ internal sealed class OletxResourceManager
                                         resourceManager.ReenlistPendingList.Add(localEnlistment);
                                     }
 
-                                    if (localOutcome == OletxTransactionOutcome.Committed)
+                                    if (localOutcome == Interop.Xolehlp.OletxTransactionOutcome.Committed)
                                     {
                                         localEnlistment.State = OletxEnlistment.OletxEnlistmentState.Committing;
 
@@ -688,7 +688,7 @@ internal sealed class OletxResourceManager
 
                                         localEnlistment.EnlistmentNotification!.Commit(localEnlistment);
                                     }
-                                    else if (localOutcome == OletxTransactionOutcome.Aborted)
+                                    else if (localOutcome == Interop.Xolehlp.OletxTransactionOutcome.Aborted)
                                     {
                                         localEnlistment.State = OletxEnlistment.OletxEnlistmentState.Aborting;
 
