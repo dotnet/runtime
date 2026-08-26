@@ -11,7 +11,8 @@ using Microsoft.Build.Utilities;
 namespace Microsoft.WebAssembly.Build.Tasks;
 
 /// <summary>
-/// Narrows a bundle's files down to the managed assemblies the interop generator can scan.
+/// Narrows a bundle's files down to the managed assemblies the portable call-helpers generator
+/// can scan.
 /// An app bundle legitimately carries native payloads named <c>.dll</c> - per-architecture content
 /// shipped by a NuGet package is the usual case - and the tools that read managed metadata cannot
 /// be handed those. It can also carry several managed files sharing a simple name, satellite

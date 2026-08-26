@@ -330,7 +330,7 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
     </PropertyGroup>
 
     <Error Condition="!Exists('$(_WasmCorerunGeneratorPath)')"
-           Text="crossgen2 was not found at '$(_WasmCorerunGeneratorPath)', so the test's P/Invoke call helpers cannot be generated. It is built by the 'clr' subset." />
+           Text="crossgen2 was not found at '$(_WasmCorerunGeneratorPath)', so the test's portable call helpers cannot be generated. It is built by the 'clr' subset." />
 
     <!-- One token per line: that is how crossgen2 reads a response file. -->
     <ItemGroup>

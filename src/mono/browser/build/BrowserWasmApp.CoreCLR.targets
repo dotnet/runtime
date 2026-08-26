@@ -701,7 +701,7 @@
     </PropertyGroup>
 
     <Error Condition="'$(PortableCallHelpersGeneratorPath)' == ''"
-           Text="crossgen2 was not found, so the wasm P/Invoke helpers cannot be generated. Install the 'wasm-tools' workload, or set %24(PortableCallHelpersGeneratorPath) to a crossgen2 executable." />
+           Text="crossgen2 was not found, so the portable call helpers cannot be generated. Install the 'wasm-tools' workload, or set %24(PortableCallHelpersGeneratorPath) to a crossgen2 executable." />
 
     <PropertyGroup>
       <_PortableCallHelpersGeneratorRsp>$(_WasmIntermediateOutputPath)callhelpers-generator.rsp</_PortableCallHelpersGeneratorRsp>

@@ -6,8 +6,8 @@
     Performs a per-app native link of the shipping wasihost corehost (libWasiHost.a, from
     src/native/corehost/wasihost) so reverse P/Invoke thunks for the app/test
     [UnmanagedCallersOnly] methods are covered (the baked libcoreclr_gen_static.a
-    only covers framework top-level UCO callbacks). Runs the crossgen2 wasm interop generator
-    (TargetOS=wasi) over the bundle, compiles the generated callhelpers with the wasi-sdk
+    only covers framework top-level UCO callbacks). Runs crossgen2's portable call-helpers
+    generator (TargetOS=wasi) over the bundle, compiles the generated callhelpers with the wasi-sdk
     clang, and links libWasiHost.a from the runtime-pack static archives + the app callhelper .o
     (replacing libcoreclr_gen_static.a) via wasm-component-ld. The wasi:http import that
     System.Net.* pulls in is declared via the component-type link flag
@@ -165,7 +165,7 @@
     </PropertyGroup>
 
     <Error Condition="'$(PortableCallHelpersGeneratorPath)' == ''"
-           Text="crossgen2 was not found, so the wasi P/Invoke helpers cannot be generated. Set %24(PortableCallHelpersGeneratorPath) to a crossgen2 executable." />
+           Text="crossgen2 was not found, so the portable call helpers cannot be generated. Set %24(PortableCallHelpersGeneratorPath) to a crossgen2 executable." />
 
     <PropertyGroup>
       <_PortableCallHelpersGeneratorRsp>$(_WasiRelinkObjDir)callhelpers-generator.rsp</_PortableCallHelpersGeneratorRsp>

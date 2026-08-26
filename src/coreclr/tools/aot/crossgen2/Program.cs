@@ -83,9 +83,10 @@ namespace ILCompiler
             (TargetArchitecture targetArchitecture, TargetOS targetOS, TargetAbi targetAbi) =
                 Helpers.GetTargetSpec(Get(_command.TargetArchitecture), Get(_command.TargetOS));
 
-            // The interop generator answers ABI questions (struct sizes, argument lowering) through the
-            // same type system the compiler uses, so an unspecified target would silently produce host
-            // layouts. Reject anything but a wasm target instead of emitting subtly wrong helpers.
+            // The portable call-helpers generator answers ABI questions (struct sizes, argument
+            // lowering) through the same type system the compiler uses, so an unspecified target
+            // would silently produce host layouts. Reject anything but a wasm target instead of
+            // emitting subtly wrong helpers.
             if (_generatePortableCallHelpers is not null
                 && (targetArchitecture != TargetArchitecture.Wasm32 || targetOS is not (TargetOS.Browser or TargetOS.Wasi)))
             {

@@ -1,8 +1,8 @@
 <!--
   The framework P/Invoke modules that CoreCLR resolves without dynamic loading on WebAssembly.
 
-  The wasm interop generator emits a direct-call entry for every [DllImport] whose module name is
-  on this list and nothing for the rest, so two builds have to agree on it:
+  The portable call-helpers generator emits a direct-call entry for every [DllImport] whose module
+  name is on this list and nothing for the rest, so two builds have to agree on it:
 
     * src/coreclr/vm/wasm/generate-coreclr-helpers.proj imports this list to regenerate the
       checked-in call tables under src/coreclr/vm/wasm (see generate-coreclr-helpers.md). They are
