@@ -57,15 +57,57 @@ internal static class NativeCommandLine
         "--subsystem",
     };
 
+    private static readonly HashSet<string> s_modernOptionsWithSeparateValues = new(StringComparer.Ordinal)
+    {
+        "--alignment",
+        "--aname",
+        "--base",
+        "--debug-mode",
+        "--flags",
+        "--include",
+        "--key",
+        "--mdv",
+        "--output",
+        "--ssver",
+        "--stack",
+        "--subsystem",
+        "-I",
+        "-k",
+        "-o",
+    };
+
     internal static string[] Normalize(string[] args) =>
         Normalize(args, allowSlashOptions: OperatingSystem.IsWindows());
 
     internal static string[] Normalize(string[] args, bool allowSlashOptions)
     {
         List<string> result = new(args.Length);
+        bool preserveRemainingArguments = false;
+        bool preserveNextArgument = false;
 
         foreach (string arg in args)
         {
+            if (preserveRemainingArguments || preserveNextArgument)
+            {
+                result.Add(arg);
+                preserveNextArgument = false;
+                continue;
+            }
+
+            if (arg == "--")
+            {
+                result.Add(arg);
+                preserveRemainingArguments = true;
+                continue;
+            }
+
+            if (s_modernOptionsWithSeparateValues.Contains(arg))
+            {
+                result.Add(arg);
+                preserveNextArgument = true;
+                continue;
+            }
+
             if (arg is "-?" || (allowSlashOptions && arg == "/?"))
             {
                 result.Add("--help");
@@ -80,9 +122,7 @@ internal static class NativeCommandLine
 
             if (optionName.Length < 3)
             {
-                // System.CommandLine splits attached values before validating option arity, so
-                // reject malformed short options here instead of treating the value as an input file.
-                if (value is not null && !IsValidModernShortOptionValue(arg[0], optionName, value))
+                if (!IsValidModernShortOption(arg[0], optionName, value))
                 {
                     throw new ArgumentException($"Invalid native option '{arg}'.");
                 }
@@ -117,14 +157,28 @@ internal static class NativeCommandLine
                     throw new ArgumentException(
                         $"Unsupported native option '{arg}'. The managed ilasm implementation does not support -RESOURCES.");
                 }
+                if (prefix.Equals("MSV", StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new ArgumentException(
+                        $"Unsupported native option '{arg}'. The managed ilasm implementation does not support -MSV.");
+                }
+                if (prefix.Equals("LIS", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
 
                 s_options.TryGetValue(prefix, out normalizedOption);
             }
 
             if (normalizedOption is null)
             {
-                result.Add(arg);
-                continue;
+                if (IsValidModernShortOption(arg[0], optionName, value))
+                {
+                    result.Add(arg);
+                    continue;
+                }
+
+                throw new ArgumentException($"Invalid native option '{arg}'.");
             }
 
             if (normalizedOption == "--debug" && value is not null)
@@ -192,10 +246,21 @@ internal static class NativeCommandLine
         return true;
     }
 
-    private static bool IsValidModernShortOptionValue(char prefix, string optionName, string value) =>
-        prefix == '-' &&
-        (optionName is "I" or "k" or "o" ||
-         optionName is "O" or "g" or "q" && bool.TryParse(value, out _));
+    private static bool IsValidModernShortOption(char prefix, string optionName, string? value)
+    {
+        if (prefix != '-' || optionName.Length != 1)
+        {
+            return false;
+        }
+
+        return optionName switch
+        {
+            "I" or "k" or "o" => true,
+            "O" or "g" or "q" => value is null || bool.TryParse(value, out _),
+            "h" => value is null,
+            _ => false,
+        };
+    }
 
     private static string NormalizeDebugMode(string value)
     {

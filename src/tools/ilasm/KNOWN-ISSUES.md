@@ -12,6 +12,11 @@ does not currently implement.
 Embedding Win32 resources (in either `.obj` or `.res` format) is not
 supported by managed ilasm.
 
+## -MSV is not supported
+
+Overriding the metadata stream version with `-MSV` is not supported by
+managed ilasm.
+
 ## -OPTIMIZE is a no-op
 
 Currently managed ilasm does not do any optimizations of the IL written by the user.
