@@ -6,6 +6,7 @@ using System.Formats.Asn1;
 using System.Security.Cryptography.Asn1;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using Internal.Cryptography;
 using Microsoft.Win32.SafeHandles;
 
 using KeyBlobMagicNumber = Interop.BCrypt.KeyBlobMagicNumber;
@@ -89,6 +90,8 @@ namespace System.Security.Cryptography
             return _key.Duplicate();
         }
 
+        internal CngKey KeyNoDuplicate => _key;
+
         /// <inheritdoc/>
         protected override void DecapsulateCore(ReadOnlySpan<byte> ciphertext, Span<byte> sharedSecret)
         {
@@ -123,6 +126,52 @@ namespace System.Security.Cryptography
                 Debug.Assert(sharedSecretWritten == (uint)sharedSecret.Length);
                 Debug.Assert(ciphertextWritten == (uint)ciphertext.Length);
             }
+        }
+
+        [SupportedOSPlatform("windows")]
+        internal static MLKemCng ImportPkcs8PrivateKey(byte[] source, out int bytesRead)
+        {
+            int len;
+
+            try
+            {
+                AsnDecoder.ReadEncodedValue(
+                    source,
+                    AsnEncodingRules.BER,
+                    out _,
+                    out _,
+                    out len);
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+
+            bytesRead = len;
+            CngKey key;
+
+#if SYSTEM_SECURITY_CRYPTOGRAPHY
+            ReadOnlySpan<byte> pkcs8Source = source.AsSpan(0, len);
+#else
+            using (Helpers.TrimAndTrack(source, bytesRead, out byte[] pkcs8Source))
+#endif
+            {
+                try
+                {
+                    key = CngKey.Import(pkcs8Source, CngKeyBlobFormat.Pkcs8PrivateBlob);
+                }
+                catch (AsnContentException e)
+                {
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+                }
+            }
+
+#if SYSTEM_SECURITY_CRYPTOGRAPHY
+            key.ExportPolicy = CngExportPolicies.AllowExport | CngExportPolicies.AllowPlaintextExport;
+#else
+            CngKeyExtensions.SetExportPolicy(key, CngExportPolicies.AllowExport | CngExportPolicies.AllowPlaintextExport);
+#endif
+            return new MLKemCng(key, transferOwnership: true);
         }
 
         /// <inheritdoc/>

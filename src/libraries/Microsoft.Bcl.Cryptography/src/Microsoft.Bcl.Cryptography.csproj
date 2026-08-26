@@ -567,6 +567,8 @@
              Link="Common\System\Security\Cryptography\MLKemCng.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\MLKemCng.Windows.cs"
              Link="Common\System\Security\Cryptography\MLKemCng.Windows.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\MLKemImplementation.CreateCng.cs"
+             Link="Common\System\Security\Cryptography\MLKemImplementation.CreateCng.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\SlhDsaCng.cs"
              Link="Common\System\Security\Cryptography\SlhDsaCng.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\X509Certificates\CertificateHelpers.Windows.cs"

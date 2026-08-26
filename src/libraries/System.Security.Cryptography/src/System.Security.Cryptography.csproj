@@ -1949,6 +1949,8 @@
              Link="Common\System\Security\Cryptography\MLKem.Windows.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\MLKemCng.Windows.cs"
              Link="Common\System\Security\Cryptography\MLKemCng.Windows.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\MLKemImplementation.CreateCng.cs"
+             Link="Common\System\Security\Cryptography\MLKemImplementation.CreateCng.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\MLKemImplementation.cs"
              Link="Common\System\Security\Cryptography\MLKemImplementation.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\MLKemImplementation.Windows.cs"
