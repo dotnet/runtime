@@ -3,9 +3,15 @@
 
 
 using System.Runtime.InteropServices;
+#if NET
+using System.Runtime.Versioning;
+#endif
 
 internal static partial class Interop
 {
+#if NET
+    [SupportedOSPlatform("windows")]
+#endif
     internal static partial class Mincore
     {
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]

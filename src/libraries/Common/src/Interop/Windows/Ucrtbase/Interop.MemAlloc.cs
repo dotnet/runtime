@@ -4,9 +4,15 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+#if NET
+using System.Runtime.Versioning;
+#endif
 
 internal static partial class Interop
 {
+#if NET
+    [SupportedOSPlatform("windows")]
+#endif
     internal static unsafe partial class Ucrtbase
     {
 #pragma warning disable CS3016 // Arrays as attribute arguments is not CLS-compliant

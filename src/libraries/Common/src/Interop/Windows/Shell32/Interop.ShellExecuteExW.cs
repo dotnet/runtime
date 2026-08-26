@@ -3,9 +3,15 @@
 
 using System;
 using System.Runtime.InteropServices;
+#if NET
+using System.Runtime.Versioning;
+#endif
 
 internal static partial class Interop
 {
+#if NET
+    [SupportedOSPlatform("windows")]
+#endif
     internal static partial class Shell32
     {
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]

@@ -5,6 +5,8 @@ using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 
+#pragma warning disable CA1416 // Interop is only supported on Windows; this file is compiled only for Windows.
+
 namespace System.Runtime.InteropServices
 {
     /// <summary>This class contains methods that are mainly used to manage native memory.</summary>

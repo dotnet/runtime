@@ -3,9 +3,15 @@
 
 using System;
 using System.Runtime.InteropServices;
+#if NET
+using System.Runtime.Versioning;
+#endif
 
 internal static partial class Interop
 {
+#if NET
+    [SupportedOSPlatform("windows")]
+#endif
     internal static partial class Shell32
     {
         internal const int COR_E_PLATFORMNOTSUPPORTED = unchecked((int)0x80131539);
