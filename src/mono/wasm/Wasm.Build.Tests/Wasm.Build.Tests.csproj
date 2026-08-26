@@ -73,6 +73,8 @@
     <ItemGroup>
       <_DotnetPgoOutputFiles Include="%(_DotnetPgoBuiltAssembly.RootDir)%(_DotnetPgoBuiltAssembly.Directory)**\*" />
     </ItemGroup>
+    <!-- Pre-create nested output dirs (e.g. amd64/, arm64/); Copy's own dir creation races on them. -->
+    <MakeDir Directories="@(_DotnetPgoOutputFiles->'$(OutDir)dotnet-pgo\%(RecursiveDir)')" />
     <Copy SourceFiles="@(_DotnetPgoOutputFiles)"
           DestinationFiles="@(_DotnetPgoOutputFiles->'$(OutDir)dotnet-pgo\%(RecursiveDir)%(Filename)%(Extension)')"
           SkipUnchangedFiles="true" />
