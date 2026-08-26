@@ -22,9 +22,24 @@ namespace System.Diagnostics
         internal static bool SupportsAtomicNonInheritablePipeCreation => Interop.Sys.IsAtomicNonInheritablePipeCreationSupported;
 
         private static bool IsExecutable(ReadOnlySpan<char> fullPath)
-            => Interop.Sys.Access(fullPath, Interop.Sys.AccessMode.X_OK) == 0 && !Directory.Exists(fullPath.ToString());
+            => Interop.Sys.Access(fullPath, Interop.Sys.AccessMode.X_OK) == 0 &&
+               Interop.Sys.Stat(fullPath, out Interop.Sys.FileStatus fileStatus) == 0 &&
+               (fileStatus.Mode & Interop.Sys.FileTypes.S_IFMT) != Interop.Sys.FileTypes.S_IFDIR;
 
         internal static string? FindProgramInPath(string program)
+        {
+            ValueStringBuilder pathBuilder = new(stackalloc char[256]);
+            try
+            {
+                return FindProgramInPath(program, ref pathBuilder);
+            }
+            finally
+            {
+                pathBuilder.Dispose();
+            }
+        }
+
+        private static string? FindProgramInPath(string program, ref ValueStringBuilder pathBuilder)
         {
             string? pathEnvVar = Environment.GetEnvironmentVariable("PATH");
             if (pathEnvVar is null)
@@ -33,47 +48,46 @@ namespace System.Diagnostics
             }
 
             ReadOnlySpan<char> pathEnvVarSpan = pathEnvVar;
-            ValueStringBuilder pathBuilder = new(stackalloc char[256]);
-            try
+            int segmentStart = 0;
+            while (segmentStart < pathEnvVarSpan.Length)
             {
-                int segmentStart = 0;
-                while (segmentStart < pathEnvVarSpan.Length)
+                int segmentLength = pathEnvVarSpan[segmentStart..].IndexOf(Path.PathSeparator);
+                if (segmentLength < 0)
                 {
-                    int segmentLength = pathEnvVarSpan[segmentStart..].IndexOf(Path.PathSeparator);
-                    if (segmentLength < 0)
-                    {
-                        segmentLength = pathEnvVarSpan.Length - segmentStart;
-                    }
-
-                    ReadOnlySpan<char> segment = pathEnvVarSpan.Slice(segmentStart, segmentLength);
-                    segmentStart += segmentLength + 1;
-
-                    if (segment.IsEmpty)
-                    {
-                        continue;
-                    }
-
-                    pathBuilder.Append(segment);
-                    if (!segment.EndsWith(Path.DirectorySeparatorChar))
-                    {
-                        pathBuilder.Append(Path.DirectorySeparatorChar);
-                    }
-
-                    pathBuilder.Append(program);
-                    if (IsExecutable(pathBuilder.AsSpan()))
-                    {
-                        return pathBuilder.ToString();
-                    }
-
-                    pathBuilder.Length = 0;
+                    segmentLength = pathEnvVarSpan.Length - segmentStart;
                 }
-            }
-            finally
-            {
-                pathBuilder.Dispose();
+
+                ReadOnlySpan<char> segment = pathEnvVarSpan.Slice(segmentStart, segmentLength);
+                segmentStart += segmentLength + 1;
+
+                if (segment.IsEmpty)
+                {
+                    continue;
+                }
+
+                Combine(segment, program, ref pathBuilder);
+                if (IsExecutable(pathBuilder.AsSpan()))
+                {
+                    return pathBuilder.ToString();
+                }
+
+                pathBuilder.Length = 0;
             }
 
             return null;
+        }
+
+        private static void Combine(ReadOnlySpan<char> left, ReadOnlySpan<char> right, ref ValueStringBuilder pathBuilder)
+        {
+            Debug.Assert(!left.IsEmpty);
+            Debug.Assert(!right.IsEmpty);
+
+            pathBuilder.Append(left);
+            if (!left.EndsWith(Path.DirectorySeparatorChar))
+            {
+                pathBuilder.Append(Path.DirectorySeparatorChar);
+            }
+            pathBuilder.Append(right);
         }
 
         internal static unsafe void EnsureInitialized()
@@ -362,42 +376,26 @@ namespace System.Diagnostics
             {
                 if (path is not null)
                 {
-                    try
+                    ReadOnlySpan<char> executableDirectory = Path.GetDirectoryName(path.AsSpan());
+                    Combine(executableDirectory, filename, ref pathBuilder);
+                    if (IsExecutable(pathBuilder.AsSpan()))
                     {
-                        string executableDirectory = Path.GetDirectoryName(path)!;
-                        pathBuilder.Append(executableDirectory);
-                        if (!executableDirectory.EndsWith(Path.DirectorySeparatorChar))
-                        {
-                            pathBuilder.Append(Path.DirectorySeparatorChar);
-                        }
-
-                        pathBuilder.Append(filename);
-                        if (IsExecutable(pathBuilder.AsSpan()))
-                        {
-                            return pathBuilder.ToString();
-                        }
-
-                        pathBuilder.Length = 0;
+                        return pathBuilder.ToString();
                     }
-                    catch (ArgumentException) { } // ignore any errors in data that may come from the exe path
+
+                    pathBuilder.Length = 0;
                 }
 
                 // Then check the current directory
                 string currentDirectory = Directory.GetCurrentDirectory();
-                pathBuilder.Append(currentDirectory);
-                if (!currentDirectory.EndsWith(Path.DirectorySeparatorChar))
-                {
-                    pathBuilder.Append(Path.DirectorySeparatorChar);
-                }
-
-                pathBuilder.Append(filename);
+                Combine(currentDirectory, filename, ref pathBuilder);
                 if (IsExecutable(pathBuilder.AsSpan()))
                 {
                     return pathBuilder.ToString();
                 }
 
                 // Then check each directory listed in the PATH environment variables
-                return FindProgramInPath(filename);
+                return FindProgramInPath(filename, ref pathBuilder);
             }
             finally
             {
