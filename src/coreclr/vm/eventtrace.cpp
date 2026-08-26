@@ -5062,8 +5062,8 @@ VOID ETW::MethodLog::SendEventsForJitMethodsHelper2(
             nativeCodeVersion = pMD->GetCodeVersionManager()->GetNativeCodeVersion(pMD, codeStart);
             if (nativeCodeVersion.IsNull())
             {
-                // The code version manager hasn't been updated with the jitted code
-                if (codeStart != MethodAndStartAddressToEECodeInfoPointer(pMD, (PCODE)NULL))
+                // The code version state may be published concurrently with rundown.
+                if (codeStart != pMD->GetNativeCodeVolatile())
                 {
                     continue;
                 }
