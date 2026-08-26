@@ -27,6 +27,11 @@
     <_Crossgen2Path>$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'coreclr', '$(HostOS).$(BuildArchitecture).$(Configuration)', 'crossgen2', 'crossgen2.dll'))</_Crossgen2Path>
     <_TesthostDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'testhost'))</_TesthostDir>
     <_FrameworkVersion>$(MajorVersion).$(MinorVersion).0</_FrameworkVersion>
+
+    <!-- The scripts that drive this project are per-OS, so name the one the reader can actually
+         run rather than the one the author happened to be using. -->
+    <_BuildScript Condition="$([MSBuild]::IsOSPlatform('Windows'))">.\build.cmd</_BuildScript>
+    <_BuildScript Condition="'$(_BuildScript)' == ''">./build.sh</_BuildScript>
   </PropertyGroup>
 
   <ItemGroup>
@@ -51,9 +56,9 @@
     </PropertyGroup>
 
     <Error Condition="!Exists('$(_Crossgen2Path)')"
-           Text="crossgen2 was not found at $(_Crossgen2Path). Build the clr subset first: ./build.sh clr -c $(Configuration)" />
+           Text="crossgen2 was not found at $(_Crossgen2Path). Build the clr subset first: $(_BuildScript) clr -c $(Configuration)" />
     <Error Condition="!Exists('$(_ScanPath)')"
-           Text="Scan path for $(_TargetOS) does not exist: $(_ScanPath). Build the runtime first: ./build.sh clr+libs -os $(_TargetOS) -c $(Configuration)" />
+           Text="Scan path for $(_TargetOS) does not exist: $(_ScanPath). Build the runtime first: $(_BuildScript) clr+libs -os $(_TargetOS) -c $(Configuration)" />
     <Error Condition="'@(WasmCoreClrFrameworkPInvokeModule)' == ''"
            Text="No WasmCoreClrFrameworkPInvokeModule entries were found in $(RepositoryEngineeringDir)wasm/WasmPInvokeModules.props." />
 

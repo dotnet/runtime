@@ -101,7 +101,7 @@ namespace ILCompiler
         public Option<string> GeneratePortableCallHelpers { get; } =
             new("--generate-portable-callhelpers") { Description = SR.GeneratePortableCallHelpersOption };
         public Option<string[]> DirectPInvoke { get; } =
-            new("--directpinvoke") { Description = SR.DirectPInvokeOption };
+            new("--directpinvoke") { DefaultValueFactory = _ => Array.Empty<string>(), Description = SR.DirectPInvokeOption };
         public Option<string> SingleMethodTypeName { get; } =
             new("--singlemethodtypename") { Description = SR.SingleMethodTypeName };
         public Option<string> SingleMethodName { get; } =
