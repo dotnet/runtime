@@ -7247,7 +7247,6 @@ int CodeGenInterface::genSPtoFPdelta() const
 
 int CodeGenInterface::genTotalFrameSize() const
 {
-    assert(!IsUninitialized(m_compiler->compCalleeRegsPushed));
 
     int totalFrameSize = m_compiler->compCalleeRegsPushed * REGSIZE_BYTES + m_compiler->compLclFrameSize;
 

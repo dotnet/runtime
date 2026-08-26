@@ -7454,5 +7454,121 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             Assert.Throws<ArgumentOutOfRangeException>(() => Vector128<int>.Zero.GetElement(index));
             Assert.Throws<ArgumentOutOfRangeException>(() => Vector128<int>.Zero.WithElement(index, 1));
         }
+
+        private enum StoreKind
+        {
+            Store,
+            StoreUnsafe,
+            StoreUnsafeWithOffset,
+        }
+
+        /// <summary>
+        /// Stores a vector holding a distinct byte per lane at every alignment from 0 to 15 and checks
+        /// the whole buffer, so a wrong store destination, a reversed operand pair, or a byte written
+        /// outside the 16-byte window is caught rather than masked by a uniform fill.
+        /// </summary>
+        private static unsafe void ValidateStore<T>(StoreKind kind)
+            where T : unmanaged
+        {
+            const int Guard = 16;
+            const int MaxAlignmentOffset = 16;
+            const byte Filler = 0x5A;
+
+            byte[] pattern = new byte[Vector128<byte>.Count];
+            for (int i = 0; i < pattern.Length; i++)
+            {
+                pattern[i] = (byte)(0xA0 + i);
+            }
+
+            Vector128<T> vector = Vector128.Create<byte>(new ReadOnlySpan<byte>(pattern)).As<byte, T>();
+
+            byte[] buffer = new byte[Guard + MaxAlignmentOffset + pattern.Length + Guard];
+            byte[] expected = new byte[buffer.Length];
+
+            for (int offset = 0; offset < MaxAlignmentOffset; offset++)
+            {
+                Array.Fill(buffer, Filler);
+                Array.Fill(expected, Filler);
+                pattern.CopyTo(expected, Guard + offset);
+
+                fixed (byte* pBuffer = buffer)
+                {
+                    T* destination = (T*)(pBuffer + Guard + offset);
+
+                    switch (kind)
+                    {
+                        case StoreKind.Store:
+                            vector.Store(destination);
+                            break;
+
+                        case StoreKind.StoreUnsafe:
+                            vector.StoreUnsafe(ref *destination);
+                            break;
+
+                        case StoreKind.StoreUnsafeWithOffset:
+                            // Bias the destination backwards and let the element offset undo it, so a
+                            // dropped offset argument shows up as a wrongly placed store.
+                            vector.StoreUnsafe(ref *(destination - 1), elementOffset: 1);
+                            break;
+
+                        default:
+                            throw new InvalidOperationException($"Unexpected {nameof(StoreKind)}: {kind}");
+                    }
+                }
+
+                Assert.Equal(expected, buffer);
+            }
+        }
+
+        [Fact]
+        public unsafe void Vector128StoreUnalignedTest()
+        {
+            ValidateStore<byte>(StoreKind.Store);
+            ValidateStore<sbyte>(StoreKind.Store);
+            ValidateStore<short>(StoreKind.Store);
+            ValidateStore<ushort>(StoreKind.Store);
+            ValidateStore<int>(StoreKind.Store);
+            ValidateStore<uint>(StoreKind.Store);
+            ValidateStore<long>(StoreKind.Store);
+            ValidateStore<ulong>(StoreKind.Store);
+            ValidateStore<float>(StoreKind.Store);
+            ValidateStore<double>(StoreKind.Store);
+            ValidateStore<nint>(StoreKind.Store);
+            ValidateStore<nuint>(StoreKind.Store);
+        }
+
+        [Fact]
+        public unsafe void Vector128StoreUnsafeUnalignedTest()
+        {
+            ValidateStore<byte>(StoreKind.StoreUnsafe);
+            ValidateStore<sbyte>(StoreKind.StoreUnsafe);
+            ValidateStore<short>(StoreKind.StoreUnsafe);
+            ValidateStore<ushort>(StoreKind.StoreUnsafe);
+            ValidateStore<int>(StoreKind.StoreUnsafe);
+            ValidateStore<uint>(StoreKind.StoreUnsafe);
+            ValidateStore<long>(StoreKind.StoreUnsafe);
+            ValidateStore<ulong>(StoreKind.StoreUnsafe);
+            ValidateStore<float>(StoreKind.StoreUnsafe);
+            ValidateStore<double>(StoreKind.StoreUnsafe);
+            ValidateStore<nint>(StoreKind.StoreUnsafe);
+            ValidateStore<nuint>(StoreKind.StoreUnsafe);
+        }
+
+        [Fact]
+        public unsafe void Vector128StoreUnsafeElementOffsetUnalignedTest()
+        {
+            ValidateStore<byte>(StoreKind.StoreUnsafeWithOffset);
+            ValidateStore<sbyte>(StoreKind.StoreUnsafeWithOffset);
+            ValidateStore<short>(StoreKind.StoreUnsafeWithOffset);
+            ValidateStore<ushort>(StoreKind.StoreUnsafeWithOffset);
+            ValidateStore<int>(StoreKind.StoreUnsafeWithOffset);
+            ValidateStore<uint>(StoreKind.StoreUnsafeWithOffset);
+            ValidateStore<long>(StoreKind.StoreUnsafeWithOffset);
+            ValidateStore<ulong>(StoreKind.StoreUnsafeWithOffset);
+            ValidateStore<float>(StoreKind.StoreUnsafeWithOffset);
+            ValidateStore<double>(StoreKind.StoreUnsafeWithOffset);
+            ValidateStore<nint>(StoreKind.StoreUnsafeWithOffset);
+            ValidateStore<nuint>(StoreKind.StoreUnsafeWithOffset);
+        }
     }
 }

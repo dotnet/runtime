@@ -57,6 +57,7 @@ extern "C" void QCALLTYPE InterfaceMarshaler_ValidateComVisibilityForIUnknown(IU
 #endif
 
 extern "C" void QCALLTYPE StubHelpers_ThrowInteropParamException(INT resID, INT paramIdx);
+extern "C" void QCALLTYPE StubHelpers_ThrowInteropException(INT exceptionKind, INT resID);
 
 extern "C" void QCALLTYPE StubHelpers_MarshalToManagedVaList(va_list va, VARARGS* pArgIterator);
 extern "C" void QCALLTYPE StubHelpers_MarshalToUnmanagedVaList(va_list va, DWORD cbVaListSize, const VARARGS* pArgIterator);

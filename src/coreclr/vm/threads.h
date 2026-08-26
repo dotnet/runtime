@@ -2596,12 +2596,11 @@ private:
 
     // <TODO> It would be nice to remove m_ThreadHandleForClose to simplify Thread.Join,
     //   but at the moment that isn't possible without extensive work.
-    //   This handle is used by SwitchOut to store the old handle which may need to be closed
-    //   if we are the owner.  The handle can't be closed before checking the external count
+    //   This handle is used by SwitchOut to store the old handle that needs to be closed.
+    //   The handle can't be closed before checking the external count,
     //   which we can't do in SwitchOut since that may require locking or switching threads.</TODO>
     HANDLE          m_ThreadHandleForClose;
     HANDLE          m_ThreadHandleForResume;
-    BOOL            m_WeOwnThreadHandle;
     SIZE_T          m_OSThreadId;
 
     BOOL CreateNewOSThread(SIZE_T stackSize, LPTHREAD_START_ROUTINE start, void *args);
@@ -3789,6 +3788,8 @@ struct cdac_data<Thread>
     static constexpr size_t UEWatsonBucketTrackerBuckets = offsetof(Thread, m_ExceptionState) + offsetof(ThreadExceptionState, m_UEWatsonBucketTracker)
     + offsetof(EHWatsonBucketTracker, m_WatsonUnhandledInfo.m_pUnhandledBuckets);
 #endif
+
+    static_assert(State == 0, "Thread.NativeThread depends on Thread::m_State being the first field");
 };
 
 // End of class Thread
@@ -5135,7 +5136,7 @@ class GCForbidLoaderUseHolder
 
 #endif
 
-// Declaring this macro turns off the GC_TRIGGERS/THROWS/INJECT_FAULT contract in LoadTypeHandle.
+// Declaring this macro turns off the GC_TRIGGERS/THROWS contract in LoadTypeHandle.
 // If you do this, you must restrict your use of the loader only to retrieve TypeHandles
 // for types that have already been loaded and resolved. If you fail to observe this restriction, you will
 // reach a GC_TRIGGERS point somewhere in the loader and assert. If you're lucky, that is.
@@ -5165,8 +5166,7 @@ class GCForbidLoaderUseHolder
 #ifdef ENABLE_CONTRACTS_IMPL
 #define ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE()    GCForbidLoaderUseHolder __gcfluh; \
                                                        CANNOTTHROWCOMPLUSEXCEPTION();  \
-                                                       GCX_NOTRIGGER(); \
-                                                       FAULT_FORBID();
+                                                       GCX_NOTRIGGER();
 #else   // _DEBUG_IMPL
 #define ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE()    ;
 #endif  // _DEBUG_IMPL
