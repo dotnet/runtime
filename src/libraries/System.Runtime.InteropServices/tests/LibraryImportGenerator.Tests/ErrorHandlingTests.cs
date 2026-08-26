@@ -75,6 +75,7 @@ namespace LibraryImportGenerator.IntegrationTests
 
             public static bool FromUnmanagedCalled { get; set; }
             public static bool ToManagedCalled { get; set; }
+            public static bool FreeCalled { get; set; }
 
             public void FromUnmanaged(int error)
             {
@@ -95,6 +96,37 @@ namespace LibraryImportGenerator.IntegrationTests
 
             public void Free()
             {
+                FreeCalled = true;
+            }
+        }
+    }
+
+    [CustomMarshaller(typeof(CustomError), MarshalMode.ManagedToUnmanagedOut, typeof(StatefulResultMarshaller.Marshaller))]
+    internal static class StatefulResultMarshaller
+    {
+        public struct Marshaller
+        {
+            private int _error;
+
+            public static bool FromUnmanagedCalled { get; set; }
+            public static bool ToManagedCalled { get; set; }
+            public static bool FreeCalled { get; set; }
+
+            public void FromUnmanaged(int error)
+            {
+                FromUnmanagedCalled = true;
+                _error = error;
+            }
+
+            public CustomError ToManaged()
+            {
+                ToManagedCalled = true;
+                return new CustomError(_error);
+            }
+
+            public void Free()
+            {
+                FreeCalled = true;
             }
         }
     }
@@ -169,7 +201,7 @@ namespace LibraryImportGenerator.IntegrationTests
 
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "return_error_with_output")]
             [ErrorHandler(typeof(StatefulErrorMarshaller), ErrorLocation.ReturnValue)]
-            [return: MarshalUsing(typeof(CustomErrorMarshaller))]
+            [return: MarshalUsing(typeof(StatefulResultMarshaller))]
             public static partial CustomError StatefulReturnErrorBeforeOutput(
                 int error,
                 [MarshalUsing(typeof(TrackedOutputMarshaller))] out TrackedOutput output);
@@ -185,6 +217,12 @@ namespace LibraryImportGenerator.IntegrationTests
             public static partial void HiddenLastParameterErrorBeforeOutput(
                 int error,
                 [MarshalUsing(typeof(TrackedOutputMarshaller))] out TrackedOutput output);
+
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "set_error_out")]
+            [ErrorHandler(typeof(StatefulErrorMarshaller), ErrorLocation.LastParameter)]
+            public static partial void StatefulLastParameterError(
+                int error,
+                [MarshalUsing(typeof(StatefulResultMarshaller))] out CustomError errorValue);
 
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "return_error")]
             [ErrorHandler(typeof(CustomErrorMarshaller), ErrorLocation.HiddenReturnValue)]
@@ -301,6 +339,10 @@ namespace LibraryImportGenerator.IntegrationTests
         {
             StatefulErrorMarshaller.Marshaller.FromUnmanagedCalled = false;
             StatefulErrorMarshaller.Marshaller.ToManagedCalled = false;
+            StatefulErrorMarshaller.Marshaller.FreeCalled = false;
+            StatefulResultMarshaller.Marshaller.FromUnmanagedCalled = false;
+            StatefulResultMarshaller.Marshaller.ToManagedCalled = false;
+            StatefulResultMarshaller.Marshaller.FreeCalled = false;
             TrackedOutputMarshaller.ConvertToManagedCalled = false;
 
             CustomErrorException exception = Assert.Throws<CustomErrorException>(
@@ -309,7 +351,33 @@ namespace LibraryImportGenerator.IntegrationTests
             Assert.Equal(-5, exception.Error);
             Assert.True(StatefulErrorMarshaller.Marshaller.FromUnmanagedCalled);
             Assert.True(StatefulErrorMarshaller.Marshaller.ToManagedCalled);
+            Assert.True(StatefulErrorMarshaller.Marshaller.FreeCalled);
+            Assert.False(StatefulResultMarshaller.Marshaller.FromUnmanagedCalled);
+            Assert.False(StatefulResultMarshaller.Marshaller.ToManagedCalled);
+            Assert.False(StatefulResultMarshaller.Marshaller.FreeCalled);
             Assert.False(TrackedOutputMarshaller.ConvertToManagedCalled);
+        }
+
+        [Fact]
+        public void StatefulLastParameterErrorCleanupRunsWhenConversionThrows()
+        {
+            StatefulErrorMarshaller.Marshaller.FromUnmanagedCalled = false;
+            StatefulErrorMarshaller.Marshaller.ToManagedCalled = false;
+            StatefulErrorMarshaller.Marshaller.FreeCalled = false;
+            StatefulResultMarshaller.Marshaller.FromUnmanagedCalled = false;
+            StatefulResultMarshaller.Marshaller.ToManagedCalled = false;
+            StatefulResultMarshaller.Marshaller.FreeCalled = false;
+
+            CustomErrorException exception = Assert.Throws<CustomErrorException>(
+                () => NativeExportsNE.ErrorHandling.StatefulLastParameterError(-6, out _));
+
+            Assert.Equal(-6, exception.Error);
+            Assert.True(StatefulErrorMarshaller.Marshaller.FromUnmanagedCalled);
+            Assert.True(StatefulErrorMarshaller.Marshaller.ToManagedCalled);
+            Assert.True(StatefulErrorMarshaller.Marshaller.FreeCalled);
+            Assert.False(StatefulResultMarshaller.Marshaller.FromUnmanagedCalled);
+            Assert.False(StatefulResultMarshaller.Marshaller.ToManagedCalled);
+            Assert.False(StatefulResultMarshaller.Marshaller.FreeCalled);
         }
 
         [Fact]

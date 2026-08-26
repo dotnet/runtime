@@ -66,5 +66,12 @@ namespace Microsoft.Interop
                 return base.GetIdentifiers(info);
             }
         }
+
+        public override string GetAdditionalIdentifier(TypePositionInfo info, string name)
+        {
+            return info is { IsErrorHandlingPosition: true, IsNativePositionOverlapping: true }
+                ? $"__errorHandler{GeneratedNativeIdentifierSuffix}__{name}"
+                : base.GetAdditionalIdentifier(info, name);
+        }
     }
 }

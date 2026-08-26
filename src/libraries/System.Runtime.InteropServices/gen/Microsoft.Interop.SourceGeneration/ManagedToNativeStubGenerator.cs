@@ -38,6 +38,7 @@ namespace Microsoft.Interop
         private const string ReturnIdentifier = "__retVal";
         private const string LastErrorIdentifier = "__lastError";
         private const string InvokeSucceededIdentifier = "__invokeSucceeded";
+        private const string ErrorValueCapturedIdentifier = "__errorValueCaptured";
 
         // Error code representing success. This maps to S_OK for Windows HRESULT semantics and 0 for POSIX errno semantics.
         private const int SuccessErrorCode = 0;
@@ -132,6 +133,11 @@ namespace Microsoft.Interop
                 setupStatements.Add(Declare(PredefinedType(Token(SyntaxKind.BoolKeyword)), InvokeSucceededIdentifier, initializeToDefault: true));
             }
 
+            if (!statements.ErrorCleanupCalleeAllocated.IsEmpty)
+            {
+                setupStatements.Add(Declare(PredefinedType(Token(SyntaxKind.BoolKeyword)), ErrorValueCapturedIdentifier, initializeToDefault: true));
+            }
+
             setupStatements.AddRange(declarations.Initializations);
             setupStatements.AddRange(declarations.Variables);
             setupStatements.AddRange(statements.Setup);
@@ -160,6 +166,14 @@ namespace Microsoft.Interop
                 tryStatements.Add(MarshallerHelpers.CreateSetLastPInvokeErrorStatement(LastErrorIdentifier));
             }
 
+            tryStatements.AddRange(statements.ErrorUnmarshalCapture);
+            if (!statements.ErrorCleanupCalleeAllocated.IsEmpty)
+            {
+                tryStatements.Add(ExpressionStatement(AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
+                    IdentifierName(ErrorValueCapturedIdentifier),
+                    LiteralExpression(SyntaxKind.TrueLiteralExpression))));
+            }
+
             tryStatements.AddRange(statements.ErrorUnmarshal);
 
             // <invokeSucceeded> = true;
@@ -174,6 +188,13 @@ namespace Microsoft.Interop
 
             List<StatementSyntax> allStatements = setupStatements;
             List<StatementSyntax> finallyStatements = [];
+            if (!statements.ErrorCleanupCalleeAllocated.IsEmpty)
+            {
+                finallyStatements.Add(IfStatement(
+                    IdentifierName(ErrorValueCapturedIdentifier),
+                    Block(statements.ErrorCleanupCalleeAllocated)));
+            }
+
             if (!(statements.GuaranteedUnmarshal.IsEmpty && statements.CleanupCalleeAllocated.IsEmpty))
             {
                 finallyStatements.Add(IfStatement(IdentifierName(InvokeSucceededIdentifier), Block(statements.GuaranteedUnmarshal.Concat(statements.CleanupCalleeAllocated))));
