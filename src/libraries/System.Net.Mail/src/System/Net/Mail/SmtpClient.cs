@@ -164,6 +164,9 @@ namespace System.Net.Mail
                 {
                     _host = value;
                     _servicePoint = null;
+                    // The cached connection targets the previous host, so release it
+                    // to force a new connection to be established on the next send.
+                    _transport.ReleaseConnection();
                 }
             }
         }
@@ -187,6 +190,9 @@ namespace System.Net.Mail
                 {
                     _port = value;
                     _servicePoint = null;
+                    // The cached connection targets the previous port, so release it
+                    // to force a new connection to be established on the next send.
+                    _transport.ReleaseConnection();
                 }
             }
         }
