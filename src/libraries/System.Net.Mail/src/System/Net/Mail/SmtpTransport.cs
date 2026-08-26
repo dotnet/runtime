@@ -99,37 +99,17 @@ namespace System.Net.Mail
         internal Task GetConnectionAsync<TIOAdapter>(string host, int port, CancellationToken cancellationToken = default)
             where TIOAdapter : IReadWriteAdapter
         {
-            // Detach any previously cached connection (for example one that became stale after a
-            // configuration change, or one whose connect attempt failed) so its socket is not
-            // leaked. Sends are serialized by SmtpClient._inCall, so no other GetConnectionAsync
-            // can run concurrently here.
-            SmtpConnection? previousConnection;
             lock (this)
             {
-                previousConnection = _connection;
-                _connection = null;
+                // Abort any previously cached connection (for example one that became stale after a
+                // configuration change, or one whose connect attempt failed) so its socket is not
+                // leaked. Abort() only force-closes the socket without any network round-trip, so it
+                // is safe to run under the lock and does not block this async send path. A graceful
+                // QUIT is unnecessary for a connection we are discarding. Sends are serialized by
+                // SmtpClient._inCall, so no other GetConnectionAsync can run concurrently here.
+                _connection?.Abort();
                 _stale = false;
-            }
 
-            // Shut the previous connection down outside the lock: a graceful release performs a
-            // blocking QUIT over the network, and holding the transport lock across that I/O would
-            // delay a concurrent Abort() (for example from the send-timeout path). Only a
-            // connection that was actually established can be shut down gracefully; one that never
-            // connected may not have an initialized stream, so it is aborted instead.
-            if (previousConnection is not null)
-            {
-                if (previousConnection.IsConnected)
-                {
-                    previousConnection.ReleaseConnection();
-                }
-                else
-                {
-                    previousConnection.Abort();
-                }
-            }
-
-            lock (this)
-            {
                 _connection = new SmtpConnection(this, _client, _credentials, _authenticationModules);
                 if (_shouldAbort)
                 {
@@ -188,10 +168,10 @@ namespace System.Net.Mail
             _connection?.ReleaseConnection();
         }
 
-        // Marks any cached connection as stale without performing blocking work. The connection
-        // is gracefully released and replaced the next time one is established (see
-        // GetConnectionAsync). This is called when a property that affects how the connection is
-        // established (host, port, credentials, SSL settings, target name) changes.
+        // Marks any cached connection as stale without performing blocking work. The connection is
+        // aborted and replaced the next time one is established (see GetConnectionAsync). This is
+        // called when a property that affects how the connection is established (host, port,
+        // credentials, SSL settings, target name) changes.
         internal void InvalidateCachedConnection()
         {
             _stale = true;
