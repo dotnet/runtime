@@ -11,7 +11,7 @@ using System.Linq;
 using crossgen2::ILCompiler;
 using crossgen2::ILCompiler.DependencyAnalysis.ReadyToRun;
 using crossgen2::ILCompiler.DependencyAnalysis.Wasm;
-using crossgen2::ILCompiler.Wasm;
+using crossgen2::ILCompiler.PortableCallHelpers;
 using crossgen2::Internal.CallingConvention;
 using crossgen2::Internal.JitInterface;
 
@@ -557,11 +557,11 @@ public class WasmArgumentLayoutTests
     [InlineData("Guid", "S16")]
     [InlineData("DateTime", "l")]
     [InlineData("Int32", "i")]
-    public void WasmInteropGeneratorEncodesTypesTheWayTheCompilerLowersThem(string typeName, string expected)
+    public void PortableCallHelpersGeneratorEncodesTypesTheWayTheCompilerLowersThem(string typeName, string expected)
     {
         ReadyToRunCompilerContext context = CreateWasmContext();
 
-        Assert.Equal(expected, WasmInteropSignature.GetAbiToken(GetSystemType(context, typeName)));
+        Assert.Equal(expected, InteropSignature.GetAbiToken(GetSystemType(context, typeName)));
     }
 
     /// <summary>
@@ -570,7 +570,7 @@ public class WasmArgumentLayoutTests
     /// it has to configure a group itself for that question to have an answer at all.
     /// </summary>
     [Fact]
-    public void WasmInteropGeneratorComputesLayoutOfStructsHoldingReferences()
+    public void PortableCallHelpersGeneratorComputesLayoutOfStructsHoldingReferences()
     {
         ReadyToRunCompilerContext context = CreateWasmContext();
         var type = GetSystemType(context, "RuntimeTypeHandle");
@@ -579,7 +579,7 @@ public class WasmArgumentLayoutTests
         Assert.True(type.ContainsGCPointers, $"{type} was chosen because it holds a reference");
 
         // One field the size of the whole struct: lowered to that field, a reference, passed as i32.
-        Assert.Equal("i", WasmInteropSignature.GetAbiToken(type));
+        Assert.Equal("i", InteropSignature.GetAbiToken(type));
     }
 
     /// <summary>
@@ -588,7 +588,7 @@ public class WasmArgumentLayoutTests
     /// thunk built for a different shape.
     /// </summary>
     [Fact]
-    public void WasmInteropGeneratorEncodesMethodsLikeTheCompiler()
+    public void PortableCallHelpersGeneratorEncodesMethodsLikeTheCompiler()
     {
         ReadyToRunCompilerContext context = CreateWasmContext();
         var method = (EcmaMethod)GetSystemType(context, "DateTime").GetMethod("AddTicks"u8, null);
@@ -596,7 +596,7 @@ public class WasmArgumentLayoutTests
         string expected = WasmLowering.GetSignature(method.Signature, WasmLowering.LoweringFlags.None).SignatureString;
         _output.WriteLine($"{method} lowers to '{expected}'");
 
-        Assert.Equal(expected, WasmInteropSignature.GetMethodSignature(method, includeThis: true));
+        Assert.Equal(expected, InteropSignature.GetMethodSignature(method, includeThis: true));
     }
 
     /// <summary>
@@ -604,11 +604,11 @@ public class WasmArgumentLayoutTests
     /// but it is still what a thunk returns, so the generator has to encode it.
     /// </summary>
     [Fact]
-    public void WasmInteropGeneratorEncodesVoid()
+    public void PortableCallHelpersGeneratorEncodesVoid()
     {
         ReadyToRunCompilerContext context = CreateWasmContext();
 
-        Assert.Equal("v", WasmInteropSignature.GetAbiToken(context.GetWellKnownType(WellKnownType.Void)));
+        Assert.Equal("v", InteropSignature.GetAbiToken(context.GetWellKnownType(WellKnownType.Void)));
     }
 
     /// <summary>
@@ -625,7 +625,7 @@ public class WasmArgumentLayoutTests
     [InlineData("DateTime")]
     [InlineData("Int32")]
     [InlineData("Double")]
-    public void WasmInteropGeneratorEncodesTypesTheSameWayInAndOutOfASignature(string typeName)
+    public void PortableCallHelpersGeneratorEncodesTypesTheSameWayInAndOutOfASignature(string typeName)
     {
         ReadyToRunCompilerContext context = CreateWasmContext();
         TypeDesc type = GetSystemType(context, typeName);
@@ -636,8 +636,8 @@ public class WasmArgumentLayoutTests
         _output.WriteLine($"{typeName} lowers to '{signature}' in a signature");
 
         // 'v' return, then the single parameter, then the 'p' entrypoint suffix.
-        List<string> tokens = WasmInteropSignature.ParseSignatureTokens(signature);
-        Assert.Equal(tokens[1], WasmInteropSignature.GetAbiToken(type));
+        List<string> tokens = InteropSignature.ParseSignatureTokens(signature);
+        Assert.Equal(tokens[1], InteropSignature.GetAbiToken(type));
     }
 
     /// <summary>
@@ -646,7 +646,7 @@ public class WasmArgumentLayoutTests
     /// group built without it asserts in checked builds and lays out nothing in any build.
     /// </summary>
     [Fact]
-    public void WasmInteropGeneratorAcceptsMoreThanOneInputAssembly()
+    public void PortableCallHelpersGeneratorAcceptsMoreThanOneInputAssembly()
     {
         // Any second real assembly will do. This one is guaranteed to exist because it is the
         // assembly currently executing.
@@ -658,20 +658,20 @@ public class WasmArgumentLayoutTests
 
         try
         {
-            var options = new WasmInteropGeneratorOptions
+            var options = new PortableCallHelpersGeneratorOptions
             {
                 OutputDirectory = outputDirectory,
                 TargetOS = "browser",
                 PInvokeModules = new[] { "libSystem.Native" },
             };
 
-            Assert.Equal(0, WasmInteropGenerator.Run(context, options, new Logger(TextWriter.Null, isVerbose: false)));
+            Assert.Equal(0, PortableCallHelpersGenerator.Run(context, options, new Logger(TextWriter.Null, isVerbose: false)));
 
             foreach (string fileName in new[]
                      {
-                         WasmInteropGenerator.PInvokeFileName,
-                         WasmInteropGenerator.ReversePInvokeFileName,
-                         WasmInteropGenerator.InterpToNativeFileName,
+                         PortableCallHelpersGenerator.PInvokeFileName,
+                         PortableCallHelpersGenerator.ReversePInvokeFileName,
+                         PortableCallHelpersGenerator.InterpToNativeFileName,
                      })
             {
                 string path = Path.Combine(outputDirectory, fileName);
@@ -681,7 +681,7 @@ public class WasmArgumentLayoutTests
 
             // The statically linked module has to resolve to direct calls, which is the whole point
             // of naming it on the command line.
-            Assert.Contains("SystemNative_", File.ReadAllText(Path.Combine(outputDirectory, WasmInteropGenerator.PInvokeFileName)));
+            Assert.Contains("SystemNative_", File.ReadAllText(Path.Combine(outputDirectory, PortableCallHelpersGenerator.PInvokeFileName)));
         }
         finally
         {

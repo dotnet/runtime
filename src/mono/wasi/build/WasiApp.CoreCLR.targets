@@ -156,42 +156,42 @@
          Generation does not load the JIT, so a host-targeting crossgen2 answers wasm questions
          correctly. In the repo it comes from the build output; outside it, from a crossgen2 pack
          that sets $(Crossgen2ToolPath). The wasi-experimental workload does not acquire that pack
-         today, so out-of-repo wasi relink needs $(WasmInteropGeneratorPath) or
+         today, so out-of-repo wasi relink needs $(PortableCallHelpersGeneratorPath) or
          $(Crossgen2ToolPath) to be set explicitly. -->
     <PropertyGroup>
-      <_WasmInteropGeneratorExeSuffix Condition="'$(OS)' == 'Windows_NT'">.exe</_WasmInteropGeneratorExeSuffix>
-      <WasmInteropGeneratorPath Condition="'$(WasmInteropGeneratorPath)' == '' and '$(Crossgen2InBuildDir)' != ''">$([MSBuild]::NormalizePath('$(Crossgen2InBuildDir)', 'crossgen2$(_WasmInteropGeneratorExeSuffix)'))</WasmInteropGeneratorPath>
-      <WasmInteropGeneratorPath Condition="'$(WasmInteropGeneratorPath)' == ''">$(Crossgen2ToolPath)</WasmInteropGeneratorPath>
+      <_PortableCallHelpersGeneratorExeSuffix Condition="'$(OS)' == 'Windows_NT'">.exe</_PortableCallHelpersGeneratorExeSuffix>
+      <PortableCallHelpersGeneratorPath Condition="'$(PortableCallHelpersGeneratorPath)' == '' and '$(Crossgen2InBuildDir)' != ''">$([MSBuild]::NormalizePath('$(Crossgen2InBuildDir)', 'crossgen2$(_PortableCallHelpersGeneratorExeSuffix)'))</PortableCallHelpersGeneratorPath>
+      <PortableCallHelpersGeneratorPath Condition="'$(PortableCallHelpersGeneratorPath)' == ''">$(Crossgen2ToolPath)</PortableCallHelpersGeneratorPath>
     </PropertyGroup>
 
-    <Error Condition="'$(WasmInteropGeneratorPath)' == ''"
-           Text="crossgen2 was not found, so the wasi P/Invoke helpers cannot be generated. Set %24(WasmInteropGeneratorPath) to a crossgen2 executable." />
+    <Error Condition="'$(PortableCallHelpersGeneratorPath)' == ''"
+           Text="crossgen2 was not found, so the wasi P/Invoke helpers cannot be generated. Set %24(PortableCallHelpersGeneratorPath) to a crossgen2 executable." />
 
     <PropertyGroup>
-      <_WasiInteropGeneratorRsp>$(_WasiRelinkObjDir)wasm-interop-generator.rsp</_WasiInteropGeneratorRsp>
+      <_PortableCallHelpersGeneratorRsp>$(_WasiRelinkObjDir)callhelpers-generator.rsp</_PortableCallHelpersGeneratorRsp>
       <!-- An IL-only build of crossgen2 needs the dotnet host to launch it; an apphost does not. -->
-      <_WasiInteropGeneratorCommand Condition="'$([System.IO.Path]::GetExtension(`$(WasmInteropGeneratorPath)`))' == '.dll'">"$(DOTNET_HOST_PATH)" "$(WasmInteropGeneratorPath)"</_WasiInteropGeneratorCommand>
-      <_WasiInteropGeneratorCommand Condition="'$(_WasiInteropGeneratorCommand)' == ''">"$(WasmInteropGeneratorPath)"</_WasiInteropGeneratorCommand>
+      <_PortableCallHelpersGeneratorCommand Condition="'$([System.IO.Path]::GetExtension(`$(PortableCallHelpersGeneratorPath)`))' == '.dll'">"$(DOTNET_HOST_PATH)" "$(PortableCallHelpersGeneratorPath)"</_PortableCallHelpersGeneratorCommand>
+      <_PortableCallHelpersGeneratorCommand Condition="'$(_PortableCallHelpersGeneratorCommand)' == ''">"$(PortableCallHelpersGeneratorPath)"</_PortableCallHelpersGeneratorCommand>
     </PropertyGroup>
 
     <!-- One token per line: that is how crossgen2 reads a response file. -->
     <ItemGroup>
-      <_WasiInteropGeneratorArg Include="--targetos" />
-      <_WasiInteropGeneratorArg Include="wasi" />
-      <_WasiInteropGeneratorArg Include="--targetarch" />
-      <_WasiInteropGeneratorArg Include="wasm" />
-      <_WasiInteropGeneratorArg Include="--generate-portable-callhelpers" />
-      <_WasiInteropGeneratorArg Include="$(_WasiRelinkObjDir)" />
-      <_WasiInteropGeneratorArg Include="--directpinvoke;%(_WasiPInvokeModules.Identity)" Condition="'%(_WasiPInvokeModules.Identity)' != ''" />
-      <_WasiInteropGeneratorArg Include="@(_WasiManagedAssemblies->'%(FullPath)')" />
+      <_PortableCallHelpersGeneratorArg Include="--targetos" />
+      <_PortableCallHelpersGeneratorArg Include="wasi" />
+      <_PortableCallHelpersGeneratorArg Include="--targetarch" />
+      <_PortableCallHelpersGeneratorArg Include="wasm" />
+      <_PortableCallHelpersGeneratorArg Include="--generate-portable-callhelpers" />
+      <_PortableCallHelpersGeneratorArg Include="$(_WasiRelinkObjDir)" />
+      <_PortableCallHelpersGeneratorArg Include="--directpinvoke;%(_WasiPInvokeModules.Identity)" Condition="'%(_WasiPInvokeModules.Identity)' != ''" />
+      <_PortableCallHelpersGeneratorArg Include="@(_WasiManagedAssemblies->'%(FullPath)')" />
     </ItemGroup>
 
-    <WriteLinesToFile File="$(_WasiInteropGeneratorRsp)" Lines="@(_WasiInteropGeneratorArg)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+    <WriteLinesToFile File="$(_PortableCallHelpersGeneratorRsp)" Lines="@(_PortableCallHelpersGeneratorArg)" Overwrite="true" WriteOnlyWhenDifferent="true" />
 
-    <Exec Command="$(_WasiInteropGeneratorCommand) &quot;@$(_WasiInteropGeneratorRsp)&quot;" />
+    <Exec Command="$(_PortableCallHelpersGeneratorCommand) &quot;@$(_PortableCallHelpersGeneratorRsp)&quot;" />
 
     <ItemGroup>
-      <FileWrites Include="$(_WasiInteropGeneratorRsp);$(_WasiPInvokeTablePath);$(_WasiReversePInvokeTablePath);$(_WasiInterpToNativeTablePath)" />
+      <FileWrites Include="$(_PortableCallHelpersGeneratorRsp);$(_WasiPInvokeTablePath);$(_WasiReversePInvokeTablePath);$(_WasiInterpToNativeTablePath)" />
     </ItemGroup>
 
     <!-- 2. Compile the three generated callhelper sources with the wasi-sdk clang.

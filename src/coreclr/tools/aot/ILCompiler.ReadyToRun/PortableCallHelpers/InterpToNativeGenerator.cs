@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace ILCompiler.Wasm
+namespace ILCompiler.PortableCallHelpers
 {
     /// <summary>
     /// Generates the <c>g_wasmThunks</c> array and <c>CallFunc_*</c> functions used by the CoreCLR
@@ -16,7 +16,7 @@ namespace ILCompiler.Wasm
     /// The generated code has to stay in sync with the CoreCLR runtime code that consumes these
     /// thunks and call functions.
     /// </remarks>
-    internal static class WasmInterpToNativeGenerator
+    internal static class InterpToNativeGenerator
     {
         public static void Emit(TextWriter w, IEnumerable<string> cookies)
         {
@@ -27,9 +27,9 @@ namespace ILCompiler.Wasm
             var structReturnSizes = new SortedSet<int>();
             foreach (string signature in signatures)
             {
-                string returnToken = WasmInteropSignature.ParseSignatureTokens(signature)[0];
+                string returnToken = InteropSignature.ParseSignatureTokens(signature)[0];
                 if (returnToken[0] == 'S' && returnToken.Length > 1)
-                    structReturnSizes.Add(WasmInteropSignature.GetStructSize(returnToken));
+                    structReturnSizes.Add(InteropSignature.GetStructSize(returnToken));
             }
 
             w.Write(
@@ -71,7 +71,7 @@ namespace ILCompiler.Wasm
             {
                 try
                 {
-                    List<string> tokens = WasmInteropSignature.ParseSignatureTokens(signature);
+                    List<string> tokens = InteropSignature.ParseSignatureTokens(signature);
                     string returnToken = tokens[0];
                     (bool isVoid, string nativeType) result = Result(returnToken);
                     bool isPortableEntryPointCall = IsPortableEntryPointCall(tokens);
@@ -85,7 +85,7 @@ namespace ILCompiler.Wasm
                     RemoveAsyncCallMarker(tokens);
 
                     List<string> args = Args(tokens);
-                    string argTypes = string.Join(", ", args.Select(WasmInteropSignature.TokenToNativeType));
+                    string argTypes = string.Join(", ", args.Select(InteropSignature.TokenToNativeType));
 
                     string portableEntryPointComma = args.Count > 0 ? ", " : "";
                     string portableEntrypointDeclaration = isPortableEntryPointCall ? portableEntryPointComma + "PCODE" : "";
@@ -96,7 +96,7 @@ namespace ILCompiler.Wasm
                     w.Write(
                         $$"""
 
-                            {{(isPortableEntryPointCall ? "NOINLINE " : "")}}static void {{CallFuncName(args, WasmInteropSignature.TokenToNameType(returnToken), isPortableEntryPointCall)}}(PCODE {{(isPortableEntryPointCall ? "pPortableEntryPoint" : "pcode")}}, int8_t* pArgs, int8_t* pRet)
+                            {{(isPortableEntryPointCall ? "NOINLINE " : "")}}static void {{CallFuncName(args, InteropSignature.TokenToNameType(returnToken), isPortableEntryPointCall)}}(PCODE {{(isPortableEntryPointCall ? "pPortableEntryPoint" : "pcode")}}, int8_t* pArgs, int8_t* pRet)
                             {{{(isPortableEntryPointCall ? "\n        alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;" : "")}}
                                 {{result.nativeType}} (*fptr)({{portableEntrypointStackDeclaration}}{{argTypes}}{{portableEntrypointDeclaration}}) = {{portableEntrypointPointerRD}}({{result.nativeType}} ({{portableEntrypointPointerRD}}*)({{portableEntrypointStackDeclaration}}{{argTypes}}{{portableEntrypointDeclaration}})){{(isPortableEntryPointCall ? "(pPortableEntryPoint)" : "pcode")}};
                                 {{(result.isVoid ? "" : $"*(({result.nativeType}*)pRet) = ")}}(*fptr)({{portableEntrypointStackParam}}{{string.Join(", ", ArgsWithSlotOffsets(args))}}{{portableEntrypointParam}});
@@ -124,13 +124,13 @@ namespace ILCompiler.Wasm
 
             static string ThunkEntry(string signature)
             {
-                List<string> tokens = WasmInteropSignature.ParseSignatureTokens(signature);
+                List<string> tokens = InteropSignature.ParseSignatureTokens(signature);
                 bool isPortableEntryPointCall = IsPortableEntryPointCall(tokens);
                 if (isPortableEntryPointCall)
                     tokens.RemoveAt(tokens.Count - 1);
                 RemoveAsyncCallMarker(tokens);
 
-                string name = CallFuncName(Args(tokens), WasmInteropSignature.TokenToNameType(tokens[0]), isPortableEntryPointCall);
+                string name = CallFuncName(Args(tokens), InteropSignature.TokenToNameType(tokens[0]), isPortableEntryPointCall);
                 return $"    {{ \"M{signature}\", (void*)&{name} }}";
             }
 
@@ -146,8 +146,8 @@ namespace ILCompiler.Wasm
                     if (token[0] == 'A')
                         slot = (slot + 1) & ~1;
 
-                    result.Add($"{WasmInteropSignature.TokenToArgType(token)}({slot})");
-                    slot += WasmInteropSignature.TokenToSlotCount(token);
+                    result.Add($"{InteropSignature.TokenToArgType(token)}({slot})");
+                    slot += InteropSignature.TokenToSlotCount(token);
                 }
 
                 return result;
@@ -157,9 +157,9 @@ namespace ILCompiler.Wasm
             {
                 // For struct returns, use the typedef so emcc generates the correct sret ABI
                 if (returnToken[0] == 'S' && returnToken.Length > 1)
-                    return (false, $"wasm_ret_S{WasmInteropSignature.GetStructSize(returnToken)}");
+                    return (false, $"wasm_ret_S{InteropSignature.GetStructSize(returnToken)}");
 
-                return (returnToken == "v", WasmInteropSignature.TokenToNativeType(returnToken));
+                return (returnToken == "v", InteropSignature.TokenToNativeType(returnToken));
             }
 
             static bool IsPortableEntryPointCall(List<string> tokens)
@@ -176,7 +176,7 @@ namespace ILCompiler.Wasm
         private static string CallFuncName(List<string> args, string result, bool isPortableEntryPointCall)
         {
             string paramTypes = args.Count > 0
-                ? string.Join("_", args.Select(WasmInteropSignature.TokenToNameType))
+                ? string.Join("_", args.Select(InteropSignature.TokenToNameType))
                 : "Void";
 
             return $"CallFunc_{paramTypes}_Ret{result}{(isPortableEntryPointCall ? "_PE" : "")}";

@@ -11,14 +11,14 @@ using System.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
-namespace ILCompiler.Wasm
+namespace ILCompiler.PortableCallHelpers
 {
     /// <summary>
     /// Emits the static P/Invoke resolution table and the native-to-interpreter reverse thunks.
     /// </summary>
-    internal sealed class WasmPInvokeTableGenerator(WasmInteropLogger log)
+    internal sealed class PInvokeTableGenerator(InteropLogger log)
     {
-        public void EmitPInvokeTable(TextWriter w, IEnumerable<string> pinvokeModules, List<WasmPInvoke> pinvokes)
+        public void EmitPInvokeTable(TextWriter w, IEnumerable<string> pinvokeModules, List<PInvokeInfo> pinvokes)
         {
             // Modules an unresolved P/Invoke has already been reported for, so each is logged once.
             // Only the logging is suppressed: a module a later P/Invoke does resolve - through
@@ -34,7 +34,7 @@ namespace ILCompiler.Wasm
             // [WasmImportLinkage] and has no archive behind it at all.
             var linkedModules = new HashSet<string>(modules.Keys, StringComparer.Ordinal);
 
-            foreach (WasmPInvoke pinvoke in pinvokes)
+            foreach (PInvokeInfo pinvoke in pinvokes)
             {
                 if (modules.ContainsKey(pinvoke.Module))
                     continue;
@@ -99,10 +99,10 @@ namespace ILCompiler.Wasm
                                                 .OrderBy(l => l.EntryPoint, StringComparer.Ordinal)
                                                 .GroupBy(CEntryPoint, StringComparer.Ordinal);
 
-            foreach (IGrouping<string, WasmPInvoke> group in pinvokesGroupedByEntryPoint)
+            foreach (IGrouping<string, PInvokeInfo> group in pinvokesGroupedByEntryPoint)
             {
-                WasmPInvoke[] candidates = group.Distinct().ToArray();
-                WasmPInvoke first = candidates[0];
+                PInvokeInfo[] candidates = group.Distinct().ToArray();
+                PInvokeInfo first = candidates[0];
                 if (ShouldTreatAsVariadic(candidates))
                 {
                     string imports = string.Join(Environment.NewLine,
@@ -112,14 +112,14 @@ namespace ILCompiler.Wasm
                                      " Calling such functions is not supported, and will fail at runtime." +
                                     $" Managed DllImports: {Environment.NewLine}{imports}");
 
-                    foreach (WasmPInvoke candidate in candidates)
+                    foreach (PInvokeInfo candidate in candidates)
                         candidate.Skip = true;
 
                     continue;
                 }
 
                 var decls = new HashSet<string>();
-                foreach (WasmPInvoke candidate in candidates)
+                foreach (PInvokeInfo candidate in candidates)
                 {
                     string decl = GenPInvokeDecl(candidate);
                     if (decls.Add(decl))
@@ -143,7 +143,7 @@ namespace ILCompiler.Wasm
                     .GroupBy(d => d.EntryPoint, StringComparer.Ordinal)
                     .Select(l =>
                     {
-                        WasmPInvoke p = l.First();
+                        PInvokeInfo p = l.First();
                         // Runtime resolver looks up by managed EntryPoint.
                         // [WasmImportLinkage] mangles the C symbol per module,
                         // so emit the entry-point string explicitly rather than
@@ -194,7 +194,7 @@ namespace ILCompiler.Wasm
 
                 """);
 
-            static bool ShouldTreatAsVariadic(WasmPInvoke[] candidates)
+            static bool ShouldTreatAsVariadic(PInvokeInfo[] candidates)
             {
                 if (candidates.Length < 2)
                     return false;
@@ -205,11 +205,11 @@ namespace ILCompiler.Wasm
                 return candidates.Skip(1).Any(c => c.Method.Signature.Length != firstNumArgs);
             }
 
-            static string ListRefs(IGrouping<string, WasmPInvoke> l)
+            static string ListRefs(IGrouping<string, PInvokeInfo> l)
                 => string.Join(", ", l.Select(c => ((EcmaAssembly)c.Method.Module).GetName().Name).Distinct().OrderBy(n => n, StringComparer.Ordinal));
         }
 
-        public void EmitNativeToInterp(TextWriter w, List<WasmPInvokeCallback> callbacks)
+        public void EmitNativeToInterp(TextWriter w, List<PInvokeCallback> callbacks)
         {
             // Generate native->interp entry functions
             // These are called by native code, so they need to obtain
@@ -242,8 +242,8 @@ namespace ILCompiler.Wasm
             var callbackNames = new HashSet<string>();
             var keys = new HashSet<string>();
             int callbackIndex = 0;
-            callbacks = callbacks.Order(new WasmPInvokeCallbackComparer()).ToList();
-            foreach (WasmPInvokeCallback cb in callbacks)
+            callbacks = callbacks.Order(new PInvokeCallbackComparer()).ToList();
+            foreach (PInvokeCallback cb in callbacks)
             {
                 cb.EntrySymbol = FixedSymbolName(cb);
 
@@ -303,19 +303,19 @@ namespace ILCompiler.Wasm
                 """);
         }
 
-        private string CEntryPoint(WasmPInvoke pinvoke)
+        private string CEntryPoint(PInvokeInfo pinvoke)
         {
             if (pinvoke.WasmLinkage)
             {
                 // We mangle the name to avoid collisions with symbols in other modules
-                string namespaceName = WasmTypeNames.GetNamespace(pinvoke.Method.OwningType);
+                string namespaceName = TypeNames.GetNamespace(pinvoke.Method.OwningType);
                 return FixupSymbolName($"{namespaceName}#{pinvoke.Module}#{pinvoke.EntryPoint}");
             }
 
             return FixupSymbolName(pinvoke.EntryPoint);
         }
 
-        private string GenPInvokeDecl(WasmPInvoke pinvoke)
+        private string GenPInvokeDecl(PInvokeInfo pinvoke)
         {
             MethodSignature signature = pinvoke.Method.Signature;
             TypeDesc returnType = signature.ReturnType;
@@ -335,7 +335,7 @@ namespace ILCompiler.Wasm
             return $"    {importAttributes}{externKeyword}{MapType(returnType)} {CEntryPoint(pinvoke)} ({string.Join(", ", parameterTypes)});";
         }
 
-        private string FixedSymbolName(WasmPInvokeCallback cb)
+        private string FixedSymbolName(PInvokeCallback cb)
         {
             string paramTypes = cb.Parameters.Length > 0
                 ? string.Join("_", ParameterTypes(cb.Parameters).Select(TypeToNameType))
@@ -344,7 +344,7 @@ namespace ILCompiler.Wasm
             return FixupSymbolName($"{cb.EntryName}_{paramTypes}_Ret{TypeToNameType(cb.ReturnType)}");
         }
 
-        private string ThunkMapEntryLine(WasmPInvokeCallback cb)
+        private string ThunkMapEntryLine(PInvokeCallback cb)
             => $"    {{ {HashString(cb.Key)}, \"{EscapeLiteral(cb.Key)}\", {{ &MD_{FixedSymbolName(cb)}, (void*)&Call_{cb.EntrySymbol} }} }}";
 
         /// <summary>
@@ -357,7 +357,7 @@ namespace ILCompiler.Wasm
             if (!type.IsValueType || type.IsPrimitive || type.IsEnum || type is FunctionPointerType)
                 return false;
 
-            return WasmInteropSignature.GetAbiToken(type)[0] is 'S' or 'A';
+            return InteropSignature.GetAbiToken(type)[0] is 'S' or 'A';
         }
 
         private static string TypeToNameType(TypeDesc type)
@@ -368,7 +368,7 @@ namespace ILCompiler.Wasm
             if (type.IsEnum)
                 return TypeToNameType(type.UnderlyingType);
 
-            return WasmInteropSignature.TokenToNameType(WasmInteropSignature.GetAbiToken(type));
+            return InteropSignature.TokenToNameType(InteropSignature.GetAbiToken(type));
         }
 
         private static string MapType(TypeDesc type) => type.Category switch

@@ -10,7 +10,7 @@ using ILCompiler.DependencyAnalysis.Wasm;
 using Internal.JitInterface;
 using Internal.TypeSystem;
 
-namespace ILCompiler.Wasm
+namespace ILCompiler.PortableCallHelpers
 {
     /// <summary>
     /// Thrown when a signature token has no representation in the generated C.
@@ -31,7 +31,7 @@ namespace ILCompiler.Wasm
     /// implementation of the encoding; everything here either produces a string through it or
     /// consumes one it produced.
     /// </remarks>
-    internal static class WasmInteropSignature
+    internal static class InteropSignature
     {
         /// <summary>
         /// Returns the wasm signature string for a method.

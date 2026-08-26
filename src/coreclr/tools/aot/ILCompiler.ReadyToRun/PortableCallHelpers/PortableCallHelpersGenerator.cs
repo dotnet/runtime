@@ -10,12 +10,12 @@ using System.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
-namespace ILCompiler.Wasm
+namespace ILCompiler.PortableCallHelpers
 {
     /// <summary>
-    /// Options for <see cref="WasmInteropGenerator"/>, mirroring the command line.
+    /// Options for <see cref="PortableCallHelpersGenerator"/>, mirroring the command line.
     /// </summary>
-    internal sealed class WasmInteropGeneratorOptions
+    internal sealed class PortableCallHelpersGeneratorOptions
     {
         public string OutputDirectory { get; init; }
         public IReadOnlyList<string> PInvokeModules { get; init; } = [];
@@ -37,15 +37,15 @@ namespace ILCompiler.Wasm
     ///   crossgen2 --generate-portable-callhelpers &lt;dir&gt; --targetos &lt;browser|wasi&gt; --targetarch wasm \
     ///             --directpinvoke &lt;name&gt;... &lt;assembly&gt;...
     /// </remarks>
-    internal static class WasmInteropGenerator
+    internal static class PortableCallHelpersGenerator
     {
         public const string PInvokeFileName = "callhelpers-pinvoke.cpp";
         public const string ReversePInvokeFileName = "callhelpers-reverse.cpp";
         public const string InterpToNativeFileName = "callhelpers-interp-to-managed.cpp";
 
-        public static int Run(ReadyToRunCompilerContext context, WasmInteropGeneratorOptions options, Logger logger)
+        public static int Run(ReadyToRunCompilerContext context, PortableCallHelpersGeneratorOptions options, Logger logger)
         {
-            var log = new WasmInteropLogger(logger);
+            var log = new InteropLogger(logger);
 
             try
             {
@@ -59,15 +59,15 @@ namespace ILCompiler.Wasm
             }
         }
 
-        private static void Generate(ReadyToRunCompilerContext context, WasmInteropGeneratorOptions options, WasmInteropLogger log)
+        private static void Generate(ReadyToRunCompilerContext context, PortableCallHelpersGeneratorOptions options, InteropLogger log)
         {
             ConfigureCompilationGroup(context);
 
-            var collector = new WasmPInvokeCollector(log, options.TargetOS);
-            var internalCallCollector = new WasmInternalCallSignatureCollector(log);
+            var collector = new PInvokeCollector(log, options.TargetOS);
+            var internalCallCollector = new InternalCallSignatureCollector(log);
 
-            List<WasmPInvoke> pinvokes = [];
-            List<WasmPInvokeCallback> callbacks = [];
+            List<PInvokeInfo> pinvokes = [];
+            List<PInvokeCallback> callbacks = [];
             HashSet<string> signatures = [];
 
             foreach (string simpleName in context.InputFilePaths.Keys)
@@ -93,7 +93,7 @@ namespace ILCompiler.Wasm
                 }
             }
 
-            var generator = new WasmPInvokeTableGenerator(log);
+            var generator = new PInvokeTableGenerator(log);
 
             WriteIfDifferent(Path.Combine(options.OutputDirectory, PInvokeFileName), log,
                 w => generator.EmitPInvokeTable(w, options.PInvokeModules, pinvokes));
@@ -104,7 +104,7 @@ namespace ILCompiler.Wasm
             IEnumerable<string> cookies = signatures.Concat(internalCallCollector.Signatures);
 
             WriteIfDifferent(Path.Combine(options.OutputDirectory, InterpToNativeFileName), log,
-                w => WasmInterpToNativeGenerator.Emit(w, cookies));
+                w => InterpToNativeGenerator.Emit(w, cookies));
         }
 
         /// <summary>
@@ -112,7 +112,7 @@ namespace ILCompiler.Wasm
         /// already there, so that an unchanged file keeps its timestamp and does not retrigger the
         /// native build that consumes it.
         /// </summary>
-        private static void WriteIfDifferent(string path, WasmInteropLogger log, Action<TextWriter> emit)
+        private static void WriteIfDifferent(string path, InteropLogger log, Action<TextWriter> emit)
         {
             var buffer = new StringWriter { NewLine = Environment.NewLine };
             emit(buffer);

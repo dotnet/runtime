@@ -290,7 +290,7 @@ namespace ILCompiler
 
             if (_generatePortableCallHelpers is not null)
             {
-                return Wasm.WasmInteropGenerator.Run(typeSystemContext, new Wasm.WasmInteropGeneratorOptions
+                return PortableCallHelpers.PortableCallHelpersGenerator.Run(typeSystemContext, new PortableCallHelpers.PortableCallHelpersGeneratorOptions
                 {
                     OutputDirectory = _generatePortableCallHelpers,
                     PInvokeModules = Get(_command.DirectPInvoke),

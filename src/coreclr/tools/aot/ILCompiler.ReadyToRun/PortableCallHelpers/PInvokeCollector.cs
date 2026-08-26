@@ -9,13 +9,13 @@ using System.Reflection.Metadata.Ecma335;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
-namespace ILCompiler.Wasm
+namespace ILCompiler.PortableCallHelpers
 {
     /// <summary>
     /// A P/Invoke discovered while scanning the input assemblies.
     /// </summary>
-    internal sealed class WasmPInvoke(string entryPoint, string module, EcmaMethod method, bool wasmLinkage)
-        : IEquatable<WasmPInvoke>
+    internal sealed class PInvokeInfo(string entryPoint, string module, EcmaMethod method, bool wasmLinkage)
+        : IEquatable<PInvokeInfo>
     {
         public string EntryPoint { get; } = entryPoint;
         public string Module { get; } = module;
@@ -26,10 +26,10 @@ namespace ILCompiler.Wasm
         /// <summary>A stable identity for de-duplicating declarations of the same import.</summary>
         private string Identity => $"{EntryPoint}!{Module}!{Method.OwningType}::{Method.Name.ToString()}{Method.Signature}";
 
-        public bool Equals(WasmPInvoke other)
+        public bool Equals(PInvokeInfo other)
             => other is not null && string.Equals(Identity, other.Identity, StringComparison.Ordinal);
 
-        public override bool Equals(object obj) => Equals(obj as WasmPInvoke);
+        public override bool Equals(object obj) => Equals(obj as PInvokeInfo);
 
         public override int GetHashCode() => Identity.GetHashCode(StringComparison.Ordinal);
 
@@ -39,22 +39,22 @@ namespace ILCompiler.Wasm
     /// <summary>
     /// A managed method callable from native code, discovered while scanning the input assemblies.
     /// </summary>
-    internal sealed class WasmPInvokeCallback
+    internal sealed class PInvokeCallback
     {
-        public WasmPInvokeCallback(EcmaMethod method)
+        public PInvokeCallback(EcmaMethod method)
         {
             Method = method;
             var type = (EcmaType)method.OwningType;
 
             TypeName = type.Name.ToString();
-            TypeFullName = WasmTypeNames.GetFullName(type);
+            TypeFullName = TypeNames.GetFullName(type);
             AssemblyName = ((EcmaAssembly)type.Module).GetName().Name;
 
             // Nested types: the runtime reverse-thunk key (vm/wasm/helpers.cpp GetHashCode ->
             // GetFullyQualifiedNameInfo) reports an empty namespace for nested types, so match that
             // here or the emitted g_ReverseThunks key won't be found at lookup time (#130129).
             // This key drops the enclosing-type chain, so nested types with the same simple name in
-            // different namespaces collide; the duplicate-key check in WasmPInvokeTableGenerator
+            // different namespaces collide; the duplicate-key check in PInvokeTableGenerator
             // (EmitNativeToInterp) turns that into a build error.
             // Tracked by https://github.com/dotnet/runtime/issues/130739.
             Namespace = type.ContainingType is not null ? string.Empty : type.Namespace.ToString();
@@ -110,9 +110,9 @@ namespace ILCompiler.Wasm
         public string Key { get; }
     }
 
-    internal sealed class WasmPInvokeCallbackComparer : IComparer<WasmPInvokeCallback>
+    internal sealed class PInvokeCallbackComparer : IComparer<PInvokeCallback>
     {
-        public int Compare(WasmPInvokeCallback x, WasmPInvokeCallback y)
+        public int Compare(PInvokeCallback x, PInvokeCallback y)
         {
             int compare = string.Compare(x.Key, y.Key, StringComparison.Ordinal);
             return compare != 0 ? compare : (int)(x.Token - y.Token);
@@ -123,14 +123,14 @@ namespace ILCompiler.Wasm
     /// Scans assemblies for the interop surface the wasm interpreter needs thunks for: P/Invokes,
     /// methods callable from native code, native function pointer signatures, and InternalCalls.
     /// </summary>
-    internal sealed class WasmPInvokeCollector(WasmInteropLogger log, string targetOS)
+    internal sealed class PInvokeCollector(InteropLogger log, string targetOS)
     {
         private readonly Dictionary<EcmaAssembly, bool> _assemblyDisableRuntimeMarshalling = [];
         private readonly Dictionary<TypeDesc, bool> _typeUnsupportedOnPlatform = [];
         private readonly Dictionary<EcmaAssembly, bool> _assemblyUnsupportedOnPlatform = [];
         private readonly Dictionary<TypeDesc, bool> _blittable = [];
 
-        public void CollectPInvokes(List<WasmPInvoke> pinvokes, List<WasmPInvokeCallback> callbacks, HashSet<string> signatures, EcmaType type)
+        public void CollectPInvokes(List<PInvokeInfo> pinvokes, List<PInvokeCallback> callbacks, HashSet<string> signatures, EcmaType type)
         {
             foreach (MethodDesc methodDesc in type.GetMethods())
             {
@@ -139,7 +139,7 @@ namespace ILCompiler.Wasm
                 {
                     CollectPInvokesForMethod(method);
                     if (DoesMethodHaveCallbacks(method))
-                        callbacks.Add(new WasmPInvokeCallback(method));
+                        callbacks.Add(new PInvokeCallback(method));
                 }
                 catch (Exception ex) when (ex is not LogAsErrorException)
                 {
@@ -174,7 +174,7 @@ namespace ILCompiler.Wasm
                 PInvokeMetadata metadata = method.GetPInvokeMethodMetadata();
                 bool wasmLinkage = method.HasCustomAttribute("System.Runtime.InteropServices", "WasmImportLinkageAttribute");
 
-                pinvokes.Add(new WasmPInvoke(metadata.Name, metadata.Module, method, wasmLinkage));
+                pinvokes.Add(new PInvokeInfo(metadata.Name, metadata.Module, method, wasmLinkage));
 
                 AddSignature(signatures, method, includeThis: false, "pinvoke");
             }
@@ -182,7 +182,7 @@ namespace ILCompiler.Wasm
 
         private void AddSignature(HashSet<string> signatures, MethodDesc method, bool includeThis, string kind)
         {
-            string signature = WasmInteropSignature.GetMethodSignature(method, includeThis);
+            string signature = InteropSignature.GetMethodSignature(method, includeThis);
             if (signatures.Add(signature))
                 log.Verbose($"Adding {kind} signature {signature} for method '{method.OwningType}.{method.Name.ToString()}'");
         }

@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
-namespace ILCompiler.Wasm
+namespace ILCompiler.PortableCallHelpers
 {
     /// <summary>
     /// Reports a condition that should fail the build, with a message that is complete on its own.
@@ -18,7 +18,7 @@ namespace ILCompiler.Wasm
     /// Emits generator diagnostics in the canonical MSBuild format, so that a build driving
     /// crossgen2 through Exec still reports them with their codes.
     /// </summary>
-    internal sealed class WasmInteropLogger(Logger logger)
+    internal sealed class InteropLogger(Logger logger)
     {
         private readonly HashSet<string> _reportedInfo = [];
 
@@ -47,7 +47,7 @@ namespace ILCompiler.Wasm
     /// collects the portable entry point signatures the interpreter-to-native thunks are generated
     /// from.
     /// </summary>
-    internal sealed class WasmInternalCallSignatureCollector(WasmInteropLogger log)
+    internal sealed class InternalCallSignatureCollector(InteropLogger log)
     {
         private readonly HashSet<string> _signatures = [];
 
@@ -81,7 +81,7 @@ namespace ILCompiler.Wasm
                 {
                     // A managed signature: the lowering adds the 'T' for an instance method and the
                     // trailing 'p' for the portable entry point parameter.
-                    string signature = WasmInteropSignature.GetMethodSignature(method, includeThis: true);
+                    string signature = InteropSignature.GetMethodSignature(method, includeThis: true);
                     if (_signatures.Add(signature))
                         log.Verbose($"Adding InternalCall signature {signature} for method '{type}.{method.Name.ToString()}'");
                 }

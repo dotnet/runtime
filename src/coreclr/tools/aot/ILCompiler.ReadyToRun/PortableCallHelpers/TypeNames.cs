@@ -3,14 +3,14 @@
 
 using Internal.TypeSystem;
 
-namespace ILCompiler.Wasm
+namespace ILCompiler.PortableCallHelpers
 {
     /// <summary>
     /// Formats type names the way <see cref="System.Reflection"/> reports them. The runtime looks
     /// callbacks up by these names and the emitted symbols embed them, so they have to match
     /// reflection rather than the type system, which spells nested types differently.
     /// </summary>
-    internal static class WasmTypeNames
+    internal static class TypeNames
     {
         /// <summary>
         /// The name <see cref="System.Type.FullName"/> would report, with nested types joined by '+'.
