@@ -555,7 +555,7 @@ namespace System.Net.ServerSentEvents
             uint preferredSize = (uint)currentSize * 2;
             preferredSize = Math.Min(preferredSize, (uint)_maxBufferSize);
             preferredSize = Math.Max(preferredSize, DefaultArrayPoolRentSize);
-            Debug.Assert(preferredSize < int.MaxValue);
+            Debug.Assert(preferredSize <= int.MaxValue);
 
             if (minimumSize > _maxBufferSize)
             {
