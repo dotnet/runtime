@@ -10,8 +10,8 @@ time the way a .so/.dylib/.dll is elsewhere. It has to be linked into the host u
 with a generated table mapping each [DllImport] to the address of its target. That is what this
 file does, once per test that has a CMakeProjectReference:
 
-  1. ManagedToNativeGenerator (src/tasks/WasmAppBuilder) scans the test's managed assemblies plus
-     the whole framework closure and emits callhelpers-{pinvoke,reverse,interp-to-managed}.cpp.
+  1. crossgen2, in its portable call-helpers generation mode, scans the test's managed assemblies
+     plus the whole framework closure and emits callhelpers-{pinvoke,reverse,interp-to-managed}.cpp.
   2. Those three sources are compiled with em++ using the response file exported by the CoreCLR
      build (see src/coreclr/hosts/corerun/wasm/testkit.cmake).
   3. They are linked, together with the test's own static libraries, against the same archives
@@ -60,7 +60,7 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
     <_WasmCorerunScriptExt Condition="$([MSBuild]::IsOSPlatform('windows'))">.bat</_WasmCorerunScriptExt>
   </PropertyGroup>
 
-  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.CoreClr.ManagedToNativeGenerator"
+  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.FilterManagedAssemblies"
              AssemblyFile="$([MSBuild]::NormalizePath('$(WasmAppBuilderDir)', 'WasmAppBuilder.dll'))"
              TaskFactory="TaskHostFactory" />
 
@@ -189,6 +189,7 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
            and corerun.wasm below belong in the output directory. -->
       <_WasmCorerunDir>$([MSBuild]::NormalizeDirectory('$(IntermediateOutputPath)', 'wasm-corerun'))</_WasmCorerunDir>
       <_WasmCorerunInputManifest>$(_WasmCorerunDir)inputs.txt</_WasmCorerunInputManifest>
+      <_WasmCorerunGeneratorRsp>$(_WasmCorerunDir)callhelpers-generator.rsp</_WasmCorerunGeneratorRsp>
 
       <!-- Consumed straight out of the kit: the paths in them are relative to the kit directory,
            which is why both em++ invocations below run from there. -->
@@ -312,22 +313,45 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
     </ItemGroup>
 
     <!--
-      WarnOnUnresolvedPInvokeModules is off on purpose: tests may P/Invoke into a module that is
-      deliberately absent (JIT/interpreter checks that DllNotFoundException is thrown), and the
-      framework assemblies reference modules that no wasm build links.
+      Tests may P/Invoke into a module that is deliberately absent (JIT/interpreter checks that
+      DllNotFoundException is thrown), and the framework assemblies reference modules no wasm build
+      links. The generator skips those rather than failing, which is what makes that safe.
     -->
-    <ManagedToNativeGenerator
-      Assemblies="@(_WasmCorerunAssembly->Distinct())"
-      PInvokeModules="@(_WasmCorerunPInvokeModule->Distinct())"
-      PInvokeOutputPath="$(_WasmCorerunDir)callhelpers-pinvoke.cpp"
-      ReversePInvokeOutputPath="$(_WasmCorerunDir)callhelpers-reverse.cpp"
-      InterpToNativeOutputPath="$(_WasmCorerunDir)callhelpers-interp-to-managed.cpp"
-      CacheFilePath="$(_WasmCorerunDir)m2n_cache.txt"
-      TargetOS="browser"
-      IsLibraryMode="false"
-      WarnOnUnresolvedPInvokeModules="false">
-      <Output TaskParameter="FileWrites" ItemName="FileWrites" />
-    </ManagedToNativeGenerator>
+    <FilterManagedAssemblies Assemblies="@(_WasmCorerunAssembly->Distinct())">
+      <Output TaskParameter="ManagedAssemblies" ItemName="_WasmCorerunManagedAssembly" />
+    </FilterManagedAssemblies>
+
+    <PropertyGroup>
+      <_WasmCorerunGeneratorExeSuffix Condition="'$(OS)' == 'Windows_NT'">.exe</_WasmCorerunGeneratorExeSuffix>
+      <_WasmCorerunGeneratorPath Condition="'$(_WasmCorerunGeneratorPath)' == '' and '$(Crossgen2InBuildDir)' != ''">$([MSBuild]::NormalizePath('$(Crossgen2InBuildDir)', 'crossgen2$(_WasmCorerunGeneratorExeSuffix)'))</_WasmCorerunGeneratorPath>
+      <!-- An IL-only build of crossgen2 needs the dotnet host to launch it; an apphost does not. -->
+      <_WasmCorerunGeneratorCommand Condition="'$([System.IO.Path]::GetExtension(`$(_WasmCorerunGeneratorPath)`))' == '.dll'">"$(DOTNET_HOST_PATH)" "$(_WasmCorerunGeneratorPath)"</_WasmCorerunGeneratorCommand>
+      <_WasmCorerunGeneratorCommand Condition="'$(_WasmCorerunGeneratorCommand)' == ''">"$(_WasmCorerunGeneratorPath)"</_WasmCorerunGeneratorCommand>
+    </PropertyGroup>
+
+    <Error Condition="!Exists('$(_WasmCorerunGeneratorPath)')"
+           Text="crossgen2 was not found at '$(_WasmCorerunGeneratorPath)', so the test's P/Invoke call helpers cannot be generated. It is built by the 'clr' subset." />
+
+    <!-- One token per line: that is how crossgen2 reads a response file. -->
+    <ItemGroup>
+      <_WasmCorerunGeneratorArg Include="--targetos" />
+      <_WasmCorerunGeneratorArg Include="browser" />
+      <_WasmCorerunGeneratorArg Include="--targetarch" />
+      <_WasmCorerunGeneratorArg Include="wasm" />
+      <_WasmCorerunGeneratorArg Include="--generate-portable-callhelpers" />
+      <_WasmCorerunGeneratorArg Include="$(_WasmCorerunDir)" />
+      <_WasmCorerunGeneratorArg Include="--directpinvoke;%(_WasmCorerunPInvokeModule.Identity)" Condition="'%(_WasmCorerunPInvokeModule.Identity)' != ''" />
+      <_WasmCorerunGeneratorArg Include="@(_WasmCorerunManagedAssembly->'%(FullPath)')" />
+    </ItemGroup>
+
+    <WriteLinesToFile File="$(_WasmCorerunGeneratorRsp)" Lines="@(_WasmCorerunGeneratorArg)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+
+    <Exec Command="$(_WasmCorerunGeneratorCommand) &quot;@$(_WasmCorerunGeneratorRsp)&quot;" />
+
+    <ItemGroup>
+      <FileWrites Include="$(_WasmCorerunGeneratorRsp)" />
+      <FileWrites Include="@(_WasmCorerunGeneratedSource)" />
+    </ItemGroup>
   </Target>
 
   <!-- ======================== Compile ======================== -->
