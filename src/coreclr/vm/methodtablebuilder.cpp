@@ -2860,6 +2860,122 @@ static bool CopyTypeSigWithSubstitution(
 
 //---------------------------------------------------------------------------------------
 //
+// A MethodImpl declaration may be a MethodDef token, in which case it refers to the method on the
+// generic type definition of the declaring type and carries no instantiation of its own.
+// This helper recovers the instantiation of the declaring type by walking the inheritance chain
+// from the type that is being built up to the declaring type, composing the instantiations found
+// in the "extends" clauses. The resulting type arguments are expressed in the scope of the type
+// that is being built and thus can be used in its signatures as-is.
+//
+// The type arguments are stored in the provided CQuickBytes buffer and are only valid for as long
+// as the buffer is alive.
+//
+// Returns false if the declaring type could not be reached without loading types
+// (i.e. it is in another module) or if the case is not supported.
+//
+static bool TryGetDeclaringTypeInstantiation(
+    IMDInternalImport* pMDInternalImport,
+    mdTypeDef          tkImplType,
+    DWORD              cImplTypeArgs,
+    mdTypeDef          tkDeclType,
+    CQuickBytes*       pInstBuffer,
+    SigParser*         pInstArgs,
+    DWORD*             pcInstArgs)
+{
+    STANDARD_VM_CONTRACT;
+
+    // The instantiation of the type that is being built, in its own scope, is the identity - !0, !1, ...
+    SigBuilder curInstBuilder;
+    for (DWORD i = 0; i < cImplTypeArgs; i++)
+    {
+        curInstBuilder.AppendElementType(ELEMENT_TYPE_VAR);
+        curInstBuilder.AppendData(i);
+    }
+
+    DWORD cbCurInst;
+    PCCOR_SIGNATURE pCurInst = (PCCOR_SIGNATURE)curInstBuilder.GetSignature(&cbCurInst);
+    DWORD cCurInst = cImplTypeArgs;
+
+    CQuickBytes curInstBuffer;
+    memcpy(curInstBuffer.AllocThrows(cbCurInst), pCurInst, cbCurInst);
+    pCurInst = (PCCOR_SIGNATURE)curInstBuffer.Ptr();
+
+    mdTypeDef tkType = tkImplType;
+    while (tkType != tkDeclType)
+    {
+        mdToken tkExtends;
+        if (FAILED(pMDInternalImport->GetTypeDefProps(tkType, NULL, &tkExtends)))
+            return false;
+
+        if (IsNilToken(tkExtends))
+            return false;
+
+        if (TypeFromToken(tkExtends) == mdtTypeDef)
+        {
+            // A non-generic base type - the instantiation becomes empty.
+            tkType = tkExtends;
+            cbCurInst = 0;
+            cCurInst = 0;
+            continue;
+        }
+
+        if (TypeFromToken(tkExtends) != mdtTypeSpec)
+        {
+            // Either the base type is in another module (mdtTypeRef), in which case it cannot declare
+            // a method referred to by a MethodDef token, or the hierarchy ended (mdTypeDefNil).
+            return false;
+        }
+
+        PCCOR_SIGNATURE pTypeSpecSig;
+        ULONG cbTypeSpecSig;
+        if (FAILED(pMDInternalImport->GetTypeSpecFromToken(tkExtends, &pTypeSpecSig, &cbTypeSpecSig)))
+            return false;
+
+        // GENERICINST CLASS <token> <argCnt> <args>
+        SigParser typeSpecSig(pTypeSpecSig, cbTypeSpecSig);
+        BYTE elemType;
+        if (FAILED(typeSpecSig.GetByte(&elemType)) || (elemType != ELEMENT_TYPE_GENERICINST))
+            return false;
+
+        if (FAILED(typeSpecSig.GetByte(&elemType)) || (elemType != ELEMENT_TYPE_CLASS))
+            return false;
+
+        mdToken tkBase;
+        if (FAILED(typeSpecSig.GetToken(&tkBase)) || (TypeFromToken(tkBase) != mdtTypeDef))
+            return false;
+
+        uint32_t argCnt;
+        if (FAILED(typeSpecSig.GetData(&argCnt)))
+            return false;
+
+        // The type arguments of the base type may refer to the type variables of the current type,
+        // which are expressed in terms of the type that is being built by the current instantiation.
+        SigBuilder nextInstBuilder;
+        for (uint32_t i = 0; i < argCnt; i++)
+        {
+            SigParser curInstArgs(pCurInst, cbCurInst);
+            if (!CopyTypeSigWithSubstitution(&typeSpecSig, &nextInstBuilder, curInstArgs, cCurInst))
+                return false;
+        }
+
+        DWORD cbNextInst;
+        PCCOR_SIGNATURE pNextInst = (PCCOR_SIGNATURE)nextInstBuilder.GetSignature(&cbNextInst);
+
+        memcpy(curInstBuffer.AllocThrows(cbNextInst), pNextInst, cbNextInst);
+        pCurInst = (PCCOR_SIGNATURE)curInstBuffer.Ptr();
+        cbCurInst = cbNextInst;
+        cCurInst = argCnt;
+        tkType = tkBase;
+    }
+
+    memcpy(pInstBuffer->AllocThrows(cbCurInst), pCurInst, cbCurInst);
+    *pInstArgs = SigParser((PCCOR_SIGNATURE)pInstBuffer->Ptr(), cbCurInst);
+    *pcInstArgs = cCurInst;
+    return true;
+}
+
+//---------------------------------------------------------------------------------------
+//
 // Task and Task<T> are not sealed, thus a covariant override may return a type that derives from
 // Task/Task<T>, while not being Task/Task<T> itself. Such a method is not Task-returning on its own,
 // but the method that it overrides may well be. Since the overridden method has an Async variant,
@@ -2877,6 +2993,8 @@ static bool CopyTypeSigWithSubstitution(
 static bool TryGetCovariantOverrideAsyncVariantReturnType(
     IMDInternalImport* pMDInternalImport,
     Module*            pModule,
+    mdTypeDef          tkImplType,
+    DWORD              cImplTypeArgs,
     mdToken            tkDecl,
     SigBuilder*        pElementSigBuilder,
     PCCOR_SIGNATURE*   ppElementSig,
@@ -2891,15 +3009,32 @@ static bool TryGetCovariantOverrideAsyncVariantReturnType(
     ULONG cbSigDecl = 0;
 
     // Type arguments of the type that declares the overridden method, if that type is generic.
-    // The instantiation comes from the TypeSpec of the MethodImpl declaration, thus it is
-    // expressed in the scope of the overriding type and can be used in its signatures as-is.
+    // The type arguments are expressed in the scope of the overriding type and thus can be used
+    // in its signatures as-is.
     SigParser declInstArgs;
     DWORD cDeclInstArgs = 0;
+    CQuickBytes declInstBuffer;
 
     if (TypeFromToken(tkDecl) == mdtMethodDef)
     {
         if (FAILED(pMDInternalImport->GetSigOfMethodDef(tkDecl, &cbSigDecl, &pSigDecl)))
             return false;
+
+        // A MethodDef declaration refers to the method on the generic type definition of the
+        // declaring type, so, when that type is generic, the type arguments must be recovered
+        // from the inheritance chain of the type that is being built.
+        mdTypeDef tkDeclType;
+        if (FAILED(pMDInternalImport->GetParentToken(tkDecl, &tkDeclType)) ||
+            (TypeFromToken(tkDeclType) != mdtTypeDef))
+        {
+            return false;
+        }
+
+        // If the instantiation cannot be recovered, continue with an empty one - it is only
+        // needed if the return type of the declaration actually refers to the type variables
+        // of the declaring type.
+        TryGetDeclaringTypeInstantiation(
+            pMDInternalImport, tkImplType, cImplTypeArgs, tkDeclType, &declInstBuffer, &declInstArgs, &cDeclInstArgs);
     }
     else if (TypeFromToken(tkDecl) == mdtMemberRef)
     {
@@ -3690,6 +3825,8 @@ MethodTableBuilder::EnumerateClassMethods()
                     isCovariantTaskOverride = TryGetCovariantOverrideAsyncVariantReturnType(
                         pMDInternalImport,
                         GetModule(),
+                        GetCl(),
+                        bmtGenericsInfo->GetNumGenericArgs(),
                         bmtMetaData->rgMethodImplTokens[impls].methodDecl,
                         &covariantElementSigBuilder,
                         &pCovariantElementSig,
