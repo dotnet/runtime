@@ -702,14 +702,18 @@ namespace System.Net.Tests
             }
         }
 
-        [Theory]
+        // http.sys tolerates whitespace around the chunk size and delivers the body, so this
+        // is asserting the behavior of the managed implementation only. Gating on the
+        // implementation rather than the platform keeps it running on Windows when the
+        // managed implementation is force-enabled.
+        [ConditionalTheory(typeof(Helpers), nameof(Helpers.IsManagedImplementation))]
         [InlineData("5 ")]
         [InlineData(" 5")]
         [InlineData(" 5 ")]
         [InlineData("5\t")]
         [InlineData("\t5")]
         [InlineData("5 ;foo=bar")]
-        public async Task Read_ChunkSizeWithWhitespace_BodyIsNotDelivered(string chunkSizeLine)
+        public async Task Read_ChunkSizeWithWhitespace_ThrowsHttpListenerException(string chunkSizeLine)
         {
             using (Socket client = _factory.GetConnectedSocket())
             {
@@ -727,22 +731,8 @@ namespace System.Net.Tests
                 await client.SendAsync(Encoding.ASCII.GetBytes(request));
                 HttpListenerContext context = await _listener.GetContextAsync();
 
-                // The chunk size is malformed, so the body must never be surfaced to the application.
-                // The managed implementation rejects it while reading the body, while http.sys may
-                // instead terminate the request without handing back any data.
                 byte[] buffer = new byte[5];
-                int bytesRead = 0;
-                Exception exception = await Record.ExceptionAsync(async () =>
-                    bytesRead = await ReadLengthAsync(context.Request.InputStream, buffer, 0, buffer.Length));
-
-                if (exception is null)
-                {
-                    Assert.Equal(0, bytesRead);
-                }
-                else
-                {
-                    Assert.IsType<HttpListenerException>(exception);
-                }
+                await Assert.ThrowsAsync<HttpListenerException>(() => ReadLengthAsync(context.Request.InputStream, buffer, 0, buffer.Length));
             }
         }
     }
