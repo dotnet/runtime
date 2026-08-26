@@ -376,16 +376,19 @@ namespace System.Diagnostics
             ValueStringBuilder pathBuilder = new(stackalloc char[256]);
             try
             {
-                if (path is not null)
+                if (!string.IsNullOrEmpty(path))
                 {
                     ReadOnlySpan<char> executableDirectory = Path.GetDirectoryName(path.AsSpan());
-                    Combine(executableDirectory, filename, ref pathBuilder);
-                    if (IsExecutable(pathBuilder.AsSpan()))
+                    if (!executableDirectory.IsEmpty)
                     {
-                        return pathBuilder.ToString();
-                    }
+                        Combine(executableDirectory, filename, ref pathBuilder);
+                        if (IsExecutable(pathBuilder.AsSpan()))
+                        {
+                            return pathBuilder.ToString();
+                        }
 
-                    pathBuilder.Length = 0;
+                        pathBuilder.Length = 0;
+                    }
                 }
 
                 // Then check the current directory
