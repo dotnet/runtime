@@ -3826,7 +3826,7 @@ MethodTableBuilder::EnumerateClassMethods()
                         pMDInternalImport,
                         GetModule(),
                         GetCl(),
-                        bmtGenericsInfo->GetNumGenericArgs(),
+                        bmtGenerics->GetNumGenericArgs(),
                         bmtMetaData->rgMethodImplTokens[impls].methodDecl,
                         &covariantElementSigBuilder,
                         &pCovariantElementSig,
