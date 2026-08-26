@@ -13052,12 +13052,8 @@ CORJIT_FLAGS* CEECodeGenInfo::getJitFlagsInternal()
 #ifdef FEATURE_PGO
 static bool InterpreterPgoInstrumentationEnabled()
 {
-    static LONG s_enabled = -1;
-    if (s_enabled == -1)
-    {
-        InterlockedExchange(&s_enabled, (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_InterpPGO) != 0) ? 1 : 0);
-    }
-    return s_enabled != 0;
+    static ConfigDWORD s_interpPgo;
+    return s_interpPgo.val(CLRConfig::INTERNAL_InterpPGO) != 0;
 }
 #endif // FEATURE_PGO
 
