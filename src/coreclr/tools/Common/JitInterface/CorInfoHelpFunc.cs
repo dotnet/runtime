@@ -286,6 +286,8 @@ namespace Internal.JitInterface
         CORINFO_HELP_ALLOC_CONTINUATION_METHOD,
         CORINFO_HELP_ALLOC_CONTINUATION_CLASS,
 
+        CORINFO_HELP_WASM_PROF_SAMPLEPOINT,     // WASM only: cooperative EventPipe CPU-sampling samplepoint
+
         CORINFO_HELP_COUNT,
     }
 }

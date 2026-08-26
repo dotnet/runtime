@@ -4983,6 +4983,11 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     m_pLowering->FinalizeOutgoingArgSpace();
 
 #ifdef TARGET_WASM
+    // Insert EventPipe CPU-sampling samplepoints before the Virtual IP phase, so the
+    // per-block Virtual IP stores land ahead of each samplepoint.
+    //
+    DoPhase(this, PHASE_WASM_PROF_INSTRUMENT, &Compiler::fgWasmProfInstrument);
+
     // Determine if a Virtual IP is needed and add code as needed to
     // keep the Virtual IP updated.
     //

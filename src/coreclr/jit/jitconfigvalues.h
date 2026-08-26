@@ -914,6 +914,9 @@ RELEASE_CONFIG_INTEGER(JitWasmNyiToR2RUnsupported, "JitWasmNyiToR2RUnsupported",
 CONFIG_STRING(JitR2RUnsupportedRange, "JitR2RUnsupportedRange")
 // Enable processing methods with funclets. Set to 0 to bail to R2R unsupported before codegen.
 RELEASE_CONFIG_INTEGER(JitWasmFunclets, "JitWasmFunclets", 1)
+// Method filter for WASM performance instrumentation profiler. Uses standard MethodSet pattern format.
+// Same key as the interpreter's InterpConfig.WasmPerformanceInstrumentation so both engines share it.
+RELEASE_CONFIG_METHODSET(WasmPerformanceInstrumentation, "WasmPerformanceInstrumentation")
 #endif // defined(TARGET_WASM)
 
 // Allow to enregister locals with struct type.

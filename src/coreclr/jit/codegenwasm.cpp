@@ -1014,6 +1014,12 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             // no codegen needed here.
             break;
 
+        case GT_WASM_PROF_SAMPLEPOINT:
+            // Managed helper ABI: push the shadow stack pointer, then call the samplepoint helper.
+            GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetStackPointerRegIndex());
+            genEmitHelperCall(CORINFO_HELP_WASM_PROF_SAMPLEPOINT, 0, EA_UNKNOWN);
+            break;
+
         case GT_WASM_THROW_REF:
             // Reload and rethrow the exnref stashed at the catch_ref landing.
             {
@@ -3344,6 +3350,9 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
         // RhBulkMoveWithWriteBarrier
         HELPER_SIG(CORINFO_HELP_BULK_WRITEBARRIER, UNMANAGED, CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I,
                    CORINFO_WASM_TYPE_I, CORINFO_WASM_TYPE_I);
+        // EventPipe CPU-sampling samplepoint (native helper wrapped in a PortableEntryPoint; managed ABI)
+        HELPER_SIG(CORINFO_HELP_WASM_PROF_SAMPLEPOINT, MANAGED, CORINFO_WASM_TYPE_VOID /* retval */,
+                   CORINFO_WASM_TYPE_I /* sp */, CORINFO_WASM_TYPE_I /* pep */);
         default:
             JITDUMP("Helper '%s' has no hard-coded signature\n", m_compiler->eeGetMethodFullName(params.methHnd));
             unreached();

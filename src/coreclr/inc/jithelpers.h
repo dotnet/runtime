@@ -367,6 +367,14 @@
     DYNAMICJITHELPER(CORINFO_HELP_ALLOC_CONTINUATION_METHOD, NULL, METHOD__ASYNC_HELPERS__ALLOC_CONTINUATION_METHOD)
     DYNAMICJITHELPER(CORINFO_HELP_ALLOC_CONTINUATION_CLASS, NULL, METHOD__ASYNC_HELPERS__ALLOC_CONTINUATION_CLASS)
 
+    // WASM EventPipe CPU-sampling samplepoint. Native helper (no managed fallback), auto-wrapped in a
+    // PortableEntryPoint by getHelperFtnAddr. Never emitted on other targets; NULL keeps enum/table aligned.
+#ifdef TARGET_WASM
+    JITHELPER(CORINFO_HELP_WASM_PROF_SAMPLEPOINT, JIT_WasmProfSamplepoint, METHOD__NIL)
+#else
+    JITHELPER(CORINFO_HELP_WASM_PROF_SAMPLEPOINT, NULL,                     METHOD__NIL)
+#endif
+
 #undef JITHELPER
 #undef DYNAMICJITHELPER
 #undef JITHELPER

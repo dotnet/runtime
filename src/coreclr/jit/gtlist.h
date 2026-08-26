@@ -366,6 +366,7 @@ GTNODE(SWIFT_ERROR_RET  , GenTreeOp          ,0,1,GTK_BINOP|GTK_NOVALUE) // Retu
 
 GTNODE(WASM_JEXCEPT     , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR)  // Special jump for Wasm exception handling
 GTNODE(WASM_THROW_REF   , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR)  // Wasm rethrow host exception (exception is an implicit operand)
+GTNODE(WASM_PROF_SAMPLEPOINT, GenTree         ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR)  // Wasm EventPipe CPU-sampling samplepoint
 
 //-----------------------------------------------------------------------------
 //  Nodes used by Lower to generate a closer CPU representation of other nodes

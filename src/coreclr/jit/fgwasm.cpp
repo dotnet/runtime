@@ -3351,6 +3351,123 @@ void Compiler::fgWasmEhTransformTry(ArrayStack<BasicBlock*>* catchRetBlocks,
 }
 
 //-----------------------------------------------------------------------------
+// fgWasmProfInstrument: insert EventPipe CPU-sampling samplepoints
+//
+// Returns:
+//   suitable phase status
+//
+// Notes:
+//   Mirrors the interpreter's INTOP_PROF_SAMPLEPOINT placement (see
+//   src/coreclr/interpreter/compiler.cpp): one samplepoint at method entry and
+//   one on every loop back-edge. Emitted only for methods matching the
+//   WasmPerformanceInstrumentation MethodSet filter (same key the interpreter
+//   uses, so both engines share the filter and the runtime skip counter).
+//
+//   Each samplepoint is a GT_WASM_PROF_SAMPLEPOINT leaf that codegen lowers to a
+//   call to CORINFO_HELP_WASM_PROF_SAMPLEPOINT. We run just before fgWasmVirtualIP
+//   so the per-block Virtual IP store is inserted ahead of the samplepoint, giving
+//   the cooperative stack walk a correct Virtual IP for the sampled frame.
+//
+PhaseStatus Compiler::fgWasmProfInstrument()
+{
+    // Codegen only supports single-threaded wasm today; the shared runtime skip
+    // counter and cooperative sampling both assume PERFTRACING_DISABLE_THREADS.
+    assert(!WASM_THREAD_SUPPORT);
+
+    if (!JitConfig.WasmPerformanceInstrumentation().contains(info.compMethodHnd, info.compClassHnd,
+                                                             &info.compMethodInfo->args))
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    // Insert a samplepoint at the beginning of a block. Placed after any Virtual IP
+    // store that fgWasmVirtualIP will later insert at the block's beginning.
+    auto insertSamplepoint = [this](BasicBlock* block) {
+        GenTree* const samplepoint = new (this, GT_WASM_PROF_SAMPLEPOINT) GenTree(GT_WASM_PROF_SAMPLEPOINT, TYP_VOID);
+        LIR::AsRange(block).InsertAtBeginning(samplepoint);
+    };
+
+    unsigned samplepointsAdded = 0;
+
+    // Method entry.
+    insertSamplepoint(fgFirstBB);
+    samplepointsAdded++;
+
+    // Loop back-edges: a DFS back edge (source -> target where target is an
+    // ancestor still on the DFS stack) identifies target as a loop header.
+    // We sample at each unique loop header, which executes on every iteration.
+    // Unlike fgHasCycleWithoutGCSafePoint we do NOT skip BBF_GC_SAFE_POINT blocks:
+    // the framework is not instrumented, so a loop calling only BCL methods would
+    // otherwise never sample.
+    BitVecTraits traits(fgBBNumMax + 1, this);
+    BitVec       visited(BitVecOps::MakeEmpty(&traits));
+    BitVec       onStack(BitVecOps::MakeEmpty(&traits));
+    BitVec       headers(BitVecOps::MakeEmpty(&traits));
+
+    struct DfsFrame
+    {
+        BasicBlock* block;
+        unsigned    nextSucc;
+    };
+
+    ArrayStack<DfsFrame> stack(getAllocator(CMK_ArrayStack));
+
+    for (BasicBlock* const start : Blocks())
+    {
+        if (BitVecOps::IsMember(&traits, visited, start->bbNum))
+        {
+            continue;
+        }
+
+        BitVecOps::AddElemD(&traits, visited, start->bbNum);
+        BitVecOps::AddElemD(&traits, onStack, start->bbNum);
+        stack.Push(DfsFrame{start, 0});
+
+        while (stack.Height() > 0)
+        {
+            DfsFrame&         top      = stack.TopRef();
+            BasicBlock* const block    = top.block;
+            const unsigned    numSuccs = block->NumSucc();
+
+            if (top.nextSucc < numSuccs)
+            {
+                BasicBlock* const succ = block->GetSucc(top.nextSucc++);
+
+                if (BitVecOps::IsMember(&traits, onStack, succ->bbNum))
+                {
+                    // Back edge: succ is a loop header.
+                    BitVecOps::AddElemD(&traits, headers, succ->bbNum);
+                }
+                else if (!BitVecOps::IsMember(&traits, visited, succ->bbNum))
+                {
+                    BitVecOps::AddElemD(&traits, visited, succ->bbNum);
+                    BitVecOps::AddElemD(&traits, onStack, succ->bbNum);
+                    stack.Push(DfsFrame{succ, 0});
+                }
+            }
+            else
+            {
+                BitVecOps::RemoveElemD(&traits, onStack, block->bbNum);
+                stack.Pop();
+            }
+        }
+    }
+
+    for (BasicBlock* const block : Blocks())
+    {
+        // fgFirstBB already got an entry samplepoint above.
+        if ((block != fgFirstBB) && BitVecOps::IsMember(&traits, headers, block->bbNum))
+        {
+            insertSamplepoint(block);
+            samplepointsAdded++;
+        }
+    }
+
+    JITDUMP("Added %u Wasm profiler samplepoint(s)\n", samplepointsAdded);
+    return (samplepointsAdded > 0) ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
+}
+
+//-----------------------------------------------------------------------------
 // fgWasmVirtualIP: set up virtual IP mapping for EH and calls
 //
 // Returns:

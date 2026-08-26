@@ -2482,6 +2482,7 @@ void Liveness<TLiveness>::ComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VAR
             case GT_SWIFT_ERROR_RET:
             case GT_GCPOLL:
             case GT_WASM_JEXCEPT:
+            case GT_WASM_PROF_SAMPLEPOINT:
                 // Never remove these nodes, as they are always side-effecting.
                 //
                 // NOTE: the only side-effect of some of these nodes (GT_CMP, GT_SUB_HI) is a write to the flags
