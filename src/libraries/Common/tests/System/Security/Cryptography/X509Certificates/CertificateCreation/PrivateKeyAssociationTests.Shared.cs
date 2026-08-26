@@ -241,7 +241,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         public static void CheckCopyWithPrivateKey_MLKem_OtherMLKem_Seed()
         {
             using (X509Certificate2 pubOnly = MLKemCertTests.LoadCertificateFromPem(MLKemTestData.IetfMlKem512CertificatePem))
-            using (MLKemContract contract = new(MLKemAlgorithm.MLKem512))
+            using (MLKemContract contract = new(MLKemAlgorithm.MLKem512, verifyCallsOnDispose: false))
             {
                 contract.OnTryExportPkcs8PrivateKeyCore = (Span<byte> destination, out int bytesWritten) =>
                 {
@@ -255,6 +255,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     return false;
                 };
 
+                contract.OnExportPrivateSeedCore = destination => MLKemTestData.IncrementalSeed.CopyTo(destination);
                 contract.OnExportEncapsulationKeyCore = (Span<byte> destination) =>
                 {
                     using MLKem publicKem = MLKem.ImportSubjectPublicKeyInfo(MLKemTestData.IetfMlKem512Spki);
@@ -277,7 +278,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         public static void CheckCopyWithPrivateKey_MLKem_OtherMLKem_DecapsulationKey()
         {
             using (X509Certificate2 pubOnly = MLKemCertTests.LoadCertificateFromPem(MLKemTestData.IetfMlKem512CertificatePem))
-            using (MLKemContract contract = new(MLKemAlgorithm.MLKem512))
+            using (MLKemContract contract = new(MLKemAlgorithm.MLKem512, verifyCallsOnDispose: false))
             {
                 contract.OnTryExportPkcs8PrivateKeyCore = (Span<byte> destination, out int bytesWritten) =>
                 {
@@ -291,6 +292,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     return false;
                 };
 
+                contract.OnExportPrivateSeedCore = _ => throw new CryptographicException();
+                contract.OnExportDecapsulationKeyCore =
+                    destination => MLKemTestData.IetfMlKem512PrivateKeyDecapsulationKey.CopyTo(destination);
                 contract.OnExportEncapsulationKeyCore = (Span<byte> destination) =>
                 {
                     using MLKem publicKem = MLKem.ImportSubjectPublicKeyInfo(MLKemTestData.IetfMlKem512Spki);
