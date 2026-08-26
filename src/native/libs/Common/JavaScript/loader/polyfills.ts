@@ -2,11 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { dotnetAssert } from "./cross-module";
-import { ENVIRONMENT_IS_NODE } from "./per-module";
+import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL } from "./per-module";
 
 let hasFetch = false;
 
-export async function initPolyfills(): Promise<void> {
+export async function initPolyfillsLoader(): Promise<void> {
     if (ENVIRONMENT_IS_NODE) {
         await nodeFs();
         await nodeUrl();
@@ -17,7 +17,23 @@ export async function initPolyfills(): Promise<void> {
     }
 }
 
-export async function initPolyfillsAsync(): Promise<void> {
+export async function initPolyfillsEarly(): Promise<void> {
+    if (ENVIRONMENT_IS_SHELL) {
+        if (typeof globalThis.atob !== "function") {
+            const b64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+            globalThis.atob = (input) => {
+                const str = String(input).replace(/=+$/, "");
+                let output = "";
+                for (let bc = 0, bs = 0, i = 0; i < str.length; i++) {
+                    const c = b64.indexOf(str.charAt(i));
+                    if (c === -1) continue;
+                    bs = bc % 4 ? bs * 64 + c : c;
+                    if (bc++ % 4) output += String.fromCharCode(255 & (bs >> ((-2 * bc) & 6)));
+                }
+                return output;
+            };
+        }
+    }
     if (ENVIRONMENT_IS_NODE) {
         if (!globalThis.crypto) {
             globalThis.crypto = <any>{};
@@ -53,7 +69,6 @@ export async function initPolyfillsAsync(): Promise<void> {
             globalThis.performance = (await import(/*! webpackIgnore: true */"perf_hooks")).performance;
         }
     }
-    // WASM-TODO: performance polyfill for V8
 }
 
 let _nodeFs: any | undefined = undefined;
@@ -100,7 +115,7 @@ export async function fetchLike(url: string, init?: RequestInit, expectedContent
         } else if (hasFetch) {
             return globalThis.fetch(url, init || { credentials: "same-origin" });
         } else if (typeof (read) === "function") {
-            const isText = expectedContentType === "application/json" || expectedContentType === "text/plain";
+            const isText = expectedContentType && (expectedContentType.startsWith("application/json") || expectedContentType.startsWith("text/plain"));
             const arrayBuffer = read(url, isText ? "utf8" : "binary");
             return responseLike(url, arrayBuffer, {
                 status: 200,

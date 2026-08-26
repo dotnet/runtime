@@ -9,6 +9,8 @@ using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using System.Text;
 
+using Internal.Text;
+
 using Debug = System.Diagnostics.Debug;
 
 namespace Internal.TypeSystem.Ecma
@@ -315,7 +317,7 @@ namespace Internal.TypeSystem.Ecma
             return bucketHeads;
         }
 
-        private TypeDefinitionHandle FindDefinedType(int hashCode, ReadOnlySpan<byte> nameSpace, ReadOnlySpan<byte> name)
+        private TypeDefinitionHandle FindDefinedType(int hashCode, Utf8Span nameSpace, Utf8Span name)
         {
             MetadataReader reader = _metadataReader;
 
@@ -366,7 +368,7 @@ namespace Internal.TypeSystem.Ecma
             return bucketHeads;
         }
 
-        private ExportedTypeHandle FindExportedType(int hashCode, ReadOnlySpan<byte> nameSpace, ReadOnlySpan<byte> name)
+        private ExportedTypeHandle FindExportedType(int hashCode, Utf8Span nameSpace, Utf8Span name)
         {
             MetadataReader reader = _metadataReader;
 
@@ -387,7 +389,7 @@ namespace Internal.TypeSystem.Ecma
             return default;
         }
 
-        public sealed override object GetType(ReadOnlySpan<byte> nameSpace, ReadOnlySpan<byte> name, NotFoundBehavior notFoundBehavior)
+        public sealed override object GetType(Utf8Span nameSpace, Utf8Span name, NotFoundBehavior notFoundBehavior)
         {
             int hashCode = VersionResilientHashCode.NameHashCode(nameSpace, name);
 
@@ -570,9 +572,10 @@ namespace Internal.TypeSystem.Ecma
             TypeSpecification typeSpecification = _metadataReader.GetTypeSpecification(handle);
 
             BlobReader signatureReader = _metadataReader.GetBlobReader(typeSpecification.Signature);
+
             EcmaSignatureParser parser = new EcmaSignatureParser(this, signatureReader, NotFoundBehavior.ReturnResolutionFailure);
 
-            TypeDesc parsedType = parser.ParseType();
+            TypeDesc parsedType = parser.ParseTypeSpec(handle);
             if (parsedType == null)
                 return parser.ResolutionFailure;
             else

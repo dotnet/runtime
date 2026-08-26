@@ -190,7 +190,7 @@ void ExecutableAllocator::InitLazyPreferredRange(size_t base, size_t size, int r
     }
 
     // Randomize the address space
-    pStart += GetOsPageSize() * randomPageOffset;
+    pStart += minipal_getpagesize() * randomPageOffset;
 
     g_lazyPreferredRangeStart = pStart;
     g_lazyPreferredRangeHint = pStart;
@@ -394,9 +394,6 @@ void* ExecutableAllocator::FindRWBlock(void* baseRX, size_t size, CacheableMappi
 bool ExecutableAllocator::AddRWBlock(void* baseRW, void* baseRX, size_t size, CacheableMapping cacheMapping)
 {
     LIMITED_METHOD_CONTRACT;
-
-    // The new "nothrow" below failure is handled as fail fast since it is not recoverable
-    PERMANENT_CONTRACT_VIOLATION(FaultViolation, ReasonContractInfrastructure);
 
     BlockRW* pBlockRW = new (nothrow) BlockRW();
     if (pBlockRW == NULL)

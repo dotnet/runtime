@@ -17,7 +17,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Abstractions
         private readonly bool _isParentPath;
 
         /// <summary>
-        /// Initializes an instance of <see cref="DirectoryInfoWrapper" />.
+        /// Initializes a new instance of the <see cref="DirectoryInfoWrapper" /> class.
         /// </summary>
         /// <param name="directoryInfo">The <see cref="DirectoryInfo" />.</param>
         public DirectoryInfoWrapper(DirectoryInfo directoryInfo)
@@ -33,6 +33,10 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Abstractions
         /// <inheritdoc />
         public override IEnumerable<FileSystemInfoBase> EnumerateFileSystemInfos()
         {
+            // If the directory did not exist when the DirectoryInfo was created, but does now (or vice versa),
+            // we need to call Refresh(). Otherwise Exists would provide stale information.
+            _directoryInfo.Refresh();
+
             if (_directoryInfo.Exists)
             {
                 IEnumerable<FileSystemInfo> fileSystemInfos;
@@ -66,39 +70,21 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Abstractions
         /// If <paramref name="name" /> equals '..', this returns the parent directory.
         /// </remarks>
         /// <param name="name">The directory name</param>
-        /// <returns>The directory</returns>
-        public override DirectoryInfoBase? GetDirectory(string name)
+        /// <returns>Instance of <see cref="DirectoryInfoBase" /> even if the directory does not exist</returns>
+        public override DirectoryInfoBase GetDirectory(string name)
         {
             bool isParentPath = string.Equals(name, "..", StringComparison.Ordinal);
 
-            if (isParentPath)
-            {
-                return new DirectoryInfoWrapper(
-                    new DirectoryInfo(Path.Combine(_directoryInfo.FullName, name)),
-                    isParentPath);
-            }
-            else
-            {
-                DirectoryInfo[] dirs = _directoryInfo.GetDirectories(name);
-
-                if (dirs.Length == 1)
-                {
-                    return new DirectoryInfoWrapper(dirs[0], isParentPath);
-                }
-                else if (dirs.Length == 0)
-                {
-                    return null;
-                }
-                else
-                {
-                    // This shouldn't happen. The parameter name isn't supposed to contain wild card.
-                    throw new InvalidOperationException(
-                        $"More than one sub directories are found under {_directoryInfo.FullName} with name {name}.");
-                }
-            }
+            return new DirectoryInfoWrapper(
+                new DirectoryInfo(Path.Combine(_directoryInfo.FullName, name)),
+                isParentPath);
         }
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Returns an instance of <see cref="FileInfoBase" /> that represents a file in the directory
+        /// </summary>
+        /// <param name="name">The file name</param>
+        /// <returns>Instance of <see cref="FileInfoBase" /> even if the file does not exist</returns>
         public override FileInfoBase GetFile(string name)
             => new FileInfoWrapper(new FileInfo(Path.Combine(_directoryInfo.FullName, name)));
 

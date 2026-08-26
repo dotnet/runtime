@@ -15,10 +15,10 @@ namespace System.ComponentModel.Composition.ReflectionModel
     {
         private readonly IReflectionPartCreationInfo _creationInfo;
 
-        private volatile ImportDefinition[]? _imports;
-        private volatile ExportDefinition[]? _exports;
-        private volatile IDictionary<string, object?>? _metadata;
-        private volatile ConstructorInfo? _constructor;
+        private ImportDefinition[]? _imports;
+        private ExportDefinition[]? _exports;
+        private IDictionary<string, object?>? _metadata;
+        private ConstructorInfo? _constructor;
         private readonly object _lock = new object();
 
         public ReflectionComposablePartDefinition(IReflectionPartCreationInfo creationInfo)

@@ -14,8 +14,8 @@ namespace System.Net
     {
         private static readonly object s_syncObject = new object();
 
-        private static volatile X509Store? s_myCertStoreEx;
-        private static volatile X509Store? s_myMachineCertStoreEx;
+        private static X509Store? s_myCertStoreEx;
+        private static X509Store? s_myMachineCertStoreEx;
         private static X509Chain? s_chain;
 
         internal static X509Certificate2? GetRemoteCertificate(SafeDeleteContext? securityContext) =>

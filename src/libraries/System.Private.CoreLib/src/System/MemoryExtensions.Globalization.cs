@@ -21,6 +21,7 @@ namespace System
                 if (!char.IsWhiteSpace(span[i]))
                     return false;
             }
+
             return true;
         }
 
@@ -34,6 +35,15 @@ namespace System
         {
             return IndexOf(span, value, comparisonType) >= 0;
         }
+
+        /// <summary>
+        /// Indicates whether the specified span contains any <see cref="char.IsWhiteSpace(char)">
+        /// white-space characters</see>.
+        /// </summary>
+        /// <param name="span">The source span.</param>
+        /// <returns><see langword="true"/> if the span contains any white-space characters, <see langword="false"/> otherwise.</returns>
+        public static bool ContainsAnyWhiteSpace(this ReadOnlySpan<char> span) =>
+            string.SearchValuesStorage.WhiteSpaceChars.ContainsAny(span);
 
         /// <summary>
         /// Determines whether this <paramref name="span"/> and the specified <paramref name="other"/> span have the same characters
@@ -150,6 +160,22 @@ namespace System
         }
 
         /// <summary>
+        /// Reports the zero-based index of the first occurrence of any <see cref="char.IsWhiteSpace(char)">
+        /// white-space character</see> in the current <paramref name="span"/>, or -1 if not found.
+        /// </summary>
+        /// <param name="span">The source span.</param>
+        public static int IndexOfAnyWhiteSpace(this ReadOnlySpan<char> span) =>
+            string.SearchValuesStorage.WhiteSpaceChars.IndexOfAny(span);
+
+        /// <summary>
+        /// Reports the zero-based index of the first occurrence of any <see cref="char.IsWhiteSpace(char)">
+        /// non-white-space character</see> in the current <paramref name="span"/>, or -1 if not found.
+        /// </summary>
+        /// <param name="span">The source span.</param>
+        public static int IndexOfAnyExceptWhiteSpace(this ReadOnlySpan<char> span) =>
+            string.SearchValuesStorage.WhiteSpaceChars.IndexOfAnyExcept(span);
+
+        /// <summary>
         /// Reports the zero-based index of the last occurrence of the specified <paramref name="value"/> in the current <paramref name="span"/>.
         /// </summary>
         /// <param name="span">The source span.</param>
@@ -183,6 +209,22 @@ namespace System
                     return Ordinal.LastIndexOfOrdinalIgnoreCase(span, value);
             }
         }
+
+        /// <summary>
+        /// Reports the zero-based index of the last occurrence of any <see cref="char.IsWhiteSpace(char)">
+        /// white-space character</see> in the current <paramref name="span"/>, or -1 if not found.
+        /// </summary>
+        /// <param name="span">The source span.</param>
+        public static int LastIndexOfAnyWhiteSpace(this ReadOnlySpan<char> span) =>
+            string.SearchValuesStorage.WhiteSpaceChars.LastIndexOfAny(span);
+
+        /// <summary>
+        /// Reports the zero-based index of the last occurrence of any <see cref="char.IsWhiteSpace(char)">
+        /// non-white-space character</see> in the current <paramref name="span"/>, or -1 if not found.
+        /// </summary>
+        /// <param name="span">The source span.</param>
+        public static int LastIndexOfAnyExceptWhiteSpace(this ReadOnlySpan<char> span) =>
+            string.SearchValuesStorage.WhiteSpaceChars.LastIndexOfAnyExcept(span);
 
         /// <summary>
         /// Copies the characters from the source span into the destination, converting each character to lowercase,
@@ -287,6 +329,28 @@ namespace System
                 TextInfo.Invariant.ChangeCaseToUpper(source, destination);
             return source.Length;
         }
+
+        /// <summary>
+        /// Copies the characters from the source span into the destination, converting each character to uppercase
+        /// using the casing rules used by <see cref="StringComparison.OrdinalIgnoreCase"/> comparisons.
+        /// </summary>
+        /// <param name="source">The source span.</param>
+        /// <param name="destination">The destination span which contains the transformed characters.</param>
+        /// <returns>The number of characters written into the destination span. If the destination is too small, returns -1.</returns>
+        /// <exception cref="InvalidOperationException">The source and destination buffers overlap.</exception>
+        public static int ToUpperOrdinal(this ReadOnlySpan<char> source, Span<char> destination) =>
+            Ordinal.ToUpperOrdinal(source, destination);
+
+        /// <summary>
+        /// Copies the characters from the source span into the destination, converting each character to lowercase
+        /// using ordinal (simple, one-to-one) casing rules.
+        /// </summary>
+        /// <param name="source">The source span.</param>
+        /// <param name="destination">The destination span which contains the transformed characters.</param>
+        /// <returns>The number of characters written into the destination span. If the destination is too small, returns -1.</returns>
+        /// <exception cref="InvalidOperationException">The source and destination buffers overlap.</exception>
+        public static int ToLowerOrdinal(this ReadOnlySpan<char> source, Span<char> destination) =>
+            Ordinal.ToLowerOrdinal(source, destination);
 
         /// <summary>
         /// Determines whether the end of the <paramref name="span"/> matches the specified <paramref name="value"/> when compared using the specified <paramref name="comparisonType"/> option.

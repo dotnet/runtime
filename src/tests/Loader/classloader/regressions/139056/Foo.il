@@ -11,7 +11,7 @@
            FA 84 09 19 ) 
   .ver 1:2:3400:0
 }
-.assembly legacy library Foo
+.assembly legacy library Foo_139056
 {
 
   // --- The following custom attribute is added automatically, do not uncomment -------

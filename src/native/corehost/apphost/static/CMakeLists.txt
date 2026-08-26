@@ -14,6 +14,8 @@ include_directories(${CLR_ARTIFACTS_OBJ_DIR}) # Generated version files
 
 add_subdirectory(../../hostmisc hostmisc)
 
+string(TOUPPER "${CLR_CMAKE_TARGET_ARCH}" CLR_CMAKE_TARGET_ARCH_UPPER)
+
 configure_file(${CLR_SRC_NATIVE_DIR}/corehost/configure.h.in ${GENERATED_INCLUDE_DIR}/corehost/configure.h)
 target_include_directories(hostmisc_interface INTERFACE ${GENERATED_INCLUDE_DIR}/corehost)
 
@@ -24,17 +26,16 @@ if ((NOT DEFINED CLR_CMAKE_USE_SYSTEM_RAPIDJSON) OR (NOT CLR_CMAKE_USE_SYSTEM_RA
 endif()
 
 set(SOURCES
-    ../bundle_marker.cpp
-    ./hostfxr_resolver.cpp
+    ../bundle_marker.c
+    ./apphost_hostfxr_resolver.cpp
     ./hostpolicy_resolver.cpp
     ../../hostpolicy/static/coreclr_resolver.cpp
-    ../../fxr_resolver.cpp
-    ../../corehost.cpp
+    ../apphost.c
 )
 
 set(HEADERS
     ../bundle_marker.h
-    ../../hostfxr_resolver.h
+    ../apphost_hostfxr_resolver.h
     ../../fxr_resolver.h
 )
 
@@ -60,7 +61,7 @@ endif()
 if(CLR_CMAKE_TARGET_WIN32)
     add_compile_definitions(UNICODE)
     list(APPEND SOURCES
-        ../apphost.windows.cpp
+        ../apphost.windows.c
     )
 
     list(APPEND HEADERS
@@ -145,6 +146,7 @@ if(CLR_CMAKE_TARGET_WIN32)
 else()
     if(CLR_CMAKE_HOST_OSX OR (CLR_CMAKE_HOST_LINUX AND NOT CLR_CMAKE_HOST_UNIX_X86 AND NOT CLR_CMAKE_HOST_ANDROID))
         LIST(APPEND NATIVE_LIBS createdump_static)
+        target_compile_definitions(singlefilehost PRIVATE FEATURE_STATIC_CREATEDUMP)
     endif()
 
     LIST(APPEND NATIVE_LIBS
@@ -265,6 +267,24 @@ if(CLR_CMAKE_TARGET_LINUX AND CLR_CMAKE_TARGET_ARCH_RISCV64)
 endif()
 
 set_property(TARGET singlefilehost PROPERTY ENABLE_EXPORTS 1)
+
+# Force the linker to pull in symbols from coreclr_static even though nothing in
+# singlefilehost references them directly. Without this, the linker's dead code
+# elimination can drop object files and the exports are missing from the binary.
+# This should be kept in sync with singlefilehost_unixexports.src.
+if(CLR_CMAKE_TARGET_APPLE)
+    target_link_options(singlefilehost PRIVATE
+        -Wl,-u,_DotNetRuntimeInfo
+        -Wl,-u,_g_dacTable
+        -Wl,-u,_MetaDataGetDispenser
+        -Wl,-u,_DotNetRuntimeContractDescriptor)
+elseif(NOT CLR_CMAKE_TARGET_WIN32)
+    target_link_options(singlefilehost PRIVATE
+        -Wl,-u,DotNetRuntimeInfo
+        -Wl,-u,g_dacTable
+        -Wl,-u,MetaDataGetDispenser
+        -Wl,-u,DotNetRuntimeContractDescriptor)
+endif()
 
 target_link_libraries(
     singlefilehost

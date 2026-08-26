@@ -29,6 +29,7 @@
 
 }
 
+.class public Program extends [mscorlib]System.Object{
 .method public static int32 Main(){
 	.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
 	    01 00 00 00
@@ -67,4 +68,5 @@
     ldc.i4 100
 	ret
 
+}
 }

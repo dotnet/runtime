@@ -56,8 +56,8 @@ namespace System.Diagnostics.Metrics
         // FixedSizeLabelNameDictionary<StringSequence3, ConcurrentDictionary<ObjectSequence3, TAggregator>>
         // FixedSizeLabelNameDictionary<StringSequenceMany, ConcurrentDictionary<ObjectSequenceMany, TAggregator>>
         // MultiSizeLabelNameDictionary<TAggregator> - this is used when we need to store more than one of the above union items
-        private volatile object? _stateUnion;
-        private volatile AggregatorLookupFunc<TAggregator>? _cachedLookupFunc;
+        private object? _stateUnion;
+        private AggregatorLookupFunc<TAggregator>? _cachedLookupFunc;
         private readonly Func<TAggregator?> _createAggregatorFunc;
 
         public AggregatorStore(Func<TAggregator?> createAggregator)

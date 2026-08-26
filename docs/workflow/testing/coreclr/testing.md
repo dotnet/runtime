@@ -178,6 +178,8 @@ The following are common reasons to mark a test as requiring process isolation:
 - The test launches through a native executable.
 - The test sets one of the configuration properties that are checked in the test run scripts, such as those in [test-configuration.md](test-configuration.md#adding-test-guidelines).
 
+For a comprehensive list of rules, see [requiresprocessisolation.md](requiresprocessisolation.md).
+
 When a test is marked as `<RequiresProcessIsolation>true</RequiresProcessIsolation>`, it will be run in its own process and have its own `.cmd` and `.sh` scripts generated as test entrypoints. In CI, it will be executed as out of process by whichever merged test runner it is referenced by.
 
 #### Main methods in RequiresProcessIsolation tests

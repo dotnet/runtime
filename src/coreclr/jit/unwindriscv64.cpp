@@ -47,7 +47,7 @@ void Compiler::unwindAllocStack(unsigned size)
 #if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
     {
-        if (compGeneratingProlog)
+        if (GetEmitter()->emitGeneratingPrologOrFuncletProlog())
         {
             unwindAllocStackCFI(size);
         }
@@ -90,7 +90,7 @@ void Compiler::unwindSetFrameReg(regNumber reg, unsigned offset)
 #if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
     {
-        if (compGeneratingProlog)
+        if (GetEmitter()->emitGeneratingPrologOrFuncletProlog())
         {
             unwindSetFrameRegCFI(reg, offset);
         }
@@ -158,7 +158,7 @@ void Compiler::unwindSaveReg(regNumber reg, int offset)
 #if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
     {
-        if (compGeneratingProlog)
+        if (GetEmitter()->emitGeneratingPrologOrFuncletProlog())
         {
             FuncInfoDsc*   func     = funCurrentFunc();
             UNATIVE_OFFSET cbProlog = unwindGetCurrentOffset(func);
@@ -702,7 +702,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 void Compiler::unwindBegProlog()
 {
-    assert(compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
     assert(!compGeneratingUnwindProlog);
     compGeneratingUnwindProlog = true;
 
@@ -731,14 +731,14 @@ void Compiler::unwindBegProlog()
 
 void Compiler::unwindEndProlog()
 {
-    assert(compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
     assert(compGeneratingUnwindProlog);
     compGeneratingUnwindProlog = false;
 }
 
 void Compiler::unwindBegEpilog()
 {
-    assert(compGeneratingEpilog);
+    assert(GetEmitter()->emitGeneratingEpilogOrFuncletEpilog());
     assert(!compGeneratingUnwindEpilog);
     compGeneratingUnwindEpilog = true;
 
@@ -754,7 +754,7 @@ void Compiler::unwindBegEpilog()
 
 void Compiler::unwindEndEpilog()
 {
-    assert(compGeneratingEpilog);
+    assert(GetEmitter()->emitGeneratingEpilogOrFuncletEpilog());
     assert(compGeneratingUnwindEpilog);
     compGeneratingUnwindEpilog = false;
 }
@@ -779,13 +779,12 @@ void Compiler::unwindPadding()
 // all its funclets.
 void Compiler::unwindReserve()
 {
-    assert(!compGeneratingProlog);
-    assert(!compGeneratingEpilog);
+    assert(!GetEmitter()->emitGeneratingPrologOrFuncletProlog());
+    assert(!GetEmitter()->emitGeneratingEpilogOrFuncletEpilog());
 
-    assert(compFuncInfoCount > 0);
-    for (unsigned funcIdx = 0; funcIdx < compFuncInfoCount; funcIdx++)
+    for (FuncInfoDsc* const func : Funcs())
     {
-        unwindReserveFunc(funGetFunc(funcIdx));
+        unwindReserveFunc(func);
     }
 }
 
@@ -853,10 +852,9 @@ void Compiler::unwindReserveFunc(FuncInfoDsc* func)
 
 void Compiler::unwindEmit(void* pHotCode, void* pColdCode)
 {
-    assert(compFuncInfoCount > 0);
-    for (unsigned funcIdx = 0; funcIdx < compFuncInfoCount; funcIdx++)
+    for (FuncInfoDsc* const func : Funcs())
     {
-        unwindEmitFunc(funGetFunc(funcIdx), pHotCode, pColdCode);
+        unwindEmitFunc(func, pHotCode, pColdCode);
     }
 }
 
@@ -1084,10 +1082,10 @@ void UnwindPrologCodes::EnsureSize(int requiredSize)
 #ifdef DEBUG
 void UnwindPrologCodes::Dump(int indent)
 {
-    printf("%*sUnwindPrologCodes @0x%08p, size:%d:\n", indent, "", dspPtr(this), sizeof(*this));
-    printf("%*s  m_compiler: 0x%08p\n", indent, "", dspPtr(m_compiler));
-    printf("%*s  &upcMemLocal[0]: 0x%08p\n", indent, "", dspPtr(&upcMemLocal[0]));
-    printf("%*s  upcMem: 0x%08p\n", indent, "", dspPtr(upcMem));
+    printf("%*sUnwindPrologCodes @%p, size:%zu:\n", indent, "", dspPtr(this), sizeof(*this));
+    printf("%*s  m_compiler: %p\n", indent, "", dspPtr(m_compiler));
+    printf("%*s  &upcMemLocal[0]: %p\n", indent, "", dspPtr(&upcMemLocal[0]));
+    printf("%*s  upcMem: %p\n", indent, "", dspPtr(upcMem));
     printf("%*s  upcMemSize: %d\n", indent, "", upcMemSize);
     printf("%*s  upcCodeSlot: %d\n", indent, "", upcCodeSlot);
     printf("%*s  upcHeaderSlot: %d\n", indent, "", upcHeaderSlot);
@@ -1157,10 +1155,10 @@ void UnwindEpilogCodes::EnsureSize(int requiredSize)
 #ifdef DEBUG
 void UnwindEpilogCodes::Dump(int indent)
 {
-    printf("%*sUnwindEpilogCodes @0x%08p, size:%d:\n", indent, "", dspPtr(this), sizeof(*this));
-    printf("%*s  m_compiler: 0x%08p\n", indent, "", dspPtr(m_compiler));
-    printf("%*s  &uecMemLocal[0]: 0x%08p\n", indent, "", dspPtr(&uecMemLocal[0]));
-    printf("%*s  uecMem: 0x%08p\n", indent, "", dspPtr(uecMem));
+    printf("%*sUnwindEpilogCodes @%p, size:%zu:\n", indent, "", dspPtr(this), sizeof(*this));
+    printf("%*s  m_compiler: %p\n", indent, "", dspPtr(m_compiler));
+    printf("%*s  &uecMemLocal[0]: %p\n", indent, "", dspPtr(&uecMemLocal[0]));
+    printf("%*s  uecMem: %p\n", indent, "", dspPtr(uecMem));
     printf("%*s  uecMemSize: %d\n", indent, "", uecMemSize);
     printf("%*s  uecCodeSlot: %d\n", indent, "", uecCodeSlot);
     printf("%*s  uecFinalized: %s\n", indent, "", dspBool(uecFinalized));
@@ -1234,10 +1232,10 @@ void UnwindEpilogInfo::FinalizeOffset()
 #ifdef DEBUG
 void UnwindEpilogInfo::Dump(int indent)
 {
-    printf("%*sUnwindEpilogInfo @0x%08p, size:%d:\n", indent, "", dspPtr(this), sizeof(*this));
-    printf("%*s  m_compiler: 0x%08p\n", indent, "", dspPtr(m_compiler));
-    printf("%*s  epiNext: 0x%08p\n", indent, "", dspPtr(epiNext));
-    printf("%*s  epiEmitLocation: 0x%08p\n", indent, "", dspPtr(epiEmitLocation));
+    printf("%*sUnwindEpilogInfo @%p, size:%zu:\n", indent, "", dspPtr(this), sizeof(*this));
+    printf("%*s  m_compiler: %p\n", indent, "", dspPtr(m_compiler));
+    printf("%*s  epiNext: %p\n", indent, "", dspPtr(epiNext));
+    printf("%*s  epiEmitLocation: %p\n", indent, "", dspPtr(epiEmitLocation));
     printf("%*s  epiStartOffset: 0x%x\n", indent, "", epiStartOffset);
     printf("%*s  epiMatches: %s\n", indent, "", dspBool(epiMatches));
     printf("%*s  epiStartIndex: %d\n", indent, "", epiStartIndex);
@@ -1789,15 +1787,15 @@ void UnwindFragmentInfo::Dump(int indent)
         ++count;
     }
 
-    printf("%*sUnwindFragmentInfo #%d, @0x%08p, size:%d:\n", indent, "", ufiNum, dspPtr(this), sizeof(*this));
-    printf("%*s  m_compiler: 0x%08p\n", indent, "", dspPtr(m_compiler));
-    printf("%*s  ufiNext: 0x%08p\n", indent, "", dspPtr(ufiNext));
-    printf("%*s  ufiEmitLoc: 0x%08p\n", indent, "", dspPtr(ufiEmitLoc));
+    printf("%*sUnwindFragmentInfo #%d, @%p, size:%zu:\n", indent, "", ufiNum, dspPtr(this), sizeof(*this));
+    printf("%*s  m_compiler: %p\n", indent, "", dspPtr(m_compiler));
+    printf("%*s  ufiNext: %p\n", indent, "", dspPtr(ufiNext));
+    printf("%*s  ufiEmitLoc: %p\n", indent, "", dspPtr(ufiEmitLoc));
     printf("%*s  ufiHasPhantomProlog: %s\n", indent, "", dspBool(ufiHasPhantomProlog));
     printf("%*s  %d epilog%s\n", indent, "", count, (count != 1) ? "s" : "");
-    printf("%*s  ufiEpilogList: 0x%08p\n", indent, "", dspPtr(ufiEpilogList));
-    printf("%*s  ufiEpilogLast: 0x%08p\n", indent, "", dspPtr(ufiEpilogLast));
-    printf("%*s  ufiCurCodes: 0x%08p\n", indent, "", dspPtr(ufiCurCodes));
+    printf("%*s  ufiEpilogList: %p\n", indent, "", dspPtr(ufiEpilogList));
+    printf("%*s  ufiEpilogLast: %p\n", indent, "", dspPtr(ufiEpilogLast));
+    printf("%*s  ufiCurCodes: %p\n", indent, "", dspPtr(ufiCurCodes));
     printf("%*s  ufiSize: %u\n", indent, "", ufiSize);
     printf("%*s  ufiSetEBit: %s\n", indent, "", dspBool(ufiSetEBit));
     printf("%*s  ufiNeedExtendedCodeWordsEpilogCount: %s\n", indent, "", dspBool(ufiNeedExtendedCodeWordsEpilogCount));
@@ -2087,11 +2085,11 @@ void UnwindInfo::Dump(bool isHotCode, int indent)
         ++count;
     }
 
-    printf("%*sUnwindInfo %s@0x%08p, size:%d:\n", indent, "", isHotCode ? "" : "COLD ", dspPtr(this), sizeof(*this));
-    printf("%*s  m_compiler: 0x%08p\n", indent, "", dspPtr(m_compiler));
+    printf("%*sUnwindInfo %s@%p, size:%zu:\n", indent, "", isHotCode ? "" : "COLD ", dspPtr(this), sizeof(*this));
+    printf("%*s  m_compiler: %p\n", indent, "", dspPtr(m_compiler));
     printf("%*s  %d fragment%s\n", indent, "", count, (count != 1) ? "s" : "");
-    printf("%*s  uwiFragmentLast: 0x%08p\n", indent, "", dspPtr(uwiFragmentLast));
-    printf("%*s  uwiEndLoc: 0x%08p\n", indent, "", dspPtr(uwiEndLoc));
+    printf("%*s  uwiFragmentLast: %p\n", indent, "", dspPtr(uwiFragmentLast));
+    printf("%*s  uwiEndLoc: %p\n", indent, "", dspPtr(uwiEndLoc));
     printf("%*s  uwiInitialized: 0x%08x\n", indent, "", uwiInitialized);
 
     for (pFrag = &uwiFragmentFirst; pFrag != nullptr; pFrag = pFrag->ufiNext)

@@ -474,8 +474,8 @@ void DacFreeRegionEnumerator::AddServerRegions()
             continue;
 
         dac_gc_heap heap = LoadGcHeapData(heapAddress);
-        for (int i = 0; i < count_free_region_kinds; i++)
-            AddSegmentList(heap.free_regions[i].head_free_region, FreeRegionKind::FreeRegion, i);
+        for (int kind = 0; kind < count_free_region_kinds; kind++)
+            AddSegmentList(heap.free_regions[kind].head_free_region, FreeRegionKind::FreeRegion, i);
 
         AddSegmentList(heap.freeable_soh_segment, FreeRegionKind::FreeSohSegment, i);
         AddSegmentList(heap.freeable_uoh_segment, FreeRegionKind::FreeUohSegment, i);

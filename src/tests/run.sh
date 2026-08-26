@@ -43,6 +43,9 @@ function print_usage {
     echo '  --runnativeaottests              : Run NativeAOT compiled tests'
     echo '  --interpreter                    : Runs the tests with the interpreter enabled'
     echo '  --node                           : Runs the tests with NodeJS (wasm only)'
+    echo '  --runner-filter=<pattern>        : Only run merged runners whose name contains <pattern>'
+    echo '  --active-issue-details           : Show per-issue breakdown of ActiveIssue-skipped tests'
+    echo '  --tree=<path>                    : Only run tests under the specified subtree (e.g. JIT/Regression)'
     echo '  --limitedDumpGeneration          : '
 }
 
@@ -73,9 +76,18 @@ runSequential=0
 runincontext=0
 tieringtest=0
 nativeaottest=0
+runnerFilter=
+activeIssueDetails=
+treeSubtree=
 
 for i in "$@"
 do
+    if [[ "$__nextTreeArg" == "1" ]]; then
+        treeSubtree="$i"
+        __nextTreeArg=
+        continue
+    fi
+
     case $i in
         -h|--help)
             print_usage
@@ -189,11 +201,26 @@ do
         --runnativeaottests)
             nativeaottest=1
             ;;
+        --tree=*|-tree=*)
+            treeSubtree=${i#*=}
+            ;;
+        --tree:*|-tree:*)
+            treeSubtree=${i#*:}
+            ;;
+        --tree|-tree)
+            __nextTreeArg=1
+            ;;
         --interpreter)
             export RunInterpreter=1
             ;;
         --node)
             export RunWithNodeJS=1
+            ;;
+        --runner-filter=*)
+            runnerFilter=${i#*=}
+            ;;
+        --active-issue-details)
+            activeIssueDetails=1
             ;;
         *)
             echo "Unknown switch: $i"
@@ -314,6 +341,20 @@ fi
 if [[ -n "$RunWithNodeJS" ]]; then
     echo "Running tests with NodeJS"
     runtestPyArguments+=("--node")
+fi
+
+if [[ -n "$runnerFilter" ]]; then
+    echo "Runner filter                 : ${runnerFilter}"
+    runtestPyArguments+=("--runner_filter" "$runnerFilter")
+fi
+
+if [[ -n "$activeIssueDetails" ]]; then
+    runtestPyArguments+=("--active_issue_details")
+fi
+
+if [[ -n "$treeSubtree" ]]; then
+    echo "Running tests under subtree   : ${treeSubtree}"
+    runtestPyArguments+=("--tree" "$treeSubtree")
 fi
 
 # Default to python3 if it is installed

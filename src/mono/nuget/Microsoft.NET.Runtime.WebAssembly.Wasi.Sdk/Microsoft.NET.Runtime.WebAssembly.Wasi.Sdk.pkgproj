@@ -12,33 +12,21 @@
 
     <PackageFile Include="Sdk\AutoImport.props" TargetPath="Sdk" />
     <PackageFile Include="Sdk\Sdk.props" TargetPath="Sdk" />
+    <PackageFile Include="Sdk\Sdk.targets" TargetPath="Sdk" />
     <PackageFile Include="$(WasiProjectRoot)build\WasiApp.props" TargetPath="Sdk" />
     <PackageFile Include="$(WasiProjectRoot)build\WasiApp.targets" TargetPath="Sdk" />
+
+    <PackageFile Include="$(BrowserProjectRoot)build\ILLink.Substitutions.WasmIntrinsics.xml" TargetPath="Sdk" />
+    <PackageFile Include="$(BrowserProjectRoot)build\ILLink.Substitutions.NoWasmIntrinsics.xml" TargetPath="Sdk" />
 
     <PackageFile Include="$(WasmProjectRoot)build\WasmApp.Common.props" TargetPath="Sdk" />
     <PackageFile Include="$(WasmProjectRoot)build\WasmApp.Common.targets" TargetPath="Sdk" />
 
-    <PackageFile Include="$(WasiProjectRoot)build\wasiconsole.runtimeconfig.template.json" TargetPath="Sdk" />
+    <PackageFile Include="$(WasiProjectRoot)build\wasi.runtimeconfig.template.json" TargetPath="Sdk" />
   </ItemGroup>
 
   <Target Name="_PrepareForPack" BeforeTargets="GetPackageFiles">
-    <PropertyGroup>
-      <SdkTargetsPath>$(IntermediateOutputPath)Sdk.targets</SdkTargetsPath>
-    </PropertyGroup>
-
     <ItemGroup>
-      <_ReplacementValue Include="NetCoreAppToolCurrent" Value="$(NetCoreAppToolCurrent)" />
-      <_ReplacementValue Include="NetFrameworkToolCurrent" Value="$(NetFrameworkToolCurrent)" />
-    </ItemGroup>
-
-    <GenerateFileFromTemplate
-      TemplateFile="Sdk/Sdk.targets.in"
-      Properties="@(_ReplacementValue->'%(Identity)=%(Value)')"
-      OutputPath="$(SdkTargetsPath)" />
-
-    <ItemGroup>
-      <PackageFile Include="$(SdkTargetsPath)" TargetPath="Sdk" />
-
       <_WasmAppHostFiles Include="$(WasmAppHostDir)\*" TargetPath="WasmAppHost" />
       <PackageFile Include="@(_WasmAppHostFiles)" />
     </ItemGroup>

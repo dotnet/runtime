@@ -11,6 +11,24 @@ internal class AMD64FrameHandler(Target target, ContextHolder<AMD64Context> cont
 {
     private readonly ContextHolder<AMD64Context> _holder = contextHolder;
 
+    public override void HandleInlinedCallFrame(InlinedCallFrame inlinedCallFrame)
+    {
+        base.HandleInlinedCallFrame(inlinedCallFrame);
+
+        Data.Frame? next = GetNextFrame(inlinedCallFrame.Address);
+        if (next is not null && _frameHelpers.GetFrameType(next.Identifier) == FrameType.InterpreterFrame)
+        {
+            if (_target.Contracts.RuntimeInfo.GetTargetOperatingSystem() == RuntimeInfoOperatingSystem.Windows)
+            {
+                _holder.Context.Rcx = next.Address.Value;
+            }
+            else
+            {
+                _holder.Context.Rdi = next.Address.Value;
+            }
+        }
+    }
+
     public void HandleHijackFrame(HijackFrame frame)
     {
         HijackArgsAMD64 args = _target.ProcessedData.GetOrAdd<Data.HijackArgsAMD64>(frame.HijackArgsPtr);
@@ -24,7 +42,7 @@ internal class AMD64FrameHandler(Target target, ContextHolder<AMD64Context> cont
         else
         {
             // Non-Windows case, the stack pointer is the address immediately following HijacksArgs
-            uint hijackArgsSize = _target.GetTypeInfo(DataType.HijackArgs).Size ?? throw new InvalidOperationException("HijackArgs size is not set");
+            uint hijackArgsSize = Data.HijackArgs.GetSize(_target);
             _holder.StackPointer = frame.HijackArgsPtr + hijackArgsSize;
         }
 

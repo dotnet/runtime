@@ -9,81 +9,82 @@ namespace
 {
     BOOL CallIsInterfaceImplemented(OBJECTREF *objPROTECTED, const TypeHandle &interfaceTypeHandle, BOOL throwIfNotImplemented)
     {
-        CONTRACT(BOOL) {
+        CONTRACTL {
             THROWS;
             GC_TRIGGERS;
             MODE_COOPERATIVE;
             PRECONDITION(objPROTECTED != NULL);
             PRECONDITION(interfaceTypeHandle.IsInterface());
-            POSTCONDITION(!throwIfNotImplemented || RETVAL);
-        } CONTRACT_END;
+        } CONTRACTL_END;
 
-        PREPARE_NONVIRTUAL_CALLSITE(METHOD__DYNAMICINTERFACECASTABLEHELPERS__IS_INTERFACE_IMPLEMENTED);
+        struct
+        {
+            OBJECTREF managedType;
+        } gc;
+        gc.managedType = NULL;
+        CLR_BOOL isImplemented = FALSE;
+        GCPROTECT_BEGIN(gc);
+        gc.managedType = interfaceTypeHandle.GetManagedClassObject(); // GC triggers
 
-        OBJECTREF managedType = interfaceTypeHandle.GetManagedClassObject(); // GC triggers
+        UnmanagedCallersOnlyCaller isInterfaceImplemented(METHOD__DYNAMICINTERFACECASTABLEHELPERS__IS_INTERFACE_IMPLEMENTED);
+        isInterfaceImplemented.InvokeThrowing(objPROTECTED, &gc.managedType, CLR_BOOL_ARG(throwIfNotImplemented), &isImplemented);
+        GCPROTECT_END();
 
-        DECLARE_ARGHOLDER_ARRAY(args, 3);
-        args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(*objPROTECTED);
-        args[ARGNUM_1] = OBJECTREF_TO_ARGHOLDER(managedType);
-        args[ARGNUM_2] = BOOL_TO_ARGHOLDER(throwIfNotImplemented);
-
-        BOOL isImplemented;
-        CALL_MANAGED_METHOD(isImplemented, CLR_BOOL, args);
-        INDEBUG(managedType = NULL); // managedType wasn't protected during the call
-
-        RETURN isImplemented;
+        _ASSERTE(!throwIfNotImplemented || isImplemented);
+        return isImplemented;
     }
 
     OBJECTREF CallGetInterfaceImplementation(OBJECTREF *objPROTECTED, const TypeHandle &interfaceTypeHandle)
     {
-        CONTRACT(OBJECTREF) {
+        CONTRACTL {
             THROWS;
             GC_TRIGGERS;
             MODE_COOPERATIVE;
             PRECONDITION(objPROTECTED != NULL);
             PRECONDITION(interfaceTypeHandle.IsInterface());
-            POSTCONDITION(RETVAL != NULL);
-        } CONTRACT_END;
+        } CONTRACTL_END;
 
-        PREPARE_NONVIRTUAL_CALLSITE(METHOD__DYNAMICINTERFACECASTABLEHELPERS__GET_INTERFACE_IMPLEMENTATION);
+        struct
+        {
+            OBJECTREF managedType;
+            OBJECTREF result;
+        } gc;
+        gc.managedType = NULL;
+        gc.result = NULL;
+        GCPROTECT_BEGIN(gc);
+        gc.managedType = interfaceTypeHandle.GetManagedClassObject(); // GC triggers
 
-        OBJECTREF managedType = interfaceTypeHandle.GetManagedClassObject(); // GC triggers
+        UnmanagedCallersOnlyCaller getInterfaceImplementation(METHOD__DYNAMICINTERFACECASTABLEHELPERS__GET_INTERFACE_IMPLEMENTATION);
+        getInterfaceImplementation.InvokeThrowing(objPROTECTED, &gc.managedType, &gc.result);
+        GCPROTECT_END();
 
-        DECLARE_ARGHOLDER_ARRAY(args, 2);
-        args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(*objPROTECTED);
-        args[ARGNUM_1] = OBJECTREF_TO_ARGHOLDER(managedType);
-
-        OBJECTREF implTypeRef;
-        CALL_MANAGED_METHOD_RETREF(implTypeRef, OBJECTREF, args);
-        INDEBUG(managedType = NULL); // managedType wasn't protected during the call
-
-        RETURN implTypeRef;
+        _ASSERTE(gc.result != NULL);
+        return gc.result;
     }
 }
 
 BOOL DynamicInterfaceCastable::IsInstanceOf(OBJECTREF *objPROTECTED, const TypeHandle &typeHandle, BOOL throwIfNotImplemented)
 {
-    CONTRACT(BOOL) {
+    CONTRACTL {
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
         PRECONDITION(objPROTECTED != NULL);
         PRECONDITION(typeHandle.IsInterface());
-    } CONTRACT_END;
+    } CONTRACTL_END;
 
-    RETURN CallIsInterfaceImplemented(objPROTECTED, typeHandle, throwIfNotImplemented);
+    return CallIsInterfaceImplemented(objPROTECTED, typeHandle, throwIfNotImplemented);
 }
 
 OBJECTREF DynamicInterfaceCastable::GetInterfaceImplementation(OBJECTREF *objPROTECTED, const TypeHandle &typeHandle)
 {
-    CONTRACT(OBJECTREF) {
+    CONTRACTL {
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
         PRECONDITION(objPROTECTED != NULL);
         PRECONDITION(typeHandle.IsInterface());
-        POSTCONDITION(RETVAL != NULL);
-    } CONTRACT_END;
+    } CONTRACTL_END;
 
-    RETURN CallGetInterfaceImplementation(objPROTECTED, typeHandle);
+    return CallGetInterfaceImplementation(objPROTECTED, typeHandle);
 }

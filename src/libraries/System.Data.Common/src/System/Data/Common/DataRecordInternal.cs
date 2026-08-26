@@ -112,9 +112,9 @@ namespace System.Data.Common
             cbytes = data.Length;
 
             // since arrays can't handle 64 bit values and this interface doesn't
-            // allow chunked access to data, a dataIndex outside the rang of Int32
+            // allow chunked access to data, a dataIndex outside the range of Int32
             // is invalid
-            if (dataIndex > int.MaxValue)
+            if ((ulong)dataIndex > int.MaxValue)
             {
                 throw ADP.InvalidSourceBufferIndex(cbytes, dataIndex, nameof(dataIndex));
             }
@@ -182,9 +182,9 @@ namespace System.Data.Common
             int cchars = data.Length;
 
             // since arrays can't handle 64 bit values and this interface doesn't
-            // allow chunked access to data, a dataIndex outside the rang of Int32
+            // allow chunked access to data, a dataIndex outside the range of Int32
             // is invalid
-            if (dataIndex > int.MaxValue)
+            if ((ulong)dataIndex > int.MaxValue)
             {
                 throw ADP.InvalidSourceBufferIndex(cchars, dataIndex, nameof(dataIndex));
             }

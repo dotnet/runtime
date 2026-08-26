@@ -25,8 +25,8 @@ char** SystemNative_GetEnviron(void)
 #endif
 }
 
-void SystemNative_FreeEnviron(char** environ)
+void SystemNative_FreeEnviron(char** environment)
 {
     // no op
-    (void)environ;
+    (void)environment;
 }

@@ -81,7 +81,53 @@ WasmValueType TypeToWasmValueType(var_types type)
         WasmValueType::F64,     // TYP_DOUBLE,
         WasmValueType::I,       // TYP_REF,
         WasmValueType::I,       // TYP_BYREF,
-        WasmValueType::Invalid, // TYP_STRUCT
+        WasmValueType::Invalid, // TYP_STRUCT,
+        WasmValueType::V128,    // TYP_SIMD8,
+        WasmValueType::V128,    // TYP_SIMD12
+        WasmValueType::V128,    // TYP_SIMD16
+        WasmValueType::Invalid, // TYP_UNKNOWN
+    };
+    static_assert(ArrLen(s_mapping) == TYP_COUNT);
+    // clang-format on
+
+    WasmValueType wasmType = s_mapping[type];
+    assert(wasmType != WasmValueType::Invalid);
+    return wasmType;
+}
+
+//------------------------------------------------------------------------
+// ActualTypeToWasmValueType: Convert a 'var_types' value to a 'WasmValueType' value.
+//
+// A more direct way to do "TypeToWasmValueType(genActualType(type))".
+//
+// Arguments:
+//    type - The input type
+//
+// Return Value:
+//    The WASM type corresponding to 'type' (small types are mapped to I32).
+//
+WasmValueType ActualTypeToWasmValueType(var_types type)
+{
+    // clang-format off
+    static const WasmValueType s_mapping[] = {
+        WasmValueType::Invalid, // TYP_UNDEF,
+        WasmValueType::Invalid, // TYP_VOID,
+        WasmValueType::I32,     // TYP_BYTE,
+        WasmValueType::I32,     // TYP_UBYTE,
+        WasmValueType::I32,     // TYP_SHORT,
+        WasmValueType::I32,     // TYP_USHORT,
+        WasmValueType::I32,     // TYP_INT,
+        WasmValueType::Invalid, // TYP_UINT,
+        WasmValueType::I64,     // TYP_LONG,
+        WasmValueType::Invalid, // TYP_ULONG,
+        WasmValueType::F32,     // TYP_FLOAT,
+        WasmValueType::F64,     // TYP_DOUBLE,
+        WasmValueType::I,       // TYP_REF,
+        WasmValueType::I,       // TYP_BYREF,
+        WasmValueType::Invalid, // TYP_STRUCT,
+        WasmValueType::V128,    // TYP_SIMD8,
+        WasmValueType::V128,    // TYP_SIMD12
+        WasmValueType::V128,    // TYP_SIMD16
         WasmValueType::Invalid, // TYP_UNKNOWN
     };
     static_assert(ArrLen(s_mapping) == TYP_COUNT);
@@ -101,6 +147,8 @@ const char* WasmValueTypeName(WasmValueType type)
         "i64",
         "f32",
         "f64",
+        "v128",
+        "exnref",
     };
     static_assert(ArrLen(WasmValueTypeNames) == static_cast<unsigned>(WasmValueType::Count));
     // clang-format on
@@ -186,7 +234,7 @@ bool genIsValidFloatReg(regNumber reg)
 {
     WasmValueType type;
     UnpackWasmReg(reg, &type);
-    return (type == WasmValueType::F32) || (type == WasmValueType::F64);
+    return (type == WasmValueType::F32) || (type == WasmValueType::F64) || (type == WasmValueType::V128);
 }
 
 const char* getRegName(regNumber reg)

@@ -34,6 +34,8 @@ CLREvent * FinalizerThread::hEventFinalizerToShutDown = NULL;
 
 HANDLE FinalizerThread::MHandles[kHandleCount];
 
+MethodDesc* g_pGCRunFinalizersMethodDesc = nullptr;
+
 bool FinalizerThread::IsCurrentThreadFinalizer()
 {
     LIMITED_METHOD_CONTRACT;
@@ -41,11 +43,27 @@ bool FinalizerThread::IsCurrentThreadFinalizer()
     return GetThreadNULLOk() == g_pFinalizerThread;
 }
 
+#if defined(TARGET_BROWSER) || defined(TARGET_WASI)
+
 #ifdef TARGET_BROWSER
-
+// Browser provides this in its JS host (libSystem.Native.Browser scheduling.ts);
+// it queues a microtask that pumps SystemJS_ExecuteFinalizationCallback.
 extern "C" void SystemJS_ScheduleFinalization();
+#endif
 
-extern "C" void SystemJS_ExecuteFinalizationCallback()
+#ifdef TARGET_WASI
+// WASI has no host event loop; the equivalent of SystemJS_ScheduleFinalization
+// is a pure-native flag-set, drained from managed code via the QCall below.
+extern "C" void WasiFinalizer_Schedule();
+#endif
+
+// Runs one FinalizerThreadWorkerIteration on the current thread. Body is
+// identical on browser and WASI; the surrounding entry-point shape differs:
+//   - Browser: raw wasm export invoked from a JS microtask after
+//     SystemJS_ScheduleFinalization enqueued it. Not a QCall.
+//   - WASI: QCall invoked from managed WasiEventLoop after
+//     WasiFinalizer_TryClearPending observes the flag.
+static void RunFinalizerIterationOnCurrentThread()
 {
     CONTRACTL
     {
@@ -58,13 +76,74 @@ extern "C" void SystemJS_ExecuteFinalizationCallback()
     INSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP;
     {
         GCX_COOP();
-        // TODO-WASM https://github.com/dotnet/runtime/issues/123712
-        // ManagedThreadBase::KickOff(FinalizerThread::FinalizerThreadWorkerIteration, NULL);
+        ManagedThreadBase::KickOff(FinalizerThread::FinalizerThreadWorkerIteration, NULL);
     }
     UNINSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP;
 }
 
-#endif // TARGET_BROWSER
+#ifdef TARGET_BROWSER
+extern "C" void SystemJS_ExecuteFinalizationCallback()
+{
+    RunFinalizerIterationOnCurrentThread();
+}
+#else // TARGET_WASI
+extern "C" void QCALLTYPE WasiFinalizer_RunWorker()
+{
+    QCALL_CONTRACT;
+    BEGIN_QCALL;
+    RunFinalizerIterationOnCurrentThread();
+    END_QCALL;
+}
+#endif
+
+#endif // TARGET_BROWSER || TARGET_WASI
+
+#ifdef TARGET_WASI
+
+#ifdef FEATURE_WASM_MANAGED_THREADS
+// The WASI finalizer design below is single-threaded by construction: there is
+// no separate finalizer thread, and finalization is drained synchronously on the
+// main thread via a plain (non-atomic-swap) pending flag. If managed threads are
+// ever enabled on WASI this is unsound and needs a real finalizer thread, so fail
+// the build loudly rather than silently running the single-threaded path.
+#error "TARGET_WASI finalizer path assumes a single-threaded runtime; FEATURE_WASM_MANAGED_THREADS requires a real finalizer thread implementation."
+#endif // FEATURE_WASM_MANAGED_THREADS
+
+// On WASI there is no separate finalizer thread and no JS event loop to defer
+// work to. EnableFinalization runs inside the GC, so it cannot safely cross
+// back into managed code (queueing into ThreadPool itself is a managed
+// allocation/lock-protected operation that re-enters the GC).
+//
+// Pure-native flag: WasiFinalizer_Schedule sets it from inside the GC, and
+// the managed WasiEventLoop polling loop drains it via WasiFinalizer_TryClearPending
+// at a safe point and then calls WasiFinalizer_RunWorker (the QCall exposing
+// the real FinalizerThreadWorkerIteration; same body as browser's
+// SystemJS_ExecuteFinalizationCallback, exported under a WASI-specific name).
+static Volatile<bool> s_finalizationPending = false;
+
+extern "C" void WasiFinalizer_Schedule()
+{
+    // Called from inside the GC. Setting an atomic flag is the only thing
+    // we can safely do here — no allocation, no managed callback, no locks.
+    s_finalizationPending = true;
+}
+
+extern "C" CLR_BOOL QCALLTYPE WasiFinalizer_TryClearPending()
+{
+    QCALL_CONTRACT;
+    CLR_BOOL pending = FALSE;
+    BEGIN_QCALL;
+    // Volatile load + clear. Single-threaded WASI: no atomic swap needed.
+    pending = s_finalizationPending ? TRUE : FALSE;
+    if (pending)
+    {
+        s_finalizationPending = false;
+    }
+    END_QCALL;
+    return pending;
+}
+
+#endif // TARGET_WASI
 
 void FinalizerThread::EnableFinalization()
 {
@@ -72,13 +151,20 @@ void FinalizerThread::EnableFinalization()
 
 #ifndef TARGET_WASM
     hEventFinalizer->Set();
-#else  // !TARGET_WASM
-#ifdef TARGET_BROWSER
+#elif defined(TARGET_BROWSER)
+    // Defer finalization to the host's JS event loop. Running it inline from
+    // here is unsafe: EnableFinalization is called from inside the GC, while
+    // FinalizerThreadWorkerIteration declares GC_TRIGGERS + MODE_COOPERATIVE
+    // and re-enters preemptive mode via EnablePreemptiveGC(). Re-entering the
+    // GC, transitioning thread modes from inside a collection, and the risk
+    // of unbounded recursion through finalizer-triggered allocations all make
+    // synchronous execution wrong here.
     SystemJS_ScheduleFinalization();
-#else
-    // WASI is not implemented yet
-#endif // TARGET_BROWSER
-#endif // !TARGET_WASM
+#else // TARGET_WASI
+    // Same constraints as browser; WASI sets a native flag observed by the
+    // managed WasiEventLoop polling loop. See WasiFinalizer_Schedule above.
+    WasiFinalizer_Schedule();
+#endif
 }
 
 namespace
@@ -153,7 +239,7 @@ bool FinalizerThread::HaveExtraWorkForFinalizer()
         || YieldProcessorNormalization::IsMeasurementScheduled()
         || HasDelayedDynamicMethod()
         || ThreadStore::s_pThreadStore->ShouldTriggerGCForDeadThreads()
-        || g_HashMapEbr.CleanUpRequested();
+        || g_EbrCollector.CleanUpRequested();
 
 #endif // TARGET_WASM
 }
@@ -204,10 +290,10 @@ static void DoExtraWorkForFinalizer(Thread* finalizerThread)
         CleanupDelayedDynamicMethods();
     }
 
-    if (g_HashMapEbr.CleanUpRequested())
+    if (g_EbrCollector.CleanUpRequested())
     {
         GCX_PREEMP();
-        g_HashMapEbr.CleanUpPending();
+        g_EbrCollector.CleanUpPending();
     }
 }
 
@@ -292,12 +378,13 @@ void FinalizerThread::FinalizeAllObjects()
     STATIC_CONTRACT_MODE_COOPERATIVE;
 
     FireEtwGCFinalizersBegin_V1(GetClrInstanceId());
+    if (g_pGCRunFinalizersMethodDesc == nullptr)
+    {
+        g_pGCRunFinalizersMethodDesc = CoreLibBinder::GetMethod(METHOD__GC__RUN_FINALIZERS);
+    }
 
-    PREPARE_NONVIRTUAL_CALLSITE(METHOD__GC__RUN_FINALIZERS);
-    DECLARE_ARGHOLDER_ARRAY(args, 0);
-
-    uint32_t count;
-    CALL_MANAGED_METHOD(count, uint32_t, args);
+    UnmanagedCallersOnlyCaller runFinalizers(METHOD__GC__RUN_FINALIZERS);
+    uint32_t count = runFinalizers.InvokeDirect_Ret<uint32_t>();
 
     FireEtwGCFinalizersEnd_V1(count, GetClrInstanceId());
 }
@@ -316,6 +403,10 @@ void FinalizerThread::RaiseShutdownEvents()
         // thread's context is needed (i.e. RCW cleanup)
         hEventFinalizerToShutDown->Wait(INFINITE, /*alertable*/ TRUE);
     }
+#else // TARGET_WASM
+    // No dedicated finalizer thread on WASM. Like every other CoreCLR
+    // target, finalizers queued at process exit are not pumped and
+    // leak by design.
 #endif // !TARGET_WASM
 }
 
@@ -777,5 +868,26 @@ void FinalizerThread::FinalizerThreadWait()
 
         _ASSERTE(status == WAIT_OBJECT_0);
     }
+#else // TARGET_WASM
+    // No separate finalizer thread on WASM. Drain synchronously on the
+    // calling thread so GC.WaitForPendingFinalizers() actually waits.
+    // The re-entry guard covers a user finalizer that calls
+    // WaitForPendingFinalizers itself; the non-WASM branch above uses
+    // IsCurrentThreadFinalizer() for the same purpose.
+    static thread_local bool s_inDrain = false;
+    if (s_inDrain)
+    {
+        return;
+    }
+    s_inDrain = true;
+
+    INSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP;
+    {
+        GCX_COOP();
+        ManagedThreadBase::KickOff(FinalizerThread::FinalizerThreadWorkerIteration, NULL);
+    }
+    UNINSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP;
+
+    s_inDrain = false;
 #endif // !TARGET_WASM
 }

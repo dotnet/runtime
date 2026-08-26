@@ -10,7 +10,6 @@ import {
     isDebug, staticLibDestination,
     keep_classnames, keep_fnames, reserved,
     inlinefastCheck,
-    runtimeFlavor,
 } from "./rollup.config.defines.js";
 import { terserPlugin, writeOnChangePlugin, consts, onwarn, alwaysLF, iife2fe, emsAmbient, regexReplace, sourcemapPathTransform } from "./rollup.config.plugins.js";
 import { promises as fs } from "fs";

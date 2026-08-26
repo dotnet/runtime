@@ -3,6 +3,8 @@
 
 #include "ClientTests.h"
 #include <memory>
+#include <array>
+#include <numeric>
 #include <windows_version_helpers.h>
 
 
@@ -13,6 +15,7 @@ void Validate_LCID_Marshaled();
 void Validate_Enumerator();
 void Validate_ParamCoerce();
 void Validate_TriggerCustomMarshaler();
+void Validate_Sum_IntArray_SafeArray();
 
 template<COINIT TM>
 struct ComInit
@@ -52,6 +55,7 @@ int __cdecl main()
         Validate_Enumerator();
         Validate_ParamCoerce();
         Validate_TriggerCustomMarshaler();
+        Validate_Sum_IntArray_SafeArray();
     }
     catch (HRESULT hr)
     {
@@ -675,4 +679,71 @@ void Validate_ParamCoerce()
     V_VT(&arg) = VT_DECIMAL;
     VarDecFromI8(int64_t(1) << 32, &V_DECIMAL(&arg));
     Validate_ParamCoerce_Exception(dispatchCoerceTesting, lcid, methodId, arg, DISP_E_OVERFLOW);
+}
+
+void Validate_Sum_IntArray_SafeArray()
+{
+    HRESULT hr;
+
+    CoreShimComActivation csact{ W("NETServer"), W("DispatchTesting") };
+
+    ComSmartPtr<IDispatchTesting> dispatchTesting;
+    THROW_IF_FAILED(::CoCreateInstance(CLSID_DispatchTesting, nullptr, CLSCTX_INPROC, IID_IDispatchTesting, (void**)&dispatchTesting));
+
+    LPOLESTR methodName = (LPOLESTR)W("Sum_IntArray_SafeArray");
+    LCID lcid = MAKELCID(LANG_USER_DEFAULT, SORT_DEFAULT);
+    DISPID methodId;
+
+    ::wprintf(W("Invoke %s\n"), methodName);
+    THROW_IF_FAILED(dispatchTesting->GetIDsOfNames(
+        IID_NULL,
+        &methodName,
+        1,
+        lcid,
+        &methodId));
+
+    const std::array data{ 1, 2, 3, 4, 5 };
+    const int expectedSum = std::accumulate(data.begin(), data.end(), 0);
+    const int count = (int)data.size();
+
+    SAFEARRAYBOUND bound;
+    bound.lLbound = 0;
+    bound.cElements = count;
+    SAFEARRAY *sa = ::SafeArrayCreate(VT_I4, 1, &bound);
+    THROW_FAIL_IF_FALSE(sa != nullptr);
+
+    for (LONG i = 0; i < count; ++i)
+    {
+        THROW_IF_FAILED(::SafeArrayPutElement(sa, &i, (void*)&data[i]));
+    }
+
+    DISPPARAMS params;
+    params.cArgs = 1;
+    params.rgvarg = new VARIANTARG[params.cArgs];
+    params.cNamedArgs = 0;
+    params.rgdispidNamedArgs = nullptr;
+
+    VariantInit(&params.rgvarg[0]);
+    V_VT(&params.rgvarg[0]) = VT_ARRAY | VT_I4;
+    V_ARRAY(&params.rgvarg[0]) = sa;
+
+    VARIANT result;
+    VariantInit(&result);
+
+    THROW_IF_FAILED(dispatchTesting->Invoke(
+        methodId,
+        IID_NULL,
+        lcid,
+        DISPATCH_METHOD,
+        &params,
+        &result,
+        nullptr,
+        nullptr
+    ));
+
+    THROW_FAIL_IF_FALSE(V_I4(&result) == expectedSum);
+
+    delete[] params.rgvarg;
+
+    ::SafeArrayDestroy(sa);
 }

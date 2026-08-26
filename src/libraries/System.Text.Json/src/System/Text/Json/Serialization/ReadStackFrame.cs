@@ -114,18 +114,12 @@ namespace System.Text.Json
         /// <summary>
         /// Is the current object a Dictionary.
         /// </summary>
-        public bool IsProcessingDictionary()
-        {
-            return JsonTypeInfo.Kind is JsonTypeInfoKind.Dictionary;
-        }
+        public bool IsProcessingDictionary() => JsonTypeInfo.Kind is JsonTypeInfoKind.Dictionary;
 
         /// <summary>
         /// Is the current object an Enumerable.
         /// </summary>
-        public bool IsProcessingEnumerable()
-        {
-            return JsonTypeInfo.Kind is JsonTypeInfoKind.Enumerable;
-        }
+        public bool IsProcessingEnumerable() => JsonTypeInfo.Kind is JsonTypeInfoKind.Enumerable;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void MarkPropertyAsRead(JsonPropertyInfo propertyInfo)

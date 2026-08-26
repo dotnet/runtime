@@ -25,14 +25,14 @@ namespace System.IO.Ports.Tests
 
         #region Test Cases
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(Write_str), nameof(HasLoopbackOrNullModem))]
         public void ASCIIEncoding()
         {
             Debug.WriteLine("Verifying write method with ASCIIEncoding");
             VerifyWrite(new ASCIIEncoding(), ENCODING_STRING_SIZE);
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(Write_str), nameof(HasLoopbackOrNullModem))]
         public void UTF8Encoding()
         {
             Debug.WriteLine("Verifying write method with UTF8Encoding");
@@ -40,21 +40,21 @@ namespace System.IO.Ports.Tests
         }
 
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(Write_str), nameof(HasLoopbackOrNullModem))]
         public void UTF32Encoding()
         {
             Debug.WriteLine("Verifying write method with UTF32Encoding");
             VerifyWrite(new UTF32Encoding(), ENCODING_STRING_SIZE);
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(Write_str), nameof(HasLoopbackOrNullModem))]
         public void UnicodeEncoding()
         {
             Debug.WriteLine("Verifying write method with UnicodeEncoding");
             VerifyWrite(new UnicodeEncoding(), ENCODING_STRING_SIZE);
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(Write_str), nameof(HasOneSerialPort))]
         public void NullString()
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -72,7 +72,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(Write_str), nameof(HasLoopbackOrNullModem))]
         public void EmptyString()
         {
             using (SerialPort com1 = TCSupport.InitFirstSerialPort())
@@ -89,7 +89,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(Write_str), nameof(HasLoopbackOrNullModem))]
         public void String_Null_Char()
         {
             using (SerialPort com1 = TCSupport.InitFirstSerialPort())
@@ -106,7 +106,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(Write_str), nameof(HasLoopbackOrNullModem))]
         public void LargeString()
         {
             Debug.WriteLine("Verifying write method with a large string size");

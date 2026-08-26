@@ -13,6 +13,7 @@
 **=========================================================*/
 
 #include <palsuite.h>
+#include <inttypes.h>
 
 PALTEST(threading_QueryThreadCycleTime_test1_paltest_querythreadcycletime_test1, "threading/QueryThreadCycleTime/test1/paltest_querythreadcycletime_test1")
 {
@@ -75,7 +76,7 @@ PALTEST(threading_QueryThreadCycleTime_test1_paltest_querythreadcycletime_test1,
 
         LONG64 trial = (LONG64)SecondCount - (LONG64)FirstCount;
         if (trial < 0){
-            printf("Negative value %" PRIu64 " measured", trial);
+            printf("Negative value %" PRId64 " measured", trial);
         }
         Actual += (trial);
 
@@ -83,11 +84,11 @@ PALTEST(threading_QueryThreadCycleTime_test1_paltest_querythreadcycletime_test1,
 
     if(llabs(Expected - Actual) > Delta)
     {
-        Fail("ERROR: The measured time (%" PRIu64 " millisecs) was not within Delta %" PRIu64 " "
-            "of the expected time (%" PRIu64 " millisecs).\n",
+        Fail("ERROR: The measured time (%" PRId64 " millisecs) was not within Delta %" PRId64 " "
+            "of the expected time (%" PRId64 " millisecs).\n",
              (Actual / MSEC_TO_NSEC), (Delta / MSEC_TO_NSEC), (Expected / MSEC_TO_NSEC));
     }
-    //printf("%" PRIu64 ", %" PRIu64 "\n", Expected, Actual);
+    //printf("%" PRId64 ", %" PRId64 "\n", Expected, Actual);
     PAL_Terminate();
     ret = PASS;
     }

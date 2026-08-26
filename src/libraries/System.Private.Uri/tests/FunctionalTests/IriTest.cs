@@ -241,7 +241,11 @@ namespace System.PrivateUri.Tests
         [Fact]
         public void Iri_UnicodePlane3_13()
         {
-            EscapeUnescapeTestUnicodePlane(0x30000, 0xDFFFF);
+            // Process the range in chunks of 0x10000 to avoid allocating large strings
+            for (int start = 0x30000; start < 0xE0000; start += 0x10000)
+            {
+                EscapeUnescapeTestUnicodePlane(start, start + 0x10000);
+            }
         }
 
         [Fact]
@@ -560,7 +564,7 @@ namespace System.PrivateUri.Tests
         {
             get
             {
-                foreach (int length in new[] { 1, 64_000, 66_000, 1_000_000 })
+                foreach (int length in new[] { 1, 64_000, 66_000 })
                 {
                     yield return new object[] { @"test://" + new string('a', length) + new string('\uD800', 2) + "@8.8.8.8" }; // Userinfo
                     yield return new object[] { @"test://8.8.8.8?" + new string('a', length) + new string('\uD800', 2) }; // Query

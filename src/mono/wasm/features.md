@@ -170,8 +170,6 @@ The following shows the structure for a Release build, but except the name in th
 - `./bin/Release/net8.0/browser-wasm/AppBundle/_framework` - contains all the assets of the runtime and the managed application.
 
 
-Note: You can flatten the `_framework` folder away by putting `<WasmRuntimeAssetsLocation>./</WasmRuntimeAssetsLocation>` in a property group in the project file.
-
 Note: You can replace the location of `AppBundle` directory by  `<WasmAppDir>../my-frontend/wwwroot</WasmAppDir>` in a property group in the project file.
 
 #### `_framework` folder structure
@@ -181,7 +179,7 @@ Note: You can replace the location of `AppBundle` directory by  `<WasmAppDir>../
 - `dotnet.boot.js` - contains list of all other assets and their integrity hash and also various configuration flags.
 - `dotnet.native.wasm` - is the compiled binary of the dotnet (Mono) runtime.
 - `System.Private.CoreLib.*` - is NET assembly with the core implementation of dotnet runtime and class library
-- `*.wasm` - are .NET assemblies stored in `WebCIL` format (for better compatibility with firewalls and virus scanners).
+- `*.wasm` - are .NET assemblies stored in `Webcil` format (for better compatibility with firewalls and virus scanners).
 - `*.dll` - are .NET assemblies stored in Portable Executable format (only used when you use `<WasmEnableWebcil>false</WasmEnableWebcil>`).
 - `dotnet.js.map` - is a source map file, for easier debugging of the runtime code. It's not included in the published applications.
 - `dotnet.native.js.symbols` - are debug symbols which help to put `C` runtime method names back to the `.wasm` stack traces. To enable generating it, use `<WasmEmitSymbolMap>true</WasmEmitSymbolMap>`.

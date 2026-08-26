@@ -135,6 +135,33 @@ public static unsafe class UnsafeAccessorsTests
         extern static UserDataClass CallPrivateConstructorWithEmptyName();
     }
 
+    interface IDelegateTarget
+    {
+        static virtual object GetValue() => "DelegateTargetValue";
+    }
+
+    class DelegateTargetImpl : IDelegateTarget { }
+
+    delegate object DelegateFromUnsafeAccessor();
+
+    [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
+    extern static DelegateFromUnsafeAccessor ConstructDelegate(object o, IntPtr p);
+
+    static class DelegateTargetResolver<T> where T : IDelegateTarget
+    {
+        public static unsafe delegate*<object> Resolve() => &T.GetValue;
+    }
+
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/69919", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
+    [Fact]
+    public static unsafe void Verify_ConstructDelegateFromFunctionPointer()
+    {
+        Console.WriteLine($"Running {nameof(Verify_ConstructDelegateFromFunctionPointer)}");
+
+        var del = ConstructDelegate(null, (nint)DelegateTargetResolver<DelegateTargetImpl>.Resolve());
+        Assert.Equal("DelegateTargetValue", del());
+    }
+
     [Fact]
     public static void Verify_CallCtorAsMethod()
     {

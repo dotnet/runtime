@@ -11,7 +11,7 @@ namespace test87879;
 public class test87879
 {
     [Fact, SkipLocalsInit]
-    public static void TestEntryPoint()
+    public static unsafe void TestEntryPoint()
     {
         //determine the expected available stack size 1.5MB, minus a little bit (384kB) for overhead.
         var expectedSize = 0x180000 - 0x60000;
@@ -24,8 +24,11 @@ public class test87879
         //repeat on a secondary thread
         Thread t = new Thread([SkipLocalsInit] () =>
         {
-            Span<byte> bytes = stackalloc byte[expectedSize];
-            Consume(bytes);
+            unsafe
+            {
+                Span<byte> bytes = stackalloc byte[expectedSize];
+                Consume(bytes);
+            }
         });
         t.Start();
         t.Join();

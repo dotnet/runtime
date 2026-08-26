@@ -101,7 +101,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
                     if (relativeParents.RecursiveParents.Any(p => p.Elements.Any() && p.FileName == "Dependencies"))
                         continue;
 
-                    // Magic: Anything in a directory named Individual is expected to be ran by it's own [Test] rather than as part of [TestCaseSource]
+                    // Magic: Anything in a directory named Individual is expected to be ran by it's own [TestMethod] rather than as part of [DynamicData]
                     if (relativeParents.RecursiveParents.Any(p => p.Elements.Any() && p.FileName == "Individual"))
                         continue;
 

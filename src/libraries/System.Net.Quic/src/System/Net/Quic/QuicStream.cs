@@ -120,12 +120,21 @@ public sealed partial class QuicStream
 
     private long _id = -1;
     private readonly QuicStreamType _type;
+    private byte _priority = DefaultPriority;
 
     /// <summary>
     /// Provided via <see cref="StartAsync(Action{QuicStreamType}, CancellationToken)" /> from <see cref="QuicConnection" /> so that <see cref="QuicStream"/> can decrement its available stream count field.
     /// When <see cref="HandleEventStartComplete(ref START_COMPLETE_DATA)">START_COMPLETE</see> arrives it gets invoked and unset back to <c>null</c> to not to hold any unintended reference to <see cref="QuicConnection"/>.
     /// </summary>
     private Action<QuicStreamType>? _decrementStreamCapacity;
+
+    /// <summary>
+    /// The default value of <see cref="Priority"/>, which is the middle of the <see cref="byte"/> range.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="byte.MinValue"/> represents the lowest priority and <see cref="byte.MaxValue"/> represents the highest priority.
+    /// </remarks>
+    public const byte DefaultPriority = 0x7F;
 
     /// <summary>
     /// Stream id, see <see href="https://www.rfc-editor.org/rfc/rfc9000.html#name-stream-types-and-identifier" />.
@@ -136,6 +145,27 @@ public sealed partial class QuicStream
     /// Stream type, see <see href="https://www.rfc-editor.org/rfc/rfc9000.html#name-stream-types-and-identifier" />.
     /// </summary>
     public QuicStreamType Type => _type;
+
+    /// <summary>
+    /// Gets or sets the stream priority, see <see href="https://www.rfc-editor.org/rfc/rfc9000.html#name-stream-prioritization">RFC 9000: Stream Prioritization</see>.
+    /// </summary>
+    /// <remarks>
+    /// <para>Priority only affects the order of data sent on the wire relative to other streams on the same connection.
+    /// <see cref="byte.MinValue"/> represents the lowest priority and <see cref="byte.MaxValue"/> represents the highest.
+    /// The default value is <see cref="DefaultPriority"/>.</para>
+    /// </remarks>
+    /// <value>The priority level for this stream. The default value is <see cref="DefaultPriority"/>.</value>
+    public byte Priority
+    {
+        get => _priority;
+        set
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+
+            SetMsQuicParameter(_handle, QUIC_PARAM_STREAM_PRIORITY, (ushort)((value << 8) | 0xFF));
+            _priority = value;
+        }
+    }
 
     /// <summary>
     /// A <see cref="Task"/> that will get completed once reading side has been closed.
@@ -291,9 +321,10 @@ public sealed partial class QuicStream
             cancellationToken.ThrowIfCancellationRequested();
         }
 
-        // The following loop will repeat at most twice depending whether some data are readily available in the buffer (one iteration) or not.
-        // In which case, it'll wait on RECEIVE or any of PEER_SEND_(SHUTDOWN|ABORTED) event and attempt to copy data in the second iteration.
+        // Loop copying available data and/or waiting on RECEIVE or PEER_SEND_(SHUTDOWN|ABORTED) events.
+        // Keeps waiting while nothing was copied and the buffer is empty (and not final) to ignore stale wake-ups on _receiveTcs.
         int totalCopied = 0;
+        bool empty;
         do
         {
             // Concurrent call, this one lost the race.
@@ -303,7 +334,7 @@ public sealed partial class QuicStream
             }
 
             // Copy data from the buffer, reduce target and increment total.
-            int copied = _receiveBuffers.CopyTo(buffer, out bool complete, out bool empty);
+            int copied = _receiveBuffers.CopyTo(buffer, out bool complete, out empty);
             buffer = buffer.Slice(copied);
             totalCopied += copied;
 
@@ -327,7 +358,7 @@ public sealed partial class QuicStream
             {
                 break;
             }
-        } while (!buffer.IsEmpty && totalCopied == 0);  // Exit the loop if target buffer is full we at least copied something.
+        } while (totalCopied == 0 && empty);  // Keep waiting while we haven't copied anything and no data is available.
 
         if (totalCopied > 0 && Interlocked.CompareExchange(ref _receivedNeedsEnable, 0, 1) == 1)
         {
@@ -390,6 +421,13 @@ public sealed partial class QuicStream
         // No need to call anything since we already have a result, most likely an exception.
         if (valueTask.IsCompleted)
         {
+            // The writing side is closed, this write operation will not happen. Let the caller know.
+            if (valueTask.IsCompletedSuccessfully)
+            {
+                // Clean up and reset the value task just for posterity since it's nop in this state.
+                valueTask.GetAwaiter().GetResult();
+                return ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new InvalidOperationException(SR.net_writecompleted_invalidcall)));
+            }
             return valueTask;
         }
 
@@ -642,7 +680,10 @@ public sealed partial class QuicStream
             _receiveTcs.TrySetException(exception);
             _sendTcs.TrySetException(exception);
         }
-        _startedTcs.TrySetException(ThrowHelper.GetOperationAbortedException());
+        if (!_startedTcs.IsCompleted)
+        {
+            _startedTcs.TrySetException(ThrowHelper.GetOperationAbortedException());
+        }
         _shutdownTcs.TrySetResult();
         return QUIC_STATUS_SUCCESS;
     }

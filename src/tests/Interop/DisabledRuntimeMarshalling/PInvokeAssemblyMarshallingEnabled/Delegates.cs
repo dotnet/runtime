@@ -14,7 +14,7 @@ public unsafe class DelegatesFromExternalAssembly
     public static bool IsWindowsX86Process => OperatingSystem.IsWindows() && RuntimeInformation.ProcessArchitecture == Architecture.X86;
     public static bool IsNotWindowsX86Process => !IsWindowsX86Process;
 
-    [ConditionalFact(nameof(IsNotWindowsX86Process))]
+    [ConditionalFact(typeof(DelegatesFromExternalAssembly), nameof(IsNotWindowsX86Process))]
     public static void StructWithDefaultNonBlittableFields()
     {
         short s = 42;
@@ -25,7 +25,7 @@ public unsafe class DelegatesFromExternalAssembly
         Assert.False(cb(new StructWithShortAndBool(s, b), s, b));
     }
     
-    [ConditionalFact(nameof(IsNotWindowsX86Process))]
+    [ConditionalFact(typeof(DelegatesFromExternalAssembly), nameof(IsNotWindowsX86Process))]
     [PlatformSpecific(TestPlatforms.Windows)]
     public static void StructWithDefaultNonBlittableFields_MarshalAsInfo()
     {

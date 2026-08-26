@@ -53,23 +53,5 @@ namespace ILCompiler.Dataflow
             return method.OwningType.IsTypeOf(fullTypeName);
         }
 
-        public static bool StringEquals(this ReadOnlySpan<byte> utf8bytes, string value)
-        {
-            if (utf8bytes.Length < value.Length)
-                return false;
-
-            for (int i = 0; i < value.Length; i++)
-            {
-                int ch = utf8bytes[i];
-                if (ch > 0x7F)
-                    return System.Text.Encoding.UTF8.GetString(utf8bytes) == value;
-
-                // We are assuming here that valid UTF8 encoded byte > 0x7F cannot map to a character with code point <= 0x7F
-                if (ch != value[i])
-                    return false;
-            }
-
-            return utf8bytes.Length == value.Length; // All char ANSI, all matching
-        }
     }
 }

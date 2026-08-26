@@ -20,8 +20,6 @@
     <WorkItemPrefix Condition="'$(WasmBundlerFriendlyBootConfig)' == 'true'">WBT-JavascriptBundler-</WorkItemPrefix>
     <WorkItemPrefix Condition="'$(RuntimeFlavor)' == 'Mono'">$(WorkItemPrefix)MONO-</WorkItemPrefix>
     <WorkItemPrefix Condition="'$(RuntimeFlavor)' == 'CoreCLR'">$(WorkItemPrefix)CLR-</WorkItemPrefix>
-    <WorkItemPrefix Condition="'$(WasmEnableThreads)' != 'true'">$(WorkItemPrefix)ST-</WorkItemPrefix>
-    <WorkItemPrefix Condition="'$(WasmEnableThreads)' == 'true'">$(WorkItemPrefix)MT-</WorkItemPrefix>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(Scenario)' == 'BuildWasmApps'">
@@ -43,11 +41,14 @@
       <_BuildWasmAppsPayloadArchive>@(_WasmWorkItem)</_BuildWasmAppsPayloadArchive>
     </PropertyGroup>
 
-    <ReadLinesFromFile File="$(BuildWasmAppsJobsList)" Condition="Exists($(BuildWasmAppsJobsList)) and '$(TestUsingWorkloads)' == 'true'">
+    <ReadLinesFromFile File="$(BuildWasmAppsJobsList)" Condition="Exists($(BuildWasmAppsJobsList))">
       <Output TaskParameter="Lines" ItemName="BuildWasmApps_PerJobList" />
     </ReadLinesFromFile>
 
-    <!-- for testing with workloads, we use separate items -->
+    <!-- Lanes that run with the workload installed and with the default fingerprinting/bundler
+         settings fan out per test class (this includes the webcil permutations); every other
+         lane runs as a single work item. Identical for every runtime flavor - only
+         $(BuildWasmAppsJobsList) differs. -->
     <ItemGroup>
       <HelixWorkItem Include="@(BuildWasmApps_PerJobList->'$(WorkItemPrefix)%(Identity)')" Condition="'$(TestUsingWorkloads)' == 'true' and '$(WasmFingerprintAssets)' == 'true' and '$(WasmBundlerFriendlyBootConfig)' == 'false'">
         <PayloadArchive>$(_BuildWasmAppsPayloadArchive)</PayloadArchive>

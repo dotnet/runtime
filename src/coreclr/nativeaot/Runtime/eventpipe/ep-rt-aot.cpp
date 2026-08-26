@@ -26,6 +26,7 @@
 #include "threadstore.inl"
 #include "eventtrace_context.h"
 #include "eventtracebase.h"
+#include "thread.inl"
 
 // Uses _rt_aot_lock_internal_t that has CrstStatic as a field
 // This is initialized at the beginning and EventPipe library requires the lock handle to be maintained by the runtime
@@ -122,9 +123,11 @@ ep_rt_aot_sample_profiler_write_sampling_event_for_threads (
 
         // Walk the stack and write it out as an event.
         if (ep_rt_aot_walk_managed_stack_for_thread (target_thread, current_stack_contents) && !ep_stack_contents_is_empty (current_stack_contents)) {
-            // Set the payload.
-            // TODO: We can actually detect whether we are in managed or external code but does it matter?!
-            uint32_t payload_data = EP_SAMPLE_PROFILER_SAMPLE_TYPE_EXTERNAL;
+            // Set the payload. If the thread is trapped for suspension, it was in cooperative mode
+            // (managed code). Otherwise, it was in preemptive mode (external code).
+            uint32_t payload_data = target_thread->IsSuspensionTrapped()
+                ? EP_SAMPLE_PROFILER_SAMPLE_TYPE_MANAGED
+                : EP_SAMPLE_PROFILER_SAMPLE_TYPE_EXTERNAL;
 
             // Write the sample.
             ep_write_sample_profile_event (
@@ -624,7 +627,7 @@ ep_rt_aot_spin_lock_alloc (ep_rt_spin_lock_handle_t *spin_lock)
     // EventPipe library will intialize using thread, EventPipeBufferManager instances and will maintain these on the EventPipe library side
 
     spin_lock->lock = new (nothrow) CrstStatic ();
-    spin_lock->lock->InitNoThrow (CrstType::CrstEventPipe);
+    spin_lock->lock->Init (CrstType::CrstEventPipe);
 }
 
 void
@@ -789,7 +792,7 @@ void ep_rt_aot_init (void)
     extern CrstStatic _ep_rt_aot_config_lock;
 
     _ep_rt_aot_config_lock_handle.lock = &_ep_rt_aot_config_lock;
-    _ep_rt_aot_config_lock_handle.lock->InitNoThrow (CrstType::CrstEventPipeConfig);
+    _ep_rt_aot_config_lock_handle.lock->Init (CrstType::CrstEventPipeConfig);
 }
 
 bool ep_rt_aot_lock_acquire (ep_rt_lock_handle_t *lock)

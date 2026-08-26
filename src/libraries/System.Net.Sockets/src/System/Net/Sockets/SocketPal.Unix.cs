@@ -1484,7 +1484,7 @@ namespace System.Net.Sockets
                 }
             }
 
-#if SYSTEM_NET_SOCKETS_APPLE_PLATFROM
+#if SYSTEM_NET_SOCKETS_APPLE_PLATFORM
             // macOS fails to even query it if socket is not actively listening.
             // To provide consistent platform experience we will track if
             // it was ret and we will use it later as needed.
@@ -1625,7 +1625,7 @@ namespace System.Net.Sockets
             int optLen = sizeof(int);
             Interop.Error err = Interop.Sys.GetSockOpt(handle, optionLevel, optionName, (byte*)&value, &optLen);
 
-#if SYSTEM_NET_SOCKETS_APPLE_PLATFROM
+#if SYSTEM_NET_SOCKETS_APPLE_PLATFORM
             // macOS fails to even query it if socket is not actively listening.
             // To provide consistent platform experience we will track if
             // it was set and we will use it later as needed.
@@ -1832,7 +1832,7 @@ namespace System.Net.Sockets
             }
         }
 
-        private static SocketError SelectViaSelect(IList? checkRead, IList? checkWrite, IList? checkError, int microseconds)
+        private static unsafe SocketError SelectViaSelect(IList? checkRead, IList? checkWrite, IList? checkError, int microseconds)
         {
             const int MaxStackAllocCount = 20;      // this is just arbitrary limit 3x 20 -> 60 e.g. close to 64 we have in some other places
             Span<int> readFDs = checkRead?.Count > MaxStackAllocCount ? new int[checkRead.Count] : stackalloc int[checkRead?.Count ?? 0];

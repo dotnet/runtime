@@ -12,7 +12,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         public static bool ManualTestsEnabled => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("MANUAL_TESTS"));
 
         // Take action as decsribed in the title of the dialog box window.
-        [ConditionalTheory(nameof(ManualTestsEnabled))]
+        [ConditionalTheory(typeof(X509Certificate2UIManualTests), nameof(ManualTestsEnabled))]
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(2)]
@@ -33,7 +33,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ConditionalFact(nameof(ManualTestsEnabled))]
+        [ConditionalFact(typeof(X509Certificate2UIManualTests), nameof(ManualTestsEnabled))]
         public static void DisplayCertificateTest()
         {
             using (ECDsa ecdsa = ECDsa.Create(EccTestData.Secp256r1Data.KeyParameters))

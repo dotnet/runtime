@@ -24,7 +24,7 @@ namespace System.Xml.Xsl.IlGen
         /// Check environment variable in order to determine whether to write out trace files.  This really should be a
         /// check of the configuration file, but System.Xml does not yet have a good tracing story.
         /// </summary>
-        private static volatile string? s_dirName;
+        private static string? s_dirName;
         private static volatile bool s_alreadyCheckedEnabled;
 
         /// <summary>

@@ -186,4 +186,8 @@ HRESULT GetITypeInfoForEEClass(MethodTable *pMT, ITypeInfo **ppTI, bool bClassIn
 // Gets the MethodTable for the associated IRecordInfo.
 MethodTable* GetMethodTableForRecordInfo(IRecordInfo* recInfo);
 
+extern const TADDR g_cdacTearOffAddRef;
+extern const TADDR g_cdacTearOffAddRefSimple;
+extern const TADDR g_cdacTearOffAddRefSimpleInner;
+
 #endif

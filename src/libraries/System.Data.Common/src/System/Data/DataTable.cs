@@ -3717,11 +3717,11 @@ namespace System.Data
                     // handle ASC and DESC.
                     int length = current.Length;
                     bool descending = false;
-                    if (length >= 5 && string.Compare(current, length - 4, " ASC", 0, 4, StringComparison.OrdinalIgnoreCase) == 0)
+                    if (length >= 5 && current.EndsWith(" ASC", StringComparison.OrdinalIgnoreCase))
                     {
                         current = current.AsSpan(0, length - 4).Trim().ToString();
                     }
-                    else if (length >= 6 && string.Compare(current, length - 5, " DESC", 0, 5, StringComparison.OrdinalIgnoreCase) == 0)
+                    else if (length >= 6 && current.EndsWith(" DESC", StringComparison.OrdinalIgnoreCase))
                     {
                         descending = true;
                         current = current.AsSpan(0, length - 5).Trim().ToString();

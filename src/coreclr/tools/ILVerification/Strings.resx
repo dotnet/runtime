@@ -297,6 +297,9 @@
   <data name="MethodFallthrough" xml:space="preserve">
     <value>Fall through end of the method without returning.</value>
   </data>
+  <data name="EHClauseOutOfRange" xml:space="preserve">
+    <value>Exception handling clause bounds outside code size.</value>
+  </data>
   <data name="NewobjAbstractClass" xml:space="preserve">
     <value>Cannot construct an instance of abstract class.</value>
   </data>
@@ -449,5 +452,11 @@
   </data>
   <data name="LocallocStackNotEmpty" xml:space="preserve">
     <value>Stack must be empty before localloc, except for the size item.</value>
+  </data>
+  <data name="InvalidBaseType" xml:space="preserve">
+    <value>Type '{0}' has invalid base type '{1}'.</value>
+  </data>
+  <data name="BadTypeSpec" xml:space="preserve">
+    <value>Invalid TypeSpec metadata.</value>
   </data>
 </root>

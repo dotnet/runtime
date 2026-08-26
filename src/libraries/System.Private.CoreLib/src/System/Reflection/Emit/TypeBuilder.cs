@@ -12,6 +12,8 @@ namespace System.Reflection.Emit
         {
         }
 
+        public override Type? GetNullableUnderlyingType() => null;
+
         public const int UnspecifiedTypeSize = 0;
 
         public PackingSize PackingSize
@@ -319,6 +321,11 @@ namespace System.Reflection.Emit
         public override Type MakeGenericType(params Type[] typeArguments)
         {
             return TypeBuilderInstantiation.MakeGenericType(this, typeArguments);
+        }
+
+        public override Type MakeFunctionPointerType(Type[]? parameterTypes, bool isUnmanaged = false)
+        {
+            return Type.MakeFunctionPointerSignatureType(this, parameterTypes, isUnmanaged);
         }
 
         #region Public Static Methods

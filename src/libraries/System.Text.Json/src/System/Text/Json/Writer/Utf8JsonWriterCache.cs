@@ -29,7 +29,7 @@ namespace System.Text.Json
                 writer = state.Writer;
 
                 bufferWriter.InitializeEmptyInstance(defaultBufferSize);
-                writer.Reset(bufferWriter, options);
+                writer.ConfigureForCacheReuse(bufferWriter, options);
             }
             else
             {
@@ -50,7 +50,7 @@ namespace System.Text.Json
             {
                 // First JsonSerializer call in the stack -- initialize & return the cached instance.
                 writer = state.Writer;
-                writer.Reset(bufferWriter, options.GetWriterOptions());
+                writer.ConfigureForCacheReuse(bufferWriter, options.GetWriterOptions());
             }
             else
             {
@@ -63,7 +63,7 @@ namespace System.Text.Json
 
         public static void ReturnWriterAndBuffer(Utf8JsonWriter writer, PooledByteBufferWriter bufferWriter)
         {
-            Debug.Assert(t_threadLocalState != null);
+            Debug.Assert(t_threadLocalState is not null);
             ThreadLocalState state = t_threadLocalState;
 
             writer.ResetAllStateForCacheReuse();
@@ -75,7 +75,7 @@ namespace System.Text.Json
 
         public static void ReturnWriter(Utf8JsonWriter writer)
         {
-            Debug.Assert(t_threadLocalState != null);
+            Debug.Assert(t_threadLocalState is not null);
             ThreadLocalState state = t_threadLocalState;
 
             writer.ResetAllStateForCacheReuse();

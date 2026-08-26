@@ -681,7 +681,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             => !OperatingSystem.IsBrowser() && !OperatingSystem.IsWasi();
 #endif
 
-        [ConditionalTheory(nameof(HasSymmetricEncryption))]
+        [ConditionalTheory(typeof(SlhDsaContractTests), nameof(HasSymmetricEncryption))]
         [MemberData(nameof(AlgorithmWithPbeParametersData))]
         public static void ExportEncryptedPkcs8PrivateKey_CallsExportSlhDsaPrivateKey(SlhDsaAlgorithm algorithm, PbeParameters pbeParameters)
         {

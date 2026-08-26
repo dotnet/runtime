@@ -79,58 +79,66 @@ namespace System.Text.Json.Serialization.Tests
         {
             yield return new object[]
             {
-                @"{
-                    ""album"": {
-                        ""userPlayCount"": ""123"",
-                        ""name"": ""the name of the album"",
-                        ""artist"": ""the name of the artist"",
-                        ""wiki"": {
-                            ""summary"": ""a summary of the album""
-                        }
-                    }
-                }"
+                """
+                        {
+                                            "album": {
+                                                "userPlayCount": "123",
+                                                "name": "the name of the album",
+                                                "artist": "the name of the artist",
+                                                "wiki": {
+                                                    "summary": "a summary of the album"
+                                                }
+                                            }
+                                        }
+                    """
             };
 
             yield return new object[]
             {
-                @"{
-                    ""album"": {
-                        ""name"": ""the name of the album"",
-                        ""userPlayCount"": ""123"",
-                        ""artist"": ""the name of the artist"",
-                        ""wiki"": {
-                            ""summary"": ""a summary of the album""
-                        }
-                    }
-                }"
+                """
+                        {
+                                            "album": {
+                                                "name": "the name of the album",
+                                                "userPlayCount": "123",
+                                                "artist": "the name of the artist",
+                                                "wiki": {
+                                                    "summary": "a summary of the album"
+                                                }
+                                            }
+                                        }
+                    """
             };
 
             yield return new object[]
             {
-                @"{
-                    ""album"": {
-                        ""name"": ""the name of the album"",
-                        ""artist"": ""the name of the artist"",
-                        ""userPlayCount"": ""123"",
-                        ""wiki"": {
-                            ""summary"": ""a summary of the album""
-                        }
-                    }
-                }"
+                """
+                        {
+                                            "album": {
+                                                "name": "the name of the album",
+                                                "artist": "the name of the artist",
+                                                "userPlayCount": "123",
+                                                "wiki": {
+                                                    "summary": "a summary of the album"
+                                                }
+                                            }
+                                        }
+                    """
             };
 
             yield return new object[]
             {
-                @"{
-                    ""album"": {
-                        ""name"": ""the name of the album"",
-                        ""artist"": ""the name of the artist"",
-                        ""wiki"": {
-                            ""summary"": ""a summary of the album""
-                        },
-                        ""userPlayCount"": ""123""
-                    }
-                }"
+                """
+                        {
+                                            "album": {
+                                                "name": "the name of the album",
+                                                "artist": "the name of the artist",
+                                                "wiki": {
+                                                    "summary": "a summary of the album"
+                                                },
+                                                "userPlayCount": "123"
+                                            }
+                                        }
+                    """
             };
         }
 

@@ -18,11 +18,15 @@ Mach‑O support will only be supported for composite ReadyToRun when the target
 
 `crossgen2` will:
 
-- Produce a Mach-O object file as the composite R2R image with the `RTR_HEADER` export for the `READYTORUN_HEADER`.
+- Produce a Mach-O object file as the composite R2R image with the `RTR_HEADER` export for the `READYTORUN_HEADER`. The export symbol name defaults to `RTR_HEADER` but can be overridden with the `--rtr-header-symbol-name` option (see below).
 - Mark each input IL assembly as a component R2R assembly: `READYTORUN_FLAG_COMPONENT`.
 - Mark each input IL assembly with a new flag indicating that the associated composite image is in the platform-native format: `READYTORUN_FLAG_PLATFORM_NATIVE_IMAGE`
 
-`crossgen2` does not produce the final shared library. A separate SDK / build linking step must preserve the `RTR_HEADER` export in the final `dylib`.
+`crossgen2` does not produce the final shared library. A separate SDK / build linking step must preserve the `RTR_HEADER` export (or the custom name if `--rtr-header-symbol-name` was used) in the final `dylib`.
+
+### Customizing the RTR_HEADER symbol name
+
+The `crossgen2` `--rtr-header-symbol-name <name>` option overrides the exported symbol name for the `READYTORUN_HEADER`. This is intended for custom hosts that directly link against multiple R2R images — rather than loading them dynamically via `dlopen` or equivalent — where each image needs a distinct export symbol name to avoid collisions. The runtime or host must then use the matching custom name when locating the header.
 
 ### Mach-O Emitter Decisions
 

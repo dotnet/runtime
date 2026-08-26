@@ -12,6 +12,7 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.NativeRebuild.Tests
 {
+    [TestCategory("native"), TestCategory("mono")]
     public class SimpleSourceChangeRebuildTest : NativeRebuildTestsBase
     {
         public SimpleSourceChangeRebuildTest(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)

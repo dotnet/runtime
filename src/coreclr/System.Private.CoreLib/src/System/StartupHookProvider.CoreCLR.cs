@@ -6,16 +6,25 @@ using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
 using System.IO;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Runtime.Loader;
 
 namespace System
 {
     internal static partial class StartupHookProvider
     {
-        private static unsafe void ManagedStartup(char* pDiagnosticStartupHooks)
+        [UnmanagedCallersOnly]
+        private static unsafe void ManagedStartup(char* pDiagnosticStartupHooks, Exception* pException)
         {
-            if (IsSupported)
-                ProcessStartupHooks(new string(pDiagnosticStartupHooks));
+            try
+            {
+                if (IsSupported)
+                    ProcessStartupHooks(new string(pDiagnosticStartupHooks));
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
         }
     }
 }

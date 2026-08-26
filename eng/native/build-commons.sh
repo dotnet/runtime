@@ -60,6 +60,18 @@ build_native()
     cmakeArgs="$6"
     message="$7"
 
+    # When sccache is enabled, use it as the compiler launcher.
+    # On macOS, CMake wraps PCH includes with -Xarch_<arch> which sccache
+    # cannot parse.  Use a thin wrapper that strips -Xarch_<arch> flags
+    # (safe in single-architecture builds) before forwarding to sccache.
+    if [[ "${USE_SCCACHE:-}" == "true" ]]; then
+        local __sccacheLauncher="sccache"
+        if [[ "$targetOS" == osx || "$targetOS" == maccatalyst ]]; then
+            __sccacheLauncher="$__RepoRootDir/eng/native/sccache-xarch-wrapper.sh"
+        fi
+        cmakeArgs="-DCMAKE_C_COMPILER_LAUNCHER=$__sccacheLauncher -DCMAKE_CXX_COMPILER_LAUNCHER=$__sccacheLauncher $cmakeArgs"
+    fi
+
     # All set to commence the build
     echo "Commencing build of \"$target\" target in \"$message\" for $__TargetOS.$__TargetArch.$__BuildType in $intermediatesDir"
 
@@ -101,7 +113,7 @@ build_native()
 
     if [[ "$targetOS" == android || "$targetOS" == linux-bionic ]]; then
         # Keep in sync with $(AndroidApiLevelMin) in Directory.Build.props in the repository rooot
-        local ANDROID_API_LEVEL=21
+        local ANDROID_API_LEVEL=24
         if [[ -z "$ANDROID_NDK_ROOT" ]]; then
             echo "Error: You need to set the ANDROID_NDK_ROOT environment variable pointing to the Android NDK root."
             exit 1
@@ -263,6 +275,7 @@ usage()
     echo ""
     echo "BuildArch can be: -arm, -armv6, -armel, -arm64, -loongarch64, -riscv64, -s390x, -ppc64le, x64, x86, -wasm"
     echo "BuildType can be: -debug, -checked, -release"
+    echo "-arch: target architecture (defaults to running architecture); alternative to the BuildArch flags above."
     echo "-os: target OS (defaults to running OS)"
     echo "-bindir: output directory (defaults to $__ProjectRoot/artifacts)"
     echo "-ci: indicates if this is a CI build."
@@ -300,7 +313,7 @@ __TargetRid=''
 
 # Get the number of processors available to the scheduler
 platform="$(uname -s | tr '[:upper:]' '[:lower:]')"
-if [[ "$platform" == "freebsd" ]]; then
+if [[ "$platform" == "freebsd" || "$platform" == "openbsd" ]]; then
   __NumProc="$(($(sysctl -n hw.ncpu)+1))"
 elif [[ "$platform" == "netbsd" || "$platform" == "sunos" ]]; then
   __NumProc="$(($(getconf NPROCESSORS_ONLN)+1))"
@@ -493,6 +506,16 @@ while :; do
 
         ppc64le|-ppc64le)
             __TargetArch=ppc64le
+            ;;
+
+        arch|-arch)
+            if [[ -n "$2" ]]; then
+                __TargetArch=$(echo "$2" | tr '[:upper:]' '[:lower:]')
+                shift
+            else
+                echo "ERROR: 'arch' requires a non-empty option argument"
+                exit 1
+            fi
             ;;
 
         os|-os)

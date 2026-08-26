@@ -17,23 +17,23 @@
 class MarshalNative
 {
 public:
-    static FCDECL0(int, GetLastPInvokeError);
-    static FCDECL1(void, SetLastPInvokeError, int error);
+    FCDECL0(static int, GetLastPInvokeError);
+    FCDECL1(static void, SetLastPInvokeError, int error);
 
-    static FCDECL2(LPVOID, GCHandleInternalAlloc, Object *obj, int type);
-    static FCDECL1(FC_BOOL_RET, GCHandleInternalFree, OBJECTHANDLE handle);
-    static FCDECL1(LPVOID, GCHandleInternalGet, OBJECTHANDLE handle);
+    FCDECL2(static LPVOID, GCHandleInternalAlloc, Object *obj, int type);
+    FCDECL1(static FC_BOOL_RET, GCHandleInternalFree, OBJECTHANDLE handle);
+    FCDECL1(static LPVOID, GCHandleInternalGet, OBJECTHANDLE handle);
 #ifdef FEATURE_JAVAMARSHAL
-    static FCDECL2(FC_BOOL_RET, GCHandleInternalTryGetBridgeWait, OBJECTHANDLE handle, Object** pObjResult);
+    FCDECL2(static FC_BOOL_RET, GCHandleInternalTryGetBridgeWait, OBJECTHANDLE handle, Object** pObjResult);
 #endif
-    static FCDECL2(VOID, GCHandleInternalSet, OBJECTHANDLE handle, Object *obj);
-    static FCDECL3(Object*, GCHandleInternalCompareExchange, OBJECTHANDLE handle, Object *obj, Object* oldObj);
+    FCDECL2(static VOID, GCHandleInternalSet, OBJECTHANDLE handle, Object *obj);
+    FCDECL3(static Object*, GCHandleInternalCompareExchange, OBJECTHANDLE handle, Object *obj, Object* oldObj);
 
 #ifdef FEATURE_COMINTEROP
     //====================================================================
     // Checks whether there are RCWs from any context available for cleanup.
     //====================================================================
-    static FCDECL0(FC_BOOL_RET, AreComObjectsAvailableForCleanup);
+    FCDECL0(static FC_BOOL_RET, AreComObjectsAvailableForCleanup);
 #endif // FEATURE_COMINTEROP
 };
 
@@ -42,7 +42,7 @@ extern "C" SIZE_T QCALLTYPE MarshalNative_OffsetOf(FieldDesc* pFD);
 extern "C" VOID QCALLTYPE MarshalNative_Prelink(MethodDesc * pMD);
 extern "C" BOOL QCALLTYPE MarshalNative_IsBuiltInComSupported();
 
-extern "C" BOOL QCALLTYPE MarshalNative_TryGetStructMarshalStub(void* enregisteredTypeHandle, PCODE* pStructMarshalStub, SIZE_T* pSize);
+extern "C" BOOL QCALLTYPE MarshalNative_HasLayout(QCall::TypeHandle t, BOOL* pIsBlittable, DWORD* pNativeSize);
 extern "C" INT32 QCALLTYPE MarshalNative_SizeOfHelper(QCall::TypeHandle t, BOOL throwIfNotMarshalable);
 
 extern "C" void QCALLTYPE MarshalNative_GetDelegateForFunctionPointerInternal(PVOID FPtr, QCall::TypeHandle t, QCall::ObjectHandleOnStack retDelegate);

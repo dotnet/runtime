@@ -8,6 +8,8 @@ enum class WasmValueType : unsigned
     I64,
     F32,
     F64,
+    V128,
+    ExnRef,
     Count,
 
     First = I32,
@@ -26,6 +28,7 @@ inline WasmValueType& operator++(WasmValueType& type)
 regNumber     MakeWasmReg(unsigned index, var_types type);
 regNumber     MakeWasmReg(unsigned index, WasmValueType type);
 WasmValueType TypeToWasmValueType(var_types type);
+WasmValueType ActualTypeToWasmValueType(var_types type);
 const char*   WasmValueTypeName(WasmValueType type);
 unsigned      UnpackWasmReg(regNumber reg, WasmValueType* pType = nullptr);
 unsigned      WasmRegToIndex(regNumber reg);

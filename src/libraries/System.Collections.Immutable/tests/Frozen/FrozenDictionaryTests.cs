@@ -422,6 +422,7 @@ namespace System.Collections.Frozen.Tests
 
         [Fact]
         [OuterLoop]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129973", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void ToFrozenDictionary_WithExtremelyLargeStrings()
         {
             // Test case with extremely large strings that exceed length bucket boundaries.
@@ -516,7 +517,7 @@ namespace System.Collections.Frozen.Tests
 
     public class FrozenDictionary_Generic_Tests_int_int : FrozenDictionary_Generic_Tests_base_for_numbers<int>
     {
-        protected override int Next(Random random) => random.Next(); 
+        protected override int Next(Random random) => random.Next();
     }
 
     public class FrozenDictionary_Generic_Tests_uint_uint : FrozenDictionary_Generic_Tests_base_for_numbers<uint>

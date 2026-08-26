@@ -41,8 +41,6 @@ namespace System.Diagnostics
             set { throw new PlatformNotSupportedException(SR.Format(SR.ProcessStartSingleFeatureNotSupported, nameof(UseCredentialsForNetworkingOnly))); }
         }
 
-        public bool UseShellExecute { get; set; }
-
         public string[] Verbs => Array.Empty<string>();
 
         [CLSCompliant(false)]

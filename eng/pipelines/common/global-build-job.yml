@@ -137,6 +137,10 @@ jobs:
       - name: _nativeSanitizersArg
         value: ''
 
+      # Capture MSBuild crash diagnostics so they are published with build logs
+      - name: MSBUILDDEBUGPATH
+        value: $(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/MsbuildDebugLogs
+
       - ${{ each variableTemplate in parameters.extraVariablesTemplates }}:
         - template: ${{ variableTemplate.template }}
           parameters:
@@ -173,6 +177,9 @@ jobs:
       - template: /eng/pipelines/common/restore-internal-tools.yml
 
     - template: /eng/common/${{ parameters.templatePath }}/steps/enable-internal-sources.yml
+
+    - ${{ if or(in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator'), eq(parameters.hostedOs, 'osx')) }}:
+      - template: /eng/pipelines/common/select-xcode.yml
 
     - ${{ if in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator') }}:
       - script: $(Build.SourcesDirectory)/eng/common/native/install-dependencies.sh ${{ parameters.osGroup }}

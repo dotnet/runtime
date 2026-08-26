@@ -32,13 +32,25 @@ WARNING:   When setting properties based on their current state (for example:
     Tests can opt out of ahead-of-time (AOT) compilation from crossgen / crossgen2 by setting this property in their project:
 
       <CrossGenTest>false</CrossGenTest>
+
+    Tests can pass extra crossgen2 arguments only in composite mode by setting this property in their project:
+
+      <CompositeCrossGen2TestExtraArguments>...</CompositeCrossGen2TestExtraArguments>
   -->
   <Target Name="GetCrossgenBashScript">
 
     <Error Text="Setting both AlwaysUseCrossGen2 to true and CrossGenTest to false is non-sensical" Condition="'$(CrossGenTest)' == 'false' and '$(AlwaysUseCrossGen2)' == 'true'"/>
 
     <PropertyGroup>
-      <CrossgenBashScript Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(CrossGenTest)' != 'false'">
+      <CrossgenBashScript Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(R2RIncompatible)' == 'true'">
+        <![CDATA[
+if [ ! -z ${RunCrossGen2+x} ]%3B then
+  echo SKIPPING EXECUTION BECAUSE the test is incompatible with ReadyToRun
+  exit 0
+fi
+        ]]>
+      </CrossgenBashScript>
+      <CrossgenBashScript Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(CrossGenTest)' != 'false' and '$(R2RIncompatible)' != 'true'">
         <![CDATA[
 
 if [ "$(AlwaysUseCrossGen2)" == "true" ]; then
@@ -63,10 +75,13 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
       rm IL-CG2/composite-r2r.* 2>/dev/null
 
       if [ ! -z ${CompositeBuildMode+x} ]%3B then
-        # HACK: copy native shared shim libraries. Not needed on Windows.
-        cp "$CORE_ROOT"/lib*.so "$CORE_ROOT"/lib*.dylib $(scriptPath)
+        if [ "$(CrossGen2OutputFormat)" != "wasm" ]; then
+          # HACK: copy native shared shim libraries. Not needed on Windows.
+          cp "$CORE_ROOT"/lib*.so "$CORE_ROOT"/lib*.dylib $(scriptPath)
+        fi
 
         ExtraCrossGen2Args+=" --composite"
+        ExtraCrossGen2Args+=" $(CompositeCrossGen2TestExtraArguments)"
       fi
 
       ExtraCrossGen2Args+=" $(CrossGen2TestExtraArguments)"
@@ -96,7 +111,6 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
             __R2RDumpCommand+=" dotnet"
         fi
         __R2RDumpCommand+=" $CORE_ROOT/R2RDump/R2RDump.dll"
-        __R2RDumpCommand+=" --header --sc --in $__OutputFileFinal --out $__OutputFileFinal.r2rdump --val"
 
         __Command="$_DebuggerFullPath $CORE_ROOT/crossgen2/crossgen2"
         __Command+=" @$__ResponseFile"
@@ -117,6 +131,9 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
         echo --targetos:$(TargetOS) >> "$__ResponseFile"
         echo --verify-type-and-field-layout >> "$__ResponseFile"
         echo --method-layout:random >> "$__ResponseFile"
+        if [ "$(CrossGen2OutputFormat)" == "wasm" ]; then
+            echo --codegenopt:JitWasmNyiToR2RUnsupported=1 >> "$__ResponseFile"
+        fi
         if [ ! -z ${CrossGen2SynthesizePgo+x} ]%3B then
             echo --synthesize-random-mibc >> "$__ResponseFile"
             echo --embed-pgo-data >> "$__ResponseFile"
@@ -141,7 +158,7 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
         cat "$__ResponseFile"
 
         # Suppress some DOTNET variables for the duration of Crossgen2 execution
-        export -n DOTNET_GCName DOTNET_GCStress DOTNET_HeapVerify DOTNET_ReadyToRun
+        export -n DOTNET_GCName DOTNET_GCStress DOTNET_HeapVerify DOTNET_ReadyToRun DOTNET_GCHeapAffinitizeRanges
         # FIXME: Remove this?
         # work around problems in 6.0 OSR
         export -n DOTNET_TC_OnStackReplacement DOTNET_TC_PartialCompilation
@@ -158,11 +175,28 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
             __linkExitCode=$?
         fi
 
-        echo "Running R2RDump: $__R2RDumpCommand"
-        $__R2RDumpCommand
-        __r2rDumpExitCode=$?
+        if [ $__cg2ExitCode -eq 0 ]; then
+          if [ "$(CrossGen2OutputFormat)" == "wasm" ] && [ ! -z ${CompositeBuildMode+x} ]; then
+            # The composite WASM output is a manifest, so validate each emitted R2R component.
+            for dllFile in "${__InputFiles[@]}"; do
+              __R2RDumpInput="$PWD/${dllFile##*/}"
+              __R2RDumpInput="${__R2RDumpInput%.dll}.wasm"
+              __R2RDumpOutput="${__R2RDumpInput}.r2rdump"
+              echo "Running R2RDump: $__R2RDumpCommand --header --sc --in $__R2RDumpInput --out $__R2RDumpOutput --val --rp $CORE_ROOT"
+              $__R2RDumpCommand --header --sc --in "$__R2RDumpInput" --out "$__R2RDumpOutput" --val --rp "$CORE_ROOT"
+              __r2rDumpExitCode=$?
+              if [ $__r2rDumpExitCode -ne 0 ]; then
+                break
+              fi
+            done
+          else
+            echo "Running R2RDump: $__R2RDumpCommand --header --sc --in $__OutputFileFinal --out $__OutputFileFinal.r2rdump --val --rp $CORE_ROOT"
+            $__R2RDumpCommand --header --sc --in "$__OutputFileFinal" --out "$__OutputFileFinal.r2rdump" --val --rp "$CORE_ROOT"
+            __r2rDumpExitCode=$?
+          fi
+        fi
 
-        export DOTNET_GCName DOTNET_GCStress DOTNET_HeapVerify DOTNET_ReadyToRun
+        export DOTNET_GCName DOTNET_GCStress DOTNET_HeapVerify DOTNET_ReadyToRun DOTNET_GCHeapAffinitizeRanges
         export DOTNET_TC_OnStackReplacement DOTNET_TC_PartialCompilation
         date +%H:%M:%S
       }
@@ -174,6 +208,9 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
           if [ "$(CrossGen2OutputFormat)" == "macho" ]; then
               __CompositeExt=".o"
               __CompositeExtFinal=".dylib"
+          elif [ "$(CrossGen2OutputFormat)" == "wasm" ]; then
+              __CompositeExt=".wasm"
+              __CompositeExtFinal=".wasm"
           fi
           RunCrossgen2OnFiles "$PWD/composite-r2r${__CompositeExt}" "$PWD/composite-r2r${__CompositeExtFinal}" "$PWD/IL-CG2/*.dll"
       else
@@ -182,6 +219,9 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
           do
             echo $dllFile
             bareFileName="${dllFile##*/}"
+            if [ "$(CrossGen2OutputFormat)" == "wasm" ]; then
+                bareFileName="${bareFileName%.dll}.wasm"
+            fi
             RunCrossgen2OnFiles "$PWD/$bareFileName" "$PWD/$bareFileName" "$dllFile"
             if [ $__cg2ExitCode -ne 0 ]; then
               break
@@ -218,7 +258,16 @@ fi
 
   <Target Name="GetCrossgenBatchScript">
     <PropertyGroup>
-      <CrossgenBatchScript Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(CrossGenTest)' != 'false'">
+      <CrossgenBatchScript Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(R2RIncompatible)' == 'true'">
+        <![CDATA[
+IF NOT "%RunCrossGen2%"=="" (
+  ECHO SKIPPING EXECUTION BECAUSE the test is incompatible with ReadyToRun
+  popd
+  Exit /b 0
+)
+        ]]>
+      </CrossgenBatchScript>
+      <CrossgenBatchScript Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(CrossGenTest)' != 'false' and '$(R2RIncompatible)' != 'true'">
         <![CDATA[
 
 if /i "$(AlwaysUseCrossGen2)" == "true" (
@@ -255,7 +304,12 @@ if defined RunCrossGen2 (
 
     if defined CompositeBuildMode (
         set ExtraCrossGen2Args=!ExtraCrossGen2Args! --composite
-        set __OutputFile=!scriptPath!\composite-r2r.dll
+        set ExtraCrossGen2Args=!ExtraCrossGen2Args! $(CompositeCrossGen2TestExtraArguments)
+        if "$(CrossGen2OutputFormat)"=="wasm" (
+            set __OutputFile=!scriptPath!\composite-r2r.wasm
+        ) else (
+            set __OutputFile=!scriptPath!\composite-r2r.dll
+        )
         set __PdbFile=!scriptPath!\composite-r2r.ni.pdb
         rem In composite mode, treat all dll's in the test folder as rooting inputs
         set __InputFile=!scriptPath!IL-CG2\*.dll
@@ -264,7 +318,11 @@ if defined RunCrossGen2 (
     ) else (
         set ExtraCrossGen2Args=!ExtraCrossGen2Args! -r:!scriptPath!IL-CG2\*.dll
         for %%I in (!scriptPath!IL-CG2\*.dll) do (
-            set __OutputFile=!scriptPath!%%~nI.dll
+            if "$(CrossGen2OutputFormat)"=="wasm" (
+                set __OutputFile=!scriptPath!%%~nI.wasm
+            ) else (
+                set __OutputFile=!scriptPath!%%~nI.dll
+            )
             set __PdbFile=!scriptPath!%%~nI.ni.pdb
             set __InputFile=%%I
             call :CompileOneFileCrossgen2
@@ -289,7 +347,6 @@ if defined RunCrossGen2 (
         set __DotNet="dotnet"
     )
     set __R2RDumpCommand=!_DebuggerFullPath! !__DotNet! "!CORE_ROOT!\r2rdump\r2rdump.dll"
-    set __R2RDumpCommand=!__R2RDumpCommand! --header --sc --in !__OutputFile! --out !__OutputFile!.r2rdump --val
 
     set __Command=!_DebuggerFullPath! "!CORE_ROOT!\crossgen2\crossgen2.exe"
     set __Command=!__Command! @"!__ResponseFile!"
@@ -302,6 +359,12 @@ if defined RunCrossGen2 (
     echo --targetos:$(TargetOS)>>!__ResponseFile!
     echo --verify-type-and-field-layout>>!__ResponseFile!
     echo --method-layout:random>>!__ResponseFile!
+    if "$(CrossGen2OutputFormat)"=="wasm" (
+        echo "--codegenopt:JitWasmNyiToR2RUnsupported=1">>!__ResponseFile!
+    )
+    if not "$(CrossGen2OutputFormat)"=="" (
+        echo -f:$(CrossGen2OutputFormat)>>!__ResponseFile!
+    )
     if defined CrossGen2SynthesizePgo (
         echo --synthesize-random-mibc>>!__ResponseFile!
         echo --embed-pgo-data>>!__ResponseFile!
@@ -328,6 +391,7 @@ if defined RunCrossGen2 (
     set "DOTNET_GCStress="
     set "DOTNET_HeapVerify="
     set "DOTNET_ReadyToRun="
+    set "DOTNET_GCHeapAffinitizeRanges="
 
     REM FIXME: remove this?
     REM work around problems in 6.0 OSR
@@ -341,10 +405,27 @@ if defined RunCrossGen2 (
 
     IF NOT !CrossGen2Status!==0 goto :DoneR2RDumpOperations
 
-    echo "Running R2RDump: !__R2RDumpCommand!"
-    call !__R2RDumpCommand!
+    set __R2RDumpInput=!__OutputFile!
+    if "$(CrossGen2OutputFormat)"=="wasm" (
+        REM The composite WASM output is a manifest, so validate each emitted R2R component.
+        if defined CompositeBuildMode set __R2RDumpInput=
+    )
 
-    set R2RDumpStatus=!ERRORLEVEL!
+    if defined __R2RDumpInput (
+        set __R2RDumpArguments=--header --sc --in "!__R2RDumpInput!" --out "!__R2RDumpInput!.r2rdump" --val --rp "!CORE_ROOT!"
+        echo "Running R2RDump: !__R2RDumpCommand! !__R2RDumpArguments!"
+        call !__R2RDumpCommand! !__R2RDumpArguments!
+        set R2RDumpStatus=!ERRORLEVEL!
+    ) else (
+        for %%I in (!scriptPath!IL-CG2\*.dll) do (
+            set __R2RDumpInput=!scriptPath!%%~nI.wasm
+            set __R2RDumpArguments=--header --sc --in "!__R2RDumpInput!" --out "!__R2RDumpInput!.r2rdump" --val --rp "!CORE_ROOT!"
+            echo "Running R2RDump: !__R2RDumpCommand! !__R2RDumpArguments!"
+            call !__R2RDumpCommand! !__R2RDumpArguments!
+            set R2RDumpStatus=!ERRORLEVEL!
+            if not !R2RDumpStatus!==0 goto :DoneR2RDumpOperations
+        )
+    )
 
 :DoneR2RDumpOperations
     endlocal & set "R2RDumpStatus=%R2RDumpStatus%" &set "CrossGen2Status=%CrossGen2Status%"
@@ -355,7 +436,7 @@ if defined RunCrossGen2 (
         if defined CrossGen2TestCheckPdb (
             set __CheckPdbCommand=!__DotNet!
             set __CheckPdbCommand=!__CheckPdbCommand! "!CORE_ROOT!\PdbChecker\PdbChecker.dll"
-            set __CheckPdbCommand=!__CheckPdbCommand! !__PdbFile! @(CheckPdbSymbol->'%22%(Identity)%22', ' ')
+            set __CheckPdbCommand=!__CheckPdbCommand! !__PdbFile! --image !__OutputFile! @(CheckPdbSymbol->'%22%(Identity)%22', ' ')
             echo "!__CheckPdbCommand!"
             call !__CheckPdbCommand!
             if not !ERRORLEVEL!==0 (

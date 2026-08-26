@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 
@@ -31,13 +32,35 @@ namespace System.Runtime.InteropServices.ObjectiveC
         private static unsafe partial bool TryInitializeReferenceTracker(
             delegate* unmanaged<void> beginEndCallback,
             delegate* unmanaged<IntPtr, int> isReferencedCallback,
-            delegate* unmanaged<IntPtr, void> trackedObjectEnteredFinalization);
+            delegate* unmanaged<IntPtr, void> trackedObjectEnteredFinalization,
+            ObjectHandleOnStack objectTrackingInfoTable);
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ObjCMarshal_CreateReferenceTrackingHandle")]
-        private static partial IntPtr CreateReferenceTrackingHandleInternal(
-            ObjectHandleOnStack obj,
-            out int memInSizeT,
-            out IntPtr mem);
+        private static unsafe bool TryInitializeReferenceTracker(
+            delegate* unmanaged<void> beginEndCallback,
+            delegate* unmanaged<IntPtr, int> isReferencedCallback,
+            delegate* unmanaged<IntPtr, void> trackedObjectEnteredFinalization)
+        {
+            // Make a local of the readonly field because it needs to be passed by ref to a QCall
+            // and it is marked as readonly to prevent accidental reassignment.
+            ConditionalWeakTable<object, ObjcTrackingInformation> objects = s_objects;
+            bool result = TryInitializeReferenceTracker(
+                beginEndCallback,
+                isReferencedCallback,
+                trackedObjectEnteredFinalization,
+                ObjectHandleOnStack.Create(ref objects));
+            Debug.Assert(object.ReferenceEquals(objects, s_objects));
+
+            return result;
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ObjCMarshal_AllocateReferenceTrackingHandle")]
+        private static partial IntPtr AllocateReferenceTrackingHandle(ObjectHandleOnStack obj);
+
+        private static IntPtr AllocateReferenceTrackingHandle(object obj)
+            => AllocateReferenceTrackingHandle(ObjectHandleOnStack.Create(ref obj));
+
+        private static unsafe bool IsTrackedReferenceWithFinalizer(object obj)
+            => RuntimeHelpers.GetMethodTable(obj)->IsTrackedReferenceWithFinalizer;
 
         [UnmanagedCallersOnly]
         internal static unsafe void* InvokeUnhandledExceptionPropagation(Exception* pExceptionArg, IntPtr methodDesc, IntPtr* pContext, Exception* pException)

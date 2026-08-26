@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.IO.Enumeration;
@@ -432,6 +433,131 @@ namespace System.Formats.Tar.Tests
 
             Assert.Throws<IOException>(() => TarFile.ExtractToDirectory(archive, destinationFolderPath, overwriteFiles: false));
             Assert.False(File.Exists(entryFilePath), $"File should not exist: {entryFilePath}");
+        }
+
+        public static IEnumerable<object[]> PaxExtraction_PathOverrideData()
+        {
+            // headerName, eaName, expectedApiName
+            yield return new object[] { "data/report.txt", "config/settings.txt", "config/settings.txt" };
+            yield return new object[] { "../../escape.txt", "safe.txt", "safe.txt" };
+        }
+
+        [Theory]
+        [MemberData(nameof(PaxExtraction_PathOverrideData))]
+        public void PaxExtraction_EntryNameMatchesExtractedPath(string headerName, string eaName, string expectedApiName)
+        {
+            byte[] content = "test data"u8.ToArray();
+            byte[] archive = BuildRawPaxArchiveWithEAPathOverride(headerName, eaName, content);
+
+            using TempDirectory root = new TempDirectory();
+
+            using (var scanStream = new MemoryStream(archive))
+            using (var reader = new TarReader(scanStream))
+            {
+                TarEntry entry = reader.GetNextEntry();
+                Assert.NotNull(entry);
+                Assert.Equal(expectedApiName, entry.Name);
+            }
+
+            using var extractStream = new MemoryStream(archive);
+            TarFile.ExtractToDirectory(extractStream, root.Path, overwriteFiles: false);
+
+            string[] files = Directory.GetFiles(root.Path, "*", SearchOption.AllDirectories);
+            Assert.Single(files);
+            string extractedRelPath = Path.GetRelativePath(root.Path, files[0]).Replace('\\', '/');
+            Assert.Equal(expectedApiName, extractedRelPath);
+        }
+
+        [Fact]
+        public void PaxExtraction_PathTraversalInEA_IsBlocked()
+        {
+            byte[] content = "test data"u8.ToArray();
+            byte[] archive = BuildRawPaxArchiveWithEAPathOverride("safe.txt", "../../escape.txt", content);
+
+            using (var scanStream = new MemoryStream(archive))
+            using (var reader = new TarReader(scanStream))
+            {
+                TarEntry entry = reader.GetNextEntry();
+                Assert.NotNull(entry);
+                Assert.Contains("..", entry.Name);
+            }
+
+            using TempDirectory root = new TempDirectory();
+            using var extractStream = new MemoryStream(archive);
+            Assert.Throws<IOException>(() =>
+                TarFile.ExtractToDirectory(extractStream, root.Path, overwriteFiles: false));
+        }
+
+        [Theory]
+        [InlineData(10, 50)]  // EA larger than header
+        [InlineData(100, 25)] // EA smaller than header
+        public void PaxExtraction_EntryLengthMatchesExtractedFileSize(int dataSize, long eaSize)
+        {
+            byte[] actualData = new byte[dataSize];
+            Array.Fill<byte>(actualData, (byte)'X');
+
+            byte[] archive = BuildRawPaxArchiveWithSizeOverride("file.bin", "file.bin", actualData, dataSize, eaSize);
+
+            long apiLength;
+            using (var scanStream = new MemoryStream(archive))
+            using (var reader = new TarReader(scanStream))
+            {
+                TarEntry entry = reader.GetNextEntry(copyData: true);
+                Assert.NotNull(entry);
+                apiLength = entry.Length;
+            }
+
+            using TempDirectory root = new TempDirectory();
+            using var extractStream = new MemoryStream(archive);
+            TarFile.ExtractToDirectory(extractStream, root.Path, overwriteFiles: false);
+
+            long extractedSize = new FileInfo(Path.Combine(root.Path, "file.bin")).Length;
+            Assert.Equal(apiLength, extractedSize);
+        }
+
+        [Fact]
+        public void PaxExtraction_SizeAmplification_EntryLengthMatchesExtraction()
+        {
+            int entryCount = 10;
+            byte[] tinyData = "x"u8.ToArray();
+            long headerSize = 1;
+            long eaSize = 500;
+
+            using var ms = new MemoryStream();
+            for (int i = 0; i < entryCount; i++)
+            {
+                string name = $"file_{i:D3}.bin";
+                var extraEAs = new Dictionary<string, string> { ["size"] = eaSize.ToString() };
+                byte[] eaData = BuildRawPaxExtendedAttributeData(name, extraEAs);
+
+                WriteRawTarHeader(ms, $"PaxHeaders.0/{name}", 0, 0, 0, eaData.Length, 0, 'x', "");
+                ms.Write(eaData);
+                PadToTarBlockBoundary(ms);
+
+                WriteRawTarHeader(ms, name, Convert.ToInt32("644", 8), 0, 0, headerSize, 1700000000, '0', "");
+                ms.Write(tinyData);
+                PadToTarBlockBoundary(ms);
+            }
+            ms.Write(new byte[1024]);
+            byte[] archive = ms.ToArray();
+
+            long apiTotalSize = 0;
+            using (var scanStream = new MemoryStream(archive))
+            using (var reader = new TarReader(scanStream))
+            {
+                TarEntry e;
+                while ((e = reader.GetNextEntry(copyData: true)) is not null)
+                {
+                    apiTotalSize += e.Length;
+                }
+            }
+
+            using TempDirectory root = new TempDirectory();
+            using var extractStream = new MemoryStream(archive);
+            TarFile.ExtractToDirectory(extractStream, root.Path, overwriteFiles: false);
+
+            long totalExtracted = Directory.GetFiles(root.Path).Sum(f => new FileInfo(f).Length);
+            Assert.Equal(apiTotalSize, totalExtracted);
         }
     }
 }

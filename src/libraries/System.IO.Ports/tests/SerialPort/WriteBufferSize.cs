@@ -16,7 +16,7 @@ namespace System.IO.Ports.Tests
 
         #region Test Cases
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(WriteBufferSize_Property), nameof(HasOneSerialPort))]
         public void WriteBufferSize_Default()
         {
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -45,38 +45,38 @@ namespace System.IO.Ports.Tests
         }
 
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(WriteBufferSize_Property), nameof(HasNullModem))]
         public void WriteBufferSize_AfterOpen()
         {
             VerifyException(1024, null, typeof(InvalidOperationException));
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(WriteBufferSize_Property), nameof(HasOneSerialPort))]
         public void WriteBufferSize_NEG1()
         {
             VerifyException(-1, typeof(ArgumentOutOfRangeException), typeof(ArgumentOutOfRangeException));
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(WriteBufferSize_Property), nameof(HasOneSerialPort))]
         public void WriteBufferSize_Int32MinValue()
         {
             VerifyException(int.MinValue, typeof(ArgumentOutOfRangeException), typeof(ArgumentOutOfRangeException));
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(WriteBufferSize_Property), nameof(HasOneSerialPort))]
         public void WriteBufferSize_0()
         {
             VerifyException(0, typeof(ArgumentOutOfRangeException), typeof(ArgumentOutOfRangeException));
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(WriteBufferSize_Property), nameof(HasOneSerialPort))]
         public void WriteBufferSize_1()
         {
             Debug.WriteLine("Verifying setting WriteBufferSize=1");
             VerifyException(1, typeof(IOException), typeof(InvalidOperationException), true);
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(WriteBufferSize_Property), nameof(HasNullModem))]
         public void WriteBufferSize_Smaller()
         {
             uint newWriteBufferSize = (uint)(new SerialPort()).WriteBufferSize;
@@ -87,7 +87,7 @@ namespace System.IO.Ports.Tests
             VerifyWriteBufferSize((int)newWriteBufferSize);
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(WriteBufferSize_Property), nameof(HasNullModem))]
         public void WriteBufferSize_Larger()
         {
             using (var com = new SerialPort())
@@ -96,7 +96,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(WriteBufferSize_Property), nameof(HasOneSerialPort))]
         public void WriteBufferSize_Odd()
         {
             Debug.WriteLine("Verifying setting WriteBufferSize=Odd");
@@ -107,7 +107,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(WriteBufferSize_Property), nameof(HasNullModem))]
         public void WriteBufferSize_Even()
         {
             Debug.WriteLine("Verifying setting WriteBufferSize=Even");
@@ -118,7 +118,7 @@ namespace System.IO.Ports.Tests
         }
 
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(WriteBufferSize_Property), nameof(HasNullModem))]
         public void WriteBufferSize_Rnd()
         {
             Random rndGen = new Random(-55);
@@ -129,7 +129,7 @@ namespace System.IO.Ports.Tests
             VerifyWriteBufferSize((int)newWriteBufferSize);
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(WriteBufferSize_Property), nameof(HasNullModem))]
         public void WriteBufferSize_Large()
         {
             VerifyWriteBufferSize(LARGE_BUFFER_SIZE);

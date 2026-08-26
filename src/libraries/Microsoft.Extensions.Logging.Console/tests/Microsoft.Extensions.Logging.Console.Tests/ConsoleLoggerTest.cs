@@ -415,7 +415,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             Assert.Equal(TestConsole.DefaultForegroundColor, write.ForegroundColor);
         }
 
-        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
+        [ConditionalFact(typeof(ConsoleLoggerTest), nameof(IsThreadingAndRemoteExecutorSupported))]
         public void AddConsole_IsOutputRedirected_ColorDisabled()
         {
             RemoteExecutor.Invoke(() =>
@@ -443,6 +443,42 @@ namespace Microsoft.Extensions.Logging.Console.Test
                 Assert.Equal(LoggerColorBehavior.Default, formatter.FormatterOptions.ColorBehavior);
 
             }, new RemoteInvokeOptions { StartInfo = new ProcessStartInfo() { RedirectStandardOutput = true } }).Dispose();
+        }
+
+        [ConditionalTheory(typeof(ConsoleLoggerTest), nameof(IsThreadingAndRemoteExecutorSupported))]
+        [InlineData("FORCE_COLOR", "1", null, null, true)]
+        [InlineData("DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION", "1", null, null, true)]
+        [InlineData(null, null, "NO_COLOR", "1", false)]
+        [InlineData("FORCE_COLOR", "1", "NO_COLOR", "1", true)]
+        public void DoesConsoleSupportAnsi_RespectsColorEnvVars(
+            string? envVarName1, string? envVarValue1,
+            string? envVarName2, string? envVarValue2,
+            bool expectAnsiEscapes)
+        {
+            var psi = new ProcessStartInfo { RedirectStandardOutput = true };
+            if (envVarName1 is not null)
+            {
+                psi.Environment[envVarName1] = envVarValue1;
+            }
+            if (envVarName2 is not null)
+            {
+                psi.Environment[envVarName2] = envVarValue2;
+            }
+
+            using RemoteInvokeHandle remote = RemoteExecutor.Invoke(static () =>
+            {
+                using ServiceProvider sp = new ServiceCollection()
+                    .AddLogging(builder => builder.AddSimpleConsole(options =>
+                    {
+                        options.ColorBehavior = LoggerColorBehavior.Enabled;
+                    }))
+                    .BuildServiceProvider();
+
+                sp.GetRequiredService<ILoggerProvider>().CreateLogger("Test").LogError("TestMessage");
+            }, new RemoteInvokeOptions { StartInfo = psi });
+
+            string stdout = remote.Process.StandardOutput.ReadToEnd();
+            Assert.Equal(expectAnsiEscapes, stdout.Contains('\x1B'));
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]

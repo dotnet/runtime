@@ -2,9 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.Loader;
+using System.Threading.Tasks;
 
 namespace HelloWorld
 {
@@ -49,10 +52,35 @@ namespace HelloWorld
                         Console.WriteLine($"AppContext.GetData({propertyName}) = {propertyValue}");
                     }
                     break;
+                case "print_command_line_args":
+                    string[] commandLineArgs = Environment.GetCommandLineArgs();
+                    for (int i = 0; i < commandLineArgs.Length; i++)
+                    {
+                        Console.WriteLine($"Environment.GetCommandLineArgs()[{i}] = {commandLineArgs[i]}");
+                    }
+                    break;
                 case "throw_exception":
                     // Disable core dumps - test is intentionally crashing
                     Utilities.CoreDump.Disable();
                     throw new Exception("Goodbye World!");
+                case "launch_self":
+                    // Launch copies of this app in parallel.
+                    // When run via dotnet <app_dll>, GetCommandLineArgs[0] is the managed
+                    // dll - forward it so the child knows what to launch.
+                    string fileName = Environment.ProcessPath!;
+                    string entry = Environment.GetCommandLineArgs()[0];
+                    bool forwardEntry = entry != Environment.ProcessPath;
+
+                    var tasks = Enumerable.Range(0, 5).Select(_ => Task.Run(() =>
+                    {
+                        var startInfo = new ProcessStartInfo { FileName = fileName };
+                        if (forwardEntry)
+                            startInfo.ArgumentList.Add(entry);
+                        using var process = Process.Start(startInfo)!;
+                        process.WaitForExit();
+                    })).ToArray();
+                    Task.WaitAll(tasks);
+                    break;
                 default:
                     break;
             }

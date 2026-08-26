@@ -17,7 +17,7 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.StaticInterfaceMethods
     /// Currently, the linker will always mark the .override method for instance methods, so there is not much testing required here.
     /// However, if that were to change, this test should be updated to verify that the .override is removed if the .interfaceImpl is kept.
     /// </summary>
-    [SetupLinkerArgument("--skip-unresolved", "true")]
+    [SkipUnresolved(true)]
     [Define("IL_ASSEMBLY_AVAILABLE")]
     [SetupCompileBefore("library.dll", new string[] { "Dependencies/InstanceMethods.il" })]
     [Kept]

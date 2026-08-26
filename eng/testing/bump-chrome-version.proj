@@ -12,8 +12,8 @@
     </PropertyGroup>
 
     <UpdateChromeVersions
-      OSIdentifiers="linux;Windows"
-      OSPrefixes="Linux_x64;Win_x64"
+      OSIdentifiers="linux;Windows;Mac"
+      OSPrefixes="Linux_x64;Win_x64;Mac_Arm"
       Channel="$(ChromeChannel)"
       MaxMajorVersionsToCheck="1"
       IntermediateOutputPath="$(ArtifactsObjDir)"

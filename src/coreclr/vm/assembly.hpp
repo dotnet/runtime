@@ -109,7 +109,7 @@ public:
     // is required for an operation.  Note that deadlocks are tolerated so the level may be one
     void EnsureLoadLevel(FileLoadLevel targetLevel) DAC_EMPTY();
 
-    // RequireLoadLevel throws an exception if the domain file isn't loaded enough.  Note
+    // RequireLoadLevel throws an exception if the assembly isn't loaded enough.  Note
     // that this is intolerant of deadlock related failures so is only really appropriate for
     // checks inside the main loading loop.
     void RequireLoadLevel(FileLoadLevel targetLevel) DAC_EMPTY();
@@ -164,7 +164,7 @@ public:
     static Assembly *Create(PEAssembly *pPEAssembly, AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocator);
     static void Initialize();
 
-    BOOL IsSystem() { WRAPPER_NO_CONTRACT; return m_pPEAssembly->IsSystem(); }
+    bool IsSystem() { WRAPPER_NO_CONTRACT; return m_pPEAssembly->IsSystem(); }
 
     static Assembly* CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNameParts* pAssemblyNameParts, INT32 hashAlgorithm, INT32 access, LOADERALLOCATORREF* pKeepAlive);
 
@@ -211,12 +211,6 @@ public:
         return GetPEAssembly()->GetSimpleName();
     }
 
-    BOOL IsStrongNamed()
-    {
-        WRAPPER_NO_CONTRACT;
-        return GetPEAssembly()->IsStrongNamed();
-    }
-
     const void *GetPublicKey(DWORD *pcbPK)
     {
         WRAPPER_NO_CONTRACT;
@@ -249,8 +243,6 @@ public:
 
     PTR_LoaderHeap GetLowFrequencyHeap();
     PTR_LoaderHeap GetHighFrequencyHeap();
-    PTR_LoaderHeap GetStubHeap();
-
     PTR_Module GetModule()
     {
         LIMITED_METHOD_CONTRACT;
@@ -322,12 +314,12 @@ public:
         m_debuggerFlags = flags;
     }
 
-    DomainAssembly* GetNextAssemblyInSameALC()
+    Assembly* GetNextAssemblyInSameALC()
     {
         return m_NextAssemblyInSameALC;
     }
 
-    void SetNextAssemblyInSameALC(DomainAssembly* assembly)
+    void SetNextAssemblyInSameALC(Assembly* assembly)
     {
         _ASSERTE(m_NextAssemblyInSameALC == NULL);
         m_NextAssemblyInSameALC = assembly;
@@ -355,7 +347,7 @@ public:
 
     //****************************************************************************************
     //
-    INT32 ExecuteMainMethod(PTRARRAYREF *stringArgs, BOOL waitForOtherThreads);
+    INT32 ExecuteMainMethod(PTRARRAYREF *stringArgs, bool captureException);
 
     //****************************************************************************************
 
@@ -383,9 +375,6 @@ public:
     mdAssemblyRef AddAssemblyRef(Assembly *refedAssembly, IMetaDataAssemblyEmit *pAssemEmitter);
 
     //****************************************************************************************
-
-    DomainAssembly *GetDomainAssembly();
-    void SetDomainAssembly(DomainAssembly *pAssembly);
 
 #if defined(FEATURE_COLLECTIBLE_TYPES) && !defined(DACCESS_COMPILE)
     OBJECTHANDLE GetLoaderAllocatorObjectHandle() { WRAPPER_NO_CONTRACT; return GetLoaderAllocator()->GetLoaderAllocatorObjectHandle(); }
@@ -544,7 +533,7 @@ private:
 
     LOADERHANDLE          m_hExposedObject;
 
-    DomainAssembly*             m_NextAssemblyInSameALC;
+    Assembly*                   m_NextAssemblyInSameALC;
 
     friend struct ::cdac_data<Assembly>;
 };

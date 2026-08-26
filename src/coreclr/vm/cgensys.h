@@ -11,7 +11,6 @@
 #define __cgensys_h__
 
 class MethodDesc;
-class Stub;
 class Thread;
 class CrawlFrame;
 struct EE_ILEXCEPTION_CLAUSE;
@@ -33,9 +32,6 @@ void CallJitEHFinally(CrawlFrame* pCf, BYTE* startPC, EE_ILEXCEPTION_CLAUSE *EHC
 #endif // TARGET_X86
 
 #ifdef FEATURE_COMINTEROP
-extern "C" UINT32 STDCALL CLRToCOMWorker(TransitionBlock * pTransitionBlock, CLRToCOMCallMethodDesc * pMD);
-extern "C" void GenericCLRToCOMCallStub(void);
-
 extern "C" void GenericComCallStub(void);
 #endif // FEATURE_COMINTEROP
 
@@ -54,8 +50,6 @@ extern "C" void STDCALL VarargPInvokeStubWorker(TransitionBlock* pTransitionBloc
 extern "C" void STDCALL VarargPInvokeStub(void);
 extern "C" void STDCALL VarargPInvokeStub_RetBuffArg(void);
 
-extern "C" void STDCALL GenericPInvokeCalliStubWorker(TransitionBlock * pTransitionBlock, VASigCookie * pVASigCookie, PCODE pUnmanagedTarget);
-extern "C" void STDCALL GenericPInvokeCalliHelper(void);
 
 extern "C" PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBlock, TADDR pIndirection, DWORD sectionIndex, Module * pModule);
 
@@ -63,9 +57,19 @@ extern "C" void STDCALL VirtualMethodFixupStub(void);
 extern "C" void STDCALL VirtualMethodFixupPatchLabel(void);
 
 #ifdef FEATURE_READYTORUN
+#ifdef TARGET_WASM
+// Wasm requires the signatures to be identical since the implementation is actually in C++
+struct READYTORUN_IMPORT_THUNK_PORTABLE_ENTRYPOINT;
+extern "C" PCODE STDCALL DelayLoad_MethodCall(TransitionBlock* pTransitionBlock, READYTORUN_IMPORT_THUNK_PORTABLE_ENTRYPOINT* pImportThunkEntry, uint8_t *moduleBase, int32_t rvaOfModuleFixup);
+#else
 extern "C" void STDCALL DelayLoad_MethodCall();
+#endif
 
+#ifdef TARGET_WASM
+extern "C" SIZE_T STDCALL DelayLoad_Helper(TransitionBlock* pTransitionBlock, READYTORUN_IMPORT_THUNK_PORTABLE_ENTRYPOINT* pImportThunkEntry, uint8_t *moduleBase, int32_t rvaOfModuleFixup);
+#else
 extern "C" void STDCALL DelayLoad_Helper();
+#endif
 extern "C" void STDCALL DelayLoad_Helper_Obj();
 extern "C" void STDCALL DelayLoad_Helper_ObjObj();
 #endif

@@ -53,9 +53,6 @@ ASMCONSTANTS_C_ASSERT(ASM_ELEMENT_TYPE_R8 == ELEMENT_TYPE_R8);
 #define METHODDESC_REGNUM                    10
 #define METHODDESC_REGISTER                 r10
 
-#define PINVOKE_CALLI_TARGET_REGNUM          10
-#define PINVOKE_CALLI_TARGET_REGISTER       r10
-
 #define PINVOKE_CALLI_SIGTOKEN_REGNUM        11
 #define PINVOKE_CALLI_SIGTOKEN_REGISTER     r11
 
@@ -91,17 +88,6 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__Frame__m_Next
                     == offsetof(Frame, m_Next));
 
 #define               SIZEOF__Frame                 0x10
-
-#ifdef FEATURE_COMINTEROP
-#define               SIZEOF__ComPrestubMethodFrame                 0x20
-ASMCONSTANTS_C_ASSERT(SIZEOF__ComPrestubMethodFrame
-                    == sizeof(ComPrestubMethodFrame));
-
-#define               SIZEOF__ComMethodFrame                        0x20
-ASMCONSTANTS_C_ASSERT(SIZEOF__ComMethodFrame
-                    == sizeof(ComMethodFrame));
-
-#endif // FEATURE_COMINTEROP
 
 #define               OFFSETOF__Thread__m_fPreemptiveGCDisabled     0x04
 ASMCONSTANTS_C_ASSERT(OFFSETOF__Thread__m_fPreemptiveGCDisabled
@@ -235,18 +221,6 @@ ASMCONSTANTS_C_ASSERT(SIZEOF__InterfaceInfo_t
                     == sizeof(InterfaceInfo_t));
 
 ASMCONSTANTS_C_ASSERT(MethodTableAuxiliaryData::enum_flag_Initialized == 0x1);
-
-#define                OFFSETOF__DynamicStaticsInfo__m_pMethodTable 0x10
-ASMCONSTANTS_C_ASSERT(OFFSETOF__DynamicStaticsInfo__m_pMethodTable
-                    == offsetof(DynamicStaticsInfo, m_pMethodTable));
-
-#define                OFFSETOF__DynamicStaticsInfo__m_pNonGCStatics 0x8
-ASMCONSTANTS_C_ASSERT(OFFSETOF__DynamicStaticsInfo__m_pNonGCStatics
-                    == offsetof(DynamicStaticsInfo, m_pNonGCStatics));
-
-#define                OFFSETOF__DynamicStaticsInfo__m_pGCStatics 0
-ASMCONSTANTS_C_ASSERT(OFFSETOF__DynamicStaticsInfo__m_pGCStatics
-                    == offsetof(DynamicStaticsInfo, m_pGCStatics));
 
 #define               OFFSETOF__VASigCookie__pPInvokeILStub     0x8
 ASMCONSTANTS_C_ASSERT(OFFSETOF__VASigCookie__pPInvokeILStub
@@ -553,8 +527,14 @@ ASMCONSTANTS_C_ASSERT(CallCountingStubData__TargetForThresholdReached == offseto
 #define OFFSETOF__InterfaceDispatchCache__m_rgEntries 0x20
 ASMCONSTANTS_C_ASSERT(OFFSETOF__InterfaceDispatchCache__m_rgEntries == offsetof(InterfaceDispatchCache, m_rgEntries))
 
+#define OFFSETOF__InterfaceDispatchCache__m_cEntries 0x18
+ASMCONSTANTS_C_ASSERT(OFFSETOF__InterfaceDispatchCache__m_cEntries == offsetof(InterfaceDispatchCache, m_cEntries))
+
 #define OFFSETOF__InterfaceDispatchCell__m_pCache 0x08
 ASMCONSTANTS_C_ASSERT(OFFSETOF__InterfaceDispatchCell__m_pCache == offsetof(InterfaceDispatchCell, m_pCache))
+
+#define IDC_CACHE_POINTER_MASK 0x3
+ASMCONSTANTS_C_ASSERT(IDC_CACHE_POINTER_MASK == ::IDC_CachePointerMask)
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH
 
 #define OFFSETOF__ThreadLocalInfo__m_pThread 0
@@ -568,19 +548,7 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__ThreadLocalInfo__m_pThread == offsetof(ThreadLoc
 #endif
 ASMCONSTANTS_C_ASSERT(OFFSETOF__InterpMethod__pCallStub == offsetof(InterpMethod, pCallStub))
 
-#ifdef TARGET_UNIX
-#ifdef _DEBUG
-#define OFFSETOF__Thread__m_pInterpThreadContext 0xaf8
-#else // _DEBUG
-#define OFFSETOF__Thread__m_pInterpThreadContext 0x290
-#endif // _DEBUG
-#else // TARGET_UNIX
-#ifdef _DEBUG
-#define OFFSETOF__Thread__m_pInterpThreadContext 0xb50
-#else // _DEBUG
-#define OFFSETOF__Thread__m_pInterpThreadContext 0x2d8
-#endif // _DEBUG
-#endif // TARGET_UNIX
+#define OFFSETOF__Thread__m_pInterpThreadContext 0x30
 ASMCONSTANTS_C_ASSERT(OFFSETOF__Thread__m_pInterpThreadContext == offsetof(Thread, m_pInterpThreadContext))
 
 #define OFFSETOF__InterpThreadContext__pStackPointer 0x10

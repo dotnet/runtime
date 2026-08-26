@@ -118,10 +118,20 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // Add the symbol representing this object node
             exceptionInfoLookupBuilder.AddSymbol(this);
 
+            bool isWasm = factory.Target.Architecture == TargetArchitecture.Wasm32;
+
             // First, emit the actual EH records in sequence and store map from methods to the EH record symbols
             for (int index = 0; index < _methodNodes.Count; index++)
             {
-                exceptionInfoLookupBuilder.EmitReloc(_methodNodes[index], RelocType.IMAGE_REL_BASED_ADDR32NB);
+                if (isWasm)
+                {
+                    // For WASM, we use a virtual IP in the table here instead of a method pointer, so that the runtime can perform a binary search based on the virtual IP. The virtual IP is emitted as a plain u32 (not a reloc).
+                    exceptionInfoLookupBuilder.EmitUInt(factory.RuntimeFunctionsTable.GetWasmVirtualIP(_methodNodes[index], 0));
+                }
+                else
+                {
+                    exceptionInfoLookupBuilder.EmitReloc(_methodNodes[index], RelocType.IMAGE_REL_BASED_ADDR32NB, -factory.Target.CodeDelta);
+                }
                 exceptionInfoLookupBuilder.EmitReloc(_ehInfoNode, RelocType.IMAGE_REL_BASED_ADDR32NB, _ehInfoOffsets[index]);
             }
 

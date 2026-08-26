@@ -8,7 +8,6 @@
 #endif
 
 extern CrashInfo* g_crashInfo;
-extern uint8_t g_debugHeaderCookie[4];
 
 int g_readProcessMemoryErrno = 0;
 
@@ -302,7 +301,7 @@ CrashInfo::EnumerateMemoryRegions()
 
     if (g_diagnostics)
     {
-        TRACE("Module mappings (%06llx):\n", m_cbModuleMappings / PAGE_SIZE);
+        TRACE("Module mappings (%06" PRIx64 "):\n", m_cbModuleMappings / PAGE_SIZE);
         for (const ModuleRegion& region : m_moduleMappings)
         {
             region.Trace();
@@ -402,19 +401,11 @@ CrashInfo::VisitModule(uint64_t baseAddress, std::string& moduleName)
             if (PopulateForSymbolLookup(baseAddress))
             {
                 uint64_t symbolOffset;
-                if (TryLookupSymbol("DotNetRuntimeDebugHeader", &symbolOffset))
+                if (TryLookupSymbol("DotNetRuntimeContractDescriptor", &symbolOffset))
                 {
                     m_coreclrPath = GetDirectory(moduleName);
                     m_runtimeBaseAddress = baseAddress;
-
-                    uint8_t cookie[sizeof(g_debugHeaderCookie)];
-                    if (ReadMemory(baseAddress + symbolOffset, cookie, sizeof(cookie)))
-                    {
-                        if (memcmp(cookie, g_debugHeaderCookie, sizeof(g_debugHeaderCookie)) == 0)
-                        {
-                            TRACE("Found valid NativeAOT runtime module\n");
-                        }
-                    }
+                    TRACE("Found valid NativeAOT runtime module\n");
                 }
             }
         }
@@ -455,7 +446,7 @@ CrashInfo::VisitProgramHeader(uint64_t loadbias, uint64_t baseAddress, Phdr* phd
         {
             uint64_t ehFrameHdrStart = loadbias + phdr->p_vaddr;
             uint64_t ehFrameHdrSize = phdr->p_memsz;
-            TRACE("VisitProgramHeader: ehFrameHdrStart %016llx ehFrameHdrSize %08llx\n", ehFrameHdrStart, ehFrameHdrSize);
+            TRACE("VisitProgramHeader: ehFrameHdrStart %" PRIA PRIx64 " ehFrameHdrSize %08" PRIx64 "\n", ehFrameHdrStart, ehFrameHdrSize);
             InsertMemoryRegion(ehFrameHdrStart, ehFrameHdrSize);
 
             if (m_appModel != AppModelType::NativeAOT)
@@ -464,7 +455,7 @@ CrashInfo::VisitProgramHeader(uint64_t loadbias, uint64_t baseAddress, Phdr* phd
                 ULONG64 ehFrameSize;
                 if (PAL_GetUnwindInfoSize(baseAddress, ehFrameHdrStart, ReadMemoryAdapter, &ehFrameStart, &ehFrameSize))
                 {
-                    TRACE("VisitProgramHeader: ehFrameStart %016llx ehFrameSize %08llx\n", ehFrameStart, ehFrameSize);
+                    TRACE("VisitProgramHeader: ehFrameStart %" PRIA PRIx64 " ehFrameSize %08" PRIx64 "\n", ehFrameStart, ehFrameSize);
                     if (ehFrameStart != 0 && ehFrameSize != 0)
                     {
                         InsertMemoryRegion(ehFrameStart, ehFrameSize);
@@ -501,7 +492,7 @@ CrashInfo::GetMemoryRegionFlags(uint64_t start)
     if (region != nullptr) {
         return region->Flags();
     }
-    TRACE_VERBOSE("GetMemoryRegionFlags: %016llx FAILED\n", start);
+    TRACE_VERBOSE("GetMemoryRegionFlags: %" PRIA PRIx64 " FAILED\n", start);
     return PF_R | PF_W | PF_X;
 }
 
@@ -531,6 +522,17 @@ CrashInfo::ReadProcessMemory(uint64_t address, void* buffer, size_t size, size_t
         // performance optimization.
         m_canUseProcVmReadSyscall = false;
         assert(m_fdMem != -1);
+#ifdef TARGET_ARM64
+        // Android's heap allocator (scudo) uses ARM64 Top-Byte Ignore (TBI) for memory tagging.
+        // pread on /proc/<pid>/mem treats the offset as a file position, not a virtual address,
+        // so the kernel does not apply TBI — tagged pointers cause EINVAL.
+        // See https://www.kernel.org/doc/html/latest/arch/arm64/tagged-address-abi.html
+        //
+        // Currently only Android allocators set a non-zero top byte, so on other ARM64 Linux
+        // configurations this is a no-op. However, any future use of TBI tagging (e.g., ARM MTE)
+        // on other Linux distros would hit the same issue.
+        address &= 0x00FFFFFFFFFFFFFFULL;
+#endif
         *read = pread(m_fdMem, buffer, size, (off_t)address);
     }
 
@@ -538,7 +540,7 @@ CrashInfo::ReadProcessMemory(uint64_t address, void* buffer, size_t size, size_t
     {
         // Preserve errno for the ELF dump writer call
         g_readProcessMemoryErrno = errno;
-        TRACE_VERBOSE("ReadProcessMemory FAILED addr: %" PRIA PRIx " size: %zu error: %s (%d)\n", address, size, strerror(g_readProcessMemoryErrno), g_readProcessMemoryErrno);
+        TRACE_VERBOSE("ReadProcessMemory FAILED addr: %" PRIA PRIx64 " size: %zu error: %s (%d)\n", address, size, strerror(g_readProcessMemoryErrno), g_readProcessMemoryErrno);
         return false;
     }
     return true;

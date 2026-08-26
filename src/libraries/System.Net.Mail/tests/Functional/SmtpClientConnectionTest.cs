@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Net.Mail.Tests;
+using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
@@ -11,6 +12,9 @@ namespace System.Net.Mail.Tests
     public abstract class SmtpClientConnectionTest<TSendMethod> : LoopbackServerTestBase<TSendMethod>
         where TSendMethod : ISendMethodProvider
     {
+        private const int MaxReplyLineLength = 16 * 1024;
+        private const int MaxReplyLength = 256 * 1024;
+
         public SmtpClientConnectionTest(ITestOutputHelper output) : base(output)
         {
         }
@@ -29,6 +33,35 @@ namespace System.Net.Mail.Tests
             {
                 return "Go away";
             };
+
+            await SendMail<SmtpException>(new MailMessage("mono@novell.com", "everyone@novell.com", "introduction", "hello"));
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task OversizedReply_Throws(bool multiline)
+        {
+            string reply;
+            if (multiline)
+            {
+                const int ContinuationLineLength = 8 * 1024;
+                string continuationLine = $"250-{new string('a', ContinuationLineLength - 6)}\r\n";
+                StringBuilder builder = new StringBuilder(MaxReplyLength + ContinuationLineLength);
+                while (builder.Length <= MaxReplyLength)
+                {
+                    builder.Append(continuationLine);
+                }
+                builder.Append("250 OK");
+                reply = builder.ToString();
+            }
+            else
+            {
+                reply = $"250 {new string('a', MaxReplyLineLength)}";
+            }
+
+            Server.OnCommandReceived = (command, _) =>
+                command.Equals("EHLO", StringComparison.OrdinalIgnoreCase) ? reply : null;
 
             await SendMail<SmtpException>(new MailMessage("mono@novell.com", "everyone@novell.com", "introduction", "hello"));
         }

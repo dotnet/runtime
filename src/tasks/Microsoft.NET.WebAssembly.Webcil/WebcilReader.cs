@@ -55,34 +55,58 @@ public sealed partial class WebcilReader : IDisposable
         InputPath = inputPath;
     }
 
+    // V0 header is 28 bytes, V1 adds a 4-byte TableBase field (32 bytes total)
+    private const int V0HeaderSize = 28;
+    private const int V1HeaderSize = 32;
+
     private unsafe bool ReadHeader()
     {
-        WebcilHeader header;
-        var buffer = new byte[Marshal.SizeOf<WebcilHeader>()];
+        // Read the V0 portion of the header first (28 bytes)
+        WebcilHeader header = default;
+        var buffer = new byte[V0HeaderSize];
         if (_stream.Read(buffer, 0, buffer.Length) != buffer.Length)
         {
             return false;
         }
         fixed (byte* p = buffer)
         {
-            header = *(WebcilHeader*)p;
+            // Copy V0 fields only (28 bytes) into the 32-byte struct
+            Buffer.MemoryCopy(p, &header, Marshal.SizeOf<WebcilHeader>(), V0HeaderSize);
         }
         if (!BitConverter.IsLittleEndian)
         {
-            header.version_major = BinaryPrimitives.ReverseEndianness(header.version_major);
-            header.version_minor = BinaryPrimitives.ReverseEndianness(header.version_minor);
-            header.coff_sections = BinaryPrimitives.ReverseEndianness(header.coff_sections);
-            header.pe_cli_header_rva = BinaryPrimitives.ReverseEndianness(header.pe_cli_header_rva);
-            header.pe_cli_header_size = BinaryPrimitives.ReverseEndianness(header.pe_cli_header_size);
-            header.pe_debug_rva = BinaryPrimitives.ReverseEndianness(header.pe_debug_rva);
-            header.pe_debug_rva = BinaryPrimitives.ReverseEndianness(header.pe_debug_size);
+            header.Id = BinaryPrimitives.ReverseEndianness(header.Id);
+            header.VersionMajor = BinaryPrimitives.ReverseEndianness(header.VersionMajor);
+            header.VersionMinor = BinaryPrimitives.ReverseEndianness(header.VersionMinor);
+            header.CoffSections = BinaryPrimitives.ReverseEndianness(header.CoffSections);
+            header.PeCliHeaderRva = BinaryPrimitives.ReverseEndianness(header.PeCliHeaderRva);
+            header.PeCliHeaderSize = BinaryPrimitives.ReverseEndianness(header.PeCliHeaderSize);
+            header.PeDebugRva = BinaryPrimitives.ReverseEndianness(header.PeDebugRva);
+            header.PeDebugSize = BinaryPrimitives.ReverseEndianness(header.PeDebugSize);
         }
-        if (header.id[0] != 'W' || header.id[1] != 'b'
-            || header.id[2] != 'I' || header.id[3] != 'L'
-            || header.version_major != Internal.Constants.WC_VERSION_MAJOR
-            || header.version_minor != Internal.Constants.WC_VERSION_MINOR)
+        if (header.Id != WebcilConstants.WEBCIL_MAGIC
+            || (header.VersionMajor != 0 && header.VersionMajor != 1)
+            || header.VersionMinor != WebcilConstants.WC_VERSION_MINOR)
         {
             return false;
+        }
+        if (header.VersionMajor >= 1)
+        {
+            // V1 has an additional TableBase field
+            var extra = new byte[V1HeaderSize - V0HeaderSize];
+            if (_stream.Read(extra, 0, extra.Length) != extra.Length)
+            {
+                return false;
+            }
+            header.TableBase = BitConverter.ToUInt32(extra, 0);
+            if (!BitConverter.IsLittleEndian)
+            {
+                header.TableBase = BinaryPrimitives.ReverseEndianness(header.TableBase);
+            }
+        }
+        else
+        {
+            header.TableBase = uint.MaxValue;
         }
         _header = header;
         return true;
@@ -92,7 +116,7 @@ public sealed partial class WebcilReader : IDisposable
     {
         // we can't construct CorHeader because it's constructor is internal
         // but we don't care, really, we only want the metadata directory entry
-        var pos = TranslateRVA(_header.pe_cli_header_rva);
+        var pos = TranslateRVA(_header.PeCliHeaderRva);
         if (_stream.Seek(pos, SeekOrigin.Begin) != pos)
         {
             return false;
@@ -124,12 +148,12 @@ public sealed partial class WebcilReader : IDisposable
 
     public ImmutableArray<DebugDirectoryEntry> ReadDebugDirectory()
     {
-        var debugRVA = _header.pe_debug_rva;
+        var debugRVA = _header.PeDebugRva;
         if (debugRVA == 0)
         {
             return ImmutableArray<DebugDirectoryEntry>.Empty;
         }
-        var debugSize = _header.pe_debug_size;
+        var debugSize = _header.PeDebugSize;
         if (debugSize == 0)
         {
             return ImmutableArray<DebugDirectoryEntry>.Empty;
@@ -342,21 +366,29 @@ public sealed partial class WebcilReader : IDisposable
         {
             if (rva >= section.VirtualAddress && rva < section.VirtualAddress + section.VirtualSize)
             {
-                return section.PointerToRawData + (rva - section.VirtualAddress) + _webcilInWasmOffset;
+                uint offset = rva - section.VirtualAddress;
+                if (offset >= section.SizeOfRawData)
+                {
+                    throw new BadImageFormatException("RVA maps to an offset beyond the section's raw data", nameof(_stream));
+                }
+                return section.PointerToRawData + offset + _webcilInWasmOffset;
             }
         }
         throw new BadImageFormatException("RVA not found in any section", nameof(_stream));
     }
 
-    private static long SectionDirectoryOffset => Marshal.SizeOf<WebcilHeader>();
+    // V0 header is 28 bytes (no TableBase), V1 is 32 bytes
+    private long SectionDirectoryOffset => _header.VersionMajor >= 1
+        ? V1HeaderSize
+        : V0HeaderSize;
 
     private unsafe ImmutableArray<WebcilSectionHeader> ReadSections()
     {
-        WebcilSectionHeader secheader;
-        var sections = ImmutableArray.CreateBuilder<WebcilSectionHeader>(_header.coff_sections);
+        WebcilSectionHeader sectionHeader;
+        var sections = ImmutableArray.CreateBuilder<WebcilSectionHeader>(_header.CoffSections);
         var buffer = new byte[Marshal.SizeOf<WebcilSectionHeader>()];
         _stream.Seek(SectionDirectoryOffset + _webcilInWasmOffset, SeekOrigin.Begin);
-        for (int i = 0; i < _header.coff_sections; i++)
+        for (int i = 0; i < _header.CoffSections; i++)
         {
             if (_stream.Read(buffer, 0, buffer.Length) != buffer.Length)
             {
@@ -364,7 +396,7 @@ public sealed partial class WebcilReader : IDisposable
             }
             fixed (byte* p = buffer)
             {
-                secheader = (*(WebcilSectionHeader*)p);
+                sectionHeader = (*(WebcilSectionHeader*)p);
             }
             if (!BitConverter.IsLittleEndian)
             {
@@ -372,16 +404,16 @@ public sealed partial class WebcilReader : IDisposable
                 (
                     new WebcilSectionHeader
                     (
-                        virtualSize: BinaryPrimitives.ReverseEndianness(secheader.VirtualSize),
-                        virtualAddress: BinaryPrimitives.ReverseEndianness(secheader.VirtualAddress),
-                        sizeOfRawData: BinaryPrimitives.ReverseEndianness(secheader.SizeOfRawData),
-                        pointerToRawData: BinaryPrimitives.ReverseEndianness(secheader.PointerToRawData)
+                        virtualSize: BinaryPrimitives.ReverseEndianness(sectionHeader.VirtualSize),
+                        virtualAddress: BinaryPrimitives.ReverseEndianness(sectionHeader.VirtualAddress),
+                        sizeOfRawData: BinaryPrimitives.ReverseEndianness(sectionHeader.SizeOfRawData),
+                        pointerToRawData: BinaryPrimitives.ReverseEndianness(sectionHeader.PointerToRawData)
                     )
                 );
             }
             else
             {
-                sections.Add(secheader);
+                sections.Add(sectionHeader);
             }
         }
         return sections.MoveToImmutable();
@@ -390,6 +422,120 @@ public sealed partial class WebcilReader : IDisposable
     public void Dispose()
     {
         _stream.Dispose();
+    }
+
+    /// <summary>
+    /// Reads payloadSize and (for ReadyToRun images) tableSize from data segment 0 of a
+    /// webcil-in-wasm image, without instantiating it. tableSize &gt; 0 indicates an R2R image.
+    /// The webcil payload lives in a later data segment, so only the small size header is read.
+    /// All multi-byte integers in the wasm binary format are little-endian. See docs/design/mono/webcil.md.
+    /// </summary>
+    public static bool TryReadWebcilInWasmSizes(string path, out int payloadSize, out int tableSize, out string? failureReason)
+    {
+        using var fs = File.OpenRead(path);
+        return TryReadWebcilInWasmSizes(fs, out payloadSize, out tableSize, out failureReason);
+    }
+
+    /// <summary>
+    /// Stream overload of <see cref="TryReadWebcilInWasmSizes(string,out int,out int,out string)"/>.
+    /// The stream must be readable and seekable.
+    /// </summary>
+    public static bool TryReadWebcilInWasmSizes(Stream stream, out int payloadSize, out int tableSize, out string? failureReason)
+    {
+        payloadSize = 0;
+        tableSize = 0;
+        failureReason = null;
+        try
+        {
+            using var reader = new WebcilSizesModuleReader(stream);
+            if (!reader.IsWasmModule)
+            {
+                failureReason = "not a WebAssembly module (missing '\\0asm' magic)";
+                return false;
+            }
+            if (!reader.Visit() || !reader.HasSizes)
+            {
+                failureReason = reader.FailureReason ?? "no webcil size header found in the data section";
+                return false;
+            }
+            payloadSize = reader.PayloadSize;
+            tableSize = reader.TableSize;
+            return true;
+        }
+        catch (Exception ex)
+        {
+            failureReason = ex.Message;
+            return false;
+        }
+    }
+
+    private static bool TryFill(Stream stream, byte[] buffer, int count)
+    {
+        int read = 0;
+        while (read < count)
+        {
+            int r = stream.Read(buffer, read, count - read);
+            if (r == 0)
+                return false;
+            read += r;
+        }
+        return true;
+    }
+
+    private static uint ReadUInt32LE(byte[] bytes, int offset)
+        => (uint)(bytes[offset] | (bytes[offset + 1] << 8) | (bytes[offset + 2] << 16) | (bytes[offset + 3] << 24));
+
+    private sealed class WebcilSizesModuleReader : WasmModuleReader
+    {
+        internal bool HasSizes { get; private set; }
+        internal int PayloadSize { get; private set; }
+        internal int TableSize { get; private set; }
+        internal string? FailureReason { get; private set; }
+
+        public WebcilSizesModuleReader(Stream stream) : base(stream)
+        {
+        }
+
+        protected override bool VisitSection(Section sec, out bool shouldStop)
+        {
+            shouldStop = false;
+            if (sec != Section.Data)
+                return true;
+            shouldStop = true;
+
+            uint numSegments = ReadULEB128();
+            if (numSegments < 1)
+            {
+                FailureReason = "data section has no segments";
+                return false;
+            }
+
+            // Segment 0 holds payloadSize (u32) followed, for R2R images, by tableSize (u32).
+            if (!TryReadPassiveDataSegment(out long length, out long start))
+            {
+                FailureReason = "data segment 0 is not a passive segment";
+                return false;
+            }
+            if (length < 4)
+            {
+                FailureReason = "data segment 0 is too small to hold a payload size";
+                return false;
+            }
+
+            int want = length >= 8 ? 8 : 4;
+            byte[] sizes = new byte[8];
+            BaseStream.Seek(start, SeekOrigin.Begin);
+            if (!TryFill(BaseStream, sizes, want))
+            {
+                FailureReason = "data segment 0 was truncated before the sizes could be read";
+                return false;
+            }
+
+            PayloadSize = (int)ReadUInt32LE(sizes, 0);
+            TableSize = want == 8 ? (int)ReadUInt32LE(sizes, 4) : 0;
+            HasSizes = true;
+            return true;
+        }
     }
 
     private bool TryReadWasmWrapper(out long webcilInWasmOffset)

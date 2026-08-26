@@ -172,6 +172,8 @@ public:
         return m_size;
     }
 
+    unsigned GetAlignmentRequirement(Compiler* comp) const;
+
     var_types GetType() const
     {
         return m_type;
@@ -198,11 +200,11 @@ public:
                 return TYP_USHORT;
             case 4:
                 return TYP_INT;
-#ifdef TARGET_64BIT
+#if defined(TARGET_64BIT) || defined(TARGET_WASM)
             case 8:
                 return TYP_LONG;
 #endif
-#ifdef FEATURE_SIMD
+#if defined(FEATURE_SIMD) && !defined(TARGET_WASM)
             // TODO: check TYP_SIMD12 profitability,
             // it will need additional support in `BuildStoreLoc`.
             case 16:
@@ -265,6 +267,8 @@ public:
     bool IntersectsGCPtr(unsigned offset, unsigned size) const;
 
     const SegmentList& GetNonPadding(Compiler* comp);
+
+    ClassLayout* SliceLayout(Compiler* compiler, unsigned offset, unsigned size);
 
     static bool AreCompatible(const ClassLayout* layout1, const ClassLayout* layout2);
 

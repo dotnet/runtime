@@ -28,7 +28,16 @@ namespace Mono.Linker
         // [type map group: custom attributes]
         Dictionary<TypeReference, List<CustomAttributeWithOrigin>> _pendingExternalTypeMapEntries = null!;
         Dictionary<TypeReference, List<CustomAttributeWithOrigin>> _pendingProxyTypeMapEntries = null!;
-        Dictionary<TypeReference, List<CustomAttributeWithOrigin>> _pendingAssemblyTargets = null!;
+
+        // [type map group: (custom attribute, resolved target assembly)]
+        // The resolved target assembly is null if it could not be found. In that case, the attribute will not be marked.
+        Dictionary<TypeReference, List<(CustomAttributeWithOrigin Attr, AssemblyDefinition? TargetAssembly)>> _pendingAssemblyTargets = null!;
+
+        // [target assembly: (type map group, custom attribute, calling method)]
+        // When a type map group is seen, assembly targets whose referenced assembly has not yet been marked are moved here.
+        // When the referenced assembly is eventually marked (due to a TypeMap entry being marked), all pending entries for
+        // it are also marked.
+        Dictionary<AssemblyDefinition, List<(TypeReference Group, CustomAttributeWithOrigin Attr, MethodDefinition? CallingMethod)>> _pendingAssemblyTargetsByAssembly = null!;
 
         HashSet<TypeReference> _referencedExternalTypeMaps = null!;
         HashSet<TypeReference> _referencedProxyTypeMaps = null!;
@@ -52,6 +61,7 @@ namespace Mono.Linker
             _pendingExternalTypeMapEntries = new(typeReferenceEqualityComparer);
             _pendingProxyTypeMapEntries = new(typeReferenceEqualityComparer);
             _pendingAssemblyTargets = new(typeReferenceEqualityComparer);
+            _pendingAssemblyTargetsByAssembly = [];
             _referencedExternalTypeMaps = new(typeReferenceEqualityComparer);
             _referencedProxyTypeMaps = new(typeReferenceEqualityComparer);
             var typeMapResolver = new TypeMapResolver(entryPointAssembly);
@@ -70,12 +80,11 @@ namespace Mono.Linker
                     MarkTypeMapAttribute(entry, new DependencyInfo(DependencyKind.TypeMapEntry, callingMethod));
                 }
             }
-            if (_pendingAssemblyTargets.Remove(typeMapGroup, out List<CustomAttributeWithOrigin>? assemblyTargets))
+            if (_pendingAssemblyTargets.Remove(typeMapGroup, out List<(CustomAttributeWithOrigin Attr, AssemblyDefinition? TargetAssembly)>? assemblyTargets))
             {
-                foreach (var entry in assemblyTargets)
+                foreach (var (entry, targetAssembly) in assemblyTargets)
                 {
-                    var info = new DependencyInfo(DependencyKind.TypeMapAssemblyTarget, callingMethod);
-                    MarkTypeMapAttribute(entry, info);
+                    MarkAssemblyTargetIfReady(typeMapGroup, entry, targetAssembly, callingMethod);
                 }
             }
         }
@@ -91,12 +100,11 @@ namespace Mono.Linker
                     MarkTypeMapAttribute(entry, new DependencyInfo(DependencyKind.TypeMapEntry, callingMethod));
                 }
             }
-            if (_pendingAssemblyTargets.Remove(typeMapGroup, out List<CustomAttributeWithOrigin>? assemblyTargets))
+            if (_pendingAssemblyTargets.Remove(typeMapGroup, out List<(CustomAttributeWithOrigin Attr, AssemblyDefinition? TargetAssembly)>? assemblyTargets))
             {
-                foreach (var entry in assemblyTargets)
+                foreach (var (entry, targetAssembly) in assemblyTargets)
                 {
-                    var info = new DependencyInfo(DependencyKind.TypeMapAssemblyTarget, callingMethod);
-                    MarkTypeMapAttribute(entry, info);
+                    MarkAssemblyTargetIfReady(typeMapGroup, entry, targetAssembly, callingMethod);
                 }
             }
         }
@@ -107,8 +115,44 @@ namespace Mono.Linker
             _markStep.MarkAssembly(entry.Origin, info, new MessageOrigin(entry.Origin));
 
             // Mark the target type as instantiated
-            if (entry.TargetType is { } targetType && _context.Resolve(targetType) is TypeDefinition targetTypeDef)
-                _context.Annotations.MarkInstantiated(targetTypeDef);
+            if (entry.TargetType is { } targetType
+                && _context.Resolve(UnwrapToResolvableType(targetType)) is TypeDefinition targetTypeDef)
+                _markStep.MarkRequirementsForInstantiatedTypes(targetTypeDef);
+        }
+
+        void MarkAssemblyTargetIfReady(TypeReference typeMapGroup, CustomAttributeWithOrigin entry, AssemblyDefinition? targetAssembly, MethodDefinition? callingMethod)
+        {
+            // If the target assembly could not be resolved (it is not present in the linker input),
+            // the attribute cannot safely be kept: at runtime Assembly.Load would throw
+            // FileNotFoundException. Drop it silently; the assembly simply does not participate
+            // in the type map.
+            if (targetAssembly is null)
+                return;
+
+            if (_context.Annotations.IsMarked(targetAssembly))
+            {
+                // Target assembly is already marked. Ideally we would only keep the attribute when the
+                // assembly has at least one surviving TypeMap/TypeMapAssociation entry, but checking that
+                // here would add complexity for a narrow case. We accept this slight over-approximation.
+                MarkTypeMapAttribute(entry, new DependencyInfo(DependencyKind.TypeMapAssemblyTarget, callingMethod));
+            }
+            else
+            {
+                // Target assembly is not yet marked. Defer: mark when (if) the assembly eventually gets marked.
+                _pendingAssemblyTargetsByAssembly.AddToList(targetAssembly, (typeMapGroup, entry, callingMethod));
+            }
+        }
+
+        // Called from MarkStep.MarkAssembly whenever an assembly is first marked (for any reason).
+        // This ensures that pending TypeMapAssemblyTarget attributes are flushed regardless of
+        // the order in which assemblies are visited.
+        internal void TriggerPendingAssemblyTargets(AssemblyDefinition newlyMarkedAssembly)
+        {
+            if (!_pendingAssemblyTargetsByAssembly.Remove(newlyMarkedAssembly, out List<(TypeReference Group, CustomAttributeWithOrigin Attr, MethodDefinition? CallingMethod)>? waiting))
+                return;
+
+            foreach (var (_, attr, callingMethod) in waiting)
+                MarkTypeMapAttribute(attr, new DependencyInfo(DependencyKind.TypeMapAssemblyTarget, callingMethod));
         }
 
         public void ProcessType(TypeDefinition definition)
@@ -156,7 +200,7 @@ namespace Mono.Linker
         {
             if (attr.Attribute.ConstructorArguments is [_, _, { Value: TypeReference trimTarget }])
             {
-                RecordTypeMapEntry(attr, group, trimTarget, _unmarkedExternalTypeMapEntries, _referencedExternalTypeMaps, _pendingExternalTypeMapEntries);
+                RecordTypeMapEntry(attr, group, UnwrapToResolvableType(trimTarget), _unmarkedExternalTypeMapEntries, _referencedExternalTypeMaps, _pendingExternalTypeMapEntries);
             }
             else if (attr.Attribute.ConstructorArguments is [_, { Value: TypeReference }])
             {
@@ -171,29 +215,43 @@ namespace Mono.Linker
         {
             if (attr.Attribute.ConstructorArguments is [{ Value: TypeReference sourceType }, _])
             {
-                // This is a TypeMapAssociationAttribute, which has a single type argument.
-                RecordTypeMapEntry(attr, group, sourceType, _unmarkedProxyTypeMapEntries, _referencedProxyTypeMaps, _pendingProxyTypeMapEntries);
+                // This is a TypeMapAssociationAttribute with two constructor type arguments (source and proxy).
+                RecordTypeMapEntry(attr, group, UnwrapToResolvableType(sourceType), _unmarkedProxyTypeMapEntries, _referencedProxyTypeMaps, _pendingProxyTypeMapEntries);
                 return;
             }
             // Invalid attribute, skip it.
             // Let the runtime handle the failure.
         }
 
-        private void AddAssemblyTarget(TypeReference typeMapGroup, CustomAttributeWithOrigin attr)
+        /// <summary>
+        /// Strips non-resolvable <see cref="TypeSpecification"/> wrappers (array, pointer, byref, etc.)
+        /// from <paramref name="type"/> until a <see cref="TypeDefinition"/> or <see cref="GenericInstanceType"/>
+        /// is reached. Both of those are resolvable by <see cref="LinkContext.Resolve"/>.
+        /// </summary>
+        static TypeReference UnwrapToResolvableType(TypeReference type)
+        {
+            while (type is TypeSpecification { ElementType: var elementType } and not GenericInstanceType)
+                type = elementType;
+            return type;
+        }
+
+        private void AddAssemblyTarget(TypeReference typeMapGroup, CustomAttributeWithOrigin attr, AssemblyDefinition? resolvedTargetAssembly)
         {
             // Validate attribute
             if (attr.Attribute.ConstructorArguments is not ([{ Value: string }]))
                 return;
 
-            // If the type map group has been seen, mark the attribute immediately
+            // If the type map group has been seen, process the attribute immediately.
             if (_referencedExternalTypeMaps.Contains(typeMapGroup) || _referencedProxyTypeMaps.Contains(typeMapGroup))
             {
-                _markStep.MarkCustomAttribute(attr.Attribute, new DependencyInfo(DependencyKind.TypeMapEntry, null), new MessageOrigin(attr.Origin));
+                MarkAssemblyTargetIfReady(typeMapGroup, attr, resolvedTargetAssembly, callingMethod: null);
                 return;
             }
 
-            // Otherwise, it's pending until the type map group is seen
-            _pendingAssemblyTargets.AddToList(typeMapGroup, attr);
+            // Otherwise, it's pending until the type map group is seen.
+            // Note: resolvedTargetAssembly may be null if the assembly could not be resolved (e.g., it doesn't
+            // exist in the input). In that case the attribute will be dropped (not marked) when the group is seen.
+            _pendingAssemblyTargets.AddToList(typeMapGroup, (attr, resolvedTargetAssembly));
         }
 
 
@@ -284,18 +342,20 @@ namespace Mono.Linker
                         }
                         else if (attr.AttributeType.Name is "TypeMapAssemblyTargetAttribute`1")
                         {
-                            manager.AddAssemblyTarget(typeMapGroup, (attr, assembly));
+                            AssemblyDefinition? resolvedTargetAssembly = null;
                             if (attr.ConstructorArguments[0].Value is string str)
                             {
                                 var nextAssemblyName = AssemblyNameReference.Parse(str);
                                 if (context.TryResolve(nextAssemblyName) is AssemblyDefinition nextAssembly)
                                 {
+                                    resolvedTargetAssembly = nextAssembly;
                                     if (seen.Add(nextAssembly))
                                     {
                                         toVisit.Enqueue(nextAssembly);
                                     }
                                 }
                             }
+                            manager.AddAssemblyTarget(typeMapGroup, (attr, assembly), resolvedTargetAssembly);
                         }
                     }
                 }

@@ -4,7 +4,6 @@
 using System.IO;
 using System.Security;
 using Microsoft.DotNet.RemoteExecutor;
-using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Diagnostics.Tests
@@ -14,7 +13,7 @@ namespace System.Diagnostics.Tests
         private static bool IsAdmin_IsNotNano_RemoteExecutorIsSupported_CanShareFiles
             => IsAdmin_IsNotNano_RemoteExecutorIsSupported && WindowsTestFileShare.CanShareFiles;
 
-        [ConditionalFact(nameof(IsAdmin_IsNotNano_RemoteExecutorIsSupported_CanShareFiles))] // Nano has no "netapi32.dll", Admin rights are required
+        [ConditionalFact(typeof(ProcessStartInfoTests), nameof(IsAdmin_IsNotNano_RemoteExecutorIsSupported_CanShareFiles))] // Nano has no "netapi32.dll", Admin rights are required
         [PlatformSpecific(TestPlatforms.Windows)]
         [OuterLoop("Requires admin privileges")]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/80019", TestRuntimes.Mono)]
@@ -71,32 +70,20 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalTheory(nameof(IsAdmin_IsNotNano_RemoteExecutorIsSupported))]
+        [ConditionalTheory(typeof(ProcessStartInfoTests), nameof(IsAdmin_IsNotNano_RemoteExecutorIsSupported))]
         [PlatformSpecific(TestPlatforms.Windows)]
-        [InlineData(ProcessWindowStyle.Normal, true)]
-        [InlineData(ProcessWindowStyle.Normal, false)]
-        [InlineData(ProcessWindowStyle.Hidden, true)]
-        [InlineData(ProcessWindowStyle.Hidden, false)]
-        [InlineData(ProcessWindowStyle.Minimized, true)]
-        [InlineData(ProcessWindowStyle.Minimized, false)]
-        [InlineData(ProcessWindowStyle.Maximized, true)]
-        [InlineData(ProcessWindowStyle.Maximized, false)]
-        public void TestWindowStyle(ProcessWindowStyle windowStyle, bool useShellExecute)
+        [InlineData(ProcessWindowStyle.Normal)]
+        [InlineData(ProcessWindowStyle.Hidden)]
+        [InlineData(ProcessWindowStyle.Minimized)]
+        [InlineData(ProcessWindowStyle.Maximized)]
+        public void TestWindowStyle(ProcessWindowStyle windowStyle)
         {
-            if (useShellExecute && PlatformDetection.IsMonoRuntime)
+            (bool expectUsesShowWindow, int expectedWindowFlag) = windowStyle switch
             {
-                // https://github.com/dotnet/runtime/issues/34360
-                throw new SkipTestException("ShellExecute tries to set STA COM apartment state which is not implemented by Mono.");
-            }
-
-            // "x y" where x is the expected dwFlags & 0x1 result and y is the wShowWindow value
-            (int expectedDwFlag, int expectedWindowFlag) = windowStyle switch
-            {
-                ProcessWindowStyle.Hidden => (1, 0),
-                ProcessWindowStyle.Minimized => (1, 2),
-                ProcessWindowStyle.Maximized => (1, 3),
-                // UseShellExecute always sets the flag but no shell does not for Normal.
-                _ => useShellExecute ? (1, 1) : (0, 0),
+                ProcessWindowStyle.Hidden => (true, 0), // SW_HIDE is 0
+                ProcessWindowStyle.Minimized => (true, 2), // SW_SHOWMINIMIZED is 2
+                ProcessWindowStyle.Maximized => (true, 3), // SW_SHOWMAXIMIZED is 3
+                _ => (false, 0),
             };
 
             using Process p = CreateProcess((string procArg) =>
@@ -104,14 +91,13 @@ namespace System.Diagnostics.Tests
                 Interop.GetStartupInfoW(out Interop.STARTUPINFO si);
 
                 string[] argSplit = procArg.Split(" ");
-                int expectedDwFlag = int.Parse(argSplit[0]);
+                bool expectUsesShowWindow = bool.Parse(argSplit[0]);
                 short expectedWindowFlag = short.Parse(argSplit[1]);
 
-                Assert.Equal(expectedDwFlag, si.dwFlags);
+                Assert.Equal(expectUsesShowWindow, (si.dwFlags & 0x1) != 0); // STARTF_USESHOWWINDOW is 0x1
                 Assert.Equal(expectedWindowFlag, si.wShowWindow);
                 return RemoteExecutor.SuccessExitCode;
-            }, $"{expectedDwFlag} {expectedWindowFlag}");
-            p.StartInfo.UseShellExecute  = useShellExecute;
+            }, $"{expectUsesShowWindow} {expectedWindowFlag}");
             p.StartInfo.WindowStyle = windowStyle;
             p.Start();
 

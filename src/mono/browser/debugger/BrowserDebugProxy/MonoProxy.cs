@@ -170,7 +170,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                         if (targetType == "page")
                             await AttachToTarget(new SessionId(args["sessionId"]?.ToString()), token);
                         else if (targetType == "worker")
-                            Contexts.CreateWorkerExecutionContext(new SessionId(args["sessionId"]?.ToString()), new SessionId(parms["sessionId"]?.ToString()), logger);
+                        {
+                            var workerSessionId = new SessionId(args["sessionId"]?.ToString());
+                            Contexts.CreateWorkerExecutionContext(workerSessionId, new SessionId(parms["sessionId"]?.ToString()), logger);
+                            await SendCommand(workerSessionId, "Runtime.runIfWaitingForDebugger", new JObject(), token);
+                        }
                         break;
                     }
 
@@ -245,7 +249,16 @@ namespace Microsoft.WebAssembly.Diagnostics
                         if (JustMyCode)
                         {
                             if (!Contexts.TryGetCurrentExecutionContextValue(sessionId, out ExecutionContext context) || !context.IsRuntimeReady)
+                            {
+                                // For worker sessions where runtime isn't ready yet,
+                                // resume instead of forwarding to IDE (which would leave worker stuck)
+                                if (context?.ParentContext != null)
+                                {
+                                    await SendResume(sessionId, token);
+                                    return true;
+                                }
                                 return false;
+                            }
                             //avoid pausing when justMyCode is enabled and it's a wasm function
                             if (args?["callFrames"]?[0]?["scopeChain"]?[0]?["type"]?.Value<string>()?.Equals("wasm-expression-stack") == true)
                             {

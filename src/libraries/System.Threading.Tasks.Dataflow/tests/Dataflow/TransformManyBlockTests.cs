@@ -352,7 +352,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Assert.Equal(expected: 0, actual: tb.OutputCount);
 
             tb.PostRange(1, 11);
-            await Task.Run(() => SpinWait.SpinUntil(() => tb.OutputCount == 10));
+            Assert.True(await Task.Run(() => SpinWait.SpinUntil(() => tb.OutputCount == 10, DataflowTestHelpers.SpinTimeoutMs)));
             for (int i = 10; i > 0; i--)
             {
                 int item;

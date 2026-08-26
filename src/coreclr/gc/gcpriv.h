@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#pragma once
+
 #ifndef _DEBUG
 #ifdef _MSC_VER
 // optimize for speed
@@ -14,6 +16,7 @@
 #define inline __forceinline
 #endif // __GNUC__
 
+#include <inttypes.h>
 #include "gc.h"
 #include "gcrecord.h"
 
@@ -140,13 +143,15 @@ inline void FATAL_GC_ERROR()
 //
 // This means any empty regions can be freely used for any generation. For
 // Server GC we will balance regions between heaps.
-// For now disable regions for standalone GC and macOS builds
+// For now disable regions for standalone GC builds
 // For SunOS or illumos this is temporary, until we can add MAP_PRIVATE
 // to the mmap() calls in unix/gcenv.unix.cpp  More details here:
 //    https://github.com/dotnet/runtime/issues/104211
-#if defined (HOST_64BIT) && !defined (BUILD_AS_STANDALONE) && !defined(__APPLE__) && !defined(__sun)
+// Apple non-macOS platforms (such as iOS, tvOS, and Mac Catalyst) disallow
+// the large virtual address space reservations that GC regions require.
+#if defined (HOST_64BIT) && !defined (BUILD_AS_STANDALONE) && !defined(__sun) && (!defined(HOST_APPLE) || defined(HOST_OSX))
 #define USE_REGIONS
-#endif //HOST_64BIT && BUILD_AS_STANDALONE && !__APPLE__
+#endif //HOST_64BIT && !BUILD_AS_STANDALONE && !__sun && (!HOST_APPLE || HOST_OSX)
 
 //#define SPINLOCK_HISTORY
 //#define RECORD_LOH_STATE
@@ -188,7 +193,9 @@ inline void FATAL_GC_ERROR()
 #define FEATURE_PREMORTEM_FINALIZATION
 #define GC_HISTORY
 
+#ifndef TARGET_WASM
 #define BACKGROUND_GC   //concurrent background GC (requires WRITE_WATCH)
+#endif //!TARGET_WASM
 
 // We need the lower 3 bits in the MT to do our bookkeeping so doubly linked free list is only for 64-bit
 #if defined(BACKGROUND_GC) && defined(HOST_64BIT)
@@ -244,11 +251,11 @@ inline void FATAL_GC_ERROR()
 #ifdef SYNCHRONIZATION_STATS
 #define BEGIN_TIMING(x) \
     int64_t x##_start; \
-    x##_start = GCToOSInterface::QueryPerformanceCounter()
+    x##_start = minipal_hires_ticks()
 
 #define END_TIMING(x) \
     int64_t x##_end; \
-    x##_end = GCToOSInterface::QueryPerformanceCounter(); \
+    x##_end = minipal_hires_ticks(); \
     x += x##_end - x##_start
 
 #else //SYNCHRONIZATION_STATS
@@ -257,7 +264,10 @@ inline void FATAL_GC_ERROR()
 #endif //SYNCHRONIZATION_STATS
 
 #ifdef GC_CONFIG_DRIVEN
-void GCLogConfig (const char *fmt, ... );
+
+#include <minipal/types.h>
+
+void GCLogConfig (const char *fmt, ... ) MINIPAL_ATTR_FORMAT_PRINTF(1, 2);
 #define cprintf(x) {GCLogConfig x;}
 #endif //GC_CONFIG_DRIVEN
 
@@ -1106,7 +1116,7 @@ struct static_data
     float fragmentation_burden_limit;
     float limit;
     float max_limit;
-    uint64_t time_clock; // time after which to collect generation, in performance counts (see QueryPerformanceCounter)
+    uint64_t time_clock; // time after which to collect generation, in performance counts (see minipal_hires_ticks)
     size_t gc_clock; // number of gcs after which to collect generation
 };
 
@@ -1206,7 +1216,9 @@ struct last_recorded_gc_info
 
 // alignment helpers
 //Alignment constant for allocation
+// [cDAC] [GC]: Contract depends on these values.
 #define ALIGNCONST (DATA_ALIGNMENT-1)
+#define ALIGNCONST_LARGE 7
 
 inline
 size_t Align (size_t nbytes, int alignment=ALIGNCONST)
@@ -1223,7 +1235,7 @@ int get_alignment_constant (BOOL small_object_p)
     // the compiler will tell us so.  Let's not guess an alignment here.
     return ALIGNCONST;
 #else // FEATURE_STRUCTALIGN
-    return small_object_p ? ALIGNCONST : 7;
+    return small_object_p ? ALIGNCONST : ALIGNCONST_LARGE;
 #endif // FEATURE_STRUCTALIGN
 }
 
@@ -1652,9 +1664,7 @@ private:
 
     PER_HEAP_ISOLATED_METHOD void fire_committed_usage_event();
 
-#ifdef FEATURE_BASICFREEZE
     PER_HEAP_ISOLATED_METHOD void walk_read_only_segment(heap_segment *seg, void *pvContext, object_callback_func pfnMethodTable, object_callback_func pfnObjRef);
-#endif
 
     PER_HEAP_ISOLATED_METHOD int get_plan_gen_num (int gen_number);
 
@@ -1692,7 +1702,10 @@ private:
     PER_HEAP_METHOD void set_region_sweep_in_plan (heap_segment* region);
     PER_HEAP_METHOD void clear_region_sweep_in_plan (heap_segment* region);
     PER_HEAP_METHOD void clear_region_demoted (heap_segment* region);
-    PER_HEAP_METHOD void decide_on_demotion_pin_surv (heap_segment* region, int* no_pinned_surv_region_count);
+    PER_HEAP_METHOD void decide_on_demotion_pin_surv (heap_segment* region,
+                                                      int* no_pinned_surv_region_count,
+                                                      bool promote_gen1_pins_p,
+                                                      bool large_pins_p);
     PER_HEAP_METHOD void skip_pins_in_alloc_region (generation* consing_gen, int plan_gen_num);
     PER_HEAP_METHOD void process_last_np_surv_region (generation* consing_gen,
                                       int current_plan_gen_num,
@@ -1750,7 +1763,7 @@ private:
     PER_HEAP_ISOLATED_METHOD void move_aged_regions(region_free_list dest[count_free_region_kinds], region_free_list& src, free_region_kind kind, bool joined_last_gc_before_oom);
     PER_HEAP_ISOLATED_METHOD bool aged_region_p(heap_segment* region, free_region_kind kind);
     PER_HEAP_ISOLATED_METHOD void move_regions_to_decommit(region_free_list oregions[count_free_region_kinds]);
-    PER_HEAP_ISOLATED_METHOD size_t compute_basic_region_budgets(size_t heap_basic_budget_in_region_units[MAX_SUPPORTED_CPUS], size_t min_heap_basic_budget_in_region_units[MAX_SUPPORTED_CPUS], size_t total_basic_free_regions);
+    PER_HEAP_ISOLATED_METHOD size_t compute_basic_region_budgets(size_t heap_basic_budget_in_region_units[MAX_SUPPORTED_HEAPS], size_t min_heap_basic_budget_in_region_units[MAX_SUPPORTED_HEAPS], size_t total_basic_free_regions);
     PER_HEAP_ISOLATED_METHOD bool near_heap_hard_limit_p();
     PER_HEAP_ISOLATED_METHOD bool distribute_surplus_p(ptrdiff_t balance, int kind, bool aggressive_decommit_large_p);
     PER_HEAP_ISOLATED_METHOD void decide_on_decommit_strategy(bool joined_last_gc_before_oom);
@@ -2434,11 +2447,9 @@ private:
 #endif //USE_REGIONS
                            );
     PER_HEAP_METHOD void delete_heap_segment (heap_segment* seg, BOOL consider_hoarding=FALSE);
-#ifdef FEATURE_BASICFREEZE
     PER_HEAP_METHOD BOOL insert_ro_segment (heap_segment* seg);
     PER_HEAP_METHOD void remove_ro_segment (heap_segment* seg);
     PER_HEAP_METHOD void update_ro_segment (heap_segment* seg, uint8_t* allocated, uint8_t* committed);
-#endif //FEATURE_BASICFREEZE
 
 #ifndef USE_REGIONS
     PER_HEAP_METHOD BOOL set_ro_segment_in_range (heap_segment* seg);
@@ -2557,11 +2568,9 @@ private:
     PER_HEAP_METHOD BOOL mark_array_bit_set (size_t mark_bit);
     PER_HEAP_METHOD void mark_array_clear_marked (uint8_t* add);
 
-#ifdef FEATURE_BASICFREEZE
     PER_HEAP_METHOD void seg_set_mark_array_bits_soh (heap_segment* seg);
     PER_HEAP_METHOD void clear_mark_array (uint8_t* from, uint8_t* end);
     PER_HEAP_METHOD void seg_clear_mark_array_bits_soh (heap_segment* seg);
-#endif // FEATURE_BASICFREEZE
 
     PER_HEAP_METHOD void bgc_clear_batch_mark_array_bits (uint8_t* start, uint8_t* end);
 #ifdef VERIFY_HEAP
@@ -2623,6 +2632,15 @@ private:
 #ifndef USE_REGIONS
     PER_HEAP_METHOD generation*  ensure_ephemeral_heap_segment (generation* consing_gen);
 #endif //!USE_REGIONS
+
+    PER_HEAP_ISOLATED_METHOD bool decide_on_gen1_pin_promotion (float pin_frag_ratio, float pin_surv_ratio);
+
+    PER_HEAP_METHOD void attribute_pin_higher_gen_alloc (
+#ifdef USE_REGIONS
+                                                        heap_segment* seg, int to_gen_number,
+#endif
+                                                        uint8_t* plug, size_t len);
+
     PER_HEAP_METHOD uint8_t* allocate_in_condemned_generations (generation* gen,
                                              size_t size,
                                              int from_gen_number,
@@ -2644,6 +2662,8 @@ private:
     PER_HEAP_METHOD size_t get_promoted_bytes();
 
 #ifdef USE_REGIONS
+    PER_HEAP_METHOD void attribute_pin_higher_gen_alloc (int frgn, int togn, size_t len);
+
     PER_HEAP_ISOLATED_METHOD void sync_promoted_bytes();
 
     PER_HEAP_ISOLATED_METHOD void set_heap_for_contained_basic_regions (heap_segment* region, gc_heap* hp);
@@ -2873,12 +2893,10 @@ private:
                                       BOOL& allocate_in_condemned);
 #endif //!USE_REGIONS
 
-#ifdef FEATURE_BASICFREEZE
     PER_HEAP_METHOD void seg_set_mark_bits (heap_segment* seg);
     PER_HEAP_METHOD void seg_clear_mark_bits (heap_segment* seg);
     PER_HEAP_METHOD void mark_ro_segments();
     PER_HEAP_METHOD void sweep_ro_segments();
-#endif // FEATURE_BASICFREEZE
 
     PER_HEAP_METHOD void convert_to_pinned_plug (BOOL& last_npinned_plug_p,
                                  BOOL& last_pinned_plug_p,
@@ -3034,7 +3052,7 @@ private:
 
         void print()
         {
-            dprintf (3, ("last plug: %Ix, last plug reloc: %Ix, before last: %Ix, b: %Ix",
+            dprintf (3, ("last plug: %p, last plug reloc: %zx, before last: %p, b: %zx",
                 last_plug, last_plug_relocation, before_last_plug, current_compacted_brick));
         }
     };
@@ -3527,16 +3545,20 @@ private:
     // Set during a GC and checked by allocator after that GC
     PER_HEAP_FIELD_SINGLE_GC BOOL sufficient_gen0_space_p;
 
+    PER_HEAP_FIELD_SINGLE_GC BOOL decide_promote_gen1_pins_p;
+
     PER_HEAP_FIELD_SINGLE_GC bool no_gc_oom_p;
     PER_HEAP_FIELD_SINGLE_GC heap_segment* saved_loh_segment_no_gc;
+
+#ifndef USE_REGIONS
+    PER_HEAP_FIELD_SINGLE_GC heap_segment* new_heap_segment;
+#endif //!USE_REGIONS
 
 #ifdef MULTIPLE_HEAPS
 #ifdef USE_REGIONS
     PER_HEAP_FIELD_SINGLE_GC min_fl_list_info* min_fl_list;
     PER_HEAP_FIELD_SINGLE_GC size_t num_fl_items_rethreaded_stage2;
     PER_HEAP_FIELD_SINGLE_GC size_t* free_list_space_per_heap;
-#else //USE_REGIONS
-    PER_HEAP_FIELD_SINGLE_GC heap_segment* new_heap_segment;
 #endif //USE_REGIONS
 #else //MULTIPLE_HEAPS
     PER_HEAP_FIELD_SINGLE_GC uint8_t* shigh; //keeps track of the highest marked object
@@ -3666,7 +3688,6 @@ private:
 
     PER_HEAP_FIELD_SINGLE_GC uint8_t* demotion_low;
     PER_HEAP_FIELD_SINGLE_GC uint8_t* demotion_high;
-    PER_HEAP_FIELD_SINGLE_GC BOOL demote_gen1_p;
     PER_HEAP_FIELD_SINGLE_GC uint8_t* last_gen1_pin_end;
 
     PER_HEAP_FIELD_SINGLE_GC BOOL ephemeral_promotion;
@@ -3764,6 +3785,8 @@ private:
     PER_HEAP_FIELD_SINGLE_GC_ALLOC BOOL last_gc_before_oom;
 
 #ifdef MULTIPLE_HEAPS
+    // approximate alloc_context_count. This is updated by multiple threads without locking; the
+    // increments/decrements are non-interlocked so the value is only approximate.
     PER_HEAP_FIELD_SINGLE_GC_ALLOC VOLATILE(int) alloc_context_count;
 
     // Init-ed during a GC and updated by allocator after that GC
@@ -3921,7 +3944,7 @@ private:
 #ifdef MULTIPLE_HEAPS
 #else //MULTIPLE_HEAPS
     // Used in the allocator code paths to decide if we should trigger GCs
-    PER_HEAP_FIELD_ALLOC uint64_t allocation_running_time;
+    PER_HEAP_FIELD_ALLOC int64_t allocation_running_time;
     PER_HEAP_FIELD_ALLOC size_t allocation_running_amount;
 #endif //MULTIPLE_HEAPS
 
@@ -4471,7 +4494,7 @@ private:
                 if (adj->metric == adjust_budget)
                 {
                     (adj->count)++;
-                    dprintf (6666, ("last adjustment was also budget at GC#%Id, inc count to %d", adj->gc_index, adj->count));
+                    dprintf (6666, ("last adjustment was also budget at GC#%zd, inc count to %d", adj->gc_index, adj->count));
                     return;
                 }
             }
@@ -4483,7 +4506,7 @@ private:
             adj->hc_change = change_int;
             adj->gc_index = current_gc_index;
 
-            dprintf (6666, ("recording adjustment %s at #%d GC#%Id - distance to target %.3f, changed %d HC",
+            dprintf (6666, ("recording adjustment %s at #%d GC#%zd - distance to target %.3f, changed %d HC",
                 str_adjust_metrics[metric], current_adjustment_index, adj->gc_index, adj->distance, adj->hc_change));
 
             current_adjustment_index = (current_adjustment_index + 1) % recorded_adjustment_size;
@@ -4693,7 +4716,7 @@ private:
 
             bool check_p = (current_gc_index < (last_changed_gc_index + (2 * sample_size)));
 
-            dprintf (6666, ("last adjusted at GC#%Id, %Id GCs ago, %s",
+            dprintf (6666, ("last adjusted at GC#%zd, %zd GCs ago, %s",
                 last_changed_gc_index, (current_gc_index - last_changed_gc_index), (check_p ? "check success" : "already checked success")));
             if (!check_p)
             {
@@ -4756,11 +4779,11 @@ private:
             *current_around_target_accumulation = around_target_accumulation;
 
             *num_gcs_since_last_change = current_gc_index - last_changed_gc_index;
-            dprintf (6666, ("we adjusted at GC#%Id, %Id GCs ago", last_changed_gc_index, *num_gcs_since_last_change));
+            dprintf (6666, ("we adjusted at GC#%zd, %zd GCs ago", last_changed_gc_index, *num_gcs_since_last_change));
             if (last_changed_gc_index && (*num_gcs_since_last_change < (2 * sample_size)))
             {
                 *change_decision = decide_change_condition::too_few_samples;
-                dprintf (6666, ("we just adjusted %Id GCs ago, skipping", *num_gcs_since_last_change));
+                dprintf (6666, ("we just adjusted %zd GCs ago, skipping", *num_gcs_since_last_change));
                 return false;
             }
 
@@ -4880,9 +4903,9 @@ private:
                     *reason = hc_change_freq_reason::expensive_hc_change;
                 }
 
-                dprintf (6666, ("last HC change took %.3fms  / avg gc pause %.3fms = %d , factor %d",
+                dprintf (6666, ("last HC change took %.3fms  / avg gc pause %.3fms = %lu , factor %d",
                     (change_heap_count_time / 1000.0), (avg_gc_pause_time / 1000.0),
-                    (change_heap_count_time / avg_gc_pause_time), factor));
+                    (unsigned long)(change_heap_count_time / avg_gc_pause_time), factor));
             }
 
             if (change_int < 0)
@@ -4894,7 +4917,7 @@ private:
                 adjustment* adj = get_last_adjustment();
                 int last_hc_change = adj->hc_change;
 
-                dprintf (6666, ("dec: last HC change %d heaps at GC#%Id, factor %d", last_hc_change, last_change_gc_index, factor));
+                dprintf (6666, ("dec: last HC change %d heaps at GC#%zd, factor %d", last_hc_change, last_change_gc_index, factor));
 
                 if (last_hc_change < 0)
                 {
@@ -4912,7 +4935,7 @@ private:
                     if (last_2nd_change_gc_index > 0)
                     {
                         int last_2nd_hc_change = adj->hc_change;
-                        dprintf (6666, ("before last was %d heaps at GC#%Id (%Id GCs), factor is now %d",
+                        dprintf (6666, ("before last was %d heaps at GC#%zd (%zd GCs), factor is now %d",
                             last_2nd_hc_change, last_2nd_change_gc_index, (last_change_gc_index - last_2nd_change_gc_index), factor));
 
                         if (last_2nd_hc_change < 0)
@@ -5028,7 +5051,7 @@ private:
                         count = adj->count;
                     }
 
-                    dprintf (6666, ("we've changed budget instead of HC %d times from %Id GCs ago, thres %d times",
+                    dprintf (6666, ("we've changed budget instead of HC %d times from %zd GCs ago, thres %d times",
                                     count, num_gcs_since_change, delayed_hc_change_freq_factor));
 
                     if (count < delayed_hc_change_freq_factor)
@@ -5040,7 +5063,7 @@ private:
                 else
                 {
                     bool change_p = (num_gcs_since_change > (size_t)(*hc_change_freq_factor * sample_size));
-                    dprintf (6666, ("It's been %Id GCs since we changed last time, thres %d GCs, %s",
+                    dprintf (6666, ("It's been %zd GCs since we changed last time, thres %d GCs, %s",
                         num_gcs_since_change, (*hc_change_freq_factor * sample_size), (change_p ? "change" : "don't change yet")));
                     if (!change_p)
                     {
@@ -5084,7 +5107,7 @@ private:
             gen0_growth_soh_ratio = max ((double)gen0_growth_soh_ratio_min, gen0_growth_soh_ratio);
 
             size_t total_new_allocation_old_gen = (size_t)(gen0_growth_soh_ratio * (double)total_soh_stable_size);
-            dprintf (6666, ("stable soh %Id (%.3fmb), factor %.3f=>%.3f -> total gen0 new_alloc %Id (%.3fmb)",
+            dprintf (6666, ("stable soh %zd (%.3fmb), factor %.3f=>%.3f -> total gen0 new_alloc %zd (%.3fmb)",
                 total_soh_stable_size, ((double)total_soh_stable_size / 1000.0 / 1000.0),
                 saved_gen0_growth_soh_ratio, gen0_growth_soh_ratio, total_new_allocation_old_gen,
                 ((double)total_new_allocation_old_gen  / 1000.0 / 1000.0)));
@@ -5105,7 +5128,7 @@ private:
             budget_old_gen_per_heap = min (max_gen0_new_allocation, budget_old_gen_per_heap);
             budget_old_gen_per_heap = max (min_gen0_new_allocation, budget_old_gen_per_heap);
 
-            dprintf (6666, ("BCD: %Id/heap (%.3fmb) -> %.3fmb, BCS %Id/heap (%.3fmb)",
+            dprintf (6666, ("BCD: %zd/heap (%.3fmb) -> %.3fmb, BCS %zd/heap (%.3fmb)",
                 saved_budget_old_gen_per_heap, ((double)saved_budget_old_gen_per_heap / 1000.0 / 1000.0),
                 ((double)budget_old_gen_per_heap / 1000.0 / 1000.0),
                 bcs_per_heap, ((double)bcs_per_heap / 1000.0 / 1000.0)));
@@ -5130,7 +5153,7 @@ private:
                     last_changed_gc_index++;
                 }
 
-                dprintf (6666, ("last gc gen0 budget %Id, last adjustment %s was at GC#%Id, last BGC was #%Id, this GC #%Id, %s",
+                dprintf (6666, ("last gc gen0 budget %zd, last adjustment %s was at GC#%zd, last BGC was #%zd, this GC #%zd, %s",
                     last_budget_per_heap, str_adjust_metrics[adj->metric], saved_last_changed_gc_index, last_bgc_index, current_gc_index,
                     ((last_changed_gc_index < (current_gc_index - 1)) ? "didn't just change" : "did just change")));
 
@@ -5158,7 +5181,7 @@ private:
                         new_budget_per_heap = max (new_budget_per_heap, bcs_per_heap);
                         new_budget_per_heap = min (new_budget_per_heap, budget_old_gen_per_heap);
 
-                        dprintf (6666, ("adjust last budget %Id to %Id->%Id (%.3fmb)",
+                        dprintf (6666, ("adjust last budget %zd to %zd->%zd (%.3fmb)",
                             last_budget_per_heap, saved_new_budget_per_heap, new_budget_per_heap, (new_budget_per_heap / 1000.0 / 1000.0)));
 
                         return new_budget_per_heap;
@@ -5166,7 +5189,7 @@ private:
                 }
             }
 
-            dprintf (6666, ("taking min of the two: %Id, %Id", bcs_per_heap, budget_old_gen_per_heap));
+            dprintf (6666, ("taking min of the two: %zd, %zd", bcs_per_heap, budget_old_gen_per_heap));
             return min (bcs_per_heap, budget_old_gen_per_heap);
         }
 
@@ -5350,7 +5373,17 @@ private:
 #endif
 
     // Indicate to use large pages. This only works if hardlimit is also enabled.
+    // GCLargePages=1 uses real OS large pages, GCLargePages=2 emulates it for testing.
     PER_HEAP_ISOLATED_FIELD_INIT_ONLY bool use_large_pages_p;
+    PER_HEAP_ISOLATED_FIELD_INIT_ONLY bool large_pages_emulation_mode_p;
+
+    // Indicates that the underlying OS does not support decommitting memory.
+    // Implies that VirtualCommit/VirtualDecommit are no-ops on heap memory and
+    // that GC code paths that rely on returning memory to the OS must be skipped.
+    // Set unconditionally on WASM and whenever use_large_pages_p is set (large pages
+    // are pre-committed and cannot be decommitted). Code that wants to skip a
+    // decommit-related path should test this flag rather than use_large_pages_p.
+    PER_HEAP_ISOLATED_FIELD_INIT_ONLY bool never_decommit_p;
 
 #ifdef MULTIPLE_HEAPS
     // Init-ed in gc_heap::initialize_gc
@@ -5657,9 +5690,7 @@ public:
     PER_HEAP_ISOLATED_FIELD_INIT_ONLY int n_max_heaps;
 #endif //MULTIPLE_HEAPS
 
-#ifdef FEATURE_BASICFREEZE
     PER_HEAP_ISOLATED_FIELD_MAINTAINED sorted_table* seg_table;
-#endif //FEATURE_BASICFREEZE
 }; // class gc_heap
 
 #ifdef FEATURE_PREMORTEM_FINALIZATION
@@ -6818,6 +6849,142 @@ public:
 #else
 #define THIS_ARG
 #endif // FEATURE_CARD_MARKING_STEALING
+
+inline
+size_t gc_heap::get_promoted_bytes()
+{
+#ifdef USE_REGIONS
+    if (!survived_per_region)
+    {
+        dprintf (REGIONS_LOG, ("no space to store promoted bytes"));
+        return 0;
+    }
+
+    dprintf (3, ("h%d getting surv", heap_number));
+    size_t promoted = 0;
+    for (size_t i = 0; i < region_count; i++)
+    {
+        if (survived_per_region[i] > 0)
+        {
+            heap_segment* region = get_region_at_index (i);
+            dprintf (REGIONS_LOG, ("h%d region[%zd] %p(g%d)(%s) surv: %zd(%p)",
+                heap_number, i,
+                heap_segment_mem (region),
+                heap_segment_gen_num (region),
+                (heap_segment_loh_p (region) ? "LOH" : (heap_segment_poh_p (region) ? "POH" :"SOH")),
+                survived_per_region[i],
+                &survived_per_region[i]));
+
+            promoted += survived_per_region[i];
+        }
+    }
+
+#ifdef _DEBUG
+    dprintf (REGIONS_LOG, ("h%d global recorded %zd, regions recorded %zd",
+        heap_number, promoted_bytes (heap_number), promoted));
+    assert (promoted_bytes (heap_number) == promoted);
+#endif //_DEBUG
+
+    return promoted;
+
+#else //USE_REGIONS
+
+#ifdef MULTIPLE_HEAPS
+    return g_promoted [heap_number*16];
+#else //MULTIPLE_HEAPS
+    return g_promoted;
+#endif //MULTIPLE_HEAPS
+#endif //USE_REGIONS
+}
+
+// For regions -
+// n_gen means it's pointing into the condemned regions so it's incremented
+// if the child object's region is <= condemned_gen.
+// cg_pointers_found means it's pointing into a lower generation so it's incremented
+// if the child object's region is < current_gen.
+inline void
+gc_heap::mark_through_cards_helper (uint8_t** poo, size_t& n_gen,
+                                    size_t& cg_pointers_found,
+                                    card_fn fn, uint8_t* nhigh,
+                                    uint8_t* next_boundary,
+                                    int condemned_gen,
+                                    // generation of the parent object
+                                    int current_gen
+                                    CARD_MARKING_STEALING_ARG(gc_heap* hpt))
+{
+#if defined(FEATURE_CARD_MARKING_STEALING) && defined(MULTIPLE_HEAPS)
+    int thread = hpt->heap_number;
+#else
+    THREAD_FROM_HEAP;
+#ifdef MULTIPLE_HEAPS
+    gc_heap* hpt = this;
+#endif //MULTIPLE_HEAPS
+#endif //FEATURE_CARD_MARKING_STEALING && MULTIPLE_HEAPS
+
+#ifdef USE_REGIONS
+    assert (nhigh == 0);
+    assert (next_boundary == 0);
+    uint8_t* child_object = *poo;
+    if ((child_object < ephemeral_low) || (ephemeral_high <= child_object))
+        return;
+
+    int child_object_gen = get_region_gen_num (child_object);
+    int saved_child_object_gen = child_object_gen;
+    uint8_t* saved_child_object = child_object;
+
+    if (child_object_gen <= condemned_gen)
+    {
+        n_gen++;
+        call_fn(hpt,fn) (poo THREAD_NUMBER_ARG);
+    }
+
+    if (fn == &gc_heap::relocate_address)
+    {
+        child_object_gen = get_region_plan_gen_num (*poo);
+    }
+
+    if (child_object_gen < current_gen)
+    {
+        cg_pointers_found++;
+        dprintf (4, ("cg pointer %zx found, %zd so far",
+                        (size_t)*poo, cg_pointers_found ));
+    }
+#else //USE_REGIONS
+    assert (condemned_gen == -1);
+    if ((gc_low <= *poo) && (gc_high > *poo))
+    {
+        n_gen++;
+        call_fn(hpt,fn) (poo THREAD_NUMBER_ARG);
+    }
+#ifdef MULTIPLE_HEAPS
+    else if (*poo)
+    {
+        gc_heap* hp = heap_of_gc (*poo);
+        if (hp != this)
+        {
+            if ((hp->gc_low <= *poo) &&
+                (hp->gc_high > *poo))
+            {
+                n_gen++;
+                call_fn(hpt,fn) (poo THREAD_NUMBER_ARG);
+            }
+            if ((fn == &gc_heap::relocate_address) ||
+                ((hp->ephemeral_low <= *poo) &&
+                 (hp->ephemeral_high > *poo)))
+            {
+                cg_pointers_found++;
+            }
+        }
+    }
+#endif //MULTIPLE_HEAPS
+    if ((next_boundary <= *poo) && (nhigh > *poo))
+    {
+        cg_pointers_found ++;
+        dprintf (4, ("cg pointer %zx found, %zd so far",
+                     (size_t)*poo, cg_pointers_found ));
+    }
+#endif //USE_REGIONS
+}
 
 using std::min;
 using std::max;

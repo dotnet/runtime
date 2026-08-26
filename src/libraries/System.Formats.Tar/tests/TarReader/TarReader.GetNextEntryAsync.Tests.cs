@@ -1,7 +1,9 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -10,6 +12,8 @@ namespace System.Formats.Tar.Tests
 {
     public class TarReader_GetNextEntryAsync_Tests : TarTestsBase
     {
+        private const int MaxMetadataBlockSize = 1024 * 1024;
+
         [Fact]
         public async Task GetNextEntryAsync_Cancel()
         {
@@ -448,6 +452,135 @@ namespace System.Formats.Tar.Tests
             Assert.Equal("file2.txt", nextEntry.Name);
 
             Assert.Null(await reader.GetNextEntryAsync());
+        }
+
+        [Fact]
+        public async Task GetNextEntryAsync_PaxEntryWithOnlyLinkpath_PreservesUstarPrefix()
+        {
+            // Async variant of
+            // TarReader_GetNextEntry_Tests.Read_PaxEntryWithOnlyLinkpath_PreservesUstarPrefix
+
+            string expectedName = "./sdk/tools/net11.0/any/SomeAssembly.dll";
+            string prefix = "./sdk";
+            string nameField = "tools/net11.0/any/SomeAssembly.dll";
+            string longLinkTarget = "../../../../../dotnet-format/BuildHost-netcore/Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.dll";
+
+            await using MemoryStream archiveStream = new MemoryStream();
+
+            byte[] paxHeader = new byte[512];
+            Encoding.UTF8.GetBytes("./PaxHeaders.12345/SomeAssembly.dll").CopyTo(paxHeader.AsSpan(0));
+            Encoding.UTF8.GetBytes("0000644\0").CopyTo(paxHeader.AsSpan(100, 8));
+            Encoding.UTF8.GetBytes("0000000\0").CopyTo(paxHeader.AsSpan(108, 8));
+            Encoding.UTF8.GetBytes("0000000\0").CopyTo(paxHeader.AsSpan(116, 8));
+            Encoding.UTF8.GetBytes("00000000000\0").CopyTo(paxHeader.AsSpan(136, 12));
+            paxHeader[156] = (byte)'x';
+            Encoding.UTF8.GetBytes("ustar\0").CopyTo(paxHeader.AsSpan(257, 6));
+            Encoding.UTF8.GetBytes("00").CopyTo(paxHeader.AsSpan(263, 2));
+
+            string paxPayload = $"linkpath={longLinkTarget}\n";
+            int totalLen = 1 + paxPayload.Length;
+            while (totalLen.ToString().Length + 1 + paxPayload.Length != totalLen)
+            {
+                totalLen = totalLen.ToString().Length + 1 + paxPayload.Length;
+            }
+            byte[] paxDataBytes = Encoding.UTF8.GetBytes($"{totalLen} {paxPayload}");
+
+            string sizeOctal = Convert.ToString(paxDataBytes.Length, 8).PadLeft(11, '0') + "\0";
+            Encoding.UTF8.GetBytes(sizeOctal).CopyTo(paxHeader.AsSpan(124, 12));
+
+            WriteHeaderChecksum(paxHeader);
+            archiveStream.Write(paxHeader);
+            archiveStream.Write(paxDataBytes);
+            int padding = (512 - (paxDataBytes.Length % 512)) % 512;
+            if (padding > 0) archiveStream.Write(new byte[padding]);
+
+            byte[] entryHeader = new byte[512];
+            Encoding.UTF8.GetBytes(nameField).CopyTo(entryHeader.AsSpan(0));
+            Encoding.UTF8.GetBytes("0000777\0").CopyTo(entryHeader.AsSpan(100, 8));
+            Encoding.UTF8.GetBytes("0000000\0").CopyTo(entryHeader.AsSpan(108, 8));
+            Encoding.UTF8.GetBytes("0000000\0").CopyTo(entryHeader.AsSpan(116, 8));
+            Encoding.UTF8.GetBytes("00000000000\0").CopyTo(entryHeader.AsSpan(124, 12));
+            Encoding.UTF8.GetBytes("14751414000\0").CopyTo(entryHeader.AsSpan(136, 12));
+            entryHeader[156] = (byte)'2';
+            Encoding.UTF8.GetBytes(longLinkTarget.Substring(0, Math.Min(100, longLinkTarget.Length)))
+                .CopyTo(entryHeader.AsSpan(157));
+            Encoding.UTF8.GetBytes("ustar\0").CopyTo(entryHeader.AsSpan(257, 6));
+            Encoding.UTF8.GetBytes("00").CopyTo(entryHeader.AsSpan(263, 2));
+            Encoding.UTF8.GetBytes(prefix).CopyTo(entryHeader.AsSpan(345));
+
+            WriteHeaderChecksum(entryHeader);
+            archiveStream.Write(entryHeader);
+            archiveStream.Write(new byte[1024]);
+            archiveStream.Seek(0, SeekOrigin.Begin);
+
+            await using TarReader reader2 = new TarReader(archiveStream);
+            TarEntry entry = await reader2.GetNextEntryAsync();
+            Assert.NotNull(entry);
+            Assert.Equal(expectedName, entry.Name);
+            Assert.Equal(longLinkTarget, entry.LinkName);
+            Assert.Equal(TarEntryType.SymbolicLink, entry.EntryType);
+            Assert.Null(await reader2.GetNextEntryAsync());
+        }
+
+        [Theory]
+        [InlineData("PaxExtendedAttributes", MaxMetadataBlockSize - 100)]
+        [InlineData("GnuLongPath", MaxMetadataBlockSize)]
+        [InlineData("GnuLongLink", MaxMetadataBlockSize)]
+        public async Task MetadataBlock_UnderMaxSize_Succeeds_Async(string metadataType, int size)
+        {
+            await using MemoryStream archive = new MemoryStream();
+            await WriteMetadataEntryAsync(archive, metadataType, size);
+
+            archive.Seek(0, SeekOrigin.Begin);
+            await using TarReader reader = new TarReader(archive);
+            Assert.NotNull(await reader.GetNextEntryAsync());
+        }
+
+        [Theory]
+        [InlineData("PaxExtendedAttributes", MaxMetadataBlockSize)]
+        [InlineData("GnuLongPath", MaxMetadataBlockSize + 1)]
+        [InlineData("GnuLongLink", MaxMetadataBlockSize + 1)]
+        public async Task MetadataBlock_ExceedsMaxSize_Throws_Async(string metadataType, int size)
+        {
+            await using MemoryStream archive = new MemoryStream();
+            await WriteMetadataEntryAsync(archive, metadataType, size);
+
+            archive.Seek(0, SeekOrigin.Begin);
+            await using TarReader reader = new TarReader(archive);
+            await Assert.ThrowsAsync<InvalidOperationException>(async () => await reader.GetNextEntryAsync());
+        }
+
+        private static async Task WriteMetadataEntryAsync(MemoryStream archive, string metadataType, int size)
+        {
+            switch (metadataType)
+            {
+                case "PaxExtendedAttributes":
+                    var extendedAttributes = new Dictionary<string, string>
+                    {
+                        ["bigkey"] = new string('x', size)
+                    };
+                    await using (TarWriter paxWriter = new TarWriter(archive, TarEntryFormat.Pax, leaveOpen: true))
+                    {
+                        await paxWriter.WriteEntryAsync(new PaxTarEntry(TarEntryType.RegularFile, "test.txt", extendedAttributes));
+                    }
+                    break;
+
+                case "GnuLongPath":
+                    await using (TarWriter gnuPathWriter = new TarWriter(archive, TarEntryFormat.Gnu, leaveOpen: true))
+                    {
+                        await gnuPathWriter.WriteEntryAsync(new GnuTarEntry(TarEntryType.RegularFile, new string('a', size - 1)));
+                    }
+                    break;
+
+                case "GnuLongLink":
+                    await using (TarWriter gnuLinkWriter = new TarWriter(archive, TarEntryFormat.Gnu, leaveOpen: true))
+                    {
+                        GnuTarEntry entry = new GnuTarEntry(TarEntryType.SymbolicLink, "test.txt");
+                        entry.LinkName = new string('a', size - 1);
+                        await gnuLinkWriter.WriteEntryAsync(entry);
+                    }
+                    break;
+            }
         }
     }
 }

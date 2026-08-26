@@ -20,6 +20,44 @@ function countChars(str) {
     return length;
 }
 
+const memoryTestImports = {
+    countChars,
+    echoString: (value) => value,
+    createBytes: (length) => {
+        const result = new Uint8Array(length);
+        for (let i = 0; i < length; i++) {
+            result[i] = i & 0xFF;
+        }
+        return result;
+    },
+    sumBytes: (value) => {
+        let sum = 0;
+        for (let i = 0; i < value.length; i++) {
+            sum += value[i];
+        }
+        return sum;
+    },
+    sumMemoryView: (view) => {
+        const copy = view.slice();
+        let sum = 0;
+        for (let i = 0; i < copy.length; i++) {
+            sum += copy[i];
+        }
+        return sum;
+    },
+    echoInt32Array: (value) => value,
+    echoDoubleArray: (value) => value,
+    createObject: (name, value) => ({ name, value }),
+    throwError: (message) => { throw new Error(message); },
+    delayedSum: async (a, b) => {
+        await new Promise(resolve => setTimeout(resolve, 10));
+        return a + b;
+    },
+    callManagedExports: () => memoryTestCallManagedExports(),
+};
+
+let memoryTestCallManagedExports = () => "managed exports were not initialized";
+
 // Prepare base runtime parameters
 dotnet.withConfig({ appendElementOnExit: true, exitOnUnhandledError: true, logExitCode: true });
 
@@ -117,16 +155,54 @@ switch (testCase) {
             .withInterpreterPgo(true);
         break;
     case "DownloadThenInit":
+        let dtConfigLoadedCalled = false;
+        dotnet.withModuleConfig({
+            onConfigLoaded: () => {
+                dtConfigLoadedCalled = true;
+                testOutput("onConfigLoaded called");
+            }
+        });
         const originalFetch = globalThis.fetch;
         globalThis.fetch = (url, fetchArgs) => {
             testOutput("fetching " + url);
             return originalFetch(url, fetchArgs);
         };
         await dotnet.download();
+        if (dtConfigLoadedCalled) {
+            testOutput("onConfigLoaded was called during download");
+        }
+        testOutput("download finished");
+        break;
+    case "DownloadThenInitHttpCacheOnly":
+        let loadBootResourceCalled = false;
+        let hcConfigLoadedCalled = false;
+        dotnet.withResourceLoader((type, name, defaultUri, integrity, behavior) => {
+            testOutput("loadBootResource " + type + " " + name);
+            loadBootResourceCalled = true;
+            return defaultUri;
+        });
+        dotnet.withModuleConfig({
+            onConfigLoaded: () => {
+                hcConfigLoadedCalled = true;
+                testOutput("onConfigLoaded called");
+            }
+        });
+        const originalFetch3 = globalThis.fetch;
+        globalThis.fetch = (url, fetchArgs) => {
+            testOutput("fetching " + url);
+            return originalFetch3(url, fetchArgs);
+        };
+        await dotnet.download(true);
+        if (loadBootResourceCalled) {
+            testOutput("loadBootResource was called");
+        }
+        if (hcConfigLoadedCalled) {
+            testOutput("onConfigLoaded was called during download");
+        }
         testOutput("download finished");
         break;
     case "MaxParallelDownloads":
-        const maxParallelDownloads = params.get("maxParallelDownloads");
+        const maxParallelDownloads = parseInt(params.get("maxParallelDownloads"), 10) || 16;
         let activeFetchCount = 0;
         const originalFetch2 = globalThis.fetch;
         globalThis.fetch = async (...args) => {
@@ -175,15 +251,34 @@ switch (testCase) {
         break;
     case "BrowserProfilerTest":
         break;
-    case "OverrideBootConfigName":
-        dotnet.withConfigSrc("boot.json");
-        break;
     case "MainWithArgs":
         dotnet.withApplicationArgumentsFromQuery();
         break;
+    case "BufferedAssetsTest":
+        const originalFetch4 = globalThis.fetch.bind(globalThis);
+        dotnet.withModuleConfig({
+            onConfigLoaded: (config) => {
+                const bufferedAssets = [
+                    ...config.resources.wasmNative,
+                    ...config.resources.coreAssembly,
+                    ...config.resources.assembly,
+                    ...(config.resources.corePdb ?? []),
+                    ...(config.resources.pdb ?? []),
+                    ...config.resources.wasmSymbols,
+                ];
+                for (const asset of bufferedAssets) {
+                    const url = new URL(asset.resolvedUrl ?? `./_framework/${asset.name}`, location.href);
+                    asset.buffer = originalFetch4(url).then(r => {
+                        if (!r.ok) throw new Error(`Failed to fetch buffered asset '${url}': ${r.status} ${r.statusText}`);
+                        return r.arrayBuffer();
+                    });
+                }
+            }
+        });
+        break;
 }
 
-const { setModuleImports, Module, getAssemblyExports, getConfig, INTERNAL } = await dotnet.create();
+const { setModuleImports, Module, getAssemblyExports, getConfig, INTERNAL, invokeLibraryInitializers } = await dotnet.create();
 const config = getConfig();
 const exports = await getAssemblyExports(config.mainAssemblyName);
 const assemblyExtension = Object.keys(config.resources.coreAssembly)[0].endsWith('.wasm') ? ".wasm" : ".dll";
@@ -213,7 +308,15 @@ try {
                         break;
                 }
 
-                await INTERNAL.loadLazyAssembly(`Json${lazyAssemblyExtension}`);
+                const firstJsonLoad = await INTERNAL.loadLazyAssembly(`Json${lazyAssemblyExtension}`);
+                testOutput(`firstJsonLoad=${firstJsonLoad}`);
+                if (params.get("loadLazyAssemblyTwice") === "true") {
+                    // Regression test: loading the same lazy assembly a second time must be an
+                    // idempotent no-op (returns false) and must not throw
+                    // "must be marked with 'BlazorWebAssemblyLazyLoad'".
+                    const secondJsonLoad = await INTERNAL.loadLazyAssembly(`Json${lazyAssemblyExtension}`);
+                    testOutput(`secondJsonLoad=${secondJsonLoad}`);
+                }
                 exports.LazyLoadingTest.Run();
                 await INTERNAL.loadLazyAssembly(`LazyLibrary${lazyAssemblyExtension}`);
                 const { LazyLibrary } = await getAssemblyExports("LazyLibrary");
@@ -226,6 +329,12 @@ try {
             }
             break;
         case "LibraryInitializerTest":
+            exit(0);
+            break;
+        case "InvokeLibraryInitializersTest":
+            await invokeLibraryInitializers("customHook", []);
+            testOutput(`customHookCalled=${globalThis.__customHookCalled === true}`);
+            testOutput(`resources.libraryInitializers.length=${config.resources.libraryInitializers.length}`);
             exit(0);
             break;
         case "ZipArchiveInteropTest":
@@ -247,7 +356,7 @@ try {
         case "OutErrOverrideWorks":
         case "DotnetRun":
         case "MainWithArgs":
-            dotnet.run();
+            await dotnet.runMainAndExit();
             break;
         case "DebugLevelTest":
             testOutput("WasmDebugLevel: " + config.debugLevel);
@@ -269,14 +378,46 @@ try {
             exit(0);
             break;
         case "DownloadThenInit":
+        case "DownloadThenInitHttpCacheOnly":
+            testOutput("create finished");
+            exit(0);
+            break;
         case "MaxParallelDownloads":
             exit(0);
             break;
         case "AllocateLargeHeapThenInterop":
-            setModuleImports('main.js', {
-                countChars
-            });
-            exports.MemoryTest.Run();
+            setModuleImports('main.js', memoryTestImports);
+            memoryTestCallManagedExports = () => {
+                const errors = [];
+                const check = (condition, message) => {
+                    if (!condition) {
+                        errors.push(message);
+                    }
+                };
+
+                const bytes = new Uint8Array(64 * 1024);
+                let expected = 0;
+                for (let i = 0; i < bytes.length; i++) {
+                    bytes[i] = (i * 5) & 0xFF;
+                    expected += bytes[i];
+                }
+                check(exports.MemoryTest.SumBytesManaged(bytes) === expected, "SumBytesManaged returned a wrong sum");
+
+                const made = exports.MemoryTest.CreateBytesManaged(64 * 1024);
+                check(made.length === 64 * 1024, `CreateBytesManaged returned ${made.length} bytes`);
+                for (let i = 0; i < made.length; i++) {
+                    if (made[i] !== ((i * 3) & 0xFF)) {
+                        check(false, `CreateBytesManaged[${i}] is ${made[i]}`);
+                        break;
+                    }
+                }
+
+                const text = 'ě'.repeat(200000) + 'abc';
+                check(exports.MemoryTest.EchoStringManaged(text) === text, "EchoStringManaged returned a different string");
+
+                return errors.join('; ');
+            };
+            await exports.MemoryTest.RunAsync();
             exit(0);
             break;
         case "DevServer_UploadPattern":
@@ -360,10 +501,8 @@ try {
             exit(foundB && retB == 42 ? 0 : 1);
 
             break;
-        case "OverrideBootConfigName":
-            testOutput("ConfigSrc: " + Module.configSrc);
-            exports.OverrideBootConfigNameTest.Run();
-            exit(0);
+        case "BufferedAssetsTest":
+            await dotnet.runMainAndExit();
             break;
         default:
             console.error(`Unknown test case: ${testCase}`);

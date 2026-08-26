@@ -189,6 +189,52 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void Log10Test()
+        {
+            Assert.Equal((ulong)0, BinaryIntegerHelper<ulong>.Log10((ulong)0));
+            Assert.Equal((ulong)0, BinaryIntegerHelper<ulong>.Log10((ulong)1));
+            Assert.Equal((ulong)0, BinaryIntegerHelper<ulong>.Log10((ulong)9));
+            Assert.Equal((ulong)1, BinaryIntegerHelper<ulong>.Log10((ulong)10));
+            Assert.Equal((ulong)1, BinaryIntegerHelper<ulong>.Log10((ulong)99));
+            Assert.Equal((ulong)2, BinaryIntegerHelper<ulong>.Log10((ulong)100));
+            Assert.Equal((ulong)2, BinaryIntegerHelper<ulong>.Log10((ulong)999));
+            Assert.Equal((ulong)3, BinaryIntegerHelper<ulong>.Log10((ulong)1_000));
+            Assert.Equal((ulong)3, BinaryIntegerHelper<ulong>.Log10((ulong)9_999));
+            Assert.Equal((ulong)4, BinaryIntegerHelper<ulong>.Log10((ulong)10_000));
+            Assert.Equal((ulong)4, BinaryIntegerHelper<ulong>.Log10((ulong)99_999));
+            Assert.Equal((ulong)5, BinaryIntegerHelper<ulong>.Log10((ulong)100_000));
+            Assert.Equal((ulong)5, BinaryIntegerHelper<ulong>.Log10((ulong)999_999));
+            Assert.Equal((ulong)6, BinaryIntegerHelper<ulong>.Log10((ulong)1_000_000));
+            Assert.Equal((ulong)6, BinaryIntegerHelper<ulong>.Log10((ulong)9_999_999));
+            Assert.Equal((ulong)7, BinaryIntegerHelper<ulong>.Log10((ulong)10_000_000));
+            Assert.Equal((ulong)7, BinaryIntegerHelper<ulong>.Log10((ulong)99_999_999));
+            Assert.Equal((ulong)8, BinaryIntegerHelper<ulong>.Log10((ulong)100_000_000));
+            Assert.Equal((ulong)8, BinaryIntegerHelper<ulong>.Log10((ulong)999_999_999));
+            Assert.Equal((ulong)9, BinaryIntegerHelper<ulong>.Log10((ulong)1_000_000_000));
+            Assert.Equal((ulong)9, BinaryIntegerHelper<ulong>.Log10((ulong)9_999_999_999));
+            Assert.Equal((ulong)10, BinaryIntegerHelper<ulong>.Log10((ulong)10_000_000_000));
+            Assert.Equal((ulong)10, BinaryIntegerHelper<ulong>.Log10((ulong)99_999_999_999));
+            Assert.Equal((ulong)11, BinaryIntegerHelper<ulong>.Log10((ulong)100_000_000_000));
+            Assert.Equal((ulong)11, BinaryIntegerHelper<ulong>.Log10((ulong)999_999_999_999));
+            Assert.Equal((ulong)12, BinaryIntegerHelper<ulong>.Log10((ulong)1_000_000_000_000));
+            Assert.Equal((ulong)12, BinaryIntegerHelper<ulong>.Log10((ulong)9_999_999_999_999));
+            Assert.Equal((ulong)13, BinaryIntegerHelper<ulong>.Log10((ulong)10_000_000_000_000));
+            Assert.Equal((ulong)13, BinaryIntegerHelper<ulong>.Log10((ulong)99_999_999_999_999));
+            Assert.Equal((ulong)14, BinaryIntegerHelper<ulong>.Log10((ulong)100_000_000_000_000));
+            Assert.Equal((ulong)14, BinaryIntegerHelper<ulong>.Log10((ulong)999_999_999_999_999));
+            Assert.Equal((ulong)15, BinaryIntegerHelper<ulong>.Log10((ulong)1_000_000_000_000_000));
+            Assert.Equal((ulong)15, BinaryIntegerHelper<ulong>.Log10((ulong)9_999_999_999_999_999));
+            Assert.Equal((ulong)16, BinaryIntegerHelper<ulong>.Log10((ulong)10_000_000_000_000_000));
+            Assert.Equal((ulong)16, BinaryIntegerHelper<ulong>.Log10((ulong)99_999_999_999_999_999));
+            Assert.Equal((ulong)17, BinaryIntegerHelper<ulong>.Log10((ulong)100_000_000_000_000_000));
+            Assert.Equal((ulong)17, BinaryIntegerHelper<ulong>.Log10((ulong)999_999_999_999_999_999));
+            Assert.Equal((ulong)18, BinaryIntegerHelper<ulong>.Log10((ulong)1_000_000_000_000_000_000));
+            Assert.Equal((ulong)18, BinaryIntegerHelper<ulong>.Log10((ulong)9_999_999_999_999_999_999));
+            Assert.Equal((ulong)19, BinaryIntegerHelper<ulong>.Log10((ulong)10_000_000_000_000_000_000));
+            Assert.Equal((ulong)19, BinaryIntegerHelper<ulong>.Log10((ulong)18_446_744_073_709_551_615));
+        }
+
+        [Fact]
         public static void PopCountTest()
         {
             Assert.Equal((ulong)0x0000000000000000, BinaryIntegerHelper<ulong>.PopCount((ulong)0x0000000000000000));
@@ -940,27 +986,27 @@ namespace System.Tests
 
             Assert.True(BinaryIntegerHelper<ulong>.TryWriteBigEndian((ulong)0x0000000000000000, destination, out bytesWritten));
             Assert.Equal(8, bytesWritten);
-            Assert.Equal(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, destination.ToArray());
+            Assert.Equal<byte>([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00], destination);
 
             Assert.True(BinaryIntegerHelper<ulong>.TryWriteBigEndian((ulong)0x0000000000000001, destination, out bytesWritten));
             Assert.Equal(8, bytesWritten);
-            Assert.Equal(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01 }, destination.ToArray());
+            Assert.Equal<byte>([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01], destination);
 
             Assert.True(BinaryIntegerHelper<ulong>.TryWriteBigEndian((ulong)0x7FFFFFFFFFFFFFFF, destination, out bytesWritten));
             Assert.Equal(8, bytesWritten);
-            Assert.Equal(new byte[] { 0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, destination.ToArray());
+            Assert.Equal<byte>([0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF], destination);
 
             Assert.True(BinaryIntegerHelper<ulong>.TryWriteBigEndian((ulong)0x8000000000000000, destination, out bytesWritten));
             Assert.Equal(8, bytesWritten);
-            Assert.Equal(new byte[] { 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, destination.ToArray());
+            Assert.Equal<byte>([0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00], destination);
 
             Assert.True(BinaryIntegerHelper<ulong>.TryWriteBigEndian((ulong)0xFFFFFFFFFFFFFFFF, destination, out bytesWritten));
             Assert.Equal(8, bytesWritten);
-            Assert.Equal(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, destination.ToArray());
+            Assert.Equal<byte>([0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF], destination);
 
             Assert.False(BinaryIntegerHelper<ulong>.TryWriteBigEndian(default, Span<byte>.Empty, out bytesWritten));
             Assert.Equal(0, bytesWritten);
-            Assert.Equal(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, destination.ToArray());
+            Assert.Equal<byte>([0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF], destination);
         }
 
         [Fact]
@@ -971,27 +1017,27 @@ namespace System.Tests
 
             Assert.True(BinaryIntegerHelper<ulong>.TryWriteLittleEndian((ulong)0x0000000000000000, destination, out bytesWritten));
             Assert.Equal(8, bytesWritten);
-            Assert.Equal(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, destination.ToArray());
+            Assert.Equal<byte>([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00], destination);
 
             Assert.True(BinaryIntegerHelper<ulong>.TryWriteLittleEndian((ulong)0x0000000000000001, destination, out bytesWritten));
             Assert.Equal(8, bytesWritten);
-            Assert.Equal(new byte[] { 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, destination.ToArray());
+            Assert.Equal<byte>([0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00], destination);
 
             Assert.True(BinaryIntegerHelper<ulong>.TryWriteLittleEndian((ulong)0x7FFFFFFFFFFFFFFF, destination, out bytesWritten));
             Assert.Equal(8, bytesWritten);
-            Assert.Equal(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F }, destination.ToArray());
+            Assert.Equal<byte>([0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F], destination);
 
             Assert.True(BinaryIntegerHelper<ulong>.TryWriteLittleEndian((ulong)0x8000000000000000, destination, out bytesWritten));
             Assert.Equal(8, bytesWritten);
-            Assert.Equal(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80 }, destination.ToArray());
+            Assert.Equal<byte>([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80], destination);
 
             Assert.True(BinaryIntegerHelper<ulong>.TryWriteLittleEndian((ulong)0xFFFFFFFFFFFFFFFF, destination, out bytesWritten));
             Assert.Equal(8, bytesWritten);
-            Assert.Equal(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, destination.ToArray());
+            Assert.Equal<byte>([0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF], destination);
 
             Assert.False(BinaryIntegerHelper<ulong>.TryWriteLittleEndian(default, Span<byte>.Empty, out bytesWritten));
             Assert.Equal(0, bytesWritten);
-            Assert.Equal(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, destination.ToArray());
+            Assert.Equal<byte>([0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF], destination);
         }
 
         //

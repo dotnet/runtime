@@ -28,6 +28,14 @@ bool interceptor_ICJI::isIntrinsic(CORINFO_METHOD_HANDLE ftn)
     return temp;
 }
 
+bool interceptor_ICJI::canValueClassInstancePointerEscape(CORINFO_METHOD_HANDLE ftn)
+{
+    mc->cr->AddCall("canValueClassInstancePointerEscape");
+    bool temp = original_ICorJitInfo->canValueClassInstancePointerEscape(ftn);
+    mc->recCanValueClassInstancePointerEscape(ftn, temp);
+    return temp;
+}
+
 bool interceptor_ICJI::notifyMethodInfoUsage(CORINFO_METHOD_HANDLE ftn)
 {
     mc->cr->AddCall("notifyMethodInfoUsage");
@@ -241,25 +249,11 @@ bool interceptor_ICJI::resolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info
     return result;
 }
 
-// Get the unboxed entry point for a method, if possible.
-CORINFO_METHOD_HANDLE interceptor_ICJI::getUnboxedEntry(CORINFO_METHOD_HANDLE ftn, bool* requiresInstMethodTableArg)
+CORINFO_METHOD_HANDLE interceptor_ICJI::getAsyncOtherVariant(CORINFO_METHOD_HANDLE ftn, bool* variantIsThunk)
 {
-    mc->cr->AddCall("getUnboxedEntry");
-    bool                  localRequiresInstMethodTableArg = false;
-    CORINFO_METHOD_HANDLE result = original_ICorJitInfo->getUnboxedEntry(ftn, &localRequiresInstMethodTableArg);
-    mc->recGetUnboxedEntry(ftn, &localRequiresInstMethodTableArg, result);
-    if (requiresInstMethodTableArg != nullptr)
-    {
-        *requiresInstMethodTableArg = localRequiresInstMethodTableArg;
-    }
-    return result;
-}
-
-CORINFO_METHOD_HANDLE interceptor_ICJI::getInstantiatedEntry(CORINFO_METHOD_HANDLE ftn, CORINFO_METHOD_HANDLE* methodHandle, CORINFO_CLASS_HANDLE* classHandle)
-{
-    mc->cr->AddCall("getInstantaitedEntry");
-    CORINFO_METHOD_HANDLE result = original_ICorJitInfo->getInstantiatedEntry(ftn, methodHandle, classHandle);
-    mc->recGetInstantiatedEntry(ftn, *methodHandle, *classHandle, result);
+    mc->cr->AddCall("getAsyncOtherVariant");
+    CORINFO_METHOD_HANDLE result = original_ICorJitInfo->getAsyncOtherVariant(ftn, variantIsThunk);
+    mc->recGetAsyncOtherVariant(ftn, *variantIsThunk, result);
     return result;
 }
 
@@ -608,7 +602,7 @@ unsigned interceptor_ICJI::getClassAlignmentRequirement(CORINFO_CLASS_HANDLE cls
 // This is called for ref and value classes.  It returns a boolean array
 // in representing of 'cls' from a GC perspective.  The class is
 // assumed to be an array of machine words
-// (of length // getClassSize(cls) / sizeof(void*)),
+// (of length // getClassSize(cls) / TARGET_POINTER_SIZE),
 // 'gcPtrs' is a pointer to an array of BYTEs of this length.
 // getClassGClayout fills in this array so that gcPtrs[i] is set
 // to one of the CorInfoGCType values which is the GC type of
@@ -620,14 +614,30 @@ unsigned interceptor_ICJI::getClassGClayout(CORINFO_CLASS_HANDLE cls,   /* IN */
 {
     mc->cr->AddCall("getClassGClayout");
     unsigned temp = original_ICorJitInfo->getClassGClayout(cls, gcPtrs);
+
+    // Use the target's pointer size, not the host's, so cross-target collections
+    // (e.g., wasm32 on an x64 host) record the full GC-layout buffer.
+    unsigned targetPointerSize;
+    switch (original_ICorJitInfo->getExpectedTargetArchitecture())
+    {
+        case CORINFO_ARCH_X86:
+        case CORINFO_ARCH_ARM:
+        case CORINFO_ARCH_WASM32:
+            targetPointerSize = 4;
+            break;
+        default:
+            targetPointerSize = 8;
+            break;
+    }
+
     unsigned len = 0;
     if (isValueClass(cls))
     {
-        len = (getClassSize(cls) + sizeof(void*) - 1) / sizeof(void*);
+        len = (getClassSize(cls) + targetPointerSize - 1) / targetPointerSize;
     }
     else
     {
-        len = (getHeapClassSize(cls) + sizeof(void*) - 1) / sizeof(void*);
+        len = (getHeapClassSize(cls) + targetPointerSize - 1) / targetPointerSize;
     }
     mc->recGetClassGClayout(cls, gcPtrs, len, temp);
     return temp;
@@ -798,14 +808,13 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getObjectType(CORINFO_OBJECT_HANDLE typeO
 }
 
 bool interceptor_ICJI::getReadyToRunHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                                           CORINFO_LOOKUP_KIND*    pGenericLookupKind,
                                            CorInfoHelpFunc         id,
                                            CORINFO_METHOD_HANDLE   callerHandle,
                                            CORINFO_CONST_LOOKUP*   pLookup)
 {
     mc->cr->AddCall("getReadyToRunHelper");
-    bool result = original_ICorJitInfo->getReadyToRunHelper(pResolvedToken, pGenericLookupKind, id, callerHandle, pLookup);
-    mc->recGetReadyToRunHelper(pResolvedToken, pGenericLookupKind, id, callerHandle, pLookup, result);
+    bool result = original_ICorJitInfo->getReadyToRunHelper(pResolvedToken, id, callerHandle, pLookup);
+    mc->recGetReadyToRunHelper(pResolvedToken, id, callerHandle, pLookup, result);
     return result;
 }
 
@@ -1381,6 +1390,34 @@ void interceptor_ICJI::getAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfo)
     mc->recGetAsyncInfo(pAsyncInfo);
 }
 
+void interceptor_ICJI::getWasmWellKnownGlobals(CORINFO_WASM_WELLKNOWN_GLOBALS* pWellKnownGlobalsOut)
+{
+    mc->cr->AddCall("getWasmWellKnownGlobals");
+    original_ICorJitInfo->getWasmWellKnownGlobals(pWellKnownGlobalsOut);
+    mc->recGetWasmWellKnownGlobals(pWellKnownGlobalsOut);
+}
+CORINFO_METHOD_HANDLE interceptor_ICJI::getAwaitReturnCall(CORINFO_METHOD_HANDLE callerHandle, CORINFO_CONTEXT_HANDLE* contextHandle, CORINFO_LOOKUP* instArg)
+{
+    mc->cr->AddCall("getAwaitReturnCall");
+    CORINFO_METHOD_HANDLE result = original_ICorJitInfo->getAwaitReturnCall(callerHandle, contextHandle, instArg);
+    mc->recGetAwaitReturnCall(callerHandle, contextHandle, instArg, result);
+    return result;
+}
+
+CORINFO_METHOD_HANDLE interceptor_ICJI::getAwaitAwaiterInContinuationCall(
+    CORINFO_METHOD_HANDLE callerHandle,
+    CORINFO_RESOLVED_TOKEN* pResolvedToken,
+    bool isUnsafe,
+    CORINFO_CONTEXT_HANDLE* contextHandle,
+    CORINFO_LOOKUP* instArg)
+{
+    mc->cr->AddCall("getAwaitAwaiterInContinuationCall");
+    CORINFO_METHOD_HANDLE result = original_ICorJitInfo->getAwaitAwaiterInContinuationCall(
+        callerHandle, pResolvedToken, isUnsafe, contextHandle, instArg);
+    mc->recGetAwaitAwaiterInContinuationCall(callerHandle, pResolvedToken, isUnsafe, contextHandle, instArg, result);
+    return result;
+}
+
 /*********************************************************************************/
 //
 // Diagnostic methods
@@ -1596,15 +1633,6 @@ void interceptor_ICJI::getAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method, C
     mc->cr->AddCall("getAddressOfPInvokeTarget");
     original_ICorJitInfo->getAddressOfPInvokeTarget(method, pLookup);
     mc->recGetAddressOfPInvokeTarget(method, pLookup);
-}
-
-// Generate a cookie based on the signature to pass to CORINFO_HELP_PINVOKE_CALLI
-LPVOID interceptor_ICJI::GetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, void** ppIndirection)
-{
-    mc->cr->AddCall("GetCookieForPInvokeCalliSig");
-    LPVOID temp = original_ICorJitInfo->GetCookieForPInvokeCalliSig(szMetaSig, ppIndirection);
-    mc->recGetCookieForPInvokeCalliSig(szMetaSig, ppIndirection, temp);
-    return temp;
 }
 
 // Generate a cookie based on the signature to pass to INTOP_CALLI
@@ -2005,6 +2033,13 @@ void interceptor_ICJI::recordCallSite(uint32_t              instrOffset, /* IN *
     mc->cr->recRecordCallSite(instrOffset, callSig, methodHandle);
 }
 
+void interceptor_ICJI::recordWasmManagedCallSig(CORINFO_SIG_INFO* callSig /* IN */)
+{
+    mc->cr->AddCall("recordWasmManagedCallSig");
+    original_ICorJitInfo->recordWasmManagedCallSig(callSig);
+    // No-op in the VM, nothing to record for replay.
+}
+
 // A relocation is recorded if we are pre-jitting.
 // A jump thunk may be inserted if we are jitting
 void interceptor_ICJI::recordRelocation(void*    location,   /* IN  */
@@ -2024,6 +2059,14 @@ CorInfoReloc interceptor_ICJI::getRelocTypeHint(void* target)
     mc->cr->AddCall("getRelocTypeHint");
     CorInfoReloc result = original_ICorJitInfo->getRelocTypeHint(target);
     mc->recGetRelocTypeHint(target, result);
+    return result;
+}
+
+uint32_t interceptor_ICJI::getAddressAlignment(void* address)
+{
+    mc->cr->AddCall("getAddressAlignment");
+    uint32_t result = original_ICorJitInfo->getAddressAlignment(address);
+    mc->recGetAddressAlignment(address, result);
     return result;
 }
 

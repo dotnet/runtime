@@ -50,8 +50,11 @@ enum MarshalFlags
     MARSHAL_FLAG_BYREF              = 0x008,
     MARSHAL_FLAG_HRESULT_SWAP       = 0x010,
     MARSHAL_FLAG_RETVAL             = 0x020,
-    // unused                       = 0x040,
-    MARSHAL_FLAG_FIELD              = 0x080
+    MARSHAL_FLAG_FIELD              = 0x040,
+    // Disable cleanup code even when a marshaller needs cleanup.
+    // Used for struct marshalling where we generate marshal/unmarshal/cleanup stubs separately.
+    MARSHAL_FLAG_NO_CLEANUP         = 0x080,
+    MARSHAL_FLAG_CLEANUP_ONLY       = 0x100, // Used for struct marshalling cleanup code. Only generate cleanup logic.
 };
 
 #include <pshpack1.h>
@@ -62,6 +65,7 @@ struct CREATE_MARSHALER_CARRAY_OPERANDS
     UINT32          multiplier;
     UINT32          additive;
     VARTYPE         elementType;
+    CorNativeType   elementNativeType;
     UINT16          countParamIdx;
     BYTE            bestfitmapping;
     BYTE            throwonunmappablechar;
@@ -206,26 +210,6 @@ public:
     void *operator new(size_t size, LoaderHeap *pHeap);
     void operator delete(void *pMem);
 
-#ifndef DACCESS_COMPILE
-    MethodDesc* LookupStructILStubSpeculative(MethodTable* pMT)
-    {
-        WRAPPER_NO_CONTRACT;
-        HashDatum res = 0;
-        m_structILStubCache.GetValueSpeculative(pMT, &res);
-        return (MethodDesc*)res;
-    }
-
-    MethodDesc* LookupStructILStub(MethodTable* pMT)
-    {
-        WRAPPER_NO_CONTRACT;
-        HashDatum res = 0;
-        m_structILStubCache.GetValue(pMT, &res);
-        return (MethodDesc*)res;
-    }
-
-    void CacheStructILStub(MethodTable* pMT, MethodDesc* pStubMD);
-#endif
-
     // This method returns the custom marshaling info associated with the name cookie pair. If the
     // CM info has not been created yet for this pair then it will be created and returned.
     CustomMarshalerInfo *GetCustomMarshalerInfo(Assembly *pAssembly, TypeHandle hndManagedType, LPCUTF8 strMarshalerTypeName, DWORD cMarshalerTypeNameBytes, LPCUTF8 strCookie, DWORD cCookieStrBytes);
@@ -235,7 +219,6 @@ public:
 #endif // FEATURE_COMINTEROP
 
 private:
-    EEPtrHashTable                      m_structILStubCache;
     EECMInfoHashTable                   m_CMInfoHashTable;
     LoaderAllocator*                    m_pAllocator;
     LoaderHeap*                         m_pHeap;
@@ -327,7 +310,8 @@ public:
     void GenerateFieldIL(PInvokeStubLinker* psl,
                         UINT32 managedOffset, // the field's byte offset into the managed object
                         UINT32 nativeOffset, // the field's byte offset into the native object
-                        FieldDesc* pFieldDesc); // The field descriptor for reporting errors
+                        FieldDesc* pFieldDesc, // The field descriptor for reporting errors
+                        DWORD dwMarshalFlags); // Flags to specify which scenarios to generate IL for.
 
     OverrideProcArgs const* GetOverrideProcArgs()
     {
@@ -415,6 +399,7 @@ public:
         WRAPPER_NO_CONTRACT;
         pMopsOut->methodTable = m_hndArrayElemType.AsMethodTable();
         pMopsOut->elementType = m_arrayElementType;
+        pMopsOut->elementNativeType = m_arrayElementNativeType;
         pMopsOut->countParamIdx = m_countParamIdx;
         pMopsOut->multiplier  = m_multiplier;
         pMopsOut->additive    = m_additive;
@@ -458,6 +443,16 @@ public:
         return m_ms == MarshalInfo::MARSHAL_SCENARIO_FIELD;
     }
 
+    BOOL IsComScenario()
+    {
+        LIMITED_METHOD_CONTRACT;
+#ifdef FEATURE_COMINTEROP
+        return m_ms == MarshalInfo::MARSHAL_SCENARIO_COMINTEROP;
+#else
+        return FALSE;
+#endif // FEATURE_COMINTEROP
+    }
+
     UINT GetErrorResourceId()
     {
         LIMITED_METHOD_CONTRACT;
@@ -487,6 +482,7 @@ private:
     MethodDesc*     m_pMD;  // Save MethodDesc for later inspection so that we can pass SizeParamIndex by ref
     TypeHandle      m_hndArrayElemType;
     VARTYPE         m_arrayElementType;
+    CorNativeType   m_arrayElementNativeType;
     int             m_iArrayRank;
     BOOL            m_nolowerbounds;  // if managed type is SZARRAY, don't allow lower bounds
 
@@ -552,6 +548,7 @@ class ArrayMarshalInfo
 public:
     ArrayMarshalInfo(ArrayMarshalInfoFlags flags)
     : m_vtElement(VT_EMPTY)
+    , m_ntElement(NATIVE_TYPE_DEFAULT)
     , m_errorResourceId(0)
     , m_flags(flags)
 #ifdef FEATURE_COMINTEROP
@@ -599,6 +596,12 @@ public:
         }
     }
 
+    CorNativeType GetElementNativeType()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_ntElement;
+    }
+
     BOOL IsValid()
     {
         CONTRACTL
@@ -609,7 +612,7 @@ public:
         }
         CONTRACTL_END;
 
-        return m_vtElement != VT_EMPTY;
+        return m_vtElement != VT_EMPTY || m_ntElement != NATIVE_TYPE_DEFAULT;
     }
 
     BOOL IsSafeArraySubTypeExplicitlySpecified()
@@ -661,6 +664,7 @@ protected:
     TypeHandle m_thElement;
     TypeHandle m_thInterfaceArrayElementClass;
     VARTYPE m_vtElement;
+    CorNativeType m_ntElement;
     DWORD m_errorResourceId;
     ArrayMarshalInfoFlags m_flags;
 

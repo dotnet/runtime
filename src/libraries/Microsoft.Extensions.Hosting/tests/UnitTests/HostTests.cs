@@ -161,6 +161,7 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/126697", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsNativeAot))]
         public void CreateDefaultBuilder_RegistersEventSourceLogger()
         {
             var listener = new TestEventListener();
@@ -427,6 +428,20 @@ namespace Microsoft.Extensions.Hosting.Tests
 
             var hostOptions = host.Services.GetRequiredService<IOptions<HostOptions>>();
             Assert.Equal(notDefaultTimeoutSeconds, hostOptions.Value.ShutdownTimeout.TotalSeconds);
+        }
+
+        [Fact]
+        public async Task Host_Restart_ThrowsException()
+        {
+            using var host = new HostBuilder().Build();
+
+            await host.StartAsync();
+            await host.StopAsync();
+
+            await Assert.ThrowsAsync<OperationCanceledException>(async () =>
+            {
+                await host.StartAsync();
+            });
         }
 
         internal class ServiceA { }

@@ -8,14 +8,10 @@ using System.Runtime.InteropServices;
 
 namespace System.Security.Cryptography.Asn1.Pkcs7
 {
-    [StructLayout(LayoutKind.Sequential)]
-    internal partial struct SignerIdentifierAsn
-    {
-        internal System.Security.Cryptography.Asn1.Pkcs7.IssuerAndSerialNumberAsn? IssuerAndSerialNumber;
-        internal ReadOnlyMemory<byte>? SubjectKeyIdentifier;
-
 #if DEBUG
-        static SignerIdentifierAsn()
+    file static class ValidateSignerIdentifierAsn
+    {
+        static ValidateSignerIdentifierAsn()
         {
             var usedTags = new System.Collections.Generic.Dictionary<Asn1Tag, string>();
             Action<Asn1Tag, string> ensureUniqueTag = (tag, fieldName) =>
@@ -30,6 +26,25 @@ namespace System.Security.Cryptography.Asn1.Pkcs7
 
             ensureUniqueTag(Asn1Tag.Sequence, "IssuerAndSerialNumber");
             ensureUniqueTag(new Asn1Tag(TagClass.ContextSpecific, 0), "SubjectKeyIdentifier");
+        }
+
+        [System.Runtime.CompilerServices.MethodImpl(
+            System.Runtime.CompilerServices.MethodImplOptions.NoInlining |
+            System.Runtime.CompilerServices.MethodImplOptions.NoOptimization)]
+        internal static void Validate() { }
+    }
+#endif
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal partial struct SignerIdentifierAsn
+    {
+        internal System.Security.Cryptography.Asn1.Pkcs7.IssuerAndSerialNumberAsn? IssuerAndSerialNumber;
+        internal ReadOnlyMemory<byte>? SubjectKeyIdentifier;
+
+#if DEBUG
+        static SignerIdentifierAsn()
+        {
+            ValidateSignerIdentifierAsn.Validate();
         }
 #endif
 
@@ -65,7 +80,7 @@ namespace System.Security.Cryptography.Asn1.Pkcs7
         {
             try
             {
-                AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
+                ValueAsnReader reader = new ValueAsnReader(encoded.Span, ruleSet);
 
                 DecodeCore(ref reader, encoded, out SignerIdentifierAsn decoded);
                 reader.ThrowIfNotEmpty();
@@ -77,7 +92,7 @@ namespace System.Security.Cryptography.Asn1.Pkcs7
             }
         }
 
-        internal static void Decode(ref AsnValueReader reader, ReadOnlyMemory<byte> rebind, out SignerIdentifierAsn decoded)
+        internal static void Decode(ref ValueAsnReader reader, ReadOnlyMemory<byte> rebind, out SignerIdentifierAsn decoded)
         {
             try
             {
@@ -89,7 +104,7 @@ namespace System.Security.Cryptography.Asn1.Pkcs7
             }
         }
 
-        private static void DecodeCore(ref AsnValueReader reader, ReadOnlyMemory<byte> rebind, out SignerIdentifierAsn decoded)
+        private static void DecodeCore(ref ValueAsnReader reader, ReadOnlyMemory<byte> rebind, out SignerIdentifierAsn decoded)
         {
             decoded = default;
             Asn1Tag tag = reader.PeekTag();

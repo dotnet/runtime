@@ -192,7 +192,13 @@ function(find_unwind_libs UnwindLibs)
     find_library(UNWIND NAMES unwind)
 
     if(UNWIND STREQUAL UNWIND-NOTFOUND)
-      message(FATAL_ERROR "Cannot find libunwind. Try installing libunwind8-dev or libunwind-devel.")
+      if(CLR_CMAKE_TARGET_OPENBSD)
+        # On OpenBSD the libunwind symbols are provided by the C++ ABI library
+        # (libc++abi), so a standalone libunwind is not expected.
+        set(UNWIND "")
+      else()
+        message(FATAL_ERROR "Cannot find libunwind. Try installing libunwind8-dev or libunwind-devel.")
+      endif()
     endif()
 
     set(${UnwindLibs} ${UNWIND_LIBS} ${UNWIND} PARENT_SCOPE)
@@ -559,8 +565,8 @@ function(install_clr)
 
     foreach(destination ${destinations})
       # CMake bug with executable WASM outputs - https://gitlab.kitware.com/cmake/cmake/-/issues/20745
-      if (CLR_CMAKE_TARGET_ARCH_WASM AND "${targetType}" STREQUAL "EXECUTABLE")
-        # Use install FILES since these are WASM assets that aren't executable.
+      if (CLR_CMAKE_TARGET_BROWSER AND "${targetType}" STREQUAL "EXECUTABLE")
+        # Emscripten produces a .js + .wasm pair; install both as data files.
         install(FILES
           "$<TARGET_FILE_DIR:${targetName}>/${targetName}.js"
           "$<TARGET_FILE_DIR:${targetName}>/${targetName}.wasm"
@@ -574,6 +580,13 @@ function(install_clr)
           endif()
         "
         COMPONENT ${INSTALL_CLR_COMPONENT} ${INSTALL_CLR_OPTIONAL})
+      elseif (CLR_CMAKE_TARGET_WASI AND "${targetType}" STREQUAL "EXECUTABLE")
+        # wasi-sdk produces a single .wasm binary (the executable itself, no
+        # extension). Install it as a data file — making it PROGRAMS would
+        # require execute permission on a wasm file which the host runtime
+        # (wasmtime) doesn't need.
+        install(FILES $<TARGET_FILE:${targetName}>
+          DESTINATION ${destination} COMPONENT ${INSTALL_CLR_COMPONENT} ${INSTALL_CLR_OPTIONAL})
       else()
         # We don't need to install the export libraries for our DLLs
         # since they won't be directly linked against.
@@ -608,7 +621,7 @@ function(disable_pax_mprotect targetName)
   # Disabling PAX hardening only makes sense in systems that use Elf image formats. Particularly, looking
   # for paxctl in macOS is problematic as it collides with popular software for that OS that performs completely
   # unrelated functionality. Only look for it when we'll generate Elf images.
-  if (CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
+  if (CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_OPENBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
     # Try to locate the paxctl tool. Failure to find it is not fatal,
     # but the generated executables won't work on a system where PAX is set
     # to prevent applications to create executable memory mappings.
@@ -622,7 +635,7 @@ function(disable_pax_mprotect targetName)
         COMMAND "${PAXCTL}" -c -m $<TARGET_FILE:${targetName}>
         )
     endif()
-  endif(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
+  endif(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_OPENBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
 endfunction()
 
 # add_linker_flag(Flag [Config1 Config2 ...])

@@ -31,14 +31,13 @@ int GCStressPolicy::InhibitHolder::s_nGcStressDisabled = 0;
 // Poor mans narrow
 LPUTF8 NarrowWideChar(__inout_z LPCWSTR str)
 {
-    CONTRACT (LPUTF8)
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
         PRECONDITION(CheckPointer(str, NULL_OK));
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
-    } CONTRACT_END;
+    } CONTRACTL_END;
 
     if (str != 0) {
         LPCWSTR fromPtr = str;
@@ -47,9 +46,9 @@ LPUTF8 NarrowWideChar(__inout_z LPCWSTR str)
         while(*fromPtr != 0)
             *toPtr++ = (char) *fromPtr++;
         *toPtr = 0;
-        RETURN result;
+        return result;
     }
-    RETURN NULL;
+    return NULL;
 }
 
 /**************************************************************/
@@ -139,12 +138,6 @@ HRESULT EEConfig::Init()
     pPerfTypesToLog = NULL;
     iFastGCStress = 0;
     iInjectFatalError = 0;
-#ifdef TEST_DATA_CONSISTENCY
-    // indicates whether to run the self test to determine that we are detecting when a lock is held by the
-    // LS in DAC builds. Initialized via the environment variable TestDataConsistency
-    fTestDataConsistency = false;
-#endif
-
     // In Thread::SuspendThread(), default the timeout to 2 seconds.  If the suspension
     // takes longer, assert (but keep trying).
     m_SuspendThreadDeadlockTimeoutMs = 2000;
@@ -175,7 +168,6 @@ HRESULT EEConfig::Init()
 #endif
 
 #ifdef _DEBUG
-    fShouldInjectFault = 0;
     testThreadAbort = 0;
 #endif
 
@@ -233,8 +225,6 @@ HRESULT EEConfig::Init()
     fGDBJitEmitDebugFrame = false;
 #endif
 
-    runtimeAsync = false;
-
     return S_OK;
 }
 
@@ -242,7 +232,6 @@ HRESULT EEConfig::Init()
 HRESULT EEConfig::Cleanup()
 {
     CONTRACTL {
-        FORBID_FAULT;
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
@@ -302,7 +291,6 @@ HRESULT EEConfig::sync()
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT (return E_OUTOFMEMORY);
     } CONTRACTL_END;
 
     ETWOnStartup (EEConfigSync_V1, EEConfigSyncEnd_V1);
@@ -627,10 +615,6 @@ HRESULT EEConfig::sync()
 
 #ifdef _DEBUG
 
-#ifdef TEST_DATA_CONSISTENCY
-    fTestDataConsistency = (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_TestDataConsistency) !=0);
-#endif
-
     m_SuspendThreadDeadlockTimeoutMs = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_SuspendThreadDeadlockTimeoutMs);
     m_SuspendDeadlockTimeout = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_SuspendDeadlockTimeout);
 #endif // _DEBUG
@@ -648,8 +632,6 @@ HRESULT EEConfig::sync()
 
     iPerfNumAllocsThreshold = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_PerfNumAllocsThreshold);
     iPerfAllocsSizeThreshold = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_PerfAllocsSizeThreshold);
-
-    fShouldInjectFault = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_InjectFault);
 
     testThreadAbort = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_HostTestThreadAbort);
 
@@ -789,11 +771,35 @@ HRESULT EEConfig::sync()
         }
     #endif
 
+#ifdef FEATURE_PGO
+        if (fTieredPGO)
+        {
+            // Initial tier for R2R is always just OptimizationTier0
+            // For ILOnly it depends on TieredPGO_InstrumentOnlyHotCode:
+            // OptimizationTier0 as we don't want to instrument the initial version (will only instrument hot Tier0)
+            // OptimizationTier0Instrumented - instrument all ILOnly code
+            if (g_pConfig->TieredPGO_InstrumentOnlyHotCode())
+            {
+                tieredCompilation_DefaultTier = (DWORD)NativeCodeVersion::OptimizationTier0;
+            }
+            else
+            {
+                tieredCompilation_DefaultTier = (DWORD)NativeCodeVersion::OptimizationTier0Instrumented;
+            }
+        }
+        else
+#endif
+        {
+            tieredCompilation_DefaultTier = (DWORD)NativeCodeVersion::OptimizationTier0;
+        }
+
         if (ETW::CompilationLog::TieredCompilation::Runtime::IsEnabled())
         {
             ETW::CompilationLog::TieredCompilation::Runtime::SendSettings();
         }
     }
+#else // !FEATURE_TIERED_COMPILATION
+    tieredCompilation_DefaultTier = (DWORD)NativeCodeVersion::OptimizationTierOptimized;
 #endif
 
 #if defined(FEATURE_ON_STACK_REPLACEMENT)
@@ -824,8 +830,6 @@ HRESULT EEConfig::sync()
     fUseCachedInterfaceDispatch = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_UseCachedInterfaceDispatch) != 0;
 #endif // defined(FEATURE_CACHED_INTERFACE_DISPATCH) && defined(FEATURE_VIRTUAL_STUB_DISPATCH)
 
-    runtimeAsync = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_RuntimeAsync) != 0;
-
     return hr;
 }
 
@@ -851,7 +855,6 @@ HRESULT EEConfig::ParseMethList(_In_z_ LPWSTR str, MethodNamesList** out) {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT(return E_OUTOFMEMORY);
         PRECONDITION(CheckPointer(str, NULL_OK));
         PRECONDITION(CheckPointer(out));
     } CONTRACTL_END;
@@ -934,7 +937,6 @@ HRESULT EEConfig::ParseTypeList(_In_z_ LPWSTR str, TypeNamesList** out)
         MODE_ANY;
         PRECONDITION(CheckPointer(out));
         PRECONDITION(CheckPointer(str, NULL_OK));
-        INJECT_FAULT(return E_OUTOFMEMORY);
     } CONTRACTL_END;
 
     HRESULT hr = S_OK;
@@ -1057,7 +1059,6 @@ HRESULT TypeNamesList::Init(_In_z_ LPCWSTR str)
         NOTHROW;
         GC_NOTRIGGER;
         PRECONDITION(CheckPointer(str));
-        INJECT_FAULT(return E_OUTOFMEMORY);
     } CONTRACTL_END;
 
     pNames = NULL;
@@ -1139,7 +1140,6 @@ TypeNamesList::~TypeNamesList()
 {
     CONTRACTL {
         NOTHROW;
-        FORBID_FAULT;
         GC_NOTRIGGER;
         MODE_ANY;
     } CONTRACTL_END;

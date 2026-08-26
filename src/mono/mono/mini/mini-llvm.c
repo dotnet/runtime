@@ -30,6 +30,16 @@
 #define __STDC_CONSTANT_MACROS
 #endif
 
+// Mono's LLVM backend uses the global-context LLVM-C type accessors (LLVMInt32Type, etc.)
+// pervasively. These are deprecated in newer LLVM versions in favor of the *InContext variants.
+// Suppress the deprecation warnings rather than threading an LLVMContextRef through every call site.
+#if defined(__clang__) || defined(__GNUC__)
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
+#ifdef _MSC_VER
+#pragma warning(disable:4996)
+#endif
+
 #include "llvm-c/Core.h"
 #include "llvm-c/BitWriter.h"
 #include "llvm-c/Analysis.h"
@@ -238,6 +248,8 @@ typedef struct {
 	int *gc_var_indexes;
 	int gc_var_indexes_len;
 	Address *gc_pin_area;
+	/* Saturating count (0-2) of definitions per vreg, used to decide if a ref move needs pinning */
+	guint8 *vreg_defcount;
 	LLVMValueRef il_state;
 	LLVMValueRef il_state_ret;
 } EmitContext;
@@ -558,13 +570,19 @@ const_int1 (int v)
 static LLVMValueRef
 const_int8 (int v)
 {
-	return LLVMConstInt (LLVMInt8Type (), v, FALSE);
+	/* Mask to 8 bits so a negative int is not implicitly sign-extended via
+	 * the (unsigned long long) parameter conversion. Starting with LLVM 23,
+	 * LLVMConstInt retains the upper bits when SignExtend is FALSE, which
+	 * caused constant folding of subsequent ZExt to produce wrong results
+	 * (e.g. zext i8 -1 to i64 yielding -1 instead of 255). */
+	return LLVMConstInt (LLVMInt8Type (), (guint8)v, FALSE);
 }
 
 static LLVMValueRef
 const_int32 (int v)
 {
-	return LLVMConstInt (LLVMInt32Type (), v, FALSE);
+	/* See const_int8 for why we mask. */
+	return LLVMConstInt (LLVMInt32Type (), (guint32)v, FALSE);
 }
 
 static LLVMValueRef
@@ -3810,7 +3828,7 @@ emit_div_check (EmitContext *ctx, LLVMBuilderRef builder, MonoBasicBlock *bb, Mo
 		/* b == -1 && a == 0x80000000 */
 		if (is_signed) {
 			LLVMValueRef c = (LLVMTypeOf (lhs) == LLVMInt32Type ()) ? LLVMConstInt (LLVMTypeOf (lhs), 0x80000000, FALSE) : LLVMConstInt (LLVMTypeOf (lhs), 0x8000000000000000LL, FALSE);
-			LLVMValueRef cond1 = LLVMBuildICmp (builder, LLVMIntEQ, rhs, LLVMConstInt (LLVMTypeOf (rhs), -1, FALSE), "");
+			LLVMValueRef cond1 = LLVMBuildICmp (builder, LLVMIntEQ, rhs, LLVMConstAllOnes (LLVMTypeOf (rhs)), "");
 			LLVMValueRef cond2 = LLVMBuildICmp (builder, LLVMIntEQ, lhs, c, "");
 
 			cmp = LLVMBuildICmp (builder, LLVMIntEQ, LLVMBuildAnd (builder, cond1, cond2, ""), LLVMConstInt (LLVMInt1Type (), 1, FALSE), "");
@@ -3993,6 +4011,50 @@ emit_gc_pin (EmitContext *ctx, LLVMBuilderRef builder, int vreg)
 	LLVMValueRef indexes [] = { index0, index1 };
 	LLVMValueRef addr = LLVMBuildGEP2 (builder, ctx->gc_pin_area->type, ctx->gc_pin_area->value, indexes, 2, "");
 	emit_store (builder, convert (ctx, ctx->values [vreg], IntPtrType ()), addr, TRUE);
+}
+
+/*
+ * compute_vreg_defcounts:
+ *
+ *   Count the definitions of every vreg, saturating at 2, for move_needs_gc_pin ().
+ */
+static void
+compute_vreg_defcounts (EmitContext *ctx)
+{
+	MonoCompile *cfg = ctx->cfg;
+
+	ctx->vreg_defcount = g_new0 (guint8, cfg->next_vreg);
+	for (MonoBasicBlock *bb = cfg->bb_entry; bb; bb = bb->next_bb) {
+		for (MonoInst *ins = bb->code; ins; ins = ins->next) {
+			if (ins->dreg >= 0 && (guint32)ins->dreg < cfg->next_vreg &&
+				LLVM_INS_INFO (ins->opcode) [MONO_INST_DEST] != ' ' &&
+				ctx->vreg_defcount [ins->dreg] < 2)
+				ctx->vreg_defcount [ins->dreg] ++;
+		}
+	}
+}
+
+/*
+ * A ref OP_MOVE aliases its source instead of producing a new value, so it only needs a pin
+ * slot of its own when the source can stop being rooted while the alias is still live. A vreg
+ * with a single definition keeps its pin slot for the rest of the method, but an address-taken
+ * variable is rooted through slots holding the variable's current value, which this method or
+ * a callee can overwrite at any point.
+ *
+ * Reads MONO_INST_INDIRECT, so it must run after the OP_LDADDR pass in emit_method_inner ().
+ */
+static gboolean
+move_needs_gc_pin (EmitContext *ctx, MonoInst *ins)
+{
+	MonoCompile *cfg = ctx->cfg;
+	MonoInst *var;
+
+	if (!ctx->vreg_defcount || ins->sreg1 < 0 || (guint32)ins->sreg1 >= cfg->next_vreg)
+		return TRUE;
+	if (ctx->vreg_defcount [ins->sreg1] > 1)
+		return TRUE;
+	var = get_vreg_to_inst (cfg, ins->sreg1);
+	return var && (var->flags & (MONO_INST_VOLATILE | MONO_INST_INDIRECT | MONO_INST_IS_DEAD));
 }
 #endif
 
@@ -4353,7 +4415,7 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 		index [0] = const_int32 (0);
 		index [1] = const_int32 (1);
 		addr = LLVMBuildGEP2 (builder, il_state_type, ctx->il_state, index, 2, "");
-		LLVMBuildStore (ctx->builder, LLVMConstInt (types [1], -1, FALSE), addr);
+		LLVMBuildStore (ctx->builder, LLVMConstAllOnes (types [1]), addr);
 
 		/*
 		 * Set il_state->data [i] to either the address of the arg/local, or NULL.
@@ -6390,7 +6452,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 						cmp = LLVMBuildICmp (builder, llvm_pred, lhs, LLVMConstNull (LLVMTypeOf (lhs)), "");
 
 				} else {
-					cmp = LLVMBuildICmp (builder, llvm_pred, convert (ctx, lhs, IntPtrType ()), LLVMConstInt (IntPtrType (), ins->inst_imm, FALSE), "");
+					cmp = LLVMBuildICmp (builder, llvm_pred, convert (ctx, lhs, IntPtrType ()), LLVMConstInt (IntPtrType (), ins->inst_imm, TRUE), "");
 				}
 			} else if (ins->opcode == OP_LCOMPARE_IMM) {
 				cmp = LLVMBuildICmp (builder, cond_to_llvm_cond [rel], lhs, rhs, "");
@@ -7204,7 +7266,17 @@ MONO_RESTORE_WARNING
 				index = const_int32 (GTMREG_TO_INT (ins->inst_offset / size));
 				addr = LLVMBuildGEP2 (builder, t, convert (ctx, base, pointer_type (t)), &index, 1, "");
 			}
-			LLVMValueRef srcval = convert (ctx, LLVMConstInt (IntPtrType (), ins->inst_imm, FALSE), t);
+#if TARGET_SIZEOF_VOID_P == 4
+			/* On 32-bit targets IntPtrType () is i32. ins->inst_imm is a host-width value
+			 * that may be negative (i.e. have its upper bits set). Passing it unmasked makes
+			 * LLVMConstInt receive a value outside i32's unsigned width; starting with LLVM 23
+			 * that produces a malformed ConstantInt with SignExtend FALSE. Mask to 32 bits,
+			 * matching the existing truncation behavior on older LLVM. See const_int32. */
+			LLVMValueRef imm_const = LLVMConstInt (IntPtrType (), (guint32)ins->inst_imm, FALSE);
+#else
+			LLVMValueRef imm_const = LLVMConstInt (IntPtrType (), ins->inst_imm, FALSE);
+#endif
+			LLVMValueRef srcval = convert (ctx, imm_const, t);
 			LLVMValueRef ptrdst = convert (ctx, addr, pointer_type (t));
 			if (is_unaligned)
 				mono_llvm_build_aligned_store (builder, srcval, ptrdst, is_volatile, 1);
@@ -7380,6 +7452,13 @@ MONO_RESTORE_WARNING
 			values [ins->dreg] = call_intrins (ctx, INTRINS_LOG, args, dname);
 			break;
 		}
+		case OP_LOGF: {
+			LLVMValueRef args [1];
+
+			args [0] = convert (ctx, lhs, LLVMFloatType ());
+			values [ins->dreg] = call_intrins (ctx, INTRINS_LOGF, args, dname);
+			break;
+		}
 		case OP_TRUNC: {
 			LLVMValueRef args [1];
 
@@ -7531,11 +7610,7 @@ MONO_RESTORE_WARNING
 		case OP_IMIN_UN:
 		case OP_LMIN_UN:
 		case OP_IMAX_UN:
-		case OP_LMAX_UN:
-		case OP_FMIN:
-		case OP_FMAX:
-		case OP_RMIN:
-		case OP_RMAX: {
+		case OP_LMAX_UN: {
 			LLVMValueRef v;
 
 			lhs = convert (ctx, lhs, regtype_to_llvm_type (spec [MONO_INST_DEST]));
@@ -7558,19 +7633,73 @@ MONO_RESTORE_WARNING
 			case OP_LMAX_UN:
 				v = LLVMBuildICmp (builder, LLVMIntUGE, lhs, rhs, "");
 				break;
-			case OP_FMAX:
-			case OP_RMAX:
-				v = LLVMBuildFCmp (builder, LLVMRealUGE, lhs, rhs, "");
-				break;
-			case OP_FMIN:
-			case OP_RMIN:
-				v = LLVMBuildFCmp (builder, LLVMRealULE, lhs, rhs, "");
-				break;
 			default:
 				g_assert_not_reached ();
 				break;
 			}
 			values [ins->dreg] = LLVMBuildSelect (builder, v, lhs, rhs, dname);
+			break;
+		}
+
+		case OP_FMIN:
+		case OP_FMAX:
+		case OP_RMIN:
+		case OP_RMAX: {
+			/*
+			 * Use llvm.minimum/maximum (IEEE 754-2019, NaN-propagating) so the
+			 * Math.Min/Math.Max semantics ("if either argument is NaN, NaN is
+			 * returned"), as forwarded by MathF.Min/MathF.Max, are honored
+			 * symmetrically. The old fcmp+select lowering was both asymmetric for
+			 * NaN and got folded into AArch64 fminnm/fmaxnm by the backend, which
+			 * discards NaN entirely. See llvm-intrinsics.h.
+			 */
+			gboolean is_r4 = ins->opcode == OP_RMIN || ins->opcode == OP_RMAX;
+			LLVMTypeRef t = is_r4 ? LLVMFloatType () : LLVMDoubleType ();
+			LLVMValueRef args [2] = { convert (ctx, lhs, t), convert (ctx, rhs, t) };
+			IntrinsicId iid;
+			switch (ins->opcode) {
+			case OP_FMAX: iid = INTRINS_MAXIMUM; break;
+			case OP_FMIN: iid = INTRINS_MINIMUM; break;
+			case OP_RMAX: iid = INTRINS_MAXIMUMF; break;
+			case OP_RMIN: iid = INTRINS_MINIMUMF; break;
+			default: g_assert_not_reached (); break;
+			}
+			values [ins->dreg] = call_intrins (ctx, iid, args, dname);
+			break;
+		}
+
+		case OP_FMINNUM:
+		case OP_FMAXNUM:
+		case OP_RMINNUM:
+		case OP_RMAXNUM: {
+			/*
+			 * IEEE 754-2019 minimumNumber/maximumNumber (NaN-suppressing and
+			 * sign-of-zero aware), as specified by `float.MinNumber` /
+			 * `double.MinNumber` (and the Max variants, surfaced via
+			 * INumber<TSelf> on the primitive Single/Double/Half types).
+			 *
+			 * We compose this from llvm.minimum/maximum (sign-of-zero aware but
+			 * NaN-propagating) plus an explicit NaN fixup, rather than lowering
+			 * directly to an intrinsic: llvm.minnum/maxnum leave the sign of zero
+			 * unspecified (minnum(+0, -0) may return +0 on x86, see dotnet/runtime
+			 * #131130) and llvm.minimumnum/maximumnum are miscompiled by the x86
+			 * backend in the LLVM version we build against. When exactly one operand
+			 * is NaN we return the other; when both are NaN the NaN flows through.
+			 */
+			gboolean is_r4 = ins->opcode == OP_RMINNUM || ins->opcode == OP_RMAXNUM;
+			gboolean is_max = ins->opcode == OP_FMAXNUM || ins->opcode == OP_RMAXNUM;
+			LLVMTypeRef t = is_r4 ? LLVMFloatType () : LLVMDoubleType ();
+			LLVMValueRef l = convert (ctx, lhs, t);
+			LLVMValueRef r = convert (ctx, rhs, t);
+			LLVMValueRef args [2] = { l, r };
+			IntrinsicId iid = is_max ? (is_r4 ? INTRINS_MAXIMUMF : INTRINS_MAXIMUM)
+			                         : (is_r4 ? INTRINS_MINIMUMF : INTRINS_MINIMUM);
+			LLVMValueRef result = call_intrins (ctx, iid, args, "");
+			LLVMValueRef l_nan = LLVMBuildFCmp (builder, LLVMRealUNO, l, l, "");
+			LLVMValueRef r_nan = LLVMBuildFCmp (builder, LLVMRealUNO, r, r, "");
+			result = LLVMBuildSelect (builder, r_nan, l, result, "");
+			result = LLVMBuildSelect (builder, l_nan, r, result, dname);
+			values [ins->dreg] = result;
 			break;
 		}
 
@@ -8075,7 +8204,7 @@ MONO_RESTORE_WARNING
 
 				LLVMValueRef info_var = LLVMAddGlobal (ctx->lmodule, LLVMArrayType (LLVMInt8Type (), 8), "@OBJC_IMAGE_INFO");
 				int32_t objc_imageinfo [] = { 0, 0 };
-				LLVMSetInitializer (info_var, mono_llvm_create_constant_data_array ((uint8_t *) &objc_imageinfo, 8));
+				LLVMSetInitializer (info_var, mono_llvm_create_constant_data_array (ctx->module->context, (uint8_t *) &objc_imageinfo, 8));
 				LLVMSetLinkage (info_var, LLVMPrivateLinkage);
 				LLVMSetExternallyInitialized (info_var, TRUE);
 				LLVMSetSection (info_var, "__DATA, __objc_imageinfo,regular,no_dead_strip");
@@ -8091,7 +8220,7 @@ MONO_RESTORE_WARNING
 
 				LLVMTypeRef name_var_type = LLVMArrayType (LLVMInt8Type (), (unsigned int)(strlen (name) + 1));
 				LLVMValueRef name_var = LLVMAddGlobal (ctx->lmodule, name_var_type, "@OBJC_METH_VAR_NAME_");
-				LLVMSetInitializer (name_var, mono_llvm_create_constant_data_array ((const uint8_t*)name, (int)(strlen (name) + 1)));
+				LLVMSetInitializer (name_var, mono_llvm_create_constant_data_array (ctx->module->context, (const uint8_t*)name, (int)(strlen (name) + 1)));
 				LLVMSetLinkage (name_var, LLVMPrivateLinkage);
 				LLVMSetSection (name_var, "__TEXT,__objc_methname,cstring_literals");
 				mark_as_used (ctx->module, name_var);
@@ -12669,7 +12798,18 @@ MONO_RESTORE_WARNING
 				emit_volatile_store (ctx, ins->dreg);
 #ifdef TARGET_WASM
 			//if (vreg_is_ref (cfg, ins->dreg) && ctx->values [ins->dreg])
-			if (vreg_is_ref (cfg, ins->dreg) && ctx->values [ins->dreg] && ins->opcode != OP_MOVE && ins->opcode != OP_AOTCONST)
+			/*
+			 * OP_MOVE dests need pinning too. A MOVE emits no LLVM instruction, so the dest is an SSA
+			 * alias of the source and used to rely on the source staying rooted. That fails when the
+			 * source is an address-taken variable: emit_gc_pin skips those (they live in their stack
+			 * slot instead), so overwriting the variable drops the only root and leaves the alias
+			 * holding an object rooted nowhere. See dotnet/runtime#130592.
+			 *
+			 * OP_AOTCONST stays excluded - those dests are GOT loads of ldstr literals and type/method
+			 * handles, already rooted by the loader's interned tables.
+			 */
+			if (vreg_is_ref (cfg, ins->dreg) && ctx->values [ins->dreg] && ins->opcode != OP_AOTCONST &&
+				(ins->opcode != OP_MOVE || move_needs_gc_pin (ctx, ins)))
 				emit_gc_pin (ctx, builder, ins->dreg);
 #endif
 		}
@@ -12830,6 +12970,7 @@ free_ctx (EmitContext *ctx)
 	g_free (ctx->is_dead);
 	g_free (ctx->unreachable);
 	g_free (ctx->gc_var_indexes);
+	g_free (ctx->vreg_defcount);
 	g_free (ctx->param_etypes);
 	g_ptr_array_free (ctx->phi_values, TRUE);
 	g_free (ctx->bblocks);
@@ -13438,6 +13579,9 @@ emit_method_inner (EmitContext *ctx)
 	/*
 	 * Second pass: generate code.
 	 */
+#ifdef TARGET_WASM
+	compute_vreg_defcounts (ctx);
+#endif
 	// Emit entry point
 	entry_builder = create_builder (ctx);
 	entry_bb = get_bb (ctx, cfg->bb_entry);
@@ -13619,7 +13763,7 @@ after_codegen_1:
 		LLVMValueRef name_var = LLVMAddGlobal (ctx->lmodule, type, "missing_method_name");
 		LLVMSetVisibility (name_var, LLVMHiddenVisibility);
 		LLVMSetLinkage (name_var, LLVMInternalLinkage);
-		LLVMSetInitializer (name_var, mono_llvm_create_constant_data_array ((guint8*)name, len + 1));
+		LLVMSetInitializer (name_var, mono_llvm_create_constant_data_array (ctx->module->context, (guint8*)name, len + 1));
 		mono_llvm_set_is_constant (name_var);
 		g_free (name);
 
@@ -14058,7 +14202,7 @@ add_types (MonoLLVMModule *module)
 void
 mono_llvm_init (gboolean enable_jit)
 {
-	ptr_t = mono_llvm_get_ptr_type ();
+	ptr_t = mono_llvm_get_ptr_type (LLVMGetGlobalContext ());
 
 	intrin_types [0][0] = i1_t = LLVMInt8Type ();
 	intrin_types [0][1] = i2_t = LLVMInt16Type ();
@@ -14469,7 +14613,7 @@ mono_llvm_emit_aot_data_aligned (const char *symbol, guint8 *data, int data_len,
 	d = LLVMAddGlobal (module->lmodule, type, symbol);
 	LLVMSetVisibility (d, LLVMHiddenVisibility);
 	LLVMSetLinkage (d, LLVMInternalLinkage);
-	LLVMSetInitializer (d, mono_llvm_create_constant_data_array (data, data_len));
+	LLVMSetInitializer (d, mono_llvm_create_constant_data_array (module->context, data, data_len));
 	if (align != 1)
 		LLVMSetAlignment (d, align);
 	mono_llvm_set_is_constant (d);
@@ -14911,7 +15055,7 @@ mono_llvm_emit_aot_module (const char *filename, const char *cu_name)
 			LLVMDeleteGlobal (cfg->llvm_dummy_info_var);
 			} else {
 				// FIXME: How can this happen ?
-				LLVMSetInitializer (cfg->llvm_dummy_info_var, mono_llvm_create_constant_data_array (NULL, 0));
+				LLVMSetInitializer (cfg->llvm_dummy_info_var, mono_llvm_create_constant_data_array (module->context, NULL, 0));
 			}
 		}
 	}

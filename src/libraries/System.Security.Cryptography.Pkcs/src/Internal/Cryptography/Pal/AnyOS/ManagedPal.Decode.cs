@@ -80,28 +80,16 @@ namespace Internal.Cryptography.Pal.AnyOS
 
         private static byte[] CopyContent(ReadOnlySpan<byte> encodedMessage)
         {
-            unsafe
+            ValueAsnReader reader = new ValueAsnReader(encodedMessage, AsnEncodingRules.BER);
+
+            ValueContentInfoAsn.Decode(ref reader, out ValueContentInfoAsn parsedContentInfo);
+
+            if (parsedContentInfo.ContentType != Oids.Pkcs7Enveloped)
             {
-                fixed (byte* pin = encodedMessage)
-                {
-                    using (var manager = new PointerMemoryManager<byte>(pin, encodedMessage.Length))
-                    {
-                        AsnValueReader reader = new AsnValueReader(encodedMessage, AsnEncodingRules.BER);
-
-                        ContentInfoAsn.Decode(
-                            ref reader,
-                            manager.Memory,
-                            out ContentInfoAsn parsedContentInfo);
-
-                        if (parsedContentInfo.ContentType != Oids.Pkcs7Enveloped)
-                        {
-                            throw new CryptographicException(SR.Cryptography_Cms_InvalidMessageType);
-                        }
-
-                        return parsedContentInfo.Content.ToArray();
-                    }
-                }
+                throw new CryptographicException(SR.Cryptography_Cms_InvalidMessageType);
             }
+
+            return parsedContentInfo.Content.ToArray();
         }
     }
 }

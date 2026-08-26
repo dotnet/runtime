@@ -3474,7 +3474,7 @@ namespace System.Runtime.Intrinsics.Arm
             /// </summary>
             public static unsafe void StoreSelectedScalar(short* address, (Vector128<short> value1, Vector128<short> value2, Vector128<short> value3, Vector128<short> value4) value, [ConstantExpected(Max = (byte)(7))] byte index) { throw new PlatformNotSupportedException(); }
 
-           /// <summary>
+            /// <summary>
             ///   <para>void vst4_lane_s16 (int16_t * ptr, int16x8x4_t val, const int lane)</para>
             ///   <para>  A64: ST4 { Vt.8H, Vt+1.8H, Vt+2.8H, Vt+3.8H }[index], [Xn]</para>
             /// </summary>

@@ -9,13 +9,14 @@ using Xunit.Abstractions;
 namespace System.Net.Quic.Tests
 {
     [Collection(nameof(QuicTestCollection))]
+    [ConditionalClass(typeof(QuicTestBase))]
     public class MsQuicPlatformDetectionTests : QuicTestBase
     {
         public MsQuicPlatformDetectionTests(ITestOutputHelper output) : base(output) { }
 
         public static bool IsQuicUnsupported => !IsSupported;
 
-        [ConditionalFact(nameof(IsQuicUnsupported))]
+        [ConditionalFact(typeof(MsQuicPlatformDetectionTests), nameof(IsQuicUnsupported))]
         public async Task UnsupportedPlatforms_ThrowsPlatformNotSupportedException()
         {
             PlatformNotSupportedException listenerEx = await Assert.ThrowsAsync<PlatformNotSupportedException>(async () => await CreateQuicListener());

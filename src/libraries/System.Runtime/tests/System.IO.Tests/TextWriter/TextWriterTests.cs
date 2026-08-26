@@ -4,6 +4,7 @@
 using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
@@ -1049,6 +1050,7 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
+        [UnconditionalSuppressMessage("Trimming", "IL2075", Justification = "Test is skipped under trimming via IsNotBuiltWithAggressiveTrimming.")]
         public void CreateBroadcasting_AllMethodsOverridden()
         {
             HashSet<string> exempted = ["Close", "Dispose", "get_NewLine", "set_NewLine"];

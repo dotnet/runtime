@@ -344,21 +344,21 @@ namespace System.Net.NetworkInformation
             IPAddress address = new IPAddress(reply.address);
             IPStatus ipStatus = GetStatusFromCode((int)reply.status);
 
-            long rtt;
+            // The ICMP_ECHO_REPLY RoundTripTime field is always populated by the OS
+            // for any received reply, regardless of status (e.g. TTL expired, unreachable).
+            long rtt = reply.roundTripTime;
             PingOptions? options;
             byte[] buffer;
 
             if (ipStatus == IPStatus.Success)
             {
                 // Only copy the data if we succeed w/ the ping operation.
-                rtt = reply.roundTripTime;
                 options = new PingOptions(reply.options.ttl, (reply.options.flags & DontFragmentFlag) > 0);
                 buffer = new byte[reply.dataSize];
                 Marshal.Copy(reply.data, buffer, 0, reply.dataSize);
             }
             else
             {
-                rtt = 0;
                 options = null;
                 buffer = Array.Empty<byte>();
             }
@@ -371,19 +371,19 @@ namespace System.Net.NetworkInformation
             IPAddress address = new IPAddress(reply.Address.Address, reply.Address.ScopeID);
             IPStatus ipStatus = GetStatusFromCode((int)reply.Status);
 
-            long rtt;
+            // The ICMPV6_ECHO_REPLY RoundTripTime field is always populated by the OS
+            // for any received reply, regardless of status (e.g. TTL expired, unreachable).
+            long rtt = reply.RoundTripTime;
             byte[] buffer;
 
             if (ipStatus == IPStatus.Success)
             {
                 // Only copy the data if we succeed w/ the ping operation.
-                rtt = reply.RoundTripTime;
                 buffer = new byte[sendSize];
                 Marshal.Copy(dataPtr + 36, buffer, 0, sendSize);
             }
             else
             {
-                rtt = 0;
                 buffer = Array.Empty<byte>();
             }
 

@@ -126,8 +126,8 @@ namespace System.Speech.Internal.SrgsCompiler
 
         internal class CfgResource
         {
-            internal string name;
-            internal byte[] data;
+            internal string? name;
+            internal byte[]? data;
         }
 
         #endregion
@@ -135,10 +135,10 @@ namespace System.Speech.Internal.SrgsCompiler
         #region Internal Fields
 
         // 'C#', 'VB' or 'JScript'
-        internal string _language = "C#";
+        internal string? _language = "C#";
 
         // namespace for the class wrapping the inline code
-        internal string _namespace;
+        internal string? _namespace;
 
         // namespace for the class wrapping the inline code
         internal List<Rule> _rules = new();
@@ -156,7 +156,7 @@ namespace System.Speech.Internal.SrgsCompiler
         internal Collection<string> _importNamespaces = new();
 
         // Key file for the strong name
-        internal string _keyFile;
+        internal string? _keyFile;
 
         // CFG scripts definition
         internal Collection<ScriptRef> _scriptRefs = new();

@@ -21,7 +21,7 @@ import { check, error, info, warn, debug, fastCheck, normalizeException } from "
 import { dotnetAssert, dotnetLoaderExports, dotnetLogger, dotnetUpdateInternals, dotnetUpdateInternalsSubscriber } from "./cross-module";
 import { rejectRunMainPromise, resolveRunMainPromise, getRunMainPromise, abortStartup } from "./run";
 import { createPromiseCompletionSource, getPromiseCompletionSource, isControllablePromise } from "./promise-completion-source";
-import { instantiateMainWasm } from "./assets";
+import { fetchLazyAssembly, fetchSatelliteAssemblies, instantiateMainWasm } from "./assets";
 
 export function dotnetInitializeModule(): RuntimeAPI {
 
@@ -66,7 +66,10 @@ export function dotnetInitializeModule(): RuntimeAPI {
         addOnExitListener,
         abortStartup,
         quitNow,
+        exit,
         normalizeException,
+        fetchSatelliteAssemblies,
+        fetchLazyAssembly,
     };
     Object.assign(dotnetLoaderExports, loaderFunctions);
     const logger: LoggerType = {
@@ -113,7 +116,10 @@ export function dotnetInitializeModule(): RuntimeAPI {
             dotnetLoaderExports.addOnExitListener,
             dotnetLoaderExports.abortStartup,
             dotnetLoaderExports.quitNow,
+            dotnetLoaderExports.exit,
             dotnetLoaderExports.normalizeException,
+            dotnetLoaderExports.fetchSatelliteAssemblies,
+            dotnetLoaderExports.fetchLazyAssembly,
         ];
     }
 

@@ -4,13 +4,29 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
+using System.Threading;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
 
 namespace Microsoft.Diagnostics.DataContractReader;
 
 internal static class Entrypoints
 {
+    private sealed class CdacHandle
+    {
+        internal Target Target { get; }
+        internal Lock ApiLock { get; }
+
+        internal CdacHandle(Target target, Lock apiLock)
+        {
+            Target = target;
+            ApiLock = apiLock;
+        }
+    }
+
     private const string CDAC = "cdac_reader_";
+
+    // Native CONTEXT and DT_CONTEXT declarations require 16-byte alignment.
+    private const nuint ContextAlignment = 16;
 
     [UnmanagedCallersOnly(EntryPoint = $"{CDAC}init")]
     private static unsafe int Init(
@@ -18,48 +34,141 @@ internal static class Entrypoints
         delegate* unmanaged<ulong, byte*, uint, void*, int> readFromTarget,
         delegate* unmanaged<ulong, byte*, uint, void*, int> writeToTarget,
         delegate* unmanaged<uint, uint, uint, byte*, void*, int> readThreadContext,
+        delegate* unmanaged<uint, uint, byte*, void*, int> writeThreadContext,
+        delegate* unmanaged<uint, ulong*, void*, int> allocVirtual,
         void* delegateContext,
         IntPtr* handle)
     {
-        // TODO: [cdac] Better error code/details
-        if (!ContractDescriptorTarget.TryCreate(
-            descriptor,
-            (address, buffer) =>
-            {
-                fixed (byte* bufferPtr = buffer)
-                {
-                    return readFromTarget(address, bufferPtr, (uint)buffer.Length, delegateContext);
-                }
-            },
-            (address, buffer) =>
-            {
-                fixed (byte* bufferPtr = buffer)
-                {
-                    return writeToTarget(address, bufferPtr, (uint)buffer.Length, delegateContext);
-                }
-            },
-            (threadId, contextFlags, buffer) =>
-            {
-                fixed (byte* bufferPtr = buffer)
-                {
-                    return readThreadContext(threadId, contextFlags, (uint)buffer.Length, bufferPtr, delegateContext);
-                }
-            },
-            [],
-            out ContractDescriptorTarget? target))
-            return -1;
+        try
+        {
+            if (handle == null)
+                return HResults.E_INVALIDARG;
+            *handle = IntPtr.Zero;
 
-        GCHandle gcHandle = GCHandle.Alloc(target);
-        *handle = GCHandle.ToIntPtr(gcHandle);
-        return 0;
+            // Build the allocVirtual delegate if the caller provided a callback
+            ContractDescriptorTarget.AllocVirtualDelegate allocDelegate = (ulong size, out ulong allocatedAddress) =>
+            {
+                allocatedAddress = 0;
+                return HResults.E_NOTIMPL;
+            };
+
+            if (allocVirtual != null)
+            {
+                allocDelegate = (ulong size, out ulong allocatedAddress) =>
+                {
+                    if (size > uint.MaxValue)
+                    {
+                        allocatedAddress = 0;
+                        return HResults.E_INVALIDARG;
+                    }
+
+                    fixed (ulong* addrPtr = &allocatedAddress)
+                    {
+                        return allocVirtual((uint)size, addrPtr, delegateContext);
+                    }
+                };
+            }
+
+            // Build the setThreadContext delegate if the caller provided a callback
+            ContractDescriptorTarget.SetTargetThreadContextDelegate setThreadContextDelegate =
+                (uint threadId, ReadOnlySpan<byte> context) => HResults.E_NOTIMPL;
+
+            if (writeThreadContext != null)
+            {
+                setThreadContextDelegate = (uint threadId, ReadOnlySpan<byte> context) =>
+                {
+                    fixed (byte* contextPtr = context)
+                    {
+                        if (((nuint)contextPtr & (ContextAlignment - 1)) == 0)
+                        {
+                            return writeThreadContext(threadId, (uint)context.Length, contextPtr, delegateContext);
+                        }
+
+                        byte* alignedBuffer = (byte*)NativeMemory.AlignedAlloc((nuint)context.Length, ContextAlignment);
+                        try
+                        {
+                            context.CopyTo(new Span<byte>(alignedBuffer, context.Length));
+                            return writeThreadContext(threadId, (uint)context.Length, alignedBuffer, delegateContext);
+                        }
+                        finally
+                        {
+                            NativeMemory.AlignedFree(alignedBuffer);
+                        }
+                    }
+                };
+            }
+
+            ContractDescriptorTarget target = ContractDescriptorTarget.Create(
+                descriptor,
+                (address, buffer) =>
+                {
+                    fixed (byte* bufferPtr = buffer)
+                    {
+                        return readFromTarget(address, bufferPtr, (uint)buffer.Length, delegateContext);
+                    }
+                },
+                (address, buffer) =>
+                {
+                    fixed (byte* bufferPtr = buffer)
+                    {
+                        return writeToTarget(address, bufferPtr, (uint)buffer.Length, delegateContext);
+                    }
+                },
+                (threadId, contextFlags, buffer) =>
+                {
+                    fixed (byte* bufferPtr = buffer)
+                    {
+                        if (((nuint)bufferPtr & (ContextAlignment - 1)) == 0)
+                        {
+                            return readThreadContext(threadId, contextFlags, (uint)buffer.Length, bufferPtr, delegateContext);
+                        }
+
+                        byte* alignedBuffer = (byte*)NativeMemory.AlignedAlloc((nuint)buffer.Length, ContextAlignment);
+                        NativeMemory.Clear(alignedBuffer, (nuint)buffer.Length);
+                        try
+                        {
+                            int hr = readThreadContext(threadId, contextFlags, (uint)buffer.Length, alignedBuffer, delegateContext);
+                            if (hr >= 0)
+                            {
+                                new ReadOnlySpan<byte>(alignedBuffer, buffer.Length).CopyTo(buffer);
+                            }
+                            return hr;
+                        }
+                        finally
+                        {
+                            NativeMemory.AlignedFree(alignedBuffer);
+                        }
+                    }
+                },
+                setThreadContextDelegate,
+                allocDelegate,
+                [Contracts.CoreCLRContracts.Register]);
+
+            GCHandle gcHandle = GCHandle.Alloc(new CdacHandle(target, new Lock()));
+            *handle = GCHandle.ToIntPtr(gcHandle);
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            int hr = ex.HResult;
+            return hr < 0 ? hr : HResults.E_FAIL;
+        }
     }
 
     [UnmanagedCallersOnly(EntryPoint = $"{CDAC}free")]
     private static unsafe int Free(IntPtr handle)
     {
-        GCHandle h = GCHandle.FromIntPtr(handle);
-        h.Free();
-        return 0;
+        try
+        {
+            GCHandle h = GCHandle.FromIntPtr(handle);
+            h.Free();
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            int hr = ex.HResult;
+            return hr < 0 ? hr : HResults.E_FAIL;
+        }
     }
 
     /// <summary>
@@ -72,24 +181,144 @@ internal static class Entrypoints
     [UnmanagedCallersOnly(EntryPoint = $"{CDAC}create_sos_interface")]
     private static unsafe int CreateSosInterface(IntPtr handle, IntPtr legacyImplPtr, nint* obj)
     {
-        ComWrappers cw = new StrategyBasedComWrappers();
-        Target? target = GCHandle.FromIntPtr(handle).Target as Target;
-        if (target == null)
-            return -1;
+        try
+        {
+            if (obj == null)
+                return HResults.E_INVALIDARG;
+            *obj = IntPtr.Zero;
 
-        object? legacyImpl = legacyImplPtr != IntPtr.Zero
-            ? cw.GetOrCreateObjectForComInstance(legacyImplPtr, CreateObjectFlags.None)
-            : null;
-        Legacy.SOSDacImpl impl = new(target, legacyImpl);
-        nint ptr = cw.GetOrCreateComInterfaceForObject(impl, CreateComInterfaceFlags.None);
-        *obj = ptr;
-        return 0;
+            CdacHandle? cdacHandle = GCHandle.FromIntPtr(handle).Target as CdacHandle;
+            if (cdacHandle is null)
+                return HResults.E_INVALIDARG;
+
+            object? legacyImpl = legacyImplPtr != IntPtr.Zero
+                ? ComInterfaceMarshaller<ISOSDacInterface>.ConvertToManaged((void*)legacyImplPtr)
+                : null;
+
+            // Without a legacy implementation to absorb individually-unimplemented APIs, validate
+            // the complete data-access contract set before publishing the interface.
+            if (legacyImpl is null)
+                Contracts.CoreCLRContracts.ValidateForDataAccess(cdacHandle.Target, cdacHandle.ApiLock);
+
+            Legacy.SOSDacImpl impl = new(cdacHandle.Target, legacyImpl, cdacHandle.ApiLock);
+            nint ptr = (nint)ComInterfaceMarshaller<ISOSDacInterface>.ConvertToUnmanaged(impl);
+            *obj = ptr;
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            if (obj != null)
+                *obj = IntPtr.Zero;
+            int hr = ex.HResult;
+            return hr < 0 ? hr : HResults.E_FAIL;
+        }
+    }
+
+    /// <summary>
+    /// Create the DacDbi interface implementation.
+    /// </summary>
+    /// <param name="handle">Handle created via cdac initialization</param>
+    /// <param name="legacyImplPtr">Optional. Pointer to legacy implementation of IDacDbiInterface</param>
+    /// <param name="obj"><c>IUnknown</c> pointer that can be queried for IDacDbiInterface</param>
+    [UnmanagedCallersOnly(EntryPoint = $"{CDAC}create_dacdbi_interface")]
+    private static unsafe int CreateDacDbiInterface(IntPtr handle, IntPtr legacyImplPtr, nint* obj)
+    {
+        object? legacyObj = null;
+        try
+        {
+            if (obj == null)
+                return HResults.E_INVALIDARG;
+            if (handle == IntPtr.Zero)
+            {
+                *obj = IntPtr.Zero;
+                return HResults.E_NOTIMPL;
+            }
+
+            CdacHandle? cdacHandle = GCHandle.FromIntPtr(handle).Target as CdacHandle;
+            if (cdacHandle is null)
+            {
+                *obj = IntPtr.Zero;
+                return HResults.E_INVALIDARG;
+            }
+
+            if (legacyImplPtr != IntPtr.Zero)
+            {
+                legacyObj = UniqueComInterfaceMarshaller<IDacDbiInterface>.ConvertToManaged((void*)legacyImplPtr);
+            }
+
+            Legacy.DacDbiImpl impl = new(cdacHandle.Target, legacyObj, cdacHandle.ApiLock);
+            *obj = (nint)ComInterfaceMarshaller<IDacDbiInterface>.ConvertToUnmanaged(impl);
+            legacyObj = null;
+            return HResults.S_OK;
+        }
+        catch (Exception ex)
+        {
+            if (obj != null)
+                *obj = IntPtr.Zero;
+            int hr = ex.HResult;
+            return hr < 0 ? hr : HResults.E_FAIL;
+        }
+        finally
+        {
+            (legacyObj as ComObject)?.FinalRelease();
+        }
     }
 
     [UnmanagedCallersOnly(EntryPoint = "CLRDataCreateInstanceWithFallback")]
     private static unsafe int CLRDataCreateInstanceWithFallback(Guid* pIID, IntPtr /*ICLRDataTarget*/ pLegacyTarget, IntPtr pLegacyImpl, void** iface)
     {
         return CLRDataCreateInstanceImpl(pIID, pLegacyTarget, pLegacyImpl, iface);
+    }
+
+    [UnmanagedCallersOnly(EntryPoint = "DacDbiInterfaceInstance")]
+    private static unsafe int DacDbiInterfaceInstance(
+        IntPtr /*ICorDebugDataTarget*/ pTarget,
+        ulong runtimeBase,
+        ulong contractDescriptorAddress,
+        IntPtr /*IDacDbiInterface::IAllocator*/ pAllocator,
+        IntPtr /*IDacDbiInterface::IMetaDataLookup*/ pMetaDataLookup,
+        void** iface,
+        void** legacyDac)
+    {
+        // The allocator and metadata lookup pointers are not used by the managed implementation,
+        // so, unlike the native DAC export, they are not required.
+        if (pTarget == IntPtr.Zero
+            || runtimeBase == 0
+            || contractDescriptorAddress == 0
+            || iface == null
+            || legacyDac == null)
+        {
+            return HResults.E_INVALIDARG;
+        }
+
+        *iface = null;
+        *legacyDac = null;
+
+        ComObject? dataTargetComObject = null;
+        try
+        {
+            ICorDebugDataTarget dataTarget =
+                UniqueComInterfaceMarshaller<ICorDebugDataTarget>.ConvertToManaged((void*)pTarget)!;
+            dataTargetComObject = (ComObject)(object)dataTarget;
+            ContractDescriptorTarget target = CreateTargetFromCorDebugDataTarget(dataTarget, contractDescriptorAddress);
+            Legacy.DacDbiImpl impl = new(target, legacyObj: null, apiLock: new Lock(), dataTargetComObject: dataTargetComObject);
+            *iface = ComInterfaceMarshaller<IDacDbiInterface>.ConvertToUnmanaged(impl);
+            dataTargetComObject = null;
+            return HResults.S_OK;
+        }
+        catch (Exception ex)
+        {
+            if (iface != null)
+                *iface = null;
+            if (legacyDac != null)
+                *legacyDac = null;
+            int hr = ex.HResult;
+            return hr < 0 ? hr : HResults.E_FAIL;
+        }
+        finally
+        {
+            dataTargetComObject?.FinalRelease();
+        }
     }
 
     // Same export name and signature as DAC CLRDataCreateInstance in daccess.cpp
@@ -99,19 +328,50 @@ internal static class Entrypoints
         return CLRDataCreateInstanceImpl(pIID, pLegacyTarget, IntPtr.Zero, iface);
     }
 
+    // Creates a cDAC data-access instance from an explicit contract descriptor address,
+    // so the data target does not need to implement ICLRContractLocator.
+    [UnmanagedCallersOnly(EntryPoint = "DbgShimCreateInstanceFromContractDescriptor")]
+    private static unsafe int DbgShimCreateInstanceFromContractDescriptor(Guid* pIID, IntPtr /*ICLRDataTarget*/ pLegacyTarget, ulong contractDescriptorAddr, void** iface)
+    {
+        if (pLegacyTarget == IntPtr.Zero || contractDescriptorAddr == 0 || iface == null)
+            return HResults.E_INVALIDARG;
+        *iface = null;
+
+        try
+        {
+            object legacyTarget = ComInterfaceMarshaller<ICLRDataTarget>.ConvertToManaged((void*)pLegacyTarget)!;
+            return CreateInstanceFromContractDescriptorCore(pIID, legacyTarget, contractDescriptorAddr, legacyImpl: null, new Lock(), iface);
+        }
+        catch (Exception ex)
+        {
+            int hr = ex.HResult;
+            return hr < 0 ? hr : HResults.E_FAIL;
+        }
+    }
+
     private static unsafe int CLRDataCreateInstanceImpl(Guid* pIID, IntPtr /*ICLRDataTarget*/ pLegacyTarget, IntPtr pLegacyImpl, void** iface)
     {
         if (pLegacyTarget == IntPtr.Zero || iface == null)
             return HResults.E_INVALIDARG;
         *iface = null;
 
-        ComWrappers cw = new StrategyBasedComWrappers();
-        object legacyTarget = cw.GetOrCreateObjectForComInstance(pLegacyTarget, CreateObjectFlags.None);
-        object? legacyImpl = pLegacyImpl != IntPtr.Zero ?
-            cw.GetOrCreateObjectForComInstance(pLegacyImpl, CreateObjectFlags.None) : null;
+        try
+        {
+            return CLRDataCreateInstanceCore(pIID, pLegacyTarget, pLegacyImpl, new Lock(), iface);
+        }
+        catch (Exception ex)
+        {
+            int hr = ex.HResult;
+            return hr < 0 ? hr : HResults.E_FAIL;
+        }
+    }
 
-        ICLRDataTarget dataTarget = legacyTarget as ICLRDataTarget ?? throw new ArgumentException(
-            $"{nameof(pLegacyTarget)} does not implement {nameof(ICLRDataTarget)}", nameof(pLegacyTarget));
+    private static unsafe int CLRDataCreateInstanceCore(Guid* pIID, IntPtr /*ICLRDataTarget*/ pLegacyTarget, IntPtr pLegacyImpl, Lock apiLock, void** iface)
+    {
+        object legacyTarget = ComInterfaceMarshaller<ICLRDataTarget>.ConvertToManaged((void*)pLegacyTarget)!;
+        object? legacyImpl = pLegacyImpl != IntPtr.Zero ?
+            ComInterfaceMarshaller<ISOSDacInterface>.ConvertToManaged((void*)pLegacyImpl) : null;
+
         ICLRContractLocator contractLocator = legacyTarget as ICLRContractLocator ?? throw new ArgumentException(
             $"{nameof(pLegacyTarget)} does not implement {nameof(ICLRContractLocator)}", nameof(pLegacyTarget));
 
@@ -120,10 +380,46 @@ internal static class Entrypoints
         if (hr != 0)
         {
             throw new InvalidOperationException(
-                $"{nameof(ICLRContractLocator)} failed to fetch the contract descriptor with HRESULT: 0x{hr:x}.");
+                $"{nameof(ICLRContractLocator)} failed to fetch the contract descriptor with HRESULT: 0x{hr:x}.")
+            {
+                HResult = CdacHResults.CDAC_E_DESCRIPTOR_NOT_FOUND
+            };
         }
 
-        if (!ContractDescriptorTarget.TryCreate(
+        return CreateInstanceFromContractDescriptorCore(pIID, legacyTarget, contractAddress, legacyImpl, apiLock, iface);
+    }
+
+    private static unsafe int CreateInstanceFromContractDescriptorCore(Guid* pIID, object legacyTarget, ulong contractAddress, object? legacyImpl, Lock apiLock, void** iface)
+    {
+        ICLRDataTarget dataTarget = legacyTarget as ICLRDataTarget ?? throw new ArgumentException(
+            $"Data target does not implement {nameof(ICLRDataTarget)}", nameof(legacyTarget));
+
+        // Try to get ICLRDataTarget2 for memory allocation support (optional)
+        ICLRDataTarget2? dataTarget2 = legacyTarget as ICLRDataTarget2;
+
+        // Build the allocVirtual delegate if the target supports ICLRDataTarget2
+        ContractDescriptorTarget.AllocVirtualDelegate allocVirtual = (ulong size, out ulong allocatedAddress) =>
+        {
+            allocatedAddress = 0;
+            return HResults.E_NOTIMPL;
+        };
+
+        if (dataTarget2 is not null)
+        {
+            // Windows virtual memory allocation flags used by ICLRDataTarget2::AllocVirtual.
+            const uint MEM_COMMIT = 0x1000;
+            const uint PAGE_READWRITE = 0x04;
+
+            allocVirtual = (ulong size, out ulong allocatedAddress) =>
+            {
+                ClrDataAddress addr;
+                int result = dataTarget2.AllocVirtual(0, (uint)size, MEM_COMMIT, PAGE_READWRITE, &addr);
+                allocatedAddress = (ulong)addr;
+                return result;
+            };
+        }
+
+        ContractDescriptorTarget target = ContractDescriptorTarget.Create(
             contractAddress,
             (address, buffer) =>
             {
@@ -148,20 +444,137 @@ internal static class Entrypoints
                     return dataTarget.GetThreadContext(threadId, contextFlags, (uint)bufferToFill.Length, bufferPtr);
                 }
             },
-            [],
-            out ContractDescriptorTarget? target))
-        {
-            return -1;
-        }
+            (threadId, context) =>
+            {
+                fixed (byte* contextPtr = context)
+                {
+                    if (((nuint)contextPtr & (ContextAlignment - 1)) == 0)
+                    {
+                        return dataTarget.SetThreadContext(threadId, (uint)context.Length, contextPtr);
+                    }
 
-        Legacy.SOSDacImpl impl = new(target, legacyImpl);
-        nint ccw = cw.GetOrCreateComInterfaceForObject(impl, CreateComInterfaceFlags.None);
-        Marshal.QueryInterface(ccw, *pIID, out nint ptrToIface);
-        *iface = (void*)ptrToIface;
+                    byte* alignedBuffer = (byte*)NativeMemory.AlignedAlloc((nuint)context.Length, ContextAlignment);
+                    try
+                    {
+                        context.CopyTo(new Span<byte>(alignedBuffer, context.Length));
+                        return dataTarget.SetThreadContext(threadId, (uint)context.Length, alignedBuffer);
+                    }
+                    finally
+                    {
+                        NativeMemory.AlignedFree(alignedBuffer);
+                    }
+                }
+            },
+            allocVirtual,
+            [Contracts.CoreCLRContracts.Register]);
+
+        // Without a legacy implementation to absorb individually-unimplemented APIs, validate
+        // the complete data-access contract set before publishing the interface.
+        if (legacyImpl is null)
+            Contracts.CoreCLRContracts.ValidateForDataAccess(target);
+
+        Legacy.SOSDacImpl impl = new(target, legacyImpl, apiLock);
+        void* ccw = ComInterfaceMarshaller<IXCLRDataProcess>.ConvertToUnmanaged(impl);
+        int hrQI = Marshal.QueryInterface((nint)ccw, *pIID, out nint ptrToIface);
 
         // Decrement reference count on ccw because QI incremented it
-        Marshal.Release(ccw);
+        ComInterfaceMarshaller<IXCLRDataProcess>.Free(ccw);
 
+        if (hrQI < 0)
+            return hrQI;
+
+        *iface = (void*)ptrToIface;
         return 0;
+    }
+
+    private static unsafe ContractDescriptorTarget CreateTargetFromCorDebugDataTarget(object targetObject, ulong contractAddress)
+    {
+        ICorDebugDataTarget dataTarget = targetObject as ICorDebugDataTarget ?? throw new ArgumentException(
+            $"Data target does not implement {nameof(ICorDebugDataTarget)}", nameof(targetObject));
+        ICorDebugMutableDataTarget? mutableDataTarget = targetObject as ICorDebugMutableDataTarget;
+
+        return ContractDescriptorTarget.Create(
+            contractAddress,
+            (address, buffer) =>
+            {
+                fixed (byte* bufferPtr = buffer)
+                {
+                    uint bytesRead;
+                    int hr = dataTarget.ReadVirtual(address, bufferPtr, (uint)buffer.Length, &bytesRead);
+                    return hr >= 0 && bytesRead != (uint)buffer.Length
+                        ? CorDbgHResults.CORDBG_E_READVIRTUAL_FAILURE
+                        : hr;
+                }
+            },
+            (address, buffer) =>
+            {
+                if (mutableDataTarget is null)
+                    return CorDbgHResults.CORDBG_E_TARGET_READONLY;
+
+                fixed (byte* bufferPtr = buffer)
+                {
+                    return mutableDataTarget.WriteVirtual(address, bufferPtr, (uint)buffer.Length);
+                }
+            },
+            (threadId, contextFlags, bufferToFill) =>
+            {
+                fixed (byte* bufferPtr = bufferToFill)
+                {
+                    if (((nuint)bufferPtr & (ContextAlignment - 1)) == 0)
+                    {
+                        return dataTarget.GetThreadContext(threadId, contextFlags, (uint)bufferToFill.Length, bufferPtr);
+                    }
+
+                    byte* alignedBuffer = (byte*)NativeMemory.AlignedAlloc((nuint)bufferToFill.Length, ContextAlignment);
+                    NativeMemory.Clear(alignedBuffer, (nuint)bufferToFill.Length);
+                    try
+                    {
+                        int hr = dataTarget.GetThreadContext(
+                            threadId,
+                            contextFlags,
+                            (uint)bufferToFill.Length,
+                            alignedBuffer);
+                        if (hr >= 0)
+                        {
+                            new ReadOnlySpan<byte>(alignedBuffer, bufferToFill.Length).CopyTo(bufferToFill);
+                        }
+                        return hr;
+                    }
+                    finally
+                    {
+                        NativeMemory.AlignedFree(alignedBuffer);
+                    }
+                }
+            },
+            (threadId, context) =>
+            {
+                if (mutableDataTarget is null)
+                    return CorDbgHResults.CORDBG_E_TARGET_READONLY;
+
+                fixed (byte* contextPtr = context)
+                {
+                    if (((nuint)contextPtr & (ContextAlignment - 1)) == 0)
+                    {
+                        return mutableDataTarget.SetThreadContext(threadId, (uint)context.Length, contextPtr);
+                    }
+
+                    byte* alignedBuffer = (byte*)NativeMemory.AlignedAlloc((nuint)context.Length, ContextAlignment);
+                    try
+                    {
+                        context.CopyTo(new Span<byte>(alignedBuffer, context.Length));
+                        return mutableDataTarget.SetThreadContext(threadId, (uint)context.Length, alignedBuffer);
+                    }
+                    finally
+                    {
+                        NativeMemory.AlignedFree(alignedBuffer);
+                    }
+                }
+            },
+            (ulong size, out ulong allocatedAddress) =>
+            {
+                allocatedAddress = 0;
+                return HResults.E_NOTIMPL;
+            },
+            [Contracts.CoreCLRContracts.Register]);
     }
 }

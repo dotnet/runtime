@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 using System;
 
 namespace Microsoft.Diagnostics.DataContractReader;
@@ -18,6 +19,8 @@ public readonly struct TargetPointer : IEquatable<TargetPointer>
 
     public static bool operator ==(TargetPointer left, TargetPointer right) => left.Value == right.Value;
     public static bool operator !=(TargetPointer left, TargetPointer right) => left.Value != right.Value;
+
+    public static TargetPointer PlatformMaxValue(Target target) => target.PointerSize == 4 ? Max32Bit : Max64Bit;
 
     public override bool Equals(object? obj) => obj is TargetPointer pointer && Equals(pointer);
     public bool Equals(TargetPointer other) => Value == other.Value;

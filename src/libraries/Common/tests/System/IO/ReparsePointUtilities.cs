@@ -13,6 +13,9 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+#if !NETFRAMEWORK
+using System.IO.Enumeration;
+#endif
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -184,6 +187,40 @@ public static partial class MountHelper
         return RunProcess(CreateProcessStartInfo("cmd", "/c", "mklink", "/J", junctionPath, targetPath));
     }
 
+#if !NETFRAMEWORK
+    /// <summary>
+    /// Retrieves the first appexeclink in this machine, if any.
+    /// </summary>
+    /// <returns>A string that represents a path to an appexeclink, if found, or null if not.</returns>
+    public static string? GetAppExecLinkPath()
+    {
+        string localAppDataPath = Environment.GetEnvironmentVariable("LOCALAPPDATA");
+        if (localAppDataPath is null)
+        {
+            return null;
+        }
+
+        string windowsAppsDir = Path.Join(localAppDataPath, "Microsoft", "WindowsApps");
+
+        if (!Directory.Exists(windowsAppsDir))
+        {
+            return null;
+        }
+
+        var opts = new EnumerationOptions { RecurseSubdirectories = true };
+
+        return new FileSystemEnumerable<string?>(
+            windowsAppsDir,
+            (ref FileSystemEntry entry) => entry.ToFullPath(),
+            opts)
+        {
+            ShouldIncludePredicate = (ref FileSystemEntry entry) =>
+                FileSystemName.MatchesWin32Expression("*.exe", entry.FileName) &&
+                (entry.Attributes & FileAttributes.ReparsePoint) != 0
+        }.FirstOrDefault();
+    }
+#endif
+
     public static void Mount(string volumeName, string mountPoint)
     {
         if (volumeName[volumeName.Length - 1] != Path.DirectorySeparatorChar)
@@ -206,7 +243,7 @@ public static partial class MountHelper
         Task.Delay(100).Wait(); // adding sleep for the file system to settle down so that reparse point mounting works
     }
 
-    public static void Unmount(string mountPoint)
+    public static void Unmount(string mountPoint, bool deleteDirectory = false)
     {
         if (mountPoint[mountPoint.Length - 1] != Path.DirectorySeparatorChar)
             mountPoint += Path.DirectorySeparatorChar;
@@ -214,7 +251,21 @@ public static partial class MountHelper
 
         bool r = DeleteVolumeMountPoint(mountPoint);
         if (!r)
-            throw new Exception(string.Format("Win32 error: {0}", Marshal.GetLastWin32Error()));
+        {
+            int error = Marshal.GetLastWin32Error();
+            // Ignore expected cleanup errors: 4390 (ERROR_NOT_A_REPARSE_POINT),
+            // 3 (ERROR_PATH_NOT_FOUND), 2 (ERROR_FILE_NOT_FOUND)
+            if (error != 4390 && error != 3 && error != 2)
+                throw new Exception(string.Format("Win32 error: {0}", error));
+            Console.WriteLine(string.Format("Ignoring expected Win32 error {0} while unmounting {1}", error, mountPoint));
+        }
+
+        if (deleteDirectory)
+        {
+            string dirPath = mountPoint.TrimEnd(Path.DirectorySeparatorChar);
+            if (Directory.Exists(dirPath))
+                Directory.Delete(dirPath, recursive: true);
+        }
     }
 
     private static ProcessStartInfo CreateProcessStartInfo(string fileName, params string[] arguments)

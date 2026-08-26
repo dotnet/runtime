@@ -212,6 +212,8 @@ public:
     TempDsc*         tmpGetTemp(var_types type); // get temp for the given type
     void             tmpRlsTemp(TempDsc* temp);
     TempDsc*         tmpFindNum(int temp, TEMP_USAGE_TYPE usageType = TEMP_USAGE_FREE) const;
+    TempDsc*         tmpGetNum(int temp) const;
+    bool             tmpIsUnknownSizeTemp(int tnum) const;
 
     void     tmpEnd();
     TempDsc* tmpListBeg(TEMP_USAGE_TYPE usageType = TEMP_USAGE_FREE) const;
@@ -246,24 +248,30 @@ private:
     // Used by RegSet::rsSpillChk()
     unsigned tmpGetCount; // Temps which haven't been released yet
 #endif
-    static unsigned tmpSlot(unsigned size); // which slot in tmpFree[] or tmpUsed[] to use
+    static unsigned tmpSlot(var_types type); // which slot in tmpFree[] or tmpUsed[] to use
 
     enum TEMP_CONSTANTS : unsigned
     {
 #if defined(FEATURE_SIMD)
 #if defined(TARGET_XARCH)
         TEMP_MAX_SIZE = ZMM_REGSIZE_BYTES,
-#elif defined(TARGET_ARM64)
+#elif defined(TARGET_ARM64) || defined(TARGET_WASM)
         TEMP_MAX_SIZE = FP_REGSIZE_BYTES,
-#endif // defined(TARGET_XARCH) || defined(TARGET_ARM64)
+#endif // defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_WASM)
 #else  // !FEATURE_SIMD
         TEMP_MAX_SIZE = sizeof(double),
 #endif // !FEATURE_SIMD
+
+#if defined(TARGET_ARM64) && defined(FEATURE_SIMD)
+        // There are two extra slots for temps with unknown size (TYP_SIMD/TYP_MASK)
+        TEMP_SLOT_COUNT = (TEMP_MAX_SIZE / sizeof(int)) + 2
+#else
         TEMP_SLOT_COUNT = (TEMP_MAX_SIZE / sizeof(int))
+#endif
     };
 
-    TempDsc* tmpFree[TEMP_MAX_SIZE / sizeof(int)];
-    TempDsc* tmpUsed[TEMP_MAX_SIZE / sizeof(int)];
+    TempDsc* tmpFree[TEMP_SLOT_COUNT];
+    TempDsc* tmpUsed[TEMP_SLOT_COUNT];
 };
 
 #endif // _REGSET_H

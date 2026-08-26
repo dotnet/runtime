@@ -159,5 +159,16 @@ namespace System.PrivateUri.Tests
             Assert.Equal("0.0.0.9", uri.Host);
             Assert.Equal(@"\\0.0.0.9", uri.LocalPath);
         }
+
+        [Fact]
+        public static void Uri_UncBase_WithFileRelative_DoesNotAssert()
+        {
+            // Combining a UNC file URI base with a "file:" relative URI should not trigger
+            // a debug assert in CreateThisFromUri (Debug_LeftConstructor flag must not be copied).
+            var baseUri = new Uri(@"\\aa", UriKind.Absolute);   // parses as file://aa/
+            var relUri = new Uri("file:", UriKind.Relative);
+            Uri resolved = new Uri(baseUri, relUri);
+            Assert.Equal("file://aa/", resolved.AbsoluteUri);
+        }
     }
 }

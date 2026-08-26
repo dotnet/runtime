@@ -297,86 +297,6 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/21918", TestPlatforms.AnyUnix)]
-        public async Task Write_TooMuch_ThrowsProtocolViolationException()
-        {
-            using (HttpClient client = new HttpClient())
-            {
-                _ = client.GetStringAsync(_factory.ListeningUrl);
-
-                HttpListenerContext serverContext = await _listener.GetContextAsync();
-                using (HttpListenerResponse response = serverContext.Response)
-                {
-                    Stream output = response.OutputStream;
-                    byte[] responseBuffer = "A long string"u8.ToArray();
-                    response.ContentLength64 = responseBuffer.Length - 1;
-                    try
-                    {
-                        Assert.Throws<ProtocolViolationException>(() => output.Write(responseBuffer, 0, responseBuffer.Length));
-                        await Assert.ThrowsAsync<ProtocolViolationException>(() => output.WriteAsync(responseBuffer, 0, responseBuffer.Length));
-                    }
-                    finally
-                    {
-                        // Write the remaining bytes to guarantee a successful shutdown.
-                        output.Write(responseBuffer, 0, (int)response.ContentLength64);
-                        output.Close();
-                    }
-                }
-            }
-        }
-
-        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/21918", TestPlatforms.AnyUnix)]
-        public async Task Write_TooLittleAsynchronouslyAndClose_ThrowsInvalidOperationException()
-        {
-            using (HttpClient client = new HttpClient())
-            {
-                _ = client.GetStringAsync(_factory.ListeningUrl);
-
-                HttpListenerContext serverContext = await _listener.GetContextAsync();
-                using (HttpListenerResponse response = serverContext.Response)
-                {
-                    Stream output = response.OutputStream;
-
-                    byte[] responseBuffer = "A long string"u8.ToArray();
-                    response.ContentLength64 = responseBuffer.Length + 1;
-
-                    // Throws when there are bytes left to write
-                    await output.WriteAsync(responseBuffer, 0, responseBuffer.Length);
-                    Assert.Throws<InvalidOperationException>(() => output.Close());
-
-                    // Write the final byte and make sure we can close.
-                    await output.WriteAsync(new byte[1],0, 1);
-                    output.Close();
-                }
-            }
-        }
-
-        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/21918", TestPlatforms.AnyUnix)]
-        public async Task Write_TooLittleSynchronouslyAndClose_ThrowsInvalidOperationException()
-        {
-            using (HttpClient client = new HttpClient())
-            {
-                _ = client.GetStringAsync(_factory.ListeningUrl);
-
-                HttpListenerContext serverContext = await _listener.GetContextAsync();
-                using (HttpListenerResponse response = serverContext.Response)
-                {
-                    Stream output = response.OutputStream;
-
-                    byte[] responseBuffer = "A long string"u8.ToArray();
-                    response.ContentLength64 = responseBuffer.Length + 1;
-
-                    // Throws when there are bytes left to write
-                    output.Write(responseBuffer, 0, responseBuffer.Length);
-                    Assert.Throws<InvalidOperationException>(() => output.Close());
-
-                    // Write the final byte and make sure we can close.
-                    output.Write(new byte[1], 0, 1);
-                    output.Close();
-                }
-            }
-        }
-
         [ActiveIssue("https://github.com/dotnet/runtime/issues/21940")] // CI hanging frequently
         [Theory]
         [InlineData(true)]
@@ -544,36 +464,6 @@ namespace System.Net.Tests
             using (Stream outputStream = response.OutputStream)
             {
                 AssertExtensions.Throws<ArgumentNullException>("asyncResult", () => outputStream.EndWrite(null));
-            }
-        }
-
-        [PlatformSpecific(TestPlatforms.Windows)] // Unix implementation uses Socket.Begin/EndSend, which doesn't fail in this case
-        [Fact]
-        public async Task EndWrite_InvalidAsyncResult_ThrowsArgumentException()
-        {
-            using (HttpListenerResponse response1 = await _helper.GetResponse())
-            using (Stream outputStream1 = response1.OutputStream)
-            using (HttpListenerResponse response2 = await _helper.GetResponse())
-            using (Stream outputStream2 = response2.OutputStream)
-            {
-                IAsyncResult beginWriteResult = outputStream1.BeginWrite(new byte[0], 0, 0, null, null);
-
-                AssertExtensions.Throws<ArgumentException>("asyncResult", () => outputStream2.EndWrite(new CustomAsyncResult()));
-                AssertExtensions.Throws<ArgumentException>("asyncResult", () => outputStream2.EndWrite(beginWriteResult));
-            }
-        }
-
-        [PlatformSpecific(TestPlatforms.Windows)] // Unix implementation uses Socket.Begin/EndSend, which doesn't fail in this case
-        [Fact]
-        public async Task EndWrite_CalledTwice_ThrowsInvalidOperationException()
-        {
-            using (HttpListenerResponse response1 = await _helper.GetResponse())
-            using (Stream outputStream = response1.OutputStream)
-            {
-                IAsyncResult beginWriteResult = outputStream.BeginWrite(new byte[0], 0, 0, null, null);
-                outputStream.EndWrite(beginWriteResult);
-
-                Assert.Throws<InvalidOperationException>(() => outputStream.EndWrite(beginWriteResult));
             }
         }
     }

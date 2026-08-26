@@ -325,7 +325,7 @@ namespace System.Tests
         // We still test these cultures parsing but with ParseExact instead.
         internal static bool IsNotArabicCulture => !CultureInfo.CurrentCulture.Name.StartsWith("ar", StringComparison.OrdinalIgnoreCase);
 
-        [ConditionalFact(nameof(IsNotArabicCulture))]
+        [ConditionalFact(typeof(DateOnlyTests), nameof(IsNotArabicCulture))]
         public static void BasicFormatParseTest()
         {
             DateOnly dateOnly = DateOnly.FromDateTime(DateTime.Today);
@@ -365,7 +365,7 @@ namespace System.Tests
             Assert.Equal(dateOnly, parsedDateOnly);
         }
 
-        [ConditionalFact(nameof(IsNotArabicCulture))]
+        [ConditionalFact(typeof(DateOnlyTests), nameof(IsNotArabicCulture))]
         public static void FormatParseTest()
         {
             string[] patterns = new string[] { CultureInfo.CurrentCulture.DateTimeFormat.ShortDatePattern, CultureInfo.CurrentCulture.DateTimeFormat.LongDatePattern, "d", "D", "o", "r" };

@@ -106,8 +106,8 @@ namespace Internal.TypeSystem
         {
             MetadataType t = (MetadataType)type;
             return t.Module == SystemModule
-                && t.Name.SequenceEqual("IDynamicInterfaceCastable"u8)
-                && t.Namespace.SequenceEqual("System.Runtime.InteropServices"u8);
+                && t.Name == "IDynamicInterfaceCastable"u8
+                && t.Namespace == "System.Runtime.InteropServices"u8;
         }
     }
 }

@@ -20,8 +20,17 @@
         ldr     x9, [x0]
 
         // x11 currently contains the indirection cell address.
+        // Save it in x12 before overwriting, in case we need to re-dispatch on a race.
+        mov     x12, x11
+
         // load x11 to point to the vtable offset (which is stored in the m_pCache field).
         ldr     x11, [x11, #OFFSETOF__InterfaceDispatchCell__m_pCache]
+
+        // Validate m_pCache has the vtable offset tag (low 2 bits == 0x2).
+        // A stale m_pCache from a race will have different low bits.
+        and     w10, w11, #IDC_CACHE_POINTER_MASK
+        cmp     w10, #2
+        bne     LOCAL_LABEL(RhpVTableOffsetRaceRetry)
 
         // x11 now contains the VTableOffset where the upper 32 bits are the offset to adjust
         // to get to the VTable chunk
@@ -41,6 +50,12 @@
         ldr     x9, [x9, x10]
 
         EPILOG_BRANCH_REG  x9
+
+LOCAL_LABEL(RhpVTableOffsetRaceRetry):
+        // Re-dispatch through the indirection cell
+        mov     x11, x12
+        ldr     x9, [x11]
+        br      x9
     LEAF_END RhpVTableOffsetDispatch, _TEXT
 
 //

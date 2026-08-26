@@ -20,9 +20,24 @@ namespace ILCompiler.Dataflow
 {
     internal static class GenericArgumentDataFlow
     {
-        public static void ProcessGenericArgumentDataFlow(ref DependencyList dependencies, NodeFactory factory, in MessageOrigin origin, TypeDesc type, TypeDesc contextType)
+        public static void ProcessGenericArgumentDataFlow(
+            ref DependencyList dependencies,
+            NodeFactory factory,
+            in MessageOrigin origin,
+            TypeDesc type,
+            TypeDesc contextType,
+            bool suppressTrimAnalysisWarnings = false,
+            bool suppressAotAnalysisWarnings = false)
         {
-            ProcessGenericArgumentDataFlow(ref dependencies, factory, origin, type, contextType.Instantiation, Instantiation.Empty);
+            ProcessGenericArgumentDataFlow(
+                ref dependencies,
+                factory,
+                origin,
+                type,
+                contextType.Instantiation,
+                Instantiation.Empty,
+                suppressTrimAnalysisWarnings,
+                suppressAotAnalysisWarnings);
         }
 
         public static void ProcessGenericArgumentDataFlow(ref DependencyList dependencies, NodeFactory factory, in MessageOrigin origin, TypeDesc type, MethodDesc contextMethod)
@@ -30,20 +45,44 @@ namespace ILCompiler.Dataflow
             ProcessGenericArgumentDataFlow(ref dependencies, factory, origin, type, contextMethod.OwningType.Instantiation, contextMethod.Instantiation);
         }
 
-        private static void ProcessGenericArgumentDataFlow(ref DependencyList dependencies, NodeFactory factory, in MessageOrigin origin, TypeDesc type, Instantiation typeContext, Instantiation methodContext)
+        public static void ProcessGenericArgumentDataFlow(
+            ref DependencyList dependencies,
+            NodeFactory factory,
+            in MessageOrigin origin,
+            TypeDesc type,
+            Instantiation typeContext,
+            Instantiation methodContext,
+            bool suppressTrimAnalysisWarnings = false,
+            bool suppressAotAnalysisWarnings = false)
         {
             if (!type.HasInstantiation)
                 return;
 
             TypeDesc instantiatedType = type.InstantiateSignature(typeContext, methodContext);
 
+#if ILTRIM
+            Logger logger = factory.Logger;
+            FlowAnnotations flowAnnotations = factory.FlowAnnotations;
+#else
             var mdManager = (UsageBasedMetadataManager)factory.MetadataManager;
+            Logger logger = mdManager.Logger;
+            FlowAnnotations flowAnnotations = mdManager.FlowAnnotations;
+#endif
 
             var diagnosticContext = new DiagnosticContext(
                 origin,
-                !mdManager.Logger.ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, DiagnosticUtilities.RequiresUnreferencedCodeAttribute),
-                mdManager.Logger);
-            var reflectionMarker = new ReflectionMarker(mdManager.Logger, factory, mdManager.FlowAnnotations, typeHierarchyDataFlowOrigin: null, enabled: true);
+                suppressTrimmerDiagnostics: suppressTrimAnalysisWarnings || logger.ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, DiagnosticUtilities.RequiresUnreferencedCodeAttribute),
+                suppressAotDiagnostics: suppressAotAnalysisWarnings || logger.ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, DiagnosticUtilities.RequiresDynamicCodeAttribute),
+                suppressSingleFileDiagnostics: logger.ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, DiagnosticUtilities.RequiresAssemblyFilesAttribute),
+                logger: logger);
+            var reflectionMarker = new ReflectionMarker(
+                logger,
+                factory,
+                flowAnnotations,
+                typeHierarchyDataFlowOrigin: null,
+                enabled: true,
+                suppressTrimAnalysisWarnings: suppressTrimAnalysisWarnings,
+                suppressAotAnalysisWarnings: suppressAotAnalysisWarnings);
 
             ProcessGenericArgumentDataFlow(diagnosticContext, reflectionMarker, instantiatedType);
 
@@ -117,6 +156,8 @@ namespace ILCompiler.Dataflow
                 if (flowAnnotations.HasGenericParameterAnnotation(method))
                     return true;
 
+                // No need to check for new constraint, because we handle that as DAMT.PublicParameterlessConstructor.
+
                 foreach (TypeDesc typeParameter in method.Instantiation)
                 {
                     if (RequiresGenericArgumentDataFlow(flowAnnotations, typeParameter))
@@ -141,6 +182,8 @@ namespace ILCompiler.Dataflow
         {
             if (flowAnnotations.HasGenericParameterAnnotation(type))
                 return true;
+
+            // No need to check for new constraint, because we handle that as DAMT.PublicParameterlessConstructor.
 
             if (type.HasInstantiation)
             {

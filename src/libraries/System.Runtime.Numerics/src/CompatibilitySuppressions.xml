@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- https://learn.microsoft.com/dotnet/fundamentals/package-validation/diagnostic-ids -->
+<Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Suppression>
+    <DiagnosticId>CP0008</DiagnosticId>
+    <Target>T:System.Numerics.BigInteger</Target>
+    <Left>ref/net11.0/System.Runtime.Numerics.dll</Left>
+    <Right>lib/net11.0/System.Runtime.Numerics.dll</Right>
+  </Suppression>
+</Suppressions>

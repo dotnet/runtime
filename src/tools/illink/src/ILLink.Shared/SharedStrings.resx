@@ -301,7 +301,7 @@
     <value>Root assembly could not be found.</value>
   </data>
   <data name="RootAssemblyCouldNotBeFoundMessage" xml:space="preserve">
-    <value>Root assembly '{0}' could not be found.</value>
+    <value>Root assembly with name '{0}' could not be found.</value>
   </data>
   <data name="XmlDescriptorCouldNotBeFoundTitle" xml:space="preserve">
     <value>XML descriptor file could not be found'.</value>
@@ -686,6 +686,24 @@
   </data>
   <data name="CorrectnessOfCOMCannotBeGuaranteedMessage" xml:space="preserve">
     <value>P/invoke method '{0}' declares a parameter with COM marshalling. Correctness of COM interop cannot be guaranteed after trimming. Interfaces and interface members might be removed.</value>
+  </data>
+  <data name="UnsafeMemberMissingSafetyDocumentationTitle" xml:space="preserve">
+    <value>Unsafe members should document their safety requirements</value>
+  </data>
+  <data name="UnsafeMemberMissingSafetyDocumentationMessage" xml:space="preserve">
+    <value>An unsafe member must include a '&lt;safety&gt;' XML documentation comment.</value>
+  </data>
+  <data name="PointerSignatureRequiresUnsafeTitle" xml:space="preserve">
+    <value>Pointer signatures should preserve their unsafe contract</value>
+  </data>
+  <data name="PointerSignatureRequiresUnsafeMessage" xml:space="preserve">
+    <value>A member with a pointer or function-pointer signature must be marked 'unsafe' or include a '&lt;safety&gt;' XML documentation comment explaining why it is safe.</value>
+  </data>
+  <data name="LibraryImportRequiresExplicitSafetyTitle" xml:space="preserve">
+    <value>Methods with 'LibraryImportAttribute' should declare their safety contract</value>
+  </data>
+  <data name="LibraryImportRequiresExplicitSafetyMessage" xml:space="preserve">
+    <value>A method with 'LibraryImportAttribute' must be marked 'unsafe' or 'safe' because the generated implementation calls into native code.</value>
   </data>
   <data name="XmlPropertyDoesNotContainAttributeNameTitle" xml:space="preserve">
     <value>An attribute element has property but this could not be found.</value>
@@ -1221,6 +1239,12 @@
   <data name="InvalidDependenciesFileFormatTitle" xml:space="preserve">
     <value>Unrecognized dependencies file type.</value>
   </data>
+  <data name="MultipleEntryPointRootsMessage" xml:space="preserve">
+    <value>Multiple root assemblies specified with 'entrypoint' root mode. Assembly '{0}' conflicts with '{1}'.</value>
+  </data>
+  <data name="MultipleEntryPointRootsTitle" xml:space="preserve">
+    <value>Multiple root assemblies specified with 'entrypoint' root mode.</value>
+  </data>
   <data name="RedundantSuppressionMessage" xml:space="preserve">
     <value>Unused 'UnconditionalSuppressMessageAttribute' for warning '{0}'. Consider removing the unused warning suppression.</value>
   </data>
@@ -1262,29 +1286,5 @@
   </data>
   <data name="DataflowAnalysisDidNotConvergeMessage" xml:space="preserve">
     <value>Trim dataflow analysis of member '{0}' took too long to complete. Trim safety cannot be guaranteed.</value>
-  </data>
-  <data name="RequiresUnsafeTitle" xml:space="preserve">
-    <value>Calling methods annotated with 'RequiresUnsafeAttribute' may break functionality in environments that do not support unsafe code.</value>
-  </data>
-  <data name="RequiresUnsafeMessage" xml:space="preserve">
-    <value>Using member '{0}' which has 'RequiresUnsafeAttribute' requires an unsafe context, such as an unsafe block or a method marked with 'RequiresUnsafeAttribute'.{1}{2}</value>
-  </data>
-  <data name="RequiresUnsafeAttributeMismatchTitle" xml:space="preserve">
-    <value>'RequiresUnsafeAttribute' annotations must match across all interface implementations or overrides.</value>
-  </data>
-  <data name="RequiresUnsafeAttributeMismatchMessage" xml:space="preserve">
-    <value>{0}. 'RequiresUnsafeAttribute' annotations must match across all interface implementations or overrides.</value>
-  </data>
-  <data name="RequiresUnsafeOnStaticConstructorMessage" xml:space="preserve">
-    <value>'RequiresUnsafeAttribute' cannot be placed directly on static constructor '{0}'.</value>
-  </data>
-  <data name="RequiresUnsafeOnStaticConstructorTitle" xml:space="preserve">
-    <value>'RequiresUnsafeAttribute' cannot be used on static constructors because they are not directly callable. Consider placing the attribute on the type instead.</value>
-  </data>
-  <data name="RequiresUnsafeOnEntryPointMessage" xml:space="preserve">
-    <value>'RequiresUnsafeAttribute' cannot be placed directly on application entry point '{0}'.</value>
-  </data>
-  <data name="RequiresUnsafeOnEntryPointTitle" xml:space="preserve">
-    <value>The use of 'RequiresUnsafeAttribute' on entry points is disallowed since the method will be called from outside the visible app.</value>
   </data>
 </root>

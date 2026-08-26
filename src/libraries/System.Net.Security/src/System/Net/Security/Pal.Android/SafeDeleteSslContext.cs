@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Collections.Generic;
 using System.Net.Security;
 using System.Runtime.InteropServices;
 using System.Security.Authentication;
@@ -209,34 +210,82 @@ namespace System.Net
 
         private static SafeSslHandle CreateSslContext(SslStream.JavaProxy sslStreamProxy, SslAuthenticationOptions authOptions)
         {
-            if (authOptions.CertificateContext == null)
+            // targetHost is passed to the platform's DotnetProxyTrustManager for hostname-aware
+            // certificate validation. IP literals are excluded because SNIHostName doesn't accept them.
+            string? targetHost = !authOptions.IsServer
+                && !string.IsNullOrEmpty(authOptions.TargetHost)
+                && !IPAddress.IsValid(authOptions.TargetHost)
+                    ? authOptions.TargetHost
+                    : null;
+
+            IntPtr keyManagers = authOptions.CertificateContext is not null
+                ? CreateKeyManagers(authOptions.CertificateContext)
+                : IntPtr.Zero;
+
+            try
             {
-                return Interop.AndroidCrypto.SSLStreamCreate(sslStreamProxy);
+                SafeSslHandle sslHandle = Interop.AndroidCrypto.SSLStreamCreate(sslStreamProxy, targetHost, keyManagers);
+                if (sslHandle.IsInvalid)
+                {
+                    sslHandle.Dispose();
+                    throw new Interop.AndroidCrypto.SslException();
+                }
+
+                return sslHandle;
+            }
+            finally
+            {
+                // keyManagers is a JNI global ref that was created to survive across
+                // P/Invoke boundaries. Release it now that SSLStreamCreate has consumed it.
+                if (keyManagers != IntPtr.Zero)
+                {
+                    Interop.JObjectLifetime.DeleteGlobalReference(keyManagers);
+                }
             }
 
-            SslStreamCertificateContext context = authOptions.CertificateContext;
-            X509Certificate2 cert = context.TargetCertificate;
-            Debug.Assert(context.TargetCertificate.HasPrivateKey);
-
-            if (Interop.AndroidCrypto.IsKeyStorePrivateKeyEntry(cert.Handle))
+            static IntPtr CreateKeyManagers(SslStreamCertificateContext context)
             {
-                return Interop.AndroidCrypto.SSLStreamCreateWithKeyStorePrivateKeyEntry(sslStreamProxy, cert.Handle);
-            }
+                X509Certificate2 cert = context.TargetCertificate;
+                Debug.Assert(cert.HasPrivateKey);
 
-            PAL_KeyAlgorithm algorithm;
-            byte[] keyBytes;
-            using (AsymmetricAlgorithm key = GetPrivateKeyAlgorithm(cert, out algorithm))
-            {
-                keyBytes = key.ExportPkcs8PrivateKey();
-            }
-            IntPtr[] ptrs = new IntPtr[context.IntermediateCertificates.Count + 1];
-            ptrs[0] = cert.Handle;
-            for (int i = 0; i < context.IntermediateCertificates.Count; i++)
-            {
-                ptrs[i + 1] = context.IntermediateCertificates[i].Handle;
-            }
+                IntPtr keyManagers;
+                if (Interop.AndroidCrypto.IsKeyStorePrivateKeyEntry(cert.Handle))
+                {
+                    keyManagers = Interop.AndroidCrypto.SSLStreamCreateKeyManagersFromKeyStoreEntry(cert.Handle);
+                }
+                else
+                {
+                    PAL_KeyAlgorithm algorithm;
+                    byte[] keyBytes;
+                    using (AsymmetricAlgorithm key = GetPrivateKeyAlgorithm(cert, out algorithm))
+                    {
+                        keyBytes = key.ExportPkcs8PrivateKey();
+                    }
 
-            return Interop.AndroidCrypto.SSLStreamCreateWithCertificates(sslStreamProxy, keyBytes, algorithm, ptrs);
+                    try
+                    {
+                        IntPtr[] ptrs = new IntPtr[context.IntermediateCertificates.Count + 1];
+                        ptrs[0] = cert.Handle;
+                        for (int i = 0; i < context.IntermediateCertificates.Count; i++)
+                        {
+                            ptrs[i + 1] = context.IntermediateCertificates[i].Handle;
+                        }
+
+                        keyManagers = Interop.AndroidCrypto.SSLStreamCreateKeyManagers(keyBytes, algorithm, ptrs);
+                    }
+                    finally
+                    {
+                        CryptographicOperations.ZeroMemory(keyBytes);
+                    }
+                }
+
+                if (keyManagers == IntPtr.Zero)
+                {
+                    throw new Interop.AndroidCrypto.SslException();
+                }
+
+                return keyManagers;
+            }
         }
 
         private static AsymmetricAlgorithm GetPrivateKeyAlgorithm(X509Certificate2 cert, out PAL_KeyAlgorithm algorithm)
@@ -306,6 +355,7 @@ namespace System.Net
             if (authOptions.ApplicationProtocols != null && authOptions.ApplicationProtocols.Count != 0
                 && Interop.AndroidCrypto.SSLSupportsApplicationProtocolsConfiguration())
             {
+                ValidateAlpnProtocolListSize(authOptions.ApplicationProtocols);
                 // Set application protocols if the platform supports it. Otherwise, we will silently ignore the option.
                 Interop.AndroidCrypto.SSLStreamSetApplicationProtocols(handle, authOptions.ApplicationProtocols);
             }
@@ -318,6 +368,19 @@ namespace System.Net
             if (!isServer && !string.IsNullOrEmpty(authOptions.TargetHost) && !IPAddress.IsValid(authOptions.TargetHost))
             {
                 Interop.AndroidCrypto.SSLStreamSetTargetHost(handle, authOptions.TargetHost);
+            }
+        }
+
+        private static void ValidateAlpnProtocolListSize(List<SslApplicationProtocol> applicationProtocols)
+        {
+            int protocolListSize = 0;
+            foreach (SslApplicationProtocol protocol in applicationProtocols)
+            {
+                protocolListSize += protocol.Protocol.Length + 1;
+                if (protocolListSize > ushort.MaxValue)
+                {
+                    throw new ArgumentException(SR.net_ssl_app_protocols_invalid, nameof(applicationProtocols));
+                }
             }
         }
     }

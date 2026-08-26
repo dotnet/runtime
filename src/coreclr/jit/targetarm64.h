@@ -26,6 +26,7 @@
 #define FEATURE_MULTIREG_ARGS_OR_RET  1  // Support for passing and/or returning single values in more than one register
 #define FEATURE_MULTIREG_ARGS         1  // Support for passing a single argument in more than one register
 #define FEATURE_MULTIREG_RET          1  // Support for returning a single value in more than one register
+#define FEATURE_HAS_ZERO_REG          1  // Target has a hardware "zero register" (e.g. REG_ZR on ARM64) usable as a containable source for zero stores
 #define MAX_PASS_SINGLEREG_BYTES     16  // Maximum size of a struct passed in a single register (16-byte vector).
 #define MAX_PASS_MULTIREG_BYTES      64  // Maximum size of a struct that could be passed in more than one register (max is 4 16-byte vectors using an HVA)
 #define MAX_RET_MULTIREG_BYTES       64  // Maximum size of a struct that could be returned in more than one register (Max is an HVA of 4 16-byte vectors)
@@ -41,7 +42,9 @@
 #define ETW_EBP_FRAMED           1       // if 1 we cannot use REG_FP as a scratch register and must setup the frame pointer for most methods
 
 #define CSE_CONSTS               1       // Enable if we want to CSE constants
-#define EMIT_TRACK_STACK_DEPTH   1       // This is something of a workaround.  For both ARM and AMD64, the frame size is fixed, so we don't really
+#define TARGET_MASKS_SHIFTS      1       // Shift and rotate instructions implicitly mask their count to the operand bit size
+#define TARGET_HAS_MULHI         1       // Supports GT_MULHI, the high bits of an NxN multiply
+#define EMIT_TRACK_STACK_DEPTH   1         // This is something of a workaround.  For both ARM and AMD64, the frame size is fixed, so we don't really
                                          // need to track stack depth, but this is currently necessary to get GC information reported at call sites.
 #define EMIT_GENERATE_GCINFO     1       // Track GC ref liveness in codegen and emit and generate GCInfo based on that
 
@@ -138,8 +141,10 @@
 #define REG_SHIFT                REG_NA
 #define RBM_SHIFT                RBM_ALLINT
 
-// This is a general scratch register that does not conflict with the argument registers
+// Scratch registers that do not conflict with the argument registers, usually for use in function prolog
 #define REG_SCRATCH              REG_R9
+#define REG_SCRATCH_V            REG_V9
+#define REG_SCRATCH_P            REG_P4
 
 // This is a general register that can be optionally reserved for other purposes during codegen
 #define REG_OPT_RSVD             REG_IP1
@@ -159,17 +164,7 @@
 //       x15: the object reference to be stored
 //     On exit:
 //       x12: trashed
-//       x14: incremented by 8
-//       x15: trashed
-//       x17: trashed (ip1) if FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-// CORINFO_HELP_ASSIGN_BYREF (JIT_ByRefWriteBarrier):
-//     On entry:
-//       x13: the source address (points to object reference to write)
-//       x14: the destination address (object reference written here)
-//     On exit:
-//       x12: trashed
-//       x13: incremented by 8
-//       x14: incremented by 8
+//       x14: preserved (the destination address is not modified)
 //       x15: trashed
 //       x17: trashed (ip1) if FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 //
@@ -182,34 +177,14 @@
 #define REG_WRITE_BARRIER_SRC          REG_R15
 #define RBM_WRITE_BARRIER_SRC          RBM_R15
 
-#define REG_WRITE_BARRIER_DST_BYREF    REG_R14
-#define RBM_WRITE_BARRIER_DST_BYREF    RBM_R14
-
-#define REG_WRITE_BARRIER_SRC_BYREF    REG_R13
-#define RBM_WRITE_BARRIER_SRC_BYREF    RBM_R13
-
 #define RBM_CALLEE_TRASH_NOGC          (RBM_R12|RBM_R15|RBM_IP0|RBM_IP1|RBM_DEFAULT_HELPER_CALL_TARGET)
 
 // Registers killed by CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
-#define RBM_CALLEE_TRASH_WRITEBARRIER         (RBM_R14|RBM_CALLEE_TRASH_NOGC)
+// Note: the destination register (x14) is preserved by the helper, so it is not in the kill set.
+#define RBM_CALLEE_TRASH_WRITEBARRIER         RBM_CALLEE_TRASH_NOGC
 
 // Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
 #define RBM_CALLEE_GCTRASH_WRITEBARRIER       RBM_CALLEE_TRASH_NOGC
-
-// Registers killed by CORINFO_HELP_ASSIGN_BYREF.
-#define RBM_CALLEE_TRASH_WRITEBARRIER_BYREF   (RBM_WRITE_BARRIER_DST_BYREF | RBM_WRITE_BARRIER_SRC_BYREF | RBM_CALLEE_TRASH_NOGC)
-
-// Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_BYREF.
-// Note that x13 and x14 are still valid byref pointers after this helper call, despite their value being changed.
-#define RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF RBM_CALLEE_TRASH_NOGC
-
-// GenericPInvokeCalliHelper VASigCookie Parameter
-#define REG_PINVOKE_COOKIE_PARAM          REG_R15
-#define RBM_PINVOKE_COOKIE_PARAM          RBM_R15
-
-// GenericPInvokeCalliHelper unmanaged target Parameter
-#define REG_PINVOKE_TARGET_PARAM          REG_R12
-#define RBM_PINVOKE_TARGET_PARAM          RBM_R12
 
 // IL stub's secret MethodDesc parameter (JitFlags::JIT_FLAG_PUBLISH_SECRET_PARAM)
 #define REG_SECRET_STUB_PARAM     REG_R12
@@ -263,7 +238,7 @@
 // The registers trashed by the CORINFO_HELP_INIT_PINVOKE_FRAME helper.
 #define RBM_INIT_PINVOKE_FRAME_TRASH  RBM_CALLEE_TRASH
 
-#define RBM_INTERFACELOOKUP_FOR_SLOT_TRASH (RBM_R12 | RBM_R13 | RBM_R14 | RBM_R15)
+#define RBM_INTERFACELOOKUP_FOR_SLOT_TRASH (RBM_CALLEE_TRASH & ~(RBM_ARG_REGS | RBM_FLTARG_REGS))
 #define RBM_INTERFACELOOKUP_FOR_SLOT_RETURN RBM_R15
 #define RBM_VALIDATE_INDIRECT_CALL_TRASH (RBM_INT_CALLEE_TRASH & ~(RBM_R0 | RBM_R1 | RBM_R2 | RBM_R3 | RBM_R4 | RBM_R5 | RBM_R6 | RBM_R7 | RBM_R8 | RBM_R15))
 #define REG_VALIDATE_INDIRECT_CALL_ADDR REG_R15
@@ -388,5 +363,10 @@
 #define RBM_SWIFT_SELF  RBM_R20
 #define REG_SWIFT_INTRET_ORDER REG_R0,REG_R1,REG_R2,REG_R3
 #define REG_SWIFT_FLOATRET_ORDER REG_V0,REG_V1,REG_V2,REG_V3
+
+#define REG_UNKBASE REG_R19
+#define RBM_UNKBASE RBM_R19
+
+#define MAX_SVE_REGSIZE_BYTES 256
 
 // clang-format on

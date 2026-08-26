@@ -20,6 +20,8 @@ The Native AOT toolchain can be currently built for Linux (x64/arm32/arm64), mac
 
 Once you build the repo, you can use the produced binaries in one of four ways specified below ("Using built binaries", "Building packages", "Convenience Visual Studio "repro" project", "Running tests").
 
+The native AOT compiler is a cross-compiler, however the default clr.aot subset passed to build[.cmd|.sh] will only build a flavor that can target the architecture of ILC itself. To build other codegen backends and enable crossbuilding, replace `clr.aot` with `clr.aot+clr.alljits` in the build script invocation.
+
 ### Using built binaries
 
 In this workflow, you have a project file that you want to `dotnet publish`, but you want to use your own build of the compiler/runtime/framework. You need to be using a daily build of the .NET SDK downloaded from the dotnet/sdk repo. It's typically enough to just download the daily build ZIP file, unpack it, and make sure the unpacked directory is the first thing in your PATH. Don't forget to add a NuGet.config as specified by the dotnet/sdk repo- you'll hit restore issues otherwise.
@@ -82,7 +84,7 @@ The workflow looks like this:
 * Build the repo using the Building instructions above
 * Open the ilc.slnx solution described above. This solution contains the compiler, but also an unrelated project named "repro". This repro project is a small Hello World. You can place any piece of C# you would like to compile in it. Building the project will compile the source code into IL, but also generate a response file that is suitable to pass to the AOT compiler.
 * Make sure you set the solution configuration in VS to the configuration you just built (e.g. x64 Debug).
-* In the ILCompiler project properties, on the Debug tab, set the "Application arguments" to `@$(ArtifactsBinDir)repro\$(TargetArchitecture)\$(Configuration)\compile-with-Release-libs.rsp`. The `@` at the front of the argument indicates that this is the path to the response file generated when "repro" was built. Adjust the "compile-with-Release-libs" part to "compile-with-Debug-libs" depending on how you built the libraries (the `-lc` argument to `build.cmd`). Visual Studio will expand the path to something like `@C:\runtime\artifacts\bin\repro\x64\Debug\compile-with-Release-libs.rsp`.
+* In the ILCompiler project properties, on the Debug tab, set the "Application arguments" to `@$(ArtifactsBinDir)repro\$(TargetArchitecture)\$(Configuration)\compile-with-Release-libs.rsp`. The `@` at the front of the argument indicates that this is the path to the response file generated when "repro" was built. Adjust the "compile-with-Release-libs" part to "compile-with-Debug-libs" depending on how you built the libraries (the `-lc` argument to `build.cmd`). Visual Studio will expand the path to something like `@C:\runtime\artifacts\bin\repro\x64\Debug\compile-with-Release-libs.rsp`. Optionally, you can add `--parallelism:1` after the rsp file to make the compiler single-threaded since it's multithreaded by default, which can make debugging complicated.
 * Build & run ILCompiler using **F5**. This will compile the repro project into an `.obj` file. You can debug the compiler and set breakpoints in it at this point.
 * The last step is linking the object file into an executable so that we can launch the result of the AOT compilation.
 * Open the src\coreclr\tools\aot\ILCompiler\reproNative\reproNative.vcxproj project in Visual Studio. This project is configured to pick up the `.obj` file we just compiled and link it with the rest of the runtime.
@@ -95,7 +97,10 @@ If you haven't built the tests yet, run `src\tests\build.cmd nativeaot [Debug|Re
 
 To run all the tests that got built, run `src\tests\run.cmd runnativeaottests [Debug|Release]` on Windows, or `src/tests/run.sh --runnativeaottests [Debug|Release]` on Linux. The `Debug`/`Release` flag should match the flag that was passed to `build.cmd` in the previous step.
 
-To build an individual test, follow the instructions for compiling a individual test project located in [Building an Individual Test](/docs/workflow/testing/coreclr/testing.md#building-an-individual-test), but add `/t:BuildNativeAot /p:TestBuildMode=nativeaot` to the build command.
+To build an individual test, follow the instructions for compiling an individual test project located in [Building an Individual Test](/docs/workflow/testing/coreclr/testing.md#building-an-individual-test) with these additional arguments:
+
+ * For the build `build[.cmd|.sh]` script, add the `nativeaot`/`-nativeaot` command line parameter such as `.\src\tests\build.cmd nativeaot test ...` or `./src/tests/build.sh -nativeaot test ...`
+ * For the `dotnet build` workflow, add `-t:BuildNativeAot -p:TestBuildMode=nativeaot`
 
 To run an individual test (after it was built), navigate to the `artifacts\tests\coreclr\[windows|linux|osx[.x64.[Debug|Release]\$path_to_test` directory. `$path_to_test` matches the subtree of `src\tests`. You should see a `[.cmd|.sh]` file there. This file is a script that will compile and launch the individual test for you. Before invoking the script, set the following environment variables:
 

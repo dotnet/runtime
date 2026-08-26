@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -115,6 +116,9 @@ internal static partial class Interop
             BCRYPT_ECDSA_PUBLIC_GENERIC_MAGIC = 0x50444345,
             BCRYPT_ECDSA_PRIVATE_GENERIC_MAGIC = 0x56444345,
 
+            BCRYPT_COMPOSITE_MLDSA_PUBLIC_MAGIC = 0x4B504D43,
+            BCRYPT_COMPOSITE_MLDSA_PRIVATE_MAGIC = 0x4B534D43,
+
             BCRYPT_MLDSA_PUBLIC_MAGIC = 0x4B505344,
             BCRYPT_MLDSA_PRIVATE_MAGIC = 0x4B535344,
             BCRYPT_MLDSA_PRIVATE_SEED_MAGIC = 0x53535344,
@@ -178,20 +182,32 @@ internal static partial class Interop
         ///     The BCRYPT_DSA_KEY_BLOB structure is used as a v1 header for a DSA public key or private key BLOB in memory.
         /// </summary>
         [StructLayout(LayoutKind.Sequential)]
-        internal unsafe struct BCRYPT_DSA_KEY_BLOB
+        internal struct BCRYPT_DSA_KEY_BLOB
         {
             internal KeyBlobMagicNumber Magic;
             internal int cbKey;
-            internal fixed byte Count[4];
-            internal fixed byte Seed[20];
-            internal fixed byte q[20];
+#if NET
+            internal InlineArray4<byte> Count;
+            internal KeyParamBuffer Seed;
+            internal KeyParamBuffer q;
+
+            [InlineArray(20)]
+            internal struct KeyParamBuffer
+            {
+                private byte _element0;
+            }
+#else
+            internal unsafe fixed byte Count[4];
+            internal unsafe fixed byte Seed[20];
+            internal unsafe fixed byte q[20];
+#endif
         }
 
         /// <summary>
         ///     The BCRYPT_DSA_KEY_BLOB structure is used as a v2 header for a DSA public key or private key BLOB in memory.
         /// </summary>
         [StructLayout(LayoutKind.Sequential)]
-        internal unsafe struct BCRYPT_DSA_KEY_BLOB_V2
+        internal struct BCRYPT_DSA_KEY_BLOB_V2
         {
             internal KeyBlobMagicNumber Magic;
             internal int cbKey;
@@ -199,7 +215,11 @@ internal static partial class Interop
             internal DSAFIPSVERSION_ENUM standardVersion;
             internal int cbSeedLength;
             internal int cbGroupSize;
-            internal fixed byte Count[4];
+#if NET
+            internal InlineArray4<byte> Count;
+#else
+            internal unsafe fixed byte Count[4];
+#endif
         }
 
         public enum HASHALGORITHM_ENUM

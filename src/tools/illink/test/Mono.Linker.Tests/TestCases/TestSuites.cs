@@ -1,303 +1,439 @@
-﻿// Copyright (c) .NET Foundation and contributors. All rights reserved.
+// Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
+using Microsoft.DotNet.XUnitExtensions;
 using Mono.Linker.Tests.TestCasesRunner;
-using NUnit.Framework;
+using Xunit;
 
 namespace Mono.Linker.Tests.TestCases
 {
-    [TestFixture]
-    public class All
+    public class All : LinkerTestSuite
     {
-        [TestCaseSource(typeof(TestDatabase), nameof(TestDatabase.AdvancedTests))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.AdvancedTests), MemberType = typeof(TestDatabase))]
         public void AdvancedTests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestCaseSource(typeof(TestDatabase), nameof(TestDatabase.AttributeDebuggerTests))]
-        public void AttributesDebuggerTests(TestCase testCase)
-        {
-            Run(testCase);
-        }
-
-        [TestCaseSource(typeof(TestDatabase), nameof(TestDatabase.AttributesStructLayoutTests))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.AttributesStructLayoutTests), MemberType = typeof(TestDatabase))]
         public void AttributesStructLayoutTests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestCaseSource(typeof(TestDatabase), nameof(TestDatabase.AttributeTests))]
-        public void AttributesTests(TestCase testCase)
-        {
-            Run(testCase);
-        }
-
-        [TestCaseSource(typeof(TestDatabase), nameof(TestDatabase.BCLFeaturesTests))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.BCLFeaturesTests), MemberType = typeof(TestDatabase))]
         public void BCLFeaturesTests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestCaseSource(typeof(TestDatabase), nameof(TestDatabase.BasicTests))]
-        public void BasicTests(TestCase testCase)
-        {
-            Run(testCase);
-        }
-
-        [TestCaseSource(typeof(TestDatabase), nameof(TestDatabase.CodegenAnnotationTests))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.CodegenAnnotationTests), MemberType = typeof(TestDatabase))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp, "These tests are not valid when trimming .NET Core")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "These tests are not valid when trimming .NET Framework")]
         public void CodegenAnnotationTests(TestCase testCase)
         {
-            if (Environment.OSVersion.Platform == PlatformID.Win32NT)
-                Assert.Ignore("These tests are not valid when trimming .NET Framework");
-
-#if NET
-            Assert.Ignore("These tests are not valid when trimming .NET Core");
-#endif
             Run(testCase);
         }
 
-        [TestCaseSource(typeof(TestDatabase), nameof(TestDatabase.CommandLineTests))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.CommandLineTests), MemberType = typeof(TestDatabase))]
         public void CommandLineTests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestCaseSource(typeof(TestDatabase), nameof(TestDatabase.ComponentModelTests))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.ComponentModelTests), MemberType = typeof(TestDatabase))]
         public void ComponentModelTests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestCaseSource(typeof(TestDatabase), nameof(TestDatabase.CoreLinkTests))]
-        public void CoreLinkTests(TestCase testCase)
-        {
-            Run(testCase);
-        }
-
-        [TestCaseSource(typeof(TestDatabase), nameof(TestDatabase.CppCLITests))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.CppCLITests), MemberType = typeof(TestDatabase))]
         public void CppCLITests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestCaseSource(typeof(TestDatabase), nameof(TestDatabase.DataFlowTests))]
-        public void DataFlowTests(TestCase testCase)
-        {
-            Run(testCase);
-        }
-
-        [TestCaseSource(typeof(TestDatabase), nameof(TestDatabase.DynamicDependenciesTests))]
-        public void DynamicDependenciesTests(TestCase testCase)
-        {
-            Run(testCase);
-        }
-
-        [TestCaseSource(typeof(TestDatabase), nameof(TestDatabase.ExtensibilityTests))]
-        public void ExtensibilityTests(TestCase testCase)
-        {
-            Run(testCase);
-        }
-
-        [TestCaseSource(typeof(TestDatabase), nameof(TestDatabase.FeatureSettingsTests))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.FeatureSettingsTests), MemberType = typeof(TestDatabase))]
         public void FeatureSettingsTests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestCaseSource(typeof(TestDatabase), nameof(TestDatabase.FunctionPointersTests))]
-        public void FunctionPointerTests(TestCase testCase)
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.FunctionPointersTests), MemberType = typeof(TestDatabase))]
+        public void FunctionPointersTests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestCaseSource(typeof(TestDatabase), nameof(TestDatabase.GenericsTests))]
-        public void GenericsTests(TestCase testCase)
-        {
-            Run(testCase);
-        }
-
-        [TestCaseSource(typeof(TestDatabase), nameof(TestDatabase.InheritanceAbstractClassTests))]
-        public void InheritanceAbstractClassTests(TestCase testCase)
-        {
-            Run(testCase);
-        }
-
-        [TestCaseSource(typeof(TestDatabase), nameof(TestDatabase.InheritanceComplexTests))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.InheritanceComplexTests), MemberType = typeof(TestDatabase))]
         public void InheritanceComplexTests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestCaseSource(typeof(TestDatabase), nameof(TestDatabase.InheritanceInterfaceTests))]
-        public void InheritanceInterfaceTests(TestCase testCase)
-        {
-            Run(testCase);
-        }
-
-        [TestCaseSource(typeof(TestDatabase), nameof(TestDatabase.InheritanceVirtualMethodsTests))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.InheritanceVirtualMethodsTests), MemberType = typeof(TestDatabase))]
         public void InheritanceVirtualMethodsTests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestCaseSource(typeof(TestDatabase), nameof(TestDatabase.InlineArrayTests))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.InlineArrayTests), MemberType = typeof(TestDatabase))]
         public void InlineArrayTests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestCaseSource(typeof(TestDatabase), nameof(TestDatabase.InteropTests))]
-        public void InteropTests(TestCase testCase)
-        {
-            Run(testCase);
-        }
-
-        [TestCaseSource(typeof(TestDatabase), nameof(TestDatabase.LibrariesTests))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.LibrariesTests), MemberType = typeof(TestDatabase))]
         public void LibrariesTests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestCaseSource(typeof(TestDatabase), nameof(TestDatabase.LinkAttributesTests))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.LinkAttributesTests), MemberType = typeof(TestDatabase))]
         public void LinkAttributesTests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestCaseSource(typeof(TestDatabase), nameof(TestDatabase.LoggingTests))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.LoggingTests), MemberType = typeof(TestDatabase))]
         public void LoggingTests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestCaseSource(typeof(TestDatabase), nameof(TestDatabase.PreserveDependenciesTests))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.PreserveDependenciesTests), MemberType = typeof(TestDatabase))]
         public void PreserveDependenciesTests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestCaseSource(typeof(TestDatabase), nameof(TestDatabase.ReferencesTests))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.ReferencesTests), MemberType = typeof(TestDatabase))]
         public void ReferencesTests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestCaseSource(typeof(TestDatabase), nameof(TestDatabase.ReflectionTests))]
-        public void ReflectionTests(TestCase testCase)
-        {
-            Run(testCase);
-        }
-
-        [TestCaseSource(typeof(TestDatabase), nameof(TestDatabase.RequiresCapabilityTests))]
-        public void RequiresCapabilityTests(TestCase testCase)
-        {
-            Run(testCase);
-        }
-
-        [TestCaseSource(typeof(TestDatabase), nameof(TestDatabase.ResourcesTests))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.ResourcesTests), MemberType = typeof(TestDatabase))]
         public void ResourcesTests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestCaseSource(typeof(TestDatabase), nameof(TestDatabase.SealerTests))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.SealerTests), MemberType = typeof(TestDatabase))]
         public void SealerTests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestCaseSource(typeof(TestDatabase), nameof(TestDatabase.SerializationTests))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.SerializationTests), MemberType = typeof(TestDatabase))]
         public void SerializationTests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestCaseSource(typeof(TestDatabase), nameof(TestDatabase.SingleFileTests))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.SingleFileTests), MemberType = typeof(TestDatabase))]
         public void SingleFileTests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestCaseSource(typeof(TestDatabase), nameof(TestDatabase.StaticsTests))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.StaticsTests), MemberType = typeof(TestDatabase))]
         public void StaticsTests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestCaseSource(typeof(TestDatabase), nameof(TestDatabase.SubstitutionsTests))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.SubstitutionsTests), MemberType = typeof(TestDatabase))]
         public void SubstitutionsTests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestCaseSource(typeof(TestDatabase), nameof(TestDatabase.SymbolsTests))]
-        public void SymbolsTests(TestCase testCase)
-        {
-            Run(testCase);
-        }
-
-        [TestCaseSource(typeof(TestDatabase), nameof(TestDatabase.TestFrameworkTests))]
-        public void TestFrameworkTests(TestCase testCase)
-        {
-            Run(testCase);
-        }
-
-        [TestCaseSource(typeof(TestDatabase), nameof(TestDatabase.TopLevelStatementsTests))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.TopLevelStatementsTests), MemberType = typeof(TestDatabase))]
         public void TopLevelStatementsTests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestCaseSource(typeof(TestDatabase), nameof(TestDatabase.TracingTests))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.TracingTests), MemberType = typeof(TestDatabase))]
         public void TracingTests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestCaseSource(typeof(TestDatabase), nameof(TestDatabase.TypeForwardingTests))]
-        public void TypeForwardingTests(TestCase testCase)
-        {
-            Run(testCase);
-        }
-
-        [TestCaseSource(typeof(TestDatabase), nameof(TestDatabase.UnreachableBlockTests))]
-        public void UnreachableBlockTests(TestCase testCase)
-        {
-            Run(testCase);
-        }
-
-        [TestCaseSource(typeof(TestDatabase), nameof(TestDatabase.UnreachableBodyTests))]
-        public void UnreachableBodyTests(TestCase testCase)
-        {
-            Run(testCase);
-        }
-
-        [TestCaseSource(typeof(TestDatabase), nameof(TestDatabase.WarningsTests))]
-        public void WarningsTests(TestCase testCase)
-        {
-            Run(testCase);
-        }
-
-        [TestCaseSource(typeof(TestDatabase), nameof(TestDatabase.XmlTests))]
-        public void XmlTests(TestCase testCase)
-        {
-            Run(testCase);
-        }
-
-        [TestCaseSource(typeof(TestDatabase), nameof(TestDatabase.LinqExpressionsTests))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.LinqExpressionsTests), MemberType = typeof(TestDatabase))]
         public void LinqExpressionsTests(TestCase testCase)
         {
             Run(testCase);
         }
 
-        [TestCaseSource(typeof(TestDatabase), nameof(TestDatabase.MetadataTests))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.MetadataTests), MemberType = typeof(TestDatabase))]
         public void MetadataTests(TestCase testCase)
         {
             Run(testCase);
         }
 
+    }
+
+    public class Basic : LinkerTestSuite
+    {
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.BasicTests), MemberType = typeof(TestDatabase))]
+        public void BasicTests(TestCase testCase)
+        {
+            Run(testCase);
+        }
+    }
+
+    public class CoreLink : LinkerTestSuite
+    {
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.CoreLinkTests), MemberType = typeof(TestDatabase))]
+        public void CoreLinkTests(TestCase testCase)
+        {
+            Run(testCase);
+        }
+    }
+
+    public class DynamicDependencies : LinkerTestSuite
+    {
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.DynamicDependenciesTests), MemberType = typeof(TestDatabase))]
+        public void DynamicDependenciesTests(TestCase testCase)
+        {
+            Run(testCase);
+        }
+    }
+
+    public class Extensibility : LinkerTestSuite
+    {
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.ExtensibilityTests), MemberType = typeof(TestDatabase))]
+        public void ExtensibilityTests(TestCase testCase)
+        {
+            Run(testCase);
+        }
+    }
+
+    public class Generics : LinkerTestSuite
+    {
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.GenericsTests), MemberType = typeof(TestDatabase))]
+        public void GenericsTests(TestCase testCase)
+        {
+            Run(testCase);
+        }
+    }
+
+    public class InheritanceAbstractClasses : LinkerTestSuite
+    {
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.InheritanceAbstractClassTests), MemberType = typeof(TestDatabase))]
+        public void InheritanceAbstractClassTests(TestCase testCase)
+        {
+            Run(testCase);
+        }
+    }
+
+    public class Interop : LinkerTestSuite
+    {
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.InteropTests), MemberType = typeof(TestDatabase))]
+        public void InteropTests(TestCase testCase)
+        {
+            Run(testCase);
+        }
+    }
+
+    public class RequiresCapability : LinkerTestSuite
+    {
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.RequiresCapabilityTests), MemberType = typeof(TestDatabase))]
+        public void RequiresCapabilityTests(TestCase testCase)
+        {
+            Run(testCase);
+        }
+    }
+
+    public class Symbols : LinkerTestSuite
+    {
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.SymbolsTests), MemberType = typeof(TestDatabase))]
+        public void SymbolsTests(TestCase testCase)
+        {
+            Run(testCase);
+        }
+    }
+
+    public class TestFramework : LinkerTestSuite
+    {
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.TestFrameworkTests), MemberType = typeof(TestDatabase))]
+        public void TestFrameworkTests(TestCase testCase)
+        {
+            Run(testCase);
+        }
+    }
+
+    public class UnreachableBlock : LinkerTestSuite
+    {
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.UnreachableBlockTests), MemberType = typeof(TestDatabase))]
+        public void UnreachableBlockTests(TestCase testCase)
+        {
+            Run(testCase);
+        }
+    }
+
+    public class UnreachableBody : LinkerTestSuite
+    {
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.UnreachableBodyTests), MemberType = typeof(TestDatabase))]
+        public void UnreachableBodyTests(TestCase testCase)
+        {
+            Run(testCase);
+        }
+    }
+
+    public class AttributesDebugger : LinkerTestSuite
+    {
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.AttributeDebuggerTests), MemberType = typeof(TestDatabase))]
+        public void AttributesDebuggerTests(TestCase testCase)
+        {
+            Run(testCase);
+        }
+    }
+
+    public class Attributes0 : LinkerTestSuite
+    {
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.AttributeTestsShard), 0, 2, MemberType = typeof(TestDatabase))]
+        public void AttributesTests(TestCase testCase)
+        {
+            Run(testCase);
+        }
+    }
+
+    public class Attributes1 : LinkerTestSuite
+    {
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.AttributeTestsShard), 1, 2, MemberType = typeof(TestDatabase))]
+        public void AttributesTests(TestCase testCase)
+        {
+            Run(testCase);
+        }
+    }
+
+    public class DataFlow0 : LinkerTestSuite
+    {
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.DataFlowTestsShard), 0, 2, MemberType = typeof(TestDatabase))]
+        public void DataFlowTests(TestCase testCase)
+        {
+            Run(testCase);
+        }
+    }
+
+    public class DataFlow1 : LinkerTestSuite
+    {
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.DataFlowTestsShard), 1, 2, MemberType = typeof(TestDatabase))]
+        public void DataFlowTests(TestCase testCase)
+        {
+            Run(testCase);
+        }
+    }
+
+    public class InheritanceInterfaces0 : LinkerTestSuite
+    {
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.InheritanceInterfaceTestsShard), 0, 2, MemberType = typeof(TestDatabase))]
+        public void InheritanceInterfaceTests(TestCase testCase)
+        {
+            Run(testCase);
+        }
+    }
+
+    public class InheritanceInterfaces1 : LinkerTestSuite
+    {
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.InheritanceInterfaceTestsShard), 1, 2, MemberType = typeof(TestDatabase))]
+        public void InheritanceInterfaceTests(TestCase testCase)
+        {
+            Run(testCase);
+        }
+    }
+
+    public class Reflection : LinkerTestSuite
+    {
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.ReflectionTests), MemberType = typeof(TestDatabase))]
+        public void ReflectionTests(TestCase testCase)
+        {
+            Run(testCase);
+        }
+    }
+
+    public class TypeForwarding : LinkerTestSuite
+    {
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.TypeForwardingTests), MemberType = typeof(TestDatabase))]
+        public void TypeForwardingTests(TestCase testCase)
+        {
+            Run(testCase);
+        }
+    }
+
+    public class Warnings : LinkerTestSuite
+    {
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.WarningsTests), MemberType = typeof(TestDatabase))]
+        public void WarningsTests(TestCase testCase)
+        {
+            Run(testCase);
+        }
+    }
+
+    public class Xml : LinkerTestSuite
+    {
+        [ConditionalTheory]
+        [MemberData(nameof(TestDatabase.XmlTests), MemberType = typeof(TestDatabase))]
+        public void XmlTests(TestCase testCase)
+        {
+            Run(testCase);
+        }
+    }
+
+    public abstract class LinkerTestSuite
+    {
         protected virtual void Run(TestCase testCase)
         {
             var runner = new TestRunner(new ObjectFactory());

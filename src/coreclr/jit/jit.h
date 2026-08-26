@@ -344,6 +344,12 @@ typedef ptrdiff_t ssize_t;
 #define DEBUGARG(x)
 #endif
 
+#if defined(DEBUG) || defined(TARGET_WASM)
+#define INDEBUG_OR_WASM(x) x
+#else
+#define INDEBUG_OR_WASM(x)
+#endif
+
 #if defined(DEBUG) || defined(LATE_DISASM)
 #define INDEBUG_LDISASM_COMMA(x) x,
 #else
@@ -520,13 +526,13 @@ public:
 #define NODEBASH_STATS      0 // Collect stats on changed gtOper values in GenTree's.
 #define COUNT_AST_OPERS     0 // Display use counts for GenTree operators.
 
+#include "jitshared.h" // Defines MEASURE_MEM_ALLOC
+
 #ifdef DEBUG
-#define MEASURE_MEM_ALLOC 1 // Collect memory allocation stats.
 #define LOOP_HOIST_STATS  1 // Collect loop hoisting stats.
 #define TRACK_LSRA_STATS  1 // Collect LSRA stats
 #define TRACK_ENREG_STATS 1 // Collect enregistration stats
 #else
-#define MEASURE_MEM_ALLOC 0 // You can set this to 1 to get memory stats in retail, as well
 #define LOOP_HOIST_STATS  0 // You can set this to 1 to get loop hoist stats in retail, as well
 #define TRACK_LSRA_STATS  0 // You can set this to 1 to get LSRA stats in retail, as well
 #define TRACK_ENREG_STATS 0
@@ -655,12 +661,16 @@ const bool dspGCtbls = true;
 
 #ifdef DEBUG
 
-// Forward declarations for UninitializedWord and IsUninitialized are needed by alloc.h
-template <typename T>
-inline T UninitializedWord(Compiler* comp);
+// The byte that the JIT fills uninitialized memory with in DEBUG builds. Used by alloc.h.
+const unsigned char UninitializedFillByte = 0xcd;
 
+// Returns a word filled with UninitializedFillByte.
 template <typename T>
-inline bool IsUninitialized(T data);
+inline T UninitializedWord()
+{
+    const uint64_t word = 0x0101010101010101ULL * UninitializedFillByte;
+    return (T)word;
+}
 
 #endif // DEBUG
 
@@ -725,12 +735,12 @@ inline size_t unsigned_abs(ssize_t x)
     return ((size_t)std::abs((int64_t)x));
 }
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__OpenBSD__)
 inline size_t unsigned_abs(int64_t x)
 {
     return ((size_t)std::abs(x));
 }
-#endif // __APPLE__
+#endif // __APPLE__ || __OpenBSD__
 #endif // TARGET_64BIT
 
 /*****************************************************************************/
@@ -829,40 +839,6 @@ public:
 //  Include the definition of Compiler for use by these template functions
 //
 #include "compiler.h"
-
-//****************************************************************************
-//
-//  Returns a word filled with the JITs allocator default fill value.
-//
-template <typename T>
-inline T UninitializedWord(Compiler* comp)
-{
-    unsigned char defaultFill = 0xdd;
-    if (comp == nullptr)
-    {
-        comp = JitTls::GetCompiler();
-    }
-    defaultFill = Compiler::compGetJitDefaultFill(comp);
-    assert(defaultFill <= 0xff);
-    int64_t word = 0x0101010101010101LL * defaultFill;
-    return (T)word;
-}
-
-//****************************************************************************
-//
-//  Tries to determine if this value is coming from uninitialized JIT memory
-//    - Returns true if the value matches what we initialized the memory to.
-//
-//  Notes:
-//    - Asserts that use this are assuming that the UninitializedWord value
-//      isn't a legal value for 'data'.  Thus using a default fill value of
-//      0x00 will often trigger such asserts.
-//
-template <typename T>
-inline bool IsUninitialized(T data)
-{
-    return data == UninitializedWord<T>(JitTls::GetCompiler());
-}
 
 #pragma warning(push)
 #pragma warning(disable : 4312)

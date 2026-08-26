@@ -83,6 +83,105 @@ HRESULT CordbRegisterSet::GetRegistersAvailable(ULONG64* pAvailable)
     return S_OK;
 }
 
+// Reads the value of a single register (identified by a CorDebugRegister index) into *pValue.
+// Shared by both GetRegisters overloads to avoid duplicating the per-register mapping.
+static HRESULT GetRegisterValue(CordbThread * pThread, const DT_CONTEXT * pContext, int regIndex, CORDB_REGISTER * pValue)
+{
+    if ((regIndex >= REGISTER_LOONGARCH64_F0) && (regIndex <= REGISTER_LOONGARCH64_F31))
+    {
+        if (!pThread->m_fFloatStateValid)
+        {
+            HRESULT     hr = S_OK;
+            EX_TRY
+            {
+                pThread->LoadFloatState();
+            }
+            EX_CATCH_HRESULT(hr);
+
+            if ( !SUCCEEDED(hr) )
+            {
+                return hr;
+            }
+            LOG( ( LF_CORDB, LL_INFO1000, "CRS::GR: Loaded float state\n" ) );
+        }
+
+        *pValue = *(CORDB_REGISTER*)&(pThread->m_floatValues[(regIndex - REGISTER_LOONGARCH64_F0)]);
+        return S_OK;
+    }
+
+    switch (regIndex)
+    {
+    case REGISTER_LOONGARCH64_A0:
+        *pValue = pContext->A0; break;
+    case REGISTER_LOONGARCH64_A1:
+        *pValue = pContext->A1; break;
+    case REGISTER_LOONGARCH64_A2:
+        *pValue = pContext->A2; break;
+    case REGISTER_LOONGARCH64_A3:
+        *pValue = pContext->A3; break;
+    case REGISTER_LOONGARCH64_A4:
+        *pValue = pContext->A4; break;
+    case REGISTER_LOONGARCH64_A5:
+        *pValue = pContext->A5; break;
+    case REGISTER_LOONGARCH64_A6:
+        *pValue = pContext->A6; break;
+    case REGISTER_LOONGARCH64_A7:
+        *pValue = pContext->A7; break;
+    case REGISTER_LOONGARCH64_S0:
+        *pValue = pContext->S0; break;
+    case REGISTER_LOONGARCH64_S1:
+        *pValue = pContext->S1; break;
+    case REGISTER_LOONGARCH64_S2:
+        *pValue = pContext->S2; break;
+    case REGISTER_LOONGARCH64_S3:
+        *pValue = pContext->S3; break;
+    case REGISTER_LOONGARCH64_S4:
+        *pValue = pContext->S4; break;
+    case REGISTER_LOONGARCH64_S5:
+        *pValue = pContext->S5; break;
+    case REGISTER_LOONGARCH64_S6:
+        *pValue = pContext->S6; break;
+    case REGISTER_LOONGARCH64_S7:
+        *pValue = pContext->S7; break;
+    case REGISTER_LOONGARCH64_S8:
+        *pValue = pContext->S8; break;
+    case REGISTER_LOONGARCH64_T0:
+        *pValue = pContext->T0; break;
+    case REGISTER_LOONGARCH64_T1:
+        *pValue = pContext->T1; break;
+    case REGISTER_LOONGARCH64_T2:
+        *pValue = pContext->T2; break;
+    case REGISTER_LOONGARCH64_T3:
+        *pValue = pContext->T3; break;
+    case REGISTER_LOONGARCH64_T4:
+        *pValue = pContext->T4; break;
+    case REGISTER_LOONGARCH64_T5:
+        *pValue = pContext->T5; break;
+    case REGISTER_LOONGARCH64_T6:
+        *pValue = pContext->T6; break;
+    case REGISTER_LOONGARCH64_T7:
+        *pValue = pContext->T7; break;
+    case REGISTER_LOONGARCH64_T8:
+        *pValue = pContext->T8; break;
+    case REGISTER_LOONGARCH64_X0:
+        *pValue = pContext->X0; break;
+    case REGISTER_LOONGARCH64_PC:
+        *pValue = pContext->Pc; break;
+    case REGISTER_LOONGARCH64_SP:
+        *pValue = pContext->Sp; break;
+    case REGISTER_LOONGARCH64_FP:
+        *pValue = pContext->Fp; break;
+    case REGISTER_LOONGARCH64_RA:
+        *pValue = pContext->Ra; break;
+    case REGISTER_LOONGARCH64_TP:
+        *pValue = pContext->Tp; break;
+    default:
+        _ASSERTE(false); break;
+    }
+
+    return S_OK;
+}
+
 HRESULT CordbRegisterSet::GetRegisters(ULONG64 mask, ULONG32 regCount,
                                        CORDB_REGISTER regBuffer[])
 {
@@ -102,56 +201,12 @@ HRESULT CordbRegisterSet::GetRegisters(ULONG64 mask, ULONG32 regCount,
         {
             _ASSERTE (iRegister < regCount);
 
-            if ((i >= REGISTER_LOONGARCH64_A0) && (i <= REGISTER_LOONGARCH64_X0))
+            HRESULT hr = GetRegisterValue(m_thread, &m_context, i, &regBuffer[iRegister]);
+            if (FAILED(hr))
             {
-                regBuffer[iRegister++] = *(ULONG64*)((char*)(&m_rd->A0) + ((i - REGISTER_LOONGARCH64_A0) << 3));
-                continue;
+                return hr;
             }
-
-            if ((i >= REGISTER_LOONGARCH64_S0) && (i <= REGISTER_LOONGARCH64_S8))
-            {
-                regBuffer[iRegister++] = *(ULONG64*)((char*)(&m_rd->S0) + ((i - REGISTER_LOONGARCH64_S0) << 3));
-                continue;
-            }
-
-            if ((i >= REGISTER_LOONGARCH64_F0) && (i <= REGISTER_LOONGARCH64_F31))
-            {
-                if (!m_thread->m_fFloatStateValid)
-                {
-                    HRESULT     hr = S_OK;
-                    EX_TRY
-                    {
-                        m_thread->LoadFloatState();
-                    }
-                    EX_CATCH_HRESULT(hr);
-
-                    if ( !SUCCEEDED(hr) )
-                    {
-                        return hr;
-                    }
-                    LOG( ( LF_CORDB, LL_INFO1000, "CRS::GR: Loaded float state\n" ) );
-                }
-
-                regBuffer[iRegister++] = *(CORDB_REGISTER*)
-                                          &(m_thread->m_floatValues[(i - REGISTER_LOONGARCH64_F0)]);
-                continue;
-            }
-
-            switch (i)
-            {
-            case REGISTER_LOONGARCH64_PC:
-                regBuffer[iRegister++] = m_rd->PC; break;
-            case REGISTER_LOONGARCH64_SP:
-                regBuffer[iRegister++] = m_rd->SP; break;
-            case REGISTER_LOONGARCH64_FP:
-                regBuffer[iRegister++] = m_rd->FP; break;
-            case REGISTER_LOONGARCH64_RA:
-                regBuffer[iRegister++] = m_rd->RA; break;
-            case REGISTER_LOONGARCH64_TP:
-                regBuffer[iRegister++] = m_rd->TP; break;
-            default:
-                _ASSERTE(false); break;
-            }
+            iRegister++;
         }
     }
 
@@ -200,95 +255,15 @@ HRESULT CordbRegisterSet::GetRegisters(ULONG32 maskCount, BYTE mask[],
 
                 int i = m * 8 + bit;
 
-                if ((i >= REGISTER_LOONGARCH64_A0) && (i <= REGISTER_LOONGARCH64_X0))
+                HRESULT hr = GetRegisterValue(m_thread, &m_context, i, &regBuffer[iRegister]);
+                if (FAILED(hr))
                 {
-                    regBuffer[iRegister++] = *(ULONG64*)((char*)(&m_rd->A0) + ((i - REGISTER_LOONGARCH64_A0) << 3));
-                    continue;
+                    return hr;
                 }
-
-                if ((i >= REGISTER_LOONGARCH64_S0) && (i <= REGISTER_LOONGARCH64_S8))
-                {
-                    regBuffer[iRegister++] = *(ULONG64*)((char*)(&m_rd->S0) + ((i - REGISTER_LOONGARCH64_S0) << 3));
-                    continue;
-                }
-
-
-                if ((i >= REGISTER_LOONGARCH64_F0) && (i <= REGISTER_LOONGARCH64_F31))
-                {
-                    if (!m_thread->m_fFloatStateValid)
-                    {
-                        HRESULT     hr = S_OK;
-                        EX_TRY
-                        {
-                            m_thread->LoadFloatState();
-                        }
-                        EX_CATCH_HRESULT(hr);
-
-                        if ( !SUCCEEDED(hr) )
-                        {
-                            return hr;
-                        }
-                        LOG( ( LF_CORDB, LL_INFO1000, "CRS::GR: Loaded float state\n" ) );
-                    }
-
-                    regBuffer[iRegister++] = *(CORDB_REGISTER*)
-                                              &(m_thread->m_floatValues[(i - REGISTER_LOONGARCH64_F0)]);
-                    continue;
-                }
-
-                switch (i)
-                {
-                case REGISTER_LOONGARCH64_PC:
-                    regBuffer[iRegister++] = m_rd->PC; break;
-                case REGISTER_LOONGARCH64_SP:
-                    regBuffer[iRegister++] = m_rd->SP; break;
-                case REGISTER_LOONGARCH64_FP:
-                    regBuffer[iRegister++] = m_rd->FP; break;
-                case REGISTER_LOONGARCH64_RA:
-                    regBuffer[iRegister++] = m_rd->RA; break;
-                case REGISTER_LOONGARCH64_TP:
-                    regBuffer[iRegister++] = m_rd->TP; break;
-                default:
-                    _ASSERTE(false); break;
-                }
+                iRegister++;
             }
         }
     }
 
     return S_OK;
-}
-
-
-// This is just a convenience function to convert a regdisplay into a Context.
-// Since a context has more info than a regdisplay, the conversion isn't perfect
-// and the context can't be fully accurate.
-void CordbRegisterSet::InternalCopyRDToContext(DT_CONTEXT *pInputContext)
-{    INTERNAL_SYNC_API_ENTRY(GetProcess());
-    _ASSERTE(pInputContext);
-
-    if ((pInputContext->ContextFlags & DT_CONTEXT_INTEGER) == DT_CONTEXT_INTEGER)
-    {
-        ULONG64* pDest = &pInputContext->A0;
-        ULONG64* pSrc  = &m_rd->A0;
-        for (int i = REGISTER_LOONGARCH64_A0; i < REGISTER_LOONGARCH64_X0; ++i)
-        {
-            *pDest++ = *pSrc++;
-        }
-
-        pDest = &pInputContext->S0;
-        pSrc  = &m_rd->S0;
-        for (int i = REGISTER_LOONGARCH64_S0; i <= REGISTER_LOONGARCH64_S8; ++i)
-        {
-            *pDest++ = *pSrc++;
-        }
-
-        pInputContext->Ra = m_rd->RA;
-    }
-
-    if ((pInputContext->ContextFlags & DT_CONTEXT_CONTROL) == DT_CONTEXT_CONTROL)
-    {
-        pInputContext->Sp = m_rd->SP;
-        pInputContext->Pc = m_rd->PC;
-        pInputContext->Fp = m_rd->FP;
-    }
 }

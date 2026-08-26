@@ -60,6 +60,8 @@ namespace Mono.Linker.Tests.TestCases
 
         public NPath TestSuiteDirectory { get; }
 
+        public override string ToString() => DisplayName;
+
         public TypeDefinition FindTypeDefinition(AssemblyDefinition caseAssemblyDefinition)
         {
             var typeDefinition = caseAssemblyDefinition.MainModule.GetType(ReconstructedFullTypeName);

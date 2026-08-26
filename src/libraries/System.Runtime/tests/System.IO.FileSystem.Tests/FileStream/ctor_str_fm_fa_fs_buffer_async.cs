@@ -24,7 +24,7 @@ namespace System.IO.Tests
         {
             using (FileStream fs = CreateFileStream(GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite, FileShare.Read, c_DefaultBufferSize, isAsync))
             {
-                Assert.Equal(isAsync, fs.IsAsync);
+                Assert.Equal(IsAsyncIoSupportedForRegularFiles && isAsync, fs.IsAsync);
             }
         }
     }

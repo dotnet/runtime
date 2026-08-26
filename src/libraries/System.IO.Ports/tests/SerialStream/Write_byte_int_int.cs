@@ -33,21 +33,21 @@ namespace System.IO.Ports.Tests
         private const int DEFAULT_NUM_WRITES = 3;
 
         #region Test Cases
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(SerialStream_Write_byte_int_int), nameof(HasOneSerialPort))]
         public void Buffer_Null()
         {
             VerifyWriteException(null, 0, 1, typeof(ArgumentNullException));
         }
 
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(SerialStream_Write_byte_int_int), nameof(HasOneSerialPort))]
         public void Offset_NEG1()
         {
             VerifyWriteException(new byte[DEFAULT_BUFFER_SIZE], -1, DEFAULT_BUFFER_COUNT, typeof(ArgumentOutOfRangeException));
         }
 
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(SerialStream_Write_byte_int_int), nameof(HasOneSerialPort))]
         public void Offset_NEGRND()
         {
             var rndGen = new Random(-55);
@@ -56,21 +56,21 @@ namespace System.IO.Ports.Tests
         }
 
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(SerialStream_Write_byte_int_int), nameof(HasOneSerialPort))]
         public void Offset_MinInt()
         {
             VerifyWriteException(new byte[DEFAULT_BUFFER_SIZE], int.MinValue, DEFAULT_BUFFER_COUNT, typeof(ArgumentOutOfRangeException));
         }
 
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(SerialStream_Write_byte_int_int), nameof(HasOneSerialPort))]
         public void Count_NEG1()
         {
             VerifyWriteException(new byte[DEFAULT_BUFFER_SIZE], DEFAULT_BUFFER_OFFSET, -1, typeof(ArgumentOutOfRangeException));
         }
 
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(SerialStream_Write_byte_int_int), nameof(HasOneSerialPort))]
         public void Count_NEGRND()
         {
             var rndGen = new Random(-55);
@@ -79,14 +79,14 @@ namespace System.IO.Ports.Tests
         }
 
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(SerialStream_Write_byte_int_int), nameof(HasOneSerialPort))]
         public void Count_MinInt()
         {
             VerifyWriteException(new byte[DEFAULT_BUFFER_SIZE], DEFAULT_BUFFER_OFFSET, int.MinValue, typeof(ArgumentOutOfRangeException));
         }
 
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(SerialStream_Write_byte_int_int), nameof(HasNullModem))]
         public void OffsetCount_EQ_Length_Plus_1()
         {
             var rndGen = new Random(-55);
@@ -99,7 +99,7 @@ namespace System.IO.Ports.Tests
         }
 
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(SerialStream_Write_byte_int_int), nameof(HasNullModem))]
         public void OffsetCount_GT_Length()
         {
             var rndGen = new Random(-55);
@@ -111,7 +111,7 @@ namespace System.IO.Ports.Tests
             VerifyWriteException(new byte[bufferLength], offset, count, expectedException);
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(SerialStream_Write_byte_int_int), nameof(HasNullModem))]
         public void Offset_GT_Length()
         {
             var rndGen = new Random(-55);
@@ -124,7 +124,7 @@ namespace System.IO.Ports.Tests
         }
 
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(SerialStream_Write_byte_int_int), nameof(HasNullModem))]
         public void Count_GT_Length()
         {
             var rndGen = new Random(-55);
@@ -137,7 +137,7 @@ namespace System.IO.Ports.Tests
         }
 
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(SerialStream_Write_byte_int_int), nameof(HasNullModem))]
         public void OffsetCount_EQ_Length()
         {
             var rndGen = new Random(-55);
@@ -148,7 +148,7 @@ namespace System.IO.Ports.Tests
             VerifyWrite(new byte[bufferLength], offset, count);
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(SerialStream_Write_byte_int_int), nameof(HasNullModem))]
         public void Offset_EQ_Length_Minus_1()
         {
             var rndGen = new Random(-55);
@@ -159,7 +159,7 @@ namespace System.IO.Ports.Tests
             VerifyWrite(new byte[bufferLength], offset, count);
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(SerialStream_Write_byte_int_int), nameof(HasNullModem))]
         public void Count_EQ_Length()
         {
             var rndGen = new Random(-55);
@@ -170,7 +170,7 @@ namespace System.IO.Ports.Tests
             VerifyWrite(new byte[bufferLength], offset, count);
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(SerialStream_Write_byte_int_int), nameof(HasNullModem))]
         public void ASCIIEncoding()
         {
             var rndGen = new Random(-55);
@@ -181,7 +181,7 @@ namespace System.IO.Ports.Tests
             VerifyWrite(new byte[bufferLength], offset, count, new ASCIIEncoding());
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(SerialStream_Write_byte_int_int), nameof(HasNullModem))]
         public void UTF8Encoding()
         {
             var rndGen = new Random(-55);
@@ -192,7 +192,7 @@ namespace System.IO.Ports.Tests
             VerifyWrite(new byte[bufferLength], offset, count, new UTF8Encoding());
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(SerialStream_Write_byte_int_int), nameof(HasNullModem))]
         public void UTF32Encoding()
         {
             var rndGen = new Random(-55);
@@ -203,7 +203,7 @@ namespace System.IO.Ports.Tests
             VerifyWrite(new byte[bufferLength], offset, count, new UTF32Encoding());
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(SerialStream_Write_byte_int_int), nameof(HasNullModem))]
         public void UnicodeEncoding()
         {
             var rndGen = new Random(-55);
@@ -214,7 +214,7 @@ namespace System.IO.Ports.Tests
             VerifyWrite(new byte[bufferLength], offset, count, new UnicodeEncoding());
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(SerialStream_Write_byte_int_int), nameof(HasNullModem))]
         public void LargeBuffer()
         {
             int bufferLength = LARGE_BUFFER_SIZE;
@@ -224,7 +224,7 @@ namespace System.IO.Ports.Tests
             VerifyWrite(new byte[bufferLength], offset, count, 1);
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(SerialStream_Write_byte_int_int), nameof(HasOneSerialPort))]
         public void InBreak()
         {
             using (var com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -237,7 +237,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
+        [ConditionalFact(typeof(SerialStream_Write_byte_int_int), nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
         public void Count_EQ_Zero()
         {
             using (var com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -250,7 +250,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(SerialStream_Write_byte_int_int), nameof(HasLoopbackOrNullModem))]
         public void WriteBreakSequenceDoesNotCorruptData()
         {
             using (SerialPort com1 = TCSupport.InitFirstSerialPort())

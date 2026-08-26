@@ -5,7 +5,7 @@
 #define __thread_h__
 
 #include "StackFrameIterator.h"
-#include "slist.h" // DefaultSListTraits
+#include "slist.h" // SListTraits
 #include <minipal/xoshiro128pp.h>
 
 struct gc_alloc_context;
@@ -141,6 +141,9 @@ struct RuntimeThreadLocals
 #ifdef FEATURE_HIJACK
     void **                 m_ppvHijackedReturnAddressLocation;
     void *                  m_pvHijackedReturnAddress;
+#if defined(TARGET_ARM64)
+    void *                  m_pSpForPacSign;
+#endif
 #endif // FEATURE_HIJACK
     PTR_ExInfo              m_pExInfoStackHead;
 #ifdef TARGET_X86
@@ -179,7 +182,7 @@ struct ReversePInvokeFrame
 class Thread : private RuntimeThreadLocals
 {
     friend class AsmOffsets;
-    friend struct DefaultSListTraits<Thread>;
+    friend struct SListTraits<Thread>;
     friend class ThreadStore;
     IN_DAC(friend class ClrDataAccess;)
 
@@ -214,6 +217,9 @@ public:
                                                     // On Unix this is an optimization to not queue up more signals when one is
                                                     // still being processed.
         TSF_Interrupted         = 0x00000200,       // Set to indicate Thread.Interrupt() has been called on this thread
+
+        TSF_SuspensionTrapped   = 0x00000400,       // Set when thread is trapped waiting for suspension to complete
+                                                    // (was in managed code).
     };
 private:
 
@@ -305,6 +311,8 @@ public:
 
     bool                IsDetached();
     void                SetDetached();
+
+    bool                IsSuspensionTrapped();
 
     PTR_VOID            GetThreadStressLog() const;
 #ifndef DACCESS_COMPILE

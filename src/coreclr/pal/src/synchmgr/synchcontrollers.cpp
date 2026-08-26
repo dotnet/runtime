@@ -144,64 +144,6 @@ namespace CorUnix
 
         fRetVal = m_psdSynchData->CanWaiterWaitWithoutBlocking(m_pthrOwner);
 
-        if(!fRetVal && otiProcess == m_psdSynchData->GetObjectTypeId())
-        {
-            // Note: if the target object is a process, here we need to check
-            // whether or not it has already exited. In fact, since currently
-            // we do not monitor a process status as long as there is no
-            // thread waiting on it, in general if the process already exited
-            // the process object is likely not to be signaled yet, therefore
-            // the above CanWaiterWaitWithoutBlocking call probably returned
-            // false, and, without the check below, that would cause the
-            // current thread to eventually go to sleep for a short time
-            // (until the worker thread notifies that the waited process has
-            // indeed exited), while it would not be necessary.
-            // As side effect that would cause a WaitForSingleObject with zero
-            // timeout to always return WAIT_TIMEOUT, even though the target
-            // process already exited. WaitForSingleObject with zero timeout
-            // is a common way to probe whether or not a process has already
-            // exited, and it is supposed to return WAIT_OBJECT_0 if the
-            // process exited, and WAIT_TIMEOUT if it is still active.
-            // In order to support this feature we need to check at this time
-            // whether or not the process has already exited.
-
-            CProcProcessLocalData * pProcLocalData = GetProcessLocalData();
-            DWORD dwExitCode = 0;
-            bool fIsActualExitCode = false;
-
-            _ASSERT_MSG(NULL != pProcLocalData,
-                        "Process synch data pointer is missing\n");
-
-            if (NULL != pProcLocalData &&
-                CPalSynchronizationManager::HasProcessExited(pProcLocalData->dwProcessId,
-                                                             &dwExitCode,
-                                                             &fIsActualExitCode))
-            {
-                TRACE("Process pid=%u exited with %s exitcode=%u\n",
-                      pProcLocalData->dwProcessId,
-                      fIsActualExitCode ? "actual" : "guessed",
-                      dwExitCode);
-
-                // Store the exit code in the process local data
-                if (fIsActualExitCode)
-                {
-                    pProcLocalData->dwExitCode = dwExitCode;
-                }
-
-                // Set process status to PS_DONE
-                pProcLocalData->ps = PS_DONE;
-
-                // Set signal count
-                m_psdSynchData->SetSignalCount(1);
-
-                // Releasing all local waiters
-                // (see comments in DoMonitorProcesses)
-                m_psdSynchData->ReleaseAllLocalWaiters(m_pthrOwner);
-
-                fRetVal = true;
-            }
-        }
-
         *pfCanWaitWithoutBlocking = fRetVal;
         return NO_ERROR;
     }
@@ -305,31 +247,6 @@ namespace CorUnix
 
         ptwiWaitInfo->rgpWTLNodes[ptwiWaitInfo->lObjCount] = pwtlnNewNode;
 
-        if(otiProcess == m_psdSynchData->GetObjectTypeId())
-        {
-            CProcProcessLocalData * pProcLocalData = GetProcessLocalData();
-
-            if (NULL == pProcLocalData)
-            {
-                // Process local data pointer not set in the controller.
-                // This pointer is set in CSynchWaitController only when the
-                // wait controller for the object is created by calling
-                // GetSynchWaitControllersForObjects
-                ASSERT("Process synch data pointer is missing\n");
-                palErr = ERROR_INTERNAL_ERROR;
-                goto RWT_exit;
-            }
-
-            palErr = pSynchManager->RegisterProcessForMonitoring(m_pthrOwner,
-                                                                 m_psdSynchData,
-                                                                 m_pProcessObject,
-                                                                 pProcLocalData);
-            if (NO_ERROR != palErr)
-            {
-                goto RWT_exit;
-            }
-        }
-
         if (0 == ptwiWaitInfo->lObjCount)
         {
             DWORD dwWaitState;
@@ -422,41 +339,6 @@ namespace CorUnix
         _ASSERTE(InternalGetCurrentThread() == m_pthrOwner);
 
         Release();
-    }
-
-    /*++
-    Method:
-      CSynchWaitController::GetProcessLocalData
-
-    Accessor Get method for process local data of the target object
-    --*/
-    CProcProcessLocalData * CSynchWaitController::GetProcessLocalData()
-    {
-        VALIDATEOBJECT(m_psdSynchData);
-
-        _ASSERTE(InternalGetCurrentThread() == m_pthrOwner);
-        _ASSERT_MSG(NULL != m_pProcLocalData,
-                    "Pointer to process local data not yet initialized\n");
-
-        return m_pProcLocalData;
-    }
-
-    /*++
-    Method:
-      CSynchWaitController::SetProcessData
-
-    Accessor Set method for process local data of the target object
-    --*/
-    void CSynchWaitController::SetProcessData(IPalObject* pProcessObject, CProcProcessLocalData * pProcLocalData)
-    {
-        VALIDATEOBJECT(m_psdSynchData);
-
-        _ASSERTE(InternalGetCurrentThread() == m_pthrOwner);
-        _ASSERT_MSG(m_pProcessObject == nullptr, "SetProcessData should not be called more than once");
-        _ASSERT_MSG(pProcessObject != nullptr && pProcessObject->GetObjectType()->GetId() == otiProcess, "Invalid process object passed to SetProcessData");
-
-        m_pProcessObject = pProcessObject;
-        m_pProcLocalData = pProcLocalData;
     }
 
     /////////////////////////////

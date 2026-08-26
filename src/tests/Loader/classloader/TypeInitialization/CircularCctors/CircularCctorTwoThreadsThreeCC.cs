@@ -86,6 +86,8 @@ public class Coordinator
     public readonly Thread Thread;
     private static readonly Barrier s_barrier = new (3);
 
+    public Coordinator() { }
+
     private Coordinator(bool xThenY, SlotConstants threadTag)
     {
         var t = new Thread(() => {
@@ -130,8 +132,7 @@ public class Coordinator
         Console.WriteLine ($"{Thread.CurrentThread.ManagedThreadId}: {msg}");
     }
 
-    [ActiveIssue("System.Threading.Thread.ThrowIfMultithreadingIsNotSupported: PlatformNotSupportedException", TestPlatforms.Browser)]
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public static void RunTestCase()
     {
         var c1 = CreateThread(xThenY: true, threadTag: SlotConstants.Thread1);

@@ -153,7 +153,7 @@ namespace ILCompiler.DependencyAnalysis
                 dependencies.Add(new DependencyListEntry(methodEntryPointNode, "NativeLayoutMethodEntryVertexNode entrypoint"));
             }
 
-            context.MetadataManager.GetNativeLayoutMetadataDependencies(ref dependencies, context, GetMethodForMetadata(_method, out _));
+            context.MetadataManager.GetNativeLayoutMetadataDependencies(ref dependencies, context, GetMethodForMetadata(_method, out _, out _));
 
             return dependencies;
         }
@@ -191,9 +191,11 @@ namespace ILCompiler.DependencyAnalysis
             if (IsUnboxingStub)
                 flags |= MethodFlags.IsUnboxingStub;
 
-            MethodDesc methodForToken = GetMethodForMetadata(_method, out bool isAsyncVariant);
+            MethodDesc methodForToken = GetMethodForMetadata(_method, out bool isAsyncVariant, out bool isReturnDroppingAsyncThunk);
             if (isAsyncVariant)
                 flags |= MethodFlags.IsAsyncVariant;
+            if (isReturnDroppingAsyncThunk)
+                flags |= MethodFlags.IsReturnDroppingAsyncThunk;
 
             uint fptrReferenceId = 0;
             if ((_flags & MethodEntryFlags.SaveEntryPoint) != 0)
@@ -208,15 +210,23 @@ namespace ILCompiler.DependencyAnalysis
             return GetNativeWriter(factory).GetMethodSignature((uint)flags, fptrReferenceId, containingType, token, args);
         }
 
-        private static MethodDesc GetMethodForMetadata(MethodDesc method, out bool isAsyncVariant)
+        private static MethodDesc GetMethodForMetadata(MethodDesc method, out bool isAsyncVariant, out bool isReturnDroppingAsyncThunk)
         {
             MethodDesc result = method.GetTypicalMethodDefinition();
+            if (result is ReturnDroppingAsyncThunk rdThunk)
+            {
+                isAsyncVariant = false;
+                isReturnDroppingAsyncThunk = true;
+                return rdThunk.AsyncVariantTarget.Target;
+            }
             if (result is AsyncMethodVariant asyncVariant)
             {
                 isAsyncVariant = true;
+                isReturnDroppingAsyncThunk = false;
                 return asyncVariant.Target;
             }
             isAsyncVariant = false;
+            isReturnDroppingAsyncThunk = false;
             return result;
         }
 
@@ -1266,6 +1276,49 @@ namespace ILCompiler.DependencyAnalysis
             int slot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, method, method.OwningType);
 
             return writer.GetMethodSlotSignature(_signature.WriteVertex(factory), checked((uint)slot));
+        }
+    }
+
+    public sealed class NativeLayoutGvmDispatchGenericDictionarySlotNode : NativeLayoutGenericDictionarySlotNode
+    {
+        private MethodDesc _method;
+
+        public NativeLayoutGvmDispatchGenericDictionarySlotNode(NodeFactory factory, MethodDesc method)
+        {
+            Debug.Assert(method.HasInstantiation);
+            _method = method;
+        }
+
+        protected sealed override string GetName(NodeFactory factory) => "NativeLayoutGvmDispatchGenericDictionarySlotNode_" + factory.NameMangler.GetMangledMethodName(_method);
+
+        protected sealed override FixupSignatureKind SignatureKind => FixupSignatureKind.GvmDispatchCell;
+
+        public sealed override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        {
+            var result = new DependencyList();
+
+            foreach (var dependency in factory.NativeLayout.TemplateConstructableTypes(_method.OwningType))
+            {
+                result.Add(dependency, "template construction dependency for method OwningType");
+            }
+
+            foreach (var type in _method.Instantiation)
+            {
+                foreach (var dependency in factory.NativeLayout.TemplateConstructableTypes(type))
+                    result.Add(dependency, "template construction dependency for method Instantiation types");
+            }
+
+            MethodDesc canonMethod = _method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+            result.Add(factory.GVMDependencies(canonMethod), "GVM dependencies");
+            factory.MetadataManager.GetNativeLayoutMetadataDependencies(ref result, factory, GvmDispatchCellInfoSectionNode.GetMethodForMetadata(_method, out _));
+            result.Add(factory.NativeLayout.MethodEntry(_method), "wrappednode");
+
+            return result;
+        }
+
+        protected sealed override Vertex WriteSignatureVertex(NativeWriter writer, NodeFactory factory)
+        {
+            return factory.NativeLayout.MethodEntry(_method).WriteVertex(factory);
         }
     }
 

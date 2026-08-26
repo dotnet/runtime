@@ -53,7 +53,6 @@ void InstMethodHashEntry::SetMethodAndFlags(MethodDesc *pMethod, DWORD dwFlags)
     {
         THROWS;
         GC_NOTRIGGER;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
 
@@ -86,20 +85,20 @@ PTR_LoaderAllocator InstMethodHashTable::GetLoaderAllocator()
     }
 }
 
+#endif // #ifndef DACCESS_COMPILE
 
 // Calculate a hash value for a method-desc key
 static DWORD Hash(TypeHandle declaringType, mdMethodDef token, Instantiation inst)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     DWORD dwHash = 0x87654321;
 #define INST_HASH_ADD(_value) dwHash = ((dwHash << 5) + dwHash) ^ (_value)
 #ifdef TARGET_64BIT
-#define INST_HASH_ADDPOINTER(_value) INST_HASH_ADD((uint32_t)(uintptr_t)_value); INST_HASH_ADD((uint32_t)(((uintptr_t)_value) >> 32))
+#define INST_HASH_ADDPOINTER(_value) INST_HASH_ADD((uint32_t)dac_cast<TADDR>(_value)); INST_HASH_ADD((uint32_t)((dac_cast<TADDR>(_value)) >> 32))
 #else
-#define INST_HASH_ADDPOINTER(_value) INST_HASH_ADD((uint32_t)(uintptr_t)_value);
+#define INST_HASH_ADDPOINTER(_value) INST_HASH_ADD((uint32_t)dac_cast<TADDR>(_value));
 #endif
 
     INST_HASH_ADDPOINTER(declaringType.AsPtr());
@@ -119,13 +118,12 @@ MethodDesc* InstMethodHashTable::FindMethodDesc(TypeHandle declaringType,
                                                 BOOL unboxingStub,
                                                 Instantiation inst,
                                                 BOOL getSharedNotStub,
-                                                bool isAsyncVariant)
+                                                AsyncVariantLookup variantLookup)
 {
     CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         PRECONDITION(CheckPointer(declaringType));
     }
     CONTRACTL_END
@@ -161,7 +159,7 @@ MethodDesc* InstMethodHashTable::FindMethodDesc(TypeHandle declaringType,
             continue;  // Next iteration of the for loop
         }
 
-        if (pMD->IsAsyncVariantMethod() != isAsyncVariant)
+        if (!pMD->MatchesAsyncVariantLookup(variantLookup))
         {
             continue;
         }
@@ -196,6 +194,8 @@ MethodDesc* InstMethodHashTable::FindMethodDesc(TypeHandle declaringType,
     return pMDResult;
 }
 
+#ifndef DACCESS_COMPILE
+
 BOOL InstMethodHashTable::ContainsMethodDesc(MethodDesc* pMD)
 {
     CONTRACTL
@@ -208,7 +208,7 @@ BOOL InstMethodHashTable::ContainsMethodDesc(MethodDesc* pMD)
 
     return FindMethodDesc(
         pMD->GetMethodTable(), pMD->GetMemberDef(), pMD->IsUnboxingStub(),
-        pMD->GetMethodInstantiation(), pMD->RequiresInstArg(), pMD->IsAsyncVariantMethod()) != NULL;
+        pMD->GetMethodInstantiation(), pMD->RequiresInstArg(), pMD->GetMatchingAsyncVariantLookup()) != NULL;
 }
 
 #endif // #ifndef DACCESS_COMPILE
@@ -294,7 +294,6 @@ void InstMethodHashTable::InsertMethodDesc(MethodDesc *pMD)
     {
         THROWS;
         GC_NOTRIGGER;
-        INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(IsUnsealed());          // If we are sealed then we should not be adding to this hashtable
         PRECONDITION(CheckPointer(pMD));
 

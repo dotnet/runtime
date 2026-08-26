@@ -143,9 +143,13 @@ namespace System.Diagnostics
         public virtual IDisposable Subscribe(IObserver<KeyValuePair<string, object?>> observer, Func<string, object?, object?, bool>? isEnabled,
             Action<Activity, object?>? onActivityImport = null, Action<Activity, object?>? onActivityExport = null)
         {
-            return isEnabled == null ?
-             SubscribeInternal(observer, null, null, onActivityImport, onActivityExport) :
-             SubscribeInternal(observer, name => IsEnabled(name, null, null), isEnabled, onActivityImport, onActivityExport);
+            if (isEnabled == null)
+            {
+                return SubscribeInternal(observer, null, null, onActivityImport, onActivityExport);
+            }
+
+            Func<string, object?, object?, bool> localIsEnabled = isEnabled;
+            return SubscribeInternal(observer, name => localIsEnabled(name, null, null), isEnabled, onActivityImport, onActivityExport);
         }
     }
 }

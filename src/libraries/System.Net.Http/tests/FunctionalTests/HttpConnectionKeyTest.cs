@@ -24,6 +24,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory, MemberData(nameof(KeyComponents))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", typeof(PlatformDetection), nameof(PlatformDetection.IsWasi))]
         public void Equals_DifferentParameters_ReturnsTrueIfAllEqual(string kindString, string host, int port, string sslHostName, Uri proxyUri, string identity, bool expected)
         {
             Type connectionKindType = Type.GetType("System.Net.Http.HttpConnectionKind, System.Net.Http");

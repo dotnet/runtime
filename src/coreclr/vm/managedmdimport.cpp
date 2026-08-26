@@ -12,20 +12,29 @@
 //
 extern BOOL ParseNativeTypeInfo(NativeTypeParamInfo* pInfo, PCCOR_SIGNATURE pvNativeType, ULONG cbNativeType);
 
-FCIMPL11(FC_BOOL_RET, MetaDataImport::GetMarshalAs,
+extern "C" BOOL QCALLTYPE MetadataImport_GetMarshalAs(
     BYTE*   pvNativeType,
     ULONG   cbNativeType,
     INT32*  unmanagedType,
     INT32*  safeArraySubType,
     LPUTF8* safeArrayUserDefinedSubType,
+    INT32*  safeArrayUserDefinedSubTypeLength,
     INT32*  arraySubType,
     INT32*  sizeParamIndex,
     INT32*  sizeConst,
     LPUTF8* marshalType,
+    INT32*  marshalTypeLength,
     LPUTF8* marshalCookie,
+    INT32*  marshalCookieLength,
     INT32*  iidParamIndex)
 {
-    FCALL_CONTRACT;
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     NativeTypeParamInfo info{};
 
@@ -37,7 +46,7 @@ FCIMPL11(FC_BOOL_RET, MetaDataImport::GetMarshalAs,
     ZeroMemory(&info, sizeof(info));
     if (!ParseNativeTypeInfo(&info, pvNativeType, cbNativeType))
     {
-        FC_RETURN_BOOL(FALSE);
+        return FALSE;
     }
 
     *unmanagedType = info.m_NativeType;
@@ -51,21 +60,24 @@ FCIMPL11(FC_BOOL_RET, MetaDataImport::GetMarshalAs,
     *safeArraySubType = info.m_SafeArrayElementVT;
 
     *safeArrayUserDefinedSubType = info.m_strSafeArrayUserDefTypeName;
+    *safeArrayUserDefinedSubTypeLength = info.m_cSafeArrayUserDefTypeNameBytes;
 #else
     *iidParamIndex = 0;
 
     *safeArraySubType = VT_EMPTY;
 
     *safeArrayUserDefinedSubType = NULL;
+    *safeArrayUserDefinedSubTypeLength = 0;
 #endif
 
     *marshalType = info.m_strCMMarshalerTypeName;
+    *marshalTypeLength = info.m_cCMMarshalerTypeNameBytes;
 
     *marshalCookie = info.m_strCMCookie;
+    *marshalCookieLength = info.m_cCMCookieStrBytes;
 
-    FC_RETURN_BOOL(TRUE);
+    return TRUE;
 }
-FCIMPLEND
 
 FCIMPL1(IMDInternalImport*, MetaDataImport::GetMetadataImport, ReflectModuleBaseObject * pModuleUNSAFE)
 {
@@ -196,8 +208,7 @@ FCIMPL4(HRESULT, MetaDataImport::GetUserString, IMDInternalImport* pScope, mdTok
 {
     FCALL_CONTRACT;
 
-    BOOL bHasExtendedChars;
-    return pScope->GetUserString(tk, pCount, &bHasExtendedChars, pszName);
+    return pScope->GetUserString(tk, pCount, pszName);
 }
 FCIMPLEND
 
@@ -460,19 +471,17 @@ public:
 
     INT32* AllocateUnmanagedArray(INT32 length)
     {
-        CONTRACT(INT32*)
+        CONTRACTL
         {
             THROWS;
             MODE_PREEMPTIVE;
             PRECONDITION(_alloc == NULL);
-            POSTCONDITION((length == _length));
-            POSTCONDITION((RETVAL != NULL));
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
         _alloc = new INT32[length];
         _length = length;
-        RETURN _alloc;
+        return _alloc;
     }
 
     void AllocateManagedArray(QCall::ObjectHandleOnStack& longResult)
@@ -500,15 +509,14 @@ static void* EnsureResultSize(
     INT32* shortResult,
     ResultMemory& resultMemory)
 {
-    CONTRACT(void*)
+    CONTRACTL
     {
         THROWS;
         MODE_PREEMPTIVE;
         PRECONDITION(shortResultLen > 0);
         PRECONDITION(shortResult != NULL);
-        POSTCONDITION((RETVAL != NULL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     void* p;
     if (resultLength <= shortResultLen)
@@ -521,7 +529,8 @@ static void* EnsureResultSize(
         p = resultMemory.AllocateUnmanagedArray(resultLength);
     }
     ZeroMemory(p, (size_t)resultLength * sizeof(INT32));
-    RETURN p;
+    _ASSERTE((p != NULL));
+    return p;
 }
 
 extern "C" void QCALLTYPE MetadataImport_Enum(

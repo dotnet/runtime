@@ -13,6 +13,8 @@ namespace System.IO.Tests
 
         public static bool ReservedDeviceNamesAreBlocked => PlatformDetection.IsWindows && !PlatformDetection.IsWindows10OrLater;
 
+        public static bool IsAsyncIoSupportedForRegularFiles => PlatformDetection.IsWindows;
+
         public static TheoryData<string> PathsWithInvalidColons = TestData.PathsWithInvalidColons;
         public static TheoryData<string> PathsWithInvalidCharacters = TestData.PathsWithInvalidCharacters;
         public static TheoryData<char> TrailingCharacters = TestData.TrailingCharacters;

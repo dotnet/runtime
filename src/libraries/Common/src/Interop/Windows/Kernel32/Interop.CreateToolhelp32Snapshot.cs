@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -22,7 +23,7 @@ internal static partial class Interop
         }
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-        internal unsafe struct PROCESSENTRY32
+        internal struct PROCESSENTRY32
         {
             internal int dwSize;
             internal int cntUsage;
@@ -33,19 +34,32 @@ internal static partial class Interop
             internal int th32ParentProcessID;
             internal int pcPriClassBase;
             internal int dwFlags;
-            internal fixed char szExeFile[MAX_PATH];
+#if NET
+            internal ExeFileNameBuffer szExeFile;
+
+            [InlineArray(MAX_PATH)]
+            internal struct ExeFileNameBuffer
+            {
+                private char _element0;
+            }
+#else
+            internal unsafe fixed char szExeFile[MAX_PATH];
+#endif
         }
 
         // https://learn.microsoft.com/windows/desktop/api/tlhelp32/nf-tlhelp32-createtoolhelp32snapshot
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Kernel32, SetLastError = true)]
         internal static partial nint CreateToolhelp32Snapshot(SnapshotFlags dwFlags, uint th32ProcessID);
 
         // https://learn.microsoft.com/windows/desktop/api/tlhelp32/nf-tlhelp32-process32first
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Kernel32, EntryPoint = "Process32FirstW", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool Process32First(nint hSnapshot, PROCESSENTRY32* lppe);
 
         // https://learn.microsoft.com/windows/desktop/api/tlhelp32/nf-tlhelp32-process32next
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Kernel32, EntryPoint = "Process32NextW", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool Process32Next(nint hSnapshot, PROCESSENTRY32* lppe);

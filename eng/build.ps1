@@ -135,6 +135,29 @@ function Get-Help() {
   Write-Host "For more information, check out https://github.com/dotnet/runtime/blob/main/docs/workflow/README.md"
 }
 
+function Check-LongPathSupport() {
+  $regValue = Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -ErrorAction SilentlyContinue
+
+  if ($regValue -and $regValue.LongPathsEnabled -eq 1) {
+    return
+  }
+
+  Write-Host ""
+  Write-Host "ERROR: Long file paths are not enabled on this system." -ForegroundColor Red
+  Write-Host "The dotnet/runtime repository requires long path support to build successfully." -ForegroundColor Red
+  Write-Host ""
+  Write-Host "Please follow the instructions at:" -ForegroundColor Yellow
+  Write-Host "  docs\workflow\requirements\windows-requirements.md#enable-long-paths" -ForegroundColor Yellow
+  Write-Host ""
+  Write-Host "Quick fix:" -ForegroundColor Yellow
+  Write-Host "  1. Enable long paths in Windows (requires admin):" -ForegroundColor White
+  Write-Host "     https://learn.microsoft.com/windows/win32/fileio/maximum-file-path-limitation" -ForegroundColor White
+  Write-Host "  2. Enable long paths in Git:" -ForegroundColor White
+  Write-Host "     git config --system core.longpaths true" -ForegroundColor White
+  Write-Host ""
+  exit 1
+}
+
 if ($help) {
   Get-Help
   exit 0
@@ -151,6 +174,8 @@ if ($subset -eq 'help') {
   Invoke-Expression "& `"$PSScriptRoot/common/build.ps1`" -restore -build /p:subset=help /clp:nosummary /tl:false"
   exit 0
 }
+
+Check-LongPathSupport
 
 # Lower-case the passed in OS string.
 if ($os) {
@@ -336,7 +361,15 @@ foreach ($argument in $PSBoundParameters.Keys)
     "framework"              { $arguments += " /p:BuildTargetFramework=$($PSBoundParameters[$argument].ToLowerInvariant())" }
     "os"                     { $arguments += " /p:TargetOS=$($PSBoundParameters[$argument])" }
     "pack"                   { $arguments += " -pack /p:BuildAllConfigurations=true" }
-    "properties"             { $arguments += " " + $properties }
+    "properties"             {
+      # These arguments are later passed to Invoke-Expression, which re-parses the
+      # string as PowerShell. Wrap any value containing a ';' in quotes so it isn't
+      # interpreted as a statement separator (e.g. '-warnnotaserror NU1901;NU1902;NU1903').
+      $quotedProperties = $properties | ForEach-Object {
+        if ($_ -match ';' -and $_ -notmatch '^["'']') { '"' + $_ + '"' } else { $_ }
+      }
+      $arguments += " " + ($quotedProperties -join ' ')
+    }
     "verbosity"              { $arguments += " -$argument " + $($PSBoundParameters[$argument]) }
     "cmakeargs"              { $arguments += " /p:CMakeArgs=`"$($PSBoundParameters[$argument])`"" }
     # The -ninja switch is a no-op since Ninja is the default generator on Windows.
