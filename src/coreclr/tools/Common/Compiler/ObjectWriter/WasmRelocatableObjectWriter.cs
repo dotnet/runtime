@@ -112,6 +112,7 @@ namespace ILCompiler.ObjectWriter
 
         private unsafe void ResolveRelocations(int sectionIndex, MemoryStream sectionStream, List<SymbolicRelocation> relocs, long sectionStart = 0)
         {
+            // TODO: We also need to emit relocations in the reloc section for the linker to resolve.
             byte[] relocScratchBuffer = new byte[Relocation.MaxSize];
 
             foreach (SymbolicRelocation reloc in relocs)
@@ -158,12 +159,19 @@ namespace ILCompiler.ObjectWriter
                             Relocation.WriteValue(reloc.Type, pData, symbol.Index + addend);
                             break;
                         }
+                        case RelocType.IMAGE_REL_BASED_HIGHLOW:
+                        {
+                            WasmDataSegmentEmitter segment = (WasmDataSegmentEmitter)_sections[definedSymbol.SectionIndex];
+                            int targetOffsetFromMemoryBase = segment.GetMemoryAddressOfOffset((int)(definedSymbol.Value + addend));
+                            Relocation.WriteValue(reloc.Type, pData, targetOffsetFromMemoryBase);
+                            break;
+                        }
 
                         default:
                             // TODO-WASM: add other cases as needed;
                             // ignoring other reloc types for now
                             throw new NotSupportedException($"Relocation type {reloc.Type} for symbol '{reloc.SymbolName}' at "
-                                + $"offset 0x{reloc.Offset:X} in section {sectionIndex} not yet implemented");
+                                + $"offset 0x{reloc.Offset:X} in section {_sections[sectionIndex].SectionName} not yet implemented");
 
                     }
 

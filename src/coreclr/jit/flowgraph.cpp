@@ -866,10 +866,7 @@ GenTreeCall* Compiler::fgGetSharedCCtor(CORINFO_CLASS_HANDLE cls)
 {
 #if defined(TARGET_WASM)
     // Wasm does not support dynamically created helpers
-    if (!IsNativeAot())
-    {
         return fgGetStaticsCCtorHelper(cls, CORINFO_HELP_INITCLASS);
-    }
 #endif
 
 #ifdef FEATURE_READYTORUN
