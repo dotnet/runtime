@@ -98,11 +98,24 @@ namespace System.Net.Mail
         {
             lock (this)
             {
-                // Gracefully release any previously cached connection (for example one that
-                // became stale after a configuration change) before establishing a new one so
-                // its socket is not leaked. This keeps the potentially blocking shutdown work on
-                // the send path rather than in the property setters that invalidated it.
-                _connection?.ReleaseConnection();
+                // Release any previously cached connection (for example one that became stale
+                // after a configuration change, or one whose connect attempt failed) before
+                // establishing a new one so its socket is not leaked. Only a connection that was
+                // actually established can be shut down gracefully (QUIT); a connection that never
+                // connected may not have an initialized stream, so it is aborted instead. This
+                // keeps the potentially blocking shutdown work on the send path rather than in the
+                // property setters that invalidated it.
+                if (_connection is not null)
+                {
+                    if (_connection.IsConnected)
+                    {
+                        _connection.ReleaseConnection();
+                    }
+                    else
+                    {
+                        _connection.Abort();
+                    }
+                }
                 _stale = false;
                 _connection = new SmtpConnection(this, _client, _credentials, _authenticationModules);
                 if (_shouldAbort)

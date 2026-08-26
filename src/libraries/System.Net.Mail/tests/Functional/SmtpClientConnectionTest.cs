@@ -137,7 +137,7 @@ namespace System.Net.Mail.Tests
                     Assert.Equal("SMTPSVC/127.0.0.1", Smtp.TargetName);
                     break;
                 case ConnectionAffectingProperty.Credentials:
-                    Smtp.Credentials = new NetworkCredential("user", "password");
+                    Smtp.Credentials = new NetworkCredential("foo", "bar");
                     break;
                 case ConnectionAffectingProperty.TargetName:
                     Smtp.TargetName = "SMTPSVC/example.com";
