@@ -99,27 +99,37 @@ namespace System.Net.Mail
         internal Task GetConnectionAsync<TIOAdapter>(string host, int port, CancellationToken cancellationToken = default)
             where TIOAdapter : IReadWriteAdapter
         {
+            // Detach any previously cached connection (for example one that became stale after a
+            // configuration change, or one whose connect attempt failed) so its socket is not
+            // leaked. Sends are serialized by SmtpClient._inCall, so no other GetConnectionAsync
+            // can run concurrently here.
+            SmtpConnection? previousConnection;
             lock (this)
             {
-                // Release any previously cached connection (for example one that became stale
-                // after a configuration change, or one whose connect attempt failed) before
-                // establishing a new one so its socket is not leaked. Only a connection that was
-                // actually established can be shut down gracefully (QUIT); a connection that never
-                // connected may not have an initialized stream, so it is aborted instead. This
-                // keeps the potentially blocking shutdown work on the send path rather than in the
-                // property setters that invalidated it.
-                if (_connection is not null)
-                {
-                    if (_connection.IsConnected)
-                    {
-                        _connection.ReleaseConnection();
-                    }
-                    else
-                    {
-                        _connection.Abort();
-                    }
-                }
+                previousConnection = _connection;
+                _connection = null;
                 _stale = false;
+            }
+
+            // Shut the previous connection down outside the lock: a graceful release performs a
+            // blocking QUIT over the network, and holding the transport lock across that I/O would
+            // delay a concurrent Abort() (for example from the send-timeout path). Only a
+            // connection that was actually established can be shut down gracefully; one that never
+            // connected may not have an initialized stream, so it is aborted instead.
+            if (previousConnection is not null)
+            {
+                if (previousConnection.IsConnected)
+                {
+                    previousConnection.ReleaseConnection();
+                }
+                else
+                {
+                    previousConnection.Abort();
+                }
+            }
+
+            lock (this)
+            {
                 _connection = new SmtpConnection(this, _client, _credentials, _authenticationModules);
                 if (_shouldAbort)
                 {
