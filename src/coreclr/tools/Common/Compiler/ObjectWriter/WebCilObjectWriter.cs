@@ -704,7 +704,7 @@ namespace ILCompiler.ObjectWriter
                     long preEntryStart = (b == 0) ? 0 : blobs[b - 1].End;
                     _codeOffsetMap[(ulong)preEntryStart] = (ulong)postEntryStart[b];
                 }
-                // Final boundary (end of the last entry) so a node ending the section resolves.
+                // Map final boundary (end of the last entry) so the `End` offset of a node ending the section resolves to the post-shrunk end.
                 long preTotalLength = blobs.Count > 0 ? blobs[blobs.Count - 1].End : 0;
                 _codeOffsetMap[(ulong)preTotalLength] = (ulong)writeCursor;
             }
