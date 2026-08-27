@@ -1889,10 +1889,6 @@ public:
 
 class UMThunkMarshInfo;
 
-#ifdef FEATURE_COMINTEROP
-struct CLRToCOMCallInfo;
-#endif // FEATURE_COMINTEROP
-
 class DelegateEEClass : public EEClass
 {
 public:
@@ -1903,10 +1899,6 @@ public:
     PCODE                            m_pMultiCastInvokeStub;
     UMThunkMarshInfo*                m_pUMThunkMarshInfo;
     Volatile<PCODE>                  m_pMarshalStub;
-
-#ifdef FEATURE_COMINTEROP
-    CLRToCOMCallInfo *m_pCLRToCOMCallInfo;
-#endif // FEATURE_COMINTEROP
 
     PTR_MethodDesc GetInvokeMethod()
     {

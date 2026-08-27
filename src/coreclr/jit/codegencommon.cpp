@@ -1847,6 +1847,14 @@ void CodeGen::genEmitCallWithCurrentGC(EmitCallParams& params)
         }
 #endif
 
+        // We can't provide an accurate location if the local is allocated on the UnknownSizeFrame.
+        // TODO-SVE: Remove this once vector register calling convention is supported, as we shouldn't
+        // be using the return buffer then.
+        if (m_compiler->lvaIsUnknownSizeLocal(lclNum))
+        {
+            return;
+        }
+
         info.returnValueLoc = getSiVarLoc(m_compiler->lvaGetDesc(lclNum), lclOffs, stackLevelBias);
     }
     else if (call->HasMultiRegRetVal())
