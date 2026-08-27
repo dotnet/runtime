@@ -8,6 +8,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.Emit;
+
 using crossgen2::ILCompiler;
 using crossgen2::ILCompiler.DependencyAnalysis.ReadyToRun;
 using crossgen2::ILCompiler.DependencyAnalysis.Wasm;
@@ -691,6 +695,111 @@ public class WasmArgumentLayoutTests
     }
 
     private const string CoreLibSimpleName = "System.Private.CoreLib";
+
+    /// <summary>
+    /// An exported callback resolves its MethodDesc at run time through
+    /// LookupUnmanagedCallersOnlyMethodByName, which matches on the declaring type and the method name
+    /// alone. Overloads are indistinguishable to it, so generation has to reject a name it could not
+    /// resolve rather than emit a wrapper that calls whichever one the walk reaches first.
+    /// </summary>
+    [Theory]
+    // Two exported overloads: the lookup cannot tell them apart.
+    [InlineData("[UnmanagedCallersOnly(EntryPoint = \"cb_one\")]", "Handle",
+                "[UnmanagedCallersOnly(EntryPoint = \"cb_two\")]", "Handle", true)]
+    // The twin does not have to be exported to be returned by the walk, which only tests the attribute.
+    [InlineData("[UnmanagedCallersOnly(EntryPoint = \"cb_one\")]", "Handle",
+                "[UnmanagedCallersOnly]", "Handle", true)]
+    // Distinct names resolve unambiguously.
+    [InlineData("[UnmanagedCallersOnly(EntryPoint = \"cb_one\")]", "HandleOne",
+                "[UnmanagedCallersOnly(EntryPoint = \"cb_two\")]", "HandleTwo", false)]
+    // Nothing is exported, so neither wrapper reaches the name lookup: the runtime hands both their
+    // MethodDesc through the arity-aware g_ReverseThunks key instead.
+    [InlineData("[UnmanagedCallersOnly]", "Handle", "[UnmanagedCallersOnly]", "Handle", false)]
+    // [MonoPInvokeCallback] is collected as a callback but carries no UnmanagedCallersOnly attribute,
+    // so the runtime walk skips it and it cannot be confused with the export.
+    [InlineData("[UnmanagedCallersOnly(EntryPoint = \"cb_one\")]", "Handle",
+                "[MonoPInvokeCallback]", "Handle", false)]
+    public void PortableCallHelpersGeneratorRejectsAnExportItCouldNotResolveByName(
+        string firstAttribute, string firstName, string secondAttribute, string secondName, bool expectRejected)
+    {
+        string source = $$"""
+            using System.Runtime.InteropServices;
+
+            public sealed class MonoPInvokeCallbackAttribute : System.Attribute { }
+
+            public static class Exports
+            {
+                {{firstAttribute}}
+                public static int {{firstName}}(int a) => a;
+
+                {{secondAttribute}}
+                public static int {{secondName}}(int a, int b) => a + b;
+            }
+            """;
+
+        string workingDirectory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        Directory.CreateDirectory(workingDirectory);
+
+        try
+        {
+            string inputAssembly = CompileCallbackAssembly(source, Path.Combine(workingDirectory, "Callbacks.dll"));
+            string outputDirectory = Path.Combine(workingDirectory, "generated");
+
+            var options = new PortableCallHelpersGeneratorOptions
+            {
+                OutputDirectory = outputDirectory,
+                TargetOS = "browser",
+                PInvokeModules = new[] { "libSystem.Native" },
+            };
+
+            var log = new StringWriter();
+            int exitCode = PortableCallHelpersGenerator.Run(
+                CreateWasmContext(inputAssembly), options, new Logger(log, isVerbose: false));
+
+            if (expectRejected)
+            {
+                Assert.Equal(1, exitCode);
+                Assert.Contains($"declares more than one [UnmanagedCallersOnly] method named '{firstName}'", log.ToString());
+            }
+            else
+            {
+                Assert.Equal(0, exitCode);
+                Assert.DoesNotContain("declares more than one", log.ToString());
+            }
+        }
+        finally
+        {
+            // The type system maps an input assembly with FileShare.Read and never releases it - the
+            // context is not disposable - so on Windows the compiled input cannot be deleted while
+            // this process lives. Cleaning up is best effort rather than a second way to fail.
+            try
+            {
+                Directory.Delete(workingDirectory, recursive: true);
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+            }
+        }
+    }
+
+    /// <summary>
+    /// Builds an input assembly for the generator to scan. It references the same CoreLib the context
+    /// reads, so the attributes it applies are the ones the type system will resolve.
+    /// </summary>
+    private static string CompileCallbackAssembly(string source, string outputPath)
+    {
+        CSharpCompilation compilation = CSharpCompilation.Create(
+            Path.GetFileNameWithoutExtension(outputPath),
+            new[] { CSharpSyntaxTree.ParseText(source) },
+            new[] { MetadataReference.CreateFromFile(TestPaths.SystemPrivateCoreLibPath) },
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+
+        EmitResult result = compilation.Emit(outputPath);
+        Assert.True(result.Success,
+            string.Join(Environment.NewLine, result.Diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error)));
+
+        return outputPath;
+    }
 
     private static EcmaType GetSystemType(ReadyToRunCompilerContext context, string typeName)
     {
