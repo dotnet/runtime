@@ -2873,22 +2873,22 @@ namespace Internal.JitInterface
                     Debug.Assert(!strippedInstantiation);
                     helperArg = new FieldWithToken(fieldDesc, fieldToken, forceOwningTypeNotDerivedFromToken: strippedInstantiation);
                 }
-            }
-            else if (helperId == ReadyToRunHelperId.TypeHandle &&
-                helperArg is TypeDesc typeDesc &&
-                pResolvedToken.hMethod != null &&
-                HandleToObject(pResolvedToken.hMethod) is MethodDesc declaringMethod &&
-                declaringMethod.OwningType == typeDesc &&
-                !CanEncodeTypeInSignature(typeDesc))
-            {
-                // The type handle being looked up is the type which declares the method described by the token. Encode
-                // the method instead when the declaring type isn't referenceable from the modules being compiled.
-                helperId = ReadyToRunHelperId.DeclaringTypeHandle;
-                helperArg = ComputeMethodWithToken(
-                    declaringMethod,
-                    ref pResolvedToken,
-                    constrainedType: null,
-                    unboxing: false);
+                else if (helperId == ReadyToRunHelperId.TypeHandle &&
+                    helperArg is TypeDesc typeDesc &&
+                    pResolvedToken.hMethod != null &&
+                    HandleToObject(pResolvedToken.hMethod) is MethodDesc declaringMethod &&
+                    declaringMethod.OwningType == typeDesc &&
+                    !CanEncodeTypeInSignature(typeDesc))
+                {
+                    // The type handle being looked up is the type which declares the method described by the token. Encode
+                    // the method instead when the declaring type isn't referenceable from the modules being compiled.
+                    helperId = ReadyToRunHelperId.DeclaringTypeHandle;
+                    helperArg = ComputeMethodWithToken(
+                        declaringMethod,
+                        ref pResolvedToken,
+                        constrainedType: null,
+                        unboxing: false);
+                }
             }
 
             var methodContext = new GenericContext(callerHandle);
