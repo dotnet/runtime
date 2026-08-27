@@ -410,7 +410,8 @@ namespace Tracing.Tests.Common
         // run into these zombie pipes if there are failures over time.
         // Note: Windows has some guarantees about named pipes not living longer
         // the process that created them, so we don't need to check on that platform.
-        private static bool EnsureCleanEnvironment()
+        // Runtime delta: diagnosticport performs this check before running its test cases.
+        public static bool EnsureCleanEnvironment()
         {
             if (!OperatingSystem.IsWindows() && !OperatingSystem.IsBrowser() && !OperatingSystem.IsWasi() && !OperatingSystem.IsIOS() && !OperatingSystem.IsTvOS())
             {
