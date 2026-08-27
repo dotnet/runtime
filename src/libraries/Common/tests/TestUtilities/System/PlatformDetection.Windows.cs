@@ -340,23 +340,16 @@ namespace System
                         Debug.Fail($"Unknown build {build}. This whole check can likely be greatly simplified if supported Windows versions have been widely deployed.");
                         return false;
                     }
-                    else if (isServer)
-                    {
-                        // Windows Server 2025
-                        if (build is >= 26100 and < 28200)
-                        {
-                            // https://support.microsoft.com/en-US/servicing/os/windows-server/2026/07/july-14-2026-kb5099536-os-build-26100-33158
-                            return ubr >= 33158;
-                        }
 
-                        Debug.Fail($"Unknown build {build}. This whole check can likely be greatly simplified if supported Windows versions have been widely deployed.");
-                        return false;
-                    }
-                    else
+                    // Windows Server 2025
+                    if (build is >= 26100 and < 28200)
                     {
-                        Debug.Fail($"Unknown installation type {installationType}.");
-                        return false;
+                        // https://support.microsoft.com/en-US/servicing/os/windows-server/2026/07/july-14-2026-kb5099536-os-build-26100-33158
+                        return ubr >= 33158;
                     }
+
+                    Debug.Fail($"Unknown build {build}. This whole check can likely be greatly simplified if supported Windows versions have been widely deployed.");
+                    return false;
                 }
             }
         }
