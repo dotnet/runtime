@@ -66,14 +66,13 @@ extends:
 
     - stage: Build
       jobs:
-      - ${{ if eq(variables['enableHelixJobMonitor'], true) }}:
-        - template: /eng/common/core-templates/job/helix-job-monitor.yml
-          parameters:
-            helixAccessToken: $(HelixApiAccessToken)
-            timeoutInMinutes: 540
-            testResultUploadParallelism: 48
-            # Some path-filtered builds intentionally submit no Helix jobs.
-            allowNoHelixJobs: true
+      - template: /eng/common/core-templates/job/helix-job-monitor.yml
+        parameters:
+          helixAccessToken: $(HelixApiAccessToken)
+          timeoutInMinutes: 540
+          testResultUploadParallelism: 48
+          # Some path-filtered builds intentionally submit no Helix jobs.
+          allowNoHelixJobs: true
 
       #
       # Build CoreCLR verticals
