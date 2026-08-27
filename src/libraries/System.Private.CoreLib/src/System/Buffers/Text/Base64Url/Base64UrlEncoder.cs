@@ -202,7 +202,7 @@ namespace System.Buffers.Text
         }
 
         /// <summary>
-        /// Encodes the span of binary data (in-place) into UTF-8 encoded text represented as base 64.
+        /// Encodes the span of binary data (in-place) into UTF-8 encoded text represented as Base64Url.
         /// The encoded text output is larger than the binary data contained in the input (the operation inflates the data).
         /// </summary>
         /// <param name="buffer">The input span which contains binary data that needs to be encoded.
