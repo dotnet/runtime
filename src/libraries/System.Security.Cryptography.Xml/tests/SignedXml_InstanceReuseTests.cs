@@ -212,9 +212,10 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         // --------------------------------------------------------------------
-        // Preflight: clean input-validation throws must NOT poison the instance.
-        // A caller that catches the exception, fixes the parameter, and retries
-        // on the same instance should succeed.
+        // Argument validation on ComputeSignature/CheckSignature runs before the
+        // instance transitions to the used state, so a caller that catches the
+        // resulting exception can fix the parameter and call again on the same
+        // instance.
         // --------------------------------------------------------------------
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetFramework))]
@@ -230,10 +231,10 @@ namespace System.Security.Cryptography.Xml.Tests
                 reference.AddTransform(new XmlDsigEnvelopedSignatureTransform());
                 signedXml.AddReference(reference);
 
-                // No SigningKey set: throws CryptographicException without marking the instance used.
+                // First call throws because SigningKey has not been assigned yet.
                 Assert.Throws<CryptographicException>(() => signedXml.ComputeSignature());
 
-                // Setting the key and retrying on the same instance succeeds.
+                // After assigning SigningKey the same instance can complete the operation.
                 signedXml.SigningKey = key;
                 signedXml.ComputeSignature();
                 Assert.NotNull(signedXml.SignatureValue);
@@ -251,13 +252,13 @@ namespace System.Security.Cryptography.Xml.Tests
             reference.AddTransform(new XmlDsigEnvelopedSignatureTransform());
             signedXml.AddReference(reference);
 
-            // Non-HMAC keyed hash: throws CryptographicException without marking the instance used.
+            // First call throws because the supplied KeyedHashAlgorithm is not an HMAC.
             using (NonHmacKeyedHash bad = new NonHmacKeyedHash())
             {
                 Assert.Throws<CryptographicException>(() => signedXml.ComputeSignature(bad));
             }
 
-            // Retry with a valid HMAC on the same instance succeeds.
+            // A subsequent call on the same instance with a supported HMAC succeeds.
             using (HMACSHA256 mac = new HMACSHA256(new byte[64]))
             {
                 signedXml.ComputeSignature(mac);
@@ -274,7 +275,9 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         // --------------------------------------------------------------------
-        // Positive scenarios: legitimate patterns that must keep working.
+        // Legitimate usage patterns that must continue to work: building up a
+        // SignedXml before a single sign or verify call, and using a fresh
+        // instance per operation.
         // --------------------------------------------------------------------
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetFramework))]
@@ -310,7 +313,7 @@ namespace System.Security.Cryptography.Xml.Tests
         {
             using (RSA key = RSA.Create())
             {
-                // Standard verify workflow: construct, LoadXml, CheckSignature. Must not throw.
+                // Standard verify workflow: construct, LoadXml, CheckSignature.
                 (_, SignedXml verifier) = PrepareVerifier(key);
                 Assert.True(verifier.CheckSignature(key));
             }
@@ -319,7 +322,8 @@ namespace System.Security.Cryptography.Xml.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetFramework))]
         public void FreshInstance_PerVerification_Works()
         {
-            // Re-verifying the same signature with a fresh instance each time must work.
+            // Verifying the same signed document with a fresh SignedXml each
+            // time is the recommended pattern.
             using (RSA key = RSA.Create())
             {
                 XmlDocument doc = new XmlDocument { PreserveWhitespace = true };
@@ -352,7 +356,9 @@ namespace System.Security.Cryptography.Xml.Tests
                 bool validatorCalled = false;
                 verifier.SignatureFormatValidator = sx =>
                 {
-                    // Read-only inspection of the SignedXml state must not trip the guard.
+                    // A user-supplied format validator inspects public SignedXml
+                    // state; the validator itself does not perform another
+                    // ComputeSignature or CheckSignature call on the same instance.
                     validatorCalled = true;
                     return sx.SignedInfo != null && sx.SignatureValue != null;
                 };
@@ -369,7 +375,7 @@ namespace System.Security.Cryptography.Xml.Tests
                 SignedXml signedXml = PrepareSigner(key, out _);
                 signedXml.ComputeSignature();
 
-                // GetXml is read-only; must not throw.
+                // GetXml is a read-only accessor and can be called any number of times.
                 XmlElement sig1 = signedXml.GetXml();
                 XmlElement sig2 = signedXml.GetXml();
                 Assert.Equal(sig1.OuterXml, sig2.OuterXml);
@@ -384,7 +390,8 @@ namespace System.Security.Cryptography.Xml.Tests
                 (_, SignedXml verifier) = PrepareVerifier(key);
                 Assert.True(verifier.CheckSignature(key));
 
-                // Read-only property access after a completed operation must not throw.
+                // Property getters are read-only and remain accessible after
+                // a completed sign or verify operation.
                 Assert.NotNull(verifier.Signature);
                 Assert.NotNull(verifier.SignedInfo);
                 Assert.NotNull(verifier.SignatureValue);

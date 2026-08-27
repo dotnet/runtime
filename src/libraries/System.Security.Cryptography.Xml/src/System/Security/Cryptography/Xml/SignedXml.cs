@@ -407,9 +407,9 @@ namespace System.Security.Cryptography.Xml
         [UnconditionalSuppressMessage("ILLink", "IL2026:RequiresUnreferencedCode", Justification = "ctors are marked as RDC")]
         public void ComputeSignature()
         {
-            // Preflight the common "forgot to set SigningKey" misuse before marking
-            // the instance used, so a caller that catches the exception can retry
-            // on the same instance after setting the key.
+            // Validate SigningKey first: a failure here must not prevent the caller
+            // from setting SigningKey and calling ComputeSignature again on this
+            // same instance.
             AsymmetricAlgorithm? key = SigningKey;
             if (key == null)
                 throw new CryptographicException(SR.Cryptography_Xml_LoadKeyFailed);
@@ -461,7 +461,9 @@ namespace System.Security.Cryptography.Xml
         {
             ArgumentNullException.ThrowIfNull(macAlg);
 
-            // Preflight the "not an HMAC" misuse before marking the instance used.
+            // Validate that macAlg is an HMAC first: a failure here must not prevent
+            // the caller from passing a supported algorithm to a subsequent
+            // ComputeSignature call on this same instance.
             HMAC? hash = macAlg as HMAC;
             if (hash == null)
                 throw new CryptographicException(SR.Cryptography_Xml_SignatureMethodKeyMismatch);
