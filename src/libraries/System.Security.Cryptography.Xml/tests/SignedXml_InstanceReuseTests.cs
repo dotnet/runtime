@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Xml;
+using System.Security.Cryptography.X509Certificates;
 using Xunit;
 
 namespace System.Security.Cryptography.Xml.Tests
@@ -396,6 +397,64 @@ namespace System.Security.Cryptography.Xml.Tests
                 Assert.NotNull(verifier.SignedInfo);
                 Assert.NotNull(verifier.SignatureValue);
                 Assert.NotNull(verifier.SignatureMethod);
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetFramework))]
+        public void CheckSignature_NullAsymmetricKey_DoesNotPoisonInstance()
+        {
+            using (RSA key = RSA.Create())
+            {
+                (_, SignedXml verifier) = PrepareVerifier(key);
+
+                Assert.Throws<ArgumentNullException>(() => verifier.CheckSignature((AsymmetricAlgorithm)null!));
+
+                // The instance can still be used to complete the verification with a valid key.
+                Assert.True(verifier.CheckSignature(key));
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetFramework))]
+        public void CheckSignature_NullKeyedHash_DoesNotPoisonInstance()
+        {
+            byte[] hmacKey = new byte[64];
+            using (HMACSHA256 mac = new HMACSHA256(hmacKey))
+            {
+                XmlDocument doc = new XmlDocument { PreserveWhitespace = true };
+                doc.LoadXml(ExampleXml);
+
+                SignedXml signer = new SignedXml(doc);
+                Reference reference = new Reference { Uri = "" };
+                reference.AddTransform(new XmlDsigEnvelopedSignatureTransform());
+                signer.AddReference(reference);
+                signer.ComputeSignature(mac);
+                doc.DocumentElement!.AppendChild(doc.ImportNode(signer.GetXml(), true));
+
+                XmlDocument verifyDoc = new XmlDocument { PreserveWhitespace = true };
+                verifyDoc.LoadXml(doc.OuterXml);
+                SignedXml verifier = new SignedXml(verifyDoc);
+                verifier.LoadXml((XmlElement)verifyDoc.GetElementsByTagName("Signature")[0]!);
+
+                Assert.Throws<ArgumentNullException>(() => verifier.CheckSignature((KeyedHashAlgorithm)null!));
+
+                using (HMACSHA256 mac2 = new HMACSHA256(hmacKey))
+                {
+                    Assert.True(verifier.CheckSignature(mac2));
+                }
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetFramework))]
+        public void CheckSignature_NullCertificate_DoesNotPoisonInstance()
+        {
+            using (RSA key = RSA.Create())
+            {
+                (_, SignedXml verifier) = PrepareVerifier(key);
+
+                Assert.Throws<ArgumentNullException>(() => verifier.CheckSignature((X509Certificate2)null!, verifySignatureOnly: true));
+
+                // A subsequent call on the same instance with a valid key succeeds.
+                Assert.True(verifier.CheckSignature(key));
             }
         }
     }

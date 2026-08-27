@@ -293,6 +293,8 @@ namespace System.Security.Cryptography.Xml
 
         public bool CheckSignature(AsymmetricAlgorithm key)
         {
+            ArgumentNullException.ThrowIfNull(key);
+
             ThrowIfAlreadyUsed();
             _alreadyUsed = true;
             return CheckSignatureCore(key);
@@ -324,6 +326,8 @@ namespace System.Security.Cryptography.Xml
 
         public bool CheckSignature(KeyedHashAlgorithm macAlg)
         {
+            ArgumentNullException.ThrowIfNull(macAlg);
+
             ThrowIfAlreadyUsed();
             _alreadyUsed = true;
 
@@ -350,6 +354,8 @@ namespace System.Security.Cryptography.Xml
 
         public bool CheckSignature(X509Certificate2 certificate, bool verifySignatureOnly)
         {
+            ArgumentNullException.ThrowIfNull(certificate);
+
             ThrowIfAlreadyUsed();
             _alreadyUsed = true;
 
