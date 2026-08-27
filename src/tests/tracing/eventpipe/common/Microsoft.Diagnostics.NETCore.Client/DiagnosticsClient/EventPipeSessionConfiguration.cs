@@ -115,13 +115,13 @@ namespace Microsoft.Diagnostics.NETCore.Client
             if (providers is null)
             {
                 throw new ArgumentNullException(nameof(providers));
-            };
+            }
 
             _providers = new List<EventPipeProvider>(providers);
             if (_providers.Count == 0)
             {
                 throw new ArgumentException("At least one provider must be specified.");
-            };
+            }
 
             CircularBufferSizeInMB = circularBufferSizeMB;
             Format = format;

@@ -78,7 +78,7 @@ namespace Tracing.Tests.Common
     }
 
     // This event source is used by the test infra to
-    // to insure that providers have finished being enabled
+    // ensure that providers have finished being enabled
     // for the session being observed. Since the client API
     // returns the pipe for reading _before_ it finishes
     // enabling the providers to write to that session,
@@ -316,6 +316,13 @@ namespace Tracing.Tests.Common
             // Runtime delta (dotnet/runtime#47529): wait on either task so a reader that faults during connect
             // (before signaling the sentinel) surfaces its exception instead of hanging here forever.
             Task.WaitAny(readerTask, waitSentinelEventTask);
+            if (readerTask.IsCompleted)
+            {
+                sentinelEventReceived.Set();
+                sentinelTask.Wait();
+                readerTask.GetAwaiter().GetResult();
+                return Fail("Reader task completed before event generation");
+            }
 
             Logger.logger.Log("Starting event generating action...");
             _eventGeneratingAction();
