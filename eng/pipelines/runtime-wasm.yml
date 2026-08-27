@@ -7,7 +7,7 @@ trigger: none
 variables:
   - template: /eng/pipelines/common/variables.yml
   - name: enableHelixJobMonitor
-    value: false
+    value: true
 
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
