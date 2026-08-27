@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -118,6 +119,70 @@ public class R2RTestSuites
                 "Expected a 'global.get' of the wasm image-base well-known global in the emitted code.");
             Assert.True(WasmR2RAssert.WasmImageContainsWellKnownGlobalGet(webcilReader, TableBaseGlobal),
                 "Expected a 'global.get' of the wasm table-base well-known global in the emitted code.");
+        }
+    }
+
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
+    public void WasmVirtualDispatch()
+    {
+        var wasmVirtualDispatch = new CompiledAssembly
+        {
+            AssemblyName = nameof(WasmVirtualDispatch),
+            SourceResourceNames = ["Webcil/WasmVirtualDispatch.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(WasmVirtualDispatch),
+            [
+                new(nameof(WasmVirtualDispatch), [new CrossgenAssembly(wasmVirtualDispatch)])
+                {
+                    OutputFileExtension = ".wasm",
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            var webcilReader = Assert.IsType<WebcilImageReader>(reader.CompositeReader);
+            Assert.Equal(WasmMachine.Wasm32, reader.Machine);
+
+            ReadOnlySpan<byte> image = reader.Image;
+            IEnumerable<ReadyToRunImportSection.ImportSectionEntry> importEntries =
+                reader.ImportSections
+                    .Where(section => section.Entries is not null)
+                    .SelectMany(section => section.Entries);
+            ReadyToRunImportSection.ImportSectionEntry injectStringThunks = Assert.Single(
+                importEntries,
+                entry => entry.Signature?.FixupKind == ReadyToRunFixupKind.InjectStringThunks);
+
+            int offset = reader.GetOffset((int)injectStringThunks.SignatureRVA);
+            Assert.Equal((byte)ReadyToRunFixupKind.InjectStringThunks, image[offset++]);
+
+            ReadOnlySpan<byte> thunkKey = "ViTip"u8;
+            List<uint> matchingTableIndices = [];
+            while (image[offset] != 0)
+            {
+                int terminator = image[offset..].IndexOf((byte)0);
+                Assert.True(terminator >= 0, "Unterminated InjectStringThunks key.");
+                if (image.Slice(offset, terminator).SequenceEqual(thunkKey))
+                {
+                    matchingTableIndices.Add(
+                        BinaryPrimitives.ReadUInt32LittleEndian(image.Slice(offset + terminator + 1, sizeof(uint))));
+                }
+
+                offset += terminator + 1 + sizeof(uint);
+            }
+
+            uint relativeTableIndex = Assert.Single(matchingTableIndices);
+            int functionIndex = webcilReader.GetFunctionIndexFromTableIndex(relativeTableIndex);
+            Assert.True(functionIndex >= 0, $"Could not resolve virtual thunk table index {relativeTableIndex}.");
+
+            WebcilImageReader.WasmFunctionInfo? body = webcilReader.GetWasmFunctionBody(functionIndex);
+            Assert.True(body is not null, $"Virtual dispatch thunk body {functionIndex} was not found.");
+
+            ReadOnlySpan<byte> instructions = body.Value.Image.AsSpan(
+                body.Value.InstructionOffset, body.Value.InstructionLength);
+            Assert.Contains((byte)0x11, instructions.ToArray());
         }
     }
 

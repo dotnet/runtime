@@ -404,7 +404,21 @@ extern "C" void STDMETHODCALLTYPE JIT_ProfilerEnterLeaveTailcallStub(UINT_PTR Pr
 
 extern "C" PCODE STDCALL DelayLoad_MethodCallImpl(TransitionBlock* pTransitionBlock, READYTORUN_IMPORT_THUNK_PORTABLE_ENTRYPOINT* pImportThunkEntry, uint8_t *moduleBase, int32_t rvaOfModuleFixup)
 {
+    const int32_t VirtualDispatchFlag = INT32_MIN;
+    bool virtualDispatch = (rvaOfModuleFixup & VirtualDispatchFlag) != 0;
+    rvaOfModuleFixup &= ~VirtualDispatchFlag;
+
     Module** ppModule = (Module**)(moduleBase + rvaOfModuleFixup);
+    if (virtualDispatch)
+    {
+        return ExternalMethodFixupWorkerForVirtualDispatch(
+            pTransitionBlock,
+            (TADDR)(moduleBase + pImportThunkEntry->RelocOffset),
+            -1,
+            *ppModule,
+            reinterpret_cast<READYTORUN_VIRTUAL_DISPATCH_PORTABLE_ENTRYPOINT*>(pImportThunkEntry));
+    }
+
     return ExternalMethodFixupWorker(pTransitionBlock, (TADDR)(moduleBase + pImportThunkEntry->RelocOffset), -1, *ppModule);
 }
 

@@ -1,0 +1,154 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using ILCompiler.DependencyAnalysis.Wasm;
+using ILCompiler.DependencyAnalysisFramework;
+using ILCompiler.ObjectWriter;
+using ILCompiler.ObjectWriter.WasmInstructions;
+using Internal.JitInterface;
+using Internal.Text;
+using Internal.TypeSystem;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+
+namespace ILCompiler.DependencyAnalysis.ReadyToRun
+{
+    /// <summary>
+    /// Dispatches a virtual call through the vtable offsets stored in its portable entrypoint.
+    /// </summary>
+    public sealed class WasmVirtualDispatchThunkNode : StringDiscoverableAssemblyStubNode, INodeWithTypeSignature, ISymbolDefinitionNode, ISortableSymbolNode
+    {
+        private readonly TypeSystemContext _context;
+        private readonly WasmSignature _wasmSignature;
+        private readonly WasmTypeNode _typeNode;
+
+        public WasmVirtualDispatchThunkNode(NodeFactory factory, WasmSignature wasmSignature)
+        {
+            _context = factory.TypeSystemContext;
+            _wasmSignature = wasmSignature;
+            _typeNode = factory.WasmTypeNode(wasmSignature);
+        }
+
+        public override bool StaticDependenciesAreComputed => true;
+        public override bool IsShareable => false;
+        public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.TextSection;
+        public override string LookupString => "V" + _wasmSignature.SignatureString;
+
+        MethodSignature INodeWithTypeSignature.Signature => WasmLowering.RaiseSignature(_wasmSignature, _context);
+        bool INodeWithTypeSignature.IsUnmanagedCallersOnly => false;
+        bool INodeWithTypeSignature.IsAsyncCall => _wasmSignature.SignatureString.Contains('a');
+        bool INodeWithTypeSignature.HasGenericContextArg => false;
+
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append("WasmVirtualDispatchThunk("u8);
+            sb.Append(_wasmSignature.SignatureString);
+            sb.Append(")"u8);
+        }
+
+        protected override string GetName(NodeFactory factory)
+        {
+            Utf8StringBuilder sb = new Utf8StringBuilder();
+            AppendMangledName(factory.NameMangler, sb);
+            return sb.ToString();
+        }
+
+        public override int ClassCode => 115732791;
+
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
+        {
+            WasmVirtualDispatchThunkNode otherNode = (WasmVirtualDispatchThunkNode)other;
+            return _wasmSignature.CompareTo(otherNode._wasmSignature);
+        }
+
+        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        {
+            DependencyList dependencies = base.ComputeNonRelocationBasedDependencies(factory);
+            dependencies.Add(_typeNode, "Wasm virtual dispatch thunk requires type node");
+            return dependencies;
+        }
+
+        protected override void EmitCode(NodeFactory factory, ref Wasm.WasmEmitter instructionEncoder, bool relocsOnly)
+        {
+            Debug.Assert(!instructionEncoder.Is64Bit);
+
+            MethodSignature methodSignature = WasmLowering.RaiseSignature(_wasmSignature, _context);
+            Debug.Assert(!methodSignature.IsStatic);
+
+            int portableEntrypointLocalIndex = _typeNode.Type.Params.Types.Length - 1;
+            int targetPortableEntrypointLocalIndex = _typeNode.Type.Params.Types.Length;
+            int dispatchCellLocalIndex = targetPortableEntrypointLocalIndex + 1;
+            int targetCodeLocalIndex = dispatchCellLocalIndex + 1;
+            const int ThisLocalIndex = 1;
+            const ulong RelocOffsetField = 4;
+            const ulong DelayLoadTargetField = 8;
+            const ulong PackedDispatchOffsetsField = 4;
+
+            List<WasmExpr> expressions = new List<WasmExpr>();
+
+            // dispatchCell = imageBase + pep->relocOffset
+            expressions.Add(Global.Get(WebCilObjectWriter.ImageBaseGlobalIndex));
+            expressions.Add(Local.Get(portableEntrypointLocalIndex));
+            expressions.Add(I32.Load(RelocOffsetField));
+            expressions.Add(I32.Add);
+            expressions.Add(Local.Set(dispatchCellLocalIndex));
+
+            // targetPEP = *(*(*(this) + dispatchCell->offsetOfIndirection) + dispatchCell->offsetAfterIndirection)
+            expressions.Add(Local.Get(ThisLocalIndex));
+            expressions.Add(I32.Load(0));
+            expressions.Add(Local.Get(dispatchCellLocalIndex));
+            expressions.Add(I32.Load(PackedDispatchOffsetsField));
+            expressions.Add(I32.Const(ushort.MaxValue));
+            expressions.Add(I32.And);
+            expressions.Add(I32.Add);
+            expressions.Add(I32.Load(0));
+            expressions.Add(Local.Get(dispatchCellLocalIndex));
+            expressions.Add(I32.Load(PackedDispatchOffsetsField));
+            expressions.Add(I32.Const(16));
+            expressions.Add(I32.Shr_u);
+            expressions.Add(I32.Add);
+            expressions.Add(I32.Load(0));
+            expressions.Add(Local.Set(targetPortableEntrypointLocalIndex));
+
+            expressions.Add(Local.Get(targetPortableEntrypointLocalIndex));
+            expressions.Add(I32.Load(0));
+            expressions.Add(Local.Set(targetCodeLocalIndex));
+
+            // A vtable slot for another receiver type might not have been prepared for R2R yet.
+            expressions.Add(Local.Get(targetCodeLocalIndex));
+            expressions.Add(I32.Eqz);
+            expressions.Add(Block.If(WasmBlockType.Empty));
+            for (int i = 0; i < portableEntrypointLocalIndex; i++)
+            {
+                expressions.Add(Local.Get(i));
+            }
+            expressions.Add(Local.Get(portableEntrypointLocalIndex));
+            expressions.Add(Local.Get(portableEntrypointLocalIndex));
+            expressions.Add(I32.Load(DelayLoadTargetField));
+            expressions.Add(ControlFlow.CallIndirect(_typeNode, 0));
+            expressions.Add(ControlFlow.Return);
+            expressions.Add(Block.End);
+
+            for (int i = 0; i < portableEntrypointLocalIndex; i++)
+            {
+                expressions.Add(Local.Get(i));
+            }
+            expressions.Add(Local.Get(targetPortableEntrypointLocalIndex));
+            expressions.Add(Local.Get(targetCodeLocalIndex));
+            expressions.Add(ControlFlow.CallIndirect(_typeNode, 0));
+
+            instructionEncoder.FunctionBody = new WasmFunctionBody(
+                _typeNode.Type,
+                new[] { WasmValueType.I32, WasmValueType.I32, WasmValueType.I32 },
+                expressions.ToArray());
+        }
+
+        protected override void EmitCode(NodeFactory factory, ref X64.X64Emitter instructionEncoder, bool relocsOnly) { throw new NotSupportedException(); }
+        protected override void EmitCode(NodeFactory factory, ref X86.X86Emitter instructionEncoder, bool relocsOnly) { throw new NotSupportedException(); }
+        protected override void EmitCode(NodeFactory factory, ref ARM.ARMEmitter instructionEncoder, bool relocsOnly) { throw new NotSupportedException(); }
+        protected override void EmitCode(NodeFactory factory, ref ARM64.ARM64Emitter instructionEncoder, bool relocsOnly) { throw new NotSupportedException(); }
+        protected override void EmitCode(NodeFactory factory, ref LoongArch64.LoongArch64Emitter instructionEncoder, bool relocsOnly) { throw new NotSupportedException(); }
+        protected override void EmitCode(NodeFactory factory, ref RiscV64.RiscV64Emitter instructionEncoder, bool relocsOnly) { throw new NotSupportedException(); }
+    }
+}

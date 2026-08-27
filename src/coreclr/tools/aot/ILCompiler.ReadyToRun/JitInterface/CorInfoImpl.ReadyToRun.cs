@@ -2339,7 +2339,13 @@ namespace Internal.JitInterface
             // All virtual calls which take method instantiations must
             // currently be implemented by an indirect call via a runtime-lookup
             // function pointer
-            else if (targetMethod.HasInstantiation || _compilation.NodeFactory.Target.IsWasm) // WASM doesn't currently support the stub dispatch path
+            else if (targetMethod.HasInstantiation ||
+                (_compilation.NodeFactory.Target.IsWasm &&
+                    (!targetMethod.IsVirtual ||
+                     targetMethod.OwningType.IsInterface ||
+                     targetMethod.OwningType.HasInstantiation ||
+                     targetMethod.OwningType.IsArray ||
+                     pResult->exactContextNeedsRuntimeLookup)))
             {
                 pResult->kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_LDVIRTFTN;  // stub dispatch can't handle generic method calls yet
                 pResult->nullInstanceCheck = true;
@@ -2641,9 +2647,9 @@ namespace Internal.JitInterface
                                 ComputeMethodWithToken(targetMethod, ref resolvedToken, constrainedType: null, unboxing: false),
                                 useInstantiatingStub));
 
-                        // Wasm routes all virtual calls through LDVIRTFTN (stub dispatch is unsupported),
-                        // so the call sig may carry a type arg (e.g., MD-array intrinsics); instParamLookup
-                        // is set up by the post-switch block below.
+                        // Wasm routes virtual calls that cannot use a pregenerated dispatch thunk through
+                        // LDVIRTFTN, so the call sig may carry a type arg (e.g., MD-array intrinsics);
+                        // instParamLookup is set up by the post-switch block below.
                         Debug.Assert(!pResult->sig.hasTypeArg() || _compilation.NodeFactory.Target.IsWasm);
                     }
                     break;

@@ -21,6 +21,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private readonly Import _helperCell;
         private readonly WasmTypeNode _typeNode;
         private readonly WasmSignature _wasmSignature;
+        private readonly bool _useVirtualCall;
 
         private readonly ImportThunkKind _thunkKind;
 
@@ -39,14 +40,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             _context = factory.TypeSystemContext;
             _wasmSignature = wasmSignature;
+            _useVirtualCall = useVirtualCall;
             _typeNode = factory.WasmTypeNode(wasmSignature);
             _helperCell = factory.GetReadyToRunHelperCell(helperId);
             _containingImportSection = containingImportSection;
 
             if (useVirtualCall)
             {
-                // In wasm we should always be using a helper to get the function pointer target, and then dispatching on that instead of using a thunk
-                throw new System.NotSupportedException(nameof(useVirtualCall));
+                Debug.Assert(helperId == ReadyToRunHelper.DelayLoad_MethodCall);
+                _thunkKind = ImportThunkKind.DelayLoadHelper;
             }
             else if (useJumpableStub)
             {
@@ -335,6 +337,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // Pass the RVA of the Module fixup as the fourth argument
             // i32.const (RVA of Module fixup)
             expressions.Add(I32.ConstRVA(factory.ModuleImport));
+            if (_useVirtualCall)
+            {
+                // The high bit tells the runtime that the PEP has a virtual-dispatch target.
+                expressions.Add(I32.Const(int.MinValue));
+                expressions.Add(I32.Add);
+            }
 
             // Load the helper function address and dispatch
             // global.get {module base}

@@ -50,8 +50,11 @@ extern "C" void STDCALL VarargPInvokeStubWorker(TransitionBlock* pTransitionBloc
 extern "C" void STDCALL VarargPInvokeStub(void);
 extern "C" void STDCALL VarargPInvokeStub_RetBuffArg(void);
 
-
+struct READYTORUN_VIRTUAL_DISPATCH_PORTABLE_ENTRYPOINT;
 extern "C" PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBlock, TADDR pIndirection, DWORD sectionIndex, Module * pModule);
+#ifdef TARGET_WASM
+extern "C" PCODE STDCALL ExternalMethodFixupWorkerForVirtualDispatch(TransitionBlock * pTransitionBlock, TADDR pIndirection, DWORD sectionIndex, Module * pModule, READYTORUN_VIRTUAL_DISPATCH_PORTABLE_ENTRYPOINT * pPortableEntryPoint);
+#endif // TARGET_WASM
 
 extern "C" void STDCALL VirtualMethodFixupStub(void);
 extern "C" void STDCALL VirtualMethodFixupPatchLabel(void);

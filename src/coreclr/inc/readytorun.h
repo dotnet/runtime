@@ -562,4 +562,12 @@ struct READYTORUN_IMPORT_THUNK_PORTABLE_ENTRYPOINT
 #endif
 };
 
+struct READYTORUN_VIRTUAL_DISPATCH_PORTABLE_ENTRYPOINT
+{
+    void* Target;
+    DWORD RelocOffset;
+    void* DelayLoadTarget;
+    void* VirtualDispatchTarget;
+};
+
 #endif // __READYTORUN_H__
