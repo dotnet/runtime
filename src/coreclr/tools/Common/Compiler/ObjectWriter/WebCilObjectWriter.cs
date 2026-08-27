@@ -372,6 +372,10 @@ namespace ILCompiler.ObjectWriter
            *********************************************************************/
 
             EmitWasmHeader(outputFileStream);
+            int codeSectionIndex = _sections.Contains(ObjectNodeSection.WasmCodeSection.Name)
+                ? _sections.GetSectionIndex(ObjectNodeSection.WasmCodeSection.Name)
+                : -1;
+            long codeContentFileOffset = 0;
             foreach (int index in SectionEmitOrder)
             {
                 SectionDataEmitter section = _sections[index];
@@ -386,6 +390,12 @@ namespace ILCompiler.ObjectWriter
                         section.ContentReadStream = destStream;
                         // originalStream may be disposed, section.Stream now points to resolved stream
                     }
+                }
+
+                if (index == codeSectionIndex)
+                {
+                    // Function bodies begin after the section header and the (externally counted) entry-count prefix.
+                    codeContentFileOffset = outputFileStream.Position + (section.EncodeSize() - section.ContentReadStream.Length);
                 }
 
                 section.EmitToStream(outputFileStream);
@@ -452,7 +462,31 @@ namespace ILCompiler.ObjectWriter
             WasmDataSection dataSection = new WasmDataSection([webcilSizeSegment, webcilContentsSegment], new Utf8String("data"), contentAlign: 4);
             dataSection.EmitToStream(outputFileStream);
 #endif
+
+            if (_outputInfoBuilder is not null)
+            {
+                // Populate the output section layout so OutputInfoBuilder.EnumerateMethods can resolve each
+                // method node's section. The list is index-aligned with the wasm section table; only the
+                // code section (which holds the method bodies) needs a real file offset for the perfmap.
+                for (int i = 0; i < _sections.Count; i++)
+                {
+                    SectionDataEmitter emittedSection = _sections[i];
+                    ulong fileOffset = (i == codeSectionIndex) ? (ulong)codeContentFileOffset : 0;
+                    _outputSectionLayout.Add(new OutputSection(
+                        emittedSection.SectionName.ToString(), fileOffset, fileOffset, (ulong)emittedSection.ContentReadStream.Length));
+                }
+
+                if (codeSectionIndex >= 0)
+                {
+                    _outputInfoBuilder.RemapMethodNodeOffsets(codeSectionIndex, _codeOffsetMap);
+                }
+            }
         }
+
+        // Maps each code-section entry boundary's pre-shrink content offset to its final (post-shrink)
+        // offset, populated during ResolveCodeRelocations so method node offsets and lengths can be
+        // corrected for the R2R perfmap.
+        private readonly Dictionary<ulong, ulong> _codeOffsetMap = new();
 
         Dictionary<int, List<SymbolicRelocation>> _resolvableRelocations = new();
         SortedDictionary<uint, List<ushort>> _baseRelocMap = new();
@@ -568,6 +602,8 @@ namespace ILCompiler.ObjectWriter
             MemoryStream tempStream = new MemoryStream((int)maxBlobSize);
             byte[] relocScratchBuffer = new byte[Relocation.MaxSize];
             int[] blobShrink = new int[blobs.Count];
+            // Post-shrink content offset of each blob's entry (size prefix), used to correct perfmap offsets.
+            long[] postEntryStart = new long[blobs.Count];
 
             blobs.Sort((a, b) => a.Start.CompareTo(b.Start));
             relocs.Sort((a, b) => a.Offset.CompareTo(b.Offset));
@@ -581,6 +617,8 @@ namespace ILCompiler.ObjectWriter
             for (int b = 0; b < blobs.Count; b++)
             {
                 CodeBlob blob = blobs[b];
+                // writeCursor is the post-shrink offset where this entry's (new) size prefix will be written.
+                postEntryStart[b] = writeCursor;
                 Debug.Assert(writeCursor <= blobs[b].Start, $"Write cursor {writeCursor} is beyond the start of blob {blobs[b].Start}");
 
                 bool hasRelocs = relocCursor < relocs.Count && relocs[relocCursor].Offset >= blob.Start && relocs[relocCursor].Offset < blob.End;
@@ -655,6 +693,21 @@ namespace ILCompiler.ObjectWriter
             sectionStream.SetLength(writeCursor);
 
             sectionStream.Position = 0;
+
+            if (_outputInfoBuilder is not null)
+            {
+                // Map each entry boundary's pre-shrink content offset (node offsets and lengths land on
+                // these boundaries) to its final post-shrink offset so the R2R perfmap points at the
+                // method's real position and length.
+                for (int b = 0; b < blobs.Count; b++)
+                {
+                    long preEntryStart = (b == 0) ? 0 : blobs[b - 1].End;
+                    _codeOffsetMap[(ulong)preEntryStart] = (ulong)postEntryStart[b];
+                }
+                // Map final boundary (end of the last entry) so the `End` offset of a node ending the section resolves to the post-shrunk end.
+                long preTotalLength = blobs.Count > 0 ? blobs[blobs.Count - 1].End : 0;
+                _codeOffsetMap[(ulong)preTotalLength] = (ulong)writeCursor;
+            }
 
 #if DEBUG
             // The number of code blobs should not have changed.

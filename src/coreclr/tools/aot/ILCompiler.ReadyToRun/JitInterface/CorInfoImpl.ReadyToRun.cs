@@ -2672,12 +2672,74 @@ namespace Internal.JitInterface
                     }
                     else
                     {
-                        pResult->instParamLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(
-                            ReadyToRunHelperId.TypeDictionary,
-                            exactType));
+                        ISymbolNode instParamLookup;
+                        if (targetMethod.OwningType == exactType && !CanEncodeTypeInSignature(exactType))
+                        {
+                            instParamLookup = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(
+                                ReadyToRunHelperId.DeclaringTypeHandle,
+                                ComputeMethodWithToken(targetMethod, ref resolvedToken, constrainedType, unboxing: false));
+                        }
+                        else
+                        {
+                            instParamLookup = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(
+                                ReadyToRunHelperId.TypeDictionary,
+                                exactType);
+                        }
+                        pResult->instParamLookup = CreateConstLookupToSymbol(instParamLookup);
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Determine whether a type can be encoded as a type signature in the compiled image. Encoding a named type
+        /// requires a metadata token for it which is resolvable from within the version bubble being compiled.
+        /// This must be kept in sync with <see cref="SignatureBuilder.EmitTypeSignature"/>.
+        /// </summary>
+        private bool CanEncodeTypeInSignature(TypeDesc type)
+        {
+            switch (type)
+            {
+                case RuntimeDeterminedType:
+                    return true;
+
+                case ParameterizedType parameterizedType:
+                    return CanEncodeTypeInSignature(parameterizedType.ParameterType);
+
+                case FunctionPointerType functionPointerType:
+                    MethodSignature signature = functionPointerType.Signature;
+                    if (!CanEncodeTypeInSignature(signature.ReturnType))
+                        return false;
+                    for (int argIndex = 0; argIndex < signature.Length; argIndex++)
+                    {
+                        if (!CanEncodeTypeInSignature(signature[argIndex]))
+                            return false;
+                    }
+                    return true;
+            }
+
+            if (type.HasInstantiation && !type.IsGenericDefinition)
+            {
+                foreach (TypeDesc instantiationArgument in type.Instantiation)
+                {
+                    if (!CanEncodeTypeInSignature(instantiationArgument))
+                        return false;
+                }
+            }
+
+            TypeDesc typeDefinition = type.GetTypeDefinition();
+            if (typeDefinition.IsPrimitive || typeDefinition.IsVoid || typeDefinition.IsString || typeDefinition.IsObject
+                || typeDefinition.IsWellKnownType(WellKnownType.TypedReference)
+                || typeDefinition.IsCanonicalDefinitionType(CanonicalFormKind.Specific))
+            {
+                return true;
+            }
+
+            if (typeDefinition is not EcmaType ecmaTypeDefinition)
+                return true;
+
+            return !_compilation.NodeFactory.Resolver.GetModuleTokenForType(
+                ecmaTypeDefinition, allowDynamicallyCreatedReference: true, throwIfNotFound: false).IsNull;
         }
 
         private void ComputeRuntimeLookupForSharedGenericToken(
@@ -2778,12 +2840,37 @@ namespace Internal.JitInterface
                 Debug.Assert(MethodBeingCompiled is not AsyncResumptionStub);
                 _compilation.NodeFactory.DetectGenericCycles(MethodBeingCompiled, sharedMethod);
                 helperArg = new MethodWithToken(methodDesc, HandleToModuleToken(ref pResolvedToken, out bool strippedInstantiation), constrainedType, unboxing: false, genericContextObject: sharedMethod, forceOwningTypeFromMethodDesc: strippedInstantiation);
+
+                if (helperId == ReadyToRunHelperId.TypeHandle && !CanEncodeTypeInSignature(methodDesc.OwningType))
+                {
+                    // The type handle being looked up is the type which declares the method described by the token. That
+                    // type isn't necessarily referenceable from the modules being compiled - the method may have moved to
+                    // a base type which is invisible to the version bubble of the token. Encode the method instead and let
+                    // the runtime compute the type which declares it.
+                    helperId = ReadyToRunHelperId.DeclaringTypeHandle;
+                }
             }
             else if (helperArg is FieldDesc fieldDesc)
             {
                 ModuleToken fieldToken = HandleToModuleToken(ref pResolvedToken, out bool strippedInstantiation);
                 Debug.Assert(!strippedInstantiation);
                 helperArg = new FieldWithToken(fieldDesc, fieldToken, forceOwningTypeNotDerivedFromToken: strippedInstantiation);
+            }
+            else if (helperId == ReadyToRunHelperId.TypeHandle &&
+                helperArg is TypeDesc typeDesc &&
+                pResolvedToken.hMethod != null &&
+                HandleToObject(pResolvedToken.hMethod) is MethodDesc declaringMethod &&
+                declaringMethod.OwningType == typeDesc &&
+                !CanEncodeTypeInSignature(typeDesc))
+            {
+                // The type handle being looked up is the type which declares the method described by the token. Encode
+                // the method instead when the declaring type isn't referenceable from the modules being compiled.
+                helperId = ReadyToRunHelperId.DeclaringTypeHandle;
+                helperArg = ComputeMethodWithToken(
+                    declaringMethod,
+                    ref pResolvedToken,
+                    constrainedType: null,
+                    unboxing: false);
             }
 
             var methodContext = new GenericContext(callerHandle);
@@ -2941,9 +3028,25 @@ namespace Internal.JitInterface
                 switch (pResult.handleType)
                 {
                     case CorInfoGenericHandleType.CORINFO_HANDLETYPE_CLASS:
-                        symbolNode = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(
-                            ReadyToRunHelperId.TypeHandle,
-                            HandleToObject(pResolvedToken.hClass));
+                        {
+                            TypeDesc typeHandleType = HandleToObject(pResolvedToken.hClass);
+                            if (fEmbedParent && pResolvedToken.hMethod != null && !CanEncodeTypeInSignature(typeHandleType))
+                            {
+                                // The type handle being embedded is the type which declares the method described by the
+                                // token. That type isn't necessarily referenceable from the modules being compiled - the
+                                // method may have moved to a base type which is invisible to the version bubble of the
+                                // token. Encode the method instead and let the runtime compute the declaring type.
+                                symbolNode = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(
+                                    ReadyToRunHelperId.DeclaringTypeHandle,
+                                    ComputeMethodWithToken(HandleToObject(pResolvedToken.hMethod), ref pResolvedToken, constrainedType: null, unboxing: false));
+                            }
+                            else
+                            {
+                                symbolNode = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(
+                                    ReadyToRunHelperId.TypeHandle,
+                                    typeHandleType);
+                            }
+                        }
                         break;
 
                     case CorInfoGenericHandleType.CORINFO_HANDLETYPE_METHOD:

@@ -4089,7 +4089,7 @@ DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,   DS.ERROR,
 
         // Given a specified format character, parse and update the parsing result.
         //
-        private static unsafe bool ParseByFormat(
+        private static bool ParseByFormat(
             ref __DTString str,
             ref __DTString format,
             scoped ref ParsingInfo parseInfo,

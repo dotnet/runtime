@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Text;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -15,8 +16,6 @@ namespace System
         private const int CharStackBufferSize = 32;
 
         private const int DefaultPrecisionExponentialFormat = 6;
-
-        private const int MaxUInt32DecDigits = 10;
 
         private static ReadOnlySpan<byte> GetCurrencyFormat(bool isNegative, int index)
         {
@@ -175,24 +174,154 @@ namespace System
                 '\0';
         }
 
-#if !SYSTEM_PRIVATE_CORELIB
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe TChar* UInt32ToDecChars<TChar>(TChar* bufferEnd, uint value, int digits) where TChar : unmanaged, IUtfChar<TChar>
-        {
-            // TODO: Consider to bring optimized implementation from CoreLib
+        // Optimizations using "TwoDigits" inspired by:
+        // https://engineering.fb.com/2013/03/15/developer-tools/three-optimization-tips-for-c/
+        // entry[v] = (byte)('0' + v/10) | ((byte)('0' + v%10) << 8), for writing two UTF-8 bytes as a single 2-byte store
+        private static ReadOnlySpan<ushort> TwoDigitsBytesTable =>
+        [
+            0x3030, 0x3130, 0x3230, 0x3330, 0x3430, 0x3530, 0x3630, 0x3730, 0x3830, 0x3930,
+            0x3031, 0x3131, 0x3231, 0x3331, 0x3431, 0x3531, 0x3631, 0x3731, 0x3831, 0x3931,
+            0x3032, 0x3132, 0x3232, 0x3332, 0x3432, 0x3532, 0x3632, 0x3732, 0x3832, 0x3932,
+            0x3033, 0x3133, 0x3233, 0x3333, 0x3433, 0x3533, 0x3633, 0x3733, 0x3833, 0x3933,
+            0x3034, 0x3134, 0x3234, 0x3334, 0x3434, 0x3534, 0x3634, 0x3734, 0x3834, 0x3934,
+            0x3035, 0x3135, 0x3235, 0x3335, 0x3435, 0x3535, 0x3635, 0x3735, 0x3835, 0x3935,
+            0x3036, 0x3136, 0x3236, 0x3336, 0x3436, 0x3536, 0x3636, 0x3736, 0x3836, 0x3936,
+            0x3037, 0x3137, 0x3237, 0x3337, 0x3437, 0x3537, 0x3637, 0x3737, 0x3837, 0x3937,
+            0x3038, 0x3138, 0x3238, 0x3338, 0x3438, 0x3538, 0x3638, 0x3738, 0x3838, 0x3938,
+            0x3039, 0x3139, 0x3239, 0x3339, 0x3439, 0x3539, 0x3639, 0x3739, 0x3839, 0x3939,
+        ];
 
+        // entry[v] = (char)('0' + v/10) | ((char)('0' + v%10) << 16), for writing two UTF-16 chars as a single 4-byte store
+        private static ReadOnlySpan<uint> TwoDigitsCharsTable =>
+        [
+            0x00300030u, 0x00310030u, 0x00320030u, 0x00330030u, 0x00340030u, 0x00350030u, 0x00360030u, 0x00370030u, 0x00380030u, 0x00390030u,
+            0x00300031u, 0x00310031u, 0x00320031u, 0x00330031u, 0x00340031u, 0x00350031u, 0x00360031u, 0x00370031u, 0x00380031u, 0x00390031u,
+            0x00300032u, 0x00310032u, 0x00320032u, 0x00330032u, 0x00340032u, 0x00350032u, 0x00360032u, 0x00370032u, 0x00380032u, 0x00390032u,
+            0x00300033u, 0x00310033u, 0x00320033u, 0x00330033u, 0x00340033u, 0x00350033u, 0x00360033u, 0x00370033u, 0x00380033u, 0x00390033u,
+            0x00300034u, 0x00310034u, 0x00320034u, 0x00330034u, 0x00340034u, 0x00350034u, 0x00360034u, 0x00370034u, 0x00380034u, 0x00390034u,
+            0x00300035u, 0x00310035u, 0x00320035u, 0x00330035u, 0x00340035u, 0x00350035u, 0x00360035u, 0x00370035u, 0x00380035u, 0x00390035u,
+            0x00300036u, 0x00310036u, 0x00320036u, 0x00330036u, 0x00340036u, 0x00350036u, 0x00360036u, 0x00370036u, 0x00380036u, 0x00390036u,
+            0x00300037u, 0x00310037u, 0x00320037u, 0x00330037u, 0x00340037u, 0x00350037u, 0x00360037u, 0x00370037u, 0x00380037u, 0x00390037u,
+            0x00300038u, 0x00310038u, 0x00320038u, 0x00330038u, 0x00340038u, 0x00350038u, 0x00360038u, 0x00370038u, 0x00380038u, 0x00390038u,
+            0x00300039u, 0x00310039u, 0x00320039u, 0x00330039u, 0x00340039u, 0x00350039u, 0x00360039u, 0x00370039u, 0x00380039u, 0x00390039u,
+        ];
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static ushort GetTwoDigitsBytes(uint value)
+        {
+            ushort pair = TwoDigitsBytesTable[(int)value];
+            if (!BitConverter.IsLittleEndian)
+            {
+                pair = (ushort)((pair << 8) | (pair >> 8));
+            }
+            return pair;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static uint GetTwoDigitsChars(uint value)
+        {
+            uint pair = TwoDigitsCharsTable[(int)value];
+            if (!BitConverter.IsLittleEndian)
+            {
+                pair = uint.RotateRight(pair, 16);
+            }
+            return pair;
+        }
+
+        /// <summary>Writes a value [ 00 .. 99 ] to the start of a pre-sliced 2-element span, using a single store.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static void WriteTwoDigits<TChar>(uint value, Span<TChar> destination) where TChar : unmanaged, IUtfChar<TChar>
+        {
+            Debug.Assert(value <= 99);
+            Debug.Assert(destination.Length >= 2);
+            Debug.Assert(sizeof(TChar) is sizeof(char) or sizeof(byte));
+
+            if (sizeof(TChar) == sizeof(char))
+            {
+                // TwoDigitsCharsTable[v] = (char)('0'+v/10) | ((char)('0'+v%10) << 16) — write both chars as one 4-byte store.
+                uint pair = GetTwoDigitsChars(value);
+                MemoryMarshal.Write(MemoryMarshal.AsBytes(Unsafe.BitCast<Span<TChar>, Span<char>>(destination)), in pair);
+            }
+            else
+            {
+                // Write both bytes as a single 2-byte store.
+                ushort pair = GetTwoDigitsBytes(value);
+                MemoryMarshal.Write(Unsafe.BitCast<Span<TChar>, Span<byte>>(destination), in pair);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static void WriteTwoDigits<TChar>(uint value, Span<TChar> buffer, int index) where TChar : unmanaged, IUtfChar<TChar>
+        {
+            Debug.Assert(value <= 99);
+            WriteTwoDigits(value, buffer.Slice(index, 2));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static void CopyNegativeSign<TChar>(ReadOnlySpan<TChar> sign, Span<TChar> destination)
+        {
+            if (sign.Length == 1)
+            {
+                destination[0] = sign[0];
+            }
+            else
+            {
+                sign.CopyTo(destination);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int UInt32ToDecChars<TChar>(Span<TChar> buffer, int index, uint value) where TChar : unmanaged, IUtfChar<TChar>
+        {
+            Debug.Assert(sizeof(TChar) is sizeof(char) or sizeof(byte));
+
+            if (value >= 10)
+            {
+                // Handle all values >= 100 two-digits at a time so as to avoid expensive integer division operations.
+                while (value >= 100)
+                {
+                    index -= 2;
+                    (value, uint remainder) = Math.DivRem(value, 100);
+                    WriteTwoDigits(remainder, buffer, index);
+                }
+
+                // If there are two digits remaining, store them.
+                if (value >= 10)
+                {
+                    index -= 2;
+                    WriteTwoDigits(value, buffer, index);
+                    return index;
+                }
+            }
+
+            // Otherwise, store the single digit remaining.
+            buffer[--index] = TChar.CastFrom(value + '0');
+            return index;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int UInt32ToDecChars<TChar>(Span<TChar> buffer, int index, uint value, int digits) where TChar : unmanaged, IUtfChar<TChar>
+        {
+            Debug.Assert(sizeof(TChar) is sizeof(char) or sizeof(byte));
+
+            uint remainder;
+            while (value >= 100)
+            {
+                index -= 2;
+                digits -= 2;
+                (value, remainder) = Math.DivRem(value, 100);
+                WriteTwoDigits(remainder, buffer, index);
+            }
             while (value != 0 || digits > 0)
             {
                 digits--;
-                (value, uint remainder) = Math.DivRem(value, 10);
-                *(--bufferEnd) = TChar.CastFrom(remainder + '0');
+                (value, remainder) = Math.DivRem(value, 10);
+                buffer[--index] = TChar.CastFrom(remainder + '0');
             }
-
-            return bufferEnd;
+            return index;
         }
-#endif
 
-        internal static unsafe void NumberToString<TChar>(ref ValueListBuilder<TChar> vlb, ref NumberBuffer number, char format, int nMaxDigits, NumberFormatInfo info) where TChar : unmanaged, IUtfChar<TChar>
+        internal static void NumberToString<TChar>(ref ValueListBuilder<TChar> vlb, ref NumberBuffer number, char format, int nMaxDigits, NumberFormatInfo info) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(sizeof(TChar) is sizeof(char) or sizeof(byte));
 
@@ -341,7 +470,7 @@ namespace System
             }
         }
 
-        internal static unsafe void NumberToStringFormat<TChar>(ref ValueListBuilder<TChar> vlb, ref NumberBuffer number, ReadOnlySpan<char> format, NumberFormatInfo info) where TChar : unmanaged, IUtfChar<TChar>
+        internal static void NumberToStringFormat<TChar>(ref ValueListBuilder<TChar> vlb, ref NumberBuffer number, ReadOnlySpan<char> format, NumberFormatInfo info) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(sizeof(TChar) is sizeof(char) or sizeof(byte));
 
@@ -361,10 +490,9 @@ namespace System
 
             int section;
             int src;
-            byte* dig = number.DigitsPtr;
             char ch;
 
-            section = FindSection(format, dig[0] == 0 ? 2 : number.IsNegative ? 1 : 0);
+            section = FindSection(format, number.Digits[0] == 0 ? 2 : number.IsNegative ? 1 : 0);
 
             while (true)
             {
@@ -378,79 +506,76 @@ namespace System
                 scaleAdjust = 0;
                 src = section;
 
-                fixed (char* pFormat = &MemoryMarshal.GetReference(format))
+                while (src < format.Length && (ch = format[src++]) != 0 && ch != ';')
                 {
-                    while (src < format.Length && (ch = pFormat[src++]) != 0 && ch != ';')
+                    switch (ch)
                     {
-                        switch (ch)
-                        {
-                            case '#':
-                                digitCount++;
-                                break;
+                        case '#':
+                            digitCount++;
+                            break;
 
-                            case '0':
-                                if (firstDigit == 0x7FFFFFFF)
-                                {
-                                    firstDigit = digitCount;
-                                }
-                                digitCount++;
-                                lastDigit = digitCount;
-                                break;
+                        case '0':
+                            if (firstDigit == 0x7FFFFFFF)
+                            {
+                                firstDigit = digitCount;
+                            }
+                            digitCount++;
+                            lastDigit = digitCount;
+                            break;
 
-                            case '.':
-                                if (decimalPos < 0)
-                                {
-                                    decimalPos = digitCount;
-                                }
-                                break;
+                        case '.':
+                            if (decimalPos < 0)
+                            {
+                                decimalPos = digitCount;
+                            }
+                            break;
 
-                            case ',':
-                                if (digitCount > 0 && decimalPos < 0)
+                        case ',':
+                            if (digitCount > 0 && decimalPos < 0)
+                            {
+                                if (thousandPos >= 0)
                                 {
-                                    if (thousandPos >= 0)
+                                    if (thousandPos == digitCount)
                                     {
-                                        if (thousandPos == digitCount)
-                                        {
-                                            thousandCount++;
-                                            break;
-                                        }
-                                        thousandSeps = true;
+                                        thousandCount++;
+                                        break;
                                     }
-                                    thousandPos = digitCount;
-                                    thousandCount = 1;
+                                    thousandSeps = true;
                                 }
-                                break;
+                                thousandPos = digitCount;
+                                thousandCount = 1;
+                            }
+                            break;
 
-                            case '%':
-                                scaleAdjust += 2;
-                                break;
+                        case '%':
+                            scaleAdjust += 2;
+                            break;
 
-                            case '\x2030':
-                                scaleAdjust += 3;
-                                break;
+                        case '\x2030':
+                            scaleAdjust += 3;
+                            break;
 
-                            case '\'':
-                            case '"':
-                                while (src < format.Length && pFormat[src] != 0 && pFormat[src++] != ch) ;
-                                break;
+                        case '\'':
+                        case '"':
+                            while (src < format.Length && format[src] != 0 && format[src++] != ch) ;
+                            break;
 
-                            case '\\':
-                                if (src < format.Length && pFormat[src] != 0)
-                                {
-                                    src++;
-                                }
-                                break;
+                        case '\\':
+                            if (src < format.Length && format[src] != 0)
+                            {
+                                src++;
+                            }
+                            break;
 
-                            case 'E':
-                            case 'e':
-                                if ((src < format.Length && pFormat[src] == '0') ||
-                                    (src + 1 < format.Length && (pFormat[src] == '+' || pFormat[src] == '-') && pFormat[src + 1] == '0'))
-                                {
-                                    while (++src < format.Length && pFormat[src] == '0') ;
-                                    scientific = true;
-                                }
-                                break;
-                        }
+                        case 'E':
+                        case 'e':
+                            if ((src < format.Length && format[src] == '0') ||
+                                (src + 1 < format.Length && (format[src] == '+' || format[src] == '-') && format[src + 1] == '0'))
+                            {
+                                while (++src < format.Length && format[src] == '0') ;
+                                scientific = true;
+                            }
+                            break;
                     }
                 }
 
@@ -471,12 +596,12 @@ namespace System
                     }
                 }
 
-                if (dig[0] != 0)
+                if (number.Digits[0] != 0)
                 {
                     number.Scale += scaleAdjust;
                     int pos = scientific ? digitCount : number.Scale + digitCount - decimalPos;
                     RoundNumber(ref number, pos, isCorrectlyRounded: false);
-                    if (dig[0] == 0)
+                    if (number.Digits[0] == 0)
                     {
                         src = FindSection(format, 2);
                         if (src != section)
@@ -585,184 +710,216 @@ namespace System
 
             bool decimalWritten = false;
 
-            fixed (char* pFormat = &MemoryMarshal.GetReference(format))
+            // Slicing to DigitsCount lets the JIT prove digits[i] is in-bounds whenever i < digits.Length.
+            // Math.Min proves the Slice length is within the buffer so the JIT can eliminate the cold throw.
+            // digits itself is never mutated — curIndex tracks our position so digits.Length remains
+            // loop-invariant across the outer format scan, letting the JIT hoist it once.
+            ReadOnlySpan<byte> digits = number.Digits;
+            digits = digits.Slice(0, Math.Min(number.DigitsCount, digits.Length));
+            int curIndex = 0;
+
+            while (src < format.Length && (ch = format[src++]) != 0 && ch != ';')
             {
-                byte* cur = dig;
-
-                while (src < format.Length && (ch = pFormat[src++]) != 0 && ch != ';')
+                if (adjust > 0)
                 {
-                    if (adjust > 0)
-                    {
-                        switch (ch)
-                        {
-                            case '#':
-                            case '0':
-                            case '.':
-                                while (adjust > 0)
-                                {
-                                    // digPos will be one greater than thousandsSepPos[thousandsSepCtr] since we are at
-                                    // the character after which the groupSeparator needs to be appended.
-                                    vlb.Append(TChar.CastFrom(*cur != 0 ? (char)(*cur++) : '0'));
-                                    if (thousandSeps && digPos > 1 && thousandsSepCtr >= 0)
-                                    {
-                                        if (digPos == thousandsSepPos[thousandsSepCtr] + 1)
-                                        {
-                                            vlb.Append(info.NumberGroupSeparatorTChar<TChar>());
-                                            thousandsSepCtr--;
-                                        }
-                                    }
-                                    digPos--;
-                                    adjust--;
-                                }
-                                break;
-                        }
-                    }
-
                     switch (ch)
                     {
                         case '#':
                         case '0':
+                        case '.':
+                            // Emit real digits for the first min(adjust, digits.Length) positions,
+                            // then '0' padding for any remaining. The adjust loop always fires before
+                            // any main-switch digit consumption (curIndex == 0 at entry), so
+                            // Math.Min(adjust, digits.Length) is the tight bound, and iterating the
+                            // slice itself lets the JIT eliminate the per-element bounds checks.
+                            ReadOnlySpan<byte> adjustDigits = digits.Slice(0, Math.Min(adjust, digits.Length));
+                            for (int i = 0; i < adjustDigits.Length; i++)
                             {
-                                if (adjust < 0)
+                                // digPos will be one greater than thousandsSepPos[thousandsSepCtr] since we are at
+                                // the character after which the groupSeparator needs to be appended.
+                                vlb.Append(TChar.CastFrom((char)adjustDigits[i]));
+                                if (thousandSeps && digPos > 1 && thousandsSepCtr >= 0)
                                 {
-                                    adjust++;
-                                    ch = digPos <= firstDigit ? '0' : '\0';
-                                }
-                                else
-                                {
-                                    ch = *cur != 0 ? (char)(*cur++) : digPos > lastDigit ? '0' : '\0';
-                                }
-
-                                if (ch != 0)
-                                {
-                                    vlb.Append(TChar.CastFrom(ch));
-                                    if (thousandSeps && digPos > 1 && thousandsSepCtr >= 0)
+                                    if (digPos == thousandsSepPos[thousandsSepCtr] + 1)
                                     {
-                                        if (digPos == thousandsSepPos[thousandsSepCtr] + 1)
-                                        {
-                                            vlb.Append(info.NumberGroupSeparatorTChar<TChar>());
-                                            thousandsSepCtr--;
-                                        }
+                                        vlb.Append(info.NumberGroupSeparatorTChar<TChar>());
+                                        thousandsSepCtr--;
                                     }
                                 }
-
                                 digPos--;
+                                adjust--;
+                            }
+                            curIndex = adjustDigits.Length;
+                            while (adjust > 0)
+                            {
+                                vlb.Append(TChar.CastFrom('0'));
+                                if (thousandSeps && digPos > 1 && thousandsSepCtr >= 0)
+                                {
+                                    if (digPos == thousandsSepPos[thousandsSepCtr] + 1)
+                                    {
+                                        vlb.Append(info.NumberGroupSeparatorTChar<TChar>());
+                                        thousandsSepCtr--;
+                                    }
+                                }
+                                digPos--;
+                                adjust--;
+                            }
+                            break;
+                    }
+                }
+
+                switch (ch)
+                {
+                    case '#':
+                    case '0':
+                        {
+                            if (adjust < 0)
+                            {
+                                adjust++;
+                                ch = digPos <= firstDigit ? '0' : '\0';
+                            }
+                            else if (curIndex < digits.Length)
+                            {
+                                ch = (char)digits[curIndex++];
+                            }
+                            else
+                            {
+                                ch = digPos > lastDigit ? '0' : '\0';
+                            }
+
+                            if (ch != 0)
+                            {
+                                vlb.Append(TChar.CastFrom(ch));
+                                if (thousandSeps && digPos > 1 && thousandsSepCtr >= 0)
+                                {
+                                    if (digPos == thousandsSepPos[thousandsSepCtr] + 1)
+                                    {
+                                        vlb.Append(info.NumberGroupSeparatorTChar<TChar>());
+                                        thousandsSepCtr--;
+                                    }
+                                }
+                            }
+
+                            digPos--;
+                            break;
+                        }
+
+                    case '.':
+                        {
+                            if (digPos != 0 || decimalWritten)
+                            {
+                                // For compatibility, don't echo repeated decimals
                                 break;
                             }
 
-                        case '.':
+                            // If the format has trailing zeros or the format has a decimal and digits remain
+                            if (lastDigit < 0 || (decimalPos < digitCount && curIndex < digits.Length))
                             {
-                                if (digPos != 0 || decimalWritten)
+                                vlb.Append(info.NumberDecimalSeparatorTChar<TChar>());
+                                decimalWritten = true;
+                            }
+                            break;
+                        }
+
+                    case '\x2030':
+                        vlb.Append(info.PerMilleSymbolTChar<TChar>());
+                        break;
+
+                    case '%':
+                        vlb.Append(info.PercentSymbolTChar<TChar>());
+                        break;
+
+                    case ',':
+                        break;
+
+                    case '\'':
+                    case '"':
+                        while (src < format.Length)
+                        {
+                            char quoted = format[src];
+                            if (quoted == 0 || quoted == ch)
+                            {
+                                break;
+                            }
+                            src++;
+                            AppendUnknownChar(ref vlb, quoted);
+                        }
+
+                        if (src < format.Length && format[src] != 0)
+                        {
+                            src++;
+                        }
+                        break;
+
+                    case '\\':
+                        if (src < format.Length && format[src] != 0)
+                        {
+                            AppendUnknownChar(ref vlb, format[src++]);
+                        }
+                        break;
+
+                    case 'E':
+                    case 'e':
+                        {
+                            bool positiveSign = false;
+                            int i = 0;
+                            if (scientific)
+                            {
+                                char exponentChar = src < format.Length ? format[src] : '\0';
+                                char exponentNext = src + 1 < format.Length ? format[src + 1] : '\0';
+
+                                if (exponentChar == '0')
                                 {
-                                    // For compatibility, don't echo repeated decimals
+                                    // Handles E0, which should format the same as E-0
+                                    i++;
+                                }
+                                else if (exponentChar is '+' or '-' && exponentNext == '0')
+                                {
+                                    // Handles E+0 and E-0; only E+0 emits a sign for positive exponents
+                                    positiveSign = exponentChar == '+';
+                                }
+                                else
+                                {
+                                    vlb.Append(TChar.CastFrom(ch));
                                     break;
                                 }
 
-                                // If the format has trailing zeros or the format has a decimal and digits remain
-                                if (lastDigit < 0 || (decimalPos < digitCount && *cur != 0))
+                                while (++src < format.Length && format[src] == '0')
                                 {
-                                    vlb.Append(info.NumberDecimalSeparatorTChar<TChar>());
-                                    decimalWritten = true;
+                                    i++;
                                 }
-                                break;
-                            }
 
-                        case '\x2030':
-                            vlb.Append(info.PerMilleSymbolTChar<TChar>());
-                            break;
-
-                        case '%':
-                            vlb.Append(info.PercentSymbolTChar<TChar>());
-                            break;
-
-                        case ',':
-                            break;
-
-                        case '\'':
-                        case '"':
-                            while (src < format.Length && pFormat[src] != 0 && pFormat[src] != ch)
-                            {
-                                AppendUnknownChar(ref vlb, pFormat[src++]);
-                            }
-
-                            if (src < format.Length && pFormat[src] != 0)
-                            {
-                                src++;
-                            }
-                            break;
-
-                        case '\\':
-                            if (src < format.Length && pFormat[src] != 0)
-                            {
-                                AppendUnknownChar(ref vlb, pFormat[src++]);
-                            }
-                            break;
-
-                        case 'E':
-                        case 'e':
-                            {
-                                bool positiveSign = false;
-                                int i = 0;
-                                if (scientific)
+                                if (i > 10)
                                 {
-                                    if (src < format.Length && pFormat[src] == '0')
-                                    {
-                                        // Handles E0, which should format the same as E-0
-                                        i++;
-                                    }
-                                    else if (src + 1 < format.Length && pFormat[src] == '+' && pFormat[src + 1] == '0')
-                                    {
-                                        // Handles E+0
-                                        positiveSign = true;
-                                    }
-                                    else if (src + 1 < format.Length && pFormat[src] == '-' && pFormat[src + 1] == '0')
-                                    {
-                                        // Handles E-0
-                                        // Do nothing, this is just a place holder s.t. we don't break out of the loop.
-                                    }
-                                    else
-                                    {
-                                        vlb.Append(TChar.CastFrom(ch));
-                                        break;
-                                    }
-
-                                    while (++src < format.Length && pFormat[src] == '0')
-                                    {
-                                        i++;
-                                    }
-
-                                    if (i > 10)
-                                    {
-                                        i = 10;
-                                    }
-
-                                    int exp = dig[0] == 0 ? 0 : number.Scale - decimalPos;
-                                    FormatExponent(ref vlb, info, exp, ch, i, positiveSign);
-                                    scientific = false;
+                                    i = 10;
                                 }
-                                else
-                                {
-                                    vlb.Append(TChar.CastFrom(ch));
-                                    if (src < format.Length)
-                                    {
-                                        if (pFormat[src] is '+' or '-')
-                                        {
-                                            AppendUnknownChar(ref vlb, pFormat[src++]);
-                                        }
 
-                                        while (src < format.Length && pFormat[src] == '0')
-                                        {
-                                            AppendUnknownChar(ref vlb, pFormat[src++]);
-                                        }
+                                int exp = number.Digits[0] == 0 ? 0 : number.Scale - decimalPos;
+                                FormatExponent(ref vlb, info, exp, ch, i, positiveSign);
+                                scientific = false;
+                            }
+                            else
+                            {
+                                vlb.Append(TChar.CastFrom(ch));
+                                if (src < format.Length)
+                                {
+                                    if (format[src] is '+' or '-')
+                                    {
+                                        AppendUnknownChar(ref vlb, format[src++]);
+                                    }
+
+                                    while (src < format.Length && format[src] == '0')
+                                    {
+                                        AppendUnknownChar(ref vlb, format[src++]);
                                     }
                                 }
-                                break;
                             }
-
-                        default:
-                            AppendUnknownChar(ref vlb, ch);
                             break;
-                    }
+                        }
+
+                    default:
+                        AppendUnknownChar(ref vlb, ch);
+                        break;
                 }
             }
 
@@ -772,7 +929,7 @@ namespace System
             }
         }
 
-        private static unsafe void FormatCurrency<TChar>(ref ValueListBuilder<TChar> vlb, ref NumberBuffer number, int nMaxDigits, NumberFormatInfo info) where TChar : unmanaged, IUtfChar<TChar>
+        private static void FormatCurrency<TChar>(ref ValueListBuilder<TChar> vlb, ref NumberBuffer number, int nMaxDigits, NumberFormatInfo info) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(sizeof(TChar) is sizeof(char) or sizeof(byte));
 
@@ -803,7 +960,7 @@ namespace System
             }
         }
 
-        private static unsafe void FormatFixed<TChar>(
+        private static void FormatFixed<TChar>(
             ref ValueListBuilder<TChar> vlb, ref NumberBuffer number,
             int nMaxDigits, int[]? groupDigits,
             ReadOnlySpan<TChar> sDecimal, ReadOnlySpan<TChar> sGroup) where TChar : unmanaged, IUtfChar<TChar>
@@ -811,7 +968,9 @@ namespace System
             Debug.Assert(sizeof(TChar) is sizeof(char) or sizeof(byte));
 
             int digPos = number.Scale;
-            byte* dig = number.DigitsPtr;
+            ReadOnlySpan<byte> dig = number.Digits;
+            dig = dig.Slice(0, Math.Min(number.DigitsCount, dig.Length));
+            int digIndex = 0;
 
             if (digPos > 0)
             {
@@ -848,47 +1007,68 @@ namespace System
                     }
 
                     groupSizeIndex = 0;
-                    int digitCount = 0;
-                    int digLength = number.DigitsCount;
-                    int digStart = (digPos < digLength) ? digPos : digLength;
-                    fixed (TChar* spanPtr = &MemoryMarshal.GetReference(vlb.AppendSpan(bufferSize)))
+                    ReadOnlySpan<byte> intDigits = dig.Slice(0, Math.Min(digPos, dig.Length));
+                    Span<TChar> buffer = vlb.AppendSpan(bufferSize);
+                    int writePos = bufferSize;
+                    int remainingDigits = digPos;
+
+                    while (remainingDigits > 0)
                     {
-                        TChar* p = spanPtr + bufferSize - 1;
-                        for (int i = digPos - 1; i >= 0; i--)
+                        int digitsInGroup = (groupSize > 0) ? Math.Min(groupSize, remainingDigits) : remainingDigits;
+                        int groupStartDigit = remainingDigits - digitsInGroup;
+                        int groupStartWrite = writePos - digitsInGroup;
+
+                        Span<TChar> groupBuffer = buffer.Slice(groupStartWrite, digitsInGroup);
+                        for (int j = 0; j < groupBuffer.Length; j++)
                         {
-                            *(p--) = TChar.CastFrom((i < digStart) ? (char)dig[i] : '0');
-
-                            if (groupSize > 0)
-                            {
-                                digitCount++;
-                                if ((digitCount == groupSize) && (i != 0))
-                                {
-                                    for (int j = sGroup.Length - 1; j >= 0; j--)
-                                    {
-                                        *(p--) = sGroup[j];
-                                    }
-
-                                    if (groupSizeIndex < groupDigits.Length - 1)
-                                    {
-                                        groupSizeIndex++;
-                                        groupSize = groupDigits[groupSizeIndex];
-                                    }
-                                    digitCount = 0;
-                                }
-                            }
+                            int digitIndex = groupStartDigit + j;
+                            groupBuffer[j] = TChar.CastFrom((uint)digitIndex < (uint)intDigits.Length ? (char)intDigits[digitIndex] : '0');
                         }
 
-                        Debug.Assert(p >= spanPtr - 1, "Underflow");
-                        dig += digStart;
+                        writePos = groupStartWrite;
+                        remainingDigits -= digitsInGroup;
+
+                        if ((remainingDigits > 0) && (groupSize > 0))
+                        {
+                            if (sGroup.Length == 1)
+                            {
+                                writePos--;
+                                buffer[writePos] = sGroup[0];
+                            }
+                            else
+                            {
+                                writePos -= sGroup.Length;
+                                sGroup.CopyTo(buffer.Slice(writePos, sGroup.Length));
+                            }
+
+                            if (groupSizeIndex < groupDigits.Length - 1)
+                            {
+                                groupSizeIndex++;
+                                groupSize = groupDigits[groupSizeIndex];
+                            }
+                        }
                     }
+
+                    Debug.Assert(writePos == 0, "Underflow");
+                    digIndex = intDigits.Length;
                 }
                 else
                 {
-                    do
+                    // Emit actual digits first, then trailing zeros.
+                    // Split into two unconditional loops so the JIT can prove bounds safety
+                    // for the digit loop (span iteration) and fully optimize the zero loop.
+                    int actualDigits = Math.Min(digPos, dig.Length);
+                    foreach (byte d in dig.Slice(0, actualDigits))
                     {
-                        vlb.Append(TChar.CastFrom(*dig != 0 ? (char)(*dig++) : '0'));
+                        vlb.Append(TChar.CastFrom((char)d));
                     }
-                    while (--digPos > 0);
+                    digIndex = actualDigits;
+                    digPos -= actualDigits;
+                    while (digPos > 0)
+                    {
+                        vlb.Append(TChar.CastFrom('0'));
+                        digPos--;
+                    }
                 }
             }
             else
@@ -906,13 +1086,19 @@ namespace System
                     {
                         vlb.Append(TChar.CastFrom('0'));
                     }
-                    digPos += zeroes;
                     nMaxDigits -= zeroes;
                 }
 
+                int remainingDig = dig.Length - digIndex;
+                int decActual = Math.Min(nMaxDigits, remainingDig);
+                foreach (byte d in dig.Slice(digIndex, decActual))
+                {
+                    vlb.Append(TChar.CastFrom((char)d));
+                }
+                nMaxDigits -= decActual;
                 while (nMaxDigits > 0)
                 {
-                    vlb.Append(TChar.CastFrom((*dig != 0) ? (char)(*dig++) : '0'));
+                    vlb.Append(TChar.CastFrom('0'));
                     nMaxDigits--;
                 }
             }
@@ -921,7 +1107,7 @@ namespace System
         /// <summary>Appends a char to the builder when the char is not known to be ASCII.</summary>
         /// <remarks>This requires a helper as if the character isn't ASCII, for UTF-8 encoding it will result in multiple bytes added.</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe void AppendUnknownChar<TChar>(ref ValueListBuilder<TChar> vlb, char ch) where TChar : unmanaged, IUtfChar<TChar>
+        private static void AppendUnknownChar<TChar>(ref ValueListBuilder<TChar> vlb, char ch) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(sizeof(TChar) is sizeof(char) or sizeof(byte));
 
@@ -938,11 +1124,11 @@ namespace System
             static void AppendNonAsciiBytes(ref ValueListBuilder<TChar> vlb, char ch)
             {
                 var r = new Rune(ch);
-                r.EncodeToUtf8(MemoryMarshal.AsBytes(vlb.AppendSpan(r.Utf8SequenceLength)));
+                r.EncodeToUtf8(Unsafe.BitCast<Span<TChar>, Span<byte>>(vlb.AppendSpan(r.Utf8SequenceLength)));
             }
         }
 
-        private static unsafe void FormatNumber<TChar>(ref ValueListBuilder<TChar> vlb, ref NumberBuffer number, int nMaxDigits, NumberFormatInfo info) where TChar : unmanaged, IUtfChar<TChar>
+        private static void FormatNumber<TChar>(ref ValueListBuilder<TChar> vlb, ref NumberBuffer number, int nMaxDigits, NumberFormatInfo info) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(sizeof(TChar) is sizeof(char) or sizeof(byte));
 
@@ -967,29 +1153,41 @@ namespace System
             }
         }
 
-        private static unsafe void FormatScientific<TChar>(ref ValueListBuilder<TChar> vlb, ref NumberBuffer number, int nMaxDigits, NumberFormatInfo info, char expChar) where TChar : unmanaged, IUtfChar<TChar>
+        private static void FormatScientific<TChar>(ref ValueListBuilder<TChar> vlb, ref NumberBuffer number, int nMaxDigits, NumberFormatInfo info, char expChar) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(sizeof(TChar) is sizeof(char) or sizeof(byte));
 
-            byte* dig = number.DigitsPtr;
+            ReadOnlySpan<byte> dig = number.Digits;
+            dig = dig.Slice(0, Math.Min(number.DigitsCount, dig.Length));
 
-            vlb.Append(TChar.CastFrom((*dig != 0) ? (char)(*dig++) : '0'));
+            // Emit the leading digit, or '0' when the value has no digits.
+            vlb.Append(TChar.CastFrom(!dig.IsEmpty ? (char)dig[0] : '0'));
 
             if (nMaxDigits != 1) // For E0 we would like to suppress the decimal point
             {
                 vlb.Append(info.NumberDecimalSeparatorTChar<TChar>());
             }
 
-            while (--nMaxDigits > 0)
+            // Emit the remaining nMaxDigits - 1 digits, padding with '0' once exhausted.
+            int emitted = 1;
+            if (dig.Length > 1)
             {
-                vlb.Append(TChar.CastFrom((*dig != 0) ? (char)(*dig++) : '0'));
+                foreach (byte b in dig.Slice(1, Math.Min(nMaxDigits - 1, dig.Length - 1)))
+                {
+                    vlb.Append(TChar.CastFrom((char)b));
+                    emitted++;
+                }
+            }
+            for (; emitted < nMaxDigits; emitted++)
+            {
+                vlb.Append(TChar.CastFrom('0'));
             }
 
             int e = number.Digits[0] == 0 ? 0 : number.Scale - 1;
             FormatExponent(ref vlb, info, e, expChar, 3, true);
         }
 
-        private static unsafe void FormatExponent<TChar>(ref ValueListBuilder<TChar> vlb, NumberFormatInfo info, int value, char expChar, int minDigits, bool positiveSign) where TChar : unmanaged, IUtfChar<TChar>
+        private static void FormatExponent<TChar>(ref ValueListBuilder<TChar> vlb, NumberFormatInfo info, int value, char expChar, int minDigits, bool positiveSign) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(sizeof(TChar) is sizeof(char) or sizeof(byte));
 
@@ -1008,12 +1206,13 @@ namespace System
                 }
             }
 
-            TChar* digits = stackalloc TChar[MaxUInt32DecDigits];
-            TChar* p = UInt32ToDecChars(digits + MaxUInt32DecDigits, (uint)value, minDigits);
-            vlb.Append(new ReadOnlySpan<TChar>(p, (int)(digits + MaxUInt32DecDigits - p)));
+            int digitCount = Math.Max(minDigits, FormattingHelpers.CountDigits((uint)value));
+            Span<TChar> digits = vlb.AppendSpan(digitCount);
+            int pos = UInt32ToDecChars(digits, digitCount, (uint)value, minDigits);
+            Debug.Assert(pos == 0);
         }
 
-        private static unsafe void FormatGeneral<TChar>(ref ValueListBuilder<TChar> vlb, ref NumberBuffer number, int nMaxDigits, NumberFormatInfo info, char expChar, bool suppressScientific) where TChar : unmanaged, IUtfChar<TChar>
+        private static void FormatGeneral<TChar>(ref ValueListBuilder<TChar> vlb, ref NumberBuffer number, int nMaxDigits, NumberFormatInfo info, char expChar, bool suppressScientific) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(sizeof(TChar) is sizeof(char) or sizeof(byte));
 
@@ -1030,22 +1229,29 @@ namespace System
                 }
             }
 
-            byte* dig = number.DigitsPtr;
+            ReadOnlySpan<byte> dig = number.Digits;
+            dig = dig.Slice(0, Math.Min(number.DigitsCount, dig.Length));
 
             if (digPos > 0)
             {
-                do
+                // Emit the available integer digits, then pad with '0' up to digPos.
+                int intCount = Math.Min(digPos, dig.Length);
+                foreach (byte b in dig.Slice(0, intCount))
                 {
-                    vlb.Append(TChar.CastFrom((*dig != 0) ? (char)(*dig++) : '0'));
+                    vlb.Append(TChar.CastFrom((char)b));
                 }
-                while (--digPos > 0);
+                for (int i = intCount; i < digPos; i++)
+                {
+                    vlb.Append(TChar.CastFrom('0'));
+                }
+                dig = dig.Slice(intCount);
             }
             else
             {
                 vlb.Append(TChar.CastFrom('0'));
             }
 
-            if (*dig != 0 || digPos < 0)
+            if (!dig.IsEmpty || digPos < 0)
             {
                 vlb.Append(info.NumberDecimalSeparatorTChar<TChar>());
 
@@ -1055,9 +1261,9 @@ namespace System
                     digPos++;
                 }
 
-                while (*dig != 0)
+                foreach (byte b in dig)
                 {
-                    vlb.Append(TChar.CastFrom(*dig++));
+                    vlb.Append(TChar.CastFrom((char)b));
                 }
             }
 
@@ -1067,7 +1273,7 @@ namespace System
             }
         }
 
-        private static unsafe void FormatPercent<TChar>(ref ValueListBuilder<TChar> vlb, ref NumberBuffer number, int nMaxDigits, NumberFormatInfo info) where TChar : unmanaged, IUtfChar<TChar>
+        private static void FormatPercent<TChar>(ref ValueListBuilder<TChar> vlb, ref NumberBuffer number, int nMaxDigits, NumberFormatInfo info) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(sizeof(TChar) is sizeof(char) or sizeof(byte));
 
@@ -1098,9 +1304,9 @@ namespace System
             }
         }
 
-        internal static unsafe void RoundNumber(ref NumberBuffer number, int pos, bool isCorrectlyRounded)
+        internal static void RoundNumber(ref NumberBuffer number, int pos, bool isCorrectlyRounded)
         {
-            byte* dig = number.DigitsPtr;
+            Span<byte> dig = number.Digits;
 
             int i = 0;
             while (i < pos && dig[i] != '\0')
@@ -1148,7 +1354,7 @@ namespace System
             number.DigitsCount = i;
             number.CheckConsistency();
 
-            static bool ShouldRoundUp(byte* dig, int i, NumberBufferKind numberKind, bool isCorrectlyRounded)
+            static bool ShouldRoundUp(ReadOnlySpan<byte> dig, int i, NumberBufferKind numberKind, bool isCorrectlyRounded)
             {
                 // We only want to round up if the digit is greater than or equal to 5 and we are
                 // not rounding a floating-point number. If we are rounding a floating-point number
@@ -1210,7 +1416,7 @@ namespace System
         // non-zero result reliably indicates the format defines a dedicated negative section.
         private static bool HasNegativeSection(ReadOnlySpan<char> format) => FindSection(format, 1) != 0;
 
-        private static unsafe int FindSection(ReadOnlySpan<char> format, int section)
+        private static int FindSection(ReadOnlySpan<char> format, int section)
         {
             int src;
             char ch;
@@ -1220,45 +1426,42 @@ namespace System
                 return 0;
             }
 
-            fixed (char* pFormat = &MemoryMarshal.GetReference(format))
+            src = 0;
+            while (true)
             {
-                src = 0;
-                while (true)
+                if (src >= format.Length)
                 {
-                    if (src >= format.Length)
-                    {
+                    return 0;
+                }
+
+                switch (ch = format[src++])
+                {
+                    case '\'':
+                    case '"':
+                        while (src < format.Length && format[src] != 0 && format[src++] != ch) ;
+                        break;
+
+                    case '\\':
+                        if (src < format.Length && format[src] != 0)
+                        {
+                            src++;
+                        }
+                        break;
+
+                    case ';':
+                        if (--section != 0)
+                        {
+                            break;
+                        }
+
+                        if (src < format.Length && format[src] is not ('\0' or ';'))
+                        {
+                            return src;
+                        }
+                        goto case '\0';
+
+                    case '\0':
                         return 0;
-                    }
-
-                    switch (ch = pFormat[src++])
-                    {
-                        case '\'':
-                        case '"':
-                            while (src < format.Length && pFormat[src] != 0 && pFormat[src++] != ch) ;
-                            break;
-
-                        case '\\':
-                            if (src < format.Length && pFormat[src] != 0)
-                            {
-                                src++;
-                            }
-                            break;
-
-                        case ';':
-                            if (--section != 0)
-                            {
-                                break;
-                            }
-
-                            if (src < format.Length && pFormat[src] != 0 && pFormat[src] != ';')
-                            {
-                                return src;
-                            }
-                            goto case '\0';
-
-                        case '\0':
-                            return 0;
-                    }
                 }
             }
         }

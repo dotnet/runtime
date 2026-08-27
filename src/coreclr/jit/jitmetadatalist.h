@@ -56,6 +56,7 @@ JITMETADATAMETRIC(PerfScore,                             double,           JIT_M
 JITMETADATAMETRIC(BytesAllocated,                        int64_t,          JIT_METADATA_LOWER_IS_BETTER)
 JITMETADATAMETRIC(ImporterBranchFold,                    int,              0)
 JITMETADATAMETRIC(ImporterSwitchFold,                    int,              0)
+JITMETADATAMETRIC(IRExtraFlags,                          int,              0)
 JITMETADATAMETRIC(DevirtualizedCall,                     int,              0)
 JITMETADATAMETRIC(DevirtualizedCallUnboxedEntry,         int,              0)
 JITMETADATAMETRIC(DevirtualizedCallRemovedBox,           int,              0)

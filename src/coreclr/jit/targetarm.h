@@ -41,7 +41,9 @@
 
 #define CSE_CONSTS               1       // Enable if we want to CSE constants
 #define LOWER_DECOMPOSE_LONGS    1       // Decompose TYP_LONG operations into (typically two) TYP_INT ones
-#define EMIT_TRACK_STACK_DEPTH   1       // This is something of a workaround.  For both ARM and AMD64, the frame size is fixed, so we don't really
+#define TARGET_MASKS_SHIFTS      0       // Shift and rotate instructions do not implicitly mask their count to the operand bit size
+#define TARGET_HAS_MULHI         0       // Does not support GT_MULHI, the high bits of an NxN multiply
+#define EMIT_TRACK_STACK_DEPTH   1         // This is something of a workaround.  For both ARM and AMD64, the frame size is fixed, so we don't really
                                          // need to track stack depth, but this is currently necessary to get GC information reported at call sites.
 #define EMIT_GENERATE_GCINFO     1       // Track GC ref liveness in codegen and emit and generate GCInfo based on that
 
