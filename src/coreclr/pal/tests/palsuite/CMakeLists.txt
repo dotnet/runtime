@@ -153,7 +153,6 @@ add_executable_clr(paltests
   #exception_handling/PAL_TRY_EXCEPT_EX/test2/PAL_TRY_EXCEPT_EX.cpp
   #exception_handling/PAL_TRY_EXCEPT_EX/test3/PAL_TRY_EXCEPT_EX.cpp
   #exception_handling/PAL_TRY_LEAVE_FINALLY/test1/PAL_TRY_LEAVE_FINALLY.cpp
-  exception_handling/cpp_exception_mapping/test1/test1.cpp
   exception_handling/RaiseException/test1/test1.cpp
   exception_handling/RaiseException/test2/test2.cpp
   exception_handling/RaiseException/test3/test.cpp
@@ -396,25 +395,9 @@ add_executable_clr(paltests
 
 add_dependencies(paltests coreclrpal)
 
-set_property(SOURCE exception_handling/cpp_exception_mapping/test1/test1.cpp APPEND PROPERTY INCLUDE_DIRECTORIES
-  ${CLR_DIR}/debug/inc
-  ${CLR_DIR}/debug/inc/${ARCH_SOURCES_DIR}
-  ${CLR_DIR}/debug/inc/dump
-  ${CLR_DIR}/hosts/inc
-  ${CLR_DIR}/interpreter/inc
-  ${CLR_DIR}/md/inc
-  ${CLR_DIR}/minipal
-  ${CLR_DIR}/nativeresources
-  ${COREPAL_SOURCE_DIR}/inc/rt
-  ${COREPAL_SOURCE_DIR}/prebuilt/inc
-  ${GENERATED_INCLUDE_DIR}
-)
-
 target_link_libraries(paltests
   PUBLIC
   ${COMMON_TEST_LIBRARIES}
-  mscorrc
-  utilcodestaticnohost
 )
 
 if(CLR_CMAKE_TARGET_OPENBSD)
