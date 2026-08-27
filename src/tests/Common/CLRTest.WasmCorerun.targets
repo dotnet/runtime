@@ -329,9 +329,6 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
     <Error Condition="!Exists('$(_WasmCorerunGeneratorPath)')"
            Text="crossgen2 was not found at '$(_WasmCorerunGeneratorPath)', so the test's portable call helpers cannot be generated. It is built by the 'clr' subset." />
 
-    <!-- One token per line: that is how crossgen2 reads a response file, so an option carries its
-         value in the same token, name and value joined by a colon, rather than spilling onto the
-         next line. -->
     <ItemGroup>
       <!-- This file is only imported for browser, so $(TargetOS) is that; naming it rather than
            repeating the literal keeps the two from drifting if wasi ever links a test corerun. -->

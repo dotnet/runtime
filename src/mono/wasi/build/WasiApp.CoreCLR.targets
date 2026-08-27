@@ -173,9 +173,6 @@
       <_PortableCallHelpersGeneratorRsp>$(_WasiRelinkObjDir)callhelpers-generator.rsp</_PortableCallHelpersGeneratorRsp>
     </PropertyGroup>
 
-    <!-- One token per line: that is how crossgen2 reads a response file, so an option carries its
-         value in the same token, name and value joined by a colon, rather than spilling onto the
-         next line. -->
     <ItemGroup>
       <_PortableCallHelpersGeneratorArg Include="--targetos:wasi" />
       <_PortableCallHelpersGeneratorArg Include="--targetarch:wasm" />

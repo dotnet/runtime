@@ -22,12 +22,6 @@
   <Import Project="$(RepositoryEngineeringDir)wasm\WasmPInvokeModules.props" />
 
   <PropertyGroup>
-    <!-- The generator uses crossgen2's type system to compute the wasm ABI but never loads the
-         JIT, so the crossgen2 built for the host answers wasm questions correctly. This one is a
-         framework-dependent apphost, which only launches if a matching shared runtime happens to
-         be installed, so run its IL through the repo's own host. The self-contained crossgen2 the
-         app and test targets resolve has no such constraint and is invoked directly. -->
-    <_Crossgen2Path>$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'coreclr', '$(HostOS).$(BuildArchitecture).$(Configuration)', 'crossgen2', 'crossgen2.dll'))</_Crossgen2Path>
     <_TesthostDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'testhost'))</_TesthostDir>
     <_FrameworkVersion>$(MajorVersion).$(MinorVersion).0</_FrameworkVersion>
 
@@ -51,6 +45,9 @@
   <!-- Batched over _WasmCallHelperTarget: one crossgen2 run per wasm flavor. -->
   <Target Name="GenerateCallHelpers" Outputs="%(_WasmCallHelperTarget.Identity)">
     <PropertyGroup>
+      <!-- Resolved here rather than during evaluation because eng/liveBuilds.targets, which
+           defines Crossgen2InBuildDir, is imported after this file. -->
+      <_Crossgen2Path>$([MSBuild]::NormalizePath('$(Crossgen2InBuildDir)', 'crossgen2$(ExeSuffix)'))</_Crossgen2Path>
       <_TargetOS>%(_WasmCallHelperTarget.Identity)</_TargetOS>
       <_ScanPath>%(_WasmCallHelperTarget.ScanPath)</_ScanPath>
       <_OutputDir>$(MSBuildThisFileDirectory)$(_TargetOS)/</_OutputDir>
@@ -78,11 +75,6 @@
     <Error Condition="'@(_ScanAssembly)' == ''"
            Text="No assemblies to scan were found in $(_ScanPath)." />
 
-    <!-- One token per line: that is how crossgen2 reads a response file, so an option carries its
-         value in the same token, name and value joined by a colon, rather than spilling onto the
-         next line. Going through a response file rather than the command line keeps a
-         framework-sized closure off it, and leaves the exact invocation on disk to look at when a
-         regenerated table is not what was expected. -->
     <ItemGroup>
       <_GeneratorArg Remove="@(_GeneratorArg)" />
       <_GeneratorArg Include="--targetos:$(_TargetOS)" />
@@ -94,7 +86,7 @@
 
     <WriteLinesToFile File="$(_ResponseFile)" Lines="@(_GeneratorArg)" Overwrite="true" WriteOnlyWhenDifferent="true" />
 
-    <Exec Command="&quot;$(DOTNET_HOST_PATH)&quot; &quot;$(_Crossgen2Path)&quot; &quot;@$(_ResponseFile)&quot;"
+    <Exec Command="&quot;$(_Crossgen2Path)&quot; &quot;@$(_ResponseFile)&quot;"
           WorkingDirectory="$(RepoRoot)" />
   </Target>
 
