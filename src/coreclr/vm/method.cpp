@@ -2642,17 +2642,10 @@ BOOL MethodDesc::RequiresMDContextArg()
 {
     LIMITED_METHOD_CONTRACT;
 
-    // Interop marshaling is implemented using shared stubs
-    if (IsCLRToCOMCall())
-        return TRUE;
-
     // Interop marshalling of varargs needs MethodDesc calling convention
     // to support ldftn <PInvoke method with varargs>. It is not possible
     // to smuggle the MethodDesc* via vararg cookie in this case.
-    if (IsPInvoke() && IsVarArg())
-        return TRUE;
-
-    return FALSE;
+    return IsPInvoke() && IsVarArg();
 }
 
 //*******************************************************************************
@@ -2733,8 +2726,8 @@ BOOL MethodDesc::MayHaveNativeCode()
     case mcInstantiated:    // IsIL() case. Handled below.
         break;
 #ifdef FEATURE_COMINTEROP
-    case mcComInterop:      // Generated stub. No native code.
-        return FALSE;
+    case mcComInterop:      // CLR->COM calls are backed by transient IL.
+        return TRUE;
 #endif // FEATURE_COMINTEROP
     case mcDynamic:         // LCG or stub-as-il.
         return TRUE;
@@ -3216,7 +3209,10 @@ bool MethodDesc::DetermineAndSetIsEligibleForTieredCompilation()
         (!IsAsyncThunkMethod() || SupportsAsyncVersionCodegen()) &&
 
         // Tiering P/Invoke methods is not supported currently
-        !IsPInvoke()
+        !IsPInvoke() &&
+
+        // Tiering CLR->COM methods is not supported currently
+        !IsCLRToCOMCall()
         )
     {
         InterlockedUpdateFlags3(enum_flag3_IsEligibleForTieredCompilation, TRUE);
