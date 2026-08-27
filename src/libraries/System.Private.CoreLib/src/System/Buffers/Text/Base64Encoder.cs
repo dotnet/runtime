@@ -14,10 +14,11 @@ namespace System.Buffers.Text
     public static partial class Base64
     {
         /// <summary>
-        /// Returns the length (in bytes) of the result if you were to encode binary data within a byte span of size <paramref name="bytesLength"/>.
+        /// Returns the length of the result if you were to encode binary data within a byte span of size <paramref name="bytesLength"/>.
+        /// The length is in bytes when encoding to UTF-8 and in chars when encoding to chars.
         /// </summary>
         /// <param name="bytesLength">The number of bytes to encode.</param>
-        /// <returns>The number of bytes that encoding will produce.</returns>
+        /// <returns>The number of bytes or chars that encoding will produce.</returns>
         /// <exception cref="ArgumentOutOfRangeException">
         /// <paramref name="bytesLength"/> is less than 0 or greater than 1610612733.
         /// </exception>
