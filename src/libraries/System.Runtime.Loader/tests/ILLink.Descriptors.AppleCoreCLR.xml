@@ -1,8 +1,5 @@
 <linker>
   <!-- EnC deletion deltas reference this type through the System.Runtime.Loader facade. -->
-  <assembly fullname="System.Private.CoreLib">
-    <type fullname="System.Runtime.CompilerServices.MetadataUpdateDeletedAttribute" />
-  </assembly>
   <assembly fullname="System.Runtime.Loader">
     <type fullname="System.Runtime.CompilerServices.MetadataUpdateDeletedAttribute" />
   </assembly>
