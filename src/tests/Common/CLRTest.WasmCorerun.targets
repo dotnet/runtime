@@ -324,31 +324,26 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
     <PropertyGroup>
       <_WasmCorerunGeneratorExeSuffix Condition="'$(OS)' == 'Windows_NT'">.exe</_WasmCorerunGeneratorExeSuffix>
       <_WasmCorerunGeneratorPath Condition="'$(_WasmCorerunGeneratorPath)' == '' and '$(Crossgen2InBuildDir)' != ''">$([MSBuild]::NormalizePath('$(Crossgen2InBuildDir)', 'crossgen2$(_WasmCorerunGeneratorExeSuffix)'))</_WasmCorerunGeneratorPath>
-      <!-- An IL-only build of crossgen2 needs the dotnet host to launch it; an apphost does not. -->
-      <_WasmCorerunGeneratorCommand Condition="'$([System.IO.Path]::GetExtension(`$(_WasmCorerunGeneratorPath)`))' == '.dll'">"$(DOTNET_HOST_PATH)" "$(_WasmCorerunGeneratorPath)"</_WasmCorerunGeneratorCommand>
-      <_WasmCorerunGeneratorCommand Condition="'$(_WasmCorerunGeneratorCommand)' == ''">"$(_WasmCorerunGeneratorPath)"</_WasmCorerunGeneratorCommand>
     </PropertyGroup>
 
     <Error Condition="!Exists('$(_WasmCorerunGeneratorPath)')"
            Text="crossgen2 was not found at '$(_WasmCorerunGeneratorPath)', so the test's portable call helpers cannot be generated. It is built by the 'clr' subset." />
 
-    <!-- One token per line: that is how crossgen2 reads a response file. -->
+    <!-- One option per line, name and value joined by a colon: that is how crossgen2 reads a
+         response file. -->
     <ItemGroup>
-      <_WasmCorerunGeneratorArg Include="--targetos" />
       <!-- This file is only imported for browser, so $(TargetOS) is that; naming it rather than
            repeating the literal keeps the two from drifting if wasi ever links a test corerun. -->
-      <_WasmCorerunGeneratorArg Include="$(TargetOS)" />
-      <_WasmCorerunGeneratorArg Include="--targetarch" />
-      <_WasmCorerunGeneratorArg Include="wasm" />
-      <_WasmCorerunGeneratorArg Include="--generate-portable-callhelpers" />
-      <_WasmCorerunGeneratorArg Include="$(_WasmCorerunDir)" />
-      <_WasmCorerunGeneratorArg Include="--directpinvoke;%(_WasmCorerunPInvokeModule.Identity)" Condition="'%(_WasmCorerunPInvokeModule.Identity)' != ''" />
+      <_WasmCorerunGeneratorArg Include="--targetos:$(TargetOS)" />
+      <_WasmCorerunGeneratorArg Include="--targetarch:wasm" />
+      <_WasmCorerunGeneratorArg Include="--generate-portable-callhelpers:$(_WasmCorerunDir)" />
+      <_WasmCorerunGeneratorArg Include="@(_WasmCorerunPInvokeModule->'--directpinvoke:%(Identity)')" />
       <_WasmCorerunGeneratorArg Include="@(_WasmCorerunManagedAssembly->'%(FullPath)')" />
     </ItemGroup>
 
     <WriteLinesToFile File="$(_WasmCorerunGeneratorRsp)" Lines="@(_WasmCorerunGeneratorArg)" Overwrite="true" WriteOnlyWhenDifferent="true" />
 
-    <Exec Command="$(_WasmCorerunGeneratorCommand) &quot;@$(_WasmCorerunGeneratorRsp)&quot;" />
+    <Exec Command="&quot;$(_WasmCorerunGeneratorPath)&quot; &quot;@$(_WasmCorerunGeneratorRsp)&quot;" />
 
     <ItemGroup>
       <FileWrites Include="$(_WasmCorerunGeneratorRsp)" />

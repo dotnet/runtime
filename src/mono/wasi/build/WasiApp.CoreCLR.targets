@@ -169,26 +169,21 @@
 
     <PropertyGroup>
       <_PortableCallHelpersGeneratorRsp>$(_WasiRelinkObjDir)callhelpers-generator.rsp</_PortableCallHelpersGeneratorRsp>
-      <!-- An IL-only build of crossgen2 needs the dotnet host to launch it; an apphost does not. -->
-      <_PortableCallHelpersGeneratorCommand Condition="'$([System.IO.Path]::GetExtension(`$(PortableCallHelpersGeneratorPath)`))' == '.dll'">"$(DOTNET_HOST_PATH)" "$(PortableCallHelpersGeneratorPath)"</_PortableCallHelpersGeneratorCommand>
-      <_PortableCallHelpersGeneratorCommand Condition="'$(_PortableCallHelpersGeneratorCommand)' == ''">"$(PortableCallHelpersGeneratorPath)"</_PortableCallHelpersGeneratorCommand>
     </PropertyGroup>
 
-    <!-- One token per line: that is how crossgen2 reads a response file. -->
+    <!-- One option per line, name and value joined by a colon: that is how crossgen2 reads a
+         response file. -->
     <ItemGroup>
-      <_PortableCallHelpersGeneratorArg Include="--targetos" />
-      <_PortableCallHelpersGeneratorArg Include="wasi" />
-      <_PortableCallHelpersGeneratorArg Include="--targetarch" />
-      <_PortableCallHelpersGeneratorArg Include="wasm" />
-      <_PortableCallHelpersGeneratorArg Include="--generate-portable-callhelpers" />
-      <_PortableCallHelpersGeneratorArg Include="$(_WasiRelinkObjDir)" />
-      <_PortableCallHelpersGeneratorArg Include="--directpinvoke;%(_WasiPInvokeModules.Identity)" Condition="'%(_WasiPInvokeModules.Identity)' != ''" />
+      <_PortableCallHelpersGeneratorArg Include="--targetos:wasi" />
+      <_PortableCallHelpersGeneratorArg Include="--targetarch:wasm" />
+      <_PortableCallHelpersGeneratorArg Include="--generate-portable-callhelpers:$(_WasiRelinkObjDir)" />
+      <_PortableCallHelpersGeneratorArg Include="@(_WasiPInvokeModules->'--directpinvoke:%(Identity)')" />
       <_PortableCallHelpersGeneratorArg Include="@(_WasiManagedAssemblies->'%(FullPath)')" />
     </ItemGroup>
 
     <WriteLinesToFile File="$(_PortableCallHelpersGeneratorRsp)" Lines="@(_PortableCallHelpersGeneratorArg)" Overwrite="true" WriteOnlyWhenDifferent="true" />
 
-    <Exec Command="$(_PortableCallHelpersGeneratorCommand) &quot;@$(_PortableCallHelpersGeneratorRsp)&quot;" />
+    <Exec Command="&quot;$(PortableCallHelpersGeneratorPath)&quot; &quot;@$(_PortableCallHelpersGeneratorRsp)&quot;" />
 
     <ItemGroup>
       <FileWrites Include="$(_PortableCallHelpersGeneratorRsp);$(_WasiPInvokeTablePath);$(_WasiReversePInvokeTablePath);$(_WasiInterpToNativeTablePath)" />
