@@ -2219,18 +2219,13 @@ namespace System.StubHelpers
         }
 
 #if FEATURE_COMINTEROP
-        internal static unsafe Exception GetCOMHRExceptionObject(int hr, IntPtr pCPCMD, IntPtr pUnk)
+        internal static Exception GetCOMHRExceptionObject(int hr, RuntimeTypeHandle interfaceTypeHandle, IntPtr pUnk)
         {
-            Debug.Assert(pCPCMD != IntPtr.Zero);
-            MethodTable* interfaceType = GetComInterfaceFromMethodDesc(pCPCMD);
-            RuntimeType declaringType = RuntimeTypeHandle.GetRuntimeType(interfaceType);
-            Exception ex = Marshal.GetExceptionForHR(hr, declaringType.GUID, pUnk)!;
+            RuntimeType interfaceType = interfaceTypeHandle.GetRuntimeTypeChecked();
+            Exception ex = Marshal.GetExceptionForHR(hr, interfaceType.GUID, pUnk)!;
             ex.InternalPreserveStackTrace();
             return ex;
         }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern unsafe MethodTable* GetComInterfaceFromMethodDesc(IntPtr pCPCMD);
 #endif // FEATURE_COMINTEROP
 
         [ThreadStatic]
@@ -2359,15 +2354,15 @@ namespace System.StubHelpers
 
 #if FEATURE_COMINTEROP
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern IntPtr GetCOMIPFromRCW(object objSrc, IntPtr pCPCMD, out IntPtr ppTarget);
+        private static extern IntPtr GetCOMIPFromRCW(object objSrc, IntPtr pInterfaceMT, int comSlot, out IntPtr ppTarget);
 
         [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_GetCOMIPFromRCWSlow")]
-        private static partial IntPtr GetCOMIPFromRCWSlow(ObjectHandleOnStack objSrc, IntPtr pCPCMD, out IntPtr ppTarget, [MarshalAs(UnmanagedType.Bool)] out bool pfNeedsRelease);
+        private static partial IntPtr GetCOMIPFromRCWSlow(ObjectHandleOnStack objSrc, IntPtr pInterfaceMT, int comSlot, out IntPtr ppTarget, [MarshalAs(UnmanagedType.Bool)] out bool pfNeedsRelease);
 
-        internal static IntPtr GetCOMIPFromRCW(object objSrc, IntPtr pCPCMD, out IntPtr ppTarget, out bool pfNeedsRelease)
+        internal static IntPtr GetCOMIPFromRCW(object objSrc, IntPtr pInterfaceMT, int comSlot, out IntPtr ppTarget, out bool pfNeedsRelease)
         {
-            IntPtr rcw = GetCOMIPFromRCW(objSrc, pCPCMD, out ppTarget);
+            IntPtr rcw = GetCOMIPFromRCW(objSrc, pInterfaceMT, comSlot, out ppTarget);
             if (rcw != IntPtr.Zero)
             {
                 pfNeedsRelease = false;
@@ -2376,11 +2371,11 @@ namespace System.StubHelpers
 
             // The slow path may create OLE TLS and then still resolve the interface via the RCW cache.
             // Let the slow path tell us whether it returned an owned pointer that requires cleanup.
-            return GetCOMIPFromRCWWorker(objSrc, pCPCMD, out ppTarget, out pfNeedsRelease);
+            return GetCOMIPFromRCWWorker(objSrc, pInterfaceMT, comSlot, out ppTarget, out pfNeedsRelease);
 
             [MethodImpl(MethodImplOptions.NoInlining)]
-            static IntPtr GetCOMIPFromRCWWorker(object objSrc, IntPtr pCPCMD, out IntPtr ppTarget, out bool pfNeedsRelease)
-                => GetCOMIPFromRCWSlow(ObjectHandleOnStack.Create(ref objSrc), pCPCMD, out ppTarget, out pfNeedsRelease);
+            static IntPtr GetCOMIPFromRCWWorker(object objSrc, IntPtr pInterfaceMT, int comSlot, out IntPtr ppTarget, out bool pfNeedsRelease)
+                => GetCOMIPFromRCWSlow(ObjectHandleOnStack.Create(ref objSrc), pInterfaceMT, comSlot, out ppTarget, out pfNeedsRelease);
         }
 #endif // FEATURE_COMINTEROP
 

@@ -51,10 +51,6 @@ public:
     // Marshals an unmanaged callback to Delegate
     static OBJECTREF ConvertToDelegate(LPVOID pCallback, MethodTable* pMT);
 
-#ifdef FEATURE_COMINTEROP
-    static CLRToCOMCallInfo * PopulateCLRToCOMCallInfo(MethodTable * pDelMT);
-#endif // FEATURE_COMINTEROP
-
     static PCODE GetStubForILStub(EEImplMethodDesc* pDelegateMD, MethodDesc** ppStubMD, DWORD dwStubFlags);
     static MethodDesc* GetILStubMethodDesc(EEImplMethodDesc* pDelegateMD, DWORD dwStubFlags);
 
