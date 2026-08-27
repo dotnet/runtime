@@ -7,6 +7,9 @@ using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
+#if NET
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
     internal static partial class Dnsapi
     {
         // DNS_QUERY_REQUEST (v1) — Win8 / Server 2012+

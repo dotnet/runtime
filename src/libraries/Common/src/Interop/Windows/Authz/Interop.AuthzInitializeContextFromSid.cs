@@ -6,6 +6,9 @@ using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
+#if NET
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
     internal static partial class Authz
     {
         internal const int AUTHZ_RM_FLAG_NO_AUDIT = 0x1;

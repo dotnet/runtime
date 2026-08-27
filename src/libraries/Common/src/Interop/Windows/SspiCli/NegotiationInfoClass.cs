@@ -7,6 +7,9 @@ namespace System.Net
 {
     // This class is used to determine if NTLM or
     // Kerberos are used in the context of a Negotiate handshake
+#if NET
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
     internal static partial class NegotiationInfoClass
     {
         internal static string? GetAuthenticationPackageName(SafeHandle safeHandle, int negotiationState)

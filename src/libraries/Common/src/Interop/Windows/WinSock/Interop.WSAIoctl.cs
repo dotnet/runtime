@@ -11,6 +11,9 @@ internal static partial class Interop
     {
         // Used with SIOGETEXTENSIONFUNCTIONPOINTER - we're assuming that will never block.
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Interop.Libraries.Ws2_32, SetLastError = true)]
         internal static partial SocketError WSAIoctl(
             SafeSocketHandle socketHandle,
@@ -24,6 +27,9 @@ internal static partial class Interop
             IntPtr shouldBeNull2);
 
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Interop.Libraries.Ws2_32, EntryPoint = "WSAIoctl", SetLastError = true)]
         internal static partial SocketError WSAIoctl_Blocking(
             SafeSocketHandle socketHandle,

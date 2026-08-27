@@ -10,6 +10,9 @@ internal static partial class Interop
     internal static partial class Winsock
     {
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Interop.Libraries.Ws2_32, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static unsafe partial int GetAddrInfoW(
             string pNameName,
@@ -18,6 +21,9 @@ internal static partial class Interop
             AddressInfo** ppResult);
 
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Interop.Libraries.Ws2_32, SetLastError = true)]
         internal static unsafe partial void FreeAddrInfoW(AddressInfo* info);
 

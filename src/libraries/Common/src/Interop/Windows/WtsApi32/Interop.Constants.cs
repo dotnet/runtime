@@ -3,6 +3,9 @@
 
 internal static partial class Interop
 {
+#if NET
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
     internal static partial class Wtsapi32
     {
         public const int NOTIFY_FOR_THIS_SESSION          =  0x0;

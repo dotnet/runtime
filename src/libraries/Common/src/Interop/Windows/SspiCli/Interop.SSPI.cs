@@ -8,6 +8,9 @@ using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
+#if NET
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
     internal static partial class SspiCli
     {
         internal const uint SECQOP_WRAP_NO_ENCRYPT = 0x80000001;

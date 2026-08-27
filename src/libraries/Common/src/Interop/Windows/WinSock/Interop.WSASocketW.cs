@@ -10,6 +10,9 @@ internal static partial class Interop
     internal static partial class Winsock
     {
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Interop.Libraries.Ws2_32, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static partial IntPtr WSASocketW(
             AddressFamily addressFamily,

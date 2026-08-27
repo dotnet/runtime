@@ -3,6 +3,9 @@
 
 internal static partial class Interop
 {
+#if NET
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
     internal static partial class Version
     {
         internal static partial class FileVersionInfoType

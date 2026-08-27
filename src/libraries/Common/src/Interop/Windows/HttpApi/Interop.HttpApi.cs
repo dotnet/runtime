@@ -12,6 +12,9 @@ using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
 {
+#if NET
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
     internal static partial class HttpApi
     {
         internal static readonly HTTPAPI_VERSION s_version = new HTTPAPI_VERSION() { HttpApiMajorVersion = 2, HttpApiMinorVersion = 0 };

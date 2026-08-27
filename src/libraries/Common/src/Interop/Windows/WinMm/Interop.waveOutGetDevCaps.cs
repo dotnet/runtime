@@ -10,6 +10,9 @@ using System.Runtime.InteropServices.Marshalling;
 
 internal static partial class Interop
 {
+#if NET
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
     internal static partial class WinMM
     {
 #pragma warning disable CA1823 // unused fields

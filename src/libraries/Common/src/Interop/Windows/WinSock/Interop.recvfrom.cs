@@ -11,6 +11,9 @@ internal static partial class Interop
     {
         // This method is always blocking, so it uses an IntPtr.
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Interop.Libraries.Ws2_32, SetLastError = true)]
         internal static unsafe partial int recvfrom(
             SafeSocketHandle socketHandle,
