@@ -22,7 +22,7 @@ namespace System.Buffers.Text
         private const int MaxStackallocThreshold = 256;
 
         /// <summary>
-        /// Returns the maximum length (in bytes) of the result if you were to decode Base64Url encoded text from a span of size <paramref name="base64Length"/>.
+        /// Returns the maximum length (in bytes) of the result if you were to decode Base64Url-encoded text from a span of size <paramref name="base64Length"/>.
         /// </summary>
         /// <exception cref="ArgumentOutOfRangeException">The specified <paramref name="base64Length"/> is less than 0.
         /// </exception>

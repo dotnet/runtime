@@ -32,9 +32,17 @@ namespace System.Buffers.Text
             EncodeTo(default(Base64UrlEncoderByte), source, destination, out bytesConsumed, out bytesWritten, isFinalBlock);
 
         /// <summary>
-        /// Returns the length of the result if you were to encode binary data within a byte span of size <paramref name="bytesLength"/>.
-        /// The length is in bytes when encoding to UTF-8 and in chars when encoding to chars.
+        /// Returns the number of characters required to encode
+        /// <paramref name="bytesLength"/> bytes to Base64Url.
         /// </summary>
+        /// <remarks>
+        /// Because the Base64Url characters are all in the 7-bit ASCII range,
+        /// the number of characters is equal both to the number of
+        /// <see cref="char"/> values written by methods like
+        /// <see cref="EncodeToChars(ReadOnlySpan{byte}, Span{char})"/>
+        /// and the number of <see cref="byte"/> values written by UTF-8 methods like
+        /// <see cref="EncodeToUtf8(ReadOnlySpan{byte}, Span{byte})"/>.
+        /// </remarks>
         /// <exception cref="ArgumentOutOfRangeException">
         /// <paramref name="bytesLength"/> is less than 0 or greater than 1610612733.
         /// </exception>
