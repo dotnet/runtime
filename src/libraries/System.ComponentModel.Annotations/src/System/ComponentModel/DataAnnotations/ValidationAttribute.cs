@@ -337,19 +337,40 @@ namespace System.ComponentModel.DataAnnotations
         ///     It applies the <paramref name="name" /> (for example, the name of a field) to the formatted error message, resulting
         ///     in something like "The field 'name' has an incorrect value".
         ///     <para>
-        ///         Derived classes can override this method to customize how errors are generated.
+        ///         Derived classes can override this method to validate their configuration or select an error message.
+        ///         Derived classes that provide additional message arguments should override <see cref="FormatMessage" />.
         ///     </para>
         ///     <para>
-        ///         The base class implementation will use <see cref="ErrorMessageString" /> to obtain a localized
-        ///         error message from properties within the current attribute.  If those have not been set, a generic
-        ///         error message will be provided.
+        ///         The base class implementation uses <see cref="ErrorMessageString" /> to obtain a localized
+        ///         error message from properties within the current attribute, then calls <see cref="FormatMessage" />.
+        ///         If those properties have not been set, a generic error message will be provided.
         ///     </para>
         /// </remarks>
         /// <param name="name">The user-visible name to include in the formatted message.</param>
         /// <returns>The localized string describing the validation error</returns>
         /// <exception cref="InvalidOperationException"> is thrown if the current attribute is malformed.</exception>
         public virtual string FormatErrorMessage(string name) =>
-            string.Format(CultureInfo.CurrentCulture, ErrorMessageString, name);
+            FormatMessage(ErrorMessageString, name);
+
+        /// <summary>
+        ///     Formats a validation message using the specified message template and display name.
+        /// </summary>
+        /// <remarks>
+        ///     The base implementation of <see cref="FormatErrorMessage" /> calls this method after selecting the
+        ///     attribute's error message.
+        ///     The base implementation uses <see cref="CultureInfo.CurrentCulture" /> and replaces <c>{0}</c> with
+        ///     <paramref name="name" />. Derived classes can override this method to provide additional values required
+        ///     by their message templates.
+        /// </remarks>
+        /// <param name="format">The message template to format.</param>
+        /// <param name="name">The user-visible name to include in the formatted message.</param>
+        /// <returns>The formatted validation message.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="format" /> is <see langword="null" />.</exception>
+        /// <exception cref="FormatException"><paramref name="format" /> is not a valid composite format string.</exception>
+        public virtual string FormatMessage([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, string name)
+        {
+            return string.Format(CultureInfo.CurrentCulture, format, name);
+        }
 
         /// <summary>
         ///     Gets the value indicating whether or not the specified <paramref name="value" /> is valid
