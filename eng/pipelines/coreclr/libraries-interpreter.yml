@@ -71,4 +71,4 @@ extends:
                   testRunNamePrefixSuffix: NoDynamicCodeCompiled
                   useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
                   scenarios:
-                  - interpmode1
+                  - interpmode3
