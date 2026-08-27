@@ -78,7 +78,6 @@ static MethodDesc* CreateMethodDesc(LoaderAllocator *pAllocator,
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(CheckPointer(pAllocator));
         PRECONDITION(CheckPointer(pMT));
         PRECONDITION(CheckPointer(pTemplateMD));
@@ -327,7 +326,6 @@ static BOOL SatisfiesMethodConstraintsForInstantiation(MethodDesc *pGenericMetho
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pGenericMethodDef));
     }
     CONTRACTL_END;
@@ -405,7 +403,6 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
         MODE_PREEMPTIVE;
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(CheckPointer(pExactMT));
         PRECONDITION(CheckPointer(pGenericMDescInRepMT));
         PRECONDITION(methodInst.IsEmpty() || pGenericMDescInRepMT->IsGenericMethodDefinition());
@@ -612,7 +609,6 @@ InstantiatedMethodDesc::FindLoadedInstantiatedMethodDesc(MethodTable *pExactOrRe
     {
         THROWS;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         PRECONDITION(CheckPointer(pExactOrRepMT));
         SUPPORTS_DAC;
 
@@ -774,7 +770,6 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
         if (allowCreate) { MODE_PREEMPTIVE; } else { MODE_ANY; }
         if (allowCreate) { GC_TRIGGERS; } else { GC_NOTRIGGER; }
         if (!allowCreate) { SUPPORTS_DAC; }
-        INJECT_FAULT(COMPlusThrowOM(););
 
         PRECONDITION(CheckPointer(pDefMD));
         PRECONDITION(CheckPointer(pExactMT));
@@ -1446,7 +1441,6 @@ void InstantiatedMethodDesc::SetupGenericMethodDefinition(IMDInternalImport* pIM
     {
         THROWS;
         GC_NOTRIGGER;
-        INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(CheckPointer(pIMDII));
         PRECONDITION(CheckPointer(pAllocator));
         PRECONDITION(CheckPointer(pamTracker));
@@ -1649,7 +1643,6 @@ BOOL MethodDesc::SatisfiesMethodConstraints(TypeHandle thParent, BOOL fThrowIfNo
         GC_TRIGGERS;
         MODE_ANY;
 
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 

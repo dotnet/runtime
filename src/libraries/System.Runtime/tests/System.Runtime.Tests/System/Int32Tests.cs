@@ -319,6 +319,15 @@ namespace System.Tests
             yield return new object[] { "123+", NumberStyles.AllowTrailingSign, null, 123 };
             yield return new object[] { "123-", NumberStyles.AllowTrailingSign, null, -123 };
 
+            NumberFormatInfo whitespaceSignFormat = new NumberFormatInfo()
+            {
+                PositiveSign = " +",
+                NegativeSign = " -"
+            };
+            yield return new object[] { "123 +", NumberStyles.AllowTrailingSign, whitespaceSignFormat, 123 };
+            yield return new object[] { "123 -", NumberStyles.AllowTrailingSign, whitespaceSignFormat, -123 };
+            yield return new object[] { "123 $", NumberStyles.AllowCurrencySymbol, new NumberFormatInfo() { CurrencySymbol = " $" }, 123 };
+
             // If PositiveSign and NegativeSign are the same, PositiveSign is preferred
             yield return new object[] { "123|", NumberStyles.AllowTrailingSign, samePositiveNegativeFormat, 123 };
 
@@ -457,6 +466,16 @@ namespace System.Tests
                 yield return new object[] { "g123", style, null, typeof(FormatException) };
                 yield return new object[] { "214748364g", style, null, typeof(FormatException) };
             }
+
+            NumberFormatInfo whitespaceSignFormat = new NumberFormatInfo()
+            {
+                PositiveSign = " +",
+                NegativeSign = " -"
+            };
+            yield return new object[] { "123 +,", NumberStyles.AllowTrailingSign, whitespaceSignFormat, typeof(FormatException) };
+            yield return new object[] { "123 -+", NumberStyles.AllowTrailingSign, whitespaceSignFormat, typeof(FormatException) };
+            yield return new object[] { "123 +k", NumberStyles.AllowTrailingSign, whitespaceSignFormat, typeof(FormatException) };
+            yield return new object[] { "123 $,", NumberStyles.AllowCurrencySymbol, new NumberFormatInfo() { CurrencySymbol = " $" }, typeof(FormatException) };
 
             // String has leading zeros
             yield return new object[] { "\0\0123", NumberStyles.Integer, null, typeof(FormatException) };
@@ -923,6 +942,14 @@ namespace System.Tests
             Assert.DoesNotContain("A0", fe.Message, StringComparison.Ordinal);
             Assert.DoesNotContain("ReadOnlySpan", fe.Message, StringComparison.Ordinal);
             Assert.DoesNotContain("\uFFFD", fe.Message, StringComparison.Ordinal);
+        }
+
+        [Fact]
+        public static void Parse_Utf8Span_InvalidUtf8GroupSeparator()
+        {
+            NumberFormatInfo format = new() { NumberGroupSeparator = " " };
+
+            Assert.False(int.TryParse([(byte)'1', 0xA0, (byte)'2'], NumberStyles.AllowThousands, format, out _));
         }
 
         [Theory]

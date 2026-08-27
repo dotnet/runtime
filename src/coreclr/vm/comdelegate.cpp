@@ -787,39 +787,6 @@ void COMDelegate::Init()
 #endif
 }
 
-#ifdef FEATURE_COMINTEROP
-CLRToCOMCallInfo * COMDelegate::PopulateCLRToCOMCallInfo(MethodTable * pDelMT)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    DelegateEEClass * pClass = (DelegateEEClass *)pDelMT->GetClass();
-
-    // set up the CLRToCOMCallInfo if it does not exist already
-    if (pClass->m_pCLRToCOMCallInfo == NULL)
-    {
-        LoaderHeap *pHeap = pDelMT->GetLoaderAllocator()->GetHighFrequencyHeap();
-        CLRToCOMCallInfo *pTemp = (CLRToCOMCallInfo *)(void *)pHeap->AllocMem(S_SIZE_T(sizeof(CLRToCOMCallInfo)));
-
-        pTemp->m_cachedComSlot = ComMethodTable::GetNumExtraSlots(ifVtable);
-#ifdef TARGET_X86
-        pTemp->InitStackArgumentSize();
-#endif // TARGET_X86
-
-        InterlockedCompareExchangeT(&pClass->m_pCLRToCOMCallInfo, pTemp, NULL);
-    }
-
-    pClass->m_pCLRToCOMCallInfo->m_pInterfaceMT = pDelMT;
-
-    return pClass->m_pCLRToCOMCallInfo;
-}
-#endif // FEATURE_COMINTEROP
-
 static PCODE CreateILDelegateShuffleThunk(MethodDesc* pDelegateMD, bool callTargetWithThis)
 {
     SigTypeContext typeContext(pDelegateMD);
@@ -887,7 +854,6 @@ static PCODE SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMeth)
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -950,7 +916,6 @@ static PCODE GetVirtualCallStub(MethodDesc *method, TypeHandle scopeType)
         THROWS;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        INJECT_FAULT(COMPlusThrowOM()); // from MetaSig::SizeOfArgStack
     }
     CONTRACTL_END;
 
@@ -1259,7 +1224,6 @@ LPVOID COMDelegate::ConvertToCallback(OBJECTREF pDelegateObj)
         GC_TRIGGERS;
         MODE_COOPERATIVE;
 
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
