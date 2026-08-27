@@ -1,8 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#pragma warning disable CA1416 // Windows-only ETW interop; these call sites are only reached on Windows.
-
 // This program uses code hyperlinks available as part of the HyperAddin Visual Studio plug-in.
 // It is available from http://www.codeplex.com/hyperAddin
 
@@ -614,9 +612,11 @@ namespace System.Diagnostics.Tracing
 #endif // FEATURE_PERFTRACING
 #if TARGET_WINDOWS
             // Set the activity id via ETW.
+#pragma warning disable CA1416 // Only reached on Windows via TARGET_WINDOWS.
             Interop.Advapi32.EventActivityIdControl(
                 Interop.Advapi32.ActivityControl.EVENT_ACTIVITY_CTRL_SET_ID,
                 ref activityId);
+#pragma warning restore CA1416
 #endif // TARGET_WINDOWS
         }
 
@@ -636,9 +636,11 @@ namespace System.Diagnostics.Tracing
                 // errors. Note we can't access m_throwOnWrites because this is a static method.
                 Guid retVal = default;
 #if TARGET_WINDOWS
+#pragma warning disable CA1416 // Only reached on Windows via TARGET_WINDOWS.
                 Interop.Advapi32.EventActivityIdControl(
                     Interop.Advapi32.ActivityControl.EVENT_ACTIVITY_CTRL_GET_ID,
                     ref retVal);
+#pragma warning restore CA1416
 #elif FEATURE_PERFTRACING
                 EventPipeEventProvider.EventActivityIdControl(
                     Interop.Advapi32.ActivityControl.EVENT_ACTIVITY_CTRL_GET_ID,
@@ -690,9 +692,11 @@ namespace System.Diagnostics.Tracing
 #endif // FEATURE_PERFTRACING && TARGET_WINDOWS
 
 #if TARGET_WINDOWS
+#pragma warning disable CA1416 // Only reached on Windows via TARGET_WINDOWS.
             Interop.Advapi32.EventActivityIdControl(
                 Interop.Advapi32.ActivityControl.EVENT_ACTIVITY_CTRL_GET_SET_ID,
                     ref oldActivityThatWillContinue);
+#pragma warning restore CA1416
 #endif // TARGET_WINDOWS
 
             // We don't call the activityDying callback here because the caller has declared that

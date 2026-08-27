@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#pragma warning disable CA1416 // Windows-only interop; these call sites are Windows-gated.
-
 using System;
 using System.Collections.Concurrent;
 using System.Diagnostics;
@@ -278,7 +276,9 @@ namespace Internal.Runtime.CompilerHelpers
         internal static unsafe void FreeLibrary(IntPtr hModule)
         {
 #if !TARGET_UNIX
+#pragma warning disable CA1416 // Only reached on Windows (non-Unix).
             Interop.Kernel32.FreeLibrary(hModule);
+#pragma warning restore CA1416
 #else
             Interop.Sys.FreeLibrary(hModule);
 #endif
@@ -395,7 +395,9 @@ namespace Internal.Runtime.CompilerHelpers
 #if TARGET_WINDOWS
         private static unsafe IntPtr GetProcAddressWithMangling(IntPtr hModule, byte* methodName, MethodFixupCell* pCell)
         {
+#pragma warning disable CA1416 // Only reached on Windows via TARGET_WINDOWS.
             IntPtr pMethod = Interop.Kernel32.GetProcAddress(hModule, methodName);
+#pragma warning restore CA1416
 #if TARGET_X86
             if (pMethod == IntPtr.Zero && pCell->IsStdcall)
             {
@@ -411,7 +413,9 @@ namespace Internal.Runtime.CompilerHelpers
                 probedMethodName[nameLength + 1] = (byte)'@';
                 pCell->SignatureBytes.TryFormat(new Span<byte>(probedMethodName + 2 + nameLength, 10), out int bytesWritten);
                 probedMethodName[nameLength + 2 + bytesWritten] = 0;
+#pragma warning disable CA1416 // Only reached on Windows via TARGET_WINDOWS.
                 pMethod = Interop.Kernel32.GetProcAddress(hModule, probedMethodName);
+#pragma warning restore CA1416
             }
 #else
             _ = pCell;

@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#pragma warning disable CA1416 // Windows-only interop; these call sites are Windows-gated.
-
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
@@ -84,6 +82,7 @@ namespace System.Text
                 // platforms default to replacing invalid characters with the Unicode replacement
                 // character U+FFFD.
 #if TARGET_WINDOWS
+#pragma warning disable CA1416 // Only reached on Windows via TARGET_WINDOWS.
                 convertedChars = Interop.Kernel32.MultiByteToWideChar(
                     Interop.Kernel32.CP_ACP,
                     Interop.Kernel32.MB_PRECOMPOSED,
@@ -91,6 +90,7 @@ namespace System.Text
                     newLength,
                     pChunkChars,
                     newLength);
+#pragma warning restore CA1416
 #else
                 convertedChars = Encoding.UTF8.GetChars((byte*)newBuffer, newLength, pChunkChars, newLength);
 #endif

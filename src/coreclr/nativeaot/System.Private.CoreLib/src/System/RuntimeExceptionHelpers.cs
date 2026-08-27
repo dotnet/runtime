@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#pragma warning disable CA1416 // Windows-only interop; these call sites are Windows-gated.
-
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime;
@@ -367,7 +365,9 @@ namespace System
             exceptionRecord.ExceptionInformation[3] = (uint)s_triageBufferSize;
 
 #if TARGET_WINDOWS
+#pragma warning disable CA1416 // Only reached on Windows via TARGET_WINDOWS.
             Interop.Kernel32.RaiseFailFastException(new IntPtr(&exceptionRecord), pExContext, pExAddress == IntPtr.Zero ? FAIL_FAST_GENERATE_EXCEPTION_ADDRESS : 0);
+#pragma warning restore CA1416
 #else
             RuntimeImports.RhCreateCrashDumpIfEnabled(new IntPtr(&exceptionRecord));
             Interop.Sys.Abort();

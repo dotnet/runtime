@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#pragma warning disable CA1416 // Windows-only interop; these call sites are Windows-gated.
-
 using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
@@ -235,6 +233,7 @@ namespace System
                 return Empty;
 
 #if TARGET_WINDOWS
+#pragma warning disable CA1416 // Only reached on Windows via TARGET_WINDOWS.
             int numCharsRequired = Interop.Kernel32.MultiByteToWideChar(Interop.Kernel32.CP_ACP, Interop.Kernel32.MB_PRECOMPOSED, pb, numBytes, (char*)null, 0);
             if (numCharsRequired == 0)
                 throw new ArgumentException(SR.Arg_InvalidANSIString);
@@ -244,6 +243,7 @@ namespace System
             {
                 numCharsRequired = Interop.Kernel32.MultiByteToWideChar(Interop.Kernel32.CP_ACP, Interop.Kernel32.MB_PRECOMPOSED, pb, numBytes, pFirstChar, numCharsRequired);
             }
+#pragma warning restore CA1416
             if (numCharsRequired == 0)
                 throw new ArgumentException(SR.Arg_InvalidANSIString);
             return newString;

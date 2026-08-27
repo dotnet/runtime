@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#pragma warning disable CA1416 // Windows-only interop; these call sites are Windows-gated.
-
 using System.ComponentModel;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -254,7 +252,9 @@ namespace System.Runtime.InteropServices
         {
             IntPtr result = IntPtr.Zero;
 #if TARGET_WINDOWS
+#pragma warning disable CA1416 // Only reached on Windows via TARGET_WINDOWS.
             result = Interop.Kernel32.GetModuleHandle(null);
+#pragma warning restore CA1416
 #else
             result = Interop.Sys.GetDefaultSearchOrderPseudoHandle();
 #endif

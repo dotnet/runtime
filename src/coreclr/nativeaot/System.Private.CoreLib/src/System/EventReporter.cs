@@ -1,8 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#pragma warning disable CA1416 // Windows-only ETW/event-log interop; these call sites are Windows-gated.
-
 using System.Diagnostics;
 using System.IO;
 using System.Runtime;
@@ -158,6 +156,7 @@ namespace System
 
         private static unsafe void ClrReportEvent(string eventSource, short type, ushort category, uint eventId, string message)
         {
+#pragma warning disable CA1416 // Windows-only event-log interop; ClrReportEvent is only reached on Windows.
             IntPtr handle = Interop.Advapi32.RegisterEventSource(
                 null, // uses local computer
                 eventSource);
@@ -171,6 +170,7 @@ namespace System
             }
 
             Interop.Advapi32.DeregisterEventSource(handle);
+#pragma warning restore CA1416
         }
 
         private static byte s_once;

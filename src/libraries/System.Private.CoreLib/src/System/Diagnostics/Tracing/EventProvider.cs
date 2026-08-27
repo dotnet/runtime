@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#pragma warning disable CA1416 // Windows-only ETW interop; these call sites are only reached on Windows.
-
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -97,7 +95,9 @@ namespace System.Diagnostics.Tracing
             _eventProvider = providerType switch
             {
 #if TARGET_WINDOWS
+#pragma warning disable CA1416 // EtwEventProvider is Windows-only; only constructed on Windows.
                 EventProviderType.ETW => new EtwEventProvider(this),
+#pragma warning restore CA1416
 #endif
 #if FEATURE_PERFTRACING
                 EventProviderType.EventPipe => new EventPipeEventProvider(this),
@@ -708,13 +708,16 @@ namespace System.Diagnostics.Tracing
             void* data,
             uint dataSize)
         {
+#pragma warning disable CA1416 // EtwEventProvider is Windows-only; only reached on Windows.
             return ((EtwEventProvider)_eventProvider).SetInformation(eventInfoClass, data, dataSize);
+#pragma warning restore CA1416
         }
 #endif
     }
 
 #if TARGET_WINDOWS
     // A wrapper around the ETW-specific API calls.
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
     internal sealed class EtwEventProvider : EventProviderImpl
     {
         /// <summary>

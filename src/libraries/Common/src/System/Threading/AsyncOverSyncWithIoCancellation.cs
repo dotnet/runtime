@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#pragma warning disable CA1416 // Windows-only interop; these call sites are Windows-gated.
-
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
@@ -48,7 +46,9 @@ namespace System.Threading
             // in response to the cancellation token having cancellation requested.  If the handle is invalid,
             // which could happen if OpenThread fails, skip attempts at cancellation. The handle needs to be
             // opened with THREAD_TERMINATE in order to be able to call CancelSynchronousIo.
+#pragma warning disable CA1416 // Windows-only thread interop; this helper is compiled only for Windows.
             SafeThreadHandle handle = Interop.Kernel32.OpenThread(Interop.Kernel32.THREAD_TERMINATE, bInheritHandle: false, Interop.Kernel32.GetCurrentThreadId());
+#pragma warning restore CA1416
             if (!handle.IsInvalid)
             {
                 _threadHandle = handle;
@@ -257,7 +257,9 @@ namespace System.Threading
                     SpinWait sw = default;
                     while (Volatile.Read(ref instance._continueTryingToCancel))
                     {
+#pragma warning disable CA1416 // Windows-only thread interop; this helper is compiled only for Windows.
                         if (Interop.Kernel32.CancelSynchronousIo(instance._threadHandle!))
+#pragma warning restore CA1416
                         {
                             // Successfully canceled I/O.
                             break;

@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#pragma warning disable CA1416 // Windows-only interop; these call sites are Windows-gated.
-
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
@@ -160,6 +158,7 @@ namespace System.StubHelpers
             fixed (char* pwzChar = strManaged)
             {
 #if TARGET_WINDOWS
+#pragma warning disable CA1416 // Only reached on Windows via TARGET_WINDOWS.
                 cbWritten = Interop.Kernel32.WideCharToMultiByte(
                     Interop.Kernel32.CP_ACP,
                     bestFit ? 0 : Interop.Kernel32.WC_NO_BEST_FIT_CHARS,
@@ -169,6 +168,7 @@ namespace System.StubHelpers
                     length,
                     null,
                     throwOnUnmappableChar ? &defaultCharUsed : null);
+#pragma warning restore CA1416
 #else
                 cbWritten = Encoding.UTF8.GetBytes(pwzChar, numChars, buffer, length);
 #endif
@@ -557,7 +557,9 @@ namespace System.StubHelpers
         {
             if (pVariant != IntPtr.Zero)
             {
+#pragma warning disable CA1416 // Windows-only COM interop guarded by FEATURE_COMINTEROP.
                 Interop.OleAut32.VariantClear(pVariant);
+#pragma warning restore CA1416
 
                 // VariantClear resets the instance to VT_EMPTY (0)
                 // COMPAT: Clear the remaining memory for compat. The instance remains set to VT_EMPTY (0).
@@ -1783,6 +1785,7 @@ namespace System.StubHelpers
 #if TARGET_WINDOWS
                 uint flags = TBestFit.Enabled ? 0 : Interop.Kernel32.WC_NO_BEST_FIT_CHARS;
                 Interop.BOOL defaultCharUsed = Interop.BOOL.FALSE;
+#pragma warning disable CA1416 // Only reached on Windows via TARGET_WINDOWS.
                 int result = Interop.Kernel32.WideCharToMultiByte(
                     Interop.Kernel32.CP_ACP,
                     flags,
@@ -1792,6 +1795,7 @@ namespace System.StubHelpers
                     length,
                     null,
                     TThrowOnUnmappable.Enabled ? &defaultCharUsed : null);
+#pragma warning restore CA1416
 
                 if (result == 0 && length > 0)
                 {
@@ -1815,6 +1819,7 @@ namespace System.StubHelpers
             {
                 char* pChars = (char*)pCharBytes;
 #if TARGET_WINDOWS
+#pragma warning disable CA1416 // Only reached on Windows via TARGET_WINDOWS.
                 int result = Interop.Kernel32.MultiByteToWideChar(
                     Interop.Kernel32.CP_ACP,
                     Interop.Kernel32.MB_PRECOMPOSED,
@@ -1822,6 +1827,7 @@ namespace System.StubHelpers
                     length,
                     pChars,
                     length);
+#pragma warning restore CA1416
 
                 if (result == 0 && length > 0)
                 {

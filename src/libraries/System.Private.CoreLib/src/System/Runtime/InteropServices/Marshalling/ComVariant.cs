@@ -4,8 +4,6 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
-#pragma warning disable CA1416 // Windows-only interop is guarded by #if TARGET_WINDOWS.
-
 namespace System.Runtime.InteropServices.Marshalling
 {
     /// <summary>
@@ -143,7 +141,9 @@ namespace System.Runtime.InteropServices.Marshalling
                 // as PropVariantClear covers more cases (like VT_BLOB, VT_STREAM, VT_CF, etc.)
                 // than VariantClear does. We intend for users to be able to use this ComVariant type for
                 // both VARIANT and PROPVARIANT scenarios, so we need to support all of the variant kinds that might be set.
+#pragma warning disable CA1416 // Only reached on Windows via TARGET_WINDOWS.
                 Interop.Ole32.PropVariantClear((nint)pThis);
+#pragma warning restore CA1416
             }
 #else
             // Re-implement the same clearing semantics as PropVariantClear manually for non-Windows platforms.

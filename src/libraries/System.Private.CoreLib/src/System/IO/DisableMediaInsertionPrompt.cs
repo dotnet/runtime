@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#pragma warning disable CA1416 // Windows-only interop; these call sites are Windows-gated.
-
 namespace System.IO
 {
     /// <summary>
@@ -23,14 +21,18 @@ namespace System.IO
         public static DisableMediaInsertionPrompt Create()
         {
             DisableMediaInsertionPrompt prompt = default;
+#pragma warning disable CA1416 // SetThreadErrorMode is Windows-only; this type is compiled only for Windows.
             prompt._disableSuccess = Interop.Kernel32.SetThreadErrorMode(Interop.Kernel32.SEM_FAILCRITICALERRORS, out prompt._oldMode);
+#pragma warning restore CA1416
             return prompt;
         }
 
         public void Dispose()
         {
             if (_disableSuccess)
+#pragma warning disable CA1416 // SetThreadErrorMode is Windows-only; this type is compiled only for Windows.
                 Interop.Kernel32.SetThreadErrorMode(_oldMode, out _);
+#pragma warning restore CA1416
         }
     }
 }

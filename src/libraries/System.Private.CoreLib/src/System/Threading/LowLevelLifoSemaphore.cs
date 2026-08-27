@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#pragma warning disable CA1416 // Windows-only interop; these call sites are Windows-gated.
-
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
@@ -329,7 +327,9 @@ namespace System.Threading
                 // result in woken thread preempting already working threads.
                 // GetCurrentThread() returns a pseudo-handle (-2) that is valid
                 // only on the calling thread and does not need to be closed.
+#pragma warning disable CA1416 // Only reached on Windows via TARGET_WINDOWS.
                 Interop.Kernel32.SetThreadPriorityBoost(Interop.Kernel32.GetCurrentThread(), bDisablePriorityBoost: true);
+#pragma warning restore CA1416
 #endif
 
                 try
@@ -353,7 +353,9 @@ namespace System.Threading
                 {
 #if TARGET_WINDOWS
                     // restore the default.
+#pragma warning disable CA1416 // Only reached on Windows via TARGET_WINDOWS.
                     Interop.Kernel32.SetThreadPriorityBoost(Interop.Kernel32.GetCurrentThread(), bDisablePriorityBoost: false);
+#pragma warning restore CA1416
 #endif
                 }
             }
