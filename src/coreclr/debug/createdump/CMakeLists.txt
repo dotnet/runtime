@@ -103,8 +103,8 @@ endif()
         createdump_static
         corguids
         coreclrminipal
-        coreclrpal
         coreclrpal_dac
+        coreclrpal
         dbgutil
         ${CMAKE_DL_LIBS}
     )
