@@ -9,6 +9,7 @@ using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.Wasm;
 using Internal.IL;
 using Internal.Text;
+using Internal.JitInterface;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
@@ -160,7 +161,7 @@ namespace ILCompiler.Compiler.Tests
             node.EmitCode(ref emitter);
             Assert.IsAssignableFrom<IMethodCodeNodeWithTypeSignature>(node);
 
-            byte[] expected = useRealBody ?
+            System.IO.File.WriteAllText("output.txt", $"IsStatic: {method.Signature.IsStatic}"); byte[] expected = useRealBody ?
                 [0x0C, 0x00, 0x20, 0x00, 0x20, 0x01, 0x12, 0x80, 0x80, 0x80, 0x80, 0x00, 0x0B] :
                 [0x0D, 0x00, 0x20, 0x00, 0x20, 0x01, 0x10, 0x80, 0x80, 0x80, 0x80, 0x00, 0x00, 0x0B];
             ObjectNode.ObjectData objectData = emitter.Encode(node);

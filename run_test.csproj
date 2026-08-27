@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net11.0</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Nullable>enable</Nullable>
+    <UseAppHost>false</UseAppHost>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="ILCompiler.Compiler" HintPath="artifacts/bin/ILCompiler.Compiler/x64/Debug/ILCompiler.Compiler.dll" />
+    <Reference Include="ILCompiler.TypeSystem" HintPath="artifacts/bin/ILCompiler.TypeSystem/x64/Debug/ILCompiler.TypeSystem.dll" />
+    <Reference Include="ILCompiler.DependencyAnalysisFramework" HintPath="artifacts/bin/ILCompiler.DependencyAnalysisFramework/x64/Debug/ILCompiler.DependencyAnalysisFramework.dll" />
+  </ItemGroup>
+</Project>
