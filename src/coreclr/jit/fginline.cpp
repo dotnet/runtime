@@ -371,6 +371,11 @@ public:
     fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
     {
         LateDevirtualization(use, user);
+        GenTree* tree = *use;
+        tree->VisitOperands([tree](GenTree* operand) -> GenTree::VisitResult {
+            tree->gtFlags |= operand->gtFlags & GTF_ALL_EFFECT;
+            return GenTree::VisitResult::Continue;
+        });
         return fgWalkResult::WALK_CONTINUE;
     }
 

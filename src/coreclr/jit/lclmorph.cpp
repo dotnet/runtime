@@ -922,6 +922,11 @@ public:
         assert(m_valueStack.Empty());
         m_madeChanges |= m_stmtModified;
 
+        if (m_stmtModified)
+        {
+            m_compiler->gtUpdateStmtSideEffects(stmt);
+        }
+
         if (m_sequencer != nullptr)
         {
             if (m_stmtModified)
@@ -1518,6 +1523,7 @@ private:
                 {
                     m_compiler->lvaSetHiddenBufferStructArg(lclNum);
                     callUser->gtCallMoreFlags |= GTF_CALL_M_RETBUFFARG_LCLOPT;
+                    callUser->gtFlags |= GTF_ASG;
                     defSize = m_compiler->typGetObjLayout(callUser->gtRetClsHnd)->GetSize();
                 }
             }
