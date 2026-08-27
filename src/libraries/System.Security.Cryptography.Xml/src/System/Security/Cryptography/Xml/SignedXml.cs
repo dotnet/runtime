@@ -29,6 +29,7 @@ namespace System.Security.Cryptography.Xml
         internal XmlResolver? _xmlResolver;
         internal XmlElement? _context;
         private bool _bResolverSet;
+        private bool _alreadyUsed;
 
         private Func<SignedXml, bool> _signatureFormatValidator = DefaultSignatureFormatValidator;
         private Collection<string> _safeCanonicalizationMethods;
@@ -224,6 +225,8 @@ namespace System.Security.Cryptography.Xml
         {
             ArgumentNullException.ThrowIfNull(value);
 
+            ThrowIfAlreadyUsed();
+
             m_signature.LoadXml(value);
 
             _context ??= value;
@@ -237,20 +240,31 @@ namespace System.Security.Cryptography.Xml
 
         public void AddReference(Reference reference)
         {
+            ThrowIfAlreadyUsed();
             m_signature.SignedInfo!.AddReference(reference);
         }
 
         public void AddObject(DataObject dataObject)
         {
+            ThrowIfAlreadyUsed();
             m_signature.AddObject(dataObject);
         }
 
         public bool CheckSignature()
         {
-            return CheckSignatureReturningKey(out _);
+            ThrowIfAlreadyUsed();
+            _alreadyUsed = true;
+            return CheckSignatureReturningKeyCore(out _);
         }
 
         public bool CheckSignatureReturningKey(out AsymmetricAlgorithm? signingKey)
+        {
+            ThrowIfAlreadyUsed();
+            _alreadyUsed = true;
+            return CheckSignatureReturningKeyCore(out signingKey);
+        }
+
+        private bool CheckSignatureReturningKeyCore(out AsymmetricAlgorithm? signingKey)
         {
             SignedXmlDebugLog.LogBeginSignatureVerification(this, _context);
 
@@ -268,7 +282,7 @@ namespace System.Security.Cryptography.Xml
                 key = GetPublicKey();
                 if (key != null)
                 {
-                    bRet = CheckSignature(key);
+                    bRet = CheckSignatureCore(key);
                     SignedXmlDebugLog.LogVerificationResult(this, key, bRet);
                 }
             } while (key != null && !bRet);
@@ -278,6 +292,13 @@ namespace System.Security.Cryptography.Xml
         }
 
         public bool CheckSignature(AsymmetricAlgorithm key)
+        {
+            ThrowIfAlreadyUsed();
+            _alreadyUsed = true;
+            return CheckSignatureCore(key);
+        }
+
+        private bool CheckSignatureCore(AsymmetricAlgorithm key)
         {
             if (!CheckSignatureFormat())
             {
@@ -303,6 +324,9 @@ namespace System.Security.Cryptography.Xml
 
         public bool CheckSignature(KeyedHashAlgorithm macAlg)
         {
+            ThrowIfAlreadyUsed();
+            _alreadyUsed = true;
+
             if (!CheckSignatureFormat())
             {
                 return false;
@@ -326,6 +350,9 @@ namespace System.Security.Cryptography.Xml
 
         public bool CheckSignature(X509Certificate2 certificate, bool verifySignatureOnly)
         {
+            ThrowIfAlreadyUsed();
+            _alreadyUsed = true;
+
             if (!verifySignatureOnly)
             {
                 // Check key usages to make sure it is good for signing.
@@ -367,7 +394,7 @@ namespace System.Security.Cryptography.Xml
 
             using (AsymmetricAlgorithm? publicKey = Utils.GetAnyPublicKey(certificate))
             {
-                if (!CheckSignature(publicKey!))
+                if (!CheckSignatureCore(publicKey!))
                 {
                     return false;
                 }
@@ -380,15 +407,19 @@ namespace System.Security.Cryptography.Xml
         [UnconditionalSuppressMessage("ILLink", "IL2026:RequiresUnreferencedCode", Justification = "ctors are marked as RDC")]
         public void ComputeSignature()
         {
+            // Preflight the common "forgot to set SigningKey" misuse before marking
+            // the instance used, so a caller that catches the exception can retry
+            // on the same instance after setting the key.
+            AsymmetricAlgorithm? key = SigningKey;
+            if (key == null)
+                throw new CryptographicException(SR.Cryptography_Xml_LoadKeyFailed);
+
+            ThrowIfAlreadyUsed();
+            _alreadyUsed = true;
+
             SignedXmlDebugLog.LogBeginSignatureComputation(this, _context!);
 
             BuildDigestedReferences();
-
-            // Load the key
-            AsymmetricAlgorithm? key = SigningKey;
-
-            if (key == null)
-                throw new CryptographicException(SR.Cryptography_Xml_LoadKeyFailed);
 
             // Check the signature algorithm associated with the key so that we can accordingly set the signature method
             if (SignedInfo!.SignatureMethod == null)
@@ -430,9 +461,13 @@ namespace System.Security.Cryptography.Xml
         {
             ArgumentNullException.ThrowIfNull(macAlg);
 
+            // Preflight the "not an HMAC" misuse before marking the instance used.
             HMAC? hash = macAlg as HMAC;
             if (hash == null)
                 throw new CryptographicException(SR.Cryptography_Xml_SignatureMethodKeyMismatch);
+
+            ThrowIfAlreadyUsed();
+            _alreadyUsed = true;
 
             int signatureLength;
             if (m_signature.SignedInfo!.SignatureLength == null)
@@ -466,6 +501,14 @@ namespace System.Security.Cryptography.Xml
         //
         // virtual methods
         //
+
+        private void ThrowIfAlreadyUsed()
+        {
+            if (_alreadyUsed)
+            {
+                throw new InvalidOperationException(SR.Cryptography_Xml_InstanceAlreadyUsed);
+            }
+        }
 
         protected virtual AsymmetricAlgorithm? GetPublicKey()
         {

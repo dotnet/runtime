@@ -515,6 +515,7 @@ namespace System.Security.Cryptography.Xml.Tests
             kic = new KeyInfoName();
             ki = new KeyInfo();
             ki.AddClause(kic);
+            sx = new SignedXml();
             sx.KeyInfo = ki;
             Assert.True(!sx.CheckSignature());
         }
@@ -1226,8 +1227,9 @@ namespace System.Security.Cryptography.Xml.Tests
             doc.DocumentElement.AppendChild(doc.ImportNode(sig.GetXml(), true));
             // doc.Save(System.Console.Out);
 
-            sig.LoadXml(doc.DocumentElement["Signature"]);
-            Assert.Equal(expectedToVerify, sig.CheckSignature(mac));
+            SignedXml verifier = new SignedXml(doc);
+            verifier.LoadXml(doc.DocumentElement["Signature"]);
+            Assert.Equal(expectedToVerify, verifier.CheckSignature(mac));
             return sig;
         }
 
@@ -1275,7 +1277,9 @@ namespace System.Security.Cryptography.Xml.Tests
             // https://github.com/dotnet/runtime/issues/21236
             if (!PlatformDetection.IsNetFramework)
             {
-                Assert.False(sign.CheckSignature(new HMACSHA256(badKey)));
+                SignedXml signBad = new SignedXml(doc);
+                signBad.LoadXml(doc.DocumentElement["Signature"]);
+                Assert.False(signBad.CheckSignature(new HMACSHA256(badKey)));
             }
 
             Assert.True(sign.CheckSignature(new HMACSHA256(emptyHmacKey)));
@@ -1311,7 +1315,9 @@ namespace System.Security.Cryptography.Xml.Tests
             // https://github.com/dotnet/runtime/issues/21236
             if (!PlatformDetection.IsNetFramework)
             {
-                Assert.False(sign.CheckSignature(new HMACSHA512(badKey)));
+                SignedXml signBad = new SignedXml(doc);
+                signBad.LoadXml(doc.DocumentElement["Signature"]);
+                Assert.False(signBad.CheckSignature(new HMACSHA512(badKey)));
             }
 
             Assert.True(sign.CheckSignature(new HMACSHA512(emptyHmacKey)));
@@ -1350,7 +1356,9 @@ namespace System.Security.Cryptography.Xml.Tests
             // https://github.com/dotnet/runtime/issues/21236
             if (!PlatformDetection.IsNetFramework)
             {
-                Assert.False(sign.CheckSignature(new HMACSHA384(badKey)));
+                SignedXml signBad = new SignedXml(doc);
+                signBad.LoadXml(doc.DocumentElement["Signature"]);
+                Assert.False(signBad.CheckSignature(new HMACSHA384(badKey)));
             }
 
             Assert.True(sign.CheckSignature(new HMACSHA384(emptyHmacKey)));
@@ -1389,7 +1397,9 @@ namespace System.Security.Cryptography.Xml.Tests
             // https://github.com/dotnet/runtime/issues/21236
             if (!PlatformDetection.IsNetFramework)
             {
-                Assert.False(sign.CheckSignature(new HMACMD5(badKey)));
+                SignedXml signBad = new SignedXml(doc);
+                signBad.LoadXml(doc.DocumentElement["Signature"]);
+                Assert.False(signBad.CheckSignature(new HMACMD5(badKey)));
             }
 
             Assert.True(sign.CheckSignature(new HMACMD5(emptyHmacKey)));

@@ -153,6 +153,9 @@
   <data name="Cryptography_Xml_EnvelopedSignatureRequiresContext" xml:space="preserve">
     <value>An XmlDocument context is required for enveloped transforms.</value>
   </data>
+  <data name="Cryptography_Xml_InstanceAlreadyUsed" xml:space="preserve">
+    <value>This instance has already been used to compute or verify a signature. A new instance is required for each signing or verification operation.</value>
+  </data>
   <data name="Cryptography_Xml_InvalidElement" xml:space="preserve">
     <value>Malformed element {0}.</value>
   </data>
