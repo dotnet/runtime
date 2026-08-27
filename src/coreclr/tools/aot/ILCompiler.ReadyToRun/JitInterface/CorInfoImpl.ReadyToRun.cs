@@ -3760,16 +3760,18 @@ namespace Internal.JitInterface
         }
         private CORINFO_WASM_TYPE_SYMBOL_STRUCT_* getWasmTypeSymbol(CorInfoWasmType* types, nuint typesSize)
         {
-            CorInfoWasmType[] typeArray = new ReadOnlySpan<CorInfoWasmType>(types, (int)typesSize).ToArray();
-
-            // types[0] is the return type; see WasmFuncType.FromCorInfoSignature.
-            int paramCount = typeArray.Length - 1;
+            // types[0] is the return type; see WasmFuncType.FromCorInfoSignature. Checked before
+            // materializing the array, so an over-limit arity neither allocates nor reaches the
+            // narrowing cast below.
+            nuint paramCount = typesSize > 0 ? typesSize - 1 : 0;
             if (paramCount > WasmLimits.MaxFunctionParams)
             {
                 throw new RequiresRuntimeJitException(
                     $"wasm call site in '{MethodBeingCompiled}' needs a function type with {paramCount} parameters, " +
                     $"exceeding the wasm implementation limit of {WasmLimits.MaxFunctionParams}");
             }
+
+            CorInfoWasmType[] typeArray = new ReadOnlySpan<CorInfoWasmType>(types, (int)typesSize).ToArray();
 
             WasmTypeNode typeNode = _compilation.NodeFactory.WasmTypeNode(typeArray);
             return (CORINFO_WASM_TYPE_SYMBOL_STRUCT_*)ObjectToHandle(typeNode);
