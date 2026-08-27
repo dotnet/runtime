@@ -14,6 +14,9 @@ internal static partial class Interop
     // Convenience wrappers for CryptEncodeObject() and CryptDecodeObject(). It's debatable whether they belong in Interop.Crypt32 but
     // there's no natural way to express these as extension methods and they'd be undiscoverable if put in any other class.
     //
+#if NET
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
     internal static partial class Crypt32
     {
         internal static unsafe SafeHandle CryptDecodeObjectToMemory(CryptDecodeObjectStructType lpszStructType, byte[] pbEncoded)

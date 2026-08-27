@@ -5,14 +5,11 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
-#if NET
-using System.Runtime.Versioning;
-#endif
 
 internal static partial class Interop
 {
 #if NET
-    [SupportedOSPlatform("windows")]
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
 #endif
     internal static partial class NtDll
     {

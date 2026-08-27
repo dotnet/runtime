@@ -4,14 +4,11 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
-#if NET
-using System.Runtime.Versioning;
-#endif
 
 internal static partial class Interop
 {
 #if NET
-    [SupportedOSPlatform("windows")]
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
 #endif
     internal static unsafe partial class Ucrtbase
     {

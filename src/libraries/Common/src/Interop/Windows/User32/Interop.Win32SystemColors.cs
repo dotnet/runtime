@@ -3,6 +3,9 @@
 
 internal static partial class Interop
 {
+#if NET
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
     internal static partial class User32
     {
         internal enum Win32SystemColors : byte

@@ -2,15 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-#if NET
-using System.Runtime.Versioning;
-#endif
 using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
 {
 #if NET
-    [SupportedOSPlatform("windows")]
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
 #endif
     internal static partial class Secur32
     {

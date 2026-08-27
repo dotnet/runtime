@@ -13,6 +13,8 @@ using REG_TZI_FORMAT = Interop.Kernel32.REG_TZI_FORMAT;
 using TIME_DYNAMIC_ZONE_INFORMATION = Interop.Kernel32.TIME_DYNAMIC_ZONE_INFORMATION;
 using TIME_ZONE_INFORMATION = Interop.Kernel32.TIME_ZONE_INFORMATION;
 
+#pragma warning disable CA1416 // Interop is only supported on Windows; this file is compiled only for Windows.
+
 namespace System
 {
     public sealed partial class TimeZoneInfo

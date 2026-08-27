@@ -6,6 +6,9 @@ using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
+#if NET
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
     internal static partial class NtDll
     {
         // https://msdn.microsoft.com/en-us/library/windows/hardware/ff550671.aspx
