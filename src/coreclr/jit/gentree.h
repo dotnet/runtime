@@ -1939,12 +1939,6 @@ public:
 
     bool OperIsLIR() const
     {
-        if (OperIs(GT_NOP))
-        {
-            // NOPs may only be present in LIR if they do not produce a value.
-            return IsNothingNode();
-        }
-
         return (DebugOperKind() & DBK_NOTLIR) == 0;
     }
 
@@ -5887,9 +5881,6 @@ struct GenTreeCall final : public GenTree
 
     union
     {
-        // The serialized CALLI unmanaged call (CT_INDIRECT) cookie; reified into argument IR in morph
-        CORINFO_CONST_LOOKUP* gtCallCookie;
-
         // gtInlineCandidateInfo is only used when inlining methods
         InlineCandidateInfo* gtInlineCandidateInfo;
         // gtInlineCandidateInfoList is used when we have more than one GDV candidate
@@ -5944,6 +5935,8 @@ struct GenTreeCall final : public GenTree
     bool IsSpecialIntrinsic(Compiler* compiler, NamedIntrinsic ni) const;
 
     CorInfoHelpFunc GetHelperNum() const;
+
+    ExceptionSetFlags CallExceptions() const;
 
     bool AreArgsComplete() const;
 

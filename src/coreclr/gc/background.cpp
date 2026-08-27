@@ -2671,7 +2671,6 @@ void gc_heap::background_grow_c_mark_list()
     dprintf (2, ("stack copy buffer overflow"));
     uint8_t** new_c_mark_list = 0;
     {
-        FAULT_NOT_FATAL();
         if (c_mark_list_length >= (SIZE_T_MAX / (2 * sizeof (uint8_t*))))
         {
             should_drain_p = TRUE;

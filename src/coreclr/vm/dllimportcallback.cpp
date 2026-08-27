@@ -268,7 +268,6 @@ UMEntryThunkData* UMEntryThunkData::CreateUMEntryThunk()
         THROWS;
         GC_NOTRIGGER;
         MODE_PREEMPTIVE;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -307,7 +306,6 @@ UMEntryThunkData* UMEntryThunkData::CreateUMEntryThunk(LoaderAllocator* pLoaderA
         MODE_ANY;
         PRECONDITION(CheckPointer(pLoaderAllocator));
         PRECONDITION(CheckPointer(pamTracker));
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
