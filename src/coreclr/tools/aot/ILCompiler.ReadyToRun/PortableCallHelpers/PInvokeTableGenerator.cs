@@ -261,6 +261,18 @@ namespace ILCompiler.PortableCallHelpers
                 if (!keys.Add(cb.Key))
                     throw new LogAsErrorException($"Two callbacks with the same Name and number of arguments '{cb.Key}' are not supported.");
 
+                // That check only catches overloads of the same arity, which collide outright. Different
+                // arities produce distinct keys and distinct symbols, yet the export wrapper resolves its
+                // MethodDesc through LookupUnmanagedCallersOnlyMethodByName, which matches on the
+                // declaring type and the method name alone. Overloads are indistinguishable to it, so an
+                // export sharing its name with another callback would be handed whichever MethodDesc the
+                // walk reached first and would then call it with its own arguments.
+                //
+                // This is a stopgap for a lookup that cannot express what it means to ask. If the runtime
+                // ever resolves these unambiguously, this rejection should go away with it.
+                if (cb.IsExport)
+                    RejectAmbiguousExport(cb);
+
                 int parameterCount = cb.Parameters.Length;
                 string argsArgs = parameterCount > 0 ? "(int8_t*)args, sizeof(args)" : "nullptr, 0";
                 string argsDeclaration = parameterCount > 0
@@ -308,6 +320,30 @@ namespace ILCompiler.PortableCallHelpers
                 const size_t g_ReverseThunksCount = sizeof(g_ReverseThunks) / sizeof(g_ReverseThunks[0]);
 
                 """);
+
+            // The runtime walks every [UnmanagedCallersOnly] method the type declares, so match that.
+            static void RejectAmbiguousExport(PInvokeCallback cb)
+            {
+                List<string> ambiguous = [];
+                foreach (MethodDesc candidate in cb.Method.OwningType.GetMethods())
+                {
+                    if (candidate != cb.Method
+                        && candidate.Name.StringEquals(cb.MethodName)
+                        && candidate.HasCustomAttribute("System.Runtime.InteropServices", "UnmanagedCallersOnlyAttribute"))
+                    {
+                        ambiguous.Add(candidate.ToString());
+                    }
+                }
+
+                if (ambiguous.Count == 0)
+                    return;
+
+                ambiguous.Add(cb.Method.ToString());
+                ambiguous.Sort(StringComparer.Ordinal);
+
+                throw new LogAsErrorException(
+                    $"Exported callback '{cb.EntryPoint}' cannot be resolved at run time: '{cb.TypeFullName}' declares more than one [UnmanagedCallersOnly] method named '{cb.MethodName}', and the runtime looks them up by name alone. Give them distinct names: {string.Join(", ", ambiguous)}");
+            }
         }
 
         private string CEntryPoint(PInvokeInfo pinvoke)
