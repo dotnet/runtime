@@ -18,6 +18,10 @@
     <EnableAotAnalyzer>false</EnableAotAnalyzer>
   </PropertyGroup>
 
+  <ItemGroup Condition="'$(TargetsAppleMobile)' == 'true' and '$(UseMonoRuntime)' == 'false' and '$(UseNativeAotRuntime)' != 'true'">
+    <EnvironmentVariables Include="DOTNET_MODIFIABLE_ASSEMBLIES=debug" />
+  </ItemGroup>
+
   <!-- ActiveIssue https://github.com/dotnet/runtime/issues/114526 deadlocks on linux CI -->
   <ItemGroup Condition="'$(ContinuousIntegrationBuild)' != 'true' or '$(TargetOS)' != 'browser' or '$(OS)' == 'Windows_NT'">
     <Compile Include="ApplyUpdateTest.cs" />
@@ -103,8 +107,13 @@
   <ItemGroup Condition="'$(TargetOS)' == 'browser' or ('$(TargetsAppleMobile)' == 'true' and '$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true')">
     <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetsAppleMobile)' == 'true' and '$(EnableAggressiveTrimming)' == 'true' and '$(UseMonoRuntime)' == 'false' and '$(UseNativeAotRuntime)' != 'true'">
+    <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.AppleCoreCLR.xml" />
+  </ItemGroup>
 
-  <Target Name="PreserveEnCAssembliesFromLinking" Condition="'$(TargetOS)' == 'browser' and '$(EnableAggressiveTrimming)' == 'true'" BeforeTargets="PrepareForILLink">
+  <Target Name="PreserveEnCAssembliesFromLinking"
+          Condition="'$(EnableAggressiveTrimming)' == 'true' and ('$(TargetOS)' == 'browser' or ('$(TargetsAppleMobile)' == 'true' and '$(UseMonoRuntime)' == 'false' and '$(UseNativeAotRuntime)' != 'true'))"
+          BeforeTargets="PrepareForILLink">
     <ItemGroup>
       <!-- want to compute the intersection: apply update test assemblies that are also resolved to link.
         -->
@@ -117,6 +126,16 @@
       <ManagedAssemblyToLink Condition="'%(FileName)%(Extension)' == '@(IntermediateAssembly->'%(FileName)%(Extension)')'">
         <TrimMode>copy</TrimMode>
       </ManagedAssemblyToLink>
+    </ItemGroup>
+  </Target>
+
+  <Target Name="ExcludeEnCAssembliesFromReadyToRun"
+          Condition="'$(TargetsAppleMobile)' == 'true' and '$(UseMonoRuntime)' == 'false' and '$(UseNativeAotRuntime)' != 'true'"
+          BeforeTargets="_PrepareForReadyToRunCompilation">
+    <ItemGroup>
+      <ResolvedFileToPublish Condition="$([System.String]::new('%(FileName)').StartsWith('$(ApplyUpdateTestPrefix)'))">
+        <ReferenceOnly>true</ReferenceOnly>
+      </ResolvedFileToPublish>
     </ItemGroup>
   </Target>
 

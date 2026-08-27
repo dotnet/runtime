@@ -1,0 +1,8 @@
+<linker>
+  <assembly fullname="System.Private.CoreLib">
+    <type fullname="System.Runtime.CompilerServices.MetadataUpdateDeletedAttribute" />
+  </assembly>
+  <assembly fullname="System.Runtime.Loader">
+    <type fullname="System.Runtime.CompilerServices.MetadataUpdateDeletedAttribute" />
+  </assembly>
+</linker>
