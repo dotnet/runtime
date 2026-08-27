@@ -10,6 +10,9 @@ internal static partial class Interop
     {
         /// <safety>P/Invoke to the OS that returns the current thread's numeric id by value; it takes no arguments and reads or writes no caller-supplied memory.</safety>
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Libraries.Kernel32)]
         [SuppressGCTransition]
         public static safe partial int GetCurrentThreadId();

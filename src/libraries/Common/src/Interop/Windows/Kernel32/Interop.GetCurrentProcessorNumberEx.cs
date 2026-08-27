@@ -17,6 +17,9 @@ internal static partial class Interop
         }
 
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Libraries.Kernel32)]
         [SuppressGCTransition]
         internal static partial uint GetCurrentProcessorNumberEx(out PROCESSOR_NUMBER ProcNumber);

@@ -16,6 +16,9 @@ internal static partial class Interop
         // and pass in an address for the numBytesRead parameter.
 
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Libraries.Kernel32, SetLastError = true)]
         internal static unsafe partial int WriteFile(
             SafeHandle handle,

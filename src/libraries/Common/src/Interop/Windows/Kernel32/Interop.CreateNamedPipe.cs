@@ -10,6 +10,9 @@ internal static partial class Interop
     internal static partial class Kernel32
     {
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Libraries.Kernel32, EntryPoint = "CreateNamedPipeW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static partial SafePipeHandle CreateNamedPipe(
             string pipeName,

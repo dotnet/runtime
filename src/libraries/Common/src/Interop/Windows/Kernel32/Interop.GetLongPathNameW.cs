@@ -11,6 +11,9 @@ internal static partial class Interop
         /// WARNING: This method does not implicitly handle long paths. Use GetFullPath/PathHelper.
         /// </summary>
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Libraries.Kernel32, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static partial uint GetLongPathNameW(
             ref char lpszShortPath,

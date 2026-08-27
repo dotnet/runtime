@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#pragma warning disable CA1416 // Windows-only interop; these call sites are Windows-gated.
+
 using System;
 using System.Runtime.InteropServices;
 
@@ -14,6 +16,9 @@ internal static partial class Interop
 
         // https://learn.microsoft.com/windows/win32/api/winbase/nf-winbase-localalloc
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Libraries.Kernel32)]
         // [return: NativeTypeName("HLOCAL")]
         private static partial nint LocalAlloc(uint uFlags, nuint uBytes);

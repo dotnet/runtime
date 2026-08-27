@@ -16,6 +16,9 @@ internal static partial class Interop
         // We don't set last error since we don't need the extended error info.
 
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Libraries.Kernel32)]
         [SuppressGCTransition]
         internal static unsafe partial BOOL QueryUnbiasedInterruptTime(ulong* unbiasedTime);

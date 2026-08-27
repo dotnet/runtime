@@ -12,6 +12,9 @@ internal static partial class Interop
     {
         [DoesNotReturn]
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Libraries.Kernel32, EntryPoint = "ExitProcess")]
         internal static partial void ExitProcess(int exitCode);
     }

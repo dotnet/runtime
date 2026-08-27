@@ -19,6 +19,9 @@ internal static partial class Interop
         internal const int IOCTL_STORAGE_READ_CAPACITY = 0x002D5140;
 
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Libraries.Kernel32, EntryPoint = "DeviceIoControl", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool DeviceIoControl(
