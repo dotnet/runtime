@@ -20,7 +20,7 @@ namespace ILCompiler.DependencyAnalysis
 
             if (ReferenceEquals(target, RealBody))
             {
-                // The real body was marked, so forward all parameters and tail-call it.
+                // No throw helper is available, so forward all parameters and tail-call the real body.
                 int parameterCount = signature.Params.Types.Length;
                 expressions = new WasmExpr[parameterCount + 1];
                 for (int i = 0; i < parameterCount; i++)
