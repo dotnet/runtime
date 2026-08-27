@@ -82,10 +82,9 @@ namespace System.Net
         // Socket.ReceiveAsync; async there is a plain socket read. Here mDNSResponder (a system
         // daemon) owns the socket. Its client library exposes only an fd via DNSServiceRefSockFD,
         // and the actual DNS wire read + parse + callback dispatch happen inside
-        // DNSServiceProcessResult. So on async we await readability on the fd (a truly async
-        // POLLIN wait via DnsSocket.WaitReadableAsync) and then call DNSServiceProcessResult
-        // synchronously to consume it. DNSServiceProcessResult blocks until data is available
-        // for synchronous callers, so no separate polling is needed on that path.
+        // DNSServiceProcessResult. So on async we await readability on the fd and then call
+        // DNSServiceProcessResult synchronously to consume it. DNSServiceProcessResult blocks
+        // until data is available for synchronous callers, so no separate polling is needed.
         private static async Task<DnsResult<TRecord>> QueryCore<TRecord>(
             string name,
             ushort queryType,
@@ -139,20 +138,16 @@ namespace System.Net
                     return DnsSdQueryResult.FromStatus(Interop.Dnssd.kDNSServiceErr_DefunctConnection);
                 }
 
+                using DnsSocket? readinessSocket = async ? new DnsSocket((IntPtr)fileDescriptor) : null;
+                byte[] readinessBuffer = new byte[1];
+
                 while (!state.IsComplete)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
                     if (async)
                     {
-                        try
-                        {
-                            await DnsSocket.WaitReadableAsync((IntPtr)fileDescriptor, cancellationToken).ConfigureAwait(false);
-                        }
-                        catch (SocketException)
-                        {
-                            return DnsSdQueryResult.FromStatus(Interop.Dnssd.kDNSServiceErr_DefunctConnection);
-                        }
+                        await readinessSocket!.ReceiveAsync(readinessBuffer, peek: true, cancellationToken).ConfigureAwait(false);
                     }
                     int processStatus = Interop.Dnssd.DNSServiceProcessResult(dnsService);
                     if (processStatus != Interop.Dnssd.kDNSServiceErr_NoError)

@@ -91,9 +91,16 @@ namespace System.Net
             }
 
             List<string> values = new();
-            foreach (ReadOnlySpan<byte> value in txt.EnumerateStrings())
+            DnsTxtEnumerator enumerator = txt.EnumerateStrings();
+            while (enumerator.MoveNext())
             {
-                values.Add(Encoding.UTF8.GetString(value));
+                values.Add(Encoding.UTF8.GetString(enumerator.Current));
+            }
+
+            if (!enumerator.IsValid)
+            {
+                parsed = default;
+                return false;
             }
 
             parsed = new TxtRecord(values, TimeSpan.FromSeconds(record.Ttl));

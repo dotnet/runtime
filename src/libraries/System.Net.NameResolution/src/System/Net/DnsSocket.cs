@@ -2,7 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Net.Sockets;
+using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -13,8 +16,8 @@ namespace System.Net
     // System.Net.Sockets depends on System.Net.NameResolution (Socket.Connect(host, port)
     // resolves names through Dns), so NameResolution cannot statically reference the Sockets
     // assembly without introducing a cycle in the shared-framework closure. The managed DNS
-    // stub resolver still needs raw UDP/TCP sockets, so it reaches Socket through reflection;
-    // the assembly is resolved from the shared framework at runtime. SocketException,
+    // stub resolver still needs raw UDP/TCP sockets, so it reaches Socket through type-name
+    // accessors; the assembly is resolved from the shared framework at runtime. SocketException,
     // SocketError and AddressFamily live in System.Net.Primitives and are used directly.
     //
     internal sealed class DnsSocket : IDisposable
@@ -25,6 +28,14 @@ namespace System.Net
         private const string SafeSocketHandleTypeName = "System.Net.Sockets.SafeSocketHandle, System.Net.Sockets";
         private const string SocketFlagsTypeName = "System.Net.Sockets.SocketFlags, System.Net.Sockets";
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+        private static readonly Type s_socketType = Type.GetType(SocketTypeName, throwOnError: true)!;
+        private static readonly Type s_socketTypeEnum = Type.GetType(SocketTypeEnumName, throwOnError: true)!;
+        private static readonly Type s_protocolTypeEnum = Type.GetType(ProtocolTypeEnumName, throwOnError: true)!;
+        // UnsafeAccessorType cannot represent the SocketType and ProtocolType value-type
+        // parameters without referencing System.Net.Sockets, which would create a cycle.
+        private static readonly ConstructorInfo s_socketConstructor =
+            s_socketType.GetConstructor(new[] { typeof(AddressFamily), s_socketTypeEnum, s_protocolTypeEnum })!;
         private static readonly object s_socketTypeDgram = Enum.Parse(Type.GetType(SocketTypeEnumName, throwOnError: true)!, "Dgram");
         private static readonly object s_socketTypeStream = Enum.Parse(Type.GetType(SocketTypeEnumName, throwOnError: true)!, "Stream");
         private static readonly object s_protocolTypeUdp = Enum.Parse(Type.GetType(ProtocolTypeEnumName, throwOnError: true)!, "Udp");
@@ -33,9 +44,26 @@ namespace System.Net
 
         public DnsSocket(AddressFamily addressFamily, bool stream)
         {
-            _socket = CreateSocket(addressFamily,
-                stream ? s_socketTypeStream : s_socketTypeDgram,
-                stream ? s_protocolTypeTcp : s_protocolTypeUdp);
+            try
+            {
+                _socket = s_socketConstructor.Invoke(new object[]
+                {
+                    addressFamily,
+                    stream ? s_socketTypeStream : s_socketTypeDgram,
+                    stream ? s_protocolTypeTcp : s_protocolTypeUdp,
+                })!;
+            }
+            catch (TargetInvocationException e) when (e.InnerException is not null)
+            {
+                ExceptionDispatchInfo.Throw(e.InnerException);
+                throw;
+            }
+        }
+
+        public DnsSocket(IntPtr fileDescriptor)
+        {
+            object safeHandle = CreateSafeSocketHandle(fileDescriptor, ownsHandle: false);
+            _socket = CreateSocket(safeHandle);
         }
 
         private readonly object _socket;
@@ -52,6 +80,11 @@ namespace System.Net
 
         public ValueTask<int> ReceiveAsync(Memory<byte> buffer, CancellationToken cancellationToken) =>
             ReceiveAsync(_socket, buffer, cancellationToken);
+
+        public ValueTask<int> ReceiveAsync(Memory<byte> buffer, bool peek, CancellationToken cancellationToken) =>
+            peek
+                ? ReceiveAsync(_socket, buffer, s_socketFlagsPeek, cancellationToken)
+                : ReceiveAsync(_socket, buffer, cancellationToken);
 
         public void Connect(EndPoint remoteEndPoint) => Connect(_socket, remoteEndPoint);
 
@@ -80,38 +113,6 @@ namespace System.Net
         }
 
         public void Dispose() => Dispose(_socket);
-
-        // Awaits real readability on a caller-owned fd. On Unix, an empty-buffer
-        // Socket.ReceiveAsync completes synchronously with 0 bytes without ever waiting
-        // for POLLIN, so we peek 1 byte instead; SocketFlags.Peek leaves the byte in the
-        // socket for the subsequent DNSServiceProcessResult to consume. The wrapped
-        // SafeSocketHandle is created with ownsHandle: false so disposing the scratch
-        // Socket does not close the fd — the caller (mDNSResponder client library)
-        // continues to own it.
-        public static async ValueTask WaitReadableAsync(IntPtr fileDescriptor, CancellationToken cancellationToken)
-        {
-            object safeHandle = CreateSafeSocketHandle(fileDescriptor, ownsHandle: false);
-            object socket = CreateSocket(safeHandle);
-
-            try
-            {
-                int bytesReceived = await ReceiveAsync(socket, new byte[1], s_socketFlagsPeek, cancellationToken).ConfigureAwait(false);
-                if (bytesReceived == 0)
-                {
-                    throw new SocketException((int)SocketError.ConnectionReset);
-                }
-            }
-            finally
-            {
-                ((IDisposable)socket).Dispose();
-            }
-        }
-
-        [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
-        [return: UnsafeAccessorType(SocketTypeName)]
-        private static extern object CreateSocket(AddressFamily addressFamily,
-            [UnsafeAccessorType(SocketTypeEnumName)] object socketType,
-            [UnsafeAccessorType(ProtocolTypeEnumName)] object protocolType);
 
         [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
         [return: UnsafeAccessorType(SocketTypeName)]
