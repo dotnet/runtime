@@ -51,6 +51,36 @@ namespace Wasm.Build.Tests
             PublishProject(info, config, new PublishOptions(UseCache: false));
         }
 
+        [Theory, TestCategory("no-fingerprinting"), TestCategory("workload")]
+        [InlineData(Configuration.Debug)]
+        [InlineData(Configuration.Release)]
+        public void BrowserBuildAndPublishOutputDirectories(Configuration config)
+        {
+            ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot: false, "output_directory");
+            (string projectDir, string buildOutput) = BuildProject(info, config);
+
+            string buildOutputDirectory = Path.Combine(
+                projectDir,
+                "bin",
+                config.ToString(),
+                DefaultTargetFramework,
+                "wwwroot") + Path.DirectorySeparatorChar;
+            string buildMessage = $"{info.ProjectName} (wwwroot) -> {buildOutputDirectory}";
+            Assert.Equal(1, buildOutput.Split(buildMessage).Length - 1);
+
+            (_, string publishOutput) = PublishProject(info, config, new PublishOptions(UseCache: false));
+
+            string publishOutputDirectory = Path.Combine(
+                projectDir,
+                "bin",
+                config.ToString(),
+                DefaultTargetFramework,
+                "publish",
+                "wwwroot") + Path.DirectorySeparatorChar;
+            string publishMessage = $"{info.ProjectName} (wwwroot) -> {publishOutputDirectory}";
+            Assert.Equal(1, publishOutput.Split(publishMessage).Length - 1);
+        }
+
         public static TheoryData<bool, string> TestDataForAppBundleDir()
         {
             var data = new TheoryData<bool, string>();

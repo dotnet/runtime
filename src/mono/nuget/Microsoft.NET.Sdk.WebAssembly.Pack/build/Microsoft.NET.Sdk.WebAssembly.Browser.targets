@@ -968,6 +968,17 @@ Copyright (c) .NET Foundation. All rights reserved.
     DependsOnTargets="PrepareResourceNames;ComputeIntermediateSatelliteAssemblies;ResolveAssemblyReferences"
     BeforeTargets="PrepareForPublish" />
 
+  <Target Name="_PrintWasmBrowserPublishOutputDirectory" AfterTargets="Publish" Condition="'$(WasmBuildingForNestedPublish)' != 'true'">
+    <Message Importance="High" Text="$(MSBuildProjectName) (wwwroot) -&gt; $([MSBuild]::NormalizeDirectory('$(PublishDir)', 'wwwroot'))" />
+  </Target>
+
+  <Target Name="_PrintWasmBrowserBuildOutputDirectory" AfterTargets="CopyFilesToOutputDirectory" Condition="'$(WasmBuildingForNestedPublish)' != 'true'">
+    <Message
+      Importance="High"
+      Text="$(MSBuildProjectName) (wwwroot) -&gt; $([MSBuild]::NormalizeDirectory('$(TargetDir)', 'wwwroot'))"
+      Condition="'$(CopyBuildOutputToOutputDirectory)' == 'true' and '$(SkipCopyBuildProduct)' != 'true'" />
+  </Target>
+
   <!-- Wasm's Nested publish is run just to build the native bits. We don't need to run blazor targets for that -->
   <Target Name="ProcessPublishFilesForWasm" DependsOnTargets="_ResolveWasmConfiguration;LoadStaticWebAssetsBuildManifest;_GatherWasmFilesToPublish" AfterTargets="ILLink" Condition="'$(WasmBuildingForNestedPublish)' != 'true'">
     <!-- The list of static web assets already contains all the assets from the build. We want to correct certain assets that might
