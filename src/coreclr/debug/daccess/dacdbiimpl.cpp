@@ -5525,8 +5525,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetVarArgSig(CORDB_ADDRESS VASigC
 #ifndef FEATURE_VARARGS
     *pArgBase = (CORDB_ADDRESS)NULL;
     *pRetVal = TargetBuffer();
-    // Varargs are not supported on this target, so no vararg frame can exist for the
-    // right side to have found a VASigCookie on.
     return E_NOTIMPL;
 #else // FEATURE_VARARGS
     HRESULT hr = S_OK;

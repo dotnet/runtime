@@ -51,8 +51,6 @@
         <FeatureCominteropApartmentSupport>true</FeatureCominteropApartmentSupport>
         <FeatureTypeEquivalence>true</FeatureTypeEquivalence>
         <FeatureIjw>true</FeatureIjw>
-        <!-- The vararg calling convention is only supported on Windows.
-             Must stay in sync with FEATURE_VARARGS in clrdefinitions.cmake. -->
         <FeatureVarargs>true</FeatureVarargs>
     </PropertyGroup>
 

@@ -1523,8 +1523,6 @@ void TransitionFrame::PromoteCallerStack(promote_func* fn, ScanContext* sc)
     }
 
 #ifndef FEATURE_VARARGS
-    // ConvToJitSig rejects vararg signatures on this target, so no vararg frame can exist
-    // and the "default" calling convention path below always applies.
     _ASSERTE(!MetaSig::IsVarArg(callSignature));
 #else // FEATURE_VARARGS
     if (MetaSig::IsVarArg(callSignature))
@@ -1697,8 +1695,6 @@ void TransitionFrame::PromoteCallerStackUsingGCRefMap(promote_func* fn, ScanCont
                                 &typeContext);
                 PromoteCallerStackHelper (fn, sc, NULL, &msig);
 #else // !FEATURE_VARARGS
-                // The token is part of the GC ref map format, but no vararg frame can exist on
-                // this target: ConvToJitSig rejects vararg signatures.
                 _ASSERTE(!"Unexpected GCREFMAP_VASIG_COOKIE without FEATURE_VARARGS");
 #endif // FEATURE_VARARGS
             }

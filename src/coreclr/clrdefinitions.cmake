@@ -117,10 +117,8 @@ endif(NOT CLR_CMAKE_TARGET_ARCH_WASM OR FEATURE_MULTITHREADING)
 if (CLR_CMAKE_TARGET_WIN32 AND (CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_I386 OR CLR_CMAKE_TARGET_ARCH_ARM64))
     add_definitions(-DFEATURE_INTEROP_DEBUGGING)
 endif (CLR_CMAKE_TARGET_WIN32 AND (CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_I386 OR CLR_CMAKE_TARGET_ARCH_ARM64))
-# The vararg calling convention is only supported on Windows. ConvToJitSig rejects
-# IMAGE_CEE_CS_CALLCONV_VARARG and IMAGE_CEE_CS_CALLCONV_NATIVEVARARG wherever this is
-# not defined, so the supporting infrastructure is only built where it can be reached.
 if (CLR_CMAKE_TARGET_WIN32)
+    # The managed vararg calling convention is only supported on Windows.
     set(FEATURE_VARARGS 1)
     add_definitions(-DFEATURE_VARARGS)
 endif (CLR_CMAKE_TARGET_WIN32)

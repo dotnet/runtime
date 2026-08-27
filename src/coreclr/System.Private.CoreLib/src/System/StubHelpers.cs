@@ -2510,8 +2510,6 @@ namespace System.StubHelpers
         }
 
 #if FEATURE_VARARGS
-        // The vararg calling convention, and therefore the ArgIterator marshaller that
-        // consumes these, is only supported on Windows x86, x64 and arm64.
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint="StubHelpers_MarshalToManagedVaList")]
         internal static partial void MarshalToManagedVaList(IntPtr va_list, IntPtr pArgIterator);
 
