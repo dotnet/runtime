@@ -932,7 +932,7 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { FIRST_NI_AVX512, LAST_NI_AVX512 },                        // AVX512
     { FIRST_NI_AVX512v2, LAST_NI_AVX512v2 },                    // AVX512v2
     { FIRST_NI_AVX512v3, LAST_NI_AVX512v3 },                    // AVX512v3
-    { NI_Illegal, NI_Illegal },                                 //      AVX10v1
+    { FIRST_NI_AVX10v1, LAST_NI_AVX10v1 },                      // AVX10v1
     { FIRST_NI_AVX10v2, LAST_NI_AVX10v2 },                      // AVX10v2
     { NI_Illegal, NI_Illegal },                                 //      APX
     { FIRST_NI_AES, LAST_NI_AES },                              // AES
@@ -980,6 +980,7 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { FIRST_NI_Crc32, LAST_NI_Crc32 },                          // Crc32
     { FIRST_NI_Dp, LAST_NI_Dp },                                // Dp
     { FIRST_NI_Rdm, LAST_NI_Rdm },                              // Rdm
+    { FIRST_NI_Fp16, LAST_NI_Fp16 },                            // Fp16
     { FIRST_NI_Sha1, LAST_NI_Sha1 },                            // Sha1
     { FIRST_NI_Sha256, LAST_NI_Sha256 },                        // Sha256
     { NI_Illegal, NI_Illegal },                                 //      Atomics
@@ -1004,6 +1005,7 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { FIRST_NI_Crc32_Arm64, LAST_NI_Crc32_Arm64 },              // Crc32_Arm64
     { NI_Illegal, NI_Illegal },                                 //      Dp_Arm64
     { FIRST_NI_Rdm_Arm64, LAST_NI_Rdm_Arm64 },                  // Rdm_Arm64
+    { NI_Illegal, NI_Illegal },                                 //      Fp16_Arm64
     { NI_Illegal, NI_Illegal },                                 //      Sha1_Arm64
     { NI_Illegal, NI_Illegal },                                 //      Sha256_Arm64
     { NI_Illegal, NI_Illegal },                                 //      Sve_Arm64
@@ -2783,6 +2785,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 #endif // TARGET_XARCH
 
         userCall->AsHWIntrinsic()->SetMethodHandle(this, method R2RARG(*entryPoint));
+        gtUpdateNodeSideEffects(retNode);
     }
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS) && defined(TARGET_ARM64)
@@ -3224,7 +3227,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector_AsVector512:
         {
             assert(sig->numArgs == 1);
-            uint32_t vectorTByteLength = getVectorTByteLength();
+            uint32_t vectorTByteLength = getCompileTimeVectorTByteLength();
 
             if (vectorTByteLength == 0)
             {
@@ -4076,6 +4079,26 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector_GetElement:
         {
             assert(sig->numArgs == 2);
+
+#if defined(TARGET_WASM)
+            {
+                // An out-of-range constant lane index cannot be encoded by extract_lane, so
+                // fall back to the throwing software implementation. A non-constant index is
+                // handled by the jump-table expansion during lowering.
+                GenTree* indexOp = impStackTop(0).val;
+
+                if (indexOp->OperIsConst())
+                {
+                    ssize_t imm8  = indexOp->AsIntCon()->IconValue();
+                    ssize_t count = simdSize / genTypeSize(simdBaseType);
+
+                    if ((imm8 < 0) || (imm8 >= count))
+                    {
+                        return nullptr;
+                    }
+                }
+            }
+#endif // TARGET_WASM
 
             op2 = impPopStack().val;
             op1 = impSIMDPopStack();
@@ -5277,6 +5300,24 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
                 {
                     // Using software fallback if index is out of range (throw exception)
                     return nullptr;
+                }
+            }
+#elif defined(TARGET_WASM)
+            {
+                // An out-of-range constant lane index cannot be encoded by replace_lane, so
+                // fall back to the throwing software implementation. A non-constant index is
+                // handled by the jump-table expansion during lowering.
+                GenTree* indexOp = impStackTop(1).val;
+
+                if (indexOp->OperIsConst())
+                {
+                    ssize_t imm8  = indexOp->AsIntCon()->IconValue();
+                    ssize_t count = simdSize / genTypeSize(simdBaseType);
+
+                    if ((imm8 < 0) || (imm8 >= count))
+                    {
+                        return nullptr;
+                    }
                 }
             }
 #endif

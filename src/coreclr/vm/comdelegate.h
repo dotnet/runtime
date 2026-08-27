@@ -10,7 +10,6 @@
 #ifndef _COMDELEGATE_H_
 #define _COMDELEGATE_H_
 
-class Stub;
 class ShuffleThunkCache;
 
 #include "cgensys.h"
@@ -52,10 +51,6 @@ public:
     // Marshals an unmanaged callback to Delegate
     static OBJECTREF ConvertToDelegate(LPVOID pCallback, MethodTable* pMT);
 
-#ifdef FEATURE_COMINTEROP
-    static CLRToCOMCallInfo * PopulateCLRToCOMCallInfo(MethodTable * pDelMT);
-#endif // FEATURE_COMINTEROP
-
     static PCODE GetStubForILStub(EEImplMethodDesc* pDelegateMD, MethodDesc** ppStubMD, DWORD dwStubFlags);
     static MethodDesc* GetILStubMethodDesc(EEImplMethodDesc* pDelegateMD, DWORD dwStubFlags);
 
@@ -65,7 +60,7 @@ public:
     static BOOL IsDelegate(MethodTable *pMT);
 
     // Get the cpu stub for a delegate invoke.
-    static Stub* GetInvokeMethodStub(EEImplMethodDesc* pMD);
+    static PCODE GetInvokeMethodStub(EEImplMethodDesc* pMD);
 
     static MethodDesc* GetMethodDesc(OBJECTREF obj);
     static MethodDesc* GetMethodDescForOpenVirtualDelegate(DELEGATEREF delegate);
@@ -175,21 +170,17 @@ struct ShuffleEntry
 class ShuffleThunkCache : public StubCacheBase
 {
 public:
-    ShuffleThunkCache(LoaderHeap* heap) : StubCacheBase(heap)
+    ShuffleThunkCache(LoaderAllocator* pLoaderAllocator) : StubCacheBase(pLoaderAllocator)
     {
     }
 private:
-    //---------------------------------------------------------
-    // Compile a static delegate shufflethunk. Always returns
-    // STANDALONE since we don't interpret these things.
-    //---------------------------------------------------------
-    virtual DWORD CompileStub(const BYTE *pRawStub,
-                             StubLinker *pstublinker)
+    virtual StubCodeBlockKind CompileStub(const BYTE *pRawStub,
+                                          StubLinker *pstublinker)
     {
         STANDARD_VM_CONTRACT;
 
         ((CPUSTUBLINKER*)pstublinker)->EmitShuffleThunk((ShuffleEntry*)pRawStub);
-        return NEWSTUB_FL_SHUFFLE_THUNK;
+        return STUB_CODE_BLOCK_SHUFFLE_THUNK;
     }
 
     //---------------------------------------------------------

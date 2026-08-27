@@ -319,6 +319,15 @@ namespace System.Tests
             yield return new object[] { "123+", NumberStyles.AllowTrailingSign, null, 123 };
             yield return new object[] { "123-", NumberStyles.AllowTrailingSign, null, -123 };
 
+            NumberFormatInfo whitespaceSignFormat = new NumberFormatInfo()
+            {
+                PositiveSign = " +",
+                NegativeSign = " -"
+            };
+            yield return new object[] { "123 +", NumberStyles.AllowTrailingSign, whitespaceSignFormat, 123 };
+            yield return new object[] { "123 -", NumberStyles.AllowTrailingSign, whitespaceSignFormat, -123 };
+            yield return new object[] { "123 $", NumberStyles.AllowCurrencySymbol, new NumberFormatInfo() { CurrencySymbol = " $" }, 123 };
+
             // If PositiveSign and NegativeSign are the same, PositiveSign is preferred
             yield return new object[] { "123|", NumberStyles.AllowTrailingSign, samePositiveNegativeFormat, 123 };
 
@@ -457,6 +466,16 @@ namespace System.Tests
                 yield return new object[] { "g123", style, null, typeof(FormatException) };
                 yield return new object[] { "214748364g", style, null, typeof(FormatException) };
             }
+
+            NumberFormatInfo whitespaceSignFormat = new NumberFormatInfo()
+            {
+                PositiveSign = " +",
+                NegativeSign = " -"
+            };
+            yield return new object[] { "123 +,", NumberStyles.AllowTrailingSign, whitespaceSignFormat, typeof(FormatException) };
+            yield return new object[] { "123 -+", NumberStyles.AllowTrailingSign, whitespaceSignFormat, typeof(FormatException) };
+            yield return new object[] { "123 +k", NumberStyles.AllowTrailingSign, whitespaceSignFormat, typeof(FormatException) };
+            yield return new object[] { "123 $,", NumberStyles.AllowCurrencySymbol, new NumberFormatInfo() { CurrencySymbol = " $" }, typeof(FormatException) };
 
             // String has leading zeros
             yield return new object[] { "\0\0123", NumberStyles.Integer, null, typeof(FormatException) };
@@ -925,6 +944,14 @@ namespace System.Tests
             Assert.DoesNotContain("\uFFFD", fe.Message, StringComparison.Ordinal);
         }
 
+        [Fact]
+        public static void Parse_Utf8Span_InvalidUtf8GroupSeparator()
+        {
+            NumberFormatInfo format = new() { NumberGroupSeparator = " " };
+
+            Assert.False(int.TryParse([(byte)'1', 0xA0, (byte)'2'], NumberStyles.AllowThousands, format, out _));
+        }
+
         [Theory]
         [InlineData("N")]
         [InlineData("F")]
@@ -1056,6 +1083,15 @@ namespace System.Tests
 
             // Stop at null character
             yield return new object[] { "123\0abc", NumberStyles.Integer, null, 123, 4 };
+
+            // Leading whitespace is counted as consumed even when the signs aren't the invariant "+"/"-"
+            NumberFormatInfo nonInvariantSignFormat = new NumberFormatInfo() { NegativeSign = "\u2212" };
+            yield return new object[] { " 5", NumberStyles.Integer, nonInvariantSignFormat, 5, 2 };
+            yield return new object[] { "  123abc", NumberStyles.Integer, nonInvariantSignFormat, 123, 5 };
+            yield return new object[] { "  +123abc", NumberStyles.Integer, nonInvariantSignFormat, 123, 6 };
+            yield return new object[] { "  \u2212456xyz", NumberStyles.Integer, nonInvariantSignFormat, -456, 6 };
+            yield return new object[] { "  \u2212456", NumberStyles.Integer, nonInvariantSignFormat, -456, 6 };
+            yield return new object[] { "  123  abc", NumberStyles.Integer, nonInvariantSignFormat, 123, 7 };
         }
 
         [Theory]

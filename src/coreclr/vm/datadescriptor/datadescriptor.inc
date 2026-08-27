@@ -403,7 +403,6 @@ CDAC_TYPE_FIELD(LoaderAllocator, T_UINT32, ReferenceCount, cdac_data<LoaderAlloc
 CDAC_TYPE_FIELD(LoaderAllocator, T_POINTER, HighFrequencyHeap, cdac_data<LoaderAllocator>::HighFrequencyHeap)
 CDAC_TYPE_FIELD(LoaderAllocator, T_POINTER, LowFrequencyHeap, cdac_data<LoaderAllocator>::LowFrequencyHeap)
 CDAC_TYPE_FIELD(LoaderAllocator, T_POINTER, StaticsHeap, cdac_data<LoaderAllocator>::StaticsHeap)
-CDAC_TYPE_FIELD(LoaderAllocator, T_POINTER, StubHeap, cdac_data<LoaderAllocator>::StubHeap)
 CDAC_TYPE_FIELD(LoaderAllocator, T_POINTER, ExecutableHeap, cdac_data<LoaderAllocator>::ExecutableHeap)
 #ifdef HAS_FIXUP_PRECODE
 CDAC_TYPE_FIELD(LoaderAllocator, T_POINTER, FixupPrecodeHeap, cdac_data<LoaderAllocator>::FixupPrecodeHeap)
@@ -505,6 +504,20 @@ CDAC_TYPE_BEGIN(DebuggerRCThread)
 CDAC_TYPE_INDETERMINATE(DebuggerRCThread)
 CDAC_TYPE_FIELD(DebuggerRCThread, T_POINTER, DCB, cdac_data<DebuggerRCThread>::DCB)
 CDAC_TYPE_END(DebuggerRCThread)
+
+#if defined(TARGET_AMD64)
+CDAC_TYPE_BEGIN(DebuggerPatchTable)
+CDAC_TYPE_INDETERMINATE(DebuggerPatchTable)
+CDAC_TYPE_FIELD(DebuggerPatchTable, T_POINTER, Entries, cdac_data<DebuggerPatchTable>::Entries)
+CDAC_TYPE_FIELD(DebuggerPatchTable, T_UINT32, Count, cdac_data<DebuggerPatchTable>::Count)
+CDAC_TYPE_END(DebuggerPatchTable)
+
+CDAC_TYPE_BEGIN(DebuggerControllerPatch)
+CDAC_TYPE_SIZE(sizeof(DebuggerControllerPatch))
+CDAC_TYPE_FIELD(DebuggerControllerPatch, T_POINTER, Address, offsetof(DebuggerControllerPatch, address))
+CDAC_TYPE_FIELD(DebuggerControllerPatch, T_NUINT, Opcode, offsetof(DebuggerControllerPatch, opcode))
+CDAC_TYPE_END(DebuggerControllerPatch)
+#endif // TARGET_AMD64
 
 CDAC_TYPE_BEGIN(MemoryRange)
 CDAC_TYPE_SIZE(sizeof(MemoryRange))
@@ -1306,11 +1319,6 @@ CDAC_TYPE_SIZE(sizeof(ExternalMethodFrame))
 CDAC_TYPE_FIELD(ExternalMethodFrame, T_POINTER, Indirection, cdac_data<ExternalMethodFrame>::Indirection)
 CDAC_TYPE_END(ExternalMethodFrame)
 
-CDAC_TYPE_BEGIN(PInvokeCalliFrame)
-CDAC_TYPE_SIZE(sizeof(PInvokeCalliFrame))
-CDAC_TYPE_FIELD(PInvokeCalliFrame, T_POINTER, VASigCookiePtr, cdac_data<PInvokeCalliFrame>::VASigCookiePtr)
-CDAC_TYPE_END(PInvokeCalliFrame)
-
 CDAC_TYPE_BEGIN(DynamicHelperFrame)
 CDAC_TYPE_SIZE(sizeof(DynamicHelperFrame))
 CDAC_TYPE_FIELD(DynamicHelperFrame, T_INT32, DynamicHelperFrameFlags, cdac_data<DynamicHelperFrame>::DynamicHelperFrameFlags)
@@ -1675,6 +1683,8 @@ CDAC_GLOBAL_STRING(Architecture, wasm)
 
 CDAC_GLOBAL_STRING(RuntimeFlavor, Coreclr)
 
+CDAC_GLOBAL_STRING(RuntimeProductVersionString, RuntimeProductVersion)
+
 CDAC_GLOBAL_STRING(RID, RID_STRING)
 
 CDAC_GLOBAL(GCInfoVersion, T_UINT32, GCINFO_VERSION)
@@ -1690,6 +1700,9 @@ CDAC_GLOBAL_POINTER(ThePreStub, &g_cdacThePreStub)
 #endif // !FEATURE_PORTABLE_ENTRYPOINTS
 #if defined(DEBUGGING_SUPPORTED) && !defined(TARGET_WASM)
 CDAC_GLOBAL_POINTER(Debugger, &::g_pDebugger)
+#if defined(TARGET_AMD64)
+CDAC_GLOBAL_POINTER(DebuggerPatchTable, cdac_data<DebuggerController>::PatchTable)
+#endif // TARGET_AMD64
 CDAC_GLOBAL_POINTER(CLRJitAttachState, &::CLRJitAttachState)
 CDAC_GLOBAL_POINTER(CORDebuggerControlFlags, &::g_CORDebuggerControlFlags)
 CDAC_GLOBAL(MaxHijackFunctions, T_UINT32, cdac_data<Debugger>::MaxHijackFunctions)
@@ -1834,6 +1847,7 @@ CDAC_GLOBAL(RCWInterfaceCacheSize, T_UINT32, INTERFACE_ENTRY_CACHE_SIZE)
 // When adding a new subdescriptor, EnumMemDescriptors must be updated appropriately.
 CDAC_GLOBAL_SUB_DESCRIPTOR(GC, &(g_gc_dac_vars.gc_descriptor))
 
+// Contract versions for .NET 11 are frozen and must not be changed in any .NET 11 release branch.
 CDAC_GLOBAL_CONTRACT(AuxiliarySymbols, c1)
 #if FEATURE_COMINTEROP
 CDAC_GLOBAL_CONTRACT(BuiltInCOM, c1)
@@ -1849,13 +1863,13 @@ CDAC_GLOBAL_CONTRACT(DacStreams, c1)
 #if defined(DEBUGGING_SUPPORTED) && !defined(TARGET_WASM)
 CDAC_GLOBAL_CONTRACT(Debugger, c1)
 #endif // DEBUGGING_SUPPORTED && !TARGET_WASM
-CDAC_GLOBAL_CONTRACT(DebugInfo, c2)
+CDAC_GLOBAL_CONTRACT(DebugInfo, c1)
 CDAC_GLOBAL_CONTRACT(EcmaMetadata, c1)
 #ifdef FEATURE_METADATA_UPDATER
 CDAC_GLOBAL_CONTRACT(RuntimeMutableTypeSystem, c1)
 #endif // FEATURE_METADATA_UPDATER
 CDAC_GLOBAL_CONTRACT(Exception, c1)
-CDAC_GLOBAL_CONTRACT(ExecutionManager, c2)
+CDAC_GLOBAL_CONTRACT(ExecutionManager, c1)
 CDAC_GLOBAL_CONTRACT(GCInfo, c1)
 CDAC_GLOBAL_CONTRACT(Loader, c1)
 CDAC_GLOBAL_CONTRACT(ManagedTypeSource, c1)
@@ -1866,7 +1880,7 @@ CDAC_GLOBAL_CONTRACT(ObjectiveCMarshal, c1)
 CDAC_GLOBAL_CONTRACT(Object, c1)
 CDAC_GLOBAL_CONTRACT(FeatureFlags, c1)
 CDAC_GLOBAL_CONTRACT(PlatformMetadata, c1)
-CDAC_GLOBAL_CONTRACT(PrecodeStubs, c3)
+CDAC_GLOBAL_CONTRACT(PrecodeStubs, c1)
 #ifdef PROFILING_SUPPORTED
 CDAC_GLOBAL_CONTRACT(ReJIT, c1)
 #endif // PROFILING_SUPPORTED

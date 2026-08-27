@@ -131,8 +131,8 @@ void FixContext(PCONTEXT pContextRecord)
 #define FIXUPREG(reg, value)                                                                \
     do {                                                                                    \
         STRESS_LOG2(LF_GCROOTS, LL_INFO100, "Updating " #reg " %p to %p\n",                 \
-                pContextRecord->reg,                                                        \
-                (value));                                                                   \
+                (void*)(size_t)(pContextRecord->reg),                                       \
+                (void*)(size_t)(value));                                                    \
         pContextRecord->reg = (value);                                                      \
     } while (0)
 
@@ -319,8 +319,8 @@ void ExInfo::UpdateNonvolatileRegisters(CONTEXT *pContextRecord, REGDISPLAY *pRe
         if (pRegDisplay->pCurrentContextPointers->reg != NULL)                              \
         {                                                                                   \
             STRESS_LOG3(LF_GCROOTS, LL_INFO100, "Updating " #reg " %p to %p from %p\n",     \
-                    pContextRecord->reg,                                                    \
-                    *pRegDisplay->pCurrentContextPointers->reg,                             \
+                    (void*)(size_t)pContextRecord->reg,                                     \
+                    (void*)(size_t)*pRegDisplay->pCurrentContextPointers->reg,              \
                     pRegDisplay->pCurrentContextPointers->reg);                             \
             pContextRecord->reg = *pRegDisplay->pCurrentContextPointers->reg;               \
         }                                                                                   \
@@ -885,7 +885,7 @@ static void DoEHLog(
         memset(pPadding, '.', cch);
         pPadding[cch] = 0;
 
-        LOG((LF_EH, lvl, pPadding));
+        LOG((LF_EH, lvl, "%s", pPadding));
     }
 
     LogSpewValist(LF_EH, lvl, fmt, args);
@@ -2419,7 +2419,7 @@ void ExInfo::StackRange::CombineWith(StackFrame sfCurrent, StackRange* pPrevious
         // previous tracker once they "escape" the previous tracker.
         STRESS_LOG3(LF_EH, LL_INFO100,
             "Initializing current StackRange with previous tracker's StackRange.  sfCurrent: %p, prev low: %p, prev high: %p\n",
-            sfCurrent.SP, pPreviousRange->m_sfLowBound.SP, pPreviousRange->m_sfHighBound.SP);
+            (void*)sfCurrent.SP, (void*)pPreviousRange->m_sfLowBound.SP, (void*)pPreviousRange->m_sfHighBound.SP);
 
         *this = *pPreviousRange;
     }
@@ -2517,7 +2517,7 @@ bool ExInfo::StackRange::IsConsistent()
         return true;
     }
 
-    LOG((LF_EH, LL_ERROR, "sp: low: %p high: %p\n", m_sfLowBound.SP, m_sfHighBound.SP));
+    LOG((LF_EH, LL_ERROR, "sp: low: %p high: %p\n", (void*)m_sfLowBound.SP, (void*)m_sfHighBound.SP));
 
     return false;
 }
@@ -2670,7 +2670,7 @@ bool ExInfo::HasFrameBeenUnwoundByAnyActiveException(CrawlFrame * pCF)
             csfToCheck = CallerStackFrame((UINT_PTR)pCF->GetFrame());
         }
         STRESS_LOG4(LF_EH|LF_GCROOTS, LL_INFO100, "CrawlFrame (%p): Frameless: %s %s: %p\n",
-                    pCF, pCF->IsFrameless() ? "Yes" : "No", pCF->IsFrameless() ? "CallerSP" : "Address", csfToCheck.SP);
+                    pCF, pCF->IsFrameless() ? "Yes" : "No", pCF->IsFrameless() ? "CallerSP" : "Address", (void*)csfToCheck.SP);
     }
 
     PTR_ExInfo pTopExInfo = (PTR_ExInfo)pTargetThread->GetExceptionState()->GetCurrentExceptionTracker();
@@ -2975,7 +2975,7 @@ StackFrame ExInfo::FindParentStackFrameHelper(CrawlFrame* pCF,
 lExit: ;
 
     STRESS_LOG3(LF_EH|LF_GCROOTS, LL_INFO100, "Returning 0x%p as the parent stack frame for %s 0x%p\n",
-                sfResult.SP, fIsFilterFunclet ? "filter funclet" : "funclet", csfCurrent.SP);
+                (void*)sfResult.SP, fIsFilterFunclet ? "filter funclet" : "funclet", (void*)csfCurrent.SP);
 
     return sfResult;
 }
@@ -3256,7 +3256,7 @@ PropagateForeignExceptionThroughNativeFrames(IN     PEXCEPTION_RECORD   pExcepti
 
 #endif // HOST_WINDOWS
 
-void CallCatchFunclet(OBJECTREF throwable, BYTE* pHandlerIP, REGDISPLAY* pvRegDisplay, ExInfo* exInfo)
+void CallCatchFunclet(BYTE* pHandlerIP, REGDISPLAY* pvRegDisplay, ExInfo* exInfo)
 {
     CONTRACTL
     {
@@ -3295,8 +3295,6 @@ void CallCatchFunclet(OBJECTREF throwable, BYTE* pHandlerIP, REGDISPLAY* pvRegDi
         pCodeManager->EnsureCallerContextIsValid(pvRegDisplay);
         _ASSERTE(exInfo->m_sfCallerOfActualHandlerFrame == GetSP(pvRegDisplay->pCallerContext));
 #endif
-        throwable = PossiblyUnwrapThrowable(throwable, exInfo->m_frameIter.m_crawl.GetAssembly());
-
         exInfo->m_csfEnclosingClause = CallerStackFrame::FromRegDisplay(exInfo->m_frameIter.m_crawl.GetRegisterSet());
 
         MethodDesc *pMD = exInfo->m_frameIter.m_crawl.GetFunction();
@@ -3306,12 +3304,15 @@ void CallCatchFunclet(OBJECTREF throwable, BYTE* pHandlerIP, REGDISPLAY* pvRegDi
 
         EH_LOG((LL_INFO100, "Calling catch funclet at %p\n", pHandlerIP));
 
+        OBJECTREF throwable = exInfo->GetThrowable();
+        throwable = PossiblyUnwrapThrowable(throwable, exInfo->m_frameIter.m_crawl.GetAssembly());
         dwResumePC = pCodeManager->CallFunclet(throwable, pHandlerIP, pvRegDisplay, exInfo, false /* isFilterFunclet */);
 
         FixContext(pvRegDisplay->pCurrentContext);
 
         // Profiler, debugger and ETW events
         exInfo->MakeCallbacksRelatedToHandler(false, pThread, pMD, &exInfo->m_ClauseForCatch, (DWORD_PTR)pHandlerIP, spForDebugger);
+
         SetIP(pvRegDisplay->pCurrentContext, dwResumePC);
         callerTargetSp = CallerStackFrame::FromRegDisplay(pvRegDisplay).SP;
     }
@@ -3319,17 +3320,15 @@ void CallCatchFunclet(OBJECTREF throwable, BYTE* pHandlerIP, REGDISPLAY* pvRegDi
     UINT_PTR targetSp = GetSP(pvRegDisplay->pCurrentContext);
     PopExplicitFrames(pThread, (void*)targetSp, (void*)callerTargetSp);
 
-    ExInfo* pExInfo = (PTR_ExInfo)pThread->GetExceptionState()->GetCurrentExceptionTracker();
-
 #ifdef HOST_WINDOWS
-    jmp_buf* pLongJmpBuf = pExInfo->m_pLongJmpBuf;
-    int longJmpReturnValue = pExInfo->m_longJmpReturnValue;
-    EXCEPTION_RECORD lastExceptionRecord = *pExInfo->m_ptrs.ExceptionRecord;
+    jmp_buf* pLongJmpBuf = exInfo->m_pLongJmpBuf;
+    int longJmpReturnValue = exInfo->m_longJmpReturnValue;
+    EXCEPTION_RECORD lastExceptionRecord = *exInfo->m_ptrs.ExceptionRecord;
 #endif // HOST_WINDOWS
 
 #ifdef HOST_UNIX
-    Interop::ManagedToNativeExceptionCallback propagateExceptionCallback = pExInfo->m_propagateExceptionCallback;
-    void* propagateExceptionContext = pExInfo->m_propagateExceptionContext;
+    Interop::ManagedToNativeExceptionCallback propagateExceptionCallback = exInfo->m_propagateExceptionCallback;
+    void* propagateExceptionContext = exInfo->m_propagateExceptionContext;
 #endif // HOST_UNIX
 
 #ifdef DEBUGGING_SUPPORTED
@@ -3366,6 +3365,8 @@ void CallCatchFunclet(OBJECTREF throwable, BYTE* pHandlerIP, REGDISPLAY* pvRegDi
     }
 #endif // DEBUGGING_SUPPORTED
 
+    OBJECTREF throwable = exInfo->GetThrowable();
+
     ExInfo::PopExInfos(pThread, (void*)targetSp);
 
     if (!pThread->GetExceptionState()->IsExceptionInProgress())
@@ -3393,7 +3394,7 @@ void CallCatchFunclet(OBJECTREF throwable, BYTE* pHandlerIP, REGDISPLAY* pvRegDi
         if (propagateExceptionCallback)
         {
             // A propagation callback was supplied.
-            STRESS_LOG3(LF_EH, LL_INFO100, "Deferring exception propagation to Callback = %p, IP = %p, SP = %p \n", propagateExceptionCallback, GetIP(pvRegDisplay->pCurrentContext), GetSP(pvRegDisplay->pCurrentContext));
+            STRESS_LOG3(LF_EH, LL_INFO100, "Deferring exception propagation to Callback = %p, IP = %p, SP = %p \n", propagateExceptionCallback, (void*)GetIP(pvRegDisplay->pCurrentContext), (void*)GetSP(pvRegDisplay->pCurrentContext));
 
             UpdateContextForPropagationCallback(propagateExceptionCallback, propagateExceptionContext, pvRegDisplay->pCurrentContext);
             GCX_PREEMP_NO_DTOR();
@@ -3441,7 +3442,7 @@ void CallCatchFunclet(OBJECTREF throwable, BYTE* pHandlerIP, REGDISPLAY* pvRegDi
         else
 #endif
         {
-            STRESS_LOG2(LF_EH, LL_INFO100, "Resuming propagation of managed exception through native frames at IP=%p, SP=%p\n", GetIP(pvRegDisplay->pCurrentContext), GetSP(pvRegDisplay->pCurrentContext));
+            STRESS_LOG2(LF_EH, LL_INFO100, "Resuming propagation of managed exception through native frames at IP=%p, SP=%p\n", (void*)GetIP(pvRegDisplay->pCurrentContext), (void*)GetSP(pvRegDisplay->pCurrentContext));
 #ifdef TARGET_WASM
             // wasm cannot unwind frames, so we let C++ exception handling do all the work
             PropagateExceptionThroughNativeFrames(OBJECTREFToObject(throwable), targetSp);
@@ -3498,7 +3499,7 @@ void ResumeAtInterceptionLocation(REGDISPLAY* pvRegDisplay)
 
     SetIP(pvRegDisplay->pCurrentContext, uResumePC);
 
-    STRESS_LOG2(LF_EH, LL_INFO100, "Resuming at interception location at IP=%p, SP=%p\n", uResumePC, GetSP(pvRegDisplay->pCurrentContext));
+    STRESS_LOG2(LF_EH, LL_INFO100, "Resuming at interception location at IP=%p, SP=%p\n", (void*)uResumePC, (void*)GetSP(pvRegDisplay->pCurrentContext));
     codeInfo.GetCodeManager()->ResumeAfterCatch(pvRegDisplay->pCurrentContext, targetSSP, /* fIntercepted */ true);
 }
 
@@ -3543,8 +3544,6 @@ extern "C" CLR_BOOL QCALLTYPE CallFilterFunclet(QCall::ObjectHandleOnStack excep
     MarkInlinedCallFrameAsEHHelperCall(pFrame);
 
     ExInfo* pExInfo = (ExInfo*)pThread->GetExceptionState()->GetCurrentExceptionTracker();
-    OBJECTREF throwable = exceptionObj.Get();
-    throwable = PossiblyUnwrapThrowable(throwable, pExInfo->m_frameIter.m_crawl.GetAssembly());
 
     pExInfo->m_csfEnclosingClause = CallerStackFrame::FromRegDisplay(pExInfo->m_frameIter.m_crawl.GetRegisterSet());
     MethodDesc *pMD = pExInfo->m_frameIter.m_crawl.GetFunction();
@@ -3555,6 +3554,8 @@ extern "C" CLR_BOOL QCALLTYPE CallFilterFunclet(QCall::ObjectHandleOnStack excep
 
     EX_TRY
     {
+        OBJECTREF throwable = exceptionObj.Get();
+        throwable = PossiblyUnwrapThrowable(throwable, pExInfo->m_frameIter.m_crawl.GetAssembly());
         dwResult = pExInfo->m_frameIter.m_crawl.GetCodeManager()->CallFunclet(throwable, pFilterIP, pvRegDisplay, pExInfo, true /* isFilterFunclet */);
     }
     EX_CATCH
@@ -3568,6 +3569,7 @@ extern "C" CLR_BOOL QCALLTYPE CallFilterFunclet(QCall::ObjectHandleOnStack excep
 
     // Profiler, debugger and ETW events
     pExInfo->MakeCallbacksRelatedToHandler(false, pThread, pMD, &pExInfo->m_CurrentClause, (DWORD_PTR)pFilterIP, spForDebugger);
+
     END_QCALL;
 
     return dwResult == EXCEPTION_EXECUTE_HANDLER;
@@ -4195,12 +4197,11 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
         {
             pFrame = pThis->m_crawl.GetFrame();
 
-            // Check if there are any further managed frames on the stack or a catch for all exceptions in native code (marked by
-            // DebuggerU2MCatchHandlerFrame with CatchesAllExceptions() returning true).
+            // Check if there are any further managed frames on the stack.
             // If not, the exception is unhandled.
             bool isNotHandledByRuntime =
                 (pFrame == FRAME_TOP) ||
-                (IsTopmostDebuggerU2MCatchHandlerFrame(pFrame) && !((DebuggerU2MCatchHandlerFrame*)pFrame)->CatchesAllExceptions())
+                IsTopmostDebuggerU2MCatchHandlerFrame(pFrame)
 #ifdef HOST_UNIX
                 // Don't allow propagating exceptions from managed to non-runtime native code
                 || isPropagatingToExternalNativeCode
@@ -4556,7 +4557,7 @@ void DECLSPEC_NORETURN DispatchExSecondPass(ExInfo *pExInfo)
     // ------------------------------------------------
     pExInfo->m_idxCurClause = catchingTryRegionIdx;
 
-    CallCatchFunclet(pExInfo->m_exception, (BYTE *)pCatchHandler, pFrameIter->m_crawl.GetRegisterSet(), pExInfo);
+    CallCatchFunclet((BYTE *)pCatchHandler, pFrameIter->m_crawl.GetRegisterSet(), pExInfo);
     // CallCatchFunclet will resume after the catch and never return here.
     UNREACHABLE();
 }
@@ -4625,7 +4626,7 @@ VOID DECLSPEC_NORETURN ContinueExceptionInterceptionUnwind()
     // ------------------------------------------------
     if (unwoundReversePInvoke)
     {
-        CallCatchFunclet(pExInfo->m_exception, NULL, pExInfo->m_frameIter.m_crawl.GetRegisterSet(), pExInfo);
+        CallCatchFunclet(NULL, pExInfo->m_frameIter.m_crawl.GetRegisterSet(), pExInfo);
     }
     else
     {
