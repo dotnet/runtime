@@ -788,8 +788,8 @@ public:
     }
 
     // Returns true if this MethodDesc represents an interop stub.
-    // This includes interop IL stubs (PInvoke, COM, reverse PInvoke, struct marshal)
-    // and PInvoke methods (PInvokeMethodDesc).
+    // This includes interop IL stubs (PInvoke, COM, reverse PInvoke, struct marshal),
+    // PInvoke methods (PInvokeMethodDesc), and CLR->COM calls (CLRToCOMCallMethodDesc).
     inline bool IsInteropStub();
 
     inline DWORD IsInterface()
@@ -962,6 +962,10 @@ public:
     }
 
     COR_ILMETHOD* GetILHeader();
+
+    COR_ILMETHOD* GetActiveILHeader();
+
+    COR_ILMETHOD* GetILHeaderForNativeCode(PCODE nativeCodeStartAddress);
 
     BOOL HasStoredSig()
     {
@@ -1225,13 +1229,11 @@ public:
 
 public:
 
-    // True iff it is possible to change the code this method will run using the CodeVersionManager. Note: EnC currently returns
-    // false here because it uses its own separate scheme to manage versionability. We will likely want to converge them at some
-    // point.
+    // True iff it is possible to change the code this method will run using the CodeVersionManager.
     bool IsVersionable()
     {
         WRAPPER_NO_CONTRACT;
-        return IsEligibleForTieredCompilation() || IsEligibleForReJIT();
+        return IsEligibleForTieredCompilation() || IsEligibleForReJIT() || IsEligibleForEnC();
     }
 
     // True iff all calls to the method should funnel through a Precode which can be updated to point to the current method
@@ -1266,10 +1268,24 @@ public:
             !IsWrapperStub() &&
 
             // Functional requirement
-            CodeVersionManager::IsMethodSupported(PTR_MethodDesc(this));
+            CodeVersionManager::IsMethodSupported(PTR_MethodDesc(this)) &&
+            // ReJIT and EnC are mutually exclusive
+            !InEnCEnabledModule();
 #else // FEATURE_REJIT
         return false;
 #endif
+    }
+
+    bool IsEligibleForEnC()
+    {
+        WRAPPER_NO_CONTRACT;
+
+        return
+            InEnCEnabledModule() &&
+
+            // EnC edits are expressed as IL, wrapper stubs have no editable IL body
+            IsIL() &&
+            !IsWrapperStub();
     }
 
 public:
@@ -1365,7 +1381,9 @@ private:
             IsVtableSlot() &&
 
             // Functional requirement - True interface methods are not backpatched, see DoBackpatch()
-            !(IsInterface() && !IsStatic());
+            !(IsInterface() && !IsStatic()) &&
+            // EnC methods use precode
+            !InEnCEnabledModule();
 #else
         // Entry point slot backpatch is disabled for CrossGen
         return false;
@@ -1473,10 +1491,9 @@ public:
     void TrySetInitialCodeEntryPointForVersionableMethod(PCODE entryPoint, bool mayHaveEntryPointSlotsToBackpatch);
 #endif // FEATURE_CODE_VERSIONING
     void SetCodeEntryPoint(PCODE entryPoint);
-#ifdef FEATURE_TIERED_COMPILATION
+#ifdef FEATURE_CODE_VERSIONING
     void ResetCodeEntryPoint();
-#endif // FEATURE_TIERED_COMPILATION
-    void ResetCodeEntryPointForEnC();
+#endif // FEATURE_CODE_VERSIONING
 
 
 public:
@@ -1501,7 +1518,7 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        return !IsVersionable() && !InEnCEnabledModule();
+        return !IsVersionable();
     }
 
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
@@ -1595,7 +1612,7 @@ public:
     // indirect call via slot in this case.
     PCODE TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags);
 
-    MethodDesc* GetMethodDescOfVirtualizedCode(OBJECTREF *orThis, TypeHandle staticTH);
+    MethodDesc* GetMethodDescOfVirtualizedCode(OBJECTREF *orThis, MethodTable* pMTOfThis, TypeHandle staticTH);
     // These return an address after resolving "virtual methods" correctly, including any
     // handling of context proxies, other thunking layers and also including
     // instantiation of generic virtual methods if required.
@@ -1605,8 +1622,8 @@ public:
     // The code that implements these was taken verbatim from elsewhere in the
     // codebase, and there may be subtle differences between the two, e.g. with
     // regard to thunking.
-    PCODE GetSingleCallableAddrOfVirtualizedCode(OBJECTREF *orThis, TypeHandle staticTH);
-    PCODE GetMultiCallableAddrOfVirtualizedCode(OBJECTREF *orThis, TypeHandle staticTH);
+    PCODE GetSingleCallableAddrOfVirtualizedCode(OBJECTREF *orThis, MethodTable* pMTOfThis, TypeHandle staticTH);
+    PCODE GetMultiCallableAddrOfVirtualizedCode(OBJECTREF *orThis, MethodTable* pMTOfThis, TypeHandle staticTH);
 
 #ifndef DACCESS_COMPILE
     // The current method entrypoint. It is simply the value of the current method slot.
@@ -1822,7 +1839,7 @@ public:
     // Given an object and an method descriptor for an instantiation of
     // a virtualized generic method, get the
     // corresponding instantiation of the target of a call.
-    MethodDesc *ResolveGenericVirtualMethod(OBJECTREF *orThis);
+    MethodDesc *ResolveGenericVirtualMethod(OBJECTREF *orThis, MethodTable* pMTOfThis);
 
 #if defined(TARGET_X86) && defined(HAVE_GCCOVER)
 public:
@@ -1839,7 +1856,7 @@ public:
     // but the additional weirdness that class-based-virtual calls (but not interface calls nor calls
     // on proxies) are resolved to their target.  Because of this, many clients of "Call" (see above)
     // end up doing some resolution for interface calls and/or proxies themselves.
-    PCODE GetCallTarget(OBJECTREF* pThisObj, TypeHandle ownerType = TypeHandle());
+    PCODE GetCallTarget(OBJECTREF* pThisObj, MethodTable *pMTThis, TypeHandle ownerType = TypeHandle());
 
     MethodImpl *GetMethodImpl();
 
@@ -2969,7 +2986,11 @@ public:
     DPTR(struct InterpreterPrecode) m_interpreterPrecode;
 #endif
 
-    // [cDAC] [RuntimeTypeSystem]: Contract depends on the values of StubPInvokeVarArg and StubCLRToCOMInterop.
+    // [cDAC] [RuntimeTypeSystem]: Contract depends on the values of StubPInvokeVarArg and the
+    // retired value 6 (StubCLRToCOMInterop).
+    // The values marked unused below were retired once CLR->COM calls started being compiled as
+    // transient IL on the CLR->COM MethodDesc itself instead of a separate IL stub MethodDesc. The
+    // cDAC still reads them when inspecting older runtimes, so they must not be reused.
     enum ILStubType : DWORD
     {
         StubNotSet = 0,
@@ -2978,7 +2999,7 @@ public:
         StubPInvokeCalli = 3,
         StubPInvokeVarArg = 4,
         StubReversePInvoke = 5,
-        StubCLRToCOMInterop = 6,
+        // unused           = 6, // was StubCLRToCOMInterop
         StubCOMToCLRInterop = 7,
         StubStructMarshalInterop = 8,
         StubArrayOp = 9,
@@ -2995,7 +3016,7 @@ public:
 
         StubAsyncResume = 18,
 
-        StubCLRToCOMEvent = 19,
+        // unused           = 19, // was StubCLRToCOMEvent
         StubLast = 20
     };
 
@@ -3127,17 +3148,11 @@ public:
 
         ILStubType type = GetILStubType();
 
-        isStepThrough = type == StubUnboxingIL || type == StubInstantiating || type == StubCLRToCOMEvent;
+        isStepThrough = type == StubUnboxingIL || type == StubInstantiating;
 
         return isStepThrough;
     }
 
-    bool IsCLRToCOMStub() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(IsILStub());
-        return GetILStubType() == StubCLRToCOMInterop;
-    }
     bool IsCOMToCLRStub() const
     {
         LIMITED_METHOD_CONTRACT;
@@ -3206,7 +3221,7 @@ public:
     bool HasMDContextArg() const
     {
         LIMITED_METHOD_CONTRACT;
-        return IsCLRToCOMStub() || IsPInvokeVarArgStub();
+        return IsPInvokeVarArgStub();
     }
 
     //
@@ -3470,12 +3485,6 @@ public:
 
     BOOL HasDefaultDllImportSearchPathsAttribute();
 
-    BOOL IsDefaultDllImportSearchPathsAttributeCached()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_wPInvokeFlags & kDefaultDllImportSearchPathsIsCached) != 0;
-    }
-
     BOOL IsPopulated()
     {
         LIMITED_METHOD_CONTRACT;
@@ -3615,9 +3624,6 @@ struct CLRToCOMCallInfo
     // EEImplMethodDesc that has already been initialized for COM interop.
     inline static CLRToCOMCallInfo *FromMethodDesc(MethodDesc *pMD);
 
-    // IL stub for CLR to COM call
-    PCODE m_pILStub;
-
     // MethodDesc of the COM event provider to forward the call to (COM event interfaces)
     MethodDesc *m_pEventProviderMD;
 
@@ -3635,12 +3641,6 @@ struct CLRToCOMCallInfo
     // caching but I'm not sure I know all the places these things are
     // created.)
     WORD        m_cachedComSlot;
-
-    PCODE * GetAddrOfILStubField()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return &m_pILStub;
-    }
 
 #ifdef TARGET_X86
     // Size of outgoing arguments (on stack). This is currently used only
@@ -3690,12 +3690,6 @@ public:
     CLRToCOMCallInfo *m_pCLRToCOMCallInfo; // initialized in code:CLRToCOMCall.PopulateCLRToCOMCallMethodDesc
 
     void InitComEventCallInfo();
-
-    PCODE * GetAddrOfILStubField()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pCLRToCOMCallInfo->GetAddrOfILStubField();
-    }
 
     MethodTable* GetInterfaceMethodTable()
     {
@@ -3939,9 +3933,6 @@ private:
     WORD          m_wNumGenericArgs;
 
 public:
-    static InstantiatedMethodDesc *FindOrCreateExactClassMethod(MethodTable *pExactMT,
-                                                                MethodDesc *pCanonicalMD);
-
     static InstantiatedMethodDesc* FindLoadedInstantiatedMethodDesc(MethodTable *pMT,
                                                                     mdMethodDef methodDef,
                                                                     Instantiation methodInst,

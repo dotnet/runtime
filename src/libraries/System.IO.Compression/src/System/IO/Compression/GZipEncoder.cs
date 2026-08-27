@@ -78,10 +78,9 @@ namespace System.IO.Compression
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="inputLength"/> is negative.</exception>
         public static long GetMaxCompressedLength(long inputLength)
         {
-            // compressBound() returns the upper bound for zlib-wrapped deflate, which includes
-            // 6 bytes of zlib overhead (2-byte header + 4-byte Adler32 trailer).
-            // GZip format uses 18 bytes of overhead (10-byte header + 8-byte CRC32/size trailer),
-            // which is 12 bytes more than the zlib overhead already included in compressBound().
+            // DeflateEncoder.GetMaxCompressedLength() returns the bound for zlib-wrapped deflate,
+            // where wrap length is at most 6 bytes. GZip format uses 18 bytes of overhead, which is
+            // 12 bytes more than the conservative zlib overhead already included in that bound.
             long maxCompressedLength = DeflateEncoder.GetMaxCompressedLength(inputLength);
 
             if (maxCompressedLength > long.MaxValue - 12)
@@ -117,6 +116,19 @@ namespace System.IO.Compression
         {
             EnsureNotDisposed();
             return _deflateEncoder.Flush(destination, out bytesWritten);
+        }
+
+        /// <summary>
+        /// Resets the encoder to its initial state so the same instance can be reused for a new, independent compression operation.
+        /// </summary>
+        /// <remarks>
+        /// The encoder keeps the compression quality and window size it was created with. Any pending output or unflushed input from a previous, unfinished compression is discarded.
+        /// </remarks>
+        /// <exception cref="ObjectDisposedException">The encoder has been disposed.</exception>
+        public void Reset()
+        {
+            EnsureNotDisposed();
+            _deflateEncoder.Reset();
         }
 
         /// <summary>

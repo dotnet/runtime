@@ -130,12 +130,12 @@ BYTE*  NativeWalker::SetupOrSimulateInstructionForPatchSkip(T_CONTEXT * context,
         {
             offset = offset << 12;
             finalAddr = (PCODE)(address + offset) & ~0xFFF;
-            LOG((LF_CORDB, LL_INFO100000, "Arm64Walker::Simulate opcode: %x to ADRP X%d %p finalAddr = %p\n", opcode, RegNum, offset, finalAddr));
+            LOG((LF_CORDB, LL_INFO100000, "Arm64Walker::Simulate opcode: %x to ADRP X%d %p finalAddr = %p\n", opcode, RegNum, (void*)(size_t)offset, (void*)(size_t)finalAddr));
         }
         else
         {
             finalAddr = (PCODE)(address + offset);
-            LOG((LF_CORDB, LL_INFO100000, "Arm64Walker::Simulate opcode: %x to ADR X%d %p finalAddr = %p\n", opcode, RegNum, offset, finalAddr));
+            LOG((LF_CORDB, LL_INFO100000, "Arm64Walker::Simulate opcode: %x to ADR X%d %p finalAddr = %p\n", opcode, RegNum, (void*)(size_t)offset, (void*)(size_t)finalAddr));
         }
 
         CORDbgSetInstruction((CORDB_ADDRESS_TYPE *)patchBypass, 0xd503201f); //Add Nop in buffer
@@ -147,7 +147,7 @@ BYTE*  NativeWalker::SetupOrSimulateInstructionForPatchSkip(T_CONTEXT * context,
     {
         offset = Expand19bitoffset(opcode);
         RegNum = (opcode & 0x1F);
-        LOG((LF_CORDB, LL_INFO100000, "Arm64Walker::Simulate opcode: %x to LDR[SW] | PRFM X%d %p\n", opcode, RegNum, offset));
+        LOG((LF_CORDB, LL_INFO100000, "Arm64Walker::Simulate opcode: %x to LDR[SW] | PRFM X%d %p\n", opcode, RegNum, (void*)(size_t)offset));
     }
     else if (NativeWalker::DecodePCRelativeBranchInst(context,opcode, offset, walk))
     {
@@ -189,7 +189,7 @@ BYTE*  NativeWalker::SetupOrSimulateInstructionForPatchSkip(T_CONTEXT * context,
         if (walk == WALK_CALL) //initialize Lr
         {
             SetLR(context, (PCODE)address + MAX_INSTRUCTION_LENGTH);
-            LOG((LF_CORDB, LL_INFO100000, "Arm64Walker::Simulate opcode: %x  is a Call instr, setting LR to %p \n", opcode,GetLR(context)));
+            LOG((LF_CORDB, LL_INFO100000, "Arm64Walker::Simulate opcode: %x  is a Call instr, setting LR to %p \n", opcode, (void*)(size_t)GetLR(context)));
         }
     }
     else if(RegNum >= 0)
@@ -242,7 +242,7 @@ BYTE*  NativeWalker::SetupOrSimulateInstructionForPatchSkip(T_CONTEXT * context,
                 LOG((LF_CORDB, LL_INFO100000, "Arm64Walker::Simulate Unknown opcode: %x [LDR(litera,SIMD &FP)]  \n", opcode));
                 _ASSERTE(!("Arm64Walker::Simulated Unknown opcode"));
             }
-            LOG((LF_CORDB, LL_INFO100000, "Arm64Walker::Simulate loadedMemory [Hi: %ull, lo: %ull]\n", SimdRegContents.High, SimdRegContents.Low));
+            LOG((LF_CORDB, LL_INFO100000, "Arm64Walker::Simulate loadedMemory [Hi: %llx, lo: %llx]\n", (unsigned long long)SimdRegContents.High, (unsigned long long)SimdRegContents.Low));
 
         }
     }
@@ -286,12 +286,12 @@ BOOL  NativeWalker::DecodePCRelativeBranchInst(PT_CONTEXT context, const PRD_TYP
         if ((opcode & 0x80000000) != 0) //BL
         {
             walk = WALK_CALL;
-            LOG((LF_CORDB, LL_INFO100000, "Arm64Walker::Decoded opcode: %x to BL %p \n", opcode, offset));
+            LOG((LF_CORDB, LL_INFO100000, "Arm64Walker::Decoded opcode: %x to BL %p \n", opcode, (void*)(size_t)offset));
         }
         else
         {
             walk = WALK_BRANCH; //B
-            LOG((LF_CORDB, LL_INFO100000, "Arm64Walker::Decoded opcode: %x to B %p \n", opcode, offset));
+            LOG((LF_CORDB, LL_INFO100000, "Arm64Walker::Decoded opcode: %x to B %p \n", opcode, (void*)(size_t)offset));
         }
         return TRUE;
     }
@@ -330,7 +330,7 @@ BOOL  NativeWalker::DecodePCRelativeBranchInst(PT_CONTEXT context, const PRD_TYP
         {
             walk = WALK_BRANCH;
             offset = Expand19bitoffset(opcode);
-            LOG((LF_CORDB, LL_INFO100000, "Arm64Walker::Decoded opcode: %x to B.cond %p \n", opcode, offset));
+            LOG((LF_CORDB, LL_INFO100000, "Arm64Walker::Decoded opcode: %x to B.cond %p \n", opcode, (void*)(size_t)offset));
         }
         else // NOP
         {
@@ -371,7 +371,7 @@ BOOL  NativeWalker::DecodePCRelativeBranchInst(PT_CONTEXT context, const PRD_TYP
         {
             walk = WALK_BRANCH;
             offset = Expand19bitoffset(opcode);
-            LOG((LF_CORDB, LL_INFO100000, "Arm64Walker::Decoded opcode: %x to CB[N]Z X%d %p \n", opcode, RegNum, offset));
+            LOG((LF_CORDB, LL_INFO100000, "Arm64Walker::Decoded opcode: %x to CB[N]Z X%d %p \n", opcode, RegNum, (void*)(size_t)offset));
         }
         else // NOP
         {
@@ -412,7 +412,7 @@ BOOL  NativeWalker::DecodePCRelativeBranchInst(PT_CONTEXT context, const PRD_TYP
             {
                 offset = offset | 0xFFFFFFFFFFFF0000;
             }
-            LOG((LF_CORDB, LL_INFO100000, "Arm64Walker::Decoded opcode: %x to TB[N]Z X%d %p \n", opcode, RegNum, offset));
+            LOG((LF_CORDB, LL_INFO100000, "Arm64Walker::Decoded opcode: %x to TB[N]Z X%d %p \n", opcode, RegNum, (void*)(size_t)offset));
         }
         else // NOP
         {

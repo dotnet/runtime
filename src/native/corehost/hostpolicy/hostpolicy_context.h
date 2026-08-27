@@ -20,6 +20,7 @@ public:
     pal::string_t clr_path;
     host_mode_t host_mode;
     pal::string_t host_path;
+    pal::string_t invocation_name;
 
     bool breadcrumbs_enabled;
     mutable std::unordered_set<pal::string_t> breadcrumbs;

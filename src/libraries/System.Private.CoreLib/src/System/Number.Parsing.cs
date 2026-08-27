@@ -157,6 +157,8 @@ namespace System
         static abstract int CountDigits(TValue significand);
         static abstract int NumberBitsSignificand { get; }
         static abstract TValue NaNMask { get; }
+        static abstract TValue SNaNMask { get; }
+        static abstract TValue NaNPayloadMask { get; }
         static abstract TValue SignMask { get; }
         static abstract TValue G0G1Mask { get; }
         static abstract TValue G0ToGwPlus1ExponentMask { get; } //G0 to G(w+1)
@@ -176,10 +178,6 @@ namespace System
 
     internal static partial class Number
     {
-        private const int Int32Precision = 10;
-        private const int UInt32Precision = Int32Precision;
-        private const int Int64Precision = 19;
-        private const int UInt64Precision = 20;
         private const int Int128Precision = 39;
         private const int UInt128Precision = 39;
 
@@ -188,7 +186,7 @@ namespace System
 
         private const int FloatingPointMaxDenormalMantissaBits = 52;
 
-        private static unsafe bool TryNumberBufferToBinaryInteger<TInteger>(ref NumberBuffer number, ref TInteger value)
+        private static bool TryNumberBufferToBinaryInteger<TInteger>(ref NumberBuffer number, ref TInteger value)
             where TInteger : unmanaged, IBinaryIntegerParseAndFormatInfo<TInteger>
         {
             number.CheckConsistency();
@@ -200,9 +198,9 @@ namespace System
                 return false;
             }
 
-            byte* p = number.DigitsPtr;
+            ReadOnlySpan<byte> digits = number.Digits;
+            int pos = 0;
 
-            Debug.Assert(p != null);
             TInteger n = TInteger.Zero;
 
             while (--i >= 0)
@@ -214,9 +212,12 @@ namespace System
 
                 n = TInteger.MultiplyBy10(n);
 
-                if (*p != '\0')
+                byte digit = digits[pos];
+
+                if (digit != '\0')
                 {
-                    TInteger newN = n + TInteger.CreateTruncating(*p++ - '0');
+                    pos++;
+                    TInteger newN = n + TInteger.CreateTruncating(digit - '0');
 
                     if (!TInteger.IsSigned && (newN < n))
                     {
@@ -378,13 +379,14 @@ namespace System
                 }
                 else
                 {
-                    value = value.Slice(index);
-                    index = 0;
+                    // Slice a copy rather than reassigning value, so that index (and thus the number
+                    // of elements reported as consumed) stays relative to the original input.
+                    ReadOnlySpan<TChar> remaining = value.Slice(index);
 
                     ReadOnlySpan<TChar> positiveSign = info.PositiveSignTChar<TChar>();
                     ReadOnlySpan<TChar> negativeSign = info.NegativeSignTChar<TChar>();
 
-                    if (!positiveSign.IsEmpty && value.StartsWith(positiveSign))
+                    if (!positiveSign.IsEmpty && remaining.StartsWith(positiveSign))
                     {
                         index += positiveSign.Length;
 
@@ -394,7 +396,7 @@ namespace System
                         }
                         num = TChar.CastToUInt32(value[index]);
                     }
-                    else if (!negativeSign.IsEmpty && value.StartsWith(negativeSign))
+                    else if (!negativeSign.IsEmpty && remaining.StartsWith(negativeSign))
                     {
                         isNegative = true;
                         index += negativeSign.Length;
@@ -624,7 +626,7 @@ namespace System
             public static bool IsValidChar(uint ch) => (ch - '0') <= 1;
             public static uint FromChar(uint ch) => ch - '0';
             public static uint MaxDigitValue => 1;
-            public static unsafe int MaxDigitCount => sizeof(TInteger) * 8;
+            public static int MaxDigitCount => sizeof(TInteger) * 8;
             public static TInteger ShiftLeftForNextDigit(TInteger value) => value << 1;
         }
 
@@ -814,7 +816,7 @@ namespace System
                 {
                     ThrowFormatException(value);
                 }
-                ThrowOverflowException(SR.Overflow_Decimal);
+                ThrowDecimalOverflowException();
             }
 
             return result;
@@ -835,14 +837,18 @@ namespace System
             return result;
         }
 
-        internal static unsafe bool TryNumberToDecimal(ref NumberBuffer number, ref decimal value)
+        internal static bool TryNumberToDecimal(ref NumberBuffer number, ref decimal value)
         {
             number.CheckConsistency();
 
-            byte* p = number.DigitsPtr;
+            // Walk the digits as a span sliced to the digit count. Reading past the end yields
+            // the '\0' terminator, expressed here via the length so the JIT can prove each access
+            // in bounds and elide the checks.
+            ReadOnlySpan<byte> digits = number.Digits.Slice(0, number.DigitsCount);
+            int pos = 0;
             int e = number.Scale;
             bool sign = number.IsNegative;
-            uint c = *p;
+            uint c = PeekDigit(digits, pos);
             if (c == 0)
             {
                 // To avoid risking an app-compat issue with pre 4.5 (where some app was illegally using Reflection to examine the internal scale bits), we'll only force
@@ -860,7 +866,7 @@ namespace System
                 e--;
                 low64 *= 10;
                 low64 += c - '0';
-                c = *++p;
+                c = PeekDigit(digits, ++pos);
                 if (low64 >= ulong.MaxValue / 10)
                     break;
                 if (c == 0)
@@ -892,7 +898,7 @@ namespace System
                     low64 += c;
                     if (low64 < c)
                         high++;
-                    c = *++p;
+                    c = PeekDigit(digits, ++pos);
                 }
                 e--;
             }
@@ -901,7 +907,7 @@ namespace System
             {
                 if ((c == '5') && ((low64 & 1) == 0))
                 {
-                    c = *++p;
+                    c = PeekDigit(digits, ++pos);
 
                     bool hasZeroTail = !number.HasNonZeroTail;
 
@@ -916,7 +922,7 @@ namespace System
                     while ((c != 0) && hasZeroTail)
                     {
                         hasZeroTail &= c == '0';
-                        c = *++p;
+                        c = PeekDigit(digits, ++pos);
                     }
 
                     // We should either be at the end of the stream or have a non-zero tail
@@ -953,6 +959,11 @@ namespace System
                 value = new decimal((int)low64, (int)(low64 >> 32), (int)high, sign, (byte)-e);
             }
             return true;
+
+            // Returns the digit at pos, or '\0' once the digits are exhausted. Guarding the read
+            // with the unsigned length compare lets the JIT elide the bounds check.
+            static uint PeekDigit(ReadOnlySpan<byte> digits, int pos)
+                => (uint)pos < (uint)digits.Length ? digits[pos] : (byte)'\0';
         }
 
         internal static TFloat ParseFloat<TChar, TFloat>(ReadOnlySpan<TChar> value, NumberStyles styles, NumberFormatInfo info)
@@ -966,7 +977,7 @@ namespace System
             return result;
         }
 
-        internal static unsafe ParsingStatus TryParseDecimal<TChar>(ReadOnlySpan<TChar> value, NumberStyles styles, NumberFormatInfo info, out decimal result, out int elementsConsumed)
+        internal static ParsingStatus TryParseDecimal<TChar>(ReadOnlySpan<TChar> value, NumberStyles styles, NumberFormatInfo info, out decimal result, out int elementsConsumed)
             where TChar : unmanaged, IUtfChar<TChar>
         {
             NumberBuffer number = new NumberBuffer(NumberBufferKind.Decimal, stackalloc byte[DecimalNumberBufferLength]);
@@ -992,7 +1003,7 @@ namespace System
             where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
             where TValue : unmanaged, IBinaryInteger<TValue>
         {
-            NumberBuffer number = new NumberBuffer(NumberBufferKind.Decimal, stackalloc byte[TDecimal.BufferLength]);
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.DecimalIeee754, stackalloc byte[TDecimal.BufferLength]);
             result = default;
 
             if (!TryStringToNumber(value, styles, ref number, info, out elementsConsumed))
@@ -1101,17 +1112,15 @@ namespace System
         {
             if (typeof(TChar) == typeof(char))
             {
-                ReadOnlySpan<char> typedSpan = Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(span);
-                ReadOnlySpan<char> typedValue = Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(value);
-                return typedSpan.StartsWith(typedValue, comparisonType);
+                return Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(span)
+                    .StartsWith(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(value), comparisonType);
             }
             else
             {
                 Debug.Assert(typeof(TChar) == typeof(byte));
 
-                ReadOnlySpan<byte> typedSpan = Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(span);
-                ReadOnlySpan<byte> typedValue = Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(value);
-                return typedSpan.StartsWithUtf8(typedValue, comparisonType);
+                return Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(span)
+                    .StartsWithUtf8(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(value), comparisonType);
             }
         }
 
@@ -1120,17 +1129,15 @@ namespace System
         {
             if (typeof(TChar) == typeof(char))
             {
-                ReadOnlySpan<char> typedSpan = Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(span);
-                ReadOnlySpan<char> typedValue = Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(value);
-                return typedSpan.EqualsOrdinalIgnoreCase(typedValue);
+                return Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(span)
+                    .EqualsOrdinalIgnoreCase(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(value));
             }
             else
             {
                 Debug.Assert(typeof(TChar) == typeof(byte));
 
-                ReadOnlySpan<byte> typedSpan = Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(span);
-                ReadOnlySpan<byte> typedValue = Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(value);
-                return typedSpan.EqualsOrdinalIgnoreCaseUtf8(typedValue);
+                return Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(span)
+                    .EqualsOrdinalIgnoreCaseUtf8(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(value));
             }
         }
 
@@ -1571,7 +1578,7 @@ namespace System
             return true;
         }
 
-        internal static unsafe bool TryParseFloat<TChar, TFloat>(ReadOnlySpan<TChar> value, NumberStyles styles, NumberFormatInfo info, out TFloat result, out int elementsConsumed)
+        internal static bool TryParseFloat<TChar, TFloat>(ReadOnlySpan<TChar> value, NumberStyles styles, NumberFormatInfo info, out TFloat result, out int elementsConsumed)
             where TChar : unmanaged, IUtfChar<TChar>
             where TFloat : unmanaged, IBinaryFloatParseAndFormatInfo<TFloat>
         {
@@ -1735,9 +1742,9 @@ namespace System
         }
 
         [DoesNotReturn]
-        internal static void ThrowOverflowException(string message)
+        internal static void ThrowDecimalOverflowException()
         {
-            throw new OverflowException(message);
+            throw new OverflowException(SR.Overflow_Decimal);
         }
 
         internal static TFloat NumberToFloat<TFloat>(ref NumberBuffer number)

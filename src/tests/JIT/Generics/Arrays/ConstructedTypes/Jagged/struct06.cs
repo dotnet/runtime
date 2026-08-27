@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+namespace JitTest_Generics_Arrays_ConstructedTypes_Jagged_struct06;
+
 using System;
 using Xunit;
 
@@ -52,6 +54,7 @@ public class Test_struct06
 
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

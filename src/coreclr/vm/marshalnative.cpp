@@ -765,7 +765,7 @@ extern "C" IUnknown* QCALLTYPE MarshalNative_CreateAggregatedObject(IUnknown* pO
         COMPlusThrowArgumentException(W("o"), W("Argument_AlreadyACCW"));
 
     //get wrapper for the object, this could enable GC
-    CCWHolder pWrap =  ComCallWrapper::InlineGetWrapper(&oref);
+    CCWHolder pWrap{ ComCallWrapper::InlineGetWrapper(&oref) };
 
     // Aggregation support,
     pWrap->InitializeOuter(pOuter);
@@ -1177,7 +1177,7 @@ extern "C" VOID QCALLTYPE MarshalNative_ChangeWrapperHandleStrength(QCall::Objec
         OBJECTREF oref = otp.Get();
         GCPROTECT_BEGIN(oref);
 
-        CCWHolder pWrap = ComCallWrapper::InlineGetWrapper(&oref);
+        CCWHolder pWrap{ ComCallWrapper::InlineGetWrapper(&oref) };
 
         if (fIsWeak)
             pWrap->MarkHandleWeak();
