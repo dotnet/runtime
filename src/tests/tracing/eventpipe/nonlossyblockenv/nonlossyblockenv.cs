@@ -206,7 +206,8 @@ namespace Tracing.Tests.NonLossyBlockEnv
             Console.WriteLine($"Launching tracee: {psi.FileName} {string.Join(" ", psi.ArgumentList)}");
             Console.WriteLine($"  DOTNET_EventPipeBufferingMode={bufferingMode} DOTNET_EventPipeOutputStreaming={outputStreaming} DOTNET_EventPipeCircularMB={CircularMB}");
 
-            using Process process = Process.Start(psi);
+            using Process process = Process.Start(psi)
+                ?? throw new InvalidOperationException("Failed to start tracee process.");
             process.OutputDataReceived += (_, e) => { if (!string.IsNullOrEmpty(e.Data)) Console.WriteLine($"[tracee][stdout] {e.Data}"); };
             process.ErrorDataReceived += (_, e) => { if (!string.IsNullOrEmpty(e.Data)) Console.WriteLine($"[tracee][stderr] {e.Data}"); };
             process.BeginOutputReadLine();

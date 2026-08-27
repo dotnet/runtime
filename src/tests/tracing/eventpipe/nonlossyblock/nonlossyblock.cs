@@ -46,17 +46,23 @@ namespace Tracing.Tests.NonLossyBlockValidation
                 requestStackwalk: true,
                 bufferingMode: (EventPipeBufferingMode)2);
 
+            EventPipeSession session;
             try
             {
-                using EventPipeSession session = client.StartEventPipeSession(invalidModeConfig);
-                Logger.logger.Log("Server accepted an invalid buffering mode; expected it to be rejected.");
-                return -1;
+                session = client.StartEventPipeSession(invalidModeConfig);
             }
             catch (DiagnosticsClientException ex)
             {
                 Logger.logger.Log($"Server rejected invalid buffering mode as expected: {ex.GetType().Name}: {ex.Message}");
                 Logger.logger.Log("==Invalid buffering mode rejection: PASSED==");
                 return 100;
+            }
+
+            using (session)
+            {
+                Logger.logger.Log("Server accepted an invalid buffering mode; expected it to be rejected.");
+                session.Stop();
+                return -1;
             }
         }
 
