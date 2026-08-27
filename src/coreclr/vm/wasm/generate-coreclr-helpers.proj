@@ -78,8 +78,9 @@
     <Error Condition="'@(_ScanAssembly)' == ''"
            Text="No assemblies to scan were found in $(_ScanPath)." />
 
-    <!-- One option per line, name and value joined by a colon: that is how crossgen2 reads a
-         response file. Going through a response file rather than the command line keeps a
+    <!-- One token per line: that is how crossgen2 reads a response file, so an option carries its
+         value in the same token, name and value joined by a colon, rather than spilling onto the
+         next line. Going through a response file rather than the command line keeps a
          framework-sized closure off it, and leaves the exact invocation on disk to look at when a
          regenerated table is not what was expected. -->
     <ItemGroup>

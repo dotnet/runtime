@@ -166,13 +166,16 @@
 
     <Error Condition="'$(PortableCallHelpersGeneratorPath)' == ''"
            Text="crossgen2 was not found, so the portable call helpers cannot be generated. Set %24(PortableCallHelpersGeneratorPath) to a crossgen2 executable." />
+    <Error Condition="'$([System.IO.Path]::GetExtension(`$(PortableCallHelpersGeneratorPath)`))' == '.dll'"
+           Text="%24(PortableCallHelpersGeneratorPath) is '$(PortableCallHelpersGeneratorPath)'. It has to name a crossgen2 executable; an IL assembly cannot be launched directly." />
 
     <PropertyGroup>
       <_PortableCallHelpersGeneratorRsp>$(_WasiRelinkObjDir)callhelpers-generator.rsp</_PortableCallHelpersGeneratorRsp>
     </PropertyGroup>
 
-    <!-- One option per line, name and value joined by a colon: that is how crossgen2 reads a
-         response file. -->
+    <!-- One token per line: that is how crossgen2 reads a response file, so an option carries its
+         value in the same token, name and value joined by a colon, rather than spilling onto the
+         next line. -->
     <ItemGroup>
       <_PortableCallHelpersGeneratorArg Include="--targetos:wasi" />
       <_PortableCallHelpersGeneratorArg Include="--targetarch:wasm" />
