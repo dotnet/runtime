@@ -3356,7 +3356,7 @@ public:
         kLastError                      = 0x0080,   // setLastError keyword specified
         kNativeNoMangle                 = 0x0100,   // nomangle keyword specified
 
-        kVarArgs                        = 0x0200,
+        //unused                        = 0x0200,
         kStdCall                        = 0x0400,
         kThisCall                       = 0x0800,
 
@@ -3439,13 +3439,6 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
 
         return m_pszEntrypointName;
-    }
-
-    BOOL IsVarArgs() const
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        return (m_wPInvokeFlags & kVarArgs) != 0;
     }
 
     BOOL IsStdCall() const

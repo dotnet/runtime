@@ -4744,8 +4744,6 @@ namespace
         CONTRACTL_END;
 
         WORD ndirectflags = 0;
-        if (pNMD->IsVarArg())
-            ndirectflags |= PInvokeMethodDesc::kVarArgs;
 
         if (sigInfo.GetCharSet() == nltAnsi)
             ndirectflags |= PInvokeMethodDesc::kNativeAnsi;
