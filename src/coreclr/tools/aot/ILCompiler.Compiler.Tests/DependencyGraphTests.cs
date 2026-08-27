@@ -5,7 +5,10 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using ILCompiler.Dataflow;
+using ILCompiler.DependencyAnalysis;
+using ILCompiler.DependencyAnalysis.Wasm;
 using Internal.IL;
+using Internal.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
@@ -126,12 +129,75 @@ namespace ILCompiler.Compiler.Tests
             Assert.True(foundSomethingToCheck, "No invariants to check?");
         }
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void TentativeMethodNodeEmitsWasmCall(bool useRealBody)
+        {
+            var targetDetails = new TargetDetails(TargetArchitecture.Wasm32, TargetOS.Linux, TargetAbi.NativeAot);
+            var context = new CompilerTypeSystemContext(targetDetails, SharedGenericsMode.CanonicalReferenceTypes, DelegateFeature.All);
+
+            context.InputFilePaths = new Dictionary<string, string> {
+                { "Test.CoreLib", @"Test.CoreLib.dll" },
+                { "ILCompiler.Compiler.Tests.Assets", @"ILCompiler.Compiler.Tests.Assets.dll" },
+                };
+            context.ReferenceFilePaths = new Dictionary<string, string>();
+
+            context.SetSystemModule(context.GetModuleForSimpleName("Test.CoreLib"));
+            EcmaModule testModule = context.GetModuleForSimpleName("ILCompiler.Compiler.Tests.Assets");
+            MetadataType testType = testModule
+                .GetType("ILCompiler.Compiler.Tests.Assets"u8, "DependencyGraph"u8)
+                .GetNestedType("PInvokeCctorDependencyTest"u8);
+            MethodDesc method = testType.GetMethod("Entrypoint"u8, null);
+
+            var realBody = new MethodCodeNode(method);
+            ISymbolNode callTarget = useRealBody ?
+                realBody :
+                new ExternFunctionSymbolNode(new Utf8String("ThrowBodyRemoved"));
+            var node = new TestTentativeMethodNode(realBody, callTarget);
+            var emitter = new WasmEmitter(null, relocsOnly: false);
+
+            node.EmitCode(ref emitter);
+            Assert.IsAssignableFrom<IMethodCodeNodeWithTypeSignature>(node);
+
+            byte[] expected = useRealBody ?
+                [0x0C, 0x00, 0x20, 0x00, 0x20, 0x01, 0x12, 0x80, 0x80, 0x80, 0x80, 0x00, 0x0B] :
+                [0x0D, 0x00, 0x20, 0x00, 0x20, 0x01, 0x10, 0x80, 0x80, 0x80, 0x80, 0x00, 0x00, 0x0B];
+            ObjectNode.ObjectData objectData = emitter.Encode(node);
+            Assert.Equal(expected, objectData.Data);
+            Assert.Equal(1, objectData.Alignment);
+            Assert.Same(node, Assert.Single(objectData.DefinedSymbols));
+
+            Relocation relocation = Assert.Single(objectData.Relocs);
+            Assert.Equal(RelocType.WASM_FUNCTION_INDEX_LEB, relocation.RelocType);
+            Assert.Equal(7, relocation.Offset);
+            Assert.Same(callTarget, relocation.Target);
+        }
+
         private static MethodDesc GetMethodFromAttribute(CustomAttributeValue attr)
         {
             if (attr.NamedArguments.Length > 0)
                 throw new NotImplementedException(); // TODO: parse sig and instantiation
 
             return ((TypeDesc)attr.FixedArguments[0].Value).GetMethod(Encoding.UTF8.GetBytes((string)attr.FixedArguments[1].Value), null);
+        }
+
+        private sealed class TestTentativeMethodNode : TentativeMethodNode
+        {
+            private readonly ISymbolNode _target;
+
+            public TestTentativeMethodNode(IMethodBodyNode methodNode, ISymbolNode target)
+                : base(methodNode)
+            {
+                _target = target;
+            }
+
+            protected override ISymbolNode GetTarget(NodeFactory factory) => _target;
+
+            public void EmitCode(ref WasmEmitter emitter)
+            {
+                base.EmitCode(null, ref emitter, relocsOnly: false);
+            }
         }
     }
 }
