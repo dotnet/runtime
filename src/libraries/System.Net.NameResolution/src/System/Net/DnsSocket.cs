@@ -95,7 +95,11 @@ namespace System.Net
 
             try
             {
-                await ReceiveAsync(socket, new byte[1], s_socketFlagsPeek, cancellationToken).ConfigureAwait(false);
+                int bytesReceived = await ReceiveAsync(socket, new byte[1], s_socketFlagsPeek, cancellationToken).ConfigureAwait(false);
+                if (bytesReceived == 0)
+                {
+                    throw new SocketException((int)SocketError.ConnectionReset);
+                }
             }
             finally
             {

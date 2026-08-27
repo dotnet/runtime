@@ -32,11 +32,17 @@ namespace System.Net.NameResolution.Tests
             Assert.Throws<ArgumentNullException>(() => new DnsResolver(null!));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotAndroid))]
         public void DnsResolver_Construct_DefaultOptions_DoesNotThrow()
         {
             using DnsResolver r = new DnsResolver();
             Assert.NotNull(r);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAndroid))]
+        public void DnsResolver_Construct_DefaultOptions_ThrowsPlatformNotSupported()
+        {
+            Assert.Throws<PlatformNotSupportedException>(() => new DnsResolver());
         }
 
         [Fact]
@@ -166,7 +172,7 @@ namespace System.Net.NameResolution.Tests
             using DnsResolver r = new DnsResolver();
             CancellationTokenSource cts = new CancellationTokenSource();
             cts.Cancel();
-            await Assert.ThrowsAsync<TaskCanceledException>(() => r.ResolveAddressesAsync(TestHost, cts.Token));
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => r.ResolveAddressesAsync(TestHost, cts.Token));
         }
 
         // Regression test for the Windows 10 DnsQueryEx bug where an asynchronous query
