@@ -1905,6 +1905,4 @@ CDAC_GLOBALS_END()
 // does not have to rediscover them.
 //
 // - Delete GlobalAllocContext (and ::g_global_alloc_context) once the GC contract version is
-//   bumped to c2. The runtime allocates exclusively out of thread allocation contexts, so the
-//   global is permanently zeroed; c1 requires it, docs/design/datacontracts/GC.md already
-//   documents it as optional in c2, and the cDAC's GC_1 reads it with TryReadGlobalPointer.
+//   bumped to c2.
