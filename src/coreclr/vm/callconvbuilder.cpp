@@ -393,7 +393,6 @@ HRESULT CallConv::TryGetUnmanagedCallingConventionFromModOptSigStartingAtRetType
         LPCSTR typeName;
         if (*pWalk == ELEMENT_TYPE_CMOD_INTERNAL)
         {
-            // Skip internal modifiers
             pWalk++;
             if (pWalk + 1 + sizeof(void*) > pSig + cSig)
             {
@@ -405,10 +404,14 @@ HRESULT CallConv::TryGetUnmanagedCallingConventionFromModOptSigStartingAtRetType
             void* pType;
             pWalk += CorSigUncompressPointer(pWalk, &pType);
             TypeHandle type = TypeHandle::FromPtr(pType);
-            
-            if (!required)
+
+            // Calling conventions are only ever expressed as optional modifiers. A module
+            // independent signature encodes ELEMENT_TYPE_CMOD_OPT as an internal modifier with
+            // the "is required" byte cleared (see code:SigPointer::ConvertToInternalExactlyOne),
+            // so skip the required ones just like the token based case below does.
+            if (required)
                 continue;
-            
+
             tokenLookupModule = GetScopeHandle(type.GetModule());
             tk = type.GetCl();
         }
@@ -430,7 +433,7 @@ HRESULT CallConv::TryGetUnmanagedCallingConventionFromModOptSigStartingAtRetType
         }
 
         // Check for CallConv types specified in modopt
-        if (FAILED(GetNameOfTypeRefOrDef(pModule, tk, &typeNamespace, &typeName)))
+        if (FAILED(GetNameOfTypeRefOrDef(tokenLookupModule, tk, &typeNamespace, &typeName)))
             continue;
 
         if (::strcmp(typeNamespace, CMOD_CALLCONV_NAMESPACE) != 0)
