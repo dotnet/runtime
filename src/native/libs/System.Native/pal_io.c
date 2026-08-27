@@ -75,6 +75,9 @@ extern int     getpeereid(int, uid_t *__restrict__, gid_t *__restrict__);
 #endif
 
 #ifdef __linux__
+// The statx syscall was introduced in Linux 4.11, which is older than the oldest kernel shipped
+// by any of the supported distros, so neither a per-architecture __NR_statx definition nor a
+// run-time fallback for a missing syscall is needed.
 // Some libc implementations (e.g. glibc >= 2.28, musl >= 1.2) already declare `struct statx`
 // and the STATX_* constants in <sys/stat.h>. Only pull in <linux/stat.h> when that isn't the
 // case, to avoid conflicting redefinitions.
