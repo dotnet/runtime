@@ -19,7 +19,14 @@ void DECLSPEC_NORETURN ThrowCxxSystemError(DWORD errorCode);
 #else
 static void DECLSPEC_NORETURN ThrowCxxSystemError(DWORD errorCode)
 {
-    WRAPPER_NO_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
     ThrowWin32(errorCode);
 }
 #endif
@@ -61,6 +68,7 @@ Exception *GetExceptionFromCxxException()
     {
         NOTHROW;
         GC_NOTRIGGER;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -72,7 +80,8 @@ Exception *GetExceptionFromCxxException()
 
     Exception *result = NULL;
 
-    try
+    // EX_TRY also converts std::bad_alloc if allocating a non-OOM runtime Exception fails.
+    EX_TRY_CPP_ONLY
     {
         try
         {
@@ -148,15 +157,11 @@ Exception *GetExceptionFromCxxException()
             ThrowHR(COR_E_EXCEPTION);
         }
     }
-    catch (Exception *runtimeException)
+    EX_CATCH_CPP_ONLY
     {
-        result = runtimeException;
+        result = EXTRACT_EXCEPTION();
     }
-    // Allocating the runtime Exception for a non-OOM failure can itself run out of memory.
-    catch (const std::bad_alloc&)
-    {
-        result = Exception::GetOOMException();
-    }
+    EX_END_CATCH
 
     _ASSERTE(result != NULL);
     return result;

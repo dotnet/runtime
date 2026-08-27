@@ -9505,7 +9505,14 @@ UINT GetResourceIDForFileLoadExceptionHR(HRESULT hr)
 
 void DECLSPEC_NORETURN ThrowCxxSystemError(DWORD errorCode)
 {
-    WRAPPER_NO_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
     COMPlusThrowWin32(HRESULT_FROM_WIN32(errorCode));
 }
 
