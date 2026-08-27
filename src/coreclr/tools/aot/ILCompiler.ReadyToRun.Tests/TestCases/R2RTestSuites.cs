@@ -148,26 +148,22 @@ public class R2RTestSuites
             var webcilReader = Assert.IsType<WebcilImageReader>(reader.CompositeReader);
             Assert.True(webcilReader.IsWasmWrapped);
 
-            // WebAssembly caps a function type at 1000 parameters and 1000 results. A module
-            // declaring more is rejected by every engine, and the ReadyToRun runtime reacts by
-            // silently interpreting the whole assembly, so this must hold for the type section as
-            // a whole - an over-limit type left behind by a method that was not emitted is just
-            // as fatal as one in use.
+            // Must hold for the type section as a whole: an over-limit type left behind by a method
+            // that was not emitted is as fatal as one in use.
             WasmR2RAssert.GetMaxWasmFunctionTypeArity(webcilReader, out int maxParams, out int maxResults);
             Assert.InRange(maxParams, 0, WasmLimits.MaxFunctionParams);
             Assert.InRange(maxResults, 0, WasmLimits.MaxFunctionResults);
 
             List<ReadyToRunMethod> methods = R2RAssert.GetAllMethods(reader);
 
-            // The over-limit method and the method whose call site needs the same over-limit type
-            // are both left to the interpreter.
+            // The over-limit method and the one whose call site needs the same type are both left
+            // to the interpreter.
             Assert.DoesNotContain(methods, method =>
                 method.SignatureString.Contains("TooManyParameters", StringComparison.Ordinal));
             Assert.DoesNotContain(methods, method =>
                 method.SignatureString.Contains("CallsTooManyParameters", StringComparison.Ordinal));
 
-            // Everything else in the assembly is still compiled: declining costs only the methods
-            // that cannot be expressed, not the assembly's R2R coverage.
+            // Declining costs only those methods, not the assembly's R2R coverage.
             Assert.Contains(methods, method =>
                 method.SignatureString.Contains("AddIntegers", StringComparison.Ordinal));
             Assert.Contains(methods, method =>

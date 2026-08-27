@@ -635,10 +635,8 @@ public class WasmArgumentLayoutTests
         };
 
     /// <summary>
-    /// WebAssembly caps a function type at 1000 parameters, and every engine rejects a module
-    /// declaring more. Lowering adds hidden ABI parameters on top of the managed ones, so the
-    /// managed parameter count at which the limit trips is below 1000; the lowered count is what
-    /// has to be measured, not the managed one.
+    /// Lowering adds hidden ABI parameters, so the managed parameter count at which the 1000-param
+    /// wasm limit trips is below 1000. The lowered count is what has to be measured.
     /// </summary>
     [Theory]
     [InlineData(900, false)]
@@ -662,9 +660,8 @@ public class WasmArgumentLayoutTests
     }
 
     /// <summary>
-    /// The shape that triggered the silent loss of R2R for an entire assembly: an instance method
-    /// with 1000 parameters lowers to 1003 wasm parameters once the shadow stack pointer, 'this',
-    /// and the portable entrypoint are added.
+    /// An instance method with 1000 parameters lowers to 1003 once the shadow stack pointer,
+    /// 'this', and the portable entrypoint are added.
     /// </summary>
     [Fact]
     public void ThousandParameterInstanceSignatureExceedsWasmParameterLimit()
@@ -685,8 +682,8 @@ public class WasmArgumentLayoutTests
     }
 
     /// <summary>
-    /// Results are structurally capped at one by the lowering, so an ordinary signature must never
-    /// be reported as exceeding a limit on account of its return type.
+    /// Results are structurally capped at one, so an ordinary signature must never be reported as
+    /// exceeding a limit on account of its return type.
     /// </summary>
     [Fact]
     public void OrdinarySignatureIsWithinWasmLimits()

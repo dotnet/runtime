@@ -5,15 +5,12 @@ using System.Runtime.CompilerServices;
 
 namespace Webcil;
 
-// WebAssembly caps a function type at 1000 parameters, and a module declaring more is rejected by
-// every engine. Because the ReadyToRun runtime reacts to a module it cannot instantiate by silently
-// interpreting the whole assembly, emitting such a type costs the assembly all of its R2R coverage
-// with no error. crossgen2 must therefore decline the methods that would need one, and only those,
-// leaving the rest of the assembly compiled.
+// A wasm function type over 1000 parameters makes the module unloadable, and the ReadyToRun runtime
+// responds by silently interpreting the whole assembly. crossgen2 must decline the methods needing
+// one, and only those.
 public static class WasmWideSignatureModule
 {
-    // Lowers to 1002 wasm parameters (1000 + shadow stack pointer + portable entrypoint), over the
-    // limit, so this method must not be compiled.
+    // Lowers to 1002 params (1000 + shadow stack pointer + portable entrypoint), over the limit.
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static int TooManyParameters(
         int p000, int p001, int p002, int p003, int p004, int p005, int p006, int p007, int p008, int p009,
@@ -120,9 +117,7 @@ public static class WasmWideSignatureModule
         return p000 + p999;
     }
 
-    // Calls the over-limit method, so its call site needs the same oversized function type and it
-    // must not be compiled either. A narrow method containing a wide call site is the case that a
-    // check on the method's own signature alone would miss.
+    // A narrow method with a wide call site: the case a check on the method's own signature misses.
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static int CallsTooManyParameters()
     {
@@ -178,8 +173,7 @@ public static class WasmWideSignatureModule
             981, 982, 983, 984, 985, 986, 987, 988, 989, 990, 991, 992, 993, 994, 995, 996, 997, 998, 999);
     }
 
-    // Ordinary methods in the same assembly must still be compiled: the fix has to cost only the
-    // methods that cannot be expressed, not the assembly.
+    // Must still be compiled.
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static int AddIntegers(int left, int right)
     {

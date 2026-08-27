@@ -462,14 +462,9 @@ internal static class WasmR2RAssert
 
     /// <summary>
     /// Returns the largest parameter and result counts declared by any function type in the
-    /// image's type section, whether or not a function references it.
+    /// image's type section, whether or not a function references it. An over-limit type makes the
+    /// module unloadable simply by being declared, so it is invisible to a per-function check.
     /// </summary>
-    /// <remarks>
-    /// Scanning the type section rather than the per-function signatures is deliberate. An
-    /// over-limit type makes the module unloadable simply by being declared, so a type left behind
-    /// by a method that was never emitted is just as fatal as one in use, and is invisible to any
-    /// check that walks only the functions.
-    /// </remarks>
     public static void GetMaxWasmFunctionTypeArity(WebcilImageReader reader, out int maxParams, out int maxResults)
     {
         maxParams = 0;

@@ -11,10 +11,9 @@ using Internal.JitInterface;
 namespace ILCompiler.DependencyAnalysis.Wasm
 {
     /// <summary>
-    /// WebAssembly implementation limits that apply to every conforming engine.
-    /// A module violating one of these is rejected at instantiation time, which for a
-    /// ReadyToRun image means the runtime silently falls back to interpreting the whole
-    /// assembly. See https://webassembly.github.io/spec/js-api/#limits.
+    /// WebAssembly implementation limits, enforced by every conforming engine. A module violating
+    /// one is rejected at instantiation, which for a ReadyToRun image means the runtime silently
+    /// interprets the whole assembly. See https://webassembly.github.io/spec/js-api/#limits.
     /// </summary>
     public static class WasmLimits
     {
@@ -22,16 +21,12 @@ namespace ILCompiler.DependencyAnalysis.Wasm
         public const int MaxFunctionParams = 1000;
 
         /// <summary>
-        /// Maximum number of results a function type may declare. Signatures produced by the
-        /// ReadyToRun compiler currently have at most one result, so this is documentation
-        /// rather than a limit we can approach today.
+        /// Maximum number of results a function type may declare. ReadyToRun signatures have at
+        /// most one result today, so this cannot currently be approached.
         /// </summary>
         public const int MaxFunctionResults = 1000;
 
-        /// <summary>
-        /// Returns true if <paramref name="funcType"/> exceeds an implementation limit and so
-        /// cannot be emitted into a loadable module.
-        /// </summary>
+        /// <summary>Returns true if <paramref name="funcType"/> cannot be emitted into a loadable module.</summary>
         public static bool ExceedsLimits(in WasmFuncType funcType) =>
             funcType.Params.Types.Length > MaxFunctionParams ||
             funcType.Returns.Types.Length > MaxFunctionResults;

@@ -866,12 +866,8 @@ namespace Internal.JitInterface
                 {
                     WasmSignature wasmSig = WasmLowering.GetSignature(MethodBeingCompiled);
 
-                    // A function type over the wasm parameter limit makes the entire module
-                    // unloadable, which silently costs the assembly all of its R2R coverage.
-                    // Decline the method here so it is left to the interpreter. This check is
-                    // deliberately outside the UnmanagedCallersOnly test below, because those
-                    // methods also get a function type emitted for them, and it must run before
-                    // any signature-derived dependency is added.
+                    // Decline the method so it is left to the interpreter. Outside the
+                    // UnmanagedCallersOnly test below, since those also get a function type.
                     ThrowIfExceedsWasmLimits(wasmSig, "signature");
 
                     // For managed methods on Wasm, add an interpreter-to-R2R thunk so the
@@ -3748,12 +3744,9 @@ namespace Internal.JitInterface
 
         /// <summary>
         /// Declines to ReadyToRun-compile the current method when its lowered wasm signature
-        /// exceeds an implementation limit. Emitting such a function type produces a module that
-        /// no engine will instantiate, and the runtime responds by silently interpreting the
-        /// entire assembly, so declining here is strictly better: only this method is lost.
-        /// The caller passes a constant for <paramref name="what"/>, and the method being compiled
-        /// is formatted only on the failure path, because this runs for every wasm method and call
-        /// site and <see cref="MethodDesc.ToString"/> walks every parameter.
+        /// exceeds an implementation limit, leaving it to the interpreter. <paramref name="what"/>
+        /// is a constant and the method is formatted only on failure, since this runs for every
+        /// wasm method and call site.
         /// </summary>
         private void ThrowIfExceedsWasmLimits(in WasmSignature signature, string what)
         {
@@ -3765,15 +3758,11 @@ namespace Internal.JitInterface
                     $"{WasmLimits.MaxFunctionParams} parameters / {WasmLimits.MaxFunctionResults} results");
             }
         }
-
         private CORINFO_WASM_TYPE_SYMBOL_STRUCT_* getWasmTypeSymbol(CorInfoWasmType* types, nuint typesSize)
         {
             CorInfoWasmType[] typeArray = new ReadOnlySpan<CorInfoWasmType>(types, (int)typesSize).ToArray();
 
-            // The first entry is the return type and the rest are parameters; see
-            // WasmFuncType.FromCorInfoSignature. Declining here abandons the method being
-            // compiled, which is what we want: a caller that cannot express one of its call
-            // sites cannot be ReadyToRun-compiled at all.
+            // types[0] is the return type; see WasmFuncType.FromCorInfoSignature.
             int paramCount = typeArray.Length - 1;
             if (paramCount > WasmLimits.MaxFunctionParams)
             {
@@ -3817,10 +3806,8 @@ namespace Internal.JitInterface
 
                 WasmSignature wasmSig = WasmLowering.GetSignature(sig, flags);
 
-                // The delay-load import thunk for this call site derives its function type from
-                // the callee's signature at object-emission time, and is emitted only if some
-                // live method marks it. Declining the caller here is therefore what keeps the
-                // oversized thunk out of the image; see Import.OnMarked.
+                // The delay-load import thunk is emitted only if a live method marks it, so
+                // declining the caller is what keeps it out of the image. See Import.OnMarked.
                 ThrowIfExceedsWasmLimits(wasmSig, "call site");
 
                 // Only create R2R-to-interpreter thunks for managed calls.

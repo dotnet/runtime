@@ -46,12 +46,8 @@ namespace ILCompiler.DependencyAnalysis
                        definedSymbols: new ISymbolDefinitionNode[] { this });
             }
 
-            // Last line of defense. A function type over the wasm implementation limits makes the
-            // whole module unloadable, and the runtime responds by silently interpreting the
-            // entire assembly. Compilation is expected to have declined any method needing such a
-            // type long before we get here (see the wasm limit checks in CorInfoImpl.ReadyToRun),
-            // so reaching this point means a producer was missed. Fail the build loudly rather
-            // than emit an image that no engine will load.
+            // Compilation declines methods needing an over-limit type, so reaching this point means
+            // a producer was missed. Fail the build rather than emit an unloadable module.
             if (WasmLimits.ExceedsLimits(_type))
             {
                 throw new InvalidOperationException(
