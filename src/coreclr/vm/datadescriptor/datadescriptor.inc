@@ -1904,5 +1904,5 @@ CDAC_GLOBALS_END()
 // the contract version that requires it. Keep this list up to date so that the next version bump
 // does not have to rediscover them.
 //
-// - Delete GlobalAllocContext (and ::g_global_alloc_context) once the GC contract version is
-//   bumped to c2.
+// - Delete GlobalAllocContext (and ::g_global_alloc_context, together with its dacvars.h entry
+//   that keeps it captured in mini/triage dumps) once the GC contract version is bumped to c2.
