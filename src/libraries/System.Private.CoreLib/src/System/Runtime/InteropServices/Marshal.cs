@@ -693,7 +693,9 @@ namespace System.Runtime.InteropServices
             IntPtr errorInfo = NoErrorInfo;
 
 #if TARGET_WINDOWS
+#pragma warning disable CA1416 // Windows-only COM interop guarded by TARGET_WINDOWS.
             Interop.OleAut32.GetErrorInfo(0, out errorInfo);
+#pragma warning restore CA1416
             if (errorInfo == IntPtr.Zero)
             {
                 errorInfo = NoErrorInfo;

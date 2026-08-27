@@ -22,6 +22,8 @@ using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using System.StubHelpers;
 
+#pragma warning disable CA1416 // OLE Automation interop is only supported on Windows.
+
 namespace Microsoft.Win32
 {
     internal static unsafe partial class OAVariantLib

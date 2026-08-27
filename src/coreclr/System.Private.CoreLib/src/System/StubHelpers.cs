@@ -555,7 +555,9 @@ namespace System.StubHelpers
         {
             if (pVariant != IntPtr.Zero)
             {
+#pragma warning disable CA1416 // Windows-only COM interop guarded by FEATURE_COMINTEROP.
                 Interop.OleAut32.VariantClear(pVariant);
+#pragma warning restore CA1416
 
                 // VariantClear resets the instance to VT_EMPTY (0)
                 // COMPAT: Clear the remaining memory for compat. The instance remains set to VT_EMPTY (0).
