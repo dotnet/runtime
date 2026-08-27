@@ -312,20 +312,4 @@ namespace System.Net
             };
     }
 
-    // SafeHandle wrapping the DNSServiceRef returned by DNSServiceQueryRecord.
-    // Lives at file scope so Interop.Dnssd can marshal it via [LibraryImport].
-    internal sealed class SafeDnsServiceHandle : SafeHandle
-    {
-        // Public parameterless ctor required by the LibraryImport source generator
-        // to construct the SafeHandle for `out SafeDnsServiceHandle` parameters.
-        public SafeDnsServiceHandle() : base(IntPtr.Zero, ownsHandle: true) { }
-
-        public override bool IsInvalid => handle == IntPtr.Zero;
-
-        protected override bool ReleaseHandle()
-        {
-            Interop.Dnssd.DNSServiceRefDeallocate(handle);
-            return true;
-        }
-    }
 }

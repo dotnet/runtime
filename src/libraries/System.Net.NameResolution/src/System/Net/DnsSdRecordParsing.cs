@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Text;
 
@@ -50,14 +49,14 @@ namespace System.Net
 
         public static bool TryParseSrv(DnsSdRecord record, out SrvRecord parsed)
         {
-            ReadOnlySpan<byte> data = record.Data;
-            if (data.Length >= 7 && TryParseDnsName(data.Slice(6), out string target, out _))
+            DnsRecord dnsRecord = ToDnsRecord(record);
+            if (dnsRecord.TryParseSrvRecord(out DnsSrvRecordData srv))
             {
                 parsed = new SrvRecord(
-                    target,
-                    BinaryPrimitives.ReadUInt16BigEndian(data.Slice(4, 2)),
-                    BinaryPrimitives.ReadUInt16BigEndian(data.Slice(0, 2)),
-                    BinaryPrimitives.ReadUInt16BigEndian(data.Slice(2, 2)),
+                    srv.Target.ToString(),
+                    srv.Port,
+                    srv.Priority,
+                    srv.Weight,
                     TimeSpan.FromSeconds(record.Ttl),
                     // DNSServiceQueryRecord exposes only the queried record's rdata, not
                     // additional-section glue A/AAAA records.
@@ -71,10 +70,10 @@ namespace System.Net
 
         public static bool TryParseMx(DnsSdRecord record, out MxRecord parsed)
         {
-            ReadOnlySpan<byte> data = record.Data;
-            if (data.Length >= 3 && TryParseDnsName(data.Slice(2), out string exchange, out _))
+            DnsRecord dnsRecord = ToDnsRecord(record);
+            if (dnsRecord.TryParseMxRecord(out DnsMxRecordData mx))
             {
-                parsed = new MxRecord(exchange, BinaryPrimitives.ReadUInt16BigEndian(data.Slice(0, 2)), TimeSpan.FromSeconds(record.Ttl));
+                parsed = new MxRecord(mx.Exchange.ToString(), mx.Preference, TimeSpan.FromSeconds(record.Ttl));
                 return true;
             }
 
@@ -84,21 +83,17 @@ namespace System.Net
 
         public static bool TryParseTxt(DnsSdRecord record, out TxtRecord parsed)
         {
-            ReadOnlySpan<byte> data = record.Data;
-            List<string> values = new();
-            int offset = 0;
-
-            while (offset < data.Length)
+            DnsRecord dnsRecord = ToDnsRecord(record);
+            if (!dnsRecord.TryParseTxtRecord(out DnsTxtRecordData txt))
             {
-                int length = data[offset++];
-                if (length > data.Length - offset)
-                {
-                    parsed = default;
-                    return false;
-                }
+                parsed = default;
+                return false;
+            }
 
-                values.Add(Encoding.UTF8.GetString(data.Slice(offset, length)));
-                offset += length;
+            List<string> values = new();
+            foreach (ReadOnlySpan<byte> value in txt.EnumerateStrings())
+            {
+                values.Add(Encoding.UTF8.GetString(value));
             }
 
             parsed = new TxtRecord(values, TimeSpan.FromSeconds(record.Ttl));
@@ -107,9 +102,10 @@ namespace System.Net
 
         public static bool TryParseCName(DnsSdRecord record, out CNameRecord parsed)
         {
-            if (TryParseDnsName(record.Data, out string name, out _))
+            DnsRecord dnsRecord = ToDnsRecord(record);
+            if (dnsRecord.TryParseCNameRecord(out DnsCNameRecordData cname))
             {
-                parsed = new CNameRecord(name, TimeSpan.FromSeconds(record.Ttl));
+                parsed = new CNameRecord(cname.CName.ToString(), TimeSpan.FromSeconds(record.Ttl));
                 return true;
             }
 
@@ -119,9 +115,10 @@ namespace System.Net
 
         public static bool TryParsePtr(DnsSdRecord record, out PtrRecord parsed)
         {
-            if (TryParseDnsName(record.Data, out string name, out _))
+            DnsRecord dnsRecord = ToDnsRecord(record);
+            if (dnsRecord.TryParsePtrRecord(out DnsPtrRecordData ptr))
             {
-                parsed = new PtrRecord(name, TimeSpan.FromSeconds(record.Ttl));
+                parsed = new PtrRecord(ptr.Name.ToString(), TimeSpan.FromSeconds(record.Ttl));
                 return true;
             }
 
@@ -131,9 +128,10 @@ namespace System.Net
 
         public static bool TryParseNs(DnsSdRecord record, out NsRecord parsed)
         {
-            if (TryParseDnsName(record.Data, out string name, out _))
+            DnsRecord dnsRecord = ToDnsRecord(record);
+            if (dnsRecord.TryParseNsRecord(out DnsNsRecordData ns))
             {
-                parsed = new NsRecord(name, TimeSpan.FromSeconds(record.Ttl));
+                parsed = new NsRecord(ns.Name.ToString(), TimeSpan.FromSeconds(record.Ttl));
                 return true;
             }
 
@@ -141,17 +139,8 @@ namespace System.Net
             return false;
         }
 
-        private static bool TryParseDnsName(ReadOnlySpan<byte> data, out string name, out int bytesConsumed)
-        {
-            if (DnsEncodedName.TryParse(data, 0, out DnsEncodedName encodedName, out bytesConsumed))
-            {
-                name = encodedName.ToString();
-                return true;
-            }
-
-            name = string.Empty;
-            bytesConsumed = 0;
-            return false;
-        }
+        private static DnsRecord ToDnsRecord(DnsSdRecord record) =>
+            new DnsRecord(default, (DnsRecordType)record.Type, DnsRecordClass.Internet,
+                record.Ttl, record.Data, record.Data, 0);
     }
 }

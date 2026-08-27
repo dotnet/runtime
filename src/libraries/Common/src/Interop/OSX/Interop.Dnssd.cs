@@ -5,6 +5,7 @@ using System;
 using System.Net;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
 {
@@ -59,5 +60,16 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.libSystem)]
         internal static partial void DNSServiceRefDeallocate(IntPtr sdRef);
+    }
+}
+
+internal sealed class SafeDnsServiceHandle : SafeHandleZeroOrMinusOneIsInvalid
+{
+    public SafeDnsServiceHandle() : base(ownsHandle: true) { }
+
+    protected override bool ReleaseHandle()
+    {
+        Interop.Dnssd.DNSServiceRefDeallocate(handle);
+        return true;
     }
 }
