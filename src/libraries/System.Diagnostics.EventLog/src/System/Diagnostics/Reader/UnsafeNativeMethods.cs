@@ -450,6 +450,9 @@ namespace Microsoft.Win32
             EvtSeekStrict = 0x10000
         }
 
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Interop.Libraries.Wevtapi, SetLastError = true)]
         internal static partial EventLogHandle EvtQuery(
                             EventLogHandle session,
@@ -458,6 +461,9 @@ namespace Microsoft.Win32
                             int flags);
 
         // SEEK
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Interop.Libraries.Wevtapi, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool EvtSeek(
@@ -467,6 +473,9 @@ namespace Microsoft.Win32
                             int timeout,
                             EvtSeekFlags flags);
 
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Interop.Libraries.Wevtapi, SetLastError = true)]
         internal static partial EventLogHandle EvtSubscribe(
                             EventLogHandle session,
@@ -478,6 +487,9 @@ namespace Microsoft.Win32
                             IntPtr callback,
                             int flags);
 
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Interop.Libraries.Wevtapi, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool EvtNext(
@@ -488,14 +500,23 @@ namespace Microsoft.Win32
                             int flags,
                             ref int returned);
 
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Interop.Libraries.Wevtapi, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool EvtCancel(EventLogHandle handle);
 
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Interop.Libraries.Wevtapi)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool EvtClose(IntPtr handle);
 
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Interop.Libraries.Wevtapi, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool EvtGetEventInfo(
@@ -505,6 +526,9 @@ namespace Microsoft.Win32
                             IntPtr bufferPtr,
                             out int bufferUsed);
 
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Interop.Libraries.Wevtapi, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool EvtGetQueryInfo(
@@ -515,6 +539,9 @@ namespace Microsoft.Win32
                             ref int bufferRequired);
 
         // PUBLISHER METADATA
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Interop.Libraries.Wevtapi, SetLastError = true)]
         internal static partial EventLogHandle EvtOpenPublisherMetadata(
                             EventLogHandle session,
@@ -523,6 +550,9 @@ namespace Microsoft.Win32
                             int locale,
                             int flags);
 
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Interop.Libraries.Wevtapi, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool EvtGetPublisherMetadataProperty(
@@ -535,12 +565,18 @@ namespace Microsoft.Win32
 
         // NEW
 
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Interop.Libraries.Wevtapi, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool EvtGetObjectArraySize(
                             EventLogHandle objectArray,
                             out int objectArraySize);
 
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Interop.Libraries.Wevtapi, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool EvtGetObjectArrayProperty(
@@ -553,16 +589,25 @@ namespace Microsoft.Win32
                             out int propertyValueBufferUsed);
 
         // NEW 2
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Interop.Libraries.Wevtapi, SetLastError = true)]
         internal static partial EventLogHandle EvtOpenEventMetadataEnum(
                             EventLogHandle publisherMetadata,
                             int flags);
 
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Interop.Libraries.Wevtapi, SetLastError = true)]
         internal static partial EventLogHandle EvtNextEventMetadata(
                             EventLogHandle eventMetadataEnum,
                             int flags);
 
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Interop.Libraries.Wevtapi, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool EvtGetEventMetadataProperty(
@@ -575,11 +620,17 @@ namespace Microsoft.Win32
 
         // Channel Configuration Native Api
 
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Interop.Libraries.Wevtapi, SetLastError = true)]
         internal static partial EventLogHandle EvtOpenChannelEnum(
                             EventLogHandle session,
                             int flags);
 
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Interop.Libraries.Wevtapi, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool EvtNextChannelPath(
@@ -588,11 +639,17 @@ namespace Microsoft.Win32
                             [Out] char[]? channelPathBuffer,
                             out int channelPathBufferUsed);
 
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Interop.Libraries.Wevtapi, SetLastError = true)]
         internal static partial EventLogHandle EvtOpenPublisherEnum(
                             EventLogHandle session,
                             int flags);
 
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Interop.Libraries.Wevtapi, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool EvtNextPublisherId(
@@ -601,18 +658,27 @@ namespace Microsoft.Win32
                             [Out] char[]? publisherIdBuffer,
                             out int publisherIdBufferUsed);
 
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Interop.Libraries.Wevtapi, SetLastError = true)]
         internal static partial EventLogHandle EvtOpenChannelConfig(
                             EventLogHandle session,
                             [MarshalAs(UnmanagedType.LPWStr)] string channelPath,
                             int flags);
 
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Interop.Libraries.Wevtapi, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool EvtSaveChannelConfig(
                             EventLogHandle channelConfig,
                             int flags);
 
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Interop.Libraries.Wevtapi, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool EvtSetChannelConfigProperty(
@@ -621,6 +687,9 @@ namespace Microsoft.Win32
                             int flags,
                             ref EvtVariant propertyValue);
 
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Interop.Libraries.Wevtapi, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool EvtGetChannelConfigProperty(
@@ -633,12 +702,18 @@ namespace Microsoft.Win32
 
         // Log Information Native Api
 
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Interop.Libraries.Wevtapi, SetLastError = true)]
         internal static partial EventLogHandle EvtOpenLog(
                             EventLogHandle session,
                             [MarshalAs(UnmanagedType.LPWStr)] string path,
                             PathType flags);
 
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Interop.Libraries.Wevtapi, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool EvtGetLogInfo(
@@ -650,6 +725,9 @@ namespace Microsoft.Win32
 
         // LOG MANIPULATION
 
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Interop.Libraries.Wevtapi, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool EvtExportLog(
@@ -659,6 +737,9 @@ namespace Microsoft.Win32
                             [MarshalAs(UnmanagedType.LPWStr)] string targetFilePath,
                             int flags);
 
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Interop.Libraries.Wevtapi, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool EvtArchiveExportedLog(
@@ -667,6 +748,9 @@ namespace Microsoft.Win32
                             int locale,
                             int flags);
 
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Interop.Libraries.Wevtapi, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool EvtClearLog(
@@ -676,6 +760,9 @@ namespace Microsoft.Win32
                             int flags);
 
         // RENDERING
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Interop.Libraries.Wevtapi, SetLastError = true)]
         internal static partial EventLogHandle EvtCreateRenderContext(
                             int valuePathsCount,
@@ -683,6 +770,9 @@ namespace Microsoft.Win32
                                 string[]? valuePaths,
                             EvtRenderContextFlags flags);
 
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Interop.Libraries.Wevtapi, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool EvtRender(
@@ -694,6 +784,9 @@ namespace Microsoft.Win32
                             out int buffUsed,
                             out int propCount);
 
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Interop.Libraries.Wevtapi, EntryPoint = "EvtRender", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool EvtRender(
@@ -762,6 +855,9 @@ namespace Microsoft.Win32
 #endif
         };
 
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Interop.Libraries.Wevtapi, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool EvtFormatMessage(
@@ -775,6 +871,9 @@ namespace Microsoft.Win32
                              Span<char> buffer,
                              out int bufferUsed);
 
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Interop.Libraries.Wevtapi, EntryPoint = "EvtFormatMessage", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool EvtFormatMessageBuffer(
@@ -789,6 +888,9 @@ namespace Microsoft.Win32
                              out int bufferUsed);
 
         // SESSION
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Interop.Libraries.Wevtapi, SetLastError = true)]
         internal static partial EventLogHandle EvtOpenSession(
                             EvtLoginClass loginClass,
@@ -797,10 +899,16 @@ namespace Microsoft.Win32
                             int flags);
 
         // BOOKMARK
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Interop.Libraries.Wevtapi, EntryPoint = "EvtCreateBookmark", SetLastError = true)]
         internal static partial EventLogHandle EvtCreateBookmark(
                             [MarshalAs(UnmanagedType.LPWStr)] string? bookmarkXml);
 
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Interop.Libraries.Wevtapi, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool EvtUpdateBookmark(

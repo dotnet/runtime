@@ -13,6 +13,9 @@ namespace System.Data.Common
         // Oleaut32
         //
 
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Interop.Libraries.OleAut32)]
         internal static unsafe partial OleDbHResult GetErrorInfo(
             int dwReserved,

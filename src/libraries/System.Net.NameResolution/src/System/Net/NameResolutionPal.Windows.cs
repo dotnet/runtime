@@ -184,6 +184,9 @@ namespace System.Net
             return state.Task;
         }
 
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [UnmanagedCallersOnly]
         private static unsafe void GetAddressInfoExCallback(int error, int bytes, NativeOverlapped* overlapped)
         {
