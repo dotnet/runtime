@@ -253,7 +253,22 @@ namespace Tracing.Tests.RundownValidation
         private static bool HaveMatchingStubBlocks(List<HelperEvent> liveStubBlocks, List<HelperEvent> rundownStubBlocks)
         {
             return liveStubBlocks.Any(live =>
-                rundownStubBlocks.Any(rundown => AreMatchingStubBlocks(live, rundown)));
+                rundownStubBlocks.Any(rundown => DoesRundownStubContainLiveStub(live, rundown)));
+        }
+
+        private static bool DoesRundownStubContainLiveStub(HelperEvent live, HelperEvent rundown)
+        {
+            if (!ValidateHelperEvent(live) ||
+                !ValidateHelperEvent(rundown) ||
+                live.StartAddress != rundown.StartAddress ||
+                live.Name != rundown.Name)
+            {
+                return false;
+            }
+
+            // Live events report the requested CodeFragmentHeap block size, while rundown bounds
+            // the block by the next aligned allocation and can therefore include alignment padding.
+            return rundown.StartAddress + (uint)rundown.Size >= live.StartAddress + (uint)live.Size;
         }
 
         private static bool HaveMatchingLoadForEveryUnload(
