@@ -639,6 +639,63 @@ class PInvokeStubManager : public StubManager
 #endif
 };
 
+#ifdef FEATURE_COMINTEROP
+//
+// This is the stub manager for CLR->COM calls.
+// It handles addresses that map to a CLRToCOMCallMethodDesc.
+//
+typedef VPTR(class CLRToCOMStubManager) PTR_CLRToCOMStubManager;
+
+class CLRToCOMStubManager : public StubManager
+{
+    VPTR_VTABLE_CLASS(CLRToCOMStubManager, StubManager)
+
+  public:
+    static void Init();
+
+#ifndef DACCESS_COMPILE
+    CLRToCOMStubManager() : StubManager() {WRAPPER_NO_CONTRACT;}
+    ~CLRToCOMStubManager()
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_NOTRIGGER;
+            CAN_TAKE_LOCK;     // StubManager::UnlinkStubManager uses a crst
+        }
+        CONTRACTL_END;
+    }
+#endif
+
+   public:
+
+#ifdef _DEBUG
+    virtual const char * DbgGetName() { LIMITED_METHOD_CONTRACT; return "CLRToCOMStubManager"; }
+#endif
+
+    virtual BOOL CheckIsStub_Internal(PCODE stubStartAddress);
+
+  private:
+
+    virtual BOOL DoTraceStub(PCODE stubStartAddress, TraceDestination *trace);
+
+#ifndef DACCESS_COMPILE
+    virtual BOOL TraceManager(Thread *thread,
+                              TraceDestination *trace,
+                              T_CONTEXT *pContext,
+                              BYTE **pRetAddr);
+#endif
+
+#ifdef DACCESS_COMPILE
+    virtual void DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags);
+
+  protected:
+    virtual LPCWSTR GetStubManagerName(PCODE addr)
+        { LIMITED_METHOD_CONTRACT; return W("CLRToCOMStub"); }
+#endif
+};
+#endif // FEATURE_COMINTEROP
+
 // This is used to recognize
 //   VarargPInvokeStub()
 typedef VPTR(class InteropDispatchStubManager) PTR_InteropDispatchStubManager;
