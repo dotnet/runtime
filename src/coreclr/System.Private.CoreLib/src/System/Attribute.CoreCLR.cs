@@ -6,6 +6,10 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
+#if NATIVEAOT
+using Internal.Reflection.Augments;
+#endif
+
 namespace System
 {
     public abstract partial class Attribute
@@ -80,13 +84,18 @@ namespace System
             return false;
         }
 
+#if !NATIVEAOT
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
             Justification = "rtPropAccessor.DeclaringType is guaranteed to have the specified property because " +
                 "rtPropAccessor.GetParentDefinition() returned a non-null MethodInfo.")]
+#endif
         private static PropertyInfo? GetParentDefinition(PropertyInfo property, Type[] propertyParameters)
         {
             Debug.Assert(property != null);
 
+#if NATIVEAOT
+            return ReflectionAugments.GetImplicitlyOverriddenBaseClassProperty(property);
+#else
             // for the current property get the base class of the getter and the setter, they might be different
             // note that this only works for RuntimeMethodInfo
             MethodInfo? propAccessor = property.GetGetMethod(true) ?? property.GetSetMethod(true);
@@ -112,6 +121,7 @@ namespace System
             }
 
             return null;
+#endif
         }
 
         #endregion
@@ -154,13 +164,18 @@ namespace System
             return array;
         }
 
+#if !NATIVEAOT
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
             Justification = "rtAdd.DeclaringType is guaranteed to have the specified event because " +
                 "rtAdd.GetParentDefinition() returned a non-null MethodInfo.")]
+#endif
         private static EventInfo? GetParentDefinition(EventInfo ev)
         {
             Debug.Assert(ev != null);
 
+#if NATIVEAOT
+            return ReflectionAugments.GetImplicitlyOverriddenBaseClassEvent(ev);
+#else
             // note that this only works for RuntimeMethodInfo
             MethodInfo? add = ev.GetAddMethod(true);
 
@@ -173,6 +188,7 @@ namespace System
                     return rtAdd.DeclaringType!.GetEvent(ev.Name);
             }
             return null;
+#endif
         }
 
         private static bool InternalIsDefined(EventInfo element, Type attributeType, bool inherit)
@@ -210,6 +226,18 @@ namespace System
         {
             Debug.Assert(param != null);
 
+#if NATIVEAOT
+            MethodInfo? method = param.Member as MethodInfo;
+            if (method == null)
+                return null;
+
+            MethodInfo? parentMethod = ReflectionAugments.GetImplicitlyOverriddenBaseClassMethod(method);
+            if (parentMethod == null)
+                return null;
+
+            int position = param.Position;
+            return position == -1 ? parentMethod.ReturnParameter : parentMethod.GetParametersAsSpan()[position];
+#else
             // note that this only works for RuntimeMethodInfo
             RuntimeMethodInfo? rtMethod = param.Member as RuntimeMethodInfo;
 
@@ -232,6 +260,7 @@ namespace System
                 }
             }
             return null;
+#endif
         }
 
         private static Attribute[] InternalParamGetCustomAttributes(ParameterInfo param, Type? type, bool inherit)
@@ -433,6 +462,8 @@ namespace System
                 SR.Format(SR.Format_AttributeUsage, type));
         }
 
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
+            Justification = "Array.CreateInstance is only used with reference types (attribute types) here.")]
         private static Attribute[] CreateAttributeArrayHelper(Type elementType, int elementCount) =>
             elementType.ContainsGenericParameters ? new Attribute[elementCount] : (Attribute[])Array.CreateInstance(elementType, elementCount);
         #endregion
