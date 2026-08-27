@@ -5853,7 +5853,7 @@ void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext)
             return;
         }
 
-        // Calling this turns off the GC_TRIGGERS/THROWS/INJECT_FAULT contract in LoadTypeHandle.
+        // Calling this turns off the GC_TRIGGERS/THROWS contract in LoadTypeHandle.
         // We should not trigger any loads for unresolved types.
         ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
 

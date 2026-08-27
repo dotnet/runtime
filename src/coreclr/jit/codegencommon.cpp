@@ -420,7 +420,7 @@ CodeGen::CodeGen(Compiler* theCompiler)
 
 #if HAS_FIXED_REGISTER_SET
     // Shouldn't be used before it is set in genFnProlog()
-    m_compiler->compCalleeRegsPushed = UninitializedWord<unsigned>(m_compiler);
+    m_compiler->compCalleeRegsPushed = UninitializedWord<unsigned>();
 #endif // HAS_FIXED_REGISTER_SET
 
 #if defined(TARGET_XARCH)
@@ -472,7 +472,6 @@ CodeGen::CodeGen(Compiler* theCompiler)
 
 int CodeGenInterface::genTotalFrameSize() const
 {
-    assert(!IsUninitialized(m_compiler->compCalleeRegsPushed));
 
     int totalFrameSize = m_compiler->compCalleeRegsPushed * REGSIZE_BYTES + m_compiler->compLclFrameSize;
 

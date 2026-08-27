@@ -2073,6 +2073,8 @@ namespace System
         // IUtfChar
         //
 
+        static bool IUtfChar<char>.IsUtf8 => false;
+
         static char IUtfChar<char>.CastFrom(byte value) => (char)value;
         static char IUtfChar<char>.CastFrom(char value) => value;
         static char IUtfChar<char>.CastFrom(int value) => (char)value;

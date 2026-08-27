@@ -25,3 +25,4 @@ Wasm.Build.Tests.AppSettingsTests
 Wasm.Build.Tests.Blazor.AppsettingsTests
 Wasm.Build.Tests.DownloadThenInitTests
 Wasm.Build.Tests.Blazor.EventPipeDiagnosticsTests
+Wasm.Build.Tests.CoreCLRWasmNativeDefaultsTests
