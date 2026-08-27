@@ -415,12 +415,14 @@ namespace System.IO
             }
 
             // On non-Apple platforms, shared memory files live under the process temp directory.
-            // Use Path.GetTempPath() (which honors TMPDIR on Unix and falls back to /tmp) rather
-            // than a hardcoded /tmp: sandboxed environments such as OpenHarmony mount /tmp read-only
-            // and rely on TMPDIR pointing at a writable location for the .NET shared memory files
-            // (named mutexes, etc.). Everything else in the runtime already honors TMPDIR, so this
-            // was the only offender.
+#if TARGET_OHOS
+            // HarmonyOS (OpenHarmony) app sandboxes mount /tmp read-only, so use the process temp
+            // directory (which honors TMPDIR on Unix and falls back to /tmp) for the .NET shared
+            // memory files (named mutexes, etc.).
             return Path.GetTempPath();
+#else
+            return "/tmp/";
+#endif
         }
 
         internal static SafeFileHandle CreateOrOpenFile(string sharedMemoryFilePath, SharedMemoryId id, bool createIfNotExist, out bool createdFile)
