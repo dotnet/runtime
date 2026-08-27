@@ -5,6 +5,8 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
+#pragma warning disable CA1416 // NLS interop is only supported on Windows; this file is compiled only for Windows.
+
 namespace System.Globalization
 {
     public sealed partial class IdnMapping

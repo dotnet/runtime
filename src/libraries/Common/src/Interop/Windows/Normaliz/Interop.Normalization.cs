@@ -6,6 +6,9 @@ using System.Text;
 
 internal static partial class Interop
 {
+#if NET
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
     internal static partial class Normaliz
     {
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]

@@ -7,6 +7,8 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 
+#pragma warning disable CA1416 // NLS interop is only supported on Windows; this file is compiled only for Windows.
+
 namespace System.Globalization
 {
     internal static partial class Normalization
