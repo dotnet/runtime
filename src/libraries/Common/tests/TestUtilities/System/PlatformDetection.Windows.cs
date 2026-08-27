@@ -336,16 +336,15 @@ namespace System
                             // https://support.microsoft.com/en-US/servicing/os/windows-11/2026/06/june-23-2026-kb5095091-os-build-28000-2340-preview
                             return ubr >= 2340;
                         }
-
-                        Debug.Fail($"Unknown build {build}. This whole check can likely be greatly simplified if supported Windows versions have been widely deployed.");
-                        return false;
                     }
-
-                    // Windows Server 2025
-                    if (build is >= 26100 and < 28200)
+                    else
                     {
-                        // https://support.microsoft.com/en-US/servicing/os/windows-server/2026/07/july-14-2026-kb5099536-os-build-26100-33158
-                        return ubr >= 33158;
+                        // Windows Server 2025
+                        if (build is >= 26100 and < 26200)
+                        {
+                            // https://support.microsoft.com/en-US/servicing/os/windows-server/2026/07/july-14-2026-kb5099536-os-build-26100-33158
+                            return ubr >= 33158;
+                        }
                     }
 
                     Debug.Fail($"Unknown build {build}. This whole check can likely be greatly simplified if supported Windows versions have been widely deployed.");

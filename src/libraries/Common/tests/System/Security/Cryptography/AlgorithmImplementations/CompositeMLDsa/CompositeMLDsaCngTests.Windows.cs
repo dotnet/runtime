@@ -109,7 +109,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(typeof(CompositeMLDsaTestHelpers), nameof(CompositeMLDsaTestHelpers.IsCngSupported))]
+        [ConditionalFact(typeof(CompositeMLDsa), nameof(CompositeMLDsa.IsSupported))]
         public static void CompositeMLDsaCng_WrongAlgorithm()
         {
             using RSACng rsa = new RSACng();
