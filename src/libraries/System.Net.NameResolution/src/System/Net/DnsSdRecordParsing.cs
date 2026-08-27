@@ -4,6 +4,7 @@
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Text;
+
 namespace System.Net
 {
     // Rdata returned by macOS mDNSResponder (DNSServiceQueryRecord).
@@ -142,38 +143,10 @@ namespace System.Net
 
         private static bool TryParseDnsName(ReadOnlySpan<byte> data, out string name, out int bytesConsumed)
         {
-            StringBuilder builder = new();
-            int offset = 0;
-
-            while (offset < data.Length)
+            if (DnsEncodedName.TryParse(data, 0, out DnsEncodedName encodedName, out bytesConsumed))
             {
-                byte length = data[offset++];
-                if (length == 0)
-                {
-                    name = builder.Length == 0 ? "." : builder.ToString();
-                    bytesConsumed = offset;
-                    return true;
-                }
-
-                if ((length & 0xC0) != 0 || length > 63 || length > data.Length - offset)
-                {
-                    break;
-                }
-
-                if (builder.Length != 0)
-                {
-                    builder.Append('.');
-                }
-
-                // DNS labels are opaque octets (RFC 1035). Widen byte-by-byte instead of
-                // Encoding.UTF8.GetString, which would silently replace invalid UTF-8 sequences
-                // with U+FFFD. This matches how the managed resolver decodes response labels.
-                ReadOnlySpan<byte> label = data.Slice(offset, length);
-                for (int i = 0; i < label.Length; i++)
-                {
-                    builder.Append((char)label[i]);
-                }
-                offset += length;
+                name = encodedName.ToString();
+                return true;
             }
 
             name = string.Empty;
