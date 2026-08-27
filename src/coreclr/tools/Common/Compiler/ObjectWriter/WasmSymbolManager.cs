@@ -79,6 +79,7 @@ internal sealed class WasmSymbolManager
 
     public void AddAlias(Utf8String alias, Utf8String target)
     {
+        Debug.Assert(!_entries.ContainsKey(alias));
         Entry entry = _entries[target];
         _aliases.Add(alias, entry with { Name = alias });
     }
