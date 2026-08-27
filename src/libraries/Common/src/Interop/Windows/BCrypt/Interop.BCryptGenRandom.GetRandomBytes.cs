@@ -4,6 +4,8 @@
 using System;
 using System.Diagnostics;
 
+#pragma warning disable CA1416 // Windows implementation of GetRandomBytes; this file is compiled only for Windows.
+
 internal static partial class Interop
 {
     internal static unsafe void GetRandomBytes(byte* buffer, int length)

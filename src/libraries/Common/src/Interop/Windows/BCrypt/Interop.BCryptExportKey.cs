@@ -13,6 +13,9 @@ internal static partial class Interop
     internal static partial class BCrypt
     {
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Libraries.BCrypt, StringMarshalling = StringMarshalling.Utf16)]
         private static partial NTSTATUS BCryptExportKey(
             SafeBCryptKeyHandle hKey,

@@ -130,18 +130,30 @@ namespace Internal.NativeCrypto
         internal static partial class Interop
         {
             [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+#if NET
+            [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
             [LibraryImport(Libraries.BCrypt, StringMarshalling = StringMarshalling.Utf16)]
             public static partial NTSTATUS BCryptOpenAlgorithmProvider(out SafeAlgorithmHandle phAlgorithm, string pszAlgId, string? pszImplementation, int dwFlags);
 
             [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+#if NET
+            [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
             [LibraryImport(Libraries.BCrypt, StringMarshalling = StringMarshalling.Utf16)]
             public static partial NTSTATUS BCryptSetProperty(SafeAlgorithmHandle hObject, string pszProperty, string pbInput, int cbInput, int dwFlags);
 
             [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+#if NET
+            [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
             [LibraryImport(Libraries.BCrypt, EntryPoint = "BCryptSetProperty", StringMarshalling = StringMarshalling.Utf16)]
             private static partial NTSTATUS BCryptSetIntPropertyPrivate(SafeBCryptHandle hObject, string pszProperty, ref int pdwInput, int cbInput, int dwFlags);
 
             [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+#if NET
+            [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
             [LibraryImport(Libraries.BCrypt, StringMarshalling = StringMarshalling.Utf16)]
             public static partial NTSTATUS BCryptSetProperty(SafeBCryptHandle hObject, string pszProperty, ReadOnlySpan<byte> pbInput, int cbInput, int dwFlags);
 
@@ -161,6 +173,9 @@ namespace Internal.NativeCrypto
         }
 
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Libraries.BCrypt)]
         private static partial uint BCryptCloseAlgorithmProvider(IntPtr hAlgorithm, int dwFlags);
     }
@@ -194,6 +209,9 @@ namespace Internal.NativeCrypto
         }
 
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Libraries.BCrypt)]
         private static partial uint BCryptDestroyKey(IntPtr hKey);
     }

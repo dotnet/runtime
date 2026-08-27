@@ -10,6 +10,9 @@ internal static partial class Interop
     internal static partial class BCrypt
     {
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Libraries.BCrypt)]
         private static unsafe partial NTSTATUS BCryptDecapsulate(
             SafeBCryptKeyHandle hKey,
@@ -21,6 +24,9 @@ internal static partial class Interop
             uint dwFlags);
 
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Libraries.BCrypt)]
         private static unsafe partial NTSTATUS BCryptEncapsulate(
             SafeBCryptKeyHandle hKey,

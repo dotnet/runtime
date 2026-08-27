@@ -11,6 +11,9 @@ internal static partial class Interop
         internal const int BCRYPT_USE_SYSTEM_PREFERRED_RNG = 0x00000002;
 
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Libraries.BCrypt)]
         internal static unsafe partial NTSTATUS BCryptGenRandom(IntPtr hAlgorithm, byte* pbBuffer, int cbBuffer, int dwFlags);
     }
