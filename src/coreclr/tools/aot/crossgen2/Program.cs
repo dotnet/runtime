@@ -333,18 +333,25 @@ namespace ILCompiler
             e.MoveNext();
             string inFilePath = e.Current.Value;
             string inputFileExtension = Path.GetExtension(inFilePath);
-            string nearOutFilePath = inputFileExtension switch
+            string nearOutFilePath;
+            if (inputFileExtension.Equals(".dll", StringComparison.OrdinalIgnoreCase))
             {
-                ".dll" => Path.ChangeExtension(inFilePath,
-                    _singleFileCompilation&& _inputBubble
+                nearOutFilePath = Path.ChangeExtension(inFilePath,
+                    _singleFileCompilation && _inputBubble
                         ? ".ni.dll.tmp"
-                        : ".ni.dll"),
-                ".exe" => Path.ChangeExtension(inFilePath,
+                        : ".ni.dll");
+            }
+            else if (inputFileExtension.Equals(".exe", StringComparison.OrdinalIgnoreCase))
+            {
+                nearOutFilePath = Path.ChangeExtension(inFilePath,
                     _singleFileCompilation && _inputBubble
                         ? ".ni.exe.tmp"
-                        : ".ni.exe"),
-                _ => throw new CommandLineException(string.Format(SR.UnsupportedInputFileExtension, inputFileExtension))
-            };
+                        : ".ni.exe");
+            }
+            else
+            {
+                throw new CommandLineException(string.Format(SR.UnsupportedInputFileExtension, inputFileExtension));
+            }
 
             string outFile = _outNearInput ? nearOutFilePath : _outputFilePath;
             string dgmlLogFileName = Get(_command.DgmlLogFileName);
