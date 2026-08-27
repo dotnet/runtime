@@ -8,7 +8,7 @@ namespace Runtime_132785;
 
 public class Runtime_132785
 {
-    [MethodImpl(MethodImplOptions.NoInlining)]
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
     private static long F(long p0, byte p1)
     {
         byte v69 = 0;
