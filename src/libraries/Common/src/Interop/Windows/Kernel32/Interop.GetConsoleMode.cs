@@ -16,6 +16,9 @@ internal static partial class Interop
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool GetConsoleMode(IntPtr handle, out int mode);
 
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         internal static bool IsGetConsoleModeCallSuccessful(IntPtr handle)
         {
             return GetConsoleMode(handle, out _);
