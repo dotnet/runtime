@@ -217,14 +217,17 @@ namespace ILCompiler.PortableCallHelpers
 
         public void EmitNativeToInterp(TextWriter w, List<PInvokeCallback> callbacks)
         {
-            // Generate native->interp entry functions
-            // These are called by native code, so they need to obtain
-            // the interp entry function/arg from a global array
-            // They also need to have a signature matching what the
-            // native code expects, which is the native signature
-            // of the delegate invoke in the [MonoPInvokeCallback]
-            // or [UnmanagedCallersOnly] attribute.
-            // Only blittable parameter/return types are supposed.
+            // Generate the native->interpreter entry functions. Native code calls these directly, so
+            // each one carries the native signature its caller expects, taken from the managed method
+            // it wraps - one marked [UnmanagedCallersOnly], or the [MonoPInvokeCallback] that
+            // MethodHasCallbackAttributes also accepts. Only blittable parameter and return types are
+            // supported.
+            //
+            // Each wrapper caches the MethodDesc it dispatches to in a static and hands the arguments to
+            // ExecuteInterpretedMethodFromUnmanaged. The g_ReverseThunks table emitted at the end maps
+            // the runtime's key for a method to its wrapper, and the runtime fills that static in as it
+            // hands the wrapper out. An export is not handed out that way, so it resolves the static
+            // itself, by name, on the first call.
             w.Write(
                 """
                 // Licensed to the .NET Foundation under one or more agreements.
