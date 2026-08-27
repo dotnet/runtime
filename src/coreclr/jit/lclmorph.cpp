@@ -1498,7 +1498,7 @@ private:
         unsigned   lclNum = val.LclNum();
         LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
 
-        GenTreeFlags defFlag    = GTF_EMPTY;
+        GenTreeFlags defFlags   = GTF_EMPTY;
         GenTreeCall* callUser   = (user != nullptr) && user->IsCall() ? user->AsCall() : nullptr;
         bool         escapeAddr = true;
         if ((callUser != nullptr) && m_compiler->IsValidLclAddr(lclNum, val.Offset()))
@@ -1523,7 +1523,6 @@ private:
                 {
                     m_compiler->lvaSetHiddenBufferStructArg(lclNum);
                     callUser->gtCallMoreFlags |= GTF_CALL_M_RETBUFFARG_LCLOPT;
-                    callUser->gtFlags |= GTF_ASG;
                     defSize = m_compiler->typGetObjLayout(callUser->gtRetClsHnd)->GetSize();
                 }
             }
@@ -1540,11 +1539,11 @@ private:
             {
                 INDEBUG(varDsc->SetDefinedViaAddress(true));
                 escapeAddr = false;
-                defFlag    = GTF_VAR_DEF;
+                defFlags   = GTF_VAR_DEF | GTF_ASG;
 
                 if (!m_compiler->IsEntireAccess(lclNum, val.Offset(), ValueSize(defSize)))
                 {
-                    defFlag |= GTF_VAR_USEASG;
+                    defFlags |= GTF_VAR_USEASG;
                 }
             }
         }
@@ -1579,7 +1578,7 @@ private:
 #endif // TARGET_64BIT
 
         MorphLocalAddress(val.Node(), lclNum, val.Offset());
-        val.Node()->gtFlags |= defFlag;
+        val.Node()->gtFlags |= defFlags;
 
         INDEBUG(val.Consume();)
     }
