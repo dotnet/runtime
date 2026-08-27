@@ -21,6 +21,9 @@ internal static partial class Interop
         }
 
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Libraries.Advapi32, EntryPoint = "CryptAcquireContextW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static partial bool CryptAcquireContext(

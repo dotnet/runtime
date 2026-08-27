@@ -9,6 +9,9 @@ internal static partial class Interop
     internal static partial class Advapi32
     {
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Libraries.Advapi32, SetLastError = true)]
         internal static partial int ImpersonateLoggedOnUser(IntPtr userToken);
     }

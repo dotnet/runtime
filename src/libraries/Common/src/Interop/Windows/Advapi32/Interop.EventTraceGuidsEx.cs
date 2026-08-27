@@ -46,6 +46,9 @@ internal static partial class Interop
         }
 
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Libraries.Advapi32)]
         internal static unsafe partial int EnumerateTraceGuidsEx(
             TRACE_QUERY_INFO_CLASS TraceQueryInfoClass,

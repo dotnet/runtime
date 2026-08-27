@@ -16,6 +16,9 @@ internal static partial class Interop
         internal const int REG_NOTIFY_THREAD_AGNOSTIC = 0x10000000;
 
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Libraries.Advapi32, EntryPoint = "RegNotifyChangeKeyValue", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int RegNotifyChangeKeyValue(
             SafeHandle hKey,

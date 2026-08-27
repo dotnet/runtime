@@ -10,6 +10,9 @@ internal static partial class Interop
     internal static partial class Advapi32
     {
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Interop.Libraries.Advapi32, EntryPoint = "LsaLookupSids", SetLastError = true)]
         internal static partial uint LsaLookupSids(
             SafeLsaPolicyHandle handle,

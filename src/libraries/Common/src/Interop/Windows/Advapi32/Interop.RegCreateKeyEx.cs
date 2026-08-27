@@ -15,6 +15,9 @@ internal static partial class Interop
         // Note: RegCreateKeyEx won't set the last error on failure - it returns
         // an error code if it fails.
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Libraries.Advapi32, EntryPoint = "RegCreateKeyExW", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int RegCreateKeyEx(
             SafeRegistryHandle hKey,

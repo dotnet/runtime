@@ -17,11 +17,17 @@ internal static partial class Interop
         internal const int SECURITY_DESCRIPTOR_REVISION = 1;
 
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Libraries.Advapi32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool InitializeSecurityDescriptor(nint pSecurityDescriptor, int dwRevision);
 
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Libraries.Advapi32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool SetSecurityDescriptorOwner(
@@ -30,6 +36,9 @@ internal static partial class Interop
             [MarshalAs(UnmanagedType.Bool)] bool bOwnerDefaulted);
 
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Libraries.Advapi32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool SetSecurityDescriptorGroup(
@@ -38,6 +47,9 @@ internal static partial class Interop
             [MarshalAs(UnmanagedType.Bool)] bool bGroupDefaulted);
 
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Libraries.Advapi32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool SetSecurityDescriptorDacl(
@@ -47,6 +59,9 @@ internal static partial class Interop
             [MarshalAs(UnmanagedType.Bool)] bool bDaclDefaulted);
 
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Libraries.Advapi32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool SetSecurityDescriptorSacl(

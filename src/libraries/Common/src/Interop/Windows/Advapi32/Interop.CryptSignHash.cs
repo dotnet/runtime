@@ -25,6 +25,9 @@ internal static partial class Interop
         }
 
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Libraries.Advapi32, EntryPoint = "CryptSignHashW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static partial bool CryptSignHash(
@@ -36,6 +39,9 @@ internal static partial class Interop
             ref int pdwSigLen);
 
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Libraries.Advapi32, EntryPoint = "CryptVerifySignatureW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static partial bool CryptVerifySignature(

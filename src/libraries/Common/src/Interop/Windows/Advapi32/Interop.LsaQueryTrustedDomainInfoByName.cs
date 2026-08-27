@@ -10,6 +10,9 @@ internal static partial class Interop
     internal static partial class Advapi32
     {
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Libraries.Advapi32)]
         internal static partial uint LsaQueryTrustedDomainInfoByName(SafeLsaPolicyHandle handle, in UNICODE_STRING trustedDomain, TRUSTED_INFORMATION_CLASS infoClass, ref IntPtr buffer);
     }

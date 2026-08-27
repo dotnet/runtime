@@ -9,11 +9,17 @@ internal static partial class Interop
     internal static partial class Advapi32
     {
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Libraries.Advapi32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static partial bool CryptSetKeyParam(SafeCapiKeyHandle hKey, int dwParam, byte[] pbData, int dwFlags);
 
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Libraries.Advapi32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static partial bool CryptSetKeyParam(SafeCapiKeyHandle safeKeyHandle, int dwParam, ref int pdw, int dwFlags);

@@ -1,6 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#pragma warning disable CA1416 // Windows-only ETW interop; these call sites are only reached on Windows.
+
 // This program uses code hyperlinks available as part of the HyperAddin Visual Studio plug-in.
 // It is available from http://www.codeplex.com/hyperAddin
 

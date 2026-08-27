@@ -4,6 +4,8 @@
 using System;
 using Microsoft.Win32.SafeHandles;
 
+#pragma warning disable CA1416 // Registry interop is only supported on Windows; this file is compiled only for Windows.
+
 #if REGISTRY_ASSEMBLY
 namespace Microsoft.Win32.SafeHandles
 #else

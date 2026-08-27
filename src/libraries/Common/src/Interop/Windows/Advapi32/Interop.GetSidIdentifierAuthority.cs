@@ -20,14 +20,23 @@ internal static partial class Interop
         }
 
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Libraries.Advapi32)]
         internal static partial IntPtr GetSidIdentifierAuthority(IntPtr sid);
 
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Interop.Libraries.Advapi32)]
         internal static partial IntPtr GetSidSubAuthority(IntPtr sid, int index);
 
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Interop.Libraries.Advapi32)]
         internal static partial IntPtr GetSidSubAuthorityCount(IntPtr sid);
     }

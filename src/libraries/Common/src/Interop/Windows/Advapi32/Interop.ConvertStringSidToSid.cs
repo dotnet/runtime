@@ -10,6 +10,9 @@ internal static partial class Interop
     {
         // https://learn.microsoft.com/windows/win32/api/sddl/nf-sddl-convertstringsidtosidw
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Interop.Libraries.Advapi32, EntryPoint = "ConvertStringSidToSidW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static unsafe partial BOOL ConvertStringSidToSid(
             string StringSid,

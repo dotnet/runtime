@@ -10,6 +10,9 @@ internal static partial class Interop
     internal static partial class Advapi32
     {
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Libraries.Advapi32, EntryPoint = "StartServiceW", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool StartService(SafeServiceHandle serviceHandle, int argNum, IntPtr argPtrs);

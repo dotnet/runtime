@@ -5,6 +5,8 @@ using System;
 using System.Diagnostics.Tracing;
 using System.Runtime.InteropServices;
 
+#pragma warning disable CA1416 // Windows-only ETW interop; this file is compiled only for Windows.
+
 internal static partial class Interop
 {
     internal static partial class Advapi32
@@ -33,6 +35,9 @@ internal static partial class Interop
         }
 
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Libraries.Advapi32, EntryPoint = "EventWriteTransfer")]
         private static unsafe partial int EventWriteTransfer_PInvoke(
             long registrationHandle,

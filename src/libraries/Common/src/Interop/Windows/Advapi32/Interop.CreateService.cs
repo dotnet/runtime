@@ -10,6 +10,9 @@ internal static partial class Interop
     internal static partial class Advapi32
     {
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Libraries.Advapi32, EntryPoint = "CreateServiceW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         public static partial IntPtr CreateService(SafeServiceHandle databaseHandle, string serviceName, string displayName, int access, int serviceType,
             int startType, int errorControl, string binaryPath, string loadOrderGroup, IntPtr pTagId, string dependencies,

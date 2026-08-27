@@ -28,6 +28,9 @@ internal static partial class Interop
         }
 
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Interop.Libraries.Advapi32, EntryPoint = "LsaOpenPolicy", SetLastError = true)]
         private static partial uint LsaOpenPolicy(
             ref UNICODE_STRING SystemName,

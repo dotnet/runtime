@@ -13,6 +13,9 @@ internal static partial class Interop
             12 /* sizeof(SID) */ - 4 /* sizeof(DWORD) */ + SID_MAX_SUB_AUTHORITIES * 4 /* sizeof(DWORD) */;
 
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Libraries.Advapi32, SetLastError = true)]
         internal static partial int CreateWellKnownSid(
             int sidType,
@@ -21,6 +24,9 @@ internal static partial class Interop
             ref uint resultSidLength);
 
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Libraries.Advapi32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool CreateWellKnownSid(
