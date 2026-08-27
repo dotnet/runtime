@@ -5,9 +5,6 @@ using System;
 
 internal static partial class Interop
 {
-#if NET
-    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
-#endif
     internal static partial class Crypt32
     {
         // All constants below are from wincrypt.h.

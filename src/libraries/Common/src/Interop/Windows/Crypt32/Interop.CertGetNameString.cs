@@ -6,12 +6,12 @@ using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
 {
-#if NET
-    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
-#endif
     internal static partial class Crypt32
     {
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Libraries.Crypt32, EntryPoint = "CertGetNameStringW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static unsafe partial int CertGetNameString(SafeCertContextHandle pCertContext, CertNameType dwType, CertNameFlags dwFlags, in CertNameStringType pvTypePara, char* pszNameString, int cchNameString);
     }

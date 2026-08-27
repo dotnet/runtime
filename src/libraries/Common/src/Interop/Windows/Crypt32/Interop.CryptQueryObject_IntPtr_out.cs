@@ -6,12 +6,12 @@ using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
-#if NET
-    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
-#endif
     internal static partial class Crypt32
     {
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Libraries.Crypt32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool CryptQueryObject(

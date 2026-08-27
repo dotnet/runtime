@@ -8,9 +8,6 @@ using System.Security.Cryptography;
 
 internal static partial class Interop
 {
-#if NET
-    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
-#endif
     internal static partial class Crypt32
     {
         [StructLayout(LayoutKind.Sequential)]
@@ -128,6 +125,9 @@ internal static partial class Interop
         }
 
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Interop.Libraries.Crypt32)]
         private static unsafe partial CRYPT_OID_INFO* CryptFindOIDInfo(CryptOidInfoKeyType dwKeyType, IntPtr pvKey, OidGroup group);
     }

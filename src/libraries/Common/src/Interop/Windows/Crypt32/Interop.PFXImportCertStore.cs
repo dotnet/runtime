@@ -6,16 +6,19 @@ using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
 {
-#if NET
-    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
-#endif
     internal static partial class Crypt32
     {
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Libraries.Crypt32, SetLastError = true)]
         internal static partial SafeCertStoreHandle PFXImportCertStore(ref DATA_BLOB pPFX, SafePasswordHandle password, PfxCertStoreFlags dwFlags);
 
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Libraries.Crypt32, SetLastError = true)]
         internal static unsafe partial SafeCertStoreHandle PFXImportCertStore(ref DATA_BLOB pPFX, char* password, PfxCertStoreFlags dwFlags);
     }

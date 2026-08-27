@@ -7,9 +7,6 @@ using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
 {
-#if NET
-    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
-#endif
     internal static partial class Crypt32
     {
         internal const uint PKCS_7_ASN_ENCODING = 0x00010000;
@@ -17,6 +14,9 @@ internal static partial class Interop
         internal const uint CERT_STORE_PROV_MEMORY = 2;
 
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         [LibraryImport(Interop.Libraries.Crypt32, SetLastError = true)]
         internal static partial SafeCertStoreHandle CertOpenStore(IntPtr lpszStoreProvider, uint dwMsgAndCertEncodingType, IntPtr hCryptProv, uint dwFlags, IntPtr pvPara);
     }
