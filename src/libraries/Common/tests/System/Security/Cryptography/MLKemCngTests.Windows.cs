@@ -97,6 +97,17 @@ namespace System.Security.Cryptography.Tests
                 Assert.Equal(key.Algorithm, getKey1.Algorithm); // Assert.NoThrow on getKey1.Algorithm
             }
         }
+
+        [Theory]
+        [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
+        public static void MLKemCng_GeneratedKey_ExportPkcs8PrivateBlob(MLKemAlgorithm algorithm)
+        {
+            using CngKey key = MLKemCngTests.GenerateCngKey(
+                algorithm,
+                CngExportPolicies.AllowExport | CngExportPolicies.AllowPlaintextExport);
+
+            Assert.NotEmpty(key.Export(CngKeyBlobFormat.Pkcs8PrivateBlob));
+        }
     }
 
     public abstract class MLKemCngTests : MLKemBaseTests
