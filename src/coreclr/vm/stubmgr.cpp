@@ -1770,7 +1770,8 @@ BOOL ILStubManager::TraceManager(Thread *thread,
 
         trace->InitForManaged(target);
     }
-    else if (pStubMD->HasMDContextArg())
+#ifdef FEATURE_VARARGS
+    else if (pStubMD->IsPInvokeVarArgStub())
     {
         LOG((LF_CORDB, LL_INFO1000, "ILSM::TraceManager: Hidden argument is MethodDesc\n"));
 
@@ -1785,6 +1786,7 @@ BOOL ILStubManager::TraceManager(Thread *thread,
              reinterpret_cast<void*>(target)));
         trace->InitForUnmanaged(target);
     }
+#endif // FEATURE_VARARGS
     else if (pStubMD->IsDelegateInvokeMethodStub())
     {
         if (pThis == NULL)

@@ -1867,11 +1867,6 @@ public:
     //================================================================
     // Running the Prestub preparation step.
 
-    // The stub produced by prestub requires method desc to be passed
-    // in dedicated register.
-    // See HasMDContextArg() for the related stub version.
-    BOOL RequiresMDContextArg();
-
     // Returns true if the method has to have stable entrypoint always.
     BOOL RequiresStableEntryPoint();
 private:
@@ -3214,14 +3209,6 @@ public:
         _ASSERTE(IsILStub());
         ILStubType type = GetILStubType();
         return type == DynamicMethodDesc::StubAsyncResume;
-    }
-
-    // Whether the stub takes a context argument that is an interop MethodDesc.
-    // See RequiresMDContextArg() for the non-stub version.
-    bool HasMDContextArg() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return IsPInvokeVarArgStub();
     }
 
     //
