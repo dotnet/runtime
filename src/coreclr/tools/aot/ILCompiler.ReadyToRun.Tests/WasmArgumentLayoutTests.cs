@@ -660,6 +660,29 @@ public class WasmArgumentLayoutTests
     }
 
     /// <summary>
+    /// Unmanaged signatures get neither the shadow stack pointer nor the portable entrypoint, so
+    /// they trip the limit at a different managed parameter count than managed ones do.
+    /// </summary>
+    [Theory]
+    [InlineData(999, false)]
+    [InlineData(1000, false)] // exactly the limit, which is still legal
+    [InlineData(1001, true)]
+    public void UnmanagedSignatureCrossesWasmParameterLimitAtTheBoundary(int managedParameterCount, bool expectedToExceed)
+    {
+        ReadyToRunCompilerContext context = CreateWasmContext();
+        TypeDesc intType = context.GetWellKnownType(WellKnownType.Int32);
+
+        MethodSignature signature = MakeStaticVoidSignature(
+            context, Enumerable.Repeat(intType, managedParameterCount).ToArray());
+
+        WasmFuncType funcType = WasmLowering.GetSignature(
+            signature, WasmLowering.LoweringFlags.IsUnmanagedCallersOnly).FuncType;
+
+        Assert.Equal(managedParameterCount, funcType.Params.Types.Length);
+        Assert.Equal(expectedToExceed, WasmLimits.ExceedsLimits(funcType));
+    }
+
+    /// <summary>
     /// An instance method with 1000 parameters lowers to 1003 once the shadow stack pointer,
     /// 'this', and the portable entrypoint are added.
     /// </summary>

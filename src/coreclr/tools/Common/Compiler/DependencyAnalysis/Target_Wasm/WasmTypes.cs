@@ -11,9 +11,10 @@ using Internal.JitInterface;
 namespace ILCompiler.DependencyAnalysis.Wasm
 {
     /// <summary>
-    /// WebAssembly implementation limits, enforced by every conforming engine. A module violating
-    /// one is rejected at instantiation, which for a ReadyToRun image means the runtime silently
-    /// interprets the whole assembly. See https://webassembly.github.io/spec/js-api/#limits.
+    /// Widely adopted WebAssembly implementation limits, enforced by the engines and tools we
+    /// target. A module violating one is rejected at instantiation, which for a ReadyToRun image
+    /// means the runtime silently interprets the whole assembly.
+    /// See https://webassembly.github.io/spec/js-api/#limits.
     /// </summary>
     public static class WasmLimits
     {

@@ -3806,10 +3806,6 @@ namespace Internal.JitInterface
 
                 WasmSignature wasmSig = WasmLowering.GetSignature(sig, flags);
 
-                // The delay-load import thunk is emitted only if a live method marks it, so
-                // declining the caller is what keeps it out of the image. See Import.OnMarked.
-                ThrowIfExceedsWasmLimits(wasmSig, "call site");
-
                 // Only create R2R-to-interpreter thunks for managed calls.
                 // Unmanaged calls don't go through the interpreter transition.
                 if (!flags.HasFlag(WasmLowering.LoweringFlags.IsUnmanagedCallersOnly))
@@ -3855,6 +3851,10 @@ namespace Internal.JitInterface
 
                 ThrowIfExceedsWasmLimits(wasmSig, "managed call site");
 
+                // This is the live wasm path for managed calls; recordCallSite is DEBUG-only and
+                // reached only from the xarch emitter. The delay-load import thunk is emitted only
+                // if a live method marks it, so declining the caller is what keeps it out of the
+                // image. See Import.OnMarked.
                 // Only create R2R-to-interpreter thunks for managed calls.
                 // Unmanaged calls don't go through the interpreter transition.
                 if (!flags.HasFlag(WasmLowering.LoweringFlags.IsUnmanagedCallersOnly))
