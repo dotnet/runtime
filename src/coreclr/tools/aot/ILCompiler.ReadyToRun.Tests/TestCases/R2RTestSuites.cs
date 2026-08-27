@@ -1,11 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+extern alias crossgen2;
+
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection.PortableExecutable;
+using crossgen2::ILCompiler.DependencyAnalysis.Wasm;
 using ILCompiler.ReadyToRun.Tests.TestCasesRunner;
 using ILCompiler.Reflection.ReadyToRun;
 using Internal.ReadyToRunConstants;
@@ -118,6 +121,57 @@ public class R2RTestSuites
                 "Expected a 'global.get' of the wasm image-base well-known global in the emitted code.");
             Assert.True(WasmR2RAssert.WasmImageContainsWellKnownGlobalGet(webcilReader, TableBaseGlobal),
                 "Expected a 'global.get' of the wasm table-base well-known global in the emitted code.");
+        }
+    }
+
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
+    public void WasmWideSignatureModule()
+    {
+        var wasmWideSignatureModule = new CompiledAssembly
+        {
+            AssemblyName = nameof(WasmWideSignatureModule),
+            SourceResourceNames = ["Webcil/WasmWideSignatureModule.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(WasmWideSignatureModule),
+            [
+                new(nameof(WasmWideSignatureModule), [new CrossgenAssembly(wasmWideSignatureModule)])
+                {
+                    OutputFileExtension = ".wasm",
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            var webcilReader = Assert.IsType<WebcilImageReader>(reader.CompositeReader);
+            Assert.True(webcilReader.IsWasmWrapped);
+
+            // WebAssembly caps a function type at 1000 parameters and 1000 results. A module
+            // declaring more is rejected by every engine, and the ReadyToRun runtime reacts by
+            // silently interpreting the whole assembly, so this must hold for the type section as
+            // a whole -- an over-limit type left behind by a method that was not emitted is just
+            // as fatal as one in use.
+            WasmR2RAssert.GetMaxWasmFunctionTypeArity(webcilReader, out int maxParams, out int maxResults);
+            Assert.InRange(maxParams, 0, WasmLimits.MaxFunctionParams);
+            Assert.InRange(maxResults, 0, WasmLimits.MaxFunctionResults);
+
+            List<ReadyToRunMethod> methods = R2RAssert.GetAllMethods(reader);
+
+            // The over-limit method and the method whose call site needs the same over-limit type
+            // are both left to the interpreter.
+            Assert.DoesNotContain(methods, method =>
+                method.SignatureString.Contains("TooManyParameters", StringComparison.Ordinal));
+            Assert.DoesNotContain(methods, method =>
+                method.SignatureString.Contains("CallsTooManyParameters", StringComparison.Ordinal));
+
+            // Everything else in the assembly is still compiled: declining costs only the methods
+            // that cannot be expressed, not the assembly's R2R coverage.
+            Assert.Contains(methods, method =>
+                method.SignatureString.Contains("AddIntegers", StringComparison.Ordinal));
+            Assert.Contains(methods, method =>
+                method.SignatureString.Contains("MultiplyIntegers", StringComparison.Ordinal));
         }
     }
 
