@@ -303,13 +303,11 @@ namespace Microsoft.Interop
             foreach (TypePositionInfo element in originalElements)
             {
                 TypePositionInfo unmanagedToManagedElement = element;
-                if (unmanagedToManagedElement is { IsErrorHandlingPosition: true, IsManagedExceptionPosition: false })
+                if (unmanagedToManagedElement.IsErrorHandlingPosition)
                 {
                     unmanagedToManagedElement = unmanagedToManagedElement with
                     {
                         IsErrorHandlingPosition = false,
-                        IsManagedIdentifierSynthetic = false,
-                        IsNativePositionOverlapping = false,
                     };
                 }
 
@@ -329,7 +327,6 @@ namespace Microsoft.Interop
                         InstanceIdentifier = "__exception",
                         ManagedIndex = TypePositionInfo.ExceptionIndex,
                         NativeIndex = TypePositionInfo.ReturnIndex,
-                        IsManagedExceptionPosition = true,
                         IsErrorHandlingPosition = true,
                     });
             }

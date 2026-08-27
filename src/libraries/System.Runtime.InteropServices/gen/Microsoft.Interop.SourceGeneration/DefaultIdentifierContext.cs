@@ -12,15 +12,18 @@ namespace Microsoft.Interop
         private readonly string _returnIdentifier;
         private readonly string _nativeReturnIdentifier;
         private readonly MarshalDirection _direction;
+        private readonly TypePositionInfo? _errorHandlingOverlappedPosition;
 
         public DefaultIdentifierContext(
             string returnIdentifier,
             string nativeReturnIdentifier,
-            MarshalDirection direction)
+            MarshalDirection direction,
+            TypePositionInfo? errorHandlingOverlappedPosition = null)
         {
             _returnIdentifier = returnIdentifier;
             _nativeReturnIdentifier = nativeReturnIdentifier;
             _direction = direction;
+            _errorHandlingOverlappedPosition = errorHandlingOverlappedPosition;
         }
 
         public override (string managed, string native) GetIdentifiers(TypePositionInfo info)
@@ -28,13 +31,12 @@ namespace Microsoft.Interop
             if (info is
                 {
                     IsErrorHandlingPosition: true,
-                    IsManagedExceptionPosition: false,
-                    IsNativePositionOverlapping: true,
                     ManagedIndex: TypePositionInfo.ErrorIndex,
-                    NativeIndex: TypePositionInfo.ReturnIndex,
-                })
+                }
+                && _direction == MarshalDirection.ManagedToUnmanaged
+                && _errorHandlingOverlappedPosition is not null)
             {
-                return (info.InstanceIdentifier, _nativeReturnIdentifier);
+                return (info.InstanceIdentifier, GetIdentifiers(_errorHandlingOverlappedPosition).native);
             }
 
             // If the info is in the stub return position, then we need to generate a name to use
@@ -45,7 +47,8 @@ namespace Microsoft.Interop
                 // then we're going to return using name of the native return identifier.
                 // We use the provided instance identifier as that represents
                 // the name of the exception variable specified in the catch clause.
-                if (info.IsManagedExceptionPosition)
+                if (info.IsErrorHandlingPosition
+                    && _direction == MarshalDirection.UnmanagedToManaged)
                 {
                     return (info.InstanceIdentifier, _nativeReturnIdentifier);
                 }
@@ -69,7 +72,8 @@ namespace Microsoft.Interop
 
         public override string GetAdditionalIdentifier(TypePositionInfo info, string name)
         {
-            return info is { IsErrorHandlingPosition: true, IsNativePositionOverlapping: true }
+            return info.IsErrorHandlingPosition
+                && _direction == MarshalDirection.ManagedToUnmanaged
                 ? $"__errorHandler{GeneratedNativeIdentifierSuffix}__{name}"
                 : base.GetAdditionalIdentifier(info, name);
         }

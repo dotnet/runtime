@@ -73,10 +73,8 @@ namespace Microsoft.Interop
 
         public bool IsManagedReturnPosition { get => ManagedIndex == ReturnIndex; }
         public bool IsNativeReturnPosition { get => NativeIndex == ReturnIndex; }
-        public bool IsManagedExceptionPosition { get; init; }
         public bool IsErrorHandlingPosition { get; init; }
-        public bool IsManagedIdentifierSynthetic { get; init; }
-        public bool IsNativePositionOverlapping { get; init; }
+        public bool IsManagedIdentifierSynthetic => IsSpecialIndex(ManagedIndex);
 
         public int ManagedIndex { get; init; } = UnsetIndex;
         public int NativeIndex { get; init; } = UnsetIndex;

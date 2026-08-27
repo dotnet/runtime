@@ -24,7 +24,7 @@ namespace Microsoft.Interop
                 if (info.IsManagedReturnPosition)
                     continue;
 
-                if (info.RefKind == RefKind.Out && info.ManagedIndex != TypePositionInfo.ErrorIndex)
+                if (info.RefKind == RefKind.Out && !info.IsErrorHandlingPosition)
                 {
                     initializations.Add(MarshallerHelpers.DefaultInit(info, context));
                 }
@@ -182,7 +182,7 @@ namespace Microsoft.Interop
 
                     // Declare a separate managed identifier when a separate managed and native identifier is needed
                     // and the marshaller is not the "managed exception" marshaller (whose managed identifier is defined by the catch clause).
-                    if (boundaryBehavior != ValueBoundaryBehavior.ManagedIdentifier && !marshaller.TypeInfo.IsManagedExceptionPosition)
+                    if (boundaryBehavior != ValueBoundaryBehavior.ManagedIdentifier && !marshaller.TypeInfo.IsErrorHandlingPosition)
                     {
                         statementsToUpdate.Add(Declare(
                             marshaller.TypeInfo.ManagedType.Syntax,

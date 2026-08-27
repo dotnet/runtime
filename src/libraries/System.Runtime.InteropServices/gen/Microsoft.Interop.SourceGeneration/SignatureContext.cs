@@ -173,20 +173,15 @@ namespace Microsoft.Interop
             void ApplyErrorHandlingInfo(ImmutableArray<TypePositionInfo>.Builder infos, ErrorHandlingInfo errorInfo)
             {
                 TypePositionInfo CreateErrorInfo(
-                    int nativeIndex,
-                    string instanceIdentifier = "__error",
-                    bool isManagedIdentifierSynthetic = true,
-                    bool isNativePositionOverlapping = false)
+                    int nativeIndex)
                 {
                     return new TypePositionInfo(errorInfo.ManagedType, errorInfo.MarshallingInfo)
                     {
-                        InstanceIdentifier = instanceIdentifier,
+                        InstanceIdentifier = "__error",
                         RefKind = nativeIndex == TypePositionInfo.ReturnIndex ? RefKind.None : RefKind.Out,
                         ManagedIndex = TypePositionInfo.ErrorIndex,
                         NativeIndex = nativeIndex,
                         IsErrorHandlingPosition = true,
-                        IsManagedIdentifierSynthetic = isManagedIdentifierSynthetic,
-                        IsNativePositionOverlapping = isNativePositionOverlapping,
                     };
                 }
 
@@ -199,9 +194,7 @@ namespace Microsoft.Interop
                         TypePositionInfo returnInfo = infos[returnIndex];
                         if (MatchesManagedType(returnInfo))
                         {
-                            infos.Add(CreateErrorInfo(
-                                TypePositionInfo.ReturnIndex,
-                                isNativePositionOverlapping: true));
+                            infos.Add(CreateErrorInfo(TypePositionInfo.ReturnIndex));
                         }
                         else if (returnInfo.ManagedType == SpecialTypeInfo.Void)
                         {
@@ -235,11 +228,7 @@ namespace Microsoft.Interop
                         TypePositionInfo lastParameter = GetLastManagedParameter(infos);
                         Debug.Assert(lastParameter is { RefKind: RefKind.Out or RefKind.Ref }
                             && MatchesManagedType(lastParameter));
-                        infos.Add(CreateErrorInfo(
-                            lastParameter.NativeIndex,
-                            lastParameter.InstanceIdentifier,
-                            isManagedIdentifierSynthetic: false,
-                            isNativePositionOverlapping: true));
+                        infos.Add(CreateErrorInfo(lastParameter.NativeIndex));
                         break;
 
                     case ErrorHandlingLocation.HiddenLastParameter:

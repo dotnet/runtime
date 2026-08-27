@@ -61,17 +61,30 @@ namespace Microsoft.Interop
 
             diagnosticsBag.ReportGeneratorDiagnostics(bindingDiagnostics);
 
+            TypePositionInfo? errorHandlingInfo = argTypes.FirstOrDefault(static info => info.IsErrorHandlingPosition);
+            TypePositionInfo? errorHandlingOverlappedPosition = errorHandlingInfo is null
+                ? null
+                : argTypes.FirstOrDefault(info => !info.IsErrorHandlingPosition && info.NativeIndex == errorHandlingInfo.NativeIndex);
+
             if (_marshallers.ManagedReturnMarshaller.UsesNativeIdentifier)
             {
                 // If we need a different native return identifier, then recreate the context with the correct identifier before we generate any code.
-                _context = new DefaultIdentifierContext(ReturnIdentifier, $"{ReturnIdentifier}{StubIdentifierContext.GeneratedNativeIdentifierSuffix}", MarshalDirection.ManagedToUnmanaged)
+                _context = new DefaultIdentifierContext(
+                    ReturnIdentifier,
+                    $"{ReturnIdentifier}{StubIdentifierContext.GeneratedNativeIdentifierSuffix}",
+                    MarshalDirection.ManagedToUnmanaged,
+                    errorHandlingOverlappedPosition)
                 {
                     CodeEmitOptions = codeEmitOptions
                 };
             }
             else
             {
-                _context = new DefaultIdentifierContext(ReturnIdentifier, ReturnIdentifier, MarshalDirection.ManagedToUnmanaged)
+                _context = new DefaultIdentifierContext(
+                    ReturnIdentifier,
+                    ReturnIdentifier,
+                    MarshalDirection.ManagedToUnmanaged,
+                    errorHandlingOverlappedPosition)
                 {
                     CodeEmitOptions = codeEmitOptions
                 };

@@ -35,20 +35,21 @@ namespace Microsoft.Interop
 
             foreach (TypePositionInfo argType in elementTypeInfo)
             {
-                if (argType.IsManagedExceptionPosition)
+                if (argType.IsErrorHandlingPosition)
                 {
-                    Debug.Assert(managedExceptionInfo == null);
-                    managedExceptionInfo = argType;
-                    // The exception marshaller's selection might depend on the unmanaged type of the native return marshaller.
-                    // Delay binding the generator until we've processed the native return marshaller.
-                    continue;
-                }
-
-                if (argType is { IsErrorHandlingPosition: true, ManagedIndex: TypePositionInfo.ErrorIndex })
-                {
-                    Debug.Assert(errorHandlingInfo is null);
-                    errorHandlingInfo = argType;
-                    // An error marshaller may overlap an ordinary marshaller in the native position.
+                    if (context.Direction == MarshalDirection.UnmanagedToManaged)
+                    {
+                        Debug.Assert(managedExceptionInfo is null);
+                        managedExceptionInfo = argType;
+                        // The exception marshaller's selection might depend on the unmanaged type of the native return marshaller.
+                    }
+                    else
+                    {
+                        Debug.Assert(context.Direction == MarshalDirection.ManagedToUnmanaged);
+                        Debug.Assert(errorHandlingInfo is null);
+                        errorHandlingInfo = argType;
+                        // An error marshaller may overlap an ordinary marshaller in the native position.
+                    }
                     // Delay binding until all ordinary signature marshallers have been processed.
                     continue;
                 }
@@ -206,7 +207,7 @@ namespace Microsoft.Interop
 
             static (bool IsManagedIndex, int Index) GetInfoIndex(TypePositionInfo info)
             {
-                if (info is { IsErrorHandlingPosition: true, IsManagedExceptionPosition: false })
+                if (info.IsErrorHandlingPosition)
                 {
                     return (false, info.NativeIndex);
                 }
