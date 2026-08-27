@@ -24,19 +24,19 @@ namespace ILCompiler.PortableCallHelpers
             // Only the logging is suppressed: a module a later P/Invoke does resolve - through
             // [WasmImportLinkage], say - still has to make it into the table.
             var skippedModules = new HashSet<string>(StringComparer.Ordinal);
-            var modules = new SortedDictionary<string, string>(StringComparer.Ordinal);
+            var modules = new SortedSet<string>(StringComparer.Ordinal);
             foreach (string module in pinvokeModules)
-                modules[module] = module;
+                modules.Add(module);
 
             // What actually gets linked in, captured before the scan below starts adding to modules.
             // The lib-prefix fallback has to resolve against this rather than against modules, or an
             // alias could be derived from another alias, or from a module that is only imported for
             // [WasmImportLinkage] and has no archive behind it at all.
-            var linkedModules = new HashSet<string>(modules.Keys, StringComparer.Ordinal);
+            var linkedModules = new HashSet<string>(modules, StringComparer.Ordinal);
 
             foreach (PInvokeInfo pinvoke in pinvokes)
             {
-                if (modules.ContainsKey(pinvoke.Module))
+                if (modules.Contains(pinvoke.Module))
                     continue;
 
                 // A static archive is named libFoo.a, so the module list - built from the file names
@@ -45,7 +45,7 @@ namespace ILCompiler.PortableCallHelpers
                 // runtime resolver looks up, so accept it as naming the same module.
                 if (linkedModules.Contains($"lib{pinvoke.Module}"))
                 {
-                    modules.Add(pinvoke.Module, pinvoke.Module);
+                    modules.Add(pinvoke.Module);
                     log.Verbose($"Adding module {pinvoke.Module} for statically linked lib{pinvoke.Module}");
                     continue;
                 }
@@ -55,13 +55,13 @@ namespace ILCompiler.PortableCallHelpers
                 if (pinvoke.WasmLinkage)
                 {
                     // WasmLinkage means we need to import the module
-                    modules.Add(pinvoke.Module, pinvoke.Module);
+                    modules.Add(pinvoke.Module);
                     log.Verbose($"Adding module {pinvoke.Module} for WasmImportLinkage");
                 }
                 else if (pinvoke.Module == "*")
                 {
                     // Special case for * module to indicate static linking without specifying the module
-                    modules.Add(pinvoke.Module, pinvoke.Module);
+                    modules.Add(pinvoke.Module);
                     log.Verbose($"Adding module {pinvoke.Module} for static linking");
                 }
                 else if (pinvoke.Module != "QCall")
@@ -95,7 +95,7 @@ namespace ILCompiler.PortableCallHelpers
                 """);
 
             var pinvokesGroupedByEntryPoint = pinvokes
-                                                .Where(l => modules.ContainsKey(l.Module))
+                                                .Where(l => modules.Contains(l.Module))
                                                 .OrderBy(l => l.EntryPoint, StringComparer.Ordinal)
                                                 .GroupBy(CEntryPoint, StringComparer.Ordinal);
 
@@ -134,7 +134,7 @@ namespace ILCompiler.PortableCallHelpers
                 """);
 
             var moduleImports = new Dictionary<string, List<string>>();
-            foreach (string module in modules.Keys)
+            foreach (string module in modules)
             {
                 // the order here is not important, because we use hash tables, we want it to be stable though
                 List<string> imports = pinvokes
@@ -174,7 +174,7 @@ namespace ILCompiler.PortableCallHelpers
                 } PInvokeTable;
 
                 static PInvokeTable s_PInvokeTables[] = {
-                    {{string.Join($",{w.NewLine}    ", modules.Keys.Select(m => $"{{\"{EscapeLiteral(m)}\", s_{FixupSymbolName(m)}, {moduleImports[m].Count}}}"))}}
+                    {{string.Join($",{w.NewLine}    ", modules.Select(m => $"{{\"{EscapeLiteral(m)}\", s_{FixupSymbolName(m)}, {moduleImports[m].Count}}}"))}}
                 };
                 const size_t s_PInvokeTablesCount = sizeof(s_PInvokeTables) / sizeof(s_PInvokeTables[0]);
 

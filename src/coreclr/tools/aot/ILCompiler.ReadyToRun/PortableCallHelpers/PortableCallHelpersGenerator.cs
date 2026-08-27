@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text;
 
 using Internal.TypeSystem;
@@ -101,10 +100,10 @@ namespace ILCompiler.PortableCallHelpers
             WriteIfDifferent(Path.Combine(options.OutputDirectory, ReversePInvokeFileName), log,
                 w => generator.EmitNativeToInterp(w, callbacks));
 
-            IEnumerable<string> cookies = signatures.Concat(internalCallCollector.Signatures);
+            signatures.UnionWith(internalCallCollector.Signatures);
 
             WriteIfDifferent(Path.Combine(options.OutputDirectory, InterpToNativeFileName), log,
-                w => InterpToNativeGenerator.Emit(w, cookies));
+                w => InterpToNativeGenerator.Emit(w, signatures));
         }
 
         /// <summary>

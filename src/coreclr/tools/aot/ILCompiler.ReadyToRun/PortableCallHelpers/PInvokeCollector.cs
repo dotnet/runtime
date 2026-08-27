@@ -114,7 +114,7 @@ namespace ILCompiler.PortableCallHelpers
         public int Compare(PInvokeCallback x, PInvokeCallback y)
         {
             int compare = string.Compare(x.Key, y.Key, StringComparison.Ordinal);
-            return compare != 0 ? compare : (int)(x.Token - y.Token);
+            return compare != 0 ? compare : x.Token.CompareTo(y.Token);
         }
     }
 
