@@ -66,6 +66,11 @@ public class GenerateXunitTestClassList : Task
         {
             classNames = GetTestClasses(excluded);
         }
+        catch (Exception ex) when (IsIoException(ex))
+        {
+            Log.LogError($"Failed to read '{Assembly}': {ex.Message}");
+            return false;
+        }
         catch (BadImageFormatException bife)
         {
             Log.LogError($"Failed to read metadata from '{Assembly}': {bife.Message}");
@@ -80,11 +85,22 @@ public class GenerateXunitTestClassList : Task
         }
 
         classNames.Sort(StringComparer.Ordinal);
-        WriteIfChanged(classNames);
+        try
+        {
+            WriteIfChanged(classNames);
+        }
+        catch (Exception ex) when (IsIoException(ex))
+        {
+            Log.LogError($"Failed to write '{OutputPath}': {ex.Message}");
+            return false;
+        }
 
         Log.LogMessage(MessageImportance.Low, $"Wrote {classNames.Count} test class names to '{OutputPath}'.");
         return !Log.HasLoggedErrors;
     }
+
+    private static bool IsIoException(Exception ex) =>
+        ex is IOException or UnauthorizedAccessException;
 
     private List<string> GetTestClasses(HashSet<string> excluded)
     {
