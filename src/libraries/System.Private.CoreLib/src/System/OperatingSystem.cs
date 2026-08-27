@@ -221,6 +221,17 @@ namespace System
 #endif
 
         /// <summary>
+        /// Indicates whether the current application is running on HarmonyOS (OpenHarmony).
+        /// </summary>
+        [NonVersionable]
+        internal static bool IsOhos() =>
+#if TARGET_OHOS
+            true;
+#else
+            false;
+#endif
+
+        /// <summary>
         /// Indicates whether the current application is running on Android.
         /// </summary>
         [NonVersionable]

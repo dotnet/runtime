@@ -414,7 +414,13 @@ namespace System.IO
                 }
             }
 
-            return "/tmp/";
+            // On non-Apple platforms, shared memory files live under the process temp directory.
+            // Use Path.GetTempPath() (which honors TMPDIR on Unix and falls back to /tmp) rather
+            // than a hardcoded /tmp: sandboxed environments such as OpenHarmony mount /tmp read-only
+            // and rely on TMPDIR pointing at a writable location for the .NET shared memory files
+            // (named mutexes, etc.). Everything else in the runtime already honors TMPDIR, so this
+            // was the only offender.
+            return Path.GetTempPath();
         }
 
         internal static SafeFileHandle CreateOrOpenFile(string sharedMemoryFilePath, SharedMemoryId id, bool createIfNotExist, out bool createdFile)
