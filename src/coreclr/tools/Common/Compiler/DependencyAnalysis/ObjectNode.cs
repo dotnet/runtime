@@ -70,7 +70,7 @@ namespace ILCompiler.DependencyAnalysis
 
             // A method that is not emitted needs no wasm function type. Declined compilations
             // (see the wasm limit checks in CorInfoImpl.ReadyToRun) publish empty code, and
-            // MethodWithGCInfo.ShouldSkipEmittingObjectNode skips those nodes -- but marking the
+            // MethodWithGCInfo.ShouldSkipEmittingObjectNode skips those nodes, but marking the
             // type node here anyway would still emit the signature into the type section, with no
             // function referencing it. For an over-limit signature that alone is enough to make
             // the module unloadable, which is the whole failure this check exists to prevent.

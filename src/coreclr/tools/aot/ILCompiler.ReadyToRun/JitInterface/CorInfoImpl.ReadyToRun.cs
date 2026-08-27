@@ -3751,13 +3751,10 @@ namespace Internal.JitInterface
         /// exceeds an implementation limit. Emitting such a function type produces a module that
         /// no engine will instantiate, and the runtime responds by silently interpreting the
         /// entire assembly, so declining here is strictly better: only this method is lost.
+        /// The caller passes a constant for <paramref name="what"/>, and the method being compiled
+        /// is formatted only on the failure path, because this runs for every wasm method and call
+        /// site and <see cref="MethodDesc.ToString"/> walks every parameter.
         /// </summary>
-        /// <param name="signature">The lowered wasm signature to check.</param>
-        /// <param name="what">
-        /// A constant describing what the signature belongs to. Kept as a plain string, and the
-        /// method being compiled formatted only on the failure path, because this runs for every
-        /// wasm method and call site and <see cref="MethodDesc.ToString"/> walks every parameter.
-        /// </param>
         private void ThrowIfExceedsWasmLimits(in WasmSignature signature, string what)
         {
             if (WasmLimits.ExceedsLimits(signature.FuncType))

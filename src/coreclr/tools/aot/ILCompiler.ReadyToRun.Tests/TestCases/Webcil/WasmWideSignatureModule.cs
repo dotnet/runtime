@@ -8,8 +8,8 @@ namespace Webcil;
 // WebAssembly caps a function type at 1000 parameters, and a module declaring more is rejected by
 // every engine. Because the ReadyToRun runtime reacts to a module it cannot instantiate by silently
 // interpreting the whole assembly, emitting such a type costs the assembly all of its R2R coverage
-// with no error. crossgen2 must therefore decline the methods that would need one -- and only those
-// -- leaving the rest of the assembly compiled.
+// with no error. crossgen2 must therefore decline the methods that would need one, and only those,
+// leaving the rest of the assembly compiled.
 public static class WasmWideSignatureModule
 {
     // Lowers to 1002 wasm parameters (1000 + shadow stack pointer + portable entrypoint), over the

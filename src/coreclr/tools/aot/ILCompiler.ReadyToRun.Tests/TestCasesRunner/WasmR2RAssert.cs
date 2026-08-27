@@ -467,7 +467,7 @@ internal static class WasmR2RAssert
     /// <remarks>
     /// Scanning the type section rather than the per-function signatures is deliberate. An
     /// over-limit type makes the module unloadable simply by being declared, so a type left behind
-    /// by a method that was never emitted is just as fatal as one in use -- and is invisible to any
+    /// by a method that was never emitted is just as fatal as one in use, and is invisible to any
     /// check that walks only the functions.
     /// </remarks>
     public static void GetMaxWasmFunctionTypeArity(WebcilImageReader reader, out int maxParams, out int maxResults)

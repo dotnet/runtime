@@ -151,7 +151,7 @@ public class R2RTestSuites
             // WebAssembly caps a function type at 1000 parameters and 1000 results. A module
             // declaring more is rejected by every engine, and the ReadyToRun runtime reacts by
             // silently interpreting the whole assembly, so this must hold for the type section as
-            // a whole -- an over-limit type left behind by a method that was not emitted is just
+            // a whole - an over-limit type left behind by a method that was not emitted is just
             // as fatal as one in use.
             WasmR2RAssert.GetMaxWasmFunctionTypeArity(webcilReader, out int maxParams, out int maxResults);
             Assert.InRange(maxParams, 0, WasmLimits.MaxFunctionParams);
