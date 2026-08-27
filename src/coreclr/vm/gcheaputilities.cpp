@@ -41,7 +41,7 @@ bool g_sw_ww_enabled_for_gc_heap = false;
 
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 
-// Unused - kept permanently zeroed for GC data contract c1 compatibility. See gcheaputilities.h.
+// Unused - kept for GC data contract c1 compatibility, see datadescriptor/datadescriptor.inc.
 GVAL_IMPL_INIT(ee_alloc_context, g_global_alloc_context, {});
 
 thread_local ee_alloc_context::PerThreadRandom ee_alloc_context::t_random = PerThreadRandom();
