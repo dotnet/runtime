@@ -18,6 +18,7 @@
     <EnableAotAnalyzer>false</EnableAotAnalyzer>
   </PropertyGroup>
 
+  <!-- Apple mobile cannot use RemoteExecutor, so enable metadata updates in the app process. -->
   <ItemGroup Condition="'$(TargetsAppleMobile)' == 'true' and '$(UseMonoRuntime)' == 'false' and '$(UseNativeAotRuntime)' != 'true'">
     <EnvironmentVariables Include="DOTNET_MODIFIABLE_ASSEMBLIES=debug" />
   </ItemGroup>
@@ -111,6 +112,7 @@
     <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.AppleCoreCLR.xml" />
   </ItemGroup>
 
+  <!-- EnC deltas must match their unmodified baseline assemblies. -->
   <Target Name="PreserveEnCAssembliesFromLinking"
           Condition="'$(EnableAggressiveTrimming)' == 'true' and ('$(TargetOS)' == 'browser' or ('$(TargetsAppleMobile)' == 'true' and '$(UseMonoRuntime)' == 'false' and '$(UseNativeAotRuntime)' != 'true'))"
           BeforeTargets="PrepareForILLink">
@@ -129,6 +131,7 @@
     </ItemGroup>
   </Target>
 
+  <!-- Updated fixtures must remain IL while the rest of the app stays ReadyToRun. -->
   <Target Name="ExcludeEnCAssembliesFromReadyToRun"
           Condition="'$(TargetsAppleMobile)' == 'true' and '$(UseMonoRuntime)' == 'false' and '$(UseNativeAotRuntime)' != 'true'"
           BeforeTargets="_PrepareForReadyToRunCompilation">
