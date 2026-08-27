@@ -108,6 +108,8 @@ namespace System.Security.Cryptography
                 using (ECDiffieHellmanPublicKey recipientPublicKey = _ecdh.PublicKey)
                 {
                     ExportPublicKey(ephemeral, _algorithm, ciphertext);
+
+                    // The caller clears sharedSecret, even when this method throws, so no cleanup is needed here.
                     DeriveSecret(ephemeral, recipientPublicKey, sharedSecret);
                 }
             }
@@ -124,6 +126,7 @@ namespace System.Security.Cryptography
                 using (ECDiffieHellmanKem ephemeral = ImportPublicKey(_algorithm, ciphertext))
                 using (ECDiffieHellmanPublicKey ephemeralPublicKey = ephemeral._ecdh.PublicKey)
                 {
+                    // The caller clears sharedSecret, even when this method throws, so no cleanup is needed here.
                     DeriveSecret(_ecdh, ephemeralPublicKey, sharedSecret);
                 }
             }

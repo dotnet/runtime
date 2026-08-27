@@ -35,7 +35,8 @@ namespace System.Security.Cryptography
                     rsa = RSA.Create(algorithm.KeySizeInBits);
 
                     // RSA key generation is lazy, so force it to happen eagerly
-                    // to surface errors now instead of at first use.
+                    // so that key generation failures happen in GenerateKey rather than
+                    // the first method to use the key.
                     _ = rsa.ExportParameters(includePrivateParameters: false);
 
                     return new RsaKem(rsa, algorithm);
@@ -85,21 +86,14 @@ namespace System.Security.Cryptography
                 Debug.Assert(sharedSecret.Length == RsaKemAlgorithm.SecretSizeInBytes);
                 Debug.Assert(ciphertext.Length == _algorithm.KeySizeInBits / 8);
 
-                try
-                {
-                    RandomNumberGenerator.Fill(sharedSecret);
+                // The caller clears sharedSecret, even when this method throws, so no cleanup is needed here.
+                RandomNumberGenerator.Fill(sharedSecret);
 
-                    if (!_rsa.TryEncrypt(sharedSecret, ciphertext, RSAEncryptionPadding.OaepSHA256, out int bytesWritten) ||
-                        bytesWritten != ciphertext.Length)
-                    {
-                        Debug.Fail("RSA encryption produced an unexpected ciphertext length.");
-                        throw new CryptographicException();
-                    }
-                }
-                catch
+                if (!_rsa.TryEncrypt(sharedSecret, ciphertext, RSAEncryptionPadding.OaepSHA256, out int bytesWritten) ||
+                    bytesWritten != ciphertext.Length)
                 {
-                    CryptographicOperations.ZeroMemory(sharedSecret);
-                    throw;
+                    Debug.Fail("RSA encryption produced an unexpected ciphertext length.");
+                    throw new CryptographicException();
                 }
             }
 
@@ -114,18 +108,11 @@ namespace System.Security.Cryptography
                 Debug.Assert(sharedSecret.Length == RsaKemAlgorithm.SecretSizeInBytes);
                 Debug.Assert(ciphertext.Length == _algorithm.KeySizeInBits / 8);
 
-                try
+                // The caller clears sharedSecret, even when this method throws, so no cleanup is needed here.
+                if (!_rsa.TryDecrypt(ciphertext, sharedSecret, RSAEncryptionPadding.OaepSHA256, out int bytesWritten) ||
+                    bytesWritten != sharedSecret.Length)
                 {
-                    if (!_rsa.TryDecrypt(ciphertext, sharedSecret, RSAEncryptionPadding.OaepSHA256, out int bytesWritten) ||
-                        bytesWritten != sharedSecret.Length)
-                    {
-                        throw new CryptographicException(SR.Cryptography_CompositeKemRsaDecapsulationFailed);
-                    }
-                }
-                catch
-                {
-                    CryptographicOperations.ZeroMemory(sharedSecret);
-                    throw;
+                    throw new CryptographicException(SR.Cryptography_CompositeKemRsaDecapsulationFailed);
                 }
             }
 
