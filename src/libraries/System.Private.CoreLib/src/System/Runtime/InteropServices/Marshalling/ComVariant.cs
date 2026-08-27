@@ -4,6 +4,8 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
+#pragma warning disable CA1416 // Windows-only interop is guarded by #if TARGET_WINDOWS.
+
 namespace System.Runtime.InteropServices.Marshalling
 {
     /// <summary>

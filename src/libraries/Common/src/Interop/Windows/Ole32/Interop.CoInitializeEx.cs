@@ -7,6 +7,9 @@ using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
+#if NET
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
     internal static partial class Ole32
     {
         internal const uint COINIT_APARTMENTTHREADED = 2;

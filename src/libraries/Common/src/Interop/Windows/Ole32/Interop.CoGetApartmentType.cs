@@ -27,6 +27,9 @@ internal static partial class Interop
         APTTYPEQUALIFIER_APPLICATION_STA = 0x6u,
     }
 
+#if NET
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
     internal static partial class Ole32
     {
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]

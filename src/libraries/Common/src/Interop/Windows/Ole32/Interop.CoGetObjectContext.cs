@@ -6,6 +6,9 @@ using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
+#if NET
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
     internal static partial class Ole32
     {
         internal static unsafe int CoGetObjectContext(in Guid riid, out IntPtr ppv)

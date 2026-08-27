@@ -3,6 +3,8 @@
 
 using System.Diagnostics;
 
+#pragma warning disable CA1416 // Interop is only supported on Windows; this file is compiled only for Windows.
+
 namespace System.Runtime.InteropServices
 {
     public static partial class Marshal

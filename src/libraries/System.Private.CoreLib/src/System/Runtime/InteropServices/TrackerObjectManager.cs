@@ -8,6 +8,8 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using static System.Runtime.InteropServices.ComWrappers;
 
+#pragma warning disable CA1416 // Windows-only interop is guarded by #if TARGET_WINDOWS.
+
 namespace System.Runtime.InteropServices
 {
     internal static partial class TrackerObjectManager
