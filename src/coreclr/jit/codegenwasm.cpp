@@ -3301,6 +3301,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
     CorInfoWasmType* types           = nullptr;
     size_t           typeCount       = 0;
     bool             helperIsManaged = false;
+    bool             helperUsesPep   = false;
 
     const bool MANAGED = true, UNMANAGED = false;
 #ifdef TARGET_64BIT
@@ -3316,6 +3317,9 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
         types                                      = helper_id##_types;                                                \
         typeCount                                  = ArrLen(helper_id##_types);                                        \
         helperIsManaged                            = is_managed;                                                       \
+        helperUsesPep = helperIsManaged && m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PORTABLE_ENTRY_POINTS); \
+        if (helperIsManaged /* `types` includes PEP */ && !helperUsesPep)                                              \
+            typeCount--;                                                                                               \
         break;                                                                                                         \
     }
 
@@ -3358,7 +3362,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
 
     params.wasmSignature = m_compiler->info.compCompHnd->getWasmTypeSymbol(types, typeCount);
 
-    if (helperIsManaged && m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PORTABLE_ENTRY_POINTS))
+    if (helperUsesPep)
     {
         // Push PEP onto the stack because we are calling a managed helper that expects it as the last parameter.
         // The helper function address is the address of an indirection cell, so we load from the cell to get the PEP
