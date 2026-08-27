@@ -6639,11 +6639,6 @@ DWORD CEEInfo::getMethodAttribsInternal (CORINFO_METHOD_HANDLE ftn)
         result |= CORINFO_FLG_PINVOKE;
     }
 
-    if (pMD->IsILStub() && pMD->AsDynamicMethodDesc()->HasMDContextArg())
-    {
-        result |= CORINFO_FLG_HAS_MD_CONTEXT_ARG;
-    }
-
     if (IsMdRequireSecObject(attribs))
     {
         // Assume all methods marked as DynamicSecurity are

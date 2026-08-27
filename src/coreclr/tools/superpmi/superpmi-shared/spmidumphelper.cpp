@@ -169,7 +169,6 @@ std::string SpmiDumpHelper::DumpCorInfoFlag(CorInfoFlag flags)
     AddFlag(CORINFO_FLG_SHAREDINST);
     AddFlag(CORINFO_FLG_DELEGATE_INVOKE);
     AddFlag(CORINFO_FLG_PINVOKE);
-    AddFlag(CORINFO_FLG_HAS_MD_CONTEXT_ARG);
     AddFlag(CORINFO_FLG_NOGCCHECK);
     AddFlag(CORINFO_FLG_INTRINSIC);
     AddFlag(CORINFO_FLG_CONSTRUCTOR);

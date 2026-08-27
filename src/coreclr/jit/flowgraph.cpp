@@ -2595,9 +2595,10 @@ PhaseStatus Compiler::fgAddInternal()
 
         LclVarDsc* varDsc = lvaGetDesc(lvaInlinedPInvokeFrameVar);
         // Make room for the inlined frame.
-        const CORINFO_EE_INFO* eeInfo = eeGetEEInfo();
-        unsigned frameSize            = compMethodHasMDContextArg() ? eeInfo->inlinedCallFrameInfo.sizeWithSecretStubArg
-                                                                    : eeInfo->inlinedCallFrameInfo.size;
+        const CORINFO_EE_INFO* eeInfo          = eeGetEEInfo();
+        const bool             hasMDContextArg = info.compIsVarArgs && opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB);
+        unsigned               frameSize =
+            hasMDContextArg ? eeInfo->inlinedCallFrameInfo.sizeWithSecretStubArg : eeInfo->inlinedCallFrameInfo.size;
         lvaSetStruct(lvaInlinedPInvokeFrameVar, typGetBlkLayout(frameSize), false);
     }
 

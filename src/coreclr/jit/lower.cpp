@@ -6811,7 +6811,10 @@ void Lowering::InsertPInvokeMethodProlog()
     noway_assert(m_compiler->info.compUnmanagedCallCountWithGCTransition);
     noway_assert(m_compiler->lvaInlinedPInvokeFrameVar != BAD_VAR_NUM);
 
-    if (!m_compiler->compMethodHasMDContextArg() && m_compiler->opts.ShouldUsePInvokeHelpers())
+    const bool hasMDContextArg =
+        m_compiler->info.compIsVarArgs && m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB);
+
+    if (!hasMDContextArg && m_compiler->opts.ShouldUsePInvokeHelpers())
     {
         return;
     }
@@ -6831,7 +6834,7 @@ void Lowering::InsertPInvokeMethodProlog()
     // call to the init helper below, which links the frame into the thread
     // list on 32-bit platforms.
     // InlinedCallFrame.m_StubSecretArg = stubSecretArg;
-    if (m_compiler->compMethodHasMDContextArg())
+    if (hasMDContextArg)
     {
         assert(m_compiler->compHasSecretStubArgument());
         GenTree* value = m_compiler->gtNewLclvNode(m_compiler->lvaGetSecretStubArgumentVar(), TYP_I_IMPL);
