@@ -162,7 +162,7 @@ namespace ILCompiler.Compiler.Tests
 
             byte[] expected = useRealBody ?
                 [0x0C, 0x00, 0x20, 0x00, 0x20, 0x01, 0x12, 0x80, 0x80, 0x80, 0x80, 0x00, 0x0B] :
-                [0x0D, 0x00, 0x20, 0x00, 0x20, 0x01, 0x10, 0x80, 0x80, 0x80, 0x80, 0x00, 0x00, 0x0B];
+                [0x0B, 0x00, 0x20, 0x00, 0x10, 0x80, 0x80, 0x80, 0x80, 0x00, 0x00, 0x0B];
             ObjectNode.ObjectData objectData = emitter.Encode(node);
             Assert.Equal(expected, objectData.Data);
             Assert.Equal(1, objectData.Alignment);
@@ -170,7 +170,7 @@ namespace ILCompiler.Compiler.Tests
 
             Relocation relocation = Assert.Single(objectData.Relocs);
             Assert.Equal(RelocType.WASM_FUNCTION_INDEX_LEB, relocation.RelocType);
-            Assert.Equal(7, relocation.Offset);
+            Assert.Equal(useRealBody ? 7 : 5, relocation.Offset);
             Assert.Same(callTarget, relocation.Target);
         }
 

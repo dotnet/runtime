@@ -20,6 +20,7 @@ namespace ILCompiler.DependencyAnalysis
 
             if (ReferenceEquals(target, RealBody))
             {
+                // The real body was marked, so forward all parameters and tail-call it.
                 int parameterCount = signature.Params.Types.Length;
                 expressions = new WasmExpr[parameterCount + 1];
                 for (int i = 0; i < parameterCount; i++)
@@ -30,13 +31,12 @@ namespace ILCompiler.DependencyAnalysis
             }
             else
             {
+                // The real body was removed, so call the throw helper with the shadow stack pointer.
                 Debug.Assert(!Method.IsUnmanagedCallersOnly);
-                Debug.Assert(signature.Params.Types.Length >= 2);
 
                 expressions =
                 [
                     Local.Get(0),
-                    Local.Get(signature.Params.Types.Length - 1),
                     ControlFlow.Call(target),
                     ControlFlow.Unreachable,
                 ];
