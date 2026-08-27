@@ -46,7 +46,7 @@ namespace System.Threading
 
                 // When a worker is invited to dispatch work items but finds none, it may park without spinning first.
                 // That is only preferable while more than this number of workers are still processing work and can take
-                // the next request. Set to 0 to always park without spinning after such a dispatch.
+                // the next request. Set to 0 to park without spinning when at least one other worker is still processing work.
                 short threshold =
                     AppContextConfigHelper.GetInt16Config(
                         "System.Threading.ThreadPool.SpuriousDispatchNoSpinThreshold",

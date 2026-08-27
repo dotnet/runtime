@@ -17,7 +17,7 @@ namespace System.Threading
     {
         // The spin count is chosen to be in the range of typical thread wake latency and some additional overhead,
         // all assuming a single spin is calibrated to around 35 nanoseconds.
-        // The thread wake latency commonly measures at ~10 microsecond (year 2026) and unlikely to drastically change.
+        // The thread wake latency commonly measures at ~10 microseconds (year 2026) and is unlikely to drastically change.
         // But since the wakes are LIFO, the spin needs to survive additional overhead (we will need to take a lock, unlink the thread).
         // So we limit the spin to about 35 microseconds.
         private const int DefaultSemaphoreSpinCountLimit = 1024;
@@ -261,9 +261,9 @@ namespace System.Threading
                         {
                             // success
 
-                            // If there are more counts wake another waiter, to make sure the counts are consumed.
-                            // If the threadpool is saturated, there may be no new semaphore traffic for a while and
-                            // we'd run all that time with some sleeping workers counted as running.
+                            // If there are remaining signals, wake another waiter to ensure signals are eventually consumed.
+                            // In a saturated pool there may be little new semaphore traffic, and we'd otherwise keep
+                            // sleeping workers counted as running for too long.
                             MaybeWakeWaiter(newCounts);
                             return true;
                         }
