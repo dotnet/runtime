@@ -175,7 +175,6 @@ static void GetExceptionHelp(OBJECTREF objException, BSTR *pbstrHelpFile, DWORD 
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(IsException(objException->GetMethodTable()));
         PRECONDITION(CheckPointer(pbstrHelpFile));
         PRECONDITION(CheckPointer(pdwHelpContext));
@@ -950,7 +949,7 @@ extern "C" INT64 QCALLTYPE GCInterface_GetTotalAllocatedBytesPrecise()
         }
     }
 
-    ThreadSuspend::RestartEE(FALSE, TRUE);
+    ThreadSuspend::RestartEE(true /* SuspendSucceeded */);
 
     END_QCALL;
 
@@ -1275,7 +1274,7 @@ void GCInterface::AddMemoryPressure(UINT64 bytesAllocated)
     UINT64 rem = m_remPressure[0] + m_remPressure[1] + m_remPressure[2] + m_remPressure[3] - m_remPressure[p];
 
     STRESS_LOG4(LF_GCINFO, LL_INFO10000, "AMP Add: %llu => added=%llu total_added=%llu total_removed=%llu",
-        bytesAllocated, newMemValue, add, rem);
+        (unsigned long long)bytesAllocated, (unsigned long long)newMemValue, (unsigned long long)add, (unsigned long long)rem);
 
     SendEtwAddMemoryPressureEvent(bytesAllocated);
 
@@ -1317,7 +1316,8 @@ void GCInterface::AddMemoryPressure(UINT64 bytesAllocated)
                 if ((size_t)(pGCHeap->GetNow() - pGCHeap->GetLastGCStartTime(2)) > (pGCHeap->GetLastGCDuration(2) * 5))
                 {
                     STRESS_LOG6(LF_GCINFO, LL_INFO10000, "AMP Budget: pressure=%llu ? budget=%llu (total_added=%llu, total_removed=%llu, mng_heap=%llu) pos=%d",
-                        newMemValue, budget, add, rem, heapOver3 * 3, m_iteration);
+                        (unsigned long long)newMemValue, (unsigned long long)budget, (unsigned long long)add, (unsigned long long)rem,
+                        (unsigned long long)(heapOver3 * 3), m_iteration);
 
                     GarbageCollectModeAny(2);
 
@@ -1356,7 +1356,7 @@ void GCInterface::RemoveMemoryPressure(UINT64 bytesAllocated)
     InterlockedAdd(&m_remPressure[p], bytesAllocated);
 
     STRESS_LOG2(LF_GCINFO, LL_INFO10000, "AMP Remove: %llu => removed=%llu",
-        bytesAllocated, m_remPressure[p]);
+        (unsigned long long)bytesAllocated, (unsigned long long)m_remPressure[p]);
 }
 
 inline void GCInterface::SendEtwAddMemoryPressureEvent(UINT64 bytesAllocated)

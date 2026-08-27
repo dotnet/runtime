@@ -1356,6 +1356,52 @@ namespace System.Numerics.Tests
             result = BigInteger.Parse("1\u202F234\u202F567", NumberStyles.AllowThousands, spaceCulture);
             Assert.Equal((BigInteger)1234567, result);
         }
+
+        [Fact]
+        public static void ParseUtf8WithInvalidGroupSeparator()
+        {
+            NumberFormatInfo format = new() { NumberGroupSeparator = " " };
+
+            Assert.False(BigInteger.TryParse([(byte)'1', 0xA0, (byte)'2'], NumberStyles.AllowThousands, format, out _));
+        }
+
+        [Theory]
+        [InlineData("99 +", NumberStyles.AllowTrailingSign, 99)]
+        [InlineData("99 -", NumberStyles.AllowTrailingSign, -99)]
+        [InlineData("99 $", NumberStyles.AllowCurrencySymbol, 99)]
+        public static void ParseWithWhitespacePrefixedTrailingToken(string value, NumberStyles style, int expected)
+        {
+            NumberFormatInfo format = new()
+            {
+                CurrencySymbol = " $",
+                PositiveSign = " +",
+                NegativeSign = " -"
+            };
+
+            Assert.True(BigInteger.TryParse(value, style, format, out BigInteger result));
+            Assert.Equal(expected, result);
+
+            Assert.True(BigInteger.TryParse(Encoding.UTF8.GetBytes(value), style, format, out result));
+            Assert.Equal(expected, result);
+        }
+
+        [Theory]
+        [InlineData("99 +,", NumberStyles.AllowTrailingSign)]
+        [InlineData("99 -+", NumberStyles.AllowTrailingSign)]
+        [InlineData("99 +k", NumberStyles.AllowTrailingSign)]
+        [InlineData("99 $,", NumberStyles.AllowCurrencySymbol)]
+        public static void ParseWithWhitespacePrefixedTrailingToken_Invalid(string value, NumberStyles style)
+        {
+            NumberFormatInfo format = new()
+            {
+                CurrencySymbol = " $",
+                PositiveSign = " +",
+                NegativeSign = " -"
+            };
+
+            Assert.False(BigInteger.TryParse(value, style, format, out _));
+            Assert.False(BigInteger.TryParse(Encoding.UTF8.GetBytes(value), style, format, out _));
+        }
     }
 
     [Collection(nameof(DisableParallelization))]
@@ -1482,6 +1528,11 @@ namespace System.Numerics.Tests
             // Only invalid characters (no valid number)
             yield return new object[] { "abc", NumberStyles.Integer, null };
             yield return new object[] { "xyz", NumberStyles.Integer, null };
+
+            // Values that scan successfully but aren't representable as a BigInteger
+            yield return new object[] { "1.5", NumberStyles.Float, CultureInfo.InvariantCulture };
+            yield return new object[] { "3.14159abc", NumberStyles.Float, CultureInfo.InvariantCulture };
+            yield return new object[] { "1E1000000000", NumberStyles.Float, CultureInfo.InvariantCulture };
         }
 
         [Theory]

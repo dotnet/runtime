@@ -4,6 +4,7 @@ parameters:
   isWasmOnlyBuild: false
   platforms: []
   extraBuildArgs: ''
+  useHelixMonitor: false
 
 jobs:
 
@@ -53,6 +54,7 @@ jobs:
           parameters:
             creator: dotnet-bot
             testRunNamePrefixSuffix: CoreCLR_WASI_$(_BuildConfig)
+            useHelixMonitor: ${{ parameters.useHelixMonitor }}
             # Curated test-tree subset -- expand as gates stabilize.
             testBuildArgs: >-
               -priority1

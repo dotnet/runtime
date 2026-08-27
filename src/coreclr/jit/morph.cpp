@@ -1756,34 +1756,6 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
             // add as a non-standard arg.
         }
     }
-    else if ((call->gtCallType == CT_INDIRECT) && !call->IsVirtualStub() && (call->gtCallCookie != nullptr))
-    {
-        assert(!call->IsUnmanaged());
-
-        GenTree* arg       = comp->gtNewIconEmbHndNode(call->gtCallCookie, GTF_ICON_PINVKI_HDL, nullptr);
-        call->gtCallCookie = nullptr;
-
-        // TODO: this is preserving existing behavior, but do we actually need these NO_CSEs?
-        GenTree* argConst = arg->OperIs(GT_IND) ? arg->AsIndir()->Addr() : arg;
-        argConst->gtFlags |= GTF_DONT_CSE;
-        arg->gtFlags |= GTF_DONT_CSE;
-
-        // All architectures pass the cookie in a register.
-        InsertAfterThisOrFirst(comp, NewCallArg::Primitive(arg).WellKnown(WellKnownArg::PInvokeCookie));
-        // put destination into R10/EAX
-        arg = comp->gtClone(call->gtControlExpr, true);
-        // On x64 the pinvoke target is passed in r10 which is the same
-        // register as the gs cookie check may use. That would be a problem if
-        // this was a tailcall, but we do not tailcall functions with
-        // non-standard added args except indirection cells currently.
-        assert(!call->IsFastTailCall());
-        InsertAfterThisOrFirst(comp, NewCallArg::Primitive(arg).WellKnown(WellKnownArg::PInvokeTarget));
-
-        // finally change this call to a helper call
-        call->gtCallType    = CT_HELPER;
-        call->gtControlExpr = nullptr;
-        call->gtCallMethHnd = comp->eeFindHelper(CORINFO_HELP_PINVOKE_CALLI);
-    }
 #if defined(FEATURE_READYTORUN)
 
 #ifdef TARGET_WASM
@@ -2221,6 +2193,19 @@ bool Compiler::fgTryMorphStructArg(CallArg* arg)
     GenTree** use     = GenTree::EffectiveUse(&arg->NodeRef());
     GenTree*  argNode = *use;
     assert(varTypeIsStruct(argNode));
+
+    if (arg->AbiInfo.NumSegments == 0)
+    {
+        // Pseudo arg. One case is WellKnownArg::AsyncAwaiter. We just handle
+        // these as arbitrary struct operands that can be expanded into
+        // FIELD_LIST. The async transformation will later store the value into
+        // the continuation, so FIELD_LIST allows using decomposed stores.
+        if (fgTryReplaceStructLocalWithFields(&arg->NodeRef()))
+        {
+            arg->GetNode()->SetMorphed(this, true);
+        }
+        return true;
+    }
 
     bool isSplit = arg->AbiInfo.IsSplitAcrossRegistersAndStack();
 #ifdef TARGET_ARM
@@ -4668,7 +4653,8 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         assert(call->tailCallInfo != nullptr);
 
         // We do not currently handle non-standard args except for VSD stubs.
-        if (!call->IsVirtualStub() && call->HasNonStandardAddedArgs(this))
+        if (!call->IsVirtualStub() && (call->HasNonStandardAddedArgs(this) ||
+                                       (call->gtArgs.FindWellKnownArg(WellKnownArg::SecretStubParam) != nullptr)))
         {
             failTailCall(
                 "Method with non-standard args passed in callee trash register cannot be tail called via helper");
@@ -5811,7 +5797,6 @@ void Compiler::fgMorphTailCallViaJitHelper(GenTreeCall* call)
 
     // Check for PInvoke call types that we don't handle in codegen yet.
     assert(!call->IsUnmanaged());
-    assert(call->IsVirtual() || (call->gtCallType != CT_INDIRECT) || (call->gtCallCookie == nullptr));
 
     // Don't support tail calling helper methods
     assert(!call->IsHelperCall());
@@ -6784,8 +6769,6 @@ GenTree* Compiler::fgMorphConst(GenTree* tree)
         InfoAccessType iat = info.compCompHnd->emptyStringLiteral(&pValue);
         return fgMorphTree(gtNewStringLiteralNode(iat, pValue));
     }
-
-    assert(tree->AsStrCon()->gtScpHnd == info.compScopeHnd || !IsUninitialized(tree->AsStrCon()->gtScpHnd));
 
     LPVOID         pValue;
     InfoAccessType iat =
@@ -8281,7 +8264,8 @@ DONE_MORPHING_CHILDREN:
             if (fgGlobalMorph)
             {
                 /* Mark the nodes that are conditionally executed */
-                fgWalkTreePre(&tree, gtMarkColonCond);
+                MarkColonCondVisitor markColonCond(this);
+                markColonCond.WalkTree(&tree, nullptr);
             }
             /* Since we're doing this postorder we clear this if it got set by a child */
             fgRemoveRestOfBlock = false;
@@ -9089,8 +9073,12 @@ SKIP:
         }
 
         GenTree* andOpOp1 = andOp->gtGetOp1();
+        // Note the operand's type does not have to match the AND's; morph can retype nodes to
+        // TYP_BYREF, e. g. when rewriting references to implicit byref parameters. Such operands
+        // cannot be narrowed, but can still be cast to TYP_INT below.
+        //
         // Now we narrow the first operand of AND to int.
-        if (optNarrowTree(andOpOp1, TYP_LONG, TYP_INT, ValueNumPair(), false))
+        if (andOpOp1->TypeIs(TYP_LONG) && optNarrowTree(andOpOp1, TYP_LONG, TYP_INT, ValueNumPair(), false))
         {
             optNarrowTree(andOpOp1, TYP_LONG, TYP_INT, ValueNumPair(), true);
 
@@ -12534,6 +12522,26 @@ GenTree* Compiler::fgRecognizeAndMorphBitwiseRotation(GenTree* tree)
         {
             noway_assert(GenTree::OperIsRotate(rotateOp));
 
+            // Explicitly mask the rotate amount to the range [0, bitsize-1]. Otherwise, a later
+            // transform can stick an out of range constant here and trip up lowering.  If the
+            // target's rotate or shift instructions mask their operand implicitly, those targets
+            // remove this mask again during lowering.
+            if (rotateIndex->IsCnsIntOrI())
+            {
+                ssize_t rotateAmount = rotateIndex->AsIntCon()->IconValue();
+
+                if ((rotateAmount < 0) || (rotateAmount > minimalMask))
+                {
+                    rotateIndex->AsIntCon()->SetIconValue(rotateAmount & minimalMask);
+                }
+            }
+            else
+            {
+                rotateIndex =
+                    gtNewOperNode(GT_AND, genActualType(rotateIndex), rotateIndex, gtNewIconNode(minimalMask));
+                rotateIndex->SetMorphed(this, /* doChildren */ true);
+            }
+
             GenTreeFlags inputTreeEffects = tree->gtFlags & GTF_ALL_EFFECT;
 
             // We can use the same tree only during global morph; reusing the tree in a later morph
@@ -13164,7 +13172,7 @@ void Compiler::fgMorphTreeDone(GenTree* tree, bool optAssertionPropDone DEBUGARG
     {
         printf("\nfgMorphTree (after %d):\n", morphNum);
         gtDispTree(tree);
-        printf(""); // in our logic this causes a flush
+        fflush(jitstdout());
     }
 #endif
 

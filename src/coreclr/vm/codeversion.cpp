@@ -937,7 +937,6 @@ PTR_COR_ILMETHOD ILCodeVersion::GetIL() const
     {
         THROWS; //GetILHeader throws
         GC_NOTRIGGER;
-        FORBID_FAULT;
         MODE_ANY;
     }
     CONTRACTL_END
@@ -2099,7 +2098,16 @@ HRESULT CodeVersionManager::EnumerateClosedMethodDescs(
 
     if (redirectAsyncThunk && pMD->IsAsyncThunkMethod())
     {
-        pMD = pMD->GetAsyncVariantNoCreate();
+        EX_TRY
+        {
+            pMD = pMD->GetAsyncVariantNoCreate();
+        }
+        EX_CATCH_HRESULT(hr);
+
+        if (FAILED(hr))
+        {
+            return hr;
+        }
     }
     if (pMD == NULL)
     {

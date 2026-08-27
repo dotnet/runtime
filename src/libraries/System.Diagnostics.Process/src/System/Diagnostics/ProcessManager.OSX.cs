@@ -106,6 +106,16 @@ namespace System.Diagnostics
                 procInfo.SessionId = sessionId;
             }
 
+            // Get the process's physical memory footprint - an accounting-based measurement (the same value
+            // shown in Activity Monitor's Memory column), not a strict count of unique/private pages. This can
+            // fail for several reasons - e.g. lacking permission to query a process owned by another user, or
+            // the process having exited since it was enumerated - in which case PrivateBytes is left at its
+            // default of 0, matching prior (unset) behavior for this field on macOS.
+            if (Interop.libproc.TryGetProcessPhysicalFootprint(pid, out ulong physicalFootprint))
+            {
+                procInfo.PrivateBytes = physicalFootprint > long.MaxValue ? long.MaxValue : (long)physicalFootprint;
+            }
+
             // Create a threadinfo for each thread in the process
             List<KeyValuePair<ulong, Interop.libproc.proc_threadinfo?>> lstThreads = Interop.libproc.GetAllThreadsInProcess(pid);
             foreach (KeyValuePair<ulong, Interop.libproc.proc_threadinfo?> t in lstThreads)

@@ -434,7 +434,6 @@ set(VM_HEADERS_WKS
     dllimport.h
     dllimportcallback.h
     eeconfig.h
-    eecontract.h
     eepolicy.h
     eeprofinterfaces.h
     eeprofinterfaces.inl
@@ -669,7 +668,6 @@ elseif(CLR_CMAKE_TARGET_WIN32)
             ${ARCH_SOURCES_DIR}/getstate.asm
             ${ARCH_SOURCES_DIR}/JitHelpers_Fast.asm
             ${ARCH_SOURCES_DIR}/JitHelpers_FastWriteBarriers.asm
-            ${ARCH_SOURCES_DIR}/JitHelpers_SingleAppDomain.asm
             ${ARCH_SOURCES_DIR}/JitHelpers_Slow.asm
             ${ARCH_SOURCES_DIR}/patchedcode.asm
             ${ARCH_SOURCES_DIR}/PInvokeStubs.asm
@@ -738,7 +736,6 @@ else()
             ${ARCH_SOURCES_DIR}/getstate.S
             ${ARCH_SOURCES_DIR}/jithelpers_fast.S
             ${ARCH_SOURCES_DIR}/jithelpers_fastwritebarriers.S
-            ${ARCH_SOURCES_DIR}/jithelpers_singleappdomain.S
             ${ARCH_SOURCES_DIR}/jithelpers_slow.S
             ${ARCH_SOURCES_DIR}/patchedcode.S
             ${ARCH_SOURCES_DIR}/pinvokestubs.S

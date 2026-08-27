@@ -53,14 +53,14 @@ void GCToEEInterface::SuspendEE(SUSPEND_REASON reason)
         g_pDebugInterface->SuspendForGarbageCollectionCompleted();
 }
 
-void GCToEEInterface::RestartEE(bool bFinishedGC)
+void GCToEEInterface::RestartEE(bool bUnused)
 {
     WRAPPER_NO_CONTRACT;
 
     if (g_pDebugInterface)
         g_pDebugInterface->ResumeForGarbageCollectionStarted();
 
-    ThreadSuspend::RestartEE(bFinishedGC, TRUE);
+    ThreadSuspend::RestartEE(true /* SuspendSucceeded */);
 }
 
 VOID GCToEEInterface::SyncBlockCacheWeakPtrScan(HANDLESCANPROC scanProc, uintptr_t lp1, uintptr_t lp2)
@@ -419,6 +419,22 @@ void GCToEEInterface::TriggerClientBridgeProcessing(MarkCrossReferencesArgs* arg
 
 #ifdef FEATURE_JAVAMARSHAL
     Interop::TriggerClientBridgeProcessing(args);
+#endif // FEATURE_JAVAMARSHAL
+}
+
+bool GCToEEInterface::IsClientBridgeProcessingActive()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+#ifdef FEATURE_JAVAMARSHAL
+    return Interop::IsGCBridgeActive();
+#else
+    return false;
 #endif // FEATURE_JAVAMARSHAL
 }
 
@@ -1080,7 +1096,7 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
         {
             assert(!args->is_runtime_suspended &&
                 "if runtime was suspended in patching routines then it was in running state at beginning");
-            ThreadSuspend::RestartEE(FALSE, TRUE);
+            ThreadSuspend::RestartEE(true /* SuspendSucceeded */);
         }
         return; // unlike other branches we have already done cleanup so bailing out here
 
@@ -1181,7 +1197,7 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
     {
         assert(!args->is_runtime_suspended &&
             "if runtime was suspended in patching routines then it was in running state at beginning");
-        ThreadSuspend::RestartEE(FALSE, TRUE);
+        ThreadSuspend::RestartEE(true /* SuspendSucceeded */);
     }
 }
 

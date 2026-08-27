@@ -39,7 +39,6 @@ enum SignatureKind
     SK_STATIC_VIRTUAL_CODEPOINTER_CALLSITE,
 };
 
-class Stub;
 class MethodDesc;
 class NativeCodeVersion;
 class FieldDesc;
@@ -102,18 +101,6 @@ EXTERN_C FCDECL1(PCODE, JIT_PatchpointForced, int ilOffset);
 
 EXTERN_C FCDECL0(void, JIT_PollGC);
 
-#ifndef JIT_GetGCStaticBase
-#define JIT_GetGCStaticBase NULL
-#else
-EXTERN_C FCDECL1(void*, JIT_GetGCStaticBase, DynamicStaticsInfo* pStaticsInfo);
-#endif
-
-#ifndef JIT_GetNonGCStaticBase
-#define JIT_GetNonGCStaticBase NULL
-#else
-EXTERN_C FCDECL1(void*, JIT_GetNonGCStaticBase, DynamicStaticsInfo* pStaticsInfo);
-#endif
-
 #ifndef JIT_GetGCStaticBaseNoCtor
 #define JIT_GetGCStaticBaseNoCtor JIT_GetGCStaticBaseNoCtor_Portable
 #endif
@@ -125,18 +112,6 @@ EXTERN_C FCDECL1(void*, JIT_GetGCStaticBaseNoCtor_Portable, MethodTable *pMT);
 #endif
 EXTERN_C FCDECL1(void*, JIT_GetNonGCStaticBaseNoCtor, MethodTable *pMT);
 EXTERN_C FCDECL1(void*, JIT_GetNonGCStaticBaseNoCtor_Portable, MethodTable *pMT);
-
-#ifndef JIT_GetDynamicGCStaticBase
-#define JIT_GetDynamicGCStaticBase NULL
-#else
-EXTERN_C FCDECL1(void*, JIT_GetDynamicGCStaticBase, DynamicStaticsInfo* pStaticsInfo);
-#endif
-
-#ifndef JIT_GetDynamicNonGCStaticBase
-#define JIT_GetDynamicNonGCStaticBase NULL
-#else
-EXTERN_C FCDECL1(void*, JIT_GetDynamicNonGCStaticBase, DynamicStaticsInfo* pStaticsInfo);
-#endif
 
 #ifndef JIT_GetDynamicGCStaticBaseNoCtor
 #define JIT_GetDynamicGCStaticBaseNoCtor JIT_GetDynamicGCStaticBaseNoCtor_Portable

@@ -37,6 +37,7 @@
 #endif // !TARGET_UNIX
 
 #include "nativelibrary.h"
+#include "hostinformation.h"
 
 #ifndef DACCESS_COMPILE
 
@@ -217,17 +218,11 @@ HRESULT CorHost2::ExecuteApplication(LPCWSTR   pwzAppFullName,
 }
 
 /*
- * This method processes the arguments sent to the host which are then used
- * to invoke the main method.
- * Note -
- * [0] - points to the assemblyName that has been sent by the host.
- * The rest are the arguments sent to the assembly.
- * Also note, this might not always return the exact same identity as the cmdLine
- * used to invoke the method.
- *
- * For example :-
- * ActualCmdLine - Foo arg1 arg2.
- * (Host1)       - Full_path_to_Foo arg1 arg2
+ * This method constructs the array returned by Environment.GetCommandLineArgs().
+ * The first element is passed separately from argv as exePath and uses the native
+ * invocation name when provided by the host. Otherwise, the assembly or bundle path
+ * is used. The remaining elements come from argv, which contains the arguments to the
+ * main method.
 */
 static PTRARRAYREF SetCommandLineArgs(PCWSTR pwzAssemblyPath, int argc, PCWSTR* argv)
 {
@@ -242,7 +237,10 @@ static PTRARRAYREF SetCommandLineArgs(PCWSTR pwzAssemblyPath, int argc, PCWSTR* 
     // Record the command line.
     SaveManagedCommandLine(pwzAssemblyPath, argc, argv);
 
-    PCWSTR exePath = Bundle::AppIsBundle() ? static_cast<PCWSTR>(Bundle::AppBundle->Path()) : pwzAssemblyPath;
+    StackSString invocationName;
+    PCWSTR exePath = HostInformation::GetProperty(HOST_PROPERTY_ARGV0, invocationName)
+        ? invocationName.GetUnicode()
+        : (Bundle::AppIsBundle() ? static_cast<PCWSTR>(Bundle::AppBundle->Path()) : pwzAssemblyPath);
 
     PTRARRAYREF result = NULL;
     GCPROTECT_BEGIN(result);

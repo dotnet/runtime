@@ -36,12 +36,7 @@ void InitJITAllocationHelpers()
     _ASSERTE(g_SystemInfo.dwNumberOfProcessors != 0);
 
     // Allocation helpers, faster but non-logging
-    if (!((TrackAllocationsEnabled()) ||
-        (LoggingOn(LF_GCALLOC, LL_INFO10))
-#ifdef _DEBUG
-        || (g_pConfig->ShouldInjectFault(INJECTFAULT_GCHEAP) != 0)
-#endif // _DEBUG
-        ))
+    if (!(TrackAllocationsEnabled() || LoggingOn(LF_GCALLOC, LL_INFO10)))
     {
         // if (multi-proc || server GC || non-Windows)
         if (GCHeapUtilities::UseThreadAllocationContexts())
