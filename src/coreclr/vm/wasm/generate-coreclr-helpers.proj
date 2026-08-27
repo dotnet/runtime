@@ -45,18 +45,18 @@
   <!-- Batched over _WasmCallHelperTarget: one crossgen2 run per wasm flavor. -->
   <Target Name="GenerateCallHelpers" Outputs="%(_WasmCallHelperTarget.Identity)">
     <PropertyGroup>
-      <!-- Resolved here rather than during evaluation because eng/liveBuilds.targets, which
-           defines Crossgen2InBuildDir, is imported after this file. -->
-      <_Crossgen2Path>$([MSBuild]::NormalizePath('$(Crossgen2InBuildDir)', 'crossgen2$(ExeSuffix)'))</_Crossgen2Path>
       <_TargetOS>%(_WasmCallHelperTarget.Identity)</_TargetOS>
       <_ScanPath>%(_WasmCallHelperTarget.ScanPath)</_ScanPath>
+      <!-- The self-contained crossgen2 from the same build that produced the scan path, so one
+           command per flavor supplies both. -->
+      <_Crossgen2Path>$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'coreclr', '$(_TargetOS).wasm.$(Configuration)', '$(BuildArchitecture)', 'crossgen2', 'crossgen2$(ExeSuffix)'))</_Crossgen2Path>
       <_OutputDir>$(MSBuildThisFileDirectory)$(_TargetOS)/</_OutputDir>
       <_ResponseFileDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsObjDir)', 'wasm-callhelpers', '$(_TargetOS)'))</_ResponseFileDir>
       <_ResponseFile>$(_ResponseFileDir)generate-coreclr-helpers.rsp</_ResponseFile>
     </PropertyGroup>
 
     <Error Condition="!Exists('$(_Crossgen2Path)')"
-           Text="crossgen2 was not found at $(_Crossgen2Path). Build the clr subset first: $(_BuildScript) clr -c $(Configuration)" />
+           Text="crossgen2 was not found at $(_Crossgen2Path). Build the runtime first: $(_BuildScript) clr+libs -os $(_TargetOS) -c $(Configuration)" />
     <Error Condition="!Exists('$(_ScanPath)')"
            Text="Scan path for $(_TargetOS) does not exist: $(_ScanPath). Build the runtime first: $(_BuildScript) clr+libs -os $(_TargetOS) -c $(Configuration)" />
     <Error Condition="'@(WasmCoreClrFrameworkPInvokeModule)' == ''"

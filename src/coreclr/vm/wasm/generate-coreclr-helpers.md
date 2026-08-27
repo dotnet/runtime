@@ -51,9 +51,9 @@ time rather than as a build failure.
 ## What needs to be built first
 
 The generator scans the **managed framework assemblies** in the `testhost` folder produced by a
-`clr+libs` build, and runs the crossgen2 built by the `clr` subset for your **host** platform.
-Because the scripts generate both the `browser` and `wasi` variations, you must build **both**
-WebAssembly flavors before running them. The first build of either flavor also downloads and
+`clr+libs` build, and runs the self-contained crossgen2 that the same build produces. Because the
+scripts generate both the `browser` and `wasi` variations, you must build **both** WebAssembly
+flavors before running them. The first build of either flavor also downloads and
 provisions the Emscripten SDK (emsdk) automatically.
 
 From the repository root:
@@ -74,8 +74,6 @@ Notes:
 
 - Use a matching `-c <Debug|Release|Checked>` for the configuration you intend to pass to the
   generator script (the script derives the scan path from the configuration name).
-- Generation does not load the JIT, so the host-targeting crossgen2 from a plain `clr` build
-  answers wasm questions correctly; no wasm-targeting crossgen2 is needed.
 - If a required `testhost` scan path or crossgen2 is missing, the script stops and prints the
   exact `build` command needed to produce it.
 
