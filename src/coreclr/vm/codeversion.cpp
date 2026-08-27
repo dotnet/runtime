@@ -1524,11 +1524,6 @@ ILCodeVersion CodeVersionManager::GetILCodeVersion(PTR_MethodDesc pMethod, ReJIT
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    // Note: non-default IL code versions are not exclusive to ReJIT - EnC (FEATURE_METADATA_UPDATER)
-    // creates them as well, and that feature is available even when FEATURE_REJIT is off (which is
-    // the case on the platforms without a JIT, such as the Apple mobile platforms). Unconditionally
-    // returning the default IL code version in that case makes the runtime read the IL of an updated
-    // method from the baseline image using a delta-relative RVA, which throws "Bad IL range".
     if (rejitId == 0)
     {
         return ILCodeVersion(dac_cast<PTR_Module>(pMethod->GetModule()), pMethod->GetMemberDef());
