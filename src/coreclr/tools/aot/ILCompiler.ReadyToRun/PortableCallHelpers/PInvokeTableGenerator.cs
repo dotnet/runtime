@@ -250,7 +250,6 @@ namespace ILCompiler.PortableCallHelpers
 
             var callbackNames = new HashSet<string>();
             var keys = new HashSet<string>();
-            int callbackIndex = 0;
             callbacks.Sort(new PInvokeCallbackComparer());
             foreach (PInvokeCallback cb in callbacks)
             {
@@ -296,7 +295,6 @@ namespace ILCompiler.PortableCallHelpers
                     }{{exportFunction}}
 
                     """);
-                callbackIndex++;
             }
 
             w.Write(
