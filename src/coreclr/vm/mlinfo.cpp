@@ -445,7 +445,6 @@ void *EEMarshalingData::operator new(size_t size, LoaderHeap *pHeap)
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pHeap));
     }
     CONTRACTL_END;
@@ -468,7 +467,6 @@ CustomMarshalerInfo *EEMarshalingData::GetCustomMarshalerInfo(Assembly *pAssembl
     CONTRACTL
     {
         STANDARD_VM_CHECK;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pAssembly));
     }
     CONTRACTL_END;
@@ -536,7 +534,6 @@ CustomMarshalerInfo *EEMarshalingData::GetIEnumeratorMarshalerInfo()
     CONTRACTL
     {
         STANDARD_VM_CHECK;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -2084,6 +2081,14 @@ VOID MarshalInfo::EmitOrThrowInteropParamException(PInvokeStubLinker* psl, BOOL 
     }
 #endif // FEATURE_COMINTEROP
 
+    // An unmanaged CALLI stub is created while the calli's caller is being jitted, so its failures
+    // have to be reported when the stub is called rather than failing that compilation.
+    if (SF_IsCALLIStub(psl->GetStubFlags()))
+    {
+        psl->SetInteropParamExceptionInfo(resID, paramIdx);
+        return;
+    }
+
     ThrowInteropParamException(resID, paramIdx);
 }
 
@@ -2107,7 +2112,6 @@ HRESULT MarshalInfo::HandleArrayElemType(NativeTypeParamInfo *pParamInfo, TypeHa
     CONTRACTL
     {
         STANDARD_VM_CHECK;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pParamInfo));
     }
     CONTRACTL_END;
@@ -3079,7 +3083,6 @@ DispParamMarshaler *MarshalInfo::GenerateDispParamMarshaler()
         THROWS;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -3288,7 +3291,6 @@ void ArrayMarshalInfo::InitElementInfo(CorNativeType arrayNativeType, MarshalInf
     CONTRACTL
     {
         STANDARD_VM_CHECK;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(!thElement.IsNull());
     }
     CONTRACTL_END;

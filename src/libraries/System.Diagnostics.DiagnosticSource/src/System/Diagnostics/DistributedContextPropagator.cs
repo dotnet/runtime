@@ -122,22 +122,25 @@ namespace System.Diagnostics
 
         // internal stuff
 
-        internal static void InjectBaggage(object? carrier, IEnumerable<KeyValuePair<string, string?>> baggage, PropagatorSetterCallback setter)
+        internal static void InjectBaggage(object? carrier, Activity? activity, PropagatorSetterCallback setter)
         {
-            using (IEnumerator<KeyValuePair<string, string?>> e = baggage.GetEnumerator())
+            if (activity is null)
             {
-                if (e.MoveNext())
+                return;
+            }
+
+            Activity.BaggageEnumerator e = activity.EnumerateBaggage();
+            if (e.MoveNext())
+            {
+                StringBuilder baggageList = new StringBuilder();
+
+                do
                 {
-                    StringBuilder baggageList = new StringBuilder();
+                    KeyValuePair<string, string?> item = e.Current;
+                    baggageList.Append(WebUtility.UrlEncode(item.Key)).Append('=').Append(WebUtility.UrlEncode(item.Value)).Append(CommaWithSpace);
+                } while (e.MoveNext());
 
-                    do
-                    {
-                        KeyValuePair<string, string?> item = e.Current;
-                        baggageList.Append(WebUtility.UrlEncode(item.Key)).Append('=').Append(WebUtility.UrlEncode(item.Value)).Append(CommaWithSpace);
-                    } while (e.MoveNext());
-
-                    setter(carrier, CorrelationContext, baggageList.ToString(0, baggageList.Length - 2));
-                }
+                setter(carrier, CorrelationContext, baggageList.ToString(0, baggageList.Length - 2));
             }
         }
 

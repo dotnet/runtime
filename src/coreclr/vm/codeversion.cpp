@@ -937,7 +937,6 @@ PTR_COR_ILMETHOD ILCodeVersion::GetIL() const
     {
         THROWS; //GetILHeader throws
         GC_NOTRIGGER;
-        FORBID_FAULT;
         MODE_ANY;
     }
     CONTRACTL_END
@@ -1525,7 +1524,6 @@ ILCodeVersion CodeVersionManager::GetILCodeVersion(PTR_MethodDesc pMethod, ReJIT
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-#ifdef FEATURE_REJIT
     ILCodeVersionCollection collection = GetILCodeVersions(pMethod);
     for (ILCodeVersionIterator cur = collection.Begin(), end = collection.End(); cur != end; cur++)
     {
@@ -1535,10 +1533,6 @@ ILCodeVersion CodeVersionManager::GetILCodeVersion(PTR_MethodDesc pMethod, ReJIT
         }
     }
     return ILCodeVersion();
-#else // FEATURE_REJIT
-    _ASSERTE(rejitId == 0);
-    return ILCodeVersion(dac_cast<PTR_Module>(pMethod->GetModule()), pMethod->GetMemberDef());
-#endif // FEATURE_REJIT
 }
 
 NativeCodeVersionCollection CodeVersionManager::GetNativeCodeVersions(PTR_MethodDesc pMethod) const

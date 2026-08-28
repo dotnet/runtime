@@ -320,6 +320,15 @@ namespace System.Tests
             yield return new object[] { "123+", NumberStyles.AllowTrailingSign, null, 123 };
             yield return new object[] { "123-", NumberStyles.AllowTrailingSign, null, -123 };
 
+            NumberFormatInfo whitespaceSignFormat = new NumberFormatInfo()
+            {
+                PositiveSign = " +",
+                NegativeSign = " -"
+            };
+            yield return new object[] { "123 +", NumberStyles.AllowTrailingSign, whitespaceSignFormat, 123 };
+            yield return new object[] { "123 -", NumberStyles.AllowTrailingSign, whitespaceSignFormat, -123 };
+            yield return new object[] { "123 $", NumberStyles.AllowCurrencySymbol, new NumberFormatInfo() { CurrencySymbol = " $" }, 123 };
+
             // If PositiveSign and NegativeSign are the same, PositiveSign is preferred
             yield return new object[] { "123|", NumberStyles.AllowTrailingSign, samePositiveNegativeFormat, 123 };
 
@@ -458,6 +467,16 @@ namespace System.Tests
                 yield return new object[] { "g123", style, null, typeof(FormatException) };
                 yield return new object[] { "214748364g", style, null, typeof(FormatException) };
             }
+
+            NumberFormatInfo whitespaceSignFormat = new NumberFormatInfo()
+            {
+                PositiveSign = " +",
+                NegativeSign = " -"
+            };
+            yield return new object[] { "123 +,", NumberStyles.AllowTrailingSign, whitespaceSignFormat, typeof(FormatException) };
+            yield return new object[] { "123 -+", NumberStyles.AllowTrailingSign, whitespaceSignFormat, typeof(FormatException) };
+            yield return new object[] { "123 +k", NumberStyles.AllowTrailingSign, whitespaceSignFormat, typeof(FormatException) };
+            yield return new object[] { "123 $,", NumberStyles.AllowCurrencySymbol, new NumberFormatInfo() { CurrencySymbol = " $" }, typeof(FormatException) };
 
             // String has leading zeros
             yield return new object[] { "\0\0123", NumberStyles.Integer, null, typeof(FormatException) };

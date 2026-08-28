@@ -1162,11 +1162,6 @@ FCIMPL1(Object*, RuntimeTypeHandle::InternalAllocNoChecks_FastPath, MethodTable*
 
     _ASSERTE(pMT != nullptr);
 
-    if (!GCHeapUtilities::UseThreadAllocationContexts())
-    {
-        return NULL;
-    }
-
     if (pMT->HasFinalizer())
     {
         return NULL;
