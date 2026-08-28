@@ -289,6 +289,9 @@
       <_WasiRelinkLinkFlags Include="$(_WasiRelinkOptFlag)" />
       <_WasiRelinkLinkFlags Include="-DNDEBUG" Condition="'$(Configuration)' != 'Debug'" />
       <_WasiRelinkLinkFlags Include="-Wl,--gc-sections" />
+      <!-- Keep the runtime-owned continuation global available so an R2R composite can import
+           webcil.asyncContinuation from the per-app-linked host. -->
+      <_WasiRelinkLinkFlags Include="-Wl,--export=__async_continuation" />
       <_WasiRelinkLinkFlags Include="-fwasm-exceptions" />
       <_WasiRelinkLinkFlags Include="-mllvm" />
       <_WasiRelinkLinkFlags Include="-wasm-use-legacy-eh=false" />

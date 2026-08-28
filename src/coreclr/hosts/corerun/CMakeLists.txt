@@ -157,7 +157,28 @@ else()
                 -Wl,-z,stack-size=8388608
                 -Wl,--initial-memory=134217728
                 -Wl,--max-memory=4294967296
-                "-Wl,--component-type,${_wasi_http_world_wit}")
+                "-Wl,--component-type,${_wasi_http_world_wit}"
+                # Force-root the cDAC contract descriptor getter: its object has no live
+                # references (the getter is the only one, and DATA symbols aren't auto-exported),
+                # so without an explicit --export root wasm-ld's --gc-sections drops the whole
+                # object and the descriptor never reaches the final module. Mirrors the native
+                # `-Wl,-u,DotNetRuntimeContractDescriptor` used on other non-browser targets.
+                -Wl,--export=GetDotNetRuntimeContractDescriptor
+                # [wasi][prototype] Export the runtime-owned async continuation global (#131167,
+                # helpers.cpp) so the offline R2R merge can wire each composite's webcil.asyncContinuation
+                # import to this same global (the interp<->R2R accessors use it), and so --gc-sections
+                # doesn't drop it.
+                -Wl,--export=__async_continuation
+                # [wasi] Supply the R2R composite's imports at link time. --table-base reserves the
+                # low table slots 1..N-1 for a merged composite's element segment (which crossgen2 now
+                # emits ACTIVE, so the engine installs it at instantiation and the table must already
+                # be large enough), moving corerun's own address-taken functions above it. The table
+                # stays fixed-size so the engine can still validate it statically.
+                # Reserve by the composite's FUNCTION count, not its assembly count.
+                -Wl,--table-base=65537
+                -Wl,--export-table
+                -Wl,--export=__stack_pointer
+                -Wl,--export=__coreclr_wasm_rtlrestorecontext_tag)
         endif()
 
         if (CORERUN_IN_BROWSER)
