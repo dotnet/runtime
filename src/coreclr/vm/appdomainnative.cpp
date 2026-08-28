@@ -158,7 +158,6 @@ extern "C" BOOL QCALLTYPE AppContext_TryGetHostPropertyValue(LPCWSTR name, QCall
     {
         if (pAppContext->IsTpaListProvided())
         {
-            CRITSEC_Holder contextLock(pAppContext->GetCriticalSectionCookie());
             BINDER_SPACE::SimpleNameToFileNameMap* pMap = pAppContext->GetTpaList();
             _ASSERTE(pMap != NULL);
 
@@ -174,8 +173,7 @@ extern "C" BOOL QCALLTYPE AppContext_TryGetHostPropertyValue(LPCWSTR name, QCall
                 }
                 else
                 {
-                    SString simpleName(i->m_wszSimpleName);
-                    HostInformation::ResolveAssemblyToPath(simpleName, path);
+                    HostInformation::ResolveAssemblyToPath(i->m_wszSimpleName, path);
                     if (path.IsEmpty())
                     {
                         ++i;

@@ -75,14 +75,14 @@ bool HostInformation::GetAssemblyNames(const char* const** names, size_t* count)
     return true;
 }
 
-void HostInformation::ResolveAssemblyToPath(const SString& simpleName, SString& path)
+void HostInformation::ResolveAssemblyToPath(_In_z_ LPCWSTR simpleName, SString& path)
 {
     size_t requiredSize = offsetof(host_runtime_contract, resolve_assembly_to_path) + sizeof(s_hostContract.resolve_assembly_to_path);
     if (s_hostContract.size < requiredSize || s_hostContract.resolve_assembly_to_path == nullptr)
         return;
 
     StackSString utf8Name;
-    utf8Name.SetAndConvertToUTF8(simpleName.GetUnicode());
+    utf8Name.SetAndConvertToUTF8(simpleName);
     const char* directory;
     const char* fileName;
     if (!s_hostContract.resolve_assembly_to_path(utf8Name.GetUTF8(), &directory, &fileName, s_hostContract.context))

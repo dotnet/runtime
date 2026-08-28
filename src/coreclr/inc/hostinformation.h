@@ -13,7 +13,7 @@ public:
     static bool GetProperty(_In_z_ const char* name, SString& value);
 
     static bool GetAssemblyNames(_Outptr_result_buffer_(*count) const char* const** names, _Out_ size_t* count);
-    static void ResolveAssemblyToPath(const SString& simpleName, SString& path);
+    static void ResolveAssemblyToPath(_In_z_ LPCWSTR simpleName, SString& path);
 
     static bool HasExternalProbe();
     static bool ExternalAssemblyProbe(_In_ const SString& path, _Out_ void** data, _Out_ int64_t* size);

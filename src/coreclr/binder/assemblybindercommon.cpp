@@ -907,21 +907,7 @@ namespace BINDER_SPACE
                 }
                 else
                 {
-                    SString tpaSimpleName(pTpaEntry->m_wszSimpleName);
-                    HostInformation::ResolveAssemblyToPath(tpaSimpleName, fileName);
-                    if (!fileName.IsEmpty())
-                    {
-                        LPWSTR wszFileName = new WCHAR[fileName.GetCount() + 1];
-                        if (wszFileName == nullptr)
-                        {
-                            GO_WITH_HRESULT(E_OUTOFMEMORY);
-                        }
-                        wcscpy_s(wszFileName, fileName.GetCount() + 1, fileName.GetUnicode());
-
-                        SimpleNameToFileNameMapEntry* mutableTpaEntry =
-                            const_cast<SimpleNameToFileNameMapEntry*>(pTpaEntry);
-                        mutableTpaEntry->m_wszILFileName = wszFileName;
-                    }
+                    HostInformation::ResolveAssemblyToPath(pTpaEntry->m_wszSimpleName, fileName);
                 }
             }
 

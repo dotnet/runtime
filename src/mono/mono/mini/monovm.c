@@ -86,7 +86,6 @@ parse_trusted_platform_assemblies_from_contract (void)
 
 	MonoCoreTrustedPlatformAssemblies *a = g_new0 (MonoCoreTrustedPlatformAssemblies, 1);
 	a->assembly_count = (uint32_t)count;
-	a->assembly_filepaths = g_new0 (char*, count + 1);
 	a->basenames = g_new0 (char*, count + 1);
 	a->basename_lens = g_new0 (uint32_t, count + 1);
 	for (size_t i = 0; i < count; ++i) {
@@ -141,12 +140,12 @@ mono_core_preload_hook (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname, c
 	size_t basename_len;
 	basename_len = strlen (basename);
 	size_t simple_name_len = strlen (aname->name);
+	gboolean has_fullpaths = a->assembly_filepaths != NULL;
 
 	for (guint32 i = 0; i < a->assembly_count; ++i) {
 		// Host-resolved entries store simple names, while path-based entries store filenames with extensions.
-		gboolean has_fullpath = a->assembly_filepaths [i] != NULL;
-		const char *requested_name = has_fullpath ? basename : aname->name;
-		size_t requested_name_len = has_fullpath ? basename_len : simple_name_len;
+		const char *requested_name = has_fullpaths ? basename : aname->name;
+		size_t requested_name_len = has_fullpaths ? basename_len : simple_name_len;
 		if (requested_name_len == a->basename_lens [i] && !g_strncasecmp (requested_name, a->basenames [i], a->basename_lens [i])) {
 			MonoAssemblyOpenRequest req;
 			mono_assembly_request_prepare_open (&req, default_alc);
@@ -154,8 +153,8 @@ mono_core_preload_hook (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname, c
 			req.request.predicate_ud = predicate_ud;
 
 			char *resolved_path = NULL;
-			const char *fullpath = a->assembly_filepaths [i];
-			if (!has_fullpath) {
+			const char *fullpath = has_fullpaths ? a->assembly_filepaths [i] : NULL;
+			if (!has_fullpaths) {
 				const char *directory;
 				const char *file_name;
 				if (mono_host_information_resolve_assembly_to_path (a->basenames [i], &directory, &file_name))
