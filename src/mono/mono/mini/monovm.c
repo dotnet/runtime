@@ -5,6 +5,7 @@
 #include <mono/metadata/assembly-internals.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/environment.h>
+#include <mono/metadata/icall-decl.h>
 #include <mono/metadata/loader-internals.h>
 #include <mono/metadata/native-library.h>
 #include <mono/metadata/reflection-internals.h>
