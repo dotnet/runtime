@@ -87,6 +87,31 @@ Verify the result actually executes R2R code rather than falling back — see
 [Proving R2R is actually active](../../docs/workflow/building/coreclr/wasi-r2r.md#proving-r2r-is-actually-active).
 The activation log alone is not sufficient: it reports success as soon as the composite *loads*.
 
+### Cost at framework scale
+
+Measured on a 232,673-function framework composite (post-#132906, so 4 exports and a 28.8 MB `name`
+section) spliced into `corerun`:
+
+| step | wall | peak RSS | output |
+| --- | --- | --- | --- |
+| `wasm-merge -g` | — | **4.25 GB** | 134,753,587 bytes |
+| `wasm-opt --simplify-globals -g` | 6.19 s | **2.70 GB** | names 34,152,317 bytes, 232,673 named |
+
+The peak is the whole working set, not a delta, so it is straightforward to measure and reproduce.
+Fine on a dev box; **a CI container with a 4 GB limit will not survive the merge.** Size the runner
+before putting this in a pipeline.
+
+`wasm-merge` renumbers the name map alongside the functions, verified at this scale: the composite's
+function 0 lands at merged index 10,105, offset by corerun's own function count, and
+`System_Console_System_Console__WriteLine` resolves at 17,514. A name section carried through
+*unshifted* would have produced wrong names everywhere while still validating and still running, so
+this is worth knowing rather than assuming.
+
+**Both `-g` flags are load-bearing.** Dropping it from the fold removes the `name` section entirely
+and `wasm-tools validate` still answers `YES` — measured, not inferred. Since #132906 the name
+section is the only record of function names, so a post-processing step without `-g` silently
+anonymises every frame.
+
 ## How the splice works
 
 The composite `crossgen2` emits is **self-installing**: the webcil payload is an ACTIVE data segment
