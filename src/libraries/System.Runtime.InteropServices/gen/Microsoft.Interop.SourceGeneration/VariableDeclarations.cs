@@ -52,7 +52,6 @@ namespace Microsoft.Interop
                 if (errorInfo is
                     {
                         IsErrorHandlingPosition: true,
-                        IsManagedIdentifierSynthetic: true,
                         ManagedIndex: TypePositionInfo.ErrorIndex,
                     }
                     && !ReferenceEquals(errorMarshaller, marshallers.NativeReturnMarshaller))
