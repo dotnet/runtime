@@ -308,7 +308,7 @@ static char* s_core_root_path = nullptr;
 extern "C" bool BrowserHost_ExternalAssemblyProbe(const char* pathPtr, /*out*/ void **outDataStartPtr, /*out*/ int64_t* outSize);
 #endif // TARGET_BROWSER
 
-// PROTOTYPE: WASI R2R external-assembly probe, shared with the wasihost corehost (libWasiHost.a)
+// WASI R2R external-assembly probe, shared with the wasihost corehost (libWasiHost.a)
 // so both hosts serve R2R identically. See wasi_r2r_probe.hpp.
 #include "wasi_r2r_probe.hpp"
 

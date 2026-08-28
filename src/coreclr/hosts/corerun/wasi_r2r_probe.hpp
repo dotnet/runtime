@@ -1,11 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// PROTOTYPE: statically-composed WASI R2R external-assembly probe, shared by every CoreCLR-WASI host
+// Statically-composed WASI R2R external-assembly probe, shared by every CoreCLR-WASI host
 // (the standalone corerun executable and the per-app-linked wasihost corehost / libWasiHost.a). The
 // probe is a host_runtime_contract::external_assembly_probe callback: the runtime calls out to it to
 // obtain the composite R2R webcil image and the per-assembly stubs. Keeping it here (rather than in a
 // single host) means both hosts serve R2R identically instead of one silently falling back to interp.
+//
+// The splice that populates it is hand-driven (eng/wasi-r2r/pipeline-shim.sh); there is no SDK path
+// for WASI R2R yet, so this serves the runtime tests and the development loop rather than shipping
+// apps. Both hosts must be linked with the flags that supply a composite's imports -- see
+// CORERUN_WASI_COMPOSITE_R2R in corerun/CMakeLists.txt and WasiEnableCompositeR2R in
+// WasiApp.CoreCLR.targets. Without them this probe compiles but can never be satisfied.
 //
 // Requires corerun.hpp to be included first (for pal::try_map_file_readonly). Include exactly once per
 // host translation unit; the internal-linkage buffer/functions then give one instance per host binary.
