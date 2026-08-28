@@ -533,11 +533,13 @@ jobs:
             # means a suspicious absolute/`..` path.
             timeout 60 unzip -Z1 /tmp/a.zip 2>/dev/null | grep -qE '(^/|(^|/)\.\.(/|$))'
             zscan_rc=("${PIPESTATUS[@]}")
-            if [ "${zscan_rc[0]}" -ne 0 ]; then
-              echo "::warning::Skipping ${safe_name}: could not list archive entries (unzip -Z1 rc=${zscan_rc[0]})."; continue
-            fi
+            # Check the match first: grep -q can close the pipe early and make
+            # unzip report SIGPIPE for the same suspicious-path result.
             if [ "${zscan_rc[1]}" -eq 0 ]; then
               echo "::warning::Skipping ${safe_name}: archive has a suspicious (absolute or ..) entry path."; continue
+            fi
+            if [ "${zscan_rc[0]}" -ne 0 ]; then
+              echo "::warning::Skipping ${safe_name}: could not list archive entries (unzip -Z1 rc=${zscan_rc[0]})."; continue
             fi
             timeout 120 unzip -o /tmp/a.zip '*.binlog' -d /tmp/ax >/dev/null 2>&1 \
               || { echo "::warning::Skipping ${safe_name}: extraction failed or timed out."; continue; }
