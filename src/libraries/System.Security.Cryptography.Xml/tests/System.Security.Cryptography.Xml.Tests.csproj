@@ -44,9 +44,9 @@
     <Compile Include="SignatureSupport.cs" />
     <Compile Include="SignatureTest.cs" />
     <Compile Include="SignedInfoTest.cs" />
+    <Compile Include="SignedXmlInstanceReuseTests.cs" />
     <Compile Include="SignedXmlTest.cs" />
     <Compile Include="SignedXmlTests.cs" />
-    <Compile Include="SignedXmlInstanceReuseTests.cs" />
     <Compile Include="SymmetricAlgorithmFactory.cs" />
     <Compile Include="TestHelpers.cs" />
     <Compile Include="TransformChainTest.cs" />
