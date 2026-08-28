@@ -36,7 +36,7 @@
 #include "cgencpu.h"
 #include "interopconverter.h"
 #include "cominterfacemarshaler.h"
-#include "eecontract.h"
+#include <contract.h>
 #include "stdinterfaces_internal.h"
 #include "interoputil.inl"
 
@@ -424,6 +424,19 @@ Unknown_ReleaseSpecial_IErrorInfo_Internal(IUnknown* pUnk)
 
 
 // ---------------------------------------------------------------------------
+// Find the first COM visible IClassX starting at the root ComMethodTable and
+// walking up the hierarchy.
+static ComMethodTable* FindFirstComVisibleClassComMT(ComCallWrapperTemplate* pTemplate)
+{
+    WRAPPER_NO_CONTRACT;
+
+    ComMethodTable* pComMT = pTemplate->GetClassComMT();
+    while (pComMT && !pComMT->IsComVisible())
+        pComMT = pComMT->GetParentClassComMT();
+    return pComMT;
+}
+
+// ---------------------------------------------------------------------------
 //  Interface IProvideClassInfo
 // ---------------------------------------------------------------------------
 HRESULT __stdcall
@@ -456,11 +469,7 @@ ClassInfo_GetClassInfo(IUnknown* pUnk, ITypeInfo** ppTI)
 
             // Find the first COM visible IClassX starting at ComMethodTable passed in and
             // walking up the hierarchy.
-            ComMethodTable *pComMT = NULL;
-            if (pTemplate->SupportsIClassX())
-            {
-                for (pComMT = pTemplate->GetClassComMT(); pComMT && !pComMT->IsComVisible(); pComMT = pComMT->GetParentClassComMT());
-            }
+            ComMethodTable *pComMT = FindFirstComVisibleClassComMT(pTemplate);
 
             // If the CLR part of the object is not visible then delegate the call to the
             // base COM object if it implements IProvideClassInfo.
@@ -655,7 +664,6 @@ HRESULT GetITypeInfoForEEClass(MethodTable *pClass, ITypeInfo **ppTI, bool bClas
         DISABLED(NOTHROW);
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(return E_OUTOFMEMORY);
     }
     CONTRACTL_END;
 
@@ -686,14 +694,9 @@ HRESULT GetITypeInfoForEEClass(MethodTable *pClass, ITypeInfo **ppTI, bool bClas
                     EX_TRY
                     {
                         pTemplate = ComCallWrapperTemplate::GetTemplate(pClass);
-                        if (pTemplate->SupportsIClassX())
-                        {
-                            // Find the first COM visible IClassX starting at ComMethodTable passed in and
-                            // walking up the hierarchy.
-                            pComMT = pTemplate->GetClassComMT();
-                            while (pComMT && !pComMT->IsComVisible())
-                                pComMT = pComMT->GetParentClassComMT();
-                        }
+                        // Find the first COM visible IClassX starting at ComMethodTable passed in and
+                        // walking up the hierarchy.
+                        pComMT = FindFirstComVisibleClassComMT(pTemplate);
                     }
                     EX_CATCH
                     {
@@ -916,7 +919,6 @@ IErrorInfo *GetSupportedErrorInfo(IUnknown *iface, REFIID riid)
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(iface));
     }
     CONTRACTL_END;
@@ -1250,7 +1252,6 @@ Dispatch_GetIDsOfNames(IDispatch* pDisp, REFIID riid, _In_reads_(cNames) OLECHAR
         NOTHROW;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        INJECT_FAULT(return E_OUTOFMEMORY);
         PRECONDITION(CheckPointer(pDisp));
         PRECONDITION(IsInProcCCWTearOff(pDisp));
         PRECONDITION(CheckPointer(rgszNames, NULL_OK));
@@ -1285,7 +1286,6 @@ Dispatch_Invoke
         THROWS; // InternalDispatchImpl_Invoke can throw if it encounters CE
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        INJECT_FAULT(return E_OUTOFMEMORY);
         PRECONDITION(CheckPointer(pDisp));
         PRECONDITION(IsInProcCCWTearOff(pDisp));
     }

@@ -13,10 +13,17 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     public class WasmWellKnownGlobalSymbolNode(string symbolName) : ExternDataSymbolNode(new Utf8String(symbolName))
     {
+#if READYTORUN
+        public const string StackPointerName = "stackPointer";
+        public const string ImageBaseName = "imageBase";
+        public const string TableBaseName = "tableBase";
+        public const string AsyncContinuationName = "asyncContinuation";
+#else
         public const string StackPointerName = "__stack_pointer";
         public const string ImageBaseName = "__memory_base";
         public const string TableBaseName = "__table_base";
         public const string AsyncContinuationName = "__async_continuation";
+#endif
 
         public override int ClassCode => 0x79046cf9;
 

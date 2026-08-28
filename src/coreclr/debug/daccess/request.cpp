@@ -2453,7 +2453,6 @@ ClrDataAccess::GetAppDomainData(CLRDATA_ADDRESS addr, struct DacpAppDomainData *
         PTR_LoaderAllocator pLoaderAllocator = SystemDomain::GetGlobalLoaderAllocator();
         appdomainData->pHighFrequencyHeap = HOST_CDADDR(pLoaderAllocator->GetHighFrequencyHeap());
         appdomainData->pLowFrequencyHeap = HOST_CDADDR(pLoaderAllocator->GetLowFrequencyHeap());
-        appdomainData->pStubHeap = HOST_CDADDR(pLoaderAllocator->GetStubHeap());
         appdomainData->appDomainStage = STAGE_OPEN;
 
         appdomainData->dwId = DefaultADID;
@@ -3681,7 +3680,6 @@ static const char *LoaderAllocatorLoaderHeapNames[] =
     "LowFrequencyHeap",
     "HighFrequencyHeap",
     "StaticsHeap",
-    "StubHeap",
     "ExecutableHeap",
     "FixupPrecodeHeap",
     "NewStubPrecodeHeap",
@@ -3721,7 +3719,6 @@ HRESULT ClrDataAccess::GetLoaderAllocatorHeaps(CLRDATA_ADDRESS loaderAllocatorAd
             pLoaderHeaps[i++] = HOST_CDADDR(pLoaderAllocator->GetLowFrequencyHeap());
             pLoaderHeaps[i++] = HOST_CDADDR(pLoaderAllocator->GetHighFrequencyHeap());
             pLoaderHeaps[i++] = HOST_CDADDR(pLoaderAllocator->GetStaticsHeap());
-            pLoaderHeaps[i++] = HOST_CDADDR(pLoaderAllocator->GetStubHeap());
             pLoaderHeaps[i++] = HOST_CDADDR(pLoaderAllocator->GetExecutableHeap());
             pLoaderHeaps[i++] = HOST_CDADDR(pLoaderAllocator->GetFixupPrecodeHeap());
             pLoaderHeaps[i++] = HOST_CDADDR(pLoaderAllocator->GetNewStubPrecodeHeap());
@@ -5501,9 +5498,9 @@ HRESULT ClrDataAccess::GetGlobalAllocationContext(
     }
 
     SOSDacEnter();
-    gc_alloc_context global_alloc_context = ((ee_alloc_context)g_global_alloc_context).m_GCAllocContext;
-    *allocPtr = (CLRDATA_ADDRESS)global_alloc_context.alloc_ptr;
-    *allocLimit = (CLRDATA_ADDRESS)global_alloc_context.alloc_limit;
+    // The runtime does not allocate out of a global allocation context.
+    *allocPtr = (CLRDATA_ADDRESS)0;
+    *allocLimit = (CLRDATA_ADDRESS)0;
     SOSDacLeave();
     return hr;
 }

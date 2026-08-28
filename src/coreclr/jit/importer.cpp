@@ -2788,6 +2788,11 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
 // Returns:
 //    The Vector128.CreateScalar node that contains op1
 //
+// Notes:
+//    This may append a temp store, which spills the import stack. Callers with multiple
+//    operands must therefore materialize the last operand first and leave the preceding
+//    ones on the import stack until then, so that IL evaluation order is preserved.
+//
 GenTree* Compiler::impSimdCreateScalarHalf(GenTree* op1)
 {
     unsigned op1Tmp;
@@ -3833,11 +3838,12 @@ void Compiler::impImportNewObjArray(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORI
         lvaSetStruct(lvaNewObjArrayArgs, typGetBlkLayout(dimensionsSize), false);
     }
 
-    // Increase size of lvaNewObjArrayArgs to be the largest size needed to hold 'numArgs' integers
-    // for our call to CORINFO_HELP_NEW_MDARR.
+    // Use a new temp if the current one is too small. Growing the existing temp would make earlier
+    // full-width stores partial definitions after they have already been created.
     if (dimensionsSize > lvaTable[lvaNewObjArrayArgs].lvExactSize())
     {
-        lvaTable[lvaNewObjArrayArgs].GrowBlockLayout(typGetBlkLayout(dimensionsSize));
+        lvaNewObjArrayArgs = lvaGrabTemp(false DEBUGARG("NewObjArrayArgs"));
+        lvaSetStruct(lvaNewObjArrayArgs, typGetBlkLayout(dimensionsSize), false);
     }
 
     // The side-effects may include allocation of more multi-dimensional arrays. Spill all side-effects
@@ -4444,6 +4450,10 @@ void Compiler::impAnnotateFieldIndir(GenTreeIndir* indir)
         if (addr->IsInstance() && addr->GetFldObj()->OperIs(GT_LCL_ADDR))
         {
             indir->gtFlags &= ~GTF_GLOB_REF;
+            if (indir->OperIsStore())
+            {
+                indir->gtFlags |= indir->Data()->gtFlags & GTF_GLOB_REF;
+            }
         }
         else
         {
@@ -6797,7 +6807,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
             case CEE_LDC_I8:
                 cval.lngVal = getI8LittleEndian(codeAddr);
-                JITDUMP(" 0x%016llx", cval.lngVal);
+                JITDUMP(" 0x%016llx", (unsigned long long)cval.lngVal);
                 impPushOnStack(gtNewLconNode(cval.lngVal), typeInfo(TYP_LONG));
                 break;
 
@@ -7770,6 +7780,10 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 type = genActualType(op1->TypeGet());
                 op1  = gtNewOperNode(oper, type, op1, op2);
+                if (op1->OperRequiresCallFlag(this))
+                {
+                    op1->gtFlags |= GTF_CALL;
+                }
 
                 // Fold result, if possible.
                 op1 = gtFoldExpr(op1);
@@ -9473,12 +9487,15 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     {
                         JITDUMP("\nHave extra IL stack entry after tail await\n");
                         GenTree* val = impPopStack().val;
-                        if (varTypeIsStruct(val))
+                        if ((val->gtFlags & GTF_SIDE_EFFECT) != 0)
                         {
-                            val = impNormStructVal(val, CHECK_SPILL_ALL);
-                        }
+                            if (varTypeIsStruct(val))
+                            {
+                                val = impNormStructVal(val, CHECK_SPILL_ALL);
+                            }
 
-                        impAppendTree(gtUnusedValNode(val), CHECK_SPILL_ALL, impCurStmtDI);
+                            impAppendTree(gtUnusedValNode(val), CHECK_SPILL_ALL, impCurStmtDI);
+                        }
                     }
 
                     prefixFlags &= ~PREFIX_TAILCALL;
@@ -10356,9 +10373,13 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         }
 
                         op1 = gtNewOperNode(GT_LCLHEAP, TYP_I_IMPL, op2);
-                        // We do not model stack overflow from localloc as an exception side effect.
+                        // We do not model stack overflow from localloc as an exception side effect,
+                        // but the allocation must not be reordered with, or made to execute under a
+                        // different condition than, the code around it: the dominating check is
+                        // typically what bounds its size. Mark it as a call and global reference,
+                        // much as is done for GT_KEEPALIVE.
                         // Obviously, we don't want locallocs to be CSE'd.
-                        op1->gtFlags |= GTF_DONT_CSE;
+                        op1->gtFlags |= GTF_DONT_CSE | GTF_CALL | GTF_GLOB_REF;
 
                         // Request stack security for this method.
                         setNeedsGSSecurityCookie();
@@ -11943,6 +11964,7 @@ bool Compiler::impWrapTopOfStackInAwait()
     }
 
     awaitCall->gtArgs.PushFront(this, taskArg);
+    awaitCall->gtFlags |= taskArg.Node->gtFlags & GTF_ALL_EFFECT;
 
     NewCallArg asyncContArg = NewCallArg::Primitive(gtNewNull()).WellKnown(WellKnownArg::AsyncContinuation);
 
@@ -11957,6 +11979,7 @@ bool Compiler::impWrapTopOfStackInAwait()
         }
 
         instArg = NewCallArg::Primitive(instArgTree).WellKnown(WellKnownArg::InstParam);
+        awaitCall->gtFlags |= instArg.Node->gtFlags & GTF_ALL_EFFECT;
     }
 
     if (Target::g_tgtArgOrder == Target::ARG_ORDER_R2L)
@@ -11991,7 +12014,11 @@ bool Compiler::impWrapTopOfStackInAwait()
 
     AsyncCallInfo* asyncInfo = new (this, CMK_Async) AsyncCallInfo;
 
-    if (impInlineRoot()->compIsAsyncVersion())
+    bool const hasContextHandling =
+        compIsForInlining() &&
+        (impInlineInfo->iciCall->gtArgs.FindWellKnownArg(WellKnownArg::AsyncResumedUse) != nullptr);
+
+    if (!hasContextHandling)
     {
         asyncInfo->IsTailAwait = !compIsForInlining() || impInlineInfo->iciCall->GetAsyncInfo().IsTailAwait;
 
@@ -12004,21 +12031,26 @@ bool Compiler::impWrapTopOfStackInAwait()
             awaitCall->gtCallMoreFlags |= GTF_CALL_M_IMPLICIT_TAILCALL;
         }
 #endif
+
+        awaitCall->SetIsAsync(asyncInfo);
     }
     else
     {
-        // We are inlining into an async method. This means we have a proper
-        // async await, and we require proper handling.
+        // The await runs inside a frame that does context handling, either because we are
+        // inlining into an async method or because a context-owning frame encloses this
+        // one. Either way it is a proper async await and needs that frame's handling.
         assert(compIsForInlining() && impInlineInfo->iciCall->IsAsync());
         GenTreeCall* inlCall = impInlineInfo->iciCall;
 
         JITDUMP("Inheriting continuation handling %d from caller [%06u]\n",
                 (unsigned)inlCall->GetAsyncInfo().ContinuationContextHandling, dspTreeID(inlCall));
         asyncInfo->ContinuationContextHandling = inlCall->GetAsyncInfo().ContinuationContextHandling;
+
+        // Mark the call async first: inheriting the contexts also inherits the inlined
+        // frame depth, which lives in the async call info.
+        awaitCall->SetIsAsync(asyncInfo);
         impInheritAsyncContextsFromInliner(awaitCall);
     }
-
-    awaitCall->SetIsAsync(asyncInfo);
 
     if (awaitCall->IsInlineCandidate())
     {
@@ -12840,7 +12872,7 @@ void Compiler::impImportBlockPending(BasicBlock* block)
 #ifdef DEBUG
     if (verbose && 0)
     {
-        printf("Added PendingDsc - %08p for " FMT_BB "\n", dspPtr(dsc), block->bbNum);
+        printf("Added PendingDsc - %p for " FMT_BB "\n", dspPtr(dsc), block->bbNum);
     }
 #endif
 }
@@ -12905,7 +12937,7 @@ void Compiler::impReimportBlockPending(BasicBlock* block)
 #ifdef DEBUG
     if (verbose && 0)
     {
-        printf("Added PendingDsc - %08p for " FMT_BB "\n", dspPtr(dsc), block->bbNum);
+        printf("Added PendingDsc - %p for " FMT_BB "\n", dspPtr(dsc), block->bbNum);
     }
 #endif
 }

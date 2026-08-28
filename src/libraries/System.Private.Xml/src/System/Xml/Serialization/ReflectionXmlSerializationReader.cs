@@ -922,51 +922,56 @@ namespace System.Xml.Serialization
                         value = null;
                     }
                 }
-                else if ((element.Default != null && element.Default != DBNull.Value && element.Mapping.TypeDesc!.IsValueType)
-                         && (Reader.IsEmptyElement))
-                {
-                    Reader.Skip();
-                }
-                else if (element.Mapping.TypeDesc!.Type == typeof(TimeSpan) && Reader.IsEmptyElement)
-                {
-                    Reader.Skip();
-                    value = default(TimeSpan);
-                }
-                else if (element.Mapping.TypeDesc!.Type == typeof(DateTimeOffset) && Reader.IsEmptyElement)
-                {
-                    Reader.Skip();
-                    value = default(DateTimeOffset);
-                }
-                else if (element.Mapping.TypeDesc!.Type == typeof(DateOnly) && Reader.IsEmptyElement)
-                {
-                    Reader.Skip();
-                    value = default(DateOnly);
-                }
-                else if (element.Mapping.TypeDesc!.Type == typeof(TimeOnly) && Reader.IsEmptyElement)
-                {
-                    Reader.Skip();
-                    value = default(TimeOnly);
-                }
                 else
                 {
-                    if (element.Mapping.TypeDesc == QnameTypeDesc)
+                    HandleUnknownAttributes();
+
+                    if ((element.Default != null && element.Default != DBNull.Value && element.Mapping.TypeDesc!.IsValueType)
+                            && (Reader.IsEmptyElement))
                     {
-                        value = ReadElementQualifiedName();
+                        Reader.Skip();
+                    }
+                    else if (element.Mapping.TypeDesc!.Type == typeof(TimeSpan) && Reader.IsEmptyElement)
+                    {
+                        Reader.Skip();
+                        value = default(TimeSpan);
+                    }
+                    else if (element.Mapping.TypeDesc!.Type == typeof(DateTimeOffset) && Reader.IsEmptyElement)
+                    {
+                        Reader.Skip();
+                        value = default(DateTimeOffset);
+                    }
+                    else if (element.Mapping.TypeDesc!.Type == typeof(DateOnly) && Reader.IsEmptyElement)
+                    {
+                        Reader.Skip();
+                        value = default(DateOnly);
+                    }
+                    else if (element.Mapping.TypeDesc!.Type == typeof(TimeOnly) && Reader.IsEmptyElement)
+                    {
+                        Reader.Skip();
+                        value = default(TimeOnly);
                     }
                     else
                     {
-                        if (element.Mapping.TypeDesc.FormatterName == "ByteArrayBase64")
+                        if (element.Mapping.TypeDesc == QnameTypeDesc)
                         {
-                            value = ToByteArrayBase64(false);
-                        }
-                        else if (element.Mapping.TypeDesc.FormatterName == "ByteArrayHex")
-                        {
-                            value = ToByteArrayHex(false);
+                            value = ReadElementQualifiedName();
                         }
                         else
                         {
-                            Func<object, string> readFunc = (state) => ((XmlReader)state).ReadElementContentAsString();
-                            value = WritePrimitive(element.Mapping, readFunc, Reader);
+                            if (element.Mapping.TypeDesc.FormatterName == "ByteArrayBase64")
+                            {
+                                value = ToByteArrayBase64(false);
+                            }
+                            else if (element.Mapping.TypeDesc.FormatterName == "ByteArrayHex")
+                            {
+                                value = ToByteArrayHex(false);
+                            }
+                            else
+                            {
+                                Func<object, string> readFunc = (state) => ((XmlReader)state).ReadElementContentAsString();
+                                value = WritePrimitive(element.Mapping, readFunc, Reader);
+                            }
                         }
                     }
                 }
@@ -1222,6 +1227,8 @@ namespace System.Xml.Serialization
             {
                 if (!ReadNull())
                 {
+                    HandleUnknownAttributes();
+
                     var memberMapping = new MemberMapping()
                     {
                         Elements = arrayMapping.Elements,
@@ -1977,6 +1984,28 @@ namespace System.Xml.Serialization
 
             o = null;
             return false;
+        }
+
+        // Walks the attributes on the current element and raises the UnknownNode/UnknownAttribute
+        // events for any non-namespace attribute. This mirrors the attribute handling that already
+        // happens for elements mapped to structs (via WriteAttributes), so that unknown attributes
+        // on elements mapped to primitives, arrays, and collections are surfaced consistently.
+        private void HandleUnknownAttributes()
+        {
+            if (!HasUnknownNodeOrAttributeEvents ||
+                !Reader.HasAttributes)
+            {
+                return;
+            }
+
+            while (Reader.MoveToNextAttribute())
+            {
+                if (!IsXmlnsAttribute(Reader.Name))
+                {
+                    UnknownNode(null);
+                }
+            }
+            Reader.MoveToElement();
         }
 
         private void WriteAttributes(Member[] members, Member? anyAttribute, UnknownNodeAction elseCall, ref object? o)

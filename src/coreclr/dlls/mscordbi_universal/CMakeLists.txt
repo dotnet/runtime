@@ -81,13 +81,11 @@ endif(CLR_CMAKE_HOST_UNIX)
 
 set(COREDBI_LIBRARIES
     debug-pal
-    cordbdi
     dbgutil
     utilcodestaticnohost
     mdcompiler-dbi
     mdruntime-dbi
     mdruntimerw-dbi
-    mddatasource_dbi
     corguids
     minipal
 )
@@ -95,6 +93,7 @@ set(COREDBI_LIBRARIES
 if(CLR_CMAKE_HOST_WIN32)
 
     list(APPEND COREDBI_LIBRARIES
+        cordbdi
         kernel32.lib
         advapi32.lib
         ole32.lib
@@ -111,6 +110,7 @@ if(CLR_CMAKE_HOST_WIN32)
 elseif(CLR_CMAKE_HOST_UNIX)
 
     list(APPEND COREDBI_LIBRARIES
+        cordbdi_universal
         # Link a private PAL rather than sharing the DAC's PAL through mscordaccore.
         # This lets DBI load the DAC (via OpenVirtualProcessImpl2's path-based flow)
         # into its own PAL without cross-PAL HMODULE use.

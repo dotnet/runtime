@@ -309,7 +309,6 @@ set(VM_SOURCES_WKS
     callstubgenerator.cpp
     clrconfignative.cpp
     clrex.cpp
-    clrvarargs.cpp
     comdatetime.cpp
     comdelegate.cpp
     comdependenthandle.cpp
@@ -386,11 +385,17 @@ set(VM_SOURCES_WKS
     typeparse.cpp
     unsafeaccessors.cpp
     asyncthunks.cpp
-    varargsnative.cpp
     weakreferencenative.cpp
     yieldprocessornormalized.cpp
     ${VM_SOURCES_GDBJIT}
 )
+
+if (FEATURE_VARARGS)
+    list(APPEND VM_SOURCES_WKS
+        clrvarargs.cpp
+        varargsnative.cpp
+    )
+endif()
 
 if (CLR_CMAKE_TARGET_UNIX AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
     list(APPEND VM_SOURCES_WKS
@@ -419,7 +424,6 @@ set(VM_HEADERS_WKS
     ceemain.h
     clrconfignative.h
     clrex.h
-    clrvarargs.h
     comdatetime.h
     comdelegate.h
     comdependenthandle.h
@@ -434,7 +438,6 @@ set(VM_HEADERS_WKS
     dllimport.h
     dllimportcallback.h
     eeconfig.h
-    eecontract.h
     eepolicy.h
     eeprofinterfaces.h
     eeprofinterfaces.inl
@@ -490,10 +493,16 @@ set(VM_HEADERS_WKS
     tieredcompilation.h
     threadsuspend.h
     typeparse.h
-    varargsnative.h
     weakreferencenative.h
     ${VM_HEADERS_GDBJIT}
 )
+
+if (FEATURE_VARARGS)
+    list(APPEND VM_HEADERS_WKS
+        clrvarargs.h
+        varargsnative.h
+    )
+endif()
 
 if (CLR_CMAKE_TARGET_UNIX AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
     list(APPEND VM_HEADERS_WKS
@@ -669,7 +678,6 @@ elseif(CLR_CMAKE_TARGET_WIN32)
             ${ARCH_SOURCES_DIR}/getstate.asm
             ${ARCH_SOURCES_DIR}/JitHelpers_Fast.asm
             ${ARCH_SOURCES_DIR}/JitHelpers_FastWriteBarriers.asm
-            ${ARCH_SOURCES_DIR}/JitHelpers_SingleAppDomain.asm
             ${ARCH_SOURCES_DIR}/JitHelpers_Slow.asm
             ${ARCH_SOURCES_DIR}/patchedcode.asm
             ${ARCH_SOURCES_DIR}/PInvokeStubs.asm
@@ -738,7 +746,6 @@ else()
             ${ARCH_SOURCES_DIR}/getstate.S
             ${ARCH_SOURCES_DIR}/jithelpers_fast.S
             ${ARCH_SOURCES_DIR}/jithelpers_fastwritebarriers.S
-            ${ARCH_SOURCES_DIR}/jithelpers_singleappdomain.S
             ${ARCH_SOURCES_DIR}/jithelpers_slow.S
             ${ARCH_SOURCES_DIR}/patchedcode.S
             ${ARCH_SOURCES_DIR}/pinvokestubs.S

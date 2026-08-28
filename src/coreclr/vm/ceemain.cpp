@@ -762,9 +762,7 @@ void EEStartupHelper()
         InitializeLogging();
 #endif
 
-#ifdef FEATURE_PERFMAP
-        InitThreadManagerPerfMapData();
-#endif
+        InitThreadManagerTracingData();
 
 #ifdef FEATURE_PGO
         PgoManager::Initialize();
@@ -977,7 +975,7 @@ void EEStartupHelper()
         // This should be done before assemblies/modules are loaded into it (i.e. SystemDomain::Init)
         // and after its OK to switch GC modes and synchronize for sending events to the debugger.
         // @dbgtodo  synchronization: this can probably be simplified in V3
-        LOG((LF_CORDB | LF_SYNC | LF_STARTUP, LL_INFO1000, "EEStartup: adding default domain 0x%x\n",
+        LOG((LF_CORDB | LF_SYNC | LF_STARTUP, LL_INFO1000, "EEStartup: adding default domain %p\n",
              SystemDomain::System()->DefaultDomain()));
         SystemDomain::System()->PublishAppDomainAndInformDebugger(SystemDomain::System()->DefaultDomain());
 #endif
@@ -2001,7 +1999,6 @@ void ContractRegressionCheckInner()
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         LOADS_TYPE(CLASS_LOAD_BEGIN);
         CANNOT_TAKE_LOCK;
     }
@@ -2035,13 +2032,11 @@ void ContractRegressionCheck()
         // B#564831 (which left a huge swath of contracts silently disabled for over six months)
         PERMANENT_CONTRACT_VIOLATION(ThrowsViolation
                                    | GCViolation
-                                   | FaultViolation
                                    | LoadsTypeViolation
                                    | TakesLockViolation
                                    , ReasonContractInfrastructure
                                     );
         {
-            FAULT_NOT_FATAL();
             ContractRegressionCheckInner();
         }
     }
@@ -2057,4 +2052,3 @@ void ContractRegressionCheck()
 }
 
 #endif // ENABLE_CONTRACTS_IMPL
-
