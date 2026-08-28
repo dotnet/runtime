@@ -1,6 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#if defined(__linux__) && !defined(_GNU_SOURCE)
+// glibc hides pthread_rwlockattr_setkind_np in strict standards modes.
+#define _GNU_SOURCE
+#endif
+
 #include <assert.h>
 #include "minipalconfig.h"
 #include "rwlock.h"

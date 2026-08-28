@@ -32,6 +32,9 @@ if(CLR_CMAKE_HOST_UNIX)
         set(PREVIOUS_CMAKE_REQUIRED_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES})
         list(APPEND CMAKE_REQUIRED_LIBRARIES ${PTHREAD_LIBRARY})
         check_c_source_compiles("
+            #if defined(__linux__) && !defined(_GNU_SOURCE)
+            #define _GNU_SOURCE
+            #endif
             #include <pthread.h>
             int main(void)
             {
