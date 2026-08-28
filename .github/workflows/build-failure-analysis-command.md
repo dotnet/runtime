@@ -299,7 +299,14 @@ jobs:
           # Returns a status rather than calling emit_none directly, because a
           # call in a command substitution would only exit the subshell.
           ado_get() {
-            local what="$1" url="$2" rc tmp=/tmp/ado-response.json
+            local what="$1" url="$2" rc tmp
+            # `mktemp` rather than a fixed /tmp name: a predictable path is one
+            # pre-created symlink -- or one collision with another job sharing the
+            # runner -- away from being someone else's file.
+            tmp=$(mktemp) || {
+              echo "::warning::Could not create a temporary file for the ${what}; treating as a data-resolution failure."
+              return 1
+            }
             # These are small JSON documents; cap them so a stalled endpoint
             # fails in seconds rather than hanging the job until its overall
             # timeout. The artifact download below sets its own, much larger,
@@ -311,7 +318,6 @@ jobs:
             # the run would be reported as a data-resolution failure. With `-o` curl
             # truncates the file before each attempt, so only the last response
             # survives.
-            rm -f "${tmp}"
             timeout 60 curl -sSL --fail --retry 3 --connect-timeout 10 --max-time 20 --retry-max-time 40 -o "${tmp}" "${url}"
             rc=$?
             ADO_DOC=$(cat "${tmp}" 2>/dev/null)
@@ -516,6 +522,10 @@ jobs:
           MAX_ATTEMPT_SECONDS=120       # per attempt; the full set really takes ~30s
           DOWNLOAD_DEADLINE=$(( $(date +%s) + DOWNLOAD_BUDGET ))
           TOTAL_ZIP_BYTES=0
+          # One private scratch file for every download. A fixed /tmp name is a
+          # pre-created symlink, or a second job on the same runner, away from being
+          # someone else's file.
+          ZIP_TMP=$(mktemp) || { echo "::warning::Could not create a temporary file for downloads."; emit_none; }
           TOTAL_BYTES=0
           mkdir -p /tmp/binlogs
           # Only binlogs extracted by this run may be analyzed. Anything left in
@@ -535,7 +545,7 @@ jobs:
             ai=$((ai + 1))
             url=$(printf '%s' "${artifacts_json}" | jq -r --arg n "${name}" '.value[] | select(.name==$n) | .resource.downloadUrl // empty')
             [ -z "${url}" ] && continue
-            rm -rf /tmp/ax /tmp/a.zip
+            rm -rf /tmp/ax "${ZIP_TMP}"
             mkdir -p /tmp/ax
             # Bound this transfer by whatever is left of the cumulative budget
             # as well as by the per-artifact cap, so the two limits together
@@ -577,10 +587,10 @@ jobs:
             (
               ulimit -f $(( (ZIP_CAP + 511) / 512 ))
               trap '' XFSZ
-              timeout "${TIME_LEFT}" curl -sSL --fail --retry 3 --retry-delay 2 --connect-timeout 15 --max-time "${ATTEMPT_SECONDS}" --retry-max-time "${TIME_LEFT}" -o /tmp/a.zip "${url}"
+              timeout "${TIME_LEFT}" curl -sSL --fail --retry 3 --retry-delay 2 --connect-timeout 15 --max-time "${ATTEMPT_SECONDS}" --retry-max-time "${TIME_LEFT}" -o "${ZIP_TMP}" "${url}"
             ) 2>/dev/null
             curl_rc=$?
-            ZIP_BYTES=$(stat -c%s /tmp/a.zip 2>/dev/null || echo 0)
+            ZIP_BYTES=$(stat -c%s "${ZIP_TMP}" 2>/dev/null || echo 0)
             # Charge the budget with the bytes that actually crossed the wire,
             # including those of an artifact that is about to be skipped.
             TOTAL_ZIP_BYTES=$((TOTAL_ZIP_BYTES + ZIP_BYTES))
@@ -603,7 +613,7 @@ jobs:
             # below, since `grep -q` matches if ANY line matches. `timeout`
             # bounds a hostile archive; pipefail + fail-closed because a killed
             # probe's partial output can end in a numeric column and undercount.
-            UNCOMP=$(set -o pipefail; timeout 60 unzip -Zt /tmp/a.zip 2>/dev/null | awk 'END{print $3}') \
+            UNCOMP=$(set -o pipefail; timeout 60 unzip -Zt "${ZIP_TMP}" 2>/dev/null | awk 'END{print $3}') \
               || { echo "::warning::Skipping ${safe_name}: 'unzip -Zt' failed or timed out; cannot verify uncompressed size."; continue; }
             # Fail safe: a non-numeric size (corrupt zip, unexpected or
             # timed-out output) can't be verified, so skip rather than let it
@@ -633,7 +643,7 @@ jobs:
             # of entry names) and PIPESTATUS separates the failure modes: a
             # non-zero listing exit (error/timeout) FAILS CLOSED; a grep match
             # means a suspicious absolute/`..` path.
-            timeout 60 unzip -Z1 /tmp/a.zip 2>/dev/null | grep -qE '(^/|(^|/)\.\.(/|$))'
+            timeout 60 unzip -Z1 "${ZIP_TMP}" 2>/dev/null | grep -qE '(^/|(^|/)\.\.(/|$))'
             zscan_rc=("${PIPESTATUS[@]}")
             # Check the match first: grep -q can close the pipe early and make
             # unzip report SIGPIPE for the same suspicious-path result.
@@ -643,7 +653,7 @@ jobs:
             if [ "${zscan_rc[0]}" -ne 0 ]; then
               echo "::warning::Skipping ${safe_name}: could not list archive entries (unzip -Z1 rc=${zscan_rc[0]})."; continue
             fi
-            timeout 120 unzip -o /tmp/a.zip '*.binlog' -d /tmp/ax >/dev/null 2>&1 \
+            timeout 120 unzip -o "${ZIP_TMP}" '*.binlog' -d /tmp/ax >/dev/null 2>&1 \
               || { echo "::warning::Skipping ${safe_name}: extraction failed or timed out."; continue; }
             # Consume the budget only once the archive actually extracted, so a
             # skipped leg can't exhaust it and force later legs to be dropped.
