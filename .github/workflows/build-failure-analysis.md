@@ -192,7 +192,14 @@ jobs:
           # Advisory + fail-closed: on any validation gap keep the agent inert.
           set +e
           set +o pipefail
-          [ -z "${GITHUB_OUTPUT}" ] && { echo "::error::GITHUB_OUTPUT is not set; refusing to run without a way to emit step outputs." >&2; exit 1; }
+          # A set but unwritable path would pass a non-empty check and then
+          # fail on every append, leaving the step with no outputs at all
+          # instead of the intended controlled no-op. Probe with a zero-byte
+          # append, which verifies writability without adding content.
+          if [ -z "${GITHUB_OUTPUT}" ] || ! printf '' >> "${GITHUB_OUTPUT}" 2>/dev/null; then
+            echo "::error::GITHUB_OUTPUT is unset or not writable; refusing to run without a way to emit step outputs." >&2
+            exit 1
+          fi
           emit_none() {
             {
               echo "analysis-ready=false"
@@ -434,6 +441,12 @@ jobs:
           # below) rather than after, so the last artifact can't start just
           # under the limit and still pull a full MAX_ZIP_BYTES.
           MAX_TOTAL_ZIP_BYTES=3221225472  # 3 GB compressed across all artifacts
+          # A transfer smaller than this can't yield a usable archive, and
+          # `ulimit -f` works in 512-byte blocks, so a cap under 512 bytes
+          # would floor to a 0-block file limit and fail every write. Treat a
+          # remaining allowance below this as exhausted rather than starting a
+          # transfer that is guaranteed to be discarded.
+          MIN_ZIP_BYTES=1048576           # 1 MB
           TOTAL_ZIP_BYTES=0
           TOTAL_BYTES=0
           mkdir -p /tmp/binlogs
@@ -459,8 +472,8 @@ jobs:
             ZIP_CAP="${MAX_ZIP_BYTES}"
             ZIP_ALLOWANCE=$((MAX_TOTAL_ZIP_BYTES - TOTAL_ZIP_BYTES))
             [ "${ZIP_ALLOWANCE}" -lt "${ZIP_CAP}" ] && ZIP_CAP="${ZIP_ALLOWANCE}"
-            if [ "${ZIP_CAP}" -le 0 ]; then
-              echo "::warning::Cumulative compressed download budget ${MAX_TOTAL_ZIP_BYTES} exhausted before ${safe_name}; stopping downloads."
+            if [ "${ZIP_CAP}" -lt "${MIN_ZIP_BYTES}" ]; then
+              echo "::warning::Cumulative compressed download budget ${MAX_TOTAL_ZIP_BYTES} is exhausted before ${safe_name}; stopping downloads."
               break
             fi
             # Download to a file, never a pipe: curl retries transient
