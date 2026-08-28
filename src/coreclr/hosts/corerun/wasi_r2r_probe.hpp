@@ -7,7 +7,7 @@
 // obtain the composite R2R webcil image and the per-assembly stubs. Keeping it here (rather than in a
 // single host) means both hosts serve R2R identically instead of one silently falling back to interp.
 //
-// The splice that populates it is hand-driven (eng/wasi-r2r/pipeline-shim.sh); there is no SDK path
+// The splice that populates it is hand-driven (eng/wasi-r2r/pipeline_shim.py); there is no SDK path
 // for WASI R2R yet, so this serves the runtime tests and the development loop rather than shipping
 // apps. Both hosts must be linked with the flags that supply a composite's imports -- see
 // CORERUN_WASI_COMPOSITE_R2R in corerun/CMakeLists.txt and WasiEnableCompositeR2R in
@@ -236,7 +236,7 @@ static bool WasiStaticR2RProbe(const char* name, const char* const* dirs, size_t
         //
         // NOTE: the cap test above cannot protect this buffer -- the engine installs the segment before any
         // host code runs, so an over-cap payload has already overwritten whatever follows by the time we look.
-        // The enforceable check is at build time; pipeline-shim.sh compares the payload size against the cap.
+        // The enforceable check is at build time; pipeline_shim.py compares the payload size against the cap.
         uint8_t* hdr = &g_wasi_r2r_image[0];
         uint32_t existingTableBase;
         memcpy(&existingTableBase, hdr + WEBCIL_TABLE_BASE_OFFSET, sizeof(existingTableBase));
@@ -292,7 +292,7 @@ extern "C" __attribute__((export_name("wasi_r2r_image_base"))) uint32_t wasi_r2r
 
 // The staging buffer's capacity and the table slot the composite installs at, exported for the same
 // reason as the base: the splice must not carry its own copy of either. The host owns these values;
-// eng/wasi-r2r/pipeline-shim.sh reads them out of the linked binary and validates the composite
+// eng/wasi-r2r/pipeline_shim.py reads them out of the linked binary and validates the composite
 // against them, so a mismatch is a build-time error instead of a wrong-function dispatch at runtime.
 extern "C" __attribute__((export_name("wasi_r2r_image_cap"))) uint32_t wasi_r2r_image_cap(void)
 {
