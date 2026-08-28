@@ -136,13 +136,6 @@ EXTERN_C FCDECL1(Object*, RhpNewFastMisalign, MethodTable* pMT);
 EXTERN_C FCDECL2(Object*, RhpNewArrayFastAlign8, MethodTable* pMT, INT_PTR size);
 #endif
 
-#if defined(TARGET_WINDOWS) && (defined(TARGET_AMD64) || defined(TARGET_X86))
-EXTERN_C FCDECL1(Object*, RhpNewFast_UP, MethodTable* pMT);
-EXTERN_C FCDECL2(Object*, RhpNewArrayFast_UP, MethodTable* pMT, INT_PTR size);
-EXTERN_C FCDECL2(Object*, RhpNewPtrArrayFast_UP, MethodTable* pMT, INT_PTR size);
-EXTERN_C FCDECL2(Object*, RhNewString_UP, MethodTable* pMT, INT_PTR stringLength);
-#endif
-
 EXTERN_C FCDECL1(Object*, RhpNew, MethodTable* pMT);
 EXTERN_C FCDECL2(Object*, RhpNewVariableSizeObject, MethodTable* pMT, INT_PTR size);
 EXTERN_C FCDECL1(Object*, RhpNewMaybeFrozen, MethodTable* pMT);

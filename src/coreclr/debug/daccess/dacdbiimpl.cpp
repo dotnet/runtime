@@ -5522,6 +5522,11 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetVarArgSig(CORDB_ADDRESS VASigC
 {
     DD_ENTER_MAY_THROW;
 
+#ifndef FEATURE_VARARGS
+    *pArgBase = (CORDB_ADDRESS)NULL;
+    *pRetVal = TargetBuffer();
+    return E_NOTIMPL;
+#else // FEATURE_VARARGS
     HRESULT hr = S_OK;
     EX_TRY
     {
@@ -5548,6 +5553,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetVarArgSig(CORDB_ADDRESS VASigC
     }
     EX_CATCH_HRESULT(hr);
     return hr;
+#endif // FEATURE_VARARGS
 }
 
 // returns TRUE if the type requires 8-byte alignment
@@ -6641,7 +6647,7 @@ HRESULT DacHeapWalker::Init(CORDB_ADDRESS start, CORDB_ADDRESS end)
     if (threadStore != NULL)
     {
         int count = (int)threadStore->ThreadCountInEE();
-        mAllocInfo = new (nothrow) AllocInfo[count + 1];
+        mAllocInfo = new (nothrow) AllocInfo[count];
         if (mAllocInfo == NULL)
             return E_OUTOFMEMORY;
 
@@ -6668,14 +6674,6 @@ HRESULT DacHeapWalker::Init(CORDB_ADDRESS start, CORDB_ADDRESS end)
                 j++;
             }
         }
-        gc_alloc_context globalCtx = ((ee_alloc_context)g_global_alloc_context).m_GCAllocContext;
-        if (globalCtx.alloc_ptr != nullptr)
-        {
-            mAllocInfo[j].Ptr = (CORDB_ADDRESS)globalCtx.alloc_ptr;
-            mAllocInfo[j].Limit = (CORDB_ADDRESS)globalCtx.alloc_limit;
-            j++;
-        }
-
         mAllocContextCount = j;
     }
 
