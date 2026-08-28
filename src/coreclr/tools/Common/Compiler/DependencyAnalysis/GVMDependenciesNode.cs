@@ -163,9 +163,7 @@ namespace ILCompiler.DependencyAnalysis
                                 MethodDesc canonImpl = implementingMethodInstantiation.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
 #if READYTORUN
-                                if (!implementingMethodInstantiation.Signature.IsStatic
-                                    && canonImpl.OwningType.IsValueType
-                                    && NodeFactory.CanPrecompileUnboxingStub(canonImpl))
+                                if (factory.NeedsUnboxingStub(canonImpl))
                                 {
                                     dynamicDependencies.Add(new CombinedDependencyListEntry(factory.UnboxingStub(canonImpl), null, "Unboxing thunk for interface GVM"));
                                 }

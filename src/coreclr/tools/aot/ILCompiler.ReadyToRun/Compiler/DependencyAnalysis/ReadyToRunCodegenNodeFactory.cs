@@ -136,8 +136,11 @@ namespace ILCompiler.DependencyAnalysis
             return _localMethodCache.GetOrAdd(method);
         }
 
-        public static bool CanPrecompileUnboxingStub(MethodDesc targetMethod)
+        private bool CanPrecompileUnboxingStub(MethodDesc targetMethod)
         {
+            if (!CompilationModuleGroup.ContainsMethodBody(targetMethod, false))
+                return false;
+
             // Runtime generated generic unbox stubs are not shared. Using the shared version
             // produced by R2R seems to require more work.
             if (targetMethod.RequiresInstMethodDescArg())
@@ -150,9 +153,21 @@ namespace ILCompiler.DependencyAnalysis
             return true;
         }
 
+        /// <summary>
+        /// Does an instance method on a value type need an unboxing thunk, i.e. can it be entered
+        /// with a boxed 'this'? Interface implementations and virtual overrides are both emitted as
+        /// virtual by compilers, so IsVirtual covers both.
+        /// </summary>
+        public bool NeedsUnboxingStub(MethodDesc method)
+        {
+            return method.OwningType.IsValueType
+                && !method.Signature.IsStatic
+                && method.IsVirtual
+                && CanPrecompileUnboxingStub(method);
+        }
+
         public MethodWithGCInfo UnboxingStub(MethodDesc targetMethod)
         {
-            Debug.Assert(CompilationModuleGroup.ContainsMethodBody(targetMethod, false));
             Debug.Assert(CanPrecompileUnboxingStub(targetMethod));
             ModuleDesc ownerModule = ((MetadataType)targetMethod.GetTypicalMethodDefinition().OwningType).Module;
             MethodDesc thunk = targetMethod.IsSharedByGenericInstantiations && !targetMethod.HasInstantiation
