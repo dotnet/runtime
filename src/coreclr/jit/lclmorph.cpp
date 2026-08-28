@@ -865,9 +865,10 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
     };
 
     ArrayStack<Value>               m_valueStack;
-    bool                            m_stmtModified    = false;
-    bool                            m_madeChanges     = false;
-    bool                            m_propagatedAddrs = false;
+    bool                            m_stmtModified            = false;
+    bool                            m_stmtSideEffectsModified = false;
+    bool                            m_madeChanges             = false;
+    bool                            m_propagatedAddrs         = false;
     LocalSequencer*                 m_sequencer;
     LocalEqualsLocalAddrAssertions* m_lclAddrAssertions;
 
@@ -907,7 +908,8 @@ public:
         }
 #endif // DEBUG
 
-        m_stmtModified = false;
+        m_stmtModified            = false;
+        m_stmtSideEffectsModified = false;
 
         if (m_sequencer != nullptr)
         {
@@ -922,7 +924,7 @@ public:
         assert(m_valueStack.Empty());
         m_madeChanges |= m_stmtModified;
 
-        if (m_stmtModified)
+        if (m_stmtSideEffectsModified)
         {
             m_compiler->gtUpdateStmtSideEffects(stmt);
         }
@@ -1539,7 +1541,9 @@ private:
             {
                 INDEBUG(varDsc->SetDefinedViaAddress(true));
                 escapeAddr = false;
-                defFlags   = GTF_VAR_DEF | GTF_ASG;
+                defFlags   = GTF_VAR_DEF;
+                m_stmtSideEffectsModified |= (callUser->gtFlags & GTF_ASG) == 0;
+                callUser->gtFlags |= GTF_ASG;
 
                 if (!m_compiler->IsEntireAccess(lclNum, val.Offset(), ValueSize(defSize)))
                 {
@@ -1626,6 +1630,7 @@ private:
 
             MorphLocalAddress(node->AsIndir()->Addr(), lclNum, offset);
             node->gtFlags |= GTF_GLOB_REF; // GLOB_REF may not be set already in the "large offset" case.
+            m_stmtSideEffectsModified = true;
         }
         else
         {
@@ -1933,8 +1938,9 @@ private:
             }
         }
 
-        lclNode->gtFlags = lclNodeFlags;
-        m_stmtModified   = true;
+        lclNode->gtFlags          = lclNodeFlags;
+        m_stmtModified            = true;
+        m_stmtSideEffectsModified = true;
     }
 
     //------------------------------------------------------------------------
