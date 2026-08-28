@@ -112,7 +112,9 @@ wasm-merge -g --all-features --enable-gc \
 # 5. Fold global.get -> i32.const so the result is MVP-valid. Without this, wasmtime rejects the
 #    module unless the embedder enables GC. Costs ~3.7% code size: the pass also propagates
 #    globals into function bodies, and a multi-byte i32.const is larger than a 2-byte global.get.
-wasm-opt "$D/merged.wasm" --all-features --simplify-globals -o "$D/final.wasm"
+#    -g preserves the name section; without it wasm-opt strips the names wasm-merge just kept, and
+#    every function in the spliced host becomes anonymous to a debugger.
+wasm-opt "$D/merged.wasm" --all-features -g --simplify-globals -o "$D/final.wasm"
 
 # 6. Swap the merged core module back into the corerun component.
 python3 - "$CORERUN" "$D/final.wasm" "$D/corerun-composite.wasm" <<'PY'
