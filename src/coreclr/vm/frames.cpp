@@ -328,16 +328,9 @@ void Frame::Log() {
 
     STRESS_LOG3(LF_STUBS, LL_INFO1000000, "STUBS: In Stub with Frame %p assoc Method %pM FrameType = %pV\n", this, method, *((void**) this));
 
-    char buff[64];
     const char* frameType;
     if (GetFrameIdentifier() == FrameIdentifier::PrestubMethodFrame)
         frameType = "PreStub";
-    else if (GetFrameIdentifier() == FrameIdentifier::PInvokeCalliFrame)
-    {
-        sprintf_s(buff, ARRAY_SIZE(buff), "PInvoke CALLI target" FMT_ADDR,
-                  DBG_ADDR(((PInvokeCalliFrame*)this)->GetPInvokeCalliTarget()));
-        frameType = buff;
-    }
     else if (GetFrameIdentifier() == FrameIdentifier::StubDispatchFrame)
         frameType = "StubDispatch";
     else if (GetFrameIdentifier() == FrameIdentifier::ExternalMethodFrame)
@@ -1703,37 +1696,6 @@ void TransitionFrame::PromoteCallerStackUsingGCRefMap(promote_func* fn, ScanCont
         }
     }
 }
-
-void PInvokeCalliFrame::PromoteCallerStack(promote_func* fn, ScanContext* sc)
-{
-    WRAPPER_NO_CONTRACT;
-
-    LOG((LF_GC, INFO3, "    Promoting CALLI caller Arguments\n" ));
-
-    // get the signature
-    VASigCookie *varArgSig = GetVASigCookie();
-    if (varArgSig->signature.IsEmpty())
-    {
-        return;
-    }
-
-    SigTypeContext typeContext(varArgSig->classInst, varArgSig->methodInst);
-    MetaSig msig(varArgSig->signature,
-                 varArgSig->pModule,
-                 &typeContext);
-    PromoteCallerStackHelper(fn, sc, NULL, &msig);
-}
-
-#ifndef DACCESS_COMPILE
-PInvokeCalliFrame::PInvokeCalliFrame(TransitionBlock * pTransitionBlock, VASigCookie * pVASigCookie, PCODE pUnmanagedTarget)
-    : FramedMethodFrame(FrameIdentifier::PInvokeCalliFrame, pTransitionBlock, NULL)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    m_pVASigCookie = pVASigCookie;
-    m_pUnmanagedTarget = pUnmanagedTarget;
-}
-#endif // #ifndef DACCESS_COMPILE
 
 #if defined (_DEBUG) && !defined (DACCESS_COMPILE)
 // For IsProtectedByGCFrame, we need to know whether a given object ref is protected

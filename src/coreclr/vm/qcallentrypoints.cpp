@@ -307,8 +307,6 @@ static const Entry s_QCall[] =
     DllImportEntry(ThreadNative_GetCurrentOSThreadId)
     DllImportEntry(ThreadNative_Initialize)
     DllImportEntry(ThreadNative_GetThreadState)
-    DllImportEntry(ThreadNative_SetWaitSleepJoinState)
-    DllImportEntry(ThreadNative_ClearWaitSleepJoinState)
     DllImportEntry(ThreadNative_ReentrantWaitAny)
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
     DllImportEntry(ThreadNative_GetApartmentState)
@@ -500,6 +498,7 @@ static const Entry s_QCall[] =
     DllImportEntry(StubHelpers_CreateCustomMarshaler)
     DllImportEntry(StubHelpers_CreateLayoutClassMarshalStubs)
     DllImportEntry(StubHelpers_ThrowInteropParamException)
+    DllImportEntry(StubHelpers_ThrowInteropException)
     DllImportEntry(StubHelpers_MarshalToManagedVaList)
     DllImportEntry(StubHelpers_MarshalToUnmanagedVaList)
     DllImportEntry(StubHelpers_ValidateObject)

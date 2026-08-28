@@ -3,6 +3,14 @@
     <HasMergedInTests>true</HasMergedInTests>
     <!-- Tracking issue: https://github.com/dotnet/runtime/issues/90427 -->
     <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'mono' and ('$(RuntimeVariant)' == 'minifullaot' or '$(RuntimeVariant)' == 'llvmfullaot')">true</CLRTestTargetUnsupported>
+    <!--
+      The merged runner compiles reverse P/Invoke tests directly into its own assembly, so the
+      wasm P/Invoke table generator cannot emit call helpers for them and they cannot be excluded
+      one project at a time. Skip the test-specific corerun; the tests merged in here that need
+      native assets stay gated on TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets.
+      Tracked by https://github.com/dotnet/runtime/issues/131811
+    -->
+    <WasmBuildTestCorerun Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">false</WasmBuildTestCorerun>
   </PropertyGroup>
   <ItemGroup>
     <MergedWrapperProjectReference Include="*/**/*.??proj" />
