@@ -1461,7 +1461,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool ContainsValueType<T>(ref T searchSpace, T value, int length) where T : struct, INumber<T>
         {
-            if (PackedSpanHelpers.PackedIndexOfIsSupported && typeof(T) == typeof(short) && PackedSpanHelpers.CanUsePackedIndexOf(value))
+            if (PackedSpanHelpers.PackedIndexOfIsSupported && PackedSpanHelpers.ShouldUsePackedIndexOf(length) && typeof(T) == typeof(short) && PackedSpanHelpers.CanUsePackedIndexOf(value))
             {
                 return PackedSpanHelpers.Contains(ref Unsafe.As<T, short>(ref searchSpace), Unsafe.BitCast<T, short>(value), length);
             }
@@ -1644,7 +1644,7 @@ namespace System
             where TValue : struct, INumber<TValue>
             where TNegator : struct, INegator<TValue>
         {
-            if (PackedSpanHelpers.PackedIndexOfIsSupported && typeof(TValue) == typeof(short) && PackedSpanHelpers.CanUsePackedIndexOf(value))
+            if (PackedSpanHelpers.PackedIndexOfIsSupported && PackedSpanHelpers.ShouldUsePackedIndexOf(length) && typeof(TValue) == typeof(short) && PackedSpanHelpers.CanUsePackedIndexOf(value))
             {
                 return typeof(TNegator) == typeof(DontNegate<short>)
                     ? PackedSpanHelpers.IndexOf(ref Unsafe.As<TValue, char>(ref searchSpace), Unsafe.BitCast<TValue, char>(value), length)
@@ -1859,7 +1859,7 @@ namespace System
             where TValue : struct, INumber<TValue>
             where TNegator : struct, INegator<TValue>
         {
-            if (PackedSpanHelpers.PackedIndexOfIsSupported && typeof(TValue) == typeof(short) && PackedSpanHelpers.CanUsePackedIndexOf(value0) && PackedSpanHelpers.CanUsePackedIndexOf(value1))
+            if (PackedSpanHelpers.PackedIndexOfIsSupported && PackedSpanHelpers.ShouldUsePackedIndexOf(length) && typeof(TValue) == typeof(short) && PackedSpanHelpers.CanUsePackedIndexOf(value0) && PackedSpanHelpers.CanUsePackedIndexOf(value1))
             {
                 char char0 = Unsafe.BitCast<TValue, char>(value0);
                 char char1 = Unsafe.BitCast<TValue, char>(value1);
@@ -2119,7 +2119,7 @@ namespace System
             where TValue : struct, INumber<TValue>
             where TNegator : struct, INegator<TValue>
         {
-            if (PackedSpanHelpers.PackedIndexOfIsSupported && typeof(TValue) == typeof(short) && PackedSpanHelpers.CanUsePackedIndexOf(value0) && PackedSpanHelpers.CanUsePackedIndexOf(value1) && PackedSpanHelpers.CanUsePackedIndexOf(value2))
+            if (System.Runtime.Intrinsics.X86.Sse2.IsSupported && typeof(TValue) == typeof(short) && PackedSpanHelpers.CanUsePackedIndexOf(value0) && PackedSpanHelpers.CanUsePackedIndexOf(value1) && PackedSpanHelpers.CanUsePackedIndexOf(value2))
             {
                 return typeof(TNegator) == typeof(DontNegate<short>)
                     ? PackedSpanHelpers.IndexOfAny(ref Unsafe.As<TValue, char>(ref searchSpace), Unsafe.BitCast<TValue, char>(value0), Unsafe.BitCast<TValue, char>(value1), Unsafe.BitCast<TValue, char>(value2), length)
@@ -3866,7 +3866,7 @@ namespace System
             where T : struct, IUnsignedNumber<T>, IComparisonOperators<T, T, bool>
             where TNegator : struct, INegator<T>
         {
-            if (PackedSpanHelpers.PackedIndexOfIsSupported && typeof(T) == typeof(ushort) && PackedSpanHelpers.CanUsePackedIndexOf(lowInclusive) && PackedSpanHelpers.CanUsePackedIndexOf(highInclusive) && highInclusive >= lowInclusive)
+            if (PackedSpanHelpers.PackedIndexOfIsSupported && PackedSpanHelpers.ShouldUsePackedIndexOf(length) && typeof(T) == typeof(ushort) && PackedSpanHelpers.CanUsePackedIndexOf(lowInclusive) && PackedSpanHelpers.CanUsePackedIndexOf(highInclusive) && highInclusive >= lowInclusive)
             {
                 ref char charSearchSpace = ref Unsafe.As<T, char>(ref searchSpace);
                 char charLowInclusive = Unsafe.BitCast<T, char>(lowInclusive);

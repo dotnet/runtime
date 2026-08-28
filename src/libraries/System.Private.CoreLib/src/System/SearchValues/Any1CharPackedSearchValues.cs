@@ -3,6 +3,7 @@
 
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 
 namespace System.Buffers
@@ -23,11 +24,13 @@ namespace System.Buffers
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Sse2))]
+        [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
         internal override int IndexOfAny(ReadOnlySpan<char> span) =>
             PackedSpanHelpers.IndexOf(ref MemoryMarshal.GetReference(span), _e0, span.Length);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Sse2))]
+        [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
         internal override int IndexOfAnyExcept(ReadOnlySpan<char> span) =>
             PackedSpanHelpers.IndexOfAnyExcept(ref MemoryMarshal.GetReference(span), _e0, span.Length);
 

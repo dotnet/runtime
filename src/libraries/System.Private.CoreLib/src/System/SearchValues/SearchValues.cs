@@ -126,7 +126,7 @@ namespace System.Buffers
                 char value1 = values[1];
                 char value2 = values[2];
 
-                return PackedSpanHelpers.PackedIndexOfIsSupported && PackedSpanHelpers.CanUsePackedIndexOf(value0) && PackedSpanHelpers.CanUsePackedIndexOf(value1) && PackedSpanHelpers.CanUsePackedIndexOf(value2)
+                return Sse2.IsSupported && PackedSpanHelpers.CanUsePackedIndexOf(value0) && PackedSpanHelpers.CanUsePackedIndexOf(value1) && PackedSpanHelpers.CanUsePackedIndexOf(value2)
                     ? new Any3CharPackedSearchValues(value0, value1, value2)
                     : new Any3SearchValues<char, short>(shortValues);
             }
