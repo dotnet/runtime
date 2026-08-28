@@ -413,10 +413,8 @@ namespace System.Security.Cryptography.Xml
         [UnconditionalSuppressMessage("ILLink", "IL2026:RequiresUnreferencedCode", Justification = "ctors are marked as RDC")]
         public void ComputeSignature()
         {
-            // Validate SigningKey first: a failure here must not prevent the caller
-            // from setting SigningKey and calling ComputeSignature again on this
-            // same instance.
             AsymmetricAlgorithm? key = SigningKey;
+
             if (key == null)
                 throw new CryptographicException(SR.Cryptography_Xml_LoadKeyFailed);
 
@@ -467,15 +465,9 @@ namespace System.Security.Cryptography.Xml
         {
             ArgumentNullException.ThrowIfNull(macAlg);
 
-            // Validate that macAlg is an HMAC first: a failure here must not prevent
-            // the caller from passing a supported algorithm to a subsequent
-            // ComputeSignature call on this same instance.
             HMAC? hash = macAlg as HMAC;
             if (hash == null)
                 throw new CryptographicException(SR.Cryptography_Xml_SignatureMethodKeyMismatch);
-
-            ThrowIfAlreadyUsed();
-            _alreadyUsed = true;
 
             int signatureLength;
             if (m_signature.SignedInfo!.SignatureLength == null)
@@ -488,8 +480,7 @@ namespace System.Security.Cryptography.Xml
             if (signatureLength % 8 != 0)
                 throw new CryptographicException(SR.Cryptography_Xml_InvalidSignatureLength2);
 
-            BuildDigestedReferences();
-            SignedInfo!.SignatureMethod = hash.HashName switch
+            string signatureMethod = hash.HashName switch
             {
                 "SHA1" => SignedXml.XmlDsigHMACSHA1Url,
                 "SHA256" => SignedXml.XmlDsigMoreHMACSHA256Url,
@@ -499,6 +490,12 @@ namespace System.Security.Cryptography.Xml
                 "RIPEMD160" => SignedXml.XmlDsigMoreHMACRIPEMD160Url,
                 _ => throw new CryptographicException(SR.Cryptography_Xml_SignatureMethodKeyMismatch),
             };
+
+            ThrowIfAlreadyUsed();
+            _alreadyUsed = true;
+
+            BuildDigestedReferences();
+            SignedInfo!.SignatureMethod = signatureMethod;
             byte[] hashValue = GetC14NDigest(hash);
 
             SignedXmlDebugLog.LogSigning(this, hash);

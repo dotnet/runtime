@@ -1,13 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Xml;
 using System.Security.Cryptography.X509Certificates;
+using System.Xml;
 using Xunit;
 
 namespace System.Security.Cryptography.Xml.Tests
 {
-    public class SignedXml_InstanceReuseTests
+    public class SignedXmlInstanceReuseTests
     {
         private const string ExampleXml = @"<?xml version=""1.0""?>
 <example>
@@ -212,13 +212,6 @@ namespace System.Security.Cryptography.Xml.Tests
             }
         }
 
-        // --------------------------------------------------------------------
-        // Argument validation on ComputeSignature/CheckSignature runs before the
-        // instance transitions to the used state, so a caller that catches the
-        // resulting exception can fix the parameter and call again on the same
-        // instance.
-        // --------------------------------------------------------------------
-
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetFramework))]
         public void ComputeSignature_MissingSigningKey_DoesNotPoisonInstance()
         {
@@ -232,10 +225,8 @@ namespace System.Security.Cryptography.Xml.Tests
                 reference.AddTransform(new XmlDsigEnvelopedSignatureTransform());
                 signedXml.AddReference(reference);
 
-                // First call throws because SigningKey has not been assigned yet.
                 Assert.Throws<CryptographicException>(() => signedXml.ComputeSignature());
 
-                // After assigning SigningKey the same instance can complete the operation.
                 signedXml.SigningKey = key;
                 signedXml.ComputeSignature();
                 Assert.NotNull(signedXml.SignatureValue);
@@ -253,150 +244,15 @@ namespace System.Security.Cryptography.Xml.Tests
             reference.AddTransform(new XmlDsigEnvelopedSignatureTransform());
             signedXml.AddReference(reference);
 
-            // First call throws because the supplied KeyedHashAlgorithm is not an HMAC.
             using (NonHmacKeyedHash bad = new NonHmacKeyedHash())
             {
                 Assert.Throws<CryptographicException>(() => signedXml.ComputeSignature(bad));
             }
 
-            // A subsequent call on the same instance with a supported HMAC succeeds.
             using (HMACSHA256 mac = new HMACSHA256(new byte[64]))
             {
                 signedXml.ComputeSignature(mac);
                 Assert.NotNull(signedXml.SignatureValue);
-            }
-        }
-
-        private sealed class NonHmacKeyedHash : KeyedHashAlgorithm
-        {
-            public NonHmacKeyedHash() { HashSizeValue = 256; }
-            public override void Initialize() { }
-            protected override void HashCore(byte[] array, int ibStart, int cbSize) { }
-            protected override byte[] HashFinal() => new byte[32];
-        }
-
-        // --------------------------------------------------------------------
-        // Legitimate usage patterns that must continue to work: building up a
-        // SignedXml before a single sign or verify call, and using a fresh
-        // instance per operation.
-        // --------------------------------------------------------------------
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetFramework))]
-        public void MultipleReferencesAndObjects_BeforeCompute_Work()
-        {
-            using (RSA key = RSA.Create())
-            {
-                XmlDocument doc = new XmlDocument { PreserveWhitespace = true };
-                doc.LoadXml("<root><a>1</a><b>2</b></root>");
-
-                SignedXml signedXml = new SignedXml(doc) { SigningKey = key };
-
-                XmlDocument obj1Doc = new XmlDocument();
-                obj1Doc.LoadXml("<o1>x</o1>");
-                signedXml.AddObject(new DataObject("obj1", null, null, obj1Doc.DocumentElement!));
-
-                XmlDocument obj2Doc = new XmlDocument();
-                obj2Doc.LoadXml("<o2>y</o2>");
-                signedXml.AddObject(new DataObject("obj2", null, null, obj2Doc.DocumentElement!));
-
-                Reference r1 = new Reference("#obj1");
-                signedXml.AddReference(r1);
-                Reference r2 = new Reference("#obj2");
-                signedXml.AddReference(r2);
-
-                signedXml.ComputeSignature();
-                Assert.NotNull(signedXml.SignatureValue);
-            }
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetFramework))]
-        public void LoadXml_ThenCheckSignature_Works()
-        {
-            using (RSA key = RSA.Create())
-            {
-                // Standard verify workflow: construct, LoadXml, CheckSignature.
-                (_, SignedXml verifier) = PrepareVerifier(key);
-                Assert.True(verifier.CheckSignature(key));
-            }
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetFramework))]
-        public void FreshInstance_PerVerification_Works()
-        {
-            // Verifying the same signed document with a fresh SignedXml each
-            // time is the recommended pattern.
-            using (RSA key = RSA.Create())
-            {
-                XmlDocument doc = new XmlDocument { PreserveWhitespace = true };
-                doc.LoadXml(ExampleXml);
-                SignedXml signer = new SignedXml(doc) { SigningKey = key };
-                Reference reference = new Reference { Uri = "" };
-                reference.AddTransform(new XmlDsigEnvelopedSignatureTransform());
-                signer.AddReference(reference);
-                signer.ComputeSignature();
-                doc.DocumentElement!.AppendChild(doc.ImportNode(signer.GetXml(), true));
-                string signed = doc.OuterXml;
-
-                for (int i = 0; i < 3; i++)
-                {
-                    XmlDocument verifyDoc = new XmlDocument { PreserveWhitespace = true };
-                    verifyDoc.LoadXml(signed);
-                    SignedXml verifier = new SignedXml(verifyDoc);
-                    verifier.LoadXml((XmlElement)verifyDoc.GetElementsByTagName("Signature")[0]!);
-                    Assert.True(verifier.CheckSignature(key));
-                }
-            }
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetFramework))]
-        public void SignatureFormatValidator_ReadOnly_Works()
-        {
-            using (RSA key = RSA.Create())
-            {
-                (_, SignedXml verifier) = PrepareVerifier(key);
-                bool validatorCalled = false;
-                verifier.SignatureFormatValidator = sx =>
-                {
-                    // A user-supplied format validator inspects public SignedXml
-                    // state; the validator itself does not perform another
-                    // ComputeSignature or CheckSignature call on the same instance.
-                    validatorCalled = true;
-                    return sx.SignedInfo != null && sx.SignatureValue != null;
-                };
-                Assert.True(verifier.CheckSignature(key));
-                Assert.True(validatorCalled);
-            }
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetFramework))]
-        public void GetXml_AfterCompute_Works()
-        {
-            using (RSA key = RSA.Create())
-            {
-                SignedXml signedXml = PrepareSigner(key, out _);
-                signedXml.ComputeSignature();
-
-                // GetXml is a read-only accessor and can be called any number of times.
-                XmlElement sig1 = signedXml.GetXml();
-                XmlElement sig2 = signedXml.GetXml();
-                Assert.Equal(sig1.OuterXml, sig2.OuterXml);
-            }
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetFramework))]
-        public void ReadingProperties_AfterCheck_Works()
-        {
-            using (RSA key = RSA.Create())
-            {
-                (_, SignedXml verifier) = PrepareVerifier(key);
-                Assert.True(verifier.CheckSignature(key));
-
-                // Property getters are read-only and remain accessible after
-                // a completed sign or verify operation.
-                Assert.NotNull(verifier.Signature);
-                Assert.NotNull(verifier.SignedInfo);
-                Assert.NotNull(verifier.SignatureValue);
-                Assert.NotNull(verifier.SignatureMethod);
             }
         }
 
@@ -409,7 +265,6 @@ namespace System.Security.Cryptography.Xml.Tests
 
                 Assert.Throws<ArgumentNullException>(() => verifier.CheckSignature((AsymmetricAlgorithm)null!));
 
-                // The instance can still be used to complete the verification with a valid key.
                 Assert.True(verifier.CheckSignature(key));
             }
         }
@@ -453,10 +308,124 @@ namespace System.Security.Cryptography.Xml.Tests
 
                 Assert.Throws<ArgumentNullException>(() => verifier.CheckSignature((X509Certificate2)null!, verifySignatureOnly: true));
 
-                // A subsequent call on the same instance with a valid key succeeds.
                 Assert.True(verifier.CheckSignature(key));
             }
         }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetFramework))]
+        public void MultipleReferencesAndObjects_BeforeCompute_Work()
+        {
+            using (RSA key = RSA.Create())
+            {
+                XmlDocument doc = new XmlDocument { PreserveWhitespace = true };
+                doc.LoadXml("<root><a>1</a><b>2</b></root>");
+
+                SignedXml signedXml = new SignedXml(doc) { SigningKey = key };
+
+                XmlDocument obj1Doc = new XmlDocument();
+                obj1Doc.LoadXml("<o1>x</o1>");
+                signedXml.AddObject(new DataObject("obj1", null, null, obj1Doc.DocumentElement!));
+
+                XmlDocument obj2Doc = new XmlDocument();
+                obj2Doc.LoadXml("<o2>y</o2>");
+                signedXml.AddObject(new DataObject("obj2", null, null, obj2Doc.DocumentElement!));
+
+                signedXml.AddReference(new Reference("#obj1"));
+                signedXml.AddReference(new Reference("#obj2"));
+
+                signedXml.ComputeSignature();
+                Assert.NotNull(signedXml.SignatureValue);
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetFramework))]
+        public void LoadXml_ThenCheckSignature_Works()
+        {
+            using (RSA key = RSA.Create())
+            {
+                (_, SignedXml verifier) = PrepareVerifier(key);
+                Assert.True(verifier.CheckSignature(key));
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetFramework))]
+        public void FreshInstance_PerVerification_Works()
+        {
+            using (RSA key = RSA.Create())
+            {
+                XmlDocument doc = new XmlDocument { PreserveWhitespace = true };
+                doc.LoadXml(ExampleXml);
+                SignedXml signer = new SignedXml(doc) { SigningKey = key };
+                Reference reference = new Reference { Uri = "" };
+                reference.AddTransform(new XmlDsigEnvelopedSignatureTransform());
+                signer.AddReference(reference);
+                signer.ComputeSignature();
+                doc.DocumentElement!.AppendChild(doc.ImportNode(signer.GetXml(), true));
+                string signed = doc.OuterXml;
+
+                for (int i = 0; i < 3; i++)
+                {
+                    XmlDocument verifyDoc = new XmlDocument { PreserveWhitespace = true };
+                    verifyDoc.LoadXml(signed);
+                    SignedXml verifier = new SignedXml(verifyDoc);
+                    verifier.LoadXml((XmlElement)verifyDoc.GetElementsByTagName("Signature")[0]!);
+                    Assert.True(verifier.CheckSignature(key));
+                }
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetFramework))]
+        public void SignatureFormatValidator_ReadOnly_Works()
+        {
+            using (RSA key = RSA.Create())
+            {
+                (_, SignedXml verifier) = PrepareVerifier(key);
+                bool validatorCalled = false;
+                verifier.SignatureFormatValidator = sx =>
+                {
+                    validatorCalled = true;
+                    return sx.SignedInfo != null && sx.SignatureValue != null;
+                };
+                Assert.True(verifier.CheckSignature(key));
+                Assert.True(validatorCalled);
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetFramework))]
+        public void GetXml_AfterCompute_Works()
+        {
+            using (RSA key = RSA.Create())
+            {
+                SignedXml signedXml = PrepareSigner(key, out _);
+                signedXml.ComputeSignature();
+
+                XmlElement sig1 = signedXml.GetXml();
+                XmlElement sig2 = signedXml.GetXml();
+                Assert.Equal(sig1.OuterXml, sig2.OuterXml);
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetFramework))]
+        public void ReadingProperties_AfterCheck_Works()
+        {
+            using (RSA key = RSA.Create())
+            {
+                (_, SignedXml verifier) = PrepareVerifier(key);
+                Assert.True(verifier.CheckSignature(key));
+
+                Assert.NotNull(verifier.Signature);
+                Assert.NotNull(verifier.SignedInfo);
+                Assert.NotNull(verifier.SignatureValue);
+                Assert.NotNull(verifier.SignatureMethod);
+            }
+        }
+
+        private sealed class NonHmacKeyedHash : KeyedHashAlgorithm
+        {
+            public NonHmacKeyedHash() { HashSizeValue = 256; }
+            public override void Initialize() { }
+            protected override void HashCore(byte[] array, int ibStart, int cbSize) { }
+            protected override byte[] HashFinal() => new byte[32];
+        }
     }
 }
-
