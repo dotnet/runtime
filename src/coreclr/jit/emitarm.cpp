@@ -7290,19 +7290,24 @@ void emitter::emitDispInsHelp(
             emitDispReg(id->idReg1(), attr, true);
             imm = emitGetInsSC(id);
             {
-                dataSection* jdsc = nullptr;
+                dataSection*  jdsc = nullptr;
+                NATIVE_OFFSET offs = 0;
 
                 /* Find the appropriate entry in the data section list */
 
                 for (jdsc = emitConsDsc.dsdList; jdsc; jdsc = jdsc->dsNext)
                 {
+                    UNATIVE_OFFSET size = jdsc->dsSize;
+
                     /* Is this a label table? */
 
                     if (jdsc->dsType == dataSection::blockAbsoluteAddr)
                     {
-                        if (jdsc->dsOffset == (UNATIVE_OFFSET)imm)
+                        if (offs == imm)
                             break;
                     }
+
+                    offs += size;
                 }
 
                 if (id->idIsDspReloc())

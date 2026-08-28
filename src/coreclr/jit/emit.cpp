@@ -6977,6 +6977,7 @@ unsigned emitter::emitEndCodeGen(Compiler*             comp,
     AllocMemChunk* dataChunk       = emitDataChunks;
     unsigned*      dataChunkOffset = emitDataChunkOffsets;
 
+    unsigned cumulativeOffset = 0;
     for (dataSection* sec = emitConsDsc.dsdList; sec != nullptr; sec = sec->dsNext, dataChunk++, dataChunkOffset++)
     {
         comp->Metrics.ReadOnlyDataBytes += sec->dsSize;
@@ -6990,10 +6991,8 @@ unsigned emitter::emitEndCodeGen(Compiler*             comp,
             dataChunk->flags = CORJIT_ALLOCMEM_READONLY_DATA | CORJIT_ALLOCMEM_HAS_POINTERS_TO_CODE;
         }
 
-        // The logical offset assigned to each section (see emitDataGenBeg) is what instructions
-        // reference and what emitDataOffsetToPtr maps back to a chunk, so use it here rather than
-        // recomputing a packed offset that would ignore inter-section alignment padding.
-        *dataChunkOffset = sec->dsOffset;
+        *dataChunkOffset = cumulativeOffset;
+        cumulativeOffset += sec->dsSize;
     }
 
     comp->Metrics.AllocatedHotCodeBytes  = emitTotalHotCodeSize;
@@ -7880,15 +7879,9 @@ UNATIVE_OFFSET emitter::emitDataGenBeg(unsigned size, unsigned alignment, var_ty
     //
     assert((size != 0) && ((size % dataSection::MIN_DATA_ALIGN) == 0));
 
-    // Place the constant at an offset that satisfies its required alignment. This ensures
-    // aligned loads of the constant address a properly aligned location, and it lets the
-    // duplicate-constant matching in emitDataGenFind reuse an existing entry (that search
-    // only considers candidates sitting at a suitably aligned offset). Compilers targeting
-    // SMALL_CODE request a smaller alignment in the const-emission helpers and so still get
-    // tight packing.
-    unsigned secOffs = AlignUp(emitConsDsc.dsdOffs, alignment);
+    unsigned secOffs = emitConsDsc.dsdOffs;
     /* Advance the current offset */
-    emitConsDsc.dsdOffs = secOffs + size;
+    emitConsDsc.dsdOffs += size;
 
     /* Allocate a data section descriptor and add it to the list */
 
@@ -7899,8 +7892,6 @@ UNATIVE_OFFSET emitter::emitDataGenBeg(unsigned size, unsigned alignment, var_ty
     secDesc->dsSize = size;
 
     secDesc->dsAlignment = alignment;
-
-    secDesc->dsOffset = secOffs;
 
     secDesc->dsDataType = dataType;
 
@@ -7937,13 +7928,13 @@ UNATIVE_OFFSET emitter::emitBBTableDataGenBeg(unsigned numEntries, bool relative
 
     UNATIVE_OFFSET emittedSize = numEntries * elemSize;
 
-    /* Get hold of the current offset, aligned for the element size */
+    /* Get hold of the current offset */
 
-    secOffs = AlignUp(emitConsDsc.dsdOffs, elemSize);
+    secOffs = emitConsDsc.dsdOffs;
 
     /* Advance the current offset */
 
-    emitConsDsc.dsdOffs = secOffs + emittedSize;
+    emitConsDsc.dsdOffs += emittedSize;
 
     /* Allocate a data section descriptor and add it to the list */
 
@@ -7954,8 +7945,6 @@ UNATIVE_OFFSET emitter::emitBBTableDataGenBeg(unsigned numEntries, bool relative
     secDesc->dsSize = emittedSize;
 
     secDesc->dsAlignment = elemSize;
-
-    secDesc->dsOffset = secOffs;
 
     secDesc->dsDataType = TYP_UNKNOWN;
 
@@ -7986,9 +7975,9 @@ UNATIVE_OFFSET emitter::emitBBTableDataGenBeg(unsigned numEntries, bool relative
 //
 void emitter::emitAsyncResumeTable(unsigned numEntries, UNATIVE_OFFSET* dataSecOffs, emitter::dataSection** dataSec)
 {
+    UNATIVE_OFFSET secOffs     = emitConsDsc.dsdOffs;
     unsigned       emittedSize = sizeof(CORINFO_AsyncResumeInfo) * numEntries;
-    UNATIVE_OFFSET secOffs     = AlignUp(emitConsDsc.dsdOffs, TARGET_POINTER_SIZE);
-    emitConsDsc.dsdOffs        = secOffs + emittedSize;
+    emitConsDsc.dsdOffs += emittedSize;
 
     dataSection* secDesc = (dataSection*)emitGetMem(sizeof(dataSection));
     secDesc->dsType      = dataSection::asyncResumeInfo;
@@ -7999,7 +7988,6 @@ void emitter::emitAsyncResumeTable(unsigned numEntries, UNATIVE_OFFSET* dataSecO
 
     secDesc->dsSize      = emittedSize;
     secDesc->dsAlignment = TARGET_POINTER_SIZE;
-    secDesc->dsOffset    = secOffs;
     secDesc->dsDataType  = TYP_UNKNOWN;
     secDesc->dsNext      = nullptr;
 
@@ -8086,6 +8074,7 @@ UNATIVE_OFFSET emitter::emitDataGenFind(const void* cnsAddr, unsigned cnsSize, u
 {
     UNATIVE_OFFSET cnum     = INVALID_UNATIVE_OFFSET;
     unsigned       cmpCount = 0;
+    unsigned       curOffs  = 0;
     dataSection*   secDesc  = emitConsDsc.dsdList;
     while (secDesc != nullptr)
     {
@@ -8095,17 +8084,11 @@ UNATIVE_OFFSET emitter::emitDataGenFind(const void* cnsAddr, unsigned cnsSize, u
         // We match the bit pattern, so the dataType can be different
         // Only match constants when the dsType is 'data'
         //
-        // The existing entry must also sit at an offset that satisfies the requested alignment;
-        // emitDataGenBeg aligns every entry's offset to its own alignment, so this normally holds
-        // for equally-aligned constants but can still fail when reusing a more-strictly-aligned
-        // request against a less-aligned entry.
-        //
-        if ((secDesc->dsType == dataSection::data) && (secDesc->dsSize >= cnsSize) &&
-            ((secDesc->dsOffset % alignment) == 0))
+        if ((secDesc->dsType == dataSection::data) && (secDesc->dsSize >= cnsSize) && ((curOffs % alignment) == 0))
         {
             if (memcmp(cnsAddr, secDesc->Data(), cnsSize) == 0)
             {
-                cnum = secDesc->dsOffset;
+                cnum = curOffs;
 
                 // We also might want to update the dsDataType
                 //
@@ -8122,6 +8105,7 @@ UNATIVE_OFFSET emitter::emitDataGenFind(const void* cnsAddr, unsigned cnsSize, u
             }
         }
 
+        curOffs += secDesc->dsSize;
         secDesc = secDesc->dsNext;
 
         if (++cmpCount > 64)
@@ -8465,7 +8449,8 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, AllocMemChunk* chunks)
 
     /* Walk and emit the contents of all the data blocks */
 
-    AllocMemChunk* chunk = chunks;
+    size_t         curOffs = 0;
+    AllocMemChunk* chunk   = chunks;
 
     for (dataSection* dsc = sec->dsdList; dsc; dsc = dsc->dsNext, chunk++)
     {
@@ -8575,7 +8560,7 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, AllocMemChunk* chunks)
 #ifdef DEBUG
             if (EMITVERBOSE)
             {
-                printf("  section %3u, size %zu, RWD%zu:\t", secNum++, dscSize, (size_t)dsc->dsOffset);
+                printf("  section %3u, size %2u, RWD%2u:\t", secNum++, dscSize, curOffs);
 
                 for (size_t i = 0; i < dscSize; i++)
                 {
@@ -8601,6 +8586,8 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, AllocMemChunk* chunks)
             }
 #endif // DEBUG
         }
+
+        curOffs += dscSize;
     }
 }
 
@@ -8620,7 +8607,8 @@ void emitter::emitDispDataSec(dataSecDsc* section, AllocMemChunk* dataChunks)
 {
     printf("\n");
 
-    AllocMemChunk* chunk = dataChunks;
+    unsigned       offset = 0;
+    AllocMemChunk* chunk  = dataChunks;
 
     for (dataSection* data = section->dsdList; data != nullptr; data = data->dsNext, chunk++)
     {
@@ -8633,8 +8621,9 @@ void emitter::emitDispDataSec(dataSecDsc* section, AllocMemChunk* dataChunks)
 
         const char* labelFormat = "%-7s";
         char        label[64];
-        sprintf_s(label, ArrLen(label), "RWD%02zu", (size_t)data->dsOffset);
+        sprintf_s(label, ArrLen(label), "RWD%02u", offset);
         printf(labelFormat, label);
+        offset += data->dsSize;
 
         if ((data->dsType == dataSection::blockRelative32) || (data->dsType == dataSection::blockAbsoluteAddr))
         {
