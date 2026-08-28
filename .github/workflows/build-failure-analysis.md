@@ -471,6 +471,9 @@ jobs:
           # pre-created symlink, or a second job on the same runner, away from being
           # someone else's file.
           ZIP_TMP=$(mktemp) || { echo "::warning::Could not create a temporary file for downloads."; emit_none; }
+          # A private extraction directory, for the same reason as ZIP_TMP: a fixed
+          # path is another job's directory on a runner we do not have to ourselves.
+          AX_DIR=$(mktemp -d) || { echo "::warning::Could not create a temporary directory for extraction."; emit_none; }
           TOTAL_BYTES=0
           mkdir -p /tmp/binlogs
           # Only binlogs extracted by this run may be analyzed. Anything left in
@@ -490,8 +493,8 @@ jobs:
             ai=$((ai + 1))
             url=$(printf '%s' "${artifacts_json}" | jq -r --arg n "${name}" '.value[] | select(.name==$n) | .resource.downloadUrl // empty')
             [ -z "${url}" ] && continue
-            rm -rf /tmp/ax "${ZIP_TMP}"
-            mkdir -p /tmp/ax
+            find "${AX_DIR:?}" -mindepth 1 -delete
+            : > "${ZIP_TMP}"
             # Bound this transfer by whatever is left of the cumulative budget
             # as well as by the per-artifact cap, so the two limits together
             # are a real ceiling on bytes pulled rather than
@@ -530,7 +533,10 @@ jobs:
             # scheduling hint; a killed transfer is treated like any other failed one and
             # the leg is reported as missing, which fails closed.
             (
-              ulimit -f $(( (ZIP_CAP + 511) / 512 ))
+              # Fail the leg rather than the backstop: if the shell will not apply
+              # the limit, downloading anyway would leave a response with no usable
+              # Content-Length free to fill the disk before the size check below runs.
+              ulimit -f $(( (ZIP_CAP + 511) / 512 )) || exit 1
               trap '' XFSZ
               timeout "${TIME_LEFT}" curl -sSL --fail --retry 3 --retry-delay 2 --connect-timeout 15 --max-time "${ATTEMPT_SECONDS}" --retry-max-time "${TIME_LEFT}" -o "${ZIP_TMP}" "${url}"
             ) 2>/dev/null
@@ -598,7 +604,7 @@ jobs:
             if [ "${zscan_rc[0]}" -ne 0 ]; then
               echo "::warning::Skipping ${safe_name}: could not list archive entries (unzip -Z1 rc=${zscan_rc[0]})."; continue
             fi
-            timeout 120 unzip -o "${ZIP_TMP}" '*.binlog' -d /tmp/ax >/dev/null 2>&1 \
+            timeout 120 unzip -o "${ZIP_TMP}" '*.binlog' -d "${AX_DIR}" >/dev/null 2>&1 \
               || { echo "::warning::Skipping ${safe_name}: extraction failed or timed out."; continue; }
             # Consume the budget only once the archive actually extracted, so a
             # skipped leg can't exhaust it and force later legs to be dropped.
@@ -630,7 +636,7 @@ jobs:
                 # the per-file counter and the sanitized artifact name.
                 echo "::warning::Failed to stage an entry of ${safe_name} as ${dest}; skipping."
               fi
-            done < <(find /tmp/ax -type f -name '*.binlog')
+            done < <(find "${AX_DIR}" -type f -name '*.binlog')
             # Keep each artifact all-or-nothing. A partial leg can hide the
             # actual root cause, so discard its staged files and let hlx cover
             # the failed task logs instead.
@@ -642,6 +648,7 @@ jobs:
             fi
             [ "${leg_staged}" -gt 0 ] && staged_legs=$((staged_legs + 1))
           done
+          rm -rf "${AX_DIR:?}" "${ZIP_TMP}"
           echo "Extracted ${count} binlog(s) from ${staged_legs}/${#names[@]} selected artifacts into /tmp/binlogs:"
           ls -la /tmp/binlogs || true
           binlog_found=false
