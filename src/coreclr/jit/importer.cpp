@@ -3838,11 +3838,12 @@ void Compiler::impImportNewObjArray(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORI
         lvaSetStruct(lvaNewObjArrayArgs, typGetBlkLayout(dimensionsSize), false);
     }
 
-    // Increase size of lvaNewObjArrayArgs to be the largest size needed to hold 'numArgs' integers
-    // for our call to CORINFO_HELP_NEW_MDARR.
+    // Use a new temp if the current one is too small. Growing the existing temp would make earlier
+    // full-width stores partial definitions after they have already been created.
     if (dimensionsSize > lvaTable[lvaNewObjArrayArgs].lvExactSize())
     {
-        lvaTable[lvaNewObjArrayArgs].GrowBlockLayout(typGetBlkLayout(dimensionsSize));
+        lvaNewObjArrayArgs = lvaGrabTemp(false DEBUGARG("NewObjArrayArgs"));
+        lvaSetStruct(lvaNewObjArrayArgs, typGetBlkLayout(dimensionsSize), false);
     }
 
     // The side-effects may include allocation of more multi-dimensional arrays. Spill all side-effects
@@ -4449,6 +4450,10 @@ void Compiler::impAnnotateFieldIndir(GenTreeIndir* indir)
         if (addr->IsInstance() && addr->GetFldObj()->OperIs(GT_LCL_ADDR))
         {
             indir->gtFlags &= ~GTF_GLOB_REF;
+            if (indir->OperIsStore())
+            {
+                indir->gtFlags |= indir->Data()->gtFlags & GTF_GLOB_REF;
+            }
         }
         else
         {
@@ -7775,6 +7780,10 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 type = genActualType(op1->TypeGet());
                 op1  = gtNewOperNode(oper, type, op1, op2);
+                if (op1->OperRequiresCallFlag(this))
+                {
+                    op1->gtFlags |= GTF_CALL;
+                }
 
                 // Fold result, if possible.
                 op1 = gtFoldExpr(op1);
@@ -11955,6 +11964,7 @@ bool Compiler::impWrapTopOfStackInAwait()
     }
 
     awaitCall->gtArgs.PushFront(this, taskArg);
+    awaitCall->gtFlags |= taskArg.Node->gtFlags & GTF_ALL_EFFECT;
 
     NewCallArg asyncContArg = NewCallArg::Primitive(gtNewNull()).WellKnown(WellKnownArg::AsyncContinuation);
 
@@ -11969,6 +11979,7 @@ bool Compiler::impWrapTopOfStackInAwait()
         }
 
         instArg = NewCallArg::Primitive(instArgTree).WellKnown(WellKnownArg::InstParam);
+        awaitCall->gtFlags |= instArg.Node->gtFlags & GTF_ALL_EFFECT;
     }
 
     if (Target::g_tgtArgOrder == Target::ARG_ORDER_R2L)

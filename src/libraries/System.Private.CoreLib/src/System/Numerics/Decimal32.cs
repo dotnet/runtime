@@ -1750,9 +1750,9 @@ namespace System.Numerics
             return Number.UInt32ToDecStr(significand);
         }
 
-        static unsafe uint IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.NumberToSignificand(ref Number.NumberBuffer number, int digits)
+        static uint IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.NumberToSignificand(ref Number.NumberBuffer number, int digits)
         {
-            return Number.DigitsToUInt32(number.DigitsPtr, digits);
+            return Number.DigitsToUInt32(number.Digits.Slice(0, digits));
         }
 
         static Decimal32 IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.Construct(uint value) => new Decimal32(value);
