@@ -1770,7 +1770,8 @@ BOOL ILStubManager::TraceManager(Thread *thread,
 
         trace->InitForManaged(target);
     }
-    else if (pStubMD->HasMDContextArg())
+#ifdef FEATURE_VARARGS
+    else if (pStubMD->IsPInvokeVarArgStub())
     {
         LOG((LF_CORDB, LL_INFO1000, "ILSM::TraceManager: Hidden argument is MethodDesc\n"));
 
@@ -1785,6 +1786,7 @@ BOOL ILStubManager::TraceManager(Thread *thread,
              reinterpret_cast<void*>(target)));
         trace->InitForUnmanaged(target);
     }
+#endif // FEATURE_VARARGS
     else if (pStubMD->IsDelegateInvokeMethodStub())
     {
         if (pThis == NULL)
@@ -2003,7 +2005,7 @@ BOOL CLRToCOMStubManager::TraceManager(Thread *thread,
 
 #endif // FEATURE_COMINTEROP
 
-// This is used to recognize VarargPInvokeStub.
+#ifdef FEATURE_VARARGS
 
 #ifndef DACCESS_COMPILE
 
@@ -2031,7 +2033,7 @@ static BOOL IsVarargPInvokeStub(PCODE stubStartAddress)
     if (stubStartAddress == GetEEFuncEntryPoint(VarargPInvokeStub))
         return TRUE;
 
-#if !defined(TARGET_X86) && !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
+#if !defined(TARGET_X86) && !defined(TARGET_ARM64)
     if (stubStartAddress == GetEEFuncEntryPoint(VarargPInvokeStub_RetBuffArg))
         return TRUE;
 #endif
@@ -2099,23 +2101,18 @@ BOOL InteropDispatchStubManager::TraceManager(Thread *thread,
     PCODE stubIP = GetIP(pContext);
     if (IsVarargPInvokeStub(stubIP))
     {
-#if defined(TARGET_ARM64) && defined(__APPLE__)
-        //On ARM64 Mac, we cannot put a breakpoint inside of VarargPInvokeStub
-        LOG((LF_CORDB, LL_INFO10000, "IDSM::TraceManager: Skipping on arm64-macOS\n"));
-        return FALSE;
-#else
         PInvokeMethodDesc *pNMD = (PInvokeMethodDesc *)arg;
         PCODE target = (PCODE)pNMD->GetPInvokeTarget();
 
         LOG((LF_CORDB, LL_INFO10000, "IDSM::TraceManager: Vararg P/Invoke case %p\n",
              reinterpret_cast<void*>(target)));
         trace->InitForUnmanaged(target);
-#endif //defined(TARGET_ARM64) && defined(__APPLE__)
     }
 
     return TRUE;
 }
 #endif //!DACCESS_COMPILE
+#endif // FEATURE_VARARGS
 
 #if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
 
@@ -2389,6 +2386,7 @@ CLRToCOMStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 }
 #endif // FEATURE_COMINTEROP
 
+#ifdef FEATURE_VARARGS
 void
 InteropDispatchStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 {
@@ -2397,6 +2395,7 @@ InteropDispatchStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     DAC_ENUM_VTHIS();
     EMEM_OUT(("MEM: %p InteropDispatchStubManager\n", dac_cast<TADDR>(this)));
 }
+#endif // FEATURE_VARARGS
 
 void
 VirtualCallStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)

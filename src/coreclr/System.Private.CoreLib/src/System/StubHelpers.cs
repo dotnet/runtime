@@ -2504,6 +2504,7 @@ namespace System.StubHelpers
             throw new ArgumentException(SR.Argument_WrongSizeArrayInNativeStruct);
         }
 
+#if FEATURE_VARARGS
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint="StubHelpers_MarshalToManagedVaList")]
         internal static partial void MarshalToManagedVaList(IntPtr va_list, IntPtr pArgIterator);
 
@@ -2512,6 +2513,7 @@ namespace System.StubHelpers
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern uint CalcVaListSize(IntPtr va_list);
+#endif // FEATURE_VARARGS
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void LogPinnedArgument(IntPtr localDesc, IntPtr nativeArg);
