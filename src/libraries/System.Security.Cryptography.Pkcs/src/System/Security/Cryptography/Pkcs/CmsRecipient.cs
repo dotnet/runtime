@@ -72,6 +72,34 @@ namespace System.Security.Cryptography.Pkcs
         public SubjectIdentifierType RecipientIdentifierType { get; }
         public X509Certificate2 Certificate { get; }
 
+#if NET11_0_OR_GREATER
+        /// <summary>
+        /// Creates a recipient that uses key encapsulation.
+        /// </summary>
+        /// <param name="certificate">The recipient certificate.</param>
+        /// <param name="userKeyingMaterial">The optional user keying material.</param>
+        /// <returns>A recipient that uses key encapsulation.</returns>
+        public static CmsRecipient CreateForKeyEncapsulation(
+            X509Certificate2 certificate,
+            ReadOnlySpan<byte> userKeyingMaterial) =>
+            throw new NotImplementedException();
+
+        /// <summary>
+        /// Creates a recipient that uses key encapsulation.
+        /// </summary>
+        /// <param name="recipientIdentifierType">
+        /// One of the enumeration values that specifies how the recipient is identified.
+        /// </param>
+        /// <param name="certificate">The recipient certificate.</param>
+        /// <param name="userKeyingMaterial">The optional user keying material.</param>
+        /// <returns>A recipient that uses key encapsulation.</returns>
+        public static CmsRecipient CreateForKeyEncapsulation(
+            SubjectIdentifierType recipientIdentifierType,
+            X509Certificate2 certificate,
+            ReadOnlySpan<byte> userKeyingMaterial) =>
+            throw new NotImplementedException();
+#endif
+
         private static void ValidateRSACertificate(X509Certificate2 certificate)
         {
             switch (certificate.GetKeyAlgorithm())

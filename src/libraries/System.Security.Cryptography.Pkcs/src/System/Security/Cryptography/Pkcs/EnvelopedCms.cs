@@ -9,7 +9,7 @@ using Internal.Cryptography;
 
 namespace System.Security.Cryptography.Pkcs
 {
-    public sealed class EnvelopedCms
+    public sealed partial class EnvelopedCms
     {
         //
         // Constructors

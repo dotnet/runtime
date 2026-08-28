@@ -197,6 +197,11 @@ System.Security.Cryptography.Pkcs.EnvelopedCms</PackageDescription>
     </Compile>
   </ItemGroup>
 
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net11.0'))">
+    <Compile Include="System\Security\Cryptography\Pkcs\EnvelopedCms.Kem.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\KemRecipientInfo.cs" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
              Link="Common\DisableRuntimeMarshalling.cs" />
