@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.CommandLine;
 
 namespace ILAssembler;
@@ -114,8 +113,6 @@ internal sealed class IlasmRootCommand : RootCommand
     public Option<bool> WaitForDebugger { get; } =
         new("--waitfordebugger") { Description = "Pause to give opportunity to attach debugger" };
 
-    public ParseResult Result { get; private set; } = null!;
-
     internal const string ProductName = ".NET IL Assembler";
 
     public IlasmRootCommand() : base(ProductName)
@@ -155,29 +152,5 @@ internal sealed class IlasmRootCommand : RootCommand
         Options.Add(TargetArm64);
         Options.Add(Prefer32Bit);
         Options.Add(WaitForDebugger);
-
-        this.SetAction(result =>
-        {
-            Result = result;
-
-            if (result.GetValue(WaitForDebugger))
-            {
-                Console.WriteLine("Waiting for debugger to attach. Press ENTER to continue");
-                Console.ReadLine();
-            }
-
-            try
-            {
-                return new Program(this).Run();
-            }
-            catch (Exception e)
-            {
-                Console.ResetColor();
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.Error.WriteLine("Error: " + e.Message);
-                Console.ResetColor();
-                return 1;
-            }
-        });
     }
 }
