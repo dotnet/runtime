@@ -65,13 +65,13 @@ internal static class WasmR2RAssert
         Dictionary<(string Module, string Name), WasmImportIndex> imports = ReadWasmImports(reader);
         (string Name, WasmImportKind Kind, uint Index)[] expectedImports =
         [
-            ("stackPointer", WasmImportKind.Global, 0),
-            ("imageBase", WasmImportKind.Global, 1),
-            ("tableBase", WasmImportKind.Global, 2),
-            ("asyncContinuation", WasmImportKind.Global, 3),
-            ("table", WasmImportKind.Table, 0),
+            ("__stack_pointer", WasmImportKind.Global, 0),
+            ("__memory_base", WasmImportKind.Global, 1),
+            ("__table_base", WasmImportKind.Global, 2),
+            ("__async_continuation", WasmImportKind.Global, 3),
+            ("__indirect_function_table", WasmImportKind.Table, 0),
             ("memory", WasmImportKind.Memory, 0),
-            ("rtlRestoreContextTag", WasmImportKind.Tag, 0),
+            ("__coreclr_wasm_rtlrestorecontext_tag", WasmImportKind.Tag, 0),
         ];
 
         var failures = new List<string>();

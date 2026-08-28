@@ -105,10 +105,10 @@ function allocWebcilPayload(payloadSize: number): number {
 
 // Builds the `webcil` import object. For R2R images (tableSize > 0) the module imports the runtime's
 // stack pointer, exception tag, indirect-call table and base globals; this also grows the table.
-// These import names and the webcilVersion/getWebcilPayload/fillWebcilTable handshake in
-// finishWebcilInstance are the R2R Webcil-in-Wasm host ABI defined by crossgen's WasmObjectWriter
-// (src/coreclr/tools/Common/Compiler/ObjectWriter/WasmObjectWriter.cs, CreateDefaultGlobalImports/
-// WriteExports). Keep in sync with the corerun host
+// These import names and the webcilVersion/getWebcilPayload/fillWebcilTable/patchWebcilHeader
+// handshake in finishWebcilInstance are the R2R Webcil-in-Wasm host ABI defined by crossgen's
+// WasmObjectWriter (src/coreclr/tools/Common/Compiler/ObjectWriter/WasmObjectWriter.cs,
+// CreateDefaultGlobalImports/WriteExports). Keep in sync with the corerun host
 // (src/coreclr/hosts/corerun/wasm/libCorerun.js, BrowserHost_ExternalAssemblyProbe). Unlike corerun,
 // which parses data segment 0 for payloadSize/tableSize, this loader receives them from boot config.
 function buildWebcilImports(memory: WebAssembly.Memory, payloadPtr: number, tableSize: number): Record<string, WebAssembly.ImportValue> {
@@ -128,12 +128,12 @@ function buildWebcilImports(memory: WebAssembly.Memory, payloadPtr: number, tabl
         }
         const tableStartIndex = _ems_.wasmTable.length;
         _ems_.wasmTable.grow(tableSize);
-        webcilImports.stackPointer = stackPointer;
-        webcilImports.rtlRestoreContextTag = rtlRestoreContextTag as unknown as WebAssembly.ImportValue;
-        webcilImports.asyncContinuation = asyncContinuation as unknown as WebAssembly.ImportValue;
-        webcilImports.table = _ems_.wasmTable;
-        webcilImports.tableBase = new WebAssembly.Global({ value: "i32", mutable: false }, tableStartIndex);
-        webcilImports.imageBase = new WebAssembly.Global({ value: "i32", mutable: false }, payloadPtr);
+        webcilImports.__stack_pointer = stackPointer;
+        webcilImports.__coreclr_wasm_rtlrestorecontext_tag = rtlRestoreContextTag as unknown as WebAssembly.ImportValue;
+        webcilImports.__async_continuation = asyncContinuation as unknown as WebAssembly.ImportValue;
+        webcilImports.__indirect_function_table = _ems_.wasmTable;
+        webcilImports.__table_base = new WebAssembly.Global({ value: "i32", mutable: false }, tableStartIndex);
+        webcilImports.__memory_base = new WebAssembly.Global({ value: "i32", mutable: false }, payloadPtr);
     }
     return webcilImports;
 }
@@ -146,11 +146,21 @@ function finishWebcilInstance(instance: WebAssembly.Instance, payloadPtr: number
         throw new Error(`Unsupported Webcil version: ${webcilVersion}`);
     }
 
-    const getWebcilPayload = instance.exports.getWebcilPayload as (ptr: number, size: number) => void;
-    getWebcilPayload(payloadPtr, payloadSize);
-    if (tableSize > 0) {
-        const fillWebcilTable = instance.exports.fillWebcilTable as () => void;
-        fillWebcilTable();
+    // Two image shapes reach this point. A component stub carries its payload and table in passive
+    // segments and hands them over via getWebcilPayload/fillWebcilTable. A composite uses active
+    // segments, so the engine installed both at instantiation and only the header's tableBase field
+    // is left to write. Feature-detect rather than assume: getWebcilPayload on a composite would
+    // trap, because memory.init against an active (hence dropped) segment is out of bounds.
+    const patchWebcilHeader = instance.exports.patchWebcilHeader as ((ptr: number, size: number) => void) | undefined;
+    if (typeof patchWebcilHeader === "function") {
+        patchWebcilHeader(payloadPtr, payloadSize);
+    } else {
+        const getWebcilPayload = instance.exports.getWebcilPayload as (ptr: number, size: number) => void;
+        getWebcilPayload(payloadPtr, payloadSize);
+        if (tableSize > 0) {
+            const fillWebcilTable = instance.exports.fillWebcilTable as () => void;
+            fillWebcilTable();
+        }
     }
 
     const name = virtualPath.startsWith(browserVirtualAppBase)
