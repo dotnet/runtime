@@ -2914,7 +2914,6 @@ SWITCH_OPCODE:
 
                 INTOP_CASE(INTOP_GET_RUNTIME_TYPE_FROM_HANDLE)
                 {
-                    pFrame->ip = ip;
                     void* typeHandle = LOCAL_VAR(ip[2], void*);
 
                     if (typeHandle == nullptr)
@@ -2927,6 +2926,7 @@ SWITCH_OPCODE:
                         OBJECTREF runtimeType = handle.GetManagedClassObjectIfExists();
                         if (runtimeType == nullptr)
                         {
+                            pFrame->ip = ip;
                             runtimeType = handle.GetManagedClassObject();
                         }
                         LOCAL_VAR(ip[1], OBJECTREF) = runtimeType;
