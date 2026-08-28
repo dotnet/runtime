@@ -342,6 +342,9 @@
   <data name="Cryptography_CipherModeNotSupported" xml:space="preserve">
     <value>The specified CipherMode '{0}' is not supported.</value>
   </data>
+  <data name="Cryptography_CompositeKemRsaDecapsulationFailed" xml:space="preserve">
+    <value>RSA-OAEP decapsulation failed to produce a shared secret of the expected length.</value>
+  </data>
   <data name="Cryptography_CompositeSignDataError" xml:space="preserve">
     <value>Composite signature generation failed due to an error in one or both of the components.</value>
   </data>
@@ -573,11 +576,17 @@
   <data name="Cryptography_KeyTooSmall" xml:space="preserve">
     <value>The key is too small for the requested operation.</value>
   </data>
+  <data name="Cryptography_KeyWrap_Ciphertext_InvalidLength" xml:space="preserve">
+    <value>The ciphertext is not a valid length for the Key Wrap algorithm.</value>
+  </data>
   <data name="Cryptography_KeyWrap_DecryptFailed" xml:space="preserve">
     <value>The ciphertext did not successfully decrypt with the instance key.</value>
   </data>
   <data name="Cryptography_KeyWrap_InvalidLength" xml:space="preserve">
     <value>The ciphertext is not a valid length for the Key Wrap with Padding Unwrap algorithm.</value>
+  </data>
+  <data name="Cryptography_KeyWrap_Plaintext_InvalidLength" xml:space="preserve">
+    <value>The plaintext is not a valid length for the Key Wrap algorithm.</value>
   </data>
   <data name="Cryptography_KeyWrongSizeForAlgorithm" xml:space="preserve">
     <value>The specified key is not the correct size for the indicated algorithm.</value>

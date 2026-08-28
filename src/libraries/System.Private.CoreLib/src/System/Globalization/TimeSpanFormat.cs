@@ -16,7 +16,7 @@ namespace System.Globalization
         internal static readonly FormatLiterals NegativeInvariantFormatLiterals = FormatLiterals.InitInvariant(isNegative: true);
 
         /// <summary>Main method called from TimeSpan.ToString.</summary>
-        internal static unsafe string Format(TimeSpan value, string? format, IFormatProvider? formatProvider)
+        internal static string Format(TimeSpan value, string? format, IFormatProvider? formatProvider)
         {
             if (string.IsNullOrEmpty(format))
             {
@@ -48,7 +48,7 @@ namespace System.Globalization
         }
 
         /// <summary>Main method called from TimeSpan.TryFormat.</summary>
-        internal static unsafe bool TryFormat<TChar>(TimeSpan value, Span<TChar> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? formatProvider) where TChar : unmanaged, IUtfChar<TChar>
+        internal static bool TryFormat<TChar>(TimeSpan value, Span<TChar> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? formatProvider) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
@@ -81,14 +81,14 @@ namespace System.Globalization
             return result;
         }
 
-        internal static unsafe string FormatC(TimeSpan value)
+        internal static string FormatC(TimeSpan value)
         {
             Span<char> destination = stackalloc char[26]; // large enough for any "c" TimeSpan
             TryFormatStandard(value, StandardFormat.C, null, destination, out int charsWritten);
             return new string(destination.Slice(0, charsWritten));
         }
 
-        private static unsafe string FormatG(TimeSpan value, DateTimeFormatInfo dtfi, StandardFormat format)
+        private static string FormatG(TimeSpan value, DateTimeFormatInfo dtfi, StandardFormat format)
         {
             string decimalSeparator = dtfi.DecimalSeparator;
             int maxLength = checked(25 + decimalSeparator.Length); // large enough for any "g"/"G" TimeSpan
@@ -106,7 +106,7 @@ namespace System.Globalization
             g
         }
 
-        internal static unsafe bool TryFormatStandard<TChar>(TimeSpan value, StandardFormat format, ReadOnlySpan<TChar> decimalSeparator, Span<TChar> destination, out int written) where TChar : unmanaged, IUtfChar<TChar>
+        internal static bool TryFormatStandard<TChar>(TimeSpan value, StandardFormat format, ReadOnlySpan<TChar> decimalSeparator, Span<TChar> destination, out int written) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(format == StandardFormat.C || format == StandardFormat.G || format == StandardFormat.g);
 
@@ -229,65 +229,113 @@ namespace System.Globalization
                 return false;
             }
 
-            fixed (TChar* dest = &MemoryMarshal.GetReference(destination))
+            int pos = 0;
+
+            // Write leading '-' if necessary
+            if (value.Ticks < 0)
             {
-                TChar* p = dest;
+                destination[pos++] = TChar.CastFrom('-');
+            }
 
-                // Write leading '-' if necessary
-                if (value.Ticks < 0)
-                {
-                    *p++ = TChar.CastFrom('-');
-                }
+            // Write day and separator, if necessary
+            if (dayDigits != 0)
+            {
+                Number.WriteDigits(days, destination.Slice(pos, dayDigits));
+                pos += dayDigits;
+                destination[pos++] = TChar.CastFrom(format == StandardFormat.C ? '.' : ':');
+            }
 
-                // Write day and separator, if necessary
-                if (dayDigits != 0)
+            // After writing the variable-length prefix into destination[0..pos), write the
+            // fixed "[h]h:mm:ss[.fraction]" suffix.  We branch on hourDigits (1 or 2) and
+            // initialize suffixLen to the minimum length (8 or 7) before conditionally adding
+            // the fraction part, giving the JIT a concrete lower bound to hoist bounds checks
+            // out of the inner writes.
+            Debug.Assert(hourDigits == 1 || hourDigits == 2);
+            int suffixLen;
+            if (hourDigits == 2)
+            {
+                int decSepLen = 0;
+                suffixLen = 8; // hh:mm:ss
+                if (fractionDigits != 0)
                 {
-                    Number.WriteDigits(days, p, dayDigits);
-                    p += dayDigits;
-                    *p++ = TChar.CastFrom(format == StandardFormat.C ? '.' : ':');
+                    decSepLen = format == StandardFormat.C ? 1 : decimalSeparator.Length;
+                    suffixLen += decSepLen + fractionDigits;
                 }
+                // Invariant: suffixLen >= 8 by construction; this check is unreachable but lets
+                // the JIT prove that all suffix writes at constant offsets 0..7 are in bounds.
+                if ((uint)suffixLen < 8u)
+                {
+                    ThrowHelper.ThrowUnreachableException();
+                }
+                Span<TChar> suffix = destination.Slice(pos, suffixLen);
 
-                // Write "[h]h:mm:ss
-                Debug.Assert(hourDigits == 1 || hourDigits == 2);
-                if (hourDigits == 2)
-                {
-                    Number.WriteTwoDigits(hours, p);
-                    p += 2;
-                }
-                else
-                {
-                    *p++ = TChar.CastFrom('0' + hours);
-                }
-                *p++ = TChar.CastFrom(':');
-                Number.WriteTwoDigits((uint)minutes, p);
-                p += 2;
-                *p++ = TChar.CastFrom(':');
-                Number.WriteTwoDigits((uint)seconds, p);
-                p += 2;
+                Number.WriteTwoDigits(hours, suffix.Slice(0, 2));
+                suffix[2] = TChar.CastFrom(':');
+                Number.WriteTwoDigits((uint)minutes, suffix.Slice(3, 2));
+                suffix[5] = TChar.CastFrom(':');
+                Number.WriteTwoDigits((uint)seconds, suffix.Slice(6, 2));
 
-                // Write fraction and separator, if necessary
                 if (fractionDigits != 0)
                 {
                     if (format == StandardFormat.C)
                     {
-                        *p++ = TChar.CastFrom('.');
+                        suffix[8] = TChar.CastFrom('.');
                     }
-                    else if (decimalSeparator.Length == 1)
+                    else if (decSepLen == 1)
                     {
-                        *p++ = decimalSeparator[0];
+                        suffix[8] = decimalSeparator[0];
                     }
                     else
                     {
-                        decimalSeparator.CopyTo(new Span<TChar>(p, decimalSeparator.Length));
-                        p += decimalSeparator.Length;
+                        decimalSeparator.CopyTo(suffix.Slice(8, decSepLen));
                     }
 
-                    Number.WriteDigits(fraction, p, fractionDigits);
-                    p += fractionDigits;
+                    Number.WriteDigits(fraction, suffix.Slice(8 + decSepLen, fractionDigits));
                 }
-
-                Debug.Assert(p - dest == requiredOutputLength);
             }
+            else
+            {
+                int decSepLen = 0;
+                suffixLen = 7; // h:mm:ss
+                if (fractionDigits != 0)
+                {
+                    decSepLen = format == StandardFormat.C ? 1 : decimalSeparator.Length;
+                    suffixLen += decSepLen + fractionDigits;
+                }
+                // Invariant: suffixLen >= 7 by construction; this check is unreachable but lets
+                // the JIT prove that all suffix writes at constant offsets 0..6 are in bounds.
+                if ((uint)suffixLen < 7u)
+                {
+                    ThrowHelper.ThrowUnreachableException();
+                }
+                Span<TChar> suffix = destination.Slice(pos, suffixLen);
+
+                suffix[0] = TChar.CastFrom('0' + (int)hours);
+                suffix[1] = TChar.CastFrom(':');
+                Number.WriteTwoDigits((uint)minutes, suffix.Slice(2, 2));
+                suffix[4] = TChar.CastFrom(':');
+                Number.WriteTwoDigits((uint)seconds, suffix.Slice(5, 2));
+
+                if (fractionDigits != 0)
+                {
+                    if (format == StandardFormat.C)
+                    {
+                        suffix[7] = TChar.CastFrom('.');
+                    }
+                    else if (decSepLen == 1)
+                    {
+                        suffix[7] = decimalSeparator[0];
+                    }
+                    else
+                    {
+                        decimalSeparator.CopyTo(suffix.Slice(7, decSepLen));
+                    }
+
+                    Number.WriteDigits(fraction, suffix.Slice(7 + decSepLen, fractionDigits));
+                }
+            }
+
+            Debug.Assert(pos + suffixLen == requiredOutputLength);
 
             written = requiredOutputLength;
             return true;
@@ -496,7 +544,7 @@ namespace System.Globalization
             // the constants guaranteed to include DHMSF ordered greatest to least significant.
             // Once the data becomes more complex than this we will need to write a proper tokenizer for
             // parsing and formatting
-            internal unsafe void Init(ReadOnlySpan<char> format, bool useInvariantFieldLengths)
+            internal void Init(ReadOnlySpan<char> format, bool useInvariantFieldLengths)
             {
                 dd = hh = mm = ss = ff = 0;
                 _literals = new string[6];

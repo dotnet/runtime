@@ -713,6 +713,140 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             AssertCanCreateAssemblyImage(result.OutputCompilation);
         }
 
+        [Theory]
+        [InlineData("private UnbindableType Lazy => UnbindableType.Create();")]
+        [InlineData("internal UnbindableType Lazy { get; set; }")]
+        [InlineData("protected UnbindableType Lazy { get; set; }")]
+        [InlineData("[ConfigurationIgnore] public UnbindableType Lazy { get; set; }")]
+        public async Task PropertyExcludedFromBindingDoesNotReportItsType(string propertyDeclaration)
+        {
+            string source = $$"""
+                using Microsoft.Extensions.Configuration;
+
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        ConfigurationBuilder configurationBuilder = new();
+                        IConfigurationRoot config = configurationBuilder.Build();
+
+                        MySettings settings = new();
+                        config.Bind(settings);
+                    }
+                }
+
+                public sealed class UnbindableType
+                {
+                    private UnbindableType() { }
+                    public static UnbindableType Create() => new UnbindableType();
+                    public int Value { get; set; }
+                }
+
+                public class MySettings
+                {
+                    public int Supported { get; set; }
+                    {{propertyDeclaration}}
+                }
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source);
+
+            Assert.Empty(result.Diagnostics);
+            Assert.NotNull(result.GeneratedSource);
+
+            string generated = result.GeneratedSource.Value.SourceText.ToString();
+            Assert.Contains("instance.Supported = ", generated);
+            Assert.DoesNotContain("UnbindableType", generated);
+        }
+
+        [Fact]
+        public async Task UnbindableTypeIsStillReportedWhenAlsoReachedThroughABindableProperty()
+        {
+            // The excluded property is declared first, so it would be the one to pull the type into the graph.
+            string source = """
+                using Microsoft.Extensions.Configuration;
+
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        ConfigurationBuilder configurationBuilder = new();
+                        IConfigurationRoot config = configurationBuilder.Build();
+
+                        MySettings settings = new();
+                        config.Bind(settings);
+                    }
+                }
+
+                public sealed class UnbindableType
+                {
+                    private UnbindableType() { }
+                    public static UnbindableType Create() => new UnbindableType();
+                    public int Value { get; set; }
+                }
+
+                public class MySettings
+                {
+                    [ConfigurationIgnore]
+                    public UnbindableType Excluded { get; set; }
+
+                    public UnbindableType Bindable { get; set; }
+                }
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source);
+
+            Assert.Contains(result.Diagnostics, diagnostic =>
+                diagnostic.Id == Diagnostics.PropertyNotSupported.Id &&
+                diagnostic.GetMessage(CultureInfo.InvariantCulture).Contains("'Bindable'"));
+
+            Assert.DoesNotContain(result.Diagnostics, diagnostic =>
+                diagnostic.GetMessage(CultureInfo.InvariantCulture).Contains("'Excluded'"));
+
+            Assert.Contains(result.Diagnostics, diagnostic => diagnostic.Id == Diagnostics.TypeNotSupported.Id);
+        }
+
+        [Fact]
+        public async Task NonPublicPropertyBackingConstructorParameterKeepsItsTypeRegistered()
+        {
+            // The binder cannot reach the property, but it does bind the constructor parameter it backs, so the
+            // type must stay registered and an unbindable one must still be reported.
+            string source = """
+                using Microsoft.Extensions.Configuration;
+
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        ConfigurationBuilder configurationBuilder = new();
+                        IConfigurationRoot config = configurationBuilder.Build();
+
+                        MySettings settings = config.Get<MySettings>()!;
+                    }
+                }
+
+                public sealed class UnbindableType
+                {
+                    private UnbindableType() { }
+                    public static UnbindableType Create() => new UnbindableType();
+                    public int Value { get; set; }
+                }
+
+                public class MySettings
+                {
+                    public MySettings(UnbindableType inner) => Inner = inner;
+
+                    private UnbindableType Inner { get; }
+                }
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source);
+
+            Assert.Contains(result.Diagnostics, diagnostic =>
+                diagnostic.Id == Diagnostics.PropertyNotSupported.Id &&
+                diagnostic.GetMessage(CultureInfo.InvariantCulture).Contains("'Inner'"));
+        }
+
         [Fact]
         public async Task BindingToCollectionOnlyTest()
         {

@@ -7,6 +7,14 @@
     <!-- Tracking issue: https://github.com/dotnet/runtime/issues/90427 -->
     <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'mono' and '$(RuntimeVariant)' == 'minifullaot'">true</CLRTestTargetUnsupported>
     <HasMergedInTests>true</HasMergedInTests>
+    <!--
+      The merged wrapper compiles the P/Invokes of the directly-compiled-in tests below into itself,
+      and many of them marshal structs by value, which the wasm P/Invoke table generator cannot map
+      yet. Leave the wrapper on CORE_ROOT/corerun.js until it can; its tests stay gated off by
+      TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets.
+      Tracked by https://github.com/dotnet/runtime/issues/131811
+    -->
+    <WasmBuildTestCorerun Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">false</WasmBuildTestCorerun>
   </PropertyGroup>
   <ItemGroup>
     <SupportProject Include="$(TestLibraryProjectPath)" />

@@ -348,7 +348,7 @@ namespace System.Collections.Generic
 
             if ((uint)index > (uint)array.Length)
             {
-                ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
+                ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessOrEqualException();
             }
 
             if (array.Length - index < Count)

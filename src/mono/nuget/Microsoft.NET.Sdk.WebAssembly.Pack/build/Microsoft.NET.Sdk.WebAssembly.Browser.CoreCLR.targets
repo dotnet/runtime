@@ -1,0 +1,115 @@
+<!--
+***********************************************************************************************
+Microsoft.NET.Sdk.WebAssembly.Browser.CoreCLR.targets
+
+ReadyToRun for CoreCLR browser-wasm. See dotnet/runtime#121257 for the full design.
+MUST be a .targets (not .props) and import on '== false' (not '!= true'): the WasmSdk defaults
+UseMonoRuntime=true (SDK Sdk.props), so CoreCLR is the explicit '== false' opt-in.
+
+Copyright (c) .NET Foundation. All rights reserved.
+***********************************************************************************************
+-->
+<Project>
+
+  <!-- TODO-WASM https://github.com/dotnet/runtime/issues/132466
+  Default R2R on for CoreCLR browser (mirrors AppleBuild.props); targets-time is early enough (consumed by later targets).
+  <PropertyGroup>
+    <PublishReadyToRun Condition="'$(PublishReadyToRun)' == ''">true</PublishReadyToRun>
+  </PropertyGroup>
+   -->
+
+  <PropertyGroup Condition="'$(PublishReadyToRun)' == 'true'">
+    <!-- Override only the incompatible SDK default: net11+ defaults ContainerFormat=pe (unloadable on wasm).
+         An explicit unsupported value is left as-is and rejected by _WasmCoreClrSelectR2RDirectories. -->
+    <PublishReadyToRunContainerFormat Condition="'$(PublishReadyToRunContainerFormat)' == '' or '$(PublishReadyToRunContainerFormat)' == 'pe'">wasm</PublishReadyToRunContainerFormat>
+    <!-- Default non-composite when unset; an explicit composite request is rejected below. -->
+    <PublishReadyToRunComposite Condition="'$(PublishReadyToRunComposite)' == ''">false</PublishReadyToRunComposite>
+    <!-- Compile every assembly into one shared (large) version bubble. -->
+    <PublishReadyToRunCrossgen2ExtraArgs>$(PublishReadyToRunCrossgen2ExtraArgs);--opt-cross-module:*</PublishReadyToRunCrossgen2ExtraArgs>
+    <!-- NYI/SIMD methods crossgen2 can't emit into R2R fall back to the runtime JIT. -->
+    <PublishReadyToRunCrossgen2ExtraArgs>$(PublishReadyToRunCrossgen2ExtraArgs);--codegenopt:JitWasmNyiToR2RUnsupported=1;--codegenopt:JitWasmSimdNyiToR2RUnsupported=1</PublishReadyToRunCrossgen2ExtraArgs>
+  </PropertyGroup>
+
+  <!-- Prebuilt R2R probe dir for ConvertDllsToWebcil (see dotnet/runtime#121257). Webcil staging is the
+       managed pipeline and is independent of the native relink (which WasmBuildOnlyAfterPublish gates), so
+       both build and publish stage framework webcils and both key on PublishTrimmed the same way:
+       untrimmed -> the untrimmed runtime-pack R2R images; trimmed -> the per-app crossgen output for the
+       WHOLE closure including System.Private.CoreLib. A trimmed app is crossgen'd against the trimmed
+       framework (small download, the point on browser), so every image pins the trimmed CoreLib/BCL MVID;
+       staging the untrimmed pack CoreLib instead trips the runtime R2R MVID check. _WasmRuntimePackR2RDir
+       is set here (target time) because _RuntimePackNativeDir is only set by _ResolveGlobalizationConfiguration. -->
+  <Target Name="_WasmCoreClrSelectR2RDirectories"
+          DependsOnTargets="_ResolveWasmConfiguration">
+    <Error Condition="'$(PublishReadyToRun)' == 'true' and '$(PublishReadyToRunComposite)' == 'true'"
+           Text="PublishReadyToRunComposite is not supported for CoreCLR browser-wasm; only non-composite (per-assembly) R2R images are supported." />
+    <Error Condition="'$(PublishReadyToRun)' == 'true' and '$(PublishReadyToRunContainerFormat)' != 'wasm'"
+           Text="PublishReadyToRunContainerFormat '$(PublishReadyToRunContainerFormat)' is not supported for CoreCLR browser-wasm; only 'wasm' is supported." />
+    <PropertyGroup>
+      <_WasmRuntimePackR2RDir Condition="'$(_WasmRuntimePackR2RDir)' == '' and '$(_RuntimePackNativeDir)' != ''">$([MSBuild]::NormalizeDirectory('$(_RuntimePackNativeDir)', 'r2r'))</_WasmRuntimePackR2RDir>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(PublishReadyToRun)' == 'true'">
+      <_WasmPublishR2RDir Condition="'$(_WasmPublishR2RDir)' == ''">$([MSBuild]::NormalizeDirectory('$(IntermediateOutputPath)', 'r2r'))</_WasmPublishR2RDir>
+      <_WasmBuildPrebuiltR2RDirectory Condition="'$(PublishTrimmed)' == 'true'">$(_WasmPublishR2RDir)</_WasmBuildPrebuiltR2RDirectory>
+      <_WasmBuildPrebuiltR2RDirectory Condition="'$(PublishTrimmed)' != 'true'">$(_WasmRuntimePackR2RDir)</_WasmBuildPrebuiltR2RDirectory>
+      <_WasmPublishPrebuiltR2RDirectory Condition="'$(PublishTrimmed)' == 'true'">$(_WasmPublishR2RDir)</_WasmPublishPrebuiltR2RDirectory>
+      <_WasmPublishPrebuiltR2RDirectory Condition="'$(PublishTrimmed)' != 'true'">$(_WasmRuntimePackR2RDir)</_WasmPublishPrebuiltR2RDirectory>
+    </PropertyGroup>
+  </Target>
+
+  <!-- Prune raw pack R2R images (native/r2r/*.wasm) from build copy-local so the 90 MB closure never lands
+       loose in bin/; the managed .dll stays and ConvertDllsToWebcil stages the image. The _WasmRuntimePackR2RDir
+       check stays at the item level: it is computed by the DependsOnTargets below, so it can't gate the target. -->
+  <Target Name="_WasmCoreClrPrunePackR2RFromBuild"
+          Condition="'$(_WasmEnableWebcil)' == 'true'"
+          DependsOnTargets="_WasmCoreClrSelectR2RDirectories"
+          BeforeTargets="_ComputeWasmBuildCandidates">
+    <ItemGroup>
+      <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)"
+        Condition="'%(Extension)' == '.wasm' and '$(_WasmRuntimePackR2RDir)' != '' and Exists('$(_WasmRuntimePackR2RDir)%(FileName).wasm')" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Same prune for publish, before ProcessPublishFilesForWasm derives _WasmResolvedFilesToPublish. -->
+  <Target Name="_WasmCoreClrPruneR2RFromPublish"
+          Condition="'$(_WasmEnableWebcil)' == 'true'"
+          DependsOnTargets="_WasmCoreClrSelectR2RDirectories"
+          BeforeTargets="ProcessPublishFilesForWasm">
+    <ItemGroup>
+      <ResolvedFileToPublish Remove="@(ResolvedFileToPublish)"
+        Condition="'%(Extension)' == '.wasm' and '$(_WasmRuntimePackR2RDir)' != '' and Exists('$(_WasmRuntimePackR2RDir)%(FileName).wasm')" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Feed the trimmed IL closure into mainline R2R as the compile+reference set (see dotnet/runtime#121257).
+       On the Blazor/SWA route ILLink stamps PostprocessAssembly=true on its own collection, not on
+       ResolvedFileToPublish, so the mainline compile list is empty and crossgen2 never runs. -->
+  <Target Name="_WasmFeedReadyToRunCompileList"
+          Condition="'$(PublishReadyToRun)' == 'true' and '$(PublishTrimmed)' == 'true' and '$(PublishReadyToRunComposite)' != 'true' and '$(IntermediateLinkDir)' != ''"
+          BeforeTargets="_PrepareForReadyToRunCompilation">
+    <ItemGroup>
+      <!-- Clear the stale base-SDK R2R mark on the untrimmed runtime-pack copy (e.g. CoreLib under native/)
+           so crossgen resolves against the trimmed IL supplied below; it stays for webcil output. -->
+      <ResolvedFileToPublish Update="@(ResolvedFileToPublish)" PostprocessAssembly="false"
+        Condition="'%(ResolvedFileToPublish.PostprocessAssembly)' == 'true' and Exists('$(IntermediateLinkDir)%(ResolvedFileToPublish.FileName).dll')" />
+    </ItemGroup>
+    <ItemGroup>
+      <!-- The linker output is exactly ManagedAssemblyToLink minus what trimming removed, so map that
+           item into IntermediateLinkDir (mirrors ILLink's own _LinkedResolvedFileToPublishCandidate)
+           rather than globbing every *.dll in the dir. -->
+      <_WasmReadyToRunCompileInput Include="@(ManagedAssemblyToLink->'$(IntermediateLinkDir)%(FileName)%(Extension)')"
+                                   Condition="Exists('$(IntermediateLinkDir)%(FileName)%(Extension)')" />
+      <ResolvedFileToPublish Include="@(_WasmReadyToRunCompileInput)"
+                             PostprocessAssembly="true"
+                             RelativePath="%(FileName)%(Extension)"
+                             CopyToPublishDirectory="PreserveNewest" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Force crossgen (CreateReadyToRunImages) before ProcessPublishFilesForWasm: the latter runs
+       AfterTargets=ILLink, which a Blazor publish schedules ahead of R2R, so the images would ship too late. -->
+  <Target Name="_WasmEnsureReadyToRunBeforePublish"
+          Condition="'$(PublishReadyToRun)' == 'true' and '$(PublishReadyToRunComposite)' != 'true' and '$(WasmBuildingForNestedPublish)' != 'true'"
+          DependsOnTargets="CreateReadyToRunImages"
+          BeforeTargets="ProcessPublishFilesForWasm" />
+
+</Project>

@@ -1,0 +1,18 @@
+<Project>
+  <!-- In-tree only: override ResolveReadyToRunCompilers to use the in-build crossgen2 (mirrors
+       AppleBuild.ReadyToRun.targets). Imported after the SDK targets so it wins. -->
+  <Target Name="ResolveReadyToRunCompilers"
+          Condition="'$(PublishReadyToRun)' == 'true'"
+          DependsOnTargets="$(ResolveReadyToRunCompilersDependsOn)">
+    <PropertyGroup>
+      <Crossgen2Path>$([MSBuild]::NormalizePath('$(Crossgen2InBuildDir)', 'crossgen2$(ExeSuffix)'))</Crossgen2Path>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <Crossgen2Tool Include="$(Crossgen2Path)"
+                     TargetArch="$(TargetArchitecture)"
+                     TargetOS="$(TargetOS)"
+                     PerfmapFormatVersion="$(PublishReadyToRunPerfmapFormatVersion)"/>
+    </ItemGroup>
+  </Target>
+</Project>
