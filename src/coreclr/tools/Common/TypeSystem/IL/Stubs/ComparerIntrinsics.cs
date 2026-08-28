@@ -323,7 +323,7 @@ namespace Internal.IL.Stubs
         /// type whose equality is provably a bitwise (memcmp) comparison. This is the single authority
         /// behind <see cref="System.Runtime.CompilerServices.RuntimeHelpers.IsBitwiseEquatable{T}"/>.
         /// </summary>
-        public static bool IsBitwiseEquatable(TypeDesc type)
+        public static bool IsBitwiseEquatable(TypeDesc type, Func<MethodDesc, bool> canReadMethodBody = null)
         {
             // Integer-like primitives, enums, native ints, and pointers are memcmp-comparable.
             if (IsBitwiseComparablePrimitive(type))
@@ -340,7 +340,7 @@ namespace Internal.IL.Stubs
             {
                 // Value type that implements IEquatable<T> of self: bitwise-equatable when it is tightly
                 // packed and its Equals is a plain field-wise comparison.
-                return IsIEquatableEqualsFieldwise(mdType);
+                return IsIEquatableEqualsFieldwise(mdType, canReadMethodBody);
             }
 
             // Value type that can use memcmp and that doesn't override object.Equals or implement
@@ -356,7 +356,20 @@ namespace Internal.IL.Stubs
         /// that implements IEquatable&lt;T&gt; still be reported as bitwise-equatable when its Equals does
         /// nothing more than compare every field with ==.
         /// </summary>
-        public static bool IsIEquatableEqualsFieldwise(MetadataType type)
+        public static bool IsIEquatableEqualsFieldwise(MetadataType type, Func<MethodDesc, bool> canReadMethodBody = null)
+        {
+            try
+            {
+                return IsIEquatableEqualsFieldwiseCore(type, canReadMethodBody);
+            }
+            catch (TypeSystemException.InvalidProgramException)
+            {
+                // Malformed or truncated IL: stay conservative and treat it as not field-wise.
+                return false;
+            }
+        }
+
+        private static bool IsIEquatableEqualsFieldwiseCore(MetadataType type, Func<MethodDesc, bool> canReadMethodBody)
         {
             // Unmanaged (so a byte-wise compare is meaningful) and tightly packed (no padding anywhere the
             // compare would inspect) -- matching the CoreCLR VM, which checks these separately.
@@ -370,7 +383,7 @@ namespace Internal.IL.Stubs
             if (equalsImpl == null)
                 return false;
 
-            MethodIL methodIL = GetScannableMethodIL(equalsImpl);
+            MethodIL methodIL = GetScannableMethodIL(equalsImpl, canReadMethodBody);
             if (methodIL == null)
                 return false;
 
@@ -378,19 +391,22 @@ namespace Internal.IL.Stubs
             // `op_Equality`. Follow that single forward before scanning the field-wise comparison.
             if (TryGetOpEqualityForward(methodIL, type) is MethodDesc forwarded)
             {
-                methodIL = GetScannableMethodIL(forwarded);
+                methodIL = GetScannableMethodIL(forwarded, canReadMethodBody);
                 if (methodIL == null)
                     return false;
             }
 
-            return ScanFieldwiseEqualsBody(methodIL, type);
+            return ScanFieldwiseEqualsBody(methodIL, type, canReadMethodBody);
         }
 
         // Builds the IL to scan for a method that may live on an instantiated type. The IL is defined on the
         // typical (open) method; wrapping it in an InstantiatedMethodIL makes token lookups resolve fields
         // and methods in the exact instantiation. Returns null if the method has no ECMA-backed body.
-        private static MethodIL GetScannableMethodIL(MethodDesc method)
+        private static MethodIL GetScannableMethodIL(MethodDesc method, Func<MethodDesc, bool> canReadMethodBody)
         {
+            if (canReadMethodBody != null && !canReadMethodBody(method))
+                return null;
+
             if (method.GetTypicalMethodDefinition() is not EcmaMethod typicalMethod)
                 return null;
 
@@ -479,20 +495,7 @@ namespace Internal.IL.Stubs
             return callee;
         }
 
-        private static bool ScanFieldwiseEqualsBody(MethodIL methodIL, MetadataType type)
-        {
-            try
-            {
-                return ScanFieldwiseEqualsBodyCore(methodIL, type);
-            }
-            catch (TypeSystemException.InvalidProgramException)
-            {
-                // Malformed or truncated IL: stay conservative and treat it as not field-wise.
-                return false;
-            }
-        }
-
-        private static bool ScanFieldwiseEqualsBodyCore(MethodIL methodIL, MetadataType type)
+        private static bool ScanFieldwiseEqualsBody(MethodIL methodIL, MetadataType type, Func<MethodDesc, bool> canReadMethodBody)
         {
             // Verifies the body is a plain field-wise equality: every instance field is compared exactly once
             // (via `==`, its own `Equals`, or `EqualityComparer<F>.Default.Equals`) and the results are ANDed
@@ -590,7 +593,7 @@ namespace Internal.IL.Stubs
                     if (reader.ReadILOpcode() != ILOpcode.callvirt)
                         return false;
                     MethodDesc equals = methodIL.GetObject(reader.ReadILToken()) as MethodDesc;
-                    if (!IsEqualityComparerDefaultEquals(getDefault, equals, leftField.FieldType))
+                    if (!IsEqualityComparerDefaultEquals(getDefault, equals, leftField.FieldType, canReadMethodBody))
                         return false;
                 }
                 else
@@ -599,7 +602,8 @@ namespace Internal.IL.Stubs
                     if (reader.ReadILOpcode() != ILOpcode.call)
                         return false;
                     MethodDesc callee = methodIL.GetObject(reader.ReadILToken()) as MethodDesc;
-                    if (!IsPrimitiveEqualsCall(callee, leftField.FieldType) && !IsNestedFieldwiseEquatable(callee, leftField.FieldType))
+                    if (!IsPrimitiveEqualsCall(callee, leftField.FieldType)
+                        && !IsNestedFieldwiseEquatable(callee, leftField.FieldType, canReadMethodBody))
                         return false;
                 }
 
@@ -637,7 +641,7 @@ namespace Internal.IL.Stubs
             return !reader.HasNext && comparedFields.Count == instanceFieldCount;
         }
 
-        private static bool IsNestedFieldwiseEquatable(MethodDesc callee, TypeDesc fieldType)
+        private static bool IsNestedFieldwiseEquatable(MethodDesc callee, TypeDesc fieldType, Func<MethodDesc, bool> canReadMethodBody)
         {
             // The nested field must be compared through the nested type's own IEquatable<F>.Equals, and
             // that Equals must itself be field-wise (its layout is validated by IsIEquatableEqualsFieldwise).
@@ -647,7 +651,7 @@ namespace Internal.IL.Stubs
             if (callee != GetIEquatableEqualsImplementation(nestedType))
                 return false;
 
-            return IsIEquatableEqualsFieldwise(nestedType);
+            return IsIEquatableEqualsFieldwise(nestedType, canReadMethodBody);
         }
 
         private static bool IsPrimitiveEqualsCall(MethodDesc callee, TypeDesc fieldType)
@@ -661,7 +665,11 @@ namespace Internal.IL.Stubs
                 && callee == GetIEquatableEqualsImplementation(primitiveType);
         }
 
-        private static bool IsEqualityComparerDefaultEquals(MethodDesc getDefault, MethodDesc equals, TypeDesc fieldType)
+        private static bool IsEqualityComparerDefaultEquals(
+            MethodDesc getDefault,
+            MethodDesc equals,
+            TypeDesc fieldType,
+            Func<MethodDesc, bool> canReadMethodBody)
         {
             // A field compared with EqualityComparer<F>.Default.Equals(this.F, other.F). That is a memcmp
             // only when F is itself bitwise-equatable: a bit-comparable primitive, or a nested value type
@@ -677,7 +685,7 @@ namespace Internal.IL.Stubs
 
             return fieldType is MetadataType nestedType && nestedType.IsValueType
                 && GetIEquatableEqualsImplementation(nestedType) != null
-                && IsIEquatableEqualsFieldwise(nestedType);
+                && IsIEquatableEqualsFieldwise(nestedType, canReadMethodBody);
         }
 
         private static bool IsEqualityComparerMethod(MethodDesc method, TypeDesc fieldType, ReadOnlySpan<byte> name, bool isStatic)

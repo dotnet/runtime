@@ -14,7 +14,7 @@ namespace Internal.IL.Stubs
     /// </summary>
     public static class RuntimeHelpersIntrinsics
     {
-        public static MethodIL EmitIL(MethodDesc method)
+        public static MethodIL EmitIL(MethodDesc method, Func<MethodDesc, bool> canReadMethodBody = null)
         {
             Debug.Assert(((MetadataType)method.OwningType).Name == "RuntimeHelpers"u8);
 
@@ -32,7 +32,23 @@ namespace Internal.IL.Stubs
             if (method.Name == "IsBitwiseEquatable"u8)
             {
                 // The runtime and the ILC share a single determination of what is bitwise-equatable.
-                result = ComparerIntrinsics.IsBitwiseEquatable(elementType);
+                bool unavailableMethodBody = false;
+
+                bool CanReadMethodBody(MethodDesc method)
+                {
+                    bool canRead = canReadMethodBody(method);
+                    unavailableMethodBody |= !canRead;
+                    return canRead;
+                }
+
+                result = ComparerIntrinsics.IsBitwiseEquatable(
+                    elementType,
+                    canReadMethodBody is null ? null : CanReadMethodBody);
+
+                // If the answer depended on method IL outside the version bubble, leave the intrinsic
+                // unexpanded so the runtime can determine the result using the loaded implementation.
+                if (unavailableMethodBody)
+                    return null;
             }
             else
             {

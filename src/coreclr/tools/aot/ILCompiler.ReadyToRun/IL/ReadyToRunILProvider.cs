@@ -79,7 +79,7 @@ namespace Internal.IL
 
             if (mdType.Name == "RuntimeHelpers"u8 && mdType.Namespace == "System.Runtime.CompilerServices"u8)
             {
-                return RuntimeHelpersIntrinsics.EmitIL(method);
+                return RuntimeHelpersIntrinsics.EmitIL(method, _compilationModuleGroup.VersionsWithMethodBody);
             }
 
             if (mdType.Name == "Unsafe"u8 && mdType.Namespace == "System.Runtime.CompilerServices"u8)
@@ -108,7 +108,7 @@ namespace Internal.IL
 
             if (mdType.Name == "RuntimeHelpers"u8 && mdType.Namespace == "System.Runtime.CompilerServices"u8)
             {
-                return RuntimeHelpersIntrinsics.EmitIL(method);
+                return RuntimeHelpersIntrinsics.EmitIL(method, _compilationModuleGroup.VersionsWithMethodBody);
             }
 
             if (mdType.Name == "Activator"u8 && mdType.Namespace == "System"u8)
