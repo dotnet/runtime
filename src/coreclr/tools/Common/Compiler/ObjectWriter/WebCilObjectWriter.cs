@@ -367,8 +367,6 @@ namespace ILCompiler.ObjectWriter
             WriteMemoryImport((ulong)_webcilSegment.GetFlatMappedSize());
             FinalizeSectionEntryCounts();
 
-            RecordOutputSectionLayout();
-
            /*********************************************************************
            * Write Wasm Sections, Excluding Data
            *********************************************************************/
@@ -454,67 +452,6 @@ namespace ILCompiler.ObjectWriter
             WasmDataSection dataSection = new WasmDataSection([webcilSizeSegment, webcilContentsSegment], new Utf8String("data"), contentAlign: 4);
             dataSection.EmitToStream(outputFileStream);
 #endif
-        }
-
-        /// <summary>
-        /// Records the emitted section layout for map file generation. The map file builder indexes
-        /// this list by section index, so an entry must be recorded for every section, in index order.
-        /// </summary>
-        private void RecordOutputSectionLayout()        {
-            if (_outputInfoBuilder is null)
-            {
-                return;
-            }
-
-            Debug.Assert(_outputSectionLayout.Count == 0);
-            foreach (SectionDataEmitter section in _sections.Sections)
-            {
-                // The map file builder looks sections up by section index, so each entry has to
-                // land at the index of the section it describes.
-                Debug.Assert(_outputSectionLayout.Count == section.SectionIndex);
-
-                ulong virtualAddress = 0;
-                ulong filePosition = 0;
-                // Use the stream length rather than the padded on-disk size, so that the recorded
-                // length doesn't include space appended purely for alignment, matching the other
-                // object writers. For WASM sections this is also deliberately the size before
-                // EmitObjectFile re-encodes the section to shrink variable-length relocations:
-                // node offsets are recorded against that same pre-shrink layout, so recording the
-                // post-shrink size would place nodes beyond the end of their own section.
-                ulong length = (ulong)section.ContentReadStream.Length;
-
-                if (section is WebcilSection webcilSection)
-                {
-                    // Webcil sections are flat-mapped, so unlike the WASM sections they have
-                    // meaningful RVAs. Their file positions are relative to the start of the Webcil
-                    // segment embedded in the WASM module rather than to the start of the file.
-                    virtualAddress = webcilSection.Header.VirtualAddress;
-                    filePosition = webcilSection.Header.PointerToRawData;
-                }
-
-                _outputSectionLayout.Add(new OutputSection(section.SectionName.ToString(), virtualAddress, filePosition, length));
-            }
-        }
-
-        private protected override List<(long Offset, byte[] Value)> ComputeChecksums(Stream outputFileStream, List<ChecksumsToCalculate> checksumRelocations)
-        {
-            // The base implementation treats OutputSection.FilePosition as an offset into the
-            // output file. Webcil section file positions are relative to the Webcil segment
-            // embedded in the WASM module, and WASM sections have no file position recorded at
-            // all, so the base computation would patch the checksum into the wrong place. Nothing
-            // emits checksum relocations for WASM today - the only source is the ReadyToRun native
-            // PDB debug directory entry, which requires --pdb - so fail loudly if that changes
-            // rather than silently corrupting the image. Note that the list holds one entry per
-            // relocated block, most of which carry no checksum relocation at all.
-            foreach (ChecksumsToCalculate block in checksumRelocations)
-            {
-                if (block.ChecksumRelocations.Length > 0)
-                {
-                    throw new NotSupportedException("Checksum relocations are not supported for WASM output.");
-                }
-            }
-
-            return [];
         }
 
         Dictionary<int, List<SymbolicRelocation>> _resolvableRelocations = new();
