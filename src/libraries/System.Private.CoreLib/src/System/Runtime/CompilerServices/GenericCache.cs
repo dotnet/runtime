@@ -146,7 +146,7 @@ namespace System.Runtime.CompilerServices
         {
             // The sentinel is the only table with SENTINEL_TABLE_SIZE elements.
             // NOTE: the actual array is one element longer, since element 0 is used for aux data.
-            return CacheElementCount(table) == SENTINEL_TABLE_SIZE;
+            return table.Length == SENTINEL_TABLE_SIZE + 1;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
