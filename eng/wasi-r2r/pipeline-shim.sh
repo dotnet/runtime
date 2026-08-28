@@ -40,10 +40,19 @@ MAIN=$(ls "$D"/*module0*.wasm | head -1)
 #    i32.const holding &g_wasi_r2r_image[0], so it decodes statically with no instantiation.
 #    NOTE: use sed, not awk. The awk form in pipeline-sym.sh silently yields an EMPTY string
 #    under BSD awk (the macOS default), which would feed an empty base to the shim.
-IDX=$(wasm-objdump -j Export -x "$MAIN" | grep -i wasi_r2r_image_base | grep -oE 'func\[[0-9]+\]' | grep -oE '[0-9]+')
+IDX=$(wasm-objdump -j Export -x "$MAIN" | grep -i wasi_r2r_image_base | grep -oE 'func\[[0-9]+\]' | grep -oE '[0-9]+' || true)
+case "$IDX" in ''|*[!0-9]*)
+    echo "error: the host does not export 'wasi_r2r_image_base'." >&2
+    echo "       Without it the merge has no anchor for __memory_base. Check that the probe header is" >&2
+    echo "       included and that the export survived --gc-sections." >&2
+    exit 1;;
+esac
 ADDR=$(wasm-objdump -d "$MAIN" | grep -A1 "func\[$IDX\] <wasi_r2r_image_base>" \
-        | grep 'i32\.const' | sed -E 's/.*i32\.const +([0-9]+).*/\1/')
-case "$ADDR" in ''|*[!0-9]*) echo "error: could not extract imageBase (got '$ADDR')" >&2; exit 1;; esac
+        | grep 'i32\.const' | sed -E 's/.*i32\.const +([0-9]+).*/\1/' || true)
+case "$ADDR" in ''|*[!0-9]*)
+    echo "error: could not extract imageBase from wasi_r2r_image_base (got '$ADDR')." >&2
+    exit 1;;
+esac
 
 TBL=$(wasm-objdump -x "$MAIN" | grep -iE "^ - table\[0\]" | grep -oE "initial=[0-9]+" | grep -oE "[0-9]+")
 NFUNC=$(wasm-objdump -h "$COMP" | grep -iE "^ Function " | grep -oE "count: [0-9]+" | grep -oE "[0-9]+")
@@ -57,6 +66,19 @@ if [ "$((TABLE_BASE + NFUNC))" -gt "$TBL" ]; then
     echo "       Raise -Wl,--table-base in corerun/CMakeLists.txt to at least $((TABLE_BASE + NFUNC + 1))." >&2
     exit 1
 fi
+
+# The payload is likewise installed by the engine, directly into the host's g_wasi_r2r_image buffer,
+# BEFORE any host code runs. The host's own cap test therefore cannot protect that buffer -- by the
+# time it executes, an over-cap payload has already overwritten whatever follows it. This is the only
+# place the check is enforceable, so it lives here.
+PAYLOAD=$(wasm-objdump -x "$COMP" | grep -iE "^ - segment\[1\]" | grep -oE "size=[0-9]+" | grep -oE "[0-9]+" | head -1 || true)
+CAP=${WASI_R2R_IMAGE_CAP:-$((16 * 1024 * 1024))}
+if [ -n "$PAYLOAD" ] && [ "$PAYLOAD" -gt "$CAP" ]; then
+    echo "error: composite payload $PAYLOAD bytes exceeds the host buffer cap $CAP." >&2
+    echo "       Raise WASI_R2R_IMAGE_CAP in corerun/wasi_r2r_probe.hpp and rebuild the host." >&2
+    exit 1
+fi
+echo "SHIM: payload=${PAYLOAD:-unknown} cap=$CAP"
 
 # 3. Generate the shim supplying the two globals wasm-ld cannot emit for a non-PIC main module.
 cat > "$D/shim.wat" <<WAT
