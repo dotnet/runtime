@@ -97,7 +97,8 @@ mounted read-only under `GH_AW_BINLOG_DIR` (`/data/binlogs`) and enumerated in
    `binlog_overview` for failed targets, `OnError` handlers, and
    process-termination clues.
 4. For every failed compile/build task from the `azdo_timeline` inventory that
-   is not conclusively explained by a binlog, call `azdo_search_log` with
+   is not conclusively explained by a binlog or by complete compiler/build
+   diagnostics in the timeline record's `issues`, call `azdo_search_log` with
    `buildIdOrUrl`, that task's `logId`, a narrow failure pattern, two context
    lines, and at most 100 matches. Search the task for the applicable patterns:
    `error `, `fatal`, `##[error]`, `MSB`, `CS`, `NU`, `NETSDK`, `CMake Error`,

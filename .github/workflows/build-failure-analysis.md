@@ -280,11 +280,10 @@ jobs:
           fi
 
           # Require the build's analyzed revision to equal the PR's CURRENT
-          # head. gh-aw safe-output review comments carry no `commit_id` — they
-          # target the current PR diff — so analyzing a stale revision would
-          # produce inline suggestions that get rejected or land on the wrong
-          # lines. If the PR has advanced since this build ran, skip: a newer
-          # build/check for the current head will cover it.
+          # head. Safe-output review comments are pinned to this commit, but a
+          # stale analysis would still describe the wrong revision. If the PR
+          # has advanced since this build ran, skip: a newer build/check for
+          # the current head will cover it.
           BUILD_PR_SHA=$(printf '%s' "${build_json}" | jq -r '.triggerInfo["pr.sourceSha"] // empty')
           CURRENT_HEAD=$(printf '%s' "${PR_JSON}" | jq -r '.head.sha // empty')
           # ADO builds GitHub's `refs/pull/<n>/merge` ref, so build_json.sourceVersion
@@ -541,8 +540,7 @@ jobs:
           # The download/extract loop above can take minutes. Re-read the PR
           # head right before activating and fail CLOSED if it moved or can't
           # be resolved: a force-push during that window would otherwise leave
-          # the analyzed binlog stale relative to the current diff (inline
-          # comments carry no commit_id and target the current diff).
+          # the analyzed evidence stale relative to the current PR revision.
           LATEST_PR=$(gh api "repos/${GH_AW_REPO}/pulls/${PR_NUMBER}" 2>/dev/null)
           LATEST_HEAD=$(printf '%s' "${LATEST_PR}" | jq -r '.head.sha // empty')
           LATEST_MERGE=$(printf '%s' "${LATEST_PR}" | jq -r '.merge_commit_sha // empty')
@@ -579,9 +577,9 @@ jobs:
           if-no-files-found: warn
           retention-days: 1
 
-# Steps that run in the agent job. Because the top-level `if:` gates activation
-# on `needs.fetch-binlog.outputs.binlog-found == 'true'`, these only run once
-# binlogs have been retrieved from the failed Azure DevOps build.
+# Steps that run in the agent job after the failed build and target revision
+# are verified. Binlog download is conditional; when no matching binlog was
+# published, the agent analyzes failed compile-task logs through hlx.
 steps:
   - name: Download analysis artifact
     if: needs.fetch-binlog.outputs.binlog-found == 'true'

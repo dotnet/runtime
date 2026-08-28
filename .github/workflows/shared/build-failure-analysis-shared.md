@@ -46,7 +46,8 @@ of read-only `shell` commands (including `cat`).
      Treat only compile/build/configure/link tasks as build evidence; Helix,
      test execution, publishing, and infrastructure failures remain out of
      scope. For each failed compile task that is not explained by a retrieved
-     binlog, use `azdo_search_log` from `hlx` against that task's `logId` with bounded
+     binlog or by complete build diagnostics in its timeline `issues`, use
+     `azdo_search_log` from `hlx` against that task's `logId` with bounded
      searches for compiler/MSBuild/native-build failure signatures. This is
      required even when some binlogs were retrieved: Runtime job display names
      and artifact names are not one-to-one, and some compile jobs publish no
