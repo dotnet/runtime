@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.CommandLine;
 using Xunit;
 
 namespace ILAssembler.Tests;
@@ -59,24 +60,28 @@ public class CommandLineTests
         "SUB",
     };
 
-    public static TheoryData<string> ModernValueOptions { get; } = new()
+    public static TheoryData<string> ModernValueOptions
     {
-        "--alignment",
-        "--aname",
-        "--base",
-        "--debug-mode",
-        "--flags",
-        "--include",
-        "--key",
-        "--mdv",
-        "--output",
-        "--ssver",
-        "--stack",
-        "--subsystem",
-        "-I",
-        "-k",
-        "-o",
-    };
+        get
+        {
+            TheoryData<string> options = new();
+            foreach (Option option in new IlasmRootCommand().Options)
+            {
+                if (option.Arity.MinimumNumberOfValues == 0)
+                {
+                    continue;
+                }
+
+                options.Add(option.Name);
+                foreach (string alias in option.Aliases)
+                {
+                    options.Add(alias);
+                }
+            }
+
+            return options;
+        }
+    }
 
     [Theory]
     [MemberData(nameof(NativeValueOptions))]
