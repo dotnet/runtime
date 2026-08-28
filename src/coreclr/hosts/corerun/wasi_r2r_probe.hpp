@@ -290,6 +290,20 @@ extern "C" __attribute__((export_name("wasi_r2r_image_base"))) uint32_t wasi_r2r
     return (uint32_t)(uintptr_t)&wasi_r2r::g_wasi_r2r_image[0];
 }
 
+// The staging buffer's capacity and the table slot the composite installs at, exported for the same
+// reason as the base: the splice must not carry its own copy of either. The host owns these values;
+// eng/wasi-r2r/pipeline-shim.sh reads them out of the linked binary and validates the composite
+// against them, so a mismatch is a build-time error instead of a wrong-function dispatch at runtime.
+extern "C" __attribute__((export_name("wasi_r2r_image_cap"))) uint32_t wasi_r2r_image_cap(void)
+{
+    return (uint32_t)sizeof(wasi_r2r::g_wasi_r2r_image);
+}
+
+extern "C" __attribute__((export_name("wasi_r2r_table_base"))) uint32_t wasi_r2r_table_base(void)
+{
+    return (uint32_t)WASI_R2R_TABLE_BASE;
+}
+
 #endif // TARGET_WASI
 
 #endif // WASI_R2R_PROBE_HPP

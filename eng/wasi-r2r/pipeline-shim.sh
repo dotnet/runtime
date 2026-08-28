@@ -21,10 +21,9 @@ COMP=${COMP:-$ROOT/r2rtest/out2/composite-r2r.wasm}
 CORERUN=${CORERUN:-$ROOT/artifacts/obj/coreclr/wasi.wasm.Release/hosts/corerun/corerun}
 D=${OUTDIR:-$ROOT/r2rtest/shimout}
 
-# The table slot at which the composite installs. Must match WASI_R2R_TABLE_BASE in
-# corerun/wasi_r2r_probe.hpp, which patches it into the webcil header at payload offset 28.
-# Under -Wl,--table-base=N the linker leaves slots 1..N-1 free, so this is always 1.
-TABLE_BASE=${TABLE_BASE:-1}
+# imageBase, tableBase and the buffer cap are all read from the linked host below -- this script
+# deliberately holds no copy of any of them. The host is the single source of truth; anything it does
+# not export is a build-time error rather than a silently mismatched image.
 
 [ -f "$COMP" ]    || { echo "error: composite not found at '$COMP'" >&2; exit 1; }
 [ -f "$CORERUN" ] || { echo "error: corerun not found at '$CORERUN'" >&2; exit 1; }
@@ -36,49 +35,64 @@ rm -rf "$D"; mkdir -p "$D"
 wasm-tools component unbundle "$CORERUN" --module-dir "$D" -o /dev/null >/dev/null 2>&1
 MAIN=$(ls "$D"/*module0*.wasm | head -1)
 
-# 2. Read the image base out of the LINKED host. wasi_r2r_image_base's body is a single
-#    i32.const holding &g_wasi_r2r_image[0], so it decodes statically with no instantiation.
-#    NOTE: use sed, not awk. The awk form in pipeline-sym.sh silently yields an EMPTY string
-#    under BSD awk (the macOS default), which would feed an empty base to the shim.
-IDX=$(wasm-objdump -j Export -x "$MAIN" | grep -i wasi_r2r_image_base | grep -oE 'func\[[0-9]+\]' | grep -oE '[0-9]+' || true)
-case "$IDX" in ''|*[!0-9]*)
-    echo "error: the host does not export 'wasi_r2r_image_base'." >&2
-    echo "       Without it the merge has no anchor for __memory_base. Check that the probe header is" >&2
-    echo "       included and that the export survived --gc-sections." >&2
-    exit 1;;
-esac
-ADDR=$(wasm-objdump -d "$MAIN" | grep -A1 "func\[$IDX\] <wasi_r2r_image_base>" \
-        | grep 'i32\.const' | sed -E 's/.*i32\.const +([0-9]+).*/\1/' || true)
-case "$ADDR" in ''|*[!0-9]*)
-    echo "error: could not extract imageBase from wasi_r2r_image_base (got '$ADDR')." >&2
-    exit 1;;
-esac
+# 2. Read the R2R parameters out of the LINKED host. Each is exported as a function whose body is a
+#    single i32.const, so they decode statically with no instantiation. The host owns these values;
+#    this script must not carry its own copy of any of them, or a rebuild with different settings
+#    silently produces a mismatched image.
+#    NOTE: use sed, not awk. The awk form in the original pipeline silently yields an EMPTY string
+#    under BSD awk (the macOS default), which would feed an empty value downstream.
+read_i32_export() { # $1=module $2=export name -> prints the i32.const in its body
+    local _idx
+    _idx=$(wasm-objdump -j Export -x "$1" | grep -i "$2" | grep -oE 'func\[[0-9]+\]' | grep -oE '[0-9]+' || true)
+    case "$_idx" in ''|*[!0-9]*) return 1;; esac
+    wasm-objdump -d "$1" | grep -A1 "func\[$_idx\] <$2>" \
+        | grep 'i32\.const' | sed -E 's/.*i32\.const +([0-9]+).*/\1/' || true
+}
 
-TBL=$(wasm-objdump -x "$MAIN" | grep -iE "^ - table\[0\]" | grep -oE "initial=[0-9]+" | grep -oE "[0-9]+")
+ADDR=$(read_i32_export "$MAIN" wasi_r2r_image_base || true)
+CAP=$(read_i32_export "$MAIN" wasi_r2r_image_cap || true)
+TABLE_BASE=$(read_i32_export "$MAIN" wasi_r2r_table_base || true)
+for _v in ADDR:"$ADDR" CAP:"$CAP" TABLE_BASE:"$TABLE_BASE"; do
+    case "${_v#*:}" in ''|*[!0-9]*)
+        echo "error: the host does not export ${_v%%:*} as an R2R parameter." >&2
+        echo "       Link it with CORERUN_WASI_COMPOSITE_R2R=ON (corerun) or WasiEnableCompositeR2R=true" >&2
+        echo "       (apps); without those flags the probe is present but can never be satisfied." >&2
+        exit 1;;
+    esac
+done
+
+# The composite installs at TABLE_BASE and must end before the host's OWN element segment begins --
+# not merely inside the table. Both are ACTIVE segments in the merged module, so an overlap silently
+# overwrites the host's function pointers rather than failing to link. Derive the boundary from the
+# artifact rather than from --table-base, so it cannot drift from what was actually linked.
+RESERVED=$(wasm-objdump -x "$MAIN" | grep -E "^ - segment\[0\] flags=0 table=0" | sed -E 's/.*init i32=([0-9]+).*/\1/' | head -1 || true)
+case "$RESERVED" in ''|*[!0-9]*) RESERVED=0;; esac
+
 NFUNC=$(wasm-objdump -h "$COMP" | grep -iE "^ Function " | grep -oE "count: [0-9]+" | grep -oE "[0-9]+")
-echo "SHIM: imageBase=$ADDR tableBase=$TABLE_BASE hostTable=$TBL compositeFuncs=$NFUNC"
+echo "SHIM: imageBase=$ADDR tableBase=$TABLE_BASE reservedSlots=$RESERVED compositeFuncs=$NFUNC cap=$CAP"
 
-# The engine applies an ACTIVE element segment at instantiation, so the host table must already
-# be large enough. Too small is an instantiation failure, which is loud — but catching it here
-# names the cause instead of leaving "active segments don't work".
-if [ "$((TABLE_BASE + NFUNC))" -gt "$TBL" ]; then
-    echo "error: host table $TBL too small for $NFUNC functions at base $TABLE_BASE." >&2
-    echo "       Raise -Wl,--table-base in corerun/CMakeLists.txt to at least $((TABLE_BASE + NFUNC + 1))." >&2
+if [ "$RESERVED" -eq 0 ]; then
+    echo "error: the host reserves no table slots (its element segment starts at 0 or was not found)." >&2
+    exit 1
+fi
+if [ "$((TABLE_BASE + NFUNC))" -gt "$RESERVED" ]; then
+    echo "error: composite needs slots $TABLE_BASE..$((TABLE_BASE + NFUNC - 1)) but the host's own" >&2
+    echo "       functions begin at $RESERVED. They would overlap and silently corrupt dispatch." >&2
+    echo "       Raise the table base to at least $((TABLE_BASE + NFUNC)):" >&2
+    echo "         corerun -DCORERUN_WASI_R2R_TABLE_BASE=$((TABLE_BASE + NFUNC))" >&2
+    echo "         apps    -p:WasiCompositeR2RTableBase=$((TABLE_BASE + NFUNC))" >&2
     exit 1
 fi
 
-# The payload is likewise installed by the engine, directly into the host's g_wasi_r2r_image buffer,
-# BEFORE any host code runs. The host's own cap test therefore cannot protect that buffer -- by the
-# time it executes, an over-cap payload has already overwritten whatever follows it. This is the only
-# place the check is enforceable, so it lives here.
+# The payload is installed by the engine directly into the host's staging buffer BEFORE any host code
+# runs. The host's own cap test therefore cannot protect that buffer -- by the time it executes, an
+# over-cap payload has already overwritten whatever follows. This is the only place it is enforceable.
 PAYLOAD=$(wasm-objdump -x "$COMP" | grep -iE "^ - segment\[1\]" | grep -oE "size=[0-9]+" | grep -oE "[0-9]+" | head -1 || true)
-CAP=${WASI_R2R_IMAGE_CAP:-$((16 * 1024 * 1024))}
 if [ -n "$PAYLOAD" ] && [ "$PAYLOAD" -gt "$CAP" ]; then
-    echo "error: composite payload $PAYLOAD bytes exceeds the host buffer cap $CAP." >&2
+    echo "error: composite payload $PAYLOAD bytes exceeds the host's staging buffer ($CAP)." >&2
     echo "       Raise WASI_R2R_IMAGE_CAP in corerun/wasi_r2r_probe.hpp and rebuild the host." >&2
     exit 1
 fi
-echo "SHIM: payload=${PAYLOAD:-unknown} cap=$CAP"
 
 # 3. Generate the shim supplying the two globals wasm-ld cannot emit for a non-PIC main module.
 cat > "$D/shim.wat" <<WAT
