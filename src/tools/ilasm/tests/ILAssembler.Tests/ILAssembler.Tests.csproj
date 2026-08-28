@@ -10,11 +10,15 @@
 
   <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="$(CoverletCollectorVersion)" />
+    <PackageReference Include="System.CommandLine" Version="$(SystemCommandLineVersion)" />
     <ProjectReference Include="..\..\src\ILAssembler\ILAssembler.csproj" />
   </ItemGroup>
 
-  <!-- Link CLI normalization so it can be tested without referencing the self-contained executable project. -->
+  <!-- Link CLI parsing so it can be tested without referencing the self-contained executable project. -->
   <ItemGroup>
+    <Compile Include="..\..\src\ilasm\IlasmRootCommand.cs">
+      <Link>IlasmRootCommand.cs</Link>
+    </Compile>
     <Compile Include="..\..\src\ilasm\NativeCommandLine.cs">
       <Link>NativeCommandLine.cs</Link>
     </Compile>
