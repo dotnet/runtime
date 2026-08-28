@@ -56,11 +56,12 @@ public class GenericVirtualMethodUnloading
         Type stateType = payload.GetType("MarkerState", throwOnError: true);
         Type baseType = payload.GetType("Machine", throwOnError: true);
 
-        object machine = Activator.CreateInstance(machineType);
-        MethodInfo change = baseType.GetMethod("Change").MakeGenericMethod(stateType);
+        object machine = Activator.CreateInstance(machineType)!;
+        MethodInfo change = baseType.GetMethod("Change")!.MakeGenericMethod(stateType);
 
         TargetInvocationException ex = Assert.Throws<TargetInvocationException>(() => change.Invoke(machine, null));
-        Assert.Equal("ExpectedException", ex.InnerException.GetType().FullName);
+        Assert.NotNull(ex.InnerException);
+        Assert.Equal("ExpectedException", ex.InnerException!.GetType().FullName);
 
         alc.Unload();
         return weakAlc;
