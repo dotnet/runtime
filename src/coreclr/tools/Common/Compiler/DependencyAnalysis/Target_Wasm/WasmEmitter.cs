@@ -10,7 +10,7 @@ namespace ILCompiler.DependencyAnalysis.Wasm
 {
     public struct WasmEmitter(NodeFactory factory, bool relocsOnly)
     {
-        public WasmFunctionBody FunctionBody = null;
+        public WasmFunctionBody FunctionBody = null!;
 
         public bool Is64Bit => factory.Target.PointerSize == 8;
         public bool RelocsOnly => relocsOnly;

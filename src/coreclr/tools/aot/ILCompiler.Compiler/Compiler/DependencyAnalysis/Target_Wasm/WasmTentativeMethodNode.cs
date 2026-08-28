@@ -1,8 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
-
 using ILCompiler.DependencyAnalysis.Wasm;
 using ILCompiler.ObjectWriter.WasmInstructions;
 
@@ -16,33 +14,14 @@ namespace ILCompiler.DependencyAnalysis
         {
             WasmFuncType signature = WasmLowering.GetSignature(Method).FuncType;
             ISymbolNode target = GetTarget(factory);
-            WasmExpr[] expressions;
 
-            if (ReferenceEquals(target, RealBody))
-            {
-                // No throw helper is available, so forward all parameters and tail-call the real body.
-                int parameterCount = signature.Params.Types.Length;
-                expressions = new WasmExpr[parameterCount + 1];
-                for (int i = 0; i < parameterCount; i++)
-                {
-                    expressions[i] = Local.Get(i);
-                }
-                expressions[parameterCount] = ControlFlow.ReturnCall(target);
-            }
-            else
-            {
-                // The real body was removed, so call the throw helper with the shadow stack pointer.
-                Debug.Assert(!Method.IsUnmanagedCallersOnly);
-
-                expressions =
+            encoder.FunctionBody = new WasmFunctionBody(
+                signature,
                 [
                     Local.Get(0),
                     ControlFlow.Call(target),
                     ControlFlow.Unreachable,
-                ];
-            }
-
-            encoder.FunctionBody = new WasmFunctionBody(signature, expressions);
+                ]);
         }
     }
 }
