@@ -452,6 +452,10 @@ jobs:
           TOTAL_ZIP_BYTES=0
           TOTAL_BYTES=0
           mkdir -p /tmp/binlogs
+          # Only binlogs extracted by this run may be analyzed. Anything left in
+          # the directory by an earlier run on the same runner would otherwise be
+          # uploaded and attributed to this build.
+          rm -f /tmp/binlogs/*.binlog
           count=0
           staged_legs=0
           ai=0
