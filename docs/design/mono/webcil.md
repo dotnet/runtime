@@ -98,6 +98,24 @@ the host must call it after instantiation, since the runtime reads that field fr
 an unwritten field reads as 0, silently shifting every function index by `tableBase`. Composite and
 single-assembly R2R images use this shape.
 
+A self-installing module leaves `__memory_base` and `__table_base` as imports, which a host may satisfy
+in either of two ways, with different consequences:
+
+- **Supply them at instantiation**, as immutable `WebAssembly.Global` values. The segment offsets stay
+  `global.get` of an *imported* global, which is a valid constant expression, so the module needs no
+  further processing. The browser host does this.
+- **Define and export them, then link the module into the host** with a merge tool. Merging internalizes
+  the globals, and `global.get` of a *defined* global is not a constant expression outside the GC
+  proposal - engines disagree here, so the merged module must have its offsets folded to `i32.const`
+  before it is portable. The offline WASI pipeline does this.
+
+Neither approach requires rewriting the segments themselves; only the second requires a fold, and that
+fold is not free, because the pass that performs it also propagates globals into function bodies.
+
+A host that reserves the composite's table slice at link time can treat `__table_base` as a constant:
+reserving the first N slots leaves the composite at base 1 regardless of its size. `__memory_base` is
+the address of the host's payload region and has to be read out of the linked host.
+
 The memory of the WebcilPayload must also be allocated with 16 byte alignment.
 
 The module shall not export its compiled functions. Exports count towards the engine's
