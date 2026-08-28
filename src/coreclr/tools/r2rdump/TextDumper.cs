@@ -626,9 +626,15 @@ namespace R2RDump
                     }
                     break;
                 case ReadyToRunSectionType.AttributePresence:
+                    // The runtime validates the filter's RVA, not its file offset. The distinction
+                    // matters for a Webcil image embedded at an unaligned WASM offset.
+                    if ((section.RelativeVirtualAddress & 0xF) != 0)
+                    {
+                        throw new BadImageFormatException();
+                    }
                     int attributesStartOffset = _r2r.GetOffset(section.RelativeVirtualAddress);
                     int attributesEndOffset = attributesStartOffset + section.Size;
-                    NativeCuckooFilter attributes = new NativeCuckooFilter(_r2r.ImageReader, attributesStartOffset, attributesEndOffset, section.RelativeVirtualAddress);
+                    NativeCuckooFilter attributes = new NativeCuckooFilter(_r2r.ImageReader, attributesStartOffset, attributesEndOffset);
                     _writer.WriteLine("Attribute presence filter");
                     _writer.WriteLine(attributes.ToString());
                     break;
