@@ -4,6 +4,7 @@
 using System;
 using System.Buffers;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -406,12 +407,27 @@ namespace System.Runtime.InteropServices
         private sealed class LazyExternalTypeDictionary : LazyTypeLoadDictionary<string>
         {
             private readonly Dictionary<string, DelayedType> _lazyData = [];
+            private readonly ConcurrentDictionary<(RuntimeModule Module, string Key), RuntimeType> _preCachedTypes = [];
 
             protected override bool TryGetOrLoadTypeFromPreCachedDictionary(RuntimeModule module, string key, [NotNullWhen(true)] out Type? type)
             {
+                if (_preCachedTypes.TryGetValue((module, key), out RuntimeType? cachedType))
+                {
+                    type = cachedType;
+                    return true;
+                }
+
                 IntPtr handle = FindPrecachedExternalTypeMapEntry(new QCallModule(ref module), new QCallTypeHandle(ref _groupType), key);
-                type = RuntimeTypeHandle.GetRuntimeTypeFromHandleMaybeNull(handle);
-                return type != null;
+                RuntimeType? resolvedType = RuntimeTypeHandle.GetRuntimeTypeFromHandleMaybeNull(handle);
+                if (resolvedType is null)
+                {
+                    type = null;
+                    return false;
+                }
+
+                _preCachedTypes.TryAdd((module, key), resolvedType);
+                type = resolvedType;
+                return true;
             }
 
             protected override bool TryGetOrLoadType(string key, [NotNullWhen(true)] out Type? type)
@@ -480,13 +496,28 @@ namespace System.Runtime.InteropServices
             }
 
             private readonly Dictionary<int, DelayedTypeCollection> _lazyData = new();
+            private readonly ConcurrentDictionary<(RuntimeModule Module, RuntimeType Key), RuntimeType> _preCachedTypes = [];
 
             protected override bool TryGetOrLoadTypeFromPreCachedDictionary(RuntimeModule module, Type key, [NotNullWhen(true)] out Type? type)
             {
                 RuntimeType rtKey = (RuntimeType)key;
+                if (_preCachedTypes.TryGetValue((module, rtKey), out RuntimeType? cachedType))
+                {
+                    type = cachedType;
+                    return true;
+                }
+
                 IntPtr handle = FindPrecachedProxyTypeMapEntry(new QCallModule(ref module), new QCallTypeHandle(ref _groupType), new QCallTypeHandle(ref rtKey));
-                type = RuntimeTypeHandle.GetRuntimeTypeFromHandleMaybeNull(handle);
-                return type != null;
+                RuntimeType? resolvedType = RuntimeTypeHandle.GetRuntimeTypeFromHandleMaybeNull(handle);
+                if (resolvedType is null)
+                {
+                    type = null;
+                    return false;
+                }
+
+                _preCachedTypes.TryAdd((module, rtKey), resolvedType);
+                type = resolvedType;
+                return true;
             }
 
             protected override bool TryGetOrLoadType(Type key, [NotNullWhen(true)] out Type? type)

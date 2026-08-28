@@ -53,10 +53,24 @@ namespace ILCompiler.ReadyToRun
 
             Section typeMapEntriesSection = writer.NewSection();
 
-            foreach ((TypeDesc type, TypeDesc targetType) in map.TypeMap)
+            foreach ((TypeDesc type, TypeMapMetadata.ProxyTypeMapEntry mapEntry) in map.TypeMap)
             {
-                Vertex keyVertex = ProxyReferences.EncodeReferenceToType(writer, type, TriggeringModule);
-                Vertex valueVertex = ProxyReferences.EncodeReferenceToType(writer, targetType, TriggeringModule);
+                Vertex keyVertex = ReadyToRunTypeMapReference.Encode(
+                    factory,
+                    writer,
+                    ProxyReferences,
+                    TriggeringModule,
+                    type,
+                    mapEntry.SerializedSourceTypeName,
+                    mapEntry.DeclaringModule);
+                Vertex valueVertex = ReadyToRunTypeMapReference.Encode(
+                    factory,
+                    writer,
+                    ProxyReferences,
+                    TriggeringModule,
+                    mapEntry.Type,
+                    mapEntry.SerializedTypeName,
+                    mapEntry.DeclaringModule);
                 Vertex entry = writer.GetTuple(keyVertex, valueVertex);
                 typeMapHashTable.Append((uint)type.GetHashCode(), typeMapEntriesSection.Place(entry));
             }
@@ -78,8 +92,14 @@ namespace ILCompiler.ReadyToRun
 
             foreach (var entry in map.TypeMap)
             {
-                yield return new DependencyListEntry(importProvider.GetImportToType(entry.Key, TriggeringModule), $"Key type of Proxy type map entry");
-                yield return new DependencyListEntry(importProvider.GetImportToType(entry.Value, TriggeringModule), $"Proxy type map entry target for key '{entry.Key}'");
+                if (ReadyToRunTypeMapReference.HasFixup(context, entry.Key))
+                {
+                    yield return new DependencyListEntry(importProvider.GetImportToType(entry.Key, TriggeringModule), $"Key type of Proxy type map entry");
+                }
+                if (ReadyToRunTypeMapReference.HasFixup(context, entry.Value.Type))
+                {
+                    yield return new DependencyListEntry(importProvider.GetImportToType(entry.Value.Type, TriggeringModule), $"Proxy type map entry target for key '{entry.Key}'");
+                }
             }
         }
         public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => [];

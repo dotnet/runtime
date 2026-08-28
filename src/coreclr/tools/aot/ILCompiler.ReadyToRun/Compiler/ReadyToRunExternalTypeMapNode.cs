@@ -11,6 +11,42 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.ReadyToRun
 {
+    internal static class ReadyToRunTypeMapReference
+    {
+        private const uint Fixup = 0;
+        private const uint SerializedName = 1;
+
+        public static bool HasFixup(NodeFactory factory, TypeDesc type)
+            => factory.CompilationModuleGroup.VersionsWithTypeReference(type);
+
+        public static Vertex Encode(
+            NodeFactory factory,
+            NativeWriter writer,
+            INativeFormatTypeReferenceProvider references,
+            ModuleDesc triggeringModule,
+            TypeDesc type,
+            string serializedTypeName,
+            ModuleDesc declaringModule)
+        {
+            if (HasFixup(factory, type))
+            {
+                return writer.GetTuple(
+                    writer.GetUnsignedConstant(Fixup),
+                    references.EncodeReferenceToType(writer, type, triggeringModule));
+            }
+
+            if (declaringModule.Assembly != triggeringModule.Assembly)
+            {
+                throw new InternalCompilerErrorException(
+                    $"Serialized TypeMap type name '{serializedTypeName}' was declared in '{declaringModule}' but would be resolved relative to '{triggeringModule}'.");
+            }
+
+            return writer.GetTuple(
+                writer.GetUnsignedConstant(SerializedName),
+                writer.GetStringConstant(serializedTypeName));
+        }
+    }
+
     internal class ReadyToRunExternalTypeMapNode(ModuleDesc triggeringModule, TypeDesc group, TypeMapMetadata.IExternalTypeMap map, ImportReferenceProvider importProvider) : SortableDependencyNode, IExternalTypeMapNode
     {
         public TypeDesc TypeMapGroup => group;
@@ -53,10 +89,17 @@ namespace ILCompiler.ReadyToRun
 
             Section typeMapEntriesSection = writer.NewSection();
 
-            foreach ((string key, (TypeDesc type, _)) in map.TypeMap)
+            foreach ((string key, TypeMapMetadata.ExternalTypeMapEntry mapEntry) in map.TypeMap)
             {
                 Vertex keyVertex = writer.GetStringConstant(key);
-                Vertex valueVertex = externalReferences.EncodeReferenceToType(writer, type, TriggeringModule);
+                Vertex valueVertex = ReadyToRunTypeMapReference.Encode(
+                    factory,
+                    writer,
+                    externalReferences,
+                    TriggeringModule,
+                    mapEntry.Type,
+                    mapEntry.SerializedTypeName,
+                    mapEntry.DeclaringModule);
                 Vertex entry = writer.GetTuple(keyVertex, valueVertex);
                 typeMapHashTable.Append((uint)VersionResilientHashCode.NameHashCode(Encoding.UTF8.GetBytes(key)), typeMapEntriesSection.Place(entry));
             }
@@ -78,7 +121,10 @@ namespace ILCompiler.ReadyToRun
 
             foreach (var entry in map.TypeMap)
             {
-                yield return new DependencyListEntry(importProvider.GetImportToType(entry.Value.type, TriggeringModule), $"External type map entry target for key '{entry.Key}'");
+                if (ReadyToRunTypeMapReference.HasFixup(context, entry.Value.Type))
+                {
+                    yield return new DependencyListEntry(importProvider.GetImportToType(entry.Value.Type, TriggeringModule), $"External type map entry target for key '{entry.Key}'");
+                }
             }
         }
         public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => [];

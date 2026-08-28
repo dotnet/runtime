@@ -19,6 +19,7 @@
 #include "dn-stdio.h"
 #include "ilstubcache.h"
 #include "sigbuilder.h"
+#include "typeparse.h"
 
 #include "perfmap.h"
 
@@ -1711,6 +1712,12 @@ void ReadyToRunInfo::DisableCustomAttributeFilter()
 
 namespace
 {
+    enum class TypeMapTypeReferenceKind : uint32_t
+    {
+        Fixup = 0,
+        SerializedName = 1,
+    };
+
     TypeHandle GetTypeHandleForNativeFormatFixupReference(PTR_ReadyToRunInfo pR2RInfo, PTR_Module pModule, uint32_t importSection, uint32_t fixupIndex)
     {
         STANDARD_VM_CONTRACT;
@@ -1739,6 +1746,47 @@ namespace
         }
 
         return *(TypeHandle*)fixupAddress;
+    }
+
+    TypeHandle GetTypeHandleForTypeMapReference(
+        PTR_ReadyToRunInfo pR2RInfo,
+        PTR_Module pModule,
+        PTR_Module pRequestingModule,
+        NativeParser& entryParser)
+    {
+        STANDARD_VM_CONTRACT;
+
+        if (!pR2RInfo->IsImageVersionAtLeast(READYTORUN_TYPEMAP_TAGGED_TYPES_MAJOR_VERSION, 0))
+        {
+            uint32_t importSection = entryParser.GetUnsigned();
+            uint32_t fixupIndex = entryParser.GetUnsigned();
+            return GetTypeHandleForNativeFormatFixupReference(pR2RInfo, pModule, importSection, fixupIndex);
+        }
+
+        TypeMapTypeReferenceKind kind = static_cast<TypeMapTypeReferenceKind>(entryParser.GetUnsigned());
+        switch (kind)
+        {
+            case TypeMapTypeReferenceKind::Fixup:
+            {
+                uint32_t importSection = entryParser.GetUnsigned();
+                uint32_t fixupIndex = entryParser.GetUnsigned();
+                return GetTypeHandleForNativeFormatFixupReference(pR2RInfo, pModule, importSection, fixupIndex);
+            }
+
+            case TypeMapTypeReferenceKind::SerializedName:
+            {
+                PTR_CBYTE serializedName;
+                uint32_t serializedNameLength;
+                entryParser.GetString(&serializedName, &serializedNameLength);
+
+                StackSString typeName;
+                typeName.SetUTF8(reinterpret_cast<LPCUTF8>(serializedName), serializedNameLength);
+                return TypeName::GetTypeReferencedByCustomAttribute(typeName.GetUnicode(), pRequestingModule->GetAssembly());
+            }
+
+            default:
+                COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+        }
     }
 
     Module* GetModuleForNativeFormatFixupReference(PTR_ReadyToRunInfo pR2RInfo, PTR_Module pModule, uint32_t importSection, uint32_t fixupIndex)
@@ -1800,10 +1848,12 @@ bool ReadyToRunInfo::HasPrecachedExternalTypeMap(MethodTable* pGroupTypeMT)
     return false;
 }
 
-TypeHandle ReadyToRunInfo::FindPrecachedExternalTypeMapEntry(MethodTable* pGroupType, LPCUTF8 pKey)
+TypeHandle ReadyToRunInfo::FindPrecachedExternalTypeMapEntry(Module* pRequestingModule, MethodTable* pGroupType, LPCUTF8 pKey)
 {
     STANDARD_VM_CONTRACT;
 
+    _ASSERTE(pRequestingModule != nullptr);
+    _ASSERTE(pRequestingModule == m_pModule);
     _ASSERTE(pGroupType != nullptr);
     if (m_externalTypeMaps.IsNull())
     {
@@ -1840,9 +1890,7 @@ TypeHandle ReadyToRunInfo::FindPrecachedExternalTypeMapEntry(MethodTable* pGroup
             if (typeMapEntryParser.StringEquals(pKey, keyLen))
             {
                 typeMapEntryParser.SkipString();
-                uint32_t resultImportSection = typeMapEntryParser.GetUnsigned();
-                uint32_t resultFixupIndex = typeMapEntryParser.GetUnsigned();
-                return GetTypeHandleForNativeFormatFixupReference(this, m_pModule, resultImportSection, resultFixupIndex);
+                return GetTypeHandleForTypeMapReference(this, m_pModule, pRequestingModule, typeMapEntryParser);
             }
         }
 
@@ -1932,10 +1980,12 @@ bool ReadyToRunInfo::HasPrecachedProxyTypeMap(MethodTable* pGroupType)
     return false;
 }
 
-TypeHandle ReadyToRunInfo::FindPrecachedProxyTypeMapEntry(MethodTable* pGroupType, TypeHandle key)
+TypeHandle ReadyToRunInfo::FindPrecachedProxyTypeMapEntry(Module* pRequestingModule, MethodTable* pGroupType, TypeHandle key)
 {
     STANDARD_VM_CONTRACT;
 
+    _ASSERTE(pRequestingModule != nullptr);
+    _ASSERTE(pRequestingModule == m_pModule);
     _ASSERTE(pGroupType != nullptr);
     if (m_proxyTypeMaps.IsNull())
     {
@@ -1968,17 +2018,13 @@ TypeHandle ReadyToRunInfo::FindPrecachedProxyTypeMapEntry(MethodTable* pGroupTyp
         NativeParser typeMapEntryParser;
         while (typeMapLookup.GetNext(typeMapEntryParser))
         {
-            uint32_t keyImportSection = typeMapEntryParser.GetUnsigned();
-            uint32_t keyFixupIndex = typeMapEntryParser.GetUnsigned();
-            TypeHandle keyTypeHandle = GetTypeHandleForNativeFormatFixupReference(this, m_pModule, keyImportSection, keyFixupIndex);
+            TypeHandle keyTypeHandle = GetTypeHandleForTypeMapReference(this, m_pModule, pRequestingModule, typeMapEntryParser);
             if (keyTypeHandle != key)
             {
                 continue;
             }
 
-            uint32_t resultImportSection = typeMapEntryParser.GetUnsigned();
-            uint32_t resultFixupIndex = typeMapEntryParser.GetUnsigned();
-            return GetTypeHandleForNativeFormatFixupReference(this, m_pModule, resultImportSection, resultFixupIndex);
+            return GetTypeHandleForTypeMapReference(this, m_pModule, pRequestingModule, typeMapEntryParser);
         }
 
         // No matching entry found in the table.

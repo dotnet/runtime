@@ -1851,6 +1851,7 @@ extern "C" TADDR QCALLTYPE TypeMapLazyDictionary_FindPrecachedExternalTypeMapEnt
         MethodTable* groupTypeMT = groupTypeTH.AsMethodTable();
 
         resultTypeHnd = pR2RInfo->FindPrecachedExternalTypeMapEntry(
+            pModule,
             groupTypeMT,
             key);
     }
@@ -1884,6 +1885,7 @@ extern "C" TADDR QCALLTYPE TypeMapLazyDictionary_FindPrecachedProxyTypeMapEntry(
         MethodTable* groupTypeMT = groupTypeTH.AsMethodTable();
 
         resultTypeHnd = pR2RInfo->FindPrecachedProxyTypeMapEntry(
+            pModule,
             groupTypeMT,
             pType.AsTypeHandle());
     }

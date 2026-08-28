@@ -19,10 +19,11 @@
 //  src/coreclr/nativeaot/Runtime/inc/ModuleHeaders.h
 // If you update this, ensure you run `git grep MINIMUM_READYTORUN_MAJOR_VERSION`
 // and handle pending work.
-#define READYTORUN_MAJOR_VERSION 27
+#define READYTORUN_MAJOR_VERSION 28
 #define READYTORUN_MINOR_VERSION 0x0000
 
 #define MINIMUM_READYTORUN_MAJOR_VERSION 26
+#define READYTORUN_TYPEMAP_TAGGED_TYPES_MAJOR_VERSION 28
 
 // R2R Version 2.1 adds the InliningInfo section
 // R2R Version 2.2 adds the ProfileDataInfo section
@@ -68,6 +69,8 @@
 // R2R Version 26 changes ARM64 NativeVarInfo register encoding to include V0-V31
 // R2R Version 26.1 adds READYTORUN_FIXUP_StoreMultiCallableAddrOfCode for storing a method's MultiCallableAddrOfCode into a location in the R2R image (used on WebAssembly)
 // R2R Version 27 redefines READYTORUN_FIXUP_DeclaringTypeHandle to be encoded as a method signature instead of a pair of type signatures
+// R2R Version 28 adds tagged fixup or serialized-name type references to the ExternalTypeMaps and ProxyTypeMaps sections.
+// Older supported versions use untagged import-section and fixup-index pairs in these sections.
 
 struct READYTORUN_CORE_HEADER
 {

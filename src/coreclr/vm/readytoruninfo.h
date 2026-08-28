@@ -418,12 +418,12 @@ public:
     void DisableCustomAttributeFilter();
 
     bool HasPrecachedExternalTypeMap(MethodTable* pGroupType);
-    TypeHandle FindPrecachedExternalTypeMapEntry(MethodTable* pGroupType, LPCUTF8 pKey);
+    TypeHandle FindPrecachedExternalTypeMapEntry(Module* pRequestingModule, MethodTable* pGroupType, LPCUTF8 pKey);
 
     bool CheckForUniqueExternalTypeMapKeys(MethodTable* pGroupType, ExternalTypeNameHash *pHash);
 
     bool HasPrecachedProxyTypeMap(MethodTable* pGroupType);
-    TypeHandle FindPrecachedProxyTypeMapEntry(MethodTable* pGroupType, TypeHandle key);
+    TypeHandle FindPrecachedProxyTypeMapEntry(Module* pRequestingModule, MethodTable* pGroupType, TypeHandle key);
 
     bool HasTypeMapAssemblyTargets(MethodTable* pGroupType, COUNT_T* pCount);
 
