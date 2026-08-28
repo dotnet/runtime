@@ -323,7 +323,7 @@ namespace Internal.IL.Stubs
         /// type whose equality is provably a bitwise (memcmp) comparison. This is the single authority
         /// behind <see cref="System.Runtime.CompilerServices.RuntimeHelpers.IsBitwiseEquatable{T}"/>.
         /// </summary>
-        public static bool IsBitwiseEquatable(TypeDesc type, Func<MethodDesc, bool> canReadMethodBody = null)
+        public static bool IsBitwiseEquatable(TypeDesc type, Func<MethodDesc, bool> canReadMethodBody)
         {
             // Integer-like primitives, enums, native ints, and pointers are memcmp-comparable.
             if (IsBitwiseComparablePrimitive(type))
@@ -356,7 +356,7 @@ namespace Internal.IL.Stubs
         /// that implements IEquatable&lt;T&gt; still be reported as bitwise-equatable when its Equals does
         /// nothing more than compare every field with ==.
         /// </summary>
-        public static bool IsIEquatableEqualsFieldwise(MetadataType type, Func<MethodDesc, bool> canReadMethodBody = null)
+        public static bool IsIEquatableEqualsFieldwise(MetadataType type, Func<MethodDesc, bool> canReadMethodBody)
         {
             try
             {
@@ -404,7 +404,7 @@ namespace Internal.IL.Stubs
         // and methods in the exact instantiation. Returns null if the method has no ECMA-backed body.
         private static MethodIL GetScannableMethodIL(MethodDesc method, Func<MethodDesc, bool> canReadMethodBody)
         {
-            if (canReadMethodBody != null && !canReadMethodBody(method))
+            if (!canReadMethodBody(method))
                 return null;
 
             if (method.GetTypicalMethodDefinition() is not EcmaMethod typicalMethod)

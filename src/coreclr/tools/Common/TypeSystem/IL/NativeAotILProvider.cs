@@ -126,7 +126,7 @@ namespace Internal.IL
             else if (owningType.Name == "RuntimeHelpers"u8)
             {
                 if (owningType.Namespace == "System.Runtime.CompilerServices"u8)
-                    return RuntimeHelpersIntrinsics.EmitIL(method);
+                    return RuntimeHelpersIntrinsics.EmitIL(method, static _ => true);
             }
             else if (owningType.Name == "Comparer`1"u8)
             {
