@@ -150,6 +150,19 @@
   <PropertyGroup Condition=" '$(CollectionType)' == 'crossgen2' and '$(TargetOS)' != '' and '$(TargetArchitecture)' != '' ">
     <TargetArgs>-target_os $(TargetOS) -target_arch $(TargetArchitecture)</TargetArgs>
   </PropertyGroup>
+  <!-- Cross-target crossgen2 collections compile assemblies built for the target, so crossgen2
+       must resolve references against the target's assemblies rather than the host Core_Root.
+       superpmi_collect_setup.py stages those into a folder in the correlation payload and
+       reports its name via the Crossgen2ReferenceDirName variable. -->
+  <PropertyGroup Condition=" '$(CollectionType)' == 'crossgen2' and '$(Crossgen2ReferenceDirName)' != '' ">
+    <TargetArgs>$(TargetArgs) -crossgen2_reference_directory $(SuperPMIDirectory)$(FileSeparatorChar)$(Crossgen2ReferenceDirName)</TargetArgs>
+  </PropertyGroup>
+  <!-- Composite mode puts the whole reference set in the version bubble, so cross-assembly
+       generic instantiations get compiled too. Partitioning still applies: each work item
+       roots its own assemblies and takes the rest as unrooted bubble inputs. -->
+  <PropertyGroup Condition=" '$(CollectionType)' == 'crossgen2' and '$(Crossgen2Composite)' == 'true' ">
+    <TargetArgs>$(TargetArgs) --crossgen2_composite</TargetArgs>
+  </PropertyGroup>
   <PropertyGroup Condition=" '$(CollectionType)' != 'crossgen2' ">
     <TargetArgs></TargetArgs>
   </PropertyGroup>
@@ -159,6 +172,9 @@
   <PropertyGroup Condition="'$(CollectionName)' != 'benchmarks' and '$(CollectionName)' != 'realworld' and '$(CollectionName)' != 'aspnet2'">
     <WorkItemCommand>$(Python) $(SuperPMIDirectory)$(FileSeparatorChar)superpmi.py collect --clean -log_level DEBUG --$(CollectionType) $(PmiArguments) $(InputKind) $(AssembliesDirectoryOnHelix) -arch $(Architecture) -build_type $(BuildConfig) -core_root $(SuperPMIDirectory) $(TargetArgs)</WorkItemCommand>
     <WorkItemTimeout>2:00</WorkItemTimeout>
+    <!-- A composite compilation has a much larger version bubble, so it compiles many more
+         methods per work item and needs correspondingly longer. -->
+    <WorkItemTimeout Condition=" '$(Crossgen2Composite)' == 'true' ">4:00</WorkItemTimeout>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(CollectionName)' == 'benchmarks' or '$(CollectionName)' == 'realworld'">

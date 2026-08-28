@@ -19,7 +19,7 @@ extends:
             testGroup: outerloop
             # Build clr.wasmjit on x64 hosts so the checked wasm cross-targeting JIT
             # (clrjit_universal_wasm_x64.dll) is present in the checked Core_Root for
-            # crossgen2-corelib-wasm SPMI collection. clr.alljits does not include it.
+            # crossgen2-libraries-wasm SPMI collection. clr.alljits does not include it.
             buildArgs: -s clr+libs+libs.tests+clr.wasmjit -rc $(_BuildConfig) -c Release /p:ArchiveTests=true
             timeoutInMinutes: 120
             postBuildSteps:
@@ -169,10 +169,12 @@ extends:
                   testGroup: outerloop
             disableComponentGovernance: true # No shipping artifacts produced by this pipeline
 
-      # Release build of System.Private.CoreLib.dll targeting browser/wasm, hosted on
-      # Windows x64. Produces artifacts/bin/coreclr/browser.wasm.Release/System.Private.CoreLib.dll,
-      # which is the assembly the corelib_wasm SPMI collection runs crossgen2 over.
-      # We only need the managed CoreLib here, so build the minimal clr.corelib subset.
+      # Release build of the browser/wasm CoreCLR runtime pack, hosted on Windows x64.
+      # Produces artifacts/bin/microsoft.netcore.app.runtime.browser-wasm/Release, whose
+      # runtimes/browser-wasm/lib/<tfm>/*.dll and runtimes/browser-wasm/native/System.Private.CoreLib.dll
+      # are the managed assemblies the wasm SPMI collection runs crossgen2 over.
+      # The runtime pack layout comes from the packs.product subset, which harvests native
+      # runtime files, so the full clr+libs+packs set has to be built here.
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
@@ -180,17 +182,19 @@ extends:
           platforms:
           - browser_wasm_win
           jobParameters:
-            buildArgs: -s clr.corelib -c Release
-            timeoutInMinutes: 120
+            buildArgs: -s clr+libs+packs -c Release
+            timeoutInMinutes: 180
             postBuildSteps:
+              # Only the runtime pack is needed downstream, so avoid uploading the whole
+              # (much larger) artifacts/bin tree that clr+libs+packs produces.
               - template: /eng/pipelines/common/upload-artifact-step.yml
                 parameters:
-                  rootFolder: $(Build.SourcesDirectory)/artifacts/bin
-                  includeRootFolder: false
+                  rootFolder: $(Build.SourcesDirectory)/artifacts/bin/microsoft.netcore.app.runtime.browser-wasm
+                  includeRootFolder: true
                   archiveType: $(archiveType)
                   archiveExtension: $(archiveExtension)
                   tarCompression: $(tarCompression)
-                  artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+                  artifactName: WasmRuntimePack_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
             disableComponentGovernance: true # No shipping artifacts produced by this pipeline
 
       - template: /eng/pipelines/common/platform-matrix.yml
@@ -330,11 +334,18 @@ extends:
             collectionType: crossgen2
             collectionName: libraries
 
-      # Crossgen2 of release System.Private.CoreLib.dll targeting browser/wasm.
+      # Crossgen2 of the release browser/wasm managed assembly set (the browser-wasm
+      # CoreCLR runtime pack: all shared framework libraries plus System.Private.CoreLib.dll).
       # Runs crossgen2 on a windows_x64 host with the wasm cross-targeting JIT
       # (clrjit_universal_wasm_x64.dll) under superpmi-shim-collector, producing an MCH
       # uploaded under <jit_ee_version>/browser/x64/ (the wasm mch_arch override in
       # superpmi.py maps target_arch=wasm to mch_arch=<host_arch>=x64).
+      #
+      # NOTE: this collection was previously named 'corelib'. Replay downloads every MCH
+      # under <jit_ee_version>/browser/x64/, so the now-orphaned
+      # corelib.crossgen2.windows.x64.checked.mch (and its .mct) has to be deleted from the
+      # superpmi collections container by hand; nothing overwrites it any more, and it
+      # would otherwise be replayed until the JIT-EE GUID rolls.
       #
       # Uses buildConfig: checked so the wasm cross-targeting JIT used during collection
       # is a Checked build.
@@ -350,9 +361,21 @@ extends:
             testGroup: outerloop
             liveLibrariesBuildConfig: Release
             collectionType: crossgen2
-            collectionName: corelib
+            collectionName: libraries
             targetOS: browser
             targetArch: wasm
+            # Compile in composite mode so the whole framework is one version bubble and
+            # generic instantiations over types from other assemblies (most importantly
+            # CoreLib) get compiled instead of being skipped as cross-bubble. Measured on
+            # this collection: 82,870 -> 109,684 contexts (+32%).
+            crossgen2Composite: true
+            # Keep the collection partitioned. Each work item roots only its own partition
+            # but takes the rest of the framework as unrooted bubble inputs, so every
+            # partition still gets the full version bubble; the redundant work between
+            # partitions is deduplicated by the merge step (177,230 contexts collected,
+            # 109,684 kept). That costs CPU rather than coverage, and keeps a failed
+            # partition from losing the whole collection. Work items ran 1-2 minutes each.
+            maxPartitionSizeMB: 5
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
