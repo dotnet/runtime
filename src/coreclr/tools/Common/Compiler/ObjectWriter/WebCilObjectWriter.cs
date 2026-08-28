@@ -315,9 +315,9 @@ namespace ILCompiler.ObjectWriter
         /// <remarks>
         /// True for any image that carries code - a composite or a single-assembly R2R image - since
         /// the host instantiates those and the engine can apply the segments. False for a per-assembly
-        /// component forwarding stub, which must keep its payload passive: on WASI a stub is never
-        /// instantiated, it is parsed as a file by <c>WasiExtractStubPayload</c>, which locates the
-        /// payload by passive data segment index.
+        /// component forwarding stub, which must keep its payload passive: a stub is not necessarily
+        /// instantiated at all, and an offline host may instead parse it as a file and locate the
+        /// payload by passive data segment index, which an active segment would defeat.
         /// </remarks>
         private bool IsSelfInstallingImage => !_nodeFactory.OptimizationFlags.IsComponentModule;
 
