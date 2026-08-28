@@ -7880,12 +7880,7 @@ UNATIVE_OFFSET emitter::emitDataGenBeg(unsigned size, unsigned alignment, var_ty
     //
     assert((size != 0) && ((size % dataSection::MIN_DATA_ALIGN) == 0));
 
-    // Place the constant at an offset that satisfies its required alignment. This ensures
-    // aligned loads of the constant address a properly aligned location, and it lets the
-    // duplicate-constant matching in emitDataGenFind reuse an existing entry (that search
-    // only considers candidates sitting at a suitably aligned offset). Compilers targeting
-    // SMALL_CODE request a smaller alignment in the const-emission helpers and so still get
-    // tight packing.
+    // Keep the logical layout in sync with the per-chunk alignment used by the EE.
     unsigned secOffs = AlignUp(emitConsDsc.dsdOffs, alignment);
     /* Advance the current offset */
     emitConsDsc.dsdOffs = secOffs + size;
@@ -8095,13 +8090,10 @@ UNATIVE_OFFSET emitter::emitDataGenFind(const void* cnsAddr, unsigned cnsSize, u
         // We match the bit pattern, so the dataType can be different
         // Only match constants when the dsType is 'data'
         //
-        // The existing entry must also sit at an offset that satisfies the requested alignment;
-        // emitDataGenBeg aligns every entry's offset to its own alignment, so this normally holds
-        // for equally-aligned constants but can still fail when reusing a more-strictly-aligned
-        // request against a less-aligned entry.
+        // The existing entry must also satisfy the requested alignment.
         //
         if ((secDesc->dsType == dataSection::data) && (secDesc->dsSize >= cnsSize) &&
-            ((secDesc->dsOffset % alignment) == 0))
+            (secDesc->dsAlignment >= alignment))
         {
             if (memcmp(cnsAddr, secDesc->Data(), cnsSize) == 0)
             {
@@ -8712,7 +8704,8 @@ void emitter::emitDispDataSec(dataSecDsc* section, AllocMemChunk* dataChunks)
             {
                 if (i > 0)
                 {
-                    sprintf_s(label, ArrLen(label), "RWD%02zu", i * sizeof(CORINFO_AsyncResumeInfo));
+                    sprintf_s(label, ArrLen(label), "RWD%02zu",
+                              static_cast<size_t>(data->dsOffset) + (i * sizeof(CORINFO_AsyncResumeInfo)));
                     printf(labelFormat, label);
                 }
 
@@ -9359,7 +9352,9 @@ BYTE* emitter::emitDataOffsetToPtr(UNATIVE_OFFSET offset)
     }
 
     assert((min > 0) && (min <= emitNumDataChunks));
-    return emitDataChunks[min - 1].block + (offset - emitDataChunkOffsets[min - 1]);
+    const unsigned chunkIndex = min - 1;
+    assert((offset - emitDataChunkOffsets[chunkIndex]) < emitDataChunks[chunkIndex].size);
+    return emitDataChunks[chunkIndex].block + (offset - emitDataChunkOffsets[chunkIndex]);
 }
 
 /*****************************************************************************
