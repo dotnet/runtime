@@ -31,7 +31,6 @@ namespace Internal.IL.Stubs
             bool result;
             if (method.Name == "IsBitwiseEquatable"u8)
             {
-                // The runtime and the ILC share a single determination of what is bitwise-equatable.
                 bool unavailableMethodBody = false;
 
                 bool CanReadMethodBody(MethodDesc method)
