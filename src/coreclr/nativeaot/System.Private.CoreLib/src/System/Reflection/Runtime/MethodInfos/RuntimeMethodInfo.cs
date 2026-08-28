@@ -118,7 +118,7 @@ namespace System.Reflection.Runtime.MethodInfos
         public abstract override int GetHashCode();
 
         internal RuntimeMethodInfo? GetParentDefinition()
-            => (RuntimeMethodInfo)this.GetImplicitlyOverriddenBaseClassMember(MethodPolicies.Instance);
+            => (RuntimeMethodInfo?)this.GetImplicitlyOverriddenBaseClassMember();
 
         public sealed override MethodInfo GetBaseDefinition()
         {
@@ -135,8 +135,8 @@ namespace System.Reflection.Runtime.MethodInfos
 
             while (true)
             {
-                MethodInfo next = method.GetImplicitlyOverriddenBaseClassMember(MethodPolicies.Instance);
-                if (next == null)
+                MethodInfo? next = method.GetImplicitlyOverriddenBaseClassMember();
+                if (next is null)
                     return ((RuntimeMethodInfo)method).WithReflectedTypeSetToDeclaringType;
 
                 method = next;
