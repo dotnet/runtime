@@ -407,8 +407,9 @@ jobs:
           # Use the timeline to select only failed/canceled jobs; downloading
           # every successful leg would exceed this advisory workflow's time and
           # disk budgets without adding evidence about the failing job.
-          timeline_json=$(curl -sSL --fail --retry 3 --connect-timeout 10 --max-time 20 --retry-max-time 40 \
-            "${ADO_API}/build/builds/${BUILD_ID}/timeline?api-version=7.1")
+          ado_get "build timeline" \
+            "${ADO_API}/build/builds/${BUILD_ID}/timeline?api-version=7.1" || emit_none
+          timeline_json="${ADO_DOC}"
           mapfile -t failed_job_keys < <(
             printf '%s' "${timeline_json}" |
               jq -r '.records // [] | map(select(.type == "Job" and (.result == "failed" or .result == "canceled"))) | .[].name' |
@@ -534,13 +535,15 @@ jobs:
             ZIP_ALLOWANCE=$((MAX_TOTAL_ZIP_BYTES - TOTAL_ZIP_BYTES))
             [ "${ZIP_ALLOWANCE}" -lt "${ZIP_CAP}" ] && ZIP_CAP="${ZIP_ALLOWANCE}"
             if [ "${ZIP_CAP}" -le 0 ]; then
-              echo "::warning::Cumulative compressed download budget ${MAX_TOTAL_ZIP_BYTES} is exhausted before ${safe_name}; stopping downloads."None
+              echo "::warning::Cumulative compressed download budget ${MAX_TOTAL_ZIP_BYTES} is exhausted before ${safe_name}; stopping downloads."
+              break
             fi
             # Bound this transfer by the time left as well, and never start one with
             # no time to finish in.
             TIME_LEFT=$(( DOWNLOAD_DEADLINE - $(date +%s) ))
             if [ "${TIME_LEFT}" -le 0 ]; then
-              echo "::warning::Download time budget ${DOWNLOAD_BUDGET}s exhausted before ${safe_name}; stopping downloads."None
+              echo "::warning::Download time budget ${DOWNLOAD_BUDGET}s exhausted before ${safe_name}; stopping downloads."
+              break
             fi
             ATTEMPT_SECONDS="${MAX_ATTEMPT_SECONDS}"
             [ "${TIME_LEFT}" -lt "${ATTEMPT_SECONDS}" ] && ATTEMPT_SECONDS="${TIME_LEFT}"
