@@ -13,7 +13,7 @@ pr: none
 variables:
   - template: /eng/pipelines/common/variables.yml
   - name: enableHelixJobMonitor
-    value: true
+    value: false
   - template: /eng/pipelines/helix-platforms.yml
 
 extends:
