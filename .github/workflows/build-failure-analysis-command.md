@@ -591,6 +591,10 @@ jobs:
               # Fail the leg rather than the backstop: if the shell will not apply
               # the limit, downloading anyway would leave a response with no usable
               # Content-Length free to fill the disk before the size check below runs.
+              # bash counts `ulimit -f` in 1024-byte units, except in POSIX mode where
+              # it counts 512-byte blocks. Pin the mode so this arithmetic means one
+              # thing regardless of how the runner's shell was invoked.
+              set +o posix
               ulimit -f $(( (ZIP_CAP + 1023) / 1024 )) || exit 1
               trap '' XFSZ
               timeout "${TIME_LEFT}" curl -sSL --fail --retry 3 --retry-delay 2 --connect-timeout 15 --max-time "${ATTEMPT_SECONDS}" --retry-max-time "${TIME_LEFT}" -o "${ZIP_TMP}" "${url}"
@@ -669,7 +673,7 @@ jobs:
             # ever reaching the controlled no-op below.
             TIME_LEFT=$(( FETCH_DEADLINE - $(date +%s) ))
             if [ "${TIME_LEFT}" -le 0 ]; then
-              echo "::warning::Fetch budget exhausted before extracting ${name}; stopping."; break
+              echo "::warning::Fetch budget exhausted before extracting ${safe_name}; stopping."; break
             fi
             [ "${TIME_LEFT}" -gt 120 ] && TIME_LEFT=120
             timeout "${TIME_LEFT}" unzip -o "${ZIP_TMP}" '*.binlog' -d "${AX_DIR}" >/dev/null 2>&1 \
