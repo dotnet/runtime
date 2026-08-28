@@ -48,6 +48,10 @@
     <Compile Include="SignedCms\SignedDocuments.cs" />
     <Compile Include="SignedCms\SignerInfoTests.cs" />
   </ItemGroup>
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net11.0'))">
+    <Compile Include="EnvelopedCms\KemGeneralTests.cs" />
+    <Compile Include="EnvelopedCms\KemTestDocuments.cs" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Compile Include="AlgorithmIdentifierTest.cs" />
     <Compile Include="EnvelopedCms\DecryptTestsRsaPaddingModeTests.cs" />

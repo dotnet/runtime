@@ -12,46 +12,56 @@ namespace System.Security.Cryptography.Pkcs
     /// </summary>
     public sealed class KemRecipientInfo : RecipientInfo
     {
-        internal KemRecipientInfo()
-            : base(RecipientInfoType.KeyEncapsulation, GetPal())
+        private AlgorithmIdentifier? _lazyKeyDerivationAlgorithm;
+        private AlgorithmIdentifier? _lazyKeyEncapsulationAlgorithm;
+        private AlgorithmIdentifier? _lazyKeyEncryptionAlgorithm;
+        private byte[]? _lazyEncryptedKey;
+        private SubjectIdentifier? _lazyRecipientIdentifier;
+
+        internal KemRecipientInfo(KemRecipientInfoPal pal)
+            : base(RecipientInfoType.KeyEncapsulation, pal)
         {
         }
 
         /// <inheritdoc/>
-        public override int Version => throw new NotImplementedException();
+        public override int Version => Pal.Version;
 
         /// <inheritdoc/>
-        public override SubjectIdentifier RecipientIdentifier => throw new NotImplementedException();
+        public override SubjectIdentifier RecipientIdentifier =>
+            _lazyRecipientIdentifier ??= Pal.RecipientIdentifier;
 
         /// <inheritdoc/>
-        public override AlgorithmIdentifier KeyEncryptionAlgorithm => throw new NotImplementedException();
+        public override AlgorithmIdentifier KeyEncryptionAlgorithm =>
+            _lazyKeyEncryptionAlgorithm ??= Pal.KeyEncryptionAlgorithm;
 
         /// <inheritdoc/>
-        public override byte[] EncryptedKey => throw new NotImplementedException();
+        public override byte[] EncryptedKey => _lazyEncryptedKey ??= Pal.EncryptedKey;
 
         /// <summary>
         /// Gets the key encapsulation algorithm.
         /// </summary>
         /// <value>The key encapsulation algorithm.</value>
-        public AlgorithmIdentifier KeyEncapsulationAlgorithm => throw new NotImplementedException();
+        public AlgorithmIdentifier KeyEncapsulationAlgorithm =>
+            _lazyKeyEncapsulationAlgorithm ??= Pal.KeyEncapsulationAlgorithm;
 
         /// <summary>
         /// Gets the key encapsulation ciphertext.
         /// </summary>
         /// <value>The key encapsulation ciphertext.</value>
-        public ReadOnlyMemory<byte> KeyEncapsulationCiphertext => throw new NotImplementedException();
+        public ReadOnlyMemory<byte> KeyEncapsulationCiphertext => Pal.KeyEncapsulationCiphertext;
 
         /// <summary>
         /// Gets the key derivation algorithm.
         /// </summary>
         /// <value>The key derivation algorithm.</value>
-        public AlgorithmIdentifier KeyDerivationAlgorithm => throw new NotImplementedException();
+        public AlgorithmIdentifier KeyDerivationAlgorithm =>
+            _lazyKeyDerivationAlgorithm ??= Pal.KeyDerivationAlgorithm;
 
         /// <summary>
         /// Gets the key-encryption key length, in bytes.
         /// </summary>
         /// <value>The key-encryption key length, in bytes.</value>
-        public int KeyEncryptionKeyLengthInBytes => throw new NotImplementedException();
+        public int KeyEncryptionKeyLengthInBytes => Pal.KeyEncryptionKeyLengthInBytes;
 
         /// <summary>
         /// Gets the optional user keying material.
@@ -59,8 +69,8 @@ namespace System.Security.Cryptography.Pkcs
         /// <value>
         /// The user keying material, or <see langword="null"/> when the optional value is not present.
         /// </value>
-        public ReadOnlyMemory<byte>? UserKeyingMaterial => throw new NotImplementedException();
+        public ReadOnlyMemory<byte>? UserKeyingMaterial => Pal.UserKeyingMaterial;
 
-        private static RecipientInfoPal GetPal() => throw new NotImplementedException();
+        private new KemRecipientInfoPal Pal => (KemRecipientInfoPal)base.Pal;
     }
 }

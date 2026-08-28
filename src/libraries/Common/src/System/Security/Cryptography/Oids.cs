@@ -58,6 +58,9 @@ namespace System.Security.Cryptography
         internal const string CmsRc2Wrap = "1.2.840.113549.1.9.16.3.7";
         internal const string Cms3DesWrap = "1.2.840.113549.1.9.16.3.6";
 
+        // OtherRecipientInfo types
+        internal const string IdSmimeOriKem = "1.2.840.113549.1.9.16.13.3";
+
         // PKCS7 Content Types.
         internal const string Pkcs7Data = "1.2.840.113549.1.7.1";
         internal const string Pkcs7Signed = "1.2.840.113549.1.7.2";
