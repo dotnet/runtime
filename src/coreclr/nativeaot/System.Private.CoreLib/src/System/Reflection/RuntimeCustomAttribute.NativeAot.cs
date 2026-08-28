@@ -88,14 +88,14 @@ namespace System.Reflection
                     TypeUnificationKey attributeTypeKey = new TypeUnificationKey(actualAttributeType);
                     if (!encounteredTypes.TryGetValue(attributeTypeKey, out AttributeUsageAttribute? usage))
                     {
-                        usage = GetAttributeUsage(actualAttributeType);
+                        usage = Attribute.InternalGetAttributeUsage(actualAttributeType);
                         encounteredTypes.Add(attributeTypeKey, usage);
                         if (usage.Inherited)
                             yield return attribute;
                     }
                     else
                     {
-                        usage ??= GetAttributeUsage(actualAttributeType);
+                        usage ??= Attribute.InternalGetAttributeUsage(actualAttributeType);
                         encounteredTypes[attributeTypeKey] = usage;
                         if (usage.Inherited && usage.AllowMultiple)
                             yield return attribute;
@@ -158,12 +158,6 @@ namespace System.Reflection
                 return method.GetParentDefinition();
 
             return null;
-        }
-
-        private static AttributeUsageAttribute GetAttributeUsage(Type attributeType)
-        {
-            AttributeUsageAttribute? usage = attributeType.GetCustomAttribute<AttributeUsageAttribute>(inherit: false);
-            return usage ?? new AttributeUsageAttribute(AttributeTargets.All) { AllowMultiple = false, Inherited = true };
         }
 
         private static object[] Instantiate(IEnumerable<CustomAttributeData> customAttributes, Type actualElementType)

@@ -423,7 +423,7 @@ namespace System
             }
         }
 
-        private static AttributeUsageAttribute InternalGetAttributeUsage(Type type)
+        internal static AttributeUsageAttribute InternalGetAttributeUsage(Type type)
         {
             // Check if the custom attributes is Inheritable
             object[] obj = type.GetCustomAttributes(typeof(AttributeUsageAttribute), false);
