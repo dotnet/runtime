@@ -207,14 +207,14 @@ jobs:
             # details_url looks like: .../_build/results?buildId=NNN&view=...
             BUILD_ID=$(printf '%s' "${CHECK_DETAILS_URL}" | grep -oE 'buildId=[0-9]+' | head -1 | cut -d= -f2)
           fi
-          echo "Azure DevOps build id: '${BUILD_ID}'"
           [ -z "${BUILD_ID}" ] && { echo "::warning::Could not resolve an ADO build id."; emit_none; }
           # The build id feeds directly into ADO API URLs below; require it to
           # be purely numeric (esp. on workflow_dispatch, where it is free-form
           # input) so a malformed value can't alter the request path/query.
           if ! printf '%s' "${BUILD_ID}" | grep -qE '^[0-9]+$'; then
-            echo "::warning::Resolved ADO build id '${BUILD_ID}' is not numeric; refusing."; emit_none
+            echo "::warning::Resolved ADO build id is not numeric; refusing."; emit_none
           fi
+          echo "Azure DevOps build id: '${BUILD_ID}'"
 
           # Fetch the build metadata once, up front: it is the authoritative
           # source for the definition/result/revision validated in step 4.
@@ -242,7 +242,7 @@ jobs:
           # comparison; require it numeric so a malformed value can't reach the
           # GitHub API path (traversal-like input) or skew the branch match.
           if ! printf '%s' "${PR_NUMBER}" | grep -qE '^[0-9]+$'; then
-            echo "::warning::Resolved PR number '${PR_NUMBER}' is not numeric; refusing."; emit_none
+            echo "::warning::Resolved PR number is not numeric; refusing."; emit_none
           fi
 
           # --- 3. Scope check: only analyse PRs targeting main / release/* ---

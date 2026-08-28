@@ -289,7 +289,7 @@ jobs:
           # branch query; require it numeric so a malformed event/aw_context
           # payload can't reach those URLs with unexpected content.
           if ! printf '%s' "${PR_NUMBER}" | grep -qE '^[0-9]+$'; then
-            echo "::warning::Resolved PR number '${PR_NUMBER}' is not numeric; refusing."; emit_none
+            echo "::warning::Resolved PR number is not numeric; refusing."; emit_none
           fi
 
           # --- Scope check: only analyse PRs targeting main / release/* ---
@@ -320,13 +320,13 @@ jobs:
           BUILD_ID=$(printf '%s' "${builds_json}" | jq -r '.value // [] | .[0].id // empty')
           BUILD_STATUS=$(printf '%s' "${builds_json}" | jq -r '.value // [] | .[0].status // empty')
           BUILD_RESULT=$(printf '%s' "${builds_json}" | jq -r '.value // [] | .[0].result // empty')
-          echo "Newest runtime build for PR #${PR_NUMBER}: id='${BUILD_ID}' status='${BUILD_STATUS}' result='${BUILD_RESULT}'"
           [ -z "${BUILD_ID}" ] && { echo "::warning::No runtime build found for PR #${PR_NUMBER}."; emit_none; }
           # Require a numeric build id before it feeds subsequent ADO API URLs,
           # so a malformed query response can't inject unexpected path/query.
           if ! printf '%s' "${BUILD_ID}" | grep -qE '^[0-9]+$'; then
-            echo "::warning::ADO build id '${BUILD_ID}' is not numeric; refusing."; emit_none
+            echo "::warning::ADO build id is not numeric; refusing."; emit_none
           fi
+          echo "Newest runtime build for PR #${PR_NUMBER}: id='${BUILD_ID}' status='${BUILD_STATUS}' result='${BUILD_RESULT}'"
           if [ "${BUILD_STATUS}" != "completed" ]; then
             echo "::warning::PR #${PR_NUMBER}'s newest runtime build (${BUILD_ID}) is still '${BUILD_STATUS}'; wait for it to finish before analysing."
             emit_none
