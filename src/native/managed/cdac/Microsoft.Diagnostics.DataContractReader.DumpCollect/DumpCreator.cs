@@ -103,7 +103,8 @@ internal sealed class DumpCreator
             if (flags.HasFlag(ModuleFlags.ReflectionEmit))
                 _emitter.RegisterMetadataRange(ecmaMetadata.GetReadWriteSavedMetadataAddress(module));
 
-            if (loader.TryGetSymbolStream(module, out TargetPointer symbolBuffer, out uint symbolSize))
+            // Smaller dumps do not include in-memory symbols unless they are otherwise referenced.
+            if (loader.TryGetSymbolStream(module, out TargetPointer symbolBuffer, out uint symbolSize) && _includeHeap)
                 _emitter.Add(symbolBuffer.Value, symbolSize);
 
             if (peAssembly != TargetPointer.Null)
