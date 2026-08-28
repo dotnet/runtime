@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#pragma warning disable CA1416 // Windows-only interop; these call sites are Windows-gated.
+#pragma warning disable CA1416 // GetMessage flows through cross-platform Win32Marshal error paths; cannot narrow to SupportedOSPlatform.
 
 using System;
 using System.Runtime.InteropServices;

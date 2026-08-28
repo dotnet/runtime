@@ -5,8 +5,6 @@ using System;
 using System.Diagnostics.Tracing;
 using System.Runtime.InteropServices;
 
-#pragma warning disable CA1416 // Windows-only ETW interop; this file is compiled only for Windows.
-
 internal static partial class Interop
 {
     internal static partial class Advapi32
@@ -16,6 +14,9 @@ internal static partial class Interop
         ///  The implementation of EventWriteTransfer on some older OSes (Windows 2008) does not accept null relatedActivityId.
         ///  So, for these cases we will retry the call with an empty Guid.
         /// </summary>
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         internal static unsafe int EventWriteTransfer(
             long registrationHandle,
             in EventDescriptor eventDescriptor,

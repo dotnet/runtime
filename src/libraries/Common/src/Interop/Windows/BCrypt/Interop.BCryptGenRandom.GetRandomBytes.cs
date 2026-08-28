@@ -4,7 +4,7 @@
 using System;
 using System.Diagnostics;
 
-#pragma warning disable CA1416 // Windows implementation of GetRandomBytes; this file is compiled only for Windows.
+#pragma warning disable CA1416 // Interop.GetRandomBytes is the cross-platform RNG entry point; callers are not Windows-gated.
 
 internal static partial class Interop
 {

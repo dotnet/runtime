@@ -4,8 +4,6 @@
 using System.IO;
 using System.Runtime.InteropServices;
 
-#pragma warning disable CA1416 // Windows-only file encryption interop; this file is compiled only for Windows.
-
 internal static partial class Interop
 {
     internal static partial class Advapi32
@@ -21,6 +19,9 @@ internal static partial class Interop
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool EncryptFilePrivate(string lpFileName);
 
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         internal static bool EncryptFile(string path)
         {
             path = PathInternal.EnsureExtendedPrefixIfNeeded(path);
@@ -40,6 +41,9 @@ internal static partial class Interop
             string lpFileName,
             int dwReserved);
 
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         internal static bool DecryptFile(string path)
         {
             path = PathInternal.EnsureExtendedPrefixIfNeeded(path);

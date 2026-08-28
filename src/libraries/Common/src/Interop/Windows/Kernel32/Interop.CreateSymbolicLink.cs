@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#pragma warning disable CA1416 // Windows-only interop; these call sites are Windows-gated.
-
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -37,6 +35,9 @@ internal static partial class Interop
         /// <param name="targetFileName">The name of the target for the symbolic link to be created.
         /// If it has a device name associated with it, the link is treated as an absolute link; otherwise, the link is treated as a relative link.</param>
         /// <param name="isDirectory"><see langword="true" /> if the link target is a directory; <see langword="false" /> otherwise.</param>
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         internal static void CreateSymbolicLink(string symlinkFileName, string targetFileName, bool isDirectory)
         {
             string originalPath = symlinkFileName;

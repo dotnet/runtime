@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#pragma warning disable CA1416 // Windows-only interop; these call sites are Windows-gated.
-
 using System.IO;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
@@ -24,6 +22,9 @@ internal static partial class Interop
             string path,
             SECURITY_ATTRIBUTES* lpSecurityAttributes);
 
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         internal static unsafe bool CreateDirectory(string path, SECURITY_ATTRIBUTES* lpSecurityAttributes)
         {
             // We always want to add for CreateDirectory to get around the legacy 248 character limitation

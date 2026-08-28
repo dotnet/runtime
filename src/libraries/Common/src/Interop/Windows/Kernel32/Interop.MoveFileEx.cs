@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#pragma warning disable CA1416 // Windows-only interop; these call sites are Windows-gated.
-
 using System.IO;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
@@ -33,6 +31,9 @@ internal static partial class Interop
         /// <param name="dst">Destination file or directory</param>
         /// <param name="overwrite">True to overwrite existing destination file. NOTE: must pass false for directories as overwrite of directories is not supported.</param>
         /// <returns></returns>
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         internal static bool MoveFile(string src, string dst, bool overwrite)
         {
             src = PathInternal.EnsureExtendedPrefixIfNeeded(src);

@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#pragma warning disable CA1416 // Windows-only interop; these call sites are Windows-gated.
-
 using System;
 using System.Runtime.InteropServices;
 
@@ -23,9 +21,15 @@ internal static partial class Interop
         // [return: NativeTypeName("HLOCAL")]
         private static partial nint LocalAlloc(uint uFlags, nuint uBytes);
 
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         internal static unsafe void* LocalAlloc(nuint byteCount) =>
             (void*)LocalAlloc(LMEM_FIXED, byteCount);
 
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         internal static unsafe void* LocalAllocZeroed(nuint byteCount) =>
             (void*)LocalAlloc(LPTR, byteCount);
     }

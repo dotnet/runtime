@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#pragma warning disable CA1416 // Windows-only interop; these call sites are Windows-gated.
-
 using System.IO;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
@@ -22,6 +20,9 @@ internal static partial class Interop
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool RemoveDirectoryPrivate(string path);
 
+#if NET
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
         internal static bool RemoveDirectory(string path)
         {
             path = PathInternal.EnsureExtendedPrefixIfNeeded(path);
