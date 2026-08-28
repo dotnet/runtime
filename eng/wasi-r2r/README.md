@@ -21,13 +21,15 @@ does not work. This README only covers the tools in this directory.
 
 | Path | Purpose |
 | --- | --- |
-| `pipeline-shim.sh` | The splice pipeline: unbundle → extract image base → generate shim → `wasm-merge` → `wasm-opt` fold → module-swap. |
+| `pipeline_shim.py` | The splice pipeline: unbundle → extract image base → generate shim → `wasm-merge` → `wasm-opt` fold → module-swap. |
 | `comp.rsp.template` | `crossgen2` composite response file; replace `@ROOT@` with your worktree root. |
 
 ## Prerequisites
 
-- `wasm-tools`, `wasm-merge` and `wasm-opt` (Binaryen), and `wasm-objdump` / `wat2wasm` (WABT) on
-  `PATH`, plus `python3`. `pipeline-shim.sh` fails fast if any are missing.
+- `wasm-tools` and Binaryen (`wasm-merge`, `wasm-opt`) on `PATH`, plus Python 3.8+.
+  `pipeline_shim.py` fails fast if any are missing. **WABT is not required** — the shim is
+  assembled directly and every value that used to come from `wasm-objdump` is parsed from the
+  module, which is also what lets the pipeline run on Windows.
 - `wasmtime` on `PATH` for running the result.
 
 There is no longer an out-of-repo dependency. The pipeline previously required `Nesm.dll` (a wasm
@@ -73,15 +75,16 @@ runs clean, the composite was simply never delivered to the runtime, and you nee
 
 ## Usage
 
-`pipeline-shim.sh` derives `ROOT` from the repo root above it, so from a worktree with a matching
+`pipeline_shim.py` derives `ROOT` from the repo root above it, so from a worktree with a matching
 build already in `artifacts/` it is just:
 
 ```bash
-eng/wasi-r2r/pipeline-shim.sh
+python3 eng/wasi-r2r/pipeline_shim.py
 ```
 
-Every input is overridable by environment variable — see the header comment in the script.
-It prints the resolved bases, then `VALID` and the output path on success.
+Every input is overridable by environment variable (`COMP`, `CORERUN`, `OUTDIR`, `ROOT`) — see the
+module docstring. It prints the resolved bases, then `VALID` and the output path on success, and
+exits non-zero with a specific message on any failure.
 
 Verify the result actually executes R2R code rather than falling back — see
 [Proving R2R is actually active](../../docs/workflow/building/coreclr/wasi-r2r.md#proving-r2r-is-actually-active).
@@ -135,7 +138,7 @@ That covers `memory`, `__indirect_function_table`, `__stack_pointer`,
 
 **The two it cannot supply are `__memory_base` and `__table_base`.** `wasm-ld` creates those globals
 only in PIC mode, and a wasm global whose initializer is a data symbol's address is not expressible
-from C — which is exactly what `surgery` used to inject post-link. `pipeline-shim.sh` generates a
+from C — which is exactly what `surgery` used to inject post-link. `pipeline_shim.py` generates a
 six-line shim module exporting them as constants and merges it as a third input, which retired
 `surgery`.
 
@@ -193,10 +196,15 @@ was already how `surgery` got its argument. `wasi_r2r_image_base`'s body is a si
 instantiation. Two things to carry forward:
 
 - `wasm-tools component unbundle` is **mandatory** first — `corerun` is a WASI component and
-  `wasm-objdump` rejects components outright.
-- Extract with `sed`, not `awk`. The `awk` form the old pipeline used silently yields an **empty
-  string** under BSD `awk` (the macOS default), which would feed an empty base downstream rather than
-  failing. `pipeline-shim.sh` validates that the result is numeric.
+  core-module readers reject components outright.
+- The old shell pipeline extracted these values by scraping `wasm-objdump` text, and that is
+  where its sharpest edges were: the `awk` form silently yielded an **empty string** under BSD
+  `awk` (the macOS default), and the payload-size scrape selected `segment[1]` positionally and
+  skipped its own cap check when the scrape came back empty. `pipeline_shim.py` parses the
+  sections instead and selects by meaning — the payload is "the one active data segment", not
+  an index — so a layout change is an error rather than a silently skipped check. The general
+  lesson outlives the port: **scraping a disassembler's text makes a missing value
+  indistinguishable from a zero.**
 
 Measured on the real 36 MB corerun: table `6298/6298` → `71834/71834` with `--table-base=65537`,
 exports 6 → 9, and the run still passes with `DOTNET_ReadyToRun=0` (verified against a same-binary

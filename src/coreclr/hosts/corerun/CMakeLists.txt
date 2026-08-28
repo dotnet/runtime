@@ -11,7 +11,7 @@ set(CORERUN_IN_BROWSER 0)
 option(CORERUN_WASI_COMPOSITE_R2R "Reserve table slots and export the globals a spliced R2R composite needs" ON)
 # Table slots 1..N-1 are reserved for the composite's ACTIVE element segment, which the engine installs
 # at instantiation, so the table must already be large enough. Reserve by the composite's FUNCTION
-# count, not its assembly count; eng/wasi-r2r/pipeline-shim.sh checks this and names the value needed.
+# count, not its assembly count; eng/wasi-r2r/pipeline_shim.py checks this and names the value needed.
 set(CORERUN_WASI_R2R_TABLE_BASE "65537" CACHE STRING "First table slot for corerun's own address-taken functions")
 
 if(CLR_CMAKE_HOST_WIN32)

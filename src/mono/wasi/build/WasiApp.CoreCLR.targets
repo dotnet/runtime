@@ -289,7 +289,7 @@
       <!-- Table slots 1..N-1 are reserved for the composite's ACTIVE element segment, which the engine
            installs at instantiation - so the table must already be large enough. Reserve by the
            composite's FUNCTION count, not its assembly count. Must be > the composite's function count;
-           eng/wasi-r2r/pipeline-shim.sh checks this and names the required value if it is too small. -->
+           eng/wasi-r2r/pipeline_shim.py checks this and names the required value if it is too small. -->
       <WasiCompositeR2RTableBase Condition="'$(WasiCompositeR2RTableBase)' == ''">65537</WasiCompositeR2RTableBase>
     </PropertyGroup>
 
