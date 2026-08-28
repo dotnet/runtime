@@ -13,6 +13,7 @@
 **=========================================================*/
 
 #include <palsuite.h>
+#include <inttypes.h>
 
 PALTEST(threading_QueryThreadCycleTime_test1_paltest_querythreadcycletime_test1, "threading/QueryThreadCycleTime/test1/paltest_querythreadcycletime_test1")
 {
