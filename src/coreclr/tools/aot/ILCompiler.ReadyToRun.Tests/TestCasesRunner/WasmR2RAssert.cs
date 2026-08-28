@@ -247,15 +247,21 @@ internal static class WasmR2RAssert
             uint index = ReadWasmUleb32(image, ref offset, subsectionEnd);
             string name = ReadWasmName(image, ref offset, subsectionEnd);
 
-            if (index <= previousIndex)
+            // Names must cover the defined-function range exactly. Checking only the ordering and
+            // the lower bound would accept a uniformly shifted map, which is precisely the
+            // off-by-one this section has to be trusted not to have.
+            uint expectedIndex = importedFunctionCount + i;
+            if (index != expectedIndex)
             {
-                failures.Add($"Name section entries are not sorted and unique by index ({index} follows {previousIndex}).");
+                failures.Add(
+                    $"Name section entry {i} names function index {index}; expected {expectedIndex} " +
+                    $"after {importedFunctionCount} function imports.");
                 return;
             }
 
-            if (index < importedFunctionCount)
+            if (index <= previousIndex)
             {
-                failures.Add($"Name section names imported function index {index}; only defined functions are named.");
+                failures.Add($"Name section entries are not sorted and unique by index ({index} follows {previousIndex}).");
                 return;
             }
 
