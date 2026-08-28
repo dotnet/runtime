@@ -342,6 +342,9 @@
   <data name="Cryptography_CipherModeNotSupported" xml:space="preserve">
     <value>The specified CipherMode '{0}' is not supported.</value>
   </data>
+  <data name="Cryptography_CompositeKemRsaDecapsulationFailed" xml:space="preserve">
+    <value>RSA-OAEP decapsulation failed to produce a shared secret of the expected length.</value>
+  </data>
   <data name="Cryptography_CompositeSignDataError" xml:space="preserve">
     <value>Composite signature generation failed due to an error in one or both of the components.</value>
   </data>
