@@ -7,7 +7,7 @@ using System.Text;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
 
-namespace Microsoft.Diagnostics.DataContractReader.DumpCollect;
+namespace Microsoft.Diagnostics.DataContractReader.EnumMemory;
 
 internal sealed class ObjectCollector(
     Target target,

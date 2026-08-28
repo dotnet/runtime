@@ -9,7 +9,7 @@ using Microsoft.Diagnostics.DataContractReader.Contracts.Extensions;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
 using ContractModuleHandle = Microsoft.Diagnostics.DataContractReader.Contracts.ModuleHandle;
 
-namespace Microsoft.Diagnostics.DataContractReader.DumpCollect;
+namespace Microsoft.Diagnostics.DataContractReader.EnumMemory;
 
 internal sealed class MethodCollector(Target target)
 {

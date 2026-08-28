@@ -18,7 +18,7 @@
     <ProjectReference Condition="'$(HasCdacBuildTool)' == 'true'" Include="tools\cdac-build-tool\cdac-build-tool.csproj" ReferenceOutputAssembly="false" GlobalPropertiesToRemove="$(NativeBuildPartitionPropertiesToRemove)" />
     <ProjectReference
       Condition="'$(HasCdacDumpCollectProvider)' == 'true'"
-      Include="..\native\managed\cdac\Microsoft.Diagnostics.DataContractReader.DumpCollect\Microsoft.Diagnostics.DataContractReader.DumpCollect.csproj"
+      Include="..\native\managed\cdac\Microsoft.Diagnostics.DataContractReader.EnumMemory\Microsoft.Diagnostics.DataContractReader.EnumMemory.csproj"
       AdditionalProperties="$(SplitSubprojectProps);NativeLib=shared"
       ReferenceOutputAssembly="false"
       Targets="Publish" />

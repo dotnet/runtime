@@ -1,4 +1,4 @@
-# cDAC dump collector known issues
+# cDAC memory enumeration provider known issues
 
 ## SOS tests requiring DBI
 

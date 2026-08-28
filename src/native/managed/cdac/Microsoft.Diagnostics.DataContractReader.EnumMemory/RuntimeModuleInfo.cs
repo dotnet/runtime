@@ -5,7 +5,7 @@ using System;
 using System.Buffers.Binary;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
 
-namespace Microsoft.Diagnostics.DataContractReader.DumpCollect;
+namespace Microsoft.Diagnostics.DataContractReader.EnumMemory;
 
 internal sealed class RuntimeModuleInfo
 {

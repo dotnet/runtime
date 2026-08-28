@@ -8,7 +8,7 @@
     <AssemblyName>$(LibPrefix)mscordaccore</AssemblyName>
     <UseNativeLibPrefix>false</UseNativeLibPrefix>
     <TargetFramework>$(CDacTfm)</TargetFramework>
-    <RootNamespace>Microsoft.Diagnostics.DataContractReader.DumpCollect</RootNamespace>
+    <RootNamespace>Microsoft.Diagnostics.DataContractReader.EnumMemory</RootNamespace>
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsShippingPackage>false</IsShippingPackage>

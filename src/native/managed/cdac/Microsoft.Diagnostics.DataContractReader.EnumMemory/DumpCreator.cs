@@ -7,7 +7,7 @@ using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Contracts.Extensions;
 using ContractModuleHandle = Microsoft.Diagnostics.DataContractReader.Contracts.ModuleHandle;
 
-namespace Microsoft.Diagnostics.DataContractReader.DumpCollect;
+namespace Microsoft.Diagnostics.DataContractReader.EnumMemory;
 
 internal sealed class DumpCreator
 {

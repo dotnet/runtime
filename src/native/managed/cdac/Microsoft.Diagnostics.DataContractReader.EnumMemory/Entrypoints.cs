@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
 
-namespace Microsoft.Diagnostics.DataContractReader.DumpCollect;
+namespace Microsoft.Diagnostics.DataContractReader.EnumMemory;
 
 internal static class Entrypoints
 {

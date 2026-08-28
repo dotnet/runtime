@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Text;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 
-namespace Microsoft.Diagnostics.DataContractReader.DumpCollect;
+namespace Microsoft.Diagnostics.DataContractReader.EnumMemory;
 
 internal static class MiniMetadataWriter
 {
