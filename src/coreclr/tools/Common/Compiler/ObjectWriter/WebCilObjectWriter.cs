@@ -1096,13 +1096,9 @@ namespace ILCompiler.ObjectWriter
                 .Select(symbol => symbol.Index)
                 .ToArray();
 
-#if READYTORUN
             // A self-installing image installs its table slice via an active segment at the host-supplied table
             // base. A component stub stays passive; it has no table slice of its own to install.
             WriteElementSegment(functionIndices, IsSelfInstallingImage ? TableBaseOffsetExpr : null);
-#else
-            WriteElementSegment(functionIndices);
-#endif
         }
     }
 }
