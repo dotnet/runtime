@@ -5,14 +5,9 @@ description: >-
   `/analyze-build-failure`. Same body as `build-failure-analysis.md` — it does
   NOT rebuild: it inspects the PR's **latest** Azure Pipelines `runtime`
   build and, **only when that latest build has failed** (it stops if the
-  newest build is still running or has succeeded), downloads the binary logs
-  from that build's failed or canceled jobs and delegates to the
-  `build-failure-analyst` agent (which queries the binlogs live via the
-  containerized `binlog-mcp` MCP server). Useful when a previous run was
-  cancelled, the analysis comment was dismissed, or the agent needs another
-  pass. Like the auto workflow it performs **no build**; the generated jobs do
-  check out the repository (and, for the slash-command event, the PR branch)
-  for agent tooling only — the PR's code is never built or executed.
+  newest build is still running or has succeeded), reuses available binary
+  logs and falls back to failed Azure DevOps compile-task logs when Runtime
+  did not publish a matching binlog artifact.
 
 on:
   slash_command:
@@ -20,13 +15,14 @@ on:
     events: [pull_request_comment]
   roles: [admin, maintainer, write]
   reaction: "eyes"
-  # Gate the AI pipeline on the fetch job so the agent only runs when a binlog
-  # was actually retrieved from a failed Azure DevOps build.
+  # Gate the AI pipeline on the fetch job so the agent only runs after the
+  # failed Azure DevOps build and target revision have been verified.
   needs: [fetch-binlog]
 
-# Skip activation (and the agent) unless a binlog was retrieved — e.g. if the
-# PR's latest Azure DevOps build did not fail, or the PR is out of scope.
-if: needs.fetch-binlog.outputs.binlog-found == 'true'
+# Runtime compile jobs do not always publish binlogs. Once the failed build is
+# verified, analyze available binlogs and use the bounded Azure DevOps log
+# fallback for failed compile tasks without them.
+if: needs.fetch-binlog.outputs.analysis-ready == 'true'
 
 # Least-privilege for the workflow/agent jobs. The agent runs read-only; it
 # does NOT post directly. All PR writes it produces (summary comment + inline
@@ -65,6 +61,7 @@ network:
   allowed:
     - defaults
     - dotnet
+    - dev.azure.com
 
 # ###############################################################
 # Select a PAT from the pool and override COPILOT_GITHUB_TOKEN.
@@ -101,7 +98,19 @@ mcp-servers:
     container: "mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-binlog-mcp-amd64"
     mounts:
       - "/tmp/binlogs:/data/binlogs:ro"
-    allowed: ["*"]
+    allowed: ["binlog_*"]
+  hlx:
+    container: "ghcr.io/lewing/helix.mcp:v0.8.0"
+    env:
+      AZDO_TOKEN: ""
+      HELIX_ACCESS_TOKEN: ""
+      HLX_CACHE_MAX_SIZE_MB: "256"
+    allowed:
+      - "azdo_timeline"
+      - "azdo_search_timeline"
+      - "azdo_search_log"
+      - "azdo_log"
+      - "azdo_artifacts"
 
 # Custom job that reuses the binlogs from the PR's most recent failed Azure
 # DevOps `runtime` build instead of rebuilding. Mirrors the fetch-binlog job
@@ -153,6 +162,7 @@ jobs:
       contents: read
       pull-requests: read
     outputs:
+      analysis-ready: ${{ steps.fetch.outputs.analysis-ready }}
       binlog-found: ${{ steps.fetch.outputs.binlog-found }}
       pr-number: ${{ steps.fetch.outputs.pr-number }}
       pr-head-sha: ${{ steps.fetch.outputs.pr-head-sha }}
@@ -263,11 +273,16 @@ jobs:
           ADO_BUILD_DEFINITION_ID: "129"
           PR_NUMBER: ${{ github.event.issue.number || fromJSON(github.event.inputs.aw_context || github.event.client_payload.aw_context || '{}').item_number }}
         run: |
-          # Advisory + best-effort. On any gap emit binlog-found=false so the
-          # agent pipeline stays inert.
+          # Advisory + fail-closed. On any validation gap keep the agent inert.
           set +e
           set +o pipefail
-          emit_none() { echo "binlog-found=false" >> "$GITHUB_OUTPUT"; exit 0; }
+          emit_none() {
+            {
+              echo "analysis-ready=false"
+              echo "binlog-found=false"
+            } >> "$GITHUB_OUTPUT"
+            exit 0
+          }
 
           [ -z "${PR_NUMBER}" ] && { echo "::warning::No PR number resolved from the slash-command event / aw_context."; emit_none; }
           # PR_NUMBER feeds GitHub API paths and the `refs/pull/<n>/merge`
@@ -334,11 +349,10 @@ jobs:
           PR_JSON2=$(gh api "repos/${GH_AW_REPO}/pulls/${PR_NUMBER}" 2>/dev/null)
           CURRENT_HEAD=$(printf '%s' "${PR_JSON2}" | jq -r '.head.sha // empty')
           CURRENT_MERGE=$(printf '%s' "${PR_JSON2}" | jq -r '.merge_commit_sha // empty')
-          # Fail CLOSED: if either SHA can't be resolved (transient API failure
-          # or missing Azure triggerInfo), skip rather than risk analyzing a
-          # stale binlog against the current diff.
-          if [ -z "${BUILD_PR_SHA}" ] || [ -z "${CURRENT_HEAD}" ]; then
-            echo "::warning::Could not resolve build revision ('${BUILD_PR_SHA}') and/or current PR head ('${CURRENT_HEAD}'); skipping."
+          # Fail CLOSED unless both head and merge revisions are known. The
+          # merge revision detects a moved base even when the head is stable.
+          if [ -z "${BUILD_PR_SHA}" ] || [ -z "${CURRENT_HEAD}" ] || [ -z "${BUILD_MERGE_SHA}" ] || [ -z "${CURRENT_MERGE}" ]; then
+            echo "::warning::Could not resolve all build/current head and merge revisions; skipping."
             emit_none
           fi
           if [ "${BUILD_PR_SHA}" != "${CURRENT_HEAD}" ]; then
@@ -346,9 +360,8 @@ jobs:
             emit_none
           fi
           # ADO builds GitHub's `refs/pull/<n>/merge` ref, so build_json.sourceVersion
-          # is that merge commit; if the base branch advanced it differs from the
-          # PR's current merge_commit_sha even with the head unchanged. Skip stale merges.
-          if [ -n "${BUILD_MERGE_SHA}" ] && [ -n "${CURRENT_MERGE}" ] && [ "${BUILD_MERGE_SHA}" != "${CURRENT_MERGE}" ]; then
+          # is that merge commit; a difference means the base branch moved.
+          if [ "${BUILD_MERGE_SHA}" != "${CURRENT_MERGE}" ]; then
             echo "::warning::Build ${BUILD_ID} merge revision '${BUILD_MERGE_SHA}' but PR #${PR_NUMBER} current merge is '${CURRENT_MERGE}' (base branch advanced); skipping stale merge."
             emit_none
           fi
@@ -372,27 +385,60 @@ jobs:
               awk 'NF && !seen[$0]++'
           )
           [ "${#failed_job_keys[@]}" -eq 0 ] && { echo "::warning::No failed or canceled jobs found in the timeline for build ${BUILD_ID}."; emit_none; }
+          mapfile -t all_job_keys < <(
+            printf '%s' "${timeline_json}" |
+              jq -r '.records // [] | map(select(.type == "Job")) | .[].name' |
+              while IFS= read -r job_name; do
+                printf '%s' "${job_name}" | tr '[:upper:]' '[:lower:]' | tr -cd '[:alnum:]'
+                printf '\n'
+              done |
+              awk 'NF && !seen[$0]++'
+          )
 
-          artifacts_json=$(curl -sSL --retry 3 "${ADO_API}/build/builds/${BUILD_ID}/artifacts?api-version=7.1")
+          artifacts_json=$(curl -sSL --fail --retry 3 "${ADO_API}/build/builds/${BUILD_ID}/artifacts?api-version=7.1")
           mapfile -t all_names < <(printf '%s' "${artifacts_json}" | jq -r '.value // [] | map(select(.name | test("^Logs_Build_"))) | .[].name')
           mapfile -t names < <(
             for name in "${all_names[@]}"; do
-              # Remove only the transport/retry prefix, then compare the
-              # normalized job portion exactly. A substring comparison makes
-              # `..._NativeAOT` also match the distinct successful
-              # `..._NativeAOT_Libraries` job.
+              # Runtime artifact names usually equal the timeline job name,
+              # but some matrices append a display-only mode such as
+              # `monointerpreter`, `minijit`, or `llvmaot` to the job. Match
+              # exact spellings first. Only fall back to an artifact-key
+              # prefix when it identifies exactly one job in the entire
+              # timeline; this avoids selecting `..._NativeAOT` for the
+              # distinct `..._NativeAOT_Libraries` job.
               artifact_job_name=$(printf '%s' "${name}" | sed -E 's/^Logs_Build_(Attempt[0-9]+_)?//')
               artifact_key=$(printf '%s' "${artifact_job_name}" | tr '[:upper:]' '[:lower:]' | tr -cd '[:alnum:]')
-              for job_key in "${failed_job_keys[@]}"; do
-                if [[ "${artifact_key}" == "${job_key}" ]]; then
+              [ -z "${artifact_key}" ] && continue
+              mapped_job_key=""
+              for job_key in "${all_job_keys[@]}"; do
+                if [ "${artifact_key}" = "${job_key}" ]; then
+                  mapped_job_key="${job_key}"
+                  break
+                fi
+              done
+              if [ -z "${mapped_job_key}" ]; then
+                prefix_matches=0
+                for job_key in "${all_job_keys[@]}"; do
+                  if [[ "${job_key}" == "${artifact_key}"* ]]; then
+                    mapped_job_key="${job_key}"
+                    prefix_matches=$((prefix_matches + 1))
+                  fi
+                done
+                [ "${prefix_matches}" -eq 1 ] || mapped_job_key=""
+              fi
+              for failed_job_key in "${failed_job_keys[@]}"; do
+                if [ -n "${mapped_job_key}" ] && [ "${mapped_job_key}" = "${failed_job_key}" ]; then
                   printf '%s\n' "${name}"
                   break
                 fi
               done
             done
           )
-          [ "${#names[@]}" -eq 0 ] && { echo "::warning::No Logs_Build_* artifacts matched the failed or canceled jobs in build ${BUILD_ID}; the failure is likely outside a build leg."; emit_none; }
-          echo "Selected ${#names[@]} of ${#all_names[@]} Logs_Build_* artifacts for ${#failed_job_keys[@]} failed or canceled jobs."
+          if [ "${#names[@]}" -eq 0 ]; then
+            echo "::warning::No Logs_Build_* artifacts mapped unambiguously to failed or canceled jobs in build ${BUILD_ID}; the agent will inspect failed compile-task logs through hlx."
+          else
+            echo "Selected ${#names[@]} of ${#all_names[@]} Logs_Build_* artifacts for ${#failed_job_keys[@]} failed or canceled jobs."
+          fi
 
           # Guards for untrusted PR-produced archives: cap the compressed
           # download and the reported uncompressed size per artifact, bound
@@ -501,6 +547,8 @@ jobs:
             TOTAL_BYTES=$((TOTAL_BYTES + UNCOMP))
             i=0
             leg_staged=0
+            leg_failed=0
+            count_before_leg="${count}"
             while IFS= read -r bl; do
               [ -f "${bl}" ] || continue
               # Prefixing with the artifact index (`ai`) and per-file counter
@@ -508,27 +556,40 @@ jobs:
               # sanitize collision nor same-basename entries can overwrite a
               # staged binlog. `safe_name` is kept only for readability.
               dest="/tmp/binlogs/${ai}_${i}_${safe_name}.binlog"
+              # Advance before copying so a failed copy can never cause the
+              # next entry to reuse a possibly partially-created destination.
+              i=$((i + 1))
               # Count only a successful copy — `set +e` is on, so a failed `cp`
               # must not inflate the counts.
               if cp "${bl}" "${dest}"; then
                 count=$((count + 1))
-                i=$((i + 1))
-                leg_staged=1
+                leg_staged=$((leg_staged + 1))
               else
+                leg_failed=1
                 echo "::warning::Failed to stage ${bl}; skipping."
               fi
             done < <(find /tmp/ax -type f -name '*.binlog')
-            # This leg produced at least one usable binlog.
-            [ "${leg_staged}" -eq 1 ] && staged_legs=$((staged_legs + 1))
+            # Keep each artifact all-or-nothing. A partial leg can hide the
+            # actual root cause, so discard its staged files and let hlx cover
+            # the failed task logs instead.
+            if [ "${leg_failed}" -ne 0 ]; then
+              find /tmp/binlogs -maxdepth 1 -type f -name "${ai}_*_${safe_name}.binlog" -delete
+              count="${count_before_leg}"
+              echo "::warning::Skipping ${safe_name}: not every extracted binlog could be staged."
+              continue
+            fi
+            [ "${leg_staged}" -gt 0 ] && staged_legs=$((staged_legs + 1))
           done
           echo "Extracted ${count} binlog(s) from ${staged_legs}/${#names[@]} selected artifacts into /tmp/binlogs:"
           ls -la /tmp/binlogs || true
-          [ "${count}" -eq 0 ] && { echo "::warning::No *.binlog found in the selected Logs_Build_* artifacts of build ${BUILD_ID}."; emit_none; }
-          # Fail CLOSED on a partial selected set: a missing artifact could be
-          # the failed attempt that contains the root cause.
+          binlog_found=false
+          [ "${count}" -gt 0 ] && binlog_found=true
+          [ "${count}" -eq 0 ] && echo "::warning::No usable *.binlog was staged; the agent will inspect failed compile-task logs through hlx."
+          # A missing archive is no longer an analysis blind spot: the agent
+          # must inspect every failed compile task through hlx and use binlogs
+          # as higher-fidelity evidence where available.
           if [ "${staged_legs}" -ne "${#names[@]}" ]; then
-            echo "::warning::Only ${staged_legs} of ${#names[@]} selected Logs_Build_* artifacts produced a usable binlog; skipping incomplete failed-job data."
-            emit_none
+            echo "::warning::Only ${staged_legs} of ${#names[@]} selected Logs_Build_* artifacts produced usable binlogs; hlx will cover the missing failed-task logs."
           fi
 
           # The download/extract loop above can take minutes. Re-read the PR
@@ -543,15 +604,19 @@ jobs:
             echo "::warning::PR #${PR_NUMBER} head changed during artifact download ('${HEAD_SHA}' -> '${LATEST_HEAD}') or could not be re-resolved; skipping to avoid posting stale-build suggestions against the new diff."
             emit_none
           fi
-          # The base branch may also have advanced during the download; if the
-          # merge revision moved from what the build analyzed, skip (stale merge).
-          if [ -n "${BUILD_MERGE_SHA}" ] && [ -n "${LATEST_MERGE}" ] && [ "${LATEST_MERGE}" != "${BUILD_MERGE_SHA}" ]; then
+          if [ -z "${LATEST_MERGE}" ]; then
+            echo "::warning::Could not re-resolve PR #${PR_NUMBER}'s merge revision after artifact download; skipping."
+            emit_none
+          fi
+          # The base branch may also have advanced during the download.
+          if [ "${LATEST_MERGE}" != "${BUILD_MERGE_SHA}" ]; then
             echo "::warning::PR #${PR_NUMBER} merge revision changed during artifact download ('${BUILD_MERGE_SHA}' -> '${LATEST_MERGE}'); skipping stale merge."
             emit_none
           fi
 
           {
-            echo "binlog-found=true"
+            echo "analysis-ready=true"
+            echo "binlog-found=${binlog_found}"
             echo "pr-number=${PR_NUMBER}"
             echo "pr-head-sha=${HEAD_SHA}"
             echo "pr-merge-sha=${BUILD_MERGE_SHA}"
@@ -572,6 +637,7 @@ jobs:
 # having been retrieved, so the agent never runs without something to analyse.
 steps:
   - name: Download analysis artifact
+    if: needs.fetch-binlog.outputs.binlog-found == 'true'
     uses: actions/download-artifact@v8.0.1
     with:
       name: build-failure-analysis-data
@@ -636,6 +702,25 @@ tools:
     - "binlog-mcp:*"
 
 safe-outputs:
+  needs: [fetch-binlog]
+  steps:
+    - name: Revalidate PR revision before applying queued outputs
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        GH_AW_REPO: ${{ github.repository }}
+        PR_NUMBER: ${{ needs.fetch-binlog.outputs.pr-number }}
+        EXPECTED_HEAD: ${{ needs.fetch-binlog.outputs.pr-head-sha }}
+        EXPECTED_MERGE: ${{ needs.fetch-binlog.outputs.pr-merge-sha }}
+      run: |
+        set -euo pipefail
+        if [ -z "${EXPECTED_HEAD}" ] || [ -z "${EXPECTED_MERGE}" ] ||
+           ! gh api "repos/${GH_AW_REPO}/pulls/${PR_NUMBER}" |
+             jq -e --arg head "${EXPECTED_HEAD}" --arg merge "${EXPECTED_MERGE}" \
+               '.head.sha == $head and .merge_commit_sha == $merge' >/dev/null; then
+          echo "::error::PR #${PR_NUMBER} moved or could not be verified before applying queued build-analysis outputs."
+          exit 1
+        fi
   messages:
     footer: "> 🤖 **Automated content by GitHub Copilot.** Generated by the [{workflow_name}]({agentic_workflow_url}) workflow.{ai_credits_suffix} · [◷]({history_link})"
   data:
@@ -646,7 +731,7 @@ safe-outputs:
         enum: [build-failure-analysis]
       artifact_kind:
         type: string
-        enum: [analysis, no-binlog]
+        enum: [analysis]
     required: [workflow_artifact, artifact_kind]
     additionalProperties: false
   # This workflow is triggered by an `issue_comment` on a PR, so it HAS a
@@ -655,14 +740,15 @@ safe-outputs:
   # content from selecting a different repository target.
   report-failure-as-issue: false
   add-comment:
-    max: 5
+    max: 1
     target: "triggering"
     hide-older-comments: true
   create-pull-request-review-comment:
     max: 25
     target: "triggering"
+    commit-id: ${{ needs.fetch-binlog.outputs.pr-head-sha }}
   noop:
-    max: 5
+    max: 1
     report-as-issue: false
 ---
 
