@@ -109,7 +109,7 @@ internal sealed unsafe partial class MemoryRegionEnumerator(
 
 internal sealed unsafe class MemoryRegionEmitter(nint callback, uint pointerSize)
 {
-    private static readonly Guid s_callback2Iid = new("3721A26F-8B91-4D98-A388-DB17B356FADB");
+    private static readonly Guid s_ICLRDataEnumMemoryRegionsCallback2_Iid = new("3721A26F-8B91-4D98-A388-DB17B356FADB");
 
     private readonly delegate* unmanaged[MemberFunction]<nint, Guid*, nint*, int> _queryInterface =
         (delegate* unmanaged[MemberFunction]<nint, Guid*, nint*, int>)(*(nint**)callback)[0];
@@ -166,7 +166,7 @@ internal sealed unsafe class MemoryRegionEmitter(nint callback, uint pointerSize
     public bool Update(ulong address, ReadOnlySpan<byte> buffer)
     {
         nint callback2 = 0;
-        Guid iid = s_callback2Iid;
+        Guid iid = s_ICLRDataEnumMemoryRegionsCallback2_Iid;
         int hr = _queryInterface(callback, &iid, &callback2);
 
         if (hr < 0 || callback2 == 0)
