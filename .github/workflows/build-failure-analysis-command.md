@@ -276,12 +276,38 @@ jobs:
           # Advisory + fail-closed. On any validation gap keep the agent inert.
           set +e
           set +o pipefail
+          [ -z "${GITHUB_OUTPUT}" ] && { echo "::error::GITHUB_OUTPUT is not set; refusing to run without a way to emit step outputs." >&2; exit 1; }
           emit_none() {
             {
               echo "analysis-ready=false"
               echo "binlog-found=false"
             } >> "$GITHUB_OUTPUT"
             exit 0
+          }
+
+          # Fetch an Azure DevOps API document into ADO_DOC. A network failure
+          # or a non-JSON body is a data-resolution failure, not evidence that
+          # there is nothing to analyze, so it is reported as such instead of
+          # falling through to an empty `.value` and a misleading warning.
+          # Returns a status rather than calling emit_none directly, because a
+          # call in a command substitution would only exit the subshell.
+          ado_get() {
+            local what="$1" url="$2" rc
+            # These are small JSON documents; cap them so a stalled endpoint
+            # fails in seconds rather than hanging the job until its overall
+            # timeout. The artifact download below sets its own, much larger,
+            # budget.
+            ADO_DOC=$(curl -sSL --fail --retry 3 --connect-timeout 15 --max-time 60 "${url}")
+            rc=$?
+            if [ "${rc}" -ne 0 ] || [ -z "${ADO_DOC}" ]; then
+              echo "::warning::Could not fetch the ${what} from Azure DevOps (curl exit ${rc}); treating as a data-resolution failure."
+              return 1
+            fi
+            if ! printf '%s' "${ADO_DOC}" | jq -e . >/dev/null 2>&1; then
+              echo "::warning::Azure DevOps returned a non-JSON ${what}; treating as a data-resolution failure."
+              return 1
+            fi
+            return 0
           }
 
           [ -z "${PR_NUMBER}" ] && { echo "::warning::No PR number resolved from the slash-command event / aw_context."; emit_none; }
@@ -315,8 +341,9 @@ jobs:
           # the newest build is completed AND failed. The head SHA is then
           # anchored to that build's own revision (below), so links/suggestions
           # always match the analysed binlog.
-          builds_json=$(curl -sSL --retry 3 \
-            "${ADO_API}/build/builds?definitions=${ADO_BUILD_DEFINITION_ID}&branchName=refs/pull/${PR_NUMBER}/merge&queryOrder=queueTimeDescending&\$top=1&api-version=7.1")
+          ado_get "build list" \
+            "${ADO_API}/build/builds?definitions=${ADO_BUILD_DEFINITION_ID}&branchName=refs/pull/${PR_NUMBER}/merge&queryOrder=queueTimeDescending&\$top=1&api-version=7.1" || emit_none
+          builds_json="${ADO_DOC}"
           BUILD_ID=$(printf '%s' "${builds_json}" | jq -r '.value // [] | .[0].id // empty')
           BUILD_STATUS=$(printf '%s' "${builds_json}" | jq -r '.value // [] | .[0].status // empty')
           BUILD_RESULT=$(printf '%s' "${builds_json}" | jq -r '.value // [] | .[0].result // empty')
@@ -342,7 +369,8 @@ jobs:
           # advance between selecting the build and downloading artifacts, and
           # right after a force-push this query can still return the previous
           # failed build — so re-read the head here and skip if it moved.
-          build_json=$(curl -sSL --retry 3 "${ADO_API}/build/builds/${BUILD_ID}?api-version=7.1")
+          ado_get "build metadata" "${ADO_API}/build/builds/${BUILD_ID}?api-version=7.1" || emit_none
+          build_json="${ADO_DOC}"
           BUILD_PR_SHA=$(printf '%s' "${build_json}" | jq -r '.triggerInfo["pr.sourceSha"] // empty')
           BUILD_MERGE_SHA=$(printf '%s' "${build_json}" | jq -r '.sourceVersion // empty')
           PR_JSON2=$(gh api "repos/${GH_AW_REPO}/pulls/${PR_NUMBER}" 2>/dev/null)
@@ -394,7 +422,8 @@ jobs:
               awk 'NF && !seen[$0]++'
           )
 
-          artifacts_json=$(curl -sSL --fail --retry 3 "${ADO_API}/build/builds/${BUILD_ID}/artifacts?api-version=7.1")
+          ado_get "artifact list" "${ADO_API}/build/builds/${BUILD_ID}/artifacts?api-version=7.1" || emit_none
+          artifacts_json="${ADO_DOC}"
           mapfile -t all_names < <(printf '%s' "${artifacts_json}" | jq -r '.value // [] | map(select(.name | test("^Logs_Build_"))) | .[].name')
           mapfile -t names < <(
             for name in "${all_names[@]}"; do
@@ -444,9 +473,23 @@ jobs:
           # extraction time, AND enforce a cumulative uncompressed budget across
           # all legs so many individually-small artifacts can't collectively
           # exhaust the runner's disk.
-          MAX_ZIP_BYTES=524288000       # 500 MB compressed per artifact
+          # A 500 MB per-artifact cap is close enough to the size of a real
+          # log artifact that an ordinary build trips it, and the job then
+          # silently skips exactly the leg it exists to diagnose. Only one
+          # archive is on disk at a time (each is deleted before the next
+          # download), so this bounds peak zip disk use, not the sum across
+          # artifacts.
+          MAX_ZIP_BYTES=2147483648      # 2 GB compressed per artifact
           MAX_UNZIP_BYTES=2147483648    # 2 GB uncompressed per artifact
           MAX_TOTAL_BYTES=4294967296    # 4 GB uncompressed across all artifacts
+          # Raising the per-artifact cap would otherwise raise the worst-case
+          # number of bytes pulled over the network by the same factor, since
+          # nothing else bounds the sum across artifacts. Cap the total
+          # download too, and charge it *before* each transfer (see ZIP_CAP
+          # below) rather than after, so the last artifact can't start just
+          # under the limit and still pull a full MAX_ZIP_BYTES.
+          MAX_TOTAL_ZIP_BYTES=3221225472  # 3 GB compressed across all artifacts
+          TOTAL_ZIP_BYTES=0
           TOTAL_BYTES=0
           mkdir -p /tmp/binlogs
           count=0
@@ -464,29 +507,48 @@ jobs:
             [ -z "${url}" ] && continue
             rm -rf /tmp/ax /tmp/a.zip
             mkdir -p /tmp/ax
+            # Bound this transfer by whatever is left of the cumulative budget
+            # as well as by the per-artifact cap, so the two limits together
+            # are a real ceiling on bytes pulled rather than
+            # `MAX_TOTAL_ZIP_BYTES + MAX_ZIP_BYTES`.
+            ZIP_CAP="${MAX_ZIP_BYTES}"
+            ZIP_ALLOWANCE=$((MAX_TOTAL_ZIP_BYTES - TOTAL_ZIP_BYTES))
+            [ "${ZIP_ALLOWANCE}" -lt "${ZIP_CAP}" ] && ZIP_CAP="${ZIP_ALLOWANCE}"
+            if [ "${ZIP_CAP}" -le 0 ]; then
+              echo "::warning::Cumulative compressed download budget ${MAX_TOTAL_ZIP_BYTES} exhausted before ${safe_name}; stopping downloads."
+              break
+            fi
             # Download to a file, never a pipe: curl retries transient
             # 5xx/429/timeouts but can only rewind seekable output, so through
             # a pipe the retried body is APPENDED — a 503 error page followed
             # by a retry yields a corrupt `<error page><zip>` that still exits
             # 0. `--fail` keeps error bodies off disk.
             # `ulimit -f` is only a disk backstop for a response that declares
-            # no Content-Length; the `-ge MAX_ZIP_BYTES` guard below is
-            # authoritative. Divide by 512 so the cap is >= MAX_ZIP_BYTES under
+            # no Content-Length; the `-ge ZIP_CAP` guard below is
+            # authoritative. Divide by 512 so the cap is >= ZIP_CAP under
             # either block-size reading (bash uses 1024, POSIX says 512).
             # SIGXFSZ is ignored so hitting the cap is an ordinary write error
             # (23) rather than a "File size limit exceeded (core dumped)" log.
+            # `--max-time` must stay comfortably below this job's
+            # `timeout-minutes`, or a stalled transfer takes the whole job down
+            # instead of letting the script emit its controlled no-op. A full
+            # artifact set really downloads in well under a minute, so 5
+            # minutes per artifact is already very generous.
             (
-              ulimit -f $((MAX_ZIP_BYTES / 512))
+              ulimit -f $((ZIP_CAP / 512))
               trap '' XFSZ
-              curl -sSL --fail --retry 3 --retry-delay 2 --max-time 600 -o /tmp/a.zip "${url}"
+              curl -sSL --fail --retry 3 --retry-delay 2 --connect-timeout 15 --max-time 300 -o /tmp/a.zip "${url}"
             ) 2>/dev/null
             curl_rc=$?
             ZIP_BYTES=$(stat -c%s /tmp/a.zip 2>/dev/null || echo 0)
+            # Charge the budget with the bytes that actually crossed the wire,
+            # including those of an artifact that is about to be skipped.
+            TOTAL_ZIP_BYTES=$((TOTAL_ZIP_BYTES + ZIP_BYTES))
             if [ "${ZIP_BYTES}" -eq 0 ]; then
               echo "::warning::Skipping ${safe_name}: empty or failed download."; continue
             fi
-            if [ "${ZIP_BYTES}" -ge "${MAX_ZIP_BYTES}" ]; then
-              echo "::warning::Skipping ${safe_name}: download reached the ${MAX_ZIP_BYTES}-byte cap."; continue
+            if [ "${ZIP_BYTES}" -ge "${ZIP_CAP}" ]; then
+              echo "::warning::Skipping ${safe_name}: download reached the ${ZIP_CAP}-byte cap."; continue
             fi
             # After the size guards: hitting the ulimit cap is reported as an
             # oversized artifact above, not as a generic transfer failure.
@@ -567,7 +629,11 @@ jobs:
                 leg_staged=$((leg_staged + 1))
               else
                 leg_failed=1
-                echo "::warning::Failed to stage ${bl}; skipping."
+                # `bl` is an entry name from a PR-produced archive, so it can
+                # carry newlines or `::` and forge workflow commands. Report
+                # the destination, which is built only from the artifact index,
+                # the per-file counter and the sanitized artifact name.
+                echo "::warning::Failed to stage an entry of ${safe_name} as ${dest}; skipping."
               fi
             done < <(find /tmp/ax -type f -name '*.binlog')
             # Keep each artifact all-or-nothing. A partial leg can hide the
