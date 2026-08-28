@@ -860,7 +860,7 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
 
                 while (pNativeMDImport->EnumNext(&assemblyEnum, &assemblyRef))
                 {
-                    const GUID *componentMvid = &componentMvids[manifestAssemblyCount];
+                    const GUID *componentMvid = &componentMvids[manifestAssemblyCount++];
 
                     if (IsEqualGUID(*componentMvid, emptyGuid))
                     {
@@ -870,9 +870,7 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
 
                     LPCSTR assemblyName;
                     IfFailThrow(pNativeMDImport->GetAssemblyRefProps(assemblyRef, NULL, NULL, &assemblyName, NULL, NULL, NULL, NULL));
-
                     binder->DeclareDependencyOnMvid(assemblyName, *componentMvid, pNativeImage != NULL, pModule != NULL ? pModule->GetSimpleName() : pNativeImage->GetFileName());
-                    manifestAssemblyCount++;
                 }
             }
         }
@@ -881,7 +879,7 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
             pNativeMDImport = NULL;
         }
 
-        m_pNativeManifestModule = CreateNativeManifestModule(pLoaderAllocator, pNativeMDImport, pModule, pamTracker);
+        m_pNativeManifestModule = CreateNativeManifestModule(pLoaderAllocator, pNativeMDImport, pModule, pNativeImage, pamTracker);
         m_pLoadedImageBase = m_pComposite->GetLayout()->GetBase();
     }
 
@@ -2055,18 +2053,17 @@ COUNT_T ReadyToRunInfo::GetTypeMapAssemblyTargets(MethodTable* pGroupType, Modul
 class NativeManifestModule : public ModuleBase
 {
     IMDInternalImport* m_pMDImport;
-    ReadyToRunInfo *m_pReadyToRunInfo;
     Module* m_pILModule;
+    NativeImage* m_pNativeImage;
 
     // Mapping of ModuleRef token to Module *
     LookupMap<PTR_Module>           m_ModuleReferencesMap;
 public:
 
-    NativeManifestModule(LoaderAllocator* pLoaderAllocator, IMDInternalImport *pManifestMetadata, Module* pModule, AllocMemTracker *pamTracker)
+    NativeManifestModule(LoaderAllocator* pLoaderAllocator, IMDInternalImport *pManifestMetadata, Module* pModule, NativeImage* pNativeImage, AllocMemTracker *pamTracker)
     {
-        // NOTE: Composite images will not set m_pILModule to anything other than NULL. This implies that cross module
-        // type loading outside of System.Private.CoreLib is not supported
         m_pILModule = pModule;
+        m_pNativeImage = pNativeImage;
         m_loaderAllocator = pLoaderAllocator;
         m_pMDImport = pManifestMetadata;
         m_LookupTableCrst.Init(CrstModuleLookupTable, CrstFlags(CRST_UNSAFE_ANYMODE | CRST_DEBUGGER_THREAD));
@@ -2124,8 +2121,30 @@ public:
     Assembly * LoadAssemblyImpl(mdAssemblyRef kAssemblyRef) final
     {
         STANDARD_VM_CONTRACT;
-        // Since we can only load via ModuleRef, this should never fail unless the module is improperly formatted
-        COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+
+        Assembly *pAssembly = LookupAssemblyRef(kAssemblyRef);
+        if (pAssembly == nullptr)
+        {
+            AssemblySpec spec;
+            spec.InitializeSpec(kAssemblyRef, m_pMDImport, m_pILModule != nullptr ? m_pILModule->GetAssembly() : nullptr);
+            if (m_pNativeImage != nullptr)
+            {
+                spec.SetBinder(m_pNativeImage->GetAssemblyBinder());
+            }
+            pAssembly = spec.LoadAssembly(FILE_LOADED);
+            m_ManifestModuleReferencesMap.TrySetElement(RidFromToken(kAssemblyRef), pAssembly->GetModule());
+        }
+
+        return pAssembly;
+    }
+
+    Assembly * GetAssemblyIfLoaded(
+        mdAssemblyRef kAssemblyRef,
+        IMDInternalImport *pMDImportOverride = nullptr,
+        AssemblyBinder *pBinderForLoadedAssembly = nullptr) final
+    {
+        LIMITED_METHOD_CONTRACT;
+        return LookupAssemblyRef(kAssemblyRef);
     }
 
     // Decompose a null terminated moduleName into a pointer to an internal assemblyName, the length of that, and the associate module index
@@ -2167,9 +2186,9 @@ public:
     }
 
     // Find the assemblyRef with a given simple name in a module, or return mdTokenNil
-    HRESULT GetAssemblyRefTokenOfIndirectDependency(Module* module, LPCSTR assemblyName, size_t assemblyNameLen, mdToken *pAssemblyRef)
+    HRESULT GetAssemblyRefTokenOfIndirectDependency(ModuleBase* module, LPCSTR assemblyName, size_t assemblyNameLen, mdToken *pAssemblyRef)
     {
-        auto pMDImport = module->GetMDImport();
+        IMDInternalImport *pMDImport = module->GetMDImport();
         //Get the assembly refs.
         HENUMInternalHolder hEnumTypeRefs(pMDImport);
         mdToken assemblyRef = mdTokenNil;
@@ -2249,20 +2268,16 @@ public:
         }
         else if (DecomposeModuleRef(moduleName, &assemblyNameInModuleRef, &assemblyNameLen, &index))
         {
-            // This disable cross module inlining beyond System.Private.CoreLib for composite images
-            if (m_pILModule == NULL)
-                return NULL;
+            ModuleBase *moduleBase = m_pILModule != nullptr ?
+                m_pILModule->GetModuleFromIndexIfLoaded(index) :
+                (index == 1 ? this : nullptr);
 
-            auto moduleBase = m_pILModule->GetModuleFromIndexIfLoaded(index);
-            _ASSERTE(moduleBase == NULL || moduleBase->IsFullModule());
-            module = static_cast<Module*>(moduleBase);
-
-            if (module != NULL)
+            if (moduleBase != nullptr)
             {
                 if (assemblyNameLen != 0) // #:<num> is a direct reference to a module index, #<assemblyName>:<num> is indirect
                 {
                     mdToken assemblyRef;
-                    if (FAILED(GetAssemblyRefTokenOfIndirectDependency(module, assemblyNameInModuleRef, assemblyNameLen, &assemblyRef)))
+                    if (FAILED(GetAssemblyRefTokenOfIndirectDependency(moduleBase, assemblyNameInModuleRef, assemblyNameLen, &assemblyRef)))
                     {
                         return NULL;
                     }
@@ -2273,10 +2288,15 @@ public:
                     }
                     else
                     {
-                        auto assemblyOfFinalModule = module->GetAssemblyIfLoaded(assemblyRef);
+                        Assembly *assemblyOfFinalModule = moduleBase->GetAssemblyIfLoaded(assemblyRef);
                         if (assemblyOfFinalModule != NULL)
                             module = assemblyOfFinalModule->GetModule();
                     }
+                }
+                else
+                {
+                    _ASSERTE(moduleBase->IsFullModule());
+                    module = static_cast<Module*>(moduleBase);
                 }
             }
         }
@@ -2315,25 +2335,29 @@ public:
         }
         else if (DecomposeModuleRef(moduleName, &assemblyNameInModuleRef, &assemblyNameLen, &index))
         {
-            // This disable cross module inlining beyond System.Private.CoreLib for composite images
-            if (m_pILModule == NULL)
+            ModuleBase *moduleBase = m_pILModule != nullptr ?
+                m_pILModule->GetModuleFromIndex(index) :
+                (index == 1 ? this : nullptr);
+
+            if (moduleBase == nullptr)
                 COMPlusThrowHR(COR_E_FILENOTFOUND);
 
-            auto moduleBase = m_pILModule->GetModuleFromIndex(index);
-            _ASSERTE(moduleBase == NULL || moduleBase->IsFullModule());
-            module = static_cast<Module*>(moduleBase);
-
-            if (assemblyNameLen != 0) // #:<num> is a direct reference to a module index, #<assemblyName>:<num> is indirect
+            if (moduleBase != nullptr && assemblyNameLen != 0) // #:<num> is a direct reference to a module index, #<assemblyName>:<num> is indirect
             {
                 mdToken assemblyRef;
 
-                IfFailThrow(GetAssemblyRefTokenOfIndirectDependency(module, assemblyNameInModuleRef, assemblyNameLen, &assemblyRef));
+                IfFailThrow(GetAssemblyRefTokenOfIndirectDependency(moduleBase, assemblyNameInModuleRef, assemblyNameLen, &assemblyRef));
                 if (assemblyRef == mdTokenNil)
                 {
                     COMPlusThrowHR(COR_E_FILENOTFOUND);
                 }
-                auto domainAssemblyOfFinalModule = module->LoadAssembly(assemblyRef);
+                Assembly *domainAssemblyOfFinalModule = moduleBase->LoadAssembly(assemblyRef);
                 module = domainAssemblyOfFinalModule->GetModule();
+            }
+            else
+            {
+                _ASSERTE(moduleBase == nullptr || moduleBase->IsFullModule());
+                module = static_cast<Module*>(moduleBase);
             }
         }
         else
@@ -2359,10 +2383,10 @@ public:
     }
 };
 
-ModuleBase* CreateNativeManifestModule(LoaderAllocator* pLoaderAllocator, IMDInternalImport *pManifestMetadata, Module* pModule, AllocMemTracker *pamTracker)
+ModuleBase* CreateNativeManifestModule(LoaderAllocator* pLoaderAllocator, IMDInternalImport *pManifestMetadata, Module* pModule, NativeImage* pNativeImage, AllocMemTracker *pamTracker)
 {
     void *mem = pamTracker->Track(pLoaderAllocator->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(NativeManifestModule))));
-    return new (mem) NativeManifestModule(pLoaderAllocator, pManifestMetadata, pModule, pamTracker);
+    return new (mem) NativeManifestModule(pLoaderAllocator, pManifestMetadata, pModule, pNativeImage, pamTracker);
 }
 #endif // DACCESS_COMPILE
 

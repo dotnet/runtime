@@ -58,9 +58,17 @@ namespace Internal.TypeSystem.Ecma
                         }
                         else
                         {
-                            // Further dependencies are handled by specifying a module which has a further assembly dependency on the correct module
-                            string asmReferenceName = GetNameOfAssemblyRefWhichResolvesToType(_mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences, metadataType);
-                            int index = _moduleToIndex(_mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences);
+                            ModuleDesc assemblyRefSource = _mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences;
+                            string asmReferenceName = GetNameOfAssemblyRefWhichResolvesToType(assemblyRefSource, metadataType);
+                            if (asmReferenceName is null)
+                            {
+                                _mutableModule._ensureAssemblyReferenceInManifest(module);
+                                assemblyRefSource = _mutableModule;
+                                asmReferenceName = ((EcmaModule)module).Assembly.GetName().Name;
+                            }
+
+                            // Further dependencies are handled by specifying a module which has an assembly dependency on the correct module.
+                            int index = _moduleToIndex(assemblyRefSource);
                             Debug.Assert(index != -1);
                             moduleRefString = $"#{asmReferenceName}:{index.ToStringInvariant()}";
                         }
@@ -137,15 +145,20 @@ namespace Internal.TypeSystem.Ecma
                     return assemblyName;
                 }
 
-                // Some producers encode type map custom attributes without emitting matching TypeRef rows
-                // for the referenced types. In that case, fall back to the target type's defining assembly.
                 if (module is EcmaModule ecmaModule && type.Module is EcmaModule targetTypeModule)
                 {
                     string targetAssemblyName = targetTypeModule.Assembly.GetName().Name;
-                    return targetAssemblyName;
+                    MetadataReader reader = ecmaModule.MetadataReader;
+                    foreach (AssemblyReferenceHandle assemblyRefHandle in reader.AssemblyReferences)
+                    {
+                        if (reader.StringComparer.Equals(reader.GetAssemblyReference(assemblyRefHandle).Name, targetAssemblyName))
+                        {
+                            return targetAssemblyName;
+                        }
+                    }
                 }
 
-                throw new KeyNotFoundException($"Unable to resolve an assembly reference from module '{module}' to type '{type}'.");
+                return null;
             }
         }
 
@@ -305,10 +318,12 @@ namespace Internal.TypeSystem.Ecma
                              Version version,
                              AssemblyHashAlgorithm hashAlgorithm,
                              Func<ModuleDesc, int> moduleToIndex,
+                             Action<ModuleDesc> ensureAssemblyReferenceInManifest,
                              ReadyToRunCompilationModuleGroupBase compilationGroup) : base(context, null)
         {
             _compilationGroup = compilationGroup;
             _cache = new Cache(this, assemblyName, assemblyFlags, publicKeyArray, version, hashAlgorithm, moduleToIndex);
+            _ensureAssemblyReferenceInManifest = ensureAssemblyReferenceInManifest;
             TryGetHandle = _cache.CreateCacheFunc<TypeSystemEntity>(GetHandleForTypeSystemEntity);
             TryGetStringHandle = _cache.CreateCacheFunc<string>(GetUserStringHandle);
             TryGetAssemblyRefHandle = _cache.CreateCacheFunc<AssemblyNameInfo>(GetAssemblyRefHandle);
@@ -319,6 +334,7 @@ namespace Internal.TypeSystem.Ecma
         public bool DisableNewTokens;
         public ModuleDesc ModuleThatIsCurrentlyTheSourceOfNewReferences;
         private ReadyToRunCompilationModuleGroupBase _compilationGroup;
+        private readonly Action<ModuleDesc> _ensureAssemblyReferenceInManifest;
         private Dictionary<ModuleDesc, string> _moduleToModuleRefString = new Dictionary<ModuleDesc, string>();
 
         private int GetHandleForTypeSystemEntity(TypeSystemMetadataEmitter emitter, object type)

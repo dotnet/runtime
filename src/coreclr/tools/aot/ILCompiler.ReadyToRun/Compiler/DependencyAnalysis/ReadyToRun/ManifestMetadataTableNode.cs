@@ -50,6 +50,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private readonly List<Guid> _manifestAssemblyMvids;
 
         /// <summary>
+        /// Assembly references that must be emitted in addition to those represented by module IDs.
+        /// </summary>
+        private readonly List<AssemblyNameInfo> _additionalAssemblyReferences;
+
+        /// <summary>
         /// Registered signature emitters.
         /// </summary>
         private readonly List<ISignatureEmitter> _signatureEmitters;
@@ -70,6 +75,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private ConcurrentBag<EcmaModule> _modulesWhichMustBeIndexable = new ConcurrentBag<EcmaModule>();
 
         /// <summary>
+        /// Modules whose assembly identities must be present in the manifest metadata.
+        /// </summary>
+        private ConcurrentBag<EcmaModule> _modulesWhichMustHaveAssemblyReferences = new ConcurrentBag<EcmaModule>();
+
+        /// <summary>
         /// Set to true after GetData has been called. After that, ModuleToIndex may be called no more.
         /// </summary>
         private bool _emissionCompleted;
@@ -86,6 +96,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _assemblyRefToModuleIdMap = new Dictionary<string, int>();
             _moduleIdToAssemblyNameMap = new Dictionary<int, AssemblyNameInfo>();
             _manifestAssemblyMvids = new List<Guid>();
+            _additionalAssemblyReferences = new List<AssemblyNameInfo>();
             _signatureEmitters = new List<ISignatureEmitter>();
             _nodeFactory = nodeFactory;
             _nextModuleId = 2;
@@ -117,6 +128,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                                                manifestAssemblyVersion,
                                                hashAlgorithm,
                                                ModuleToIndexSingleThreadedAndSorted,
+                                               EnsureAssemblyReferenceInManifest,
                                                nodeFactory.CompilationModuleGroup);
 
             if (!_nodeFactory.CompilationModuleGroup.IsCompositeBuildMode)
@@ -215,6 +227,19 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
         }
 
+        private void EnsureAssemblyReferenceInManifest(ModuleDesc module)
+        {
+            if (_emissionCompleted)
+            {
+                throw new InvalidOperationException("Adding a new assembly after signatures have been materialized.");
+            }
+
+            if (module is EcmaModule ecmaModule)
+            {
+                _modulesWhichMustHaveAssemblyReferences.Add(ecmaModule);
+            }
+        }
+
         private int ModuleToIndexInternal(IEcmaModule module)
         {
             Debug.Assert(module != null);
@@ -286,6 +311,27 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     ModuleToIndex(module);
                 }
 
+                moduleArray = _modulesWhichMustHaveAssemblyReferences.ToArray();
+                Array.Sort(moduleArray, (EcmaModule moduleA, EcmaModule moduleB) => moduleA.CompareTo(moduleB));
+                HashSet<string> additionalAssemblyNames = new HashSet<string>();
+                foreach (EcmaModule module in moduleArray)
+                {
+                    int moduleId = ModuleToIndex(module);
+                    if (moduleId <= _assemblyRefCount)
+                    {
+                        AssemblyNameInfo assemblyName = module.Assembly.GetName();
+                        if (additionalAssemblyNames.Add(assemblyName.FullName))
+                        {
+                            _additionalAssemblyReferences.Add(assemblyName);
+                        }
+                    }
+                }
+
+                for (int i = 0; i < _additionalAssemblyReferences.Count; i++)
+                {
+                    _manifestAssemblyMvids.Add(default(Guid));
+                }
+
                 _emissionCompleted = true;
             }
         }
@@ -305,6 +351,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 var handle = _mutableModule.TryGetAssemblyRefHandle(assemblyName);
                 Debug.Assert(handle.HasValue);
                 Debug.Assert(((handle.Value & 0xFFFFFF) + (_assemblyRefCount)) == (idAndAssemblyName.Key - 1));
+            }
+
+            foreach (AssemblyNameInfo assemblyName in _additionalAssemblyReferences)
+            {
+                int? handle = _mutableModule.TryGetAssemblyRefHandle(assemblyName);
+                Debug.Assert(handle.HasValue);
             }
 
             // After this point new tokens will not be embedded in the final image
@@ -337,6 +389,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public void Dispose()
         {
             _modulesWhichMustBeIndexable = null;
+            _modulesWhichMustHaveAssemblyReferences = null;
         }
     }
 }
