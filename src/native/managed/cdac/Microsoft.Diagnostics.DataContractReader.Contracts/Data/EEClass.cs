@@ -29,15 +29,7 @@ internal sealed partial class EEClass : IData<EEClass>
 
     private const uint HasLayoutFlag = 0x00000040;
 
-    // Descriptor-optional for runtimes that predate GetClassAlignmentRequirement.
-    [CustomInit(nameof(InitVMFlags))] public partial uint VMFlags { get; }
+    [Field] public partial uint? VMFlags { get; }
 
-    [DataDescriptorDependency(nameof(VMFlags), "uint32")]
-    private partial uint InitVMFlags(Target target, TargetPointer address)
-    {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.EEClass);
-        return target.ReadFieldOrDefault<uint>(address, type, nameof(VMFlags));
-    }
-
-    public bool HasLayout => (VMFlags & HasLayoutFlag) != 0;
+    public bool HasLayout => VMFlags.HasValue && (VMFlags.Value & HasLayoutFlag) != 0;
 }

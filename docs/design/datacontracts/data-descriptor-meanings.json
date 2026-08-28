@@ -125,7 +125,7 @@
     "EEClass.NumStaticFields": "Count of static fields of the EEClass",
     "EEClass.NumThreadStaticFields": "Count of threadstatic fields of the EEClass",
     "EEClass.OptionalFields": "Pointer to the `EEClassOptionalFields` for this type, or null if it has none",
-    "EEClass.VMFlags": "Flags for the EEClass. Bit `0x40` (`VMFLAG_HASLAYOUT`) indicates the EEClass is a `LayoutEEClass` and its `LayoutInfo` may be read",
+    "EEClass.VMFlags": "Optional flags for the EEClass. Bit `0x40` (`VMFLAG_HASLAYOUT`) indicates the EEClass is a `LayoutEEClass` and its `LayoutInfo` may be read",
     "EEClassLayoutInfo.AlignmentRequirement": "Largest alignment requirement of all members of the type",
     "EEClassLayoutInfo.Flags": "Layout flags. Bit `0x01` (`e_BLITTABLE`) indicates the type is blittable",
     "EEClassLayoutInfo.LayoutType": "Layout kind: `Auto` (0), `Sequential` (1), `Explicit` (2), `CStruct` (3), `CUnion` (4)",

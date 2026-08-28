@@ -88,8 +88,8 @@ partial interface IRuntimeTypeSystem : IContract
     public virtual bool RequiresAlign8(ITypeHandle typeHandle);
     // Returns the alignment requirement of a type. Mirrors
     // CEEInfo::getClassAlignmentRequirementStatic in src/coreclr/vm/jitinterface.cpp. The result is
-    // unclamped -- callers such as ArgIterator apply their own clamping. Runtimes that predate the
-    // layout descriptors return the target pointer size.
+    // unclamped -- callers such as ArgIterator apply their own clamping. This is optional
+    // functionality; runtimes that don't support it return the target pointer size.
     public virtual int GetClassAlignmentRequirement(ITypeHandle typeHandle);
     // Returns the cached SystemV AMD64 eightbyte register-passing classification for a value type
     // (used to decide how a struct is passed in registers), or false if the type has no such
@@ -561,7 +561,7 @@ static class RuntimeTypeSystem_1_Helpers
 | `EEClass` | `NumStaticFields` | `uint16` | Count of static fields of the EEClass |
 | `EEClass` | `NumThreadStaticFields` | `uint16` | Count of threadstatic fields of the EEClass |
 | `EEClass` | `OptionalFields` | `pointer` | Pointer to the `EEClassOptionalFields` for this type, or null if it has none |
-| `EEClass` | `VMFlags` | `uint32` | Flags for the EEClass. Bit `0x40` (`VMFLAG_HASLAYOUT`) indicates the EEClass is a `LayoutEEClass` and its `LayoutInfo` may be read |
+| `EEClass` | `VMFlags` | `uint32` | Optional flags for the EEClass. Bit `0x40` (`VMFLAG_HASLAYOUT`) indicates the EEClass is a `LayoutEEClass` and its `LayoutInfo` may be read |
 | `EEClassLayoutInfo` | `AlignmentRequirement` | `uint8` | Largest alignment requirement of all members of the type |
 | `EEClassLayoutInfo` | `Flags` | `uint8` | Layout flags. Bit `0x01` (`e_BLITTABLE`) indicates the type is blittable |
 | `EEClassLayoutInfo` | `LayoutType` | `uint8` | Layout kind: `Auto` (0), `Sequential` (1), `Explicit` (2), `CStruct` (3), `CUnion` (4) |
