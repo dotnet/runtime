@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Runtime.General;
+using System.Reflection.Runtime.MethodInfos;
 
 using Internal.LowLevelLinq;
 using Internal.Reflection.Augments;
@@ -153,8 +154,8 @@ namespace System.Reflection
                 return baseType == typeof(object) || baseType == typeof(ValueType) ? null : baseType;
             }
 
-            if (element is MethodInfo method)
-                return ReflectionAugments.GetImplicitlyOverriddenBaseClassMethod(method);
+            if (element is RuntimeMethodInfo method)
+                return method.GetParentDefinition();
 
             return null;
         }

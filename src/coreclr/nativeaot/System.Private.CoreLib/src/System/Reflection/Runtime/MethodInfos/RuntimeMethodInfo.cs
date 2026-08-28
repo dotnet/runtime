@@ -117,6 +117,9 @@ namespace System.Reflection.Runtime.MethodInfos
 
         public abstract override int GetHashCode();
 
+        internal RuntimeMethodInfo? GetParentDefinition()
+            => (RuntimeMethodInfo)this.GetImplicitlyOverriddenBaseClassMember(MethodPolicies.Instance);
+
         public sealed override MethodInfo GetBaseDefinition()
         {
             // This check is for compatibility. Yes, it happens before we normalize constructed generic methods back to their backing definition.
