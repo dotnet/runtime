@@ -11,9 +11,5 @@ internal static partial class Interop
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.NCrypt, StringMarshalling = StringMarshalling.Utf16)]
         internal static partial ErrorCode NCryptOpenStorageProvider(out SafeNCryptProviderHandle phProvider, string pszProviderName, int dwFlags);
-
-        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-        [LibraryImport(Interop.Libraries.NCrypt, StringMarshalling = StringMarshalling.Utf16)]
-        internal static partial ErrorCode NCryptIsAlgSupported(SafeNCryptProviderHandle hProvider, string pszAlgId, int dwFlags);
     }
 }

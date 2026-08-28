@@ -14,9 +14,10 @@ namespace System.Security.Cryptography.Tests
     internal static partial class CompositeMLDsaTestHelpers
     {
         private const int NTE_NOT_SUPPORTED = unchecked((int)0x80090029);
+
         private static readonly Lazy<bool> s_lazyIsCngSupported = new(CheckCngSupport);
 
-        // Remove this separate CNG gate once supported Windows versions provide Composite ML-DSA through NCrypt.
+        // Remove this separate CNG flag once supported Windows versions consistently provide Composite ML-DSA through NCrypt.
         internal static bool IsCngSupported => s_lazyIsCngSupported.Value;
 
         internal static CompositeMLDsaCng ImportPublicKey(CompositeMLDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
@@ -119,7 +120,7 @@ namespace System.Security.Cryptography.Tests
                     throw error.ToCryptographicException();
                 }
 
-                error = Interop.NCrypt.NCryptIsAlgSupported(provider, CngAlgorithm.CompositeMLDsa.Algorithm, 0);
+                error = NCryptIsAlgSupported(provider, CngAlgorithm.CompositeMLDsa.Algorithm, 0);
 
                 return error switch
                 {
@@ -129,5 +130,9 @@ namespace System.Security.Cryptography.Tests
                 };
             }
         }
+
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+        [LibraryImport(Interop.Libraries.NCrypt, StringMarshalling = StringMarshalling.Utf16)]
+        internal static partial ErrorCode NCryptIsAlgSupported(SafeNCryptProviderHandle hProvider, string pszAlgId, int dwFlags);
     }
 }
