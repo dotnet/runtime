@@ -18,6 +18,12 @@ namespace ILCompiler.DependencyAnalysis
     /// <c>__memory_base</c> and <c>__table_base</c> are wasm-ld's PIC names for exactly these two
     /// quantities (where a module's data and table slice begin) and must be defined and exported by
     /// the host, since a non-PIC main module does not produce them on its own.
+    /// <para>
+    /// Those last two belong to the emscripten/wasm-ld dynamic linking ABI, where they carry a
+    /// per-side-module meaning. Reusing them is safe only while the host is a non-PIC main module.
+    /// Building the host with <c>-sMAIN_MODULE</c> would give the linker its own definitions of both
+    /// and collide with these; that would require picking runtime-specific names instead.
+    /// </para>
     /// </remarks>
     public class WasmWellKnownGlobalSymbolNode(string symbolName) : ExternDataSymbolNode(new Utf8String(symbolName))
     {
