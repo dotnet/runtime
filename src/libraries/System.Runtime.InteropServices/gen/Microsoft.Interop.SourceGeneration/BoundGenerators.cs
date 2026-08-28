@@ -65,6 +65,9 @@ namespace Microsoft.Interop
                 }
             }
 
+            // Now that we've processed all of the signature marshallers, handle the error marshaller,
+            // which may depend on or overlap with another marshaller in the native position.
+            // Some cases may require an overlap, such as when using COM exception marshalling.
             if (errorHandlingInfo is not null && context.Direction == MarshalDirection.ManagedToUnmanaged)
             {
                 IBoundMarshallingGenerator? overlappedMarshaller = FindOverlappedMarshaller(errorHandlingInfo);
@@ -91,13 +94,8 @@ namespace Microsoft.Interop
                 }
             }
 
-            // Now that we've processed all of the signature marshallers,
-            // we'll handle the special ones that might depend on them, like the exception marshaller.
             if (errorHandlingInfo is not null && context.Direction == MarshalDirection.UnmanagedToManaged)
             {
-                // The managed exception marshaller may overlap with another marshaller in the native position.
-                // In that case, we need to validate some additional invariants.
-                // Also, some cases may require an overlap, such as when using the "COM" exception marshalling.
                 IBoundMarshallingGenerator? overlappedMarshaller = null;
                 if (errorHandlingInfo.IsNativeReturnPosition)
                 {
