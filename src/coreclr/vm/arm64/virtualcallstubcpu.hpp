@@ -162,7 +162,7 @@ struct ResolveStub
 
 private:
     friend struct ResolveHolder;
-    const static int resolveEntryPointLen = 17;
+    const static int resolveEntryPointLen = 14;
     const static int slowEntryPointLen = 4;
     const static int failEntryPointLen = 8;
 
@@ -187,7 +187,7 @@ struct ResolveHolder
     {
          int n=0;
          DWORD offset;
-         int br_nextEntry[2];
+         int branchToNextEntry;
 /******** Rough Convention of used in this routine
          ;;x9  hash scratch / current ResolveCacheElem
          ;;x10 base address of the data region
@@ -195,6 +195,7 @@ struct ResolveHolder
          ;;x12 MethodTable (from object ref in x0), out: this._token
          ;;X13 temp
          ;;X15 temp, this._token
+         ;;X16 temp, cached token
          ;;cachemask => [CALL_STUB_CACHE_MASK * sizeof(void*)]
 *********/
          // Called directly by JITTED code
@@ -248,48 +249,33 @@ struct ResolveHolder
 
          //;; ResolveCacheElem e = this._cacheAddress + i
          //
-         //ldr x13, [x10 + DATA_OFFSET(_cacheAddress)]
+         //ldp x13, x15, [x10 + DATA_OFFSET(_cacheAddress)]
          offset=DATA_OFFSET(_cacheAddress);
          _ASSERTE(offset >=0 && offset%8 == 0);
-         _stub._resolveEntryPoint[n++] = 0xF940014D | offset<<7;
+         static_assert(offsetof(ResolveStub, _token) == offsetof(ResolveStub, _cacheAddress) + sizeof(TADDR));
+         _stub._resolveEntryPoint[n++] = 0xA9403D4D | offset<<12;
 
          //ldr x9, [x13, x9] ;; x9 = e = this._cacheAddress + i
          _stub._resolveEntryPoint[n++] = 0xF86969A9  ;
 
-         //ldr x15, [x10 + DATA_OFFSET(_token)]
-         offset = DATA_OFFSET(_token);
-         _ASSERTE(offset >=0 && offset%8 == 0);
-         _stub._resolveEntryPoint[n++] = 0xF940014F | offset<<7;
-
          //;; Check mt == e.pMT
          //
          //
-         //ldr x13, [x9, #offsetof(ResolveCacheElem, pMT) ]
+         //ldp x13, x16, [x9, #offsetof(ResolveCacheElem, pMT) ]
          offset = offsetof(ResolveCacheElem, pMT) & 0x000001ff;
          _ASSERTE(offset >=0 && offset%8 == 0);
-         _stub._resolveEntryPoint[n++] = 0xF940012D | offset<<7;
+         static_assert(offsetof(ResolveCacheElem, token) == offsetof(ResolveCacheElem, pMT) + sizeof(TADDR));
+         _stub._resolveEntryPoint[n++] = 0xA940412D | offset<<12;
 
          //cmp x12, x13
          _stub._resolveEntryPoint[n++] = 0xEB0D019F;
 
-         //;; bne nextEntry
-         //place holder for the above instruction
-         br_nextEntry[0]=n++;
-
-         //;; Check this._token == e.token
-         //x15: this._token
-         //
-         //ldr x13, [x9, #offsetof(ResolveCacheElem, token) ]
-         offset = offsetof(ResolveCacheElem, token) & 0xffffffff;
-         _ASSERTE(offset >=0 && offset%8 == 0);
-         _stub._resolveEntryPoint[n++] = 0xF940012D | offset<<7;
-
-         //cmp x15, x13
-         _stub._resolveEntryPoint[n++] = 0xEB0D01FF;
+         //ccmp x16, x15, #0, eq
+         _stub._resolveEntryPoint[n++] = 0xFA4F0200;
 
          //;; bne nextEntry
          //place holder for the above instruction
-         br_nextEntry[1]=n++;
+         branchToNextEntry=n++;
 
          //ldr x12, [x9, #offsetof(ResolveCacheElem, target) ]
          offset = offsetof(ResolveCacheElem, target) & 0xffffffff;
@@ -303,10 +289,8 @@ struct ResolveHolder
          //;;nextEntry:
          //back patching the call sites as now we know the offset to nextEntry
          //bne #offset
-         for(auto i: br_nextEntry)
-         {
-            _stub._resolveEntryPoint[i] = 0x54000001 | ((((n-i)*sizeof(DWORD))<<3) & 0x3FFFFFF);
-         }
+         _stub._resolveEntryPoint[branchToNextEntry] =
+             0x54000001 | ((((n - branchToNextEntry) * sizeof(DWORD)) << 3) & 0x3FFFFFF);
 
          _ASSERTE(n == ResolveStub::resolveEntryPointLen);
          _ASSERTE(_stub._resolveEntryPoint + n == _stub._slowEntryPoint);
