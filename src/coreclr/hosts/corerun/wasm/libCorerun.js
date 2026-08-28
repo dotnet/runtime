@@ -245,13 +245,13 @@ function libCoreRunFactory() {
                 wasmInstance = new WebAssembly.Instance(wasmModule, {
                     webcil: {
                         memory: wasmMemory,
-                        stackPointer: wasmExports.__stack_pointer,
-                        rtlRestoreContextTag: wasmExports.__coreclr_wasm_rtlrestorecontext_tag,
-                        table: wasmTable,
-                        tableBase: new WebAssembly.Global({ value: "i32", mutable: false }, tableStartIndex),
-                        imageBase: new WebAssembly.Global({ value: "i32", mutable: false }, payloadPtr),
+                        __stack_pointer: wasmExports.__stack_pointer,
+                        __coreclr_wasm_rtlrestorecontext_tag: wasmExports.__coreclr_wasm_rtlrestorecontext_tag,
+                        __indirect_function_table: wasmTable,
+                        __table_base: new WebAssembly.Global({ value: "i32", mutable: false }, tableStartIndex),
+                        __memory_base: new WebAssembly.Global({ value: "i32", mutable: false }, payloadPtr),
                         // Runtime-async continuation return value, shared with the runtime module.
-                        asyncContinuation: wasmExports.__async_continuation
+                        __async_continuation: wasmExports.__async_continuation
                     }
                 });
             } catch (e) {
@@ -267,10 +267,21 @@ function libCoreRunFactory() {
                 throw new Error(`Unsupported Webcil version: ${webcilVersion}`);
             }
 
-            wasmInstance.exports.getWebcilPayload(payloadPtr, payloadSize);
-            if (tableSize > 0) {
-                wasmInstance.exports.fillWebcilTable();
+            // Two image shapes reach this point. A component stub carries its payload and table in
+            // passive segments and hands them over via getWebcilPayload/fillWebcilTable. A composite
+            // uses active segments, so the engine has already installed both by the time the instance
+            // exists, and only the header's tableBase field is left to write. Feature-detect rather
+            // than assume: calling getWebcilPayload on a composite would trap, because memory.init
+            // against an active (hence dropped) segment is out of bounds.
+            if (typeof (wasmInstance.exports.patchWebcilHeader) === "function") {
+                wasmInstance.exports.patchWebcilHeader(payloadPtr, payloadSize);
+            } else {
+                wasmInstance.exports.getWebcilPayload(payloadPtr, payloadSize);
+                if (tableSize > 0) {
+                    wasmInstance.exports.fillWebcilTable();
+                }
             }
+
             HEAPU32[outDataStartPtr >>> 2 >>> 0] = payloadPtr;
             HEAPU32[outSize >>> 2 >>> 0] = payloadSize;
             HEAPU32[(outSize + 4) >>> 2 >>> 0] = 0;
