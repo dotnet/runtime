@@ -6,7 +6,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -18,12 +17,30 @@ namespace System.Net.ServerSentEvents.Tests
 {
     public partial class SseParserTests
     {
+        // Mirrors SseParser<T>.DefaultArrayPoolRentSize, which also serves as the smallest configurable maximum buffer size.
+#if DEBUG
+        private const int MinConfigurableMaxBufferSize = 16;
+#else
+        private const int MinConfigurableMaxBufferSize = 1024;
+#endif
+
         [Fact]
         public void Parse_InvalidArguments_Throws()
         {
             AssertExtensions.Throws<ArgumentNullException>("sseStream", () => SseParser.Create(null));
             AssertExtensions.Throws<ArgumentNullException>("sseStream", () => SseParser.Create(null, delegate { return ""; }));
-            AssertExtensions.Throws<ArgumentNullException>("itemParser", () => SseParser.Create<string>(Stream.Null, null));
+            AssertExtensions.Throws<ArgumentNullException>("itemParser", () => SseParser.Create<string>(Stream.Null, (SseItemParser<string>)null));
+            AssertExtensions.Throws<ArgumentNullException>("itemParser", () => new SseParserOptions<string>(null));
+            AssertExtensions.Throws<ArgumentNullException>("sseStream", () => SseParser.Create<string>(null, new SseParserOptions<string>(delegate { return ""; })));
+            AssertExtensions.Throws<ArgumentNullException>("options", () => SseParser.Create<string>(Stream.Null, (SseParserOptions<string>)null));
+        }
+
+        [Fact]
+        public void Options_DefaultMaxBufferSize()
+        {
+            var options = new SseParserOptions<string>(delegate { return ""; });
+
+            Assert.Equal(-1, options.MaxBufferSize);
         }
 
         [Fact]
@@ -905,18 +922,12 @@ namespace System.Net.ServerSentEvents.Tests
         [MemberData(nameof(NewlineAsyncData))]
         public async Task Parse_LongLineCap_Throws(string newline, bool useAsync)
         {
-            // Temporary workaround until we expose limit in public API
-            void ReduceLineLengthLimit(SseParser<string> parser)
-            {
-                Type type = typeof(SseParser<string>);
-                var field = type.GetField("_maxBufferSize", BindingFlags.Instance | BindingFlags.NonPublic);
-                Assert.NotNull(field);
-                field.SetValue(parser, 10 * 1024);
-            }
-
             using Stream stream = new InfiniteLineStream($"data: shortline{newline}{newline}data: ");
-            var parser = SseParser.Create(stream);
-            ReduceLineLengthLimit(parser);
+            var options = new SseParserOptions<string>(static (_, bytes) => Encoding.UTF8.GetString(bytes.ToArray()))
+            {
+                MaxBufferSize = 10 * 1024
+            };
+            var parser = SseParser.Create(stream, options);
 
             if (useAsync)
             {
@@ -931,6 +942,95 @@ namespace System.Net.ServerSentEvents.Tests
                 enumerator.MoveNext();
                 Assert.Equal("shortline", enumerator.Current.Data);
                 Assert.Throws<InvalidDataException>(() => enumerator.MoveNext());
+            }
+        }
+
+        [Theory]
+        [InlineData(false, MinConfigurableMaxBufferSize)]
+        [InlineData(true, MinConfigurableMaxBufferSize)]
+        [InlineData(false, MinConfigurableMaxBufferSize + 1)]
+        [InlineData(true, MinConfigurableMaxBufferSize + 1)]
+        public async Task Parse_MaxBufferSize_AllowsDataBelowConfiguredLimit(bool useAsync, int maxBufferSize)
+        {
+            using Stream stream = new MemoryStream(Encoding.UTF8.GetBytes(new string('a', maxBufferSize - 1)));
+            var options = new SseParserOptions<string>(static (_, bytes) => Encoding.UTF8.GetString(bytes.ToArray()))
+            {
+                MaxBufferSize = maxBufferSize
+            };
+            var parser = SseParser.Create(stream, options);
+
+            if (useAsync)
+            {
+                int count = 0;
+                await foreach (SseItem<string> _ in parser.EnumerateAsync())
+                {
+                    count++;
+                }
+
+                Assert.Equal(0, count);
+            }
+            else
+            {
+                Assert.Empty(parser.Enumerate());
+            }
+        }
+
+        [Theory]
+        [InlineData(false, 0)]
+        [InlineData(true, 0)]
+        [InlineData(false, 1)]
+        [InlineData(true, 1)]
+        [InlineData(false, 10)]
+        [InlineData(true, 10)]
+        public async Task Parse_MaxBufferSize_BelowMinimum_IsRaisedToMinimum(bool useAsync, int maxBufferSize)
+        {
+            // The enforced minimum (MinConfigurableMaxBufferSize) is well above any of the configured values above, so data
+            // shorter than it should be accepted, while data long enough to exceed it should still throw.
+            using (Stream stream = new MemoryStream(Encoding.UTF8.GetBytes(new string('a', MinConfigurableMaxBufferSize / 2))))
+            {
+                var options = new SseParserOptions<string>(static (_, bytes) => Encoding.UTF8.GetString(bytes.ToArray()))
+                {
+                    MaxBufferSize = maxBufferSize
+                };
+                var parser = SseParser.Create(stream, options);
+
+                if (useAsync)
+                {
+                    int count = 0;
+                    await foreach (SseItem<string> _ in parser.EnumerateAsync())
+                    {
+                        count++;
+                    }
+
+                    Assert.Equal(0, count);
+                }
+                else
+                {
+                    Assert.Empty(parser.Enumerate());
+                }
+            }
+
+            using (Stream stream = new MemoryStream(Encoding.UTF8.GetBytes(new string('a', MinConfigurableMaxBufferSize * 2))))
+            {
+                var options = new SseParserOptions<string>(static (_, bytes) => Encoding.UTF8.GetString(bytes.ToArray()))
+                {
+                    MaxBufferSize = maxBufferSize
+                };
+                var parser = SseParser.Create(stream, options);
+
+                if (useAsync)
+                {
+                    await Assert.ThrowsAsync<InvalidDataException>(async () =>
+                    {
+                        await foreach (SseItem<string> _ in parser.EnumerateAsync())
+                        {
+                        }
+                    });
+                }
+                else
+                {
+                    Assert.Throws<InvalidDataException>(() => parser.Enumerate().ToArray());
+                }
             }
         }
 
