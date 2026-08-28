@@ -800,6 +800,7 @@ namespace System.Numerics.Tests
         [InlineData(6)]
         [InlineData(9)]
         [InlineData(12)]
+        [InlineData(18)]
         [InlineData(20)]
         [InlineData(27)]
         [InlineData(343)]
