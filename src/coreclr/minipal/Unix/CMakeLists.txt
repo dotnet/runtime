@@ -1,4 +1,5 @@
 set(SOURCES
+    ${RUNTIME_DIR}/unix/RuntimeEvent.cpp
     doublemapping.cpp
     dn-u16.cpp
     dn-stdio.cpp
@@ -9,6 +10,7 @@ add_library(coreclrminipal_objects
     OBJECT
     ${SOURCES}
 )
+target_include_directories(coreclrminipal_objects PRIVATE ${CMAKE_BINARY_DIR}/shared_minipal)
 
 add_library(coreclrminipal
     STATIC

@@ -3,6 +3,7 @@
 // ===========================================================================
 
 #include "common.h"
+#include "RuntimeEvent.h"
 
 #include "finalizerthread.h"
 #include "threadsuspend.h"
@@ -321,7 +322,7 @@ Again:
         //       regular not re-arming finalizables.
         GetFinalizerThread()->m_GCOnTransitionsOK = FALSE;
         GetFinalizerThread()->EnablePreemptiveGC();
-        ClrSleepEx(1, false);
+        PAL_Sleep(1);
         GetFinalizerThread()->DisablePreemptiveGC();
         GetFinalizerThread()->m_GCOnTransitionsOK = TRUE;
     }
@@ -458,7 +459,7 @@ void FinalizerThread::WaitForFinalizerEvent (CLREvent *event)
             cEventsForWait--;
         }
 
-        switch (WaitForMultipleObjectsEx(
+        switch (PAL_WaitForMultipleObjectsEx(
             cEventsForWait,                           // # objects to wait on
             &(MHandles[uiEventIndexOffsetForWait]),   // array of objects to wait on
             FALSE,          // bWaitAll == FALSE, so wait for first signal

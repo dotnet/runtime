@@ -7,6 +7,7 @@
 #include "common.h"
 
 #include "corhost.h"
+#include "RuntimeEvent.h"
 #include "synch.h"
 
 void CLREventBase::CreateAutoEvent (BOOL bInitialState  // If TRUE, initial state is signalled
@@ -23,7 +24,7 @@ void CLREventBase::CreateAutoEvent (BOOL bInitialState  // If TRUE, initial stat
     CONTRACTL_END;
 
     {
-        HANDLE h = CreateEvent(NULL,FALSE,bInitialState,NULL);
+        HANDLE h = PAL_CreateEvent(NULL, false, bInitialState);
         if (h == NULL) {
             ThrowOutOfMemory();
         }
@@ -71,7 +72,7 @@ void CLREventBase::CreateManualEvent (BOOL bInitialState  // If TRUE, initial st
     CONTRACTL_END;
 
     {
-        HANDLE h = CreateEvent(NULL,TRUE,bInitialState,NULL);
+        HANDLE h = PAL_CreateEvent(NULL, true, bInitialState);
         if (h == NULL) {
             ThrowOutOfMemory();
         }
@@ -117,7 +118,7 @@ void CLREventBase::CloseEvent()
 
     if (m_handle != INVALID_HANDLE_VALUE) {
         {
-            CloseHandle(m_handle);
+            PAL_CloseEvent(m_handle);
         }
 
         m_handle = INVALID_HANDLE_VALUE;
@@ -138,7 +139,7 @@ BOOL CLREventBase::Set()
     _ASSERTE(Thread::Debug_AllowCallout());
 
     {
-        return SetEvent(m_handle);
+        return PAL_SetEvent(m_handle);
     }
 
 }
@@ -157,7 +158,7 @@ BOOL CLREventBase::Reset()
     _ASSERTE(Thread::Debug_AllowCallout());
 
     {
-        return ResetEvent(m_handle);
+        return PAL_ResetEvent(m_handle);
     }
 }
 
@@ -166,7 +167,7 @@ static DWORD CLREventWaitHelper2(HANDLE handle, DWORD dwMilliseconds, BOOL alert
 {
     STATIC_CONTRACT_THROWS;
 
-    return WaitForSingleObjectEx(handle,dwMilliseconds,alertable);
+    return PAL_WaitForMultipleObjectsEx(1, &handle, false, dwMilliseconds, alertable);
 }
 
 static DWORD CLREventWaitHelper(HANDLE handle, DWORD dwMilliseconds, BOOL alertable)
@@ -248,7 +249,11 @@ DWORD CLREventBase::WaitEx(DWORD dwMilliseconds, WaitMode mode)
     {
         if (pThread && alertable) {
             GCX_PREEMP();
+#ifdef TARGET_UNIX
+            return PAL_WaitForMultipleObjectsEx(1, &m_handle, false, dwMilliseconds, alertable);
+#else
             return pThread->DoReentrantWaitWithRetry(m_handle, dwMilliseconds, mode);
+#endif // TARGET_UNIX
         }
         else {
             return CLREventWaitHelper(m_handle,dwMilliseconds,alertable);

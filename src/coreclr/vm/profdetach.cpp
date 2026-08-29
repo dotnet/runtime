@@ -10,6 +10,7 @@
 // ======================================================================================
 
 #include "common.h"
+#include "RuntimeEvent.h"
 
 #ifdef FEATURE_PROFAPI_ATTACH_DETACH
 
@@ -449,7 +450,7 @@ void ProfilingAPIDetach::SleepWhileProfilerEvacuates(ProfilerDetachInfo *pDetach
     // At this point it's safe to cast ui64SleepMilliseconds down to a DWORD since we
     // know it's between s_dwMinSleepMs & s_dwMaxSleepMs
     _ASSERTE(ui64SleepMilliseconds <= 0xFFFFffff);
-    ClrSleepEx((DWORD) ui64SleepMilliseconds, FALSE /* alertable */);
+    PAL_Sleep((DWORD)ui64SleepMilliseconds);
 }
 
 

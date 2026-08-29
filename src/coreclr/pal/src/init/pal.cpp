@@ -17,7 +17,6 @@ Abstract:
 SET_DEFAULT_DEBUG_CHANNEL(PAL); // some headers have code with asserts, so do this first
 
 #include "pal/thread.hpp"
-#include "pal/synchobjects.hpp"
 #include "pal/procobj.hpp"
 #include "pal/file.hpp"
 #include "pal/map.hpp"
@@ -446,18 +445,6 @@ Initialize(
 
         g_pObjectManager = plom;
 
-        //
-        // Initialize the synchronization manager
-        //
-        g_pSynchronizationManager =
-            CPalSynchMgrController::CreatePalSynchronizationManager();
-
-        if (nullptr == g_pSynchronizationManager)
-        {
-            palError = ERROR_NOT_ENOUGH_MEMORY;
-            ERROR("Failure creating synchronization manager\n");
-            goto CLEANUP1c;
-        }
     }
     else
     {
@@ -579,7 +566,6 @@ CLEANUP2:
     free(exe_path);
 CLEANUP1e:
     // Cleanup synchronization manager
-CLEANUP1c:
     // Cleanup object manager
 CLEANUP1b:
     // Cleanup initial thread data
@@ -752,10 +738,6 @@ PALCommonCleanup()
     {
         cleanupDone = true;
 
-        //
-        // Let the synchronization manager know we're about to shutdown
-        //
-        CPalSynchMgrController::PrepareForShutdown();
     }
 }
 

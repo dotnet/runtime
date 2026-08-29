@@ -792,7 +792,7 @@ EP_RT_DEFINE_THREAD_FUNC (ep_rt_thread_aot_start_session_or_sampling_thread)
     ep_rt_thread_params_t* thread_params = reinterpret_cast<ep_rt_thread_params_t *>(data);
 
     if (thread_params->thread_type == EP_THREAD_TYPE_SESSION) {
-        // The session drain thread runs a purely native drain loop whose blocking primitives (PalSleep,
+        // The session drain thread runs a purely native drain loop whose blocking primitives (PAL_Sleep,
         // CLREventStatic::Wait, CrstStatic::Enter) all tolerate a thread with no runtime Thread, so - like the
         // CoreCLR native drain thread - it does not attach to the ThreadStore. That lets it start during
         // diagnostic-port startup suspension, before RuntimeInstance/ThreadStore is initialized, without

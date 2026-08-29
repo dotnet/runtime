@@ -116,6 +116,7 @@
 //     boxing this describes this feature.
 
 #include "common.h"
+#include "RuntimeEvent.h"
 
 #include "vars.hpp"
 #include "log.h"
@@ -790,7 +791,7 @@ void EEStartupHelper()
         _ASSERTE(NULL != g_pConfig);
         if (g_pConfig->StartupDelayMS())
         {
-            ClrSleepEx(g_pConfig->StartupDelayMS(), FALSE);
+            PAL_Sleep(g_pConfig->StartupDelayMS());
         }
 #endif
 
@@ -1674,6 +1675,9 @@ static void RuntimeThreadShutdown(void* thread)
             GCX_COOP_NO_DTOR_END();
         }
 
+#ifdef TARGET_UNIX
+        pThread->SetThreadExited();
+#endif // TARGET_UNIX
         pThread->DetachThread(TRUE);
     }
     else

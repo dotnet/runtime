@@ -19,6 +19,7 @@
 #define REPEAT_COUNT 10000
 
 LONG GlobalCounter_InterlockedIncrement64_test2 = 0;
+LONG CompletedThreads_InterlockedIncrement64_test2 = 0;
 void IncrementCounter_InterlockedIncrement64_test2(void);
 
 PALTEST(miscellaneous_InterlockedIncrement64_test2_paltest_interlockedincrement64_test2, "miscellaneous/InterlockedIncrement64/test2/paltest_interlockedincrement64_test2")
@@ -64,14 +65,10 @@ PALTEST(miscellaneous_InterlockedIncrement64_test2_paltest_interlockedincrement6
 		}
 
 
-		//Wait for all threads to finish
+		WaitForThreadCompletion(&CompletedThreads_InterlockedIncrement64_test2, MAX_THREADS);
 		for (i=0;i<MAX_THREADS;i++)
 		{
-			if (WAIT_OBJECT_0 != WaitForSingleObject (hThread[i], INFINITE))
- 			{
-	 			Fail ("Main: Wait for Single Object failed.  Failing test.\n"
-				"GetLastError returned %d\n", GetLastError());  
- 			}
+			CloseHandle(hThread[i]);
 		}
 		
 		/* Compare the value of  global counter with zero.  
@@ -94,7 +91,7 @@ void IncrementCounter_InterlockedIncrement64_test2(void)
 	{
 		InterlockedIncrement(&GlobalCounter_InterlockedIncrement64_test2);
 	}
+	InterlockedIncrement(&CompletedThreads_InterlockedIncrement64_test2);
 }
-
 
 

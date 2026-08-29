@@ -1287,7 +1287,7 @@ void Thread::EnsureRuntimeInitialized()
 {
     while (PalInterlockedCompareExchangePointer((void *volatile *)&g_RuntimeInitializingThread, this, NULL) != NULL)
     {
-        PalSleep(1);
+        PAL_Sleep(1);
     }
 
     if (g_RuntimeInitializationCallback != NULL)

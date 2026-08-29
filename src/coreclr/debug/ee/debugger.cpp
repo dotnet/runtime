@@ -8,6 +8,7 @@
 //*****************************************************************************
 
 #include "stdafx.h"
+#include "RuntimeEvent.h"
 #include "debugdebugger.h"
 #include "../inc/common.h"
 #include "eeconfig.h" // This is here even for retail & free builds...
@@ -1326,8 +1327,8 @@ DWORD WINAPI DbgInteropStressProc(void * lpParameter)
 
         // This helps parallelize if we have a lot of threads, and keeps us from
         // chewing too much CPU time.
-        ClrSleepEx(2000,FALSE);
-        ClrSleepEx(GetRandomInt(1000), FALSE);
+        PAL_Sleep(2000);
+        PAL_Sleep(GetRandomInt(1000));
     }
 
     return 0;
@@ -1349,7 +1350,7 @@ DWORD WINAPI DbgInteropDummyStressProc(void * lpParameter)
 {
     LIMITED_METHOD_CONTRACT;
 
-    ClrSleepEx(1,FALSE);
+    PAL_Sleep(1);
     return 0;
 }
 
@@ -1374,7 +1375,7 @@ DWORD WINAPI DbgInteropOOBStressProc(void * lpParameter)
             OutputDebugString(W("OOB ping from "));
         }
 
-        ClrSleepEx(3000, FALSE);
+        PAL_Sleep(3000);
     }
 
     return 0;
@@ -2147,13 +2148,13 @@ void DebuggerLazyInit::Init()
 
     // Create some synchronization events...
     // these events stay signaled all the time except when an attach is in progress
-    m_exAttachEvent          = CreateWin32EventOrThrow(NULL, kManualResetEvent, TRUE);
-    m_exUnmanagedAttachEvent = CreateWin32EventOrThrow(pSA,  kManualResetEvent, TRUE);
+    m_exAttachEvent          = CreateEventOrThrow(NULL, kManualResetEvent, TRUE);
+    m_exUnmanagedAttachEvent = CreateEventOrThrow(pSA,  kManualResetEvent, TRUE);
 
-    m_CtrlCMutex             = CreateWin32EventOrThrow(NULL, kAutoResetEvent, FALSE);
+    m_CtrlCMutex             = CreateEventOrThrow(NULL, kAutoResetEvent, FALSE);
     m_DebuggerHandlingCtrlC  = FALSE;
 
-    m_garbageCollectionBlockerEvent = CreateEventW(NULL, TRUE, FALSE, NULL);
+    m_garbageCollectionBlockerEvent = CreateEventOrThrow(NULL, kManualResetEvent, FALSE);
 
     // Let the helper thread lazy init stuff too.
     m_RCThread.Init();
@@ -2180,22 +2181,22 @@ DebuggerLazyInit::~DebuggerLazyInit()
 
     if (m_CtrlCMutex != NULL)
     {
-        CloseHandle(m_CtrlCMutex);
+        PAL_CloseEvent(m_CtrlCMutex);
     }
 
     if (m_exAttachEvent != NULL)
     {
-        CloseHandle(m_exAttachEvent);
+        PAL_CloseEvent(m_exAttachEvent);
     }
 
     if (m_exUnmanagedAttachEvent != NULL)
     {
-        CloseHandle(m_exUnmanagedAttachEvent);
+        PAL_CloseEvent(m_exUnmanagedAttachEvent);
     }
 
     if (m_garbageCollectionBlockerEvent != NULL)
     {
-        CloseHandle(m_garbageCollectionBlockerEvent);
+        PAL_CloseEvent(m_garbageCollectionBlockerEvent);
     }
 }
 
@@ -5683,8 +5684,9 @@ void Debugger::SuspendForGarbageCollectionCompleted()
         this->SuspendComplete(true);
     }
 
-    WaitForSingleObject(this->GetGarbageCollectionBlockerEvent(), INFINITE);
-    ResetEvent(this->GetGarbageCollectionBlockerEvent());
+    HANDLE waitHandles[] = { this->GetGarbageCollectionBlockerEvent() };
+    PAL_WaitForMultipleObjectsEx(1, waitHandles, false, INFINITE, false);
+    PAL_ResetEvent(this->GetGarbageCollectionBlockerEvent());
 }
 
 void Debugger::ResumeForGarbageCollectionStarted()
@@ -5720,8 +5722,9 @@ void Debugger::ResumeForGarbageCollectionStarted()
         this->SuspendComplete(true);
     }
 
-    WaitForSingleObject(this->GetGarbageCollectionBlockerEvent(), INFINITE);
-    ResetEvent(this->GetGarbageCollectionBlockerEvent());
+    HANDLE waitHandles[] = { this->GetGarbageCollectionBlockerEvent() };
+    PAL_WaitForMultipleObjectsEx(1, waitHandles, false, INFINITE, false);
+    PAL_ResetEvent(this->GetGarbageCollectionBlockerEvent());
     this->m_isBlockedOnGarbageCollectionEvent = FALSE;
     this->m_willBlockOnGarbageCollectionEvent = FALSE;
 }
@@ -6729,8 +6732,8 @@ BOOL Debugger::PreJitAttach(BOOL willSendManagedEvent, BOOL willLaunchDebugger, 
             m_jitAttachInProgress = TRUE;
             m_launchingDebugger = willLaunchDebugger;
             CLRJitAttachState = (willSendManagedEvent ? CLR_DEBUGGING_MANAGED_EVENT_PENDING : 0) | (explicitUserRequest ? CLR_DEBUGGING_MANAGED_EVENT_DEBUGGER_LAUNCH : 0);
-            ResetEvent(GetUnmanagedAttachEvent());
-            ResetEvent(GetAttachEvent());
+            PAL_ResetEvent(GetUnmanagedAttachEvent());
+            PAL_ResetEvent(GetAttachEvent());
             LOG( (LF_CORDB, LL_INFO10000, "D::PreJA: Leaving - first thread\n") );
             return TRUE;
         }
@@ -6867,14 +6870,16 @@ void Debugger::WaitForDebuggerAttach()
     // be signaled.
     if (m_launchingDebugger)
     {
-        WaitForSingleObject(GetUnmanagedAttachEvent(), INFINITE);
+        HANDLE waitHandles[] = { GetUnmanagedAttachEvent() };
+        PAL_WaitForMultipleObjectsEx(1, waitHandles, false, INFINITE, false);
     }
 
     // Wait until the pending managed debugger attach is completed
     if (CORDebuggerPendingAttach() && !CORDebuggerAttached())
     {
         LOG( (LF_CORDB, LL_INFO10000, "D::WFDA: Waiting for managed attach too\n") );
-        WaitForSingleObject(GetAttachEvent(), INFINITE);
+        HANDLE waitHandles[] = { GetAttachEvent() };
+        PAL_WaitForMultipleObjectsEx(1, waitHandles, false, INFINITE, false);
     }
 
     // We can't reset the event here because some threads may
@@ -6912,8 +6917,8 @@ void Debugger::PostJitAttach()
 
     // set the attaching events to unblock other threads waiting on this attach
     // regardless of whether or not it completed
-    SetEvent(GetUnmanagedAttachEvent());
-    SetEvent(GetAttachEvent());
+    PAL_SetEvent(GetUnmanagedAttachEvent());
+    PAL_SetEvent(GetAttachEvent());
     LOG( (LF_CORDB, LL_INFO10000, "D::PostJA: Leaving\n") );
 }
 
@@ -10104,11 +10109,11 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
             MarkDebuggerAttachedInternal();
 
             // set the managed attach event so that waiting threads can continue
-            VERIFY(SetEvent(GetAttachEvent()));
+            VERIFY(PAL_SetEvent(GetAttachEvent()));
             break;
         }
 
-        VERIFY(SetEvent(GetAttachEvent()));
+        VERIFY(PAL_SetEvent(GetAttachEvent()));
 
         //
         // For regular (non-jit) attach, fall through to do an async break.
@@ -10147,7 +10152,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
             if (this->m_isBlockedOnGarbageCollectionEvent)
             {
                 this->m_stopped = false;
-                SetEvent(this->GetGarbageCollectionBlockerEvent());
+                PAL_SetEvent(this->GetGarbageCollectionBlockerEvent());
             }
             else
             {
@@ -10700,7 +10705,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
         if (this->m_isBlockedOnGarbageCollectionEvent)
         {
             this->m_stopped = FALSE;
-            SetEvent(this->GetGarbageCollectionBlockerEvent());
+            PAL_SetEvent(this->GetGarbageCollectionBlockerEvent());
         }
         else
         {
@@ -10905,7 +10910,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
             // store the result of whether the event has been handled by the debugger and
             // wake up the thread waiting for the result
             SetDebuggerHandlingCtrlC(pEvent->hr == S_OK);
-            VERIFY(SetEvent(GetCtrlCMutex()));
+            VERIFY(PAL_SetEvent(GetCtrlCMutex()));
         }
         break;
 
@@ -11420,7 +11425,7 @@ void Debugger::PollWaitingForHelper()
         _ASSERTE(!ThreadHoldsLock());
 
         const DWORD dwTime = 50;
-        ClrSleepEx(dwTime, FALSE);
+        PAL_Sleep(dwTime);
         nTotalMSToWait -= dwTime;
 
         if (nTotalMSToWait <= 0)
@@ -13481,7 +13486,8 @@ LONG Debugger::FirstChanceSuspendHijackWorker(CONTEXT *pContext,
             // Wait for the continue. We may / may not have an EE Thread for this, (and we're definitely
             // not doing fiber-mode debugging), so just use a raw win32 API, and not some fancy fiber-safe call.
             SPEW(fprintf(stderr, "0x%x D::FCHF: waiting for continue.\n", tid));
-            DWORD ret = WaitForSingleObject(g_pDebugger->m_pRCThread->GetDCB()->m_leftSideUnmanagedWaitEvent, INFINITE);
+            HANDLE waitHandles[] = { g_pDebugger->m_pRCThread->GetDCB()->m_leftSideUnmanagedWaitEvent };
+            DWORD ret = PAL_WaitForMultipleObjectsEx(1, waitHandles, false, INFINITE, false);
             SPEW(fprintf(stderr, "0x%x D::FCHF: waiting for continue complete.\n", tid));
 
             if (ret != WAIT_OBJECT_0)
@@ -13571,8 +13577,8 @@ void GenericHijackFuncHelper()
         pEEThread->SetInteropDebuggingHijacked(TRUE);
     }
 
-    DWORD ret = WaitForSingleObject(g_pRCThread->GetDCB()->m_leftSideUnmanagedWaitEvent,
-                                    INFINITE);
+    HANDLE waitHandles[] = { g_pRCThread->GetDCB()->m_leftSideUnmanagedWaitEvent };
+    DWORD ret = PAL_WaitForMultipleObjectsEx(1, waitHandles, false, INFINITE, false);
 
     if (ret != WAIT_OBJECT_0)
     {
@@ -14723,7 +14729,7 @@ void Debugger::DoHelperThreadDuty()
 
     // Make sure the helper thread has something to wait on while
     // we're trying to be the helper thread.
-    VERIFY(ResetEvent(m_pRCThread->GetHelperThreadCanGoEvent()));
+    VERIFY(PAL_ResetEvent(m_pRCThread->GetHelperThreadCanGoEvent()));
 
     // We have not sent the sync-complete flare yet.
 
@@ -14753,7 +14759,7 @@ void Debugger::DoHelperThreadDuty()
     m_pRCThread->GetDCB()->m_temporaryHelperThreadId = 0;
 
     // Let the helper thread go if its waiting on us.
-    VERIFY(SetEvent(m_pRCThread->GetHelperThreadCanGoEvent()));
+    VERIFY(PAL_SetEvent(m_pRCThread->GetHelperThreadCanGoEvent()));
 }
 
 
@@ -14892,7 +14898,8 @@ BOOL Debugger::SendCtrlCToDebugger(DWORD dwCtrlType)
 
     // now wait for notification from the right side about whether or not
     // the out-of-proc debugger is handling ControlC events.
-    ::WaitForSingleObject(GetCtrlCMutex(), INFINITE);
+    HANDLE waitHandles[] = { GetCtrlCMutex() };
+    PAL_WaitForMultipleObjectsEx(1, waitHandles, false, INFINITE, false);
 
     return GetDebuggerHandlingCtrlC();
 }

@@ -44,14 +44,14 @@ uint32_t WINAPI FinalizerStart(void* pContext)
 #ifdef TARGET_WINDOWS
     g_ComAndFlsInitSucceeded = PalInitComAndFlsSlot();
     // handshake with EE initialization, as now we can attach Thread objects to native threads.
-    UInt32_BOOL res = PalSetEvent(g_FinalizerDoneEvent.GetOSEvent());
+    bool res = PAL_SetEvent(g_FinalizerDoneEvent.GetOSEvent());
     ASSERT(res);
 
     // if FLS initialization failed do not attach the current thread and just exit instead.
     // we are going to fail the runtime initialization.
     if (!g_ComAndFlsInitSucceeded)
         return 0;
-#endif // DEBUG
+#endif // TARGET_WINDOWS
 
     HANDLE hFinalizerEvent = (HANDLE)pContext;
 
@@ -67,12 +67,13 @@ uint32_t WINAPI FinalizerStart(void* pContext)
     g_pFinalizerThread = PTR_Thread(pThread);
 
     // Wait for a finalization request.
-    uint32_t uResult = PalWaitForSingleObjectEx(hFinalizerEvent, INFINITE, FALSE);
+    HANDLE waitHandles[] = { hFinalizerEvent };
+    uint32_t uResult = PAL_WaitForMultipleObjectsEx(1, waitHandles, false, INFINITE, false);
     ASSERT(uResult == WAIT_OBJECT_0);
 
     // Since we just consumed the request (and the event is auto-reset) we must set the event again so the
     // managed finalizer code will immediately start processing the queue when we run it.
-    UInt32_BOOL fResult = PalSetEvent(hFinalizerEvent);
+    bool fResult = PAL_SetEvent(hFinalizerEvent);
     ASSERT(fResult);
 
     // Run the managed portion of the finalizer. This call will never return.
@@ -194,7 +195,7 @@ EXTERN_C UInt32_BOOL QCALLTYPE RhpWaitForFinalizerRequest()
         uint32_t  cWaitHandles = (fLastEventWasLowMemory || (lowMemEvent == NULL)) ? 1 : 2;
         uint32_t  uTimeout = fLastEventWasLowMemory ? 2000 : INFINITE;
 
-        uint32_t uResult = PalCompatibleWaitAny(/*alertable=*/ FALSE, uTimeout, cWaitHandles, rgWaitHandles, /*allowReentrantWait=*/ FALSE);
+        uint32_t uResult = PAL_WaitForMultipleObjectsEx(cWaitHandles, rgWaitHandles, false, uTimeout, false);
 
         switch (uResult)
         {
@@ -227,7 +228,7 @@ EXTERN_C UInt32_BOOL QCALLTYPE RhpWaitForFinalizerRequest()
             break;
 
         default:
-            ASSERT(!"Unexpected PalWaitForMultipleObjectsEx() result");
+            ASSERT(!"Unexpected PAL_WaitForMultipleObjectsEx() result");
             return FALSE;
         }
     } while (true);

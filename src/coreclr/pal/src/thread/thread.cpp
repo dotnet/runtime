@@ -101,10 +101,7 @@ CObjectType CorUnix::otThread(
                 NULL,   // No immutable data copy routine
                 NULL,   // No immutable data cleanup routine
                 sizeof(CThreadProcessLocalData),
-                NULL,   // No process local data cleanup routine
-                CObjectType::WaitableObject,
-                CObjectType::SingleTransitionObject,
-                CObjectType::ThreadReleaseHasNoSideEffects
+                NULL    // No process local data cleanup routine
                 );
 
 CAllowedObjectTypes aotThread(otiThread);
@@ -683,9 +680,6 @@ CorUnix::InternalEndCurrentThread(
     CPalThread *pThread
     )
 {
-    PAL_ERROR palError = NO_ERROR;
-    ISynchStateController *pSynchStateController = NULL;
-
     //
     // Need to synchronize setting the thread state to TS_DONE since
     // this is checked for in InternalSuspendThreadFromData.
@@ -693,32 +687,8 @@ CorUnix::InternalEndCurrentThread(
     //
 
     pThread->suspensionInfo.AcquireSuspensionLock(pThread);
-    pThread->synchronizationInfo.SetThreadState(TS_DONE);
+    pThread->SetThreadState(TS_DONE);
     pThread->suspensionInfo.ReleaseSuspensionLock(pThread);
-
-    //
-    // Mark the thread object as signaled
-    //
-
-    palError = pThread->GetThreadObject()->GetSynchStateController(
-        pThread,
-        &pSynchStateController
-        );
-
-    if (NO_ERROR == palError)
-    {
-        palError = pSynchStateController->SetSignalCount(1);
-        if (NO_ERROR != palError)
-        {
-            ASSERT("Unable to mark thread object as signaled");
-        }
-
-        pSynchStateController->ReleaseController();
-    }
-    else
-    {
-        ASSERT("Unable to obtain state controller for thread");
-    }
 
     //
     // Add a reference to the thread data before releasing the
@@ -918,7 +888,7 @@ CorUnix::InternalSetThreadPriority(
     }
 
     /* check if the thread is still running */
-    if (TS_DONE == pTargetThread->synchronizationInfo.GetThreadState())
+    if (TS_DONE == pTargetThread->GetThreadState())
     {
         /* the thread has exited, set the priority in the thread structure
            and exit */
@@ -1513,7 +1483,7 @@ CPalThread::ThreadEntry(
         pThread->SetStartStatus(TRUE);
     }
 
-    pThread->synchronizationInfo.SetThreadState(TS_RUNNING);
+    pThread->SetThreadState(TS_RUNNING);
 
     /* Inform all loaded modules that a thread has been created */
     /* note : no need to take a critical section to serialize here; the loader
@@ -1539,7 +1509,7 @@ fail:
 
     if (NULL != pThread)
     {
-        pThread->synchronizationInfo.SetThreadState(TS_FAILED);
+        pThread->SetThreadState(TS_FAILED);
         pThread->SetStartStatus(FALSE);
     }
 
@@ -1970,12 +1940,6 @@ CPalThread::RunPreCreateInitializers(
     // Call the pre-create initializers for embedded classes
     //
 
-    palError = synchronizationInfo.InitializePreCreate();
-    if (NO_ERROR != palError)
-    {
-        goto RunPreCreateInitializersExit;
-    }
-
     palError = suspensionInfo.InitializePreCreate();
     if (NO_ERROR != palError)
     {
@@ -2053,12 +2017,6 @@ CPalThread::RunPostCreateInitializers(
     {
         ASSERT("Unable to set the thread object key's value\n");
         palError = ERROR_INTERNAL_ERROR;
-        goto RunPostCreateInitializersExit;
-    }
-
-    palError = synchronizationInfo.InitializePostCreate(this, m_threadId, m_dwLwpId);
-    if (NO_ERROR != palError)
-    {
         goto RunPostCreateInitializersExit;
     }
 

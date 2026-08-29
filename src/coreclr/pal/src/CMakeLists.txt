@@ -196,10 +196,6 @@ set(SOURCES
   safecrt/wcsncat_s.cpp
   safecrt/wcsncpy_s.cpp
   safecrt/wmakepath_s.cpp
-  synchobj/event.cpp
-  synchmgr/synchcontrollers.cpp
-  synchmgr/synchmanager.cpp
-  synchmgr/wait.cpp
   thread/process.cpp
   thread/thread.cpp
   thread/threadsusp.cpp
