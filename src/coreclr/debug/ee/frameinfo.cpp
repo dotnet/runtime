@@ -1503,11 +1503,12 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
         }
     }
     else
-    // We ignore PInvoke methods with inlined stubs in our stackwalking.
-    // These are similar to IL stubs but use PInvokeMethodDesc instead of DynamicMethodDesc.
-    if ((md != NULL) && md->IsPInvoke() && pCF->IsFrameless())
+    // We ignore PInvoke and CLR->COM methods with inlined stubs in our stackwalking.
+    // These are similar to IL stubs but use PInvokeMethodDesc/CLRToCOMCallMethodDesc
+    // instead of DynamicMethodDesc.
+    if ((md != NULL) && (md->IsPInvoke() || md->IsCLRToCOMCall()) && pCF->IsFrameless())
     {
-        LOG((LF_CORDB, LL_INFO100000, "DWSP: Skip frameless PInvoke stub.\n"));
+        LOG((LF_CORDB, LL_INFO100000, "DWSP: Skip frameless interop stub.\n"));
     }
     else
     // For frames w/o method data, send them as an internal stub frame.

@@ -10,8 +10,6 @@ parameters:
         eng/testing/BrowserVersions.props
         eng/testing/WasmRunner*
         eng/testing/WasiRunner*
-        eng/testing/scenarios/BuildWasiAppsJobsList.txt
-        eng/testing/scenarios/BuildWasmAppsJobsList.txt
         eng/testing/tests.browser.targets
         eng/testing/tests.was*.targets
         eng/testing/was*provisioning.targets
@@ -229,9 +227,6 @@ jobs:
       - eng/AcquireWasiSdk.targets
       - eng/AcquireEmscriptenSdk.targets
       - eng/wasm/*
-      - eng/testing/scenarios/BuildWasiAppsJobsList.txt
-      - eng/testing/scenarios/BuildWasmAppsJobsList.txt
-      - eng/testing/scenarios/BuildWasmAppsJobsListCoreCLR.txt
       - eng/testing/tests.browser.targets
       - eng/testing/tests.was*.targets
       - src/mono/nuget/Microsoft.NET.Runtime.WorkloadTesting.Internal/Sdk/WorkloadTesting.Core.targets
@@ -318,8 +313,6 @@ jobs:
       # other paths that should also trigger wasm jobs
       - src/mono/*
       exclude:
-      - eng/testing/scenarios/BuildWasiAppsJobsList.txt
-      - eng/testing/scenarios/BuildWasmAppsJobsList.txt
       - src/mono/nuget/Microsoft.NET.Runtime.WorkloadTesting.Internal/Sdk/WorkloadTesting.Core.targets
       - eng/testing/workloads-browser.targets
       - eng/testing/workloads-testing.targets

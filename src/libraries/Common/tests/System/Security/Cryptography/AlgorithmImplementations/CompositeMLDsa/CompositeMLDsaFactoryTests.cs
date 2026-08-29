@@ -730,16 +730,7 @@ namespace System.Security.Cryptography.Tests
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                if (PlatformDetection.IsWindows10Version28120OrGreater)
-                {
-                    // Windows supports: https://learn.microsoft.com/en-us/windows/win32/seccng/bcrypt/ns-bcrypt-bcrypt_pqdsa_key_blob#cbparameterset
-                    supported = true;
-                }
-                else
-                {
-                    // Do not fall back to managed implementation on Windows versions that do not support Composite ML-DSA.
-                    supported = false;
-                }
+                supported = CompositeMLDsaTestHelpers.IsBCryptSupported;
             }
             else
             {
@@ -758,20 +749,13 @@ namespace System.Security.Cryptography.Tests
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                if (PlatformDetection.IsWindows10Version28120OrGreater)
-                {
-                    // Windows supports: https://learn.microsoft.com/en-us/windows/win32/seccng/bcrypt/ns-bcrypt-bcrypt_pqdsa_key_blob#cbparameterset
-                    supported =
-                        algorithm == CompositeMLDsaAlgorithm.MLDsa44WithECDsaP256 ||
+                // Windows supports: https://learn.microsoft.com/en-us/windows/win32/seccng/bcrypt/ns-bcrypt-bcrypt_pqdsa_key_blob#cbparameterset
+                supported =
+                    CompositeMLDsaTestHelpers.IsBCryptSupported &&
+                    (algorithm == CompositeMLDsaAlgorithm.MLDsa44WithECDsaP256 ||
                         algorithm == CompositeMLDsaAlgorithm.MLDsa65WithECDsaP256 ||
                         algorithm == CompositeMLDsaAlgorithm.MLDsa65WithECDsaP384 ||
-                        algorithm == CompositeMLDsaAlgorithm.MLDsa87WithECDsaP384;
-                }
-                else
-                {
-                    // Do not fall back to managed implementation on Windows versions that do not support Composite ML-DSA.
-                    supported = false;
-                }
+                        algorithm == CompositeMLDsaAlgorithm.MLDsa87WithECDsaP384);
             }
             else
             {

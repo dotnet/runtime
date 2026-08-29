@@ -26,15 +26,16 @@ public:
     //-------------------------------------------------------
 
 #ifdef FEATURE_COMINTEROP
-    FCDECL1(static MethodTable*,    GetComInterfaceFromMethodDesc, MethodDesc* pMD);
-    FCDECL3(static IUnknown*,       GetCOMIPFromRCW,    Object* pSrcUNSAFE, MethodDesc* pMD, void **ppTarget);
+    FCDECL4(static IUnknown*,       GetCOMIPFromRCW,    Object* pSrcUNSAFE, MethodTable* pInterfaceMT, INT32 comSlot, void **ppTarget);
 #endif // FEATURE_COMINTEROP
 
     FCDECL0(static void,            SetLastError            );
     FCDECL0(static void,            ClearLastError          );
 
     FCDECL2(static void,            LogPinnedArgument, MethodDesc *localDesc, Object *nativeArg);
+#ifdef FEATURE_VARARGS
     FCDECL1(static DWORD,           CalcVaListSize, VARARGS *varargs);
+#endif // FEATURE_VARARGS
 };
 
 extern "C" void QCALLTYPE StubHelpers_CreateCustomMarshaler(MethodDesc* pMD, mdToken paramToken, TypeHandle hndManagedType, QCall::ObjectHandleOnStack retObject);
@@ -45,7 +46,7 @@ extern "C" void QCALLTYPE StubHelpers_ProfilerEndTransitionCallback(MethodDesc* 
 #endif
 
 #ifdef FEATURE_COMINTEROP
-extern "C" IUnknown* QCALLTYPE StubHelpers_GetCOMIPFromRCWSlow(QCall::ObjectHandleOnStack pSrc, MethodDesc* pMD, void** ppTarget, BOOL* pfNeedsRelease);
+extern "C" IUnknown* QCALLTYPE StubHelpers_GetCOMIPFromRCWSlow(QCall::ObjectHandleOnStack pSrc, MethodTable* pInterfaceMT, INT32 comSlot, void** ppTarget, BOOL* pfNeedsRelease);
 
 extern "C" void QCALLTYPE ObjectMarshaler_ConvertToNative(QCall::ObjectHandleOnStack pSrcUNSAFE, VARIANT* pDest);
 extern "C" void QCALLTYPE ObjectMarshaler_ConvertToManaged(VARIANT* pSrc, QCall::ObjectHandleOnStack retObject);
@@ -57,9 +58,12 @@ extern "C" void QCALLTYPE InterfaceMarshaler_ValidateComVisibilityForIUnknown(IU
 #endif
 
 extern "C" void QCALLTYPE StubHelpers_ThrowInteropParamException(INT resID, INT paramIdx);
+extern "C" void QCALLTYPE StubHelpers_ThrowInteropException(INT exceptionKind, INT resID);
 
+#ifdef FEATURE_VARARGS
 extern "C" void QCALLTYPE StubHelpers_MarshalToManagedVaList(va_list va, VARARGS* pArgIterator);
 extern "C" void QCALLTYPE StubHelpers_MarshalToUnmanagedVaList(va_list va, DWORD cbVaListSize, const VARARGS* pArgIterator);
+#endif // FEATURE_VARARGS
 
 extern "C" void QCALLTYPE StubHelpers_ValidateObject(QCall::ObjectHandleOnStack pObj, MethodDesc *pMD);
 extern "C" void QCALLTYPE StubHelpers_ValidateByref(void *pByref, MethodDesc *pMD);

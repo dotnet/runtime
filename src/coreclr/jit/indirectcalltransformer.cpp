@@ -1545,22 +1545,32 @@ private:
 
 #ifdef DEBUG
 
-//------------------------------------------------------------------------
-// fgDebugCheckForTransformableIndirectCalls: callback to make sure there
-//  are no more GTF_CALL_M_FAT_POINTER_CHECK or GTF_CALL_M_GUARDED_DEVIRT
-//  calls remaining
-//
-Compiler::fgWalkResult Compiler::fgDebugCheckForTransformableIndirectCalls(GenTree** pTree, fgWalkData* data)
+class CheckTransformableIndirectCallsVisitor final : public GenTreeVisitor<CheckTransformableIndirectCallsVisitor>
 {
-    GenTree* tree = *pTree;
-    if (tree->IsCall())
+public:
+    enum
     {
-        GenTreeCall* call = tree->AsCall();
-        assert(!call->IsFatPointerCandidate());
-        assert(!call->IsGuardedDevirtualizationCandidate());
+        DoPreOrder = true,
+    };
+
+    CheckTransformableIndirectCallsVisitor(Compiler* compiler)
+        : GenTreeVisitor<CheckTransformableIndirectCallsVisitor>(compiler)
+    {
     }
-    return WALK_CONTINUE;
-}
+
+    fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+    {
+        GenTree* tree = *use;
+        if (tree->IsCall())
+        {
+            GenTreeCall* call = tree->AsCall();
+            assert(!call->IsFatPointerCandidate());
+            assert(!call->IsGuardedDevirtualizationCandidate());
+        }
+
+        return fgWalkResult::WALK_CONTINUE;
+    }
+};
 
 //------------------------------------------------------------------------
 // CheckNoTransformableIndirectCallsRemain: walk through blocks and check
@@ -1570,11 +1580,13 @@ void Compiler::CheckNoTransformableIndirectCallsRemain()
 {
     assert(!doesMethodHaveFatPointer());
 
+    CheckTransformableIndirectCallsVisitor visitor(this);
+
     for (BasicBlock* const block : Blocks())
     {
         for (Statement* const stmt : block->Statements())
         {
-            fgWalkTreePre(stmt->GetRootNodePointer(), fgDebugCheckForTransformableIndirectCalls);
+            visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
         }
     }
 }
