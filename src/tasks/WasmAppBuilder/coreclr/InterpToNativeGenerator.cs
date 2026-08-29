@@ -274,7 +274,25 @@ internal sealed class InterpToNativeGenerator
 
                 var args = Args(tokens);
 
-                var portableEntryPointComma = args.Count > 0 ? ", " : "";
+                var argTypes = args.Select(static t => SignatureMapper.TokenToNativeType(t)).ToList();
+                var argValues = ArgsWithSlotOffsets(args).ToList();
+
+                // R2R code takes a struct return through an explicit buffer that follows the stack
+                // pointer and 'this', so the pointer this calls through must spell it out. Declaring
+                // the call as returning the struct would make the compiler insert its own sret
+                // pointer at parameter 0 instead, ahead of the stack pointer. Native callees keep the
+                // by-value form, which is what their own C ABI gives them.
+                bool isStructReturn = isPortableEntryPointCall && IsStructToken(returnToken);
+                if (isStructReturn)
+                {
+                    argTypes.Insert(args.Count > 0 && args[0] == "T" ? 1 : 0, "int8_t*");
+                    argValues.Insert(args.Count > 0 && args[0] == "T" ? 1 : 0, "pRet");
+                }
+
+                string fptrReturn = isStructReturn ? "void" : result.nativeType;
+                string assignResult = isStructReturn || result.isVoid ? "" : $"*(({result.nativeType}*)pRet) = ";
+
+                var portableEntryPointComma = argTypes.Count > 0 ? ", " : "";
                 var portableEntrypointDeclaration = isPortableEntryPointCall ? portableEntryPointComma + "PCODE" : "";
                 var portableEntrypointParam = isPortableEntryPointCall ? portableEntryPointComma + "pPortableEntryPoint" : "";
                 var portableEntrypointStackDeclaration = isPortableEntryPointCall ? "int*, " : "";
@@ -285,8 +303,8 @@ internal sealed class InterpToNativeGenerator
 
                         {{(isPortableEntryPointCall ? "NOINLINE " : "")}}static void {{CallFuncName(args, SignatureMapper.TokenToNameType(returnToken), isPortableEntryPointCall)}}(PCODE {{(isPortableEntryPointCall ? "pPortableEntryPoint" : "pcode")}}, int8_t* pArgs, int8_t* pRet)
                         {{{(isPortableEntryPointCall ? "\n        alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;" : "")}}
-                            {{result.nativeType}} (*fptr)({{portableEntrypointStackDeclaration}}{{string.Join(", ", args.Select(static t => SignatureMapper.TokenToNativeType(t)))}}{{portableEntrypointDeclaration}}) = {{portableEntrypointPointerRD}}({{result.nativeType}} ({{portableEntrypointPointerRD}}*)({{portableEntrypointStackDeclaration}}{{string.Join(", ", args.Select(static t => SignatureMapper.TokenToNativeType(t)))}}{{portableEntrypointDeclaration}})){{(isPortableEntryPointCall ? "(pPortableEntryPoint)" : "pcode")}};
-                            {{(result.isVoid ? "" : "*" + "((" + result.nativeType + "*)pRet) = ")}}(*fptr)({{portableEntrypointStackParam}}{{string.Join(", ", ArgsWithSlotOffsets(args))}}{{portableEntrypointParam}});
+                            {{fptrReturn}} (*fptr)({{portableEntrypointStackDeclaration}}{{string.Join(", ", argTypes)}}{{portableEntrypointDeclaration}}) = {{portableEntrypointPointerRD}}({{fptrReturn}} ({{portableEntrypointPointerRD}}*)({{portableEntrypointStackDeclaration}}{{string.Join(", ", argTypes)}}{{portableEntrypointDeclaration}})){{(isPortableEntryPointCall ? "(pPortableEntryPoint)" : "pcode")}};
+                            {{assignResult}}(*fptr)({{portableEntrypointStackParam}}{{string.Join(", ", argValues)}}{{portableEntrypointParam}});
                         }
 
                     """);
