@@ -979,12 +979,9 @@ elseif(CLR_CMAKE_TARGET_ARCH_WASM)
     endif()
     # Unlike the other generated call helpers, the portable entrypoint thunks are not regenerated
     # per app, so they belong in the shipped static library rather than in cee_wks_gen.
-    # Only browser has a generated table today; wasi keeps using the hand-written thunks alone.
-    if (CLR_CMAKE_TARGET_BROWSER)
-        list(APPEND VM_SOURCES_WKS_ARCH
-            ${ARCH_SOURCES_DIR}/${WASM_THUNK_SUBDIR}/callhelpers-portable-entrypoints.cpp
-        )
-    endif(CLR_CMAKE_TARGET_BROWSER)
+    list(APPEND VM_SOURCES_WKS_ARCH
+        ${ARCH_SOURCES_DIR}/${WASM_THUNK_SUBDIR}/callhelpers-portable-entrypoints.cpp
+    )
     set(VM_SOURCES_WKS_GEN
         ${ARCH_SOURCES_DIR}/${WASM_THUNK_SUBDIR}/callhelpers-interp-to-managed.cpp
         ${ARCH_SOURCES_DIR}/${WASM_THUNK_SUBDIR}/callhelpers-reverse.cpp

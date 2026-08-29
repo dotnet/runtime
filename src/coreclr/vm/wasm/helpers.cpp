@@ -18,8 +18,7 @@ void ExecuteInterpretedMethodWithArgs_PortableEntryPoint(PCODE portableEntrypoin
 
 // -------------------------------------------------
 // The R2R to interpreter thunks are generated into callhelpers-portable-entrypoints.cpp by the
-// WasmAppBuilder generator. Only browser has one; wasi has no generated table yet, so a call that
-// needs a thunk there reports a missing key rather than finding one.
+// WasmAppBuilder generator, one table per target.
 // -------------------------------------------------
 
 extern "C" void STDCALL CallCountingStubCode()
@@ -1309,17 +1308,11 @@ void InitializeWasmThunkCaches()
 
     {
         StringToWasmSigThunkHash* newTable = new StringToWasmSigThunkHash();
-        size_t total = 0;
-#ifdef TARGET_BROWSER
-        total = g_wasmGeneratedPortableEntryPointThunksCount;
-#endif
-        newTable->Reallocate(total * StringToWasmSigThunkHash::s_density_factor_denominator / StringToWasmSigThunkHash::s_density_factor_numerator + 1);
-#ifdef TARGET_BROWSER
+        newTable->Reallocate(g_wasmGeneratedPortableEntryPointThunksCount * StringToWasmSigThunkHash::s_density_factor_denominator / StringToWasmSigThunkHash::s_density_factor_numerator + 1);
         for (size_t i = 0; i < g_wasmGeneratedPortableEntryPointThunksCount; i++)
         {
             newTable->Add(g_wasmGeneratedPortableEntryPointThunks[i].key, g_wasmGeneratedPortableEntryPointThunks[i].value);
         }
-#endif
         portableEntrypointThunkCache = newTable;
     }
 }
