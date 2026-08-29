@@ -593,12 +593,22 @@ typedef DPTR(GSCookie) PTR_GSCookie;
 #define READONLY_ATTR __attribute__((READONLY_ATTR_ARGS))
 #endif
 
+// Apple's __DATA_CONST segment is immutable at runtime, so InitGSCookie's ClrVirtualProtect
+// call fails there (see nativeaot/Runtime for the same FEATURE_READONLY_GS_COOKIE guard).
+#ifndef TARGET_APPLE
+#define FEATURE_READONLY_GS_COOKIE
+#endif
+
 #ifndef DACCESS_COMPILE
 // const is so that it gets placed in the .text section (which is read-only)
 // volatile is so that accesses to it do not get optimized away because of the const
 //
 
+#ifdef FEATURE_READONLY_GS_COOKIE
 extern "C" RAW_KEYWORD(volatile) READONLY_ATTR const GSCookie s_gsCookie;
+#else
+extern "C" RAW_KEYWORD(volatile) GSCookie s_gsCookie;
+#endif
 
 inline
 GSCookie * GetProcessGSCookiePtr() { return  const_cast<GSCookie *>(&s_gsCookie); }
