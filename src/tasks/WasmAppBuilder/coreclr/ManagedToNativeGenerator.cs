@@ -131,7 +131,7 @@ public class ManagedToNativeGenerator : Task
             "vTS8p", "vTS8ip", "vTS8S8p", "vTiS8p", "vTS12p", "vTS32p", "vTiiS8S8iip",
             "S8Tp", "S8Tip", "S8Tiiip", "S12Tiip", "S12Tiiip", "S12TS12ip", "S16Tp", "S1Tp",
             "S12TiS12ip",
-            "viiiip", "iiiiiiiip", "iiiiiiiiip", "idp", "ldp", "iiS8p", "iS8p",
+            "viiiip", "iiiiiiiip", "iiiiiiiiip", "idp", "ldp", "iiS8p", "iS8p", "S16l2ip",
         };
 
         IEnumerable<string> cookies = pinvoke.Generate(PInvokeModules, IgnoredPInvokeModules, PInvokeOutputPath, ReversePInvokeOutputPath);

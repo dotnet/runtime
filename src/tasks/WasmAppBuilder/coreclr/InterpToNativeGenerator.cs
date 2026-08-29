@@ -152,13 +152,21 @@ internal sealed class InterpToNativeGenerator
                 // A float or double occupies its slot as itself: casting to int64_t would convert the
                 // value rather than store its bits, and the interpreter reads the slot back through
                 // ARG_F32/ARG_F64.
-                stores.Add(t switch
+                if (SignatureMapper.TryGetMultiSlotToken(t, out int multiSlotCount))
                 {
-                    _ when IsStructToken(t) => $"        memcpy(&transitionBlock.args[{slot}], arg{i}, {SignatureMapper.GetStructSize(t)});",
-                    "f" => $"        *(float*)&transitionBlock.args[{slot}] = arg{i};",
-                    "d" => $"        *(double*)&transitionBlock.args[{slot}] = arg{i};",
-                    _ => $"        transitionBlock.args[{slot}] = (int64_t)arg{i};",
-                });
+                    for (int s = 0; s < multiSlotCount; s++)
+                        stores.Add($"        transitionBlock.args[{slot + s}] = {PortableEntryPointThunkSignature.MultiSlotParameterName(i, s, multiSlotCount)};");
+                }
+                else
+                {
+                    stores.Add(t switch
+                    {
+                        _ when IsStructToken(t) => $"        memcpy(&transitionBlock.args[{slot}], arg{i}, {SignatureMapper.GetStructSize(t)});",
+                        "f" => $"        *(float*)&transitionBlock.args[{slot}] = arg{i};",
+                        "d" => $"        *(double*)&transitionBlock.args[{slot}] = arg{i};",
+                        _ => $"        transitionBlock.args[{slot}] = (int64_t)arg{i};",
+                    });
+                }
 
                 slot += SignatureMapper.TokenToSlotCount(t);
             }
@@ -274,7 +282,21 @@ internal sealed class InterpToNativeGenerator
 
                 var args = Args(tokens);
 
-                var argTypes = args.Select(static t => SignatureMapper.TokenToNativeType(t)).ToList();
+                var argTypes = new List<string>();
+                foreach (var argToken in args)
+                {
+                    if (SignatureMapper.TryGetMultiSlotToken(argToken, out int multiSlotCount))
+                    {
+                        string slotType = SignatureMapper.MultiSlotElementNativeType(argToken);
+                        for (int s = 0; s < multiSlotCount; s++)
+                            argTypes.Add(slotType);
+                    }
+                    else
+                    {
+                        argTypes.Add(SignatureMapper.TokenToNativeType(argToken));
+                    }
+                }
+
                 var argValues = ArgsWithSlotOffsets(args).ToList();
 
                 // R2R code takes a struct return through an explicit buffer that follows the stack
@@ -348,7 +370,17 @@ internal sealed class InterpToNativeGenerator
                     slot = (slot + 1) & ~1;
                 }
 
-                result.Add($"{SignatureMapper.TokenToArgType(token)}({slot})");
+                if (SignatureMapper.TryGetMultiSlotToken(token, out int multiSlotCount))
+                {
+                    string slotArgType = SignatureMapper.MultiSlotElementArgType(token);
+                    for (int s = 0; s < multiSlotCount; s++)
+                        result.Add($"{slotArgType}({slot + s})");
+                }
+                else
+                {
+                    result.Add($"{SignatureMapper.TokenToArgType(token)}({slot})");
+                }
+
                 slot += SignatureMapper.TokenToSlotCount(token);
             }
 

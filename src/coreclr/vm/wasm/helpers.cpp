@@ -17,45 +17,9 @@
 void ExecuteInterpretedMethodWithArgs_PortableEntryPoint(PCODE portableEntrypoint, TransitionBlock* block, size_t argsSize, int8_t* retBuff);
 
 // -------------------------------------------------
-// Logic that will eventually mostly be pregenerated for R2R to interpreter code
-// -------------------------------------------------
-namespace
-{
-    // 'l2' is a 16-byte multi-slot argument (Int128/UInt128/Decimal128) passed by value in two i64
-    // slots. A struct return is NOT a C return value here: crossgen2 passes the return buffer as an
-    // explicit parameter (after callersStackPointer, or after 'this' for an instance method), so the
-    // thunk must be void — returning a struct would make the compiler insert its own sret pointer at
-    // parameter 0 and shift everything.
-    FCDECL4(void, CallInterpreter_L2_I32_RetS16, int8_t*, int64_t, int64_t, int32_t);
-    WASM_CALLABLE_FUNC_5(void, CallInterpreter_L2_I32_RetS16, int8_t* retBuf, int64_t arg0Lo, int64_t arg0Hi, int32_t arg1, PCODE portableEntrypoint)
-    {
-        struct
-        {
-            TransitionBlock block;
-            int64_t args[3];
-        } transitionBlock;
-        transitionBlock.block.m_ReturnAddress = 0;
-        transitionBlock.block.m_StackPointer = callersStackPointer;
-        transitionBlock.args[0] = arg0Lo;
-        transitionBlock.args[1] = arg0Hi;
-        transitionBlock.args[2] = (int64_t)arg1;
-        static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
-
-        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, sizeof(transitionBlock.args), retBuf);
-    }
-
-}
-
-const StringToWasmSigThunk g_wasmPortableEntryPointThunks[] = {
-    // Every other shape is emitted by the WasmAppBuilder generator into
-    // callhelpers-portable-entrypoints.cpp; only the multi-slot 'l2' form, which the generator
-    // cannot express, is still written by hand.
-    { "IS16l2ip", (void*)&CallInterpreter_L2_I32_RetS16 },
-};
-
-const size_t g_wasmPortableEntryPointThunksCount = sizeof(g_wasmPortableEntryPointThunks) / sizeof(g_wasmPortableEntryPointThunks[0]);
-// -------------------------------------------------
-// END Logic that will eventually mostly be pregenerated for R2R to interpreter code END
+// The R2R to interpreter thunks are generated into callhelpers-portable-entrypoints.cpp by the
+// WasmAppBuilder generator. Only browser has one; wasi has no generated table yet, so a call that
+// needs a thunk there reports a missing key rather than finding one.
 // -------------------------------------------------
 
 extern "C" void STDCALL CallCountingStubCode()
@@ -1229,7 +1193,7 @@ namespace
             // Printed rather than only asserted: the caller's assert compiles out in release, where these
             // gaps surface, and cannot carry the key. A miss leaves the entry point's table index 0 and
             // traps later as "null function", far from here.
-            printf("WASM: no R2R-to-interpreter thunk for signature key '%s'. Add it to g_wasmPortableEntryPointThunks.\n", keyBuffer);
+            printf("WASM: no R2R-to-interpreter thunk for signature key '%s'. Add it to pregeneratedInterpreterToNativeSignatures in ManagedToNativeGenerator and regenerate.\n", keyBuffer);
         }
         return thunk;
     }
@@ -1345,15 +1309,11 @@ void InitializeWasmThunkCaches()
 
     {
         StringToWasmSigThunkHash* newTable = new StringToWasmSigThunkHash();
-        size_t total = g_wasmPortableEntryPointThunksCount;
+        size_t total = 0;
 #ifdef TARGET_BROWSER
-        total += g_wasmGeneratedPortableEntryPointThunksCount;
+        total = g_wasmGeneratedPortableEntryPointThunksCount;
 #endif
         newTable->Reallocate(total * StringToWasmSigThunkHash::s_density_factor_denominator / StringToWasmSigThunkHash::s_density_factor_numerator + 1);
-        for (size_t i = 0; i < g_wasmPortableEntryPointThunksCount; i++)
-        {
-            newTable->Add(g_wasmPortableEntryPointThunks[i].key, g_wasmPortableEntryPointThunks[i].value);
-        }
 #ifdef TARGET_BROWSER
         for (size_t i = 0; i < g_wasmGeneratedPortableEntryPointThunksCount; i++)
         {

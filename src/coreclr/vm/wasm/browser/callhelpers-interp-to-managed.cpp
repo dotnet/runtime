@@ -59,6 +59,13 @@ namespace
         (*fptr)(&framePointer, ARG_I32(0), pRet, pPortableEntryPoint);
     }
 
+    NOINLINE static void CallFunc_L2_I32_RetS16_PE(PCODE pPortableEntryPoint, int8_t* pArgs, int8_t* pRet)
+    {
+        alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;
+        void (*fptr)(int*, int8_t*, int64_t, int64_t, int32_t, PCODE) = *(void (**)(int*, int8_t*, int64_t, int64_t, int32_t, PCODE))(pPortableEntryPoint);
+        (*fptr)(&framePointer, pRet, ARG_I64(0), ARG_I64(1), ARG_I32(2), pPortableEntryPoint);
+    }
+
     NOINLINE static void CallFunc_This_RetS1_PE(PCODE pPortableEntryPoint, int8_t* pArgs, int8_t* pRet)
     {
         alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;
@@ -952,6 +959,7 @@ const StringToWasmSigThunk g_wasmThunks[] = {
     { "MS12Tiiip", (void*)&CallFunc_This_I32_I32_I32_RetS12_PE },
     { "MS12Tiip", (void*)&CallFunc_This_I32_I32_RetS12_PE },
     { "MS16Tp", (void*)&CallFunc_This_RetS16_PE },
+    { "MS16l2ip", (void*)&CallFunc_L2_I32_RetS16_PE },
     { "MS1Tp", (void*)&CallFunc_This_RetS1_PE },
     { "MS8Tiiip", (void*)&CallFunc_This_I32_I32_I32_RetS8_PE },
     { "MS8Tip", (void*)&CallFunc_This_I32_RetS8_PE },

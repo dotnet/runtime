@@ -110,6 +110,25 @@ namespace
         return;
     }
 
+    FCDECL4(void, CallInterpreter_L2_I32_RetS16, int8_t*, int64_t, int64_t, int32_t);
+    WASM_CALLABLE_FUNC_5(void, CallInterpreter_L2_I32_RetS16, int8_t* retBuf, int64_t arg0Lo, int64_t arg0Hi, int32_t arg1, PCODE portableEntrypoint)
+    {
+        struct
+        {
+            TransitionBlock block;
+            int64_t args[3];
+        } transitionBlock;
+        transitionBlock.block.m_ReturnAddress = 0;
+        transitionBlock.block.m_StackPointer = callersStackPointer;
+        transitionBlock.args[0] = arg0Lo;
+        transitionBlock.args[1] = arg0Hi;
+        transitionBlock.args[2] = (int64_t)arg1;
+        static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
+
+        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, sizeof(transitionBlock.args), retBuf);
+        return;
+    }
+
     FCDECL2(void, CallInterpreter_This_RetS1, int32_t, int8_t*);
     WASM_CALLABLE_FUNC_3(void, CallInterpreter_This_RetS1, int32_t arg0, int8_t* retBuf, PCODE portableEntrypoint)
     {
@@ -1372,6 +1391,7 @@ const StringToWasmSigThunk g_wasmGeneratedPortableEntryPointThunks[] = {
     { "IS12Tiiip", (void*)&CallInterpreter_This_I32_I32_I32_RetS12 },
     { "IS12Tiip", (void*)&CallInterpreter_This_I32_I32_RetS12 },
     { "IS16Tp", (void*)&CallInterpreter_This_RetS16 },
+    { "IS16l2ip", (void*)&CallInterpreter_L2_I32_RetS16 },
     { "IS1Tp", (void*)&CallInterpreter_This_RetS1 },
     { "IS8Tiiip", (void*)&CallInterpreter_This_I32_I32_I32_RetS8 },
     { "IS8Tip", (void*)&CallInterpreter_This_I32_RetS8 },

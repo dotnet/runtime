@@ -29,6 +29,12 @@ internal static class PortableEntryPointThunkSignature
         => IsStructToken(token) ? "int8_t*" : SignatureMapper.TokenToNativeType(token);
 
     /// <summary>
+    /// The name of one slot of a multi-slot argument, which occupies several wasm parameters.
+    /// </summary>
+    public static string MultiSlotParameterName(int argIndex, int slot, int slotCount)
+        => slotCount == 2 ? $"arg{argIndex}{(slot == 0 ? "Lo" : "Hi")}" : $"arg{argIndex}_{slot}";
+
+    /// <summary>
     /// The thunk's declared C parameters, in the order crossgen2 passes them:
     /// (callersStackPointer, [this], retBuf, args..., portableEntrypoint). The stack pointer comes
     /// from the WASM_CALLABLE_FUNC macro and the entrypoint is appended by the caller, so neither
@@ -38,7 +44,18 @@ internal static class PortableEntryPointThunkSignature
     {
         var parameters = new List<Parameter>(args.Count + 1);
         for (int i = 0; i < args.Count; i++)
-            parameters.Add(new Parameter(DeclType(args[i]), $"arg{i}"));
+        {
+            if (SignatureMapper.TryGetMultiSlotToken(args[i], out int slotCount))
+            {
+                string slotType = SignatureMapper.MultiSlotElementNativeType(args[i]);
+                for (int slot = 0; slot < slotCount; slot++)
+                    parameters.Add(new Parameter(slotType, MultiSlotParameterName(i, slot, slotCount)));
+            }
+            else
+            {
+                parameters.Add(new Parameter(DeclType(args[i]), $"arg{i}"));
+            }
+        }
 
         if (isStructReturn)
         {

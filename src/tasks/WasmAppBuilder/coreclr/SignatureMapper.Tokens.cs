@@ -47,16 +47,41 @@ internal static partial class SignatureMapper
     }
 
     /// <summary>
-    /// True for a token describing a type passed by value across several wasm parameters
-    /// ("l2", "V2", "V4"). Interop signatures do not use these today.
+    /// True for a token describing a type passed by value across several wasm parameters ("l2",
+    /// "V2", "V4"), reporting how many it occupies. A caller has to expand it into one parameter per
+    /// slot; the single-type accessors below still reject it so an unexpanded token cannot slip
+    /// through as one parameter.
     /// </summary>
-    private static bool IsMultiSlotToken(string token)
-        => token.Length == 2 && token[0] is 'l' or 'V' && char.IsDigit(token[1]);
+    public static bool TryGetMultiSlotToken(string token, out int slotCount)
+    {
+        if (token.Length == 2 && token[0] is 'l' or 'V' && char.IsDigit(token[1]))
+        {
+            slotCount = token[1] - '0';
+            return true;
+        }
+
+        slotCount = 0;
+        return false;
+    }
+
+    /// <summary>The type of one slot of a multi-slot token.</summary>
+    public static string MultiSlotElementNativeType(string token) => token[0] switch
+    {
+        'l' => "int64_t",
+        _ => throw new NotSupportedException($"Multi-slot token '{token}' has no native type these thunks can spell")
+    };
+
+    /// <summary>The interpreter stack accessor for one slot of a multi-slot token.</summary>
+    public static string MultiSlotElementArgType(string token) => token[0] switch
+    {
+        'l' => "ARG_I64",
+        _ => throw new NotSupportedException($"Multi-slot token '{token}' has no interpreter stack accessor")
+    };
 
     private static void RejectMultiSlotToken(string token)
     {
-        if (IsMultiSlotToken(token))
-            throw new NotSupportedException($"Multi-slot signature token '{token}' is not supported in interop thunks");
+        if (TryGetMultiSlotToken(token, out _))
+            throw new NotSupportedException($"Multi-slot signature token '{token}' must be expanded into one parameter per slot");
     }
 
     public static string TokenToNativeType(string token)
@@ -78,7 +103,9 @@ internal static partial class SignatureMapper
 
     public static string TokenToNameType(string token)
     {
-        RejectMultiSlotToken(token);
+        if (TryGetMultiSlotToken(token, out int multiSlotCount))
+            return $"{char.ToUpperInvariant(token[0])}{multiSlotCount}";
+
         return token[0] switch
         {
             'v' => "Void",
@@ -114,6 +141,14 @@ internal static partial class SignatureMapper
     /// </summary>
     public static int TokenToSlotCount(string token)
     {
+        if (TryGetMultiSlotToken(token, out int multiSlotCount))
+        {
+            // An i64 slot is one interpreter slot; a v128 slot would be two, but nothing spells one yet.
+            return token[0] == 'l'
+                ? multiSlotCount
+                : throw new NotSupportedException($"Multi-slot token '{token}' has no known interpreter slot size");
+        }
+
         if (token[0] is not ('S' or 'A') || token.Length < 2)
             return 1;
 
