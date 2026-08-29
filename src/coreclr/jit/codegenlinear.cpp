@@ -1405,12 +1405,16 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
                     case GT_CNS_DBL:
                         genSetRegToConst(dstReg, unspillTree->TypeGet(), unspillTree);
                         break;
+#if defined(FEATURE_SIMD)
                     case GT_CNS_VEC:
                         genSetRegToConst(dstReg, unspillTree->TypeGet(), &unspillTree->AsVecCon()->gtSimdVal);
                         break;
+#endif // FEATURE_SIMD
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
                     case GT_CNS_MSK:
                         genSetRegToConst(dstReg, unspillTree->TypeGet(), &unspillTree->AsMskCon()->gtSimdMaskVal);
                         break;
+#endif // FEATURE_MASKED_HW_INTRINSICS
                     default:
                         unreached();
                 }
