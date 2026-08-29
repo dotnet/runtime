@@ -3666,7 +3666,7 @@ enum EEventResetType {
     kAutoResetEvent = FALSE
 };
 
-HANDLE CreateWin32EventOrThrow(
+HANDLE CreateEventOrThrow(
     LPSECURITY_ATTRIBUTES lpEventAttributes,
     EEventResetType eType,
     BOOL bInitialState

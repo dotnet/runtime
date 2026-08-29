@@ -10128,6 +10128,7 @@ private:
     HANDLE               m_thread;
     DWORD                m_threadId;
     WaitEvent           *m_threadControlEvent;
+    WaitLatch           *m_threadExitedEvent;
     HANDLE               m_actionTakenEvent;
     BOOL                 m_run;
 
@@ -10302,6 +10303,7 @@ private:
     DWORD                m_threadId;
     BOOL                 m_run;
     WaitEvent           *m_threadControlEvent;
+    WaitLatch           *m_threadExitedEvent;
     BOOL                 m_processStateChanged;
 };
 

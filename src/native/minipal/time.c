@@ -156,7 +156,7 @@ void minipal_microdelay(uint32_t usecs, uint32_t* usecsSinceYield)
 #if HOST_WINDOWS
     if (usecs > 1000)
     {
-        SleepEx(usecs / 1000, FALSE);
+        Sleep(usecs / 1000);
         if (usecsSinceYield)
         {
             *usecsSinceYield = 0;

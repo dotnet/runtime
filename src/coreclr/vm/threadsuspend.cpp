@@ -10,6 +10,7 @@
 //
 
 #include "common.h"
+#include "RuntimeEvent.h"
 
 #include "threadsuspend.h"
 
@@ -1582,7 +1583,7 @@ LPrepareRetry:
         }
         else
         {
-            ClrSleepEx(ABORT_POLL_TIMEOUT, FALSE);
+            PAL_Sleep(ABORT_POLL_TIMEOUT);
         }
 
 
@@ -1618,7 +1619,7 @@ LPrepareRetry:
             }
             else
             {
-                ClrSleepEx(100, FALSE);
+                PAL_Sleep(100);
             }
         }
 

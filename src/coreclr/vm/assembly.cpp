@@ -12,6 +12,7 @@
 ===========================================================*/
 
 #include "common.h"
+#include "RuntimeEvent.h"
 
 #include <stdlib.h>
 
@@ -1282,7 +1283,7 @@ static void RunMainPost()
     //
     if (dwSecondsToSleep != 0)
     {
-        ClrSleepEx(dwSecondsToSleep * 1000, FALSE);
+        PAL_Sleep(dwSecondsToSleep * 1000);
     }
 }
 

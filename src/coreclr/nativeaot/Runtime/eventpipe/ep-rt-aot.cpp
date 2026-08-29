@@ -483,7 +483,7 @@ void
 ep_rt_aot_thread_sleep (uint64_t ns)
 {
     STATIC_CONTRACT_NOTHROW;
-    PalSleep(static_cast<uint32_t>(ns/1000000));
+    PAL_Sleep(static_cast<uint32_t>(ns/1000000));
 }
 
 uint32_t

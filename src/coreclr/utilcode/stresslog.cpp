@@ -16,6 +16,7 @@
 #define DONOT_DEFINE_ETW_CALLBACK
 #include "eventtracebase.h"
 #include "minipal/time.h"
+#include "../runtime/RuntimeEvent.h"
 
  #if !defined(STRESS_LOG_READONLY)
 #ifdef HOST_WINDOWS
@@ -389,7 +390,7 @@ void StressLog::Terminate(BOOL fProcessDetach) {
                 // threads are out of logMsg.  In practice, since they can no longer enter logMsg
                 // and there are no blocking operations in logMsg, simply sleeping will ensure
                 // that everyone gets out.
-        ClrSleepEx(2, FALSE);
+        PAL_Sleep(2);
         lockh.Acquire();
     }
 
@@ -999,4 +1000,3 @@ void __cdecl ThreadStressLog::operator delete(void* p)
 #endif //MEMORY_MAPPED_STRESSLOG
 
 #endif // STRESS_LOG
-

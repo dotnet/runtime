@@ -106,84 +106,8 @@ namespace CorUnix
         CListedObject*
         GetObjectFromListLink(PLIST_ENTRY pLink);
 
-        //
-        // IPalObject routines
-        //
-
-        virtual
-        PAL_ERROR
-        GetSynchStateController(
-            CPalThread *pthr,
-            ISynchStateController **ppStateController
-            );
-
-        virtual
-        PAL_ERROR
-        GetSynchWaitController(
-            CPalThread *pthr,
-            ISynchWaitController **ppWaitController
-            );
-
-        virtual
-        PAL_ERROR
-        GetObjectSynchData(
-            VOID **ppvSynchData
-            );
-
-    };
-
-    class CSharedMemoryWaitableObject : public CListedObject
-    {
-    protected:
-
-        VOID *m_pvSynchData;
-
-        virtual ~CSharedMemoryWaitableObject();
-
-    public:
-
-        CSharedMemoryWaitableObject(
-            CObjectType *pot,
-            minipal_mutex *pcsObjListLock
-            )
-            :
-            CListedObject(pot, pcsObjListLock)
-        {
-        };
-
-        virtual
-        PAL_ERROR
-        Initialize(
-            CPalThread *pthr,
-            CObjectAttributes *poa
-            );
-
-        //
-        // IPalObject routines
-        //
-
-        virtual
-        PAL_ERROR
-        GetSynchStateController(
-            CPalThread *pthr,
-            ISynchStateController **ppStateController
-            );
-
-        virtual
-        PAL_ERROR
-        GetSynchWaitController(
-            CPalThread *pthr,
-            ISynchWaitController **ppWaitController
-            );
-
-        virtual
-        PAL_ERROR
-        GetObjectSynchData(
-            VOID **ppvSynchData
-            );
     };
 
 }
 
 #endif // _PAL_SHMOBJECT_HPP
-

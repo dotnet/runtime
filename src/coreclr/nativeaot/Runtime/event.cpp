@@ -22,64 +22,63 @@
 //
 // -----------------------------------------------------------------------------------------------------------
 //
-// CLR wrapper around events. This version directly uses Win32 events (there's no support for host
-// interception).
+// CLR wrapper around native events. This version does not support host interception.
 //
 
 bool CLREventStatic::CreateManualEventNoThrow(bool bInitialState)
 {
-    m_hEvent = PalCreateEventW(NULL, TRUE, bInitialState, NULL);
+    m_hEvent = PAL_CreateEvent(NULL, true, bInitialState);
     m_fInitialized = true;
     return IsValid();
 }
 
 bool CLREventStatic::CreateAutoEventNoThrow(bool bInitialState)
 {
-    m_hEvent = PalCreateEventW(NULL, FALSE, bInitialState, NULL);
+    m_hEvent = PAL_CreateEvent(NULL, false, bInitialState);
     m_fInitialized = true;
     return IsValid();
 }
 
 bool CLREventStatic::CreateOSManualEventNoThrow(bool bInitialState)
 {
-    m_hEvent = PalCreateEventW(NULL, TRUE, bInitialState, NULL);
+    m_hEvent = PAL_CreateEvent(NULL, true, bInitialState);
     m_fInitialized = true;
     return IsValid();
 }
 
 bool CLREventStatic::CreateOSAutoEventNoThrow(bool bInitialState)
 {
-    m_hEvent = PalCreateEventW(NULL, FALSE, bInitialState, NULL);
+    m_hEvent = PAL_CreateEvent(NULL, false, bInitialState);
     m_fInitialized = true;
     return IsValid();
 }
 
 void CLREventStatic::CloseEvent()
 {
-    if (m_fInitialized && m_hEvent != INVALID_HANDLE_VALUE)
+    if (m_fInitialized && m_hEvent != NULL && m_hEvent != INVALID_HANDLE_VALUE)
     {
-        PalCloseHandle(m_hEvent);
+        PAL_CloseEvent(m_hEvent);
         m_hEvent = INVALID_HANDLE_VALUE;
     }
 }
 
 bool CLREventStatic::IsValid() const
 {
-    return m_fInitialized && m_hEvent != INVALID_HANDLE_VALUE;
+    return m_fInitialized && m_hEvent != NULL && m_hEvent != INVALID_HANDLE_VALUE;
 }
 
 bool CLREventStatic::Set()
 {
     if (!m_fInitialized)
         return false;
-    return PalSetEvent(m_hEvent);
+    return PAL_SetEvent(m_hEvent);
 }
 
 bool CLREventStatic::Reset()
 {
     if (!m_fInitialized)
         return false;
-    return PalResetEvent(m_hEvent);
+    return PAL_ResetEvent(m_hEvent);
 }
 
 uint32_t CLREventStatic::Wait(uint32_t dwMilliseconds, bool bAlertable, bool bAllowReentrantWait)
@@ -100,7 +99,16 @@ uint32_t CLREventStatic::Wait(uint32_t dwMilliseconds, bool bAlertable, bool bAl
             }
         }
 
-        result = PalCompatibleWaitAny(bAlertable, dwMilliseconds, 1, &m_hEvent, bAllowReentrantWait);
+#ifdef TARGET_WINDOWS
+        if (bAllowReentrantWait)
+        {
+            result = PalCompatibleWaitAny(bAlertable, dwMilliseconds, 1, &m_hEvent, TRUE);
+        }
+        else
+#endif // TARGET_WINDOWS
+        {
+            result = PAL_WaitForMultipleObjectsEx(1, &m_hEvent, false, dwMilliseconds, bAlertable);
+        }
 
         if (disablePreemptive)
         {

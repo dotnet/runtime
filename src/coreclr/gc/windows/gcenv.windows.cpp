@@ -14,6 +14,7 @@
 #include "gcenv.windows.inl"
 #include "volatile.h"
 #include "gcconfig.h"
+#include "../../runtime/RuntimeEvent.h"
 
 GCSystemInfo g_SystemInfo;
 
@@ -663,7 +664,7 @@ void GCToOSInterface::Sleep(uint32_t sleepMSec)
     // to avoid context switches - is that interesting or useful here?
     if (sleepMSec > 0)
     {
-        ::SleepEx(sleepMSec, FALSE);
+        PAL_Sleep(sleepMSec);
     }
 }
 

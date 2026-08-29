@@ -2580,9 +2580,26 @@ public:
         return m_ThreadHandle;
     }
 
+#if defined(TARGET_UNIX) && !defined(DACCESS_COMPILE)
+    HANDLE GetThreadExitedEvent()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_ThreadExitedEvent.GetOSEvent();
+    }
+
+    void SetThreadExited()
+    {
+        WRAPPER_NO_CONTRACT;
+        m_ThreadExitedEvent.Set();
+    }
+#endif // TARGET_UNIX && !DACCESS_COMPILE
+
 private:
     // For suspends:
     CLREvent        m_DebugSuspendEvent;
+#ifdef TARGET_UNIX
+    CLREvent        m_ThreadExitedEvent;
+#endif // TARGET_UNIX
 
     void        SetThreadHandle(HANDLE h)
     {

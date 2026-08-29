@@ -10,6 +10,7 @@
 //*****************************************************************************
 
 #include "stdafx.h"
+#include "RuntimeEvent.h"
 
 #include "safewrap.h"
 #include "check.h"
@@ -52,16 +53,18 @@ ShimProcess::ShimProcess() :
 
     m_machineInfo.Clear();
 
-    m_markAttachPendingEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
+    m_markAttachPendingEvent = PAL_CreateEvent(NULL, true, false);
     if (m_markAttachPendingEvent == NULL)
     {
-        ThrowLastError();
+        ThrowOutOfMemory();
     }
 
-    m_terminatingEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
+    m_terminatingEvent = PAL_CreateEvent(NULL, true, false);
     if (m_terminatingEvent == NULL)
     {
-        ThrowLastError();
+        PAL_CloseEvent(m_markAttachPendingEvent);
+        m_markAttachPendingEvent = NULL;
+        ThrowOutOfMemory();
     }
 }
 
@@ -84,13 +87,13 @@ ShimProcess::~ShimProcess()
 
     if (m_markAttachPendingEvent != NULL)
     {
-        CloseHandle(m_markAttachPendingEvent);
+        PAL_CloseEvent(m_markAttachPendingEvent);
         m_markAttachPendingEvent = NULL;
     }
 
     if (m_terminatingEvent != NULL)
     {
-        CloseHandle(m_terminatingEvent);
+        PAL_CloseEvent(m_terminatingEvent);
         m_terminatingEvent = NULL;
     }
 
@@ -874,7 +877,7 @@ HRESULT ShimProcess::HandleWin32DebugEvent(const DEBUG_EVENT * pEvent)
             DWORD fSkipResume = config.val(CLRConfig::UNSUPPORTED_DbgDontResumeThreadsOnUnhandledException);
             if (!fSkipResume)
             {
-                ::Sleep(500);
+                PAL_Sleep(500);
             }
         }
     }
@@ -1612,12 +1615,12 @@ MachineInfo ShimProcess::GetMachineInfo()
 
 void ShimProcess::SetMarkAttachPendingEvent()
 {
-    SetEvent(m_markAttachPendingEvent);
+    PAL_SetEvent(m_markAttachPendingEvent);
 }
 
 void ShimProcess::SetTerminatingEvent()
 {
-    SetEvent(m_terminatingEvent);
+    PAL_SetEvent(m_terminatingEvent);
 }
 
 RSLock * ShimProcess::GetShimLock()

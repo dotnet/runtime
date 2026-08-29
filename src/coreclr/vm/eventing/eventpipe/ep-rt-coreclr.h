@@ -16,6 +16,7 @@
 #include "typestring.h"
 #include "clrversion.h"
 #include "hostinformation.h"
+#include "RuntimeEvent.h"
 
 #ifdef HOST_WINDOWS
 #include <windows.h>
@@ -1123,7 +1124,7 @@ ep_rt_thread_sleep (uint64_t ns)
 	PAL_nanosleep (ns);
 #else  //TARGET_UNIX
 	const uint32_t NUM_NANOSECONDS_IN_1_MS = 1000000;
-	ClrSleepEx (static_cast<DWORD>(ns / NUM_NANOSECONDS_IN_1_MS), FALSE);
+	PAL_Sleep(static_cast<DWORD>(ns / NUM_NANOSECONDS_IN_1_MS));
 #endif //TARGET_UNIX
 #endif // PERFTRACING_DISABLE_THREADS
 }
