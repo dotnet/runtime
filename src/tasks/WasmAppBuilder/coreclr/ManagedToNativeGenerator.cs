@@ -31,6 +31,9 @@ public class ManagedToNativeGenerator : Task
 
     [Required, NotNull]
     public string? InterpToNativeOutputPath { get; set; }
+
+    /// <summary>Set only by the in-tree RunGenerator target; app builds use the runtime's copy.</summary>
+    public string? PortableEntryPointOutputPath { get; set; }
     public string? CacheFilePath { get; set; }
 
     public bool IsLibraryMode { get; set; }
@@ -117,7 +120,19 @@ public class ManagedToNativeGenerator : Task
         // The signatures should be in the form of a string where the first character represents the return type and the
         // following characters represent the argument types. The type characters should match those used by the
         // SignatureMapper.CharToNativeType method.
-        string[] pregeneratedInterpreterToNativeSignatures = Array.Empty<string>(); // Currently none, but can be added here as needed in the future.
+        // The instance ('T') shapes below are the ones a Blazor app hits on startup. The static shapes on
+        // the last line were hand-written in vm/wasm/helpers.cpp before this generator emitted the table.
+        string[] pregeneratedInterpreterToNativeSignatures = new[]
+        {
+            "iTp", "iTip", "iTiip", "iTiiip", "iTiiiip",
+            "vTp", "vTip", "vTiip", "vTiiip", "vTiiiip", "vTiiiiip",
+            "iTS8p", "iTS8ip", "iTS8S8p", "iTS8iS8ip", "iTS8iiip", "iTiS8p",
+            "iTS12p", "iTS12ip", "iTiS12p",
+            "vTS8p", "vTS8ip", "vTS8S8p", "vTiS8p", "vTS12p", "vTS32p", "vTiiS8S8iip",
+            "S8Tp", "S8Tip", "S8Tiiip", "S12Tiip", "S12Tiiip", "S12TS12ip", "S16Tp", "S1Tp",
+            "S12TiS12ip",
+            "viiiip", "iiiiiiiip", "iiiiiiiiip", "idp", "ldp", "iiS8p", "iS8p",
+        };
 
         IEnumerable<string> cookies = pinvoke.Generate(PInvokeModules, IgnoredPInvokeModules, PInvokeOutputPath, ReversePInvokeOutputPath);
         cookies = cookies.Concat(internalCallCollector.GetSignatures());
@@ -125,6 +140,9 @@ public class ManagedToNativeGenerator : Task
 
         var m2n = new InterpToNativeGenerator(log);
         m2n.Generate(cookies, InterpToNativeOutputPath);
+
+        if (!string.IsNullOrEmpty(PortableEntryPointOutputPath))
+            m2n.GeneratePortableEntryPoints(cookies, PortableEntryPointOutputPath);
 
         if (!string.IsNullOrEmpty(CacheFilePath))
         {

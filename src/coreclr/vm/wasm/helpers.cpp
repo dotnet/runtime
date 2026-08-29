@@ -21,57 +21,13 @@ void ExecuteInterpretedMethodWithArgs_PortableEntryPoint(PCODE portableEntrypoin
 // -------------------------------------------------
 namespace
 {
-    FCDECL0(void, CallInterpreter_RetVoid);
-    WASM_CALLABLE_FUNC_1(void, CallInterpreter_RetVoid, PCODE portableEntrypoint)
-    {
-        struct
-        {
-            TransitionBlock block;
-        } transitionBlock;
-        transitionBlock.block.m_ReturnAddress = 0;
-        transitionBlock.block.m_StackPointer = callersStackPointer;
-        void * result = NULL;
-
-        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, 0, (int8_t*)&result);
-        return;
-    }
-    FCDECL1(void, CallInterpreter_I32_RetVoid, int32_t);
-    WASM_CALLABLE_FUNC_2(void, CallInterpreter_I32_RetVoid, int32_t arg0, PCODE portableEntrypoint)
-    {
-        struct
-        {
-            TransitionBlock block;
-            int64_t args[1];
-        } transitionBlock;
-        transitionBlock.block.m_ReturnAddress = 0;
-        transitionBlock.block.m_StackPointer = callersStackPointer;
-        transitionBlock.args[0] = (int64_t)arg0;
-        static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
-
-        void * result = NULL;
-        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, sizeof(transitionBlock.args), (int8_t*)&result);
-        return;
-    }
-    FCDECL2(void, CallInterpreter_I32_I32_RetVoid, int32_t, int32_t);
-    WASM_CALLABLE_FUNC_3(void, CallInterpreter_I32_I32_RetVoid, int32_t arg0, int32_t arg1, PCODE portableEntrypoint)
-    {
-        struct
-        {
-            TransitionBlock block;
-            int64_t args[2];
-        } transitionBlock;
-        transitionBlock.block.m_ReturnAddress = 0;
-        transitionBlock.block.m_StackPointer = callersStackPointer;
-        transitionBlock.args[0] = (int64_t)arg0;
-        transitionBlock.args[1] = (int64_t)arg1;
-        static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
-
-        void * result = NULL;
-        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, sizeof(transitionBlock.args), (int8_t*)&result);
-        return;
-    }
-    FCDECL3(void, CallInterpreter_I32_I32_I32_RetVoid, int32_t, int32_t, int32_t);
-    WASM_CALLABLE_FUNC_4(void, CallInterpreter_I32_I32_I32_RetVoid, int32_t arg0, int32_t arg1, int32_t arg2, PCODE portableEntrypoint)
+    // 'l2' is a 16-byte multi-slot argument (Int128/UInt128/Decimal128) passed by value in two i64
+    // slots. A struct return is NOT a C return value here: crossgen2 passes the return buffer as an
+    // explicit parameter (after callersStackPointer, or after 'this' for an instance method), so the
+    // thunk must be void — returning a struct would make the compiler insert its own sret pointer at
+    // parameter 0 and shift everything.
+    FCDECL4(void, CallInterpreter_L2_I32_RetS16, int8_t*, int64_t, int64_t, int32_t);
+    WASM_CALLABLE_FUNC_5(void, CallInterpreter_L2_I32_RetS16, int8_t* retBuf, int64_t arg0Lo, int64_t arg0Hi, int32_t arg1, PCODE portableEntrypoint)
     {
         struct
         {
@@ -80,285 +36,21 @@ namespace
         } transitionBlock;
         transitionBlock.block.m_ReturnAddress = 0;
         transitionBlock.block.m_StackPointer = callersStackPointer;
-        transitionBlock.args[0] = (int64_t)arg0;
-        transitionBlock.args[1] = (int64_t)arg1;
-        transitionBlock.args[2] = (int64_t)arg2;
+        transitionBlock.args[0] = arg0Lo;
+        transitionBlock.args[1] = arg0Hi;
+        transitionBlock.args[2] = (int64_t)arg1;
         static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
 
+        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, sizeof(transitionBlock.args), retBuf);
+    }
 
-        void * result = NULL;
-        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, sizeof(transitionBlock.args), (int8_t*)&result);
-        return;
-    }
-    FCDECL4(void, CallInterpreter_I32_I32_I32_I32_RetVoid, int32_t, int32_t, int32_t, int32_t);
-    WASM_CALLABLE_FUNC_5(void, CallInterpreter_I32_I32_I32_I32_RetVoid, int32_t arg0, int32_t arg1, int32_t arg2, int32_t arg3, PCODE portableEntrypoint)
-    {
-        struct
-        {
-            TransitionBlock block;
-            int64_t args[4];
-        } transitionBlock;
-        transitionBlock.block.m_ReturnAddress = 0;
-        transitionBlock.block.m_StackPointer = callersStackPointer;
-        transitionBlock.args[0] = (int64_t)arg0;
-        transitionBlock.args[1] = (int64_t)arg1;
-        transitionBlock.args[2] = (int64_t)arg2;
-        transitionBlock.args[3] = (int64_t)arg3;
-        static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
-
-        void * result = NULL;
-        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, sizeof(transitionBlock.args), (int8_t*)&result);
-        return;
-    }
-    FCDECL0(int32_t, CallInterpreter_RetI32);
-    WASM_CALLABLE_FUNC_1(int32_t, CallInterpreter_RetI32, PCODE portableEntrypoint)
-    {
-        struct
-        {
-            TransitionBlock block;
-        } transitionBlock;
-        transitionBlock.block.m_ReturnAddress = 0;
-        transitionBlock.block.m_StackPointer = callersStackPointer;
-        void * result = NULL;
-        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, 0, (int8_t*)&result);
-        return (int32_t)result;
-    }
-    FCDECL1(int32_t, CallInterpreter_I32_RetI32, int32_t);
-    WASM_CALLABLE_FUNC_2(int32_t, CallInterpreter_I32_RetI32, int32_t arg0, PCODE portableEntrypoint)
-    {
-        struct
-        {
-            TransitionBlock block;
-            int64_t args[1];
-        } transitionBlock;
-        transitionBlock.block.m_ReturnAddress = 0;
-        transitionBlock.block.m_StackPointer = callersStackPointer;
-        transitionBlock.args[0] = (int64_t)arg0;
-        static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
-
-        void * result = NULL;
-        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, sizeof(transitionBlock.args), (int8_t*)&result);
-        return (int32_t)result;
-    }
-    FCDECL1(int32_t, CallInterpreter_D64_RetI32, double);
-    WASM_CALLABLE_FUNC_2(int32_t, CallInterpreter_D64_RetI32, double arg0, PCODE portableEntrypoint)
-    {
-        struct
-        {
-            TransitionBlock block;
-            double args[1];
-        } transitionBlock;
-        transitionBlock.block.m_ReturnAddress = 0;
-        transitionBlock.block.m_StackPointer = callersStackPointer;
-        transitionBlock.args[0] = arg0;
-        static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
-
-        void * result = NULL;
-        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, sizeof(transitionBlock.args), (int8_t*)&result);
-        return (int32_t)result;
-    }
-    FCDECL1(int64_t, CallInterpreter_D64_RetI64, double);
-    WASM_CALLABLE_FUNC_2(int64_t, CallInterpreter_D64_RetI64, double arg0, PCODE portableEntrypoint)
-    {
-        struct
-        {
-            TransitionBlock block;
-            double args[1];
-        } transitionBlock;
-        transitionBlock.block.m_ReturnAddress = 0;
-        transitionBlock.block.m_StackPointer = callersStackPointer;
-        transitionBlock.args[0] = arg0;
-        static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
-
-        int64_t result = 0;
-        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, sizeof(transitionBlock.args), (int8_t*)&result);
-        return result;
-    }
-    FCDECL2(int32_t, CallInterpreter_I32_I32_RetI32, int32_t, int32_t);
-    WASM_CALLABLE_FUNC_3(int32_t, CallInterpreter_I32_I32_RetI32, int32_t arg0, int32_t arg1, PCODE portableEntrypoint)
-    {
-        struct
-        {
-            TransitionBlock block;
-            int64_t args[2];
-        } transitionBlock;
-        transitionBlock.block.m_ReturnAddress = 0;
-        transitionBlock.block.m_StackPointer = callersStackPointer;
-        transitionBlock.args[0] = (int64_t)arg0;
-        transitionBlock.args[1] = (int64_t)arg1;
-        static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
-
-        void * result = NULL;
-        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, sizeof(transitionBlock.args), (int8_t*)&result);
-        return (int32_t)result;
-    }
-    FCDECL2(int32_t, CallInterpreter_I32_S8_RetI32, int32_t, int8_t*);
-    WASM_CALLABLE_FUNC_3(int32_t, CallInterpreter_I32_S8_RetI32, int32_t arg0, int8_t* arg1, PCODE portableEntrypoint)
-    {
-        struct
-        {
-            TransitionBlock block;
-            int64_t args[2];
-        } transitionBlock;
-        transitionBlock.block.m_ReturnAddress = 0;
-        transitionBlock.block.m_StackPointer = callersStackPointer;
-        transitionBlock.args[0] = (int64_t)arg0;
-        memcpy(&transitionBlock.args[1], arg1, 8);
-        static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
-
-        void * result = NULL;
-        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, sizeof(transitionBlock.args), (int8_t*)&result);
-        return (int32_t)result;
-    }
-    FCDECL3(int32_t, CallInterpreter_I32_I32_I32_RetI32, int32_t, int32_t, int32_t);
-    WASM_CALLABLE_FUNC_4(int32_t, CallInterpreter_I32_I32_I32_RetI32, int32_t arg0, int32_t arg1, int32_t arg2, PCODE portableEntrypoint)
-    {
-        struct
-        {
-            TransitionBlock block;
-            int64_t args[3];
-        } transitionBlock;
-        transitionBlock.block.m_ReturnAddress = 0;
-        transitionBlock.block.m_StackPointer = callersStackPointer;
-        transitionBlock.args[0] = (int64_t)arg0;
-        transitionBlock.args[1] = (int64_t)arg1;
-        transitionBlock.args[2] = (int64_t)arg2;
-        static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
-
-        void * result = NULL;
-        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, sizeof(transitionBlock.args), (int8_t*)&result);
-        return (int32_t)result;
-    }
-    FCDECL4(int32_t, CallInterpreter_I32_I32_I32_I32_RetI32, int32_t, int32_t, int32_t, int32_t);
-    WASM_CALLABLE_FUNC_5(int32_t, CallInterpreter_I32_I32_I32_I32_RetI32, int32_t arg0, int32_t arg1, int32_t arg2, int32_t arg3, PCODE portableEntrypoint)
-    {
-        struct
-        {
-            TransitionBlock block;
-            int64_t args[4];
-        } transitionBlock;
-        transitionBlock.block.m_ReturnAddress = 0;
-        transitionBlock.block.m_StackPointer = callersStackPointer;
-        transitionBlock.args[0] = (int64_t)arg0;
-        transitionBlock.args[1] = (int64_t)arg1;
-        transitionBlock.args[2] = (int64_t)arg2;
-        transitionBlock.args[3] = (int64_t)arg3;
-        static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
-
-        void * result = NULL;
-        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, sizeof(transitionBlock.args), (int8_t*)&result);
-        return (int32_t)result;
-    }
-    FCDECL5(int32_t, CallInterpreter_I32_I32_I32_I32_I32_RetI32, int32_t, int32_t, int32_t, int32_t, int32_t);
-    WASM_CALLABLE_FUNC_6(int32_t, CallInterpreter_I32_I32_I32_I32_I32_RetI32, int32_t arg0, int32_t arg1, int32_t arg2, int32_t arg3, int32_t arg4, PCODE portableEntrypoint)
-    {
-        struct
-        {
-            TransitionBlock block;
-            int64_t args[5];
-        } transitionBlock;
-        transitionBlock.block.m_ReturnAddress = 0;
-        transitionBlock.block.m_StackPointer = callersStackPointer;
-        transitionBlock.args[0] = (int64_t)arg0;
-        transitionBlock.args[1] = (int64_t)arg1;
-        transitionBlock.args[2] = (int64_t)arg2;
-        transitionBlock.args[3] = (int64_t)arg3;
-        transitionBlock.args[4] = (int64_t)arg4;
-        static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
-
-        void * result = NULL;
-        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, sizeof(transitionBlock.args), (int8_t*)&result);
-        return (int32_t)result;
-    }
-    FCDECL6(int32_t, CallInterpreter_I32_I32_I32_I32_I32_I32_RetI32, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t);
-    WASM_CALLABLE_FUNC_7(int32_t, CallInterpreter_I32_I32_I32_I32_I32_I32_RetI32, int32_t arg0, int32_t arg1, int32_t arg2, int32_t arg3, int32_t arg4, int32_t arg5, PCODE portableEntrypoint)
-    {
-        struct
-        {
-            TransitionBlock block;
-            int64_t args[6];
-        } transitionBlock;
-        transitionBlock.block.m_ReturnAddress = 0;
-        transitionBlock.block.m_StackPointer = callersStackPointer;
-        transitionBlock.args[0] = (int64_t)arg0;
-        transitionBlock.args[1] = (int64_t)arg1;
-        transitionBlock.args[2] = (int64_t)arg2;
-        transitionBlock.args[3] = (int64_t)arg3;
-        transitionBlock.args[4] = (int64_t)arg4;
-        transitionBlock.args[5] = (int64_t)arg5;
-        static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
-
-        void * result = NULL;
-        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, sizeof(transitionBlock.args), (int8_t*)&result);
-        return (int32_t)result;
-    }
-    FCDECL7(int32_t, CallInterpreter_I32_I32_I32_I32_I32_I32_I32_RetI32, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t);
-    WASM_CALLABLE_FUNC_8(int32_t, CallInterpreter_I32_I32_I32_I32_I32_I32_I32_RetI32, int32_t arg0, int32_t arg1, int32_t arg2, int32_t arg3, int32_t arg4, int32_t arg5, int32_t arg6, PCODE portableEntrypoint)
-    {
-        struct
-        {
-            TransitionBlock block;
-            int64_t args[7];
-        } transitionBlock;
-        transitionBlock.block.m_ReturnAddress = 0;
-        transitionBlock.block.m_StackPointer = callersStackPointer;
-        transitionBlock.args[0] = (int64_t)arg0;
-        transitionBlock.args[1] = (int64_t)arg1;
-        transitionBlock.args[2] = (int64_t)arg2;
-        transitionBlock.args[3] = (int64_t)arg3;
-        transitionBlock.args[4] = (int64_t)arg4;
-        transitionBlock.args[5] = (int64_t)arg5;
-        transitionBlock.args[6] = (int64_t)arg6;
-        static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
-
-        void * result = NULL;
-        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, sizeof(transitionBlock.args), (int8_t*)&result);
-        return (int32_t)result;
-    }
-    FCDECL8(int32_t, CallInterpreter_I32_I32_I32_I32_I32_I32_I32_I32_RetI32, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t);
-    WASM_CALLABLE_FUNC_9(int32_t, CallInterpreter_I32_I32_I32_I32_I32_I32_I32_I32_RetI32, int32_t arg0, int32_t arg1, int32_t arg2, int32_t arg3, int32_t arg4, int32_t arg5, int32_t arg6, int32_t arg7, PCODE portableEntrypoint)
-    {
-        struct
-        {
-            TransitionBlock block;
-            int64_t args[8];
-        } transitionBlock;
-        transitionBlock.block.m_ReturnAddress = 0;
-        transitionBlock.block.m_StackPointer = callersStackPointer;
-        transitionBlock.args[0] = (int64_t)arg0;
-        transitionBlock.args[1] = (int64_t)arg1;
-        transitionBlock.args[2] = (int64_t)arg2;
-        transitionBlock.args[3] = (int64_t)arg3;
-        transitionBlock.args[4] = (int64_t)arg4;
-        transitionBlock.args[5] = (int64_t)arg5;
-        transitionBlock.args[6] = (int64_t)arg6;
-        transitionBlock.args[7] = (int64_t)arg7;
-        static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
-
-        void * result = NULL;
-        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, sizeof(transitionBlock.args), (int8_t*)&result);
-        return (int32_t)result;
-    }
 }
 
 const StringToWasmSigThunk g_wasmPortableEntryPointThunks[] = {
-    { "Ivp", (void*)&CallInterpreter_RetVoid },
-    { "Ivip", (void*)&CallInterpreter_I32_RetVoid },
-    { "Iviip", (void*)&CallInterpreter_I32_I32_RetVoid },
-    { "Iviiip", (void*)&CallInterpreter_I32_I32_I32_RetVoid },
-    { "Iviiiip", (void*)&CallInterpreter_I32_I32_I32_I32_RetVoid },
-    { "Iip", (void*)&CallInterpreter_RetI32 },
-    { "Iiip", (void*)&CallInterpreter_I32_RetI32 },
-    { "Iiiip", (void*)&CallInterpreter_I32_I32_RetI32 },
-    { "Iiiiip", (void*)&CallInterpreter_I32_I32_I32_RetI32 },
-    { "Iiiiiip", (void*)&CallInterpreter_I32_I32_I32_I32_RetI32 },
-    { "Iiiiiiip", (void*)&CallInterpreter_I32_I32_I32_I32_I32_RetI32 },
-    { "Iiiiiiiip", (void*)&CallInterpreter_I32_I32_I32_I32_I32_I32_RetI32 },
-    { "Iiiiiiiiip", (void*)&CallInterpreter_I32_I32_I32_I32_I32_I32_I32_RetI32 },
-    { "Iiiiiiiiiip", (void*)&CallInterpreter_I32_I32_I32_I32_I32_I32_I32_I32_RetI32 },
-    { "Iidp", (void*)&CallInterpreter_D64_RetI32 },
-    { "Ildp", (void*)&CallInterpreter_D64_RetI64 },
-    { "IiiS8p", (void*)&CallInterpreter_I32_S8_RetI32 }
+    // Every other shape is emitted by the WasmAppBuilder generator into
+    // callhelpers-portable-entrypoints.cpp; only the multi-slot 'l2' form, which the generator
+    // cannot express, is still written by hand.
+    { "IS16l2ip", (void*)&CallInterpreter_L2_I32_RetS16 },
 };
 
 const size_t g_wasmPortableEntryPointThunksCount = sizeof(g_wasmPortableEntryPointThunks) / sizeof(g_wasmPortableEntryPointThunks[0]);
@@ -1486,10 +1178,10 @@ namespace
         }
 
         InterpreterCalliCookie thunk = LookupThunk(keyBuffer);
-#ifdef _DEBUG
         if (thunk == NULL)
-            printf("WASM calli missing for key: %s\n", keyBuffer);
-#endif
+        {
+            printf("WASM: no interpreter-to-R2R calli thunk for signature key '%s'. Add it to g_wasmThunks.\n", keyBuffer);
+        }
         return thunk;
     }
 
@@ -1532,12 +1224,13 @@ namespace
         }
 
         void* thunk = LookupPortableEntryPointThunk(keyBuffer);
-#ifdef _DEBUG
         if (thunk == NULL)
         {
-            LOG((LF_STUBS, LL_INFO100000, "WASM R2R to interpreter call missing for key: %s\n", keyBuffer));
+            // Printed rather than only asserted: the caller's assert compiles out in release, where these
+            // gaps surface, and cannot carry the key. A miss leaves the entry point's table index 0 and
+            // traps later as "null function", far from here.
+            printf("WASM: no R2R-to-interpreter thunk for signature key '%s'. Add it to g_wasmPortableEntryPointThunks.\n", keyBuffer);
         }
-#endif
         return thunk;
     }
 
@@ -1652,11 +1345,21 @@ void InitializeWasmThunkCaches()
 
     {
         StringToWasmSigThunkHash* newTable = new StringToWasmSigThunkHash();
-        newTable->Reallocate(g_wasmPortableEntryPointThunksCount * StringToWasmSigThunkHash::s_density_factor_denominator / StringToWasmSigThunkHash::s_density_factor_numerator + 1);
+        size_t total = g_wasmPortableEntryPointThunksCount;
+#ifdef TARGET_BROWSER
+        total += g_wasmGeneratedPortableEntryPointThunksCount;
+#endif
+        newTable->Reallocate(total * StringToWasmSigThunkHash::s_density_factor_denominator / StringToWasmSigThunkHash::s_density_factor_numerator + 1);
         for (size_t i = 0; i < g_wasmPortableEntryPointThunksCount; i++)
         {
             newTable->Add(g_wasmPortableEntryPointThunks[i].key, g_wasmPortableEntryPointThunks[i].value);
         }
+#ifdef TARGET_BROWSER
+        for (size_t i = 0; i < g_wasmGeneratedPortableEntryPointThunksCount; i++)
+        {
+            newTable->Add(g_wasmGeneratedPortableEntryPointThunks[i].key, g_wasmGeneratedPortableEntryPointThunks[i].value);
+        }
+#endif
         portableEntrypointThunkCache = newTable;
     }
 }
@@ -1786,10 +1489,18 @@ void* GetPortableEntryPointToInterpreterThunk(MethodDesc *pMD)
         }
 
         thunk = LookupPortableEntryPointThunk(thunkKey);
+        if (thunk == NULL)
+        {
+            PORTABILITY_ASSERT("GetPortableEntryPointToInterpreterThunk: unknown thunk for string constructor");
+        }
     }
     else
     {
         thunk = ComputePortableEntryPointToInterpreterThunk(sig);
+        if (thunk == NULL)
+        {
+            PORTABILITY_ASSERT("ComputePortableEntryPointToInterpreterThunk: unknown thunk signature");
+        }
     }
 
     return thunk;

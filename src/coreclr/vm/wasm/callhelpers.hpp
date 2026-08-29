@@ -43,6 +43,11 @@ struct StringToWasmSigThunk
 extern const StringToWasmSigThunk g_wasmThunks[];
 extern const size_t g_wasmThunksCount;
 
+#ifdef TARGET_BROWSER
+extern const StringToWasmSigThunk g_wasmGeneratedPortableEntryPointThunks[];
+extern const size_t g_wasmGeneratedPortableEntryPointThunksCount;
+#endif
+
 struct ReverseThunkMapValue
 {
     MethodDesc** Target;

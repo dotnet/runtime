@@ -81,7 +81,8 @@
           TargetOS="$(_RunGeneratorTargetOS)"
           PInvokeOutputPath="$(GeneratorOutputPath)callhelpers-pinvoke.cpp"
           ReversePInvokeOutputPath="$(GeneratorOutputPath)callhelpers-reverse.cpp"
-          InterpToNativeOutputPath="$(GeneratorOutputPath)callhelpers-interp-to-managed.cpp">
+          InterpToNativeOutputPath="$(GeneratorOutputPath)callhelpers-interp-to-managed.cpp"
+          PortableEntryPointOutputPath="$(GeneratorOutputPath)callhelpers-portable-entrypoints.cpp">
           <Output TaskParameter="FileWrites" ItemName="FileWrites" />
       </ManagedToNativeGenerator>
   </Target>
