@@ -558,7 +558,7 @@ namespace System.Net.Http
                     await _stream.WriteAsync(_sendBuffer.ActiveMemory, cancellationToken).ConfigureAwait(false);
                     await _stream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
 
-                    _sendBuffer.Discard(_sendBuffer.ActiveLength);
+                    _sendBuffer.DiscardAll();
 
                     _singleDataFrameWritten = true;
                 }
@@ -577,14 +577,14 @@ namespace System.Net.Http
                 await _stream.WriteAsync(_sendBuffer.ActiveMemory, cancellationToken).ConfigureAwait(false);
                 await _stream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
 
-                _sendBuffer.Discard(_sendBuffer.ActiveLength);
+                _sendBuffer.DiscardAll();
             }
         }
 
         private ValueTask FlushSendBufferAsync(bool endStream, CancellationToken cancellationToken)
         {
             ReadOnlyMemory<byte> toSend = _sendBuffer.ActiveMemory;
-            _sendBuffer.Discard(toSend.Length);
+            _sendBuffer.DiscardAll();
             return _stream.WriteAsync(toSend, endStream, cancellationToken);
         }
 

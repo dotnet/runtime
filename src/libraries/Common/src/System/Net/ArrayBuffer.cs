@@ -59,8 +59,7 @@ namespace System.Net
 
         public void Dispose()
         {
-            _activeStart = 0;
-            _availableStart = 0;
+            DiscardAll();
 
             byte[] array = _bytes;
             _bytes = null!;
@@ -77,8 +76,7 @@ namespace System.Net
             Debug.Assert(_usePool);
             Debug.Assert(_bytes is not null);
 
-            _activeStart = 0;
-            _availableStart = 0;
+            DiscardAll();
 
             byte[] bufferToReturn = _bytes;
             _bytes = Array.Empty<byte>();
@@ -110,6 +108,12 @@ namespace System.Net
                 _activeStart = 0;
                 _availableStart = 0;
             }
+        }
+
+        public void DiscardAll()
+        {
+            _activeStart = 0;
+            _availableStart = 0;
         }
 
         public void Commit(int byteCount)
