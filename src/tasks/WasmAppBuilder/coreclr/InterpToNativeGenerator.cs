@@ -149,9 +149,16 @@ internal sealed class InterpToNativeGenerator
                 if (t[0] == 'A')
                     slot = (slot + 1) & ~1;
 
-                stores.Add(IsStructToken(t)
-                    ? $"        memcpy(&transitionBlock.args[{slot}], arg{i}, {SignatureMapper.GetStructSize(t)});"
-                    : $"        transitionBlock.args[{slot}] = (int64_t)arg{i};");
+                // A float or double occupies its slot as itself: casting to int64_t would convert the
+                // value rather than store its bits, and the interpreter reads the slot back through
+                // ARG_F32/ARG_F64.
+                stores.Add(t switch
+                {
+                    _ when IsStructToken(t) => $"        memcpy(&transitionBlock.args[{slot}], arg{i}, {SignatureMapper.GetStructSize(t)});",
+                    "f" => $"        *(float*)&transitionBlock.args[{slot}] = arg{i};",
+                    "d" => $"        *(double*)&transitionBlock.args[{slot}] = arg{i};",
+                    _ => $"        transitionBlock.args[{slot}] = (int64_t)arg{i};",
+                });
 
                 slot += SignatureMapper.TokenToSlotCount(t);
             }

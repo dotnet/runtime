@@ -192,9 +192,9 @@ namespace
         } transitionBlock;
         transitionBlock.block.m_ReturnAddress = 0;
         transitionBlock.block.m_StackPointer = callersStackPointer;
-        transitionBlock.args[0] = (int64_t)arg0;
-        transitionBlock.args[1] = (int64_t)arg1;
-        transitionBlock.args[2] = (int64_t)arg2;
+        *(double*)&transitionBlock.args[0] = arg0;
+        *(double*)&transitionBlock.args[1] = arg1;
+        *(double*)&transitionBlock.args[2] = arg2;
         static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
 
         double result = 0;
@@ -212,8 +212,8 @@ namespace
         } transitionBlock;
         transitionBlock.block.m_ReturnAddress = 0;
         transitionBlock.block.m_StackPointer = callersStackPointer;
-        transitionBlock.args[0] = (int64_t)arg0;
-        transitionBlock.args[1] = (int64_t)arg1;
+        *(double*)&transitionBlock.args[0] = arg0;
+        *(double*)&transitionBlock.args[1] = arg1;
         static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
 
         double result = 0;
@@ -231,7 +231,7 @@ namespace
         } transitionBlock;
         transitionBlock.block.m_ReturnAddress = 0;
         transitionBlock.block.m_StackPointer = callersStackPointer;
-        transitionBlock.args[0] = (int64_t)arg0;
+        *(double*)&transitionBlock.args[0] = arg0;
         transitionBlock.args[1] = (int64_t)arg1;
         static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
 
@@ -250,7 +250,7 @@ namespace
         } transitionBlock;
         transitionBlock.block.m_ReturnAddress = 0;
         transitionBlock.block.m_StackPointer = callersStackPointer;
-        transitionBlock.args[0] = (int64_t)arg0;
+        *(double*)&transitionBlock.args[0] = arg0;
         static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
 
         double result = 0;
@@ -268,9 +268,9 @@ namespace
         } transitionBlock;
         transitionBlock.block.m_ReturnAddress = 0;
         transitionBlock.block.m_StackPointer = callersStackPointer;
-        transitionBlock.args[0] = (int64_t)arg0;
-        transitionBlock.args[1] = (int64_t)arg1;
-        transitionBlock.args[2] = (int64_t)arg2;
+        *(float*)&transitionBlock.args[0] = arg0;
+        *(float*)&transitionBlock.args[1] = arg1;
+        *(float*)&transitionBlock.args[2] = arg2;
         static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
 
         float result = 0;
@@ -288,8 +288,8 @@ namespace
         } transitionBlock;
         transitionBlock.block.m_ReturnAddress = 0;
         transitionBlock.block.m_StackPointer = callersStackPointer;
-        transitionBlock.args[0] = (int64_t)arg0;
-        transitionBlock.args[1] = (int64_t)arg1;
+        *(float*)&transitionBlock.args[0] = arg0;
+        *(float*)&transitionBlock.args[1] = arg1;
         static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
 
         float result = 0;
@@ -307,7 +307,7 @@ namespace
         } transitionBlock;
         transitionBlock.block.m_ReturnAddress = 0;
         transitionBlock.block.m_StackPointer = callersStackPointer;
-        transitionBlock.args[0] = (int64_t)arg0;
+        *(float*)&transitionBlock.args[0] = arg0;
         transitionBlock.args[1] = (int64_t)arg1;
         static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
 
@@ -326,7 +326,7 @@ namespace
         } transitionBlock;
         transitionBlock.block.m_ReturnAddress = 0;
         transitionBlock.block.m_StackPointer = callersStackPointer;
-        transitionBlock.args[0] = (int64_t)arg0;
+        *(float*)&transitionBlock.args[0] = arg0;
         static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
 
         float result = 0;
@@ -644,7 +644,7 @@ namespace
         } transitionBlock;
         transitionBlock.block.m_ReturnAddress = 0;
         transitionBlock.block.m_StackPointer = callersStackPointer;
-        transitionBlock.args[0] = (int64_t)arg0;
+        *(double*)&transitionBlock.args[0] = arg0;
         static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
 
         int32_t result = 0;
@@ -868,7 +868,7 @@ namespace
         } transitionBlock;
         transitionBlock.block.m_ReturnAddress = 0;
         transitionBlock.block.m_StackPointer = callersStackPointer;
-        transitionBlock.args[0] = (int64_t)arg0;
+        *(double*)&transitionBlock.args[0] = arg0;
         static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
 
         int64_t result = 0;
@@ -1241,7 +1241,7 @@ namespace
         } transitionBlock;
         transitionBlock.block.m_ReturnAddress = 0;
         transitionBlock.block.m_StackPointer = callersStackPointer;
-        transitionBlock.args[0] = (int64_t)arg0;
+        *(double*)&transitionBlock.args[0] = arg0;
         transitionBlock.args[1] = (int64_t)arg1;
         transitionBlock.args[2] = (int64_t)arg2;
         static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
@@ -1261,7 +1261,7 @@ namespace
         } transitionBlock;
         transitionBlock.block.m_ReturnAddress = 0;
         transitionBlock.block.m_StackPointer = callersStackPointer;
-        transitionBlock.args[0] = (int64_t)arg0;
+        *(float*)&transitionBlock.args[0] = arg0;
         transitionBlock.args[1] = (int64_t)arg1;
         transitionBlock.args[2] = (int64_t)arg2;
         static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
