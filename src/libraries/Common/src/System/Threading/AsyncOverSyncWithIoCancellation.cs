@@ -13,7 +13,9 @@ namespace System.Threading
     /// <summary>
     /// Helper for performing asynchronous I/O on Windows implemented as queueing a work item that performs synchronous I/O, complete with cancellation support.
     /// </summary>
+#if NET
     [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
     internal sealed class AsyncOverSyncWithIoCancellation
     {
         /// <summary>The <see cref="AsyncOverSyncWithIoCancellation"/> for the current thread.</summary>
