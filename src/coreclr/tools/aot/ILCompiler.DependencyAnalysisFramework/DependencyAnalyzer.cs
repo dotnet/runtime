@@ -39,8 +39,56 @@ namespace ILCompiler.DependencyAnalysisFramework
         private List<DynamicDependencyNode> _markedNodesWithDynamicDependencies = new List<DynamicDependencyNode>();
         private bool _newDynamicDependenciesMayHaveAppeared;
 
-        private Dictionary<DependencyNodeCore<DependencyContextType>, HashSet<DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry>> _conditional_dependency_store = new Dictionary<DependencyNodeCore<DependencyContextType>, HashSet<DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry>>();
+        private Dictionary<DependencyNodeCore<DependencyContextType>, ConditionalDependencyBucket> _conditionalDependencyStore =
+            new Dictionary<DependencyNodeCore<DependencyContextType>, ConditionalDependencyBucket>();
         private bool _markingCompleted;
+
+        private sealed class ConditionalDependencyBucket
+        {
+            private readonly DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry _singleDependency;
+            private HashSet<DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry> _dependencies;
+
+            public ConditionalDependencyBucket(DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry dependency)
+            {
+                _singleDependency = dependency;
+            }
+
+            public void Add(DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry dependency)
+            {
+                if (_dependencies is null)
+                {
+                    if (_singleDependency.Equals(dependency))
+                    {
+                        return;
+                    }
+
+                    _dependencies = new HashSet<DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry>
+                    {
+                        _singleDependency,
+                        dependency,
+                    };
+                    return;
+                }
+
+                _dependencies.Add(dependency);
+            }
+
+            public void MarkDependencies(
+                DependencyAnalyzer<MarkStrategy, DependencyContextType> analyzer,
+                DependencyNodeCore<DependencyContextType> condition)
+            {
+                if (_dependencies is null)
+                {
+                    analyzer.AddToMarkStack(_singleDependency.Node, _singleDependency.Reason, _singleDependency.OtherReasonNode, condition);
+                    return;
+                }
+
+                foreach (DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry dependency in _dependencies)
+                {
+                    analyzer.AddToMarkStack(dependency.Node, dependency.Reason, dependency.OtherReasonNode, condition);
+                }
+            }
+        }
 
         private sealed class RandomInsertStack<T>
         {
@@ -199,16 +247,19 @@ namespace ILCompiler.DependencyAnalysisFramework
                     }
                     else
                     {
-                        HashSet<DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry> storedDependencySet;
-                        if (!_conditional_dependency_store.TryGetValue(dependency.OtherReasonNode, out storedDependencySet))
-                        {
-                            storedDependencySet = new HashSet<DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry>();
-                            _conditional_dependency_store.Add(dependency.OtherReasonNode, storedDependencySet);
-                        }
                         // Swap out other reason node as we're storing that as the dictionary key
                         DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry conditionalDependencyStoreEntry =
                             new DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry(dependency.Node, node, dependency.Reason);
-                        storedDependencySet.Add(conditionalDependencyStoreEntry);
+                        ConditionalDependencyBucket storedDependencies;
+                        if (!_conditionalDependencyStore.TryGetValue(dependency.OtherReasonNode, out storedDependencies))
+                        {
+                            storedDependencies = new ConditionalDependencyBucket(conditionalDependencyStoreEntry);
+                            _conditionalDependencyStore.Add(dependency.OtherReasonNode, storedDependencies);
+                        }
+                        else
+                        {
+                            storedDependencies.Add(conditionalDependencyStoreEntry);
+                        }
                     }
                 }
             }
@@ -266,15 +317,9 @@ namespace ILCompiler.DependencyAnalysisFramework
 
                     // If this new node satisfies any stored conditional dependencies,
                     // add them to the mark stack
-                    HashSet<DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry> storedDependencySet;
-                    if (_conditional_dependency_store.TryGetValue(currentNode, out storedDependencySet))
+                    if (_conditionalDependencyStore.Remove(currentNode, out ConditionalDependencyBucket storedDependencies))
                     {
-                        foreach (DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry newlySatisfiedDependency in storedDependencySet)
-                        {
-                            AddToMarkStack(newlySatisfiedDependency.Node, newlySatisfiedDependency.Reason, newlySatisfiedDependency.OtherReasonNode, currentNode);
-                        }
-
-                        _conditional_dependency_store.Remove(currentNode);
+                        storedDependencies.MarkDependencies(this, currentNode);
                     }
                 }
 
