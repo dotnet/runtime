@@ -66,17 +66,17 @@ jobs:
             - (Fedora.44.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-44-helix-amd64@sha256:741194ecb2b87a0af7da451dee72c8e74f8133dd6c41056f8d09db5faceeae09
             - (openSUSE.16.0.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:opensuse-16.0-helix-amd64@sha256:d78699f264e2f7bf2c29eb46d0000b49989cd72993a0692fa3c657c21761a57c
 
-          - ${{ if eq(parameters.jobParameters.testScope, 'outerloop') }}:
-              # outerloop only CoreCLR
-              - AzureLinux.3.Amd64.Open
-
           - ${{ if or(ne(parameters.jobParameters.isExtraPlatformsBuild, true), eq(parameters.jobParameters.includeAllPlatforms, true))}}:
               # inner and outer loop CoreCLR (general set)
               # Primary distro for all builds
               - Ubuntu.2604.Amd64.Open
+              # Compare standard and experimental Azure Linux queues on both the VM and container paths.
+              - AzureLinux.3.Amd64.Open
+              - AzureLinux.3.Amd64.Experimental.Open
+              - (AzureLinux.3.0.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-helix-amd64@sha256:2c63328456835933ff33304c3e088c26399083ec37a80c074a87e00e0ae2471e
+              - (AzureLinux.3.0.Amd64.Open)AzureLinux.3.Amd64.Experimental.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-helix-amd64@sha256:2c63328456835933ff33304c3e088c26399083ec37a80c074a87e00e0ae2471e
               # Additional distros on non-PR builds for broader coverage
               - ${{ if or(eq(variables['isRollingBuild'], true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
-                - (AzureLinux.3.0.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-helix-amd64@sha256:2c63328456835933ff33304c3e088c26399083ec37a80c074a87e00e0ae2471e
                 - (Centos.10.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream-10-helix-amd64@sha256:b68432097fb44630d4c0b00c6ddcb7bda3867827e4131e0fcefa71f98f1e047e
 
     # OSX arm64
@@ -133,6 +133,8 @@ jobs:
           - ${{ if or(ne(parameters.jobParameters.isExtraPlatformsBuild, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
             # Primary Windows versions for all builds: newest server + Nano (distinct environment)
             - Windows.Server2025.Amd64.Open
+            - Windows.11.Amd64.Client.Open
+            - Windows.11.Amd64.Experimental.Open
             - ${{ if ne(parameters.jobParameters.runtimeFlavor, 'mono') }}:
               - (Windows.Nano.1809.Amd64.Open)windows.10.amd64.serverrs5.open@mcr.microsoft.com/dotnet-buildtools/prereqs:nanoserver-1809-helix-amd64@sha256:0d775842615e5642149c6f2e03a269b5bf217eba50297318b47dd706fce2d9b0
             # Additional Windows versions on non-PR builds for broader coverage
