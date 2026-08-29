@@ -23,6 +23,23 @@ internal sealed class TestPaths
         _output = output;
     }
 
+    public static bool IsBrowserWasmRuntimePackAvailable
+    {
+        get
+        {
+            DirectoryInfo? directory = new(AppContext.BaseDirectory);
+
+            while ((directory is not null) &&
+                   ((directory.Name != "bin") || (directory.Parent?.Name != "artifacts")))
+            {
+                directory = directory.Parent;
+            }
+
+            return (directory is not null) &&
+                   Directory.Exists(Path.Combine(directory.FullName, "microsoft.netcore.app.runtime.browser-wasm"));
+        }
+    }
+
     private static string GetRequiredConfig(string key)
     {
         return AppContext.GetData(key) as string
@@ -206,6 +223,32 @@ internal sealed class TestPaths
 
             return dir;
         }
+    }
+
+    public (string RuntimePackDir, string RuntimePackNativeDir) GetRuntimePackDirectories(
+        string runtimeIdentifier)
+    {
+        string artifactsBin = Path.GetFullPath(Path.Combine(CoreCLRArtifactsDir, "..", ".."));
+        string runtimePackRoot = Path.Combine(
+            artifactsBin,
+            $"microsoft.netcore.app.runtime.{runtimeIdentifier}",
+            CoreCLRConfiguration,
+            "runtimes",
+            runtimeIdentifier);
+        runtimePackRoot = ProbeConfigFallback(runtimePackRoot);
+
+        string runtimePackLibRoot = Path.Combine(runtimePackRoot, "lib");
+        if (!Directory.Exists(runtimePackLibRoot))
+            throw new DirectoryNotFoundException($"Runtime pack library directory not found: {runtimePackLibRoot}");
+
+        string[] targetFrameworkDirectories = Directory.GetDirectories(runtimePackLibRoot);
+        if (targetFrameworkDirectories.Length != 1)
+        {
+            throw new InvalidOperationException(
+                $"Expected one target framework directory under '{runtimePackLibRoot}', found {targetFrameworkDirectories.Length}.");
+        }
+
+        return (targetFrameworkDirectories[0], Path.Combine(runtimePackRoot, "native"));
     }
 
     /// <summary>
