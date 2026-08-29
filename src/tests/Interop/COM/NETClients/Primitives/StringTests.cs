@@ -193,7 +193,22 @@ namespace NetClient
                 Assert.Equal(expected, actual);
 
                 actual = local;
-                Assert.Throws<MarshalDirectiveException>( () => this.server.Reverse_LPWStr_OutAttr(local, actual));
+                MarshalDirectiveException exception = Assert.Throws<MarshalDirectiveException>(() => this.server.Reverse_LPWStr_OutAttr(local, actual));
+                string[] expectedStackTrace =
+                {
+                    "System.StubHelpers.StubHelpers.ThrowInteropParamException",
+                    "Server.Contract.IStringTesting.Reverse_LPWStr_OutAttr",
+                    "Xunit.Assert.RecordException",
+                };
+                string[] actualStackTrace = exception.StackTrace!
+                    .Split(Environment.NewLine)
+                    .Select(static frame =>
+                    {
+                        int methodStart = frame.IndexOf("at ", StringComparison.Ordinal) + "at ".Length;
+                        return frame.Substring(methodStart, frame.IndexOf('(') - methodStart);
+                    })
+                    .ToArray();
+                Assert.Equal(expectedStackTrace, actualStackTrace);
             }
 
             foreach (var s in reversibleStrings)

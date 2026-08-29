@@ -6660,6 +6660,10 @@ void UnwindAndContinueRethrowHelperInsideQcallCatch(
     OBJECTREF orThrowable = CLRException::GetThrowableFromException(pException);
     CONSISTENCY_CHECK(orThrowable != NULL);
     SetQCallExceptionStatusThrowable(pQCallException, orThrowable);
+
+    // The exception status now owns a handle to the throwable. Release the native
+    // exception and its cached throwable handle, as the normal rethrow path does.
+    Exception::Delete(pException);
 }
 
 #ifdef TARGET_UNIX
