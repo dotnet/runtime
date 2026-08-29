@@ -28,10 +28,12 @@ from pathlib import Path
 
 # ---------------------------------------------------------------- wasm reading
 
-SEC_CUSTOM, SEC_IMPORT, SEC_FUNCTION, SEC_GLOBAL = 0, 2, 3, 6
-SEC_EXPORT, SEC_ELEMENT, SEC_CODE, SEC_DATA = 7, 9, 10, 11
+SEC_CUSTOM, SEC_TYPE, SEC_IMPORT, SEC_FUNCTION = 0, 1, 2, 3
+SEC_GLOBAL, SEC_EXPORT, SEC_START = 6, 7, 8
+SEC_ELEMENT, SEC_CODE, SEC_DATA = 9, 10, 11
 
 EXTERNKIND_FUNC = 0
+WEBCIL_HEADER_SIZE = 32
 
 
 class WasmError(Exception):
@@ -263,30 +265,65 @@ class WasmModule:
         return out
 
 
-def make_shim(memory_base, table_base):
-    """Assemble the two-global module wasm-ld cannot emit for a non-PIC main module.
+def make_shim(memory_base, table_base, patch_header):
+    """Assemble the module supplying what wasm-ld cannot emit for a non-PIC main module.
 
-    Hand-assembled rather than written as WAT so wabt is not a prerequisite -- one fewer
-    toolchain to install on Windows. Validated by the caller before it is merged.
+    Always exports the two base globals. When `patch_header` is set it additionally imports
+    the composite's `patchWebcilHeader` and calls it from a start function, so the composite
+    fills in its own header's TableBase field using the `__table_base` this shim defines.
+    That is strictly better than the host writing that field: the composite owns both the
+    offset and the value, so the two cannot disagree about the format.
+
+    The import lives here rather than in corerun deliberately. corerun is a WASI *component*,
+    and an arbitrary core import is not expressible in a WIT world -- `wasm-component-ld`
+    rejects it with "failed to decode world from module". The shim is merged and never
+    componentized, so the import is resolved by the merge and the component wrapper never
+    sees it.
+
+    Hand-assembled rather than written as WAT so wabt is not a prerequisite; the caller
+    validates the result before it reaches the merge.
     """
-    def global_entry(value):
-        return b"\x7f\x00" + b"\x41" + _emit_sleb(value) + b"\x0b"  # i32, const, init
-
-    globals_payload = _emit_uleb(2) + global_entry(memory_base) + global_entry(table_base)
-
-    def export_entry(name, index):
-        raw = name.encode("utf-8")
-        return _emit_uleb(len(raw)) + raw + b"\x03" + _emit_uleb(index)
-
-    exports_payload = (_emit_uleb(2) + export_entry("__memory_base", 0)
-                       + export_entry("__table_base", 1))
-
     def section(sec_id, payload):
         return bytes([sec_id]) + _emit_uleb(len(payload)) + payload
 
-    return (b"\0asm\x01\x00\x00\x00"
-            + section(SEC_GLOBAL, globals_payload)
-            + section(SEC_EXPORT, exports_payload))
+    def name(text):
+        raw = text.encode("utf-8")
+        return _emit_uleb(len(raw)) + raw
+
+    out = bytearray(b"\0asm\x01\x00\x00\x00")
+
+    if patch_header:
+        # (i32,i32)->()  for patchWebcilHeader, and ()->() for the start function.
+        types = _emit_uleb(2) + b"\x60\x02\x7f\x7f\x00" + b"\x60\x00\x00"
+        out += section(SEC_TYPE, types)
+        out += section(SEC_IMPORT,
+                       _emit_uleb(1) + name("composite") + name("patchWebcilHeader")
+                       + b"\x00" + _emit_uleb(0))
+        out += section(SEC_FUNCTION, _emit_uleb(1) + _emit_uleb(1))
+
+    def global_entry(value):
+        return b"\x7f\x00\x41" + _emit_sleb(value) + b"\x0b"  # i32, immutable, i32.const
+
+    out += section(SEC_GLOBAL,
+                   _emit_uleb(2) + global_entry(memory_base) + global_entry(table_base))
+    out += section(SEC_EXPORT,
+                   _emit_uleb(2)
+                   + name("__memory_base") + b"\x03" + _emit_uleb(0)
+                   + name("__table_base") + b"\x03" + _emit_uleb(1))
+
+    if patch_header:
+        # Function 0 is the import, so the start function is index 1.
+        out += section(SEC_START, _emit_uleb(1))
+        # patchWebcilHeader(dest = __memory_base, length): its own guard is `length >= 32`,
+        # and it writes 4 bytes at dest+28, so the header size is the only length it needs.
+        body = (_emit_uleb(0)                              # no locals
+                + b"\x41" + _emit_sleb(memory_base)        # i32.const dest
+                + b"\x41" + _emit_sleb(WEBCIL_HEADER_SIZE)  # i32.const 32
+                + b"\x10" + _emit_uleb(0)                  # call 0
+                + b"\x0b")                                 # end
+        out += section(SEC_CODE, _emit_uleb(1) + _emit_uleb(len(body)) + body)
+
+    return bytes(out)
 
 
 def swap_core_module(component_path, module_path, out_path):
@@ -420,9 +457,19 @@ def main():
 
     # 3. Generate the shim supplying the two globals wasm-ld cannot emit for a non-PIC main
     #    module, and validate it before it reaches the merge.
+    #
+    #    If the composite exports patchWebcilHeader (the self-installing shape in
+    #    docs/design/mono/webcil.md), have the shim call it from a start function so the
+    #    composite writes its own TableBase field. Older composites predate that export, so
+    #    detect rather than assume -- importing a function the composite does not export makes
+    #    the merge leave it unresolved and the host fails to instantiate. When it is absent the
+    #    host's own fallback in wasi_r2r_probe.hpp writes the field instead.
+    patch_header = "patchWebcilHeader" in composite.exports()
     shim = outdir / "shim.wasm"
-    shim.write_bytes(make_shim(params["image_base"], params["table_base"]))
+    shim.write_bytes(make_shim(params["image_base"], params["table_base"], patch_header))
     run([wasm_tools, "validate", "--features", "all", str(shim)], capture=True)
+    print(f"SHIM: tableBase written by "
+          f"{'the composite (patchWebcilHeader)' if patch_header else 'the host (fallback)'}")
 
     # 4. Merge host + shim + composite. --enable-gc is needed only for the INTERMEDIATE:
     #    merging internalizes the imported globals, and global.get of a *defined* global is
