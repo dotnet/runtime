@@ -19,6 +19,8 @@ using ILCompiler.ReadyToRun.Tests.TestCasesRunner;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
+using Microsoft.WebAssembly.Build.Tasks.CoreClr;
+
 using Xunit;
 using Xunit.Abstractions;
 
@@ -522,6 +524,195 @@ public class WasmArgumentLayoutTests
         Assert.Equal("vll2ip", SignatureOf(context, wrapper));
         Assert.Equal(OffsetsOf(context, int128), OffsetsOf(context, wrapper));
     }
+
+    public static TheoryData<string, bool, string> ThunkShapes()
+    {
+        // (description, isStatic, expected signature key)
+        TheoryData<string, bool, string> data = new()
+        {
+            { "void(int)", true, "vip" },
+            { "int(int)", false, "iTip" },
+            { "long(double)", true, "ldp" },
+            { "int(float, double, long)", false, "iTfdlp" },
+            { "void()", false, "vTp" },
+            // Struct returns: the shape both encoders previously disagreed on.
+            { "S8()", true, "S8p" },
+            { "S8(int)", false, "S8Tip" },
+            { "S16(long, int)", true, "S16lip" },
+            { "S12(S12, int)", false, "S12TS12ip" },
+            { "void(S8)", false, "vTS8p" },
+        };
+
+        return data;
+    }
+
+    /// <summary>
+    /// The R2R-to-interpreter thunks are written by the WasmAppBuilder generator but called by code
+    /// crossgen2 emits, so the two have to agree on the wasm signature behind every key. This checks
+    /// arity and types: a missing hidden return buffer — which is what returning the struct by value
+    /// produces, since the compiler then inserts its own pointer ahead of the stack pointer — or a
+    /// wrong scalar width shows up here. It cannot see two same-typed parameters swapped;
+    /// <see cref="ThunkParametersFollowCrossgen2Order"/> covers the order.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(ThunkShapes))]
+    public void GeneratedThunkMatchesLoweredWasmSignature(string description, bool isStatic, string expectedKey)
+    {
+        _output.WriteLine($"{description} => {expectedKey}");
+
+        ReadyToRunCompilerContext context = CreateWasmContext();
+        WasmSignature lowered = WasmLowering.GetSignature(MakeThunkSignature(context, description, isStatic), WasmLowering.LoweringFlags.None);
+
+        Assert.Equal(expectedKey, lowered.SignatureString);
+        Assert.Equal(lowered.FuncType.Params.Types.ToArray(), GetThunkWasmParameters(lowered.SignatureString));
+    }
+
+    /// <summary>
+    /// A generic context argument is an ordinary pointer slot that follows the return buffer, so it
+    /// encodes exactly like a leading <c>int</c> parameter and must lay out the same way.
+    /// </summary>
+    [Fact]
+    public void GenericContextArgumentFollowsTheReturnBuffer()
+    {
+        ReadyToRunCompilerContext context = CreateWasmContext();
+        MethodSignature signature = new(
+            MethodSignatureFlags.None,
+            genericParameterCount: 0,
+            returnType: MakeBlobOfSize(context, 8),
+            parameters: Array.Empty<TypeDesc>());
+
+        WasmSignature lowered = WasmLowering.GetSignature(signature, WasmLowering.LoweringFlags.HasGenericContextArg);
+
+        Assert.Equal("S8Tip", lowered.SignatureString);
+        Assert.Equal(lowered.FuncType.Params.Types.ToArray(), GetThunkWasmParameters(lowered.SignatureString));
+    }
+
+    public static TheoryData<string[], bool, string[]> ThunkParameterOrder()
+    {
+        // Transcribed from WasmR2RToInterpreterThunkNode.EmitCode, which stores 'this' from the
+        // local after the stack pointer and then reads the buffer from
+        // retBufLocalIndex = 1 + (hasThis ? 1 : 0). A generic context is an ordinary slot that
+        // follows the buffer, so it is spelled like any other argument here.
+        return new TheoryData<string[], bool, string[]>
+        {
+            { Array.Empty<string>(), true, new[] { "retBuf" } },
+            { new[] { "i" }, true, new[] { "retBuf", "arg0" } },
+            { new[] { "T" }, true, new[] { "arg0", "retBuf" } },
+            { new[] { "T", "i" }, true, new[] { "arg0", "retBuf", "arg1" } },
+            { new[] { "T", "i", "S8" }, true, new[] { "arg0", "retBuf", "arg1", "arg2" } },
+            { new[] { "T", "i" }, false, new[] { "arg0", "arg1" } },
+            { new[] { "i", "l" }, false, new[] { "arg0", "arg1" } },
+        };
+    }
+
+    /// <summary>
+    /// The transposition that shipped broken, and the reason it needs its own test: for an instance
+    /// method the hidden return buffer follows <c>this</c>, and both are <c>i32</c>, so getting the
+    /// order wrong leaves the wasm type sequence unchanged. Comparing lowered parameter types cannot
+    /// see it — only the positions can.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(ThunkParameterOrder))]
+    public void ThunkParametersFollowCrossgen2Order(string[] args, bool isStructReturn, string[] expectedNames)
+    {
+        Assert.Equal(
+            expectedNames,
+            PortableEntryPointThunkSignature.GetDeclaredParameters(args, isStructReturn).Select(static p => p.Name));
+    }
+
+    /// <summary>
+    /// Builds the signature named by <paramref name="description"/> in <see cref="ThunkShapes"/>.
+    /// </summary>
+    private static MethodSignature MakeThunkSignature(ReadyToRunCompilerContext context, string description, bool isStatic)
+    {
+        TypeDesc Int32() => context.GetWellKnownType(WellKnownType.Int32);
+
+        (TypeDesc Return, TypeDesc[] Parameters) shape = description switch
+        {
+            "void(int)" => (context.GetWellKnownType(WellKnownType.Void), new[] { Int32() }),
+            "int(int)" => (Int32(), new[] { Int32() }),
+            "long(double)" => (context.GetWellKnownType(WellKnownType.Int64), new[] { context.GetWellKnownType(WellKnownType.Double) }),
+            "int(float, double, long)" => (Int32(), new[]
+            {
+                context.GetWellKnownType(WellKnownType.Single),
+                context.GetWellKnownType(WellKnownType.Double),
+                context.GetWellKnownType(WellKnownType.Int64),
+            }),
+            "void()" => (context.GetWellKnownType(WellKnownType.Void), Array.Empty<TypeDesc>()),
+            "S8()" => (MakeBlobOfSize(context, 8), Array.Empty<TypeDesc>()),
+            "S8(int)" => (MakeBlobOfSize(context, 8), new[] { Int32() }),
+            "S16(long, int)" => (MakeBlobOfSize(context, 16), new[] { context.GetWellKnownType(WellKnownType.Int64), Int32() }),
+            "S12(S12, int)" => (MakeBlobOfSize(context, 12), new TypeDesc[] { MakeBlobOfSize(context, 12), Int32() }),
+            "void(S8)" => (context.GetWellKnownType(WellKnownType.Void), new TypeDesc[] { MakeBlobOfSize(context, 8) }),
+            _ => throw new ArgumentOutOfRangeException(nameof(description), description, null),
+        };
+
+        return new MethodSignature(
+            isStatic ? MethodSignatureFlags.Static : MethodSignatureFlags.None,
+            genericParameterCount: 0,
+            returnType: shape.Return,
+            parameters: shape.Parameters);
+    }
+
+    /// <summary>
+    /// A multi-field struct of the given size. It needs more than one field: a single-field struct
+    /// is lowered to the field's own type and would never reach the <c>S&lt;N&gt;</c> encoding.
+    /// </summary>
+    private static DefType MakeBlobOfSize(ReadyToRunCompilerContext context, int size)
+    {
+        TypeDesc int32 = context.GetWellKnownType(WellKnownType.Int32);
+        TypeDesc int64 = context.GetWellKnownType(WellKnownType.Int64);
+
+        DefType result = size switch
+        {
+            8 => MakeValueTuple(context, int32, int32),
+            12 => MakeValueTuple(context, int32, int32, int32),
+            16 => MakeValueTuple(context, int64, int64),
+            _ => throw new ArgumentOutOfRangeException(nameof(size), size, null),
+        };
+
+        Assert.Equal(size, result.InstanceFieldSize.AsInt);
+        return result;
+    }
+
+    /// <summary>
+    /// The wasm parameters of the thunk the generator emits for <paramref name="signatureKey"/>.
+    /// The stack pointer comes from the WASM_CALLABLE_FUNC macro and the portable entrypoint is
+    /// appended after the declared arguments, so neither is part of the generator's own list.
+    /// </summary>
+    private static List<WasmValueType> GetThunkWasmParameters(string signatureKey)
+    {
+        List<string> tokens = SignatureMapper.ParseSignatureTokens(signatureKey);
+        string returnToken = tokens[0];
+
+        Assert.Equal("p", tokens[tokens.Count - 1]);
+        tokens.RemoveAt(tokens.Count - 1);
+        List<string> args = tokens.GetRange(1, tokens.Count - 1);
+
+        List<WasmValueType> parameters = new() { WasmValueType.I32 }; // callersStackPointer
+        foreach (PortableEntryPointThunkSignature.Parameter parameter in
+                 PortableEntryPointThunkSignature.GetDeclaredParameters(args, PortableEntryPointThunkSignature.IsStructToken(returnToken)))
+        {
+            parameters.Add(NativeTypeToWasmType(parameter.NativeType));
+        }
+
+        parameters.Add(WasmValueType.I32); // portable entrypoint
+        return parameters;
+    }
+
+    /// <summary>
+    /// Maps a C type the generator emits onto the wasm type clang gives it on wasm32. Reading the
+    /// generator's own type strings, rather than re-deriving them from the signature, is what makes
+    /// this a check of the emitted thunk instead of a restatement of the encoding rules.
+    /// </summary>
+    private static WasmValueType NativeTypeToWasmType(string nativeType) => nativeType switch
+    {
+        "int32_t" or "int8_t*" or "PCODE" => WasmValueType.I32,
+        "int64_t" => WasmValueType.I64,
+        "float" => WasmValueType.F32,
+        "double" => WasmValueType.F64,
+        _ => throw new ArgumentOutOfRangeException(nameof(nativeType), nativeType, null),
+    };
 
     private static DefType MakeValueTuple(ReadyToRunCompilerContext context, params TypeDesc[] fields) =>
         ((MetadataType)context.SystemModule.GetType(

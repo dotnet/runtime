@@ -37,6 +37,14 @@
     <EmbeddedResource Include="TestCases/**/*.cs" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
 
+  <!-- The wasm R2R-to-interpreter thunks are emitted by these two files but called by code crossgen2
+       generates, so WasmArgumentLayoutTests checks the two agree. Only the MSBuild-free half of the
+       generator is linked; the rest of WasmAppBuilder needs a TaskLoggingHelper. -->
+  <ItemGroup>
+    <Compile Include="$(RepoRoot)src/tasks/WasmAppBuilder/coreclr/SignatureMapper.Tokens.cs" />
+    <Compile Include="$(RepoRoot)src/tasks/WasmAppBuilder/coreclr/PortableEntryPointThunkSignature.cs" />
+  </ItemGroup>
+
   <Target Name="SetupCopyCrossgen2CompilationAssets"
           BeforeTargets="AssignTargetPaths"
           DependsOnTargets="ResolveProjectReferences"
