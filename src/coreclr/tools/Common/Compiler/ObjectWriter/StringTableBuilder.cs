@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
-using System.Linq;
 using Internal.Text;
 
 namespace ILCompiler.ObjectWriter
@@ -15,7 +14,7 @@ namespace ILCompiler.ObjectWriter
     internal class StringTableBuilder
     {
         private readonly MemoryStream _stream = new();
-        private readonly SortedSet<Utf8String> _reservedStrings = new();
+        private readonly HashSet<Utf8String> _reservedStrings = new();
         private Dictionary<Utf8String, uint> _stringToOffset = new();
 
         public void Write(Stream stream)
@@ -43,9 +42,13 @@ namespace ILCompiler.ObjectWriter
 
         private void FlushReservedStrings()
         {
-            Utf8String[] reservedStrings = _reservedStrings.ToArray();
+            Utf8String[] reservedStrings = new Utf8String[_reservedStrings.Count];
+            _reservedStrings.CopyTo(reservedStrings);
 
-            // Pre-sort the string based on their matching suffix
+            // Establish a deterministic order before the in-place suffix sort.
+            Array.Sort(reservedStrings);
+
+            // Sort strings so matching suffixes are adjacent.
             MultiKeySort(reservedStrings, 0);
 
             // Add the strings to string table
