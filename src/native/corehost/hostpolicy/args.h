@@ -67,7 +67,9 @@ struct probe_config_t
         , probe_deps_json(nullptr)
         , fx_level(-1)
         , only_runtime_assets(false)
-    { }
+    {
+        assert(probe_type == type::app || pal::is_path_fully_qualified(probe_dir));
+    }
 
     bool is_lookup() const
     {
