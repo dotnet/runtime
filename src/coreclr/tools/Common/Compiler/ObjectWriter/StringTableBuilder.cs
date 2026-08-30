@@ -42,6 +42,11 @@ namespace ILCompiler.ObjectWriter
 
         private void FlushReservedStrings()
         {
+            if (_reservedStrings.Count == 0)
+            {
+                return;
+            }
+
             Utf8String[] reservedStrings = new Utf8String[_reservedStrings.Count];
             _reservedStrings.CopyTo(reservedStrings);
 
