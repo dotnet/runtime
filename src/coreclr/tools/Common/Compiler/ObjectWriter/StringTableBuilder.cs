@@ -15,7 +15,7 @@ namespace ILCompiler.ObjectWriter
     {
         private readonly MemoryStream _stream = new();
         private readonly HashSet<Utf8String> _reservedStrings = new();
-        private Dictionary<Utf8String, uint> _stringToOffset = new();
+        private readonly Dictionary<Utf8String, uint> _stringToOffset = new();
 
         public void Write(Stream stream)
         {
