@@ -796,7 +796,7 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
     }
 
     if ((dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes) && (conserve_mem_setting == 0))
-        conserve_mem_setting = 5;
+        conserve_mem_setting = 3;
 
 #ifdef STRESS_DYNAMIC_HEAP_COUNT
     bgc_to_ngc2_ratio = (int)GCConfig::GetGCDBGCRatio();
