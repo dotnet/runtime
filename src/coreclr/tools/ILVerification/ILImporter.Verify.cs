@@ -1553,12 +1553,27 @@ namespace Internal.IL
             TypeDesc constrained = null;
             bool tailCall = false;
 
+            MethodDesc method = ResolveMethodToken(token);
+            MethodSignature sig = method.Signature;
+
             if (opcode != ILOpcode.newobj)
             {
-                if (HasPendingPrefix(Prefix.Constrained) && opcode == ILOpcode.callvirt)
+                if (HasPendingPrefix(Prefix.Constrained))
                 {
-                    ClearPendingPrefix(Prefix.Constrained);
-                    constrained = _constrained;
+                    if (opcode == ILOpcode.callvirt)
+                    {
+                        ClearPendingPrefix(Prefix.Constrained);
+                        constrained = _constrained;
+                    }
+                    else if (opcode == ILOpcode.call && method.IsVirtual && sig.IsStatic && method.OwningType.IsInterface)
+                    {
+                        ClearPendingPrefix(Prefix.Constrained);
+                        constrained = _constrained;
+
+                        // The constrained type must implement the interface declaring the static virtual method
+                        if (!constrained.CanCastTo(method.OwningType))
+                            VerificationError(VerifierError.ConstrainedTypeNoInterfaceImpl, constrained, method.OwningType);
+                    }
                 }
 
                 if (HasPendingPrefix(Prefix.Tail))
@@ -1572,10 +1587,6 @@ namespace Internal.IL
             // if (sig.isVarArg())
             //      eeGetCallSiteSig(memberRef, getCurrentModuleHandle(), getCurrentContext(), &sig, false);
 
-            MethodDesc method = ResolveMethodToken(token);
-
-            MethodSignature sig = method.Signature;
-
             TypeDesc methodType = sig.IsStatic ? null : method.OwningType;
 
             if (opcode == ILOpcode.callvirt)
@@ -1587,7 +1598,9 @@ namespace Internal.IL
             {
                 EcmaMethod ecmaMethod = method.GetTypicalMethodDefinition() as EcmaMethod;
                 if (ecmaMethod != null)
-                    Check(!ecmaMethod.IsAbstract, VerifierError.CallAbstract);
+                {
+                    Check(!ecmaMethod.IsAbstract || (method.OwningType.IsInterface && constrained != null), VerifierError.CallAbstract);
+                }
             }
 
             if (opcode == ILOpcode.newobj && methodType.IsDelegate)

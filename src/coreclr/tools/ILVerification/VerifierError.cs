@@ -192,5 +192,6 @@ namespace ILVerify
         LocallocStackNotEmpty, // localloc requires that stack must be empty, except for 'size' argument
         InvalidBaseType, // Type has an invalid base type.
         BadTypeSpec, // Invalid TypeSpec metadata.
+        ConstrainedTypeNoInterfaceImpl, // The type operand of the constrained prefix must implement the interface declaring the static virtual method.
     }
 }
