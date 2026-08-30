@@ -715,7 +715,7 @@ namespace ILCompiler.ObjectWriter
                 sizeof(uint) +  // SymbolTableIndex
                 sizeof(ushort); // Type
 
-            public readonly void Write(Stream stream)
+            public void Write(Stream stream)
             {
                 Span<byte> buffer = stackalloc byte[Size];
 
