@@ -40,7 +40,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="CoffObjectWriterTests.cs" />
     <Compile Include="DependencyGraphTests.cs" />
     <Compile Include="DevirtualizationTests.cs" />
     <Compile Include="SwiftLoweringTests.cs" />
