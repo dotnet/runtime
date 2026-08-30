@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 
 using Internal.Text;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -36,7 +37,7 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         // At minimum, Target needs to be reported as a static dependency by inheritors.
-        public abstract override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory);
+        public abstract override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory);
 
         int ISymbolNode.Offset => 0;
 

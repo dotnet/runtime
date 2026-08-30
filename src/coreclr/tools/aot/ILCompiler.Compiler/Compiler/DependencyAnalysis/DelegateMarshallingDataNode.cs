@@ -26,17 +26,15 @@ namespace ILCompiler.DependencyAnalysis
             _type = type;
         }
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
             InteropStateManager stateManager = ((CompilerGeneratedInteropStubManager)factory.InteropStubManager)._interopStateManager;
 
-            return new DependencyListEntry[]
-            {
+            sink.AddRange(
                 new DependencyListEntry(factory.NecessaryTypeSymbol(_type), "Delegate Marshalling Stub"),
                 new DependencyListEntry(factory.MethodEntrypoint(stateManager.GetOpenStaticDelegateMarshallingThunk(_type)), "Delegate Marshalling Stub"),
                 new DependencyListEntry(factory.MethodEntrypoint(stateManager.GetClosedDelegateMarshallingThunk(_type)), "Delegate Marshalling Stub"),
-                new DependencyListEntry(factory.MethodEntrypoint(stateManager.GetForwardDelegateCreationThunk(_type)), "Delegate Marshalling Stub"),
-            };
+                new DependencyListEntry(factory.MethodEntrypoint(stateManager.GetForwardDelegateCreationThunk(_type)), "Delegate Marshalling Stub"));
         }
 
         protected override string GetName(NodeFactory context)
@@ -48,7 +46,7 @@ namespace ILCompiler.DependencyAnalysis
         public override bool HasDynamicDependencies => false;
         public override bool HasConditionalStaticDependencies => false;
         public override bool StaticDependenciesAreComputed => true;
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context) => null;
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => null;
+        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory context) { }
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink<NodeFactory> sink, NodeFactory context) { }
     }
 }

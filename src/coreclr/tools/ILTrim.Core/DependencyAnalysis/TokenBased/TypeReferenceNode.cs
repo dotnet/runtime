@@ -9,6 +9,7 @@ using System.Reflection.Metadata.Ecma335;
 using Internal.TypeSystem.Ecma;
 
 using Debug = System.Diagnostics.Debug;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -46,14 +47,14 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            yield return new(GetResolutionScopeNode(factory), "Resolution Scope of a type reference");
+            sink.Add(new DependencyListEntry(GetResolutionScopeNode(factory), "Resolution Scope of a type reference"));
 
             var typeDescObject = _module.GetObject(Handle);
             if (typeDescObject is EcmaType typeDef && factory.IsModuleTrimmed(typeDef.Module))
             {
-                yield return new(factory.TypeDefinition(typeDef.Module, typeDef.Handle), "Target of a type reference");
+                sink.Add(new DependencyListEntry(factory.TypeDefinition(typeDef.Module, typeDef.Handle), "Target of a type reference"));
             }
         }
 

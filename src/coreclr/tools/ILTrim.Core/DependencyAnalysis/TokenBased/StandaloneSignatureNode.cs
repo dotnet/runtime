@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Reflection.Metadata;
 
 using Internal.TypeSystem.Ecma;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -20,7 +21,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private StandaloneSignatureHandle Handle => (StandaloneSignatureHandle)_handle;
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
             MetadataReader reader = _module.MetadataReader;
 
@@ -28,11 +29,11 @@ namespace ILCompiler.DependencyAnalysis
 
             BlobReader signatureReader = reader.GetBlobReader(standaloneSig.Signature);
 
-            return EcmaSignatureAnalyzer.AnalyzeStandaloneSignatureBlob(
+            EcmaSignatureAnalyzer.AnalyzeStandaloneSignatureBlob(
                 _module,
                 signatureReader,
-                factory
-                );
+                factory,
+                sink);
         }
 
         protected override EntityHandle WriteInternal(ModuleWritingContext writeContext)

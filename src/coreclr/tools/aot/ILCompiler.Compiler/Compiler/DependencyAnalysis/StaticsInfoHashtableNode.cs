@@ -7,6 +7,7 @@ using System.Diagnostics;
 using Internal.Text;
 using Internal.TypeSystem;
 using Internal.NativeFormat;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -40,7 +41,7 @@ namespace ILCompiler.DependencyAnalysis
         /// This helper is used by EETypeNode, which is used by the dependency analysis to compute the statics hashtable
         /// entries for the compiled types.
         /// </summary>
-        public static void AddStaticsInfoDependencies(ref DependencyList dependencies, NodeFactory factory, MetadataType metadataType)
+        public static void AddStaticsInfoDependencies(DependencySink<NodeFactory> dependencies, NodeFactory factory, MetadataType metadataType)
         {
             Debug.Assert(metadataType.HasInstantiation && !metadataType.IsCanonicalSubtype(CanonicalFormKind.Any));
 

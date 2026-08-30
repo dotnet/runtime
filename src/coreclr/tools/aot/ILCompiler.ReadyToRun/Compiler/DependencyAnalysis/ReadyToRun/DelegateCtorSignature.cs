@@ -5,6 +5,7 @@ using Internal.TypeSystem;
 using Internal.JitInterface;
 using Internal.Text;
 using Internal.ReadyToRunConstants;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -63,14 +64,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return builder.ToObjectData();
         }
 
-        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        protected override void ComputeNonRelocationBasedDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            return new DependencyList(
-                new DependencyListEntry[]
-                {
-                    new DependencyListEntry(_targetMethod, "Delegate target method")
-                }
-            );
+            sink.Add(_targetMethod, "Delegate target method");
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)

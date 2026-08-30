@@ -55,7 +55,7 @@ namespace ILCompiler
         }
 
         public static void AddTypeLoaderDependencies(
-            List<DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry> dependencies,
+            DependencySink<NodeFactory> dependencies,
             NodeFactory factory,
             IEETypeNode dependencyType,
             string reason)

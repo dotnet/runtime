@@ -42,24 +42,24 @@ namespace ILCompiler.DependencyAnalysis
         public override bool StaticDependenciesAreComputed => true;
         protected override string GetName(NodeFactory factory) => "__GVMDependenciesNode_" + factory.NameMangler.GetMangledMethodName(_method);
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
             if (!_method.IsAbstract)
             {
                 DependencyNodeCore<NodeFactory> node = GetVirtualMethodImplNode(factory, _method);
                 if (node != null)
-                    yield return new DependencyListEntry(node, "Implementation of the generic virtual method");
+                    sink.Add(node, "Implementation of the generic virtual method");
             }
 #if !READYTORUN
             if (!_method.OwningType.IsInterface)
             {
-                yield return new DependencyListEntry(factory.TypeGVMEntries(_method.OwningType.GetTypeDefinition()), "Resolution metadata");
+                sink.Add(factory.TypeGVMEntries(_method.OwningType.GetTypeDefinition()), "Resolution metadata");
             }
-            yield return new DependencyListEntry(factory.AnalysisCharacteristic("GenericVirtualMethodsPresent"), "Runtime GVM resolution needed");
+            sink.Add(factory.AnalysisCharacteristic("GenericVirtualMethodsPresent"), "Runtime GVM resolution needed");
 #endif
         }
 
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context) => null;
+        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory context) { }
 
         public override bool HasDynamicDependencies
         {
@@ -76,9 +76,9 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory)
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            List<CombinedDependencyListEntry> dynamicDependencies = new List<CombinedDependencyListEntry>();
+            DependencySink<NodeFactory> dynamicDependencies = sink;
 
             TypeDesc methodOwningType = _method.OwningType;
             bool methodIsShared = _method.IsSharedByGenericInstantiations;
@@ -182,7 +182,7 @@ namespace ILCompiler.DependencyAnalysis
 #if !READYTORUN
                                 TypeSystemEntity origin = (implementingMethodInstantiation.OwningType != potentialOverrideType) ? potentialOverrideType : null;
                                 factory.MetadataManager.NoteOverridingMethod(_method, implementingMethodInstantiation, origin);
-                                factory.MetadataManager.GetDependenciesForOverridingMethod(ref dynamicDependencies, factory, _method, implementingMethodInstantiation);
+                                factory.MetadataManager.GetDependenciesForOverridingMethod(dynamicDependencies, factory, _method, implementingMethodInstantiation);
 #endif
                             }
 
@@ -241,7 +241,7 @@ namespace ILCompiler.DependencyAnalysis
                             dynamicDependencies.Add(new CombinedDependencyListEntry(node, null, "DerivedMethodInstantiation"));
 #if !READYTORUN
                         factory.MetadataManager.NoteOverridingMethod(_method, instantiatedTargetMethod);
-                        factory.MetadataManager.GetDependenciesForOverridingMethod(ref dynamicDependencies, factory, _method, instantiatedTargetMethod);
+                        factory.MetadataManager.GetDependenciesForOverridingMethod(dynamicDependencies, factory, _method, instantiatedTargetMethod);
 
                         foundImpl = true;
 #endif
@@ -262,7 +262,7 @@ namespace ILCompiler.DependencyAnalysis
 #endif
             }
 
-            return dynamicDependencies;
+            return;
         }
 
         private static DependencyNodeCore<NodeFactory> GetVirtualMethodImplNode(NodeFactory factory, MethodDesc method)

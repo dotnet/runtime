@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -37,7 +38,7 @@ namespace ILCompiler.DependencyAnalysis
             return helper == null ? RealBody: factory.MethodEntrypoint(helper);
         }
 
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
+        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
             // Convert methods on Array<T> into T[]
             TypeDesc owningType = Method.OwningType;
@@ -48,13 +49,11 @@ namespace ILCompiler.DependencyAnalysis
 
             // If a constructed symbol for the owning type was included in the compilation,
             // include the real method body.
-            return new CombinedDependencyListEntry[]
-            {
+            sink.Add(
                 new CombinedDependencyListEntry(
                     RealBody,
                     factory.ConstructedTypeSymbol(owningType),
-                    "Instance method on a constructed type"),
-            };
+                    "Instance method on a constructed type"));
         }
 
         protected override string GetName(NodeFactory factory)

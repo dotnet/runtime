@@ -38,6 +38,7 @@ namespace ILCompiler.DependencyAnalysisFramework
         private List<DependencyNodeCore<DependencyContextType>> _dynamicDependencyInterestingList = new List<DependencyNodeCore<DependencyContextType>>();
         private List<DynamicDependencyNode> _markedNodesWithDynamicDependencies = new List<DynamicDependencyNode>();
         private bool _newDynamicDependenciesMayHaveAppeared;
+        private readonly DependencySink<DependencyContextType> _dependencySink = new DependencySink<DependencyContextType>();
 
         private Dictionary<DependencyNodeCore<DependencyContextType>, HashSet<DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry>> _conditional_dependency_store = new Dictionary<DependencyNodeCore<DependencyContextType>, HashSet<DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry>>();
         private bool _markingCompleted;
@@ -88,12 +89,11 @@ namespace ILCompiler.DependencyAnalysisFramework
 
             public void MarkNewDynamicDependencies(DependencyAnalyzer<MarkStrategy, DependencyContextType> analyzer)
             {
-                foreach (DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry dependency in
-                    _node.SearchDynamicDependencies(analyzer._dynamicDependencyInterestingList, _next, analyzer._dependencyContext))
-                {
-                    Debug.Assert(dependency.OtherReasonNode is null || dependency.OtherReasonNode.Marked);
-                    analyzer.AddToMarkStack(dependency.Node, dependency.Reason, _node, dependency.OtherReasonNode);
-                }
+                DependencySink<DependencyContextType> sink = analyzer._dependencySink;
+                sink.ClearDependencies();
+                sink.BeginNode(_node, DependencySink<DependencyContextType>.DependencyKind.Dynamic);
+                _node.SearchDynamicDependencies(analyzer._dynamicDependencyInterestingList, _next, sink, analyzer._dependencyContext);
+                analyzer.CommitDependencies(sink);
                 _next = analyzer._dynamicDependencyInterestingList.Count;
             }
         }
@@ -178,39 +178,48 @@ namespace ILCompiler.DependencyAnalysisFramework
         }
 
         // Internal details
-        private void GetStaticDependenciesImpl(DependencyNodeCore<DependencyContextType> node)
+        private void AddStaticDependencies(DependencyNodeCore<DependencyContextType> node)
         {
-            IEnumerable<DependencyNodeCore<DependencyContextType>.DependencyListEntry> staticDependencies = node.GetStaticDependencies(_dependencyContext);
-            if (staticDependencies != null)
-            {
-                foreach (DependencyNodeCore<DependencyContextType>.DependencyListEntry dependency in staticDependencies)
-                {
-                    AddToMarkStack(dependency.Node, dependency.Reason, node, null);
-                }
-            }
+            DependencySink<DependencyContextType> sink = _dependencySink;
+            sink.ClearDependencies();
+            sink.BeginNode(node, DependencySink<DependencyContextType>.DependencyKind.Static);
+            node.AddStaticDependencies(sink, _dependencyContext);
 
             if (node.HasConditionalStaticDependencies)
             {
-                foreach (DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry dependency in node.GetConditionalStaticDependencies(_dependencyContext))
+                sink.BeginNode(node, DependencySink<DependencyContextType>.DependencyKind.Conditional);
+                node.AddConditionalDependencies(sink, _dependencyContext);
+            }
+
+            CommitDependencies(sink);
+        }
+
+        private void CommitDependencies(DependencySink<DependencyContextType> sink)
+        {
+            foreach (DependencySink<DependencyContextType>.Dependency dependency in sink.Dependencies)
+            {
+                if (dependency.Kind != DependencySink<DependencyContextType>.DependencyKind.Conditional ||
+                    dependency.OtherReasonNode is null ||
+                    dependency.OtherReasonNode.Marked)
                 {
-                    if (dependency.OtherReasonNode is null || dependency.OtherReasonNode.Marked)
-                    {
-                        AddToMarkStack(dependency.Node, dependency.Reason, node, dependency.OtherReasonNode);
-                    }
-                    else
-                    {
-                        HashSet<DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry> storedDependencySet;
-                        if (!_conditional_dependency_store.TryGetValue(dependency.OtherReasonNode, out storedDependencySet))
-                        {
-                            storedDependencySet = new HashSet<DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry>();
-                            _conditional_dependency_store.Add(dependency.OtherReasonNode, storedDependencySet);
-                        }
-                        // Swap out other reason node as we're storing that as the dictionary key
-                        DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry conditionalDependencyStoreEntry =
-                            new DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry(dependency.Node, node, dependency.Reason);
-                        storedDependencySet.Add(conditionalDependencyStoreEntry);
-                    }
+                    Debug.Assert(
+                        dependency.Kind != DependencySink<DependencyContextType>.DependencyKind.Dynamic ||
+                        dependency.OtherReasonNode is null ||
+                        dependency.OtherReasonNode.Marked);
+                    AddToMarkStack(dependency.Node, dependency.Reason, dependency.Source, dependency.OtherReasonNode);
+                    continue;
                 }
+
+                if (!_conditional_dependency_store.TryGetValue(dependency.OtherReasonNode, out HashSet<DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry> storedDependencySet))
+                {
+                    storedDependencySet = new HashSet<DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry>();
+                    _conditional_dependency_store.Add(dependency.OtherReasonNode, storedDependencySet);
+                }
+
+                // Swap out other reason node as we're storing that as the dictionary key
+                var conditionalDependencyStoreEntry =
+                    new DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry(dependency.Node, dependency.Source, dependency.Reason);
+                storedDependencySet.Add(conditionalDependencyStoreEntry);
             }
         }
 
@@ -220,7 +229,7 @@ namespace ILCompiler.DependencyAnalysisFramework
         {
             if (node.StaticDependenciesAreComputed)
             {
-                GetStaticDependenciesImpl(node);
+                AddStaticDependencies(node);
             }
             else
             {
@@ -254,14 +263,14 @@ namespace ILCompiler.DependencyAnalysisFramework
                         _newDynamicDependenciesMayHaveAppeared = true;
                     }
 
+                    bool staticDependenciesAreComputed = currentNode.StaticDependenciesAreComputed;
+
                     // Add all static dependencies to the mark stack
                     GetStaticDependencies(currentNode);
 
-                    // If there are dynamic dependencies, note for later
-                    if (currentNode.HasDynamicDependencies)
+                    if (staticDependenciesAreComputed)
                     {
-                        _newDynamicDependenciesMayHaveAppeared = true;
-                        _markedNodesWithDynamicDependencies.Add(new DynamicDependencyNode(currentNode));
+                        RegisterDynamicDependencies(currentNode);
                     }
 
                     // If this new node satisfies any stored conditional dependencies,
@@ -318,7 +327,8 @@ namespace ILCompiler.DependencyAnalysisFramework
                         foreach (DependencyNodeCore<DependencyContextType> node in deferredDependenciesInCurrentPhase)
                         {
                             Debug.Assert(node.StaticDependenciesAreComputed);
-                            GetStaticDependenciesImpl(node);
+                            AddStaticDependencies(node);
+                            RegisterDynamicDependencies(node);
                         }
 
                         deferredDependenciesInCurrentPhase.Clear();
@@ -348,6 +358,15 @@ namespace ILCompiler.DependencyAnalysisFramework
                 _markedNodesFinal = _markedNodes.ToImmutableArray();
                 _markedNodes = null;
                 _markingCompleted = true;
+            }
+        }
+
+        private void RegisterDynamicDependencies(DependencyNodeCore<DependencyContextType> node)
+        {
+            if (node.HasDynamicDependencies)
+            {
+                _newDynamicDependenciesMayHaveAppeared = true;
+                _markedNodesWithDynamicDependencies.Add(new DynamicDependencyNode(node));
             }
         }
 

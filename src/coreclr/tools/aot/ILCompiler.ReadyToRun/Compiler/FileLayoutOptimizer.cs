@@ -103,6 +103,10 @@ namespace ILCompiler
                 sortOrder++;
             }
 
+            const int MaxDependencyDepth = 5;
+            var dependencyLists = new DependencyNodeCore<NodeFactory>.DependencyList[MaxDependencyDepth + 1];
+            var dependencySinks = new DependencySink<NodeFactory>[MaxDependencyDepth + 1];
+
             if (_fileLayoutAlgorithm == FileLayoutAlgorithm.MethodOrder)
             {
                 // Sort the dependencies of methods by the method order
@@ -118,7 +122,7 @@ namespace ILCompiler
 
             void ApplySortToDependencies(DependencyNodeCore<NodeFactory> node, int depth)
             {
-                if (depth > 5)
+                if (depth > MaxDependencyDepth)
                     return;
 
                 if (node is SortableDependencyNode sortableNode)
@@ -127,7 +131,21 @@ namespace ILCompiler
                         return; // Node already sorted
                     sortableNode.CustomSort += sortOrder++;
                 }
-                foreach (var dependency in node.GetStaticDependencies(_nodeFactory))
+                DependencyNodeCore<NodeFactory>.DependencyList dependencies = dependencyLists[depth];
+                if (dependencies is null)
+                {
+                    dependencies = new DependencyNodeCore<NodeFactory>.DependencyList();
+                    dependencyLists[depth] = dependencies;
+                    dependencySinks[depth] = new DependencySink<NodeFactory>(dependencies);
+                }
+                else
+                {
+                    dependencies.Clear();
+                }
+
+                DependencySink<NodeFactory> dependencySink = dependencySinks[depth];
+                node.AddStaticDependencies(dependencySink, _nodeFactory);
+                foreach (DependencyNodeCore<NodeFactory>.DependencyListEntry dependency in dependencies)
                 {
                     ApplySortToDependencies(dependency.Node, depth + 1);
                 }

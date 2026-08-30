@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using Internal.JitInterface;
 using Internal.TypeSystem;
 using Internal.ReadyToRunConstants;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -40,14 +41,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override int ClassCode => 459923351;
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            foreach (DependencyListEntry entry in base.GetStaticDependencies(factory))
-            {
-                yield return entry;
-            }
+            base.AddStaticDependencies(sink, factory);
             if (_localMethod != null)
-                yield return new DependencyListEntry(_localMethod, "Local method import");
+                sink.Add(_localMethod, "Local method import");
         }
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)

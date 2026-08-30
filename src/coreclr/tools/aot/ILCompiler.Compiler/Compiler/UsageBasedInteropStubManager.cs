@@ -10,6 +10,7 @@ using ILCompiler.DependencyAnalysis;
 
 using Debug = System.Diagnostics.Debug;
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler
 {
@@ -26,23 +27,21 @@ namespace ILCompiler
             _logger = logger;
         }
 
-        public override void AddDependenciesDueToMethodCodePresence(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
+        public override void AddDependenciesDueToMethodCodePresence(IDependencySink<NodeFactory> dependencies, NodeFactory factory, MethodDesc method)
         {
             if (method.HasInstantiation)
             {
-                dependencies ??= new DependencyList();
-                AddMarshalAPIsGenericDependencies(ref dependencies, factory, method);
+                AddMarshalAPIsGenericDependencies(dependencies, factory, method);
             }
         }
 
-        public override void AddInterestingInteropConstructedTypeDependencies(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
+        public override void AddInterestingInteropConstructedTypeDependencies(DependencySink<NodeFactory> dependencies, NodeFactory factory, TypeDesc type)
         {
             if (type.IsDelegate)
             {
                 var delegateType = (MetadataType)type;
                 if (delegateType.HasCustomAttribute("System.Runtime.InteropServices", "UnmanagedFunctionPointerAttribute"))
                 {
-                    dependencies ??= new DependencyList();
                     dependencies.Add(factory.DelegateMarshallingData(delegateType), "Delegate marshalling");
                 }
             }
@@ -52,7 +51,7 @@ namespace ILCompiler
         /// For Marshal generic APIs(eg. Marshal.StructureToPtr<T>, GetFunctionPointerForDelegate) we add
         /// the generic parameter as dependencies so that we can generate runtime data for them
         /// </summary>
-        public override void AddMarshalAPIsGenericDependencies(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
+        public override void AddMarshalAPIsGenericDependencies(IDependencySink<NodeFactory> dependencies, NodeFactory factory, MethodDesc method)
         {
             Debug.Assert(method.HasInstantiation);
 
@@ -72,7 +71,6 @@ namespace ILCompiler
                     {
                         foreach (TypeDesc type in method.Instantiation)
                         {
-                            dependencies ??= new DependencyList();
                             if (type.IsDelegate)
                             {
                                 dependencies.Add(factory.DelegateMarshallingData((DefType)type), "Delegate marshlling");

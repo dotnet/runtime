@@ -5,6 +5,7 @@ using Internal.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 using Internal.ReadyToRunConstants;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -51,13 +52,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return comparer.Compare(_arrayType, otherNode._arrayType);
         }
 
-        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        protected override void ComputeNonRelocationBasedDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            DependencyList dependencies = base.ComputeNonRelocationBasedDependencies(factory);
+            DependencySink<NodeFactory> dependencies = sink;
+            base.ComputeNonRelocationBasedDependencies(sink, factory);
 
-            factory.AddVirtualMethodDiscoveryDependencies(ref dependencies, _arrayType);
+            factory.AddVirtualMethodDiscoveryDependencies(dependencies, _arrayType);
 
-            return dependencies;
+            return;
         }
     }
 }

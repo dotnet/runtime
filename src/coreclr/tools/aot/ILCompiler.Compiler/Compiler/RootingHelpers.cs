@@ -6,6 +6,7 @@ using Internal.TypeSystem;
 using ILCompiler.DependencyAnalysis;
 
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler
 {
@@ -127,7 +128,7 @@ namespace ILCompiler
             rootProvider.AddReflectionRoot(field, reason);
         }
 
-        public static bool TryGetDependenciesForReflectedMethod(ref DependencyList dependencies, NodeFactory factory, MethodDesc method, string reason)
+        public static bool TryGetDependenciesForReflectedMethod(IDependencySink<NodeFactory> dependencies, NodeFactory factory, MethodDesc method, string reason)
         {
             MethodDesc typicalMethod = method.GetTypicalMethodDefinition();
             if (factory.MetadataManager.IsReflectionBlocked(typicalMethod))
@@ -140,7 +141,6 @@ namespace ILCompiler
             // for it below.
             if (typicalMethod.IsGenericMethodDefinition || typicalMethod.OwningType.IsGenericDefinition)
             {
-                dependencies ??= new DependencyList();
                 dependencies.Add(factory.ReflectedMethod(typicalMethod), reason);
             }
 
@@ -185,13 +185,12 @@ namespace ILCompiler
                 return false;
             }
 
-            dependencies ??= new DependencyList();
             dependencies.Add(factory.ReflectedMethod(method.GetCanonMethodTarget(CanonicalFormKind.Specific)), reason);
 
             return true;
         }
 
-        public static bool TryGetDependenciesForReflectedField(ref DependencyList dependencies, NodeFactory factory, FieldDesc field, string reason)
+        public static bool TryGetDependenciesForReflectedField(IDependencySink<NodeFactory> dependencies, NodeFactory factory, FieldDesc field, string reason)
         {
             FieldDesc typicalField = field.GetTypicalFieldDefinition();
             if (factory.MetadataManager.IsReflectionBlocked(typicalField))
@@ -199,7 +198,6 @@ namespace ILCompiler
                 return false;
             }
 
-            dependencies ??= new DependencyList();
 
             // If this is a field on generic type, make sure we at minimum have the metadata
             // for it. This hedges against the risk that we fail to figure out an instantiated base
@@ -242,7 +240,7 @@ namespace ILCompiler
             return true;
         }
 
-        public static bool TryGetDependenciesForReflectedType(ref DependencyList dependencies, NodeFactory factory, TypeDesc type, string reason)
+        public static bool TryGetDependenciesForReflectedType(IDependencySink<NodeFactory> dependencies, NodeFactory factory, TypeDesc type, string reason)
         {
             try
             {
@@ -257,7 +255,6 @@ namespace ILCompiler
                     return false;
                 }
 
-                dependencies ??= new DependencyList();
 
                 dependencies.Add(factory.ReflectedType(type), reason);
 

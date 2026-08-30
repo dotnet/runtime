@@ -42,15 +42,15 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool StaticDependenciesAreComputed => _dependenciesNoLongerMutable;
 
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context) => null;
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
+        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory context) { }
+        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory context)
         {
             foreach (var dependencyNode in _dependencies)
             {
-                yield return new DependencyNodeCore<NodeFactory>.DependencyListEntry(dependencyNode, "DeferredDependency");
+                sink.Add(new DependencyNodeCore<NodeFactory>.DependencyListEntry(dependencyNode, "DeferredDependency"));
             }
         }
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => throw new NotImplementedException();
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink<NodeFactory> sink, NodeFactory context) => throw new NotImplementedException();
         protected override string GetName(NodeFactory context) => $"DeferredTillPhaseNode {_phase}";
 
         public override int DependencyPhaseForDeferredStaticComputation => _phase;

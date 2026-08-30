@@ -795,13 +795,19 @@ namespace ILLink.Shared.TrimAnalysis
 
             public MakeGenericMethodSite(MethodDesc method) => _method = method;
 
-            public IEnumerable<DependencyNodeCore<NodeFactory>.DependencyListEntry> InstantiateDependencies(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, bool isConcreteInstantiation)
+            public void AddDependencies(DependencySink<NodeFactory> sink, NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, bool isConcreteInstantiation, DependencyNodeCore<NodeFactory> otherReasonNode)
             {
-                var list = new DependencyList();
-                MethodDesc instantiatedMethod = _method.InstantiateSignature(typeInstantiation, methodInstantiation);
-                if (instantiatedMethod.CheckConstraints(new InstantiationContext(typeInstantiation, methodInstantiation)))
-                    RootingHelpers.TryGetDependenciesForReflectedMethod(ref list, factory, instantiatedMethod, "MakeGenericMethod");
-                return list;
+                DependencyNodeCore<NodeFactory>? previousOtherReasonNode = sink.SetOtherReasonNode(otherReasonNode);
+                try
+                {
+                    MethodDesc instantiatedMethod = _method.InstantiateSignature(typeInstantiation, methodInstantiation);
+                    if (instantiatedMethod.CheckConstraints(new InstantiationContext(typeInstantiation, methodInstantiation)))
+                        RootingHelpers.TryGetDependenciesForReflectedMethod(sink, factory, instantiatedMethod, "MakeGenericMethod");
+                }
+                finally
+                {
+                    sink.SetOtherReasonNode(previousOtherReasonNode);
+                }
             }
         }
 
@@ -811,17 +817,23 @@ namespace ILLink.Shared.TrimAnalysis
 
             public MakeGenericTypeSite(TypeDesc type) => _type = type;
 
-            public IEnumerable<DependencyNodeCore<NodeFactory>.DependencyListEntry> InstantiateDependencies(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, bool isConcreteInstantiation)
+            public void AddDependencies(DependencySink<NodeFactory> sink, NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, bool isConcreteInstantiation, DependencyNodeCore<NodeFactory> otherReasonNode)
             {
-                var list = new DependencyList();
-                TypeDesc instantiatedType = _type.InstantiateSignature(typeInstantiation, methodInstantiation);
+                DependencyNodeCore<NodeFactory>? previousOtherReasonNode = sink.SetOtherReasonNode(otherReasonNode);
+                try
+                {
+                    TypeDesc instantiatedType = _type.InstantiateSignature(typeInstantiation, methodInstantiation);
 
-                // InstantiateSignature could end up with a denormalized shape (Foo<object, __Canon>) so normalize.
-                instantiatedType = instantiatedType.NormalizeInstantiation();
+                    // InstantiateSignature could end up with a denormalized shape (Foo<object, __Canon>) so normalize.
+                    instantiatedType = instantiatedType.NormalizeInstantiation();
 
-                if (instantiatedType.CheckConstraints(new InstantiationContext(typeInstantiation, methodInstantiation)))
-                    RootingHelpers.TryGetDependenciesForReflectedType(ref list, factory, instantiatedType, "MakeGenericType");
-                return list;
+                    if (instantiatedType.CheckConstraints(new InstantiationContext(typeInstantiation, methodInstantiation)))
+                        RootingHelpers.TryGetDependenciesForReflectedType(sink, factory, instantiatedType, "MakeGenericType");
+                }
+                finally
+                {
+                    sink.SetOtherReasonNode(previousOtherReasonNode);
+                }
             }
         }
 

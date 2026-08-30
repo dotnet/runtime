@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using ILCompiler.Dataflow;
+using ILCompiler.DependencyAnalysisFramework;
 using Internal.IL;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -124,6 +125,80 @@ namespace ILCompiler.Compiler.Tests
             //
 
             Assert.True(foundSomethingToCheck, "No invariants to check?");
+        }
+
+        [Fact]
+        public void DependencyAnalyzerComputesDeferredStaticDependenciesBeforeDynamicDependencies()
+        {
+            var deferredNode = new DeferredTestDependencyNode();
+            var rootNode = new TestDependencyNode(deferredNode);
+            var analyzer = new DependencyAnalyzer<NoLogStrategy<string>, string>(
+                "context",
+                Comparer<DependencyNodeCore<string>>.Create((left, right) => string.CompareOrdinal(left.ToString(), right.ToString())));
+            analyzer.ComputeDependencyRoutine += nodes =>
+            {
+                Assert.Same(deferredNode, Assert.Single(nodes));
+                deferredNode.SetDependenciesComputed();
+            };
+
+            analyzer.AddRoot(rootNode, "root");
+            analyzer.ComputeMarkedNodes();
+
+            Assert.True(deferredNode.DynamicDependenciesQueried);
+        }
+
+        private sealed class TestDependencyNode : DependencyNodeCore<string>
+        {
+            private readonly DependencyNodeCore<string> _dependency;
+
+            public TestDependencyNode(DependencyNodeCore<string> dependency)
+            {
+                _dependency = dependency;
+            }
+
+            public override bool InterestingForDynamicDependencyAnalysis => false;
+            public override bool HasDynamicDependencies => false;
+            public override bool HasConditionalStaticDependencies => false;
+            public override bool StaticDependenciesAreComputed => true;
+
+            public override void AddStaticDependencies(DependencySink<string> sink, string context)
+            {
+                sink.Add(_dependency, "static");
+            }
+
+            protected override string GetName(string context) => nameof(TestDependencyNode);
+        }
+
+        private sealed class DeferredTestDependencyNode : DependencyNodeCore<string>
+        {
+            private bool _dependenciesComputed;
+
+            public bool DynamicDependenciesQueried { get; private set; }
+            public override bool InterestingForDynamicDependencyAnalysis => false;
+
+            public override bool HasDynamicDependencies
+            {
+                get
+                {
+                    Assert.True(_dependenciesComputed);
+                    DynamicDependenciesQueried = true;
+                    return false;
+                }
+            }
+
+            public override bool HasConditionalStaticDependencies => false;
+            public override bool StaticDependenciesAreComputed => _dependenciesComputed;
+
+            public void SetDependenciesComputed()
+            {
+                _dependenciesComputed = true;
+            }
+
+            public override void AddStaticDependencies(DependencySink<string> sink, string context)
+            {
+            }
+
+            protected override string GetName(string context) => nameof(DeferredTestDependencyNode);
         }
 
         private static MethodDesc GetMethodFromAttribute(CustomAttributeValue attr)

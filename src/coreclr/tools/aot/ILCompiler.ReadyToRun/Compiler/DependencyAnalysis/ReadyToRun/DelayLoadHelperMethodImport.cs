@@ -7,6 +7,7 @@ using Internal.JitInterface;
 using Internal.Text;
 using Internal.TypeSystem;
 using Internal.ReadyToRunConstants;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -36,12 +37,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _useInstantiatingStub = useInstantiatingStub;
         }
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            foreach (DependencyListEntry baseEntry in base.GetStaticDependencies(factory))
-            {
-                yield return baseEntry;
-            }
+            base.AddStaticDependencies(sink, factory);
             if (_useInstantiatingStub)
             {
                 // Require compilation of the canonical version for instantiating stubs
@@ -60,7 +58,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     if (useDependency)
                     {
                         ISymbolNode canonMethodNode = factory.CompiledMethodNode(canonMethod);
-                        yield return new DependencyListEntry(canonMethodNode, "Canonical method for instantiating stub");
+                        sink.Add(canonMethodNode, "Canonical method for instantiating stub");
                     }
                 }
             }

@@ -11,6 +11,7 @@ using Internal.Pgo;
 using Internal.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -262,26 +263,27 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return writer.ToArray();
         }
 
-        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        protected override void ComputeNonRelocationBasedDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            DependencyList dependencyList = new DependencyList(new DependencyListEntry[] { new DependencyListEntry(GCInfoNode, "Unwind & GC info") });
+            sink.Add(GCInfoNode, "Unwind & GC info");
 
             if (this.ColdCodeNode != null)
             {
-                dependencyList.Add(this.ColdCodeNode, "cold");
+                sink.Add(this.ColdCodeNode, "cold");
             }
 
             foreach (ISymbolNode node in _fixups)
             {
-                dependencyList.Add(node, "classMustBeLoadedBeforeCodeIsRun");
+                sink.Add(node, "classMustBeLoadedBeforeCodeIsRun");
             }
 
             if (_nonRelocationDependencies != null)
             {
-                dependencyList.AddRange(_nonRelocationDependencies);
+                foreach (DependencyListEntry dependency in _nonRelocationDependencies)
+                {
+                    sink.Add(dependency);
+                }
             }
-
-            return dependencyList;
         }
 
         public override bool StaticDependenciesAreComputed => _methodCode != null;

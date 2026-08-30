@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using Internal.TypeSystem.Ecma;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -21,9 +22,9 @@ namespace ILCompiler.DependencyAnalysis
 
         private ModuleReferenceHandle Handle => (ModuleReferenceHandle)_handle;
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            return null;
+            return;
         }
 
         protected override EntityHandle WriteInternal(ModuleWritingContext writeContext)

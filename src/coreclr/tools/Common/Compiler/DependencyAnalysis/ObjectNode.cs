@@ -53,41 +53,31 @@ namespace ILCompiler.DependencyAnalysis
         public override bool HasDynamicDependencies => false;
         public override bool InterestingForDynamicDependencyAnalysis => false;
 
-        public sealed override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        public sealed override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            DependencyList dependencies = ComputeNonRelocationBasedDependencies(factory);
+            ComputeNonRelocationBasedDependencies(sink, factory);
             Relocation[] relocs = GetData(factory, true).Relocs;
 
             if (relocs != null)
             {
-                dependencies ??= new DependencyList();
-
                 foreach (Relocation reloc in relocs)
                 {
-                    dependencies.Add(reloc.Target, "reloc");
+                    sink.Add(reloc.Target, "reloc");
                 }
             }
 
             if (factory.Target.IsWasm && this is IMethodCodeNodeWithTypeSignature wasmMethodCodeNode)
             {
-                dependencies ??= new DependencyList();
-
                 WasmTypeNode wasmTypeNode = factory.WasmTypeNode(wasmMethodCodeNode.Method);
-                dependencies.Add(wasmTypeNode, "Wasm Method Code Nodes Require Signature");
+                sink.Add(wasmTypeNode, "Wasm Method Code Nodes Require Signature");
             }
-
-            if (dependencies == null)
-                return Array.Empty<DependencyListEntry>();
-            else
-                return dependencies;
         }
 
-        protected virtual DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        protected virtual void ComputeNonRelocationBasedDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            return null;
         }
 
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory) => null;
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory) => null;
+        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory) { }
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink<NodeFactory> sink, NodeFactory factory) { }
     }
 }

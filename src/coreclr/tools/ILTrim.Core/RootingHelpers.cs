@@ -5,6 +5,7 @@ using ILCompiler.DependencyAnalysis;
 using Internal.TypeSystem;
 
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
+using ILCompiler.DependencyAnalysisFramework;
 
 #nullable enable
 
@@ -15,25 +16,22 @@ namespace ILCompiler
     public static class RootingHelpers
     {
         public static bool TryGetDependenciesForReflectedType(
-            ref DependencyList dependencies, NodeFactory factory, TypeDesc type, string reason)
+            IDependencySink<NodeFactory> dependencies, NodeFactory factory, TypeDesc type, string reason)
         {
-            dependencies ??= new DependencyList();
             dependencies.Add(factory.ReflectedType(type), reason);
             return true;
         }
 
         public static bool TryGetDependenciesForReflectedMethod(
-            ref DependencyList dependencies, NodeFactory factory, MethodDesc method, string reason)
+            IDependencySink<NodeFactory> dependencies, NodeFactory factory, MethodDesc method, string reason)
         {
-            dependencies ??= new DependencyList();
             dependencies.Add(factory.ReflectedMethod(method), reason);
             return true;
         }
 
         public static bool TryGetDependenciesForReflectedField(
-            ref DependencyList dependencies, NodeFactory factory, FieldDesc field, string reason)
+            IDependencySink<NodeFactory> dependencies, NodeFactory factory, FieldDesc field, string reason)
         {
-            dependencies ??= new DependencyList();
             dependencies.Add(factory.ReflectedField(field), reason);
             return true;
         }
