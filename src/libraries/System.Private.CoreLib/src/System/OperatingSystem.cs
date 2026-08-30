@@ -224,8 +224,8 @@ namespace System
         /// Indicates whether the current application is running on HarmonyOS (OpenHarmony).
         /// </summary>
         [NonVersionable]
-        internal static bool IsOhos() =>
-#if TARGET_OHOS
+        internal static bool IsOpenHarmony() =>
+#if TARGET_OPENHARMONY
             true;
 #else
             false;
