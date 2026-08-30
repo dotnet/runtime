@@ -1640,7 +1640,8 @@ public sealed unsafe partial class SOSDacImpl
 
                 Debug.Assert(details->lowest_address == detailsLocal.lowest_address, $"cDAC: {details->lowest_address:x}, DAC: {detailsLocal.lowest_address:x}");
                 Debug.Assert(details->highest_address == detailsLocal.highest_address, $"cDAC: {details->highest_address:x}, DAC: {detailsLocal.highest_address:x}");
-                Debug.Assert(details->card_table == detailsLocal.card_table, $"cDAC: {details->card_table:x}, DAC: {detailsLocal.card_table:x}");
+                // Reduced dumps may omit the cDAC card-table slot while retaining the legacy VM mirror.
+                Debug.Assert(details->card_table == 0 || details->card_table == detailsLocal.card_table, $"cDAC: {details->card_table:x}, DAC: {detailsLocal.card_table:x}");
             }
         }
 #endif
