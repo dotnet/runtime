@@ -36,6 +36,11 @@ bool PerfMap::s_GroupStubsOfSameType = false;
 bool PerfMap::s_IndividualAllocationStubReporting = false;
 bool PerfMap::s_LogStubs = false;
 
+// IL-as-source debug info emission (jitdump JIT_CODE_DEBUG_INFO records).
+// Enabled by setting DOTNET_PerfMapIlSourcePath; disabled (zero cost) otherwise.
+static bool s_IlDebugInfoEnabled = false;
+static char s_IlSourcePath[512];
+
 unsigned PerfMap::s_StubsMapped = 0;
 CrstStatic PerfMap::s_csPerfMap;
 
@@ -88,6 +93,17 @@ void PerfMap::InitializeConfiguration()
     s_GroupStubsOfSameType = (granularity & 1) != 1;
     s_IndividualAllocationStubReporting = (granularity & 2) != 0;
     s_LogStubs = (granularity & 4) == 0;
+
+    CLRConfigStringHolder ilSourcePath(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_PerfMapIlSourcePath));
+    if (ilSourcePath != NULL)
+    {
+        MAKE_UTF8PTR_FROMWIDE_NOTHROW(utf8IlSourcePath, ilSourcePath);
+        if (utf8IlSourcePath != NULL && strlen(utf8IlSourcePath) < sizeof(s_IlSourcePath))
+        {
+            strcpy_s(s_IlSourcePath, sizeof(s_IlSourcePath), utf8IlSourcePath);
+            s_IlDebugInfoEnabled = true;
+        }
+    }
 }
 
 void PerfMap::Enable(PerfMapType type, bool sendExisting)
@@ -369,7 +385,7 @@ void PerfMap::LogJITCompiledMethod(MethodDesc * pMethod, PCODE pCode, size_t cod
         PAL_PerfJitDumpDebugInfo* pPalDebugInfo = nullptr;
         NewArrayHolder<PAL_PerfJitDumpDebugEntry> debugEntries;
         SString ilFileName;
-        if (PAL_PerfJitDump_IsStarted())
+        if (s_IlDebugInfoEnabled && PAL_PerfJitDump_IsStarted())
         {
             uint32_t cMap = 0;
             uint32_t* rguiNativeOffset = nullptr;
@@ -400,7 +416,7 @@ void PerfMap::LogJITCompiledMethod(MethodDesc * pMethod, PCODE pCode, size_t cod
                 }
                 if (nEntries > 0)
                 {
-                    ilFileName.Printf("/tmp/il/%s/m_%08x.il",
+                    ilFileName.Printf("%s/%s/m_%08x.il", s_IlSourcePath,
                         pMethod->GetModule()->GetSimpleName(), pMethod->GetMemberDef());
                     palDebugInfo.nrEntries = nEntries;
                     palDebugInfo.fileName = ilFileName.GetUTF8();
