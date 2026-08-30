@@ -82,7 +82,22 @@ namespace ILCompiler.DependencyAnalysis
             return _dependencies;
         }
 
+        internal override bool TryGetStaticDependencyList(NodeFactory factory, out DependencyList dependencies)
+        {
+            Debug.Assert(_dependencies != null);
+            dependencies = _dependencies;
+            return true;
+        }
+
         public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory) => _conditionalDependencies;
+
+        internal override bool TryGetConditionalStaticDependencyList(
+            NodeFactory factory,
+            out List<CombinedDependencyListEntry> dependencies)
+        {
+            dependencies = _conditionalDependencies;
+            return true;
+        }
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 

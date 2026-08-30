@@ -127,6 +127,26 @@ namespace ILCompiler.DependencyAnalysisFramework
 
         public abstract IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(DependencyContextType context);
 
+        // Allows nodes that naturally produce a concrete list to avoid exposing it as IEnumerable<T>
+        // to the dependency analyzer. A true result means the list was provided, including when it is null.
+        internal virtual bool TryGetStaticDependencyList(
+            DependencyContextType context,
+            out DependencyList dependencies)
+        {
+            dependencies = null;
+            return false;
+        }
+
+        // Allows nodes that naturally produce a concrete list to avoid exposing it as IEnumerable<T>
+        // to the dependency analyzer. A true result means the list was provided, including when it is null.
+        internal virtual bool TryGetConditionalStaticDependencyList(
+            DependencyContextType context,
+            out List<CombinedDependencyListEntry> dependencies)
+        {
+            dependencies = null;
+            return false;
+        }
+
         public abstract IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<DependencyContextType>> markedNodes, int firstNode, DependencyContextType context);
 
         internal void CallOnMarked(DependencyContextType context)

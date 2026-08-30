@@ -68,9 +68,23 @@ namespace ILCompiler.DependencyAnalysis
 
         public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
         {
+            CombinedDependencyList dependencies = GetConditionalStaticDependencyList(factory);
+            return dependencies is not null ? dependencies : Array.Empty<CombinedDependencyListEntry>();
+        }
+
+        internal override bool TryGetConditionalStaticDependencyList(
+            NodeFactory factory,
+            out List<CombinedDependencyListEntry> dependencies)
+        {
+            dependencies = GetConditionalStaticDependencyList(factory);
+            return true;
+        }
+
+        private CombinedDependencyList GetConditionalStaticDependencyList(NodeFactory factory)
+        {
             CombinedDependencyList dependencies = null;
             CodeBasedDependencyAlgorithm.AddConditionalDependenciesDueToMethodCodePresence(ref dependencies, factory, _method);
-            return dependencies ?? (IEnumerable<CombinedDependencyListEntry>)Array.Empty<CombinedDependencyListEntry>();
+            return dependencies;
         }
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)

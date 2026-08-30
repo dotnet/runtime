@@ -314,6 +314,19 @@ namespace ILCompiler.DependencyAnalysis
 
         public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
         {
+            return GetConditionalStaticDependencyList(factory);
+        }
+
+        internal override bool TryGetConditionalStaticDependencyList(
+            NodeFactory factory,
+            out List<CombinedDependencyListEntry> dependencies)
+        {
+            dependencies = GetConditionalStaticDependencyList(factory);
+            return true;
+        }
+
+        private List<CombinedDependencyListEntry> GetConditionalStaticDependencyList(NodeFactory factory)
+        {
             List<CombinedDependencyListEntry> result = new List<CombinedDependencyListEntry>();
 
             if (IsReflectionVisible)

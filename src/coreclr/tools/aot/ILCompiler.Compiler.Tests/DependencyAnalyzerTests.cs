@@ -74,10 +74,8 @@ namespace ILCompiler.Compiler.Tests
         {
             TestNode[] dependencyNodes = CreateNodes("dependency", count);
             DependencyListEntry[] entries = CreateStaticEntries(dependencyNodes);
-            var root = new TestNode("root")
-            {
-                StaticDependencies = CreateStaticDependencies(collectionKind, entries),
-            };
+            var root = new TestNode("root");
+            SetStaticDependencies(root, collectionKind, entries);
             DependencyAnalyzer<NoLogStrategy<object>, object> analyzer = CreateAnalyzer();
 
             analyzer.AddRoot(root, "root");
@@ -87,6 +85,7 @@ namespace ILCompiler.Compiler.Tests
             expected[0] = root;
             CopyExpectedNodes(expected, 1, dependencyNodes, collectionKind);
             Assert.Equal(expected, analyzer.MarkedNodeList);
+            Assert.Equal(collectionKind == DependencyCollectionKind.DependencyList ? 0 : 1, root.StaticEnumerableAccessCount);
         }
 
         [Theory]
@@ -96,10 +95,8 @@ namespace ILCompiler.Compiler.Tests
             var condition = new TestNode("condition");
             TestNode[] dependencyNodes = CreateNodes("dependency", count);
             CombinedDependencyListEntry[] entries = CreateConditionalEntries(dependencyNodes, condition);
-            var root = new TestNode("root")
-            {
-                ConditionalDependencies = CreateConditionalDependencies(collectionKind, entries),
-            };
+            var root = new TestNode("root");
+            SetConditionalDependencies(root, collectionKind, entries);
             DependencyAnalyzer<NoLogStrategy<object>, object> analyzer = CreateAnalyzer();
 
             analyzer.AddRoot(condition, "condition");
@@ -111,6 +108,7 @@ namespace ILCompiler.Compiler.Tests
             expected[1] = root;
             CopyExpectedNodes(expected, 2, dependencyNodes, collectionKind);
             Assert.Equal(expected, analyzer.MarkedNodeList);
+            Assert.Equal(collectionKind == DependencyCollectionKind.List ? 0 : 1, root.ConditionalEnumerableAccessCount);
         }
 
         [Theory]
@@ -122,10 +120,8 @@ namespace ILCompiler.Compiler.Tests
             [
                 new CombinedDependencyListEntry(dependency, null, "unconditional"),
             ];
-            var root = new TestNode("root")
-            {
-                ConditionalDependencies = CreateConditionalDependencies(collectionKind, entries),
-            };
+            var root = new TestNode("root");
+            SetConditionalDependencies(root, collectionKind, entries);
             DependencyAnalyzer<NoLogStrategy<object>, object> analyzer = CreateAnalyzer();
 
             analyzer.AddRoot(root, "root");
@@ -140,22 +136,20 @@ namespace ILCompiler.Compiler.Tests
         {
             var condition = new TestNode("condition");
             TestNode[] dependencyNodes = CreateNodes("dependency", count);
-            var conditionProvider = new TestNode("condition provider")
-            {
-                StaticDependencies =
+            var conditionProvider = new TestNode("condition provider");
+            conditionProvider.SetStaticDependencies(
+                (IEnumerable<DependencyListEntry>)
                 [
                     new DependencyListEntry(condition, "condition"),
-                ],
-            };
+                ]);
             CombinedDependencyListEntry[] entries = CreateConditionalEntries(dependencyNodes, condition);
-            var root = new TestNode("root")
-            {
-                StaticDependencies =
+            var root = new TestNode("root");
+            root.SetStaticDependencies(
+                (IEnumerable<DependencyListEntry>)
                 [
                     new DependencyListEntry(conditionProvider, "condition provider"),
-                ],
-                ConditionalDependencies = CreateConditionalDependencies(collectionKind, entries),
-            };
+                ]);
+            SetConditionalDependencies(root, collectionKind, entries);
             DependencyAnalyzer<NoLogStrategy<object>, object> analyzer = CreateAnalyzer();
 
             analyzer.AddRoot(root, "root");
@@ -184,10 +178,15 @@ namespace ILCompiler.Compiler.Tests
                 "dependency",
                 () => dependencies.Add(new DependencyListEntry(addedDependency, "added dependency")));
             dependencies.Add(new DependencyListEntry(dependency, "dependency"));
-            var root = new TestNode("root")
+            var root = new TestNode("root");
+            if (dependencies is DependencyList dependencyList)
             {
-                StaticDependencies = dependencies,
-            };
+                root.SetStaticDependencies(dependencyList);
+            }
+            else
+            {
+                root.SetStaticDependencies((IEnumerable<DependencyListEntry>)dependencies);
+            }
             DependencyAnalyzer<NoLogStrategy<object>, object> analyzer = CreateAnalyzer();
             analyzer.AddRoot(root, "root");
 
@@ -204,15 +203,29 @@ namespace ILCompiler.Compiler.Tests
                 "dependency",
                 () => dependencies.Add(new CombinedDependencyListEntry(addedDependency, condition, "added dependency")));
             dependencies.Add(new CombinedDependencyListEntry(dependency, condition, "dependency"));
-            var root = new TestNode("root")
-            {
-                ConditionalDependencies = dependencies,
-            };
+            var root = new TestNode("root");
+            root.SetConditionalDependencies(dependencies);
             DependencyAnalyzer<NoLogStrategy<object>, object> analyzer = CreateAnalyzer();
             analyzer.AddRoot(condition, "condition");
             analyzer.AddRoot(root, "root");
 
             Assert.Throws<InvalidOperationException>(analyzer.ComputeMarkedNodes);
+        }
+
+        [Fact]
+        public void NullConcreteDependencyListsDoNotUseEnumerableFallback()
+        {
+            var root = new TestNode("root");
+            root.SetNullStaticDependencyList();
+            root.SetNullConditionalDependencyList();
+            DependencyAnalyzer<NoLogStrategy<object>, object> analyzer = CreateAnalyzer();
+
+            analyzer.AddRoot(root, "root");
+            analyzer.ComputeMarkedNodes();
+
+            Assert.Equal(new DependencyNodeCore<object>[] { root }, analyzer.MarkedNodeList);
+            Assert.Equal(0, root.StaticEnumerableAccessCount);
+            Assert.Equal(0, root.ConditionalEnumerableAccessCount);
         }
 
         private static DependencyAnalyzer<NoLogStrategy<object>, object> CreateAnalyzer()
@@ -282,6 +295,21 @@ namespace ILCompiler.Compiler.Tests
             };
         }
 
+        private static void SetStaticDependencies(
+            TestNode node,
+            DependencyCollectionKind collectionKind,
+            DependencyListEntry[] entries)
+        {
+            if (collectionKind == DependencyCollectionKind.DependencyList)
+            {
+                node.SetStaticDependencies(new DependencyList(entries));
+            }
+            else
+            {
+                node.SetStaticDependencies(CreateStaticDependencies(collectionKind, entries));
+            }
+        }
+
         private static IEnumerable<CombinedDependencyListEntry> CreateConditionalDependencies(
             DependencyCollectionKind collectionKind,
             CombinedDependencyListEntry[] entries)
@@ -294,6 +322,21 @@ namespace ILCompiler.Compiler.Tests
                 DependencyCollectionKind.ReimplementedList => new ReimplementedEnumerableList<CombinedDependencyListEntry>(entries),
                 _ => throw new UnreachableException(),
             };
+        }
+
+        private static void SetConditionalDependencies(
+            TestNode node,
+            DependencyCollectionKind collectionKind,
+            CombinedDependencyListEntry[] entries)
+        {
+            if (collectionKind == DependencyCollectionKind.List)
+            {
+                node.SetConditionalDependencies(new List<CombinedDependencyListEntry>(entries));
+            }
+            else
+            {
+                node.SetConditionalDependencies(CreateConditionalDependencies(collectionKind, entries));
+            }
         }
 
         private static IEnumerable<T> Enumerate<T>(T[] items)
@@ -351,6 +394,16 @@ namespace ILCompiler.Compiler.Tests
         {
             private readonly string _name;
             private readonly Action _onMarked;
+            private IEnumerable<DependencyListEntry> _staticDependencies = Array.Empty<DependencyListEntry>();
+            private IEnumerable<CombinedDependencyListEntry> _conditionalDependencies;
+            private DependencyList _staticDependencyList;
+            private List<CombinedDependencyListEntry> _conditionalDependencyList;
+            private bool _providesStaticDependencyList;
+            private bool _providesConditionalDependencyList;
+
+            public int StaticEnumerableAccessCount { get; private set; }
+
+            public int ConditionalEnumerableAccessCount { get; private set; }
 
             public TestNode(string name, Action onMarked = null)
             {
@@ -358,26 +411,73 @@ namespace ILCompiler.Compiler.Tests
                 _onMarked = onMarked;
             }
 
-            public IEnumerable<DependencyListEntry> StaticDependencies { get; set; } = Array.Empty<DependencyListEntry>();
-
-            public IEnumerable<CombinedDependencyListEntry> ConditionalDependencies { get; set; }
-
             public override bool InterestingForDynamicDependencyAnalysis => false;
 
             public override bool HasDynamicDependencies => false;
 
-            public override bool HasConditionalStaticDependencies => ConditionalDependencies is not null;
+            public override bool HasConditionalStaticDependencies =>
+                _providesConditionalDependencyList || _conditionalDependencies is not null;
 
             public override bool StaticDependenciesAreComputed => true;
 
+            public void SetStaticDependencies(IEnumerable<DependencyListEntry> dependencies)
+            {
+                _staticDependencies = dependencies;
+            }
+
+            public void SetStaticDependencies(DependencyList dependencies)
+            {
+                _staticDependencies = dependencies;
+                _staticDependencyList = dependencies;
+                _providesStaticDependencyList = true;
+            }
+
+            public void SetConditionalDependencies(IEnumerable<CombinedDependencyListEntry> dependencies)
+            {
+                _conditionalDependencies = dependencies;
+            }
+
+            public void SetConditionalDependencies(List<CombinedDependencyListEntry> dependencies)
+            {
+                _conditionalDependencies = dependencies;
+                _conditionalDependencyList = dependencies;
+                _providesConditionalDependencyList = true;
+            }
+
+            public void SetNullStaticDependencyList()
+            {
+                _providesStaticDependencyList = true;
+            }
+
+            public void SetNullConditionalDependencyList()
+            {
+                _providesConditionalDependencyList = true;
+            }
+
             public override IEnumerable<DependencyListEntry> GetStaticDependencies(object context)
             {
-                return StaticDependencies;
+                StaticEnumerableAccessCount++;
+                return _staticDependencies;
             }
 
             public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(object context)
             {
-                return ConditionalDependencies;
+                ConditionalEnumerableAccessCount++;
+                return _conditionalDependencies;
+            }
+
+            internal override bool TryGetStaticDependencyList(object context, out DependencyList dependencies)
+            {
+                dependencies = _staticDependencyList;
+                return _providesStaticDependencyList;
+            }
+
+            internal override bool TryGetConditionalStaticDependencyList(
+                object context,
+                out List<CombinedDependencyListEntry> dependencies)
+            {
+                dependencies = _conditionalDependencyList;
+                return _providesConditionalDependencyList;
             }
 
             public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(

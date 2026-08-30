@@ -55,6 +55,18 @@ namespace ILCompiler.DependencyAnalysis
 
         public sealed override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
+            DependencyList dependencies = GetStaticDependencyList(factory);
+            return dependencies is not null ? dependencies : Array.Empty<DependencyListEntry>();
+        }
+
+        internal sealed override bool TryGetStaticDependencyList(NodeFactory factory, out DependencyList dependencies)
+        {
+            dependencies = GetStaticDependencyList(factory);
+            return true;
+        }
+
+        private DependencyList GetStaticDependencyList(NodeFactory factory)
+        {
             DependencyList dependencies = ComputeNonRelocationBasedDependencies(factory);
             Relocation[] relocs = GetData(factory, true).Relocs;
 
@@ -76,10 +88,7 @@ namespace ILCompiler.DependencyAnalysis
                 dependencies.Add(wasmTypeNode, "Wasm Method Code Nodes Require Signature");
             }
 
-            if (dependencies == null)
-                return Array.Empty<DependencyListEntry>();
-            else
-                return dependencies;
+            return dependencies;
         }
 
         protected virtual DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)

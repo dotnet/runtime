@@ -16,6 +16,12 @@
     <Configurations>Debug;Release;Checked</Configurations>
   </PropertyGroup>
   <ItemGroup>
+    <InternalsVisibleTo Include="ILCompiler.Compiler" />
+    <InternalsVisibleTo Include="ILCompiler.Compiler.Tests" />
+    <InternalsVisibleTo Include="ILCompiler.ReadyToRun" />
+    <InternalsVisibleTo Include="ILCompiler.RyuJit" />
+  </ItemGroup>
+  <ItemGroup>
     <Compile Include="ComputedStaticDependencyNode.cs" />
     <Compile Include="DependencyAnalyzer.cs" />
     <Compile Include="DependencyAnalyzerBase.cs" />

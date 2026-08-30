@@ -62,6 +62,17 @@ namespace ILCompiler.DependencyAnalysis
 #if !READYTORUN
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
+            return GetStaticDependencyList(factory);
+        }
+
+        internal override bool TryGetStaticDependencyList(NodeFactory factory, out DependencyList dependencies)
+        {
+            dependencies = GetStaticDependencyList(factory);
+            return true;
+        }
+
+        private DependencyList GetStaticDependencyList(NodeFactory factory)
+        {
             DependencyList dependencies = new DependencyList();
 
             MethodDesc canonDecl = _decl.GetCanonMethodTarget(CanonicalFormKind.Specific);

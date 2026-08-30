@@ -180,29 +180,23 @@ namespace ILCompiler.DependencyAnalysisFramework
         // Internal details
         private void GetStaticDependenciesImpl(DependencyNodeCore<DependencyContextType> node)
         {
-            IEnumerable<DependencyNodeCore<DependencyContextType>.DependencyListEntry> staticDependencies = node.GetStaticDependencies(_dependencyContext);
-            if (staticDependencies != null)
+            if (node.TryGetStaticDependencyList(_dependencyContext, out DependencyNodeCore<DependencyContextType>.DependencyList staticDependencies))
             {
-                // Preserve custom enumeration behavior on List<T> subclasses by only fast-pathing known exact types.
-                if (staticDependencies is List<DependencyNodeCore<DependencyContextType>.DependencyListEntry> dependencyList &&
-                    (dependencyList.GetType() == typeof(DependencyNodeCore<DependencyContextType>.DependencyList) ||
-                     dependencyList.GetType() == typeof(List<DependencyNodeCore<DependencyContextType>.DependencyListEntry>)))
-                {
-                    foreach (DependencyNodeCore<DependencyContextType>.DependencyListEntry dependency in dependencyList)
-                    {
-                        AddToMarkStack(dependency.Node, dependency.Reason, node, null);
-                    }
-                }
-                else if (staticDependencies is DependencyNodeCore<DependencyContextType>.DependencyListEntry[] dependencyArray)
-                {
-                    foreach (DependencyNodeCore<DependencyContextType>.DependencyListEntry dependency in dependencyArray)
-                    {
-                        AddToMarkStack(dependency.Node, dependency.Reason, node, null);
-                    }
-                }
-                else
+                if (staticDependencies != null)
                 {
                     foreach (DependencyNodeCore<DependencyContextType>.DependencyListEntry dependency in staticDependencies)
+                    {
+                        AddToMarkStack(dependency.Node, dependency.Reason, node, null);
+                    }
+                }
+            }
+            else
+            {
+                IEnumerable<DependencyNodeCore<DependencyContextType>.DependencyListEntry> enumerableDependencies =
+                    node.GetStaticDependencies(_dependencyContext);
+                if (enumerableDependencies != null)
+                {
+                    foreach (DependencyNodeCore<DependencyContextType>.DependencyListEntry dependency in enumerableDependencies)
                     {
                         AddToMarkStack(dependency.Node, dependency.Reason, node, null);
                     }
@@ -211,26 +205,23 @@ namespace ILCompiler.DependencyAnalysisFramework
 
             if (node.HasConditionalStaticDependencies)
             {
-                IEnumerable<DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry> conditionalDependencies =
-                    node.GetConditionalStaticDependencies(_dependencyContext);
-                if (conditionalDependencies is List<DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry> dependencyList &&
-                    conditionalDependencies.GetType() == typeof(List<DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry>))
+                if (node.TryGetConditionalStaticDependencyList(
+                    _dependencyContext,
+                    out List<DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry> conditionalDependencies))
                 {
-                    foreach (DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry dependency in dependencyList)
+                    if (conditionalDependencies != null)
                     {
-                        ProcessConditionalDependency(node, dependency);
-                    }
-                }
-                else if (conditionalDependencies is DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry[] dependencyArray)
-                {
-                    foreach (DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry dependency in dependencyArray)
-                    {
-                        ProcessConditionalDependency(node, dependency);
+                        foreach (DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry dependency in conditionalDependencies)
+                        {
+                            ProcessConditionalDependency(node, dependency);
+                        }
                     }
                 }
                 else
                 {
-                    foreach (DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry dependency in conditionalDependencies)
+                    IEnumerable<DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry> enumerableDependencies =
+                        node.GetConditionalStaticDependencies(_dependencyContext);
+                    foreach (DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry dependency in enumerableDependencies)
                     {
                         ProcessConditionalDependency(node, dependency);
                     }
