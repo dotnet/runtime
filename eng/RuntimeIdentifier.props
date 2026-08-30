@@ -19,6 +19,7 @@
     <!-- Detect linux flavors using __PortableTargetOS from the native script. -->
     <PortableOS Condition="'$(PortableOS)' == 'linux' and '$(__PortableTargetOS)' == 'linux-musl'">linux-musl</PortableOS>
     <PortableOS Condition="'$(PortableOS)' == 'linux' and '$(__PortableTargetOS)' == 'linux-bionic'">linux-bionic</PortableOS>
+    <PortableOS Condition="'$(PortableOS)' == 'linux' and '$(__PortableTargetOS)' == 'linux-ohos'">linux-ohos</PortableOS>
 
     <PortableTargetRid Condition="'$(PortableTargetRid)' == ''">$(PortableOS)-$(TargetArchitecture)</PortableTargetRid>
   </PropertyGroup>
@@ -50,7 +51,8 @@
     <TargetsLinux Condition="'$(TargetOS)' == 'linux' or '$(TargetOS)' == 'android'">true</TargetsLinux>
     <TargetsLinuxBionic Condition="'$(PortableOS)' == 'linux-bionic'">true</TargetsLinuxBionic>
     <TargetsLinuxMusl Condition="'$(PortableOS)' == 'linux-musl'">true</TargetsLinuxMusl>
-    <TargetsLinuxGlibc Condition="'$(TargetsLinux)' == 'true' and '$(TargetsLinuxMusl)' != 'true' and '$(TargetsLinuxBionic)' != 'true'">true</TargetsLinuxGlibc>
+    <TargetOpenHarmony Condition="'$(PortableOS)' == 'linux-ohos'">true</TargetOpenHarmony>
+    <TargetsLinuxGlibc Condition="'$(TargetsLinux)' == 'true' and '$(TargetsLinuxMusl)' != 'true' and '$(TargetsLinuxBionic)' != 'true' and '$(TargetOpenHarmony)' != 'true'">true</TargetsLinuxGlibc>
     <TargetsNetBSD Condition="'$(TargetOS)' == 'netbsd'">true</TargetsNetBSD>
     <TargetsOSX Condition="'$(TargetOS)' == 'osx'">true</TargetsOSX>
     <TargetsMacCatalyst Condition="'$(TargetOS)' == 'maccatalyst'">true</TargetsMacCatalyst>

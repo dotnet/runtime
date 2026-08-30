@@ -32,7 +32,7 @@ usage()
   echo "                                  [Default: Debug]"
   echo "  --os                            Target operating system: windows, linux, freebsd, osx, maccatalyst, tvos,"
   echo "                                  tvossimulator, ios, iossimulator, android, browser, wasi, netbsd, illumos, solaris"
-  echo "                                  linux-musl, linux-bionic, tizen, or haiku."
+  echo "                                  linux-musl, linux-bionic, linux-ohos, tizen, or haiku."
   echo "                                  [Default: Your machine's OS.]"
   echo "  --targetrid <rid>               Optional argument that overrides the target rid name."
   echo "  --projects <value>              Project or solution file(s) to build."
@@ -146,8 +146,9 @@ initDistroRid()
     local isCrossBuild="$3"
 
     # Only pass ROOTFS_DIR if __DoCrossArchBuild is specified and the current platform is not an Apple platform (that doesn't use rootfs)
-    if [[ $isCrossBuild == 1 && "$targetOs" != "osx" && "$targetOs" != "android" && "$targetOs" != "ios" && "$targetOs" != "iossimulator" && "$targetOs" != "tvos" && "$targetOs" != "tvossimulator" && "$targetOs" != "maccatalyst" ]]; then
-        passedRootfsDir=${ROOTFS_DIR}
+    # HarmonyOS uses its NDK toolchain, so no rootfs is required either.
+    if [[ $isCrossBuild == 1 && "$targetOs" != "osx" && "$targetOs" != "android" && "$targetOs" != "ios" && "$targetOs" != "iossimulator" && "$targetOs" != "tvos" && "$targetOs" != "tvossimulator" && "$targetOs" != "maccatalyst" && "${__PortableTargetOS:-}" != "linux-ohos" ]]; then
+        passedRootfsDir=${ROOTFS_DIR:-}
     fi
     initDistroRidGlobal "${targetOs}" "${targetArch}" "${passedRootfsDir}"
 }
@@ -309,6 +310,10 @@ while [[ $# -gt 0 ]]; do
         linux-musl)
           os="linux"
           __PortableTargetOS=linux-musl
+          ;;
+        linux-ohos)
+          os="linux"
+          __PortableTargetOS=linux-ohos
           ;;
         haiku)
           os="haiku" ;;
