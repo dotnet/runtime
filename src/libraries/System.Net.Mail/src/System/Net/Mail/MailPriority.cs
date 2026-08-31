@@ -132,26 +132,22 @@ namespace System.Net.Mail
             }
             set
             {
-                Encoding? inputEncoding = null;
-                try
-                {
-                    // extract the encoding from =?encoding?BorQ?blablalba?=
-                    inputEncoding = MimeBasePart.DecodeEncoding(value);
-                }
-                catch (ArgumentException)
-                {
-                }
-
-                if (inputEncoding != null && value != null)
+                if (value != null)
                 {
                     try
                     {
-                        // Store the decoded value, we'll re-encode before sending
-                        value = MimeBasePart.DecodeHeaderValue(value);
-                        _subjectEncoding ??= inputEncoding;
+                        // extract the encoding from =?encoding?BorQ?blablalba?= and store the
+                        // decoded value; we'll re-encode before sending
+                        (string decodedValue, Encoding? inputEncoding) = MimeBasePart.DecodeHeaderValue(value);
+                        if (inputEncoding != null)
+                        {
+                            value = decodedValue;
+                            _subjectEncoding ??= inputEncoding;
+                        }
                     }
-                    // Failed to decode, just pass it through as ascii (legacy)
+                    // Failed to decode, or unsupported charset; just pass it through as ascii (legacy)
                     catch (FormatException) { }
+                    catch (ArgumentException) { }
                 }
 
                 if (value != null && MailBnfHelper.HasCROrLF(value))
