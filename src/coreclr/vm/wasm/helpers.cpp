@@ -14,9 +14,6 @@
 #define WASM_STRINGIFY_HELPER(value) #value
 #define WASM_STRINGIFY(value) WASM_STRINGIFY_HELPER(value)
 
-// R2R-to-interpreter thunks are no longer hand-written here. crossgen2 emits them into each R2R
-// image (WasmR2RToInterpreterThunkNode, keyed "I"+signature) and the runtime discovers them by
-// string via LookupPregeneratedThunkByString. See GetPortableEntryPointToInterpreterThunk.
 
 extern "C" void STDCALL CallCountingStubCode()
 {
