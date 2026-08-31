@@ -966,16 +966,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     case ConfigurationSectionSpec:
                         return property.CanSet;
                     case ComplexTypeSpec complexType:
-                        // EmitBindImplForMember skips a complex member only when it is a
-                        // parameterized-constructor object with no bindable members. Every other complex member is bound.
-                        return _typeIndex.HasBindableMembers(complexType) ||
-                            complexType.IsValueType ||
-                            complexType is CollectionSpec ||
-                            complexType is not ObjectSpec { InstantiationStrategy: ObjectInstantiationStrategy.ParameterizedConstructor };
+                        return IsBindableAsMember(complexType, property.CanSet);
                     default:
                         return false;
                 }
             }
+
+            private bool IsBindableAsMember(ComplexTypeSpec complexType, bool canSet) =>
+                _typeIndex.HasBindableMembers(complexType) ||
+                complexType.IsValueType ||
+                complexType is not ObjectSpec { InstantiationStrategy: ObjectInstantiationStrategy.ParameterizedConstructor } ||
+                (canSet && _typeIndex.CanInstantiate(complexType));
 
             private bool EmitBindImplForMember(
                 MemberSpec member,
@@ -1082,10 +1083,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     case ComplexTypeSpec complexType:
                         {
                             // Early detection of types we cannot bind to and skip it.
-                            if (!_typeIndex.HasBindableMembers(complexType) &&
-                                !complexType.IsValueType &&
-                                complexType is not CollectionSpec &&
-                                ((ObjectSpec)complexType).InstantiationStrategy == ObjectInstantiationStrategy.ParameterizedConstructor)
+                            if (!IsBindableAsMember(complexType, canSet))
                             {
                                 return false;
                             }
@@ -1142,7 +1140,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         return;
                     }
 
-                    Debug.Assert(canSet);
+                    if (!_typeIndex.HasBindableMembers(effectiveMemberType) &&
+                        effectiveMemberType is ObjectSpec { InstantiationStrategy: ObjectInstantiationStrategy.ParameterizedConstructor } &&
+                        _typeIndex.CanInstantiate(effectiveMemberType))
+                    {
+                        EmitObjectInit(effectiveMemberType, memberAccessExpr, InitializationKind.SimpleAssignment, configArgExpr);
+                        return;
+                    }
+
                     string effectiveMemberTypeFQN = effectiveMemberType.TypeRef.FullyQualifiedName;
                     initKind = InitializationKind.None;
 

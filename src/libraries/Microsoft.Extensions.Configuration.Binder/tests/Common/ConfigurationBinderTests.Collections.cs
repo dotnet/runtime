@@ -2479,5 +2479,48 @@ namespace Microsoft.Extensions
             Assert.Equal(2, users[1].Id);
             Assert.Null(users[1].Name);
         }
+
+        [Fact]
+        public void CanBindNestedTypeWhoseSoleMemberIsAReadOnlyCollectionConstructorParameter()
+        {
+            IConfiguration config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    { "Class:Values:0", "a" },
+                    { "Struct:Values:0", "b" },
+                    { "NullableStruct:Values:0", "c" },
+                })
+                .Build();
+
+            var options = config.Get<SoleReadOnlyCollectionParamHolder>();
+
+            Assert.NotNull(options);
+            Assert.Equal(new[] { "a" }, options.Class?.Values);
+            Assert.Equal(new[] { "b" }, options.Struct.Values);
+            Assert.Equal(new[] { "c" }, options.NullableStruct?.Values);
+        }
+
+        [Fact]
+        public void CanBindNestedTypeWhoseSoleMemberIsAReadOnlyDictionaryConstructorParameter()
+        {
+            // IReadOnlyDictionary<,> reaches the same "no bindable members" state as the read-only collection
+            // interfaces above, but by way of the LinqToDictionary instantiation strategy rather than a copy
+            // constructor. Both are excluded by the same clause in TypeIndex.ShouldBindTo.
+            IConfiguration config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    { "Class:Values:a", "1" },
+                    { "Struct:Values:b", "2" },
+                    { "NullableStruct:Values:c", "3" },
+                })
+                .Build();
+
+            var options = config.Get<SoleReadOnlyDictionaryParamHolder>();
+
+            Assert.NotNull(options);
+            Assert.Equal(new Dictionary<string, string> { ["a"] = "1" }, options.Class?.Values);
+            Assert.Equal(new Dictionary<string, string> { ["b"] = "2" }, options.Struct.Values);
+            Assert.Equal(new Dictionary<string, string> { ["c"] = "3" }, options.NullableStruct?.Values);
+        }
     }
 }
