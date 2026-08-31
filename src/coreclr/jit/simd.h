@@ -1848,7 +1848,7 @@ bool EvaluateSimdPatternToMask(simdmask_t* result, SveMaskPattern pattern)
         case SveMaskPatternVectorCount64:
         case SveMaskPatternVectorCount128:
         case SveMaskPatternVectorCount256:
-            finalOne = std::min(uint32_t(16 << (pattern - SveMaskPatternVectorCount16)), count);
+            finalOne = 16 << (pattern - SveMaskPatternVectorCount16);
             break;
 
         case SveMaskPatternLargestMultipleOf4:
@@ -1862,7 +1862,13 @@ bool EvaluateSimdPatternToMask(simdmask_t* result, SveMaskPattern pattern)
         default:
             return false;
     }
-    assert(finalOne <= count);
+
+    // For something like ptrue p0.s, vl5
+    // "If the constraint specifies more elements than are available at the current vector length then all elements of the destination predicate are set to false."
+    if (finalOne > count)
+    {
+        finalOne = 0;
+    }
 
     // Write finalOne number of bits
     for (uint32_t i = 0; i < finalOne; i++)
