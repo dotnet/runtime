@@ -3404,6 +3404,26 @@ handle_alloc (MonoCompile *cfg, MonoClass *klass, gboolean for_box, int context_
 }
 
 /*
+ * Box a gsharedvt Nullable<T> via a non-generic runtime helper, passing the value by
+ * address and the concrete class from the rgctx. This avoids a per-T box wrapper that
+ * cannot be emitted at AOT time when the consuming assembly runs interpreted.
+ */
+static MonoInst*
+mini_emit_nullable_box_helper (MonoCompile *cfg, MonoInst *val, MonoClass *klass, int context_used)
+{
+	MonoInst *iargs [2], *addr, *var;
+
+	var = get_vreg_to_inst (cfg, val->dreg);
+	if (!var)
+		var = mono_compile_create_var_for_vreg (cfg, m_class_get_byval_arg (klass), OP_LOCAL, val->dreg);
+	EMIT_NEW_VARLOADA (cfg, addr, var, var->inst_vtype);
+
+	iargs [0] = addr;
+	iargs [1] = mini_emit_get_rgctx_klass (cfg, context_used, klass, MONO_RGCTX_INFO_KLASS);
+	return mono_emit_jit_icall (cfg, mono_helper_box_nullable, iargs);
+}
+
+/*
  * Returns NULL and set the cfg exception on error.
  */
 MonoInst*
@@ -3425,11 +3445,9 @@ mini_emit_box (MonoCompile *cfg, MonoInst *val, MonoClass *klass, int context_us
 				MonoInst *addr;
 				MonoMethodSignature *sig = mono_method_signature_internal (method);
 				if (mini_is_gsharedvt_klass (klass))
-					addr = mini_emit_get_gsharedvt_info_klass (cfg, klass,
-															   MONO_RGCTX_INFO_NULLABLE_CLASS_BOX);
-				else
-					addr = emit_get_rgctx_method (cfg, context_used, method,
-												  MONO_RGCTX_INFO_METHOD_FTNDESC);
+					return mini_emit_nullable_box_helper (cfg, val, klass, context_used);
+				addr = emit_get_rgctx_method (cfg, context_used, method,
+											  MONO_RGCTX_INFO_METHOD_FTNDESC);
 				cfg->interp_in_signatures = g_slist_prepend_mempool (cfg->mempool, cfg->interp_in_signatures, sig);
 				return mini_emit_llvmonly_calli (cfg, sig, &val, addr);
 			} else {
@@ -3495,9 +3513,14 @@ mini_emit_box (MonoCompile *cfg, MonoInst *val, MonoClass *klass, int context_us
 		/* Nullable case */
 		MONO_START_BB (cfg, is_nullable_bb);
 
-		{
+		if (cfg->llvm_only) {
+			MonoInst *box_call = mini_emit_nullable_box_helper (cfg, val, klass, context_used);
+			EMIT_NEW_UNALU (cfg, res, OP_MOVE, dreg, box_call->dreg);
+			res->type = STACK_OBJ;
+			res->klass = klass;
+		} else {
 			MonoInst *box_addr = mini_emit_get_gsharedvt_info_klass (cfg, klass,
-													MONO_RGCTX_INFO_NULLABLE_CLASS_BOX);
+										MONO_RGCTX_INFO_NULLABLE_CLASS_BOX);
 			MonoInst *box_call;
 			MonoMethodSignature *box_sig;
 
@@ -3510,10 +3533,7 @@ mini_emit_box (MonoCompile *cfg, MonoInst *val, MonoClass *klass, int context_us
 			box_sig->param_count = 1;
 			box_sig->params [0] = m_class_get_byval_arg (klass);
 
-			if (cfg->llvm_only)
-				box_call = mini_emit_llvmonly_calli (cfg, box_sig, &val, box_addr);
-			else
-				box_call = mini_emit_calli (cfg, box_sig, &val, box_addr, NULL, NULL);
+			box_call = mini_emit_calli (cfg, box_sig, &val, box_addr, NULL, NULL);
 			EMIT_NEW_UNALU (cfg, res, OP_MOVE, dreg, box_call->dreg);
 			res->type = STACK_OBJ;
 			res->klass = klass;
@@ -7493,13 +7513,22 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			fsig = mono_method_signature_internal (cmethod);
 			int nargs = fsig->param_count + fsig->hasthis;
-			if (cfg->llvm_only) {
+			if (cfg->llvm_only || cfg->compile_aot) {
 				MonoInst **args;
 
+				/*
+				 * A real tailcall (OP_TAILCALL) disables AOT for the method (see DISABLE_AOT
+				 * below), which under aot-only/full-AOT leaves the method out of the image and
+				 * crashes at runtime. For AOT (and llvm_only) emit the jmp as a normal call
+				 * followed by a return instead. This preserves the jmp semantics that matter
+				 * here (transfer to the target with the current arguments and return its
+				 * result), but it is not a true tailcall: it adds a stack frame, so observable
+				 * details such as stack traces can differ. Keep the real tailcall for the JIT.
+				 */
 				args = (MonoInst **)mono_mempool_alloc (cfg->mempool, sizeof (MonoInst*) * nargs);
 				for (int i = 0; i < nargs; ++i)
 					EMIT_NEW_ARGLOAD (cfg, args [i], i);
-				ins = mini_emit_method_call_full (cfg, cmethod, fsig, TRUE, args, NULL, NULL, NULL);
+				ins = mini_emit_method_call_full (cfg, cmethod, fsig, cfg->llvm_only, args, NULL, NULL, NULL);
 				/*
 				 * The code in mono-basic-block.c treats the rest of the code as dead, but we
 				 * have to emit a normal return since llvm expects it.
@@ -9409,6 +9438,20 @@ calli_end:
 			MonoInst *vtable_arg = NULL;
 
 			cmethod = mini_get_method (cfg, method, token, NULL, generic_context);
+			/*
+			 * In AOT mode, a type-load failure while resolving the constructor (e.g. an
+			 * invalid covariant override on the declaring type) should turn the method
+			 * into one that throws TypeLoadException at runtime, matching the JIT
+			 * behavior, instead of aborting compilation. Aborting would exclude the
+			 * method from the AOT image, and calling it under full-AOT would surface a
+			 * confusing 'JIT compile while running in aot-only mode' error instead.
+			 */
+			if (cfg->compile_aot && !is_ok (cfg->error) && mono_error_get_error_code (cfg->error) == MONO_ERROR_TYPE_LOAD) {
+				clear_cfg_error (cfg);
+				INLINE_FAILURE ("type load error");
+				method_make_alwaysthrow_typeloadfailure (cfg, cmethod ? cmethod->klass : NULL);
+				goto all_bbs_done;
+			}
 			CHECK_CFG_ERROR;
 
 			fsig = mono_method_get_signature_checked (cmethod, image, token, generic_context, cfg->error);
@@ -9416,8 +9459,20 @@ calli_end:
 
 			mono_save_token_info (cfg, image, token, cmethod);
 
-			if (mono_class_has_failure (cmethod->klass) || !mono_class_init_internal (cmethod->klass))
-				TYPE_LOAD_ERROR (cmethod->klass);
+			if (mono_class_has_failure (cmethod->klass) || !mono_class_init_internal (cmethod->klass)) {
+				if (!cfg->compile_aot)
+					TYPE_LOAD_ERROR (cmethod->klass);
+				/*
+				 * In AOT mode, rather than aborting compilation of the whole method
+				 * (which would exclude it from the AOT image and make a full-AOT call
+				 * site throw a confusing 'JIT compile while running in aot-only mode'
+				 * error), turn the method into one that throws the TypeLoadException at
+				 * runtime, matching the JIT behavior.
+				 */
+				INLINE_FAILURE ("type load error");
+				method_make_alwaysthrow_typeloadfailure (cfg, cmethod->klass);
+				goto all_bbs_done;
+			}
 
 			context_used = mini_method_check_context_used (cfg, cmethod);
 
@@ -10167,9 +10222,14 @@ calli_end:
 				if (!field || CLASS_HAS_FAILURE (klass)) {
 						HANDLE_TYPELOAD_ERROR (cfg, klass);
 
-						// Reached only in AOT. Cannot turn a token into a class. We silence the compilation error
-						// and generate a runtime exception.
-						if (cfg->error->error_code == MONO_ERROR_BAD_IMAGE)
+						/*
+						 * Reached only in AOT. After lowering the field resolution failure into a runtime
+						 * throw, consume the expected recoverable metadata errors as well. Memberref field
+						 * resolution can report MissingField/BadImage directly through cfg->error without
+						 * setting cfg->exception_type, and leaving one of those live lets an accepted inline
+						 * trip the inline_method () cfg->error assert later on.
+						 */
+						if (cfg->error->error_code == MONO_ERROR_BAD_IMAGE || cfg->error->error_code == MONO_ERROR_MISSING_FIELD)
 							clear_cfg_error (cfg);
 
 						// We need to push a dummy value onto the stack, respecting the intended type.
@@ -11921,6 +11981,57 @@ mono_ldptr:
 			const gboolean has_unmanaged_callers_only =
 				cmethod->wrapper_type == MONO_WRAPPER_NONE &&
 				mono_method_has_unmanaged_callers_only_attribute (cmethod);
+
+			/*
+			 * ldftn of a static virtual (static abstract) interface method resolved through gsharedvt
+			 * followed by a delegate creation. The target method is only known at runtime (via the rgctx),
+			 * so the generic newobj ctor-call fallback below cannot be used: under llvmonly it would call
+			 * the runtime delegate ctor with an extra rgctx argument it does not accept, producing a wasm
+			 * signature mismatch. Create the delegate directly and let the runtime initialize it from
+			 * del->method instead.
+			 */
+			if (gshared_static_virtual && cfg->llvm_only && (sp > stack_start) && (next_ip + 4 < end) && ip_in_bb (cfg, cfg->cbb, next_ip) && (next_ip [0] == CEE_NEWOBJ)) {
+				MonoMethod *ctor_method = mini_get_method (cfg, method, read32 (next_ip + 1), NULL, generic_context);
+				if (ctor_method && (m_class_get_parent (ctor_method->klass) == mono_defaults.multicastdelegate_class)) {
+					int dele_context_used = mini_class_check_context_used (cfg, ctor_method->klass);
+					MonoInst *target_ins = sp [-1];
+					MonoInst *method_ins = emit_get_rgctx_virt_method (cfg, -1, constrained_class, cmethod, MONO_RGCTX_INFO_VIRT_METHOD);
+					MonoInst *obj = handle_alloc (cfg, ctor_method->klass, FALSE, dele_context_used);
+
+					if (!obj)
+						CHECK_CFG_ERROR;
+
+					if (obj) {
+						/* Set the target field (typically null for a static method) */
+						if (!MONO_INS_IS_PCONST_NULL (target_ins)) {
+							if (!mini_debug_options.weak_memory_model)
+								mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_REL);
+							MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, obj->dreg, MONO_STRUCT_OFFSET (MonoDelegate, target), target_ins->dreg);
+							if (cfg->gen_write_barriers) {
+								MonoInst *ptr;
+								int dreg = alloc_preg (cfg);
+								EMIT_NEW_BIALU_IMM (cfg, ptr, OP_PADD_IMM, dreg, obj->dreg, MONO_STRUCT_OFFSET (MonoDelegate, target));
+								mini_emit_write_barrier (cfg, ptr, target_ins);
+							}
+						}
+						/* del->method = runtime-resolved implementation; init_delegate derives the rest */
+						MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, obj->dreg, MONO_STRUCT_OFFSET (MonoDelegate, method), method_ins->dreg);
+
+						MonoInst *init_args [2];
+						init_args [0] = obj;
+						EMIT_NEW_PCONST (cfg, init_args [1], NULL);
+						mono_emit_jit_icall (cfg, mini_llvmonly_init_delegate, init_args);
+
+						constrained_class = NULL;
+						sp --;
+						*sp = obj;
+						sp ++;
+						next_ip += 5;
+						il_op = MONO_CEE_NEWOBJ;
+						break;
+					}
+				}
+			}
 
 			/*
 			 * Optimize the common case of ldftn+delegate creation

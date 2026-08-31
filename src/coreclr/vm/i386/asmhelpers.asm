@@ -37,8 +37,9 @@ EXTERN _ProcessCLRException:PROC
 EXTERN __alloca_probe:PROC
 EXTERN _PInvokeImportWorker@4:PROC
 
+ifdef FEATURE_VARARGS
 EXTERN _VarargPInvokeStubWorker@12:PROC
-EXTERN _GenericPInvokeCalliStubWorker@12:PROC
+endif ; FEATURE_VARARGS
 
 EXTERN _PreStubWorker@8:PROC
 EXTERN _TheUMEntryPrestubWorker@4:PROC
@@ -653,6 +654,7 @@ _ProfileTailcallNaked@4 proc public
     retn    4
 _ProfileTailcallNaked@4 endp
 
+ifdef FEATURE_VARARGS
 ;==========================================================================
 ; Invoked for vararg forward P/Invoke calls as a stub.
 ; Except for secret return buffer, arguments come on the stack so EDX is available as scratch.
@@ -700,49 +702,7 @@ GoCallVarargWorker:
     jmp _VarargPInvokeStub@0
 
 _VarargPInvokeStub@0 endp
-
-;==========================================================================
-; Invoked for marshaling-required unmanaged CALLI calls as a stub.
-; EAX       - the unmanaged target
-; ECX, EDX  - arguments
-; EBX       - the VASigCookie
-;
-_GenericPInvokeCalliHelper@0 proc public
-
-    cmp     dword ptr [ebx + VASigCookie__StubOffset], 0
-    jz      GoCallCalliWorker
-
-    ; Stub is already prepared, just jump to it
-    jmp     dword ptr [ebx + VASigCookie__StubOffset]
-
-GoCallCalliWorker:
-    ;
-    ; call the stub generating worker
-    ; target ptr in EAX, VASigCookie ptr in EBX
-    ;
-
-    STUB_PROLOG
-
-    mov         esi, esp
-
-    ; save target
-    push        eax
-
-    push        eax                         ; unmanaged target
-    push        ebx                         ; pVaSigCookie (first stack argument)
-    push        esi                         ; pTransitionBlock
-
-    call        _GenericPInvokeCalliStubWorker@12
-
-    ; restore target
-    pop     eax
-
-    STUB_EPILOG
-
-    ; jump back to the helper - this time it won't come back here as the stub already exists
-    jmp _GenericPInvokeCalliHelper@0
-
-_GenericPInvokeCalliHelper@0 endp
+endif ; FEATURE_VARARGS
 
 ifdef FEATURE_READYTORUN
 ;==========================================================================

@@ -35,6 +35,134 @@
     {
       "PipelineId": 309,
       "PipelineName": "runtime-diagnostics"
+    },
+    {
+      "PipelineId": 109,
+      "PipelineName": "runtime-coreclr jitstress"
+    },
+    {
+      "PipelineId": 110,
+      "PipelineName": "runtime-coreclr jitstressregs"
+    },
+    {
+      "PipelineId": 111,
+      "PipelineName": "runtime-coreclr jitstress2-jitstressregs"
+    },
+    {
+      "PipelineId": 112,
+      "PipelineName": "runtime-coreclr gcstress0x3-gcstress0xc"
+    },
+    {
+      "PipelineId": 113,
+      "PipelineName": "runtime-coreclr gcstress-extra"
+    },
+    {
+      "PipelineId": 114,
+      "PipelineName": "runtime-coreclr r2r-extra"
+    },
+    {
+      "PipelineId": 115,
+      "PipelineName": "runtime-coreclr jitstress-isas-x86"
+    },
+    {
+      "PipelineId": 116,
+      "PipelineName": "runtime-coreclr jitstress-isas-arm"
+    },
+    {
+      "PipelineId": 117,
+      "PipelineName": "runtime-coreclr jitstressregs-x86"
+    },
+    {
+      "PipelineId": 118,
+      "PipelineName": "runtime-coreclr libraries-jitstressregs"
+    },
+    {
+      "PipelineId": 119,
+      "PipelineName": "runtime-coreclr libraries-jitstress2-jitstressregs"
+    },
+    {
+      "PipelineId": 120,
+      "PipelineName": "runtime-coreclr r2r"
+    },
+    {
+      "PipelineId": 123,
+      "PipelineName": "runtime-coreclr gc-simulator"
+    },
+    {
+      "PipelineId": 124,
+      "PipelineName": "runtime-coreclr crossgen2"
+    },
+    {
+      "PipelineId": 134,
+      "PipelineName": "runtime-coreclr crossgen2 outerloop"
+    },
+    {
+      "PipelineId": 136,
+      "PipelineName": "runtime-coreclr crossgen2-composite"
+    },
+    {
+      "PipelineId": 141,
+      "PipelineName": "runtime-coreclr crossgen2-composite gcstress"
+    },
+    {
+      "PipelineId": 137,
+      "PipelineName": "runtime-jit-experimental"
+    },
+    {
+      "PipelineId": 138,
+      "PipelineName": "runtime-coreclr libraries-jitstress"
+    },
+    {
+      "PipelineId": 140,
+      "PipelineName": "runtime-coreclr ilasm"
+    },
+    {
+      "PipelineId": 144,
+      "PipelineName": "runtime-coreclr pgo"
+    },
+    {
+      "PipelineId": 145,
+      "PipelineName": "runtime-coreclr libraries-pgo"
+    },
+    {
+      "PipelineId": 146,
+      "PipelineName": "gc-standalone"
+    },
+    {
+      "PipelineId": 150,
+      "PipelineName": "runtime-coreclr superpmi-replay"
+    },
+    {
+      "PipelineId": 153,
+      "PipelineName": "runtime-coreclr superpmi-asmdiffs-checked-release"
+    },
+    {
+      "PipelineId": 155,
+      "PipelineName": "runtime-coreclr jit-cfg"
+    },
+    {
+      "PipelineId": 159,
+      "PipelineName": "runtime-coreclr jitstress-random"
+    },
+    {
+      "PipelineId": 160,
+      "PipelineName": "runtime-coreclr libraries-jitstress-random"
+    },
+    {
+      "PipelineId": 230,
+      "PipelineName": "runtime-coreclr pgostress"
+    },
+    {
+      "PipelineId": 235,
+      "PipelineName": "runtime-coreclr jitstress-isas-avx512"
+    },
+    {
+      "PipelineId": 316,
+      "PipelineName": "runtime-interpreter"
+    },
+    {
+      "PipelineId": 330,
+      "PipelineName": "runtime-libraries-interpreter"
     }
   ]
 }

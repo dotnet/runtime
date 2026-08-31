@@ -50,7 +50,7 @@ As described in the [workflow README](/docs/workflow/README.md#building-the-repo
 Once you have both subsets built, you can generate the *Core_Root*, which as mentioned above, is the most flexible way of testing your changes. You can generate the *Core_Root* by running the following command, assuming a *Checked* clr build on an x64 machine:
 
 ```bash
-./src/tests/build.sh -x64 -checked -generatelayoutonly
+./src/tests/build.sh -arch x64 -checked -generatelayoutonly
 ```
 
 Since this is more related to testing, you can find the full details and instructions in the CoreCLR testing doc [over here](/docs/workflow/testing/coreclr/testing.md).

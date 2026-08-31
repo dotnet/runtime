@@ -131,8 +131,6 @@ typedef struct {
 	MonoJitInfo *ji;
 	int clause_index;
 	MonoContext ctx, new_ctx;
-	/* FIXME: GC */
-	gpointer        ex_obj;
 	MonoLMF *lmf;
 	int first_filter_idx, filter_idx;
 	/* MonoMethodILState */

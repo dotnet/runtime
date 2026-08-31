@@ -68,6 +68,10 @@ namespace Microsoft.Extensions.Logging.Console
         private void WriteInternal(IExternalScopeProvider? scopeProvider, TextWriter textWriter, string message, LogLevel logLevel,
             int eventId, string? exception, string category, DateTimeOffset stamp)
         {
+            message = ConsoleControlCharacterSanitizer.Sanitize(message)!;
+            exception = ConsoleControlCharacterSanitizer.Sanitize(exception);
+            category = ConsoleControlCharacterSanitizer.Sanitize(category)!;
+
             ConsoleColors logLevelColors = GetLogLevelConsoleColors(logLevel);
             string logLevelString = GetLogLevelString(logLevel);
 
@@ -215,7 +219,8 @@ namespace Microsoft.Extensions.Logging.Console
                     {
                         state.Write(" => ");
                     }
-                    state.Write(scope);
+                    string? scopeMessage = ConsoleControlCharacterSanitizer.Sanitize(scope?.ToString());
+                    state.Write(scopeMessage);
                 }, textWriter);
 
                 if (!paddingNeeded && !singleLine)

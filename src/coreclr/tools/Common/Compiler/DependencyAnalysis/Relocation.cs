@@ -62,6 +62,7 @@ namespace ILCompiler.DependencyAnalysis
         WASM_MEMORY_ADDR_REL_LEB   = 0x209,  // Wasm: a relative linear memory index encoded as a 5-byte varuint32. Used as the immediate argument of a load or store instruction,
                                                        // e.g. in R2R scenarios as an offset from $imageBase
         WASM_TABLE_INDEX_REL_I32   = 0x20A,  // Wasm: a table index encoded as a 4-byte uint32 relative to the tableBase of the R2R image
+        WASM_CLR_RESTORE_CONTEXT_EXCEPTION_TAG_LEB = 0x20B, // Wasm: an exception tag index encoded as a 5-byte varuint32. Used to refer to the CoreCLR restore context exception tag.
 
         //
         // Relocation operators related to TLS access
@@ -672,6 +673,7 @@ namespace ILCompiler.DependencyAnalysis
                 case RelocType.WASM_FUNCTION_INDEX_LEB:
                 case RelocType.WASM_MEMORY_ADDR_LEB:
                 case RelocType.WASM_MEMORY_ADDR_REL_LEB:
+                case RelocType.WASM_CLR_RESTORE_CONTEXT_EXCEPTION_TAG_LEB:
                     DwarfHelper.WritePaddedULEB128(new Span<byte>((byte*)location, WASM_PADDED_RELOC_SIZE_32), checked((ulong)value));
                     return;
 
@@ -691,6 +693,31 @@ namespace ILCompiler.DependencyAnalysis
                 default:
                     Debug.Fail("Invalid RelocType: " + relocType);
                     break;
+            }
+        }
+
+        public static unsafe int WriteVariableLengthValue(RelocType relocType, byte* location, long value)
+        {
+            Debug.Assert(IsVariableLength(relocType));
+            switch (relocType)
+            {
+                case RelocType.WASM_TYPE_INDEX_LEB:
+                case RelocType.WASM_GLOBAL_INDEX_LEB:
+                case RelocType.WASM_FUNCTION_INDEX_LEB:
+                case RelocType.WASM_MEMORY_ADDR_LEB:
+                case RelocType.WASM_MEMORY_ADDR_REL_LEB:
+                case RelocType.WASM_CLR_RESTORE_CONTEXT_EXCEPTION_TAG_LEB:
+                    DwarfHelper.WriteULEB128(new Span<byte>((byte*)location, WASM_PADDED_RELOC_SIZE_32), checked((ulong)value));
+                    return (int)DwarfHelper.SizeOfULEB128((ulong)value);
+
+                case RelocType.WASM_TABLE_INDEX_SLEB:
+                case RelocType.WASM_MEMORY_ADDR_SLEB:
+                case RelocType.WASM_MEMORY_ADDR_REL_SLEB:
+                    DwarfHelper.WriteSLEB128(new Span<byte>((byte*)location, WASM_PADDED_RELOC_SIZE_32), value);
+                    return (int)DwarfHelper.SizeOfSLEB128(value);
+                default:
+                    Debug.Fail("Invalid variable-length RelocType: " + relocType);
+                    return 0;
             }
         }
 
@@ -731,12 +758,52 @@ namespace ILCompiler.DependencyAnalysis
                 RelocType.WASM_MEMORY_ADDR_SLEB => WASM_PADDED_RELOC_SIZE_32,
                 RelocType.WASM_MEMORY_ADDR_REL_LEB => WASM_PADDED_RELOC_SIZE_32,
                 RelocType.WASM_MEMORY_ADDR_REL_SLEB => WASM_PADDED_RELOC_SIZE_32,
+                RelocType.WASM_CLR_RESTORE_CONTEXT_EXCEPTION_TAG_LEB => WASM_PADDED_RELOC_SIZE_32,
                 RelocType.WASM_TABLE_INDEX_I32 => 4,
                 RelocType.WASM_TABLE_INDEX_REL_I32 => 4,
                 RelocType.WASM_TABLE_INDEX_I64 => 8,
 
                 _ => throw new NotSupportedException(),
             };
+        }
+
+        public static bool IsVariableLength(RelocType relocType)
+        {
+            return relocType switch
+            {
+                RelocType.WASM_FUNCTION_INDEX_LEB or
+                RelocType.WASM_TABLE_INDEX_SLEB or
+                RelocType.WASM_TYPE_INDEX_LEB or
+                RelocType.WASM_GLOBAL_INDEX_LEB or
+                RelocType.WASM_MEMORY_ADDR_LEB or
+                RelocType.WASM_MEMORY_ADDR_SLEB or
+                RelocType.WASM_MEMORY_ADDR_REL_LEB or
+                RelocType.WASM_MEMORY_ADDR_REL_SLEB or
+                RelocType.WASM_CLR_RESTORE_CONTEXT_EXCEPTION_TAG_LEB => true,
+                _ => false,
+            };
+        }
+
+        public static int ActualSize(RelocType relocType, long resolvedValue)
+        {
+            Debug.Assert(IsVariableLength(relocType));
+            switch (relocType)
+            {
+                case RelocType.WASM_FUNCTION_INDEX_LEB:
+                case RelocType.WASM_TYPE_INDEX_LEB:
+                case RelocType.WASM_GLOBAL_INDEX_LEB:
+                case RelocType.WASM_MEMORY_ADDR_LEB:
+                case RelocType.WASM_MEMORY_ADDR_REL_LEB:
+                case RelocType.WASM_CLR_RESTORE_CONTEXT_EXCEPTION_TAG_LEB:
+                    return (int)DwarfHelper.SizeOfULEB128((ulong)resolvedValue);
+                case RelocType.WASM_TABLE_INDEX_SLEB:
+                case RelocType.WASM_MEMORY_ADDR_SLEB:
+                case RelocType.WASM_MEMORY_ADDR_REL_SLEB:
+                    return (int)DwarfHelper.SizeOfSLEB128(resolvedValue);
+                default:
+                    Debug.Fail("Invalid reloc type");
+                    return 0;
+            }
         }
 
         public static unsafe long ReadValue(RelocType relocType, void* location)
@@ -802,6 +869,7 @@ namespace ILCompiler.DependencyAnalysis
                 case RelocType.WASM_FUNCTION_INDEX_LEB:
                 case RelocType.WASM_MEMORY_ADDR_LEB:
                 case RelocType.WASM_MEMORY_ADDR_REL_LEB:
+                case RelocType.WASM_CLR_RESTORE_CONTEXT_EXCEPTION_TAG_LEB:
                     return checked((long)DwarfHelper.ReadULEB128(new ReadOnlySpan<byte>(location, WASM_PADDED_RELOC_SIZE_32)));
                 case RelocType.WASM_TABLE_INDEX_SLEB:
                 case RelocType.WASM_MEMORY_ADDR_SLEB:

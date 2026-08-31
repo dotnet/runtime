@@ -41,6 +41,12 @@ namespace System.Threading
             => Wait(obj, WaitHandle.ToTimeoutMilliseconds(timeout));
 
 #if !MONO
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void Enter(object obj)
+        {
+            ObjectHeader.AcquireThinLock(obj);
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Enter(object obj, ref bool lockTaken)
         {
@@ -50,6 +56,19 @@ namespace System.Threading
 
             Enter(obj);
             lockTaken = true;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static bool TryEnter(object obj)
+        {
+            return ObjectHeader.TryAcquireThinLock(obj);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static bool TryEnter(object obj, int millisecondsTimeout)
+        {
+            ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
+            return ObjectHeader.TryAcquireThinLock(obj, millisecondsTimeout);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -72,11 +91,48 @@ namespace System.Threading
             lockTaken = TryEnter(obj, millisecondsTimeout);
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static bool IsEntered(object obj)
+        {
+            return ObjectHeader.IsAcquired(obj);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void Exit(object obj)
+        {
+            ArgumentNullException.ThrowIfNull(obj);
+            ObjectHeader.Release(obj);
+        }
+
         [DoesNotReturn]
         private static void ThrowLockTakenException()
         {
             throw new ArgumentException(SR.Argument_MustBeFalse, "lockTaken");
         }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void SynchronizedMethodEnter(object obj, ref bool lockTaken)
+        {
+            ObjectHeader.AcquireThinLock(obj);
+            lockTaken = true;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void SynchronizedMethodExit(object obj, ref bool lockTaken)
+        {
+            // Inlined Monitor.Exit
+            if (!lockTaken)
+                return;
+
+            ObjectHeader.Release(obj);
+        }
+
+        #region Object->Lock mapping
+        private static Lock GetLockObject(object obj)
+        {
+            return ObjectHeader.GetLockObject(obj);
+        }
+        #endregion
 
         #region Public Wait/Pulse methods
 

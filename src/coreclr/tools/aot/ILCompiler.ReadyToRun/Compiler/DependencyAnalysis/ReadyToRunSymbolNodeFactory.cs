@@ -116,7 +116,7 @@ namespace ILCompiler.DependencyAnalysis
                 );
             });
 
-            _interfaceDispatchCells = new NodeCache<MethodAndCallSite, Import>(cellKey =>
+            _dispatchCells = new NodeCache<MethodAndCallSite, Import>(cellKey =>
             {
                 return new DelayLoadHelperMethodImport(
                     _codegenNodeFactory,
@@ -276,6 +276,9 @@ namespace ILCompiler.DependencyAnalysis
                 case ReadyToRunHelperId.TypeHandle:
                     return CreateTypeHandleHelper((TypeDesc)key.Target);
 
+                case ReadyToRunHelperId.DeclaringTypeHandle:
+                    return CreateDeclaringTypeHandleHelper((MethodWithToken)key.Target);
+
                 case ReadyToRunHelperId.MethodHandle:
                     return CreateMethodHandleHelper((MethodWithToken)key.Target);
 
@@ -389,6 +392,16 @@ namespace ILCompiler.DependencyAnalysis
                 _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.TypeHandle, type));
         }
 
+        private Import CreateDeclaringTypeHandleHelper(MethodWithToken method)
+        {
+            return new PrecodeHelperImport(
+                _codegenNodeFactory,
+                _codegenNodeFactory.MethodSignature(
+                    ReadyToRunFixupKind.DeclaringTypeHandle,
+                    method,
+                    isInstantiatingStub: false));
+        }
+
         private Import CreateMethodHandleHelper(MethodWithToken method)
         {
             bool useInstantiatingStub = method.Method.GetCanonMethodTarget(CanonicalFormKind.Specific) != method.Method;
@@ -470,12 +483,12 @@ namespace ILCompiler.DependencyAnalysis
             return _rvaFieldAddressCache.GetOrAdd(fieldWithToken);
         }
 
-        private NodeCache<MethodAndCallSite, Import> _interfaceDispatchCells = new NodeCache<MethodAndCallSite, Import>();
+        private NodeCache<MethodAndCallSite, Import> _dispatchCells = new NodeCache<MethodAndCallSite, Import>();
 
-        public Import InterfaceDispatchCell(MethodWithToken method, MethodDesc callingMethod)
+        public Import DispatchCell(MethodWithToken method, MethodDesc callingMethod)
         {
             MethodAndCallSite cellKey = new MethodAndCallSite(method, null);
-            return _interfaceDispatchCells.GetOrAdd(cellKey);
+            return _dispatchCells.GetOrAdd(cellKey);
         }
 
         private NodeCache<TypeAndMethod, Import> _delegateCtors = new NodeCache<TypeAndMethod, Import>();
@@ -619,6 +632,13 @@ namespace ILCompiler.DependencyAnalysis
                         helperArgument,
                         methodContext);
 
+                case ReadyToRunHelperId.DeclaringTypeHandle:
+                    return GenericLookupMethodHelper(
+                        runtimeLookupKind,
+                        ReadyToRunFixupKind.DeclaringTypeHandle,
+                        (MethodWithToken)helperArgument,
+                        methodContext);
+
                 case ReadyToRunHelperId.MethodHandle:
                     return GenericLookupMethodHelper(
                         runtimeLookupKind,
@@ -631,20 +651,6 @@ namespace ILCompiler.DependencyAnalysis
                         runtimeLookupKind,
                         ReadyToRunFixupKind.MethodEntry,
                         (MethodWithToken)helperArgument,
-                        methodContext);
-
-                case ReadyToRunHelperId.MethodDictionary:
-                    return GenericLookupMethodHelper(
-                        runtimeLookupKind,
-                        ReadyToRunFixupKind.MethodHandle,
-                        (MethodWithToken)helperArgument,
-                        methodContext);
-
-                case ReadyToRunHelperId.TypeDictionary:
-                    return GenericLookupTypeHelper(
-                        runtimeLookupKind,
-                        ReadyToRunFixupKind.TypeDictionary,
-                        (TypeDesc)helperArgument,
                         methodContext);
 
                 case ReadyToRunHelperId.VirtualDispatchCell:

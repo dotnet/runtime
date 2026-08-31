@@ -27,11 +27,12 @@ Volatile<LONG> g_ShutdownCrstUsageCount = 0;
 //-----------------------------------------------------------------
 // Initialize critical section
 //-----------------------------------------------------------------
-VOID CrstBase::InitWorker(INDEBUG_COMMA(CrstType crstType) CrstFlags flags)
+void CrstBase::InitWorker(INDEBUG_COMMA(CrstType crstType) CrstFlags flags)
 {
-    CONTRACTL {
-        THROWS;
-        WRAPPER(GC_TRIGGERS);
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
     } CONTRACTL_END;
 
     _ASSERTE((flags & CRST_INITIALIZED) == 0);
@@ -671,15 +672,15 @@ BOOL CrstBase::IsSafeToTake()
             || (pcrst->m_crstlevel == m_crstlevel && (m_dwFlags & CRST_UNSAFE_SAMELEVEL) != 0);
         if (!fSafe)
         {
-            LOG((LF_SYNC, INFO3, "Crst Level violation: Can't take level %lu lock %s because you already holding level %lu lock %s\n",
-                (ULONG)m_crstlevel, m_tag, (ULONG)(pcrst->m_crstlevel), pcrst->m_tag));
+            LOG((LF_SYNC, INFO3, "Crst Level violation: Can't take level %d lock %s because you already holding level %d lock %s\n",
+                m_crstlevel, m_tag, pcrst->m_crstlevel, pcrst->m_tag));
             // So that we can debug here.
             if (!g_fEEShutDown)
             {
-                CONSISTENCY_CHECK_MSGF(false, ("Crst Level violation: Can't take level %lu lock %s because you already holding level %lu lock %s\n",
-                                               (ULONG)m_crstlevel,
+                CONSISTENCY_CHECK_MSGF(false, ("Crst Level violation: Can't take level %d lock %s because you already holding level %d lock %s\n",
+                                               m_crstlevel,
                                                m_tag,
-                                               (ULONG)(pcrst->m_crstlevel),
+                                               pcrst->m_crstlevel,
                                                pcrst->m_tag));
             }
             break;

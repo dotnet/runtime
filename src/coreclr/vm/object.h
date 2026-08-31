@@ -607,7 +607,7 @@ class Array : public ArrayBase
     {
         WRAPPER_NO_CONTRACT;
         SUPPORTS_DAC;
-        return PTR_KIND(m_Array);
+        return dac_cast<PTR_KIND>(PTR_HOST_MEMBER_TADDR(Array, this, m_Array));
     }
 };
 
@@ -1743,8 +1743,9 @@ typedef BStrWrapper*     BSTRWRAPPEROBJECTREF;
 
 #endif // FEATURE_COMINTEROP
 
+#define DELEGATE_MARKER_UNMANAGEDFPTR (-1)
 
-// This class corresponds to System.MulticastDelegate on the managed side.
+// This class corresponds to System.Delegate on the managed side.
 class DelegateObject : public Object
 {
     friend class CheckAsmOffsets;
@@ -1752,7 +1753,9 @@ class DelegateObject : public Object
     friend struct ::cdac_data<DelegateObject>;
 
 public:
-    BOOL IsWrapperDelegate() { LIMITED_METHOD_CONTRACT; return _methodPtrAux == 0; }
+    OBJECTREF GetHelperObject() { LIMITED_METHOD_CONTRACT; return _helperObject; }
+    void SetHelperObject(OBJECTREF helperObject) { WRAPPER_NO_CONTRACT; SetObjectReference(&_helperObject, helperObject); }
+    static int GetOffsetOfHelperObject() { LIMITED_METHOD_CONTRACT; return offsetof(DelegateObject, _helperObject); }
 
     OBJECTREF GetTarget() { LIMITED_METHOD_CONTRACT; return _target; }
     void SetTarget(OBJECTREF target) { WRAPPER_NO_CONTRACT; SetObjectReference(&_target, target); }
@@ -1766,41 +1769,33 @@ public:
     void SetMethodPtrAux(PCODE methodPtrAux) { LIMITED_METHOD_CONTRACT; _methodPtrAux = methodPtrAux; }
     static int GetOffsetOfMethodPtrAux() { LIMITED_METHOD_CONTRACT; return offsetof(DelegateObject, _methodPtrAux); }
 
-    OBJECTREF GetInvocationList() { LIMITED_METHOD_CONTRACT; return _invocationList; }
-    void SetInvocationList(OBJECTREF invocationList) { WRAPPER_NO_CONTRACT; SetObjectReference(&_invocationList, invocationList); }
-    static int GetOffsetOfInvocationList() { LIMITED_METHOD_CONTRACT; return offsetof(DelegateObject, _invocationList); }
-
-    INT_PTR GetInvocationCount() { LIMITED_METHOD_CONTRACT; return _invocationCount; }
-    void SetInvocationCount(INT_PTR invocationCount) { LIMITED_METHOD_CONTRACT; _invocationCount = invocationCount; }
-    static int GetOffsetOfInvocationCount() { LIMITED_METHOD_CONTRACT; return offsetof(DelegateObject, _invocationCount); }
-
-    void SetMethodBase(OBJECTREF newMethodBase) { LIMITED_METHOD_CONTRACT; SetObjectReference((OBJECTREF*)&_methodBase, newMethodBase); }
+    INT_PTR GetExtraData() { LIMITED_METHOD_CONTRACT; return _extraData; }
+    void SetExtraData(INT_PTR extraData) { LIMITED_METHOD_CONTRACT; _extraData = extraData; }
+    static int GetOffsetOfExtraData() { LIMITED_METHOD_CONTRACT; return offsetof(DelegateObject, _extraData); }
 
     // README:
     // If you modify the order of these fields, make sure to update the definition in
     // BCL for this object.
 private:
-    // System.Delegate
+    OBJECTREF   _helperObject;
     OBJECTREF   _target;
-    OBJECTREF   _methodBase;
     PCODE       _methodPtr;
     PCODE       _methodPtrAux;
-    // System.MulticastDelegate
-    OBJECTREF   _invocationList;
-    INT_PTR     _invocationCount;
+    INT_PTR     _extraData;
 };
 
-#define OFFSETOF__DelegateObject__target          OBJECT_SIZE /* m_pMethTab */
-#define OFFSETOF__DelegateObject__methodPtr       (OFFSETOF__DelegateObject__target + TARGET_POINTER_SIZE /* _target */ + TARGET_POINTER_SIZE /* _methodBase */)
-#define OFFSETOF__DelegateObject__methodPtrAux    (OFFSETOF__DelegateObject__methodPtr + TARGET_POINTER_SIZE /* _methodPtr */)
+#define OFFSETOF__DelegateObject__target       (OBJECT_SIZE /* m_pMethTab */ + TARGET_POINTER_SIZE /* _helperObject */)
+#define OFFSETOF__DelegateObject__methodPtr    (OFFSETOF__DelegateObject__target + TARGET_POINTER_SIZE /* _target */)
+#define OFFSETOF__DelegateObject__methodPtrAux (OFFSETOF__DelegateObject__methodPtr + TARGET_POINTER_SIZE /* _methodPtr */)
 
 template<>
 struct cdac_data<DelegateObject>
 {
+    static constexpr size_t HelperObject = offsetof(DelegateObject, _helperObject);
     static constexpr size_t Target = offsetof(DelegateObject, _target);
     static constexpr size_t MethodPtr = offsetof(DelegateObject, _methodPtr);
     static constexpr size_t MethodPtrAux = offsetof(DelegateObject, _methodPtrAux);
-    static constexpr size_t InvocationCount = offsetof(DelegateObject, _invocationCount);
+    static constexpr size_t ExtraData = offsetof(DelegateObject, _extraData);
 };
 
 #ifdef USE_CHECKED_OBJECTREFS
@@ -2126,6 +2121,7 @@ class GenericCacheStruct
 class ContinuationObject : public Object
 {
     friend class CoreLibBinder;
+    friend struct ::cdac_data<ContinuationObject>;
 
     public:
     CorInfoContinuationFlags GetFlags() const
@@ -2236,6 +2232,14 @@ private:
     void* ResumeInfo;
     int32_t Flags;
     int32_t State;
+};
+
+template<>
+struct cdac_data<ContinuationObject>
+{
+    static constexpr size_t Next = offsetof(ContinuationObject, Next);
+    static constexpr size_t ResumeInfo = offsetof(ContinuationObject, ResumeInfo);
+    static constexpr size_t State = offsetof(ContinuationObject, State);
 };
 
 // This class corresponds to Exception on the managed side.

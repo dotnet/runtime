@@ -5713,11 +5713,17 @@ decode_value_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, 
 {
 	ErrorCode err;
 
-	if (m_type_is_byref (t) && extra_space != NULL && *extra_space != NULL) {
-		*(guint8**)addr = *extra_space; //assign the extra_space allocated for byref fields to the addr
-		guint8 *buf_int = buf;
-		addr = *(guint8**)addr; //dereference the pointer as it's a byref field
-		*extra_space += decode_value_compute_size (t, type, domain, buf_int, &buf_int, limit, TRUE); //increment the extra_space used then it can use the correct address for the next byref field
+	if (m_type_is_byref (t)) {
+		if (type == VALUE_TYPE_ID_NULL) {
+			// It means the by ref field hasn't been set, it is NULL, so we should not try to decode its value further
+			goto handle_type_id_null;
+		}
+		if (extra_space != NULL && *extra_space != NULL) {
+			*(guint8**)addr = *extra_space; //assign the extra_space allocated for byref fields to the addr
+			guint8 *buf_int = buf;
+			addr = *(guint8**)addr; //dereference the pointer as it's a byref field
+			*extra_space += decode_value_compute_size (t, type, domain, buf_int, &buf_int, limit, TRUE); //increment the extra_space used then it can use the correct address for the next byref field
+		}
 	}
 
 	if (type != t->type && !MONO_TYPE_IS_REFERENCE (t) &&
@@ -5868,9 +5874,10 @@ decode_value_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, 
 
 				mono_gc_wbarrier_generic_store_internal (addr, obj);
 			} else if (type == VALUE_TYPE_ID_NULL) {
-				if (CHECK_PROTOCOL_VERSION (2, 59)) {
-					decode_byte (buf, &buf, limit);
-					decode_int (buf, &buf, limit); //not used
+			handle_type_id_null:
+				if (CHECK_PROTOCOL_VERSION(2, 59)) {
+					decode_byte(buf, &buf, limit);
+					decode_int(buf, &buf, limit); //not used
 				}
 				*(MonoObject**)addr = NULL;
 

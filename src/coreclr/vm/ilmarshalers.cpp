@@ -1056,15 +1056,14 @@ namespace
 {
     MethodDesc* GetStructMarshalingMethod(BinderMethodID methodId, MethodTable* pMT)
     {
-        CONTRACT(MethodDesc*)
+        CONTRACTL
         {
             THROWS;
             GC_TRIGGERS;
             MODE_PREEMPTIVE;
             PRECONDITION(CheckPointer(pMT));
-            POSTCONDITION(CheckPointer(RETVAL));
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
         MethodDesc* pPrimaryMD = CoreLibBinder::GetMethod(methodId);
 
@@ -1077,7 +1076,7 @@ namespace
             Instantiation(),
             FALSE);
 
-        RETURN pMD;
+        return pMD;
     }
 }
 
@@ -3462,6 +3461,7 @@ MarshalerOverrideStatus ILBlittableValueClassWithCopyCtorMarshaler::ArgumentOver
 }
 #endif // defined(FEATURE_IJW)
 
+#ifdef FEATURE_VARARGS
 LocalDesc ILArgIteratorMarshaler::GetNativeType()
 {
     LIMITED_METHOD_CONTRACT;
@@ -3517,6 +3517,7 @@ void ILArgIteratorMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslILE
     // void MarshalToManagedVaList(va_list va, VARARGS *dataout)
     pslILEmit->EmitCALL(METHOD__STUBHELPERS__MARSHAL_TO_MANAGED_VA_LIST, 2, 0);
 }
+#endif // FEATURE_VARARGS
 
 LocalDesc ILArrayWithOffsetMarshaler::GetNativeType()
 {

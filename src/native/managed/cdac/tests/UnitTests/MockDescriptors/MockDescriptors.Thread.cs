@@ -20,6 +20,8 @@ internal sealed class MockExceptionInfo : TypedView
     private const string CallerOfActualHandlerFrameFieldName = "CallerOfActualHandlerFrame";
     private const string ClauseForCatchHandlerStartPCFieldName = "ClauseForCatchHandlerStartPC";
     private const string ClauseForCatchHandlerEndPCFieldName = "ClauseForCatchHandlerEndPC";
+    private const string ExceptionRecordFieldName = "ExceptionRecord";
+    private const string ContextRecordFieldName = "ContextRecord";
 
     public static Layout<MockExceptionInfo> CreateLayout(MockTarget.Architecture architecture)
         => new SequentialLayoutBuilder("ExceptionInfo", architecture)
@@ -35,12 +37,26 @@ internal sealed class MockExceptionInfo : TypedView
             .AddPointerField(CallerOfActualHandlerFrameFieldName)
             .AddUInt32Field(ClauseForCatchHandlerStartPCFieldName)
             .AddUInt32Field(ClauseForCatchHandlerEndPCFieldName)
+            .AddPointerField(ExceptionRecordFieldName)
+            .AddPointerField(ContextRecordFieldName)
             .Build<MockExceptionInfo>();
 
     public ulong ThrownObject
     {
         get => ReadPointerField(ThrownObjectFieldName);
         set => WritePointerField(ThrownObjectFieldName, value);
+    }
+
+    public ulong ExceptionRecord
+    {
+        get => ReadPointerField(ExceptionRecordFieldName);
+        set => WritePointerField(ExceptionRecordFieldName, value);
+    }
+
+    public ulong ContextRecord
+    {
+        get => ReadPointerField(ContextRecordFieldName);
+        set => WritePointerField(ContextRecordFieldName, value);
     }
 }
 
@@ -182,6 +198,7 @@ internal sealed class MockThread : TypedView
     private const string PreemptiveGCDisabledFieldName = "PreemptiveGCDisabled";
     private const string RuntimeThreadLocalsFieldName = "RuntimeThreadLocals";
     private const string FrameFieldName = "Frame";
+    private const string GCFrameFieldName = "GCFrame";
     private const string CachedStackBaseFieldName = "CachedStackBase";
     private const string CachedStackLimitFieldName = "CachedStackLimit";
     private const string ExposedObjectFieldName = "ExposedObject";
@@ -206,6 +223,7 @@ internal sealed class MockThread : TypedView
             .AddUInt32Field(PreemptiveGCDisabledFieldName)
             .AddPointerField(RuntimeThreadLocalsFieldName)
             .AddPointerField(FrameFieldName)
+            .AddPointerField(GCFrameFieldName)
             .AddPointerField(CachedStackBaseFieldName)
             .AddPointerField(CachedStackLimitFieldName)
             .AddPointerField(ExposedObjectFieldName)
@@ -299,6 +317,16 @@ internal sealed class MockThread : TypedView
     {
         get => ReadPointerField(FrameFieldName);
         set => WritePointerField(FrameFieldName, value);
+    }
+
+    /// <summary>
+    /// The value of the Thread's m_pGCFrame field - the head of the GCFrame (GCPROTECT)
+    /// chain.
+    /// </summary>
+    public ulong GCFrame
+    {
+        get => ReadPointerField(GCFrameFieldName);
+        set => WritePointerField(GCFrameFieldName, value);
     }
 
     public uint DebuggerControlledThreadState

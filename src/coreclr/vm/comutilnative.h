@@ -113,13 +113,8 @@ public:
 #ifndef UNIX_X86_ABI
     UINT8 padding[6];
 #endif
-    GCGenerationInfo generationInfo0;
-    GCGenerationInfo generationInfo1;
-    GCGenerationInfo generationInfo2;
-    GCGenerationInfo generationInfo3;
-    GCGenerationInfo generationInfo4;
-    UINT64 pauseDuration0;
-    UINT64 pauseDuration1;
+    GCGenerationInfo generationInfo[5];
+    UINT64 pauseDurations[2];
 };
 #include "poppack.h"
 
@@ -207,11 +202,9 @@ extern "C" void QCALLTYPE GCInterface_Collect(INT32 generation, INT32 mode, CLR_
 extern "C" void* QCALLTYPE GCInterface_GetNextFinalizableObject(QCall::ObjectHandleOnStack pObj);
 
 extern "C" void QCALLTYPE GCInterface_WaitForPendingFinalizers();
-#ifdef FEATURE_BASICFREEZE
 extern "C" void* QCALLTYPE GCInterface_RegisterFrozenSegment(void *pSection, SIZE_T sizeSection);
 
 extern "C" void QCALLTYPE GCInterface_UnregisterFrozenSegment(void *segmentHandle);
-#endif // FEATURE_BASICFREEZE
 
 extern "C" int QCALLTYPE GCInterface_WaitForFullGCApproach(int millisecondsTimeout);
 

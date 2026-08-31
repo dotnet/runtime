@@ -1,5 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <!-- No test-specific corerun on wasm: the generator or the wasm linker rejects this test's
+         native interop surface. Native-dependent tests skip instead. Tracked by https://github.com/dotnet/runtime/issues/131811 -->
+    <WasmBuildTestCorerun Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">false</WasmBuildTestCorerun>
     <!-- Needed for CMakeProjectReference -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -11,8 +14,8 @@
   <ItemGroup>
     <Compile Include="StructABI.cs" />
     <Compile Include="StructABI.Windows.cs" Condition="'$(TargetOS)' == 'windows'" />
-    <Compile Include="StructABI.Unix.cs" Condition="'$(TargetOS)' == 'linux' Or '$(TargetOS)' == 'freebsd' Or '$(TargetOS)' == 'netbsd' Or '$(TargetOS)' == 'illumos' Or '$(TargetOS)' == 'solaris' Or '$(TargetOS)' == 'haiku'" />
     <Compile Include="StructABI.OSX.cs" Condition="'$(TargetOS)' == 'osx'" />
+    <Compile Include="StructABI.Unix.cs" Condition="'$(TargetOS)' != 'windows' and '$(TargetOS)' != 'osx'" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(TestLibraryProjectPath)" />

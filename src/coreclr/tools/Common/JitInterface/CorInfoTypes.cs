@@ -64,6 +64,10 @@ namespace Internal.JitInterface
     {
     }
 
+    public struct CORINFO_WASM_GLOBAL_SYMBOL_STRUCT_
+    {
+    }
+
     public struct CORINFO_JUST_MY_CODE_HANDLE_
     {
     }
@@ -427,7 +431,6 @@ namespace Internal.JitInterface
     {
         CORINFO_SIGFLAG_IS_LOCAL_SIG = 0x01,
         CORINFO_SIGFLAG_IL_STUB = 0x02,
-        // unused = 0x04,
         CORINFO_SIGFLAG_FAT_CALL = 0x08,
     };
 
@@ -444,6 +447,7 @@ namespace Internal.JitInterface
                                                    CORINFO_GENERICS_CTXT_FROM_METHODTABLE),
         CORINFO_GENERICS_CTXT_KEEP_ALIVE = 0x00000100, // Keep the generics context alive throughout the method even if there is no explicit use, and report its location to the CLR
         CORINFO_ASYNC_SAVE_CONTEXTS = 0x00000200, // Runtime async method must save and restore contexts
+        CORINFO_ASYNC_VERSION = 0x00000400, // This is an async version whose IL belongs to a non-async method
     }
 
     // These are used to detect array methods as NamedIntrinsic in JIT importer,
@@ -478,6 +482,7 @@ namespace Internal.JitInterface
         ARM64_BRANCH26,                        // Arm64: B, BL
         ARM64_PAGEBASE_REL21,                  // ADRP
         ARM64_PAGEOFFSET_12A,                  // ADD/ADDS (immediate) with zero shift, for page offset
+        ARM64_PAGEOFFSET_12L,                  // LDR (indexed, unsigned immediate), for page offset
         // Linux arm64
         ARM64_LIN_TLSDESC_ADR_PAGE21,
         ARM64_LIN_TLSDESC_LD64_LO12,
@@ -510,6 +515,8 @@ namespace Internal.JitInterface
         WASM_FUNCTION_INDEX_LEB,             // Wasm: a function index encoded as a 5-byte varuint32. Used for the immediate argument of a call instruction.
         WASM_TABLE_INDEX_SLEB,               // Wasm: a function table index encoded as a 5-byte varint32. Used to refer to the immediate argument of a
                                                //  i32.const instruction, e.g. taking the address of a function.
+        WASM_TABLE_INDEX_I32,                // Wasm: a function table index stored as a 4-byte little-endian uint32 in the data section,
+                                               //  e.g. recording a function reference in a JIT-emitted constant pool entry.
         WASM_MEMORY_ADDR_LEB,                // Wasm: a linear memory index encoded as a 5-byte varuint32. Used for the immediate argument of a load or store instruction,
                                                //  e.g. directly loading from or storing to a C++ global.
         WASM_MEMORY_ADDR_SLEB,               // Wasm: a linear memory index encoded as a 5-byte varint32. Used for the immediate argument of a i32.const instruction,
@@ -520,6 +527,7 @@ namespace Internal.JitInterface
         WASM_GLOBAL_INDEX_LEB,               // Wasm: a global index encoded as a 5-byte varuint32, e.g. the index immediate in a get_global.
         WASM_MEMORY_ADDR_REL_LEB,            // Wasm: a relative linear memory index encoded as a 5-byte varuint32. Used as the immediate argument of a load or store instruction,
                                                // e.g. in R2R scenarios, encoding an offset from $imageBase
+        WASM_CLR_RESTORE_CONTEXT_EXCEPTION_TAG_LEB, // Wasm: an exception tag index encoded as a 5-byte varuint32. Used to refer to the CoreCLR restore context exception tag.
     }
 
     public enum CorInfoGCType
@@ -540,6 +548,7 @@ namespace Internal.JitInterface
         CLASSID_STRING,
         CLASSID_ARGUMENT_HANDLE,
         CLASSID_RUNTIME_TYPE,
+        CLASSID_NUMERICS_VECTORT,
     }
     public enum CorInfoInline
     {
@@ -845,6 +854,7 @@ namespace Internal.JitInterface
         CORINFO_TYPE_MASK = 0x3F,        // lower 6 bits are type mask
         CORINFO_TYPE_MOD_PINNED = 0x40,        // can be applied to CLASS, or BYREF to indicate pinned
         CORINFO_TYPE_MOD_COPY_WITH_HELPER = 0x80, // can be applied to VALUECLASS to indicate 'needs helper to copy'
+        CORINFO_TYPE_MOD_SECRET_STUB_ARGUMENT = 0x100, // can be applied to NATIVEINT to indicate the secret stub argument
     };
 
     public struct CORINFO_HELPER_ARG
@@ -929,9 +939,6 @@ namespace Internal.JitInterface
         public uint offsetOfDelegateInstance;
         public uint offsetOfDelegateFirstTarget;
 
-        // Wrapper delegate offsets
-        public uint offsetOfWrapperDelegateIndirectCell;
-
         // Reverse PInvoke offsets
         public uint sizeOfReversePInvokeFrame;
 
@@ -966,8 +973,27 @@ namespace Internal.JitInterface
         public CORINFO_METHOD_STRUCT_* captureContextsMethHnd;
         public CORINFO_METHOD_STRUCT_* restoreContextsMethHnd;
         public CORINFO_METHOD_STRUCT_* restoreContextsOnSuspensionMethHnd;
+        public CORINFO_METHOD_STRUCT_* restoreInlinedFrameContextsMethHnd;
+        public CORINFO_METHOD_STRUCT_* captureInlinedFrameTransitionWithContinuationContextMethHnd;
+        public CORINFO_METHOD_STRUCT_* captureInlinedFrameTransitionNoContinuationContextMethHnd;
+        public CORINFO_METHOD_STRUCT_* captureInlinedFrameTransitionContinueOnThreadPoolMethHnd;
         public CORINFO_METHOD_STRUCT_* finishSuspensionNoContinuationContextMethHnd;
         public CORINFO_METHOD_STRUCT_* finishSuspensionWithContinuationContextMethHnd;
+    }
+
+    // The well-known wasm globals referenced by JIT-generated code via
+    // WASM_GLOBAL_INDEX_LEB relocations. Each handle is the relocation target for the
+    // corresponding well-known global; the object writer resolves it to the final wasm global index.
+    public unsafe struct CORINFO_WASM_WELLKNOWN_GLOBALS
+    {
+        // Shadow stack pointer global (read at the root frame, then threaded through locals).
+        public CORINFO_WASM_GLOBAL_SYMBOL_STRUCT_* stackPointer;
+        // Image base global (__memory_base), added to static data offsets.
+        public CORINFO_WASM_GLOBAL_SYMBOL_STRUCT_* imageBase;
+        // Table base global (__table_base), added to funclet pointer offsets.
+        public CORINFO_WASM_GLOBAL_SYMBOL_STRUCT_* tableBase;
+        // Runtime-async continuation return value global.
+        public CORINFO_WASM_GLOBAL_SYMBOL_STRUCT_* asyncContinuation;
     }
 
     // Flags passed from JIT to runtime.
@@ -1134,9 +1160,6 @@ namespace Internal.JitInterface
 
         // Used by Ready-to-Run
         public CORINFO_CONST_LOOKUP instParamLookup;
-
-        public byte _wrapperDelegateInvoke;
-        public bool wrapperDelegateInvoke { get { return _wrapperDelegateInvoke != 0; } set { _wrapperDelegateInvoke = value ? (byte)1 : (byte)0; } }
     }
 
     public enum CORINFO_DEVIRTUALIZATION_DETAIL
@@ -1176,10 +1199,15 @@ namespace Internal.JitInterface
         // [Out] results of resolveVirtualMethod.
         // - devirtualizedMethod is set to MethodDesc of devirt'ed method iff we were able to devirtualize.
         //      invariant is `resolveVirtualMethod(...) == (devirtualizedMethod != nullptr)`.
-        // - tokenLookupContext is set to the wrapped context handle to use for token lookups after devirtualization.
+        // - tokenLookupContext is set to the wrapped context handle to use for token lookups and the instantiation
+        //   parameter after devirtualization.
         // - detail describes the computation done by the jit host
+        // - resolvedTokenDevirtualizedMethod is used as the parameter to getCallInfo when targeting an R2R image.
+        // - resolvedTokenDevirtualizedUnboxedMethod is set when devirtualizedMethod is an unboxing stub. Its hMethod
+        //   is the unboxed entry point, and the resolved token is used as the parameter to getCallInfo when targeting
+        //   an R2R image.
         // - instParamLookup contains all the information necessary to pass the instantiation parameter for
-        //   the devirtualized method.
+        //   the devirtualized method or its unboxed entry point.
         //
         public CORINFO_METHOD_STRUCT_* devirtualizedMethod;
         public CORINFO_CONTEXT_STRUCT* tokenLookupContext;

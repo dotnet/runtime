@@ -595,10 +595,9 @@ struct InlineCandidateInfo : public HandleHistogramProfileCandidateInfo
 {
     CORINFO_CLASS_HANDLE   guardedClassHandle;
     CORINFO_METHOD_HANDLE  guardedMethodHandle;
-    CORINFO_METHOD_HANDLE  guardedMethodUnboxedEntryHandle;
     CORINFO_LOOKUP         guardedMethodInstParamLookup;
     CORINFO_RESOLVED_TOKEN guardedMethodResolvedToken;        // Only used by R2R
-    CORINFO_RESOLVED_TOKEN guardedMethodUnboxedResolvedToken; // Only used by R2R
+    CORINFO_RESOLVED_TOKEN guardedMethodUnboxedResolvedToken; // hMethod is the unboxed entry; token data is used by R2R
     unsigned               likelihood;
 
     CORINFO_METHOD_INFO methInfo;
@@ -623,8 +622,14 @@ struct InlineCandidateInfo : public HandleHistogramProfileCandidateInfo
     unsigned methAttr;
 
     CorInfoInitClassResult initClassResult;
-    bool                   exactContextNeedsRuntimeLookup;
     InlineContext*         inlinersContext;
+
+#ifdef DEBUG
+    // Position of this candidate in its enclosing body's shuffled group of async inline
+    // candidates, under async inlining stress. -1 means the candidate is not part of any
+    // group and so is left to the normal policy; see Compiler::fgAsyncStressPrepare.
+    int asyncStressIndex = -1;
+#endif // DEBUG
 };
 
 // LateDevirtualizationInfo
@@ -692,9 +697,9 @@ struct InlineInfo
     CORINFO_CONTEXT_HANDLE tokenLookupContextHandle; // The context handle that will be passed to
                                                      // impTokenLookupContextHandle in Inlinee's Compiler.
 
-    unsigned      argCnt;
-    InlArgInfo    inlArgInfo[MAX_INL_ARGS + 1];
-    InlArgInfo*   inlInstParamArgInfo;
+    unsigned      argCnt;                                      // Number of IL args
+    InlArgInfo    inlArgInfo[MAX_INL_ARGS + 1];                // IL arg info
+    InlArgInfo*   inlInstParamArgInfo;                         // Arg info for inst param
     int           lclTmpNum[MAX_INL_LCLS];                     // map local# -> temp# (-1 if unused)
     InlLclVarInfo lclVarInfo[MAX_INL_LCLS + MAX_INL_ARGS + 1]; // type information from local sig
 
@@ -864,6 +869,11 @@ public:
     {
         return m_Unboxed;
     }
+
+    bool IsAsyncCall() const
+    {
+        return m_IsAsyncCall;
+    }
 #endif
 
     unsigned GetImportedILSize() const
@@ -928,6 +938,7 @@ private:
     bool          m_Devirtualized : 1; // true if this was a devirtualized call
     bool          m_Guarded       : 1; // true if this was a guarded call
     bool          m_Unboxed       : 1; // true if this call now invokes the unboxed entry
+    bool          m_IsAsyncCall   : 1; // true if the call being inlined was an async call
 
 #endif // defined(DEBUG)
 

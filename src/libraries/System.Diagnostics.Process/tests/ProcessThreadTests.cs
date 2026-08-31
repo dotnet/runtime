@@ -92,7 +92,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.OSX|TestPlatforms.FreeBSD)] // OSX and FreeBSD throw PNSE from StartTime
+        [PlatformSpecific(TestPlatforms.OSX | TestPlatforms.FreeBSD | TestPlatforms.OpenBSD)] // these platforms throw PNSE from StartTime
         public void TestStartTimeProperty_OSX()
         {
             using (Process p = Process.GetCurrentProcess())

@@ -35,7 +35,7 @@ public class ISOSDacInterfaceTests : DumpTestBase
 
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
         IPrecodeStubs precodeStubs = Target.Contracts.PrecodeStubs;
-        ISOSDacInterface sosDac = new SOSDacImpl(Target, legacyObj: null);
+        ISOSDacInterface sosDac = new SOSDacImpl(Target, legacyObj: null, new());
 
         ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
         DumpTestStackWalker walker = DumpTestStackWalker.Walk(Target, crashingThread);

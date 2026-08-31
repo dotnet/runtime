@@ -14,7 +14,11 @@ internal static partial class Interop
         // Constants from sys/sysctl.h
         private const int CTL_KERN = 1;
         private const int KERN_PROC = 66;
-        private const int KERN_PROC_PID = 1;
+        private const int KERN_PROC_ALL = 0;            // everything but kernel threads
+        private const int KERN_PROC_PID = 1;            // by process id
+        private const int KERN_PROC_SHOW_THREADS = unchecked((int)0x40000000); // also return threads
+        private const int KERN_PROC_ARGS = 55;          // node: proc args and env
+        private const int KERN_PROC_ARGV = 1;           // KERN_PROC_ARGS subtype: argv
 
         // Constants from sys/sysctl.h that determine the fixed-size members of kinfo_proc
         private const int KI_NGROUPS = 16;
@@ -102,9 +106,9 @@ internal static partial class Interop
             private LoginBuffer p_login;        /* setlogin() name */
 
             public int p_vm_rssize;             /* SEGSZ_T: current resident set size in pages */
-            private int p_vm_tsize;             /* SEGSZ_T: text size (pages) */
-            private int p_vm_dsize;             /* SEGSZ_T: data size (pages) */
-            private int p_vm_ssize;             /* SEGSZ_T: stack size (pages) */
+            public int p_vm_tsize;              /* SEGSZ_T: text size (pages) */
+            public int p_vm_dsize;              /* SEGSZ_T: data size (pages) */
+            public int p_vm_ssize;              /* SEGSZ_T: stack size (pages) */
 
             private long p_uvalid;              /* CHAR: following p_u* members are valid */
             public ulong p_ustart_sec;          /* STRUCT TIMEVAL: starting time. */
@@ -115,7 +119,7 @@ internal static partial class Interop
             public uint p_ustime_sec;           /* STRUCT TIMEVAL: system time. */
             public uint p_ustime_usec;          /* STRUCT TIMEVAL: system time. */
 
-            private ulong p_uru_maxrss;         /* LONG: max resident set size. */
+            public ulong p_uru_maxrss;          /* LONG: max resident set size (kilobytes). */
             private ulong p_uru_ixrss;          /* LONG: integral shared memory size. */
             private ulong p_uru_idrss;          /* LONG: integral unshared data ". */
             private ulong p_uru_isrss;          /* LONG: integral unshared stack ". */
@@ -178,22 +182,29 @@ internal static partial class Interop
         }
 
         /// <summary>
-        /// Gets information about a single process by its PID.
+        /// Gets information about processes.
         /// </summary>
-        /// <param name="pid">The PID of the process.</param>
+        /// <param name="pid">The PID of the process to query, or 0 to enumerate all processes.</param>
+        /// <param name="threads">When querying a single process, also return its threads.</param>
         /// <param name="count">The number of kinfo_proc entries returned.</param>
-        public static unsafe kinfo_proc* GetProcInfo(int pid, out int count)
+        public static unsafe kinfo_proc* GetProcInfo(int pid, bool threads, out int count)
         {
             // OpenBSD's KERN_PROC sysctl mib carries the element size and count inline:
-            // { CTL_KERN, KERN_PROC, KERN_PROC_PID, pid, sizeof(kinfo_proc), elem_count }.
-            // A single PID returns at most one entry, so request a count of one.
-            ReadOnlySpan<int> sysctlName = [CTL_KERN, KERN_PROC, KERN_PROC_PID, pid, sizeof(kinfo_proc), 1];
+            // { CTL_KERN, KERN_PROC, op, arg, sizeof(kinfo_proc), elem_count }.
+            int op = pid == 0
+                ? KERN_PROC_ALL
+                : KERN_PROC_PID | (threads ? KERN_PROC_SHOW_THREADS : 0);
+            int arg = pid == 0 ? 0 : pid;
+
+            // The kernel bounds the result by the supplied buffer size, so request the
+            // maximum element count and let Sysctl probe, allocate, and grow the buffer.
+            ReadOnlySpan<int> sysctlName = [CTL_KERN, KERN_PROC, op, arg, sizeof(kinfo_proc), int.MaxValue];
 
             byte* pBuffer = null;
             uint bytesLength = 0;
             Interop.Sys.Sysctl(sysctlName, ref pBuffer, ref bytesLength);
 
-            count = (int)(bytesLength / sizeof(kinfo_proc));
+            count = (int)(bytesLength / (uint)sizeof(kinfo_proc));
 
             // Buffer ownership transferred to the caller
             return (kinfo_proc*)pBuffer;
