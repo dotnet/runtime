@@ -1087,11 +1087,7 @@ namespace
     {
         // R2R->interpreter thunks are emitted into the R2R image by crossgen2
         // (WasmR2RToInterpreterThunkNode) and discovered here by signature string.
-        PCODE r2rThunk = LookupPregeneratedThunkByString(key);
-        if (r2rThunk != NULL)
-            return (void*)(size_t)r2rThunk;
-
-    return (void*)(size_t)LookupPregeneratedThunkByString(key);
+        return (void*)(size_t)LookupPregeneratedThunkByString(key);
     }
 
     // This is a simple signature computation routine for signatures currently supported in the wasm environment.
