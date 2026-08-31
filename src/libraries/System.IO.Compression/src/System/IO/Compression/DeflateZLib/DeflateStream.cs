@@ -332,7 +332,15 @@ namespace System.IO.Compression
                         // - Inflation is not finished yet.
                         // - Provided input wasn't completely empty
                         // In such case, we are dealing with a truncated input stream.
-                        if (s_useStrictValidation && !buffer.IsEmpty && !_inflater.Finished() && _inflater.NonEmptyInput())
+                        if (_inflater.HasUnconfirmedGZipProbe && _stream.CanSeek)
+                        {
+                            // A lone trailing GZip ID1 (0x1F) byte was speculatively consumed as a
+                            // possible concatenated member, but no further data followed. It was actually
+                            // trailing content: mark the inflater finished so the byte is rewound below and
+                            // not re-read on subsequent calls.
+                            _inflater.MarkEndOfStream();
+                        }
+                        else if (s_useStrictValidation && !buffer.IsEmpty && !_inflater.Finished() && _inflater.NonEmptyInput())
                         {
                             ThrowTruncatedInvalidData();
                         }
@@ -376,8 +384,10 @@ namespace System.IO.Compression
             // 1. DeflateStream => return
             // 2. GZipStream that is finished but may have an additional GZipStream appended => feed more input
             // 3. GZipStream that is finished and appended with garbage => return
-            _inflater!.Finished() &&
-            (!_inflater.IsGzipStream() || !_inflater.NeedsInput());
+            (_inflater!.Finished() &&
+            (!_inflater.IsGzipStream() || !_inflater.NeedsInput()))
+            // 4. GZipStream whose lone trailing 0x1F probe has been resolved as end-of-stream => return
+            || _inflater.EndOfStreamReached;
 
         private void EnsureNotDisposed()
         {
@@ -484,7 +494,15 @@ namespace System.IO.Compression
                                 // - Inflation is not finished yet.
                                 // - Provided input wasn't completely empty
                                 // In such case, we are dealing with a truncated input stream.
-                                if (s_useStrictValidation && !_inflater.Finished() && _inflater.NonEmptyInput() && !buffer.IsEmpty)
+                                if (_inflater.HasUnconfirmedGZipProbe && _stream.CanSeek)
+                                {
+                                    // A lone trailing GZip ID1 (0x1F) byte was speculatively consumed as a
+                                    // possible concatenated member, but no further data followed. It was
+                                    // actually trailing content: mark the inflater finished so the byte is
+                                    // rewound below and not re-read on subsequent calls.
+                                    _inflater.MarkEndOfStream();
+                                }
+                                else if (s_useStrictValidation && !_inflater.Finished() && _inflater.NonEmptyInput() && !buffer.IsEmpty)
                                 {
                                     ThrowTruncatedInvalidData();
                                 }
@@ -691,8 +709,10 @@ namespace System.IO.Compression
             Debug.Assert(stream.CanSeek);
             Debug.Assert(_inflater != null);
 
-            // Check if there are unconsumed bytes in the inflater's input buffer
-            int unconsumedBytes = _inflater.GetAvailableInput();
+            // Check if there are unconsumed bytes in the inflater's input buffer, plus any lone GZip ID1
+            // (0x1F) byte that was speculatively consumed as an unconfirmed concatenated-member probe but
+            // turned out to be trailing data.
+            int unconsumedBytes = _inflater.GetAvailableInput() + _inflater.UnconfirmedGZipProbeBytes;
             if (unconsumedBytes > 0)
             {
                 try
@@ -961,14 +981,20 @@ namespace System.IO.Compression
 
                     // Now, use the source stream's CopyToAsync to push directly to our inflater via this helper stream
                     await _deflateStream._stream.CopyToAsync(this, _arrayPoolBuffer.Length, _cancellationToken).ConfigureAwait(false);
-                    if (s_useStrictValidation && !_deflateStream._inflater.Finished())
+                    if (s_useStrictValidation && !_deflateStream._inflater.Finished() && !_deflateStream._inflater.HasUnconfirmedGZipProbe)
                     {
                         ThrowTruncatedInvalidData();
                     }
 
-                    // Rewind the stream if decompression has finished and the stream supports seeking
-                    if (_deflateStream._inflater.Finished() && !_deflateStream._decompressionFinished && _deflateStream._stream.CanSeek)
+                    // Rewind the stream if decompression has finished and the stream supports seeking. A lone
+                    // trailing GZip ID1 (0x1F) byte that was speculatively consumed as a possible concatenated
+                    // member also counts as finished here: it was actually trailing data.
+                    if ((_deflateStream._inflater.Finished() || _deflateStream._inflater.HasUnconfirmedGZipProbe) && !_deflateStream._decompressionFinished && _deflateStream._stream.CanSeek)
                     {
+                        if (_deflateStream._inflater.HasUnconfirmedGZipProbe)
+                        {
+                            _deflateStream._inflater.MarkEndOfStream();
+                        }
                         _deflateStream.TryRewindStream(_deflateStream._stream);
                         _deflateStream._decompressionFinished = true;
                     }
@@ -1004,14 +1030,20 @@ namespace System.IO.Compression
 
                     // Now, use the source stream's CopyToAsync to push directly to our inflater via this helper stream
                     _deflateStream._stream.CopyTo(this, _arrayPoolBuffer.Length);
-                    if (s_useStrictValidation && !_deflateStream._inflater.Finished())
+                    if (s_useStrictValidation && !_deflateStream._inflater.Finished() && !_deflateStream._inflater.HasUnconfirmedGZipProbe)
                     {
                         ThrowTruncatedInvalidData();
                     }
 
-                    // Rewind the stream if decompression has finished and the stream supports seeking
-                    if (_deflateStream._inflater.Finished() && !_deflateStream._decompressionFinished && _deflateStream._stream.CanSeek)
+                    // Rewind the stream if decompression has finished and the stream supports seeking. A lone
+                    // trailing GZip ID1 (0x1F) byte that was speculatively consumed as a possible concatenated
+                    // member also counts as finished here: it was actually trailing data.
+                    if ((_deflateStream._inflater.Finished() || _deflateStream._inflater.HasUnconfirmedGZipProbe) && !_deflateStream._decompressionFinished && _deflateStream._stream.CanSeek)
                     {
+                        if (_deflateStream._inflater.HasUnconfirmedGZipProbe)
+                        {
+                            _deflateStream._inflater.MarkEndOfStream();
+                        }
                         _deflateStream.TryRewindStream(_deflateStream._stream);
                         _deflateStream._decompressionFinished = true;
                     }

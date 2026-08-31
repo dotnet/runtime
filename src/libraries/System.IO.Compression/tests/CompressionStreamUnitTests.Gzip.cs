@@ -116,6 +116,102 @@ namespace System.IO.Compression
         }
 
         [Theory]
+        [InlineData(0x00, TestScenario.Read)]
+        [InlineData(0x00, TestScenario.ReadByte)]
+        [InlineData(0x00, TestScenario.ReadAsync)]
+        [InlineData(0x00, TestScenario.Copy)]
+        [InlineData(0x00, TestScenario.CopyAsync)]
+        [InlineData(0x1F, TestScenario.Read)]
+        [InlineData(0x1F, TestScenario.ReadByte)]
+        [InlineData(0x1F, TestScenario.ReadAsync)]
+        [InlineData(0x1F, TestScenario.Copy)]
+        [InlineData(0x1F, TestScenario.CopyAsync)]
+        [InlineData(0x8B, TestScenario.Read)]
+        [InlineData(0x8B, TestScenario.ReadAsync)]
+        [InlineData(0x8B, TestScenario.Copy)]
+        [InlineData(0xFF, TestScenario.Read)]
+        [InlineData(0xFF, TestScenario.ReadAsync)]
+        [InlineData(0xFF, TestScenario.Copy)]
+        public async Task TrailingByteAfterGzipMember_IsRewound(byte footer, TestScenario scenario)
+        {
+            // Regression coverage for a seekable leaveOpen:true stream shaped as [header][gzip][1-byte footer].
+            // The decompressor must rewind the base stream to the first footer byte so the caller can read it,
+            // even when the footer byte is the lone GZip ID1 value (0x1F) that the inflater speculatively treats
+            // as the start of a concatenated member.
+            byte[] header = "HEADER"u8.ToArray();
+            byte[] payload = "hello"u8.ToArray();
+
+            byte[] gzip;
+            using (var ms = new MemoryStream())
+            {
+                using (var gz = new GZipStream(ms, CompressionLevel.SmallestSize, leaveOpen: true))
+                {
+                    gz.Write(payload);
+                }
+                gzip = ms.ToArray();
+            }
+
+            byte[] combined = new byte[header.Length + gzip.Length + 1];
+            header.CopyTo(combined, 0);
+            gzip.CopyTo(combined, header.Length);
+            combined[^1] = footer;
+
+            using var stream = new MemoryStream(combined);
+            stream.Position = header.Length;
+
+            byte[] decompressed;
+            using (var gz = new GZipStream(stream, CompressionMode.Decompress, leaveOpen: true))
+            using (var output = new MemoryStream())
+            {
+                switch (scenario)
+                {
+                    case TestScenario.Copy:
+                        gz.CopyTo(output);
+                        break;
+                    case TestScenario.CopyAsync:
+                        await gz.CopyToAsync(output);
+                        break;
+                    case TestScenario.ReadByte:
+                        int b;
+                        while ((b = gz.ReadByte()) != -1)
+                        {
+                            output.WriteByte((byte)b);
+                        }
+                        break;
+                    case TestScenario.Read:
+                    {
+                        byte[] buffer = new byte[64];
+                        int n;
+                        while ((n = gz.Read(buffer, 0, buffer.Length)) > 0)
+                        {
+                            output.Write(buffer, 0, n);
+                        }
+                        break;
+                    }
+                    case TestScenario.ReadAsync:
+                    {
+                        byte[] buffer = new byte[64];
+                        int n;
+                        while ((n = await gz.ReadAsync(buffer)) > 0)
+                        {
+                            output.Write(buffer, 0, n);
+                        }
+                        break;
+                    }
+                }
+
+                decompressed = output.ToArray();
+            }
+
+            Assert.Equal(payload, decompressed);
+
+            // The base stream should be rewound to exactly the footer byte, and reading it should return it.
+            Assert.Equal(header.Length + gzip.Length, stream.Position);
+            Assert.Equal(footer, stream.ReadByte());
+            Assert.Equal(-1, stream.ReadByte());
+        }
+
+        [Theory]
         [InlineData(1000, TestScenario.Read, 1000, 1)]
         [InlineData(1000, TestScenario.ReadByte, 0, 1)]
         [InlineData(1000, TestScenario.ReadAsync, 1000, 1)]
