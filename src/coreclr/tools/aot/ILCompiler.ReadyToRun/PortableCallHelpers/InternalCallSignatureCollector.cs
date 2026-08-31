@@ -49,9 +49,9 @@ namespace ILCompiler.PortableCallHelpers
     /// </summary>
     internal sealed class InternalCallSignatureCollector(InteropLogger log)
     {
-        private readonly HashSet<string> _signatures = [];
+        private readonly Dictionary<string, MethodDesc> _signatures = [];
 
-        public IEnumerable<string> Signatures => _signatures;
+        public IReadOnlyDictionary<string, MethodDesc> Signatures => _signatures;
 
         public void ScanType(EcmaType type)
         {
@@ -82,7 +82,7 @@ namespace ILCompiler.PortableCallHelpers
                     // A managed signature: the lowering adds the 'T' for an instance method and the
                     // trailing 'p' for the portable entry point parameter.
                     string signature = InteropSignature.GetMethodSignature(method);
-                    if (_signatures.Add(signature))
+                    if (_signatures.TryAdd(signature, method))
                         log.Verbose($"Adding InternalCall signature {signature} for method '{type}.{method.Name.ToString()}'");
                 }
                 catch (Exception ex) when (ex is not LogAsErrorException)

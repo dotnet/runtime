@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
+using Internal.TypeSystem;
+
 namespace ILCompiler.PortableCallHelpers
 {
     /// <summary>
@@ -18,11 +20,9 @@ namespace ILCompiler.PortableCallHelpers
     /// </remarks>
     internal static class InterpToNativeGenerator
     {
-        public static void Emit(TextWriter w, IEnumerable<string> cookies)
+        public static void Emit(TextWriter w, IReadOnlyDictionary<string, MethodDesc> cookies)
         {
-            var unique = new HashSet<string>(cookies, StringComparer.Ordinal);
-            string[] signatures = new string[unique.Count];
-            unique.CopyTo(signatures);
+            string[] signatures = cookies.Keys.ToArray();
             Array.Sort(signatures, StringComparer.Ordinal);
 
             // Collect unique struct return sizes so we can emit typedefs
@@ -104,7 +104,14 @@ namespace ILCompiler.PortableCallHelpers
                 }
                 catch (InvalidSignatureCharException e)
                 {
-                    throw new LogAsErrorException($"Element '{e.Char}' of signature '{signature}' can't be handled by managed2native generator");
+                    throw new LogAsErrorException(
+                        $"Cannot generate an interop thunk for '{cookies[signature]}': its signature '{signature}' contains {e.Description}, " +
+                        "which interop thunks cannot pass. Take it by reference, or wrap it in a blittable struct.");
+                }
+                catch (LogAsErrorException e)
+                {
+                    // The only place that still knows which method the signature came from.
+                    throw new LogAsErrorException($"Cannot generate an interop thunk for '{cookies[signature]}': {e.Message}");
                 }
             }
 

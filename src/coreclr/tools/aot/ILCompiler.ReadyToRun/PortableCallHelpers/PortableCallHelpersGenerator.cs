@@ -67,7 +67,7 @@ namespace ILCompiler.PortableCallHelpers
 
             List<PInvokeInfo> pinvokes = [];
             List<PInvokeCallback> callbacks = [];
-            HashSet<string> signatures = [];
+            Dictionary<string, MethodDesc> signatures = [];
 
             foreach (string simpleName in context.InputFilePaths.Keys)
             {
@@ -100,7 +100,8 @@ namespace ILCompiler.PortableCallHelpers
             WriteIfDifferent(Path.Combine(options.OutputDirectory, ReversePInvokeFileName), log,
                 w => generator.EmitNativeToInterp(w, callbacks));
 
-            signatures.UnionWith(internalCallCollector.Signatures);
+            foreach (KeyValuePair<string, MethodDesc> internalCall in internalCallCollector.Signatures)
+                signatures.TryAdd(internalCall.Key, internalCall.Value);
 
             WriteIfDifferent(Path.Combine(options.OutputDirectory, InterpToNativeFileName), log,
                 w => InterpToNativeGenerator.Emit(w, signatures));

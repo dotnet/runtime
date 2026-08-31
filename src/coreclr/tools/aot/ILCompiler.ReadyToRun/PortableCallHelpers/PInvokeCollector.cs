@@ -130,7 +130,7 @@ namespace ILCompiler.PortableCallHelpers
         private readonly Dictionary<EcmaAssembly, bool> _assemblyUnsupportedOnPlatform = [];
         private readonly Dictionary<TypeDesc, bool> _blittable = [];
 
-        public void CollectPInvokes(List<PInvokeInfo> pinvokes, List<PInvokeCallback> callbacks, HashSet<string> signatures, EcmaType type)
+        public void CollectPInvokes(List<PInvokeInfo> pinvokes, List<PInvokeCallback> callbacks, Dictionary<string, MethodDesc> signatures, EcmaType type)
         {
             foreach (MethodDesc methodDesc in type.GetMethods())
             {
@@ -180,10 +180,10 @@ namespace ILCompiler.PortableCallHelpers
             }
         }
 
-        private void AddSignature(HashSet<string> signatures, MethodDesc method, WasmLowering.LoweringFlags flags, string kind)
+        private void AddSignature(Dictionary<string, MethodDesc> signatures, MethodDesc method, WasmLowering.LoweringFlags flags, string kind)
         {
             string signature = InteropSignature.GetMethodSignature(method, flags);
-            if (signatures.Add(signature))
+            if (signatures.TryAdd(signature, method))
                 log.Verbose($"Adding {kind} signature {signature} for method '{method.OwningType}.{method.Name.ToString()}'");
         }
 
