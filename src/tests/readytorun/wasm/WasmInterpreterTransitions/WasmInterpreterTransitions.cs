@@ -131,16 +131,16 @@ public class WasmInterpreterTransitions
         // 1- and 2-byte struct shapes (S1 / S2). These small structs travel by value in a single
         // slot and are the 'S1'/'S2' encodings the runtime spells for the return buffer and by-ref
         // argument; the hand-written table only ever had 8-byte forms.
-        Assert.Equal((byte)A, InterpretedStaticReturnsS1(A).A);          // I S1 i p
+        Assert.Equal(unchecked((byte)A), InterpretedStaticReturnsS1(A).A);          // I S1 i p
         s_sideEffect = 0;
-        self.InterpretedInstanceTakesIntAndS2(A, new S2 { A = (short)B }); // I v T i S2 p
-        Assert.Equal(A + (short)B, s_sideEffect);
+        self.InterpretedInstanceTakesIntAndS2(A, new S2 { A = unchecked((short)B) }); // I v T i S2 p
+        Assert.Equal(A + unchecked((short)B), s_sideEffect);
 
         // R2R reaches an interpreted method through a delegate: its entrypoint is materialized as a
         // native function pointer via GetMultiCallableAddrOfCode, which is the path that needs the
         // R2R-to-interpreter thunk independent of any direct call. The target returns S2 from an
         // instance method (I S2 T i p).
-        Assert.Equal((short)(A + C), self.R2RInvokesInterpretedViaDelegate().A);
+        Assert.Equal(unchecked((short)(A + C)), self.R2RInvokesInterpretedViaDelegate().A);
     }
 
     private static int s_sideEffect;
