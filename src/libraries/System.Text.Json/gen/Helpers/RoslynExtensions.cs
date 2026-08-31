@@ -859,17 +859,19 @@ namespace System.Text.Json.SourceGeneration
 
         /// <summary>
         /// Polyfill for <c>ITypeSymbol.GetClosedDerivedTypeInfo().ClosedDerivedTypes</c>: reconstructs the
-        /// immediate derived types of a closed hierarchy. The <c>closed</c> modifier constrains subtyping
-        /// to the base type's declaring module, so the immediate derived types are exactly the same-module
-        /// named types whose direct base type shares <paramref name="closedType"/>'s original definition —
-        /// the set Roslyn records internally as <c>CandidateClosedSubtypeDefinitions</c>. Generic derived
-        /// types are returned in unbound form so callers can unify them against the constructed base.
+        /// derived types of a closed hierarchy, recursively expanding derived types that are themselves
+        /// closed. The <c>closed</c> modifier constrains subtyping to the base type's declaring module, so
+        /// the derived types at each level are exactly the same-module named types whose direct base type
+        /// shares the current closed type's original definition. Generic derived types are returned in
+        /// unbound form so callers can unify them against the constructed base.
         /// Returns <see langword="null"/> when none are found. Derived types are yielded in module-scan
         /// order; callers that require a canonical ordering (for example, for deterministic generator
         /// output) order them by discriminator, where uniqueness is established.
         /// </summary>
         public static List<ITypeSymbol>? GetClosedDerivedTypes(this INamedTypeSymbol closedType)
         {
+            Debug.Assert(closedType.TypeKind is TypeKind.Class);
+
             INamedTypeSymbol baseDefinition = closedType.OriginalDefinition;
             List<ITypeSymbol>? derivedTypes = null;
 
@@ -878,9 +880,19 @@ namespace System.Text.Json.SourceGeneration
                 if (candidate.BaseType is { } candidateBase &&
                     SymbolEqualityComparer.Default.Equals(candidateBase.OriginalDefinition, baseDefinition))
                 {
-                    ITypeSymbol derivedType = candidate.IsGenericType
+                    INamedTypeSymbol derivedType = candidate.IsGenericType
                         ? candidate.ConstructUnboundGenericType()
                         : candidate;
+
+                    if (candidate.IsClosedType())
+                    {
+                        if (derivedType.GetClosedDerivedTypes() is { } nestedDerivedTypes)
+                        {
+                            (derivedTypes ??= new()).AddRange(nestedDerivedTypes);
+                        }
+
+                        continue;
+                    }
 
                     (derivedTypes ??= new()).Add(derivedType);
                 }

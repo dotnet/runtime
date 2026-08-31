@@ -1296,7 +1296,7 @@ namespace System.Text.Json.SourceGeneration
             }
 
             /// <summary>
-            /// Synthesizes <see cref="DerivedTypeSpec"/> entries from a closed hierarchy's immediate
+            /// Synthesizes <see cref="DerivedTypeSpec"/> entries from a closed hierarchy's inferred
             /// derived type set, mirroring the reflection-side inference in
             /// <c>DefaultJsonTypeInfoResolver.Helpers.PopulatePolymorphismMetadata</c>. Each inferred
             /// entry uses the derived type's simple name as its string discriminator.

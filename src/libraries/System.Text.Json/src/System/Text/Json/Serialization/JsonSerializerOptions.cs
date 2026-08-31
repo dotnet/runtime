@@ -889,6 +889,10 @@ namespace System.Text.Json
         /// <see cref="Serialization.JsonDerivedTypeAttribute"/> list) are treated as polymorphic, with one
         /// derived type registered per member of the closed hierarchy. The simple name of each derived type,
         /// equivalent to the result of <c>nameof</c>, is used as its type discriminator.
+        /// If a type declares one or more <see cref="Serialization.JsonDerivedTypeAttribute"/> registrations,
+        /// inference is skipped for that type and only the explicitly registered derived types are used.
+        /// Polymorphism configuration declared on derived types applies to their respective contracts and does
+        /// not affect inference for the base type.
         /// </remarks>
         public bool InferClosedTypePolymorphism
         {
