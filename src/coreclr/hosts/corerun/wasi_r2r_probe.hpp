@@ -35,13 +35,19 @@ namespace wasi_r2r
 // composite image's imageBase). The runtime then finds the R2R webcil via this probe, exactly the way
 // the browser host does via BrowserHost_ExternalAssemblyProbe.
 //
-// This buffer is a composite-AGNOSTIC cap: its address is exported (wasi_r2r_image_base) for the merge
-// step to target, but its size is NOT tuned per composite. The actual payload size and the merge-time
-// table base are discovered at runtime from the self-describing WbIL header (see WasiWebcilPayloadSize
-// / WebcilHeader_1.TableBase), so this host never needs rebuilding when the composite changes. It only
-// requires the composite's metadata payload to fit under the cap below.
+// Standalone corerun uses the fixed development buffer below. The per-app host declares the symbols
+// external instead: its publish builds a strong buffer definition sized exactly to the composite,
+// while the host archive carries a 64-byte weak fallback for non-R2R apps.
 #ifndef WASI_R2R_IMAGE_CAP
 #define WASI_R2R_IMAGE_CAP (16u * 1024u * 1024u)
+#endif
+
+#ifdef WASI_R2R_EXTERNAL_IMAGE_BUFFER
+extern "C" uint8_t g_wasi_r2r_image[];
+extern "C" uint32_t g_wasi_r2r_image_cap;
+#else
+alignas(16) static uint8_t g_wasi_r2r_image[WASI_R2R_IMAGE_CAP];
+static constexpr uint32_t g_wasi_r2r_image_cap = WASI_R2R_IMAGE_CAP;
 #endif
 
 // The table index at which the composite's functions are installed. Under the reservation model the
@@ -52,19 +58,28 @@ namespace wasi_r2r
 #ifndef WASI_R2R_TABLE_BASE
 #define WASI_R2R_TABLE_BASE (1u)
 #endif
-// The webcil header's TableBase field lives at this offset; see the layout note on
-// WasiWebcilPayloadSize. Named so the patch site below reads as a field access rather than a constant.
-#define WEBCIL_HEADER_SIZE          (32u)
+// Header version 1 adds TableBase to the 28-byte version 0 header.
+#define WEBCIL_HEADER_V0_SIZE       (28u)
+#define WEBCIL_HEADER_V1_SIZE       (32u)
 #define WEBCIL_SECTION_HEADER_SIZE  (16u)
+#define WEBCIL_VERSION_MAJOR_OFFSET (4u)
 #define WEBCIL_TABLE_BASE_OFFSET    (28u)
-
-alignas(16) static uint8_t g_wasi_r2r_image[WASI_R2R_IMAGE_CAP];
 
 // The composite native image's bundle-relative file name (the ownerCompositeExecutable named by each
 // per-assembly stub). The runtime asks for this via NativeImage::Open -> external_assembly_probe.
 #ifndef WASI_R2R_COMPOSITE_NAME
 #define WASI_R2R_COMPOSITE_NAME "composite-r2r.wasm"
 #endif
+
+static size_t WasiWebcilHeaderSize(const uint8_t* p, size_t len)
+{
+    if (len < WEBCIL_HEADER_V0_SIZE)
+        return 0;
+
+    uint16_t versionMajor;
+    memcpy(&versionMajor, p + WEBCIL_VERSION_MAJOR_OFFSET, sizeof(versionMajor));
+    return versionMajor >= 1 ? WEBCIL_HEADER_V1_SIZE : WEBCIL_HEADER_V0_SIZE;
+}
 
 // Compute the exact WbIL payload size from its self-describing header - no baked constant needed.
 // WebcilHeader_1 (32 bytes): Id[4] 'WbIL', VersionMajor u16, VersionMinor u16, CoffSections u16,
@@ -77,7 +92,8 @@ alignas(16) static uint8_t g_wasi_r2r_image[WASI_R2R_IMAGE_CAP];
 // hands the runtime a truncated image.
 static int64_t WasiWebcilPayloadSize(const uint8_t* p, size_t len)
 {
-    if (len < WEBCIL_HEADER_SIZE)
+    size_t headerSize = WasiWebcilHeaderSize(p, len);
+    if (headerSize == 0 || headerSize > len)
         return 0;
 
     if (p[0] != 'W' || p[1] != 'b' || p[2] != 'I' || p[3] != 'L')
@@ -87,10 +103,10 @@ static int64_t WasiWebcilPayloadSize(const uint8_t* p, size_t len)
     memcpy(&coffSections, p + 8, sizeof(coffSections));
 
     // Section headers must fit entirely within the buffer.
-    if ((len - WEBCIL_HEADER_SIZE) / WEBCIL_SECTION_HEADER_SIZE < coffSections)
+    if ((len - headerSize) / WEBCIL_SECTION_HEADER_SIZE < coffSections)
         return 0;
 
-    const uint8_t* sec = p + WEBCIL_HEADER_SIZE;
+    const uint8_t* sec = p + headerSize;
     uint32_t maxEnd = 0;
     for (uint16_t i = 0; i < coffSections; i++)
     {
@@ -172,19 +188,19 @@ static bool WasiExtractStubPayload(const char* wasmPath, void** data_start, int6
             {
                 size_t q = pos;
                 uint64_t segCount;
-                if (!wasi_read_uleb(p, len, &q, &segCount))
+                if (!wasi_read_uleb(p, secEnd, &q, &segCount))
                     break;
                 for (uint64_t s = 0; s < segCount && q < secEnd; s++)
                 {
                     uint64_t mode;
-                    if (!wasi_read_uleb(p, len, &q, &mode))
+                    if (!wasi_read_uleb(p, secEnd, &q, &mode))
                         break;
                     // Only passive segments (mode 1) are used by the webcil wrapper. A composite's
                     // payload segment is ACTIVE, so this also declines a composite handed here by
                     // mistake rather than misreading its offset expression as segment data.
                     if (mode != 1) { break; }
                     uint64_t dlen;
-                    if (!wasi_read_uleb(p, len, &q, &dlen))
+                    if (!wasi_read_uleb(p, secEnd, &q, &dlen))
                         break;
                     if (dlen > (uint64_t)(secEnd - q))
                         break; // segment claims more bytes than the section holds
@@ -223,27 +239,28 @@ static bool WasiStaticR2RProbe(const char* name, const char* const* dirs, size_t
     // read from the self-describing WbIL header (no baked constant), and validated against the buffer cap.
     if (strcmp(name, WASI_R2R_COMPOSITE_NAME) == 0)
     {
-        int64_t payloadSize = WasiWebcilPayloadSize(&g_wasi_r2r_image[0], sizeof(g_wasi_r2r_image));
-        if (payloadSize <= 0 || (size_t)payloadSize > sizeof(g_wasi_r2r_image))
+        int64_t payloadSize = WasiWebcilPayloadSize(&g_wasi_r2r_image[0], g_wasi_r2r_image_cap);
+        if (payloadSize <= 0 || (size_t)payloadSize > g_wasi_r2r_image_cap)
             return false; // buffer not populated, or composite payload exceeds the cap
 
-        // Self-installing images: crossgen2 emits the payload as an ACTIVE data segment that the engine
-        // installs at instantiation, so the offline `activate` step that used to bake WebcilHeader_1.TableBase
-        // no longer runs and nothing has written it. That field is not optional --
-        // WebcilDecoder::GetTableBaseOffset returns 0 rather than failing, and that 0 becomes tableBaseDelta
-        // in PEImageLayout, shifting every R2R function index by the table base. The symptom is call_indirect
-        // landing on the wrong function, nowhere near the cause. Patch it before the runtime parses the header.
+        // A current self-installing image patches its own TableBase from the composition shim's start
+        // function. Older images predate patchWebcilHeader, so retain the native fallback when the
+        // field is still zero. WebcilDecoder treats an unwritten zero as a valid base and would
+        // otherwise shift every R2R function index to the wrong table slot.
         //
         // NOTE: the cap test above cannot protect this buffer -- the engine installs the segment before any
         // host code runs, so an over-cap payload has already overwritten whatever follows by the time we look.
         // The enforceable check is at build time; pipeline_shim.py compares the payload size against the cap.
         uint8_t* hdr = &g_wasi_r2r_image[0];
-        uint32_t existingTableBase;
-        memcpy(&existingTableBase, hdr + WEBCIL_TABLE_BASE_OFFSET, sizeof(existingTableBase));
-        if (existingTableBase == 0)
+        if (WasiWebcilHeaderSize(hdr, (size_t)payloadSize) >= WEBCIL_HEADER_V1_SIZE)
         {
-            uint32_t tableBase = WASI_R2R_TABLE_BASE;
-            memcpy(hdr + WEBCIL_TABLE_BASE_OFFSET, &tableBase, sizeof(tableBase));
+            uint32_t existingTableBase;
+            memcpy(&existingTableBase, hdr + WEBCIL_TABLE_BASE_OFFSET, sizeof(existingTableBase));
+            if (existingTableBase == 0)
+            {
+                uint32_t tableBase = WASI_R2R_TABLE_BASE;
+                memcpy(hdr + WEBCIL_TABLE_BASE_OFFSET, &tableBase, sizeof(tableBase));
+            }
         }
 
         *data_start = &g_wasi_r2r_image[0];
@@ -279,12 +296,8 @@ static bool WasiStaticR2RProbe(const char* name, const char* const* dirs, size_t
 // __memory_base global. Defined outside the namespace with C linkage so the export name is exactly
 // "wasi_r2r_image_base" (the merge step targets this symbol).
 //
-// NOTE: this is an external-linkage definition in a header, as is the WASI_R2R_IMAGE_CAP buffer above.
-// That is safe only because the two includers -- corerun.cpp and wasihost.cpp -- link into separate
-// binaries. A second includer in either binary is a duplicate-symbol error (loud) but would also add
-// another cap-sized BSS buffer. Making this `static` does NOT work: the export then disappears and the
-// merge step silently loses its anchor. The correct fix is to move the buffer and this definition into
-// a shared .cpp compiled into both hosts; tracked as follow-up.
+// This header is included once in each host binary. Keeping the exported accessor here ensures the
+// linker roots the selected fixed or per-app buffer and gives the composition step a stable anchor.
 extern "C" __attribute__((export_name("wasi_r2r_image_base"))) uint32_t wasi_r2r_image_base(void)
 {
     return (uint32_t)(uintptr_t)&wasi_r2r::g_wasi_r2r_image[0];
@@ -294,10 +307,16 @@ extern "C" __attribute__((export_name("wasi_r2r_image_base"))) uint32_t wasi_r2r
 // reason as the base: the splice must not carry its own copy of either. The host owns these values;
 // eng/wasi-r2r/pipeline_shim.py reads them out of the linked binary and validates the composite
 // against them, so a mismatch is a build-time error instead of a wrong-function dispatch at runtime.
-extern "C" __attribute__((export_name("wasi_r2r_image_cap"))) uint32_t wasi_r2r_image_cap(void)
+#ifdef WASI_R2R_EXTERNAL_IMAGE_BUFFER
+#define WASI_R2R_IMAGE_CAP_WEAK __attribute__((weak))
+#else
+#define WASI_R2R_IMAGE_CAP_WEAK
+#endif
+extern "C" WASI_R2R_IMAGE_CAP_WEAK __attribute__((export_name("wasi_r2r_image_cap"))) uint32_t wasi_r2r_image_cap(void)
 {
-    return (uint32_t)sizeof(wasi_r2r::g_wasi_r2r_image);
+    return wasi_r2r::g_wasi_r2r_image_cap;
 }
+#undef WASI_R2R_IMAGE_CAP_WEAK
 
 extern "C" __attribute__((export_name("wasi_r2r_table_base"))) uint32_t wasi_r2r_table_base(void)
 {

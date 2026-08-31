@@ -33,7 +33,6 @@ SEC_GLOBAL, SEC_EXPORT, SEC_START = 6, 7, 8
 SEC_ELEMENT, SEC_CODE, SEC_DATA = 9, 10, 11
 
 EXTERNKIND_FUNC = 0
-WEBCIL_HEADER_SIZE = 32
 
 
 class WasmError(Exception):
@@ -42,18 +41,21 @@ class WasmError(Exception):
 
 def _uleb(data, pos):
     result = shift = 0
-    while True:
+    while pos < len(data):
         byte = data[pos]
         pos += 1
         result |= (byte & 0x7F) << shift
         shift += 7
         if not byte & 0x80:
             return result, pos
+        if shift >= 64:
+            raise WasmError("invalid overlong ULEB128 value")
+    raise WasmError("truncated ULEB128 value")
 
 
 def _sleb(data, pos):
     result = shift = 0
-    while True:
+    while pos < len(data):
         byte = data[pos]
         pos += 1
         result |= (byte & 0x7F) << shift
@@ -62,6 +64,9 @@ def _sleb(data, pos):
             if shift < 64 and byte & 0x40:
                 result -= 1 << shift
             return result, pos
+        if shift >= 64:
+            raise WasmError("invalid overlong SLEB128 value")
+    raise WasmError("truncated SLEB128 value")
 
 
 def _emit_uleb(value):
@@ -93,7 +98,7 @@ class WasmModule:
     def __init__(self, path):
         self.path = Path(path)
         self.data = self.path.read_bytes()
-        if self.data[:4] != b"\0asm":
+        if len(self.data) < 8 or self.data[:4] != b"\0asm":
             raise WasmError(f"{path} is not a wasm core module (bad magic). "
                             "If it is a component, unbundle it first.")
         self.sections = []  # (id, payload_start, payload_end)
@@ -101,6 +106,8 @@ class WasmModule:
         while pos < len(self.data):
             sec_id = self.data[pos]
             size, pos = _uleb(self.data, pos + 1)
+            if size > len(self.data) - pos:
+                raise WasmError(f"section {sec_id} in {self.path.name} extends beyond the file")
             self.sections.append((sec_id, pos, pos + size))
             pos += size
 
@@ -265,7 +272,7 @@ class WasmModule:
         return out
 
 
-def make_shim(memory_base, table_base, patch_header):
+def make_shim(memory_base, table_base, patch_header, payload_size):
     """Assemble the module supplying what wasm-ld cannot emit for a non-PIC main module.
 
     Always exports the two base globals. When `patch_header` is set it additionally imports
@@ -314,11 +321,11 @@ def make_shim(memory_base, table_base, patch_header):
     if patch_header:
         # Function 0 is the import, so the start function is index 1.
         out += section(SEC_START, _emit_uleb(1))
-        # patchWebcilHeader(dest = __memory_base, length): its own guard is `length >= 32`,
-        # and it writes 4 bytes at dest+28, so the header size is the only length it needs.
+        # Let the composite validate the complete payload extent rather than duplicating its
+        # current header size in the host-side shim.
         body = (_emit_uleb(0)                              # no locals
                 + b"\x41" + _emit_sleb(memory_base)        # i32.const dest
-                + b"\x41" + _emit_sleb(WEBCIL_HEADER_SIZE)  # i32.const 32
+                + b"\x41" + _emit_sleb(payload_size)        # i32.const length
                 + b"\x10" + _emit_uleb(0)                  # call 0
                 + b"\x0b")                                 # end
         out += section(SEC_CODE, _emit_uleb(1) + _emit_uleb(len(body)) + body)
@@ -369,7 +376,37 @@ def run(args, capture=False):
 
 # ---------------------------------------------------------------- pipeline
 
+def composite_requirements(composite):
+    n_funcs = composite.defined_func_count()
+
+    # The payload is the composite's ONE active data segment. Select it by meaning: the
+    # 9-byte webcilCount segment is passive, so index-based selection would be a positional
+    # assumption that breaks silently if crossgen2 ever reorders segments.
+    payloads = [s for s in composite.data_segments() if s["active"]]
+    if len(payloads) != 1:
+        raise WasmError(
+            f"expected exactly one active data segment in {composite.path.name} "
+            f"(the webcil payload), found {len(payloads)}. The composite layout changed; "
+            "this check would otherwise pick the wrong segment.")
+
+    return n_funcs, payloads[0]["size"]
+
+
 def main():
+    if len(sys.argv) == 3 and sys.argv[1] in ("--describe", "--function-count", "--payload-size"):
+        composite = WasmModule(sys.argv[2])
+        n_funcs, payload = composite_requirements(composite)
+        if sys.argv[1] == "--describe":
+            print(f"{n_funcs},{payload}")
+        else:
+            print(n_funcs if sys.argv[1] == "--function-count" else payload)
+        return
+
+    if len(sys.argv) != 1:
+        raise WasmError(
+            "usage: pipeline_shim.py [--describe|--function-count|--payload-size] "
+            "<composite.wasm>")
+
     root = Path(os.environ.get("ROOT") or Path(__file__).resolve().parents[2])
     comp = Path(os.environ.get("COMP") or root / "r2rtest/out2/composite-r2r.wasm")
     corerun = Path(os.environ.get("CORERUN")
@@ -420,18 +457,7 @@ def main():
                         "slots for the composite.")
     reserved = min(s["offset"] for s in host_active)
 
-    n_funcs = composite.defined_func_count()
-
-    # The payload is the composite's ONE active data segment. Select it by meaning: the
-    # 9-byte webcilCount segment is passive, so index-based selection would be a positional
-    # assumption that breaks silently if crossgen2 ever reorders segments.
-    payloads = [s for s in composite.data_segments() if s["active"]]
-    if len(payloads) != 1:
-        raise WasmError(
-            f"expected exactly one active data segment in {comp.name} (the webcil payload), "
-            f"found {len(payloads)}. The composite layout changed; this check would "
-            "otherwise pick the wrong segment.")
-    payload = payloads[0]["size"]
+    n_funcs, payload = composite_requirements(composite)
 
     print(f"SHIM: imageBase={params['image_base']} tableBase={params['table_base']} "
           f"reservedSlots={reserved} compositeFuncs={n_funcs} payload={payload} "
@@ -466,7 +492,8 @@ def main():
     #    host's own fallback in wasi_r2r_probe.hpp writes the field instead.
     patch_header = "patchWebcilHeader" in composite.exports()
     shim = outdir / "shim.wasm"
-    shim.write_bytes(make_shim(params["image_base"], params["table_base"], patch_header))
+    shim.write_bytes(make_shim(
+        params["image_base"], params["table_base"], patch_header, payload))
     run([wasm_tools, "validate", "--features", "all", str(shim)], capture=True)
     print(f"SHIM: tableBase written by "
           f"{'the composite (patchWebcilHeader)' if patch_header else 'the host (fallback)'}")
@@ -503,4 +530,7 @@ if __name__ == "__main__":
         main()
     except WasmError as error:
         print(f"error: {error}", file=sys.stderr)
+        sys.exit(1)
+    except IndexError:
+        print("error: malformed wasm input ended unexpectedly", file=sys.stderr)
         sys.exit(1)

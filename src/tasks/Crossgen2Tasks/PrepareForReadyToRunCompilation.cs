@@ -164,6 +164,11 @@ namespace Microsoft.NET.Build.Tasks
                 }
 
                 var outputR2RImageRelativePath = file.GetMetadata(MetadataKeys.RelativePath);
+                if (Crossgen2Composite && Crossgen2ContainerFormat == "wasm")
+                {
+                    outputR2RImageRelativePath = Path.ChangeExtension(outputR2RImageRelativePath, ".wasm");
+                }
+
                 var outputR2RImage = Path.Combine(OutputPath, outputR2RImageRelativePath);
 
                 string outputPDBImage = null;
@@ -235,6 +240,11 @@ namespace Microsoft.NET.Build.Tasks
                     ItemSpec = outputR2RImage
                 };
                 r2rFileToPublish.RemoveMetadata(MetadataKeys.OriginalItemSpec);
+                if (Crossgen2Composite && Crossgen2ContainerFormat == "wasm")
+                {
+                    r2rFileToPublish.SetMetadata(MetadataKeys.RelativePath, outputR2RImageRelativePath);
+                }
+
                 r2rFilesPublishList.Add(r2rFileToPublish);
 
                 // Note: ReadyToRun PDB/Map files are not needed for debugging. They are only used for profiling, therefore the default behavior is to not generate them
@@ -286,7 +296,12 @@ namespace Microsoft.NET.Build.Tasks
                 // by any post-crossgen2 linking steps and used at runtime.
                 var compositeR2RFinalImageRelativePath = compositeR2RImageRelativePath;
 
-                if (Crossgen2ContainerFormat == "macho")
+                if (Crossgen2ContainerFormat == "wasm")
+                {
+                    compositeR2RImageRelativePath = "composite-r2r.wasm";
+                    compositeR2RFinalImageRelativePath = compositeR2RImageRelativePath;
+                }
+                else if (Crossgen2ContainerFormat == "macho")
                 {
                     compositeR2RImageRelativePath = Path.ChangeExtension(compositeR2RImageRelativePath, ".o");
                     compositeR2RFinalImageRelativePath = Path.ChangeExtension(compositeR2RImageRelativePath, ".dylib");
