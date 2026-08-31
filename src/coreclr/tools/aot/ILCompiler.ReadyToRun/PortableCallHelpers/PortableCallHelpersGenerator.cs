@@ -14,7 +14,7 @@ namespace ILCompiler.PortableCallHelpers
     /// <summary>
     /// Options for <see cref="PortableCallHelpersGenerator"/>, mirroring the command line.
     /// </summary>
-    internal sealed class PortableCallHelpersGeneratorOptions
+    public sealed class PortableCallHelpersGeneratorOptions
     {
         public string OutputDirectory { get; init; }
         public IReadOnlyList<string> PInvokeModules { get; init; } = [];
@@ -36,7 +36,7 @@ namespace ILCompiler.PortableCallHelpers
     ///   crossgen2 --generate-portable-callhelpers &lt;dir&gt; --targetos &lt;browser|wasi&gt; --targetarch wasm \
     ///             --directpinvoke &lt;name&gt;... &lt;assembly&gt;...
     /// </remarks>
-    internal static class PortableCallHelpersGenerator
+    public static class PortableCallHelpersGenerator
     {
         public const string PInvokeFileName = "callhelpers-pinvoke.cpp";
         public const string ReversePInvokeFileName = "callhelpers-reverse.cpp";
