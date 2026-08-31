@@ -67,7 +67,7 @@ namespace Internal.JitInterface
             _methodCodeNode = methodCodeNodeNeedingCode;
             _isFallbackBodyCompilation = methodIL != null;
 
-            methodIL ??= GetMethodILForJit(MethodBeingCompiled);
+            methodIL ??= _compilation.GetMethodIL(MethodBeingCompiled);
 
             try
             {

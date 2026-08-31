@@ -1824,6 +1824,18 @@ CORINFO_METHOD_HANDLE WrapICorJitInfo::getSpecialCopyHelper(
     return temp;
 }
 
+CorInfoBitwiseEquatable WrapICorJitInfo::getBitwiseEquatableInfo(
+          CORINFO_CLASS_HANDLE type,
+          CORINFO_METHOD_HANDLE* equalsMethod,
+          CORINFO_METHOD_HANDLE* comparerGetDefault,
+          CORINFO_METHOD_HANDLE* comparerEquals)
+{
+    API_ENTER(getBitwiseEquatableInfo);
+    CorInfoBitwiseEquatable temp = wrapHnd->getBitwiseEquatableInfo(type, equalsMethod, comparerGetDefault, comparerEquals);
+    API_LEAVE(getBitwiseEquatableInfo);
+    return temp;
+}
+
 /**********************************************************************************/
 // clang-format on
 /**********************************************************************************/

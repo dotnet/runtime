@@ -1293,6 +1293,8 @@ DEFINE_METHOD(UTF8BUFFERMARSHALER, CONVERT_TO_MANAGED, ConvertToManaged, NoSig)
 // Classes referenced in EqualityComparer<T>.Default optimization
 
 DEFINE_CLASS(EQUALITY_COMPARER, CollectionsGeneric, EqualityComparer`1)
+DEFINE_METHOD(EQUALITY_COMPARER, GET_DEFAULT, get_Default, NoSig)
+DEFINE_METHOD(EQUALITY_COMPARER, EQUALS, Equals, NoSig)
 DEFINE_CLASS(STRING_EQUALITYCOMPARER, CollectionsGeneric, StringEqualityComparer)
 DEFINE_CLASS(ENUM_EQUALITYCOMPARER, CollectionsGeneric, EnumEqualityComparer`1)
 DEFINE_CLASS(NULLABLE_EQUALITYCOMPARER, CollectionsGeneric, NullableEqualityComparer`1)

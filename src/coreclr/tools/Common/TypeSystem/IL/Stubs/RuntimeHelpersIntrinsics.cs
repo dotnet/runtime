@@ -14,20 +14,7 @@ namespace Internal.IL.Stubs
     /// </summary>
     public static class RuntimeHelpersIntrinsics
     {
-        public static bool IsSupported(MethodDesc method)
-        {
-            return method.IsIntrinsic
-                && method.Name == "IsBitwiseEquatable"u8
-                && method.OwningType.GetTypeDefinition() is MetadataType owningType
-                && owningType.Module == method.Context.SystemModule
-                && owningType.Name == "RuntimeHelpers"u8
-                && owningType.Namespace == "System.Runtime.CompilerServices"u8;
-        }
-
-        public static MethodIL EmitIL(
-            MethodDesc method,
-            Func<MethodDesc, MethodIL> getMethodIL,
-            bool emitFalseIfMethodBodyUnavailable)
+        public static MethodIL EmitIL(MethodDesc method)
         {
             Debug.Assert(((MetadataType)method.OwningType).Name == "RuntimeHelpers"u8);
 
@@ -41,33 +28,26 @@ namespace Internal.IL.Stubs
             if (elementType.IsCanonicalSubtype(CanonicalFormKind.Universal))
                 return null;
 
-            bool result;
+            bool? result;
             if (method.Name == "IsBitwiseEquatable"u8)
             {
-                bool unavailableMethodBody = false;
-
-                MethodIL GetMethodIL(MethodDesc method)
-                {
-                    MethodIL methodIL = getMethodIL(method);
-                    unavailableMethodBody |= methodIL == null;
-                    return methodIL;
-                }
-
-                result = ComparerIntrinsics.IsBitwiseEquatable(
+                result = ComparerIntrinsics.GetBitwiseEquatableInfo(
                     elementType,
-                    GetMethodIL);
-
-                // If the effective method IL is unavailable, leave the intrinsic unexpanded when the
-                // runtime can determine the result using the loaded implementation.
-                if (unavailableMethodBody && !emitFalseIfMethodBodyUnavailable)
-                    return null;
+                    out _,
+                    out _,
+                    out _);
             }
             else
             {
                 return null;
             }
 
-            ILOpcode opcode = result ? ILOpcode.ldc_i4_1 : ILOpcode.ldc_i4_0;
+            if (!result.HasValue)
+            {
+                return null;
+            }
+
+            ILOpcode opcode = result.Value ? ILOpcode.ldc_i4_1 : ILOpcode.ldc_i4_0;
 
             return new ILStubMethodIL(method, new byte[] { (byte)opcode, (byte)ILOpcode.ret }, Array.Empty<LocalVariableDefinition>(), Array.Empty<object>());
         }

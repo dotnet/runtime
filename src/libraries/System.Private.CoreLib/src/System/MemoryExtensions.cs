@@ -2556,7 +2556,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe int LastIndexOf<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> value, IEqualityComparer<T>? comparer = null)
         {
-            if (RuntimeHelpers.IsBitwiseEquatable<T>())
+            if (RuntimeHelpers.IsBitwiseEquatable<T>() && (comparer is null || comparer == EqualityComparer<T>.Default))
             {
                 if (sizeof(T) == sizeof(byte))
                 {

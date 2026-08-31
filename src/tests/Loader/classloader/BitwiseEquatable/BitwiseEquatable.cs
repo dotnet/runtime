@@ -19,7 +19,11 @@ namespace BitwiseEquatableTests
         [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "IsBitwiseEquatable")]
         private static extern bool IsBitwiseEquatable<T>([UnsafeAccessorType("System.Runtime.CompilerServices.RuntimeHelpers")] object o);
 
-        private static void Check<T>(bool expected) => Assert.Equal(expected, IsBitwiseEquatable<T>(null!));
+        private static void Check<T>(bool expected)
+        {
+            bool actual = IsBitwiseEquatable<T>(null!);
+            Assert.True(expected == actual, $"{typeof(T)}: expected {expected}, actual {actual}");
+        }
 
         [Fact]
         public static void IsBitwiseEquatable_MatchesExpected()

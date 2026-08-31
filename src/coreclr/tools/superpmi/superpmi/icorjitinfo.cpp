@@ -1919,3 +1919,14 @@ CORINFO_METHOD_HANDLE MyICJI::getSpecialCopyHelper(CORINFO_CLASS_HANDLE type)
     CORINFO_METHOD_HANDLE result = jitInstance->mc->repGetSpecialCopyHelper(type);
     return result;
 }
+
+CorInfoBitwiseEquatable MyICJI::getBitwiseEquatableInfo(
+    CORINFO_CLASS_HANDLE   type,
+    CORINFO_METHOD_HANDLE* equalsMethod,
+    CORINFO_METHOD_HANDLE* comparerGetDefault,
+    CORINFO_METHOD_HANDLE* comparerEquals)
+{
+    jitInstance->mc->cr->AddCall("getBitwiseEquatableInfo");
+    return jitInstance->mc->repGetBitwiseEquatableInfo(
+        type, equalsMethod, comparerGetDefault, comparerEquals);
+}

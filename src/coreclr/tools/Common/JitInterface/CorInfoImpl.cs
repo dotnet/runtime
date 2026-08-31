@@ -344,35 +344,6 @@ namespace Internal.JitInterface
             return null;
         }
 
-        private MethodIL GetMethodILForJit(MethodDesc method)
-        {
-            if (!RuntimeHelpersIntrinsics.IsSupported(method))
-            {
-                return _compilation.GetMethodIL(method);
-            }
-
-            MethodIL GetMethodIL(MethodDesc methodToScan)
-            {
-#if READYTORUN
-                if (!_compilation.CanInline(MethodBeingCompiled, methodToScan))
-                {
-                    return null;
-                }
-#endif
-
-                return _compilation.GetMethodIL(methodToScan);
-            }
-
-            return RuntimeHelpersIntrinsics.EmitIL(
-                method,
-                GetMethodIL,
-#if READYTORUN
-                emitFalseIfMethodBodyUnavailable: false);
-#else
-                emitFalseIfMethodBodyUnavailable: true);
-#endif
-        }
-
         private CompilationResult CompileMethodInternal(IMethodNode methodCodeNodeNeedingCode, MethodIL methodIL)
         {
             // methodIL must not be null
@@ -1440,7 +1411,7 @@ namespace Internal.JitInterface
                 return false;
 
 
-            MethodIL methodIL = method.IsUnboxingThunk() ? null : GetMethodILForJit(method);
+            MethodIL methodIL = method.IsUnboxingThunk() ? null : _compilation.GetMethodIL(method);
             return Get_CORINFO_METHOD_INFO(method, methodIL, info);
         }
 
@@ -5382,6 +5353,59 @@ namespace Internal.JitInterface
         private CORINFO_METHOD_STRUCT_* getSpecialCopyHelper(CORINFO_CLASS_STRUCT_* type)
         {
             throw new NotImplementedException("getSpecialCopyHelper");
+        }
+
+        private CorInfoBitwiseEquatable getBitwiseEquatableInfo(
+            CORINFO_CLASS_STRUCT_* type,
+            CORINFO_METHOD_STRUCT_** equalsMethod,
+            CORINFO_METHOD_STRUCT_** comparerGetDefault,
+            CORINFO_METHOD_STRUCT_** comparerEquals)
+        {
+            if (equalsMethod != null)
+            {
+                *equalsMethod = null;
+            }
+            if (comparerGetDefault != null)
+            {
+                *comparerGetDefault = null;
+            }
+            if (comparerEquals != null)
+            {
+                *comparerEquals = null;
+            }
+
+            try
+            {
+                bool? result = ComparerIntrinsics.GetBitwiseEquatableInfo(
+                    HandleToObject(type),
+                    out MethodDesc equals,
+                    out MethodDesc getDefault,
+                    out MethodDesc comparerEqualsMethod);
+
+                if (equalsMethod != null)
+                {
+                    *equalsMethod = equals is null ? null : ObjectToHandle(equals);
+                }
+                if (comparerGetDefault != null)
+                {
+                    *comparerGetDefault = getDefault is null ? null : ObjectToHandle(getDefault);
+                }
+                if (comparerEquals != null)
+                {
+                    *comparerEquals = comparerEqualsMethod is null ? null : ObjectToHandle(comparerEqualsMethod);
+                }
+
+                return result switch
+                {
+                    true => CorInfoBitwiseEquatable.CORINFO_BITWISE_EQUATABLE_TRUE,
+                    false => CorInfoBitwiseEquatable.CORINFO_BITWISE_EQUATABLE_FALSE,
+                    null => CorInfoBitwiseEquatable.CORINFO_BITWISE_EQUATABLE_NEEDS_METHOD_SCAN,
+                };
+            }
+            catch (TypeSystemException)
+            {
+                return CorInfoBitwiseEquatable.CORINFO_BITWISE_EQUATABLE_FALSE;
+            }
         }
     }
 }

@@ -146,6 +146,15 @@ namespace System.SpanTests
         }
 
         [Fact]
+        public static void LastIndexOfSequenceUsesCustomComparerForBitwiseEquatableType()
+        {
+            var source = new[] { new BitwiseEquatableByte(1) };
+            var value = new[] { new BitwiseEquatableByte(1) };
+
+            Assert.Equal(-1, new ReadOnlySpan<BitwiseEquatableByte>(source).LastIndexOf(value, GetFalseEqualityComparer<BitwiseEquatableByte>()));
+        }
+
+        [Fact]
         public static void LastIndexOfSequenceMatchAtStart_String()
         {
             var source = new string[] { "5", "1", "77", "2", "3", "77", "77", "4", "5", "77", "77", "77", "88", "6", "6", "77", "77", "88", "9" };
@@ -278,6 +287,15 @@ namespace System.SpanTests
         {
             Assert.Equal(expected, new ReadOnlySpan<string>(source).LastIndexOf(target));
             Assert.All(GetDefaultEqualityComparers<string>(), comparer => Assert.Equal(expected, new ReadOnlySpan<string>(source).LastIndexOf(target, comparer)));
+        }
+
+        private readonly struct BitwiseEquatableByte : IEquatable<BitwiseEquatableByte>
+        {
+            private readonly byte _value;
+
+            public BitwiseEquatableByte(byte value) => _value = value;
+
+            public bool Equals(BitwiseEquatableByte other) => _value == other._value;
         }
     }
 }

@@ -204,6 +204,7 @@ namespace Internal.JitInterface
                 s_callbacks.getJitFlags = &_getJitFlags;
                 s_callbacks.getWasmTypeSymbol = &_getWasmTypeSymbol;
                 s_callbacks.getSpecialCopyHelper = &_getSpecialCopyHelper;
+                s_callbacks.getBitwiseEquatableInfo = &_getBitwiseEquatableInfo;
             }
 
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, byte> isIntrinsic;
@@ -390,6 +391,7 @@ namespace Internal.JitInterface
             public delegate* unmanaged<IntPtr, IntPtr*, CORJIT_FLAGS*, uint, uint> getJitFlags;
             public delegate* unmanaged<IntPtr, IntPtr*, CorInfoWasmType*, nuint, CORINFO_WASM_TYPE_SYMBOL_STRUCT_*> getWasmTypeSymbol;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_METHOD_STRUCT_*> getSpecialCopyHelper;
+            public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_METHOD_STRUCT_**, CORINFO_METHOD_STRUCT_**, CORINFO_METHOD_STRUCT_**, CorInfoBitwiseEquatable> getBitwiseEquatableInfo;
         }
 
         private static IntPtr GetUnmanagedCallbacks()
@@ -3098,6 +3100,21 @@ namespace Internal.JitInterface
             try
             {
                 return _this.getSpecialCopyHelper(type);
+            }
+            catch (Exception ex)
+            {
+                *ppException = _this.AllocException(ex);
+                return default;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static CorInfoBitwiseEquatable _getBitwiseEquatableInfo(IntPtr thisHandle, IntPtr* ppException, CORINFO_CLASS_STRUCT_* type, CORINFO_METHOD_STRUCT_** equalsMethod, CORINFO_METHOD_STRUCT_** comparerGetDefault, CORINFO_METHOD_STRUCT_** comparerEquals)
+        {
+            var _this = GetThis(thisHandle);
+            try
+            {
+                return _this.getBitwiseEquatableInfo(type, equalsMethod, comparerGetDefault, comparerEquals);
             }
             catch (Exception ex)
             {

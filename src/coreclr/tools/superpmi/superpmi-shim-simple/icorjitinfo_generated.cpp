@@ -1323,3 +1323,12 @@ CORINFO_METHOD_HANDLE interceptor_ICJI::getSpecialCopyHelper(
     return original_ICorJitInfo->getSpecialCopyHelper(type);
 }
 
+CorInfoBitwiseEquatable interceptor_ICJI::getBitwiseEquatableInfo(
+          CORINFO_CLASS_HANDLE type,
+          CORINFO_METHOD_HANDLE* equalsMethod,
+          CORINFO_METHOD_HANDLE* comparerGetDefault,
+          CORINFO_METHOD_HANDLE* comparerEquals)
+{
+    return original_ICorJitInfo->getBitwiseEquatableInfo(type, equalsMethod, comparerGetDefault, comparerEquals);
+}
+

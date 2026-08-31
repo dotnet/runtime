@@ -97,6 +97,14 @@ struct DLDL
     DWORDLONG B;
 };
 
+struct Agnostic_BitwiseEquatableInfo
+{
+    DWORD     result;
+    DWORDLONG equalsMethod;
+    DWORDLONG comparerGetDefault;
+    DWORDLONG comparerEquals;
+};
+
 struct Agnostic_CanInline
 {
     DWORD result;

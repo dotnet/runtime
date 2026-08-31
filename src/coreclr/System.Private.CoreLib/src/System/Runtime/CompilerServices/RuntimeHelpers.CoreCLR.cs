@@ -371,12 +371,7 @@ namespace System.Runtime.CompilerServices
         /// </para>
         /// </remarks>
         [Intrinsic]
-        internal static bool IsBitwiseEquatable<T>()
-        {
-            // The body of this function will be replaced by the EE.
-            // See getILIntrinsicImplementationForRuntimeHelpers for how this happens.
-            throw new InvalidOperationException();
-        }
+        internal static bool IsBitwiseEquatable<T>() => IsBitwiseEquatable<T>();
 
         [Intrinsic]
         internal static bool EnumEquals<T>(T x, T y) where T : struct, Enum

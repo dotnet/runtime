@@ -3304,6 +3304,470 @@ GenTree* Compiler::impCreateSpanIntrinsic(CORINFO_SIG_INFO* sig)
 //    identified as "must expand" if they are invoked from within their
 //    own method bodies.
 //
+namespace
+{
+class BitwiseEquatableScanner
+{
+    Compiler* const                   m_compiler;
+    ArrayStack<CORINFO_METHOD_HANDLE> m_scannedMethods;
+
+    static bool IsBitwiseComparableType(CorInfoType type)
+    {
+        switch (type)
+        {
+            case CORINFO_TYPE_BOOL:
+            case CORINFO_TYPE_CHAR:
+            case CORINFO_TYPE_BYTE:
+            case CORINFO_TYPE_UBYTE:
+            case CORINFO_TYPE_SHORT:
+            case CORINFO_TYPE_USHORT:
+            case CORINFO_TYPE_INT:
+            case CORINFO_TYPE_UINT:
+            case CORINFO_TYPE_LONG:
+            case CORINFO_TYPE_ULONG:
+            case CORINFO_TYPE_NATIVEINT:
+            case CORINFO_TYPE_NATIVEUINT:
+            case CORINFO_TYPE_PTR:
+                return true;
+
+            default:
+                return false;
+        }
+    }
+
+    bool TryReadBranch(
+        const BYTE* code, unsigned codeSize, unsigned& offset, BYTE shortOpcode, BYTE longOpcode, int& target)
+    {
+        if ((offset < codeSize) && (code[offset] == shortOpcode))
+        {
+            if ((offset + 2) > codeSize)
+            {
+                return false;
+            }
+
+            target = static_cast<int>(offset + 2) + getI1LittleEndian(code + offset + 1);
+            offset += 2;
+            return true;
+        }
+
+        if ((offset < codeSize) && (code[offset] == longOpcode))
+        {
+            if ((offset + 5) > codeSize)
+            {
+                return false;
+            }
+
+            target = static_cast<int>(offset + 5) + getI4LittleEndian(code + offset + 1);
+            offset += 5;
+            return true;
+        }
+
+        return false;
+    }
+
+    bool ResolveToken(const CORINFO_METHOD_INFO& methodInfo,
+                      CORINFO_METHOD_HANDLE      method,
+                      mdToken                    token,
+                      CorInfoTokenKind           kind,
+                      CORINFO_RESOLVED_TOKEN*    resolvedToken)
+    {
+        *resolvedToken              = {};
+        resolvedToken->tokenContext = MAKE_METHODCONTEXT(method);
+        resolvedToken->tokenScope   = methodInfo.scope;
+        resolvedToken->token        = token;
+        resolvedToken->tokenType    = kind;
+        m_compiler->info.compCompHnd->resolveToken(resolvedToken);
+        return true;
+    }
+
+    CorInfoBitwiseEquatable GetInfo(CORINFO_CLASS_HANDLE   type,
+                                    CORINFO_METHOD_HANDLE* equalsMethod,
+                                    CORINFO_METHOD_HANDLE* comparerGetDefault,
+                                    CORINFO_METHOD_HANDLE* comparerEquals)
+    {
+        return m_compiler->info.compCompHnd->getBitwiseEquatableInfo(type, equalsMethod, comparerGetDefault,
+                                                                     comparerEquals);
+    }
+
+    bool HaveSameMethod(CORINFO_METHOD_HANDLE left, CORINFO_METHOD_HANDLE right)
+    {
+        return (left == right) || ((left != nullptr) && (right != nullptr) &&
+                                   m_compiler->info.compCompHnd->haveSameMethodDefinition(left, right));
+    }
+
+    bool HaveSameType(CORINFO_CLASS_HANDLE left, CORINFO_CLASS_HANDLE right)
+    {
+        return (left == right) ||
+               ((left != nullptr) && (right != nullptr) &&
+                (m_compiler->info.compCompHnd->compareTypesForEquality(left, right) == TypeCompareState::Must));
+    }
+
+    bool IsBitwiseEquatable(CORINFO_CLASS_HANDLE type, CORINFO_METHOD_HANDLE expectedEquals = nullptr)
+    {
+        CORINFO_METHOD_HANDLE   equalsMethod;
+        CORINFO_METHOD_HANDLE   comparerGetDefault;
+        CORINFO_METHOD_HANDLE   comparerEquals;
+        CorInfoBitwiseEquatable result = GetInfo(type, &equalsMethod, &comparerGetDefault, &comparerEquals);
+
+        if ((expectedEquals != nullptr) && !HaveSameMethod(expectedEquals, equalsMethod))
+        {
+            return false;
+        }
+
+        if (result == CORINFO_BITWISE_EQUATABLE_TRUE)
+        {
+            return true;
+        }
+
+        if (result != CORINFO_BITWISE_EQUATABLE_NEEDS_METHOD_SCAN || equalsMethod == nullptr)
+        {
+            return false;
+        }
+
+        CORINFO_METHOD_INFO methodInfo;
+        if (!m_compiler->info.compCompHnd->getMethodInfo(equalsMethod, &methodInfo, MAKE_METHODCONTEXT(equalsMethod)))
+        {
+            return false;
+        }
+
+        CORINFO_METHOD_HANDLE scanMethod = equalsMethod;
+
+        if ((methodInfo.ILCodeSize == 13) && (methodInfo.ILCode[0] == CEE_LDARG_0) &&
+            (methodInfo.ILCode[1] == CEE_LDOBJ) && (methodInfo.ILCode[6] == CEE_LDARG_1) &&
+            (methodInfo.ILCode[7] == CEE_CALL) && (methodInfo.ILCode[12] == CEE_RET))
+        {
+            CORINFO_RESOLVED_TOKEN resolvedType;
+            CORINFO_RESOLVED_TOKEN resolvedMethod;
+            ResolveToken(methodInfo, equalsMethod, getU4LittleEndian(methodInfo.ILCode + 2), CORINFO_TOKENKIND_Class,
+                         &resolvedType);
+            ResolveToken(methodInfo, equalsMethod, getU4LittleEndian(methodInfo.ILCode + 8), CORINFO_TOKENKIND_Method,
+                         &resolvedMethod);
+
+            const char* methodName =
+                m_compiler->info.compCompHnd->getMethodNameFromMetadata(resolvedMethod.hMethod, nullptr, nullptr,
+                                                                        nullptr, 0);
+            unsigned methodAttribs = m_compiler->info.compCompHnd->getMethodAttribs(resolvedMethod.hMethod);
+
+            if ((resolvedType.hClass == type) && (resolvedMethod.hClass == type) &&
+                ((methodAttribs & CORINFO_FLG_STATIC) != 0) && (methodName != nullptr) &&
+                (strcmp(methodName, "op_Equality") == 0))
+            {
+                scanMethod = resolvedMethod.hMethod;
+                if (!m_compiler->info.compCompHnd->getMethodInfo(scanMethod, &methodInfo,
+                                                                 MAKE_METHODCONTEXT(scanMethod)))
+                {
+                    return false;
+                }
+            }
+        }
+
+        if (!ScanFieldwiseEqualsBody(type, scanMethod, methodInfo))
+        {
+            return false;
+        }
+
+        m_scannedMethods.Push(equalsMethod);
+        if (scanMethod != equalsMethod)
+        {
+            m_scannedMethods.Push(scanMethod);
+        }
+
+        return true;
+    }
+
+    bool GetFieldType(CORINFO_FIELD_HANDLE  field,
+                      CORINFO_CLASS_HANDLE  owner,
+                      CorInfoType*          fieldType,
+                      CORINFO_CLASS_HANDLE* fieldClass)
+    {
+        *fieldClass = nullptr;
+        *fieldType  = m_compiler->info.compCompHnd->getFieldType(field, fieldClass, owner);
+        return true;
+    }
+
+    bool MatchesPrimitiveClass(CorInfoType fieldType, CORINFO_CLASS_HANDLE type)
+    {
+        if (!IsBitwiseComparableType(fieldType))
+        {
+            return false;
+        }
+
+        if (m_compiler->info.compCompHnd->getTypeForPrimitiveValueClass(type) == fieldType)
+        {
+            return true;
+        }
+
+        CORINFO_CLASS_HANDLE underlyingType;
+        return (m_compiler->info.compCompHnd->isEnum(type, &underlyingType) == TypeCompareState::Must) &&
+               (m_compiler->info.compCompHnd->getTypeForPrimitiveValueClass(underlyingType) == fieldType);
+    }
+
+    bool ScanFieldwiseEqualsBody(CORINFO_CLASS_HANDLE       valueType,
+                                 CORINFO_METHOD_HANDLE      method,
+                                 const CORINFO_METHOD_INFO& methodInfo)
+    {
+        const BYTE*    code       = methodInfo.ILCode;
+        const unsigned codeSize   = methodInfo.ILCodeSize;
+        const unsigned fieldCount = m_compiler->info.compCompHnd->getClassNumInstanceFields(valueType);
+
+        if ((code == nullptr) || (fieldCount == 0))
+        {
+            return false;
+        }
+
+        ArrayStack<CORINFO_FIELD_HANDLE> comparedFields(m_compiler->getAllocator(CMK_ArrayStack));
+        unsigned                         offset       = 0;
+        int                              falseTarget  = -1;
+        bool                             sawFinalUnit = false;
+
+        while (!sawFinalUnit)
+        {
+            mdToken getDefaultToken = mdTokenNil;
+            if (((offset + 5) <= codeSize) && (code[offset] == CEE_CALL))
+            {
+                getDefaultToken = getU4LittleEndian(code + offset + 1);
+                offset += 5;
+            }
+
+            if (((offset + 6) > codeSize) || (code[offset] != CEE_LDARG_0))
+            {
+                return false;
+            }
+
+            BYTE leftLoad = code[offset + 1];
+            if ((leftLoad != CEE_LDFLD) && (leftLoad != CEE_LDFLDA))
+            {
+                return false;
+            }
+            if ((getDefaultToken != mdTokenNil) && (leftLoad != CEE_LDFLD))
+            {
+                return false;
+            }
+
+            mdToken leftFieldToken = getU4LittleEndian(code + offset + 2);
+            offset += 6;
+
+            if (((offset + 6) > codeSize) || (code[offset] != CEE_LDARG_1) || (code[offset + 1] != CEE_LDFLD))
+            {
+                return false;
+            }
+
+            mdToken rightFieldToken = getU4LittleEndian(code + offset + 2);
+            offset += 6;
+            if (leftFieldToken != rightFieldToken)
+            {
+                return false;
+            }
+
+            CORINFO_RESOLVED_TOKEN resolvedField;
+            ResolveToken(methodInfo, method, leftFieldToken, CORINFO_TOKENKIND_Field, &resolvedField);
+            if ((resolvedField.hField == nullptr) || (resolvedField.hClass != valueType) ||
+                m_compiler->info.compCompHnd->isFieldStatic(resolvedField.hField))
+            {
+                return false;
+            }
+
+            for (int i = 0; i < comparedFields.Height(); i++)
+            {
+                if (comparedFields.Bottom(i) == resolvedField.hField)
+                {
+                    return false;
+                }
+            }
+            comparedFields.Push(resolvedField.hField);
+
+            CORINFO_CLASS_HANDLE fieldClass;
+            CorInfoType          fieldType;
+            GetFieldType(resolvedField.hField, valueType, &fieldType, &fieldClass);
+
+            if ((getDefaultToken == mdTokenNil) && (leftLoad == CEE_LDFLD))
+            {
+                bool bitwiseComparable = IsBitwiseComparableType(fieldType);
+                if (!bitwiseComparable && (fieldClass != nullptr))
+                {
+                    bitwiseComparable = IsBitwiseComparableType(
+                        m_compiler->info.compCompHnd->getTypeForPrimitiveValueClass(fieldClass));
+                }
+                if (!bitwiseComparable)
+                {
+                    return false;
+                }
+
+                int target;
+                if (TryReadBranch(code, codeSize, offset, CEE_BNE_UN_S, CEE_BNE_UN, target))
+                {
+                    if (falseTarget == -1)
+                    {
+                        falseTarget = target;
+                    }
+                    else if (falseTarget != target)
+                    {
+                        return false;
+                    }
+                }
+                else if (((offset + 3) <= codeSize) && (code[offset] == CEE_PREFIX1) &&
+                         (code[offset + 1] == (CEE_CEQ & 0xFF)) && (code[offset + 2] == CEE_RET))
+                {
+                    offset += 3;
+                    sawFinalUnit = true;
+                }
+                else
+                {
+                    return false;
+                }
+
+                continue;
+            }
+
+            if (getDefaultToken != mdTokenNil)
+            {
+                if (((offset + 5) > codeSize) || (code[offset] != CEE_CALLVIRT))
+                {
+                    return false;
+                }
+
+                CORINFO_RESOLVED_TOKEN resolvedGetDefault;
+                CORINFO_RESOLVED_TOKEN resolvedComparerEquals;
+                ResolveToken(methodInfo, method, getDefaultToken, CORINFO_TOKENKIND_Method, &resolvedGetDefault);
+                ResolveToken(methodInfo, method, getU4LittleEndian(code + offset + 1), CORINFO_TOKENKIND_Method,
+                             &resolvedComparerEquals);
+
+                if (resolvedGetDefault.hClass != resolvedComparerEquals.hClass)
+                {
+                    return false;
+                }
+
+                CORINFO_CLASS_HANDLE comparisonType =
+                    m_compiler->info.compCompHnd->getTypeInstantiationArgument(resolvedGetDefault.hClass, 0);
+                if ((comparisonType == nullptr) ||
+                    ((fieldClass != nullptr) && !HaveSameType(fieldClass, comparisonType)) ||
+                    ((fieldClass == nullptr) && !MatchesPrimitiveClass(fieldType, comparisonType)))
+                {
+                    return false;
+                }
+
+                CORINFO_METHOD_HANDLE   fieldEquals;
+                CORINFO_METHOD_HANDLE   expectedGetDefault;
+                CORINFO_METHOD_HANDLE   expectedComparerEquals;
+                CorInfoBitwiseEquatable fieldResult =
+                    GetInfo(comparisonType, &fieldEquals, &expectedGetDefault, &expectedComparerEquals);
+                if (!HaveSameMethod(resolvedGetDefault.hMethod, expectedGetDefault) ||
+                    !HaveSameMethod(resolvedComparerEquals.hMethod, expectedComparerEquals) ||
+                    ((fieldResult != CORINFO_BITWISE_EQUATABLE_TRUE) &&
+                     ((fieldResult != CORINFO_BITWISE_EQUATABLE_NEEDS_METHOD_SCAN) ||
+                      !IsBitwiseEquatable(comparisonType, fieldEquals))))
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                if (((offset + 5) > codeSize) || (code[offset] != CEE_CALL))
+                {
+                    return false;
+                }
+
+                CORINFO_RESOLVED_TOKEN resolvedCallee;
+                ResolveToken(methodInfo, method, getU4LittleEndian(code + offset + 1), CORINFO_TOKENKIND_Method,
+                             &resolvedCallee);
+
+                CORINFO_CLASS_HANDLE comparisonType = fieldClass;
+                if (comparisonType == nullptr)
+                {
+                    if (!MatchesPrimitiveClass(fieldType, resolvedCallee.hClass))
+                    {
+                        return false;
+                    }
+                    comparisonType = resolvedCallee.hClass;
+                }
+
+                if (!IsBitwiseEquatable(comparisonType, resolvedCallee.hMethod))
+                {
+                    return false;
+                }
+            }
+
+            offset += 5;
+
+            int target;
+            if (TryReadBranch(code, codeSize, offset, CEE_BRFALSE_S, CEE_BRFALSE, target))
+            {
+                if (falseTarget == -1)
+                {
+                    falseTarget = target;
+                }
+                else if (falseTarget != target)
+                {
+                    return false;
+                }
+            }
+            else if ((offset < codeSize) && (code[offset] == CEE_RET))
+            {
+                offset++;
+                sawFinalUnit = true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        if (falseTarget != -1)
+        {
+            if ((static_cast<int>(offset) != falseTarget) || ((offset + 2) != codeSize) ||
+                (code[offset] != CEE_LDC_I4_0) || (code[offset + 1] != CEE_RET))
+            {
+                return false;
+            }
+        }
+        else if (offset != codeSize)
+        {
+            return false;
+        }
+
+        return comparedFields.Height() == static_cast<int>(fieldCount);
+    }
+
+    struct ScanArguments
+    {
+        BitwiseEquatableScanner* scanner;
+        CORINFO_CLASS_HANDLE     type;
+        bool                     result;
+    };
+
+    static void Scan(ScanArguments* scanArguments)
+    {
+        scanArguments->result = scanArguments->scanner->IsBitwiseEquatable(scanArguments->type);
+    }
+
+public:
+    explicit BitwiseEquatableScanner(Compiler* compiler)
+        : m_compiler(compiler)
+        , m_scannedMethods(compiler->getAllocator(CMK_ArrayStack))
+    {
+    }
+
+    bool IsBitwiseEquatableSafely(CORINFO_CLASS_HANDLE type)
+    {
+        ScanArguments arguments = {this, type, false};
+        if (!m_compiler->eeRunWithErrorTrap(Scan, &arguments) || !arguments.result)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < m_scannedMethods.Height(); i++)
+        {
+            m_compiler->info.compCompHnd->beginInlining(m_compiler->info.compMethodHnd, m_scannedMethods.Bottom(i));
+            m_compiler->info.compCompHnd->reportInliningDecision(m_compiler->info.compMethodHnd,
+                                                                 m_scannedMethods.Bottom(i), INLINE_PASS,
+                                                                 "field-wise equality scan");
+        }
+
+        return true;
+    }
+};
+} // namespace
+
 GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                                 CORINFO_METHOD_HANDLE   method,
                                 CORINFO_SIG_INFO*       sig,
@@ -3629,6 +4093,20 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
     {
         JITDUMP("\nExpanding RuntimeHelpers.IsRuntimeAsync to %s early\n", compIsAsync() ? "true" : "false");
         return compIsAsync() ? gtNewTrue() : gtNewFalse();
+    }
+
+    if (ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_IsBitwiseEquatable)
+    {
+        assert(sig->numArgs == 0);
+        assert(sig->sigInst.methInstCount == 1);
+        CORINFO_CLASS_HANDLE type = getMethodInstantiationArgument(method, 0);
+        if (type == nullptr)
+        {
+            type = sig->sigInst.methInst[0];
+        }
+        bool result = BitwiseEquatableScanner(this).IsBitwiseEquatableSafely(type);
+        JITDUMP("\nExpanding RuntimeHelpers.IsBitwiseEquatable to %s early\n", result ? "true" : "false");
+        return gtNewIconNode(result);
     }
 
     bool betterToExpand = false;
@@ -12315,6 +12793,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                             else if (strcmp(methodName, "IsKnownConstant") == 0)
                             {
                                 result = NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant;
+                            }
+                            else if (strcmp(methodName, "IsBitwiseEquatable") == 0)
+                            {
+                                result = NI_System_Runtime_CompilerServices_RuntimeHelpers_IsBitwiseEquatable;
                             }
                             else if (strcmp(methodName, "IsRuntimeAsync") == 0)
                             {

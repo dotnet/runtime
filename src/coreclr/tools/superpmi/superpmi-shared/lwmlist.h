@@ -178,6 +178,7 @@ LWM(CanValueClassInstancePointerEscape, DWORDLONG, DWORD)
 LWM(GetWasmWellKnownGlobals, DWORD, Agnostic_CORINFO_WASM_WELLKNOWN_GLOBALS)
 LWM(IsByRefLike, DWORDLONG, DWORD)
 LWM(IsSharedInst, DWORDLONG, DWORD)
+LWM(GetBitwiseEquatableInfo, DWORDLONG, Agnostic_BitwiseEquatableInfo)
 
 #undef LWM
 #undef DENSELWM
