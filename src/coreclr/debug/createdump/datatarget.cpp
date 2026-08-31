@@ -33,12 +33,6 @@ DumpDataTarget::QueryInterface(
         AddRef();
         return S_OK;
     }
-    else if (InterfaceId == IID_ICLRContractLocator)
-    {
-        *Interface = (ICLRContractLocator*)this;
-        AddRef();
-        return S_OK;
-    }
     else
     {
         *Interface = NULL;
@@ -230,12 +224,4 @@ DumpDataTarget::GetRuntimeBase(
 {
     *baseAddress = m_crashInfo.RuntimeBaseAddress();
     return S_OK;
-}
-
-HRESULT STDMETHODCALLTYPE
-DumpDataTarget::GetContractDescriptor(
-    /* [out] */ CLRDATA_ADDRESS* contractAddress)
-{
-    *contractAddress = m_crashInfo.ContractDescriptorAddress();
-    return *contractAddress != 0 ? S_OK : E_FAIL;
 }

@@ -303,6 +303,12 @@ CrashInfo::InitializeDAC(DumpType dumpType)
     }
     ReleaseHolder<DumpDataTarget> dataTarget{ new DumpDataTarget(*this) };
     PFN_CLRDataCreateInstance pfnCLRDataCreateInstance = nullptr;
+    typedef HRESULT (STDAPICALLTYPE *PFN_CLRDataCreateInstanceFromContractDescriptor)(
+        REFIID iid,
+        ICLRDataTarget* dataTarget,
+        CLRDATA_ADDRESS contractDescriptorAddress,
+        void** iface);
+    PFN_CLRDataCreateInstanceFromContractDescriptor pfnCLRDataCreateInstanceFromContractDescriptor = nullptr;
     PFN_DLLMAIN pfnDllMain = nullptr;
     bool result = false;
     HRESULT hr = S_OK;
@@ -349,10 +355,23 @@ CrashInfo::InitializeDAC(DumpType dumpType)
         printf_error("InitializeDAC: GetProcAddress(CLRDataCreateInstance) FAILED %s\n", dlerror());
         goto exit;
     }
-    hr = pfnCLRDataCreateInstance(__uuidof(ICLRDataEnumMemoryRegions), dataTarget, (void**)&m_pClrDataEnumRegions);
+    pfnCLRDataCreateInstanceFromContractDescriptor =
+        (PFN_CLRDataCreateInstanceFromContractDescriptor)dlsym(m_dacModule, "CLRDataCreateInstanceFromContractDescriptor");
+    if (pfnCLRDataCreateInstanceFromContractDescriptor != nullptr)
+    {
+        hr = pfnCLRDataCreateInstanceFromContractDescriptor(
+            __uuidof(ICLRDataEnumMemoryRegions),
+            dataTarget,
+            m_contractDescriptorAddress,
+            (void**)&m_pClrDataEnumRegions);
+    }
+    else
+    {
+        hr = pfnCLRDataCreateInstance(__uuidof(ICLRDataEnumMemoryRegions), dataTarget, (void**)&m_pClrDataEnumRegions);
+    }
     if (FAILED(hr))
     {
-        printf_error("InitializeDAC: CLRDataCreateInstance(ICLRDataEnumMemoryRegions) FAILED %s (%08x)\n", GetHResultString(hr), hr);
+        printf_error("InitializeDAC: CreateInstance(ICLRDataEnumMemoryRegions) FAILED %s (%08x)\n", GetHResultString(hr), hr);
         goto exit;
     }
     hr = pfnCLRDataCreateInstance(__uuidof(IXCLRDataProcess), dataTarget, (void**)&m_pClrDataProcess);

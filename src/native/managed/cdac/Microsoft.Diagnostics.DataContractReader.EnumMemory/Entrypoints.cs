@@ -15,6 +15,27 @@ internal static class Entrypoints
     [UnmanagedCallersOnly(EntryPoint = "CLRDataCreateInstance")]
     private static unsafe int CLRDataCreateInstance(Guid* pIID, IntPtr pDataTarget, void** iface)
     {
+        return CreateInstance(pIID, pDataTarget, contractAddress: 0, iface);
+    }
+
+    [UnmanagedCallersOnly(EntryPoint = "CLRDataCreateInstanceFromContractDescriptor")]
+    private static unsafe int CLRDataCreateInstanceFromContractDescriptor(
+        Guid* pIID,
+        IntPtr pDataTarget,
+        ulong contractAddress,
+        void** iface)
+    {
+        if (iface != null)
+            *iface = null;
+
+        if (contractAddress == 0)
+            return HResults.E_INVALIDARG;
+
+        return CreateInstance(pIID, pDataTarget, contractAddress, iface);
+    }
+
+    private static unsafe int CreateInstance(Guid* pIID, IntPtr pDataTarget, ulong contractAddress, void** iface)
+    {
         if (pIID == null || pDataTarget == IntPtr.Zero || iface == null)
             return HResults.E_INVALIDARG;
 
@@ -28,13 +49,7 @@ internal static class Entrypoints
             if (!RuntimeModuleInfo.TryCreate(dataTarget, out RuntimeModuleInfo runtimeModule))
                 return HResults.E_FAIL;
 
-            ulong contractAddress;
-            if (dataTarget is ICLRContractLocator contractLocator)
-            {
-                if (contractLocator.GetContractDescriptor(&contractAddress) < 0)
-                    contractAddress = 0;
-            }
-            else if (!runtimeModule.TryGetExport(
+            if (contractAddress == 0 && !runtimeModule.TryGetExport(
                 RuntimeModuleInfo.ContractDescriptorSymbolName,
                 out contractAddress))
             {
@@ -44,7 +59,7 @@ internal static class Entrypoints
             if (contractAddress == 0)
                 return HResults.E_FAIL;
 
-            var enumerator = new MemoryRegionEnumerator(dataTarget, contractAddress, runtimeModule);
+            MemoryRegionEnumerator enumerator = new(dataTarget, contractAddress, runtimeModule);
             *iface = ComInterfaceMarshaller<ICLRDataEnumMemoryRegions>.ConvertToUnmanaged(enumerator);
             return 0;
         }
