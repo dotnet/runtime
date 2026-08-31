@@ -48,12 +48,14 @@ namespace System.Diagnostics
         internal static string? FindProgramInPath(string program)
         {
             ValueStringBuilder pathBuilder = new(stackalloc char[256]);
-#pragma warning disable CS0728 // pathBuilder is intentionally mutated via ref; disposal still targets this local
-            using (pathBuilder)
+            try
             {
                 return FindProgramInPath(program, ref pathBuilder);
             }
-#pragma warning restore CS0728
+            finally
+            {
+                pathBuilder.Dispose();
+            }
         }
 
         private static string? FindProgramInPath(string program, ref ValueStringBuilder pathBuilder)
@@ -368,8 +370,7 @@ namespace System.Diagnostics
             // Then check the executable's directory
             string? path = Environment.ProcessPath;
             ValueStringBuilder pathBuilder = new(stackalloc char[256]);
-#pragma warning disable CS0728 // pathBuilder is intentionally mutated via ref; disposal still targets this local
-            using (pathBuilder)
+            try
             {
                 if (!string.IsNullOrEmpty(path))
                 {
@@ -390,7 +391,10 @@ namespace System.Diagnostics
                 // Then check each directory listed in the PATH environment variables
                 return FindProgramInPath(filename, ref pathBuilder);
             }
-#pragma warning restore CS0728
+            finally
+            {
+                pathBuilder.Dispose();
+            }
         }
 
         /// <summary>Parses a command-line argument string into a list of arguments.</summary>
