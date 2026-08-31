@@ -42,9 +42,20 @@ public class Program
         {
             GC.Collect(2, GCCollectionMode.Forced, blocking: false, compacting: false);
 
-            if (SpinWait.SpinUntil(() => GC.GetGCMemoryInfo(GCKind.Background).Index > initialBackgroundGcIndex, TimeSpan.FromMilliseconds(500)))
+            // Poll with a short sleep rather than a tight spin. GC.GetGCMemoryInfo(GCKind.Background)
+            // reads state that the GC engine updates non-atomically as a background collection
+            // finishes; querying it as fast as possible increases the odds of observing a
+            // transiently inconsistent record and hitting an unrelated GC-engine assert in Checked
+            // builds. A short delay between polls avoids that without noticeably slowing detection.
+            Stopwatch pollStopwatch = Stopwatch.StartNew();
+            while (pollStopwatch.Elapsed < TimeSpan.FromMilliseconds(500))
             {
-                return;
+                if (GC.GetGCMemoryInfo(GCKind.Background).Index > initialBackgroundGcIndex)
+                {
+                    return;
+                }
+
+                Thread.Sleep(15);
             }
         }
 
