@@ -51,6 +51,7 @@ stimuli:
          set -o pipefail
          curl -fsS "$url"
          ```
+         Define the complete URL as a literal and invoke `curl` in the same shell call. Never persist a URL for a later shell call or load one through a file, standard input, command substitution, backticks, `xargs`, a client config file, or a persisted shell script.
       2. Open that build's timeline at `/_apis/build/builds/{id}/timeline?api-version=7.1`, pick a failed leg, and read its log at `/_apis/build/builds/{id}/logs/{logId}?api-version=7.1` to extract a concrete error or assertion signature. Save the leg log you extract from as `failure.log` under /tmp and grep it for your signature to get the hit count. Select assertion text, an exception message, or a diagnostic that distinguishes the failure. A `Failed test:` or `[FAIL]` line whose variable content is only a test path/name is forbidden even when it is stable; if the log contains no better signature, continue to another real failure.
       3. Before filing, follow the shared KBE lookup instructions to check whether an equivalent open KBE or in-flight fix already exists. Use the GitHub MCP `search_issues` tool for every issue search and `search_pull_requests` for every PR search, always passing `owner: dotnet` and `repo: runtime` as tool arguments. Run separate searches whose queries start with:
          - `is:open label:"Known Build Error" "<signature-text>"` for the extracted assertion or exception text;
@@ -136,6 +137,17 @@ stimuli:
           disallowed:
             - name: '^(bash|powershell)$'
               command: '(?is)(\bgh\s+(search|issue|pr|api)\b|\b(?:curl|wget|Invoke-WebRequest|Invoke-RestMethod|iwr|irm)\b.*(?:[a-z0-9-]+\.)*(?:github\.com|githubusercontent\.com)\b|(?:[a-z0-9-]+\.)*(?:github\.com|githubusercontent\.com)\b.*\b(?:curl|wget|Invoke-WebRequest|Invoke-RestMethod|iwr|irm)\b)'
+
+      - type: tool-calls
+        name: no-indirect-network-fetches
+        config:
+          disallowed:
+            - name: '^(bash|powershell)$'
+              command: '(?s)^(?!.*\b(?:curl|wget|Invoke-WebRequest|Invoke-RestMethod|iwr|irm)\b[^|;&\r\n]*https?://)(?!.*\b([a-z_][a-z0-9_]*)\s*=\s*["'']?https?://[^\s"'']+["'']?[\s\S]*\b(?:curl|wget|Invoke-WebRequest|Invoke-RestMethod|iwr|irm)\b[^|;&\r\n]*(?:\$\{\1\}|\$\1\b))[\s\S]*\b(?:curl|wget|Invoke-WebRequest|Invoke-RestMethod|iwr|irm)\b'
+            - name: '^(bash|powershell)$'
+              command: '(?s)(\b(?:curl|wget|Invoke-WebRequest|Invoke-RestMethod|iwr|irm)\b[^|;&\r\n]*(?:\$\(|`)|\bcurl\b[^|;&\r\n]*(?:--config(?:[=\s]|$)|-K(?:\S+|\s|$))|\bwget\b[^|;&\r\n]*(?:--input-file(?:[=\s]|$)|-i(?:\s|$))|\bxargs\b[^|;&\r\n]*\b(?:curl|wget)\b)'
+            - name: '^(bash|powershell)$'
+              command: '(?im)(\b(?:bash|sh)\b(?:\s+(?:--|-[a-zA-Z]+))*\s+(?:/tmp/|\./|\.\./)\S+|(?:\bsource|(?:^|[\s"'';&])\.)\s+(?:/tmp/|\./|\.\./)\S+|\b(?:bash|sh)\b[^;\r\n]*\s-c\s+["'']\s*(?:/tmp/|\./|\.\./)\S+)'
 
       - type: prompt
         name: kbe-format-conformant

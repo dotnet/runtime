@@ -404,11 +404,11 @@ These look like permission errors but are physical.
   curl -fsS "$url" | jq '.' | tee /tmp/gh-aw/agent/builds.json | jq -r '.value[0] | "\(.id) \(.result)"'
   ```
 
-  Do NOT retry an inline URL hoping the rejection clears. Switch to the variable pattern immediately.
+  Do NOT retry an inline URL hoping the rejection clears. Switch to the variable pattern immediately. Define the complete URL as a literal and invoke `curl` in the same shell call; never load a URL from a file, standard input, command substitution, backticks, `xargs`, a client config file, or a persisted shell script.
 
 - **Every piped shell command starts with `set -o pipefail`.** Do not redirect or suppress stderr. Verify the expected output shape before treating an empty result as valid.
 - **No `>` or `-o` redirection.** Use `| tee /path/to/file`.
-- **No `$(...)` or `${var@P}`.** Compose via `xargs -I{}` or by reading files inline.
+- **No `$(...)` or `${var@P}`.** Read persisted values in a separate shell call, then copy their literal values into later commands.
 - **OData `$top` must be encoded as `%24top` in URLs.**
 - **Bash allowlist** (per the frontmatter `tools.bash`): `dotnet`, `git`, `find`, `ls`, `cat`, `grep`, `head`, `tail`, `wc`, `curl`, `jq`, `tee`, `sed`, `awk`, `tr`, `cut`, `sort`, `uniq`, `xargs`, `echo`, `date`, `mkdir`, `test`, `env`, `basename`, `dirname`, `bash`, `sh`, `chmod`, `set`. No `gh`, no `pwsh`, no `python`.
 - **Each bash call runs in a fresh subshell.** Persist state to `/tmp/gh-aw/agent/<file>`.
