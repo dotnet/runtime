@@ -873,35 +873,40 @@ namespace System.Text.Json.SourceGeneration
         {
             Debug.Assert(closedType.TypeKind is TypeKind.Class);
 
-            INamedTypeSymbol baseDefinition = closedType.OriginalDefinition;
+            INamedTypeSymbol[] enumeratedTypes = EnumerateNamedTypes(closedType.ContainingModule.GlobalNamespace).ToArray();
             List<ITypeSymbol>? derivedTypes = null;
+            GetClosedDerivedTypesCore(closedType, enumeratedTypes, ref derivedTypes);
+            return derivedTypes;
 
-            foreach (INamedTypeSymbol candidate in EnumerateNamedTypes(closedType.ContainingModule.GlobalNamespace))
+            static void GetClosedDerivedTypesCore(
+                INamedTypeSymbol closedType,
+                INamedTypeSymbol[] enumeratedTypes,
+                ref List<ITypeSymbol>? derivedTypes)
             {
-                if (candidate.BaseType is { } candidateBase &&
-                    SymbolEqualityComparer.Default.Equals(candidateBase.OriginalDefinition, baseDefinition))
-                {
-                    INamedTypeSymbol derivedType = candidate.IsGenericType
-                        ? candidate.ConstructUnboundGenericType()
-                        : candidate;
+                INamedTypeSymbol baseDefinition = closedType.OriginalDefinition;
 
-                    if (candidate.IsClosedType())
+                foreach (INamedTypeSymbol candidate in enumeratedTypes)
+                {
+                    if (candidate.BaseType is { } candidateBase &&
+                        SymbolEqualityComparer.Default.Equals(candidateBase.OriginalDefinition, baseDefinition))
                     {
                         derivedTypes ??= new();
 
-                        if (derivedType.GetClosedDerivedTypes() is { } nestedDerivedTypes)
+                        INamedTypeSymbol derivedType = candidate.IsGenericType
+                            ? candidate.ConstructUnboundGenericType()
+                            : candidate;
+
+                        if (candidate.IsClosedType())
                         {
-                            derivedTypes.AddRange(nestedDerivedTypes);
+                            GetClosedDerivedTypesCore(derivedType, enumeratedTypes, ref derivedTypes);
                         }
-
-                        continue;
+                        else
+                        {
+                            derivedTypes.Add(derivedType);
+                        }
                     }
-
-                    (derivedTypes ??= new()).Add(derivedType);
                 }
             }
-
-            return derivedTypes;
 
             static IEnumerable<INamedTypeSymbol> EnumerateNamedTypes(INamespaceSymbol namespaceSymbol)
             {
