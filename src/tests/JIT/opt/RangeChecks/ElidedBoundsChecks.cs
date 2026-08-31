@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
@@ -64,6 +65,20 @@ public class ElidedBoundsChecks
         // ARM64-NOT: CORINFO_HELP_RNGCHKFAIL
         ReadOnlySpan<byte> span = new byte[] { 1, 2, 3, 4 };
         return span[i & (span.Length - 1)];
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void FillPairs(Span<int> buffer)
+    {
+        // X64-NOT: CORINFO_HELP_RNGCHKFAIL
+        // ARM64-NOT: CORINFO_HELP_RNGCHKFAIL
+        for (int i = buffer.Length; i > 2;)
+        {
+            i -= 2;
+            Span<int> pair = MemoryMarshal.CreateSpan(ref buffer[i], 2);
+            pair[0] = i;
+            pair[1] = i + 1;
+        }
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -240,6 +255,22 @@ public class ElidedBoundsChecks
 
         if (AndByLength(255) != 4)
             return 0;
+
+        for (int length = 2; length <= 6; length += 2)
+        {
+            int[] pairs = new int[length];
+            Array.Fill(pairs, -1);
+            FillPairs(pairs);
+
+            for (int i = 0; i < length; i++)
+            {
+                int expected = i < 2 ? -1 : i;
+                if (pairs[i] != expected)
+                {
+                    return 0;
+                }
+            }
+        }
 
         if (IndexPlusConstLessThanLen("%FF".AsSpan()) != true)
             return 0;
