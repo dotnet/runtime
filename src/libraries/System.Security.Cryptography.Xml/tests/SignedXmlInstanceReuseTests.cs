@@ -313,7 +313,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetFramework))]
-        public void MultipleReferencesAndObjects_BeforeCompute_Work()
+        public void MultipleReferencesAndObjects_BeforeCompute_Works()
         {
             using (RSA key = RSA.Create())
             {
