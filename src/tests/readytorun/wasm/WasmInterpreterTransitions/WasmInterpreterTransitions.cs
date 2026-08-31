@@ -31,6 +31,8 @@ public class WasmInterpreterTransitions
     private const int B = 0x55667788;
     private const int C = 0x1234567;
     private const long Wide = 0x1122334455667788;
+    private const float F32 = 3.5f;
+    private const double F64 = 6.25;
 
     public struct S8
     {
@@ -50,6 +52,18 @@ public class WasmInterpreterTransitions
         public long A;
         public long B;
     }
+
+    public struct S1
+    {
+        public byte A;
+    }
+
+    public struct S2
+    {
+        public short A;
+    }
+
+    private delegate S2 ReturnsS2Delegate(int a);
 
     private readonly int _state = C;
 
@@ -88,6 +102,14 @@ public class WasmInterpreterTransitions
         Assert.Equal(A + B + C, InterpretedStaticSumsFour(A, B, C, 0));
         Assert.Equal(A, self.InterpretedInstanceMixedScalars(1.5f, 2.5, Wide));
 
+        // R2R -> interpreted, floating-point returns. A float/double return travels back through
+        // the thunk's return buffer and is reloaded with an f32/f64 load; a wrong width or an
+        // integer reload silently corrupts it. The runtime's hand-written table had no such shape.
+        Assert.Equal(F32, InterpretedStaticReturnsF32(A));
+        Assert.Equal(F32, self.InterpretedInstanceReturnsF32());
+        Assert.Equal(F64, InterpretedStaticReturnsF64(A));
+        Assert.Equal(F64, self.InterpretedInstanceReturnsF64(F32));
+
         // A struct argument arrives as the address of its interpreter stack slot.
         Assert.Equal(A + B, self.InterpretedInstanceTakesS8(new S8 { A = A, B = B }));
 
@@ -101,6 +123,24 @@ public class WasmInterpreterTransitions
         S16 fromInterpreter = self.InterpretedCallsR2RReturningS16();
         Assert.Equal(Wide, fromInterpreter.A);
         Assert.Equal(C, fromInterpreter.B);
+
+        // interpreted -> R2R, floating-point returns over the same boundary.
+        Assert.Equal(F32, self.InterpretedCallsR2RReturningF32());
+        Assert.Equal(F64, self.InterpretedCallsR2RReturningF64());
+
+        // 1- and 2-byte struct shapes (S1 / S2). These small structs travel by value in a single
+        // slot and are the 'S1'/'S2' encodings the runtime spells for the return buffer and by-ref
+        // argument; the hand-written table only ever had 8-byte forms.
+        Assert.Equal((byte)A, InterpretedStaticReturnsS1(A).A);          // I S1 i p
+        s_sideEffect = 0;
+        self.InterpretedInstanceTakesIntAndS2(A, new S2 { A = (short)B }); // I v T i S2 p
+        Assert.Equal(A + (short)B, s_sideEffect);
+
+        // R2R reaches an interpreted method through a delegate: its entrypoint is materialized as a
+        // native function pointer via GetMultiCallableAddrOfCode, which is the path that needs the
+        // R2R-to-interpreter thunk independent of any direct call. The target returns S2 from an
+        // instance method (I S2 T i p).
+        Assert.Equal((short)(A + C), self.R2RInvokesInterpretedViaDelegate().A);
     }
 
     private static int s_sideEffect;
@@ -143,6 +183,22 @@ public class WasmInterpreterTransitions
 
     [BypassReadyToRun]
     [MethodImpl(MethodImplOptions.NoInlining)]
+    private static float InterpretedStaticReturnsF32(int a) => a == A ? F32 : 0f;
+
+    [BypassReadyToRun]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private float InterpretedInstanceReturnsF32() => _state == C ? F32 : 0f;
+
+    [BypassReadyToRun]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static double InterpretedStaticReturnsF64(int a) => a == A ? F64 : 0.0;
+
+    [BypassReadyToRun]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private double InterpretedInstanceReturnsF64(float f) => f == F32 ? F64 : 0.0;
+
+    [BypassReadyToRun]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private int InterpretedInstanceTakesS8(S8 value) => value.A + value.B;
 
     [BypassReadyToRun]
@@ -157,9 +213,44 @@ public class WasmInterpreterTransitions
     [MethodImpl(MethodImplOptions.NoInlining)]
     private S16 InterpretedCallsR2RReturningS16() => R2RInstanceReturnsS16();
 
+    [BypassReadyToRun]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private float InterpretedCallsR2RReturningF32() => R2RInstanceReturnsF32();
+
+    [BypassReadyToRun]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private double InterpretedCallsR2RReturningF64() => R2RInstanceReturnsF64();
+
+    [BypassReadyToRun]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static S1 InterpretedStaticReturnsS1(int a) => new S1 { A = (byte)a };
+
+    [BypassReadyToRun]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private void InterpretedInstanceTakesIntAndS2(int a, S2 s) => s_sideEffect = a + s.A;
+
+    [BypassReadyToRun]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private S2 InterpretedInstanceReturnsS2(int a) => new S2 { A = (short)(a + _state) };
+
+    // R2R code: takes a delegate to the interpreted method above and invokes it. Creating the
+    // delegate takes the interpreted method's address, so its entrypoint must be callable from R2R.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private S2 R2RInvokesInterpretedViaDelegate()
+    {
+        ReturnsS2Delegate d = InterpretedInstanceReturnsS2;
+        return d(A);
+    }
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     private int R2RInstanceReturnsI32(int a) => a + _state;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private S16 R2RInstanceReturnsS16() => new S16 { A = Wide, B = _state };
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private float R2RInstanceReturnsF32() => _state == C ? F32 : 0f;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private double R2RInstanceReturnsF64() => _state == C ? F64 : 0.0;
 }
