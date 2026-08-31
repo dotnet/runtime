@@ -6,6 +6,7 @@ using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Security.Cryptography;
 using System.Linq;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
@@ -21,16 +22,65 @@ namespace ILCompiler.ObjectWriter
     {
         public static void EmitObject(string objectFilePath, IReadOnlyCollection<DependencyNode> nodes, NodeFactory factory, ObjectWritingOptions options, IObjectDumper dumper, Logger logger)
         {
+            EmitObjectForIncrementalCompilation(
+                objectFilePath,
+                nodes,
+                factory,
+                options,
+                dumper,
+                logger,
+                recordIncrementalNode: null,
+                completeIncrementalLayout: null,
+                out _,
+                out _);
+        }
+
+        internal static void EmitObjectForIncrementalCompilation(
+            string objectFilePath,
+            IReadOnlyCollection<DependencyNode> nodes,
+            NodeFactory factory,
+            ObjectWritingOptions options,
+            IObjectDumper dumper,
+            Logger logger,
+            Action<object, int, long, object, bool> recordIncrementalNode,
+            Action<Func<int, long, int, long?>> completeIncrementalLayout,
+            out long objectLength,
+            out byte[] objectHash)
+        {
             var stopwatch = Stopwatch.StartNew();
 
             ObjectWriter objectWriter =
                 factory.Target.IsApplePlatform ? new MachObjectWriter(factory, options) :
-                factory.Target.OperatingSystem == TargetOS.Windows ? new CoffObjectWriter(factory, options) :
+                factory.Target.OperatingSystem == TargetOS.Windows ? new CoffObjectWriter(
+                    factory,
+                    options,
+                    recordIncrementalNode: recordIncrementalNode,
+                    completeIncrementalLayout: completeIncrementalLayout) :
                 factory.Target.Architecture == TargetArchitecture.Wasm32 ? new WasmRelocatableObjectWriter(factory, options) :
                 new ElfObjectWriter(factory, options);
 
-            using Stream outputFileStream = new FileStream(objectFilePath, FileMode.Create);
+            bool incrementalEmission =
+                recordIncrementalNode is not null ||
+                completeIncrementalLayout is not null;
+            if ((recordIncrementalNode is null) != (completeIncrementalLayout is null))
+                throw new ArgumentException("Incremental object-emission callbacks must be provided together.");
+
+            using FileStream outputFileStream = incrementalEmission ?
+                new FileStream(objectFilePath, FileMode.Create, FileAccess.ReadWrite, FileShare.None) :
+                new FileStream(objectFilePath, FileMode.Create);
             objectWriter.EmitObject(outputFileStream, nodes, dumper, logger);
+            if (incrementalEmission)
+            {
+                outputFileStream.Flush(flushToDisk: true);
+                outputFileStream.Position = 0;
+                objectLength = outputFileStream.Length;
+                objectHash = SHA256.HashData(outputFileStream);
+            }
+            else
+            {
+                objectLength = 0;
+                objectHash = null;
+            }
 
             stopwatch.Stop();
             if (logger.IsVerbose)

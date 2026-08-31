@@ -19,6 +19,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="ILCompiler.Compiler.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\ILCompiler.MetadataTransform\ILCompiler.MetadataTransform.csproj" />
     <ProjectReference Include="..\ILCompiler.DependencyAnalysisFramework\ILCompiler.DependencyAnalysisFramework.csproj" />
     <ProjectReference Include="..\ILCompiler.Compiler\ILCompiler.Compiler.csproj" />
@@ -28,9 +32,17 @@
   <ItemGroup>
     <Compile Include="Compiler\DependencyAnalysis\MethodCodeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\RyuJitNodeFactory.cs" />
+    <Compile Include="Compiler\IncrementalBodyUpdate.cs" />
+    <Compile Include="Compiler\IncrementalCodeStateValidator.cs" />
+    <Compile Include="Compiler\IncrementalCompilationOptions.cs" />
+    <Compile Include="Compiler\IncrementalObjectPatch.cs" />
     <Compile Include="Compiler\ProfileDataManager.cs" />
+    <Compile Include="Compiler\RyuJitCompilation.Incremental.cs" />
     <Compile Include="Compiler\RyuJitCompilation.cs" />
     <Compile Include="Compiler\RyuJitCompilationBuilder.cs" />
+    <Compile Include="..\ILCompiler\IncrementalFailureContract.cs">
+      <Link>Compiler\IncrementalFailureContract.cs</Link>
+    </Compile>
     <Compile Include="JitInterface\CorInfoImpl.RyuJit.cs" />
   </ItemGroup>
 

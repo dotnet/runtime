@@ -62,8 +62,18 @@ namespace ILCompiler.ObjectWriter
         private static readonly ObjectNodeSection DebugTypesSection = new ObjectNodeSection(".debug$T", SectionType.ReadOnly);
         private static readonly ObjectNodeSection DebugSymbolSection = new ObjectNodeSection(".debug$S", SectionType.ReadOnly);
 
-        public CoffObjectWriter(NodeFactory factory, ObjectWritingOptions options, OutputInfoBuilder outputInfoBuilder = null)
-            : base(factory, options, outputInfoBuilder)
+        public CoffObjectWriter(
+            NodeFactory factory,
+            ObjectWritingOptions options,
+            OutputInfoBuilder outputInfoBuilder = null,
+            Action<object, int, long, object, bool> recordIncrementalNode = null,
+            Action<Func<int, long, int, long?>> completeIncrementalLayout = null)
+            : base(
+                factory,
+                options,
+                outputInfoBuilder,
+                recordIncrementalNode,
+                completeIncrementalLayout)
         {
             _machine = factory.Target.Architecture switch
             {
@@ -479,6 +489,32 @@ namespace ILCompiler.ObjectWriter
 
             // Write string table
             stringTable.Write(outputFileStream);
+        }
+
+        private protected override bool TryGetObjectFileRange(
+            int sectionIndex,
+            long sectionOffset,
+            int size,
+            out long fileOffset)
+        {
+            fileOffset = 0;
+            if ((uint)sectionIndex >= (uint)_sections.Count ||
+                sectionOffset < 0 ||
+                size < 0)
+            {
+                return false;
+            }
+
+            CoffSectionHeader header = _sections[sectionIndex].Header;
+            if (header.PointerToRawData == 0 ||
+                sectionOffset > header.SizeOfRawData ||
+                size > header.SizeOfRawData - sectionOffset)
+            {
+                return false;
+            }
+
+            fileOffset = checked(header.PointerToRawData + sectionOffset);
+            return true;
         }
 
         protected struct CoffHeader

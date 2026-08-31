@@ -4,6 +4,9 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
+using System.Reflection;
+using System.Runtime.ExceptionServices;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -20,7 +23,7 @@ using Internal.JitInterface;
 
 namespace ILCompiler
 {
-    public sealed class RyuJitCompilation : Compilation
+    public sealed partial class RyuJitCompilation : Compilation
     {
         private readonly ConditionalWeakTable<Thread, CorInfoImpl> _corinfos = new ConditionalWeakTable<Thread, CorInfoImpl>();
         internal readonly RyuJitCompilationOptions _compilationOptions;
@@ -29,6 +32,11 @@ namespace ILCompiler
         private readonly MethodImportationErrorProvider _methodImportationErrorProvider;
         private readonly ReadOnlyFieldPolicy _readOnlyFieldPolicy;
         private readonly int _parallelism;
+        private readonly ILProvider _incrementalBaseILProvider;
+        private ILProvider _incrementalCurrentILProvider;
+        private bool _incrementalOutputsPublished;
+        private readonly IncrementalCompilationOptions _incrementalOptions;
+        private readonly string _incrementalConfigurationDescription;
 
         public InstructionSetSupport InstructionSetSupport { get; }
 
@@ -48,7 +56,9 @@ namespace ILCompiler
             MethodLayoutAlgorithm methodLayoutAlgorithm,
             FileLayoutAlgorithm fileLayoutAlgorithm,
             int parallelism,
-            string orderFile)
+            string orderFile,
+            IncrementalCompilationOptions incrementalOptions,
+            string incrementalConfigurationDescription)
             : base(dependencyGraph, nodeFactory, roots, ilProvider, debugInformationProvider, inliningPolicy, logger)
         {
             _compilationOptions = options;
@@ -63,6 +73,9 @@ namespace ILCompiler
             _parallelism = parallelism;
 
             _fileLayoutOptimizer = new FileLayoutOptimizer(logger, methodLayoutAlgorithm, fileLayoutAlgorithm, profileDataManager, nodeFactory, orderFile);
+            _incrementalBaseILProvider = new BaselineILProvider(this);
+            _incrementalOptions = incrementalOptions;
+            _incrementalConfigurationDescription = incrementalConfigurationDescription;
         }
 
         public ProfileDataManager ProfileData => _profileDataManager;
@@ -116,7 +129,192 @@ namespace ILCompiler
             if ((_compilationOptions & RyuJitCompilationOptions.ControlFlowGuardAnnotations) != 0)
                 options |= ObjectWritingOptions.ControlFlowGuard;
 
-            ObjectWriter.ObjectWriter.EmitObject(outputFile, nodes, NodeFactory, options, dumper, _logger);
+            if (_incrementalOptions is null)
+            {
+                ObjectWriter.ObjectWriter.EmitObject(outputFile, nodes, NodeFactory, options, dumper, _logger);
+                return;
+            }
+
+            if (!IncrementalCompilationSession.TryPrepare(
+                this,
+                outputFile,
+                nodes,
+                options,
+                dumper,
+                out IncrementalCompilationSession session,
+                out string reason))
+            {
+                throw new IncrementalCompilationException(reason);
+            }
+
+            using (session)
+            {
+                var stagedObjects = new List<IncrementalStagedObject>();
+                try
+                {
+                    EmitIncrementalObject(
+                        outputFile,
+                        nodes,
+                        options,
+                        dumper,
+                        session.Layout,
+                        out long emittedObjectLength,
+                        out byte[] emittedObjectHash);
+
+                    if (!session.TryAttachBaseline(
+                        outputFile,
+                        emittedObjectLength,
+                        emittedObjectHash,
+                        out reason))
+                    {
+                        throw new IncrementalCompilationException(reason);
+                    }
+
+                    for (int i = 0; i < _incrementalOptions.Updates.Length; i++)
+                    {
+                        IncrementalUpdateResult result = session.EmitUpdate(
+                            i,
+                            out IncrementalStagedObject stagedObject);
+                        if (!result.Succeeded)
+                            throw new IncrementalCompilationException(result.Reason);
+                        stagedObjects.Add(stagedObject);
+
+                        _logger.LogMessage(
+                            $"Incremental update {i + 1} staged: " +
+                            $"{result.ChangedMethodCount} changed definitions, " +
+                            $"{result.RecompiledMethodCount} recompiled nodes, " +
+                            $"{result.PatchedByteCount} patched bytes.");
+                    }
+
+                    TypeSystemContext.LogWarnings(_logger);
+                    if (_logger.HasLoggedErrors)
+                    {
+                        throw new IncrementalCompilationException(
+                            "compiler diagnostics prevent incremental output publication");
+                    }
+
+                    foreach (IncrementalStagedObject stagedObject in stagedObjects)
+                    {
+                        if (!stagedObject.TryPublish(out reason))
+                        {
+                            session.Poison();
+                            throw new IncrementalCompilationException(
+                                $"incremental-output-publication-failed:{reason}");
+                        }
+                    }
+
+                    _incrementalOutputsPublished = true;
+                    _logger.LogMessage("All incremental outputs were published.");
+                    stagedObjects.Clear();
+                }
+                catch (IncrementalCompilationException ex)
+                {
+                    session.Poison();
+                    string cleanupFailure = CleanupIncrementalOutputs(stagedObjects);
+                    throw cleanupFailure is null ?
+                        ex :
+                        new IncrementalCompilationException(
+                            IncrementalObjectBaseline.AppendFailure(ex.Reason, cleanupFailure));
+                }
+                catch (Exception ex)
+                {
+                    session.Poison();
+                    string cleanupFailure = CleanupIncrementalOutputs(stagedObjects);
+                    if (cleanupFailure is not null)
+                    {
+                        throw new AggregateException(
+                            ex,
+                            new IOException(cleanupFailure));
+                    }
+
+                    throw;
+                }
+            }
+        }
+
+        public override MethodIL GetMethodIL(MethodDesc method) =>
+            _incrementalCurrentILProvider?.GetMethodIL(method) ?? base.GetMethodIL(method);
+
+        private MethodIL GetBaselineMethodIL(MethodDesc method) => base.GetMethodIL(method);
+
+        internal bool GetIncrementalOutputPublicationStatus() =>
+            _incrementalOutputsPublished;
+
+        private void EmitIncrementalObject(
+            string outputFile,
+            IReadOnlyCollection<DependencyNode> nodes,
+            ObjectWritingOptions options,
+            ObjectDumper dumper,
+            IncrementalObjectLayout layout,
+            out long objectLength,
+            out byte[] objectHash)
+        {
+            object[] arguments =
+            {
+                outputFile,
+                nodes,
+                NodeFactory,
+                options,
+                dumper,
+                _logger,
+                new Action<object, int, long, object, bool>(layout.RecordNode),
+                new Action<Func<int, long, int, long?>>(layout.Complete),
+                null,
+                null,
+            };
+
+            try
+            {
+                IncrementalObjectWriterAccess.EmitMethod.Invoke(null, arguments);
+            }
+            catch (TargetInvocationException ex) when (ex.InnerException is not null)
+            {
+                ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
+                throw;
+            }
+
+            objectLength = (long)arguments[8];
+            objectHash = (byte[])arguments[9];
+        }
+
+        private static string CleanupIncrementalOutputs(
+            IReadOnlyList<IncrementalStagedObject> stagedObjects)
+        {
+            string reason = null;
+            foreach (IncrementalStagedObject stagedObject in stagedObjects)
+            {
+                if (!stagedObject.TryCleanup(out string cleanupFailure))
+                    reason = IncrementalObjectBaseline.AppendFailure(reason, cleanupFailure);
+            }
+
+            return reason;
+        }
+
+        private sealed class BaselineILProvider : ILProvider
+        {
+            private readonly RyuJitCompilation _compilation;
+
+            internal BaselineILProvider(RyuJitCompilation compilation)
+            {
+                _compilation = compilation;
+            }
+
+            public override MethodIL GetMethodIL(MethodDesc method) =>
+                _compilation.GetBaselineMethodIL(method);
+        }
+
+        private static class IncrementalObjectWriterAccess
+        {
+            // ILCompiler.Compiler and ILCompiler.RyuJit compile overlapping linked sources, so
+            // InternalsVisibleTo would make duplicate internal types ambiguous. Keep this
+            // experiment-only boundary internal and fail loudly if the reflected seam changes.
+            internal static readonly MethodInfo EmitMethod =
+                typeof(ObjectWriter.ObjectWriter).GetMethod(
+                    "EmitObjectForIncrementalCompilation",
+                    BindingFlags.NonPublic | BindingFlags.Static) ??
+                throw new MissingMethodException(
+                    typeof(ObjectWriter.ObjectWriter).FullName,
+                    "EmitObjectForIncrementalCompilation");
         }
 
         protected override void ComputeDependencyNodeDependencies(List<DependencyNodeCore<NodeFactory>> obj)

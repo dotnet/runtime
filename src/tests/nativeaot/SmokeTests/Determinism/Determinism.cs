@@ -23,10 +23,23 @@ for (int i = 0; i < length; i++)
 // We're not interested in running this, we just want some junk to compile
 if (Environment.GetEnvironmentVariable("Never") == "Ever")
 {
+#if !INCREMENTAL_COMPILATION_EXPERIMENT
     Delegates.Run();
     Devirtualization.Run();
     Generics.Run();
     Interfaces.Run();
+#endif
+#if INCREMENTAL_COMPILATION_EXPERIMENT
+    Console.WriteLine(IncrementalFixture.GetValue(1));
+#endif
 }
 
 return 100;
+
+#if INCREMENTAL_COMPILATION_EXPERIMENT
+static class IncrementalFixture
+{
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+    public static int GetValue(int value) => value + 0x61234567;
+}
+#endif

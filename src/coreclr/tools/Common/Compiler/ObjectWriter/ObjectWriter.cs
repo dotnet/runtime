@@ -32,6 +32,8 @@ namespace ILCompiler.ObjectWriter
         private protected readonly NodeFactory _nodeFactory;
         private protected readonly ObjectWritingOptions _options;
         private protected readonly OutputInfoBuilder _outputInfoBuilder;
+        private readonly Action<object, int, long, object, bool> _recordIncrementalNode;
+        private readonly Action<Func<int, long, int, long?>> _completeIncrementalLayout;
         private readonly bool _isSingleFileCompilation;
         protected readonly Utf8StringBuilder _utf8StringBuilder = new();
 
@@ -48,11 +50,18 @@ namespace ILCompiler.ObjectWriter
         // Symbol table
         private readonly Dictionary<Utf8String, SymbolDefinition> _definedSymbols = new();
 
-        private protected ObjectWriter(NodeFactory factory, ObjectWritingOptions options, OutputInfoBuilder outputInfoBuilder = null)
+        private protected ObjectWriter(
+            NodeFactory factory,
+            ObjectWritingOptions options,
+            OutputInfoBuilder outputInfoBuilder = null,
+            Action<object, int, long, object, bool> recordIncrementalNode = null,
+            Action<Func<int, long, int, long?>> completeIncrementalLayout = null)
         {
             _nodeFactory = factory;
             _options = options;
             _outputInfoBuilder = outputInfoBuilder;
+            _recordIncrementalNode = recordIncrementalNode;
+            _completeIncrementalLayout = completeIncrementalLayout;
             _isSingleFileCompilation = _nodeFactory.CompilationModuleGroup.IsSingleFileCompilation;
 
             // Padding byte for code sections (NOP for x86/x64)
@@ -80,6 +89,16 @@ namespace ILCompiler.ObjectWriter
         /// This method allows formats that want to merge sections during emit to do so.
         /// </remarks>
         private protected virtual ObjectNodeSection GetEmitSection(ObjectNodeSection section) => section;
+
+        private protected virtual bool TryGetObjectFileRange(
+            int sectionIndex,
+            long sectionOffset,
+            int size,
+            out long fileOffset)
+        {
+            fileOffset = 0;
+            return false;
+        }
 
         private protected SectionWriter GetOrCreateSection(ObjectNodeSection section)
             => GetOrCreateSection(section, default, default);
@@ -399,7 +418,8 @@ namespace ILCompiler.ObjectWriter
                 }
 
                 ObjectNodeSection section = node.GetSection(_nodeFactory);
-                SectionWriter sectionWriter = ShouldShareSymbol(node, section) ?
+                bool isComdat = ShouldShareSymbol(node, section);
+                SectionWriter sectionWriter = isComdat ?
                     GetOrCreateSection(section, currentSymbolName, currentSymbolName) :
                     GetOrCreateSection(section);
 
@@ -407,6 +427,13 @@ namespace ILCompiler.ObjectWriter
                 {
                     sectionWriter.EmitAlignment(nodeContents.Alignment);
                 }
+
+                _recordIncrementalNode?.Invoke(
+                    node,
+                    sectionWriter.SectionIndex,
+                    sectionWriter.Position,
+                    nodeContents,
+                    isComdat);
 
                 bool isMethod = node is IPCodeSymbolNode;
                 long thumbBit = _nodeFactory.Target.Architecture == TargetArchitecture.ARM && isMethod ? 1 : 0;
@@ -615,6 +642,12 @@ namespace ILCompiler.ObjectWriter
                     _outputInfoBuilder.AddSection(outputSection);
                 }
             }
+
+            _completeIncrementalLayout?.Invoke(
+                (int sectionIndex, long sectionOffset, int size) =>
+                    TryGetObjectFileRange(sectionIndex, sectionOffset, size, out long fileOffset) ?
+                        fileOffset :
+                        null);
         }
 
         private protected virtual void RecordMethodDeclaration(INodeWithTypeSignature node)

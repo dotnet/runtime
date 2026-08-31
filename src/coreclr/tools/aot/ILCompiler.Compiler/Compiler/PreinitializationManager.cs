@@ -18,6 +18,7 @@ namespace ILCompiler
         private readonly bool _supportsLazyCctors;
 
         public ReadOnlyFieldPolicy ReadOnlyFieldPolicy => _preinitHashTable._readOnlyPolicy;
+        internal bool IsDisabled => _preinitHashTable._policy is TypePreinit.DisabledPreinitializationPolicy;
 
         public PreinitializationManager(TypeSystemContext context, CompilationModuleGroup compilationGroup, ILProvider ilprovider, TypePreinit.TypePreinitializationPolicy policy, ReadOnlyFieldPolicy readOnlyPolicy, FlowAnnotations flowAnnotations)
         {

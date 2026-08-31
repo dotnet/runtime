@@ -22,6 +22,9 @@ namespace ILCompiler.DependencyAnalysis
         protected override bool CanFold(MethodDesc method)
             => _methodBodyDeduplicator?.CanFold(method) ?? false;
 
+        internal bool CanFoldMethodBodyForIncrementalCompilation(MethodDesc method) =>
+            CanFold(method);
+
         protected override IMethodNode CreateMethodEntrypointNode(MethodDesc method)
         {
             if (method.IsInternalCall)

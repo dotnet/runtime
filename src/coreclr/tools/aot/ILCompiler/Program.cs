@@ -9,9 +9,12 @@ using System.CommandLine;
 using System.CommandLine.Help;
 using System.CommandLine.Parsing;
 using System.IO;
+using System.Reflection;
 using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Text;
 using System.Xml;
 
@@ -74,6 +77,13 @@ namespace ILCompiler
             string outputFilePath = Get(_command.OutputFilePath);
             if (outputFilePath == null)
                 throw new CommandLineException("Output filename must be specified (--out <file>)");
+            bool incrementalCompilationRequested = IsIncrementalEnvironmentRequested();
+            string incrementalCommandLineConfiguration = ValidateIncrementalCommandLine();
+            if (incrementalCompilationRequested && File.Exists(outputFilePath))
+            {
+                throw new IncrementalDriverException(
+                    "the baseline output already exists");
+            }
 
             var suppressedWarningCategories = new List<string>();
             if (Get(_command.NoTrimWarn))
@@ -600,6 +610,9 @@ namespace ILCompiler
             }
 
             string ilDump = Get(_command.IlDump);
+            string mapFileName = Get(_command.MapFileName);
+            string mstatFileName = Get(_command.MstatFileName);
+            string sourceLinkFileName = Get(_command.SourceLinkFileName);
             DebugInformationProvider debugInfoProvider = Get(_command.EnableDebugInfo) ?
                 (ilDump == null ? new DebugInformationProvider() : new ILAssemblyGeneratingMethodDebugInfoProvider(ilDump, new EcmaOnlyDebugInformationProvider())) :
                 new NullDebugInformationProvider();
@@ -632,11 +645,11 @@ namespace ILCompiler
                 .UseDwarf5(Get(_command.UseDwarf5))
                 .UseResilience(resilient);
 
-            ICompilation compilation = builder.ToCompilation();
+            ConfigureIncrementalCommandLineFingerprint(
+                (RyuJitCompilationBuilder)builder,
+                incrementalCommandLineConfiguration);
 
-            string mapFileName = Get(_command.MapFileName);
-            string mstatFileName = Get(_command.MstatFileName);
-            string sourceLinkFileName = Get(_command.SourceLinkFileName);
+            ICompilation compilation = builder.ToCompilation();
 
             List<ObjectDumper> dumpers = new List<ObjectDumper>();
 
@@ -651,7 +664,41 @@ namespace ILCompiler
 
             // Write to a temporary file and rename on success to avoid leaving partial files on failure
             string tempOutputFilePath = outputFilePath + ".tmp";
-            CompilationResults compilationResults = compilation.Compile(tempOutputFilePath, ObjectDumper.Compose(dumpers));
+            CompilationResults compilationResults;
+            try
+            {
+                compilationResults = compilation.Compile(
+                    tempOutputFilePath,
+                    ObjectDumper.Compose(dumpers));
+            }
+            catch (Exception ex) when (incrementalCompilationRequested)
+            {
+                string cleanupFailure;
+                try
+                {
+                    cleanupFailure = CleanupIncrementalDriverOutputs(
+                        tempOutputFilePath,
+                        IncrementalCompilerAccess.GetOutputPublicationStatus(compilation));
+                }
+                catch (Exception cleanupException)
+                {
+                    throw new AggregateException(ex, cleanupException);
+                }
+
+                if (ex.HResult == IncrementalFailureContract.FailureHResult)
+                {
+                    if (cleanupFailure is null)
+                        throw;
+
+                    throw new IncrementalDriverException(
+                        AppendFailure(ex.Message, cleanupFailure));
+                }
+
+                if (cleanupFailure is not null)
+                    throw new AggregateException(ex, new IOException(cleanupFailure));
+                throw;
+            }
+
             string exportsFile = Get(_command.ExportsFile);
             if (exportsFile != null)
             {
@@ -669,7 +716,8 @@ namespace ILCompiler
                 defFileWriter.EmitExportedMethods();
             }
 
-            typeSystemContext.LogWarnings(logger);
+            if (!incrementalCompilationRequested)
+                typeSystemContext.LogWarnings(logger);
 
             if (dgmlLogFileName != null)
                 compilationResults.WriteDependencyLog(dgmlLogFileName);
@@ -730,6 +778,16 @@ namespace ILCompiler
             // and return error code to avoid misleading build systems into thinking the compilation succeeded.
             if (logger.HasLoggedErrors)
             {
+                if (incrementalCompilationRequested)
+                {
+                    string cleanupFailure = CleanupIncrementalDriverOutputs(
+                        tempOutputFilePath,
+                        includeUpdateOutputs: true);
+                    throw new IncrementalDriverException(AppendFailure(
+                        "compiler diagnostics prevent incremental output publication",
+                        cleanupFailure));
+                }
+
                 try
                 {
                     File.Delete(tempOutputFilePath);
@@ -744,7 +802,38 @@ namespace ILCompiler
             }
 
             // Rename the temporary file to the final output file
-            File.Move(tempOutputFilePath, outputFilePath, overwrite: true);
+            try
+            {
+                File.Move(
+                    tempOutputFilePath,
+                    outputFilePath,
+                    overwrite: !incrementalCompilationRequested);
+            }
+            catch (Exception ex) when (incrementalCompilationRequested)
+            {
+                string cleanupFailure;
+                try
+                {
+                    cleanupFailure = CleanupIncrementalDriverOutputs(
+                        tempOutputFilePath,
+                        includeUpdateOutputs: true);
+                }
+                catch (Exception cleanupException)
+                {
+                    throw new AggregateException(ex, cleanupException);
+                }
+
+                if (IsExpectedFileException(ex))
+                {
+                    throw new IncrementalDriverException(AppendFailure(
+                        $"the baseline object could not be published: {ex.Message}",
+                        cleanupFailure));
+                }
+
+                if (cleanupFailure is not null)
+                    throw new AggregateException(ex, new IOException(cleanupFailure));
+                throw;
+            }
 
             return 0;
         }
@@ -838,6 +927,211 @@ namespace ILCompiler
 
         private T Get<T>(Option<T> option) => _command.Result.GetValue(option);
 
+        private static bool IsIncrementalEnvironmentRequested() =>
+            IncrementalDriverException.IsEnvironmentRequested;
+
+        private static string CleanupIncrementalDriverOutputs(
+            string temporaryBaselinePath,
+            bool includeUpdateOutputs)
+        {
+            var paths = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                Path.GetFullPath(temporaryBaselinePath),
+            };
+            if (includeUpdateOutputs)
+            {
+                string configuredOutputs =
+                    Environment.GetEnvironmentVariable(IncrementalFailureContract.OutputObjectsVariable);
+                if (!string.IsNullOrWhiteSpace(configuredOutputs))
+                {
+                    foreach (string output in configuredOutputs.Split(
+                        Path.PathSeparator,
+                        StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
+                    {
+                        paths.Add(Path.GetFullPath(output));
+                    }
+                }
+            }
+
+            string reason = null;
+            foreach (string path in paths)
+            {
+                try
+                {
+                    File.Delete(path);
+                }
+                catch (Exception ex) when (IsExpectedFileException(ex))
+                {
+                    reason = AppendFailure(
+                        reason,
+                        $"The incremental driver output '{path}' could not be deleted: {ex.Message}");
+                }
+            }
+
+            return reason;
+        }
+
+        private static bool IsExpectedFileException(Exception ex) =>
+            ex is IOException or
+            UnauthorizedAccessException or
+            DirectoryNotFoundException or
+            PathTooLongException or
+            NotSupportedException or
+            System.Security.SecurityException;
+
+        private static string AppendFailure(string reason, string additionalFailure) =>
+            string.IsNullOrEmpty(additionalFailure) ?
+                reason :
+                string.IsNullOrEmpty(reason) ? additionalFailure : $"{reason} {additionalFailure}";
+
+        private string ValidateIncrementalCommandLine()
+        {
+            if (!IsIncrementalEnvironmentRequested())
+                return null;
+
+            if (!IncrementalCompilerAccess.TryValidateCommandLineConfiguration(
+                exports:
+                    Get(_command.ExportsFile) is not null ||
+                    Get(_command.ExportDynamicSymbols).Length != 0 ||
+                    Get(_command.ExportUnmanagedEntryPoints) ||
+                    Get(_command.UnmanagedEntryPointsAssemblies).Length != 0,
+                dependencyGraph:
+                    Get(_command.DgmlLogFileName) is not null ||
+                    Get(_command.GenerateFullDgmlLog),
+                scannerDependencyGraph:
+                    Get(_command.ScanDgmlLogFileName) is not null ||
+                    Get(_command.GenerateFullScanDgmlLog),
+                ilDump: Get(_command.IlDump) is not null,
+                map: Get(_command.MapFileName) is not null,
+                mstat: Get(_command.MstatFileName) is not null,
+                sourceLink: Get(_command.SourceLinkFileName) is not null,
+                metadataLog: Get(_command.MetadataLogFileName) is not null,
+                reachability:
+                    Get(_command.InstrumentReachability) ||
+                    Get(_command.UseReachability) is not null,
+                out string description,
+                out string reason))
+            {
+                throw new IncrementalDriverException(reason);
+            }
+
+            return description;
+        }
+
+        private void ConfigureIncrementalCommandLineFingerprint(
+            RyuJitCompilationBuilder builder,
+            string incrementalCommandLineConfiguration)
+        {
+            if (incrementalCommandLineConfiguration is null)
+                return;
+
+            var commandLine = new StringBuilder();
+            foreach (Token token in _command.Result.Tokens)
+            {
+                commandLine.Append(token.Value);
+                commandLine.Append('\0');
+            }
+
+            string fingerprint = Convert.ToHexString(
+                SHA256.HashData(Encoding.UTF8.GetBytes(commandLine.ToString())));
+            IncrementalCompilerAccess.SetCommandLineConfiguration(
+                builder,
+                $"{incrementalCommandLineConfiguration};commandline={fingerprint}");
+        }
+
+        private static class IncrementalCompilerAccess
+        {
+            // ilc and ILCompiler.RyuJit compile overlapping linked sources, so InternalsVisibleTo
+            // would make duplicate internal types ambiguous. Keep this experiment-only boundary
+            // internal and fail loudly if any reflected seam changes.
+            private static readonly MethodInfo s_validateCommandLineConfiguration =
+                typeof(RyuJitCompilationBuilder).GetMethod(
+                    "TryValidateIncrementalCommandLineConfiguration",
+                    BindingFlags.NonPublic | BindingFlags.Static) ??
+                throw new MissingMethodException(
+                    typeof(RyuJitCompilationBuilder).FullName,
+                    "TryValidateIncrementalCommandLineConfiguration");
+
+            private static readonly MethodInfo s_setCommandLineConfiguration =
+                typeof(RyuJitCompilationBuilder).GetMethod(
+                    "SetIncrementalCommandLineConfiguration",
+                    BindingFlags.NonPublic | BindingFlags.Instance) ??
+                throw new MissingMethodException(
+                    typeof(RyuJitCompilationBuilder).FullName,
+                    "SetIncrementalCommandLineConfiguration");
+
+            private static readonly MethodInfo s_getOutputPublicationStatus =
+                typeof(RyuJitCompilation).GetMethod(
+                    "GetIncrementalOutputPublicationStatus",
+                    BindingFlags.NonPublic | BindingFlags.Instance) ??
+                throw new MissingMethodException(
+                    typeof(RyuJitCompilation).FullName,
+                    "GetIncrementalOutputPublicationStatus");
+
+            internal static bool TryValidateCommandLineConfiguration(
+                bool exports,
+                bool dependencyGraph,
+                bool scannerDependencyGraph,
+                bool ilDump,
+                bool map,
+                bool mstat,
+                bool sourceLink,
+                bool metadataLog,
+                bool reachability,
+                out string description,
+                out string reason)
+            {
+                object[] arguments =
+                {
+                    exports,
+                    dependencyGraph,
+                    scannerDependencyGraph,
+                    ilDump,
+                    map,
+                    mstat,
+                    sourceLink,
+                    metadataLog,
+                    reachability,
+                    null,
+                    null,
+                };
+
+                bool result = (bool)Invoke(s_validateCommandLineConfiguration, null, arguments);
+                description = (string)arguments[9];
+                reason = (string)arguments[10];
+                return result;
+            }
+
+            internal static void SetCommandLineConfiguration(
+                RyuJitCompilationBuilder builder,
+                string configuration)
+            {
+                Invoke(
+                    s_setCommandLineConfiguration,
+                    builder,
+                    new object[] { configuration });
+            }
+
+            internal static bool GetOutputPublicationStatus(ICompilation compilation) =>
+                (bool)Invoke(
+                    s_getOutputPublicationStatus,
+                    compilation,
+                    Array.Empty<object>());
+
+            private static object Invoke(MethodInfo method, object instance, object[] arguments)
+            {
+                try
+                {
+                    return method.Invoke(instance, arguments);
+                }
+                catch (TargetInvocationException ex) when (ex.InnerException is not null)
+                {
+                    ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
+                    throw;
+                }
+            }
+        }
+
         private static int Main(string[] args) =>
             new ILCompilerRootCommand(args)
                 .UseVersion()
@@ -850,5 +1144,19 @@ namespace ILCompiler
                 {
                     EnableDefaultExceptionHandler = false
                 });
+    }
+
+    internal sealed class IncrementalDriverException : Exception
+    {
+        internal static bool IsEnvironmentRequested =>
+            Environment.GetEnvironmentVariable(IncrementalFailureContract.EnableVariable) is not null ||
+            Environment.GetEnvironmentVariable(IncrementalFailureContract.UpdatedAssembliesVariable) is not null ||
+            Environment.GetEnvironmentVariable(IncrementalFailureContract.OutputObjectsVariable) is not null;
+
+        internal IncrementalDriverException(string reason)
+            : base($"Incremental compilation requires a clean compilation: {reason}")
+        {
+            HResult = IncrementalFailureContract.FailureHResult;
+        }
     }
 }

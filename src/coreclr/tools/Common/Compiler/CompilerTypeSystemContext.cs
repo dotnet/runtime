@@ -87,6 +87,8 @@ namespace ILCompiler
 
         private readonly SharedGenericsMode _genericsMode;
 
+        internal SharedGenericsMode SharedGenericsMode => _genericsMode;
+
         public IReadOnlyDictionary<string, string> InputFilePaths
         {
             get;

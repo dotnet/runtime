@@ -2,12 +2,41 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Text;
+
+using Internal.IL;
 
 namespace ILCompiler
 {
     public partial class CompilationBuilder
     {
         private PreinitializationManager _preinitializationManager;
+
+        internal bool TryGetIncrementalBaseConfiguration(
+            out string description,
+            out string reason)
+        {
+            description = null;
+            if (_dependencyTrackingLevel != DependencyTrackingLevel.None)
+            {
+                reason = "dependency tracking must be disabled";
+                return false;
+            }
+            if (_preinitializationManager is not null && !_preinitializationManager.IsDisabled)
+            {
+                reason = "preinitialization must be disabled";
+                return false;
+            }
+
+            var builder = new StringBuilder();
+            builder.Append("sharedgenerics=").Append((int)_context.SharedGenericsMode);
+            builder.Append(";delegatefeatures=").Append((int)_context.DelegateFeatures);
+            builder.Append(";genericcycledepth=").Append(_context.GenericCycleDepthCutoff);
+            builder.Append(";genericcyclebreadth=").Append(_context.GenericCycleBreadthCutoff);
+            description = builder.ToString();
+            reason = null;
+            return true;
+        }
 
         // These need to provide reasonable defaults so that the user can optionally skip
         // calling the Use/Configure methods and still get something reasonable back.

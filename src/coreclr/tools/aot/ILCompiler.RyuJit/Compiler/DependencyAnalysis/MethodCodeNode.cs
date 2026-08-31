@@ -43,6 +43,20 @@ namespace ILCompiler.DependencyAnalysis
             _methodCode = data;
         }
 
+        internal void ResetForIncrementalCompilation()
+        {
+            _methodCode = null;
+            _frameInfos = null;
+            _gcInfo = null;
+            _ehInfo = null;
+            _debugLocInfos = null;
+            _debugVarInfos = null;
+            _debugEHClauseInfos = null;
+            _nonRelocationDependencies = null;
+            _debugInfo = null;
+            _localTypes = null;
+        }
+
         public MethodDesc Method =>  _method;
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
@@ -151,6 +165,8 @@ namespace ILCompiler.DependencyAnalysis
         public DebugLocInfo[] DebugLocInfos => _debugLocInfos;
         public DebugVarInfo[] DebugVarInfos => _debugVarInfos;
         public DebugEHClauseInfo[] DebugEHClauseInfos => _debugEHClauseInfos;
+        internal MethodDebugInformation DebugInfoForIncrementalCompilation => _debugInfo;
+        internal TypeDesc[] LocalTypesForIncrementalCompilation => _localTypes;
 
         public bool IsStateMachineMoveNextMethod => _debugInfo.IsStateMachineMoveNextMethod;
 

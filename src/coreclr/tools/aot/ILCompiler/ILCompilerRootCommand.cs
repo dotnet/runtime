@@ -302,6 +302,13 @@ namespace ILCompiler
                 try
                 {
                     string makeReproPath = result.GetValue(MakeReproPath);
+                    if (makeReproPath is not null &&
+                        IncrementalDriverException.IsEnvironmentRequested)
+                    {
+                        throw new IncrementalDriverException(
+                            "repro-package output is unsupported");
+                    }
+
                     if (makeReproPath != null)
                     {
                         // Create a repro package in the specified path
@@ -317,6 +324,16 @@ namespace ILCompiler
                     }
 
                     return new Program(this).Run();
+                }
+                catch (Exception ex) when (IncrementalFailureContract.IsCleanFallbackRequested(
+                    ex,
+                    IncrementalDriverException.IsEnvironmentRequested))
+                {
+                    Console.Error.WriteLine(
+                        $"ILC_INCREMENTAL_REJECTED: {ex.Message}");
+                    Console.Error.WriteLine(
+                        "Run a new clean compilation with all DOTNET_ILC_INCREMENTAL* variables removed.");
+                    return IncrementalFailureContract.CleanFallbackExitCode;
                 }
 #if DEBUG
                 catch (CodeGenerationFailedException ex) when (DumpReproArguments(ex))

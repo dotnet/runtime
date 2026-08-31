@@ -32,6 +32,10 @@ namespace ILCompiler
             get;
         }
 
+        internal DelegateFeature DelegateFeatures { get; }
+        internal int GenericCycleDepthCutoff { get; }
+        internal int GenericCycleBreadthCutoff { get; }
+
         private readonly MetadataFieldLayoutAlgorithm _metadataFieldLayoutAlgorithm = new CompilerMetadataFieldLayoutAlgorithm();
         private readonly RuntimeDeterminedFieldLayoutAlgorithm _runtimeDeterminedFieldLayoutAlgorithm = new RuntimeDeterminedFieldLayoutAlgorithm();
         private readonly VectorOfTFieldLayoutAlgorithm _vectorOfTFieldLayoutAlgorithm;
@@ -53,6 +57,9 @@ namespace ILCompiler
             : base(details)
         {
             _genericsMode = genericsMode;
+            DelegateFeatures = delegateFeatures;
+            GenericCycleDepthCutoff = genericCycleDepthCutoff;
+            GenericCycleBreadthCutoff = genericCycleBreadthCutoff;
 
             _virtualMethodAlgorithm = new AsyncAwareVirtualMethodResolutionAlgorithm(this);
 
