@@ -73,6 +73,9 @@ namespace System.Security.Cryptography.Pkcs
         public X509Certificate2 Certificate { get; }
 
 #if NET11_0_OR_GREATER
+        internal bool IsKeyEncapsulation { get; private set; }
+        internal ReadOnlyMemory<byte>? KeyEncapsulationUserKeyingMaterial { get; private set; }
+
         /// <summary>
         /// Creates a recipient that uses key encapsulation.
         /// </summary>
@@ -82,7 +85,7 @@ namespace System.Security.Cryptography.Pkcs
         public static CmsRecipient CreateForKeyEncapsulation(
             X509Certificate2 certificate,
             ReadOnlySpan<byte> userKeyingMaterial) =>
-            throw new NotImplementedException();
+            new CmsRecipient(SubjectIdentifierType.IssuerAndSerialNumber, certificate, userKeyingMaterial);
 
         /// <summary>
         /// Creates a recipient that uses key encapsulation.
@@ -97,7 +100,41 @@ namespace System.Security.Cryptography.Pkcs
             SubjectIdentifierType recipientIdentifierType,
             X509Certificate2 certificate,
             ReadOnlySpan<byte> userKeyingMaterial) =>
-            throw new NotImplementedException();
+            new CmsRecipient(recipientIdentifierType, certificate, userKeyingMaterial);
+
+        internal static bool IsKeyEncapsulationAlgorithm(string? oid) =>
+            oid is Oids.MlKem512 or
+                Oids.MlKem768 or
+                Oids.MlKem1024 or
+                Oids.MLKem768WithRsaOaep2048Sha3_256 or
+                Oids.MLKem768WithRsaOaep3072Sha3_256 or
+                Oids.MLKem768WithRsaOaep4096Sha3_256 or
+                Oids.MLKem768WithX25519Sha3_256 or
+                Oids.MLKem768WithECDiffieHellmanP256Sha3_256 or
+                Oids.MLKem768WithECDiffieHellmanP384Sha3_256 or
+                Oids.MLKem768WithECDiffieHellmanBrainpoolP256r1Sha3_256 or
+                Oids.MLKem1024WithRsaOaep3072Sha3_256 or
+                Oids.MLKem1024WithECDiffieHellmanP384Sha3_256 or
+                Oids.MLKem1024WithECDiffieHellmanBrainpoolP384r1Sha3_256 or
+                Oids.MLKem1024WithX448Sha3_256 or
+                Oids.MLKem1024WithECDiffieHellmanP521Sha3_256;
+
+        private CmsRecipient(
+            SubjectIdentifierType recipientIdentifierType,
+            X509Certificate2 certificate,
+            ReadOnlySpan<byte> userKeyingMaterial)
+            : this(recipientIdentifierType, certificate)
+        {
+            string keyAlgorithm = certificate.GetKeyAlgorithm();
+
+            if (!IsKeyEncapsulationAlgorithm(keyAlgorithm))
+            {
+                throw new CryptographicException(SR.Cryptography_Cms_UnknownAlgorithm, keyAlgorithm);
+            }
+
+            IsKeyEncapsulation = true;
+            KeyEncapsulationUserKeyingMaterial = userKeyingMaterial.ToArray();
+        }
 #endif
 
         private static void ValidateRSACertificate(X509Certificate2 certificate)

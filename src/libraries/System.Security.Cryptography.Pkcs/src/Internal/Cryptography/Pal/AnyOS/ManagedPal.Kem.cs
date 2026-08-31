@@ -14,12 +14,111 @@ namespace Internal.Cryptography.Pal.AnyOS
 {
     internal sealed partial class ManagedPkcsPal
     {
+        private static readonly AlgorithmIdentifierAsn s_hkdfSha384Identifier = new() { Algorithm = Oids.HkdfWithSha384 };
+        private static readonly AlgorithmIdentifierAsn s_aes256KwIdentifier = new() { Algorithm = Oids.Aes256Wrap };
+
+        private static RecipientInfoAsn MakeKemRecipientInfo(byte[] cek, CmsRecipient recipient)
+        {
+            KemRecipientInfoAsn kemRecipientInfo = MakeKeri(cek, recipient);
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+            kemRecipientInfo.Encode(writer);
+
+            return new RecipientInfoAsn
+            {
+                Ori = new OtherRecipientInfoAsn
+                {
+                    OriType = Oids.IdSmimeOriKem,
+                    OriValue = writer.Encode(),
+                },
+            };
+        }
+
+        private static KemRecipientInfoAsn MakeKeri(byte[] cek, CmsRecipient recipient)
+        {
+            if (cek.Length < ManagedKemRecipientInfoPal.MinimumKeySizeInBytes ||
+                cek.Length % 8 != 0 ||
+                cek.Length > ManagedKemRecipientInfoPal.Aes256KeySizeInBytes)
+            {
+                throw new CryptographicException(SR.Cryptography_Cms_InvalidSymmetricKey);
+            }
+
+            KemRecipientInfoAsn keri = default;
+            keri.Rid = PkcsHelpers.MakeRecipientIdentifier(recipient);
+
+            // KDF and AES-KW algorithm is not user selectable currently. Always use AES-256-KW with SHA-2-384 since it
+            // meets all requirements.
+            keri.Kdf = s_hkdfSha384Identifier;
+            keri.Wrap = s_aes256KwIdentifier;
+            keri.KekLength = ManagedKemRecipientInfoPal.Aes256KeySizeInBytes;
+            keri.Ukm = recipient.KeyEncapsulationUserKeyingMaterial;
+
+            const int SharedSecretSize = 32;
+            Span<byte> sharedSecret = stackalloc byte[SharedSecretSize];
+            byte[]? algorithmParameters = recipient.Certificate.GetKeyAlgorithmParameters();
+
+            try
+            {
+                string keyAlgorithm = recipient.Certificate.GetKeyAlgorithm();
+
+                switch (keyAlgorithm)
+                {
+                    case Oids.MlKem512 or Oids.MlKem768 or Oids.MlKem1024 when algorithmParameters is null:
+                        using (MLKem? key = recipient.Certificate.GetMLKemPublicKey())
+                        {
+                            Debug.Assert(key is not null);
+                            byte[] ciphertext = new byte[key.Algorithm.CiphertextSizeInBytes];
+                            Debug.Assert(key.Algorithm.SharedSecretSizeInBytes == SharedSecretSize);
+
+                            key.Encapsulate(ciphertext, sharedSecret);
+                            keri.Kemct = ciphertext;
+                            keri.Kem.Algorithm = keyAlgorithm;
+                        }
+                        break;
+                    default:
+                        throw new CryptographicException(SR.Cryptography_Cms_UnknownAlgorithm, keyAlgorithm);
+                }
+
+                State3<ReadOnlySpan<byte>, ReadOnlySpan<byte>, int> encodeState = new(cek, sharedSecret, 0);
+                AsnWriter hkdfInfoWriter = ManagedKemRecipientInfoPal.EncodeKdfInfo(
+                    keri.Wrap,
+                    keri.KekLength,
+                    keri.Ukm);
+
+                keri.EncryptedKey = hkdfInfoWriter.Encode(encodeState, static (state, info) =>
+                {
+                    Span<byte> derivedKey = stackalloc byte[ManagedKemRecipientInfoPal.Aes256KeySizeInBytes];
+
+                    try
+                    {
+                        HKDF.DeriveKey(HashAlgorithmName.SHA384, state.Item2, derivedKey, salt: [], info);
+
+                        using (Aes aes = Aes.Create())
+                        {
+                            aes.SetKey(derivedKey);
+                            return aes.EncryptKeyWrap(state.Item1);
+                        }
+                    }
+                    finally
+                    {
+                        CryptographicOperations.ZeroMemory(derivedKey);
+                    }
+                });
+            }
+            finally
+            {
+                CryptographicOperations.ZeroMemory(sharedSecret);
+            }
+
+            return keri;
+        }
+
         private sealed class ManagedKemRecipientInfoPal : KemRecipientInfoPal
         {
-            private const int Aes128KeySizeInBytes = 128 / 8;
-            private const int Aes192KeySizeInBytes = 192 / 8;
-            private const int Aes256KeySizeInBytes = 256 / 8;
-            private const int SharedSecretSizeInBytes = 32;
+            internal const int Aes128KeySizeInBytes = 128 / 8;
+            internal const int Aes192KeySizeInBytes = 192 / 8;
+            internal const int Aes256KeySizeInBytes = 256 / 8;
+            internal const int SharedSecretSizeInBytes = 32;
+            internal const int MinimumKeySizeInBytes = 24;
 
             private readonly KemRecipientInfoAsn _asn;
 
@@ -160,8 +259,6 @@ namespace Internal.Cryptography.Pal.AnyOS
                     return null;
                 }
 
-                const int MinimumKeySizeInBytes = 24;
-
                 if (_asn.EncryptedKey.Length % 8 != 0 || _asn.EncryptedKey.Length < MinimumKeySizeInBytes)
                 {
                     exception = new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
@@ -175,28 +272,25 @@ namespace Internal.Cryptography.Pal.AnyOS
                     decapsulator(state, KeyEncapsulationCiphertext.Span, sharedSecret);
 
                     exception = null;
-                    return EncodeKdfInfo().Encode(
-                        new HkdfCallback(this, hkdfAlgorithm.Value, sharedSecret),
+                    State3<ManagedKemRecipientInfoPal, HashAlgorithmName, ReadOnlySpan<byte>> encodeState =
+                        new(this, hkdfAlgorithm.Value, sharedSecret);
+
+                    return EncodeKdfInfo(_asn.Wrap, _asn.KekLength, _asn.Ukm).Encode(encodeState,
                         static (state, info) =>
                         {
                             // AES-256-KW is the largest supported key size.
                             const int MaxKeyEncryptionKeySize = 32;
                             Span<byte> derivedKey = stackalloc byte[MaxKeyEncryptionKeySize]
-                                .Slice(0, state.Instance.KeyEncryptionKeyLengthInBytes);
+                                .Slice(0, state.Item1.KeyEncryptionKeyLengthInBytes);
 
                             try
                             {
-                                HKDF.DeriveKey(
-                                    state.HkdfAlgorithm,
-                                    state.Key,
-                                    derivedKey,
-                                    salt: [],
-                                    info);
+                                HKDF.DeriveKey(state.Item2, state.Item3, derivedKey, salt: [], info);
 
                                 using (Aes aes = Aes.Create())
                                 {
                                     aes.SetKey(derivedKey);
-                                    return aes.DecryptKeyWrap(state.Instance._asn.EncryptedKey.Span);
+                                    return aes.DecryptKeyWrap(state.Item1._asn.EncryptedKey.Span);
                                 }
                             }
                             finally
@@ -224,37 +318,40 @@ namespace Internal.Cryptography.Pal.AnyOS
                 };
             }
 
-
-            private AsnWriter EncodeKdfInfo()
+            internal static AsnWriter EncodeKdfInfo(in AlgorithmIdentifierAsn wrap, int kekLength, ReadOnlyMemory<byte>? ukm)
             {
                 CmsOriForKemOtherInfoAsn kdfInfo = new()
                 {
-                    Wrap = _asn.Wrap,
-                    KekLength = _asn.KekLength,
-                    Ukm = _asn.Ukm,
+                    Wrap = wrap,
+                    KekLength = kekLength,
+                    Ukm = ukm,
                 };
 
                 AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
                 kdfInfo.Encode(writer);
                 return writer;
             }
-
-            private readonly ref struct HkdfCallback
-            {
-                internal HkdfCallback(
-                    ManagedKemRecipientInfoPal instance,
-                    HashAlgorithmName hkdfAlgorithm,
-                    ReadOnlySpan<byte> key)
-                {
-                    Instance = instance;
-                    HkdfAlgorithm = hkdfAlgorithm;
-                    Key = key;
-                }
-
-                internal ManagedKemRecipientInfoPal Instance { get; }
-                internal HashAlgorithmName HkdfAlgorithm { get; }
-                internal ReadOnlySpan<byte> Key { get; }
-            }
         }
+    }
+
+    file readonly ref struct State3<T1, T2, T3>
+        where T1 : allows ref struct
+        where T2 : allows ref struct
+        where T3 : allows ref struct
+    {
+        private T1 _item1 { get; }
+        private T2 _item2 { get; }
+        private T3 _item3 { get; }
+
+        internal State3(T1 Item1, T2 Item2, T3 Item3)
+        {
+            _item1 = Item1;
+            _item2 = Item2;
+            _item3 = Item3;
+        }
+
+        internal T1 Item1 => _item1;
+        internal T2 Item2 => _item2;
+        internal T3 Item3 => _item3;
     }
 }
