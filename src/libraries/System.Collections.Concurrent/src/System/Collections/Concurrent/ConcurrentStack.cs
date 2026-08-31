@@ -539,12 +539,34 @@ namespace System.Collections.Concurrent
                 return 0;
 
             Node? poppedHead;
-            int nodesCount = TryPopCore(count, out poppedHead);
-            if (nodesCount > 0)
+            int tempCount = count;
+            int tempStartIndex = startIndex;
+            int totalNodesCount = 0;
+
+            while (totalNodesCount != count)
             {
-                CopyRemovedItems(poppedHead!, items, startIndex, nodesCount);
+                bool isEmpty;
+                int nodesCount = TryPopCore(tempCount, out poppedHead, out isEmpty);
+
+                if (isEmpty)
+                {
+                    break;
+                }
+
+                if (nodesCount > 0)
+                {
+                    CopyRemovedItems(poppedHead!, items, tempStartIndex, nodesCount);
+                    totalNodesCount += nodesCount;
+                    tempStartIndex = startIndex + totalNodesCount;
+                    tempCount = Math.Min(tempCount, (count - totalNodesCount));
+                }
+
+                else
+                {
+                    tempCount = Math.Max(1, tempCount / 2);
+                }
             }
-            return nodesCount;
+            return totalNodesCount;
         }
 
         /// <summary>
@@ -621,6 +643,82 @@ namespace System.Collections.Concurrent
                 }
 
                 // We failed to CAS the new head.  Spin briefly and retry.
+                for (int i = 0; i < backoff; i++)
+                {
+                    spin.SpinOnce(sleep1Threshold: -1);
+                }
+
+                if (spin.NextSpinWillYield)
+                {
+                    backoff = Random.Shared.Next(1, BACKOFF_MAX_YIELDS);
+                }
+                else
+                {
+                    backoff *= 2;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Slow path helper for TryPopRange.
+        /// </summary>
+        /// <param name="count">The number of items to pop.</param>
+        /// <param name="poppedHead">
+        /// When this method returns, if the pop succeeded, contains the removed object. If no object was
+        /// available to be removed, the value is unspecified. This parameter is passed uninitialized.
+        /// </param>
+        /// <param name="isEmpty">When this method returns, true if the stack is empty; otherwise, false.</param>
+        /// <returns>The number of objects successfully popped from the top of
+        /// the <see cref="ConcurrentStack{T}"/>.</returns>
+        private int TryPopCore(int count, out Node? poppedHead, out bool isEmpty)
+        {
+            SpinWait spin = default;
+            Node? head;
+            Node next;
+            int backoff = 1;
+            int casCounter = 0;
+            while (true)
+            {
+                head = _head;
+                // Is the stack empty?
+                if (head == null)
+                {
+                    if (count == 1 && CDSCollectionETWBCLProvider.Log.IsEnabled())
+                    {
+                        CDSCollectionETWBCLProvider.Log.ConcurrentStack_FastPopFailed(spin.Count);
+                    }
+
+                    poppedHead = null;
+                    isEmpty = true;
+                    return 0;
+                }
+                next = head;
+                int nodesCount = 1;
+                for (; nodesCount < count && next._next != null; nodesCount++)
+                {
+                    next = next._next;
+                }
+
+                if (Interlocked.CompareExchange(ref _head, next._next, head) == head)
+                {
+                    if (count == 1 && CDSCollectionETWBCLProvider.Log.IsEnabled())
+                    {
+                        CDSCollectionETWBCLProvider.Log.ConcurrentStack_FastPopFailed(spin.Count);
+                    }
+
+                    poppedHead = head;
+                    isEmpty = false;
+                    return nodesCount;
+                }
+
+                casCounter++;
+                if (casCounter >= 30)
+                {
+                    isEmpty = false;
+                    poppedHead = null;
+                    return 0;
+                }
+
                 for (int i = 0; i < backoff; i++)
                 {
                     spin.SpinOnce(sleep1Threshold: -1);
