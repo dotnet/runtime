@@ -43,7 +43,8 @@ extern "C" QCallExceptionStatus QCALLTYPE TypeBuilder_DefineType(QCall::ModuleHa
                                                   INT32 tkParent,
                                                   INT32 attributes,
                                                   INT32 tkEnclosingType,
-                                                  INT32 * pInterfaceTokens, INT32* pReturnValue);
+                                                  INT32 * pInterfaceTokens,
+                                                  INT32* pReturnValue);
 
 
 extern "C" QCallExceptionStatus QCALLTYPE TypeBuilder_DefineGenericParam(QCall::ModuleHandle pModule,
@@ -51,7 +52,8 @@ extern "C" QCallExceptionStatus QCALLTYPE TypeBuilder_DefineGenericParam(QCall::
                                                           INT32 tkParent,
                                                           INT32 attributes,
                                                           INT32 position,
-                                                          INT32 * pConstraintTokens, INT32* pReturnValue);
+                                                          INT32 * pConstraintTokens,
+                                                          INT32* pReturnValue);
 
 // This function will reset the parent class in metadata
 

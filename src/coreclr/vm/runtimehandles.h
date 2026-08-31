@@ -219,7 +219,8 @@ extern "C" QCallExceptionStatus QCALLTYPE RuntimeMethodHandle_IsCAVisibleFromDec
         QCall::TypeHandle targetTypeHandle,
         MethodDesc * pTargetCtor,
         QCall::TypeHandle sourceTypeHandle,
-        QCall::ModuleHandle sourceModuleHandle, BOOL* pReturnValue);
+        QCall::ModuleHandle sourceModuleHandle,
+        BOOL* pReturnValue);
 
 extern "C" QCallExceptionStatus QCALLTYPE RuntimeMethodHandle_GetMethodInstantiation(MethodDesc * pMethod, QCall::ObjectHandleOnStack retTypes, BOOL fAsRuntimeTypeArray);
 

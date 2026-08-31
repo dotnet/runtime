@@ -28,7 +28,8 @@ extern "C" QCallExceptionStatus QCALLTYPE ObjCMarshal_TryInitializeReferenceTrac
     _In_ ObjCMarshalNative::BeginEndCallback beginEndCallback,
     _In_ ObjCMarshalNative::IsReferencedCallback isReferencedCallback,
     _In_ ObjCMarshalNative::EnteredFinalizationCallback trackedObjectEnteredFinalization,
-    _In_ QCall::ObjectHandleOnStack objectTrackingInfoTable, BOOL* pReturnValue)
+    _In_ QCall::ObjectHandleOnStack objectTrackingInfoTable,
+    BOOL* pReturnValue)
 {
     QCALL_CONTRACT;
     _ASSERTE(beginEndCallback != NULL
@@ -121,7 +122,8 @@ namespace
 
 extern "C" QCallExceptionStatus QCALLTYPE ObjCMarshal_TrySetGlobalMessageSendCallback(
     _In_ ObjCMarshalNative::MessageSendFunction msgSendFunction,
-    _In_ void* fptr, BOOL* pReturnValue)
+    _In_ void* fptr,
+    BOOL* pReturnValue)
 {
     QCALL_CONTRACT;
 

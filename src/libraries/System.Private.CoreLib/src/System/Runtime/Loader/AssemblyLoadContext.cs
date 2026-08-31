@@ -101,8 +101,7 @@ namespace System.Runtime.Loader
             // If this is a collectible ALC, we are creating a weak handle tracking resurrection otherwise we use a strong handle
             var thisHandle = GCHandle.Alloc(this, IsCollectible ? GCHandleType.WeakTrackResurrection : GCHandleType.Normal);
             var thisHandlePtr = GCHandle.ToIntPtr(thisHandle);
-            _nativeAssemblyLoadContext = InitializeAssemblyLoadContext(thisHandlePtr, representsTPALoadContext, isCollectible
-            );
+            _nativeAssemblyLoadContext = InitializeAssemblyLoadContext(thisHandlePtr, representsTPALoadContext, isCollectible);
 
             // Add this instance to the list of alive ALC
             Dictionary<long, WeakReference<AssemblyLoadContext>> allContexts = AllContexts;
@@ -150,8 +149,7 @@ namespace System.Runtime.Loader
                     var thisStrongHandlePtr = GCHandle.ToIntPtr(thisStrongHandle);
                     // The underlying code will transform the original weak handle
                     // created by InitializeLoadContext to a strong handle
-                    PrepareForAssemblyLoadContextRelease(_nativeAssemblyLoadContext, thisStrongHandlePtr
-                    );
+                    PrepareForAssemblyLoadContextRelease(_nativeAssemblyLoadContext, thisStrongHandlePtr);
 
                     _state = InternalState.Unloading;
                 }

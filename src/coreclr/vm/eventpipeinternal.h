@@ -44,7 +44,8 @@ extern "C" QCallExceptionStatus QCALLTYPE EventPipeInternal_Enable(
     EventPipeSerializationFormat format,
     UINT32 circularBufferSizeInMB,
     /* COR_PRF_EVENTPIPE_PROVIDER_CONFIG */ LPCVOID pProviders,
-    UINT32 numProviders, UINT64* pReturnValue);
+    UINT32 numProviders,
+    UINT64* pReturnValue);
 
 //!
 //! Disables the specified session Id.
@@ -56,7 +57,8 @@ extern "C" QCallExceptionStatus QCALLTYPE EventPipeInternal_GetSessionInfo(UINT6
 extern "C" QCallExceptionStatus QCALLTYPE EventPipeInternal_CreateProvider(
     _In_z_ LPCWSTR providerName,
     EventPipeCallback pCallbackFunc,
-    void* pCallbackContext, INT_PTR* pReturnValue);
+    void* pCallbackContext,
+    INT_PTR* pReturnValue);
 
 extern "C" QCallExceptionStatus QCALLTYPE EventPipeInternal_DefineEvent(
     INT_PTR provHandle,
@@ -65,17 +67,20 @@ extern "C" QCallExceptionStatus QCALLTYPE EventPipeInternal_DefineEvent(
     UINT32 eventVersion,
     UINT32 level,
     void *pMetadata,
-    UINT32 metadataLength, INT_PTR* pReturnValue);
+    UINT32 metadataLength,
+    INT_PTR* pReturnValue);
 
 extern "C" QCallExceptionStatus QCALLTYPE EventPipeInternal_GetProvider(
-    _In_z_ LPCWSTR providerName, INT_PTR* pReturnValue);
+    _In_z_ LPCWSTR providerName,
+    INT_PTR* pReturnValue);
 
 extern "C" QCallExceptionStatus QCALLTYPE EventPipeInternal_DeleteProvider(
     INT_PTR provHandle);
 
 extern "C" QCallExceptionStatus QCALLTYPE EventPipeInternal_EventActivityIdControl(
     UINT32 controlCode,
-    GUID *pActivityId, int* pReturnValue);
+    GUID *pActivityId,
+    int* pReturnValue);
 
 extern "C" QCallExceptionStatus QCALLTYPE EventPipeInternal_WriteEventData(
     INT_PTR eventHandle,
@@ -85,14 +90,17 @@ extern "C" QCallExceptionStatus QCALLTYPE EventPipeInternal_WriteEventData(
 
 extern "C" QCallExceptionStatus QCALLTYPE EventPipeInternal_GetNextEvent(
     UINT64 sessionID,
-    EventPipeEventInstanceData *pInstance, BOOL* pReturnValue);
+    EventPipeEventInstanceData *pInstance,
+    BOOL* pReturnValue);
 
 extern "C" QCallExceptionStatus QCALLTYPE EventPipeInternal_SignalSession(
-    UINT64 sessionID, BOOL* pReturnValue);
+    UINT64 sessionID,
+    BOOL* pReturnValue);
 
 extern "C" QCallExceptionStatus QCALLTYPE EventPipeInternal_WaitForSessionSignal(
     UINT64 sessionID,
-    INT32 timeoutMs, BOOL* pReturnValue);
+    INT32 timeoutMs,
+    BOOL* pReturnValue);
 
 #endif // FEATURE_PERFTRACING
 

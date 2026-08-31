@@ -83,7 +83,7 @@ namespace System.Runtime.InteropServices
 #if CORECLR
         [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
 #endif
-                [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeMapLazyDictionary_ProcessAttributes")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeMapLazyDictionary_ProcessAttributes")]
         private static unsafe partial void ProcessAttributes(
             QCallAssembly assembly,
             QCallTypeHandle groupType,
@@ -91,22 +91,19 @@ namespace System.Runtime.InteropServices
             delegate* unmanaged<CallbackContext*, ProcessAttributesCallbackArg*, Interop.BOOL> newProxyTypeEntry,
             delegate* unmanaged<CallbackContext*, Interop.BOOL> newPrecachedExternalTypeMap,
             delegate* unmanaged<CallbackContext*, Interop.BOOL> newPrecachedProxyTypeMap,
-            CallbackContext* context
-        );
+            CallbackContext* context);
 
 #if CORECLR
         [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
 #endif
-                [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeMapLazyDictionary_FindPrecachedExternalTypeMapEntry", StringMarshalling = StringMarshalling.Utf8)]
-        private static unsafe partial IntPtr FindPrecachedExternalTypeMapEntry(QCallModule module, QCallTypeHandle groupType, string key
-        );
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeMapLazyDictionary_FindPrecachedExternalTypeMapEntry", StringMarshalling = StringMarshalling.Utf8)]
+        private static unsafe partial IntPtr FindPrecachedExternalTypeMapEntry(QCallModule module, QCallTypeHandle groupType, string key);
 
 #if CORECLR
         [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
 #endif
-                [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeMapLazyDictionary_FindPrecachedProxyTypeMapEntry")]
-        private static unsafe partial IntPtr FindPrecachedProxyTypeMapEntry(QCallModule module, QCallTypeHandle groupType, QCallTypeHandle type
-        );
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeMapLazyDictionary_FindPrecachedProxyTypeMapEntry")]
+        private static unsafe partial IntPtr FindPrecachedProxyTypeMapEntry(QCallModule module, QCallTypeHandle groupType, QCallTypeHandle type);
 
         public ref struct Utf16SharedBuffer
         {
@@ -276,8 +273,7 @@ namespace System.Runtime.InteropServices
                 newProxyTypeEntry,
                 &NewPrecachedExternalTypeMap,
                 &NewPrecachedProxyTypeMap,
-                &context
-            );
+                &context);
 
             // If an exception was thrown during the processing of
             // the attributes, rethrow it.
@@ -422,8 +418,7 @@ namespace System.Runtime.InteropServices
 
             protected override bool TryGetOrLoadTypeFromPreCachedDictionary(RuntimeModule module, string key, [NotNullWhen(true)] out Type? type)
             {
-                IntPtr handle = FindPrecachedExternalTypeMapEntry(new QCallModule(ref module), new QCallTypeHandle(ref _groupType), key
-                );
+                IntPtr handle = FindPrecachedExternalTypeMapEntry(new QCallModule(ref module), new QCallTypeHandle(ref _groupType), key);
                 type = RuntimeTypeHandle.GetRuntimeTypeFromHandleMaybeNull(handle);
                 return type != null;
             }
@@ -498,8 +493,7 @@ namespace System.Runtime.InteropServices
             protected override bool TryGetOrLoadTypeFromPreCachedDictionary(RuntimeModule module, Type key, [NotNullWhen(true)] out Type? type)
             {
                 RuntimeType rtKey = (RuntimeType)key;
-                IntPtr handle = FindPrecachedProxyTypeMapEntry(new QCallModule(ref module), new QCallTypeHandle(ref _groupType), new QCallTypeHandle(ref rtKey)
-                );
+                IntPtr handle = FindPrecachedProxyTypeMapEntry(new QCallModule(ref module), new QCallTypeHandle(ref _groupType), new QCallTypeHandle(ref rtKey));
                 type = RuntimeTypeHandle.GetRuntimeTypeFromHandleMaybeNull(handle);
                 return type != null;
             }

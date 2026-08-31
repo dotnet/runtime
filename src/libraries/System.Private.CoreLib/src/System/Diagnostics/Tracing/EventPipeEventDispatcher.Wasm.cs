@@ -44,8 +44,7 @@ namespace System.Diagnostics.Tracing
             // the SignalSession() call could be on a disabled session.
             await Task.Yield();
 
-            EventPipeInternal.Disable(sessionID
-            );
+            EventPipeInternal.Disable(sessionID);
         }
     }
 }

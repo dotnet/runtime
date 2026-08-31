@@ -41,8 +41,7 @@ namespace System.Diagnostics.Tracing
         private EventPipeEventDispatcher()
         {
             // Get the ID of the runtime provider so that it can be used as a filter when processing events.
-            m_RuntimeProviderID = EventPipeInternal.GetProvider(NativeRuntimeEventSource.EventSourceName
-            );
+            m_RuntimeProviderID = EventPipeInternal.GetProvider(NativeRuntimeEventSource.EventSourceName);
         }
 
         internal void SendCommand(EventListener eventListener, EventCommand command, bool enable, EventLevel level, EventKeywords matchAnyKeywords)
@@ -144,8 +143,7 @@ namespace System.Diagnostics.Tracing
             ulong sessionID = Volatile.Read(ref m_sessionID);
             Debug.Assert(sessionID != 0);
             m_dispatchTaskCancellationSource.Cancel();
-            EventPipeInternal.SignalSession(sessionID
-            );
+            EventPipeInternal.SignalSession(sessionID);
             Volatile.Write(ref m_sessionID, 0);
         }
 

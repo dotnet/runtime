@@ -22,7 +22,8 @@ public:
 extern "C" QCallExceptionStatus QCALLTYPE ModuleBuilder_GetTypeRef(QCall::ModuleHandle pModule,
                                 LPCWSTR wszFullName,
                                 QCall::ModuleHandle pRefedModule,
-                                INT32 tkResolution, mdTypeRef* pReturnValue);
+                                INT32 tkResolution,
+                                mdTypeRef* pReturnValue);
 
 // SetFieldRVAContent
 // This function is used to set the FieldRVA with the content data
@@ -34,7 +35,8 @@ extern "C" QCallExceptionStatus QCALLTYPE ModuleBuilder_GetArrayMethodToken(QCal
                                     INT32 tkTypeSpec,
                                     LPCWSTR wszMethodName,
                                     LPCBYTE pSignature,
-                                    INT32 sigLength, INT32* pReturnValue);
+                                    INT32 sigLength,
+                                    INT32* pReturnValue);
 
 // GetMemberRefToken
 // This function will return the MemberRef token
@@ -54,7 +56,8 @@ extern "C" QCallExceptionStatus QCALLTYPE ModuleBuilder_GetMemberRefFromSignatur
                                             INT32 tr,
                                             LPCWSTR wszMemberName,
                                             LPCBYTE pSignature,
-                                            INT32 sigLength, INT32* pReturnValue);
+                                            INT32 sigLength,
+                                            INT32* pReturnValue);
 
 // GetTokenFromTypeSpec
 extern "C" QCallExceptionStatus QCALLTYPE ModuleBuilder_GetTokenFromTypeSpec(QCall::ModuleHandle pModule, LPCBYTE pSignature, INT32 sigLength, mdTypeSpec* pReturnValue);

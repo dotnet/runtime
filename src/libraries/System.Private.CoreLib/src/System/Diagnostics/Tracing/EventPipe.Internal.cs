@@ -18,21 +18,19 @@ namespace System.Diagnostics.Tracing
 #if CORECLR
         [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
 #endif
-                [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_Enable")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_Enable")]
         private static unsafe partial ulong Enable(
             char* outputFile,
             EventPipeSerializationFormat format,
             uint circularBufferSizeInMB,
             EventPipeProviderConfigurationNative* providers,
-            uint numProviders
-        );
+            uint numProviders);
 
 #if CORECLR
         [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
 #endif
-                [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_Disable")]
-        internal static partial void Disable(ulong sessionID
-        );
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_Disable")]
+        internal static partial void Disable(ulong sessionID);
 
         //
         // These PInvokes are used by EventSource to interact with the EventPipe.
@@ -40,46 +38,40 @@ namespace System.Diagnostics.Tracing
 #if CORECLR
         [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
 #endif
-                [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_CreateProvider", StringMarshalling = StringMarshalling.Utf16)]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_CreateProvider", StringMarshalling = StringMarshalling.Utf16)]
         internal static unsafe partial IntPtr CreateProvider(string providerName,
             delegate* unmanaged<byte*, int, byte, long, long, Interop.Advapi32.EVENT_FILTER_DESCRIPTOR*, void*, void> callbackFunc,
-            void* callbackContext
-        );
+            void* callbackContext);
 
 #if CORECLR
         [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
 #endif
-                [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_DefineEvent")]
-        internal static unsafe partial IntPtr DefineEvent(IntPtr provHandle, uint eventID, long keywords, uint eventVersion, uint level, void *pMetadata, uint metadataLength
-        );
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_DefineEvent")]
+        internal static unsafe partial IntPtr DefineEvent(IntPtr provHandle, uint eventID, long keywords, uint eventVersion, uint level, void *pMetadata, uint metadataLength);
 
 #if CORECLR
         [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
 #endif
-                [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_GetProvider", StringMarshalling = StringMarshalling.Utf16)]
-        internal static partial IntPtr GetProvider(string providerName
-        );
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_GetProvider", StringMarshalling = StringMarshalling.Utf16)]
+        internal static partial IntPtr GetProvider(string providerName);
 
 #if CORECLR
         [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
 #endif
-                [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_DeleteProvider")]
-        internal static partial void DeleteProvider(IntPtr provHandle
-        );
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_DeleteProvider")]
+        internal static partial void DeleteProvider(IntPtr provHandle);
 
 #if CORECLR
         [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
 #endif
-                [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_EventActivityIdControl")]
-        internal static partial int EventActivityIdControl(uint controlCode, ref Guid activityId
-        );
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_EventActivityIdControl")]
+        internal static partial int EventActivityIdControl(uint controlCode, ref Guid activityId);
 
 #if CORECLR
         [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
 #endif
-                [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_WriteEventData")]
-        internal static unsafe partial void WriteEventData(IntPtr eventHandle, EventProvider.EventData* pEventData, uint dataCount, Guid* activityId, Guid* relatedActivityId
-        );
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_WriteEventData")]
+        internal static unsafe partial void WriteEventData(IntPtr eventHandle, EventProvider.EventData* pEventData, uint dataCount, Guid* activityId, Guid* relatedActivityId);
 
         //
         // These PInvokes are used as part of the EventPipeEventDispatcher.
@@ -87,34 +79,30 @@ namespace System.Diagnostics.Tracing
 #if CORECLR
         [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
 #endif
-                [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_GetSessionInfo")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_GetSessionInfo")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static unsafe partial bool GetSessionInfo(ulong sessionID, EventPipeSessionInfo* pSessionInfo
-        );
+        internal static unsafe partial bool GetSessionInfo(ulong sessionID, EventPipeSessionInfo* pSessionInfo);
 
 #if CORECLR
         [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
 #endif
-                [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_GetNextEvent")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_GetNextEvent")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static unsafe partial bool GetNextEvent(ulong sessionID, EventPipeEventInstanceData* pInstance
-        );
+        internal static unsafe partial bool GetNextEvent(ulong sessionID, EventPipeEventInstanceData* pInstance);
 
 #if CORECLR
         [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
 #endif
-                [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_SignalSession")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_SignalSession")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static unsafe partial bool SignalSession(ulong sessionID
-        );
+        internal static unsafe partial bool SignalSession(ulong sessionID);
 
 #if CORECLR
         [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
 #endif
-                [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_WaitForSessionSignal")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_WaitForSessionSignal")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static unsafe partial bool WaitForSessionSignal(ulong sessionID, int timeoutMs
-        );
+        internal static unsafe partial bool WaitForSessionSignal(ulong sessionID, int timeoutMs);
 #else
 #pragma warning disable IDE0060
         private static unsafe ulong Enable(

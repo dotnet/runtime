@@ -80,8 +80,7 @@ namespace System.Diagnostics.Tracing
         private void ContentionLockCreated(nint LockID, nint AssociatedObjectID, ushort ClrInstanceID = DefaultClrInstanceId)
         {
             Debug.Assert(IsEnabled(EventLevel.Informational, Keywords.ContentionKeyword));
-            LogContentionLockCreated(LockID, AssociatedObjectID, ClrInstanceID
-            );
+            LogContentionLockCreated(LockID, AssociatedObjectID, ClrInstanceID);
         }
 
         [NonEvent]
@@ -102,8 +101,7 @@ namespace System.Diagnostics.Tracing
             ulong LockOwnerThreadID)
         {
             Debug.Assert(IsEnabled(EventLevel.Informational, Keywords.ContentionKeyword));
-            LogContentionStart(ContentionFlags, ClrInstanceID, LockID, AssociatedObjectID, LockOwnerThreadID
-            );
+            LogContentionStart(ContentionFlags, ClrInstanceID, LockID, AssociatedObjectID, LockOwnerThreadID);
         }
 
         [NonEvent]
@@ -122,8 +120,7 @@ namespace System.Diagnostics.Tracing
         private void ContentionStop(ContentionFlagsMap ContentionFlags, ushort ClrInstanceID, double DurationNs)
         {
             Debug.Assert(IsEnabled(EventLevel.Informational, Keywords.ContentionKeyword));
-            LogContentionStop(ContentionFlags, ClrInstanceID, DurationNs
-            );
+            LogContentionStop(ContentionFlags, ClrInstanceID, DurationNs);
         }
 
         [NonEvent]
@@ -139,8 +136,7 @@ namespace System.Diagnostics.Tracing
         {
             if (IsEnabled(EventLevel.Informational, Keywords.ThreadingKeyword))
             {
-                LogThreadPoolWorkerThreadStart(ActiveWorkerThreadCount, RetiredWorkerThreadCount, ClrInstanceID
-                );
+                LogThreadPoolWorkerThreadStart(ActiveWorkerThreadCount, RetiredWorkerThreadCount, ClrInstanceID);
             }
         }
 
@@ -152,8 +148,7 @@ namespace System.Diagnostics.Tracing
         {
             if (IsEnabled(EventLevel.Informational, Keywords.ThreadingKeyword))
             {
-                LogThreadPoolWorkerThreadStop(ActiveWorkerThreadCount, RetiredWorkerThreadCount, ClrInstanceID
-                );
+                LogThreadPoolWorkerThreadStop(ActiveWorkerThreadCount, RetiredWorkerThreadCount, ClrInstanceID);
             }
         }
 
@@ -166,8 +161,7 @@ namespace System.Diagnostics.Tracing
         {
             if (IsEnabled(EventLevel.Informational, Keywords.ThreadingKeyword))
             {
-                LogThreadPoolWorkerThreadWait(ActiveWorkerThreadCount, RetiredWorkerThreadCount, ClrInstanceID
-                );
+                LogThreadPoolWorkerThreadWait(ActiveWorkerThreadCount, RetiredWorkerThreadCount, ClrInstanceID);
             }
         }
 
@@ -180,8 +174,7 @@ namespace System.Diagnostics.Tracing
             {
                 return;
             }
-            LogThreadPoolWorkerThreadAdjustmentSample(Throughput, ClrInstanceID
-            );
+            LogThreadPoolWorkerThreadAdjustmentSample(Throughput, ClrInstanceID);
         }
 
         [Event(55, Level = EventLevel.Informational, Message = Messages.WorkerThreadAdjustmentAdjustment, Task = Tasks.ThreadPoolWorkerThreadAdjustment, Opcode = Opcodes.Adjustment, Version = 0, Keywords = Keywords.ThreadingKeyword)]
@@ -195,8 +188,7 @@ namespace System.Diagnostics.Tracing
             {
                 return;
             }
-            LogThreadPoolWorkerThreadAdjustmentAdjustment(AverageThroughput, NewWorkerThreadCount, Reason, ClrInstanceID
-            );
+            LogThreadPoolWorkerThreadAdjustmentAdjustment(AverageThroughput, NewWorkerThreadCount, Reason, ClrInstanceID);
         }
 
         [Event(56, Level = EventLevel.Verbose, Message = Messages.WorkerThreadAdjustmentStats, Task = Tasks.ThreadPoolWorkerThreadAdjustment, Opcode = Opcodes.Stats, Version = 0, Keywords = Keywords.ThreadingKeyword)]
@@ -217,8 +209,7 @@ namespace System.Diagnostics.Tracing
             {
                 return;
             }
-            LogThreadPoolWorkerThreadAdjustmentStats(Duration, Throughput, ThreadWave, ThroughputWave, ThroughputErrorEstimate, AverageThroughputErrorEstimate, ThroughputRatio, Confidence, NewControlSetting, NewThreadWaveMagnitude, ClrInstanceID
-            );
+            LogThreadPoolWorkerThreadAdjustmentStats(Duration, Throughput, ThreadWave, ThroughputWave, ThroughputErrorEstimate, AverageThroughputErrorEstimate, ThroughputRatio, Confidence, NewControlSetting, NewThreadWaveMagnitude, ClrInstanceID);
         }
 
         [Event(63, Level = EventLevel.Verbose, Message = Messages.IOEnqueue, Task = Tasks.ThreadPool, Opcode = Opcodes.IOEnqueue, Version = 0, Keywords = Keywords.ThreadingKeyword | Keywords.ThreadTransferKeyword)]
@@ -228,8 +219,7 @@ namespace System.Diagnostics.Tracing
             bool MultiDequeues,
             ushort ClrInstanceID = DefaultClrInstanceId)
         {
-            LogThreadPoolIOEnqueue(NativeOverlapped, Overlapped, MultiDequeues, ClrInstanceID
-            );
+            LogThreadPoolIOEnqueue(NativeOverlapped, Overlapped, MultiDequeues, ClrInstanceID);
         }
 
         [NonEvent]
@@ -270,8 +260,7 @@ namespace System.Diagnostics.Tracing
             IntPtr Overlapped, // 0 if the Windows thread pool is used, the relevant info could be obtained from the NativeOverlapped* if necessary
             ushort ClrInstanceID = DefaultClrInstanceId)
         {
-            LogThreadPoolIODequeue(NativeOverlapped, Overlapped, ClrInstanceID
-            );
+            LogThreadPoolIODequeue(NativeOverlapped, Overlapped, ClrInstanceID);
         }
 
         [NonEvent]
@@ -310,8 +299,7 @@ namespace System.Diagnostics.Tracing
             {
                 return;
             }
-            LogThreadPoolWorkingThreadCount(Count, ClrInstanceID
-            );
+            LogThreadPoolWorkingThreadCount(Count, ClrInstanceID);
         }
 
         [NonEvent]
@@ -337,8 +325,7 @@ namespace System.Diagnostics.Tracing
             IntPtr Overlapped,  // 0 if the Windows thread pool is used, the relevant info could be obtained from the NativeOverlapped* if necessary
             ushort ClrInstanceID = DefaultClrInstanceId)
         {
-            LogThreadPoolIOPack(NativeOverlapped, Overlapped, ClrInstanceID
-            );
+            LogThreadPoolIOPack(NativeOverlapped, Overlapped, ClrInstanceID);
         }
 
 
@@ -352,8 +339,7 @@ namespace System.Diagnostics.Tracing
         {
             if (IsEnabled(EventLevel.Informational, Keywords.ThreadingKeyword))
             {
-                LogThreadPoolMinMaxThreads(MinWorkerThreads, MaxWorkerThreads, MinIOCompletionThreads, MaxIOCompletionThreads, ClrInstanceID
-                );
+                LogThreadPoolMinMaxThreads(MinWorkerThreads, MaxWorkerThreads, MinIOCompletionThreads, MaxIOCompletionThreads, ClrInstanceID);
             }
         }
 
@@ -364,8 +350,7 @@ namespace System.Diagnostics.Tracing
             ushort ClrInstanceID = DefaultClrInstanceId)
         {
             Debug.Assert(IsEnabled(EventLevel.Verbose, Keywords.WaitHandleKeyword));
-            LogWaitHandleWaitStart(WaitSource, AssociatedObjectID, ClrInstanceID
-            );
+            LogWaitHandleWaitStart(WaitSource, AssociatedObjectID, ClrInstanceID);
         }
 
         [NonEvent]
@@ -379,8 +364,7 @@ namespace System.Diagnostics.Tracing
         public void WaitHandleWaitStop(ushort ClrInstanceID = DefaultClrInstanceId)
         {
             Debug.Assert(IsEnabled(EventLevel.Verbose, Keywords.WaitHandleKeyword));
-            LogWaitHandleWaitStop(ClrInstanceID
-            );
+            LogWaitHandleWaitStop(ClrInstanceID);
         }
     }
 }

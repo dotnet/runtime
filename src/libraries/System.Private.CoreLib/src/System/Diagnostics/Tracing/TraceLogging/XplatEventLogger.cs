@@ -25,9 +25,8 @@ namespace System.Diagnostics.Tracing
 #if CORECLR
         [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
 #endif
-                [LibraryImport(RuntimeHelpers.QCall, StringMarshalling = StringMarshalling.Utf16)]
-        private static unsafe partial char* EventSource_GetClrConfig(string configName
-        );
+        [LibraryImport(RuntimeHelpers.QCall, StringMarshalling = StringMarshalling.Utf16)]
+        private static unsafe partial char* EventSource_GetClrConfig(string configName);
 
         private static bool initializedPersistentListener;
 
@@ -49,17 +48,15 @@ namespace System.Diagnostics.Tracing
 #if CORECLR
         [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
 #endif
-                [LibraryImport(RuntimeHelpers.QCall)]
+        [LibraryImport(RuntimeHelpers.QCall)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static partial bool IsEventSourceLoggingEnabled(
-        );
+        private static partial bool IsEventSourceLoggingEnabled();
 
 #if CORECLR
         [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
 #endif
-                [LibraryImport(RuntimeHelpers.QCall, StringMarshalling = StringMarshalling.Utf16)]
-        private static partial void LogEventSource(int eventID, string? eventName, string eventSourceName, string payload
-        );
+        [LibraryImport(RuntimeHelpers.QCall, StringMarshalling = StringMarshalling.Utf16)]
+        private static partial void LogEventSource(int eventID, string? eventName, string eventSourceName, string payload);
 
         private static readonly List<char> escape_seq = new List<char> { '\b', '\f', '\n', '\r', '\t', '\"', '\\' };
         private static readonly Dictionary<char, string> seq_mapping = new Dictionary<char, string>()
@@ -208,8 +205,7 @@ namespace System.Diagnostics.Tracing
                 }
             }
 
-            LogEventSource(eventData.EventId, eventData.EventName, eventData.EventSource.Name, payload
-            );
+            LogEventSource(eventData.EventId, eventData.EventName, eventData.EventSource.Name, payload);
         }
     }
 }

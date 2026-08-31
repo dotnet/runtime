@@ -1306,7 +1306,8 @@ extern "C" QCallExceptionStatus QCALLTYPE AssemblyNative_GetLoadContextForAssemb
 extern "C" QCallExceptionStatus QCALLTYPE AssemblyNative_InternalTryGetRawMetadata(
     QCall::AssemblyHandle assembly,
     UINT8 **blobRef,
-    INT32 *lengthRef, BOOL* pReturnValue)
+    INT32 *lengthRef,
+    BOOL* pReturnValue)
 {
     QCALL_CONTRACT;
 
@@ -1838,7 +1839,8 @@ extern "C" QCallExceptionStatus QCALLTYPE TypeMapLazyDictionary_ProcessAttribute
 extern "C" QCallExceptionStatus QCALLTYPE TypeMapLazyDictionary_FindPrecachedExternalTypeMapEntry(
     QCall::ModuleHandle pModule,
     QCall::TypeHandle pGroupType,
-    LPCUTF8 key, TADDR* pReturnValue)
+    LPCUTF8 key,
+    TADDR* pReturnValue)
 {
     QCALL_CONTRACT;
     _ASSERTE(pModule != NULL);
@@ -1871,7 +1873,8 @@ extern "C" QCallExceptionStatus QCALLTYPE TypeMapLazyDictionary_FindPrecachedExt
 extern "C" QCallExceptionStatus QCALLTYPE TypeMapLazyDictionary_FindPrecachedProxyTypeMapEntry(
     QCall::ModuleHandle pModule,
     QCall::TypeHandle pGroupType,
-    QCall::TypeHandle pType, TADDR* pReturnValue)
+    QCall::TypeHandle pType,
+    TADDR* pReturnValue)
 {
     QCALL_CONTRACT;
     _ASSERTE(pModule != NULL);

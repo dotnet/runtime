@@ -676,7 +676,8 @@ void FlushVirtualFunctionPointerCaches()
 // slow helper to call from the fast one
 extern "C" QCallExceptionStatus QCALLTYPE ResolveVirtualFunctionPointer(QCall::ObjectHandleOnStack obj,
                                                        EnregisteredTypeHandle classHnd,
-                                                       MethodDesc* pStaticMD, PCODE* pReturnValue)
+                                                       MethodDesc* pStaticMD,
+                                                       PCODE* pReturnValue)
 {
     QCALL_CONTRACT;
 

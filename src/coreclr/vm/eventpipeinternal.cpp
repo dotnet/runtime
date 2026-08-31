@@ -19,11 +19,10 @@ extern "C" QCallExceptionStatus QCALLTYPE EventPipeInternal_Enable(
     EventPipeSerializationFormat format,
     UINT32 circularBufferSizeInMB,
     /* COR_PRF_EVENTPIPE_PROVIDER_CONFIG */ LPCVOID pProviders,
-    UINT32 numProviders, UINT64* pReturnValue)
+    UINT32 numProviders,
+    UINT64* pReturnValue)
 {
     QCALL_CONTRACT;
-
-    UINT64 sessionID = 0;
 
     // Invalid input!
     if (circularBufferSizeInMB == 0 ||
@@ -36,6 +35,9 @@ extern "C" QCallExceptionStatus QCALLTYPE EventPipeInternal_Enable(
     }
 
     BEGIN_QCALL;
+
+    UINT64 sessionID = 0;
+
     {
         EventPipeProviderConfigurationAdapter configAdapter(reinterpret_cast<const COR_PRF_EVENTPIPE_PROVIDER_CONFIG *>(pProviders), numProviders);
         sessionID = EventPipeAdapter::Enable(
@@ -95,7 +97,8 @@ extern "C" QCallExceptionStatus QCALLTYPE EventPipeInternal_GetSessionInfo(UINT6
 extern "C" QCallExceptionStatus QCALLTYPE EventPipeInternal_CreateProvider(
     _In_z_ LPCWSTR providerName,
     EventPipeCallback pCallbackFunc,
-    void* pCallbackContext, INT_PTR* pReturnValue)
+    void* pCallbackContext,
+    INT_PTR* pReturnValue)
 {
     QCALL_CONTRACT;
 
@@ -117,7 +120,8 @@ extern "C" QCallExceptionStatus QCALLTYPE EventPipeInternal_DefineEvent(
     UINT32 eventVersion,
     UINT32 level,
     void *pMetadata,
-    UINT32 metadataLength, INT_PTR* pReturnValue)
+    UINT32 metadataLength,
+    INT_PTR* pReturnValue)
 {
     QCALL_CONTRACT;
 

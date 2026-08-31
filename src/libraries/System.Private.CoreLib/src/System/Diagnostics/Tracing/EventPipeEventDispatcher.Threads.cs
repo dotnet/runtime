@@ -34,8 +34,7 @@ namespace System.Diagnostics.Tracing
                 {
                     if (!eventsReceived)
                     {
-                        EventPipeInternal.WaitForSessionSignal(sessionID, Timeout.Infinite
-                        );
+                        EventPipeInternal.WaitForSessionSignal(sessionID, Timeout.Infinite);
                     }
 
                     Thread.Sleep(10);
@@ -52,8 +51,7 @@ namespace System.Diagnostics.Tracing
 
             // Disable the old session. This can happen asynchronously since we aren't using the old session
             // anymore.
-            EventPipeInternal.Disable(sessionID
-            );
+            EventPipeInternal.Disable(sessionID);
         }
     }
 }

@@ -97,7 +97,8 @@ extern "C" QCallExceptionStatus QCALLTYPE RuntimeMethodHandle_IsCAVisibleFromDec
     QCall::TypeHandle       targetTypeHandle,
     MethodDesc *            pTargetCtor,
     QCall::TypeHandle       sourceTypeHandle,
-    QCall::ModuleHandle     sourceModuleHandle, BOOL* pReturnValue)
+    QCall::ModuleHandle     sourceModuleHandle,
+    BOOL* pReturnValue)
 {
     QCALL_CONTRACT;
 

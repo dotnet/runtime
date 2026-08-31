@@ -131,8 +131,7 @@ namespace System.Diagnostics.Tracing
                 fixed (char* outputFilePath = outputFile)
                 fixed (EventPipeProviderConfigurationNative* providersNativePointer = providersNative)
                 {
-                    return Enable(outputFilePath, format, circularBufferSizeInMB, providersNativePointer, (uint)providersNative.Length
-                    );
+                    return Enable(outputFilePath, format, circularBufferSizeInMB, providersNativePointer, (uint)providersNative.Length);
                 }
             }
             finally

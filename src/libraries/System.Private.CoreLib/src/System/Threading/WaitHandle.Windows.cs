@@ -65,8 +65,7 @@ namespace System.Threading
                 if (reentrantWait)
                 {
                     Debug.Assert(!waitAll);
-                    result = Thread.ReentrantWaitAny(true, millisecondsTimeout, numHandles, pHandles
-                    );
+                    result = Thread.ReentrantWaitAny(true, millisecondsTimeout, numHandles, pHandles);
                 }
                 else
                 {

@@ -24,7 +24,8 @@
 extern "C" QCallExceptionStatus QCALLTYPE ModuleBuilder_GetTypeRef(QCall::ModuleHandle pModule,
                                           LPCWSTR wszFullName,
                                           QCall::ModuleHandle pRefedModule,
-                                          INT32 tkResolutionArg, mdTypeRef* pReturnValue)
+                                          INT32 tkResolutionArg,
+                                          mdTypeRef* pReturnValue)
 {
     QCALL_CONTRACT;
 
@@ -128,7 +129,8 @@ extern "C" QCallExceptionStatus QCALLTYPE ModuleBuilder_GetArrayMethodToken(QCal
                                                INT32 tkTypeSpec,
                                                LPCWSTR wszMethodName,
                                                LPCBYTE pSignature,
-                                               INT32 sigLength, INT32* pReturnValue)
+                                               INT32 sigLength,
+                                               INT32* pReturnValue)
 {
     QCALL_CONTRACT;
 
@@ -442,7 +444,8 @@ extern "C" QCallExceptionStatus QCALLTYPE ModuleBuilder_GetMemberRefFromSignatur
                                                      INT32 tr,
                                                      LPCWSTR wszMemberName,
                                                      LPCBYTE pSignature,
-                                                     INT32 sigLength, INT32* pReturnValue)
+                                                     INT32 sigLength,
+                                                     INT32* pReturnValue)
 {
     QCALL_CONTRACT;
 
