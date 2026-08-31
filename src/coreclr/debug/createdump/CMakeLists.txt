@@ -98,7 +98,6 @@ target_link_libraries(createdump_static PRIVATE minipal)
         PRIVATE
         createdump_static
         corguids
-        coreclrminipal
         coreclrpal_dac
         coreclrpal
         dbgutil
