@@ -2,10 +2,10 @@
 #
 # Pipeline overview:
 #
-#   SOSTests           windows_x64 Release. One shared coreclr+libs build (-c Debug
-#                      -rc release -lc release -clrinterpreter) consumed by the
-#                      cDAC SOS leg. The leg sets testInterpreter: true so
-#                      interpreter coverage is exercised inline.
+#   SOSTests           windows_x64 Release. Two shared coreclr+libs builds (-c Debug
+#                      -rc release -lc release -clrinterpreter), one using the
+#                      EnumMemory provider. Four SOS legs preserve cDAC, cDAC_verify,
+#                      and DAC coverage while testing the EnumMemory provider.
 #
 #   CdacUnitTests      linux_x64 Debug. Builds + tests the cDAC managed-side
 #                      UnitTests + DataGeneratorTests projects (tools.cdactests
@@ -115,14 +115,13 @@ extends:
     stages:
 
     # ----------------------------------------------------------------------
-    # SOS tests: shared windows_x64 build + cDAC SOS leg.
+    # SOS tests: standard and EnumMemory windows_x64 builds + 4 SOS legs.
     # ----------------------------------------------------------------------
     - stage: SOSTests
       jobs:
       # Shared coreclr+libs+host+packs build. -clrinterpreter compiles
-      # FEATURE_INTERPRETER into the Release CoreCLR so the SOS leg below
-      # gets interpreter coverage through sos-test-leg.yml
-      # interpreter coverage without needing a separate Checked drop
+      # FEATURE_INTERPRETER into the Release CoreCLR so the SOS legs below
+      # get interpreter coverage without needing a separate Checked drop
       # (see review on dotnet/runtime#127840 -- -clrinterpreter enables
       # the interpreter in Release too).
       - template: /eng/pipelines/common/platform-matrix.yml
@@ -132,7 +131,7 @@ extends:
           platforms:
           - windows_x64
           jobParameters:
-            buildArgs: -s clr+libs+tools.cdac+host+packs -c Debug -rc $(_BuildConfig) -lc $(_BuildConfig) -clrinterpreter /p:UseCdacDumpCollectProvider=true
+            buildArgs: -s clr+libs+tools.cdac+host+packs -c Debug -rc $(_BuildConfig) -lc $(_BuildConfig) -clrinterpreter
             nameSuffix: AllSubsets_CoreCLR
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 360
@@ -166,12 +165,73 @@ extends:
                 artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_cdac
                 displayName: cDAC Assets
 
+      # Build the same runtime with the EnumMemory provider replacing the legacy DAC.
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: release
+          platforms:
+          - windows_x64
+          jobParameters:
+            buildArgs: -s clr+libs+tools.cdac+host+packs -c Debug -rc $(_BuildConfig) -lc $(_BuildConfig) -clrinterpreter /p:UseCdacDumpCollectProvider=true
+            nameSuffix: AllSubsets_CoreCLR_EnumMemory
+            isOfficialBuild: ${{ variables.isOfficialBuild }}
+            timeoutInMinutes: 360
+            postBuildSteps:
+            - powershell: |
+                $versionDir = Get-ChildItem -Directory -Path "$(Build.SourcesDirectory)\artifacts\bin\testhost\net*\shared\Microsoft.NETCore.App" | Select-Object -ExpandProperty FullName
+                Write-Host "##vso[task.setvariable variable=versionDir]$versionDir"
+              displayName: 'Set Path to Shared Framework Artifacts'
+            - template: /eng/pipelines/common/upload-artifact-step.yml
+              parameters:
+                rootFolder: $(versionDir)
+                includeRootFolder: false
+                archiveType: $(archiveType)
+                archiveExtension: $(archiveExtension)
+                tarCompression: $(tarCompression)
+                artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_coreclr_enum_memory
+                displayName: Build Assets
+            - powershell: |
+                $cdacDir = Get-ChildItem -Directory -Path "$(Build.SourcesDirectory)\artifacts\bin\mscordaccore_universal\*\win-$(archType)\publish" | Select-Object -ExpandProperty FullName -First 1
+                Write-Host "##vso[task.setvariable variable=cdacDir]$cdacDir"
+              displayName: 'Set Path to cDAC Artifacts'
+            - template: /eng/pipelines/common/upload-artifact-step.yml
+              parameters:
+                rootFolder: $(cdacDir)
+                includeRootFolder: false
+                archiveType: $(archiveType)
+                archiveExtension: $(archiveExtension)
+                tarCompression: $(tarCompression)
+                artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_cdac_enum_memory
+                displayName: cDAC Assets
+
+      # SOS test legs differ only in their artifact namespace and cDAC/DAC load mode.
+
       # cDAC: the runtime-under-test's own standalone cDAC (mscordaccore_universal) loaded through SOS's
       # standard cDAC hosting path (overlaying the freshly built cDAC next to sos.dll).
       - template: /eng/pipelines/diagnostics/sos-test-leg.yml
         parameters:
           name: cDAC
           dacMode: cdac
+
+      # cDAC_verify: the in-box DAC hosts the cDAC contract reader without fallback,
+      # while still verifying against the legacy DAC.
+      - template: /eng/pipelines/diagnostics/sos-test-leg.yml
+        parameters:
+          name: cDAC_verify
+          dacMode: cdacverify
+
+      - template: /eng/pipelines/diagnostics/sos-test-leg.yml
+        parameters:
+          name: DAC
+          dacMode: dac
+
+      - template: /eng/pipelines/diagnostics/sos-test-leg.yml
+        parameters:
+          name: cDAC_EnumMemory
+          dacMode: cdac
+          buildNameSuffix: AllSubsets_CoreCLR_EnumMemory
+          artifactSuffix: _enum_memory
 
     # ----------------------------------------------------------------------
     # cDAC managed-side unit tests + DataGenerator tests. Standalone, no
