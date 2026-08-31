@@ -254,7 +254,7 @@ namespace System
     {
         internal const int DecimalPrecision = 29; // Decimal.DecCalc also uses this value
 
-        /// <summary>The non-inclusive upper bound of <see cref="s_smallNumberCache"/>.</summary>
+        /// <summary>The non-inclusive upper bound of <see cref="SmallNumberCache.Value"/>.</summary>
         /// <remarks>
         /// This is a semi-arbitrary bound. For mono, which is often used for more size-constrained workloads,
         /// we keep the size really small, supporting only single digit values.  For coreclr, we use a larger
@@ -269,39 +269,46 @@ namespace System
 #else
             300;
 #endif
-        /// <summary>Lazily-populated cache of strings for uint values in the range [0, <see cref="SmallNumberCacheLength"/>).</summary>
-        private static readonly string?[] s_smallNumberCache = new string[SmallNumberCacheLength];
+        private static class SmallNumberCache
+        {
+            /// <summary>Lazily-populated cache of strings for uint values in the range [0, <see cref="SmallNumberCacheLength"/>).</summary>
+            internal static readonly string?[] Value = new string[SmallNumberCacheLength];
+        }
 
         // Optimizations using "TwoDigits" inspired by:
         // https://engineering.fb.com/2013/03/15/developer-tools/three-optimization-tips-for-c/
 #if MONO
         // Workaround for a performance regression on Mono: https://github.com/dotnet/runtime/issues/111932
-        private static readonly byte[] TwoDigitsCharsAsBytes =
-            MemoryMarshal.AsBytes<char>("00010203040506070809" +
-                                        "10111213141516171819" +
-                                        "20212223242526272829" +
-                                        "30313233343536373839" +
-                                        "40414243444546474849" +
-                                        "50515253545556575859" +
-                                        "60616263646566676869" +
-                                        "70717273747576777879" +
-                                        "80818283848586878889" +
-                                        "90919293949596979899").ToArray();
-        private static readonly byte[] TwoDigitsBytes =
-                                       ("00010203040506070809"u8 +
-                                        "10111213141516171819"u8 +
-                                        "20212223242526272829"u8 +
-                                        "30313233343536373839"u8 +
-                                        "40414243444546474849"u8 +
-                                        "50515253545556575859"u8 +
-                                        "60616263646566676869"u8 +
-                                        "70717273747576777879"u8 +
-                                        "80818283848586878889"u8 +
-                                        "90919293949596979899"u8).ToArray();
+        private static class TwoDigitsCache
+        {
+            internal static readonly byte[] CharsAsBytes =
+                MemoryMarshal.AsBytes<char>("00010203040506070809" +
+                                            "10111213141516171819" +
+                                            "20212223242526272829" +
+                                            "30313233343536373839" +
+                                            "40414243444546474849" +
+                                            "50515253545556575859" +
+                                            "60616263646566676869" +
+                                            "70717273747576777879" +
+                                            "80818283848586878889" +
+                                            "90919293949596979899").ToArray();
+
+            internal static readonly byte[] Bytes =
+                                           ("00010203040506070809"u8 +
+                                            "10111213141516171819"u8 +
+                                            "20212223242526272829"u8 +
+                                            "30313233343536373839"u8 +
+                                            "40414243444546474849"u8 +
+                                            "50515253545556575859"u8 +
+                                            "60616263646566676869"u8 +
+                                            "70717273747576777879"u8 +
+                                            "80818283848586878889"u8 +
+                                            "90919293949596979899"u8).ToArray();
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static ref byte GetTwoDigitsBytesRef(bool useChars) =>
-            ref MemoryMarshal.GetArrayDataReference(useChars ? TwoDigitsCharsAsBytes : TwoDigitsBytes);
+            ref MemoryMarshal.GetArrayDataReference(useChars ? TwoDigitsCache.CharsAsBytes : TwoDigitsCache.Bytes);
 #else
         private static ReadOnlySpan<byte> TwoDigitsCharsAsBytes =>
             MemoryMarshal.AsBytes<char>("00010203040506070809" +
@@ -2163,11 +2170,11 @@ namespace System
         internal static string UInt32ToDecStrForKnownSmallNumber(uint value)
         {
             Debug.Assert(value < SmallNumberCacheLength);
-            return s_smallNumberCache[value] ?? CreateAndCacheString(value);
+            return SmallNumberCache.Value[value] ?? CreateAndCacheString(value);
 
             [MethodImpl(MethodImplOptions.NoInlining)] // keep rare usage out of fast path
             static string CreateAndCacheString(uint value) =>
-                s_smallNumberCache[value] = UInt32ToDecStr_NoSmallNumberCheck(value);
+                SmallNumberCache.Value[value] = UInt32ToDecStr_NoSmallNumberCheck(value);
         }
 
         private static unsafe string UInt32ToDecStr_NoSmallNumberCheck(uint value)
