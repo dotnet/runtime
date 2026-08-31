@@ -63,10 +63,7 @@ namespace ILCompiler.DependencyAnalysis
                 if (_targetMethod.IsAbstract)
                     factory.MetadataManager.GetDependenciesDueToMethodCodePresence(dependencies, factory, canonMethod, methodIL: null);
             }
-
             factory.MetadataManager.GetDependenciesDueToLdToken(dependencies, factory, _targetMethod);
-
-            return;
         }
 
         protected override ObjectData GetDehydratableData(NodeFactory factory, bool relocsOnly = false)

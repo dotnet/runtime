@@ -100,7 +100,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             base.ComputeNonRelocationBasedDependencies(sink, factory);
             DependencySink<NodeFactory> dependencies = sink;
             dependencies.Add(factory.DelayLoadMethodCallThunks, "MethodCallThunksList");
-            return;
         }
 
         protected override void OnMarked(NodeFactory factory)

@@ -173,8 +173,6 @@ namespace ILCompiler.DependencyAnalysis
                                                                 templateLayout,
                                                                 "Type loader template"));
             }
-
-            return;
         }
 
         protected override string GetName(NodeFactory factory) => $"Dictionary layout for {_owningMethodOrType}";

@@ -54,7 +54,6 @@ namespace ILCompiler.ReadyToRun
                     dependencies.Add(new DependencyListEntry(_importReferenceProvider.GetImportToModule(targetModule), "Type Map Assembly Target"));
                 }
             }
-            return;
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)

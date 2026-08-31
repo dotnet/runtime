@@ -97,8 +97,6 @@ namespace ILCompiler.DependencyAnalysis
                     ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(result, factory, type.Module);
                 }
             }
-
-            return;
         }
 
         public override bool HasConditionalStaticDependencies =>

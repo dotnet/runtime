@@ -56,10 +56,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             DependencySink<NodeFactory> dependencies = sink;
             base.ComputeNonRelocationBasedDependencies(sink, factory);
-
             factory.AddVirtualMethodDiscoveryDependencies(dependencies, _arrayType);
-
-            return;
         }
     }
 }

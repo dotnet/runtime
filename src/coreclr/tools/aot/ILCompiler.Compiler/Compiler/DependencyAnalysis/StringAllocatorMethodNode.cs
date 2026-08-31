@@ -56,10 +56,7 @@ namespace ILCompiler.DependencyAnalysis
             result.Add(
                 factory.MethodEntrypoint(_allocationMethod),
                 "String constructor call");
-
             factory.MetadataManager.GetDependenciesDueToMethodCodePresence(result, factory, _constructorMethod, methodIL: null);
-
-            return;
         }
 
         public override bool HasConditionalStaticDependencies => false;

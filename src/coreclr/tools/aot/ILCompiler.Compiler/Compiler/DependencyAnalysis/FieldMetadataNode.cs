@@ -57,8 +57,6 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             TypeMetadataNode.GetMetadataDependencies(dependencies, factory, _field.FieldType, "Type of the field");
-
-            return;
         }
 
         public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)

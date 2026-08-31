@@ -32,8 +32,6 @@ namespace ILCompiler.DependencyAnalysis
                 _module.MetadataReader.GetBlobReader(typeSpec.Signature),
                 factory,
                 dependencies);
-
-            return;
         }
 
         protected override EntityHandle WriteInternal(ModuleWritingContext writeContext)

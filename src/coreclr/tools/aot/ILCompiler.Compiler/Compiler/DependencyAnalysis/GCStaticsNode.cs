@@ -64,10 +64,7 @@ namespace ILCompiler.DependencyAnalysis
             ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(dependencyList, factory, _type.Module);
 
             dependencyList.Add(factory.GCStaticsRegion, "GCStatics Region");
-
             dependencyList.Add(factory.GCStaticIndirection(_type), "GC statics indirection");
-
-            return;
         }
 
         public override bool HasConditionalStaticDependencies => _type.ConvertToCanonForm(CanonicalFormKind.Specific) != _type;

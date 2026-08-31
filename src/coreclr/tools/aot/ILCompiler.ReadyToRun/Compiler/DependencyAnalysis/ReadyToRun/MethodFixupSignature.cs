@@ -103,8 +103,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 list.Add(factory.VirtualMethodUse(canonMethod), "Non-GVM virtual slot use");
             }
-
-            return;
         }
 
         private static bool HasNonCanonicalInstantiationArguments(MethodDesc canonMethod)

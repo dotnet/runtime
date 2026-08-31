@@ -75,8 +75,6 @@ namespace ILCompiler.DependencyAnalysis
             }
             if (hasStaticVirtuals)
                 dependencyList.Add(factory.MaximallyConstructableType(_type), "Has static virtual methods");
-
-            return;
         }
 
         protected override ISymbolNode GetBaseTypeNode(NodeFactory factory)

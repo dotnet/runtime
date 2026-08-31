@@ -45,8 +45,6 @@ namespace ILCompiler.DependencyAnalysis
             {
                 dependencies.Add(factory.ReflectedMethod(typicalMethod), "Definition of the reflectable method");
             }
-
-            return;
         }
         protected override string GetName(NodeFactory factory)
         {

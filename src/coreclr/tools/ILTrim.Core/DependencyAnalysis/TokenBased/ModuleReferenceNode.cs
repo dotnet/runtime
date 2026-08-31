@@ -24,7 +24,6 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            return;
         }
 
         protected override EntityHandle WriteInternal(ModuleWritingContext writeContext)

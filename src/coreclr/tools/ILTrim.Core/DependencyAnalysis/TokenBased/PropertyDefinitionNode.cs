@@ -44,10 +44,7 @@ namespace ILCompiler.DependencyAnalysis
                 dependencies);
 
             dependencies.Add(factory.TypeDefinition(_module, declaringTypeHandle), "Property owning type");
-
             CustomAttributeNode.AddDependenciesDueToCustomAttributes(dependencies, factory, _module, property.GetCustomAttributes());
-
-            return;
         }
 
         protected override EntityHandle WriteInternal(ModuleWritingContext writeContext)

@@ -96,8 +96,6 @@ namespace ILCompiler.DependencyAnalysis
                         dependencies.Add(factory.FieldMetadata(field), "Complete metadata for type");
                 }
             }
-
-            return;
         }
 
         public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)

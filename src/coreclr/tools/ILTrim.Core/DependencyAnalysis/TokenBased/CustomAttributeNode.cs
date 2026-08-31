@@ -110,8 +110,6 @@ namespace ILCompiler.DependencyAnalysis
 
                 GetDependenciesFromCustomAttributeArgument(dependencies, factory, namedArg.Type, namedArg.Value);
             }
-
-            return;
         }
 
         private void AddGenericArgumentDataFlowDependencies(DependencySink<NodeFactory> dependencies, NodeFactory factory, EntityHandle attributeTarget, TypeDesc attributeType)

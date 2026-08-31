@@ -26,8 +26,6 @@ namespace ILCompiler.DependencyAnalysis
         {
             DependencySink<NodeFactory> dependencies = sink;
             dependencies.Add(factory.InjectStringThunksImport, "StringDiscoverableAssemblyStubNode requires InjectStringThunks fixup");
-
-            return;
         }
 
         protected override void OnMarked(NodeFactory factory)

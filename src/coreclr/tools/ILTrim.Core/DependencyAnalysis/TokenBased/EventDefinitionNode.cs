@@ -52,8 +52,6 @@ namespace ILCompiler.DependencyAnalysis
             if (!accessors.Raiser.IsNil)
                 dependencies.Add(factory.MethodDefinition(_module, accessors.Raiser), "Event raiser");
             Debug.Assert(accessors.Others.Length == 0);
-
-            return;
         }
 
         protected override EntityHandle WriteInternal(ModuleWritingContext writeContext)

@@ -59,7 +59,6 @@ namespace ILCompiler.DependencyAnalysis
                     return;
                 }
             }
-            return;
         }
 
         protected override string GetName(NodeFactory factory)

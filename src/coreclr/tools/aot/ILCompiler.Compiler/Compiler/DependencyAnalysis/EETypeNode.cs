@@ -559,8 +559,6 @@ namespace ILCompiler.DependencyAnalysis
                     }
                 }
             }
-
-            return;
         }
 
         public static bool IsTypeNodeShareable(TypeDesc type)
@@ -673,7 +671,6 @@ namespace ILCompiler.DependencyAnalysis
             if (_type.IsFunctionPointer)
                 FunctionPointerMapNode.GetHashtableDependencies(dependencies, factory, (FunctionPointerType)_type);
 
-            return;
         }
 
         protected override ObjectData GetDehydratableData(NodeFactory factory, bool relocsOnly)

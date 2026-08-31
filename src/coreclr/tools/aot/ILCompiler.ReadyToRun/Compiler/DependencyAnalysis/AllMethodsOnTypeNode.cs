@@ -50,8 +50,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     }
                 }
             }
-
-            return;
         }
 
         protected override string GetName(NodeFactory factory) => $"All methods on type {Type.ToString()}";

@@ -50,8 +50,6 @@ namespace ILCompiler.DependencyAnalysis
             {
                 dependencies.Add(factory.ModuleMetadata(satelliteModule), "Satellite assembly");
             }
-
-            return;
         }
 
         public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)

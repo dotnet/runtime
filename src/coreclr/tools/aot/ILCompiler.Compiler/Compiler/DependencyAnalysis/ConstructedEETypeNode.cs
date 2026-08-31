@@ -63,8 +63,6 @@ namespace ILCompiler.DependencyAnalysis
             {
                 factory.InteropStubManager.AddInterestingInteropConstructedTypeDependencies(dependencyList, factory, _type);
             }
-
-            return;
         }
 
         protected override ISymbolNode GetBaseTypeNode(NodeFactory factory)

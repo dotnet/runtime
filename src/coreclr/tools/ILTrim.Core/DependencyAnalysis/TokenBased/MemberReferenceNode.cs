@@ -73,8 +73,6 @@ namespace ILCompiler.DependencyAnalysis
                 signatureBlob,
                 factory,
                 dependencies);
-
-            return;
         }
 
         protected override EntityHandle WriteInternal(ModuleWritingContext writeContext)

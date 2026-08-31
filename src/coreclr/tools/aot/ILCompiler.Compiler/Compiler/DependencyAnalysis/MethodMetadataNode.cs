@@ -121,8 +121,6 @@ namespace ILCompiler.DependencyAnalysis
                     }
                 }
             }
-
-            return;
         }
 
         public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)

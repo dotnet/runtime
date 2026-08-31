@@ -261,8 +261,6 @@ namespace ILCompiler.DependencyAnalysis
                 }
 #endif
             }
-
-            return;
         }
 
         private static DependencyNodeCore<NodeFactory> GetVirtualMethodImplNode(NodeFactory factory, MethodDesc method)

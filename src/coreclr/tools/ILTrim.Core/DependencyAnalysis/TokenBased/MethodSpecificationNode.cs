@@ -32,10 +32,8 @@ namespace ILCompiler.DependencyAnalysis
                 _module.MetadataReader.GetBlobReader(methodSpec.Signature),
                 factory,
                 dependencies);
-
+                
             dependencies.Add(factory.GetNodeForMethodToken(_module, methodSpec.Method), "Instantiated method");
-
-            return;
         }
 
         protected override EntityHandle WriteInternal(ModuleWritingContext writeContext)

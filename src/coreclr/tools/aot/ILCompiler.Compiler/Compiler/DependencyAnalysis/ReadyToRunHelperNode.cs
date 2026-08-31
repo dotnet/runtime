@@ -165,8 +165,6 @@ namespace ILCompiler.DependencyAnalysis
 
                 return;
             }
-
-            return;
         }
 
         public override bool HasConditionalStaticDependencies => _id == ReadyToRunHelperId.DelegateCtor;
@@ -176,7 +174,6 @@ namespace ILCompiler.DependencyAnalysis
             DependencySink<NodeFactory> dependencyList = sink;
             var info = (DelegateCreationInfo)_target;
             factory.MetadataManager.GetConditionalDependenciesDueToDelegateCreation(dependencyList, factory, info.DelegateType, info.PossiblyUnresolvedTargetMethod);
-            return;
         }
 
 #if !SUPPORT_JIT

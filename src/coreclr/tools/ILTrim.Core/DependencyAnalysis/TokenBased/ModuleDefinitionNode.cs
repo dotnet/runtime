@@ -40,8 +40,6 @@ namespace ILCompiler.DependencyAnalysis
             {
                 dependencies.Add(factory.ManifestResource(_module, resourceHandle), "Manifest resource of a module");
             }
-
-            return;
         }
 
         protected override EntityHandle WriteInternal(ModuleWritingContext writeContext)

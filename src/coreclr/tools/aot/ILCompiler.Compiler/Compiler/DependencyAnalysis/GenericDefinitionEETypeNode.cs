@@ -106,8 +106,6 @@ namespace ILCompiler.DependencyAnalysis
 
             // Ask the metadata manager if we have any dependencies due to the presence of the EEType.
             factory.MetadataManager.GetDependenciesDueToEETypePresence(dependencyList, factory, _type);
-
-            return;
         }
 
         public override int ClassCode => 983279111;

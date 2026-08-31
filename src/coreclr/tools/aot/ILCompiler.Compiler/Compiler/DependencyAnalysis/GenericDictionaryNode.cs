@@ -242,8 +242,6 @@ namespace ILCompiler.DependencyAnalysis
 
             // Make sure the dictionary can also be populated
             dependencies.Add(factory.ShadowConcreteMethod(_owningMethod), "Dictionary contents");
-
-            return;
         }
 
         public override DictionaryLayoutNode GetDictionaryLayout(NodeFactory factory)

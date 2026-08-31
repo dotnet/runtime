@@ -237,8 +237,6 @@ namespace ILCompiler.DependencyAnalysis
                 MethodDesc targetMethod = delegateCreationInfo.PossiblyUnresolvedTargetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
                 factory.MetadataManager.GetDependenciesDueToDelegateCreation(dependencies, factory, delegateCreationInfo.DelegateType, targetMethod);
             }
-
-            return;
         }
 
         public override bool HasConditionalStaticDependencies => true;
@@ -283,7 +281,6 @@ namespace ILCompiler.DependencyAnalysis
                 factory.MetadataManager.GetConditionalDependenciesDueToDelegateCreation(conditionalDependencies, factory, delegateCreationInfo.DelegateType, targetMethod);
             }
 
-            return;
         }
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)

@@ -176,10 +176,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 dependencyList.Add(factory.EagerCctorIndirection(_type.GetStaticConstructor()), "Eager .cctor");
             }
-
             ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(dependencyList, factory, _type.Module);
-
-            return;
         }
 
         private static bool IsNonGcStaticField(FieldDesc field)

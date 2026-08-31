@@ -98,8 +98,6 @@ namespace ILCompiler.DependencyAnalysis
             {
                 dependencies.Add(new DependencyListEntry(factory.MethodAssociatedData(this), "Method associated data"));
             }
-
-            return;
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly)

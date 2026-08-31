@@ -145,8 +145,6 @@ namespace ILCompiler.DependencyAnalysis
                         dependencies.Add(factory.MethodDefinition(_module, pairMethod.Handle), "Delegate BeginInvoke/EndInvoke pair");
                 }
             }
-
-            return;
         }
 
         // Instance methods on reference types conditionally depend on their bodies.

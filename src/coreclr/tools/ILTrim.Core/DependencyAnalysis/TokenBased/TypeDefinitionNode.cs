@@ -91,8 +91,6 @@ namespace ILCompiler.DependencyAnalysis
                 // for now (it's on par with IL Linker).
                 dependencies.Add(factory.ConstructedType(ecmaType), "Implicitly constructed valuetype");
             }
-
-            return;
         }
 
         public override bool HasConditionalStaticDependencies

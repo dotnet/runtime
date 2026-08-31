@@ -220,7 +220,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 AddDependenciesForAsyncStateMachineBox(dependencies, factory, _typeDesc);
             }
-            return;
         }
 
         public static void AddDependenciesForAsyncStateMachineBox(DependencySink<NodeFactory> dependencies, NodeFactory factory, TypeDesc type)

@@ -75,8 +75,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         "Array generic interface method implemented by SZArrayHelper"));
                 }
             }
-
-            return;
         }
 
         protected override string GetName(NodeFactory factory) => $"Array interface methods on {_arrayType}";

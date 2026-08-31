@@ -139,8 +139,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 // TODO: https://github.com/dotnet/runtime/issues/132338 - Gate this recovery on --resilient and report a warning.
             }
-
-            return;
         }
 
         private static bool TypeHasGVMSlots(TypeDesc type)

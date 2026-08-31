@@ -146,8 +146,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 if (_typeArgument != null)
                     factory.AddVirtualMethodDiscoveryDependencies(dependencies, _typeArgument);
             }
-
-            return;
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)

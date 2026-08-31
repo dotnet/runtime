@@ -35,8 +35,6 @@ namespace ILCompiler.DependencyAnalysis
             dependencies.Add(factory.GetNodeForTypeToken(_module, genericParamConstraint.Type), "Parameter constrained to type");
 
             CustomAttributeNode.AddDependenciesDueToCustomAttributes(dependencies, factory, _module, genericParamConstraint.GetCustomAttributes());
-
-            return;
         }
 
         protected override EntityHandle WriteInternal(ModuleWritingContext writeContext)

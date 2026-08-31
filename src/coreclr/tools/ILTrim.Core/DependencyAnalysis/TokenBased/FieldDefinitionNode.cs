@@ -43,8 +43,6 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             CustomAttributeNode.AddDependenciesDueToCustomAttributes(dependencies, factory, _module, fieldDef.GetCustomAttributes());
-
-            return;
         }
 
         protected override EntityHandle WriteInternal(ModuleWritingContext writeContext)

@@ -41,12 +41,10 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory context)
         {
-            return;
         }
 
         public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink<NodeFactory> sink, NodeFactory context)
         {
-            return;
         }
 
         protected override void OnMarked(NodeFactory context)
@@ -152,10 +150,8 @@ namespace ILCompiler.DependencyAnalysis
                 IMethodNode methodEntryPointNode = GetMethodEntrypointNode(context);
                 dependencies.Add(new DependencyListEntry(methodEntryPointNode, "NativeLayoutMethodEntryVertexNode entrypoint"));
             }
-
             context.MetadataManager.GetNativeLayoutMetadataDependencies(dependencies, context, GetMethodForMetadata(_method, out _, out _));
 
-            return;
         }
 
         public override Vertex WriteVertex(NodeFactory factory)
@@ -276,7 +272,6 @@ namespace ILCompiler.DependencyAnalysis
             foreach (var arg in _parametersSig)
                 dependencies.Add(new DependencyListEntry(arg, "NativeLayoutMethodSignatureVertexNode parameter signature"));
 
-            return;
         }
 
         public override Vertex WriteVertex(NodeFactory factory)
@@ -415,7 +410,6 @@ namespace ILCompiler.DependencyAnalysis
             }
             public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory context)
             {
-                return;
             }
             public override Vertex WriteVertex(NodeFactory factory)
             {
@@ -458,7 +452,6 @@ namespace ILCompiler.DependencyAnalysis
                 foreach (var arg in _instantiationArgs)
                     dependencies.Add(new DependencyListEntry(arg, "NativeLayoutInstantiatedTypeSignatureVertexNode instantiation argument signature"));
 
-                return;
             }
             public override Vertex WriteVertex(NodeFactory factory)
             {
@@ -568,7 +561,6 @@ namespace ILCompiler.DependencyAnalysis
         public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory context)
         {
             // There are no interesting dependencies
-            return;
         }
 
         public override Vertex WriteVertex(NodeFactory factory)
@@ -1575,10 +1567,8 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             GenericMethodsTemplateMap.GetTemplateMethodDependencies(dependencies, factory, _method.GetCanonMethodTarget(CanonicalFormKind.Specific));
-
             dependencies.Add(_wrappedNode, "wrappednode");
 
-            return;
         }
 
         protected sealed override Vertex WriteSignatureVertex(NativeWriter writer, NodeFactory factory)
@@ -1590,10 +1580,8 @@ namespace ILCompiler.DependencyAnalysis
     public sealed class NativeLayoutNotSupportedDictionarySlotNode : NativeLayoutGenericDictionarySlotNode
     {
         protected override FixupSignatureKind SignatureKind => FixupSignatureKind.NotYetSupported;
-
         public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory context)
         {
-            return;
         }
 
         protected override string GetName(NodeFactory context) => "NativeLayoutNotSupportedDictionarySlotNode";

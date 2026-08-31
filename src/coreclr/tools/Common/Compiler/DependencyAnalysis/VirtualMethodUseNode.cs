@@ -76,8 +76,6 @@ namespace ILCompiler.DependencyAnalysis
 
             if (VariantInterfaceMethodUseNode.IsVariantMethodCall(factory, _decl))
                 dependencies.Add(factory.VariantInterfaceMethodUse(_decl.GetTypicalMethodDefinition()), "Variant interface call");
-
-            return;
         }
 #else
         public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory) { }

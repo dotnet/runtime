@@ -98,9 +98,8 @@ namespace ILCompiler.DependencyAnalysis
 
             TypeDesc fieldType = _field.FieldType.NormalizeInstantiation();
             ReflectionInvokeMapNode.AddSignatureDependency(dependencies, factory, _field, fieldType, "Type of the field", isOut: true);
-
-            return;
         }
+
         protected override string GetName(NodeFactory factory)
         {
             return "Reflectable field: " + _field.ToString();
