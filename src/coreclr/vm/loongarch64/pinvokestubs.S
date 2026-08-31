@@ -5,66 +5,6 @@
 #include "unixasmmacros.inc"
 
 // ------------------------------------------------------------------
-// Macro to generate PInvoke Stubs.
-// $__PInvokeStubFuncName : function which calls the actual stub obtained from VASigCookie
-// $__PInvokeGenStubFuncName : function which generates the IL stubs for PInvoke
-//
-// Params :-
-// $FuncPrefix : prefix of the function name for the stub
-//                     Eg. VarargPinvoke
-// $VASigCookieReg : register which contains the VASigCookie
-// $SaveFPArgs : "Yes" or "No" . For varidic functions FP Args are not present in FP regs
-//                        So need not save FP Args registers for vararg Pinvoke
-
-.macro PINVOKE_STUB __PInvokeStubFuncName,__PInvokeGenStubFuncName,__PInvokeStubWorkerName,VASigCookieReg,HiddenArg,SaveFPArgs
-
-        NESTED_ENTRY \__PInvokeStubFuncName, _TEXT, NoHandler
-
-        // get the stub
-        ld.d   $t0, \VASigCookieReg, VASigCookie__pPInvokeILStub
-
-        // if null goto stub generation
-        beq  $t0, $zero, \__PInvokeGenStubFuncName
-
-        jirl  $r0, $t0, 0
-
-        NESTED_END \__PInvokeStubFuncName, _TEXT
-
-        NESTED_ENTRY \__PInvokeGenStubFuncName, _TEXT, NoHandler
-
-        PROLOG_WITH_TRANSITION_BLOCK 0, 0, \SaveFPArgs
-
-        // $a2 = Umanaged Target\MethodDesc
-        ori  $a2, \HiddenArg, 0
-
-        // $a1 = VaSigCookie
-        ori  $a1, \VASigCookieReg, 0
-
-        // $a0 = pTransitionBlock
-        addi.d  $a0, $sp, __PWTB_TransitionBlock
-
-        // save hidden arg
-        ori  $s0, \HiddenArg, 0
-
-        // save VASigCookieReg
-        ori  $s1, \VASigCookieReg, 0
-
-        bl  C_FUNC(\__PInvokeStubWorkerName)
-
-        // restore VASigCookieReg
-        ori  \VASigCookieReg, $s1, 0
-
-        // restore hidden arg (method desc or unmanaged target)
-        ori  \HiddenArg, $s0, 0
-
-        EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
-
-        EPILOG_BRANCH       C_FUNC(\__PInvokeStubFuncName)
-
-        NESTED_END \__PInvokeGenStubFuncName, _TEXT
-.endm
-
-// ------------------------------------------------------------------
 // IN:
 // InlinedCallFrame ($a0) = pointer to the InlinedCallFrame data
 //
@@ -144,24 +84,3 @@ LOCAL_LABEL(RarePath):
     b  JIT_PInvokeEndRarePath
 
 LEAF_END JIT_PInvokeEnd, _TEXT
-
-// ------------------------------------------------------------------
-// VarargPInvokeStub & VarargPInvokeGenILStub
-// There is a separate stub when the method has a hidden return buffer arg.
-//
-// in:
-// $a0 = VASigCookie*
-// $t2 = MethodDesc *
-//
-PINVOKE_STUB VarargPInvokeStub, VarargPInvokeGenILStub, VarargPInvokeStubWorker, $a0, $t2, 0
-
-
-//// ------------------------------------------------------------------
-//// VarargPInvokeStub_RetBuffArg & VarargPInvokeGenILStub_RetBuffArg
-//// Vararg PInvoke Stub when the method has a hidden return buffer arg
-////
-//// in:
-//// $a1 = VASigCookie*          //not used ???
-//// $t2 = MethodDesc*
-////
-//PINVOKE_STUB VarargPInvokeStub_RetBuffArg, VarargPInvokeGenILStub_RetBuffArg, VarargPInvokeStubWorker, $a1, t8, 0
