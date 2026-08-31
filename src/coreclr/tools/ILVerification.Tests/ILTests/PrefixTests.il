@@ -80,6 +80,46 @@
         ret
     }
 
+    .method static public hidebysig void ConstrainedLdftn.StaticAbstractOnConstrainedTypeParam_Valid<(IStaticInterface) T>() cil managed
+    {
+        constrained. !!T
+        ldftn  void IStaticInterface::StaticAbstractMethod()
+        pop
+        ret
+    }
+
+    .method static public hidebysig void ConstrainedLdftn.StaticAbstractOnImplStruct_Valid() cil managed
+    {
+        constrained. ImplStruct
+        ldftn  void IStaticInterface::StaticAbstractMethod()
+        pop
+        ret
+    }
+
+    .method static public hidebysig void ConstrainedLdftn.UnconstrainedTypeParam_Invalid_ConstrainedTypeNoInterfaceImpl<T>() cil managed
+    {
+        constrained. !!T
+        ldftn  void IStaticInterface::StaticAbstractMethod()
+        pop
+        ret
+    }
+
+    .method static public hidebysig void ConstrainedLdftn.NonImplStruct_Invalid_ConstrainedTypeNoInterfaceImpl() cil managed
+    {
+        constrained. NonImplStruct
+        ldftn  void IStaticInterface::StaticAbstractMethod()
+        pop
+        ret
+    }
+
+    .method static public hidebysig void ConstrainedLdftn.NonVirtualStaticMethod_Invalid_Constrained<(IStaticInterface) T>() cil managed
+    {
+        constrained. !!T
+        ldftn  void PrefixTestsType::StaticMethod()
+        pop
+        ret
+    }
+
     .method static public hidebysig void Readonly.Ldelema_Valid() cil managed 
     {
         .locals init (int32[] V_0)

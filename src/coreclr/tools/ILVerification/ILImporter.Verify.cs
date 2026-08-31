@@ -1833,6 +1833,14 @@ namespace Internal.IL
                 _delegateCreateStart = _currentInstructionOffset;
 
                 instance = null;
+
+                if (HasPendingPrefix(Prefix.Constrained) && method.IsVirtual &&
+                    method.Signature.IsStatic && method.OwningType.IsInterface)
+                {
+                    ClearPendingPrefix(Prefix.Constrained);
+                    if (!_constrained.CanCastTo(method.OwningType))
+                        VerificationError(VerifierError.ConstrainedTypeNoInterfaceImpl, _constrained, method.OwningType);
+                }
             }
             else if (opCode == ILOpcode.ldvirtftn)
             {
