@@ -2322,6 +2322,17 @@ void emitter::emitInsSve_R_R(instruction     ins,
             fmt = IF_SVE_BI_2A;
             break;
 
+        case INS_sve_aesimc:
+        case INS_sve_aesmc:
+            assert(insScalableOptsNone(sopt));
+            assert(insOptsNone(opt) || (opt == INS_OPTS_SCALABLE_B));
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert(isScalableVectorSize(size));
+            emitInsSve_Mov(INS_sve_mov, EA_SCALABLE, reg1, reg2, /* canSkip */ true, INS_OPTS_SCALABLE_B);
+            emitInsSve_R(ins, attr, reg1, opt);
+            return;
+
         case INS_sve_fmov:
             assert(insOptsScalableAtLeastHalf(opt));
             assert(isVectorRegister(reg1));                        // ddddd
@@ -3016,6 +3027,8 @@ void emitter::emitInsSve_R_R_R(instruction     ins,
             emitInsSve_R_R(ins, attr, reg1, reg3, opt, sopt);
             return;
 
+        case INS_sve_aesd:
+        case INS_sve_aese:
         case INS_sve_sm4e:
         case INS_sve_sqxtnt:
         case INS_sve_uqxtnt:
