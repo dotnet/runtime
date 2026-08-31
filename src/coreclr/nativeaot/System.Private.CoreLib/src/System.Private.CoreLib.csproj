@@ -165,6 +165,7 @@
     <Compile Include="System\Reflection\MethodInvoker.cs" />
     <Compile Include="System\Reflection\ModifiedType.NativeAot.cs" />
     <Compile Include="System\Reflection\RuntimeCustomAttribute.NativeAot.cs" />
+    <Compile Include="System\Reflection\RuntimeMethodInfo.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeFunctionPointerTypeInfo.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeFunctionPointerTypeInfo.UnificationKey.cs" />
     <Compile Include="System\CrashInfo.cs" />
@@ -437,7 +438,6 @@
     <Compile Include="System\Reflection\Runtime\MethodInfos\RuntimePlainConstructorInfo.cs" />
     <Compile Include="System\Reflection\Runtime\MethodInfos\RuntimeSyntheticConstructorInfo.cs" />
     <Compile Include="System\Reflection\Runtime\MethodInfos\IRuntimeMethodCommon.cs" />
-    <Compile Include="System\Reflection\Runtime\MethodInfos\RuntimeMethodInfo.cs" />
     <Compile Include="System\Reflection\Runtime\MethodInfos\RuntimeNamedMethodInfo.cs" />
     <Compile Include="System\Reflection\Runtime\MethodInfos\RuntimeSyntheticMethodInfo.cs" />
     <Compile Include="System\Reflection\Runtime\MethodInfos\SyntheticMethodId.cs" />

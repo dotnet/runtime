@@ -16,7 +16,7 @@ using System.Runtime.CompilerServices;
 using Internal.Reflection.Core.Execution;
 using Internal.Runtime.Augments;
 
-namespace System.Reflection.Runtime.MethodInfos
+namespace System.Reflection
 {
     //
     // Abstract base class for RuntimeNamedMethodInfo, RuntimeConstructedGenericMethodInfo.

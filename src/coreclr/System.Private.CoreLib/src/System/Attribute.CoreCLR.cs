@@ -6,11 +6,6 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
-#if NATIVEAOT
-using System.Reflection.Runtime.MethodInfos;
-using Internal.Reflection.Augments;
-#endif
-
 namespace System
 {
     public abstract partial class Attribute
