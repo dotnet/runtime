@@ -1,8 +1,8 @@
 # WASI composite-R2R splice tooling
 
-Tooling for building, splicing, and running a **composite ReadyToRun image on CoreCLR/WASI**.
-It exists because WASI has no productised R2R path: the working flow is hand-driven — run
-`crossgen2` directly, splice the result into `corerun`, and run it under `wasmtime`.
+Tooling for composing a **composite ReadyToRun image into a CoreCLR/WASI component**.
+The in-tree CoreCLR-WASI app builder invokes it when `PublishReadyToRun=true`. The shipping WASI SDK
+does not select the CoreCLR app builder yet, so this remains an experimental in-tree path.
 
 Scope note, since this is easy to over-read: **the splice is a WASI requirement, not a composite
 requirement.** `WasiStaticR2RProbe` serves `composite-r2r.wasm` only from a baked-in buffer that the
@@ -11,11 +11,6 @@ no such constraint — `crossgen2 --composite --targetos:browser` plus a flat di
 `corerun.js` works without any of this tooling. Browser also has a productised **non-composite** path
 since [#132339](https://github.com/dotnet/runtime/pull/132339) (`-p:PublishReadyToRun=true`); that
 path declines composite, but only as an SDK opt-out.
-
-**Read [`docs/workflow/building/coreclr/wasi-r2r.md`](../../docs/workflow/building/coreclr/wasi-r2r.md) first.**
-That is the full playbook: build commands, crossgen2 invocations, run commands, and — most
-importantly — the traps that repeatedly lead people to falsely conclude that CoreCLR R2R on WASI
-does not work. This README only covers the tools in this directory.
 
 ## Pieces
 
@@ -75,20 +70,20 @@ runs clean, the composite was simply never delivered to the runtime, and you nee
 
 ## Usage
 
-`pipeline_shim.py` derives `ROOT` from the repo root above it, so from a worktree with a matching
-build already in `artifacts/` it is just:
+The in-tree publish path drives crossgen2, sizes the host's image buffer and table from the generated
+composite, invokes the splice, and deploys the component stubs:
 
 ```bash
-python3 eng/wasi-r2r/pipeline_shim.py
+./dotnet.sh publish <project> -c Release -p:TargetOS=wasi \
+  -p:RuntimeFlavor=CoreCLR -p:PublishReadyToRun=true
 ```
 
-Every input is overridable by environment variable (`COMP`, `CORERUN`, `OUTDIR`, `ROOT`) — see the
-module docstring. It prints the resolved bases, then `VALID` and the output path on success, and
-exits non-zero with a specific message on any failure.
+For manual experiments, `pipeline_shim.py` still accepts `COMP`, `CORERUN`, `OUTDIR`, and `ROOT`
+through the environment. It prints the resolved bases, then `VALID` and the output path on success.
 
-Verify the result actually executes R2R code rather than falling back — see
-[Proving R2R is actually active](../../docs/workflow/building/coreclr/wasi-r2r.md#proving-r2r-is-actually-active).
-The activation log alone is not sufficient: it reports success as soon as the composite *loads*.
+The activation log alone is not proof that a method executed from the composite. For a deterministic
+check, break on the app method's wasm function from the final component; an interpreted fallback
+cannot hit a breakpoint inside the R2R body.
 
 ### Cost at framework scale
 
@@ -157,12 +152,10 @@ Three things about this are easy to get wrong:
   proves nothing). The pass also propagates globals into function bodies, costing ~3.7% code size.
   A host that supplies the bases at *instantiation* instead — as the browser does — keeps `global.get`
   of an **imported** global, which is valid MVP, and pays neither cost.
-- **Payload offset 28 is now a runtime responsibility.** `activate` used to bake
-  `WebcilHeader_1.TableBase` offline. With the segment installed by the engine, nothing writes it, and
-  its absence is silent: `GetTableBaseOffset` returns 0 rather than failing, and that 0 becomes
-  `tableBaseDelta`, shifting every R2R function index. The WASI host patches it in
-  [`wasi_r2r_probe.hpp`](../../src/coreclr/hosts/corerun/wasi_r2r_probe.hpp) (`WASI_R2R_TABLE_BASE`,
-  which must match the shim); browser calls the composite's exported `patchWebcilHeader`.
+- **Payload offset 28 must be patched before the runtime reads it.** The composition shim calls the
+  composite's exported `patchWebcilHeader` from its start function, so the image owns its format.
+  [`wasi_r2r_probe.hpp`](../../src/coreclr/hosts/corerun/wasi_r2r_probe.hpp) retains a native fallback
+  only for older composites that do not export that function.
 
   This is measured, not argued. Setting the host's table base to 2 while the shim installs at 1 makes
   the run fail with `wasm trap: indirect call type mismatch` — a symptom nowhere near its cause. Note
@@ -219,22 +212,18 @@ LEB encodings for the shifted function indices, not from the table itself:
 | 65,537 | 36,284,095 | 71,834 |
 | 500,001 | 36,336,407 | 506,298 |
 
-**Size it from the composite's function count, not its assembly count.** Every function in the
-composite consumes a table slot: a 4-assembly composite needs 52,637; the `System.Text.Json` test
-closure needs **283,573**. Reserve generously and fail loudly when a composite exceeds it — the same
-contract the 16 MB `g_wasi_r2r_image` buffer already uses on the memory side.
-
-**The composite half is crossgen2 work.** It would need to emit import names matching the linker's
-exports, emit the payload and element segments as **active** at the reserved bases rather than
-passive, and drop the `tableBase`/`imageBase` global imports since both become compile-time constants.
-`WasmDataSegmentType.Active` is already modelled; only `Passive` is currently ever emitted.
+**Size from the composite's function count, not its assembly count.** Every function consumes a
+table slot. The publish target inspects the completed composite before linking the host, reserves
+exactly `function count + 1` table slots, and supplies a strong image-buffer symbol whose size exactly
+matches the active payload. Non-R2R app links use the host archive's 64-byte weak fallback instead of
+paying a fixed 16 MiB reservation.
 
 That leaves the whole splice as `wasm-tools component unbundle` → `wasm-merge` → reassemble, all
 standard tooling.
 
-> **Do not solve this with a `start` function.** A composite that grows its own table and populates it
+> **Do not populate the image or table from a `start` function.** A composite that grows its own table and populates it
 > via `table.init`/`memory.init` at startup does work — verified end-to-end, including that
 > `wasm-merge` correctly combines two start functions. But it replaces declarative, engine-applied
 > installation with guest code mutating its own dispatch table at runtime, and it forfeits the
-> statically-known table size. It would level WASI down to the browser's runtime-linking posture,
-> which is the weaker of the two. The reservation approach above gets the same result declaratively.
+> statically-known table size. The small start function used here only calls `patchWebcilHeader`;
+> active segments still install the payload and function table declaratively.

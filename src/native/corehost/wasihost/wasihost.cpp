@@ -20,7 +20,19 @@
 // Shared WASI R2R external-assembly probe (same code corerun uses), so the per-app test host serves
 // statically-composed R2R images instead of silently interpreting everything. Requires corerun.hpp
 // above (pal::try_map_file_readonly).
+#define WASI_R2R_EXTERNAL_IMAGE_BUFFER
 #include "wasi_r2r_probe.hpp"
+
+namespace wasi_r2r
+{
+// A ReadyToRun publish supplies strong definitions sized from its composite. Keep non-R2R app links
+// working without paying the 16 MiB development-host reservation.
+extern "C"
+{
+    alignas(16) __attribute__((weak)) uint8_t g_wasi_r2r_image[64] = {};
+    __attribute__((weak)) uint32_t g_wasi_r2r_image_cap = sizeof(g_wasi_r2r_image);
+}
+}
 
 #include <host_runtime_contract.h>
 
