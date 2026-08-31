@@ -61,7 +61,9 @@ namespace Internal.Cryptography.Pal.AnyOS
 #if NET11_0_OR_GREATER
                 else if (recipientInfo.Pal is ManagedKemRecipientInfoPal kemRecipientInfo)
                 {
-                    if (privateKey is not MLKem mlKem)
+                    MLKem? mlKem = privateKey is MLKem key ? key : null;
+
+                    if (privateKey is not EnvelopedCmsKey.None && mlKem is null)
                     {
                         exception = new CryptographicException(
                             SR.Cryptography_Cms_RecipientType_NotSupported,
@@ -70,7 +72,7 @@ namespace Internal.Cryptography.Pal.AnyOS
                         return null;
                     }
 
-                    cek = kemRecipientInfo.DecryptCek(mlKem, out exception);
+                    cek = kemRecipientInfo.DecryptCek(cert, mlKem, out exception);
                 }
 #endif
                 else

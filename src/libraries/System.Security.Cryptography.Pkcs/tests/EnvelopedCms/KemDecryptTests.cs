@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Security.Cryptography.Tests;
+using System.Security.Cryptography.X509Certificates;
 
 using Xunit;
 
@@ -35,6 +36,13 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             { KemTestDocuments.MlKem1024, MLKemTestData.IetfMlKem1024PrivateKeySeed },
         };
 
+        public static TheoryData<byte[], byte[]?> UkmDocuments { get; } = new TheoryData<byte[], byte[]?>
+        {
+            { KemTestDocuments.MlKem768, null },
+            { KemTestDocuments.MlKem768EmptyUkm, [] },
+            { KemTestDocuments.MlKem768NonEmptyUkm, [0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08] },
+        };
+
         [Theory]
         [MemberData(nameof(AesKeyWrapDocuments))]
         public static void DecryptAesKeyWrapAlgorithm(byte[] encodedMessage)
@@ -54,6 +62,40 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         public static void DecryptMlKemParameterSet(byte[] encodedMessage, byte[] privateKey)
         {
             Decrypt(encodedMessage, privateKey);
+        }
+
+        [Theory]
+        [MemberData(nameof(UkmDocuments))]
+        public static void DecryptUserKeyingMaterial(byte[] encodedMessage, byte[]? expectedUkm)
+        {
+            EnvelopedCms cms = Decrypt(encodedMessage, MLKemTestData.IetfMlKem768PrivateKeySeed);
+            KemRecipientInfo recipientInfo = Assert.IsType<KemRecipientInfo>(Assert.Single(cms.RecipientInfos));
+            ReadOnlyMemory<byte>? actualUkm = recipientInfo.UserKeyingMaterial;
+
+            if (expectedUkm is null)
+            {
+                Assert.Null(actualUkm);
+            }
+            else
+            {
+                Assert.True(actualUkm.HasValue);
+                Assert.Equal<byte>(expectedUkm, actualUkm.Value.ToArray());
+            }
+        }
+
+        [Fact]
+        public static void DecryptWithCertificatePrivateKey()
+        {
+            using (X509Certificate2 certificate = X509Certificate2.CreateFromPem(
+                MLKemTestData.IetfMlKem768CertificatePem,
+                MLKemTestData.IetfMlKem768PrivateKeySeedPem))
+            {
+                EnvelopedCms cms = new EnvelopedCms();
+                cms.Decode(KemTestDocuments.MlKem768);
+                cms.Decrypt(new X509Certificate2Collection(certificate));
+
+                Assert.Equal("hello world!"u8.ToArray(), cms.ContentInfo.Content);
+            }
         }
 
         [Fact]
@@ -330,7 +372,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             }
         }
 
-        private static void Decrypt(byte[] encodedMessage, byte[] privateKey)
+        private static EnvelopedCms Decrypt(byte[] encodedMessage, byte[] privateKey)
         {
             EnvelopedCms cms = new EnvelopedCms();
             cms.Decode(encodedMessage);
@@ -343,6 +385,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             }
 
             Assert.Equal("hello world!"u8.ToArray(), cms.ContentInfo.Content);
+            return cms;
         }
 
         private sealed class ValidationMLKem : MLKem

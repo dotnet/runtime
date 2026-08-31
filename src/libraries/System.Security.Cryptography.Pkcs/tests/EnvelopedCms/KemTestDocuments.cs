@@ -34,6 +34,48 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             AzYr7w==
             """);
 
+        // ML-KEM-768, AES-256-KW, SHA-384, empty UKM
+        internal static readonly byte[] MlKem768EmptyUkm = Convert.FromBase64String(
+            """
+            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
+            """);
+
+        // ML-KEM-768, AES-256-KW, SHA-384, UKM 01 02 03 04 05 06 07 08
+        internal static readonly byte[] MlKem768NonEmptyUkm = Convert.FromBase64String(
+            """
+            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
+            """);
+
         // ML-KEM-768, AES-256-KW, SHA-3-384
         internal static readonly byte[] MlKem768HkdfSha3_384 = Convert.FromBase64String(
             """

@@ -8,6 +8,7 @@ using System.Security.Cryptography;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.Pkcs;
 using System.Security.Cryptography.Pkcs.Asn1;
+using System.Security.Cryptography.X509Certificates;
 
 namespace Internal.Cryptography.Pal.AnyOS
 {
@@ -53,6 +54,27 @@ namespace Internal.Cryptography.Pal.AnyOS
                 _ = privateKey;
                 exception = new PlatformNotSupportedException();
                 return null;
+            }
+
+            internal byte[]? DecryptCek(X509Certificate2? cert, MLKem? privateKey, out Exception? exception)
+            {
+                if (privateKey is not null)
+                {
+                    return DecryptCek(privateKey, out exception);
+                }
+
+                Debug.Assert(cert is not null);
+
+                using (MLKem? certificatePrivateKey = cert.GetMLKemPrivateKey())
+                {
+                    if (certificatePrivateKey is null)
+                    {
+                        exception = new CryptographicException(SR.Cryptography_Cms_Signing_RequiresPrivateKey);
+                        return null;
+                    }
+
+                    return DecryptCek(certificatePrivateKey, out exception);
+                }
             }
 
             internal byte[]? DecryptCek(MLKem privateKey, out Exception? exception)
