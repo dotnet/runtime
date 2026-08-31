@@ -4,6 +4,8 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 
+using Internal.Cryptography;
+
 namespace System.Security.Cryptography.Pkcs
 {
     public sealed partial class EnvelopedCms
@@ -13,8 +15,13 @@ namespace System.Security.Cryptography.Pkcs
         /// </summary>
         /// <param name="recipientInfo">The recipient information that identifies the encrypted key.</param>
         /// <param name="privateKey">The private key to use for decapsulation.</param>
-        public void Decrypt(KemRecipientInfo recipientInfo, MLKem privateKey) =>
-            throw new NotImplementedException();
+        public void Decrypt(KemRecipientInfo recipientInfo, MLKem privateKey)
+        {
+            ArgumentNullException.ThrowIfNull(recipientInfo);
+            ArgumentNullException.ThrowIfNull(privateKey);
+
+            DecryptWithKey(recipientInfo, privateKey);
+        }
 
         /// <summary>
         /// Decrypts the content using the specified recipient information and Composite ML-KEM private key.

@@ -33,6 +33,29 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             AzYr7w==
             """);
 
+        internal static readonly byte[] MlKem768HkdfSha3_384 = Convert.FromBase64String(
+            """
+            MIIFRgYJKoZIhvcNAQcDoIIFNzCCBTMCAQMxggTupIIE6gYLKoZIhvcNAQkQDQMwggTZAgEAMDowIjENMAsGA1UEChMESUVURjER
+            MA8GA1UEAxMITEFNUFMgV0cCFBWf/m8i/VzELFJN9v1eKNDeOPNPMAsGCWCGSAFlAwQEAgSCBEBUusDZ1LK5aav1+chVh5q4AZWM
+            9unnLwK5qjwK/goc6O3q5EBGAUQcxTwixLFOWgCrqRo01fZ8TGpBdBN9EfttKQQ7JwUgVVGlUgMLmcGc+CO0Wxn1wyJY4moiRQk6
+            xwy3ORMSj9TXluZNM7FRZOF70xx14fmvr9o7SlwOlBUfCxmwJR/+cLmz33mnopHf5mEeNGJ2YEzPitZQ2ns1vOFqmXOWEn+jkoWp
+            W6mi1UxizCfElF//Vh6Y07mSU8LZVmvEq9oi/29n0P7OSAh/NLbKqBT/ZqeW6TnYd8oifNzj6du+fkoK0o2CmLY5DgdK3A0C16b8
+            oyJi9rJ4ZOpW1mQ9VzNN5lOyJv68tR3piOTZhJxwE0iYaYUqXhDk0N5Kyu8xe9gTx5+XTrEMIKDv/CcsBURPEdNGWUN3N1X8ziaq
+            WtUy8iHJUnvPH7faAKOwbqZb/VTVEMaGE1qzRNWaVpCOjnG4naUj/1T5vbv3dZzBqhiYWRFNYZf0uWw3ZaDDZ8NKO+uHH5ax1HcN
+            B2XI+SysNms/n/15C/rnfz/ebviGJwLRIHcOsYg3xL/3D+9QrGMvpTVmmEzEUZv+skmBdqrzkijK+w08dxSA0jehT69CGr94xIBh
+            lTmEe+IU97oTrP0mlzRgRGoYtoqjc/Q96+W9u+RSSUzImwqUS/sUUZmJRt4QYr/WTypwpGvmXZLVf1va4E81Put+EZ+8RZQ/lqAV
+            tV0Bd4nscanbEJAQ2zh2QYylk7BOuEunndn5ey1KClxanQqBNqT6Hw8oK+4EcDDbfes8a86oqGAa8sUXT3hoY929FwJNvDl2gNxt
+            1Xa4YU3ZuQy5ChvK0HZwZMeN09W5mj/NMrqAXyW6qTFASilaUTkZJ/TL31xqyOF5bo0Og8UHgkC50SUWZf+H5VsnoFIOTYwLqTnD
+            wlVY37+LPhLbwVmFjD2q9Mcv4Iu0767Dl0FrbG4Tdrpqm7YjnCmxZGTyX/MjyMbiJGN8nJCyK40uUac40+/GcTaQZKDGjtOh66Gl
+            tq1dFZuKxEs+f3Md5Weh5tpr602guHvYVijfb/gVBBPR3P/F74PAgDOCq3vbONA2V4tVBnzqQK4DxMscAQrD42q/GXmjh1aI2ymF
+            S4IMmdkHotRSlU+R11NsH+U0kZoN1CynQR8ZMQRC4KBwL5AOnvzzxnlosRkUo8ZguX4Kc3sIVD/9eHp1iauuF7mjVmzdqjRnIzkG
+            84SglkwafxrFDiOiDCVrLN5gyTDfM6DL5cZeRGR66lJdTOue8tTXGWzcrpw1HGfclcnc2d+FWCnnCEhIZVz8ll7uPP1gE+zWUP+f
+            F+rd0nfIjWjIa0FRnmKWVNua4uSH7j0SV4wbA6OSwNjE7SuVnqDMZdyHKAryi8tI/kZhfESD9DBDToLWJnmmCahr2JVSJ2GbBXZq
+            NqX2SK7bGzDk9zbK1pD4GdPbsjANBgsqhkiG9w0BCRADHAIBIDALBglghkgBZQMEAS0EKIV1CiYS1ilPY9ViYl12hbTik0f840dz
+            4FUVDIK6qXJMevQWWl+CP6QwPAYJKoZIhvcNAQcBMB0GCWCGSAFlAwQBKgQQ0NoOCI+HY7B2CLV5cOOcVIAQNyxWNgIKUvs1xKFS
+            lmLmag==
+            """);
+
         internal static byte[] UnsupportedOtherRecipientInfo { get; } = BuildUnsupportedOtherRecipientInfo();
 
         private static byte[] BuildUnsupportedOtherRecipientInfo()

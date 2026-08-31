@@ -49,6 +49,9 @@
     <Compile Include="SignedCms\SignerInfoTests.cs" />
   </ItemGroup>
   <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net11.0'))">
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\MLKemTestData.cs"
+             Link="CommonTest\System\Security\Cryptography\MLKemTestData.cs" />
+    <Compile Include="EnvelopedCms\KemDecryptTests.cs" />
     <Compile Include="EnvelopedCms\KemGeneralTests.cs" />
     <Compile Include="EnvelopedCms\KemTestDocuments.cs" />
   </ItemGroup>

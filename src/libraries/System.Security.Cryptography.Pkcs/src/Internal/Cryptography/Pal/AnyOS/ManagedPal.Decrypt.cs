@@ -32,7 +32,7 @@ namespace Internal.Cryptography.Pal.AnyOS
             public override unsafe ContentInfo? TryDecrypt(
                 RecipientInfo recipientInfo,
                 X509Certificate2? cert,
-                AsymmetricAlgorithm? privateKey,
+                EnvelopedCmsKey privateKey,
                 X509Certificate2Collection originatorCerts,
                 X509Certificate2Collection extraStore,
                 out Exception? exception)
@@ -40,45 +40,39 @@ namespace Internal.Cryptography.Pal.AnyOS
                 // When encryptedContent is null Windows seems to decrypt the CEK first,
                 // then return a 0 byte answer.
 
-                Debug.Assert((cert != null) ^ (privateKey != null));
+                Debug.Assert((cert is not null) ^ (privateKey is not EnvelopedCmsKey.None));
+
+                byte[]? cek;
 
                 if (recipientInfo.Pal is ManagedKeyTransPal ktri)
                 {
-                    RSA? key = privateKey as RSA;
+                    RSA? key = privateKey is AsymmetricAlgorithm asymmetricAlgorithm ?
+                        asymmetricAlgorithm as RSA :
+                        null;
 
-                    if (privateKey != null && key == null)
+                    if (privateKey is not EnvelopedCmsKey.None && key is null)
                     {
                         exception = new CryptographicException(SR.Cryptography_Cms_Ktri_RSARequired);
                         return null;
                     }
 
-                    byte[]? cek = ktri.DecryptCek(cert, key, out exception);
-                    // Pin CEK to prevent it from getting copied during heap compaction.
-                    fixed (byte* pinnedCek = cek)
-                    {
-                        try
-                        {
-                            if (exception != null)
-                            {
-                                return null;
-                            }
-
-                            return TryDecryptCore(
-                                cek!,
-                                _envelopedData.EncryptedContentInfo.ContentType,
-                                _envelopedData.EncryptedContentInfo.EncryptedContent,
-                                _envelopedData.EncryptedContentInfo.ContentEncryptionAlgorithm,
-                                out exception);
-                        }
-                        finally
-                        {
-                            if (cek != null)
-                            {
-                                Array.Clear(cek, 0, cek.Length);
-                            }
-                        }
-                    }
+                    cek = ktri.DecryptCek(cert, key, out exception);
                 }
+#if NET11_0_OR_GREATER
+                else if (recipientInfo.Pal is ManagedKemRecipientInfoPal kemRecipientInfo)
+                {
+                    if (privateKey is not MLKem mlKem)
+                    {
+                        exception = new CryptographicException(
+                            SR.Cryptography_Cms_RecipientType_NotSupported,
+                            recipientInfo.Type.ToString());
+
+                        return null;
+                    }
+
+                    cek = kemRecipientInfo.DecryptCek(mlKem, out exception);
+                }
+#endif
                 else
                 {
                     exception = new CryptographicException(
@@ -86,6 +80,36 @@ namespace Internal.Cryptography.Pal.AnyOS
                         recipientInfo.Type.ToString());
 
                     return null;
+                }
+
+                // Pin CEK to prevent it from getting copied during heap compaction.
+                fixed (byte* pinnedCek = cek)
+                {
+                    try
+                    {
+                        if (exception is not null)
+                        {
+                            return null;
+                        }
+
+                        return TryDecryptCore(
+                            cek!,
+                            _envelopedData.EncryptedContentInfo.ContentType,
+                            _envelopedData.EncryptedContentInfo.EncryptedContent,
+                            _envelopedData.EncryptedContentInfo.ContentEncryptionAlgorithm,
+                            out exception);
+                    }
+                    finally
+                    {
+                        if (cek is not null)
+                        {
+#if NET
+                            CryptographicOperations.ZeroMemory(cek);
+#else
+                            Array.Clear(cek, 0, cek.Length);
+#endif
+                        }
+                    }
                 }
             }
 
