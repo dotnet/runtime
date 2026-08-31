@@ -32,37 +32,24 @@ public class Program
 
     private static void ForceBackgroundGen2Collection(TimeSpan timeout)
     {
-        int initialGen2Collections = GC.CollectionCount(2);
+        long initialBackgroundGcIndex = GC.GetGCMemoryInfo(GCKind.Background).Index;
         using AllocationPressure pressure = new();
         pressure.Start();
 
         Stopwatch stopwatch = Stopwatch.StartNew();
-        bool observedConcurrentGen2 = false;
 
         while (stopwatch.Elapsed < timeout)
         {
-            int previousGen2Collections = GC.CollectionCount(2);
             GC.Collect(2, GCCollectionMode.Forced, blocking: false, compacting: false);
 
-            if (!SpinWait.SpinUntil(() => GC.CollectionCount(2) > previousGen2Collections, TimeSpan.FromMilliseconds(500)))
+            if (SpinWait.SpinUntil(() => GC.GetGCMemoryInfo(GCKind.Background).Index > initialBackgroundGcIndex, TimeSpan.FromMilliseconds(500)))
             {
-                continue;
-            }
-
-            GCMemoryInfo memoryInfo = GC.GetGCMemoryInfo();
-            if (memoryInfo.Generation == 2 && memoryInfo.Concurrent)
-            {
-                observedConcurrentGen2 = true;
-                break;
+                return;
             }
         }
 
-        pressure.Stop();
-
-        if (!observedConcurrentGen2)
-        {
-            throw new Exception($"Timed out after {timeout} waiting for a concurrent Gen2 GC. Initial count: {initialGen2Collections}, final count: {GC.CollectionCount(2)}.");
-        }
+        long finalBackgroundGcIndex = GC.GetGCMemoryInfo(GCKind.Background).Index;
+        throw new Exception($"Timed out after {timeout} waiting for a background GC. Initial index: {initialBackgroundGcIndex}, final index: {finalBackgroundGcIndex}.");
     }
 }
 
