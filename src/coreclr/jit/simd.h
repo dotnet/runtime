@@ -1864,7 +1864,8 @@ bool EvaluateSimdPatternToMask(simdmask_t* result, SveMaskPattern pattern)
     }
 
     // For something like ptrue p0.s, vl5
-    // "If the constraint specifies more elements than are available at the current vector length then all elements of the destination predicate are set to false."
+    // "If the constraint specifies more elements than are available at the current vector length then all elements of
+    // the destination predicate are set to false."
     if (finalOne > count)
     {
         finalOne = 0;
