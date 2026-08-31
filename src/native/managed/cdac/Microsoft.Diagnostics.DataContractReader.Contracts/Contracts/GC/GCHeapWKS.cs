@@ -17,10 +17,7 @@ internal sealed class GCHeapWKS : IGCHeap
             BackgroundMaxSavedAddr = target.ReadPointer(bgMaxPtr.Value);
         AllocAllocated = target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.GCHeapAllocAllocated));
         EphemeralHeapSegment = target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.GCHeapEphemeralHeapSegment));
-        TargetPointer cardTablePtr = target.ReadGlobalPointer(Constants.Globals.GCHeapCardTable);
-        CardTable = target.TryReadPointer(cardTablePtr, out TargetPointer cardTable)
-            ? cardTable
-            : TargetPointer.Null;
+        CardTable = target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.GCHeapCardTable));
         FinalizeQueue = target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.GCHeapFinalizeQueue));
         GenerationTable = target.ReadGlobalPointer(Constants.Globals.GCHeapGenerationTable);
 

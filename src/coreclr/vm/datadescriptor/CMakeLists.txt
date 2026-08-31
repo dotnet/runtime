@@ -26,6 +26,7 @@ add_library(gc_wks_descriptor_interface INTERFACE)
 target_include_directories(gc_wks_descriptor_interface INTERFACE
     ${GC_DESCRIPTOR_DIR}
     ${CLR_DIR}/gc)
+target_compile_definitions(gc_wks_descriptor_interface INTERFACE -DGC_HEAP_CARD_TABLE_IN_VM)
 add_dependencies(gc_wks_descriptor_interface cee_wks_core)
 generate_data_descriptors(
     LIBRARY_NAME gc_wks_descriptor

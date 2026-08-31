@@ -78,6 +78,7 @@ public class WorkstationGCDumpTests : DumpTestBase
         GCHeapData heapData = gcContract.GetHeapData();
         Assert.NotNull(heapData.GenerationTable);
         Assert.True(heapData.GenerationTable.Count > 0, "Expected at least one generation");
+        Assert.NotEqual(TargetPointer.Null, heapData.CardTable);
     }
 
     [ConditionalTheory]

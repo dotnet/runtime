@@ -11,6 +11,9 @@
 #include "gchandletableimpl.h"
 #include "handletablepriv.h"
 #include "gceventstatus.h"
+#ifdef GC_HEAP_CARD_TABLE_IN_VM
+#include "gcheaputilities.h"
+#endif // GC_HEAP_CARD_TABLE_IN_VM
 
 #ifdef SERVER_GC
 #define GC_NAMESPACE SVR
@@ -60,7 +63,11 @@ struct cdac_data<GC_NAMESPACE::gc_heap>
 #endif // BACKGROUND_GC
     GC_HEAP_FIELD(AllocAllocated, alloc_allocated)
     GC_HEAP_FIELD(EphemeralHeapSegment, ephemeral_heap_segment)
+#ifdef GC_HEAP_CARD_TABLE_IN_VM
+    static constexpr decltype(&g_card_table) CardTable = &g_card_table;
+#else // !GC_HEAP_CARD_TABLE_IN_VM
     GC_HEAP_FIELD(CardTable, card_table)
+#endif // !GC_HEAP_CARD_TABLE_IN_VM
     GC_HEAP_FIELD(FinalizeQueue, finalize_queue)
     GC_HEAP_FIELD(GenerationTable, generation_table)
 #if !defined(USE_REGIONS) && defined(BACKGROUND_GC)

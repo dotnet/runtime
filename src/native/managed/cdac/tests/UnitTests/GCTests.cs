@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
-using Microsoft.Diagnostics.DataContractReader.Legacy;
 using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Xunit;
 
@@ -12,54 +11,6 @@ namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
 public class GCTests
 {
-    private const ulong CardTableAddress = 0x1234_5000;
-
-    private static readonly MockGCBuilder.Generation[] s_cardTableGenerations =
-    [
-        new() { StartSegment = 0x1A00_0000, AllocationStart = 0x1A00_1000, AllocContextPointer = 0x1A00_2000, AllocContextLimit = 0x1A00_3000 },
-        new() { StartSegment = 0x1B00_0000, AllocationStart = 0x1B00_1000, AllocContextPointer = 0, AllocContextLimit = 0 },
-        new() { StartSegment = 0x1C00_0000, AllocationStart = 0x1C00_1000, AllocContextPointer = 0, AllocContextLimit = 0 },
-        new() { StartSegment = 0x1D00_0000, AllocationStart = 0x1D00_1000, AllocContextPointer = 0, AllocContextLimit = 0 },
-    ];
-
-    [Theory]
-    [ClassData(typeof(MockTarget.StdArch))]
-    public void GetHeapData_ReadableCardTableSlot_ReturnsCardTable(MockTarget.Architecture arch)
-    {
-        Target target = CreateWksTargetWithCardTable(arch, cardTableSlotReadable: true);
-
-        GCHeapData heapData = target.Contracts.GC.GetHeapData();
-
-        Assert.Equal(CardTableAddress, (ulong)heapData.CardTable);
-    }
-
-    [Theory]
-    [ClassData(typeof(MockTarget.StdArch))]
-    public void GetHeapData_UnreadableCardTableSlot_ReturnsHeapDataWithNullCardTable(MockTarget.Architecture arch)
-    {
-        Target target = CreateWksTargetWithCardTable(arch, cardTableSlotReadable: false);
-
-        GCHeapData heapData = target.Contracts.GC.GetHeapData();
-
-        Assert.Equal(TargetPointer.Null, heapData.CardTable);
-        Assert.Equal(s_cardTableGenerations.Length, heapData.GenerationTable.Count);
-        Assert.Equal(s_cardTableGenerations[0].StartSegment, (ulong)heapData.GenerationTable[0].StartSegment);
-    }
-
-    [Theory]
-    [ClassData(typeof(MockTarget.StdArch))]
-    public unsafe void GetGCHeapStaticData_UnreadableCardTableSlot_ReturnsHeapDataWithNullCardTable(MockTarget.Architecture arch)
-    {
-        Target target = CreateWksTargetWithCardTable(arch, cardTableSlotReadable: false);
-
-        ISOSDacInterface sosDac = new SOSDacImpl(target, legacyObj: null, new());
-        DacpGcHeapDetails details = default;
-
-        Assert.Equal(0, sosDac.GetGCHeapStaticData(&details));
-        Assert.Equal(0UL, details.card_table.Value);
-        Assert.Equal(s_cardTableGenerations[0].StartSegment, details.generation_table[0].start_segment.Value);
-    }
-
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
     public void GetHeapData_ReturnsCorrectGenerationTable(MockTarget.Architecture arch)
@@ -168,29 +119,6 @@ public class GCTests
     }
 
     private sealed record CapturedSegment(ulong Start, ulong End, GCSegmentClassification Generation);
-
-    private static Target CreateWksTargetWithCardTable(MockTarget.Architecture arch, bool cardTableSlotReadable)
-    {
-        ulong cardTableGlobalAddress = 0;
-        var builder = new TestPlaceholderTarget.Builder(arch);
-        builder.AddGCHeapWks(gc =>
-        {
-            gc.Generations = s_cardTableGenerations;
-            gc.ConfigureMemory = gcBuilder =>
-            {
-                cardTableGlobalAddress = gcBuilder.CardTableGlobalAddress;
-                gcBuilder.WritePointerGlobal(cardTableGlobalAddress, CardTableAddress);
-            };
-        });
-
-        if (!cardTableSlotReadable)
-        {
-            TestPlaceholderTarget.ReadFromTargetDelegate reader = builder.MemoryBuilder.GetMemoryContext().ReadFromTarget;
-            builder.UseReader((address, buffer) => address == cardTableGlobalAddress ? -1 : reader(address, buffer));
-        }
-
-        return builder.Build();
-    }
 
     private static MockGCBuilder.Generation[] MakeGenerations(ulong gen0Seg, ulong gen0Start, ulong gen1Seg, ulong gen1Start, ulong gen2Seg, ulong lohSeg, ulong pohSeg)
         =>
