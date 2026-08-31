@@ -2547,7 +2547,7 @@ PhaseStatus Compiler::fgUnpinNonMovableLocals()
                             continue;
                         }
 
-                        bool isNoGc = value->IsNotGcDef();
+                        bool isNoGc = value->IsNotGcDef(this);
 
                         if (!isNoGc && value->OperIs(GT_LCL_VAR))
                         {
