@@ -3,7 +3,6 @@
 
 using Internal.TypeSystem;
 
-using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
 using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
@@ -12,7 +11,6 @@ namespace ILCompiler.DependencyAnalysis
     {
         internal static void AddDependenciesDueToModuleUse(IDependencySink<NodeFactory> dependencyList, NodeFactory factory, ModuleDesc module)
         {
-            dependencyList ??= new DependencyList();
             if (module.GetGlobalModuleType().GetStaticConstructor() is MethodDesc moduleCctor)
             {
                 dependencyList.Add(factory.MethodEntrypoint(moduleCctor), "Module with a static constructor");
