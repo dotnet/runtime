@@ -864,9 +864,10 @@ namespace System.Text.Json.SourceGeneration
         /// the derived types at each level are exactly the same-module named types whose direct base type
         /// shares the current closed type's original definition. Generic derived types are returned in
         /// unbound form so callers can unify them against the constructed base.
-        /// Returns <see langword="null"/> when none are found. Derived types are yielded in module-scan
-        /// order; callers that require a canonical ordering (for example, for deterministic generator
-        /// output) order them by discriminator, where uniqueness is established.
+        /// Returns <see langword="null"/> when the closed type has no derived types. Returns an empty list
+        /// when it has closed descendants but no terminal derived types. Derived types are yielded in
+        /// module-scan order; callers that require a canonical ordering (for example, for deterministic
+        /// generator output) order them by discriminator, where uniqueness is established.
         /// </summary>
         public static List<ITypeSymbol>? GetClosedDerivedTypes(this INamedTypeSymbol closedType)
         {
@@ -886,9 +887,11 @@ namespace System.Text.Json.SourceGeneration
 
                     if (candidate.IsClosedType())
                     {
+                        derivedTypes ??= new();
+
                         if (derivedType.GetClosedDerivedTypes() is { } nestedDerivedTypes)
                         {
-                            (derivedTypes ??= new()).AddRange(nestedDerivedTypes);
+                            derivedTypes.AddRange(nestedDerivedTypes);
                         }
 
                         continue;

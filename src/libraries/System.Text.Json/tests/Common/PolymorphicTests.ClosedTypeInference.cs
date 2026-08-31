@@ -187,6 +187,17 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public void ClosedTypeInference_NestedHierarchyWithoutTerminalDerivedTypes_Throws()
+        {
+            InvalidOperationException exception = Assert.Throws<InvalidOperationException>(
+                () => JsonSerializer.Serialize(
+                    value: null,
+                    ClosedTypeInferenceOptions.GetTypeInfo(typeof(ClosedNestedEmptyRoot))));
+
+            Assert.Contains(typeof(ClosedNestedEmptyRoot).ToString(), exception.Message);
+        }
+
+        [Fact]
         public async Task ClosedTypeInference_CollectionOfClosedBase_InfersEachElement()
         {
             JsonSerializerOptions options = ClosedTypeInferenceOptions;
@@ -883,6 +894,10 @@ namespace System.Text.Json.Serialization.Tests
     {
         public bool Herding { get; set; }
     }
+
+    public closed class ClosedNestedEmptyRoot;
+
+    public closed class ClosedNestedEmptyMiddle : ClosedNestedEmptyRoot;
 
     public closed class ClosedNestedConverterRoot;
 

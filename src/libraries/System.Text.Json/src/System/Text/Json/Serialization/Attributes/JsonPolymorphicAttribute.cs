@@ -36,6 +36,7 @@ namespace System.Text.Json.Serialization
         /// enabled globally. When the property is left unset the globally configured value is used.
         /// If the annotated type declares one or more <see cref="JsonDerivedTypeAttribute"/> registrations,
         /// inference is skipped for that type and only the explicitly registered derived types are used.
+        /// Closed derived types are expanded recursively and only terminal derived types are registered.
         /// Polymorphism configuration declared on derived types applies to their respective contracts and does
         /// not affect inference for the annotated type.
         /// </remarks>

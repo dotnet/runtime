@@ -2082,6 +2082,36 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
 
         [Fact]
+        public void ClosedTypeInference_SerializationMode_ProducesSYSLIB1039()
+        {
+            string source = """
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSourceGenerationOptions(InferClosedTypePolymorphism = true)]
+                    [JsonSerializable(
+                        typeof(ClosedBase),
+                        GenerationMode = JsonSourceGenerationMode.Serialization)]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    public closed abstract class ClosedBase { }
+                    public sealed class ClosedDerived : ClosedBase { }
+                }
+                """;
+
+            Compilation compilation = CreateCompilationWithClosedType(source, "ClosedBase");
+            JsonSourceGeneratorResult result =
+                CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+            Diagnostic diagnostic = Assert.Single(result.Diagnostics);
+            Assert.Equal("SYSLIB1039", diagnostic.Id);
+            Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
+        }
+
+        [Fact]
         public void ClosedTypeInference_ConstraintViolation_ProducesSYSLIB1229()
         {
             string source = """
