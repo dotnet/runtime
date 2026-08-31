@@ -37,19 +37,13 @@ namespace ILCompiler.PortableCallHelpers
         /// Returns the wasm signature string for a method.
         /// </summary>
         /// <param name="method">The method to encode.</param>
-        /// <param name="includeThis">
-        /// <see langword="true"/> for a managed signature, which picks up the leading 'T' for an
-        /// instance method and the trailing 'p' for the portable entry point argument.
-        /// <see langword="false"/> describes a native function.
+        /// <param name="flags">
+        /// The default lowers as a managed method, taking the leading 'T' for an instance method
+        /// and the trailing 'p' for the portable entry point argument;
+        /// <see cref="WasmLowering.LoweringFlags.IsUnmanagedCallersOnly"/> lowers as a native function.
         /// </param>
-        public static string GetMethodSignature(MethodDesc method, bool includeThis)
-        {
-            WasmLowering.LoweringFlags flags = includeThis
-                ? WasmLowering.LoweringFlags.None
-                : WasmLowering.LoweringFlags.IsUnmanagedCallersOnly;
-
-            return WasmLowering.GetSignature(method.Signature, flags).SignatureString;
-        }
+        public static string GetMethodSignature(MethodDesc method, WasmLowering.LoweringFlags flags = WasmLowering.LoweringFlags.None)
+            => WasmLowering.GetSignature(method.Signature, flags).SignatureString;
 
         /// <summary>
         /// Gets the signature encoding for a type in parameter position: a primitive character

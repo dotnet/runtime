@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 
+using Internal.JitInterface;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
@@ -159,7 +160,7 @@ namespace ILCompiler.PortableCallHelpers
 
                 MethodDesc invokeMethod = type.GetMethod("Invoke"u8, null);
                 if (invokeMethod is not null)
-                    AddSignature(signatures, invokeMethod, includeThis: false, "pinvoke");
+                    AddSignature(signatures, invokeMethod, WasmLowering.LoweringFlags.IsUnmanagedCallersOnly, "pinvoke");
             }
 
             void CollectPInvokesForMethod(EcmaMethod method)
@@ -175,13 +176,13 @@ namespace ILCompiler.PortableCallHelpers
 
                 pinvokes.Add(new PInvokeInfo(metadata.Name, metadata.Module, method, wasmLinkage));
 
-                AddSignature(signatures, method, includeThis: false, "pinvoke");
+                AddSignature(signatures, method, WasmLowering.LoweringFlags.IsUnmanagedCallersOnly, "pinvoke");
             }
         }
 
-        private void AddSignature(HashSet<string> signatures, MethodDesc method, bool includeThis, string kind)
+        private void AddSignature(HashSet<string> signatures, MethodDesc method, WasmLowering.LoweringFlags flags, string kind)
         {
-            string signature = InteropSignature.GetMethodSignature(method, includeThis);
+            string signature = InteropSignature.GetMethodSignature(method, flags);
             if (signatures.Add(signature))
                 log.Verbose($"Adding {kind} signature {signature} for method '{method.OwningType}.{method.Name.ToString()}'");
         }

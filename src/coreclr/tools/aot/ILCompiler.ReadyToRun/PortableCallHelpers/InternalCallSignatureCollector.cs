@@ -81,7 +81,7 @@ namespace ILCompiler.PortableCallHelpers
                 {
                     // A managed signature: the lowering adds the 'T' for an instance method and the
                     // trailing 'p' for the portable entry point parameter.
-                    string signature = InteropSignature.GetMethodSignature(method, includeThis: true);
+                    string signature = InteropSignature.GetMethodSignature(method);
                     if (_signatures.Add(signature))
                         log.Verbose($"Adding InternalCall signature {signature} for method '{type}.{method.Name.ToString()}'");
                 }

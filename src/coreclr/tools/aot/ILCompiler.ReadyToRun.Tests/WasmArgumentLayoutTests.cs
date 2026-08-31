@@ -600,7 +600,7 @@ public class WasmArgumentLayoutTests
         string expected = WasmLowering.GetSignature(method.Signature, WasmLowering.LoweringFlags.None).SignatureString;
         _output.WriteLine($"{method} lowers to '{expected}'");
 
-        Assert.Equal(expected, InteropSignature.GetMethodSignature(method, includeThis: true));
+        Assert.Equal(expected, InteropSignature.GetMethodSignature(method));
     }
 
     /// <summary>
