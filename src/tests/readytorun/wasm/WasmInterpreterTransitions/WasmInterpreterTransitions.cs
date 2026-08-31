@@ -53,6 +53,18 @@ public class WasmInterpreterTransitions
         public long B;
     }
 
+    public struct S1
+    {
+        public byte A;
+    }
+
+    public struct S2
+    {
+        public short A;
+    }
+
+    private delegate S2 ReturnsS2Delegate(int a);
+
     private readonly int _state = C;
 
     [Fact]
@@ -115,6 +127,20 @@ public class WasmInterpreterTransitions
         // interpreted -> R2R, floating-point returns over the same boundary.
         Assert.Equal(F32, self.InterpretedCallsR2RReturningF32());
         Assert.Equal(F64, self.InterpretedCallsR2RReturningF64());
+
+        // 1- and 2-byte struct shapes (S1 / S2). These small structs travel by value in a single
+        // slot and are the 'S1'/'S2' encodings the runtime spells for the return buffer and by-ref
+        // argument; the hand-written table only ever had 8-byte forms.
+        Assert.Equal((byte)A, InterpretedStaticReturnsS1(A).A);          // I S1 i p
+        s_sideEffect = 0;
+        self.InterpretedInstanceTakesIntAndS2(A, new S2 { A = (short)B }); // I v T i S2 p
+        Assert.Equal(A + (short)B, s_sideEffect);
+
+        // R2R reaches an interpreted method through a delegate: its entrypoint is materialized as a
+        // native function pointer via GetMultiCallableAddrOfCode, which is the path that needs the
+        // R2R-to-interpreter thunk independent of any direct call. The target returns S2 from an
+        // instance method (I S2 T i p).
+        Assert.Equal((short)(A + C), self.R2RInvokesInterpretedViaDelegate().A);
     }
 
     private static int s_sideEffect;
@@ -194,6 +220,27 @@ public class WasmInterpreterTransitions
     [BypassReadyToRun]
     [MethodImpl(MethodImplOptions.NoInlining)]
     private double InterpretedCallsR2RReturningF64() => R2RInstanceReturnsF64();
+
+    [BypassReadyToRun]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static S1 InterpretedStaticReturnsS1(int a) => new S1 { A = (byte)a };
+
+    [BypassReadyToRun]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private void InterpretedInstanceTakesIntAndS2(int a, S2 s) => s_sideEffect = a + s.A;
+
+    [BypassReadyToRun]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private S2 InterpretedInstanceReturnsS2(int a) => new S2 { A = (short)(a + _state) };
+
+    // R2R code: takes a delegate to the interpreted method above and invokes it. Creating the
+    // delegate takes the interpreted method's address, so its entrypoint must be callable from R2R.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private S2 R2RInvokesInterpretedViaDelegate()
+    {
+        ReturnsS2Delegate d = InterpretedInstanceReturnsS2;
+        return d(A);
+    }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private int R2RInstanceReturnsI32(int a) => a + _state;

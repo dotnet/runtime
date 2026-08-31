@@ -1126,10 +1126,10 @@ namespace
         }
 
         InterpreterCalliCookie thunk = LookupThunk(keyBuffer);
-#ifdef _DEBUG
+
         if (thunk == NULL)
             printf("WASM calli missing for key: %s\n", keyBuffer);
-#endif
+
         return thunk;
     }
 
@@ -1172,12 +1172,10 @@ namespace
         }
 
         void* thunk = LookupPortableEntryPointThunk(keyBuffer);
-#ifdef _DEBUG
+
         if (thunk == NULL)
-        {
-            LOG((LF_STUBS, LL_INFO100000, "WASM R2R to interpreter call missing for key: %s\n", keyBuffer));
-        }
-#endif
+            printf("WASM: no R2R-to-interpreter thunk for signature key '%s'. \n", keyBuffer);
+
         return thunk;
     }
 
@@ -1416,10 +1414,18 @@ void* GetPortableEntryPointToInterpreterThunk(MethodDesc *pMD)
         }
 
         thunk = LookupPortableEntryPointThunk(thunkKey);
+        if (thunk == NULL)
+        {
+            PORTABILITY_ASSERT("GetPortableEntryPointToInterpreterThunk: unknown thunk for string constructor");
+        }
     }
     else
     {
         thunk = ComputePortableEntryPointToInterpreterThunk(sig);
+        if (thunk == NULL)
+        {
+            PORTABILITY_ASSERT("ComputePortableEntryPointToInterpreterThunk: unknown thunk signature");
+        }
     }
 
     return thunk;

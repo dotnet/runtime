@@ -860,14 +860,22 @@ namespace Internal.JitInterface
                     }
                 }
 
-                // For managed methods on Wasm, add an interpreter-to-R2R thunk so the
-                // interpreter can call into this R2R-compiled function.
+                // For managed methods on Wasm, add both interpreter transition thunks for this
+                // method's signature. The interpreter-to-R2R thunk lets the interpreter call into
+                // this R2R function. The R2R-to-interpreter thunk is keyed by signature, not method:
+                // a method of the same shape that runs interpreted must be enterable from R2R (via a
+                // function pointer, delegate, virtual slot, or the interpreter's own
+                // GetMultiCallableAddrOfCode path), and its thunk is not otherwise rooted unless an
+                // R2R call site happens to share the signature.
                 if (_compilation.NodeFactory.Target.IsWasm && !MethodBeingCompiled.IsUnmanagedCallersOnly)
                 {
                     WasmSignature wasmSig = WasmLowering.GetSignature(MethodBeingCompiled);
                     AddAdditionalDependency(
                         _compilation.NodeFactory.WasmInterpreterToR2RThunk(wasmSig),
                         "Interpreter-to-R2R thunk for compiled method");
+                    AddAdditionalDependency(
+                        _compilation.NodeFactory.WasmR2RToInterpreterThunk(wasmSig),
+                        "R2R-to-interpreter thunk for compiled method signature");
                 }
 
                 var compilationResult = CompileMethodInternal(methodCodeNodeNeedingCode, methodIL);
