@@ -661,6 +661,7 @@
     <Compile Include="TripleDesProvider.cs" />
     <Compile Include="TripleDesTests.cs" />
     <Compile Include="ZeroMemoryTests.cs" />
+    <Compile Include="X509Certificates\AppAndCertPoliciesChainTests.cs" />
     <Compile Include="X509Certificates\Cert.cs" />
     <Compile Include="X509Certificates\CertTests.cs" />
     <Compile Include="X509Certificates\ChainHolder.cs" />
@@ -670,6 +671,7 @@
     <Compile Include="X509Certificates\CollectionImportTests.cs" />
     <Compile Include="X509Certificates\CollectionTests.cs" />
     <Compile Include="X509Certificates\ContentTypeTests.cs" />
+    <Compile Include="X509Certificates\CorruptPoliciesChainTests.cs" />
     <Compile Include="X509Certificates\CrlDistPointBuilderTests.cs" />
     <Compile Include="X509Certificates\CtorTests.cs" />
     <Compile Include="X509Certificates\DSAOther.cs" />

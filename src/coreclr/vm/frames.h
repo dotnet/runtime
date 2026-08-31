@@ -853,10 +853,12 @@ protected:  // we don't want people using this directly
     TADDR GetAddrOfThis();
 
 public:
+#ifdef FEATURE_VARARGS
     //---------------------------------------------------------------
     // For vararg calls, return cookie.
     //---------------------------------------------------------------
     VASigCookie *GetVASigCookie();
+#endif // FEATURE_VARARGS
 
     CalleeSavedRegisters *GetCalleeSavedRegisters()
     {
