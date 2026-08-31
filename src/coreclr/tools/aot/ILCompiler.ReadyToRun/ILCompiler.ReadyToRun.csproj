@@ -198,6 +198,7 @@
     <Compile Include="..\..\Common\Compiler\ObjectWriter\TypeString.cs" Link="Compiler\ObjectWriter\TypeString.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\Wasm\WasmDataSection.cs" Link="Compiler\ObjectWriter\Wasm\WasmDataSection.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\Wasm\WasmDataSegment.cs" Link="Compiler\ObjectWriter\Wasm\WasmDataSegment.cs" />
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\Wasm\WasmNameSection.cs" Link="Compiler\ObjectWriter\Wasm\WasmNameSection.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\Wasm\WasmSection.cs" Link="Compiler\ObjectWriter\Wasm\WasmSection.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\Wasm\WasmSections.cs" Link="Compiler\ObjectWriter\Wasm\WasmSections.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\Wasm\WebcilSection.cs" Link="Compiler\ObjectWriter\Wasm\WebcilSection.cs" />

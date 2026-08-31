@@ -135,7 +135,15 @@ namespace System.Security.Cryptography
             byte[] localCiphertext = new byte[Algorithm.CiphertextSizeInBytes];
             byte[] localSharedSecret = new byte[Algorithm.SharedSecretSizeInBytes];
 
-            EncapsulateCore(localCiphertext, localSharedSecret);
+            try
+            {
+                EncapsulateCore(localCiphertext, localSharedSecret);
+            }
+            catch
+            {
+                CryptographicOperations.ZeroMemory(localSharedSecret);
+                throw;
+            }
 
             sharedSecret = localSharedSecret;
             ciphertext = localCiphertext;
@@ -188,7 +196,15 @@ namespace System.Security.Cryptography
 
             ThrowIfDisposed();
 
-            EncapsulateCore(ciphertext, sharedSecret);
+            try
+            {
+                EncapsulateCore(ciphertext, sharedSecret);
+            }
+            catch
+            {
+                CryptographicOperations.ZeroMemory(sharedSecret);
+                throw;
+            }
         }
 
         /// <summary>
@@ -243,7 +259,17 @@ namespace System.Security.Cryptography
             ThrowIfDisposed();
 
             byte[] sharedSecret = new byte[Algorithm.SharedSecretSizeInBytes];
-            DecapsulateCore(ciphertext, sharedSecret);
+
+            try
+            {
+                DecapsulateCore(ciphertext, sharedSecret);
+            }
+            catch
+            {
+                CryptographicOperations.ZeroMemory(sharedSecret);
+                throw;
+            }
+
             return sharedSecret;
         }
 
@@ -286,7 +312,15 @@ namespace System.Security.Cryptography
 
             ThrowIfDisposed();
 
-            DecapsulateCore(ciphertext, sharedSecret);
+            try
+            {
+                DecapsulateCore(ciphertext, sharedSecret);
+            }
+            catch
+            {
+                CryptographicOperations.ZeroMemory(sharedSecret);
+                throw;
+            }
         }
 
         /// <summary>

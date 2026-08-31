@@ -94,6 +94,8 @@ namespace ILCompiler
             new("--maxgenericcyclebreadth") { DefaultValueFactory = _ => ReadyToRunCompilerContext.DefaultGenericCycleBreadthCutoff, Description = SR.GenericCycleBreadthCutoff };
         public Option<string> TargetOS { get; } =
             new("--targetos") { Description = SR.TargetOSOption };
+        public Option<bool?> TargetAllowsRuntimeCodeGeneration { get; } =
+            new("--target-allows-runtime-code-generation") { Description = SR.TargetAllowsRuntimeCodeGenerationOption };
         public Option<string> JitPath { get; } =
             new("--jitpath") { Description = SR.JitPathOption };
         public Option<bool> PrintReproInstructions { get; } =
@@ -203,6 +205,7 @@ namespace ILCompiler
             Options.Add(GenericCycleBreadthCutoff);
             Options.Add(TargetArchitecture);
             Options.Add(TargetOS);
+            Options.Add(TargetAllowsRuntimeCodeGeneration);
             Options.Add(JitPath);
             Options.Add(PrintReproInstructions);
             Options.Add(GeneratePortableCallHelpers);

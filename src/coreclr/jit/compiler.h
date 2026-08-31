@@ -1517,9 +1517,10 @@ enum class PhaseChecks : unsigned int
     CHECK_LIKELIHOODS   = 1 << 5, // profile data likelihood integrity
     CHECK_PROFILE       = 1 << 6, // profile data full integrity
     CHECK_PROFILE_FLAGS = 1 << 7, // blocks with profile-derived weights have BBF_PROF_WEIGHT flag set
-    CHECK_LINKED_LOCALS = 1 << 8,  // check linked list of locals
-    CHECK_FG_INIT_BLOCK = 1 << 9,  // flow graph has an init block
+    CHECK_LINKED_LOCALS    = 1 << 8,  // check linked list of locals
+    CHECK_FG_INIT_BLOCK    = 1 << 9,  // flow graph has an init block
     CHECK_LIR_UNUSED_VALUES = 1 << 10, // LIR values with no user are marked as unused
+    CHECK_IR_RELAXED       = 1 << 11, // allow and count extra IR flags
 };
 
 inline constexpr PhaseChecks operator ~(PhaseChecks a)
@@ -8709,7 +8710,10 @@ public:
 
         bool IsConstantInt32Assertion() const
         {
-            return CanPropEqualOrNotEqual() && GetOp2().KindIs(O2K_CONST_INT) && GetOp1().KindIs(O1K_LCLVAR, O1K_VN);
+            // Note the O2K_CONST_INT payload is an ssize_t, so it may hold a TYP_LONG constant that
+            // does not fit into an int32. Callers assume an int32-sized constant, so require that here.
+            return CanPropEqualOrNotEqual() && GetOp2().KindIs(O2K_CONST_INT) && GetOp1().KindIs(O1K_LCLVAR, O1K_VN) &&
+                   FitsIn<int>(GetOp2().GetIntConstant());
         }
 
         bool CanPropLclVar() const
