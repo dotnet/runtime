@@ -56,7 +56,7 @@
     <SdkToolsSupported Condition="'$(_SdkToolsSupportedOS)' == 'true' and '$(_SdkToolsSupportedArch)' == 'true'">true</SdkToolsSupported>
 
     <_UseNativeAotForComponentsCrossOS Condition="'$(CrossBuild)' == 'true' and '$(_hostArchitecture)' == '$(_targetArchitecture)' and '$(_hostOS)' != 'windows'">true</_UseNativeAotForComponentsCrossOS>
-    <UseNativeAotForComponents Condition="'$(NativeAotSupported)' == 'true' and ('$(TargetOS)' == '$(HostOS)' or '$(_UseNativeAotForComponentsCrossOS)' == 'true') and '$(TargetsLinuxBionic)' != 'true' and '$(TargetOpenHarmony)' != 'true'">true</UseNativeAotForComponents>
+    <UseNativeAotForComponents Condition="'$(NativeAotSupported)' == 'true' and ('$(TargetOS)' == '$(HostOS)' or '$(_UseNativeAotForComponentsCrossOS)' == 'true') and '$(TargetsLinuxBionic)' != 'true' and '$(TargetsOpenHarmony)' != 'true'">true</UseNativeAotForComponents>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -77,9 +77,9 @@
     <DefaultSubsets Condition="'$(TargetsLinuxBionic)' == 'true' and '$(CoreCLRSupported)' == 'true' and '$(MonoSupported)' != 'true'">clr+libs+host+packs</DefaultSubsets>
     <DefaultSubsets Condition="'$(TargetsLinuxBionic)' == 'true' and '$(CoreCLRSupported)' != 'true' and '$(MonoSupported)' == 'true'">clr.nativeaotruntime+clr.nativeaotlibs+mono+libs+host+packs</DefaultSubsets>
     <DefaultSubsets Condition="'$(TargetsLinuxBionic)' == 'true' and '$(CoreCLRSupported)' != 'true' and '$(MonoSupported)' != 'true'">clr.nativeaotruntime+clr.nativeaotlibs+libs+packs</DefaultSubsets>
-    <DefaultSubsets Condition="'$(TargetOpenHarmony)' == 'true' and '$(CoreCLRSupported)' == 'true' and '$(MonoSupported)' == 'true'">clr.nativeaotruntime+clr.nativeaotlibs+clr+mono+libs+host+packs</DefaultSubsets>
-    <DefaultSubsets Condition="'$(TargetOpenHarmony)' == 'true' and '$(CoreCLRSupported)' == 'true' and '$(MonoSupported)' != 'true'">clr.nativeaotruntime+clr.nativeaotlibs+clr+libs+host+packs</DefaultSubsets>
-    <DefaultSubsets Condition="'$(TargetOpenHarmony)' == 'true' and '$(CoreCLRSupported)' != 'true'">clr.nativeaotruntime+clr.nativeaotlibs+mono+libs+host+packs</DefaultSubsets>
+    <DefaultSubsets Condition="'$(TargetsOpenHarmony)' == 'true' and '$(CoreCLRSupported)' == 'true' and '$(MonoSupported)' == 'true'">clr.nativeaotruntime+clr.nativeaotlibs+clr+mono+libs+host+packs</DefaultSubsets>
+    <DefaultSubsets Condition="'$(TargetsOpenHarmony)' == 'true' and '$(CoreCLRSupported)' == 'true' and '$(MonoSupported)' != 'true'">clr.nativeaotruntime+clr.nativeaotlibs+clr+libs+host+packs</DefaultSubsets>
+    <DefaultSubsets Condition="'$(TargetsOpenHarmony)' == 'true' and '$(CoreCLRSupported)' != 'true'">clr.nativeaotruntime+clr.nativeaotlibs+mono+libs+host+packs</DefaultSubsets>
     <DefaultSubsets Condition="'$(TargetsBrowser)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">clr+libs+tools+host+packs</DefaultSubsets>
     <!-- In source build, mono is only supported as primary runtime flavor. -->
     <DefaultSubsets Condition="'$(DotNetBuildSourceOnly)' == 'true' and '$(PrimaryRuntimeFlavor)' != 'Mono'">clr+libs+tools+host+packs</DefaultSubsets>
@@ -389,7 +389,7 @@
     <!-- linux-bionic reports TargetOS as 'linux', so the HostOS/TargetOS check below never fires for it.
          It always targets the bionic libc via the NDK though, so host tools must be built separately.
          linux-ohos (HarmonyOS) similarly reports TargetOS as 'linux' and uses its own NDK toolchain. -->
-    <_BuildAnyCrossArch Condition="('$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)' or '$(HostOS)' != '$(TargetOS)' or '$(TargetsLinuxBionic)' == 'true' or '$(TargetOpenHarmony)' == 'true' or '$(EnableNativeSanitizers)' != '')">true</_BuildAnyCrossArch>
+    <_BuildAnyCrossArch Condition="('$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)' or '$(HostOS)' != '$(TargetOS)' or '$(TargetsLinuxBionic)' == 'true' or '$(TargetsOpenHarmony)' == 'true' or '$(EnableNativeSanitizers)' != '')">true</_BuildAnyCrossArch>
     <_BuildCrossComponents Condition="$(_subset.Contains('+clr.crossarchtools+'))">true</_BuildCrossComponents>
     <_BuildCrossComponents Condition="'$(ClrRuntimeBuildSubsets)' != '' and ('$(PrimaryRuntimeFlavor)' == 'CoreCLR' or '$(TargetsMobile)' == 'true')">true</_BuildCrossComponents>
     <_CrossBitwidthBuild Condition="'$(BuildArchitecture)' == 'x64' and ('$(TargetArchitecture)' == 'x86' or '$(TargetArchitecture)' == 'arm')">true</_CrossBitwidthBuild>

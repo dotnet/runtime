@@ -51,8 +51,8 @@
     <TargetsLinux Condition="'$(TargetOS)' == 'linux' or '$(TargetOS)' == 'android'">true</TargetsLinux>
     <TargetsLinuxBionic Condition="'$(PortableOS)' == 'linux-bionic'">true</TargetsLinuxBionic>
     <TargetsLinuxMusl Condition="'$(PortableOS)' == 'linux-musl'">true</TargetsLinuxMusl>
-    <TargetOpenHarmony Condition="'$(PortableOS)' == 'linux-ohos'">true</TargetOpenHarmony>
-    <TargetsLinuxGlibc Condition="'$(TargetsLinux)' == 'true' and '$(TargetsLinuxMusl)' != 'true' and '$(TargetsLinuxBionic)' != 'true' and '$(TargetOpenHarmony)' != 'true'">true</TargetsLinuxGlibc>
+    <TargetsOpenHarmony Condition="'$(PortableOS)' == 'linux-ohos'">true</TargetsOpenHarmony>
+    <TargetsLinuxGlibc Condition="'$(TargetsLinux)' == 'true' and '$(TargetsLinuxMusl)' != 'true' and '$(TargetsLinuxBionic)' != 'true' and '$(TargetsOpenHarmony)' != 'true'">true</TargetsLinuxGlibc>
     <TargetsNetBSD Condition="'$(TargetOS)' == 'netbsd'">true</TargetsNetBSD>
     <TargetsOSX Condition="'$(TargetOS)' == 'osx'">true</TargetsOSX>
     <TargetsMacCatalyst Condition="'$(TargetOS)' == 'maccatalyst'">true</TargetsMacCatalyst>
