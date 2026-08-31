@@ -20,6 +20,7 @@ using Internal.Runtime.CompilerServices;
 #endif
 
 using Internal.IL;
+using Internal.IL.Stubs;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 using Internal.TypeSystem.Interop;
@@ -320,6 +321,35 @@ namespace Internal.JitInterface
             }
 
             return null;
+        }
+
+        private MethodIL GetMethodILForJit(MethodDesc method)
+        {
+            if (!RuntimeHelpersIntrinsics.IsSupported(method))
+            {
+                return _compilation.GetMethodIL(method);
+            }
+
+            MethodIL GetMethodIL(MethodDesc methodToScan)
+            {
+#if READYTORUN
+                if (!_compilation.CanInline(MethodBeingCompiled, methodToScan))
+                {
+                    return null;
+                }
+#endif
+
+                return _compilation.GetMethodIL(methodToScan);
+            }
+
+            return RuntimeHelpersIntrinsics.EmitIL(
+                method,
+                GetMethodIL,
+#if READYTORUN
+                emitFalseIfMethodBodyUnavailable: false);
+#else
+                emitFalseIfMethodBodyUnavailable: true);
+#endif
         }
 
         private CompilationResult CompileMethodInternal(IMethodNode methodCodeNodeNeedingCode, MethodIL methodIL)
@@ -1329,7 +1359,7 @@ namespace Internal.JitInterface
                 return false;
 
 
-            MethodIL methodIL = method.IsUnboxingThunk() ? null : _compilation.GetMethodIL(method);
+            MethodIL methodIL = method.IsUnboxingThunk() ? null : GetMethodILForJit(method);
             return Get_CORINFO_METHOD_INFO(method, methodIL, info);
         }
 

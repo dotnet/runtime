@@ -14,7 +14,20 @@ namespace Internal.IL.Stubs
     /// </summary>
     public static class RuntimeHelpersIntrinsics
     {
-        public static MethodIL EmitIL(MethodDesc method, Func<MethodDesc, bool> canReadMethodBody)
+        public static bool IsSupported(MethodDesc method)
+        {
+            return method.IsIntrinsic
+                && method.Name == "IsBitwiseEquatable"u8
+                && method.OwningType.GetTypeDefinition() is MetadataType owningType
+                && owningType.Module == method.Context.SystemModule
+                && owningType.Name == "RuntimeHelpers"u8
+                && owningType.Namespace == "System.Runtime.CompilerServices"u8;
+        }
+
+        public static MethodIL EmitIL(
+            MethodDesc method,
+            Func<MethodDesc, MethodIL> getMethodIL,
+            bool emitFalseIfMethodBodyUnavailable)
         {
             Debug.Assert(((MetadataType)method.OwningType).Name == "RuntimeHelpers"u8);
 
@@ -33,20 +46,20 @@ namespace Internal.IL.Stubs
             {
                 bool unavailableMethodBody = false;
 
-                bool CanReadMethodBody(MethodDesc method)
+                MethodIL GetMethodIL(MethodDesc method)
                 {
-                    bool canRead = canReadMethodBody(method);
-                    unavailableMethodBody |= !canRead;
-                    return canRead;
+                    MethodIL methodIL = getMethodIL(method);
+                    unavailableMethodBody |= methodIL == null;
+                    return methodIL;
                 }
 
                 result = ComparerIntrinsics.IsBitwiseEquatable(
                     elementType,
-                    CanReadMethodBody);
+                    GetMethodIL);
 
-                // If the answer depended on method IL outside the version bubble, leave the intrinsic
-                // unexpanded so the runtime can determine the result using the loaded implementation.
-                if (unavailableMethodBody)
+                // If the effective method IL is unavailable, leave the intrinsic unexpanded when the
+                // runtime can determine the result using the loaded implementation.
+                if (unavailableMethodBody && !emitFalseIfMethodBodyUnavailable)
                     return null;
             }
             else
