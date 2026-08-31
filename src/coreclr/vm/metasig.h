@@ -169,7 +169,7 @@
 
 
 // static methods:
-DEFINE_METASIG_T(SM(Int_IntPtr_IntPtr_RetException, i I I, C(EXCEPTION)))
+DEFINE_METASIG_T(SM(Int_RuntimeTypeHandle_IntPtr_RetException, i g(RT_TYPE_HANDLE) I, C(EXCEPTION)))
 DEFINE_METASIG_T(SM(Type_CharPtr_RuntimeAssembly_Bool_Bool_IntPtr_RetRuntimeType, P(u) C(ASSEMBLY) F F I, C(CLASS)))
 DEFINE_METASIG(SM(RefIntPtr_IntPtr_IntPtr_Int_RetObj, r(I) I I i, j))
 DEFINE_METASIG(SM(VoidPtr_RetVoidPtr, P(v), P(v)))
@@ -183,7 +183,7 @@ DEFINE_METASIG_T(SM(PtrObj_PtrExInfo_RetVoid, P(j) P(g(EXINFO)), v))
 DEFINE_METASIG_T(SM(UInt_PtrExInfo_RetVoid, K P(g(EXINFO)), v))
 DEFINE_METASIG_T(SM(PtrExInfo_PtrExInfo_RetVoid, P(g(EXINFO)) P(g(EXINFO)), v))
 #ifdef FEATURE_COMINTEROP
-DEFINE_METASIG(SM(Obj_IntPtr_RefIntPtr_RefBool_RetIntPtr, j I r(I) r(F), I))
+DEFINE_METASIG(SM(Obj_IntPtr_Int_RefIntPtr_RefBool_RetIntPtr, j I i r(I) r(F), I))
 #endif // FEATURE_COMINTEROP
 #ifdef FEATURE_COMWRAPPERS
 DEFINE_METASIG_T(SM(IntPtr_CreateObjectFlags_RetObj, I g(CREATEOBJECTFLAGS), j))
@@ -198,9 +198,8 @@ DEFINE_METASIG(SM(Int_Int_RetVoid, i i, v))
 DEFINE_METASIG(SM(IntPtr_IntPtr_RetVoid, I I, v))
 DEFINE_METASIG(SM(IntPtr_Int_IntPtr_RetObj, I i I, j))
 DEFINE_METASIG(SM(IntPtr_IntPtr_Int_Bool_RetVoid, I I i F, v))
-DEFINE_METASIG(SM(IntPtr_IntPtr_Obj_RetVoid, I I j, v))
 DEFINE_METASIG_T(SM(Obj_Array_RetVoid, j C(ARRAY), v))
-DEFINE_METASIG(SM(Obj_IntPtr_Obj_RetVoid, j I j, v))
+DEFINE_METASIG(SM(Obj_IntPtr_RetVoid, j I, v))
 DEFINE_METASIG(SM(RetIntPtr, _, I))
 DEFINE_METASIG(SM(RetUInt, _, K))
 DEFINE_METASIG(SM(IntPtr_RetStr, I, s))
@@ -385,7 +384,9 @@ DEFINE_METASIG(IM(RefInt_RefInt_RefInt_RetArrByte, r(i) r(i) r(i), a(b)))
 DEFINE_METASIG_T(IM(RefInt_RetRuntimeType, r(i) , C(CLASS)))
 DEFINE_METASIG_T(SM(IntPtr_RetRuntimeType, I , C(CLASS)))
 
+#ifdef FEATURE_VARARGS
 DEFINE_METASIG_T(IM(RuntimeArgumentHandle_PtrVoid_RetVoid, g(ARGUMENT_HANDLE) P(v), v))
+#endif // FEATURE_VARARGS
 
 // Exception
 #ifdef FEATURE_COMINTEROP

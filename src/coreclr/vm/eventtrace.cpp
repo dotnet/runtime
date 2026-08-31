@@ -3603,25 +3603,68 @@ VOID ETW::MethodLog::MethodJitting(MethodDesc *pMethodDesc, COR_ILMETHOD_DECODER
 }
 
 /**********************************************************************/
-/* This is called by the runtime when a single jit helper method with stub is initialized */
+/* This is called by the runtime when a helper is initialized */
 /**********************************************************************/
-VOID ETW::MethodLog::StubInitialized(ULONGLONG ullHelperStartAddress, ULONG ulHelperSize, LPCWSTR pHelperName)
+VOID ETW::MethodLog::HelperInitialized(ULONGLONG ullHelperStartAddress, ULONG ulHelperSize, LPCWSTR pHelperName)
 {
     CONTRACTL {
         NOTHROW;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
         PRECONDITION(ullHelperStartAddress != 0);
         PRECONDITION(ulHelperSize != 0);
+        PRECONDITION(pHelperName != nullptr);
     } CONTRACTL_END;
 
     EX_TRY
     {
-        if(ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context,
-                                        TRACE_LEVEL_INFORMATION,
-                                        CLR_JIT_KEYWORD))
-        {
-            ETW::MethodLog::SendHelperEvent(ullHelperStartAddress, ulHelperSize, pHelperName);
-        }
+        SendHelperEvent(
+            ullHelperStartAddress,
+            ulHelperSize,
+            pHelperName,
+            ETW::EnumerationLog::EnumerationStructs::JitMethodLoad);
+    } EX_CATCH { } EX_END_CATCH
+}
+
+/**********************************************************************/
+/* This is called by the runtime when a helper is destroyed */
+/**********************************************************************/
+VOID ETW::MethodLog::HelperDestroyed(ULONGLONG ullHelperStartAddress, ULONG ulHelperSize, LPCWSTR pHelperName)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        PRECONDITION(ullHelperStartAddress != 0);
+        PRECONDITION(ulHelperSize != 0);
+        PRECONDITION(pHelperName != nullptr);
+    } CONTRACTL_END;
+
+    EX_TRY
+    {
+        SendHelperEvent(
+            ullHelperStartAddress,
+            ulHelperSize,
+            pHelperName,
+            ETW::EnumerationLog::EnumerationStructs::JitMethodUnload);
+    } EX_CATCH { } EX_END_CATCH
+}
+
+VOID ETW::MethodLog::SendCopiedWriteBarrierEvent(
+    ULONGLONG ullHelperStartAddress,
+    ULONG ulHelperSize,
+    LPCWSTR pHelperName,
+    DWORD dwEventOptions)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        PRECONDITION(ullHelperStartAddress != 0);
+        PRECONDITION(ulHelperSize != 0);
+        PRECONDITION(pHelperName != nullptr);
+    } CONTRACTL_END;
+
+    EX_TRY
+    {
+        SendHelperEvent(ullHelperStartAddress, ulHelperSize, pHelperName, dwEventOptions);
     } EX_CATCH { } EX_END_CATCH
 }
 
@@ -4926,23 +4969,76 @@ VOID ETW::MethodLog::SendMethodRichDebugInfo(MethodDesc* pMethodDesc, PCODE pNat
     delete[] (BYTE*)mappings;
 }
 
-VOID ETW::MethodLog::SendHelperEvent(ULONGLONG ullHelperStartAddress, ULONG ulHelperSize, LPCWSTR pHelperName)
+// Do not explicitly check CLR_JIT_KEYWORD here. These events can be enabled by multiple
+// keywords, and copied write barriers and stubs should be reported when any of them is enabled.
+VOID ETW::MethodLog::SendHelperEvent(
+    ULONGLONG ullHelperStartAddress,
+    ULONG ulHelperSize,
+    LPCWSTR pHelperName,
+    DWORD dwEventOptions)
 {
     WRAPPER_NO_CONTRACT;
-    if(pHelperName)
+
+    if (pHelperName == nullptr || ulHelperSize == 0)
     {
-         PCWSTR szDtraceOutput1=W("");
-         ULONG methodFlags = ETW::MethodLog::MethodStructs::JitHelperMethod; // helper flag set
-         FireEtwMethodLoadVerbose_V1(ullHelperStartAddress,
-                                     0,
-                                     ullHelperStartAddress,
-                                     ulHelperSize,
-                                     0,
-                                     methodFlags,
-                                     NULL,
-                                     pHelperName,
-                                     NULL,
-                                     GetClrInstanceId());
+        return;
+    }
+
+    if (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::JitMethodLoad)
+    {
+        FireEtwMethodLoadVerbose_V1(
+            ullHelperStartAddress,
+            0,
+            ullHelperStartAddress,
+            ulHelperSize,
+            0,
+            MethodStructs::JitHelperMethod,
+            nullptr,
+            pHelperName,
+            nullptr,
+            GetClrInstanceId());
+    }
+    else if (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::JitMethodUnload)
+    {
+        FireEtwMethodUnloadVerbose_V1(
+            ullHelperStartAddress,
+            0,
+            ullHelperStartAddress,
+            ulHelperSize,
+            0,
+            MethodStructs::JitHelperMethod,
+            nullptr,
+            pHelperName,
+            nullptr,
+            GetClrInstanceId());
+    }
+    else if (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::JitMethodDCStart)
+    {
+        FireEtwMethodDCStartVerbose_V1(
+            ullHelperStartAddress,
+            0,
+            ullHelperStartAddress,
+            ulHelperSize,
+            0,
+            MethodStructs::JitHelperMethod,
+            nullptr,
+            pHelperName,
+            nullptr,
+            GetClrInstanceId());
+    }
+    else if (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::JitMethodDCEnd)
+    {
+        FireEtwMethodDCEndVerbose_V1(
+            ullHelperStartAddress,
+            0,
+            ullHelperStartAddress,
+            ulHelperSize,
+            0,
+            MethodStructs::JitHelperMethod,
+            nullptr,
+            pHelperName,
+            nullptr,
+            GetClrInstanceId());
     }
 }
 
@@ -5045,7 +5141,17 @@ VOID ETW::MethodLog::SendEventsForJitMethodsHelper2(
     {
         MethodDesc * pMD = heapIterator.GetMethod();
         if (pMD == NULL)
+        {
+            if (fSendMethodEvent && heapIterator.GetStubCodeBlockKind() != STUB_CODE_BLOCK_UNKNOWN)
+            {
+                ETW::MethodLog::SendHelperEvent(
+                    heapIterator.GetMethodCode(),
+                    heapIterator.GetCodeSize(),
+                    GetStubCodeBlockKindStringW(heapIterator.GetStubCodeBlockKind()),
+                    dwEventOptions);
+            }
             continue;
+        }
 
         PCODE codeStart = PINSTRToPCODE(heapIterator.GetMethodCode());
 
@@ -5213,6 +5319,13 @@ VOID ETW::MethodLog::SendEventsForJitMethods(BOOL getCodeVersionIds, LoaderAlloc
                 fSendRichDebugInfoEvent,
                 FALSE);
         }
+
+#ifndef FEATURE_PORTABLE_HELPERS
+        if (pLoaderAllocatorFilter == nullptr && fSendMethodEvent)
+        {
+            ReportCopiedWriteBarriersToEventTracing(dwEventOptions);
+        }
+#endif // !FEATURE_PORTABLE_HELPERS
     } EX_CATCH{} EX_END_CATCH
 #endif // !DACCESS_COMPILE
 }

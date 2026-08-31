@@ -2615,16 +2615,15 @@ BOOL StackFrameIterator::CheckForSkippedFrames(void)
         {
             m_crawl.isFrameless     = false;
 
-            // If we see InlinedCallFrame in certain IL stubs, we should report the MD that
-            // was passed to the stub as its secret argument. This is the true interop MD.
-            // Note that code:InlinedCallFrame.GetFunction may return NULL in this case because
-            // the call is made using the CALLI instruction.
+#ifdef FEATURE_VARARGS
+            // A vararg P/Invoke stub receives the true interop MethodDesc as its secret argument.
+            // Report that MethodDesc instead of the IL stub.
             bool fReportInteropMD =
                 m_crawl.pFrame != FRAME_TOP
                 && m_crawl.pFrame->GetFrameIdentifier() == FrameIdentifier::InlinedCallFrame
                 && m_crawl.pFunc != NULL
                 && m_crawl.pFunc->IsILStub()
-                && m_crawl.pFunc->AsDynamicMethodDesc()->HasMDContextArg();
+                && m_crawl.pFunc->AsDynamicMethodDesc()->IsPInvokeVarArgStub();
             if (fReportInteropMD)
             {
                 m_crawl.pFunc = ((PTR_InlinedCallFrame)m_crawl.pFrame)->GetActualInteropMethodDesc();
@@ -2632,6 +2631,7 @@ BOOL StackFrameIterator::CheckForSkippedFrames(void)
                 _ASSERTE(m_crawl.pFunc->SanityCheck());
             }
             else
+#endif // FEATURE_VARARGS
             {
                 m_crawl.pFunc = m_crawl.pFrame->GetFunction();
             }
