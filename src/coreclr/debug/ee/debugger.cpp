@@ -2078,8 +2078,23 @@ void HelperThreadFavor::Init()
     CONTRACTL_END;
 
     // Create events for managing favors.
-    m_FavorReadEvent      = CreateWin32EventOrThrow(NULL, kAutoResetEvent, FALSE);
-    m_FavorAvailableEvent = CreateWin32EventOrThrow(NULL, kAutoResetEvent, FALSE);
+    m_FavorReadEvent = new (nothrow) WaitEvent(false);
+    if ((m_FavorReadEvent == nullptr) || !m_FavorReadEvent->IsValid())
+    {
+        delete m_FavorReadEvent;
+        m_FavorReadEvent = nullptr;
+        ThrowOutOfMemory();
+    }
+
+    m_FavorAvailableEvent = new (nothrow) WaitEvent(false);
+    if ((m_FavorAvailableEvent == nullptr) || !m_FavorAvailableEvent->IsValid())
+    {
+        delete m_FavorAvailableEvent;
+        m_FavorAvailableEvent = nullptr;
+        delete m_FavorReadEvent;
+        m_FavorReadEvent = nullptr;
+        ThrowOutOfMemory();
+    }
 }
 
 
@@ -6803,10 +6818,9 @@ HRESULT Debugger::LaunchJitDebuggerAndNativeAttach(Thread * pThread, EXCEPTION_P
     }
 
     LOG((LF_CORDB, LL_INFO10000, "D::LJDANA: waiting on m_exUnmanagedAttachEvent and debugger's process handle\n"));
-    DWORD  dwHandles = 2;
-    HANDLE arrHandles[2];
-    arrHandles[0] = GetUnmanagedAttachEvent();
-    arrHandles[1] = processInfo.hProcess;
+    WaitEvent unmanagedAttachEvent(GetUnmanagedAttachEvent());
+    NativeHandle debuggerProcess(processInfo.hProcess);
+    const WaitHandle *waitSet[] = { &unmanagedAttachEvent, &debuggerProcess };
 
     // Let the helper thread do the attach logic for us and wait for the
     // attach event.  Must release the lock before blocking on a wait.
@@ -6814,21 +6828,24 @@ HRESULT Debugger::LaunchJitDebuggerAndNativeAttach(Thread * pThread, EXCEPTION_P
 
     // Wait for one or the other to be set. Multiple threads could be waiting here.
     // The events are manual events, so when they go high, all threads will be released.
-    DWORD res = WaitForMultipleObjectsEx(dwHandles, arrHandles, FALSE, INFINITE, FALSE);
+    int32_t waitResult = WaitHandle::Wait(
+        waitSet,
+        ARRAY_SIZE(waitSet),
+        WaitHandle::Infinite);
 
     // We no long need to keep handles to the debugger process.
     CloseHandle(processInfo.hProcess);
     CloseHandle(processInfo.hThread);
 
     // Indicate to the caller that the attach was aborted
-    if (res == WAIT_OBJECT_0 + 1)
+    if (waitResult == 1)
     {
         LOG((LF_CORDB, LL_INFO10000, "D::LJDANA: Debugger process is unexpectedly terminated!\n"));
         return E_FAIL;
     }
 
     // Otherwise, attach was successful (Note, only native attach is done so far)
-    _ASSERTE((res == WAIT_OBJECT_0) && "WaitForMultipleObjectsEx failed!");
+    _ASSERTE((waitResult == 0) && "Debugger attach wait failed!");
     LOG( (LF_CORDB, LL_INFO10000, "D::LJDANA: Leaving\n") );
     return S_OK;
 #endif // TARGET_UNIX

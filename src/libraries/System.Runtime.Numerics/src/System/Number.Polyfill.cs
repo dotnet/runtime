@@ -5,7 +5,6 @@ using System.Buffers;
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.Wasm;
@@ -21,6 +20,8 @@ namespace System
         IEquatable<TSelf>
         where TSelf : unmanaged, IUtfChar<TSelf>
     {
+        public static abstract bool IsUtf8 { get; }
+
         public static abstract TSelf CastFrom(byte value);
 
         public static abstract TSelf CastFrom(char value);
@@ -40,6 +41,8 @@ namespace System
     {
         private readonly char value = ch;
 
+        public static bool IsUtf8 => false;
+
         public static Utf16Char CastFrom(byte value) => new((char)value);
         public static Utf16Char CastFrom(char value) => new(value);
         public static Utf16Char CastFrom(int value) => new((char)value);
@@ -54,6 +57,8 @@ namespace System
 #pragma warning restore CA1067
     {
         private readonly byte value = ch;
+
+        public static bool IsUtf8 => true;
 
         public static Utf8Char CastFrom(byte value) => new(value);
         public static Utf8Char CastFrom(char value) => new((byte)value);
@@ -111,9 +116,14 @@ namespace System
         internal static OperationStatus DecodeFromUtfChar<TChar>(ReadOnlySpan<TChar> span, out Rune result, out int elemsConsumed)
             where TChar : unmanaged, IUtfChar<TChar>
         {
-            return (typeof(TChar) == typeof(Utf8Char))
-                ? Rune.DecodeFromUtf8(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(span), out result, out elemsConsumed)
-                : Rune.DecodeFromUtf16(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(span), out result, out elemsConsumed);
+            if (typeof(TChar) == typeof(Utf8Char))
+            {
+                return Rune.DecodeFromUtf8(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(span), out result, out elemsConsumed);
+            }
+
+            Debug.Assert(typeof(TChar) == typeof(Utf16Char));
+
+            return Rune.DecodeFromUtf16(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(span), out result, out elemsConsumed);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -124,11 +134,9 @@ namespace System
             {
                 return Unsafe.BitCast<ReadOnlySpan<byte>, ReadOnlySpan<TChar>>(Encoding.UTF8.GetBytes(value));
             }
-            else
-            {
-                Debug.Assert(typeof(TChar) == typeof(Utf16Char));
-                return Unsafe.BitCast<ReadOnlySpan<char>, ReadOnlySpan<TChar>>(value);
-            }
+
+            Debug.Assert(typeof(TChar) == typeof(Utf16Char));
+            return Unsafe.BitCast<ReadOnlySpan<char>, ReadOnlySpan<TChar>>(value.AsSpan());
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
