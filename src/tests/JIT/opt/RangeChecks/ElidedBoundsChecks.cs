@@ -82,6 +82,54 @@ public class ElidedBoundsChecks
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
+    static void FillPairsWithSlice(Span<int> buffer)
+    {
+        // X64-NOT: ThrowArgumentOutOfRangeException
+        // X86-NOT: ThrowArgumentOutOfRangeException
+        // ARM64-NOT: ThrowArgumentOutOfRangeException
+        for (int i = buffer.Length; i > 2;)
+        {
+            i -= 2;
+            Span<int> pair = buffer.Slice(i, 2);
+            pair[0] = i;
+            pair[1] = i + 1;
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static long RepeatedSliceAfterMerge(byte[] values, int start)
+    {
+        Span<byte> span = values;
+        long sum = 0;
+
+        // Keep the duplicate checks on distinct paths so CSE replaces the check after the merge.
+        if ((start & 1) == 0)
+        {
+            Span<byte> slice = span.Slice(start, 4);
+            for (int i = 0; i < slice.Length; i++)
+            {
+                sum += slice[i];
+            }
+        }
+        else
+        {
+            Span<byte> slice = span.Slice(start, 4);
+            for (int i = 0; i < slice.Length; i++)
+            {
+                sum += slice[i];
+            }
+        }
+
+        Span<byte> finalSlice = span.Slice(start, 4);
+        for (int i = 0; i < finalSlice.Length; i++)
+        {
+            sum += finalSlice[i];
+        }
+
+        return sum;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
     static bool IndexPlusConstLessThanLen(ReadOnlySpan<char> span)
     {
         // X64-NOT: CORINFO_HELP_RNGCHKFAIL
@@ -270,6 +318,23 @@ public class ElidedBoundsChecks
                     return 0;
                 }
             }
+
+            Array.Fill(pairs, -1);
+            FillPairsWithSlice(pairs);
+
+            for (int i = 0; i < length; i++)
+            {
+                int expected = i < 2 ? -1 : i;
+                if (pairs[i] != expected)
+                {
+                    return 0;
+                }
+            }
+        }
+
+        if (RepeatedSliceAfterMerge([0, 1, 2, 3, 4, 5, 6], 3) != 36)
+        {
+            return 0;
         }
 
         if (IndexPlusConstLessThanLen("%FF".AsSpan()) != true)

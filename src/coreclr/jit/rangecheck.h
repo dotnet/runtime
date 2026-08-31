@@ -860,6 +860,8 @@ public:
 
     bool TryGetRange(BasicBlock* block, GenTree* expr, Range* pRange, ValueNum preferredBoundVN = ValueNumStore::NoVN);
 
+    bool IsRangeInBounds(BasicBlock* block, GenTree* index, ValueNum upperVN, unsigned accessWidth);
+
     // Cheaper version of TryGetRange that is based only on incoming assertions.
     static Range GetRangeFromAssertions(Compiler* comp, GenTree* tree, ASSERT_VALARG_TP assertions, int budget = 10);
     static Range GetRangeFromAssertions(Compiler* comp, ValueNum vn, ASSERT_VALARG_TP assertions, int budget = 10);
@@ -881,10 +883,10 @@ private:
     int GetArrLength(ValueNum vn);
 
     // Check whether the computed range is within 0 and upper bounds. This function
-    // assumes that the lower range is resolved and upper range is symbolic as in an
-    // increasing loop.
+    // assumes that the lower range is resolved and the upper range is relative to
+    // the supplied upper bound.
     // TODO-CQ: This is not general enough.
-    bool BetweenBounds(Range& range, GenTree* upper, int arrSize);
+    bool BetweenBounds(Range& range, ValueNum uLimitVN, int arrSize, unsigned accessWidth);
 
     // Given a "tree" node, check if it contains array bounds check node and
     // optimize to remove it, if possible. Requires "stmt" and "block" that

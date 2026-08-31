@@ -110,11 +110,12 @@ int RangeCheck::GetArrLength(ValueNum vn)
 //
 // Arguments:
 //    Range - the range to check if in bounds
-//    upper - the array length vn
+//    uLimitVN - the array length vn
 //    arrSize - the length of the array if known, or <= 0
+//    accessWidth - the number of elements accessed starting at the lower bound
 //
 // Return Value:
-//    True iff range is between [0 and vn - 1] or [0, arrSize - 1]
+//    True iff the accessed range is between [0 and vn - 1] or [0, arrSize - 1]
 //
 // notes:
 //    This function assumes that the lower range is resolved and upper range is symbolic as in an
@@ -122,22 +123,19 @@ int RangeCheck::GetArrLength(ValueNum vn)
 //
 // TODO-CQ: This is not general enough.
 //
-bool RangeCheck::BetweenBounds(Range& range, GenTree* upper, int arrSize)
+bool RangeCheck::BetweenBounds(Range& range, ValueNum uLimitVN, int arrSize, unsigned accessWidth)
 {
+    assert((accessWidth > 0) && (accessWidth <= INT_MAX));
+
 #ifdef DEBUG
     assert(range.IsValid());
     if (m_compiler->verbose)
     {
-        printf("%s BetweenBounds <%d, ", range.ToString(m_compiler), 0);
-        Compiler::printTreeID(upper);
-        printf(">\n");
+        printf("%s BetweenBounds <%d, " FMT_VN ">\n", range.ToString(m_compiler), 0, uLimitVN);
     }
 #endif // DEBUG
 
     ValueNumStore* vnStore = m_compiler->vnStore;
-
-    // Get the VN for the upper limit.
-    ValueNum uLimitVN = vnStore->VNConservativeNormalValue(upper->gtVNPair);
 
 #ifdef DEBUG
     JITDUMP(FMT_VN " upper bound is: ", uLimitVN);
@@ -166,8 +164,8 @@ bool RangeCheck::BetweenBounds(Range& range, GenTree* upper, int arrSize)
 
         int ucns = range.UpperLimit().GetConstant();
 
-        // Upper limit: Len + [0..n]
-        if (ucns >= 0)
+        // The highest accessed element must remain below Len.
+        if (ucns > -static_cast<int64_t>(accessWidth))
         {
             return false;
         }
@@ -208,10 +206,12 @@ bool RangeCheck::BetweenBounds(Range& range, GenTree* upper, int arrSize)
             return false;
         }
         int ucns = range.UpperLimit().GetConstant();
-        if (ucns >= arrSize)
+        if ((accessWidth > static_cast<unsigned>(arrSize)) || (ucns < 0) ||
+            (static_cast<unsigned>(ucns) > (static_cast<unsigned>(arrSize) - accessWidth)))
         {
             return false;
         }
+
         if (range.LowerLimit().IsConstant())
         {
             int lcns = range.LowerLimit().GetConstant();
@@ -237,6 +237,34 @@ bool RangeCheck::BetweenBounds(Range& range, GenTree* upper, int arrSize)
     return false;
 }
 
+//------------------------------------------------------------------------
+// IsRangeInBounds: Check whether an access is within bounds
+//
+// Arguments:
+//    block - the block containing the access
+//    index - the index where the access starts
+//    upperVN - the upper bound's value number
+//    accessWidth - the number of elements accessed
+//
+// Return Value:
+//    True if every element in the access is within [0, upperVN)
+//
+bool RangeCheck::IsRangeInBounds(BasicBlock* block, GenTree* index, ValueNum upperVN, unsigned accessWidth)
+{
+    assert((accessWidth > 0) && (accessWidth <= INT_MAX));
+
+    Range range = Range(Limit(Limit::keUndef));
+    if (!TryGetRange(block, index, &range, upperVN))
+    {
+        JITDUMP("Failed to get range\n");
+        return false;
+    }
+
+    Range arrSizeRng = GetRangeFromAssertions(m_compiler, upperVN, block->bbAssertionIn);
+    int   arrSize    = arrSizeRng.IsConstantRange() ? arrSizeRng.LowerLimit().GetConstant() : 0;
+    return BetweenBounds(range, upperVN, arrSize, accessWidth);
+}
+
 void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree* treeParent)
 {
     // Check if we are dealing with a bounds check node.
@@ -259,28 +287,11 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
     GenTree*          treeIndex = bndsChk->GetIndex();
 
     ValueNum arrLenVn = m_compiler->optConservativeNormalVN(bndsChk->GetArrayLength());
-
-    // Get the range for this index.
-    Range range = Range(Limit(Limit::keUndef));
-    if (!TryGetRange(block, treeIndex, &range, arrLenVn))
+    if (IsRangeInBounds(block, treeIndex, arrLenVn, 1))
     {
-        JITDUMP("Failed to get range\n");
-        return;
-    }
-
-    Range arrSizeRng = GetRangeFromAssertions(m_compiler, bndsChk->GetArrayLength(), block->bbAssertionIn);
-
-    if (arrSizeRng.IsConstantRange())
-    {
-        int arrSize = arrSizeRng.LowerLimit().GetConstant();
-
-        // Is the range between the lower and upper bound values.
-        if (BetweenBounds(range, bndsChk->GetArrayLength(), arrSize))
-        {
-            JITDUMP("[RangeCheck::OptimizeRangeCheck] Between bounds\n");
-            m_compiler->optRemoveRangeCheck(bndsChk, comma, stmt);
-            m_updateStmt = true;
-        }
+        JITDUMP("[RangeCheck::OptimizeRangeCheck] Between bounds\n");
+        m_compiler->optRemoveRangeCheck(bndsChk, comma, stmt);
+        m_updateStmt = true;
     }
 }
 
@@ -306,7 +317,7 @@ void RangeCheck::Widen(BasicBlock* block, GenTree* tree, Range* pRange)
         {
             JITDUMP("[%06d] is monotonically increasing.\n", Compiler::dspTreeID(tree));
             ClearRangeMap();
-            *pRange = GetRangeWorker(block, tree, Monotonicity::Increasing DEBUGARG(0));
+            range.LowerLimit() = GetRangeWorker(block, tree, Monotonicity::Increasing DEBUGARG(0)).LowerLimit();
         }
     }
 
@@ -318,7 +329,7 @@ void RangeCheck::Widen(BasicBlock* block, GenTree* tree, Range* pRange)
         {
             JITDUMP("[%06d] is monotonically decreasing.\n", Compiler::dspTreeID(tree));
             ClearRangeMap();
-            *pRange = GetRangeWorker(block, tree, Monotonicity::Decreasing DEBUGARG(0));
+            range.UpperLimit() = GetRangeWorker(block, tree, Monotonicity::Decreasing DEBUGARG(0)).UpperLimit();
         }
     }
 }
