@@ -131,8 +131,10 @@ extern "C" void WasiFinalizer_Schedule()
 extern "C" QCallExceptionStatus QCALLTYPE WasiFinalizer_TryClearPending(CLR_BOOL* pReturnValue)
 {
     QCALL_CONTRACT;
-    CLR_BOOL pending = FALSE;
     BEGIN_QCALL;
+
+    CLR_BOOL pending = FALSE;
+
     // Volatile load + clear. Single-threaded WASI: no atomic swap needed.
     pending = s_finalizationPending ? TRUE : FALSE;
     if (pending)

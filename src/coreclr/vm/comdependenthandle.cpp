@@ -30,9 +30,9 @@ extern "C" QCallExceptionStatus QCALLTYPE DependentHandle_InternalAllocWithGCTra
 {
     QCALL_CONTRACT;
 
-    OBJECTHANDLE result = NULL;
-
     BEGIN_QCALL;
+
+    OBJECTHANDLE result = NULL;
 
     GCX_COOP();
     result = GetAppDomain()->CreateDependentHandle(target.Get(), dependent.Get());

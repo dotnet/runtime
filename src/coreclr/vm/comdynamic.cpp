@@ -46,9 +46,9 @@ extern "C" QCallExceptionStatus QCALLTYPE TypeBuilder_DefineGenericParam(QCall::
 {
     QCALL_CONTRACT;
 
-    mdTypeDef           classE = mdTokenNil;
-
     BEGIN_QCALL;
+
+    mdTypeDef           classE = mdTokenNil;
 
     RefClassWriter * pRCW = pModule->GetReflectionModule()->GetClassWriter();
     _ASSERTE(pRCW);
@@ -70,9 +70,9 @@ extern "C" QCallExceptionStatus QCALLTYPE TypeBuilder_DefineType(QCall::ModuleHa
 {
     QCALL_CONTRACT;
 
-    int classE = mdTokenNil;
-
     BEGIN_QCALL;
+
+    int classE = mdTokenNil;
 
     classE = COMDynamicWrite::DefineType(pModule, wszFullName, tkParent, attributes, tkEnclosingType, pInterfaceTokens);
 
@@ -171,9 +171,9 @@ extern "C" QCallExceptionStatus QCALLTYPE TypeBuilder_DefineMethodSpec(QCall::Mo
 {
     QCALL_CONTRACT;
 
-    mdMethodDef memberE = mdTokenNil;
-
     BEGIN_QCALL;
+
+    mdMethodDef memberE = mdTokenNil;
 
     RefClassWriter * pRCW = pModule->GetReflectionModule()->GetClassWriter();
     _ASSERTE(pRCW);
@@ -193,9 +193,9 @@ extern "C" QCallExceptionStatus QCALLTYPE TypeBuilder_DefineMethod(QCall::Module
 {
     QCALL_CONTRACT;
 
-    mdMethodDef memberE = mdTokenNil;
-
     BEGIN_QCALL;
+
+    mdMethodDef memberE = mdTokenNil;
 
     RefClassWriter * pRCW = pModule->GetReflectionModule()->GetClassWriter();
     _ASSERTE(pRCW);
@@ -225,9 +225,9 @@ extern "C" QCallExceptionStatus QCALLTYPE TypeBuilder_DefineField(QCall::ModuleH
 {
     QCALL_CONTRACT;
 
-    mdFieldDef retVal = mdTokenNil;
-
     BEGIN_QCALL;
+
+    mdFieldDef retVal = mdTokenNil;
 
     RefClassWriter * pRCW = pModule->GetReflectionModule()->GetClassWriter();
     _ASSERTE(pRCW);
@@ -540,9 +540,9 @@ extern "C" QCallExceptionStatus QCALLTYPE TypeBuilder_DefineProperty(QCall::Modu
 {
     QCALL_CONTRACT;
 
-    mdProperty      pr = mdTokenNil;
-
     BEGIN_QCALL;
+
+    mdProperty      pr = mdTokenNil;
 
     RefClassWriter * pRCW = pModule->GetReflectionModule()->GetClassWriter();
     _ASSERTE(pRCW);
@@ -577,9 +577,9 @@ extern "C" QCallExceptionStatus QCALLTYPE TypeBuilder_DefineEvent(QCall::ModuleH
 {
     QCALL_CONTRACT;
 
-    mdProperty      ev = mdTokenNil;
-
     BEGIN_QCALL;
+
+    mdProperty      ev = mdTokenNil;
 
     RefClassWriter * pRCW = pModule->GetReflectionModule()->GetClassWriter();
     _ASSERTE(pRCW);
@@ -672,9 +672,9 @@ extern "C" QCallExceptionStatus QCALLTYPE TypeBuilder_GetTokenFromSig(QCall::Mod
 {
     QCALL_CONTRACT;
 
-    mdSignature retVal = 0;
-
     BEGIN_QCALL;
+
+    mdSignature retVal = 0;
 
     RefClassWriter * pRCW = pModule->GetReflectionModule()->GetClassWriter();
     _ASSERTE(pRCW);
@@ -702,9 +702,9 @@ extern "C" QCallExceptionStatus QCALLTYPE TypeBuilder_SetParamInfo(QCall::Module
 {
     QCALL_CONTRACT;
 
-    mdParamDef retVal = 0;
-
     BEGIN_QCALL;
+
+    mdParamDef retVal = 0;
 
     RefClassWriter * pRCW = pModule->GetReflectionModule()->GetClassWriter();
     _ASSERTE(pRCW);

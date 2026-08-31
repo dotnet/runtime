@@ -92,8 +92,9 @@ extern "C" QCallExceptionStatus QCALLTYPE ObjectToComWeakRef(QCall::ObjectHandle
 {
     QCALL_CONTRACT;
 
-    IWeakReference* pWeakReference = nullptr;
     BEGIN_QCALL;
+
+    IWeakReference* pWeakReference = nullptr;
 
     IWeakReferenceSource* pWeakReferenceSourceRaw = nullptr;
     {

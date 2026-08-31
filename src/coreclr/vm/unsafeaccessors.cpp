@@ -1177,9 +1177,9 @@ extern "C" QCallExceptionStatus QCALLTYPE UnsafeAccessors_ResolveGenericParamToT
     QCALL_CONTRACT;
     _ASSERTE(unsafeAccessorMethod != NULL);
 
-    TypeHandle ret;
-
     BEGIN_QCALL;
+
+    TypeHandle ret;
 
     MethodDesc* typicalMD = unsafeAccessorMethod->LoadTypicalMethodDefinition();
     Instantiation genericParams = isMethodParam

@@ -1047,9 +1047,9 @@ extern "C" QCallExceptionStatus QCALLTYPE Delegate_BindToMethodInfo(MethodTable*
 {
     QCALL_CONTRACT;
 
-    BOOL result = TRUE;
-
     BEGIN_QCALL;
+
+    BOOL result = TRUE;
 
     MethodTable *pMethMT = pMethodType.AsTypeHandle().GetMethodTable();
 
@@ -1892,9 +1892,9 @@ extern "C" QCallExceptionStatus QCALLTYPE Delegate_GetMethodDesc(QCall::ObjectHa
 {
     QCALL_CONTRACT;
 
-    MethodDesc* pMD = nullptr;
-
     BEGIN_QCALL;
+
+    MethodDesc* pMD = nullptr;
 
     GCX_COOP();
 
@@ -1931,9 +1931,9 @@ extern "C" QCallExceptionStatus QCALLTYPE Delegate_GetMulticastInvokeSlow(Method
     QCALL_CONTRACT;
     _ASSERTE(pDelegateMT != NULL);
 
-    PCODE pStub = (PCODE)NULL;
-
     BEGIN_QCALL;
+
+    PCODE pStub = (PCODE)NULL;
 
     DelegateEEClass *delegateEEClass = (DelegateEEClass*)pDelegateMT->GetClass();
     pStub = delegateEEClass->m_pMultiCastInvokeStub;

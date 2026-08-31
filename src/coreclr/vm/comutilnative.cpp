@@ -589,9 +589,9 @@ extern "C" QCallExceptionStatus QCALLTYPE GCInterface_WaitForFullGCApproach(int 
 {
     QCALL_CONTRACT;
 
-    int result = 0;
-
     BEGIN_QCALL;
+
+    int result = 0;
 
     GCX_COOP();
 
@@ -607,9 +607,9 @@ extern "C" QCallExceptionStatus QCALLTYPE GCInterface_WaitForFullGCComplete(int 
 {
     QCALL_CONTRACT;
 
-    int result = 0;
-
     BEGIN_QCALL;
+
+    int result = 0;
 
     GCX_COOP();
 
@@ -674,9 +674,9 @@ extern "C" QCallExceptionStatus QCALLTYPE GCInterface_StartNoGCRegion(INT64 tota
 {
     QCALL_CONTRACT;
 
-    int retVal = 0;
-
     BEGIN_QCALL;
+
+    int retVal = 0;
 
     GCX_COOP();
 
@@ -694,9 +694,9 @@ extern "C" QCallExceptionStatus QCALLTYPE GCInterface_EndNoGCRegion(int* pReturn
 {
     QCALL_CONTRACT;
 
-    int retVal = FALSE;
-
     BEGIN_QCALL;
+
+    int retVal = FALSE;
 
     retVal = GCHeapUtilities::GetGCHeap()->EndNoGCRegion();
 
@@ -731,9 +731,9 @@ extern "C" QCallExceptionStatus QCALLTYPE GCInterface_GetTotalMemory(INT64* pRet
 {
     QCALL_CONTRACT;
 
-    INT64 iRetVal = 0;
-
     BEGIN_QCALL;
+
+    INT64 iRetVal = 0;
 
     GCX_COOP();
     iRetVal = (INT64) GCHeapUtilities::GetGCHeap()->GetTotalBytesInUse();
@@ -770,9 +770,9 @@ extern "C" QCallExceptionStatus QCALLTYPE GCInterface_GetNextFinalizableObject(Q
 {
     QCALL_CONTRACT;
 
-    PCODE funcPtr = 0;
-
     BEGIN_QCALL;
+
+    PCODE funcPtr = 0;
 
     MethodTable *pTargetMT = NULL;
     {
@@ -967,9 +967,9 @@ extern "C" QCallExceptionStatus QCALLTYPE GCInterface_RegisterFrozenSegment(void
 {
     QCALL_CONTRACT;
 
-    void* retVal = nullptr;
-
     BEGIN_QCALL;
+
+    void* retVal = nullptr;
 
     _ASSERTE(pSection != nullptr);
     _ASSERTE(sizeSection > 0);
@@ -1131,9 +1131,10 @@ extern "C" QCallExceptionStatus QCALLTYPE GCInterface_RefreshMemoryLimit(GCHeapH
 {
     QCALL_CONTRACT;
 
+    BEGIN_QCALL;
+
     int result = 0;
 
-    BEGIN_QCALL;
     g_gcHeapHardLimitInfo = heapHardLimitInfo;
     g_gcHeapHardLimitInfoSpecified = true;
     result = GCInterface::RefreshMemoryLimit();
@@ -1455,9 +1456,9 @@ extern "C" QCallExceptionStatus QCALLTYPE Environment_GetProcessorCount(INT32* p
 {
     QCALL_CONTRACT;
 
-    INT32 processorCount = 0;
-
     BEGIN_QCALL;
+
+    INT32 processorCount = 0;
 
     processorCount = GetCurrentProcessCpuCount();
 
@@ -1579,9 +1580,9 @@ extern "C" QCallExceptionStatus QCALLTYPE ObjectNative_GetHashCodeSlow(QCall::Ob
 {
     QCALL_CONTRACT;
 
-    INT32 idx = 0;
-
     BEGIN_QCALL;
+
+    INT32 idx = 0;
 
     GCX_COOP();
 
@@ -1846,9 +1847,9 @@ extern "C" QCallExceptionStatus QCALLTYPE MethodTable_CanCompareBitsOrUseFastGet
 {
     QCALL_CONTRACT;
 
-    BOOL ret = FALSE;
-
     BEGIN_QCALL;
+
+    BOOL ret = FALSE;
 
     if (mt->GetClass()->IsInlineArray())
         COMPlusThrow(kNotSupportedException, W("NotSupported_InlineArrayEqualsGetHashCode"));
@@ -1965,12 +1966,13 @@ extern "C" QCallExceptionStatus QCALLTYPE ValueType_GetHashCodeStrategy(MethodTa
 {
     QCALL_CONTRACT;
 
-    ValueTypeHashCodeStrategy ret = ValueTypeHashCodeStrategy::None;
     *fieldOffset = 0;
     *fieldSize = 0;
     *fieldMT = NULL;
 
     BEGIN_QCALL;
+
+    ValueTypeHashCodeStrategy ret = ValueTypeHashCodeStrategy::None;
 
     ret = GetHashCodeStrategy(mt, objHandle, fieldOffset, fieldSize, fieldMT);
 
@@ -2026,9 +2028,9 @@ extern "C" QCallExceptionStatus QCALLTYPE MethodTable_AreTypesEquivalent(MethodT
 {
     QCALL_CONTRACT;
 
-    BOOL bResult = FALSE;
-
     BEGIN_QCALL;
+
+    BOOL bResult = FALSE;
 
     bResult = mta->IsEquivalentTo(mtb);
 
@@ -2041,9 +2043,9 @@ extern "C" QCallExceptionStatus QCALLTYPE TypeHandle_CanCastTo_NoCacheLookup(voi
 {
     QCALL_CONTRACT;
 
-    BOOL ret = false;
-
     BEGIN_QCALL;
+
+    BOOL ret = false;
 
     // Cache lookup and trivial cases are already handled at managed side. Call the uncached versions directly.
     _ASSERTE(fromTypeHnd != toTypeHnd);
@@ -2100,10 +2102,10 @@ extern "C" QCallExceptionStatus QCALLTYPE Stream_HasOverriddenSlow(MethodTable* 
     QCALL_CONTRACT;
     _ASSERTE(pMT != NULL);
 
+    BEGIN_QCALL;
+
     BOOL readOverride = FALSE;
     BOOL writeOverride = FALSE;
-
-    BEGIN_QCALL;
 
     MethodTable* pStreamMT = CoreLibBinder::GetClass(CLASS__STREAM);
     WORD slotBeginRead = CoreLibBinder::GetMethod(METHOD__STREAM__BEGIN_READ)->GetSlot();

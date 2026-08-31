@@ -35,9 +35,9 @@ extern "C" QCallExceptionStatus QCALLTYPE ObjCMarshal_TryInitializeReferenceTrac
             && isReferencedCallback != NULL
             && trackedObjectEnteredFinalization != NULL);
 
-    BOOL success = FALSE;
-
     BEGIN_QCALL;
+
+    BOOL success = FALSE;
 
     // Switch to Cooperative mode since we are setting callbacks that
     // will be used during a GC and we want to ensure a GC isn't occurring
@@ -64,9 +64,9 @@ extern "C" QCallExceptionStatus QCALLTYPE ObjCMarshal_AllocateReferenceTrackingH
 {
     QCALL_CONTRACT;
 
-    OBJECTHANDLE instHandle;
-
     BEGIN_QCALL;
+
+    OBJECTHANDLE instHandle;
 
     // Switch to Cooperative mode since object references
     // are being manipulated.
@@ -125,9 +125,9 @@ extern "C" QCallExceptionStatus QCALLTYPE ObjCMarshal_TrySetGlobalMessageSendCal
 {
     QCALL_CONTRACT;
 
-    bool success;
-
     BEGIN_QCALL;
+
+    bool success;
 
     _ASSERTE(msgSendFunction >= 0 && msgSendFunction < ARRAY_SIZE(s_msgSendOverrides));
     success = InterlockedCompareExchangeT(&s_msgSendOverrides[msgSendFunction], fptr, NULL) == NULL;

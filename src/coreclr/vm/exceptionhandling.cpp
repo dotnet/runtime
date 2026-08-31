@@ -3535,9 +3535,10 @@ extern "C" QCallExceptionStatus QCALLTYPE CallFilterFunclet(QCall::ObjectHandleO
 {
     QCALL_CONTRACT;
 
+    BEGIN_QCALL;
+
     DWORD_PTR dwResult = 0;
 
-    BEGIN_QCALL;
     MAKE_CURRENT_THREAD_AVAILABLE();
     GCX_COOP();
 
@@ -3704,9 +3705,9 @@ extern "C" QCallExceptionStatus QCALLTYPE EHEnumNext(EH_CLAUSE_ENUMERATOR* pEHEn
 {
     QCALL_CONTRACT;
 
-    CLR_BOOL result = FALSE;
-
     BEGIN_QCALL;
+
+    CLR_BOOL result = FALSE;
 
     MAKE_CURRENT_THREAD_AVAILABLE();
     Thread* pThread = GET_THREAD();
@@ -4056,8 +4057,9 @@ extern "C" QCallExceptionStatus QCALLTYPE SfiInit(StackFrameIterator* pThis, CON
 {
     QCALL_CONTRACT;
 
-    CLR_BOOL result = FALSE;
     BEGIN_QCALL;
+
+    CLR_BOOL result = FALSE;
 
     MAKE_CURRENT_THREAD_AVAILABLE();
     Thread* pThread = GET_THREAD();
@@ -4377,9 +4379,9 @@ extern "C" QCallExceptionStatus QCALLTYPE SfiNext(StackFrameIterator* pThis, uin
 {
     QCALL_CONTRACT;
 
-    CLR_BOOL result = FALSE;
-
     BEGIN_QCALL;
+
+    CLR_BOOL result = FALSE;
 
     MAKE_CURRENT_THREAD_AVAILABLE();
     Thread* pThread = GET_THREAD();

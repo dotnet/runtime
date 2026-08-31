@@ -71,8 +71,9 @@ extern "C" QCallExceptionStatus QCALLTYPE EventPipeInternal_GetSessionInfo(UINT6
 {
     QCALL_CONTRACT;
 
-    bool retVal = false;
     BEGIN_QCALL;
+
+    bool retVal = false;
 
     if (pSessionInfo != NULL)
     {
@@ -168,9 +169,9 @@ extern "C" QCallExceptionStatus QCALLTYPE EventPipeInternal_EventActivityIdContr
 
     QCALL_CONTRACT;
 
-    int retVal = 0;
-
     BEGIN_QCALL;
+
+    int retVal = 0;
 
     Thread *pThread = GetThreadNULLOk();
     if (pThread == NULL || pActivityId == NULL)
@@ -270,8 +271,9 @@ extern "C" QCallExceptionStatus QCALLTYPE EventPipeInternal_SignalSession(UINT64
 {
     QCALL_CONTRACT;
 
-    bool result = false;
     BEGIN_QCALL;
+
+    bool result = false;
 
     result = EventPipeAdapter::SignalSession(sessionID);
 
@@ -284,8 +286,9 @@ extern "C" QCallExceptionStatus QCALLTYPE EventPipeInternal_WaitForSessionSignal
 {
     QCALL_CONTRACT;
 
-    bool result = false;
     BEGIN_QCALL;
+
+    bool result = false;
 
     result = EventPipeAdapter::WaitForSessionSignal(sessionID, timeoutMs);
 

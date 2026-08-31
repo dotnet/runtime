@@ -145,9 +145,9 @@ extern "C" QCallExceptionStatus QCALLTYPE AppContext_TryGetHostPropertyValue(LPC
 {
     QCALL_CONTRACT;
 
-    BOOL found = FALSE;
-
     BEGIN_QCALL;
+
+    BOOL found = FALSE;
 
     AppDomain* pDomain = AppDomain::GetCurrentDomain();
     DefaultAssemblyBinder* pBinder = pDomain->GetDefaultBinder();

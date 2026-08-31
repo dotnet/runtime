@@ -454,9 +454,9 @@ extern "C" QCallExceptionStatus QCALLTYPE VersionResilientHashCode_TypeHashCode(
 {
     QCALL_CONTRACT;
 
-    INT32 hashCode = 0;
-
     BEGIN_QCALL;
+
+    INT32 hashCode = 0;
 
     hashCode = GetVersionResilientTypeHashCode(pTypeHandle.AsTypeHandle());
 

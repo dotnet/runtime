@@ -598,9 +598,9 @@ extern "C" QCallExceptionStatus QCALLTYPE AssemblyNative_GetCodeBase(QCall::Asse
 {
     QCALL_CONTRACT;
 
-    BOOL ret = TRUE;
-
     BEGIN_QCALL;
+
+    BOOL ret = TRUE;
 
     StackSString codebase;
 
@@ -618,8 +618,10 @@ extern "C" QCallExceptionStatus QCALLTYPE AssemblyNative_GetHashAlgorithm(QCall:
 {
     QCALL_CONTRACT;
 
-    INT32 retVal=0;
     BEGIN_QCALL;
+
+    INT32 retVal=0;
+
     retVal = pAssembly->GetPEAssembly()->GetHashAlgId();
     *pReturnValue = retVal;
 
@@ -630,8 +632,10 @@ extern "C" QCallExceptionStatus QCALLTYPE AssemblyNative_GetFlags(QCall::Assembl
 {
     QCALL_CONTRACT;
 
-    INT32 retVal=0;
     BEGIN_QCALL;
+
+    INT32 retVal=0;
+
     retVal = pAssembly->GetPEAssembly()->GetFlags();
     *pReturnValue = retVal;
 
@@ -642,9 +646,9 @@ extern "C" QCallExceptionStatus QCALLTYPE AssemblyNative_GetResource(QCall::Asse
 {
     QCALL_CONTRACT;
 
-    PBYTE       pbInMemoryResource  = NULL;
-
     BEGIN_QCALL;
+
+    PBYTE       pbInMemoryResource  = NULL;
 
     if (wszName == NULL)
         COMPlusThrow(kArgumentNullException, W("ArgumentNull_String"));
@@ -673,9 +677,9 @@ extern "C" QCallExceptionStatus QCALLTYPE AssemblyNative_GetManifestResourceInfo
 {
     QCALL_CONTRACT;
 
-    INT32 rv = -1;
-
     BEGIN_QCALL;
+
+    INT32 rv = -1;
 
     if (wszName == NULL)
         COMPlusThrow(kArgumentNullException, W("ArgumentNull_String"));
@@ -1188,9 +1192,9 @@ extern "C" QCallExceptionStatus QCALLTYPE AssemblyNative_InitializeAssemblyLoadC
 {
     QCALL_CONTRACT;
 
-    INT_PTR ptrNativeAssemblyBinder = 0;
-
     BEGIN_QCALL;
+
+    INT_PTR ptrNativeAssemblyBinder = 0;
 
     // We do not need to take a lock since this method is invoked from the ctor of AssemblyLoadContext managed type and
     // only one thread is ever executing a ctor for a given instance.
@@ -1278,9 +1282,9 @@ extern "C" QCallExceptionStatus QCALLTYPE AssemblyNative_GetLoadContextForAssemb
 {
     QCALL_CONTRACT;
 
-    INT_PTR ptrAssemblyLoadContext = 0;
-
     BEGIN_QCALL;
+
+    INT_PTR ptrAssemblyLoadContext = 0;
 
     _ASSERTE(pAssembly != NULL);
 
@@ -1306,9 +1310,9 @@ extern "C" QCallExceptionStatus QCALLTYPE AssemblyNative_InternalTryGetRawMetada
 {
     QCALL_CONTRACT;
 
-    PTR_CVOID metadata = nullptr;
-
     BEGIN_QCALL;
+
+    PTR_CVOID metadata = nullptr;
 
     _ASSERTE(assembly != nullptr);
     _ASSERTE(blobRef != nullptr);
@@ -1431,9 +1435,9 @@ extern "C" QCallExceptionStatus QCALLTYPE AssemblyNative_IsApplyUpdateSupported(
 {
     QCALL_CONTRACT;
 
-    BOOL result = false;
-
     BEGIN_QCALL;
+
+    BOOL result = false;
 
 #ifdef FEATURE_METADATA_UPDATER
     result = (g_pConfig->ModifiableAssemblies() != MODIFIABLE_ASSM_NONE) &&

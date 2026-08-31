@@ -25,9 +25,10 @@ extern "C" QCallExceptionStatus QCALLTYPE IsEventSourceLoggingEnabled(BOOL* pRet
 {
     QCALL_CONTRACT;
 
+    BEGIN_QCALL;
+
     BOOL retVal = FALSE;
 
-    BEGIN_QCALL;
     retVal = XplatEventLogger::IsEventLoggingEnabled();
     *pReturnValue = retVal;
 
@@ -38,9 +39,10 @@ extern "C" QCallExceptionStatus QCALLTYPE EventSource_GetClrConfig(LPCWSTR confi
 {
     QCALL_CONTRACT;
 
+    BEGIN_QCALL;
+
     LPWSTR ret = NULL;
 
-    BEGIN_QCALL;
     CLRConfig::ConfigStringInfo info;
     info.name = configName;
     info.options = CLRConfig::LookupOptions::Default;

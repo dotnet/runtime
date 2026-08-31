@@ -85,9 +85,9 @@ extern "C" QCallExceptionStatus QCALLTYPE MarshalNative_IsBuiltInComSupported(BO
 {
     QCALL_CONTRACT;
 
-    BOOL ret = TRUE;
-
     BEGIN_QCALL;
+
+    BOOL ret = TRUE;
 
 #ifdef FEATURE_COMINTEROP
     ret = g_pConfig->IsBuiltInCOMSupported();
@@ -104,9 +104,9 @@ extern "C" QCallExceptionStatus QCALLTYPE MarshalNative_HasLayout(QCall::TypeHan
 {
     QCALL_CONTRACT;
 
-    BOOL ret = FALSE;
-
     BEGIN_QCALL;
+
+    BOOL ret = FALSE;
 
     TypeHandle th = t.AsTypeHandle();
 
@@ -141,9 +141,9 @@ extern "C" QCallExceptionStatus QCALLTYPE MarshalNative_SizeOfHelper(QCall::Type
 {
     QCALL_CONTRACT;
 
-    INT32 rv = 0;
-
     BEGIN_QCALL;
+
+    INT32 rv = 0;
 
     // refClass is validated to be non-NULL RuntimeType by callers
     TypeHandle th = t.AsTypeHandle();
@@ -241,9 +241,9 @@ extern "C" QCallExceptionStatus QCALLTYPE MarshalNative_GetFunctionPointerForDel
 {
     QCALL_CONTRACT;
 
-    PVOID pFPtr = NULL;
-
     BEGIN_QCALL;
+
+    PVOID pFPtr = NULL;
 
     GCX_COOP();
     pFPtr = COMDelegate::ConvertToCallback(d.Get());
@@ -320,9 +320,9 @@ extern "C" QCallExceptionStatus QCALLTYPE GCHandle_InternalAllocWithGCTransition
 {
     QCALL_CONTRACT;
 
-    OBJECTHANDLE hnd = NULL;
-
     BEGIN_QCALL;
+
+    OBJECTHANDLE hnd = NULL;
 
     GCX_COOP();
     hnd = GetAppDomain()->CreateTypedHandle(obj.Get(), static_cast<HandleType>(type));
@@ -528,9 +528,9 @@ extern "C" QCallExceptionStatus QCALLTYPE MarshalNative_GetIUnknownForObject(QCa
 {
     QCALL_CONTRACT;
 
-    IUnknown* retVal = NULL;
-
     BEGIN_QCALL;
+
+    IUnknown* retVal = NULL;
 
     // Ensure COM is started up.
     EnsureComStarted();
@@ -554,9 +554,9 @@ extern "C" QCallExceptionStatus QCALLTYPE MarshalNative_GetIDispatchForObject(QC
 {
     QCALL_CONTRACT;
 
-    IDispatch* retVal = NULL;
-
     BEGIN_QCALL;
+
+    IDispatch* retVal = NULL;
 
     // Ensure COM is started up.
     EnsureComStarted();
@@ -580,9 +580,9 @@ extern "C" QCallExceptionStatus QCALLTYPE MarshalNative_GetIUnknownOrIDispatchFo
 {
     QCALL_CONTRACT;
 
-    void* retVal = NULL;
-
     BEGIN_QCALL;
+
+    void* retVal = NULL;
 
     // Ensure COM is started up.
     EnsureComStarted();
@@ -609,9 +609,9 @@ extern "C" QCallExceptionStatus QCALLTYPE MarshalNative_GetComInterfaceForObject
 {
     QCALL_CONTRACT;
 
-    IUnknown* retVal  = NULL;
-
     BEGIN_QCALL;
+
+    IUnknown* retVal  = NULL;
 
     // Ensure COM is started up.
     EnsureComStarted();
@@ -824,9 +824,9 @@ extern "C" QCallExceptionStatus QCALLTYPE MarshalNative_ReleaseComObject(QCall::
 {
     QCALL_CONTRACT;
 
-    INT32 retVal = 0;
-
     BEGIN_QCALL;
+
+    INT32 retVal = 0;
 
     GCX_COOP();
 
@@ -946,9 +946,9 @@ extern "C" QCallExceptionStatus QCALLTYPE MarshalNative_IsTypeVisibleFromCom(QCa
 {
     QCALL_CONTRACT;
 
-    BOOL retVal = FALSE;
-
     BEGIN_QCALL;
+
+    BOOL retVal = FALSE;
 
     // Call the internal version of IsTypeVisibleFromCom.
     retVal = ::IsTypeVisibleFromCom(t.AsTypeHandle());
@@ -1106,9 +1106,9 @@ extern "C" QCallExceptionStatus QCALLTYPE MarshalNative_GetStartComSlot(QCall::T
 {
     QCALL_CONTRACT;
 
-    int retVal = 0;
-
     BEGIN_QCALL;
+
+    int retVal = 0;
 
     MethodTable *pMT = t.AsTypeHandle().GetMethodTable();
     if (NULL == pMT)
@@ -1129,9 +1129,9 @@ extern "C" QCallExceptionStatus QCALLTYPE MarshalNative_GetEndComSlot(QCall::Typ
 {
     QCALL_CONTRACT;
 
-    int retVal = 0;
-
     BEGIN_QCALL;
+
+    int retVal = 0;
 
     int StartSlot = -1;
 

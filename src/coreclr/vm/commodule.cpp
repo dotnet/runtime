@@ -28,9 +28,9 @@ extern "C" QCallExceptionStatus QCALLTYPE ModuleBuilder_GetTypeRef(QCall::Module
 {
     QCALL_CONTRACT;
 
-    mdTypeRef tr = 0;
-
     BEGIN_QCALL;
+
+    mdTypeRef tr = 0;
 
     RefClassWriter * pRCW = pModule->GetReflectionModule()->GetClassWriter();
     _ASSERTE(pRCW);
@@ -132,9 +132,9 @@ extern "C" QCallExceptionStatus QCALLTYPE ModuleBuilder_GetArrayMethodToken(QCal
 {
     QCALL_CONTRACT;
 
-    mdMemberRef memberRefE = mdTokenNil;
-
     BEGIN_QCALL;
+
+    mdMemberRef memberRefE = mdTokenNil;
 
     if (!wszMethodName)
         COMPlusThrow(kArgumentNullException, W("ArgumentNull_String"));
@@ -207,9 +207,9 @@ extern "C" QCallExceptionStatus QCALLTYPE ModuleBuilder_GetMemberRef(QCall::Modu
 {
     QCALL_CONTRACT;
 
-    mdMemberRef             memberRefE      = 0;
-
     BEGIN_QCALL;
+
+    mdMemberRef             memberRefE      = 0;
 
     RefClassWriter * pRCW = pModule->GetReflectionModule()->GetClassWriter();
     _ASSERTE( pRCW );
@@ -289,9 +289,9 @@ extern "C" QCallExceptionStatus QCALLTYPE ModuleBuilder_GetMemberRefOfMethodInfo
 {
     QCALL_CONTRACT;
 
-    mdMemberRef memberRefE = 0;
-
     BEGIN_QCALL;
+
+    mdMemberRef memberRefE = 0;
 
     if (!pMeth)
         COMPlusThrow(kArgumentNullException);
@@ -368,9 +368,9 @@ extern "C" QCallExceptionStatus QCALLTYPE ModuleBuilder_GetMemberRefOfFieldInfo(
 {
     QCALL_CONTRACT;
 
-    mdMemberRef memberRefE = 0;
-
     BEGIN_QCALL;
+
+    mdMemberRef memberRefE = 0;
 
     if (TypeFromToken(tr) == mdtTypeDef)
     {
@@ -446,9 +446,9 @@ extern "C" QCallExceptionStatus QCALLTYPE ModuleBuilder_GetMemberRefFromSignatur
 {
     QCALL_CONTRACT;
 
-    mdMemberRef     memberRefE = mdTokenNil;
-
     BEGIN_QCALL;
+
+    mdMemberRef     memberRefE = mdTokenNil;
 
     RefClassWriter * pRCW = pModule->GetReflectionModule()->GetClassWriter();
     _ASSERTE(pRCW);
@@ -530,9 +530,9 @@ extern "C" QCallExceptionStatus QCALLTYPE ModuleBuilder_GetStringConstant(QCall:
 {
     QCALL_CONTRACT;
 
-    mdString strRef = mdTokenNil;
-
     BEGIN_QCALL;
+
+    mdString strRef = mdTokenNil;
 
     RefClassWriter * pRCW = pModule->GetReflectionModule()->GetClassWriter();
     _ASSERTE(pRCW);
@@ -576,9 +576,9 @@ extern "C" QCallExceptionStatus QCALLTYPE ModuleBuilder_GetTokenFromTypeSpec(QCa
 {
     QCALL_CONTRACT;
 
-    mdTypeSpec      ts = mdTokenNil;
-
     BEGIN_QCALL;
+
+    mdTypeSpec      ts = mdTokenNil;
 
     RefClassWriter * pRCW = pModule->GetReflectionModule()->GetClassWriter();
     _ASSERTE(pRCW);
@@ -655,9 +655,9 @@ extern "C" QCallExceptionStatus QCALLTYPE MarshalNative_GetHINSTANCE(QCall::Modu
 {
     QCALL_CONTRACT;
 
-    HMODULE hMod = (HMODULE)0;
-
     BEGIN_QCALL;
+
+    HMODULE hMod = (HMODULE)0;
 
     // This returns the base address
     // Other modules should have zero base

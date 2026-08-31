@@ -761,9 +761,9 @@ extern "C" QCallExceptionStatus QCALLTYPE LoaderAllocator_Destroy(QCall::LoaderA
 {
     QCALL_CONTRACT;
 
-    BOOL ret = FALSE;
-
     BEGIN_QCALL;
+
+    BOOL ret = FALSE;
 
     ret = LoaderAllocator::Destroy(pLoaderAllocator);
 

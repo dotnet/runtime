@@ -12,9 +12,10 @@ extern "C" QCallExceptionStatus QCALLTYPE ClrConfig_GetConfigBoolValue(LPCWSTR n
 {
     QCALL_CONTRACT;
 
-    BOOL retValue = FALSE;
     *exist = FALSE;
     BEGIN_QCALL;
+
+    BOOL retValue = FALSE;
 
     if (Configuration::GetKnobStringValue(name) != nullptr)
     {

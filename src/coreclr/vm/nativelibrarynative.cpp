@@ -15,9 +15,9 @@ extern "C" QCallExceptionStatus QCALLTYPE NativeLibrary_LoadByName(LPCWSTR name,
 {
     QCALL_CONTRACT;
 
-    NATIVE_LIBRARY_HANDLE handle = nullptr;
-
     BEGIN_QCALL;
+
+    NATIVE_LIBRARY_HANDLE handle = nullptr;
 
     handle = NativeLibrary::LoadLibraryByName(name, callingAssembly, hasDllImportSearchPathFlag, dllImportSearchPathFlag, throwOnError);
 

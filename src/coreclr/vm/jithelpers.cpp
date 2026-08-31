@@ -476,9 +476,10 @@ BOOL ObjIsInstanceOf(Object* pObject, TypeHandle toTypeHnd, BOOL throwCastExcept
 extern "C" QCallExceptionStatus QCALLTYPE IsInstanceOf_NoCacheLookup(EnregisteredTypeHandle type, BOOL throwCastException, QCall::ObjectHandleOnStack objOnStack, BOOL* pReturnValue)
 {
     QCALL_CONTRACT;
-    BOOL result = FALSE;
 
     BEGIN_QCALL;
+
+    BOOL result = FALSE;
 
     GCX_COOP();
 
@@ -604,9 +605,9 @@ extern "C" QCallExceptionStatus QCALLTYPE GenericHandleWorker(MethodDesc * pMD, 
 {
     QCALL_CONTRACT;
 
-    void* result = NULL;
-
     BEGIN_QCALL;
+
+    void* result = NULL;
 
     result = GenericHandleWorkerCore(pMD, pMT, signature, dictionaryIndexAndSlot, pModule);
 
@@ -679,10 +680,10 @@ extern "C" QCallExceptionStatus QCALLTYPE ResolveVirtualFunctionPointer(QCall::O
 {
     QCALL_CONTRACT;
 
+    BEGIN_QCALL;
+
     // The address of the method that's returned.
     PCODE addr = (PCODE)NULL;
-
-    BEGIN_QCALL;
 
     if (VolatileLoadWithoutBarrier(&g_pVirtualFunctionPointerCache) == NULL)
     {

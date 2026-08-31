@@ -465,9 +465,9 @@ extern "C" QCallExceptionStatus QCALLTYPE ArgIterator_GetNextArgType(VARARGS* da
 {
     QCALL_CONTRACT;
 
-    TypedByRef value = { };
-
     BEGIN_QCALL;
+
+    TypedByRef value = { };
 
     GCX_COOP();
 

@@ -37,12 +37,11 @@ extern "C" QCallExceptionStatus QCALLTYPE MdUtf8String_EqualsCaseInsensitive(LPC
 {
     QCALL_CONTRACT;
 
+    BEGIN_QCALL;
+
     // Important: the string in pSsz isn't null terminated so the length must be used
     // when performing operations on the string.
-
     BOOL fStringsEqual = FALSE;
-
-    BEGIN_QCALL;
 
     _ASSERTE(CheckPointer(szLhs));
     _ASSERTE(CheckPointer(szRhs));
@@ -102,9 +101,10 @@ extern "C" QCallExceptionStatus QCALLTYPE RuntimeMethodHandle_IsCAVisibleFromDec
 {
     QCALL_CONTRACT;
 
+    BEGIN_QCALL;
+
     BOOL bResult = TRUE;
 
-    BEGIN_QCALL;
     TypeHandle sourceHandle = sourceTypeHandle.AsTypeHandle();
     TypeHandle targetHandle = targetTypeHandle.AsTypeHandle();
 
@@ -162,9 +162,9 @@ extern "C" QCallExceptionStatus QCALLTYPE RuntimeTypeHandle_IsEquivalentTo(QCall
 {
     QCALL_CONTRACT;
 
-    BOOL areEquivalent = FALSE;
-
     BEGIN_QCALL;
+
+    BOOL areEquivalent = FALSE;
 
     areEquivalent = rtType1.AsTypeHandle().IsEquivalentTo(rtType2.AsTypeHandle());
 
@@ -366,9 +366,9 @@ extern "C" QCallExceptionStatus QCALLTYPE RuntimeTypeHandle_GetNumVirtualsAndSta
 {
     QCALL_CONTRACT;
 
-    INT32 numVirtuals = 0;
-
     BEGIN_QCALL;
+
+    INT32 numVirtuals = 0;
 
     TypeHandle typeHandle = pTypeHandle.AsTypeHandle();
     _ASSERTE(!typeHandle.IsGenericVariable());
@@ -403,9 +403,9 @@ extern "C" QCallExceptionStatus QCALLTYPE RuntimeTypeHandle_GetMethodAt(MethodTa
     _ASSERTE(pMT != NULL);
     _ASSERTE(slot >= 0);
 
-    MethodDesc* pRetMethod = NULL;
-
     BEGIN_QCALL;
+
+    MethodDesc* pRetMethod = NULL;
 
     INT32 numVirtuals = (INT32)pMT->GetNumVirtuals();
     if (slot < numVirtuals)
@@ -463,9 +463,9 @@ extern "C" QCallExceptionStatus QCALLTYPE RuntimeTypeHandle_GetFields(MethodTabl
     _ASSERTE(result != NULL);
     _ASSERTE(pCount != NULL);
 
-    BOOL retVal = FALSE;
-
     BEGIN_QCALL;
+
+    BOOL retVal = FALSE;
 
     EncApproxFieldDescIterator fdIterator(pMT, ApproxFieldDescIterator::ALL_FIELDS, EncApproxFieldDescIterator::FixUpEncFields);
     INT32 count = (INT32)fdIterator.Count();
@@ -779,9 +779,9 @@ extern "C" QCallExceptionStatus QCALLTYPE QCall_GetGCHandleForTypeHandle(QCall::
 {
     QCALL_CONTRACT;
 
-    OBJECTHANDLE objHandle = NULL;
-
     BEGIN_QCALL;
+
+    OBJECTHANDLE objHandle = NULL;
 
     GCX_COOP();
 
@@ -851,9 +851,9 @@ extern "C" QCallExceptionStatus QCALLTYPE RuntimeTypeHandle_GetInterfaceMethodIm
 {
     QCALL_CONTRACT;
 
-    MethodDesc* pResult = nullptr;
-
     BEGIN_QCALL;
+
+    MethodDesc* pResult = nullptr;
 
     TypeHandle typeHandle = pTypeHandle.AsTypeHandle();
     TypeHandle thOwnerOfMD = pOwner.AsTypeHandle();
@@ -909,9 +909,9 @@ extern "C" QCallExceptionStatus QCALLTYPE RuntimeTypeHandle_GetDeclaringTypeHand
 {
     QCALL_CONTRACT;
 
-    TypeHandle retTypeHandle;
-
     BEGIN_QCALL;
+
+    TypeHandle retTypeHandle;
 
     TypeHandle typeHandle = TypeHandle::FromPtr(pTypeHandle);
     _ASSERTE(typeHandle.IsGenericVariable());
@@ -954,9 +954,9 @@ extern "C" QCallExceptionStatus QCALLTYPE RuntimeTypeHandle_GetDeclaringTypeHand
 {
     QCALL_CONTRACT;
 
-    TypeHandle retTypeHandle;
-
     BEGIN_QCALL;
+
+    TypeHandle retTypeHandle;
 
     TypeHandle typeHandle = TypeHandle::FromPtr(pTypeHandle);
     _ASSERTE(!typeHandle.IsTypeDesc());
@@ -1302,9 +1302,9 @@ extern "C" QCallExceptionStatus QCALLTYPE RuntimeMethodHandle_GetFunctionPointer
 {
     QCALL_CONTRACT;
 
-    void* funcPtr = NULL;
-
     BEGIN_QCALL;
+
+    void* funcPtr = NULL;
 
     // Ensure the method is active and all types have been loaded so the function pointer can be used.
     pMethod->EnsureActive();
@@ -1709,9 +1709,9 @@ extern "C" QCallExceptionStatus QCALLTYPE Signature_AreEqual(
 {
     QCALL_CONTRACT;
 
-    BOOL ret = FALSE;
-
     BEGIN_QCALL;
+
+    BOOL ret = FALSE;
 
     ret = MetaSig::CompareMethodSigs(
         sig1, cSig1, handle1.AsTypeHandle().GetModule(), NULL,
@@ -2005,9 +2005,9 @@ extern "C" QCallExceptionStatus QCALLTYPE RuntimeMethodHandle_GetNativeCode(Meth
 {
     QCALL_CONTRACT;
 
-    PCODE result = (PCODE)NULL;
-
     BEGIN_QCALL;
+
+    PCODE result = (PCODE)NULL;
 
     _ASSERTE(pMethod != NULL);
 
@@ -2415,9 +2415,9 @@ extern "C" QCallExceptionStatus QCALLTYPE ModuleHandle_ResolveMethod(QCall::Modu
 {
     QCALL_CONTRACT;
 
-    MethodDesc* pMD = NULL;
-
     BEGIN_QCALL;
+
+    MethodDesc* pMD = NULL;
 
     BOOL strictMetadataChecks = (TypeFromToken(tkMemberRef) == mdtMethodSpec);
 

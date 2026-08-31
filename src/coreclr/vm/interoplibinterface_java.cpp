@@ -140,9 +140,9 @@ extern "C" QCallExceptionStatus QCALLTYPE JavaMarshal_Initialize(
     QCALL_CONTRACT;
     _ASSERTE(markCrossReferences != NULL);
 
-    BOOL success = FALSE;
-
     BEGIN_QCALL;
+
+    BOOL success = FALSE;
 
     // Switch to Cooperative mode since we are setting callbacks that
     // will be used during a GC and we want to ensure a GC isn't occurring
@@ -168,9 +168,9 @@ extern "C" QCallExceptionStatus QCALLTYPE JavaMarshal_CreateReferenceTrackingHan
 {
     QCALL_CONTRACT;
 
-    OBJECTHANDLE instHandle = NULL;
-
     BEGIN_QCALL;
+
+    OBJECTHANDLE instHandle = NULL;
 
     GCX_COOP();
     instHandle = GetAppDomain()->CreateCrossReferenceHandle(obj.Get(), context);

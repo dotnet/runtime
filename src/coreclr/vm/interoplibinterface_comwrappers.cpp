@@ -116,9 +116,9 @@ extern "C" QCallExceptionStatus QCALLTYPE ComWrappers_AllocateRefCountedHandle(_
 {
     QCALL_CONTRACT;
 
-    void* handle = NULL;
-
     BEGIN_QCALL;
+
+    void* handle = NULL;
 
     {
         GCX_COOP();

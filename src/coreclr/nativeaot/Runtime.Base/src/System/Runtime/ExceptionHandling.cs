@@ -283,8 +283,7 @@ namespace System.Runtime
 #else
             fixed (EH.ExInfo* pExInfo = &exInfo)
             {
-                InternalCalls.RhpAppendExceptionStackFrame(ObjectHandleOnStack.Create(ref exception), ip, sp, flags, pExInfo
-                );
+                InternalCalls.RhpAppendExceptionStackFrame(ObjectHandleOnStack.Create(ref exception), ip, sp, flags, pExInfo);
             }
 
             // Clear flags only if we called the function
@@ -1039,8 +1038,7 @@ namespace System.Runtime
 
             // Search the clauses for one that contains the current offset.
             RhEHClause ehClause;
-            for (uint curIdx = 0; InternalCalls.RhpEHEnumNext(&ehEnum, &ehClause
-            ); curIdx++)
+            for (uint curIdx = 0; InternalCalls.RhpEHEnumNext(&ehEnum, &ehClause); curIdx++)
             {
                 //
                 // Skip to the starting try region.  This is used by collided unwinds and rethrows to pickup where
@@ -1105,8 +1103,7 @@ namespace System.Runtime
                     }
 #else // NATIVEAOT
                     shouldInvokeHandler =
-                        InternalCalls.RhpCallFilterFunclet(ObjectHandleOnStack.Create(ref exception), pFilterFunclet, frameIter.RegisterSet
-                        );
+                        InternalCalls.RhpCallFilterFunclet(ObjectHandleOnStack.Create(ref exception), pFilterFunclet, frameIter.RegisterSet);
 #endif // NATIVEAOT
 
                     if (shouldInvokeHandler)

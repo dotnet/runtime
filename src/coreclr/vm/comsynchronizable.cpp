@@ -201,9 +201,9 @@ extern "C" QCallExceptionStatus QCALLTYPE ThreadNative_Start(QCall::ThreadHandle
 {
     QCALL_CONTRACT;
 
-    BOOL result = TRUE;
-
     BEGIN_QCALL;
+
+    BOOL result = TRUE;
 
     Thread* pNewThread = thread;
     _ASSERTE(pNewThread != NULL);
@@ -344,14 +344,14 @@ extern "C" QCallExceptionStatus QCALLTYPE ThreadNative_GetCurrentOSThreadId(UINT
 {
     QCALL_CONTRACT;
 
+    BEGIN_QCALL;
+
     // The Windows API GetCurrentThreadId returns a 32-bit integer thread ID.
     // On some non-Windows platforms (e.g. OSX), the thread ID is a 64-bit value.
     // We special case the API for non-Windows to get the 64-bit value and zero-extend
     // the Windows value to return a single data type on all platforms.
-
     UINT64 threadId = 0;
 
-    BEGIN_QCALL;
 #ifndef TARGET_UNIX
     threadId = (UINT64) GetCurrentThreadId();
 #else
@@ -435,9 +435,9 @@ extern "C" QCallExceptionStatus QCALLTYPE ThreadNative_GetApartmentState(QCall::
 {
     QCALL_CONTRACT;
 
-    INT32 retVal = 0;
-
     BEGIN_QCALL;
+
+    INT32 retVal = 0;
 
     Thread* thread = NULL;
     {
@@ -466,9 +466,9 @@ extern "C" QCallExceptionStatus QCALLTYPE ThreadNative_SetApartmentState(QCall::
 {
     QCALL_CONTRACT;
 
-    INT32 retVal = 0;
-
     BEGIN_QCALL;
+
+    INT32 retVal = 0;
 
     Thread* thread = NULL;
     {
@@ -512,9 +512,9 @@ extern "C" QCallExceptionStatus QCALLTYPE ThreadNative_GetOSHandle(QCall::Thread
 {
     QCALL_CONTRACT;
 
-    HANDLE retVal = INVALID_HANDLE_VALUE;
-
     BEGIN_QCALL;
+
+    HANDLE retVal = INVALID_HANDLE_VALUE;
 
     HANDLE currentHandle = t->GetThreadHandle();
     if (currentHandle != INVALID_HANDLE_VALUE)
@@ -810,9 +810,9 @@ extern "C" QCallExceptionStatus QCALLTYPE ThreadNative_YieldThread(BOOL* pReturn
 {
     QCALL_CONTRACT;
 
-    BOOL ret = FALSE;
-
     BEGIN_QCALL;
+
+    BOOL ret = FALSE;
 
     ret = __SwitchToThread(0, CALLER_LIMITS_SPINNING);
 
@@ -885,9 +885,9 @@ extern "C" QCallExceptionStatus QCALLTYPE ThreadNative_ReentrantWaitAny(BOOL ale
 {
     QCALL_CONTRACT;
 
-    INT32 retVal = 0;
-
     BEGIN_QCALL;
+
+    INT32 retVal = 0;
 
     Thread *pThread = GetThread();
     WaitMode mode = alertable ? WaitMode_Alertable : WaitMode_None;

@@ -32,9 +32,9 @@ extern "C" QCallExceptionStatus QCALLTYPE Array_GetElementConstructorEntrypoint(
 {
     QCALL_CONTRACT;
 
-    PCODE ctorEntrypoint = (PCODE)NULL;
-
     BEGIN_QCALL;
+
+    PCODE ctorEntrypoint = (PCODE)NULL;
 
     TypeHandle th = pArrayTypeHnd.AsTypeHandle();
     MethodTable* pElemMT = th.GetArrayElementTypeHandle().AsMethodTable();

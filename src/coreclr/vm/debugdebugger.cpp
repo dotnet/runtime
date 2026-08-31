@@ -828,9 +828,9 @@ extern "C" QCallExceptionStatus QCALLTYPE StackFrame_GetMethodDescFromNativeIP(L
 {
     QCALL_CONTRACT;
 
-    MethodDesc* pResult = nullptr;
-
     BEGIN_QCALL;
+
+    MethodDesc* pResult = nullptr;
 
     // TODO: There is a race for dynamic and collectible methods here between getting
     // the MethodDesc here and when the managed wrapper converts it into a MethodBase

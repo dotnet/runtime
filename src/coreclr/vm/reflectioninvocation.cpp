@@ -796,9 +796,9 @@ extern "C" QCallExceptionStatus QCALLTYPE MethodBase_GetCurrentMethod(QCall::Sta
 
     QCALL_CONTRACT;
 
-    MethodDesc* pRet = nullptr;
-
     BEGIN_QCALL;
+
+    MethodDesc* pRet = nullptr;
 
     PTR_Thread pThread = GetThread();
     SkipStruct skip(stackMark, pThread);
@@ -1221,9 +1221,9 @@ extern "C" QCallExceptionStatus QCALLTYPE RuntimeFieldHandle_GetRVAFieldInfo(Fie
 {
     QCALL_CONTRACT;
 
-    BOOL ret = FALSE;
-
     BEGIN_QCALL;
+
+    BOOL ret = FALSE;
 
     if (pField != NULL && pField->IsRVA())
     {

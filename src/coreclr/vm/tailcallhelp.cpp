@@ -25,9 +25,9 @@ extern "C" QCallExceptionStatus QCALLTYPE TailCallHelp_AllocTailCallArgBufferInt
 {
     QCALL_CONTRACT;
 
-    void* retVal = NULL;
-
     BEGIN_QCALL;
+
+    void* retVal = NULL;
 
     retVal = GetThread()->GetTailCallTls()->AllocArgBuffer(size);
 
