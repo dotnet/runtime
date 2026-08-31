@@ -2,12 +2,54 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Text.RegularExpressions.Tests
 {
     public static partial class CaptureCollectionTests
     {
+        public static IEnumerable<object[]> BacktrackingEngines()
+        {
+            foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
+            {
+                if (!RegexHelpers.IsNonBacktracking(engine))
+                {
+                    yield return [engine];
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(BacktrackingEngines))]
+        public static async Task CaptureInEmptyAlternationIsPreserved(RegexEngine engine)
+        {
+            Regex withoutEmptyAlternative = await RegexHelpers.GetRegexAsync(engine, @"\w(?n)((?'G')){3}");
+            Regex withEmptyAlternative = await RegexHelpers.GetRegexAsync(engine, @"\w(?n)((?'G')|){3}");
+
+            Match expected = withoutEmptyAlternative.Match("1");
+            Match actual = withEmptyAlternative.Match("1");
+
+            Assert.True(expected.Success);
+            Assert.Equal(expected.Value, actual.Value);
+            Assert.Equal(expected.Groups["G"].Captures.Count, actual.Groups["G"].Captures.Count);
+            Assert.Equal(3, actual.Groups["G"].Captures.Count);
+            for (int i = 0; i < actual.Groups["G"].Captures.Count; i++)
+            {
+                Assert.Equal(expected.Groups["G"].Captures[i].Index, actual.Groups["G"].Captures[i].Index);
+                Assert.Equal(expected.Groups["G"].Captures[i].Length, actual.Groups["G"].Captures[i].Length);
+                Assert.Equal(1, actual.Groups["G"].Captures[i].Index);
+                Assert.Equal(0, actual.Groups["G"].Captures[i].Length);
+            }
+
+            Regex nonEmptyCapture = await RegexHelpers.GetRegexAsync(engine, @"(?n)((?'G'\w)|){3}");
+            CaptureCollection captures = nonEmptyCapture.Match("abc").Groups["G"].Captures;
+
+            Assert.Equal(3, captures.Count);
+            Assert.Equal(["a", "b", "c"], [captures[0].Value, captures[1].Value, captures[2].Value]);
+        }
+
         [Fact]
         public static void GetEnumerator()
         {
