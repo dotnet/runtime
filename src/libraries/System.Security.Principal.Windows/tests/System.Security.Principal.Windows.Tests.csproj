@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <TargetFramework>$(NetCoreAppCurrent)-windows</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="NTAccount.cs" />
+    <Compile Include="SecurityIdentifierTests.cs" />
+    <Compile Include="WindowsIdentityTests.cs" />
+    <Compile Include="WindowsIdentityImpersonatedTests.netcoreapp.cs" />
+    <Compile Include="WindowsPrincipalTests.cs" />
+    <Compile Include="WellKnownSidTypeTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonTestPath)System\Threading\ThreadTestHelpers.cs"
+             Link="Common\System\Threading\ThreadTestHelpers.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Security.Principal.Windows.csproj" />
+  </ItemGroup>
+</Project>

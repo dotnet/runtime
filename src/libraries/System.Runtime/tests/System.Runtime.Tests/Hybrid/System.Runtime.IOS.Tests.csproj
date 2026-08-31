@@ -1,0 +1,27 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos;$(NetCoreAppCurrent)-maccatalyst</TargetFrameworks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <TestRuntime>true</TestRuntime>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <HybridGlobalization>true</HybridGlobalization>
+    <!-- https://github.com/dotnet/runtime/issues/126862 -->
+    <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
+    <EnableAotAnalyzer>false</EnableAotAnalyzer>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <WithoutCategories Condition="'$(EnableAdditionalTimezoneChecks)' != 'true'">$(WithoutCategories);AdditionalTimezoneChecks</WithoutCategories>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\System\TimeZoneInfoTests.cs" />
+    <Compile Include="..\System\TimeZoneInfoTests.Common.cs" />
+    <Compile Include="..\System\TimeZoneTests.cs" />
+    <Compile Include="..\System\TimeZoneNotFoundExceptionTests.cs" />
+    <Compile Include="..\System\Text\StringBuilderTests.cs" />
+    <Compile Include="$(CommonTestPath)Tests\System\StringTests.cs" Link="Common\System\StringTests.cs" />
+    <Compile Include="..\System\StringGetHashCodeTests.cs" />
+    <Compile Include="..\System\StringTests.cs" />
+  </ItemGroup>
+</Project>

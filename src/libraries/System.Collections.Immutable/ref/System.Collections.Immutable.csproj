@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="System.Collections.Immutable.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <Compile Include="System.Collections.Immutable.netcoreapp.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\CollectionBuilderAttribute.cs" Link="System\Runtime\CompilerServices\CollectionBuilderAttribute.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net9.0'))">
+    <Compile Include="System.Collections.Immutable.net9.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net9.0'))">
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\OverloadResolutionPriorityAttribute.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections\ref\System.Collections.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\ref\System.Runtime.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
+  </ItemGroup>
+
+</Project>

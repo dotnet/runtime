@@ -1,0 +1,67 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <Nullable>enable</Nullable>
+    <IgnoreForCI Condition="'$(TargetOS)' == 'browser'">true</IgnoreForCI>
+    <DefineConstants>$(DefineConstants);EXCLUDE_PEM_ENCODING_FROM_TEST_DATA</DefineConstants>
+    <NoWarn>$(NoWarn);SYSLIB5006</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\ByteUtils.cs">
+      <Link>CommonTest\System\Security\Cryptography\ByteUtils.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\PlatformSupport.cs">
+      <Link>CommonTest\System\Security\Cryptography\PlatformSupport.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\CngKeyWrapper.cs">
+      <Link>CommonTest\System\Security\Cryptography\CngKeyWrapper.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaTestsData.cs">
+      <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaTestsData.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaTestsData.Ietf.cs">
+      <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaTestsData.Ietf.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Experimentals.cs">
+      <Link>Common\Experimentals.cs</Link>
+    </Compile>
+
+    <Compile Include="CoseHeaderValueTests.cs" />
+    <Compile Include="CoseKeyTests.ArgumentValidation.cs" />
+    <Compile Include="CoseMessageTests.Verify.cs" />
+    <Compile Include="CoseHeaderLabelTests.cs" />
+    <Compile Include="CoseHeaderMapTests.cs" />
+    <Compile Include="CoseMessageTests.DecodeMultiSign.cs" />
+    <Compile Include="CoseMessageTests.DecodeSign1.cs" />
+    <Compile Include="CoseMessageTests.Sign.cs" />
+    <Compile Include="CoseMessageTests.Sign.CustomHeaderMaps.cs" />
+    <Compile Include="CoseMessageTests.Sign.CustomHeaderMaps.Stream.cs" />
+    <Compile Include="CoseMultiSignMessageTests.Sign.cs" />
+    <Compile Include="CoseMultiSignMessageTests.Sign.CustomHeaderMaps.cs" />
+    <Compile Include="CoseMultiSignMessageTests.Sign.CustomHeaderMaps.Stream.cs" />
+    <Compile Include="CoseMultiSignMessageTests.Verify.cs" />
+    <Compile Include="CoseMultiSignMessageTests.Verify.Stream.cs" />
+    <Compile Include="CoseSign1MessageTests.Sign.cs" />
+    <Compile Include="CoseSign1MessageTests.Sign.CustomHeaderMaps.cs" />
+    <Compile Include="CoseSign1MessageTests.Sign.CustomHeaderMaps.Stream.cs" />
+    <Compile Include="CoseSign1MessageTests.Verify.Stream.cs" />
+    <Compile Include="CoseSign1MessageTests.Verify.cs" />
+    <Compile Include="CoseSignerTests.cs" />
+    <Compile Include="TestKeyRing.cs" />
+    <Compile Include="CoseTestHelpers.cs" />
+    <Compile Include="CoseKeyTests.SignVerify.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\ExperimentalAttribute.cs" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="6.15.0" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Security.Cryptography.Cose.csproj" />
+  </ItemGroup>
+</Project>

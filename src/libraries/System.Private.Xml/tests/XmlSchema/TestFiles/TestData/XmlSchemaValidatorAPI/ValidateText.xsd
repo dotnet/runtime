@@ -1,0 +1,34 @@
+﻿<?xml version="1.0" encoding="utf-8" ?> 
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+	<xs:element name="SimpleElement" type="xs:string" />
+
+	<xs:element name="PatternElement">
+		<xs:simpleType>
+			<xs:restriction base="xs:string">
+				<xs:pattern value="foo.*bar" />
+			</xs:restriction>
+		</xs:simpleType>
+	</xs:element>
+	
+	<xs:element name="MixedElement">
+		<xs:complexType mixed="true">
+			<xs:sequence>
+				<xs:element name="child" type="xs:string" />
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="ElementOnlyElement">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="child" type="xs:string" />
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	
+	<xs:element name="EmptyElement">
+		<xs:complexType />
+	</xs:element>
+
+</xs:schema>

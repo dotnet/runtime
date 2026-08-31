@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <DebugType>None</DebugType>
+    <Optimize>True</Optimize>
+    <DefineConstants>$(DefineConstants);LOOP</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="staticFieldExprUnchecked1.cs" />
+  </ItemGroup>
+</Project>

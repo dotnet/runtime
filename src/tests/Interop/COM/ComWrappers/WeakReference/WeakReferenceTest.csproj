@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Needed for CLRTestTargetUnsupported, UnloadabilityIncompatible, CMakeProjectReference, GC.WaitForPendingFinalizers -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">true</CLRTestTargetUnsupported>
+    <!-- Registers global instances of ComWrappers -->
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="WeakReferenceTest.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+  <ItemGroup>
+    <CMakeProjectReference Include="CMakeLists.txt" />
+  </ItemGroup>
+  <PropertyGroup>
+    <CLRTestNeedTarget>1</CLRTestNeedTarget>
+  </PropertyGroup>
+  <ItemGroup>
+    <TraitTags Include="OsSpecific" />
+  </ItemGroup>
+</Project>

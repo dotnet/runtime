@@ -1,0 +1,28 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+	<xs:element name="doc">
+		<xs:complexType>
+			<xs:sequence maxOccurs="3">
+			   <xs:sequence minOccurs="1" maxOccurs="1">
+					<xs:sequence minOccurs="1" maxOccurs="1">
+						<xs:element name="a" type="xs:string" fixed="abc" />
+						<xs:element name="x" type="xs:string" />
+					</xs:sequence>
+					<xs:sequence minOccurs="0" maxOccurs="3">
+						<xs:element name="a" type="xs:string" default="def" />
+						<xs:element name="y" type="xs:string" minOccurs="0" fixed="123"/>
+					</xs:sequence>
+			   </xs:sequence>
+			   <xs:sequence minOccurs="0" maxOccurs="3">
+					<xs:sequence minOccurs="1" maxOccurs="1">
+						<xs:element name="a" type="xs:string" fixed="ijk" />
+						<xs:element name="x" type="xs:string" />
+					</xs:sequence>
+					<xs:sequence minOccurs="0" maxOccurs="3">
+						<xs:element name="a" type="xs:string" default="lmn" />
+						<xs:element name="y" type="xs:string" minOccurs="0" fixed="456"/>
+					</xs:sequence>
+			   </xs:sequence>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+</xs:schema>

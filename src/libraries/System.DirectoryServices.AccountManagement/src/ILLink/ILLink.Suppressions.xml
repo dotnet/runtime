@@ -1,0 +1,29 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<linker>
+  <assembly fullname="System.DirectoryServices.AccountManagement, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2050</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.DirectoryServices.AccountManagement.UnsafeNativeMethods.ADsOpenObject(System.String,System.String,System.String,System.Int32,System.Guid@,System.Object@)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2070</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.DirectoryServices.AccountManagement.ADStoreCtx.BuildExtensionPropertyList(System.Collections.Hashtable,System.Type)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2070</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.DirectoryServices.AccountManagement.Principal.MakePrincipal(System.DirectoryServices.AccountManagement.PrincipalContext,System.Type)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2072</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.DirectoryServices.AccountManagement.FilterFactory.CreateFilter(System.String)</property>
+    </attribute>
+  </assembly>
+</linker>

@@ -1,0 +1,51 @@
+<linker>
+  <assembly fullname="test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+    <type fullname="Mono.Linker.Tests.Cases.LinkXml.LinkXmlErrorCases/TypeWithNoFields" preserve="fields"/>
+    <type fullname="Mono.Linker.Tests.Cases.LinkXml.LinkXmlErrorCases/TypeWithNoMethods" preserve="methods"/>
+
+    <type fullname="NonExistentType" />
+    
+    <type fullname="Mono.Linker.Tests.Cases.LinkXml.LinkXmlErrorCases/TypeWithNoMethods">
+      <method name="NonExistentMethod"/>
+    </type>
+
+    <type fullname="Mono.Linker.Tests.Cases.LinkXml.LinkXmlErrorCases/TypeWithNoFields">
+      <field name="NonExistentField"/>
+    </type>
+
+    <type fullname="Mono.Linker.Tests.Cases.LinkXml.LinkXmlErrorCases/TypeWithNoEvents">
+      <event name="NonExistentEvent"/>
+    </type>
+
+    <type fullname="Mono.Linker.Tests.Cases.LinkXml.LinkXmlErrorCases/TypeWithNoProperties">
+      <property name="NonExistentProperty"/>
+    </type>
+
+    <type fullname="Mono.Linker.Tests.Cases.LinkXml.LinkXmlErrorCases/TypeWithProperties">
+      <property signature="System.Boolean SetOnlyProperty" accessors="get"/>
+      <property signature="System.Boolean GetOnlyProperty" accessors="set"/>
+    </type>
+
+    <type fullname="Mono.Linker.Tests.Cases.LinkXml.LinkXmlErrorCases/TypeWithEverything">
+      <method name=".ctor"/>
+      <method name="Method"/>
+      <event name="Event"/>
+      <field name="Field"/>
+      <property name="Property"/>
+    </type>
+
+    <type fullname="Mono.Linker.Tests.Cases.LinkXml.LinkXmlErrorCases/TypeWithEverything">
+      <method name=".ctor"/>
+      <method name="Method"/>
+      <event name="Event"/>
+      <field name="Field"/>
+      <property name="Property"/>
+    </type>
+
+  </assembly>
+
+  <assembly fullname="NonExistentAssembly"/>
+
+  <!-- IL2100 -->
+  <assembly fullname="*" />
+</linker>

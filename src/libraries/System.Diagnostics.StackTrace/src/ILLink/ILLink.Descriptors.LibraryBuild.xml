@@ -1,0 +1,7 @@
+<linker>
+  <assembly fullname="System.Diagnostics.StackTrace">
+    <!-- used by System.Private.CoreLib StackTrace code to load portable pdbs for the runtime diagnostic stack trace to get source/line info -->
+    <type fullname="System.Diagnostics.StackTraceSymbols" required="true" />
+  </assembly>
+</linker>
+

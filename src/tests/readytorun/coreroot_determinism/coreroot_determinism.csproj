@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk" ToolsVersion="Current">
+  <PropertyGroup>
+    <!-- Needed for CLRTestTargetUnsupported, CrossGenTest -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <!-- TODO: Re-enable when WASM R2R host tooling can compare emitted components for determinism.
+         Tracked by https://github.com/dotnet/runtime/issues/131321. -->
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">true</CLRTestTargetUnsupported>
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' != 'coreclr'">true</CLRTestTargetUnsupported>
+    <!-- This is an explicit crossgen test -->
+    <CrossGenTest>false</CrossGenTest>
+    <!-- We skip the ReadyToRun tests when sanitized due to build complexity -->
+    <DisableProjectBuild Condition="'$(EnableNativeSanitizers)' != ''">true</DisableProjectBuild>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,1024 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Text;
+using System.Text.Json;
+using Microsoft.Diagnostics.DataContractReader.Data;
+using Microsoft.Diagnostics.DataContractReader.Contracts;
+using System.Collections.Frozen;
+
+namespace Microsoft.Diagnostics.DataContractReader;
+
+/// <summary>
+/// Representation of the target under inspection
+/// </summary>
+/// <remarks>
+/// This class provides APIs used by contracts for reading from the target and getting type and globals
+/// information based on the target's contract descriptor. Like the contracts themselves in the cdac,
+/// these are throwing APIs. Any callers at the boundaries (for example, unmanaged entry points, COM)
+/// should handle any exceptions.
+/// </remarks>
+public sealed unsafe class ContractDescriptorTarget : Target
+{
+    private const int SupportedDataDescriptorVersion = 2;
+    private const int StackAllocByteThreshold = 1024;
+
+    private readonly struct Configuration
+    {
+        public bool IsLittleEndian { get; init; }
+        public int PointerSize { get; init; }
+    }
+
+    private readonly Configuration _config;
+
+    private readonly DataTargetDelegates _dataTargetDelegates;
+
+    private readonly List<Descriptor> _descriptors = [];
+
+    // Addresses of sub-descriptor pointer slots whose value was null the last time we read
+    // them. Re-checked on Flush. This relies on the following invariant: a sub-descriptor
+    // pointer slot only ever transitions null -> real-address. Once a slot holds a
+    // non-null sub-descriptor address it never changes again, so we never need to
+    // re-validate already-loaded sub-descriptors and we can safely drop a slot from this.
+    // Each entry keeps the sub-descriptor's name so a specific provider (for example the GC) can be
+    // queried for whether it has been published yet (IsSubDescriptorResolved).
+    private readonly List<(string Name, TargetPointer Slot)> _pendingSubDescriptors = [];
+
+    private IReadOnlyDictionary<string, string> _contracts = new Dictionary<string, string>();
+    private IReadOnlyDictionary<string, GlobalValue> _globals = new Dictionary<string, GlobalValue>();
+    private IReadOnlyDictionary<string, TypeInfo> _types = new Dictionary<string, TypeInfo>();
+
+    public override ContractRegistry Contracts { get; }
+    public override DataCache ProcessedData { get; }
+
+    // A named sub-descriptor is resolved once its slot has been parsed (dropped from the pending
+    // list) - or was never advertised at all. A slot that is still pending (the subordinate module
+    // has not published its sub-descriptor address yet) reports false until a later Flush picks it up.
+    public override bool IsSubDescriptorResolved(string name)
+    {
+        foreach ((string pendingName, TargetPointer _) in _pendingSubDescriptors)
+        {
+            if (pendingName == name)
+                return false;
+        }
+        return true;
+    }
+
+    public delegate int ReadFromTargetDelegate(ulong address, Span<byte> bufferToFill);
+    public delegate int WriteToTargetDelegate(ulong address, Span<byte> bufferToWrite);
+    public delegate int GetTargetThreadContextDelegate(uint threadId, uint contextFlags, Span<byte> bufferToFill);
+    public delegate int SetTargetThreadContextDelegate(uint threadId, ReadOnlySpan<byte> context);
+    public delegate int AllocVirtualDelegate(ulong size, out ulong allocatedAddress);
+
+    private static readonly UTF8Encoding strictUTF8Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+    private static readonly UTF8Encoding looseUTF8Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: false);
+
+    /// <summary>
+    /// Create a new target instance from a contract descriptor embedded in the target memory.
+    /// </summary>
+    /// <param name="contractDescriptor">The offset of the contract descriptor in the target memory</param>
+    /// <param name="readFromTarget">A callback to read memory blocks at a given address from the target</param>
+    /// <param name="writeToTarget">A callback to write memory blocks at a given address to the target</param>
+    /// <param name="getThreadContext">A callback to fetch a thread's context</param>
+    /// <param name="setThreadContext">A callback to set a thread's context</param>
+    /// <param name="allocVirtual">A callback to allocate virtual memory in the target</param>
+    /// <param name="contractRegistrations">Registration actions that populate the contract registry (e.g., <see cref="Contracts.CoreCLRContracts.Register"/>)</param>
+    /// <returns>The target object.</returns>
+    public static ContractDescriptorTarget Create(
+        ulong contractDescriptor,
+        ReadFromTargetDelegate readFromTarget,
+        WriteToTargetDelegate writeToTarget,
+        GetTargetThreadContextDelegate getThreadContext,
+        SetTargetThreadContextDelegate setThreadContext,
+        AllocVirtualDelegate allocVirtual,
+        Action<ContractRegistry>[] contractRegistrations)
+    {
+        DataTargetDelegates dataTargetDelegates = new DataTargetDelegates(readFromTarget, writeToTarget, getThreadContext, setThreadContext, allocVirtual);
+        Descriptor descriptor = ReadContractDescriptor(contractDescriptor, dataTargetDelegates);
+        return new ContractDescriptorTarget(descriptor, dataTargetDelegates, contractRegistrations);
+    }
+
+    /// <summary>
+    /// Create a new target instance from an externally-provided contract descriptor.
+    /// </summary>
+    /// <param name="contractDescriptor">The contract descriptor to use for this target</param>
+    /// <param name="globalPointerValues">The values for any global pointers specified in the contract descriptor.</param>
+    /// <param name="readFromTarget">A callback to read memory blocks at a given address from the target</param>
+    /// <param name="writeToTarget">A callback to write memory blocks at a given address to the target</param>
+    /// <param name="getThreadContext">A callback to fetch a thread's context</param>
+    /// <param name="setThreadContext">A callback to set a thread's context</param>
+    /// <param name="allocVirtual">A callback to allocate virtual memory in the target</param>
+    /// <param name="isLittleEndian">Whether the target is little-endian</param>
+    /// <param name="pointerSize">The size of a pointer in bytes in the target process.</param>
+    /// <param name="contractRegistrations">Registration actions that populate the contract registry (e.g., <see cref="Contracts.CoreCLRContracts.Register"/>)</param>
+    /// <returns>The target object.</returns>
+    public static ContractDescriptorTarget Create(
+        ContractDescriptorParser.ContractDescriptor contractDescriptor,
+        TargetPointer[] globalPointerValues,
+        ReadFromTargetDelegate readFromTarget,
+        WriteToTargetDelegate writeToTarget,
+        GetTargetThreadContextDelegate getThreadContext,
+        SetTargetThreadContextDelegate setThreadContext,
+        AllocVirtualDelegate allocVirtual,
+        bool isLittleEndian,
+        int pointerSize,
+        Action<ContractRegistry>[]? contractRegistrations = null)
+    {
+        return new ContractDescriptorTarget(
+            new Descriptor
+            {
+                Config = new Configuration { IsLittleEndian = isLittleEndian, PointerSize = pointerSize },
+                ContractDescriptor = contractDescriptor,
+                PointerData = globalPointerValues
+            },
+            new DataTargetDelegates(readFromTarget, writeToTarget, getThreadContext, setThreadContext, allocVirtual),
+            contractRegistrations ?? []);
+    }
+
+    private ContractDescriptorTarget(Descriptor mainDescriptor, DataTargetDelegates dataTargetDelegates, Action<ContractRegistry>[] contractRegistrations)
+    {
+        Contracts = new CachingContractRegistry(this, this.TryGetContractVersion, contractRegistrations);
+        ProcessedData = new DataCache(this);
+
+        _config = mainDescriptor.Config;
+        _dataTargetDelegates = dataTargetDelegates;
+
+        AddDescriptor(mainDescriptor);
+        BuildDescriptors(forceBuild: true);
+    }
+
+    public override void Flush(FlushScope scope)
+    {
+        base.Flush(scope);
+
+        BuildDescriptors();
+    }
+
+    private void AddDescriptor(Descriptor descriptor)
+    {
+        if (descriptor.ContractDescriptor.Version != SupportedDataDescriptorVersion)
+        {
+            string version = descriptor.ContractDescriptor.Version?.ToString() ?? "<missing>";
+            throw DescriptorMalformed($"Unsupported data descriptor version '{version}'. Expected version {SupportedDataDescriptorVersion}.");
+        }
+
+        _descriptors.Add(descriptor);
+        foreach ((string name, TargetPointer pSubDescriptor) in GetSubDescriptors(descriptor))
+        {
+            if (pSubDescriptor == TargetPointer.Null)
+                continue;
+
+            _pendingSubDescriptors.Add((name, pSubDescriptor));
+        }
+    }
+
+    private void BuildDescriptors(bool forceBuild = false)
+    {
+        // First pass - find if we have any new descriptors
+        // if not, we can exit early without needing to rebuild
+        int initialDescriptorCount = _descriptors.Count;
+        int loopDescriptorCount;
+        do
+        {
+            loopDescriptorCount = _descriptors.Count;
+
+            for (int i = _pendingSubDescriptors.Count - 1; i >= 0; i--)
+            {
+                (_, TargetPointer pendingSubDescriptor) = _pendingSubDescriptors[i];
+                if (TryReadPointer(pendingSubDescriptor, out TargetPointer subDescriptorAddress)
+                    && subDescriptorAddress != TargetPointer.Null)
+                {
+                    _pendingSubDescriptors.RemoveAt(i);
+
+                    Descriptor subDescriptor = ReadContractDescriptor(subDescriptorAddress.Value, _dataTargetDelegates);
+                    AddDescriptor(subDescriptor);
+                }
+            }
+        } while (_descriptors.Count > loopDescriptorCount);
+
+        if (_descriptors.Count == initialDescriptorCount && !forceBuild)
+            // No new descriptors were found, and we're not forcing a build, so return early
+            return;
+
+
+        // Second pass - parse all descriptors and update contracts, globals, and types.
+        Dictionary<string, string> contracts = [];
+        Dictionary<string, GlobalValue> globals = [];
+        Dictionary<string, TypeInfo> types = [];
+
+        HashSet<string> seenTypeNames = [];
+        HashSet<string> seenGlobalNames = [];
+
+        // Set pointer type size
+        types[DataType.pointer.ToString()] = new TypeInfo { Size = (uint)_config.PointerSize };
+
+        foreach (Descriptor descriptor in _descriptors)
+        {
+            if (descriptor.Config.IsLittleEndian != _config.IsLittleEndian ||
+                descriptor.Config.PointerSize != _config.PointerSize)
+            {
+                throw DescriptorMalformed("All descriptors must have the same endianness and pointer size.");
+            }
+
+            // Read contracts and add to map
+            foreach ((string name, string version) in descriptor.ContractDescriptor.Contracts ?? [])
+            {
+                if (contracts.ContainsKey(name))
+                {
+                    throw DescriptorMalformed($"Duplicate contract name '{name}' found in contract descriptor.");
+                }
+                contracts[name] = version;
+            }
+
+            // Read types and map to known data types
+            if (descriptor.ContractDescriptor.Types is not null)
+            {
+                foreach ((string name, ContractDescriptorParser.TypeDescriptor type) in descriptor.ContractDescriptor.Types)
+                {
+                    Dictionary<string, Target.FieldInfo> fieldInfos = [];
+                    if (type.Fields is not null)
+                    {
+                        foreach ((string fieldName, ContractDescriptorParser.FieldDescriptor field) in type.Fields)
+                        {
+                            fieldInfos[fieldName] = new Target.FieldInfo()
+                            {
+                                Offset = field.Offset,
+                                TypeName = field.Type
+                            };
+                        }
+                    }
+                    Target.TypeInfo typeInfo = new() { Size = type.Size, Fields = fieldInfos };
+
+                    if (seenTypeNames.Contains(name))
+                    {
+                        throw DescriptorMalformed($"Duplicate type name '{name}' found in contract descriptor.");
+                    }
+                    seenTypeNames.Add(name);
+
+                    types[name] = typeInfo;
+                }
+            }
+
+            // Read globals and map indirect values to pointer data
+            if (descriptor.ContractDescriptor.Globals is not null)
+            {
+                foreach ((string name, ContractDescriptorParser.GlobalDescriptor global) in descriptor.ContractDescriptor.Globals)
+                {
+                    if (seenGlobalNames.Contains(name))
+                        throw DescriptorMalformed($"Duplicate global name '{name}' found in contract descriptor.");
+
+                    seenGlobalNames.Add(name);
+
+                    if (global.Indirect)
+                    {
+                        if (global.NumericValue.Value >= (ulong)descriptor.PointerData.Length)
+                            throw DescriptorMalformed($"Invalid pointer data index {global.NumericValue.Value}.");
+
+                        globals[name] = new GlobalValue
+                        {
+                            NumericValue = descriptor.PointerData[global.NumericValue.Value].Value,
+                            StringValue = global.StringValue,
+                            Type = global.Type
+                        };
+                    }
+                    else // direct
+                    {
+                        globals[name] = new GlobalValue
+                        {
+                            NumericValue = global.NumericValue,
+                            StringValue = global.StringValue,
+                            Type = global.Type
+                        };
+                    }
+                }
+            }
+        }
+
+        _contracts = contracts.ToFrozenDictionary();
+        _globals = globals.ToFrozenDictionary();
+        _types = types.ToFrozenDictionary();
+    }
+
+    private struct GlobalValue
+    {
+        public ulong? NumericValue;
+        public string? StringValue;
+        public string? Type;
+    }
+
+    private struct Descriptor
+    {
+        public Configuration Config { get; init; }
+        public ContractDescriptorParser.ContractDescriptor ContractDescriptor { get; init; }
+        public TargetPointer[] PointerData { get; init; }
+    }
+
+    private static IEnumerable<(string Name, TargetPointer Slot)> GetSubDescriptors(Descriptor descriptor)
+    {
+        foreach (KeyValuePair<string, ContractDescriptorParser.GlobalDescriptor> subDescriptor in descriptor.ContractDescriptor?.SubDescriptors ?? [])
+        {
+            if (subDescriptor.Value.Indirect)
+            {
+                if (subDescriptor.Value.NumericValue.Value >= (ulong)descriptor.PointerData.Length)
+                    throw DescriptorMalformed($"Invalid pointer data index {subDescriptor.Value.NumericValue.Value}.");
+
+                yield return (subDescriptor.Key, descriptor.PointerData[(int)subDescriptor.Value.NumericValue]);
+            }
+        }
+    }
+
+    // See docs/design/datacontracts/contract-descriptor.md
+    // Failure constructing a target from its contract descriptor surfaces as a FormatException so
+    // existing callers and tests keep working, but the HResult is set to a cDAC-specific code so
+    // tooling can distinguish "no descriptor / not a cDAC target" from "descriptor present but
+    // corrupt". The boundary entry points propagate Exception.HResult when it is a failure code.
+    private static FormatException DescriptorNotFound(string message) =>
+        new(message) { HResult = CdacHResults.CDAC_E_DESCRIPTOR_NOT_FOUND };
+
+    private static FormatException DescriptorMalformed(string message, System.Exception? innerException = null) =>
+        new(message, innerException) { HResult = CdacHResults.CDAC_E_DESCRIPTOR_MALFORMED };
+
+    private static Descriptor ReadContractDescriptor(
+        ulong address,
+        DataTargetDelegates dataTargetDelegates)
+    {
+        // Magic - uint64_t
+        Span<byte> buffer = stackalloc byte[sizeof(ulong)];
+        if (dataTargetDelegates.ReadFromTarget(address, buffer) < 0)
+            throw DescriptorNotFound($"Failed to read contract descriptor header at 0x{address:x8}.");
+
+        address += sizeof(ulong);
+        ReadOnlySpan<byte> magicLE = "DNCCDAC\0"u8;
+        ReadOnlySpan<byte> magicBE = "\0CADCCND"u8;
+        bool isLittleEndian = buffer.SequenceEqual(magicLE);
+        if (!isLittleEndian && !buffer.SequenceEqual(magicBE))
+            throw DescriptorNotFound("Contract descriptor has an invalid magic value.");
+
+        // Flags - uint32_t
+        if (!TryRead(address, isLittleEndian, dataTargetDelegates, out uint flags))
+            throw DescriptorMalformed($"Failed to read contract descriptor flags at 0x{address:x8}.");
+
+        address += sizeof(uint);
+
+        // Bit 1 represents the pointer size. 0 = 64-bit, 1 = 32-bit.
+        int pointerSize = (int)(flags & 0x2) == 0 ? sizeof(ulong) : sizeof(uint);
+
+        Configuration config = new Configuration { IsLittleEndian = isLittleEndian, PointerSize = pointerSize };
+
+        // Descriptor size - uint32_t
+        if (!TryRead(address, config.IsLittleEndian, dataTargetDelegates, out uint descriptorSize))
+            throw DescriptorMalformed($"Failed to read contract descriptor size at 0x{address:x8}.");
+
+        address += sizeof(uint);
+
+        // Descriptor - char*
+        if (!TryReadPointer(address, config, dataTargetDelegates, out TargetPointer descriptorAddr))
+            throw DescriptorMalformed($"Failed to read contract descriptor JSON pointer at 0x{address:x8}.");
+
+        address += (uint)pointerSize;
+
+        // Pointer data count - uint32_t
+        if (!TryRead(address, config.IsLittleEndian, dataTargetDelegates, out uint pointerDataCount))
+            throw DescriptorMalformed($"Failed to read contract descriptor pointer data count at 0x{address:x8}.");
+
+        address += sizeof(uint);
+
+        // Padding - uint32_t
+        address += sizeof(uint);
+
+        // Pointer data - uintptr_t*
+        if (!TryReadPointer(address, config, dataTargetDelegates, out TargetPointer pointerDataAddr))
+            throw DescriptorMalformed($"Failed to read contract descriptor pointer data pointer at 0x{address:x8}.");
+
+        // Read descriptor
+        if (descriptorSize > int.MaxValue)
+            throw DescriptorMalformed($"Contract descriptor size {descriptorSize} is too large.");
+
+        Span<byte> descriptorBuffer = descriptorSize <= StackAllocByteThreshold
+            ? stackalloc byte[(int)descriptorSize]
+            : new byte[(int)descriptorSize];
+        if (dataTargetDelegates.ReadFromTarget(descriptorAddr.Value, descriptorBuffer) < 0)
+            throw DescriptorMalformed($"Failed to read contract descriptor JSON at 0x{descriptorAddr.Value:x8}.");
+
+        ContractDescriptorParser.ContractDescriptor? contractDescriptor;
+        try
+        {
+            contractDescriptor = ContractDescriptorParser.ParseCompact(descriptorBuffer);
+        }
+        catch (JsonException ex)
+        {
+            throw DescriptorMalformed("Failed to parse contract descriptor JSON.", ex);
+        }
+        catch (InvalidOperationException ex)
+        {
+            throw DescriptorMalformed("Failed to parse contract descriptor JSON.", ex);
+        }
+        if (contractDescriptor is null)
+            throw DescriptorMalformed("Contract descriptor JSON parsed to null.");
+
+        // Read pointer data
+        if (pointerDataCount > int.MaxValue)
+            throw DescriptorMalformed($"Contract descriptor pointer data count {pointerDataCount} is too large.");
+
+        int pointerDataLength = (int)pointerDataCount;
+        TargetPointer[] pointerData = new TargetPointer[pointerDataLength];
+        for (int i = 0; i < pointerDataLength; i++)
+        {
+            if (!TryReadPointer(pointerDataAddr.Value + (uint)(i * pointerSize), config, dataTargetDelegates, out pointerData[i]))
+                throw DescriptorMalformed($"Failed to read contract descriptor pointer data entry {i}.");
+        }
+
+        return new Descriptor
+        {
+            Config = config,
+            ContractDescriptor = contractDescriptor,
+            PointerData = pointerData
+        };
+    }
+
+    public override int PointerSize => _config.PointerSize;
+    public override bool IsLittleEndian => _config.IsLittleEndian;
+
+    public override bool TryGetThreadContext(ulong threadId, uint contextFlags, Span<byte> buffer)
+    {
+        // Underlying API only supports 32-bit thread IDs, mask off top 32 bits
+        int hr = _dataTargetDelegates.GetThreadContext((uint)(threadId & uint.MaxValue), contextFlags, buffer);
+        return hr == 0;
+    }
+
+    public override bool TrySetThreadContext(ulong threadId, ReadOnlySpan<byte> context)
+    {
+        // Underlying API only supports 32-bit thread IDs, mask off top 32 bits
+        int hr = _dataTargetDelegates.SetThreadContext((uint)(threadId & uint.MaxValue), context);
+        return hr == 0;
+    }
+
+    /// <summary>
+    /// Read a value from the target in target endianness
+    /// </summary>
+    /// <typeparam name="T">Type of value to read</typeparam>
+    /// <param name="address">Address to start reading from</param>
+    /// <returns>Value read from the target</returns>
+    /// <exception cref="VirtualReadException">Thrown when the read operation fails</exception>
+    public override T Read<T>(ulong address)
+    {
+        if (!TryRead(address, _config.IsLittleEndian, _dataTargetDelegates, out T value))
+            throw new VirtualReadException($"Failed to read {typeof(T)} at 0x{address:x8}.");
+
+        return value;
+    }
+
+    /// <summary>
+    /// Read a value from the target in little endianness
+    /// </summary>
+    /// <typeparam name="T">Type of value to read</typeparam>
+    /// <param name="address">Address to start reading from</param>
+    /// <returns>Value read from the target</returns>
+    public override T ReadLittleEndian<T>(ulong address)
+    {
+        if (!TryRead(address, true, _dataTargetDelegates, out T value))
+            throw new VirtualReadException($"Failed to read {typeof(T)} at 0x{address:x8}.");
+
+        return value;
+    }
+
+    /// <summary>
+    /// Read a value from the target in target endianness
+    /// </summary>
+    /// <typeparam name="T">Type of value to read</typeparam>
+    /// <param name="address">Address to start reading from</param>
+    /// <returns>True if read succeeds, false otherwise.</returns>
+    public override bool TryRead<T>(ulong address, out T value)
+    {
+        value = default;
+        if (!TryRead(address, _config.IsLittleEndian, _dataTargetDelegates, out T readValue))
+            return false;
+
+        value = readValue;
+        return true;
+    }
+
+    private static bool TryRead<T>(ulong address, bool isLittleEndian, DataTargetDelegates dataTargetDelegates, out T value) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
+    {
+        value = default;
+        Span<byte> buffer = stackalloc byte[sizeof(T)];
+        if (dataTargetDelegates.ReadFromTarget(address, buffer) < 0)
+            return false;
+
+        return isLittleEndian
+            ? T.TryReadLittleEndian(buffer, !IsSigned<T>(), out value)
+            : T.TryReadBigEndian(buffer, !IsSigned<T>(), out value);
+    }
+
+    /// <summary>
+    /// Write a value to the target in target endianness
+    /// </summary>
+    /// <typeparam name="T">Type of value to write</typeparam>
+    /// <param name="address">Address to start writing to</param>
+    public override void Write<T>(ulong address, T value)
+    {
+        if (!TryWrite(address, _config.IsLittleEndian, _dataTargetDelegates, value))
+            throw new InvalidOperationException($"Failed to write {typeof(T)} at 0x{address:x8}.");
+    }
+
+    public override void WritePointer(ulong address, TargetPointer value)
+    {
+        if (_config.PointerSize == 8)
+            Write<ulong>(address, value.Value);
+        else
+            Write<uint>(address, checked((uint)value.Value));
+    }
+
+    public override void WriteNUInt(ulong address, TargetNUInt value)
+    {
+        if (_config.PointerSize == 8)
+            Write<ulong>(address, value.Value);
+        else
+            Write<uint>(address, checked((uint)value.Value));
+    }
+
+    private static bool TryWrite<T>(ulong address, bool isLittleEndian, DataTargetDelegates dataTargetDelegates, T value) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
+    {
+        Span<byte> buffer = stackalloc byte[sizeof(T)];
+        int bytesWritten = default;
+        bool success = isLittleEndian
+            ? value.TryWriteLittleEndian(buffer, out bytesWritten)
+            : value.TryWriteBigEndian(buffer, out bytesWritten);
+        if (!success || bytesWritten != buffer.Length || dataTargetDelegates.WriteToTarget(address, buffer) < 0)
+            return false;
+
+        return true;
+    }
+
+    private static T Read<T>(ReadOnlySpan<byte> bytes, bool isLittleEndian) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
+    {
+        if (sizeof(T) != bytes.Length)
+            throw new ArgumentException(nameof(bytes));
+
+        T value;
+        if (isLittleEndian)
+        {
+            T.TryReadLittleEndian(bytes, !IsSigned<T>(), out value);
+        }
+        else
+        {
+            T.TryReadBigEndian(bytes, !IsSigned<T>(), out value);
+        }
+        return value;
+    }
+
+    public override void ReadBuffer(ulong address, Span<byte> buffer)
+    {
+        if (!TryReadBuffer(address, buffer))
+            throw new VirtualReadException($"Failed to read {buffer.Length} bytes at 0x{address:x8}.");
+    }
+
+    private bool TryReadBuffer(ulong address, Span<byte> buffer)
+    {
+        return _dataTargetDelegates.ReadFromTarget(address, buffer) >= 0;
+    }
+
+    public override void WriteBuffer(ulong address, Span<byte> buffer)
+    {
+        if (!TryWriteBuffer(address, buffer))
+            throw new InvalidOperationException($"Failed to write {buffer.Length} bytes at 0x{address:x8}.");
+    }
+
+    public override TargetPointer AllocateMemory(uint size)
+    {
+        int hr = _dataTargetDelegates.AllocVirtual(size, out ulong allocatedAddress);
+        if (hr < 0)
+            throw Marshal.GetExceptionForHR(hr) ?? new InvalidOperationException($"Failed to allocate {size} bytes in the target process (HRESULT: 0x{hr:x8}).");
+        if (allocatedAddress == 0)
+            throw new OutOfMemoryException($"Failed to allocate {size} bytes in the target process (AllocVirtual returned S_OK but no address).");
+
+        return new TargetPointer(allocatedAddress);
+    }
+
+    private bool TryWriteBuffer(ulong address, Span<byte> buffer)
+    {
+        return _dataTargetDelegates.WriteToTarget(address, buffer) >= 0;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static bool IsSigned<T>() where T : struct, INumberBase<T>, IMinMaxValue<T>
+    {
+        return T.IsNegative(T.MinValue);
+    }
+
+    /// <summary>
+    /// Read a pointer from the target in target endianness
+    /// </summary>
+    /// <param name="address">Address to start reading from</param>
+    /// <returns>Pointer read from the target</returns>
+    public override TargetPointer ReadPointer(ulong address)
+    {
+        if (!TryReadPointer(address, _config, _dataTargetDelegates, out TargetPointer pointer))
+            throw new VirtualReadException($"Failed to read pointer at 0x{address:x8}.");
+
+        return pointer;
+    }
+
+    public override bool TryReadPointer(ulong address, out TargetPointer value)
+        => TryReadPointer(address, _config, _dataTargetDelegates, out value);
+
+    public override TargetPointer ReadPointerFromSpan(ReadOnlySpan<byte> bytes)
+    {
+        if (_config.PointerSize == sizeof(uint))
+        {
+            return new TargetPointer(Read<uint>(bytes.Slice(0, sizeof(uint)), _config.IsLittleEndian));
+        }
+        else
+        {
+            return new TargetPointer(Read<ulong>(bytes.Slice(0, sizeof(ulong)), _config.IsLittleEndian));
+        }
+    }
+
+    public override TargetCodePointer ReadCodePointer(ulong address)
+    {
+        TypeInfo codePointerTypeInfo = this.GetTypeInfo(DataType.CodePointer);
+        if (codePointerTypeInfo.Size is sizeof(uint))
+        {
+            return new TargetCodePointer(Read<uint>(address));
+        }
+        else if (codePointerTypeInfo.Size is sizeof(ulong))
+        {
+            return new TargetCodePointer(Read<ulong>(address));
+        }
+        throw new VirtualReadException($"Failed to read code pointer at 0x{address:x8} because CodePointer size is not 4 or 8");
+    }
+
+    public override bool TryReadCodePointer(ulong address, out TargetCodePointer value)
+    {
+        TypeInfo codePointerTypeInfo = this.GetTypeInfo(DataType.CodePointer);
+        if (codePointerTypeInfo.Size is sizeof(uint))
+        {
+            if (TryRead<uint>(address, out uint val))
+            {
+                value = new TargetCodePointer(val);
+                return true;
+            }
+        }
+        else if (codePointerTypeInfo.Size is sizeof(ulong))
+        {
+            if (TryRead<ulong>(address, out ulong val))
+            {
+                value = new TargetCodePointer(val);
+                return true;
+            }
+        }
+        value = default;
+        return false;
+    }
+
+    public void ReadPointers(ulong address, Span<TargetPointer> buffer)
+    {
+        // TODO(cdac) - This could do a single read, and then swizzle in place if it is useful for performance
+        for (int i = 0; i < buffer.Length; i++)
+        {
+            buffer[i] = ReadPointer(address);
+            checked
+            {
+                address += (ulong)_config.PointerSize;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Read a null-terminated UTF-8 string from the target
+    /// </summary>
+    /// <param name="address">Address to start reading from</param>
+    /// <param name="strict">Whether to throw on invalid UTF-8 sequences. If false, invalid sequences will be replaced with the replacement character.</param>
+    /// <returns>String read from the target</returns>
+    public override string ReadUtf8String(ulong address, bool strict = false)
+    {
+        // Read characters until we find the null terminator
+        ulong end = address;
+        while (Read<byte>(end) != 0)
+        {
+            end += sizeof(byte);
+        }
+
+        int length = (int)(end - address);
+        if (length == 0)
+            return string.Empty;
+
+        Span<byte> span = length <= StackAllocByteThreshold
+            ? stackalloc byte[length]
+            : new byte[length];
+        ReadBuffer(address, span);
+        return strict ? strictUTF8Encoding.GetString(span) : looseUTF8Encoding.GetString(span);
+    }
+
+    /// <summary>
+    /// Read a null-terminated UTF-16 string from the target in target endianness
+    /// </summary>
+    /// <param name="address">Address to start reading from</param>
+    /// <returns>String read from the target</returns>
+    public override string ReadUtf16String(ulong address)
+    {
+        // Read characters until we find the null terminator
+        ulong end = address;
+        while (Read<char>(end) != 0)
+        {
+            end += sizeof(char);
+        }
+
+        int length = (int)(end - address);
+        if (length == 0)
+            return string.Empty;
+
+        Span<byte> span = length <= StackAllocByteThreshold
+            ? stackalloc byte[length]
+            : new byte[length];
+        ReadBuffer(address, span);
+        string result = _config.IsLittleEndian
+            ? Encoding.Unicode.GetString(span)
+            : Encoding.BigEndianUnicode.GetString(span);
+        return result;
+    }
+
+    /// <summary>
+    /// Read a native unsigned integer from the target in target endianness
+    /// </summary>
+    /// <param name="address">Address to start reading from</param>
+    /// <returns>Value read from the target</returns>
+    public override TargetNUInt ReadNUInt(ulong address)
+    {
+        if (!TryReadNUInt(address, _config, _dataTargetDelegates, out ulong value))
+            throw new VirtualReadException($"Failed to read nuint at 0x{address:x8}.");
+
+        return new TargetNUInt(value);
+    }
+
+    public override TargetNInt ReadNInt(ulong address)
+    {
+        if (!TryReadNInt(address, _config, _dataTargetDelegates, out long value))
+            throw new VirtualReadException($"Failed to read nint at 0x{address:x8}.");
+
+        return new TargetNInt(value);
+    }
+
+    private static bool TryReadPointer(ulong address, Configuration config, DataTargetDelegates dataTargetDelegates, out TargetPointer pointer)
+    {
+        pointer = TargetPointer.Null;
+        if (!TryReadNUInt(address, config, dataTargetDelegates, out ulong value))
+            return false;
+
+        pointer = new TargetPointer(value);
+        return true;
+    }
+
+    private static bool TryReadNUInt(ulong address, Configuration config, DataTargetDelegates dataTargetDelegates, out ulong value)
+    {
+        value = 0;
+        if (config.PointerSize == sizeof(uint)
+            && TryRead(address, config.IsLittleEndian, dataTargetDelegates, out uint value32))
+        {
+            value = value32;
+            return true;
+        }
+        else if (config.PointerSize == sizeof(ulong)
+            && TryRead(address, config.IsLittleEndian, dataTargetDelegates, out ulong value64))
+        {
+            value = value64;
+            return true;
+        }
+
+        return false;
+    }
+
+    private static bool TryReadNInt(ulong address, Configuration config, DataTargetDelegates dataTargetDelegates, out long value)
+    {
+        value = 0;
+        if (config.PointerSize == sizeof(uint)
+            && TryRead(address, config.IsLittleEndian, dataTargetDelegates, out int value32))
+        {
+            value = value32;
+            return true;
+        }
+        else if (config.PointerSize == sizeof(ulong)
+            && TryRead(address, config.IsLittleEndian, dataTargetDelegates, out long value64))
+        {
+            value = value64;
+            return true;
+        }
+
+        return false;
+    }
+
+    public static bool IsAligned(ulong value, int alignment)
+        => (value & (ulong)(alignment - 1)) == 0;
+
+    public bool IsAlignedToPointerSize(uint value)
+        => IsAligned(value, _config.PointerSize);
+    public bool IsAlignedToPointerSize(ulong value)
+        => IsAligned(value, _config.PointerSize);
+    public override bool IsAlignedToPointerSize(TargetPointer pointer)
+        => IsAligned(pointer.Value, _config.PointerSize);
+
+    #region reading globals
+
+    public override bool TryReadGlobal<T>(string name, [NotNullWhen(true)] out T? value)
+        => TryReadGlobal<T>(name, out value, out _);
+
+    public bool TryReadGlobal<T>(string name, [NotNullWhen(true)] out T? value, out string? type) where T : struct, INumber<T>
+    {
+        value = null;
+        if (!TryGetNumericGlobal(name, out ulong globalValue, out type))
+            return false;
+
+        Debug.Assert(
+            TargetTypeHelpers.IsCompatiblePrimitiveType<T>(type),
+            $"Type mismatch reading global '{name}': declared as '{type}', reading as {typeof(T).Name}");
+
+        value = T.CreateChecked(globalValue);
+        return true;
+    }
+
+    public override T ReadGlobal<T>(string name)
+        => ReadGlobal<T>(name, out _);
+
+    public T ReadGlobal<T>(string name, out string? type) where T : struct, INumber<T>
+    {
+        if (!TryReadGlobal(name, out T? value, out type))
+            throw new InvalidOperationException($"Failed to read global {typeof(T)} '{name}'.");
+
+        return value.Value;
+    }
+
+    public override bool TryReadGlobalPointer(string name, [NotNullWhen(true)] out TargetPointer? value)
+        => TryReadGlobalPointer(name, out value, out _);
+
+    public bool TryReadGlobalPointer(string name, [NotNullWhen(true)] out TargetPointer? value, out string? type)
+    {
+        value = null;
+        if (!TryGetNumericGlobal(name, out ulong globalValue, out type))
+            return false;
+
+        Debug.Assert(
+            TargetTypeHelpers.IsCompatiblePointerType(type),
+            $"Type mismatch reading global '{name}': declared as '{type}', expected pointer");
+
+        value = new TargetPointer(globalValue);
+        return true;
+    }
+
+    public override TargetPointer ReadGlobalPointer(string name)
+        => ReadGlobalPointer(name, out _);
+
+    public TargetPointer ReadGlobalPointer(string name, out string? type)
+    {
+        if (!TryReadGlobalPointer(name, out TargetPointer? value, out type))
+            throw new InvalidOperationException($"Failed to read global pointer '{name}'.");
+
+        return value.Value;
+    }
+
+    public override string ReadGlobalString(string name)
+        => ReadStringGlobal(name, out _);
+
+    public string ReadStringGlobal(string name, out string? type)
+    {
+        if (!TryReadStringGlobal(name, out string? value, out type))
+            throw new InvalidOperationException($"Failed to read string global '{name}'.");
+
+        return value;
+    }
+
+    public override bool TryReadGlobalString(string name, [NotNullWhen(true)] out string? value)
+        => TryReadStringGlobal(name, out value, out _);
+
+    public bool TryReadStringGlobal(string name, [NotNullWhen(true)] out string? value, out string? type)
+    {
+        value = null;
+        type = null;
+        if (!_globals.TryGetValue(name, out GlobalValue global) || global.StringValue is null)
+        {
+            // Not found or does not contain a string value
+            return false;
+        }
+        type = global.Type;
+        value = global.StringValue;
+        return true;
+    }
+
+    private bool TryGetNumericGlobal(string name, out ulong value, out string? type)
+    {
+        value = default;
+        type = null;
+        if (!_globals.TryGetValue(name, out GlobalValue global) || global.NumericValue is null)
+            return false;
+
+        value = global.NumericValue.Value;
+        type = global.Type;
+        return true;
+    }
+
+    #endregion
+
+    public override Target.TypeInfo GetTypeInfo(string type)
+    {
+        if (_types.TryGetValue(type, out Target.TypeInfo typeInfo))
+            return typeInfo;
+
+        throw new InvalidOperationException($"Failed to get type info for '{type}'");
+    }
+
+    public override bool TryGetTypeInfo(string type, out Target.TypeInfo info)
+        => _types.TryGetValue(type, out info);
+
+    internal bool TryGetContractVersion(string contractName, [NotNullWhen(true)] out string? version)
+    {
+        return _contracts.TryGetValue(contractName, out version);
+    }
+
+    /// <summary>
+    /// Store of addresses that have already been read into corresponding data models.
+    /// This is simply used to avoid re-processing data on every request.
+    /// </summary>
+    public sealed class DataCache : Target.IDataCache
+    {
+        private readonly ContractDescriptorTarget _target;
+        private readonly Dictionary<(ulong, Type), object?> _readDataByAddress = [];
+
+        public DataCache(ContractDescriptorTarget target)
+        {
+            _target = target;
+        }
+
+        public T GetOrAdd<T>(TargetPointer address) where T : IData<T>
+        {
+            if (TryGet(address, out T? result))
+                return result;
+
+            T constructed = T.Create(_target, address);
+            if (_readDataByAddress.TryAdd((address, typeof(T)), constructed))
+                return constructed;
+
+            bool found = TryGet(address, out result);
+            Debug.Assert(found);
+            return result!;
+        }
+
+        public bool TryGet<T>(ulong address, [NotNullWhen(true)] out T? data)
+        {
+            data = default;
+            if (!_readDataByAddress.TryGetValue((address, typeof(T)), out object? dataObj))
+                return false;
+
+            if (dataObj is T dataMaybe)
+            {
+                data = dataMaybe;
+                return true;
+            }
+
+            return false;
+        }
+
+        public void Clear()
+        {
+            _readDataByAddress.Clear();
+        }
+    }
+
+    private readonly struct DataTargetDelegates(
+        ReadFromTargetDelegate readFromTarget,
+        WriteToTargetDelegate writeToTarget,
+        GetTargetThreadContextDelegate getThreadContext,
+        SetTargetThreadContextDelegate setThreadContext,
+        AllocVirtualDelegate allocVirtual)
+    {
+        public int ReadFromTarget(ulong address, Span<byte> buffer)
+        {
+            return readFromTarget(address, buffer);
+        }
+
+        public int ReadFromTarget(ulong address, byte* buffer, uint bytesToRead)
+            => readFromTarget(address, new Span<byte>(buffer, checked((int)bytesToRead)));
+
+        public int GetThreadContext(uint threadId, uint contextFlags, Span<byte> buffer)
+        {
+            return getThreadContext(threadId, contextFlags, buffer);
+        }
+        public int SetThreadContext(uint threadId, ReadOnlySpan<byte> context)
+        {
+            return setThreadContext(threadId, context);
+        }
+        public int WriteToTarget(ulong address, Span<byte> buffer)
+        {
+            return writeToTarget(address, buffer);
+        }
+        public int AllocVirtual(ulong size, out ulong allocatedAddress)
+        {
+            return allocVirtual(size, out allocatedAddress);
+        }
+    }
+}

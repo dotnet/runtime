@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- Make sure that invalid operations are not optimized out by Roslyn -->
+    <Optimize>false</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="ManagedPointers.cs" />
+    <Compile Include="Arrays.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+</Project>

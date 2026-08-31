@@ -1,0 +1,27 @@
+<linker>
+  <assembly fullname="test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+    <type fullname="UnknownType" />
+    <type fullname="Mono.Linker.Tests.Cases.LinkXml.EmbeddedLinkXmlUnresolvedReferencesAreReported/TestType" >
+      <!-- The type has "System.Int32 FieldWithSignature"-->
+      <field signature="System.String FieldWithSignature" />
+      <field signature="System.Int32 FieldWithSignature" />
+      <field name="UnknownField" />
+
+      <!-- The type has "System.String MethodWithSignature()" -->
+      <method signature="System.Void MethodWithSignature()" />
+      <method signature="System.String MethodWithSignature()" />
+      <method name="UnknownMethod" />
+
+      <!-- The type has "System.EventHandler EventWithSignature" -->
+      <event signature="System.ResolveEventHandler EventWithSignature" />
+      <event signature="System.EventHandler EventWithSignature" />
+      <event name="UnknownEvent" />
+
+      <!-- The type has "System.Int32 PropertyWithSignature"-->
+      <property signature="System.String PropertyWithSignature" />
+      <property signature="System.Int32 PropertyWithSignature" />
+      <property name="UnknownProperty" />
+    </type>
+    <namespace fullname="UnknownNamespace" />
+  </assembly>
+</linker>

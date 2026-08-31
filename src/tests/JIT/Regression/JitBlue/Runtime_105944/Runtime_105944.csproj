@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Optimize>True</Optimize>
+    <NoWarn>$(NoWarn);SYSLIB5003</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildProjectName).cs" />
+    <Compile Include="$(RepoRoot)src/libraries/Common/tests/TestUtilities/System/Buffers/BoundedMemory.cs" />
+    <Compile Include="$(RepoRoot)src/libraries/Common/tests/TestUtilities/System/Buffers/BoundedMemory.Creation.cs" />
+    <Compile Include="$(RepoRoot)src/libraries/Common/tests/TestUtilities/System/Buffers/BoundedMemory.Unix.cs" />
+    <Compile Include="$(RepoRoot)src/libraries/Common/tests/TestUtilities/System/Buffers/BoundedMemory.Windows.cs" />
+    <Compile Include="$(RepoRoot)src/libraries/Common/tests/TestUtilities/System/Buffers/BoundedMemory.Default.cs" />
+    <Compile Include="$(RepoRoot)src/libraries/Common/tests/TestUtilities/System/Buffers/PoisonPagePlacement.cs" />
+  </ItemGroup>
+</Project>

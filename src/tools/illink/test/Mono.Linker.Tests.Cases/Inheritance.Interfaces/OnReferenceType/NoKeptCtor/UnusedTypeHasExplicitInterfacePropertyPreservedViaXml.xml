@@ -1,0 +1,7 @@
+<linker>
+    <assembly fullname="test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <type fullname="Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.NoKeptCtor.UnusedTypeHasExplicitInterfacePropertyPreservedViaXml/A">
+            <property signature="System.Int32 Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.NoKeptCtor.UnusedTypeHasExplicitInterfacePropertyPreservedViaXml.IFoo.Foo"/>
+        </type>
+    </assembly>
+</linker>

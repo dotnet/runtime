@@ -1,0 +1,9 @@
+<Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
+  <Application>
+    <Assembly Name="System.Private.CoreLib">
+      <Type Name="System.Diagnostics.Tracing.EventPipeEventProvider">
+        <Method Name="EventActivityIdControl" />
+      </Type>
+    </Assembly>
+  </Application>
+</Directives>

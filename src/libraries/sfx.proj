@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.Build.Traversal">
+
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)-$(TargetOS)</TargetFramework>
+    <NoDefaultSlnGenSolutionFolder>true</NoDefaultSlnGenSolutionFolder>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="sfx-src.proj" />
+    <ProjectReference Include="sfx-gen.proj" />
+    <ProjectReference Include="sfx-finish.proj" />
+  </ItemGroup>
+
+</Project>

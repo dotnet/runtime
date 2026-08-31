@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<asn:Sequence
+  xmlns:asn="http://schemas.dot.net/asnxml/201808/"
+  name="KeyTransRecipientInfoAsn"
+  namespace="System.Security.Cryptography.Pkcs.Asn1">
+
+  <!--
+    https://tools.ietf.org/html/rfc5652#section-6.2.1
+
+    KeyTransRecipientInfo ::= SEQUENCE {
+        version CMSVersion,  - always set to 0 or 2
+        rid RecipientIdentifier,
+        keyEncryptionAlgorithm KeyEncryptionAlgorithmIdentifier,
+        encryptedKey EncryptedKey
+    }
+
+    https://tools.ietf.org/html/rfc5652#section-6.2
+
+    EncryptedKey ::= OCTET STRING
+  -->
+  <asn:Integer name="Version" backingType="int" />
+  <asn:AsnType name="Rid" typeName="System.Security.Cryptography.Pkcs.Asn1.RecipientIdentifierAsn" />
+  <asn:AsnType name="KeyEncryptionAlgorithm" typeName="System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn" />
+  <asn:OctetString name="EncryptedKey" />
+</asn:Sequence>

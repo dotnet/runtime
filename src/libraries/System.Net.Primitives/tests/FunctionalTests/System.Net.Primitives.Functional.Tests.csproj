@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-browser</TargetFrameworks>
+    <EventSourceSupport>true</EventSourceSupport>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="CookieTest.cs" />
+    <Compile Include="CookieCollectionTest.cs" />
+    <Compile Include="CookieContainerTest.cs" />
+    <Compile Include="CookieTest\CookieContainerTest.cs" />
+    <Compile Include="CookieTest\CookiePortTest.cs" />
+    <Compile Include="CredentialCacheTest.cs" />
+    <Compile Include="DnsEndPointTest.cs" />
+    <Compile Include="EndPointTest.cs" />
+    <Compile Include="IPAddressMappingTest.cs" />
+    <Compile Include="IPAddressParsing.cs" />
+    <Compile Include="IPAddressSpanTest.cs" />
+    <Compile Include="IPAddressTest.cs" />
+    <Compile Include="IPNetworkTest.cs" />
+    <Compile Include="IPEndPointParsing.cs" />
+    <Compile Include="IPEndPointTest.cs" />
+    <Compile Include="NetworkCredentialTest.cs" />
+    <Compile Include="SocketAddressTest.cs" />
+    <Compile Include="LoggingTest.cs" />
+    <Compile Include="RequestCachePolicyTest.cs" />
+    <Compile Include="CookieContainerAddTest.cs" />
+    <Compile Include="$(CommonTestPath)System\Diagnostics\Tracing\TestEventListener.cs"
+             Link="Common\System\Diagnostics\Tracing\TestEventListener.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\RemoteExecutorExtensions.cs"
+             Link="Common\System\Net\RemoteExecutorExtensions.cs" />
+    <Compile Include="SocketExceptionTest.cs" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,267 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
+  <file datatype="xml" source-language="en" target-language="ko" original="../Strings.resx">
+    <body>
+      <trans-unit id="AlternationHasComment">
+        <source>Alternation conditions cannot be comments.</source>
+        <target state="translated">교체 조건은 주석이 될 수 없습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="AlternationHasMalformedCondition">
+        <source>Illegal conditional (?(...)) expression.</source>
+        <target state="translated">조건(?(...))식이 잘못되었습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="AlternationHasMalformedReference">
+        <source>Conditional alternation is missing a closing parenthesis after the group number {0}.</source>
+        <target state="translated">조건부 교체에 그룹 번호 {0} 뒤에 닫는 괄호가 없습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="AlternationHasNamedCapture">
+        <source>Alternation conditions do not capture and cannot be named.</source>
+        <target state="translated">교체 조건은 캡처하지 않고 이름을 지정할 수 없습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="AlternationHasTooManyConditions">
+        <source>Too many | in (?()|).</source>
+        <target state="translated">(?()|)에 | 기호가 너무 많습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="AlternationHasUndefinedReference">
+        <source>Conditional alternation refers to an undefined group number {0}.</source>
+        <target state="translated">조건부 교체는 정의되지 않은 그룹 번호인 {0}을(를) 참조합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Arg_ArrayPlusOffTooSmall">
+        <source>Destination array is not long enough to copy all the items in the collection. Check array index and length.</source>
+        <target state="translated">대상 배열이 컬렉션의 모든 항목을 복사하기에 충분히 길지 않습니다. 배열 인덱스와 길이를 확인하세요.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="BeginIndexNotNegative">
+        <source>Start index cannot be less than 0 or greater than input length.</source>
+        <target state="translated">시작 인덱스는 0보다 작거나 입력 길이보다 클 수 없습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CaptureGroupNameInvalid">
+        <source>Invalid group name: Group names must begin with a word character.</source>
+        <target state="translated">그룹 이름이 잘못되었습니다. 그룹 이름은 문자로 시작해야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CaptureGroupOfZero">
+        <source>Capture number cannot be zero.</source>
+        <target state="translated">캡처 번호는 0일 수 없습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CountTooSmall">
+        <source>Count cannot be less than -1.</source>
+        <target state="translated">개수는 -1보다 작을 수 없습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="EnumNotStarted">
+        <source>Enumeration has either not started or has already finished.</source>
+        <target state="translated">열거가 시작되지 않았거나 이미 완료되었습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ExclusionGroupNotLast">
+        <source>A subtraction must be the last element in a character class.</source>
+        <target state="translated">빼기는 문자 클래스의 마지막 요소여야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Generic">
+        <source>Regular expression parser error '{0}' at offset {1}.</source>
+        <target state="translated">오프셋 {1}에서 정규식 파서 오류 '{0}'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="IllegalDefaultRegexMatchTimeoutInAppDomain">
+        <source>AppDomain data '{0}' contains the invalid value or object '{1}' for specifying a default matching timeout for System.Text.RegularExpressions.Regex.</source>
+        <target state="translated">AppDomain 데이터 '{0}'에 System.Text.RegularExpressions.Regex에 대한 기본 일치 제한 시간을 지정하기 위한 잘못된 값 또는 개체 '{1}'이(가) 있습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InsufficientClosingParentheses">
+        <source>Not enough )'s.</source>
+        <target state="translated">)가 부족합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InsufficientOpeningParentheses">
+        <source>Too many )'s.</source>
+        <target state="translated">)가 너무 많습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InsufficientOrInvalidHexDigits">
+        <source>Insufficient or invalid hexadecimal digits.</source>
+        <target state="translated">16진수가 부족하거나 잘못되었습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidGroupingConstruct">
+        <source>Unrecognized grouping construct.</source>
+        <target state="translated">인식할 수 없는 그룹화 구성입니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidRegexArgumentsMessage">
+        <source>The specified regex is invalid. '{0}'</source>
+        <target state="translated">지정한 regex가 잘못되었습니다. '{0}'</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidGeneratedRegexAttributeMessage">
+        <source>The GeneratedRegexAttribute is malformed</source>
+        <target state="translated">GeneratedRegexAttribute의 형식이 잘못되었습니다.</target>
+        <note>{Locked="GeneratedRegexAttribute"}</note>
+      </trans-unit>
+      <trans-unit id="InvalidGeneratedRegexAttributeTitle">
+        <source>Invalid GeneratedRegexAttribute usage</source>
+        <target state="translated">잘못된 GeneratedRegexAttribute 사용</target>
+        <note>{Locked="GeneratedRegexAttribute"}</note>
+      </trans-unit>
+      <trans-unit id="InvalidUnicodePropertyEscape">
+        <source>Incomplete \p{X} character escape.</source>
+        <target state="translated">\p{X} 문자 이스케이프가 완전하지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LengthNotNegative">
+        <source>Length cannot be less than 0 or exceed input length.</source>
+        <target state="translated">길이는 0보다 작거나 입력 길이를 초과할 수 없습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LimitedSourceGenerationMessage">
+        <source>The regex generator couldn't generate a complete source implementation for the specified regular expression due to an internal limitation. See the explanation in the generated source for more details.</source>
+        <target state="translated">regex 생성기가 내부 제한으로 인해 지정된 정규식에 대한 전체 원본 구현을 생성할 수 없습니다. 자세한 내용은 생성된 원본의 설명을 참조하세요.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LimitedSourceGenerationTitle">
+        <source>Regex generator limitation reached.</source>
+        <target state="translated">regex 생성기 제한에 도달했습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MakeException">
+        <source>Invalid pattern '{0}' at offset {1}. {2}</source>
+        <target state="translated">오프셋 {1}에서 잘못된 패턴 '{0}'. {2}</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MalformedNamedReference">
+        <source>Malformed \k&lt;...&gt; named back reference.</source>
+        <target state="translated">\k&lt;...&gt; 역참조 형식이 잘못되었습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MalformedUnicodePropertyEscape">
+        <source>Malformed \p{X} character escape.</source>
+        <target state="translated">\p{X} 문자 이스케이프 형식이 잘못되었습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MissingControlCharacter">
+        <source>Missing control character.</source>
+        <target state="translated">제어 문자가 없습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleGeneratedRegexAttributesMessage">
+        <source>Multiple GeneratedRegexAttributes were applied to the same method, but only one is allowed.</source>
+        <target state="translated">여러 GeneratedRegexAttributes가 동일한 메서드에 적용되었지만 하나만 허용됩니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="NestedQuantifiersNotParenthesized">
+        <source>Nested quantifier '{0}'.</source>
+        <target state="translated">중첩 수량자 '{0}'입니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="NoResultOnFailed">
+        <source>Result cannot be called on a failed Match.</source>
+        <target state="translated">실패한 Match에서 결과를 호출할 수 없습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="NotSupported_ReadOnlyCollection">
+        <source>Collection is read-only.</source>
+        <target state="translated">읽기 전용 컬렉션입니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="PlatformNotSupported_CompileToAssembly">
+        <source>This platform does not support writing compiled regular expressions to an assembly.</source>
+        <target state="translated">이 플랫폼은 컴파일된 정규식을 어셈블리에 쓰는 것을 지원하지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="QuantifierAfterNothing">
+        <source>Quantifier '{0}' following nothing.</source>
+        <target state="translated">수량자 '{0} 앞에 아무 것도 없습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="QuantifierOrCaptureGroupOutOfRange">
+        <source>Quantifier and capture group numbers must be less than or equal to Int32.MaxValue.</source>
+        <target state="translated">수량자 및 캡처 그룹 번호는 Int32.MaxValue보다 작거나 같아야 합니다.</target>
+        <note>{Locked="Int32.MaxValue"}</note>
+      </trans-unit>
+      <trans-unit id="RegexMatchTimeoutException_Occurred">
+        <source>The Regex engine has timed out while trying to match a pattern to an input string. This can occur for many reasons, including very large inputs or excessive backtracking caused by nested quantifiers, back-references and other factors.</source>
+        <target state="translated">Regex 엔진이 패턴을 입력 문자열에 일치시키는 동안 시간 초과되었습니다. 이 오류는 많은 입력, 중첩 수량자로 인한 과도한 역추적, 역참조, 기타 요인 등의 다양한 이유로 인해 발생할 수 있습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RegexMemberMustHaveValidSignatureMessage">
+        <source>GeneratedRegexAttribute method or property must be partial, parameterless, non-generic, non-abstract, and return Regex. If a property, it must also be get-only.</source>
+        <target state="translated">GeneratedRegexAttribute 메서드 또는 속성은 부분적이고, 매개 변수가 없고, 제네릭이 아니고, 추상적이지 않아야 하고, Regex를 반환해야 합니다. 속성인 경우 get 전용이어야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ReversedCharacterRange">
+        <source>[x-y] range in reverse order.</source>
+        <target state="translated">[x-y] 범위가 역순으로 되어 있습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ReversedQuantifierRange">
+        <source>Illegal {x,y} with x &gt; y.</source>
+        <target state="translated">x &gt; y인 {x,y}를 사용할 수 없습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ShorthandClassInCharacterRange">
+        <source>Cannot include class \{0} in character range.</source>
+        <target state="translated">문자 범위에 \{0} 클래스를 포함할 수 없습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UndefinedNamedReference">
+        <source>Reference to undefined group name '{0}'.</source>
+        <target state="translated">정의되지 않은 그룹 이름 '{0}'에 대한 참조입니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UndefinedNumberedReference">
+        <source>Reference to undefined group number {0}.</source>
+        <target state="translated">정의되지 않은 그룹 번호 {0}을(를) 참조합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnescapedEndingBackslash">
+        <source>Illegal \ at end of pattern.</source>
+        <target state="translated">패턴 끝에 잘못된 \가 있습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnrecognizedControlCharacter">
+        <source>Unrecognized control character.</source>
+        <target state="translated">인식할 수 없는 제어 문자입니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnrecognizedEscape">
+        <source>Unrecognized escape sequence \{0}.</source>
+        <target state="translated">인식할 수 없는 이스케이프 시퀀스 \{0}.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnrecognizedUnicodeProperty">
+        <source>Unknown property '{0}'.</source>
+        <target state="translated">알 수 없는 속성 '{0}'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnterminatedBracket">
+        <source>Unterminated [] set.</source>
+        <target state="translated">종결되지 않은 [] 집합입니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnterminatedComment">
+        <source>Unterminated (?#...) comment.</source>
+        <target state="translated">종결되지 않은 (?#...) 주석입니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UseRegexSourceGeneratorMessage">
+        <source>Use 'GeneratedRegexAttribute' to generate the regular expression implementation at compile-time.</source>
+        <target state="translated">'GeneratedRegexAttribute'를 사용하여 컴파일 시간에 정규식 구현을 생성합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UseRegexSourceGeneratorTitle">
+        <source>Convert to 'GeneratedRegexAttribute'.</source>
+        <target state="translated">'GeneratedRegexAttribute'로 변환합니다.</target>
+        <note />
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

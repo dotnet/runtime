@@ -1,0 +1,26 @@
+<Project>
+  <PropertyGroup>
+    <UseAllRuntimeComponents Condition="'$(UseAllRuntimeComponents)' == ''">false</UseAllRuntimeComponents>
+    <!-- Resolving _MonoRuntimeComponentManifestJsonFilePath:
+        First we resolve _RuntimeComponentManifestDir:
+            1) If it is a local build - use artifacts dir $(MonoArtifactsPath) or $(RuntimeBinDir) when building mono samples
+            2) If $(MicrosoftNetCoreAppRuntimePackRidDir) is resolved (like building on Helix) - use the resolved runtime pack dir
+        If the _RuntimeComponentManifestDir got resolved (ie is not empty) we set _MonoRuntimeComponentManifestJsonFilePath.
+        Otherwise, we fallback to resolution in RuntimeComponentsManifest.targets
+    -->
+    <_RuntimeComponentManifestDir Condition="'$(_RuntimeComponentManifestDir)' == '' and '$(BuildTestsOn)' != 'helix' and '$(MonoArtifactsPath)' != ''">$([MSBuild]::NormalizePath('$(MonoArtifactsPath)', 'build'))</_RuntimeComponentManifestDir>
+    <_RuntimeComponentManifestDir Condition="'$(_RuntimeComponentManifestDir)' == '' and '$(BuildTestsOn)' != 'helix' and '$(RuntimeBinDir)' != ''">$([MSBuild]::NormalizePath('$(RuntimeBinDir)', 'build'))</_RuntimeComponentManifestDir>
+    <_RuntimeComponentManifestDir Condition="'$(_RuntimeComponentManifestDir)' == '' and '$(MicrosoftNetCoreAppRuntimePackRidDir)' != ''">$([MSBuild]::NormalizePath('$(MicrosoftNetCoreAppRuntimePackRidDir)', 'build'))</_RuntimeComponentManifestDir>
+    <_RuntimeComponentManifestDir>$([MSBuild]::EnsureTrailingSlash('$(_RuntimeComponentManifestDir)'))</_RuntimeComponentManifestDir>
+    <_MonoRuntimeComponentManifestJsonFilePath Condition="'$(_MonoRuntimeComponentManifestJsonFilePath)' == '' and '$(_RuntimeComponentManifestDir)' != ''">$(_RuntimeComponentManifestDir)RuntimeComponentManifest.json</_MonoRuntimeComponentManifestJsonFilePath>
+  </PropertyGroup>
+
+  <UsingTask TaskName="MonoRuntimeComponentManifestReadTask" TaskFactory="JsonToItemsTaskFactory.JsonToItemsTaskFactory" AssemblyFile="$(MonoTargetsTasksAssemblyPath)">
+    <ParameterGroup>
+      <_MonoRuntimeComponentSharedLibExt ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
+      <_MonoRuntimeComponentStaticLibExt ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
+      <_MonoRuntimeComponentLinking ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
+      <_MonoRuntimeAvailableComponents ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
+    </ParameterGroup>
+  </UsingTask>
+</Project>

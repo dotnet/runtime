@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    cDAC source generator. Lives under gen/ so the auto-detect rule in
+    Directory.Build.props sets IsGeneratorProject=true, which imports
+    eng/generatorProjects.targets (defines GetAnalyzerPackFiles, used by
+    PackAsAnalyzer="true" in consuming packages).
+  -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>Microsoft.Diagnostics.DataContractReader.DataGenerator</RootNamespace>
+    <Nullable>enable</Nullable>
+    <IsRoslynComponent>true</IsRoslynComponent>
+    <!-- Generator does not ship on its own; flows inside the Abstractions
+         transport package as an analyzer asset and is linked directly by
+         Contracts via ProjectReference OutputItemType="Analyzer". -->
+    <IsShipping>false</IsShipping>
+    <IsPackable>false</IsPackable>
+    <AnalyzerLanguage>cs</AnalyzerLanguage>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- ExperimentalAttribute is injected by cdac\Directory.Build.props but does
+         not exist on netstandard2.0; remove it for this generator project. -->
+    <AssemblyAttribute Remove="System.Diagnostics.CodeAnalysis.ExperimentalAttribute" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="$(MicrosoftCodeAnalysisVersion_4_8)" PrivateAssets="all" />
+  </ItemGroup>
+
+</Project>

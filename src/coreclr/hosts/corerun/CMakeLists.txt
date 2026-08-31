@@ -1,0 +1,159 @@
+project(corerun)
+
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+
+set(CORERUN_IN_BROWSER 0)
+
+if(CLR_CMAKE_HOST_WIN32)
+    add_definitions(-DFX_VER_INTERNALNAME_STR=corerun.exe)
+else()
+    include(configure.cmake)
+endif()
+
+# Required to expose symbols for global symbol discovery.
+set(CLR_CMAKE_KEEP_NATIVE_SYMBOLS TRUE)
+
+if (CLR_CMAKE_HOST_APPLE)
+    # Prevent exporting symbols except for GetCurrentClrDetails from corerun. This is necessary
+    # to avoid a problem with local typeinfo for standard C++ EH types like std::bad_alloc,
+    # std::out_of_range etc. being exposed for binding for external shared libraries and causing
+    # mismatch in catch type matching.
+    add_link_options(LINKER:-exported_symbol,_GetCurrentClrDetails)
+endif()
+
+add_executable_clr(corerun
+  corerun.cpp
+  dotenv.cpp
+  native.rc
+)
+
+target_link_libraries(corerun PRIVATE minipal)
+
+if(CLR_CMAKE_HOST_WIN32)
+    target_link_libraries(corerun
+        PRIVATE
+        advapi32.lib
+        oleaut32.lib
+        uuid.lib
+        user32.lib
+        ${STATIC_MT_CRT_LIB}
+        ${STATIC_MT_VCRT_LIB}
+    )
+    # Enable CET-compatibility
+    if (CLR_CMAKE_HOST_ARCH_AMD64)
+        target_link_options(corerun PRIVATE "/CETCOMPAT")
+    endif()
+else()
+    if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
+        target_link_libraries(corerun PRIVATE ${CMAKE_DL_LIBS})
+        # Required to expose symbols for global symbol discovery
+        target_link_libraries(corerun PRIVATE -rdynamic)
+    endif()
+
+    # Android implements pthread natively.
+    # WASM, linking against pthreads indicates Node.js workers are
+    # enabled and not suitable for the browser.
+    if(NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
+        target_link_libraries(corerun PRIVATE pthread)
+    endif()
+    # Static linking
+    if (CLR_CMAKE_TARGET_ARCH_WASM)
+        target_sources(corerun PRIVATE ./wasm/pinvoke_override.cpp)
+        target_include_directories(corerun PRIVATE ./wasm/)
+        target_link_libraries(corerun PRIVATE
+            coreclr_static
+            System.IO.Compression.Native-Static
+            System.Native-Static
+            System.Native.TimeZoneData.Invariant)
+        if (TARGET coreclr_gen_static)
+            target_link_libraries(corerun PRIVATE coreclr_gen_static)
+        endif()
+
+        # additional requirements for System.IO.Compression.Native
+        include(${CLR_SRC_NATIVE_DIR}/libs/System.IO.Compression.Native/extra_libs.cmake)
+        append_extra_compression_libs(NATIVE_LIBS)
+
+        # linker options for NodeJs, link in JavaScript helper, access to local filesystem
+        if (CLR_CMAKE_TARGET_BROWSER)
+            target_link_libraries(corerun PRIVATE
+                System.Native.Browser-Static)
+            set(JS_SYSTEM_NATIVE_BROWSER
+                "${STATIC_LIB_DESTINATION}/libSystem.Native.Browser.js")
+            set(JS_SYSTEM_BROWSER_UTILS
+                "${STATIC_LIB_DESTINATION}/libSystem.Native.Browser.Utils.js")
+            set(JS_CORE_RUN_EXTPOST
+                "${CMAKE_CURRENT_SOURCE_DIR}/wasm/libCorerun.extpost.js")
+            set(JS_CORE_RUN
+                "${CMAKE_CURRENT_SOURCE_DIR}/wasm/libCorerun.js")
+            set_target_properties(corerun PROPERTIES
+                LINK_DEPENDS "${JS_CORE_RUN};${JS_CORE_RUN_EXTPOST};${JS_SYSTEM_NATIVE_BROWSER};${JS_SYSTEM_BROWSER_UTILS};"
+                LINK_FLAGS "--js-library ${JS_SYSTEM_NATIVE_BROWSER} --js-library ${JS_SYSTEM_BROWSER_UTILS} --js-library ${JS_CORE_RUN} --extern-post-js ${JS_CORE_RUN_EXTPOST}"
+                RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
+            if (CORERUN_IN_BROWSER)
+                target_link_options(corerun PRIVATE -sWASM_BIGINT=1)
+                # Include the virtual file system data for the browser scenario.
+                set(WASM_PRELOAD_DIR "${CMAKE_INSTALL_PREFIX}/IL")
+                if (EXISTS "${WASM_PRELOAD_DIR}")
+                    target_link_options(corerun PRIVATE --preload-file ${WASM_PRELOAD_DIR}@/)
+                endif()
+            else()
+                # Node.js doesn't have good support for WASM_BIGINT, so disable it for the Node/shell.
+                target_link_options(corerun PRIVATE -sWASM_BIGINT=0)
+
+                # remove HEAP64 and HEAPU64 from CMAKE_EMCC_EXPORTED_RUNTIME_METHODS
+                string(REPLACE "HEAP64," "" CMAKE_EMCC_EXPORTED_RUNTIME_METHODS "${CMAKE_EMCC_EXPORTED_RUNTIME_METHODS}")
+                string(REPLACE "HEAPU64," "" CMAKE_EMCC_EXPORTED_RUNTIME_METHODS "${CMAKE_EMCC_EXPORTED_RUNTIME_METHODS}")
+
+                # Add Node.js host file system support.
+                target_link_options(corerun PRIVATE -sNODERAWFS=1 -lnodefs.js)
+            endif()
+            target_link_options(corerun PRIVATE
+                -sINITIAL_MEMORY=134217728
+                -sMAXIMUM_MEMORY=4294967296
+                -sALLOW_MEMORY_GROWTH=1
+                -sGROWABLE_ARRAYBUFFERS=0
+                -sALLOW_TABLE_GROWTH=1
+                -sSTACK_SIZE=5MB
+                -sMODULARIZE=1
+                -sEXPORT_ES6=1
+                -sEXIT_RUNTIME=1
+                -sEXPORTED_RUNTIME_METHODS=CORERUN,ENV,${CMAKE_EMCC_EXPORTED_RUNTIME_METHODS}
+                -sEXPORTED_FUNCTIONS=_main,${CMAKE_EMCC_EXPORTED_FUNCTIONS}
+                -sEXPORT_NAME=createDotnetRuntime
+                -sENVIRONMENT=node,shell,web
+                -lexports.js
+                -Wl,--error-limit=0)
+        elseif (CLR_CMAKE_TARGET_WASI)
+            # wasm-component-ld wraps wasi:io@0.2.x imports into the WASI
+            # component-model; the default lld produces a plain core module
+            # the component-host can't instantiate. Absolute path is
+            # required because clang only recognizes well-known linker
+            # names (lld/bfd/gold/etc.) by short name.
+            get_filename_component(_wasi_sdk_bin "${CMAKE_C_COMPILER}" DIRECTORY)
+            set(_wasi_http_world_wit
+                "${CLR_DIR}/../libraries/System.Net.Http/src/System/Net/Http/WasiHttpHandler/WasiHttpWorld_component_type.wit")
+            target_link_options(corerun PRIVATE
+                "-fuse-ld=${_wasi_sdk_bin}/wasm-component-ld"
+                -Wl,-z,stack-size=8388608
+                -Wl,--initial-memory=134217728
+                -Wl,--max-memory=4294967296
+                "-Wl,--component-type,${_wasi_http_world_wit}")
+        endif()
+
+        if (CORERUN_IN_BROWSER)
+            # Install the HTML file for running in the browser.
+            install(FILES "./wasm/corerun.html" DESTINATION . COMPONENT hosts)
+        endif()
+    endif()
+endif(CLR_CMAKE_HOST_WIN32)
+
+if (CLR_CMAKE_HOST_APPLE)
+    adhoc_sign_with_entitlements(corerun "${CLR_ENG_NATIVE_DIR}/entitlements.plist")
+endif()
+
+install_clr(TARGETS corerun DESTINATIONS . COMPONENT hosts)
+
+# If there's a dynamic ASAN runtime, then install it in the directory where we put our executable.
+if (NOT "${ASAN_RUNTIME}" STREQUAL "")
+    install(FILES ${ASAN_RUNTIME} DESTINATION .)
+endif()

@@ -1,0 +1,7 @@
+<Directives>
+  <Application>
+    <Assembly Name="System.Private.CoreLib">
+      <Type Name="System.Collections.Generic.List`1[[Kerberos.NET.Configuration.SpakePreAuthGroupType,Kerberos.NET]]" Dynamic="Required All" />
+    </Assembly>
+  </Application>
+</Directives>

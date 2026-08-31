@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <ItemGroup>
+    <Compile Include="non_virtual_calls_to_instance_methods.il" />
+  </ItemGroup>
+</Project>

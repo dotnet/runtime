@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <CLRTestPriority>1</CLRTestPriority>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>PdbOnly</DebugType>
+    <NoWarn>$(NoWarn),8002</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Core.cs" />
+    <Compile Include="StandardSupport.cs" />
+    <ProjectReference Include="jmpwrappers.ilproj" />
+  </ItemGroup>
+</Project>

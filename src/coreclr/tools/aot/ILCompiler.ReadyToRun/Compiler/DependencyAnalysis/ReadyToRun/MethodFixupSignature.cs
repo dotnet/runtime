@@ -1,0 +1,226 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
+using System.Diagnostics;
+using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
+
+using Internal.JitInterface;
+using Internal.Text;
+using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
+using Internal.CorConstants;
+using Internal.ReadyToRunConstants;
+using ILCompiler.ReadyToRun.TypeSystem;
+
+namespace ILCompiler.DependencyAnalysis.ReadyToRun
+{
+    public class MethodFixupSignature : Signature
+    {
+        private readonly ReadyToRunFixupKind _fixupKind;
+
+        private readonly MethodWithToken _method;
+
+        public MethodFixupSignature(
+            ReadyToRunFixupKind fixupKind,
+            MethodWithToken method,
+            bool isInstantiatingStub)
+        {
+            _fixupKind = fixupKind;
+            _method = method;
+            IsInstantiatingStub = isInstantiatingStub;
+
+            // Ensure types in signature are loadable and resolvable, otherwise we'll fail later while emitting the signature
+            CompilerTypeSystemContext compilerContext = (CompilerTypeSystemContext)method.Method.Context;
+            compilerContext.EnsureLoadableMethod(method.Method);
+            compilerContext.EnsureLoadableType(_method.OwningType);
+
+            if (method.ConstrainedType != null && !method.ConstrainedType.IsRuntimeDeterminedSubtype)
+                compilerContext.EnsureLoadableType(method.ConstrainedType);
+        }
+
+        public MethodDesc Method => _method.Method;
+        public bool IsInstantiatingStub { get; }
+
+        public override int ClassCode => 150063499;
+
+        public bool IsUnboxingStub => _method.Unboxing;
+
+        public TypeDesc ConstrainedType => _method.ConstrainedType;
+
+        public bool NeedsInstantiationArg => _method.ConstrainedType?.IsCanonicalSubtype(CanonicalFormKind.Any) ?? false;
+
+        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        {
+            DependencyList list = base.ComputeNonRelocationBasedDependencies(factory);
+            MethodDesc canonMethod = Method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+            if (_fixupKind == ReadyToRunFixupKind.VirtualEntry &&
+                !Method.IsAbstract &&
+                !Method.HasInstantiation &&
+                !factory.CompilationModuleGroup.VersionsWithMethodBody(canonMethod) &&
+                factory.CompilationModuleGroup.CrossModuleCompileable(canonMethod) &&
+                factory.CompilationModuleGroup.ContainsMethodBody(canonMethod, false))
+            {
+                list = list ?? new DependencyList();
+                try
+                {
+                    factory.DetectGenericCycles(_method.Method, canonMethod);
+                    list.Add(factory.CompiledMethodNode(canonMethod), "Virtual function dependency on cross module inlineable method");
+                }
+                catch (TypeSystemException)
+                {
+                }
+            }
+
+            // For generic virtual method calls, create a virtual dependency node that will
+            // dynamically discover implementations on types as they are added to the graph.
+            if (_fixupKind == ReadyToRunFixupKind.VirtualEntry &&
+                Method.IsVirtual &&
+                Method.HasInstantiation &&
+                !Method.IsFinal &&
+                !Method.IsGenericMethodDefinition &&
+                !Method.OwningType.IsGenericDefinition &&
+                (Method.OwningType.IsInterface || !Method.OwningType.IsSealed()))
+            {
+                // Because methods with generic parameters are already compiled in their canonical form, we are only interested in finding
+                // instantiations of virtual methods that have at least one non-canonical argument (aka a valuetype).
+                if (HasNonCanonicalInstantiationArguments(canonMethod) && !factory.CanBeInGenericCycle(Method))
+                {
+                    list = list ?? new DependencyList();
+                    list.Add(factory.GVMDependencies(Method), "Virtual dispatch dependency");
+                }
+            }
+
+            // For non-GVM virtual method calls, mark the virtual slot as used so that
+            // conditional dependencies on InheritedVirtualMethodsNode can trigger compilation
+            // of concrete implementations.
+            if (_fixupKind == ReadyToRunFixupKind.VirtualEntry &&
+                Method.IsVirtual &&
+                !Method.HasInstantiation &&
+                !Method.IsFinal &&
+                !Method.OwningType.IsGenericDefinition)
+            {
+                list = list ?? new DependencyList();
+                list.Add(factory.VirtualMethodUse(canonMethod), "Non-GVM virtual slot use");
+            }
+
+            return list;
+        }
+
+        private static bool HasNonCanonicalInstantiationArguments(MethodDesc canonMethod)
+        {
+            TypeDesc canonType = canonMethod.Context.CanonType;
+            foreach (TypeDesc arg in canonMethod.Instantiation)
+            {
+                if (arg != canonType)
+                    return true;
+            }
+            return false;
+        }
+
+        public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
+        {
+            if (relocsOnly)
+            {
+                // Method fixup signature doesn't contain any direct relocs
+                return new ObjectData(data: Array.Empty<byte>(), relocs: null, alignment: 0, definedSymbols: null);
+            }
+
+            ObjectDataSignatureBuilder dataBuilder = new ObjectDataSignatureBuilder(factory, relocsOnly);
+            dataBuilder.AddSymbol(this);
+
+            // Optimize some of the fixups into a more compact form.
+            // The compact token forms cannot carry signature flags, so instantiating and unboxing
+            // stubs must use the full method signature.
+            ReadyToRunFixupKind fixupKind = _fixupKind;
+            bool optimized = false;
+            if (_method.Method.IsPrimaryMethodDesc() && !IsInstantiatingStub && !_method.Unboxing
+                && _method.ConstrainedType == null && fixupKind == ReadyToRunFixupKind.MethodEntry)
+            {
+                if (!_method.Method.HasInstantiation && !_method.Method.OwningType.HasInstantiation && !_method.Method.OwningType.IsArray)
+                {
+                    if (_method.Token.TokenType == CorTokenType.mdtMethodDef)
+                    {
+                        fixupKind = ReadyToRunFixupKind.MethodEntry_DefToken;
+                        optimized = true;
+                    }
+                    else if (_method.Token.TokenType == CorTokenType.mdtMemberRef)
+                    {
+                        if (!_method.OwningTypeNotDerivedFromToken)
+                        {
+                            fixupKind = ReadyToRunFixupKind.MethodEntry_RefToken;
+                            optimized = true;
+                        }
+                    }
+                }
+            }
+
+            MethodWithToken method = _method;
+
+            // If the method can be uniquely identified by a single token in the version bubble, use that instead of the full MethodSpec.
+            if (factory.CompilationModuleGroup.VersionsWithMethodBody(method.Method) && method.Method.IsPrimaryMethodDesc())
+            {
+                if (method.Token.TokenType == CorTokenType.mdtMethodSpec)
+                {
+                    method = new MethodWithToken(method.Method, factory.SignatureContext.GetModuleTokenForMethod(method.Method), method.ConstrainedType, unboxing: _method.Unboxing, null);
+                }
+                else if (!optimized && (method.Token.TokenType == CorTokenType.mdtMemberRef))
+                {
+                    if (method.Method.OwningType.GetTypeDefinition() is EcmaType)
+                    {
+                        method = new MethodWithToken(method.Method, factory.SignatureContext.GetModuleTokenForMethod(method.Method), method.ConstrainedType, unboxing: _method.Unboxing, null);
+                    }
+                }
+            }
+
+            SignatureContext innerContext = dataBuilder.EmitFixup(factory, fixupKind, method.Token.Module, factory.SignatureContext);
+
+            if (optimized && method.Token.TokenType == CorTokenType.mdtMethodDef)
+            {
+                dataBuilder.EmitMethodDefToken(method.Token);
+            }
+            else if (optimized && method.Token.TokenType == CorTokenType.mdtMemberRef)
+            {
+                dataBuilder.EmitMethodRefToken(method.Token);
+            }
+            else
+            {
+                dataBuilder.EmitMethodSignature(method, enforceDefEncoding: false, enforceOwningType: false, innerContext, IsInstantiatingStub);
+            }
+
+            return dataBuilder.ToObjectData();
+        }
+
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append(nameMangler.CompilationUnitPrefix);
+            sb.Append($@"MethodFixupSignature(");
+            sb.Append(_fixupKind.ToString());
+            if (IsInstantiatingStub)
+            {
+                sb.Append(" [INST]"u8);
+            }
+            if (_method.Method.IsAsyncVariant())
+            {
+                sb.Append(" [ASYNC]"u8);
+            }
+            sb.Append(": "u8);
+            _method.AppendMangledName(nameMangler, sb);
+        }
+
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
+        {
+            MethodFixupSignature otherNode = (MethodFixupSignature)other;
+            int result = ((int)_fixupKind).CompareTo((int)otherNode._fixupKind);
+            if (result != 0)
+                return result;
+
+            result = IsInstantiatingStub.CompareTo(otherNode.IsInstantiatingStub);
+            if (result != 0)
+                return result;
+
+            return _method.CompareTo(otherNode._method, comparer);
+        }
+    }
+}

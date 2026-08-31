@@ -1,0 +1,43 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+//*****************************************************************************
+// File: primitives.cpp
+//
+
+//
+// Platform-specific debugger primitives
+//
+//*****************************************************************************
+
+#include "primitives.h"
+
+
+//
+// CopyThreadContext() does an intelligent copy from pSrc to pDst,
+// respecting the ContextFlags of both contexts.
+//
+void CORDbgCopyThreadContext(DT_CONTEXT* pDst, const DT_CONTEXT* pSrc)
+{
+    DWORD dstFlags = pDst->ContextFlags;
+    DWORD srcFlags = pSrc->ContextFlags;
+    LOG((LF_CORDB, LL_INFO1000000,
+         "CP::CTC: pDst=%p dstFlags=0x%x, pSrc=%p srcFlags=0x%x\n",
+         (void*)pDst, dstFlags, (void*)pSrc, srcFlags));
+
+    if ((dstFlags & srcFlags & DT_CONTEXT_CONTROL) == DT_CONTEXT_CONTROL)
+        CopyContextChunk(&(pDst->Sp), &(pSrc->Sp), &(pDst->Fpscr),
+                         DT_CONTEXT_CONTROL);
+
+    if ((dstFlags & srcFlags & DT_CONTEXT_INTEGER) == DT_CONTEXT_INTEGER)
+        CopyContextChunk(&(pDst->R0), &(pSrc->R0), &(pDst->Sp),
+                         DT_CONTEXT_INTEGER);
+
+    if ((dstFlags & srcFlags & DT_CONTEXT_FLOATING_POINT) == DT_CONTEXT_FLOATING_POINT)
+        CopyContextChunk(&(pDst->Fpscr), &(pSrc->Fpscr), &(pDst->Bvr[0]),
+                         DT_CONTEXT_FLOATING_POINT);
+
+    if ((dstFlags & srcFlags & DT_CONTEXT_DEBUG_REGISTERS) ==
+        DT_CONTEXT_DEBUG_REGISTERS)
+        CopyContextChunk(&(pDst->Bvr[0]), &(pSrc->Bvr[0]), &(pDst->Wcr[DT_ARM_MAX_WATCHPOINTS]),
+                         DT_CONTEXT_DEBUG_REGISTERS);
+}

@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="System.Linq.Parallel.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
+    <ProjectReference Include="..\..\System.Collections.Concurrent\ref\System.Collections.Concurrent.csproj" />
+    <ProjectReference Include="..\..\System.Linq\ref\System.Linq.csproj" />
+    <ProjectReference Include="..\..\System.Collections\ref\System.Collections.csproj" />
+  </ItemGroup>
+</Project>

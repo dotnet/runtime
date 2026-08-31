@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <MergedWrapperProjectReference Include="*/**/*.??proj" />
+    <MergedWrapperProjectReference Remove="hfa/**/*.??proj" />
+    <MergedWrapperProjectReference Remove="mcc/**/*.??proj" />
+    <MergedWrapperProjectReference Remove="opt/**/*.??proj" />
+    <MergedWrapperProjectReference Remove="valuetypes/**/*.??proj" />
+  </ItemGroup>
+
+  <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
+</Project>

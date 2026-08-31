@@ -1,0 +1,229 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System.Diagnostics;
+using System.Runtime.Versioning;
+using System.Threading;
+
+#pragma warning disable CS1591
+
+namespace System.Transactions
+{
+    [UnsupportedOSPlatform("browser")]
+    public sealed class CommittableTransaction : Transaction, IAsyncResult
+    {
+        // Create a transaction with defaults
+        public CommittableTransaction() : this(TransactionManager.DefaultIsolationLevel, TransactionManager.DefaultTimeout)
+        {
+        }
+
+        // Create a transaction with the given info
+        public CommittableTransaction(TimeSpan timeout) : this(TransactionManager.DefaultIsolationLevel, timeout)
+        {
+        }
+
+        // Create a transaction with the given options
+        public CommittableTransaction(TransactionOptions options) : this(options.IsolationLevel, options.Timeout)
+        {
+        }
+
+        internal CommittableTransaction(IsolationLevel isoLevel, TimeSpan timeout) : base(isoLevel, (InternalTransaction?)null)
+        {
+            // object to use for synchronization rather than locking on a public object
+            _internalTransaction = new InternalTransaction(timeout, this);
+
+            // Because we passed null for the internal transaction to the base class, we need to
+            // fill in the traceIdentifier field here.
+            _internalTransaction._cloneCount = 1;
+            _cloneId = 1;
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
+            {
+                etwLog.TransactionCreated(TraceSourceType.TraceSourceLtm, TransactionTraceId, "CommittableTransaction");
+            }
+        }
+
+        public IAsyncResult BeginCommit(AsyncCallback? asyncCallback, object? asyncState)
+        {
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
+            {
+                etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
+                etwLog.TransactionCommit(TraceSourceType.TraceSourceLtm, TransactionTraceId, "CommittableTransaction");
+            }
+
+            ObjectDisposedException.ThrowIf(Disposed, this);
+
+            lock (_internalTransaction)
+            {
+                if (_complete)
+                {
+                    throw TransactionException.CreateTransactionCompletedException(DistributedTxId);
+                }
+
+                Debug.Assert(_internalTransaction.State != null);
+                // this.complete will get set to true when the transaction enters a state that is
+                // beyond Phase0.
+                _internalTransaction.State.BeginCommit(_internalTransaction, true, asyncCallback, asyncState);
+            }
+
+            if (etwLog.IsEnabled())
+            {
+                etwLog.MethodExit(TraceSourceType.TraceSourceLtm, this);
+            }
+
+            return this;
+        }
+
+        // Forward the commit to the state machine to take the appropriate action.
+        //
+        public void Commit()
+        {
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
+            {
+                etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
+                etwLog.TransactionCommit(TraceSourceType.TraceSourceLtm, TransactionTraceId, "CommittableTransaction");
+            }
+
+            ObjectDisposedException.ThrowIf(Disposed, this);
+
+            lock (_internalTransaction)
+            {
+                if (_complete)
+                {
+                    throw TransactionException.CreateTransactionCompletedException(DistributedTxId);
+                }
+
+                Debug.Assert(_internalTransaction.State != null);
+                _internalTransaction.State.BeginCommit(_internalTransaction, false, null, null);
+
+                // now that commit has started wait for the monitor on the transaction to know
+                // if the transaction is done.
+                do
+                {
+                    if (_internalTransaction.State.IsCompleted(_internalTransaction))
+                    {
+                        break;
+                    }
+                } while (Monitor.Wait(_internalTransaction));
+
+                _internalTransaction.State.EndCommit(_internalTransaction);
+            }
+
+            if (etwLog.IsEnabled())
+            {
+                etwLog.MethodExit(TraceSourceType.TraceSourceLtm, this);
+            }
+        }
+
+        internal override void InternalDispose()
+        {
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
+            {
+                etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
+            }
+
+            if (Interlocked.Exchange(ref _disposed, Transaction._disposedTrueValue) == Transaction._disposedTrueValue)
+            {
+                return;
+            }
+
+            Debug.Assert(_internalTransaction.State != null);
+            if (_internalTransaction.State.get_Status(_internalTransaction) == TransactionStatus.Active)
+            {
+                lock (_internalTransaction)
+                {
+                    // Since this is the root transaction do state based dispose.
+                    _internalTransaction.State.DisposeRoot(_internalTransaction);
+                }
+            }
+
+            // Attempt to clean up the internal transaction
+            long remainingITx = Interlocked.Decrement(ref _internalTransaction._cloneCount);
+            if (remainingITx == 0)
+            {
+                _internalTransaction.Dispose();
+            }
+
+            if (etwLog.IsEnabled())
+            {
+                etwLog.MethodExit(TraceSourceType.TraceSourceLtm, this);
+            }
+        }
+
+        public void EndCommit(IAsyncResult asyncResult)
+        {
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
+            {
+                etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
+            }
+
+            if (asyncResult != ((object)this))
+            {
+                throw new ArgumentException(SR.BadAsyncResult, nameof(asyncResult));
+            }
+
+            lock (_internalTransaction)
+            {
+                do
+                {
+                    Debug.Assert(_internalTransaction.State != null);
+                    if (_internalTransaction.State.IsCompleted(_internalTransaction))
+                    {
+                        break;
+                    }
+                } while (Monitor.Wait(_internalTransaction));
+
+                _internalTransaction.State.EndCommit(_internalTransaction);
+            }
+
+            if (etwLog.IsEnabled())
+            {
+                etwLog.MethodExit(TraceSourceType.TraceSourceLtm, this);
+            }
+        }
+
+        object? IAsyncResult.AsyncState => _internalTransaction._asyncState;
+
+        bool IAsyncResult.CompletedSynchronously => false;
+
+        WaitHandle IAsyncResult.AsyncWaitHandle
+        {
+            get
+            {
+                if (_internalTransaction._asyncResultEvent == null)
+                {
+                    lock (_internalTransaction)
+                    {
+                        if (_internalTransaction._asyncResultEvent == null)
+                        {
+                            Debug.Assert(_internalTransaction.State != null);
+                            // Demand create an event that is already signaled if the transaction has completed.
+                            ManualResetEvent temp = new ManualResetEvent(
+                                _internalTransaction.State.get_Status(_internalTransaction) != TransactionStatus.Active);
+
+                            _internalTransaction._asyncResultEvent = temp;
+                        }
+                    }
+                }
+
+                return _internalTransaction._asyncResultEvent;
+            }
+        }
+
+        bool IAsyncResult.IsCompleted
+        {
+            get
+            {
+                lock (_internalTransaction)
+                {
+                    Debug.Assert(_internalTransaction.State != null);
+                    return _internalTransaction.State.get_Status(_internalTransaction) != TransactionStatus.Active;
+                }
+            }
+        }
+    }
+}

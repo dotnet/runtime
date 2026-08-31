@@ -1,0 +1,190 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
+using System.Runtime.Versioning;
+using System.ServiceProcess;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+
+namespace Microsoft.Extensions.Hosting.WindowsServices
+{
+    /// <summary>
+    /// Listens for shutdown signal and tracks the status of the Windows service.
+    /// </summary>
+    [SupportedOSPlatform("windows")]
+    public class WindowsServiceLifetime : ServiceBase, IHostLifetime
+    {
+        private readonly TaskCompletionSource<object?> _delayStart = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource<object?> _serviceDispatcherStopped = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly ManualResetEventSlim _delayStop = new ManualResetEventSlim();
+        private readonly HostOptions _hostOptions;
+        private bool _serviceStopRequested;
+
+        /// <summary>
+        /// Initializes a new <see cref="WindowsServiceLifetime"/> instance.
+        /// </summary>
+        /// <param name="environment">Information about the host.</param>
+        /// <param name="applicationLifetime">The <see cref="IHostApplicationLifetime"/> that tracks the service lifetime.</param>
+        /// <param name="loggerFactory">The <see cref="ILoggerFactory"/> used to instantiate the lifetime logger.</param>
+        /// <param name="optionsAccessor">The <see cref="IOptions{HostOptions}"/> containing options for the service.</param>
+        public WindowsServiceLifetime(IHostEnvironment environment, IHostApplicationLifetime applicationLifetime, ILoggerFactory loggerFactory, IOptions<HostOptions> optionsAccessor)
+            : this(environment, applicationLifetime, loggerFactory, optionsAccessor, Options.Options.Create(new WindowsServiceLifetimeOptions()))
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="WindowsServiceLifetime"/> class.
+        /// </summary>
+        /// <param name="environment">Information about the host.</param>
+        /// <param name="applicationLifetime">The <see cref="IHostApplicationLifetime"/> that tracks the service lifetime.</param>
+        /// <param name="loggerFactory">The <see cref="ILoggerFactory"/> used to instantiate the lifetime logger.</param>
+        /// <param name="optionsAccessor">The <see cref="IOptions{HostOptions}"/> containing options for the service.</param>
+        /// <param name="windowsServiceOptionsAccessor">The Windows service options used to find the service name.</param>
+        public WindowsServiceLifetime(IHostEnvironment environment, IHostApplicationLifetime applicationLifetime, ILoggerFactory loggerFactory, IOptions<HostOptions> optionsAccessor, IOptions<WindowsServiceLifetimeOptions> windowsServiceOptionsAccessor)
+        {
+            ArgumentNullException.ThrowIfNull(environment);
+            ArgumentNullException.ThrowIfNull(applicationLifetime);
+            ArgumentNullException.ThrowIfNull(loggerFactory);
+            ArgumentNullException.ThrowIfNull(optionsAccessor);
+            ArgumentNullException.ThrowIfNull(windowsServiceOptionsAccessor);
+
+            Environment = environment;
+            ApplicationLifetime = applicationLifetime;
+            Logger = loggerFactory.CreateLogger("Microsoft.Hosting.Lifetime");
+            _hostOptions = optionsAccessor.Value;
+            ServiceName = windowsServiceOptionsAccessor.Value.ServiceName;
+            CanShutdown = true;
+        }
+
+        private IHostApplicationLifetime ApplicationLifetime { get; }
+        private IHostEnvironment Environment { get; }
+        private ILogger Logger { get; }
+
+        /// <summary>
+        /// Asynchronously waits until start is complete before continuing. This method is called at the beginning of <see cref="IHost.StartAsync(CancellationToken)" />. This can be used to delay startup until signaled by an external event.
+        /// </summary>
+        /// <param name="cancellationToken">
+        /// A cancellation token that indicates when stop should no longer be graceful.
+        /// </param>
+        /// <returns>
+        /// A task that represents the asynchronous waiting for start operation.
+        /// </returns>
+        public Task WaitForStartAsync(CancellationToken cancellationToken)
+        {
+            cancellationToken.Register(() => _delayStart.TrySetCanceled());
+            ApplicationLifetime.ApplicationStarted.Register(() =>
+            {
+                if (Logger.IsEnabled(LogLevel.Information))
+                {
+                    Logger.LogInformation("Application started. Hosting environment: {EnvName}; Content root path: {ContentRoot}",
+                    Environment.EnvironmentName, Environment.ContentRootPath);
+                }
+            });
+            ApplicationLifetime.ApplicationStopping.Register(() =>
+            {
+                Logger.LogInformation("Application is shutting down...");
+            });
+            ApplicationLifetime.ApplicationStopped.Register(_delayStop.Set);
+
+            Thread thread = new Thread(Run);
+            thread.IsBackground = true;
+            thread.Start(); // Otherwise this would block and prevent IHost.StartAsync from finishing.
+
+            return _delayStart.Task;
+        }
+
+        private void Run()
+        {
+            try
+            {
+                Run(this); // This blocks until the service is stopped.
+                _delayStart.TrySetException(new InvalidOperationException("Stopped without starting"));
+                _serviceDispatcherStopped.TrySetResult(null);
+            }
+            catch (Exception ex)
+            {
+                _delayStart.TrySetException(ex);
+                _serviceDispatcherStopped.TrySetException(ex);
+            }
+        }
+
+        /// <summary>
+        /// Asynchronously stops and shuts down the host. This method is called from <see cref="IHost.StopAsync(CancellationToken)" />.
+        /// </summary>
+        /// <param name="cancellationToken">
+        /// A cancellation token that indicates when stop should no longer be graceful.
+        /// </param>
+        /// <returns>
+        /// A task that represents the asynchronous stop operation.
+        /// </returns>
+        public async Task StopAsync(CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (!_serviceStopRequested)
+            {
+                await Task.Run(Stop, cancellationToken).ConfigureAwait(false);
+            }
+
+            // When the underlying service is stopped this will cause the ServiceBase.Run method to complete and return, which completes _serviceDispatcherStopped.
+            await _serviceDispatcherStopped.Task.ConfigureAwait(false);
+        }
+
+        // Called by base.Run when the service is ready to start.
+        /// <inheritdoc />
+        protected override void OnStart(string[] args)
+        {
+            _delayStart.TrySetResult(null);
+            base.OnStart(args);
+        }
+
+        /// <summary>
+        /// Executes when a Stop command is sent to the service by the Service Control Manager (SCM).
+        /// </summary>
+        /// <remarks>
+        /// Triggers <see cref="IHostApplicationLifetime.ApplicationStopping"/> and waits for <see cref="IHostApplicationLifetime.ApplicationStopped"/>.
+        /// Shortly after this method returns, the Service will be marked as stopped in SCM and the process might exit at any point.
+        /// </remarks>
+        protected override void OnStop()
+        {
+            _serviceStopRequested = true;
+            ApplicationLifetime.StopApplication();
+            // Wait for the host to shutdown before marking service as stopped.
+            _delayStop.Wait(_hostOptions.ShutdownTimeout);
+            base.OnStop();
+        }
+
+        /// <summary>
+        /// Executes when a Shutdown command is sent to the service by the Service Control Manager (SCM).
+        /// </summary>
+        /// <remarks>
+        /// Triggers <see cref="IHostApplicationLifetime.ApplicationStopping"/> and waits for <see cref="IHostApplicationLifetime.ApplicationStopped"/>.
+        /// Shortly after this method returns, the Service will be marked as stopped in SCM and the process might exit at any point.
+        /// </remarks>
+        protected override void OnShutdown()
+        {
+            _serviceStopRequested = true;
+            ApplicationLifetime.StopApplication();
+            // Wait for the host to shutdown before marking service as stopped.
+            _delayStop.Wait(_hostOptions.ShutdownTimeout);
+            base.OnShutdown();
+        }
+
+        /// <summary>
+        /// Releases the resources used by the <see cref="WindowsServiceLifetime"/>.
+        /// </summary>
+        /// <param name="disposing"><see langword="true" /> only when called from <see cref="IDisposable.Dispose"/>; otherwise, <see langword="false" />.</param>
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                _delayStop.Set();
+            }
+
+            base.Dispose(disposing);
+        }
+    }
+}

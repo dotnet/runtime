@@ -1,0 +1,24 @@
+<Project>
+  <!-- Property overrides -->
+  <PropertyGroup>
+    <_TasksDir Condition="'$(MSBuildRuntimeType)' == 'Core'">$(MSBuildThisFileDirectory)..\tasks\net\</_TasksDir>
+    <_TasksDir Condition="'$(MSBuildRuntimeType)' != 'Core'">$(MSBuildThisFileDirectory)..\tasks\netframework\</_TasksDir>
+
+    <WasmAppBuilderTasksAssemblyPath>$(_TasksDir)WasmAppBuilder.dll</WasmAppBuilderTasksAssemblyPath>
+    <WasmBuildTasksAssemblyPath>$(_TasksDir)WasmBuildTasks.dll</WasmBuildTasksAssemblyPath>
+    <WasmAppHostDir>$([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory), '..', 'WasmAppHost'))</WasmAppHostDir>
+
+    <!-- only for non-blazor projects -->
+    <WasmEmitSymbolMap Condition="'$(UsingMicrosoftNETSdkBlazorWebAssembly)' != 'true' and '$(UsingMicrosoftNETSdkWebAssembly)' != 'true' and '$(WasmEmitSymbolMap)' == '' and '$(RunAOTCompilation)' != 'true'">true</WasmEmitSymbolMap>
+  </PropertyGroup>
+
+  <!-- Mono and CoreCLR each get their own set of targets. BrowserWasmApp.props (and the
+       WasmApp.Common.props it imports) is Mono-only: it seeds target lists such as
+       WasmNestedPublishAppDependsOn with targets defined in WasmApp.Common.targets, which the
+       CoreCLR path does not import. CoreCLR needs no props counterpart: RuntimeIdentifier comes
+       from the WebAssembly SDK, and TargetOS/TargetArchitecture are only consumed in-tree, where
+       eng/OSArch.props derives them from the RID. -->
+  <Import Project="$(MSBuildThisFileDirectory)\BrowserWasmApp.props" Condition="'$(UseMonoRuntime)' != 'false'" />
+  <Import Project="$(MSBuildThisFileDirectory)\BrowserWasmApp.targets" Condition="'$(UseMonoRuntime)' != 'false'" />
+  <Import Project="$(MSBuildThisFileDirectory)\BrowserWasmApp.CoreCLR.targets" Condition="'$(UseMonoRuntime)' == 'false'" />
+</Project>

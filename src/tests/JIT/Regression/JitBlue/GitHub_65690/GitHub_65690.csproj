@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Needed for CLRTestEnvironmentVariable -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>None</DebugType>
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildProjectName).cs" />
+
+    <CLRTestEnvironmentVariable Include="DOTNET_JitDoValueNumber" Value="0" />
+    <CLRTestEnvironmentVariable Include="DOTNET_JitStressRegs" Value="3" />
+    <CLRTestEnvironmentVariable Include="DOTNET_TieredCompilation" Value="0" />
+  </ItemGroup>
+</Project>

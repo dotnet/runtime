@@ -1,0 +1,334 @@
+### VisualStudio ###
+
+# Tool Runtime Dir
+**/.dotnet/
+**/.packages/
+**/.tools/
+
+# User-specific files
+**/*.suo
+**/*.user
+**/*.userosscache
+**/*.sln.docstates
+
+# Build results
+**/artifacts/
+**/.idea/
+**/[Dd]ebug/
+**/[Dd]ebugPublic/
+**/[Rr]elease/
+**/[Rr]eleases/
+**/bld/
+**/[Bb]in/
+**/[Oo]bj/
+**/msbuild.log
+**/msbuild.err
+**/msbuild.wrn
+**/msbuild.binlog
+**/.deps/
+**/.dirstamp
+**/.libs/
+**/*.lo
+**/*.o
+
+# Cross building rootfs
+**/cross/rootfs/
+**/cross/android-rootfs/
+
+# Visual Studio
+**/.vs/
+
+# Ionide
+**/.ionide/
+
+# MSTest test Results
+**/[Tt]est[Rr]esult*/
+**/[Bb]uild[Ll]og.*
+
+#NUNIT
+**/*.VisualState.xml
+**/TestResult.xml
+
+# Build Results of an ATL Project
+**/[Dd]ebugPS/
+**/[Rr]eleasePS/
+**/dlldata.c
+
+**/*_i.c
+**/*_p.c
+**/*.ilk
+**/*.meta
+**/*.obj
+**/*.pch
+**/*.pdb
+!**/_.pdb
+**/*.pgc
+**/*.pgd
+**/*.rsp
+**/*.sbr
+**/*.tlb
+**/*.tli
+**/*.tlh
+**/*.tmp
+**/*.tmp_proj
+**/*.log
+**/*.vspscc
+**/*.vssscc
+**/.builds
+**/*.pidb
+**/*.svclog
+**/*.scc
+
+# Chutzpah Test files
+**/_Chutzpah*
+
+# Visual C++ cache files
+**/ipch/
+**/*.aps
+**/*.ncb
+**/*.opendb
+**/*.opensdf
+**/*.sdf
+**/*.cachefile
+**/*.VC.db
+
+# Visual Studio profiler
+**/*.psess
+**/*.vsp
+**/*.vspx
+
+# TFS 2012 Local Workspace
+**/$tf/
+
+# Guidance Automation Toolkit
+**/*.gpState
+
+# ReSharper is a .NET coding add-in
+**/_ReSharper*/
+**/*.[Rr]e[Ss]harper
+**/*.DotSettings.user
+
+# JustCode is a .NET coding addin-in
+**/.JustCode
+
+# TeamCity is a build add-in
+**/_TeamCity*
+
+# DotCover is a Code Coverage Tool
+**/*.dotCover
+
+# NCrunch
+**/_NCrunch_*
+**/.*crunch*.local.xml
+
+# MightyMoose
+**/*.mm.*
+**/AutoTest.Net/
+
+# Web workbench (sass)
+**/.sass-cache/
+
+# Installshield output folder
+**/[Ee]xpress/
+
+# DocProject is a documentation generator add-in
+**/DocProject/buildhelp/
+**/DocProject/Help/*.HxT
+**/DocProject/Help/*.HxC
+**/DocProject/Help/*.hhc
+**/DocProject/Help/*.hhk
+**/DocProject/Help/*.hhp
+**/DocProject/Help/Html2
+**/DocProject/Help/html
+
+# Publish Web Output
+**/*.[Pp]ublish.xml
+**/*.azurePubxml
+**/*.pubxml
+**/*.publishproj
+
+# NuGet Packages
+**/*.nupkg
+**/*.nuget.g.props
+**/*.nuget.g.targets
+**/*.nuget.cache
+**/**/packages/*
+**/project.lock.json
+**/project.assets.json
+**/*.nuget.dgspec.json
+
+# Windows Azure Build Output
+**/csx/
+**/*.build.csdef
+
+# Windows Store app package directory
+**/AppPackages/
+
+# Others
+**/*.Cache
+**/ClientBin/
+**/[Ss]tyle[Cc]op.*
+**/~$*
+**/*.dbmdl
+**/*.dbproj.schemaview
+**/*.pfx
+**/*.publishsettings
+**/node_modules/
+**/*.metaproj
+**/*.metaproj.tmp
+**/bin.localpkg/
+
+# RIA/Silverlight projects
+**/Generated_Code/
+
+# Backup & report files from converting an old project file
+# to a newer Visual Studio version. Backup files are not needed,
+# because we have git ;-)
+**/_UpgradeReport_Files/
+**/Backup*/
+**/UpgradeLog*.XML
+**/UpgradeLog*.htm
+
+# SQL Server files
+**/*.mdf
+**/*.ldf
+
+# Business Intelligence projects
+**/*.rdl.data
+**/*.bim.layout
+**/*.bim_*.settings
+
+# Microsoft Fakes
+**/FakesAssemblies/
+
+# C/C++ extension for Visual Studio Code
+**/browse.VC.db
+# Local settings folder for Visual Studio Code
+**/**/.vscode/**
+!**/**/.vscode/c_cpp_properties.json
+
+### MonoDevelop ###
+
+**/*.pidb
+**/*.userprefs
+
+### Windows ###
+
+# Windows image file caches
+**/Thumbs.db
+**/ehthumbs.db
+
+# Folder config file
+**/Desktop.ini
+
+# Recycle Bin used on file shares
+**/$RECYCLE.BIN/
+
+# Windows Installer files
+**/*.cab
+**/*.msi
+**/*.msm
+**/*.msp
+
+# Windows shortcuts
+**/*.lnk
+
+### Linux ###
+
+**/*~
+
+# KDE directory preferences
+**/.directory
+
+### OSX ###
+
+**/.DS_Store
+**/.AppleDouble
+**/.LSOverride
+
+# Icon must end with two \r
+**/Icon
+
+# Thumbnails
+**/._*
+
+# Files that might appear on external disk
+**/.Spotlight-V100
+**/.Trashes
+
+# Directories potentially created on remote AFP share
+**/.AppleDB
+**/.AppleDesktop
+**/Network Trash Folder
+**/Temporary Items
+**/.apdisk
+
+# vim temporary files
+**/[._]*.s[a-w][a-z]
+**/[._]s[a-w][a-z]
+**/*.un~
+**/Session.vim
+**/.netrwhist
+**/*~
+
+# Visual Studio Code
+**/.vscode/
+
+# Private test configuration and binaries.
+**/config.ps1
+**/**/IISApplications
+
+# VS debug support files
+**/launchSettings.json
+
+# Snapcraft files
+**/.snapcraft
+**/*.snap
+**/parts/
+**/prime/
+**/stage/
+
+# CLR prebuilt generated files
+!**/src/pal/prebuilt/idl/*_i.c
+
+# Valid 'debug' folder, that contains CLR debugging code
+!**/src/**/debug
+
+# Ignore folders created by the CLR test build
+**/TestWrappers_x64_[d|D]ebug
+**/TestWrappers_x64_[c|C]hecked
+**/TestWrappers_x64_[r|R]elease
+**/TestWrappers_x86_[d|D]ebug
+**/TestWrappers_x86_[c|C]hecked
+**/TestWrappers_x86_[r|R]elease
+**/TestWrappers_arm_[d|D]ebug
+**/TestWrappers_arm_[c|C]hecked
+**/TestWrappers_arm_[r|R]elease
+**/TestWrappers_arm64_[d|D]ebug
+**/TestWrappers_arm64_[c|C]hecked
+**/TestWrappers_arm64_[r|R]elease
+**/tests/src/common/test_runtime/project.json
+
+**/Vagrantfile
+**/.vagrant
+
+# CMake files
+**/CMakeFiles/
+**/cmake_install.cmake
+**/CMakeCache.txt
+**/Makefile
+
+# Cross compilation
+**/cross/rootfs/*
+**/cross/android-rootfs/*
+# add x86 as it is ignored in 'Build results'
+!**/cross/x86
+
+#python import files
+**/*.pyc
+
+# JIT32 files
+**/src/jit32
+
+# performance testing sandbox
+**/sandbox

@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-browser</TargetFrameworks>
+    <!-- The library is not supported on Android / Apple (PNSE) -->
+    <IgnoreForCI Condition="'$(TargetOS)' == 'android' or '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'osx' or '$(TargetOS)' == 'maccatalyst'">true</IgnoreForCI>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- https://github.com/dotnet/runtime/issues/126862 -->
+    <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
+    <EnableAotAnalyzer>false</EnableAotAnalyzer>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="AssemblyInfo.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
+             Link="Common\Interop\Unix\Interop.Libraries.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\ByteUtils.cs"
+             Link="CommonTest\System\Security\Cryptography\ByteUtils.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\PlatformSupport.cs"
+             Link="CommonTest\System\Security\Cryptography\PlatformSupport.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\CngKeyWrapper.cs"
+             Link="TestCommon\System\Security\Cryptography\CngKeyWrapper.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\SignatureSupport.cs"
+             Link="CommonTest\System\Security\Cryptography\SignatureSupport.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\RC2\RC2Factory.cs"
+             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\RC2\RC2Factory.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\PositionValueStream.cs"
+             Link="CommonTest\System\IO\PositionValueStream.cs" />
+    <Compile Include="RC2Provider.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="SafeEvpPKeyHandleTests.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs"
+             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs" />
+  </ItemGroup>
+</Project>

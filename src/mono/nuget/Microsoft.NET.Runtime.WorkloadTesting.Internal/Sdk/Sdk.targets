@@ -1,0 +1,13 @@
+<Project>
+  <PropertyGroup>
+    <!-- The current build lives in a stable, version-independent folder; only the pinned net8.0 build is
+         selected by the consuming project's own TFM. -->
+    <WorkloadBuildTasksAssemblyPath>$(MSBuildThisFileDirectory)..\tasks\net\WorkloadBuildTasks.dll</WorkloadBuildTasksAssemblyPath>
+    <WorkloadBuildTasksAssemblyPath Condition="'$(TargetFramework)' == 'net8.0'">$(MSBuildThisFileDirectory)..\tasks\net8.0\WorkloadBuildTasks.dll</WorkloadBuildTasksAssemblyPath>
+  </PropertyGroup>
+
+  <UsingTask TaskName="Microsoft.Workload.Build.Tasks.InstallWorkloadFromArtifacts"
+             AssemblyFile="$(WorkloadBuildTasksAssemblyPath)" />
+
+  <Import Project="WorkloadTesting.Core.targets" Condition="'$(TestUsingWorkloads)' == 'true'" />
+</Project>

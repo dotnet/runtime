@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <MonoAotIncompatible>true</MonoAotIncompatible>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>Full</DebugType>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="helper.il" />
+  </ItemGroup>
+</Project>

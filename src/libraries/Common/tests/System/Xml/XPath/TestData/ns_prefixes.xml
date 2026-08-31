@@ -1,0 +1,19 @@
+<document>
+	<elem xmlns:prefix="http://prefix1.htm">
+		<prefix:elem xmlns:prefix="http://prefix2.htm">
+			<prefix:elem xmlns:prefix="http://prefix3.htm">
+				<prefix:elem/>
+				<prefix:elem xmlns:prefix="http://prefix4.htm">
+					<prefix:elem/>
+				</prefix:elem>
+				<prefix:elem xmlns:prefix="http://prefix5.htm">
+					<prefix:elem/>
+				</prefix:elem>
+			</prefix:elem>
+		</prefix:elem>
+	</elem>
+	<elem xmlns:pre1="http://pre1.htm" xmlns:pre2="http://pre2.htm" xmlns:pre3="http://pre3.htm" xmlns:pre4="http://pre4.htm"/>
+</document>
+			
+			
+		

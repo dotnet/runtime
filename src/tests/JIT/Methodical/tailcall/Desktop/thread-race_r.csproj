@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Needed for IsLongRunningGCTest -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <IsLongRunningGCTest>true</IsLongRunningGCTest>
+    <CLRTestPriority>1</CLRTestPriority>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>PdbOnly</DebugType>
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="thread-race.cs" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+</Project>

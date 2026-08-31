@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(CDacTfm)</TargetFramework>
+    <RootNamespace>Microsoft.Diagnostics.DataContractReader</RootNamespace>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- Do not produce a public package. This ships as part of the runtime -->
+    <IsShipping>false</IsShipping>
+    <IsPackable>true</IsPackable>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!--
+      Pack the cDAC source generator into this transport package as an
+      analyzer asset. Anyone who PackageReferences the Abstractions package
+      (in particular downstream cDAC consumers writing their own [CdacType]
+      partial classes).
+
+      ReferenceOutputAssembly=false because we don't link the generator at
+      runtime; only its compiled output flows in the nupkg.
+    -->
+    <ProjectReference Include="..\gen\Microsoft.Diagnostics.DataContractReader.DataGenerator.csproj"
+                      ReferenceOutputAssembly="false"
+                      PackAsAnalyzer="true" />
+  </ItemGroup>
+</Project>

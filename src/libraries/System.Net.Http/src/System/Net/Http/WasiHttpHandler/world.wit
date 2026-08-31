@@ -1,0 +1,3 @@
+world wasi-http {
+  import outgoing-handler;
+}

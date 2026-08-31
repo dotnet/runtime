@@ -1,0 +1,17 @@
+﻿<out>
+  <test1>
+    <foo>
+      <bar>baz</bar>
+    </foo>
+  </test1>
+  <test2>
+    <foo>
+      <bar>baz</bar>
+    </foo>
+                    some text                  
+                </test2>
+  <test3>
+    <foo bar="value">text</foo>
+  </test3>
+  <test4>text</test4>
+</out>

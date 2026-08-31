@@ -1,0 +1,34 @@
+# Steps used to prepare the Artifacts Staging Directory with required files for
+# executing libraries tests as well as shared framework assets
+parameters:
+  isOfficialBuild: ''
+
+steps:
+  - ${{ if ne(parameters.isOfficialBuild, true) }}:
+    - task: CopyFiles@2
+      displayName: Prepare bin folders to publish (unofficial build)
+      inputs:
+        sourceFolder: $(Build.SourcesDirectory)/artifacts/bin
+        targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin
+        contents: |
+          ref/**
+          runtime/**
+          testhost/**
+          XUnitLogChecker/**
+
+  - task: CopyFiles@2
+    displayName: Prepare bin folders to publish
+    inputs:
+      sourceFolder: $(Build.SourcesDirectory)/artifacts/bin
+      targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin
+      contents: |
+        docs/**
+        microsoft.netcore.app.*/**
+        native/**
+  
+  - task: CopyFiles@2
+    displayName: Prepare artifacts packages folder to publish
+    inputs:
+      sourceFolder: $(Build.SourcesDirectory)/artifacts/packages
+      targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/packages
+    condition: and(succeeded(), eq(variables['_librariesBuildProducedPackages'], true))

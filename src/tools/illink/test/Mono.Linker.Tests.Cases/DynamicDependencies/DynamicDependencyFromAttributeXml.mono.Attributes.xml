@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<linker>
+	<assembly fullname="test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+		<type fullname="Mono.Linker.Tests.Cases.DynamicDependencies.DynamicDependencyFromAttributeXml">
+			<method name="DependencyToUnusedMethod">
+				<attribute fullname="System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute" assembly="Mono.Linker.Tests.Cases.Expectations">
+					<argument>UnusedMethod</argument>
+				</attribute>
+			</method>
+			<method name="DependencyToUnusedType">
+				<attribute fullname="System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute" assembly="Mono.Linker.Tests.Cases.Expectations">
+					<argument type="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes, test">All</argument>
+					<argument type="System.Type">Mono.Linker.Tests.Cases.DynamicDependencies.DynamicDependencyFromAttributeXml/NonUsedType</argument>
+				</attribute>
+			</method>
+		</type>
+	</assembly>
+</linker>

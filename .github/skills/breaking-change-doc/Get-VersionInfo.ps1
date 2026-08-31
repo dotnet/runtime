@@ -1,0 +1,594 @@
+# Get-VersionInfo.ps1
+# Determines the .NET version context for a merged PR using the GitHub CLI (gh).
+#
+# The reliable signal is the existence of release branches named
+#   release/<major>.<minor>-preview<N>   (and later -rc<N> / GA release/<major>.<minor>)
+# Once release/<M>.<m>-preview<N> exists, that preview has been branched off, so a
+# change merged to main lands in the *next* milestone -- following the standard .NET
+# cadence of $PreviewCount previews, then $RcCount RCs, then GA (so Preview 7 rolls
+# over to RC 1, and RC 2 to GA). Exceptions:
+#   * If the change was backported into an already-branched milestone, it ships there.
+#     A merged backport is found via commit containment (compare API); an unmerged one
+#     is found via the backport PR and reported as tentative.
+#   * For changes that already shipped in a past major (whose preview/RC branches were
+#     pruned), containment resolves only to the GA line, so release *tags* (which are
+#     never pruned) are scanned to recover the exact first preview/RC.
+#
+# Usage:
+#   pwsh .github/skills/breaking-change-doc/Get-VersionInfo.ps1 -PrNumber 114929
+#
+# Output: JSON object with EstimatedVersion, Tentative, DetectionMethod, HighestBranch,
+#         ContainedInBranch, FirstShippedTag, Backports, MergeCommit, MergedAt, BaseRef.
+
+param(
+    [Parameter(Mandatory = $true)]
+    [string]$PrNumber,
+
+    [string]$SourceRepo = "dotnet/runtime",
+
+    [string]$BaseRef = "",
+
+    # .NET release cadence: this many previews, then this many RCs, then GA.
+    # Used to predict the next milestone across Preview->RC and RC->GA transitions.
+    [int]$PreviewCount = 7,
+
+    [int]$RcCount = 2
+)
+
+$ErrorActionPreference = "Stop"
+
+# Parse a release branch name into a structured milestone.
+# Recognizes:
+#   release/11.0                -> GA
+#   release/11.0-preview6       -> Preview 6
+#   release/11.0-rc1            -> RC 1
+#   release/11.0-staging        -> GA (staging variant, treated as GA milestone)
+# Returns $null for non-release or unrecognized branch names.
+function ConvertFrom-ReleaseBranch {
+    param([string]$branchName)
+
+    if ($branchName -notmatch '^release/(\d+)\.(\d+)(?:-([a-zA-Z]+)(\d+)?)?$') {
+        return $null
+    }
+
+    $major = [int]$matches[1]
+    $minor = [int]$matches[2]
+    $label = if ($matches[3]) { $matches[3].ToLower() } else { $null }
+    $number = if ($matches[4]) { [int]$matches[4] } else { $null }
+
+    # Milestone ordering rank within a major.minor: previews < rc < GA.
+    switch ($label) {
+        "preview" { $kind = "preview"; $rank = 1000 + ($number ?? 0) }
+        "rc"      { $kind = "rc";      $rank = 2000 + ($number ?? 0) }
+        "staging" { $kind = "ga";      $rank = 3000 }
+        $null     { $kind = "ga";      $rank = 3000 }
+        default   { return $null }   # unrecognized label (e.g. release/11.0-rtm)
+    }
+
+    return [pscustomobject]@{
+        Major  = $major
+        Minor  = $minor
+        Kind   = $kind
+        Number = $number
+        Rank   = $rank
+        Branch = $branchName
+    }
+}
+
+# Format a milestone (kind + number) for a given major.minor as a docs-template
+# version string, e.g. ".NET 11 Preview 7", ".NET 11 RC 1", ".NET 11".
+function Format-Milestone {
+    param([int]$major, [int]$minor, [string]$kind, [Nullable[int]]$number)
+
+    $baseVersion = ".NET $major"
+    if ($minor -ne 0) {
+        $baseVersion = ".NET $major.$minor"
+    }
+
+    switch ($kind) {
+        "preview" { return "$baseVersion Preview $number" }
+        "rc"      { return "$baseVersion RC $number" }
+        default   { return $baseVersion }
+    }
+}
+
+# Compute the version a change merged to main would ship in, given the release branches
+# already cut for its major.minor. Follows the .NET cadence: $previewCount previews,
+# then $rcCount RCs, then GA -- so the milestone *after* the highest branched one, with
+# Preview N -> RC 1 and RC N -> GA rollovers. Returns the version string, the highest
+# branch name, and a human-readable detection note.
+function Get-NextMilestoneVersion {
+    param(
+        [pscustomobject[]]$milestones,
+        [pscustomobject]$devVersion,
+        [string]$baseRef,
+        [int]$previewCount,
+        [int]$rcCount
+    )
+
+    if (-not $milestones -or $milestones.Count -eq 0) {
+        return [pscustomobject]@{
+            Version       = Format-Milestone $devVersion.Major $devVersion.Minor "preview" 1
+            HighestBranch = "(none)"
+            Detection     = "Merged to '$baseRef'; no milestone branched yet for this version"
+        }
+    }
+
+    $highest = $milestones | Sort-Object Rank -Descending | Select-Object -First 1
+
+    switch ($highest.Kind) {
+        "preview" {
+            $version = if ($highest.Number -lt $previewCount) {
+                Format-Milestone $devVersion.Major $devVersion.Minor "preview" ($highest.Number + 1)
+            } else {
+                # Final preview branched -> next milestone is RC 1.
+                Format-Milestone $devVersion.Major $devVersion.Minor "rc" 1
+            }
+        }
+        "rc" {
+            $version = if ($highest.Number -lt $rcCount) {
+                Format-Milestone $devVersion.Major $devVersion.Minor "rc" ($highest.Number + 1)
+            } else {
+                # Final RC branched -> next milestone is GA.
+                Format-Milestone $devVersion.Major $devVersion.Minor "ga" $null
+            }
+        }
+        default {
+            # Highest branched milestone is GA:
+            # a change on main that isn't in it ships in the *next* major's first preview.
+            $version = Format-Milestone ($devVersion.Major + 1) 0 "preview" 1
+        }
+    }
+
+    return [pscustomobject]@{
+        Version       = $version
+        HighestBranch = $highest.Branch
+        Detection     = "Merged to '$baseRef'; ships after highest branched milestone '$($highest.Branch)'"
+    }
+}
+
+# Parse a .NET release tag (e.g. v11.0.0-preview.7.25380.108, v10.0.0-rc.1.xxx,
+# v10.0.0, v10.0.3) into a structured milestone. Unlike release branches, tags are
+# never pruned, so they preserve preview/RC granularity for already-shipped versions.
+function ConvertFrom-DotNetTag {
+    param([string]$tagName)
+
+    if ($tagName -notmatch '^v(\d+)\.(\d+)\.(\d+)(?:-(.+))?$') {
+        return $null
+    }
+
+    $major = [int]$matches[1]
+    $minor = [int]$matches[2]
+    $build = [int]$matches[3]
+    $prerelease = if ($matches[4]) { $matches[4] } else { $null }
+
+    $kind = "ga"
+    $number = $null
+    if ($prerelease) {
+        if ($prerelease -match '^([a-zA-Z]+)\.(\d+)') {
+            $raw = $matches[1]
+            $number = [int]$matches[2]
+            $kind = if ($raw -ieq "rc") { "rc" } elseif ($raw -ieq "preview") { "preview" } else { $raw.ToLower() }
+        } else {
+            $kind = "prerelease"
+        }
+    }
+
+    return [pscustomobject]@{
+        Major     = $major
+        Minor     = $minor
+        Build     = $build
+        Kind      = $kind
+        Number    = $number
+        IsRelease = ($null -eq $prerelease)
+        Tag       = $tagName
+    }
+}
+
+# Ordering key so preview < rc < GA within a patch, and lower patch first.
+function Get-TagSortKey {
+    param($t)
+
+    $sub = switch ($t.Kind) {
+        "preview" { 1000 + ($t.Number ?? 0) }
+        "rc"      { 2000 + ($t.Number ?? 0) }
+        "ga"      { 3000 }
+        default   { 500 }
+    }
+    return ($t.Build * 100000) + $sub
+}
+
+# Find the earliest published tag for a given major.minor that already contains the
+# merge commit. Used to recover exact preview/RC granularity when branch containment
+# only resolved to a (pruned) GA line. Only the tags for that major.minor are fetched
+# (server-side prefix filter). Returns the parsed tag, or $null.
+#
+# Containment is monotonic along release order: each tag on a major.minor line is a
+# superset of the previous one (preview N+1 includes preview N, GA includes all
+# previews/RCs, each servicing release includes GA). So the candidates -- sorted into
+# chronological release order by Get-TagSortKey -- form a false*..true* sequence, and
+# the earliest containing tag can be found with a binary search (~log2(n) compare-API
+# calls) instead of probing every candidate linearly.
+function Get-EarliestContainingTag {
+    param([string]$repo, [string]$commit, [int]$major, [int]$minor)
+
+    if (-not $commit) { return $null }
+
+    # Fetch only the tags for this major.minor via a server-side prefix filter
+    # (git/matching-refs) instead of paginating every tag in the repo. The trailing
+    # dot scopes the match to v<major>.<minor>.* (e.g. v9.0.0, v9.0.0-preview.4,
+    # v9.0.10). This endpoint returns HTTP 200 with an empty array (not 404) when
+    # nothing matches, so the exit-code check below stays valid.
+    $refs = @(gh api "repos/$repo/git/matching-refs/tags/v$major.$minor." --paginate --jq '.[].ref' 2>$null)
+    if ($LASTEXITCODE -ne 0) { return $null }
+
+    $candidates = @(
+        $refs |
+        ForEach-Object { ConvertFrom-DotNetTag ($_ -replace '^refs/tags/', '') } |
+        Where-Object { $_ -and $_.Major -eq $major -and $_.Minor -eq $minor } |
+        Sort-Object { Get-TagSortKey $_ }
+    )
+    if ($candidates.Count -eq 0) { return $null }
+
+    $lo = 0
+    $hi = $candidates.Count - 1
+    $earliest = $null
+    while ($lo -le $hi) {
+        $mid = [int](($lo + $hi) / 2)
+        if (Test-CommitInBranch -repo $repo -commit $commit -branch $candidates[$mid].Tag) {
+            $earliest = $candidates[$mid]
+            $hi = $mid - 1   # a containing tag exists; look for an earlier one
+        } else {
+            $lo = $mid + 1
+        }
+    }
+    return $earliest
+}
+
+# Has major.minor reached GA? True when the exact GA tag vN.M.0 exists (ignoring
+# prerelease tags like vN.M.0-preview/-rc). Used to tell a *pre-GA* release/N.M branch
+# -- which is cut at the RC1 fork, months before GA, and parsed as a GA milestone by
+# name -- apart from a shipped GA/servicing branch.
+function Test-GATagExists {
+    param([string]$repo, [int]$major, [int]$minor)
+
+    $refs = @(gh api "repos/$repo/git/matching-refs/tags/v$major.$minor.0" --jq '.[].ref' 2>$null)
+    if ($LASTEXITCODE -ne 0) { return $false }
+    foreach ($r in $refs) {
+        if (($r -replace '^refs/tags/', '') -eq "v$major.$minor.0") { return $true }
+    }
+    return $false
+}
+
+# Refine a milestone parsed from a bare `release/N.M` branch to the stage it is heading
+# toward. A bare release/N.M branch is cut around the RC1 fork -- months before GA --
+# yet is parsed as a GA milestone by name. A separate `release/N.M-rc<K>` branch exists
+# for each RC that has been taken; the bare branch keeps stabilizing toward the *next* stage.
+# So the highest rc branch number present indicates how far along the bare branch is:
+# if the product has not GA'd (no vN.M.0 tag), map the highest existing rc branch number K to the bare
+# branch's stage:
+#   no rc branch yet -> RC 1 (just forked); rc<K> exists -> RC (K+1); the final RC
+#   (rcCount) branch exists -> heading to GA. Returns the milestone unchanged when it
+#   already GA'd, isn't a GA-kind milestone, or the rc lookup fails.
+function Resolve-ReleaseBranchStage {
+    param([string]$repo, [pscustomobject]$milestone, [int]$rcCount = 2)
+
+    if (-not $milestone -or $milestone.Kind -ne 'ga') { return $milestone }
+    if (Test-GATagExists -repo $repo -major $milestone.Major -minor $milestone.Minor) { return $milestone }
+
+    $rcRefs = @(gh api "repos/$repo/git/matching-refs/heads/release/$($milestone.Major).$($milestone.Minor)-rc" --jq '.[].ref' 2>$null)
+    if ($LASTEXITCODE -ne 0) { return $milestone }
+
+    $highestRc = @(
+        $rcRefs |
+        ForEach-Object { ConvertFrom-ReleaseBranch ($_ -replace '^refs/heads/', '') } |
+        Where-Object { $_ -and $_.Kind -eq 'rc' -and $_.Major -eq $milestone.Major -and $_.Minor -eq $milestone.Minor } |
+        Sort-Object Rank -Descending |
+        Select-Object -First 1
+    )
+
+    $k = if ($highestRc) { $highestRc.Number } else { 0 }
+    if ($k -ge $rcCount) {
+        # The final RC branch already exists -> the bare branch heads to GA (unchanged).
+        return $milestone
+    }
+
+    $next = $k + 1
+    return [pscustomobject]@{
+        Major  = $milestone.Major
+        Minor  = $milestone.Minor
+        Kind   = 'rc'
+        Number = $next
+        Rank   = 2000 + $next
+        Branch = $milestone.Branch
+    }
+}
+
+# Read MajorVersion/MinorVersion from eng/Versions.props at a specific ref.
+# This is the authoritative source for the in-development major.minor on main.
+function Get-DevMajorMinor {
+    param([string]$repo, [string]$ref)
+
+    try {
+        $content = gh api "repos/$repo/contents/eng/Versions.props?ref=$ref" -H "Accept: application/vnd.github.raw" 2>$null
+        if ($LASTEXITCODE -ne 0 -or -not $content) {
+            return $null
+        }
+        $text = ($content | Out-String)
+        if ($text -match '<MajorVersion>(\d+)</MajorVersion>' ) {
+            $maj = [int]$matches[1]
+            $min = 0
+            if ($text -match '<MinorVersion>(\d+)</MinorVersion>') {
+                $min = [int]$matches[1]
+            }
+            return [pscustomobject]@{ Major = $maj; Minor = $min }
+        }
+    } catch { }
+
+    return $null
+}
+
+# Is the merge commit already contained in the given branch?
+# True when the milestone branched after the PR merged (normal case), or when a
+# backport was already merged into the branch.
+function Test-CommitInBranch {
+    param([string]$repo, [string]$commit, [string]$branch)
+
+    if (-not $commit) { return $false }
+    $behind = gh api "repos/$repo/compare/$commit...$branch" --jq '.behind_by' 2>$null
+    return ($LASTEXITCODE -eq 0 -and $behind -match '^\d+$' -and [int]$behind -eq 0)
+}
+
+# Find *potential* backport PRs for a source PR via GitHub's cross-reference graph.
+# A backport PR is almost always cross-referenced from the primary PR (through its
+# body, a comment, or the backport tooling), regardless of its head-branch name --
+# which makes this far more robust than matching a branch naming convention (real
+# backports use ad-hoc names, and branches are deleted after merge). The primary PR's
+# timeline yields candidate PR numbers; a single GraphQL batch resolves each one's
+# base branch and state; and we keep only those targeting a release branch.
+#
+# NOTE: these are *candidates only*. A cross-reference does not prove a PR is a
+# backport of this change, so the caller (skill) should confirm via the PR's
+# title/description/diff before trusting it.
+function Get-BackportPRs {
+    param([string]$repo, [string]$prNumber)
+
+    # Cross-references can point at PRs in *other* repos (e.g. VMR codeflow PRs from
+    # dotnet/dotnet). Filter to same-repo PRs up front (via source.issue.repository)
+    # so the GraphQL batch only asks for numbers that exist in this repo.
+    # Capture the call separately and check the exit code: on failure, warn and return
+    # no candidates rather than failing silently. Backport detection only enriches the
+    # result (it can make a version tentative), so a timeline hiccup shouldn't abort the
+    # whole version detection -- but the warning ensures the gap is visible in the log.
+    $timeline = gh api "repos/$repo/issues/$prNumber/timeline" --paginate `
+        --jq ".[] | select(.event==`"cross-referenced`") | select(.source.issue.pull_request != null) | select(.source.issue.repository.full_name == `"$repo`") | .source.issue.number" 2>$null
+    if ($LASTEXITCODE -ne 0) {
+        Write-Warning "Failed to read cross-references from the issue timeline for $repo#$prNumber; proceeding without backport candidates."
+        return @()
+    }
+    $candidateNumbers = @($timeline | Sort-Object -Unique)
+    if ($candidateNumbers.Count -eq 0) { return @() }
+
+    $parts = $repo -split '/'
+    $owner = $parts[0]
+    $name = $parts[1]
+
+    # Build a single batched GraphQL query with one alias per candidate.
+    $aliases = for ($i = 0; $i -lt $candidateNumbers.Count; $i++) {
+        "p${i}: pullRequest(number: $($candidateNumbers[$i])) { number state merged baseRefName title }"
+    }
+    $query = 'query($owner:String!,$name:String!){ repository(owner:$owner,name:$name){ ' + ($aliases -join ' ') + ' } }'
+
+    $resp = gh api graphql -f owner=$owner -f name=$name -f query=$query 2>$null
+    if ($LASTEXITCODE -ne 0 -or -not $resp) {
+        Write-Warning "Failed to resolve backport PR metadata via GraphQL for $repo#$prNumber; proceeding without backport candidates."
+        return @()
+    }
+    $repository = ($resp | ConvertFrom-Json).data.repository
+    if (-not $repository) { return @() }
+
+    $results = @()
+    foreach ($prop in $repository.PSObject.Properties) {
+        $pr = $prop.Value
+        if (-not $pr) { continue }
+        # Only PRs targeting a release branch are plausible backports.
+        $milestone = ConvertFrom-ReleaseBranch $pr.baseRefName
+        if (-not $milestone) { continue }
+        $results += [pscustomobject]@{
+            Number       = $pr.number
+            State        = $pr.state    # OPEN | CLOSED | MERGED
+            Merged       = [bool]$pr.merged
+            TargetBranch = $pr.baseRefName
+            Title        = $pr.title
+            Milestone    = $milestone
+        }
+    }
+
+    return $results
+}
+
+try {
+    # Step 1: PR merge info
+    $prJson = gh pr view $PrNumber --repo $SourceRepo --json mergeCommit,mergedAt,baseRefName 2>$null
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to fetch PR #$PrNumber from $SourceRepo"
+    }
+    $prData = $prJson | ConvertFrom-Json
+
+    $mergeCommit = $prData.mergeCommit.oid
+    $mergedAt = $prData.mergedAt
+    if (-not $BaseRef) {
+        $BaseRef = $prData.baseRefName
+    }
+
+    # Step 2: If the PR merged directly into a release branch, the milestone is that
+    # branch's milestone -- no further estimation needed. Refine a bare pre-GA
+    # release/N.M to its current RC stage (see Resolve-ReleaseBranchStage).
+    $baseMilestone = if ($BaseRef -match '^release/') { ConvertFrom-ReleaseBranch $BaseRef } else { $null }
+
+    if ($baseMilestone) {
+        $baseMilestone = Resolve-ReleaseBranchStage -repo $SourceRepo -milestone $baseMilestone -rcCount $RcCount
+        $estimated = Format-Milestone $baseMilestone.Major $baseMilestone.Minor $baseMilestone.Kind $baseMilestone.Number
+        @{
+            EstimatedVersion = $estimated
+            Tentative        = $false
+            DetectionMethod  = "PR merged directly into release branch '$BaseRef'"
+            MergeCommit      = $mergeCommit
+            MergedAt         = $mergedAt
+            BaseRef          = $BaseRef
+        } | ConvertTo-Json
+        return
+    }
+
+    # Step 3: Determine the in-development major.minor for main.
+    $devVersion = Get-DevMajorMinor -repo $SourceRepo -ref $mergeCommit
+    if (-not $devVersion) {
+        $devVersion = Get-DevMajorMinor -repo $SourceRepo -ref $BaseRef
+    }
+
+    # Step 4: Enumerate release branches for that major.minor.
+    $branchNames = @(gh api "repos/$SourceRepo/branches" --paginate --jq '.[].name' 2>$null)
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to list branches for $SourceRepo"
+    }
+
+    $allMilestones = @($branchNames | ForEach-Object { ConvertFrom-ReleaseBranch $_ } | Where-Object { $_ -ne $null })
+
+    # If we could not read the dev version, fall back to the highest major.minor
+    # that has any release branch.
+    if (-not $devVersion -and $allMilestones.Count -gt 0) {
+        $top = $allMilestones | Sort-Object Major, Minor -Descending | Select-Object -First 1
+        $devVersion = [pscustomobject]@{ Major = $top.Major; Minor = $top.Minor }
+    }
+
+    if (-not $devVersion) {
+        throw "Could not determine the in-development major.minor version."
+    }
+
+    $milestones = @($allMilestones | Where-Object { $_.Major -eq $devVersion.Major -and $_.Minor -eq $devVersion.Minor })
+
+    # Collect *potential* backport PRs (cross-referenced from this PR and targeting a
+    # release branch). Surface all of them -- including cross-major servicing backports
+    # -- as informational output; they are candidates the skill should confirm.
+    $backports = @(Get-BackportPRs -repo $SourceRepo -prNumber $PrNumber)
+    $backportInfo = @($backports | ForEach-Object {
+        [pscustomobject]@{ Number = $_.Number; State = $_.State; Merged = $_.Merged; Target = $_.TargetBranch; Title = $_.Title }
+    })
+
+    # Step 5a: If *this PR's merge commit itself* is contained in an existing milestone
+    # branch, the change definitively ships in that milestone (lowest such milestone).
+    # This is the normal "milestone branched after merge" case. Note it does NOT catch
+    # cherry-pick backports, whose commit differs from this PR's -- those are handled
+    # (tentatively) in Step 5b.
+    $containing = $null
+    foreach ($m in ($milestones | Sort-Object Rank)) {
+        if (Test-CommitInBranch -repo $SourceRepo -commit $mergeCommit -branch $m.Branch) {
+            $containing = $m
+            break
+        }
+    }
+
+    if ($containing) {
+        $detection = "Merge commit is already contained in branched milestone '$($containing.Branch)'"
+        $firstShippedTag = $null
+        $estimated = Format-Milestone $containing.Major $containing.Minor $containing.Kind $containing.Number
+
+        # Refinement: preview/RC branches are pruned after a major ships, so containment
+        # on a GA branch loses granularity. Recover the exact first preview/RC from the
+        # persistent release tags.
+        if ($containing.Kind -eq "ga") {
+            $tag = Get-EarliestContainingTag -repo $SourceRepo -commit $mergeCommit -major $containing.Major -minor $containing.Minor
+            if ($tag) {
+                $estimated = Format-Milestone $tag.Major $tag.Minor $tag.Kind $tag.Number
+                $firstShippedTag = $tag.Tag
+                $detection = "First shipped in tag '$($tag.Tag)' (refined from GA branch '$($containing.Branch)')"
+            }
+        }
+
+        @{
+            EstimatedVersion    = $estimated
+            Tentative           = $false
+            DetectionMethod     = $detection
+            HighestBranch       = ($milestones | Sort-Object Rank -Descending | Select-Object -First 1).Branch
+            ContainedInBranch   = $containing.Branch
+            FirstShippedTag     = $firstShippedTag
+            Backports           = $backportInfo
+            MergeCommit         = $mergeCommit
+            MergedAt            = $mergedAt
+            BaseRef             = $BaseRef
+        } | ConvertTo-Json -Depth 5
+        return
+    }
+
+    # Step 5b: Not contained by commit. A *linked* PR targeting an earlier branched
+    # milestone of the same major.minor suggests the change may also ship there (e.g.
+    # via a cherry-pick backport, whose commit differs from this PR's so containment
+    # can't see it). But a "backport" here is only "a linked PR to a release branch" and
+    # is NOT verified, so it is never definitive: report that milestone but mark the
+    # version **tentative** for the skill to confirm. Consider OPEN and MERGED linked
+    # PRs (a merged one may already be shipped there); ignore CLOSED (abandoned) ones.
+    $tentativeBackport = $backports |
+        Where-Object { ($_.State -eq 'OPEN' -or $_.State -eq 'MERGED') -and $_.Milestone -and $_.Milestone.Major -eq $devVersion.Major -and $_.Milestone.Minor -eq $devVersion.Minor } |
+        Sort-Object { $_.Milestone.Rank } |
+        Select-Object -First 1
+
+    if ($tentativeBackport) {
+        # RC-precision refinement: the target may be a bare pre-GA release/N.M branch
+        # (GA milestone by name but really heading to an RC stage). Resolve it to the
+        # stage it is heading toward. This only refines the reported backport version;
+        # the main-PR next-milestone prediction below still treats the bare branch as GA
+        # so it can roll over to the next major.
+        $origMilestone = $tentativeBackport.Milestone
+        $bm = Resolve-ReleaseBranchStage -repo $SourceRepo -milestone $origMilestone -rcCount $RcCount
+        $refinedNote = if ($bm.Kind -ne $origMilestone.Kind -or $bm.Number -ne $origMilestone.Number) {
+            " '$($tentativeBackport.TargetBranch)' is a pre-GA branch heading to the $(Format-Milestone $bm.Major $bm.Minor $bm.Kind $bm.Number) stage."
+        } else { "" }
+
+        $estimated = Format-Milestone $bm.Major $bm.Minor $bm.Kind $bm.Number
+        $stateNote = if ($tentativeBackport.State -eq 'MERGED') {
+            "merged into '$($tentativeBackport.TargetBranch)' (may already ship there)"
+        } else {
+            "open against '$($tentativeBackport.TargetBranch)' (would ship there if it merges)"
+        }
+
+        # The version if the linked PR turns out NOT to be a genuine backport: the
+        # normal "ships after highest branched milestone" result. Provided so the skill
+        # doesn't have to re-derive the cadence rollover itself.
+        $fallback = Get-NextMilestoneVersion -milestones $milestones -devVersion $devVersion -baseRef $BaseRef -previewCount $PreviewCount -rcCount $RcCount
+
+        @{
+            EstimatedVersion = $estimated
+            Tentative        = $true
+            DetectionMethod  = "Potential backport PR #$($tentativeBackport.Number) $stateNote;$refinedNote version is tentative -- confirm the PR is a genuine backport of this change (title/description/diff). If it is NOT, use FallbackVersion instead."
+            FallbackVersion  = $fallback.Version
+            HighestBranch    = $fallback.HighestBranch
+            Backports        = $backportInfo
+            MergeCommit      = $mergeCommit
+            MergedAt         = $mergedAt
+            BaseRef          = $BaseRef
+        } | ConvertTo-Json -Depth 5
+        return
+    }
+
+    # Step 6: Not contained and no relevant linked PR -> ships in the milestone *after*
+    # the highest branched one (cadence-aware; see Get-NextMilestoneVersion).
+    $next = Get-NextMilestoneVersion -milestones $milestones -devVersion $devVersion -baseRef $BaseRef -previewCount $PreviewCount -rcCount $RcCount
+
+    @{
+        EstimatedVersion = $next.Version
+        Tentative        = $false
+        DetectionMethod  = $next.Detection
+        HighestBranch    = $next.HighestBranch
+        Backports        = $backportInfo
+        MergeCommit      = $mergeCommit
+        MergedAt         = $mergedAt
+        BaseRef          = $BaseRef
+    } | ConvertTo-Json -Depth 5
+
+} catch {
+    @{
+        EstimatedVersion = "Next release"
+        DetectionMethod  = "error"
+        Error            = $_.Exception.Message
+    } | ConvertTo-Json
+}

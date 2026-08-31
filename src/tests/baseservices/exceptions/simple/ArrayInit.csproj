@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <CLRTestPriority>1</CLRTestPriority>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="ArrayInit.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="VT.ilproj" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,10 @@
+<Project>
+
+  <!-- The list of redistributed assemblies that also ship via out-of-band packages.
+       Includes the AssemblyName, PackageId and the PackageVersion:
+       <RuntimeWindowsDesktopPackageLibrary Include="" PackageId="" PackageVersion="" /> -->
+  <ItemGroup>
+    ${RuntimeWindowsDesktopPackageLibraries}
+  </ItemGroup>
+
+</Project>

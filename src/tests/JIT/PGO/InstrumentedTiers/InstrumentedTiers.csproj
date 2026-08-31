@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Needed for CLRTestBatchEnvironmentVariable -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="InstrumentedTiers.cs" />
+
+    <CLRTestBatchEnvironmentVariable Include="DOTNET_TieredCompilation" Value="1" />
+    <CLRTestBatchEnvironmentVariable Include="DOTNET_TieredPGO" Value="1" />
+    <CLRTestBatchEnvironmentVariable Include="DOTNET_TieredPGO_InstrumentOnlyHotCode" Value="1" />
+  </ItemGroup>
+</Project>

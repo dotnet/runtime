@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Needed for others -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <!-- TODO: Re-enable when browser OOP host actions can run configuration variants and import their results.
+         Tracked by https://github.com/dotnet/runtime/issues/131321. -->
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">true</CLRTestTargetUnsupported>
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+    <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'Mono'">true</DisableProjectBuild>
+    <DefineConstants>$(DefineConstants);IS_TESTER_APP</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildProjectName).cs" />
+    <Compile Include="TestConfig.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)TestConfig.csproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <OutputItemType>Content</OutputItemType>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </ProjectReference>
+  </ItemGroup>
+</Project>

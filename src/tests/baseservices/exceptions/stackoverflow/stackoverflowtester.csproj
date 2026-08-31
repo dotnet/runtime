@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Needed for CLRTestTargetUnsupported, SuperPMICollectIncompatible -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <!-- TODO: Re-enable when browser OOP host actions can run crashing child processes and import their results.
+         Tracked by https://github.com/dotnet/runtime/issues/131321. -->
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">true</CLRTestTargetUnsupported>
+    <Optimize>false</Optimize>
+    <!-- Exception handling in this test is incompatible with SuperPMI collection. See https://github.com/dotnet/runtime/issues/108215. -->
+    <SuperPMICollectIncompatible>true</SuperPMICollectIncompatible>
+    <!-- needs triage -->
+    <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'mono'">true</DisableProjectBuild>
+    <!-- Requires corerun -->
+    <NativeAotIncompatible>true</NativeAotIncompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="stackoverflowtester.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+</Project>

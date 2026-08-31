@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<asn:Sequence
+  xmlns:asn="http://schemas.dot.net/asnxml/201808/"
+  name="KeyAgreeRecipientInfoAsn"
+  namespace="System.Security.Cryptography.Pkcs.Asn1">
+
+  <!--
+    https://tools.ietf.org/html/rfc5652#section-6.2.2
+
+    KeyAgreeRecipientInfo ::= SEQUENCE {
+        version CMSVersion,  - always set to 3
+        originator[0] EXPLICIT OriginatorIdentifierOrKey,
+        ukm[1] EXPLICIT UserKeyingMaterial OPTIONAL,
+        keyEncryptionAlgorithm KeyEncryptionAlgorithmIdentifier,
+        recipientEncryptedKeys RecipientEncryptedKeys
+    }
+
+    https://tools.ietf.org/html/rfc5652#section-10.2.6
+
+    UserKeyingMaterial ::= OCTET STRING
+  -->
+  <asn:Integer name="Version" backingType="int" />
+  <asn:AsnType name="Originator" typeName="System.Security.Cryptography.Pkcs.Asn1.OriginatorIdentifierOrKeyAsn" explicitTag="0" />
+  <asn:OctetString name="Ukm" explicitTag="1" optional="true" />
+  <asn:AsnType name="KeyEncryptionAlgorithm" typeName="System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn" />
+  <asn:SequenceOf name="RecipientEncryptedKeys">
+    <asn:AsnType typeName="System.Security.Cryptography.Pkcs.Asn1.RecipientEncryptedKeyAsn" />
+  </asn:SequenceOf>
+</asn:Sequence>

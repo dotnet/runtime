@@ -1,0 +1,11 @@
+<Directives>
+  <Application>
+    <Assembly Name="mscorlib" />
+    <Assembly Name="System.Runtime" />
+    <Assembly Name="System.Diagnostics.DiagnosticSource">
+        <Type Name="System.Diagnostics.ActivityEvent" Dynamic="Required All" />
+        <Type Name="System.Diagnostics.Activity+TagsLinkedList" Dynamic="Required All" />
+        <Type Name="System.Diagnostics.DiagLinkedList`1[[System.Diagnostics.ActivityEvent, System.Diagnostics.DiagnosticSource]]" Dynamic="Required All" />
+      </Assembly>
+  </Application>
+</Directives>

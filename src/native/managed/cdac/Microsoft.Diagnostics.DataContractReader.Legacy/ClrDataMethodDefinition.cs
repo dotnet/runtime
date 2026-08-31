@@ -1,0 +1,766 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
+using System.Text;
+using System.Threading;
+using Microsoft.Diagnostics.DataContractReader.Contracts;
+
+namespace Microsoft.Diagnostics.DataContractReader.Legacy;
+
+[GeneratedComClass]
+public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefinition
+{
+    private sealed class EnumMethodDefinitionExtents : IEnum<ClrDataMethodDefinitionExtent>
+    {
+        public IEnumerator<ClrDataMethodDefinitionExtent> Enumerator { get; }
+        public nuint LegacyHandle { get; set; }
+
+        public EnumMethodDefinitionExtents(ClrDataMethodDefinitionExtent extent)
+        {
+            Enumerator = Enumerable.Repeat(extent, 1).GetEnumerator();
+        }
+    }
+
+    private readonly Lock _apiLock;
+    private readonly Target _target;
+    private readonly TargetPointer _module;
+    private readonly uint _token;
+    private readonly IXCLRDataMethodDefinition? _legacyImpl;
+    public ClrDataMethodDefinition(
+        Target target,
+        TargetPointer module,
+        uint token,
+        IXCLRDataMethodDefinition? legacyImpl,
+        Lock apiLock)
+    {
+        _apiLock = apiLock;
+        _target = target;
+        _module = module;
+        _token = token;
+        _legacyImpl = legacyImpl;
+    }
+
+    private TargetPointer TryResolveMethodDesc()
+    {
+        ILoader loader = _target.Contracts.Loader;
+        Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(_module);
+        TargetPointer methodDescAddr = loader.GetModuleLookupMapElement(
+            moduleHandle,
+            ModuleLookupMapKind.MethodDefToDesc,
+            _token,
+            out _);
+
+        return methodDescAddr;
+    }
+
+    private TargetPointer GetILExtentStart(out uint codeSize)
+    {
+        ILoader loader = _target.Contracts.Loader;
+        Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(_module);
+        TargetPointer ilHeader = TargetPointer.Null;
+        TargetPointer methodDesc = TryResolveMethodDesc();
+        if (methodDesc != TargetPointer.Null && _target.Contracts.TryGetContract(out ICodeVersions codeVersions))
+        {
+            ILCodeVersionHandle activeVersion = codeVersions.GetActiveILCodeVersion(methodDesc);
+            if (activeVersion.IsValid && codeVersions.GetSource(activeVersion) == CodeVersionSource.EnC)
+            {
+                ilHeader = codeVersions.GetIL(activeVersion);
+            }
+        }
+
+        if (ilHeader == TargetPointer.Null)
+            ilHeader = loader.GetILHeader(moduleHandle, _token);
+
+        if (ilHeader == TargetPointer.Null)
+        {
+            codeSize = 0;
+            return TargetPointer.Null;
+        }
+
+        int headerSize = HeaderReaderHelpers.GetHeaderSize(_target, ilHeader);
+        codeSize = (uint)HeaderReaderHelpers.GetCodeSize(_target, ilHeader);
+        return ilHeader + (uint)headerSize;
+    }
+
+    private static bool HasClassInstantiation(Target target, MethodDescHandle md)
+    {
+        IRuntimeTypeSystem rts = target.Contracts.RuntimeTypeSystem;
+        TargetPointer mtAddr = rts.GetMethodTable(md);
+        ITypeHandle mt = rts.GetTypeHandle(mtAddr);
+
+        return rts.GetInstantiation(mt).Length > 0;
+    }
+
+    private static bool HasMethodInstantiation(Target target, MethodDescHandle md)
+    {
+        IRuntimeTypeSystem rts = target.Contracts.RuntimeTypeSystem;
+        if (rts.IsGenericMethodDefinition(md))
+            return true;
+
+        return rts.GetGenericMethodInstantiation(md).Length > 0;
+    }
+
+    private static bool HasClassOrMethodInstantiation(Target target, MethodDescHandle md)
+    {
+        return HasClassInstantiation(target, md) || HasMethodInstantiation(target, md);
+    }
+
+    private string GetFullMethodNameFromMetadata()
+    {
+        ILoader loader = _target.Contracts.Loader;
+        Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(_module);
+        IEcmaMetadata ecmaMetadata = _target.Contracts.EcmaMetadata;
+        MetadataReader reader = ecmaMetadata.GetMetadata(moduleHandle)
+            ?? throw new InvalidOperationException("Failed to get metadata reader");
+
+        int rowId = (int)(_token & 0x00FFFFFF);
+        MethodDefinitionHandle methodDefHandle = MetadataTokens.MethodDefinitionHandle(rowId);
+        MethodDefinition methodDef = reader.GetMethodDefinition(methodDefHandle);
+        string methodName = reader.GetString(methodDef.Name);
+
+        TypeDefinitionHandle typeDefHandle = methodDef.GetDeclaringType();
+        if (typeDefHandle.IsNil)
+            return methodName;
+
+        TypeDefinition typeDef = reader.GetTypeDefinition(typeDefHandle);
+        string typeName = reader.GetString(typeDef.Name);
+        string namespaceName = reader.GetString(typeDef.Namespace);
+
+        StringBuilder sb = new();
+        if (!string.IsNullOrEmpty(namespaceName))
+        {
+            sb.Append(namespaceName);
+            sb.Append('.');
+        }
+        sb.Append(typeName);
+        sb.Append('.');
+        sb.Append(methodName);
+
+        return sb.ToString();
+    }
+
+    int IXCLRDataMethodDefinition.GetTypeDefinition(DacComNullableByRef<IXCLRDataTypeDefinition> typeDefinition)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+
+        return HResults.E_NOTIMPL;
+    }
+
+    int IXCLRDataMethodDefinition.StartEnumInstances(IXCLRDataAppDomain? appDomain, ulong* handle)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+        int hr = HResults.S_FALSE;
+        *handle = 0;
+
+        // Start the legacy enumeration to keep it in sync with the cDAC enumeration.
+        // EnumInstance passes the legacy method instance to ClrDataMethodInstance,
+        // which delegates some operations to it.
+        ulong legacyHandle = default;
+        int hrLocal = default;
+        if (_legacyImpl is not null)
+        {
+            hrLocal = _legacyImpl.StartEnumInstances(appDomain, &legacyHandle);
+        }
+
+        try
+        {
+            TargetPointer methodDescAddr = TryResolveMethodDesc();
+            if (methodDescAddr != TargetPointer.Null)
+            {
+                SOSDacImpl.EnumMethodInstances emi = new(_target, methodDescAddr, TargetPointer.Null);
+                emi.LegacyHandle = (nuint)legacyHandle;
+
+                hr = emi.Start();
+                if (hr == HResults.S_OK)
+                {
+                    *handle = (ulong)((IEnum<MethodDescHandle>)emi).GetHandle();
+                    // Legacy handle ownership transferred to emi — don't clean up below.
+                    legacyHandle = default;
+                }
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+        finally
+        {
+            // The legacy enumeration is started eagerly (before the cDAC try block) so
+            // that EnumInstance can advance both enumerations in lockstep. If the cDAC
+            // side fails to produce an enum (no MethodDesc, exception, or emi.Start()
+            // returns S_FALSE), the legacy handle would be orphaned because the caller
+            // receives *handle == 0 and has no way to call End. Clean it up here.
+            if (_legacyImpl is not null && legacyHandle != default)
+            {
+                _legacyImpl.EndEnumInstances(legacyHandle);
+            }
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            Debug.ValidateHResult(hr, hrLocal);
+        }
+#endif
+
+        return hr;
+    }
+
+    int IXCLRDataMethodDefinition.EnumInstance(ulong* handle, DacComNullableByRef<IXCLRDataMethodInstance> instance)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+        int hr = HResults.S_OK;
+
+        if (*handle == 0)
+            return HResults.S_FALSE;
+
+        GCHandle gcHandle = GCHandle.FromIntPtr((IntPtr)(*handle));
+        if (gcHandle.Target is not SOSDacImpl.EnumMethodInstances emi)
+            return HResults.E_INVALIDARG;
+
+        // Advance the legacy enumeration to keep it in sync with the cDAC enumeration.
+        // The legacy method instance is passed to ClrDataMethodInstance for delegation.
+        IXCLRDataMethodInstance? legacyMethod = null;
+        int hrLocal = default;
+        if (_legacyImpl is not null)
+        {
+            ulong legacyHandle = emi.LegacyHandle;
+            DacComNullableByRef<IXCLRDataMethodInstance> legacyMethodOut = new(isNullRef: false);
+            hrLocal = _legacyImpl.EnumInstance(&legacyHandle, legacyMethodOut);
+            legacyMethod = legacyMethodOut.Interface;
+            emi.LegacyHandle = (nuint)legacyHandle;
+        }
+
+        try
+        {
+            if (emi.Enumerator.MoveNext())
+            {
+                MethodDescHandle methodDesc = emi.Enumerator.Current;
+                instance.Interface = new ClrDataMethodInstance(_target, methodDesc, emi._appDomain, legacyMethod, _apiLock);
+            }
+            else
+            {
+                hr = HResults.S_FALSE;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            // Fall back to the legacy DAC result when available, otherwise propagate the error.
+            if (_legacyImpl is not null)
+            {
+                hr = hrLocal;
+                instance.Interface = legacyMethod;
+            }
+            else
+            {
+                hr = ex.HResult;
+            }
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            Debug.ValidateHResult(hr, hrLocal);
+        }
+#endif
+
+        return hr;
+    }
+
+    int IXCLRDataMethodDefinition.EndEnumInstances(ulong handle)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+        int hr = HResults.S_OK;
+
+        try
+        {
+            if (handle == 0)
+                throw new ArgumentException();
+
+            GCHandle gcHandle = GCHandle.FromIntPtr((IntPtr)handle);
+            if (gcHandle.Target is not SOSDacImpl.EnumMethodInstances emi)
+                throw new ArgumentException();
+
+            ((IEnum<MethodDescHandle>)emi).Dispose();
+            gcHandle.Free();
+
+            if (_legacyImpl is not null && emi.LegacyHandle != 0)
+            {
+                int hrLocal = _legacyImpl.EndEnumInstances(emi.LegacyHandle);
+                if (hrLocal < 0)
+                    hr = hrLocal;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+        return hr;
+    }
+
+    int IXCLRDataMethodDefinition.GetName(uint flags, uint bufLen, uint* nameLen, char* name)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+        int hr = HResults.S_OK;
+
+        try
+        {
+            if (flags != 0)
+                throw new ArgumentException();
+
+            StringBuilder sb = new();
+
+            TargetPointer methodDescAddr = TryResolveMethodDesc();
+
+            if (methodDescAddr != TargetPointer.Null)
+            {
+                IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+                MethodDescHandle methodDescHandle = rts.GetMethodDescHandle(methodDescAddr);
+                TypeNameBuilder.AppendMethodInternal(
+                    _target,
+                    sb,
+                    methodDescHandle,
+                    TypeNameFormat.FormatSignature |
+                    TypeNameFormat.FormatNamespace |
+                    TypeNameFormat.FormatFullInst);
+            }
+            else
+            {
+                sb.Append(GetFullMethodNameFromMetadata());
+            }
+
+            OutputBufferHelpers.CopyStringToBuffer(name, bufLen, nameLen, sb.ToString());
+
+            if (name is not null && bufLen < (uint)(sb.Length + 1))
+            {
+                hr = HResults.S_FALSE;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            uint nameLenLocal = 0;
+            char[] nameBufLocal = new char[bufLen > 0 ? bufLen : 1];
+            int hrLocal;
+            fixed (char* pNameBufLocal = nameBufLocal)
+            {
+                hrLocal = _legacyImpl.GetName(flags, bufLen, &nameLenLocal, name is null ? null : pNameBufLocal);
+            }
+
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr >= 0 && hrLocal >= 0)
+            {
+                if (nameLen is not null)
+                    Debug.Assert(nameLenLocal == *nameLen, $"cDAC: {*nameLen:x}, DAC: {nameLenLocal:x}");
+
+                if (name is not null && nameLenLocal > 0)
+                {
+                    string dacName = new string(nameBufLocal, 0, (int)nameLenLocal - 1);
+                    string cdacName = new string(name);
+                    Debug.Assert(dacName == cdacName, $"cDAC: {cdacName}, DAC: {dacName}");
+                }
+            }
+        }
+#endif
+
+        return hr;
+    }
+
+    int IXCLRDataMethodDefinition.GetTokenAndScope(uint* token, DacComNullableByRef<IXCLRDataModule> mod)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+        int hr = HResults.S_OK;
+        try
+        {
+            if (token is not null)
+            {
+                *token = _token;
+            }
+            if (!mod.IsNullRef)
+            {
+                IXCLRDataModule? legacyMod = null;
+                if (_legacyImpl is not null)
+                {
+                    DacComNullableByRef<IXCLRDataModule> legacyModOut = new(isNullRef: false);
+                    int hrLegacy = _legacyImpl.GetTokenAndScope(null, legacyModOut);
+                    if (hrLegacy < 0)
+                        return hrLegacy;
+                    legacyMod = legacyModOut.Interface;
+                }
+
+                mod.Interface = new ClrDataModule(_module, _target, legacyMod, _apiLock);
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            bool validateToken = token is not null;
+            bool validateMod = !mod.IsNullRef;
+
+            uint tokenLocal = 0;
+            DacComNullableByRef<IXCLRDataModule> legacyModOutLocal = new(isNullRef: !validateMod);
+            int hrLocal = _legacyImpl.GetTokenAndScope(validateToken ? &tokenLocal : null, legacyModOutLocal);
+
+            Debug.ValidateHResult(hr, hrLocal);
+
+            if (validateToken)
+            {
+                Debug.Assert(tokenLocal == *token, $"cDAC: {*token:x}, DAC: {tokenLocal:x}");
+            }
+        }
+#endif
+
+        return hr;
+    }
+
+    int IXCLRDataMethodDefinition.GetFlags(uint* flags)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+
+        return HResults.E_NOTIMPL;
+    }
+
+    int IXCLRDataMethodDefinition.IsSameObject(IXCLRDataMethodDefinition? method)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+
+        return HResults.E_NOTIMPL;
+    }
+
+    int IXCLRDataMethodDefinition.GetLatestEnCVersion(uint* version)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+
+        return HResults.E_NOTIMPL;
+    }
+
+    int IXCLRDataMethodDefinition.StartEnumExtents(ulong* handle)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+        int hr = HResults.S_OK;
+        try
+        {
+            *handle = 0;
+            TargetPointer code = GetILExtentStart(out uint codeSize);
+            if (code == TargetPointer.Null)
+            {
+                hr = HResults.S_FALSE;
+            }
+            else
+            {
+                ClrDataAddress startAddress = code.ToClrDataAddress(_target);
+                ClrDataMethodDefinitionExtent extent = new()
+                {
+                    startAddress = startAddress,
+                    endAddress = startAddress + codeSize - 1,
+                    enCVersion = 0,
+                    type = CLRDataMethodDefinitionExtentType.CLRDATA_METHDEF_IL,
+                };
+                EnumMethodDefinitionExtents extents = new(extent);
+                *handle = (ulong)((IEnum<ClrDataMethodDefinitionExtent>)extents).GetHandle();
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            ulong legacyHandle = 0;
+            int hrLocal = _legacyImpl.StartEnumExtents(handle is null ? null : &legacyHandle);
+            Debug.ValidateHResult(hr, hrLocal);
+
+            if (hr == HResults.S_OK && hrLocal == HResults.S_OK)
+            {
+                GCHandle gcHandle = GCHandle.FromIntPtr((IntPtr)(*handle));
+                ((EnumMethodDefinitionExtents)gcHandle.Target!).LegacyHandle = (nuint)legacyHandle;
+            }
+            else if (hrLocal == HResults.S_OK)
+            {
+                _legacyImpl.EndEnumExtents(legacyHandle);
+            }
+        }
+#endif
+
+        return hr;
+    }
+
+    int IXCLRDataMethodDefinition.EnumExtent(ulong* handle, ClrDataMethodDefinitionExtent* extent)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+        int hr = HResults.S_OK;
+        EnumMethodDefinitionExtents? extents = null;
+        try
+        {
+            if (handle is null)
+                throw new ArgumentNullException(nameof(handle));
+            if (extent is null)
+                throw new ArgumentNullException(nameof(extent));
+            if (*handle == 0)
+                throw new ArgumentException("Extent enumeration has not been started or has already ended.", nameof(handle));
+
+            GCHandle gcHandle = GCHandle.FromIntPtr((IntPtr)(*handle));
+            if (gcHandle.Target is not EnumMethodDefinitionExtents methodExtents)
+                throw new ArgumentException("Handle does not reference a method definition extent enumeration.", nameof(handle));
+
+            extents = methodExtents;
+            if (extents.Enumerator.MoveNext())
+            {
+                *extent = extents.Enumerator.Current;
+            }
+            else
+            {
+                hr = HResults.S_FALSE;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null && extents is { LegacyHandle: not 0 })
+        {
+            ulong legacyHandle = (ulong)extents.LegacyHandle;
+            ClrDataMethodDefinitionExtent extentLocal = default;
+            int hrLocal = _legacyImpl.EnumExtent(&legacyHandle, &extentLocal);
+            extents.LegacyHandle = (nuint)legacyHandle;
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(extent->startAddress == extentLocal.startAddress, $"StartAddress - cDAC: {extent->startAddress:x}, DAC: {extentLocal.startAddress:x}");
+                Debug.Assert(extent->endAddress == extentLocal.endAddress, $"EndAddress - cDAC: {extent->endAddress:x}, DAC: {extentLocal.endAddress:x}");
+                Debug.Assert(extent->enCVersion == extentLocal.enCVersion, $"EnCVersion - cDAC: {extent->enCVersion:x}, DAC: {extentLocal.enCVersion:x}");
+                Debug.Assert(extent->type == extentLocal.type, $"Type - cDAC: {extent->type:x}, DAC: {extentLocal.type:x}");
+            }
+        }
+#endif
+
+        return hr;
+    }
+
+    int IXCLRDataMethodDefinition.EndEnumExtents(ulong handle)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+        int hr = HResults.S_OK;
+        nuint legacyHandle = 0;
+        try
+        {
+            if (handle != 0)
+            {
+                GCHandle gcHandle = GCHandle.FromIntPtr((IntPtr)handle);
+                if (gcHandle.Target is not EnumMethodDefinitionExtents extents)
+                    throw new ArgumentException("Handle does not reference a method definition extent enumeration.", nameof(handle));
+
+                legacyHandle = extents.LegacyHandle;
+                ((IEnum<ClrDataMethodDefinitionExtent>)extents).Dispose();
+                gcHandle.Free();
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null && legacyHandle != 0)
+        {
+            int hrLocal = _legacyImpl.EndEnumExtents((ulong)legacyHandle);
+            Debug.ValidateHResult(hr, hrLocal);
+        }
+#endif
+
+        return hr;
+    }
+
+    int IXCLRDataMethodDefinition.GetCodeNotification(uint* flags)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+        int hr = HResults.S_OK;
+        ICodeNotifications codeNotif = _target.Contracts.CodeNotifications;
+
+        try
+        {
+            if (flags is null)
+                throw new ArgumentNullException(nameof(flags));
+
+            *flags = CodeNotificationFlagsConverter.ToCom(codeNotif.GetCodeNotification(_module, _token));
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+        // No #if DEBUG validation: GetCodeNotification is a read, but both cDAC and
+        // legacy DAC allocate the table on-demand when called, which would cause
+        // dual-allocation. Validation is safe at a higher layer when a dump is used.
+
+        return hr;
+    }
+
+    int IXCLRDataMethodDefinition.SetCodeNotification(uint flags)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+        int hr = HResults.S_OK;
+        ICodeNotifications codeNotif = _target.Contracts.CodeNotifications;
+
+        try
+        {
+            if (!CodeNotificationFlagsConverter.IsValid(flags))
+                throw new ArgumentException("Invalid code notification flags", nameof(flags));
+
+            codeNotif.SetCodeNotification(_module, _token, CodeNotificationFlagsConverter.FromCom(flags));
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+        // No #if DEBUG validation: SetCodeNotification is a write operation.
+        // Both the cDAC and legacy DAC independently allocate and write to
+        // g_pNotificationTable via AllocVirtual, causing dual-write corruption.
+
+        return hr;
+    }
+
+    int IXCLRDataMethodDefinition.Request(uint reqCode, uint inBufferSize, byte* inBuffer, uint outBufferSize, byte* outBuffer)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+        int hr = HResults.S_OK;
+
+        try
+        {
+            if (reqCode != (uint)CLRDataGeneralRequest.CLRDATA_REQUEST_REVISION
+                || inBufferSize != 0
+                || inBuffer is not null
+                || outBufferSize != sizeof(uint))
+            {
+                throw new ArgumentException("Invalid request parameters.");
+            }
+
+            if (outBuffer is null)
+                throw new NullReferenceException("The output buffer is null.");
+
+            *(uint*)outBuffer = 1;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            uint revisionLocal = 0;
+            int hrLocal = _legacyImpl.Request(
+                reqCode,
+                inBufferSize,
+                inBuffer,
+                outBufferSize,
+                outBuffer is null ? null : (byte*)&revisionLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+                Debug.Assert(*(uint*)outBuffer == revisionLocal);
+        }
+#endif
+
+        return hr;
+    }
+
+    int IXCLRDataMethodDefinition.GetRepresentativeEntryAddress(ClrDataAddress* addr)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+        int hr = HResults.S_OK;
+        try
+        {
+            if (addr is null)
+                throw new ArgumentNullException(nameof(addr));
+
+            TargetPointer code = GetILExtentStart(out _);
+            if (code == TargetPointer.Null)
+                throw Marshal.GetExceptionForHR(CorDbgHResults.E_UNEXPECTED)!;
+
+            *addr = code.ToClrDataAddress(_target);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (LegacyFallbackHelper.CanFallback() && _legacyImpl is not null)
+        {
+            ClrDataAddress addrLocal = 0;
+            int hrLocal = _legacyImpl.GetRepresentativeEntryAddress(addr is null ? null : &addrLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(*addr == addrLocal, $"cDAC: {*addr:x}, DAC: {addrLocal:x}");
+            }
+        }
+#endif
+
+        return hr;
+    }
+
+    int IXCLRDataMethodDefinition.HasClassOrMethodInstantiation(int* bGeneric)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+        int hr = HResults.S_OK;
+
+        try
+        {
+            if (bGeneric is null)
+                throw new NullReferenceException();
+
+            TargetPointer methodDescAddr = TryResolveMethodDesc();
+            if (methodDescAddr == TargetPointer.Null)
+                throw Marshal.GetExceptionForHR(CorDbgHResults.E_UNEXPECTED)!;
+
+            IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+            MethodDescHandle methodDescHandle = rts.GetMethodDescHandle(methodDescAddr);
+            *bGeneric = HasClassOrMethodInstantiation(_target, methodDescHandle) ? (int)Interop.BOOL.TRUE : (int)Interop.BOOL.FALSE;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            int bGenericLocal = 0;
+            int hrLocal = _legacyImpl.HasClassOrMethodInstantiation(&bGenericLocal);
+
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr >= 0 && hrLocal >= 0 && bGeneric is not null)
+            {
+                Debug.Assert(bGenericLocal == *bGeneric, $"cDAC: {*bGeneric}, DAC: {bGenericLocal}");
+            }
+        }
+#endif
+
+        return hr;
+    }
+}

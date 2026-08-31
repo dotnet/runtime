@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- Needed for IsLongRunningGCTest -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <IsLongRunningGCTest>true</IsLongRunningGCTest>
+    <CLRTestPriority>1</CLRTestPriority>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="delete_next_card_table.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+</Project>

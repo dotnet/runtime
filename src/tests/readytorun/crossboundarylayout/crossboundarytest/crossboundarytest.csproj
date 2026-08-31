@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Needed for CLRTestTargetUnsupported (inherited from Directory.Build.props) -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <CLRTestPriority>1</CLRTestPriority>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="c.cs" />
+    <Compile Include="c1.cs" />
+    <Compile Include="main.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\a\a.csproj"/>
+    <ProjectReference Include="..\b\b.csproj"/>
+    <ProjectReference Include="..\d\d.csproj"/>
+  </ItemGroup>
+</Project>

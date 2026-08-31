@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Needed for GC.WaitForPendingFinalizers -->
+    <!-- See https://github.com/dotnet/runtime/issues/68529 -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+
+    <CLRTestPriority>1</CLRTestPriority>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildProjectName).cs" />
+  </ItemGroup>
+</Project>

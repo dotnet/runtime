@@ -1,0 +1,336 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System.Buffers;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Security.Authentication;
+using System.Security.Cryptography.X509Certificates;
+
+namespace System.Net.Security
+{
+    internal sealed partial class SslAuthenticationOptions : IDisposable
+    {
+        // Hook invoked by OpenSSL's CertVerifyCallback to drive remote
+        // certificate validation. Set by SslStream and by standalone TlsSession
+        // so both flows share the same callback plumbing. Declared on the
+        // cross-platform partial so the delegate type is resolvable in test
+        // projects (unit-test fakes) that compile SslStream.cs on non-Linux
+        // targets where the OpenSSL partial file isn't included.
+        internal delegate bool VerifyRemoteCertificateCallback(
+            X509Certificate2? certificate,
+            X509Chain? chain,
+            SslCertificateTrust? trust,
+            ref ProtocolToken alertToken,
+            ref SslPolicyErrors sslPolicyErrors,
+            out X509ChainStatusFlags chainStatus);
+
+        internal VerifyRemoteCertificateCallback? RemoteCertificateValidator { get; set; }
+
+        internal const X509RevocationMode DefaultRevocationMode = X509RevocationMode.NoCheck;
+
+        internal SslAuthenticationOptions()
+        {
+            TargetHost = string.Empty;
+        }
+
+        internal void UpdateOptions(SslClientAuthenticationOptions sslClientAuthenticationOptions)
+        {
+            if (CertValidationDelegate == null)
+            {
+                CertValidationDelegate = sslClientAuthenticationOptions.RemoteCertificateValidationCallback;
+            }
+            else if (sslClientAuthenticationOptions.RemoteCertificateValidationCallback != null &&
+                     CertValidationDelegate != sslClientAuthenticationOptions.RemoteCertificateValidationCallback)
+            {
+                // Callback was set in constructor to different value.
+                throw new InvalidOperationException(SR.Format(SR.net_conflicting_options, nameof(RemoteCertificateValidationCallback)));
+            }
+
+            if (CertSelectionDelegate == null)
+            {
+                CertSelectionDelegate = sslClientAuthenticationOptions.LocalCertificateSelectionCallback;
+            }
+            else if (sslClientAuthenticationOptions.LocalCertificateSelectionCallback != null &&
+                     CertSelectionDelegate != sslClientAuthenticationOptions.LocalCertificateSelectionCallback)
+            {
+                throw new InvalidOperationException(SR.Format(SR.net_conflicting_options, nameof(LocalCertificateSelectionCallback)));
+            }
+
+            // Common options.
+            AllowRenegotiation = sslClientAuthenticationOptions.AllowRenegotiation;
+            AllowTlsResume = sslClientAuthenticationOptions.AllowTlsResume;
+            ApplicationProtocols = sslClientAuthenticationOptions.ApplicationProtocols;
+            CheckCertName = !(sslClientAuthenticationOptions.CertificateChainPolicy?.VerificationFlags.HasFlag(X509VerificationFlags.IgnoreInvalidName) == true);
+            EnabledSslProtocols = FilterOutIncompatibleSslProtocols(sslClientAuthenticationOptions.EnabledSslProtocols);
+            EncryptionPolicy = sslClientAuthenticationOptions.EncryptionPolicy;
+            IsServer = false;
+            RemoteCertRequired = true;
+            CertificateContext = sslClientAuthenticationOptions.ClientCertificateContext;
+            TargetHost = sslClientAuthenticationOptions.TargetHost ?? string.Empty;
+
+            AllowRsaPssPadding = sslClientAuthenticationOptions.AllowRsaPssPadding;
+            AllowRsaPkcs1Padding = sslClientAuthenticationOptions.AllowRsaPkcs1Padding;
+
+            if (!OperatingSystem.IsWindows() && !OperatingSystem.IsLinux())
+            {
+                if (!sslClientAuthenticationOptions.AllowRsaPssPadding || !sslClientAuthenticationOptions.AllowRsaPkcs1Padding)
+                {
+                    throw new PlatformNotSupportedException(SR.net_ssl_allow_rsa_padding_not_supported);
+                }
+            }
+
+            // Client specific options.
+            CertificateRevocationCheckMode = sslClientAuthenticationOptions.CertificateRevocationCheckMode;
+            ClientCertificates = sslClientAuthenticationOptions.ClientCertificates;
+            CipherSuitesPolicy = sslClientAuthenticationOptions.CipherSuitesPolicy;
+
+            if (sslClientAuthenticationOptions.CertificateChainPolicy != null)
+            {
+                CertificateChainPolicy = sslClientAuthenticationOptions.CertificateChainPolicy.Clone();
+            }
+        }
+
+        internal void UpdateOptions(ServerOptionsSelectionCallback optionCallback, object? state)
+        {
+            CheckCertName = false;
+            TargetHost = string.Empty;
+            IsServer = true;
+            UserState = state;
+            ServerOptionDelegate = optionCallback;
+        }
+
+        internal void UpdateOptions(SslServerAuthenticationOptions sslServerAuthenticationOptions)
+        {
+            if (sslServerAuthenticationOptions.ServerCertificate == null &&
+                sslServerAuthenticationOptions.ServerCertificateContext == null &&
+                sslServerAuthenticationOptions.ServerCertificateSelectionCallback == null &&
+                CertSelectionDelegate == null)
+            {
+                throw new NotSupportedException(SR.net_ssl_io_no_server_cert);
+            }
+
+            if ((sslServerAuthenticationOptions.ServerCertificate != null ||
+                 sslServerAuthenticationOptions.ServerCertificateContext != null ||
+                 CertSelectionDelegate != null) &&
+                sslServerAuthenticationOptions.ServerCertificateSelectionCallback != null)
+            {
+                throw new InvalidOperationException(SR.Format(SR.net_conflicting_options, nameof(ServerCertificateSelectionCallback)));
+            }
+
+            if (CertValidationDelegate == null)
+            {
+                CertValidationDelegate = sslServerAuthenticationOptions.RemoteCertificateValidationCallback;
+            }
+            else if (sslServerAuthenticationOptions.RemoteCertificateValidationCallback != null &&
+                     CertValidationDelegate != sslServerAuthenticationOptions.RemoteCertificateValidationCallback)
+            {
+                // Callback was set in constructor to differet value.
+                throw new InvalidOperationException(SR.Format(SR.net_conflicting_options, nameof(RemoteCertificateValidationCallback)));
+            }
+
+            IsServer = true;
+            AllowRenegotiation = sslServerAuthenticationOptions.AllowRenegotiation;
+            AllowTlsResume = sslServerAuthenticationOptions.AllowTlsResume;
+            ApplicationProtocols = sslServerAuthenticationOptions.ApplicationProtocols;
+            EnabledSslProtocols = FilterOutIncompatibleSslProtocols(sslServerAuthenticationOptions.EnabledSslProtocols);
+            EncryptionPolicy = sslServerAuthenticationOptions.EncryptionPolicy;
+            RemoteCertRequired = sslServerAuthenticationOptions.ClientCertificateRequired;
+            CipherSuitesPolicy = sslServerAuthenticationOptions.CipherSuitesPolicy;
+            CertificateRevocationCheckMode = sslServerAuthenticationOptions.CertificateRevocationCheckMode;
+
+            AllowRsaPssPadding = sslServerAuthenticationOptions.AllowRsaPssPadding;
+            AllowRsaPkcs1Padding = sslServerAuthenticationOptions.AllowRsaPkcs1Padding;
+
+            if (!OperatingSystem.IsWindows() && !OperatingSystem.IsLinux())
+            {
+                if (!sslServerAuthenticationOptions.AllowRsaPssPadding || !sslServerAuthenticationOptions.AllowRsaPkcs1Padding)
+                {
+                    throw new PlatformNotSupportedException(SR.net_ssl_allow_rsa_padding_not_supported);
+                }
+            }
+
+            if (sslServerAuthenticationOptions.ServerCertificateContext != null)
+            {
+                // Release any previously owned context before replacing it with the caller's context.
+                if (OwnsCertificateContext && CertificateContext is not null &&
+                    !ReferenceEquals(CertificateContext, sslServerAuthenticationOptions.ServerCertificateContext))
+                {
+                    CertificateContext.ReleaseResources();
+                }
+                CertificateContext = sslServerAuthenticationOptions.ServerCertificateContext;
+                OwnsCertificateContext = false;
+            }
+            else if (sslServerAuthenticationOptions.ServerCertificate != null)
+            {
+                X509Certificate2? certificateWithKey = sslServerAuthenticationOptions.ServerCertificate as X509Certificate2;
+
+                if (certificateWithKey != null && certificateWithKey.HasPrivateKey)
+                {
+                    bool ocspFetch = LocalAppContextSwitches.EnableOcspStapling;
+                    // given cert is X509Certificate2 with key. We can use it directly.
+                    SetCertificateContextFromCert(certificateWithKey, !ocspFetch);
+                }
+                else
+                {
+                    // This is legacy fix-up. If the Certificate did not have key, we will search stores and we
+                    // will try to find one with matching hash.
+                    certificateWithKey = SslStream.FindCertificateWithPrivateKey(this, true, sslServerAuthenticationOptions.ServerCertificate);
+                    if (certificateWithKey == null)
+                    {
+                        throw new AuthenticationException(SR.net_ssl_io_no_server_cert);
+                    }
+
+                    SetCertificateContextFromCert(certificateWithKey);
+                }
+            }
+
+            if (sslServerAuthenticationOptions.ServerCertificateSelectionCallback != null)
+            {
+                ServerCertSelectionDelegate = sslServerAuthenticationOptions.ServerCertificateSelectionCallback;
+            }
+
+            if (sslServerAuthenticationOptions.CertificateChainPolicy != null)
+            {
+                CertificateChainPolicy = sslServerAuthenticationOptions.CertificateChainPolicy.Clone();
+            }
+        }
+
+        private static SslProtocols FilterOutIncompatibleSslProtocols(SslProtocols protocols)
+        {
+            if ((protocols & (SslProtocols.Tls12 | SslProtocols.Tls13)) != SslProtocols.None)
+            {
+#pragma warning disable 0618
+                // SSL2 is mutually exclusive with >= TLS1.2
+                protocols &= ~SslProtocols.Ssl2;
+#pragma warning restore 0618
+            }
+
+            return protocols;
+        }
+
+        internal void SetCertificateContextFromCert(X509Certificate2 certificate, bool? noOcspFetch = null)
+        {
+            CertificateContext = SslStreamCertificateContext.Create(certificate, null, offline: false, null, noOcspFetch ?? true);
+            OwnsCertificateContext = true;
+        }
+
+        // Shallow copy of the configuration carried by this bag. Per-handle/per-stream
+        // state (SafeSslHandle, SslStream, RemoteCertificateValidator) is intentionally
+        // not propagated, and the clone does not take ownership of CertificateContext
+        // even if the source did.
+        internal SslAuthenticationOptions Clone()
+        {
+            SslAuthenticationOptions copy = new SslAuthenticationOptions
+            {
+                AllowRenegotiation = AllowRenegotiation,
+                TargetHost = TargetHost,
+                ClientCertificates = ClientCertificates,
+                ApplicationProtocols = ApplicationProtocols,
+                IsServer = IsServer,
+                CertificateContext = CertificateContext,
+                OwnsCertificateContext = false,
+                EnabledSslProtocols = EnabledSslProtocols,
+                CertificateRevocationCheckMode = CertificateRevocationCheckMode,
+                EncryptionPolicy = EncryptionPolicy,
+                RemoteCertRequired = RemoteCertRequired,
+                CheckCertName = CheckCertName,
+                CertValidationDelegate = CertValidationDelegate,
+                CertSelectionDelegate = CertSelectionDelegate,
+                ServerCertSelectionDelegate = ServerCertSelectionDelegate,
+                CipherSuitesPolicy = CipherSuitesPolicy,
+                UserState = UserState,
+                ServerOptionDelegate = ServerOptionDelegate,
+                CertificateChainPolicy = CertificateChainPolicy,
+                AllowTlsResume = AllowTlsResume,
+                AllowRsaPssPadding = AllowRsaPssPadding,
+                AllowRsaPkcs1Padding = AllowRsaPkcs1Padding,
+                ForceSyncPal = ForceSyncPal,
+            };
+            return copy;
+        }
+
+        // Bulk-copy field values from another options bag into this one. Used by
+        // TlsSession.SetContext to inherit a fully-configured server context's
+        // options into an existing session (whose bag was originally created empty
+        // from a deferred TlsContext.Create((SslServerAuthenticationOptions?)null)).
+        // Mirrors the field set copied by Clone(). Session-scoped state (SafeSslHandle,
+        // RemoteCertificateValidator, SocketHandle, ReplayPrefix, PreallocatedSslContext)
+        // is intentionally NOT copied — those belong to the receiving session.
+        internal void CopyFrom(SslAuthenticationOptions other)
+        {
+            AllowRenegotiation = other.AllowRenegotiation;
+            TargetHost = other.TargetHost;
+            ClientCertificates = other.ClientCertificates;
+            ApplicationProtocols = other.ApplicationProtocols;
+            IsServer = other.IsServer;
+            CertificateContext = other.CertificateContext;
+            OwnsCertificateContext = false;
+            EnabledSslProtocols = other.EnabledSslProtocols;
+            CertificateRevocationCheckMode = other.CertificateRevocationCheckMode;
+            EncryptionPolicy = other.EncryptionPolicy;
+            RemoteCertRequired = other.RemoteCertRequired;
+            CheckCertName = other.CheckCertName;
+            CertValidationDelegate = other.CertValidationDelegate;
+            CertSelectionDelegate = other.CertSelectionDelegate;
+            ServerCertSelectionDelegate = other.ServerCertSelectionDelegate;
+            CipherSuitesPolicy = other.CipherSuitesPolicy;
+            UserState = other.UserState;
+            ServerOptionDelegate = other.ServerOptionDelegate;
+            CertificateChainPolicy = other.CertificateChainPolicy;
+            AllowTlsResume = other.AllowTlsResume;
+            AllowRsaPssPadding = other.AllowRsaPssPadding;
+            AllowRsaPkcs1Padding = other.AllowRsaPkcs1Padding;
+            ForceSyncPal = other.ForceSyncPal;
+        }
+
+        internal bool AllowRenegotiation { get; set; }
+        internal string TargetHost { get; set; }
+        internal X509CertificateCollection? ClientCertificates { get; set; }
+        internal List<SslApplicationProtocol>? ApplicationProtocols { get; set; }
+        internal bool IsServer { get; set; }
+        internal bool IsClient => !IsServer;
+        internal SslStreamCertificateContext? CertificateContext { get; set; }
+        // If true, the certificate context was created by the SslStream and
+        // certificates inside should be disposed when no longer needed.
+        internal bool OwnsCertificateContext { get; set; }
+        internal SslProtocols EnabledSslProtocols { get; set; }
+        internal X509RevocationMode CertificateRevocationCheckMode { get; set; }
+        internal EncryptionPolicy EncryptionPolicy { get; set; }
+        internal bool RemoteCertRequired { get; set; }
+        internal bool CheckCertName { get; set; }
+        internal RemoteCertificateValidationCallback? CertValidationDelegate { get; set; }
+        internal LocalCertificateSelectionCallback? CertSelectionDelegate { get; set; }
+        internal ServerCertificateSelectionCallback? ServerCertSelectionDelegate { get; set; }
+        internal CipherSuitesPolicy? CipherSuitesPolicy { get; set; }
+        internal object? UserState { get; set; }
+        internal ServerOptionsSelectionCallback? ServerOptionDelegate { get; set; }
+        internal X509ChainPolicy? CertificateChainPolicy { get; set; }
+        internal bool AllowTlsResume { get; set; }
+        internal bool AllowRsaPssPadding { get; set; }
+        internal bool AllowRsaPkcs1Padding { get; set; }
+        // Set by callers (e.g. TlsSession) whose state machine is intrinsically synchronous
+        // and cannot use the async Network Framework PAL path on macOS.
+        internal bool ForceSyncPal { get; set; }
+
+#if TARGET_ANDROID
+        internal SslStream.JavaProxy? SslStreamProxy { get; set; }
+#endif
+
+#if !TARGET_WINDOWS && !SYSNETSECURITY_NO_OPENSSL
+        internal SslStream? SslStream { get; set; }
+#endif
+
+        public void Dispose()
+        {
+            if (OwnsCertificateContext && CertificateContext != null)
+            {
+                CertificateContext.ReleaseResources();
+            }
+
+#if TARGET_ANDROID
+            SslStreamProxy?.Dispose();
+#endif
+        }
+    }
+}

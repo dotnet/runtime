@@ -1,0 +1,14 @@
+﻿<root attr2="value2" xmlns:namesp1="http://my.namespace.com/test1" xmlns:a="http://my.namespace.com/test2" a:attr1="value1" namesp1:attr0="value0">
+	<textElement   >This is a &amp; text element <!-- this is a comment --> with numbers &#x30;&#x31;&#x32;&#x33;&#x34;&#x35;&#x36;&#x37;</textElement>
+
+
+	<emptyElement myAttr="wee" yourAttr="woo"    />
+	<elementWithDefaultNamespace xmlns=""><foo xmlns="http://this.is.my.new.namespace"><bar xmlns=""><foo2 xmlns="">Hello</foo2></bar><foo3 xmlns="http://this.is.my.new.namespace"></foo3></foo></elementWithDefaultNamespace>
+	<elementWithCData   ><![CDATA[This is an element with CDATA; full of chars & that will be escaped <>"$'. And some more as well!!&&&&<><>><><<>><<>><<>>.]]></elementWithCData   >
+	<elementWhoseContentContainsCRLF>This is a text
+which contains not only characters,
+but also some CRLF combinations.</elementWhoseContentContainsCRLF>
+	<elementWithAttrsWithSingleQuotes value1='1' value3='3' value2='2'   />
+	<nesting xmlns="" xmlns:a="http://namespace1"><nesting2 xmlns:a="http://namespace1"><nesting3><nesting4 xmlns:a="http://namespace1"><nesting5 xmlns:b="http://namespace2" b:attr="value b" a:attr="value a"></nesting5></nesting4></nesting3></nesting2></nesting>
+	<specialChars attr1="áéíóú" attr2="&lt;'va&amp;lue'&gt;" attr0="瑟的瓦达洒洒">Value with special characters: áéíóú ثجض萨么çèñð 提寺萨么特大厦喀拾 أبثجضسذل שׁשׂסּפּוֹפֿ and that's it.</specialChars>
+</root  >

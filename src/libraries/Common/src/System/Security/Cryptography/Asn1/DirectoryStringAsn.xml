@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<asn:Choice
+  xmlns:asn="http://schemas.dot.net/asnxml/201808/"
+  name="DirectoryStringAsn"
+  namespace="System.Security.Cryptography.Asn1">
+
+  <!--
+    https://tools.ietf.org/html/rfc5280#section-4.1.2.4
+
+    DirectoryString ::= CHOICE {
+        teletexString           TeletexString (SIZE (1..MAX)),
+        printableString         PrintableString (SIZE (1..MAX)),
+        universalString         UniversalString (SIZE (1..MAX)),
+        utf8String              UTF8String (SIZE (1..MAX)),
+        bmpString               BMPString (SIZE (1..MAX))
+    }
+  -->
+  <asn:T61String name="TeletexString" />
+  <asn:PrintableString name="PrintableString" />
+  <asn:AnyValue name="UniversalString"  universalTagNumber="28" />
+  <asn:UTF8String name="Utf8String" />
+  <asn:BMPString name="BmpString" />
+</asn:Choice>

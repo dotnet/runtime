@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Needed for CLRTestEnvironmentVariable -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <CLRTestPriority>1</CLRTestPriority>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="objmonhelper.cs" />
+
+    <CLRTestEnvironmentVariable Include="DOTNET_FastGCStress" Value="1" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+</Project>

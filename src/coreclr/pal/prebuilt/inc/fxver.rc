@@ -1,0 +1,41 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+#ifdef _WIN32
+#include <_version.h>
+#endif //_WIN32
+
+#ifdef RC_INVOKED
+
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION    VER_FILEVERSION
+PRODUCTVERSION VER_PRODUCTVERSION
+FILEFLAGSMASK  VER_FILEFLAGSMASK
+FILEFLAGS      VER_FILEFLAGS
+FILEOS         VER_FILEOS
+FILETYPE       VER_FILETYPE
+FILESUBTYPE    VER_FILESUBTYPE
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK VER_VERSION_UNICODE_LANG
+        BEGIN
+            VALUE "CompanyName",     VER_COMPANYNAME_STR
+            VALUE "FileDescription", VER_FILEDESCRIPTION_STR
+            VALUE "FileVersion",     VER_FILEVERSION_STR
+            VALUE "InternalName",    VER_INTERNALNAME_STR
+            VALUE "LegalCopyright",  VER_LEGALCOPYRIGHT_STR
+            VALUE "OriginalFilename",VER_ORIGINALFILENAME_STR
+            VALUE "ProductName",     VER_PRODUCTNAME_STR
+            VALUE "ProductVersion",  VER_FILEVERSION_STR
+            VALUE "Comments",        VER_COMMENTS_STR
+        END
+    END
+
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", VER_VERSION_TRANSLATION
+    END
+END
+
+#endif

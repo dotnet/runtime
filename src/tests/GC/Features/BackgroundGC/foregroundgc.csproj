@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Needed for GCStressIncompatible -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+
+    <!-- Test needs explicit Main as it uses command-line parameters -->
+    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
+
+    <GCStressIncompatible>true</GCStressIncompatible>
+    <CLRTestPriority>1</CLRTestPriority>
+    <!-- TODO: Re-enable when CoreCLR WebAssembly supports background GC and managed threads.
+         Tracked by https://github.com/dotnet/runtime/issues/131321. -->
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">true</CLRTestTargetUnsupported>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="foregroundgc.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,6 @@
+<linker>
+  <assembly fullname="test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+    <type fullname="Mono.Linker.Tests.Cases.Resources.EmbeddedLinkXmlFileIsProcessed/Unused" />
+  </assembly>
+  <type fullname="Mono.Linker.Tests.Cases.Resources.EmbeddedLinkXmlFileIsProcessed/Unused2" />
+</linker>

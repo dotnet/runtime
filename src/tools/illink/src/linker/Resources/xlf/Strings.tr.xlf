@@ -1,0 +1,142 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
+  <file datatype="xml" source-language="en" target-language="tr" original="../Strings.resx">
+    <body>
+      <trans-unit id="IL2060">
+        <source>Call to '{0}' can not be statically analyzed. It's not possible to guarantee the availability of requirements of the generic method.</source>
+        <target state="translated">'{0}' çağrısı statik olarak analiz edilemiyor. Genel yöntemin gereksinimlerinin kullanılabilirliğini garanti etmek mümkün değil.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="IL2067">
+        <source>'{0}' argument does not satisfy {4} in call to '{1}'. The parameter '{2}' of method '{3}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</source>
+        <target state="translated">'{0}' bağımsız değişkeni, '{1}' çağrısında şunu karşılamıyor: {4}. '{3}' yönteminin '{2}' parametresinde eşleşen ek açıklamalar yok. Kaynak değerin, atandığı hedef konumda bildirilenlerle en az aynı gereksinimleri bildirmesi gerekir.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="IL2068">
+        <source>'{0}' method return value does not satisfy {3} requirements. The parameter '{1}' of method '{2}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</source>
+        <target state="translated">'{0}' yöntemi dönüş değeri, {3} gereksinimlerini karşılamıyor. '{2}' yönteminin '{1}' parametresinde eşleşen ek açıklamalar yok. Kaynak değerin, atandığı hedef konumda bildirilenlerle en az aynı gereksinimleri bildirmesi gerekir.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="IL2069">
+        <source>value stored in field '{0}' does not satisfy {3} requirements. The parameter '{1}' of method '{2}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</source>
+        <target state="translated">'{0}' alanında depolanan değer, {3} gereksinimlerini karşılamıyor. '{2}' yönteminin '{1}' parametresinde eşleşen ek açıklamalar yok. Kaynak değerin, atandığı hedef konumda bildirilenlerle en az aynı gereksinimleri bildirmesi gerekir.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="IL2070">
+        <source>'this' argument does not satisfy {3} in call to '{0}'. The parameter '{1}' of method '{2}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</source>
+        <target state="translated">'this' bağımsız değişkeni, '{0}' çağrısında şunu karşılamıyor: {3}. '{2}' yönteminin '{1}' parametresinde eşleşen ek açıklamalar yok. Kaynak değerin, atandığı hedef konumda bildirilenlerle en az aynı gereksinimleri bildirmesi gerekir.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="IL2071">
+        <source>'{0}' generic argument does not satisfy {4} in '{1}'. The parameter '{2}' of method '{3}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</source>
+        <target state="translated">'{0}' genel bağımsız değişkeni, '{1}' içinde şunu karşılamıyor: {4}. '{3}' yönteminin '{2}' parametresinde eşleşen ek açıklamalar yok. Kaynak değerin, atandığı hedef konumda bildirilenlerle en az aynı gereksinimleri bildirmesi gerekir.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="IL2072">
+        <source>'{0}' argument does not satisfy {3} in call to '{1}'. The return value of method '{2}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</source>
+        <target state="translated">'{0}' bağımsız değişkeni, '{1}' çağrısında şunu karşılamıyor: {3}. '{2}' yönteminin dönüş değerinde eşleşen ek açıklamalar yok. Kaynak değerin, atandığı hedef konumda bildirilenlerle en az aynı gereksinimleri bildirmesi gerekir.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="IL2073">
+        <source>'{0}' method return value does not satisfy {2} requirements. The return value of method '{1}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</source>
+        <target state="translated">'{0}' yöntemi dönüş değeri, {2} gereksinimlerini karşılamıyor. '{1}' yönteminin dönüş değerinde eşleşen ek açıklamalar yok. Kaynak değerin, atandığı hedef konumda bildirilenlerle en az aynı gereksinimleri bildirmesi gerekir.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="IL2074">
+        <source>value stored in field '{0}' does not satisfy {2} requirements. The return value of method '{1}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</source>
+        <target state="translated">'{0}' alanında depolanan değer, {2} gereksinimlerini karşılamıyor. '{1}' yönteminin dönüş değerinde eşleşen ek açıklamalar yok. Kaynak değerin, atandığı hedef konumda bildirilenlerle en az aynı gereksinimleri bildirmesi gerekir.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="IL2075">
+        <source>'this' argument does not satisfy {2} in call to '{0}'. The return value of method '{1}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</source>
+        <target state="translated">'this' bağımsız değişkeni, '{0}' çağrısında şunu karşılamıyor: {2}. '{1}' yönteminin dönüş değerinde eşleşen ek açıklamalar yok. Kaynak değerin, atandığı hedef konumda bildirilenlerle en az aynı gereksinimleri bildirmesi gerekir.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="IL2076">
+        <source>'{0}' generic argument does not satisfy {3} in '{1}'. The return value of method '{2}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</source>
+        <target state="translated">'{0}' genel bağımsız değişkeni, '{1}' içinde şunu karşılamıyor: {3}. '{2}' yönteminin dönüş değerinde eşleşen ek açıklamalar yok. Kaynak değerin, atandığı hedef konumda bildirilenlerle en az aynı gereksinimleri bildirmesi gerekir.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="IL2077">
+        <source>'{0}' argument does not satisfy {3} in call to '{1}'. The field '{2}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</source>
+        <target state="translated">'{0}' bağımsız değişkeni, '{1}' çağrısında şunu karşılamıyor: {3}. '{2}' alanında eşleşen ek açıklamalar yok. Kaynak değerin, atandığı hedef konumda bildirilenlerle en az aynı gereksinimleri bildirmesi gerekir.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="IL2078">
+        <source>'{0}' method return value does not satisfy {2} requirements. The field '{1}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</source>
+        <target state="translated">'{0}' yöntemi dönüş değeri, {2} gereksinimlerini karşılamıyor. '{1}' alanında eşleşen ek açıklamalar yok. Kaynak değerin, atandığı hedef konumda bildirilenlerle en az aynı gereksinimleri bildirmesi gerekir.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="IL2079">
+        <source>value stored in field '{0}' does not satisfy {2} requirements. The field '{1}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</source>
+        <target state="translated">'{0}' alanında depolanan değer, {2} gereksinimlerini karşılamıyor. '{1}' alanında eşleşen ek açıklamalar yok. Kaynak değerin, atandığı hedef konumda bildirilenlerle en az aynı gereksinimleri bildirmesi gerekir.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="IL2080">
+        <source>'this' argument does not satisfy {2} in call to '{0}'. The field '{1}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</source>
+        <target state="translated">'this' bağımsız değişkeni, '{0}' çağrısında şunu karşılamıyor: {2}. '{1}' alanında eşleşen ek açıklamalar yok. Kaynak değerin, atandığı hedef konumda bildirilenlerle en az aynı gereksinimleri bildirmesi gerekir.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="IL2081">
+        <source>'{0}' generic argument does not satisfy {3} in '{1}'. The field '{2}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</source>
+        <target state="translated">'{0}' genel bağımsız değişkeni, '{1}' içinde şunu karşılamıyor: {3}. '{2}' alanında eşleşen ek açıklamalar yok. Kaynak değerin, atandığı hedef konumda bildirilenlerle en az aynı gereksinimleri bildirmesi gerekir.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="IL2082">
+        <source>'{0}' argument does not satisfy {3} in call to '{1}'. The implicit 'this' argument of method '{2}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</source>
+        <target state="translated">'{0}' bağımsız değişkeni, '{1}' çağrısında şunu karşılamıyor: {3}. '{2}' yönteminin örtük 'this' bağımsız değişkeninde eşleşen ek açıklamalar yok. Kaynak değerin, atandığı hedef konumda bildirilenlerle en az aynı gereksinimleri bildirmesi gerekir.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="IL2083">
+        <source>'{0}' method return value does not satisfy {2} requirements. The implicit 'this' argument of method '{1}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</source>
+        <target state="translated">'{0}' yöntemi dönüş değeri, {2} gereksinimlerini karşılamıyor. '{1}' yönteminin örtük 'this' bağımsız değişkeninde eşleşen ek açıklamalar yok. Kaynak değerin, atandığı hedef konumda bildirilenlerle en az aynı gereksinimleri bildirmesi gerekir.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="IL2084">
+        <source>value stored in field '{0}' does not satisfy {2} requirements. The implicit 'this' argument of method '{1}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</source>
+        <target state="translated">'{0}' alanında depolanan değer, {2} gereksinimlerini karşılamıyor. '{1}' yönteminin örtük 'this' bağımsız değişkeninde eşleşen ek açıklamalar yok. Kaynak değerin, atandığı hedef konumda bildirilenlerle en az aynı gereksinimleri bildirmesi gerekir.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="IL2085">
+        <source>'this' argument does not satisfy {2} in call to '{0}'. The implicit 'this' argument of method '{1}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</source>
+        <target state="translated">'this' bağımsız değişkeni, '{0}' çağrısında şunu karşılamıyor: {2}. '{1}' yönteminin örtük 'this' bağımsız değişkeninde eşleşen ek açıklamalar yok. Kaynak değerin, atandığı hedef konumda bildirilenlerle en az aynı gereksinimleri bildirmesi gerekir.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="IL2086">
+        <source>'{0}' generic argument does not satisfy {3} in '{1}'. The implicit 'this' argument of method '{2}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</source>
+        <target state="translated">'{0}' genel bağımsız değişkeni, '{1}' içinde şunu karşılamıyor: {3}. '{2}' yönteminin örtük 'this' bağımsız değişkeninde eşleşen ek açıklamalar yok. Kaynak değerin, atandığı hedef konumda bildirilenlerle en az aynı gereksinimleri bildirmesi gerekir.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="IL2087">
+        <source>'{0}' argument does not satisfy {4} in call to '{1}'. The generic parameter '{2}' of '{3}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</source>
+        <target state="translated">'{0}' bağımsız değişkeni, '{1}' çağrısında şunu karşılamıyor: {4}. '{3}' yönteminin '{2}' genel parametresinde eşleşen ek açıklamalar yok. Kaynak değerin, atandığı hedef konumda bildirilenlerle en az aynı gereksinimleri bildirmesi gerekir.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="IL2088">
+        <source>'{0}' method return value does not satisfy {3} requirements. The generic parameter '{1}' of '{2}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</source>
+        <target state="translated">'{0}' yöntemi dönüş değeri, {3} gereksinimlerini karşılamıyor. '{2}' yönteminin '{1}' genel parametresinde eşleşen ek açıklamalar yok. Kaynak değerin, atandığı hedef konumda bildirilenlerle en az aynı gereksinimleri bildirmesi gerekir.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="IL2089">
+        <source>value stored in field '{0}' does not satisfy {3} requirements. The generic parameter '{1}' of '{2}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</source>
+        <target state="translated">'{0}' alanında depolanan değer, {3} gereksinimlerini karşılamıyor. '{2}' yönteminin '{1}' genel parametresinde eşleşen ek açıklamalar yok. Kaynak değerin, atandığı hedef konumda bildirilenlerle en az aynı gereksinimleri bildirmesi gerekir.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="IL2090">
+        <source>'this' argument does not satisfy {3} in call to '{0}'. The generic parameter '{1}' of '{2}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</source>
+        <target state="translated">'this' bağımsız değişkeni, '{0}' çağrısında şunu karşılamıyor: {3}. '{2}' yönteminin '{1}' genel parametresinde eşleşen ek açıklamalar yok. Kaynak değerin, atandığı hedef konumda bildirilenlerle en az aynı gereksinimleri bildirmesi gerekir.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="IL2091">
+        <source>'{0}' generic argument does not satisfy {4} in '{1}'. The generic parameter '{2}' of '{3}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</source>
+        <target state="translated">'{0}' genel bağımsız değişkeni, '{1}' içinde şunu karşılamıyor: {4}. '{3}' yönteminin '{2}' genel parametresinde eşleşen ek açıklamalar yok. Kaynak değerin, atandığı hedef konumda bildirilenlerle en az aynı gereksinimleri bildirmesi gerekir.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="IL2103">
+        <source>Value passed to the '{0}' parameter of method '{1}' cannot be statically determined as a property accessor.</source>
+        <target state="translated">'{1}' yönteminin '{0}' parametresine geçirilen değer statik bir şekilde özellik erişimcisi olarak belirlenemiyor.</target>
+        <note />
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

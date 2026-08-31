@@ -1,0 +1,61 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System.Runtime.InteropServices;
+using System.Threading;
+
+namespace System.SpanTests
+{
+    /// <summary>
+    /// This class is used in testing functions that are allocating significantly large blocks
+    /// of memory that could conceivably cause the machine to go OOM if more than one of the
+    /// tests were run at the same time. This class will block any large allocation call until
+    /// any prior tests have released the memory back to the system.
+    /// </summary>
+    static class AllocationHelper
+    {
+        private static readonly Mutex s_memoryLock = new Mutex();
+        private static readonly TimeSpan s_waitTimeout = TimeSpan.FromSeconds(120);
+
+        public static unsafe bool TryAllocNative(IntPtr size, out IntPtr memory)
+        {
+            memory = IntPtr.Zero;
+
+            if (!s_memoryLock.WaitOne(s_waitTimeout))
+                return false;
+
+            try
+            {
+                // .NETFramework has no IntPtr -> nuint conversion; round-trip through a pointer instead.
+                memory = (IntPtr)NativeMemory.Alloc((nuint)(void*)size);
+            }
+            catch (OutOfMemoryException)
+            {
+                memory = IntPtr.Zero;
+            }
+            finally
+            {
+                // Only a successful allocation keeps the mutex; the matching ReleaseNative frees it.
+                // Any failure (OOM, a null result, or an unexpected throw) must release it here so a
+                // later large allocation doesn't hang waiting on a mutex that will never be freed.
+                if (memory == IntPtr.Zero)
+                    s_memoryLock.ReleaseMutex();
+            }
+
+            return memory != IntPtr.Zero;
+        }
+
+        public static unsafe void ReleaseNative(ref IntPtr memory)
+        {
+            try
+            {
+                NativeMemory.Free((void*)memory);
+                memory = IntPtr.Zero;
+            }
+            finally
+            {
+                s_memoryLock.ReleaseMutex();
+            }
+        }
+    }
+}

@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+
+    <!-- Indicate to the compiler to output generated files to disk. Source addded
+         by the LibraryImportGenerator can be found in the intermediate directory. -->
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\tests\Ancillary.Interop\Ancillary.Interop.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\tests\TestAssets\NativeExports\NativeExports.csproj" />
+  </ItemGroup>
+
+</Project>

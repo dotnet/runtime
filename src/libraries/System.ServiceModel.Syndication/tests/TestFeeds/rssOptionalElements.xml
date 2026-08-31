@@ -1,0 +1,31 @@
+﻿<?xml version="1.0"?>
+<rss version="2.0">
+  <channel customAttribute="customAtt">
+    <title>Liftoff News</title>
+    <link>http://contoso.com/</link>
+    <description>Liftoff to Space Exploration.</description>
+    <language>en-us</language>
+    <lastBuildDate>Tue, 10 Jun 2003 09:41:01 Z</lastBuildDate>
+    <docs>http://contoso.com/rss</docs>
+    <generator>Weblog Editor 2.0</generator>
+    <managingEditor>editor@example.com</managingEditor>
+    <category>TestingFeeds</category>
+    <copyright>Contoso Rights.</copyright>
+    <ttl>60</ttl>
+    <skipHours>
+      <hour>1</hour>
+      <hour>2</hour>
+      <hour>3</hour>
+    </skipHours>
+    <skipDays>
+      <day>Saturday</day>
+      <day>Sunday</day>
+    </skipDays>
+    <textInput>
+      <description>Search Online</description>
+      <title>Search</title>
+      <link>http://www.contoso.no/search?</link>
+      <name>input Name</name>
+    </textInput>
+  </channel>
+</rss>

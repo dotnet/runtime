@@ -1,0 +1,10 @@
+<Project>
+
+  <!-- Must set this before importing the file below -->
+  <PropertyGroup>
+    <RIDPropsFile>$(MSBuildThisFileDirectory)ILCompilerRIDs.props</RIDPropsFile>
+  </PropertyGroup>
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, $(MSBuildThisFileDirectory)..))" />
+
+</Project>

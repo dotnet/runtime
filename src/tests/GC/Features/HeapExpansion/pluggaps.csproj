@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Needed for UnloadabilityIncompatible, GC.WaitForPendingFinalizers -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <!-- This test timeouts (but completes if given a long time) if running with other tests in parallel -->
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="pluggaps.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="GCUtil_HeapExpansion.csproj" />
+  </ItemGroup>
+</Project>

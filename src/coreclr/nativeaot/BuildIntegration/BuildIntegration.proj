@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.Build.NoTargets">
+  <PropertyGroup>
+    <OutputPath>$(RuntimeBinDir)/build/</OutputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="*.*" Exclude="$(MSBuildProjectFile)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

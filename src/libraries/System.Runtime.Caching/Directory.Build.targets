@@ -1,0 +1,8 @@
+﻿<Project>
+  <Import Project="..\Directory.Build.targets" />
+  <PropertyGroup>
+    <!-- This assembly is inbox in .NETFramework, ensure that the .NETStandard assembly
+         remains <= the .NETFramework version -->
+    <AssemblyVersion Condition="'$(TargetFramework)' == 'netstandard2.0'">4.0.0.0</AssemblyVersion>
+  </PropertyGroup>
+</Project>

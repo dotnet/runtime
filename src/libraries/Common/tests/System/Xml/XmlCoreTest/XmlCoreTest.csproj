@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>XmlCoreTest.Common</RootNamespace>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="AsyncUtil.cs" />
+    <Compile Include="CustomWriter.cs" />
+    <Compile Include="FilePathUtil.cs" />
+    <Compile Include="ManagedNodeWriter.cs" />
+    <Compile Include="MiscUtil.cs" />
+    <Compile Include="ReaderCreateUtil.cs" />
+    <Compile Include="ReaderUtil.cs" />
+    <Compile Include="UnicodeCharHelper.cs" />
+    <Compile Include="WriterFactory.cs" />
+    <Compile Include="TestData.g.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\ModuleCore\ModuleCore.csproj" />
+    <ProjectReference Include="..\XmlDiff\XmlDiff.csproj" />
+    <ProjectReference Include="..\..\..\TestUtilities\TestUtilities.csproj" />
+  </ItemGroup>
+</Project>

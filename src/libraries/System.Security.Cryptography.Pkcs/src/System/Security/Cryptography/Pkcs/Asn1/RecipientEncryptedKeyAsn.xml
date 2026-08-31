@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<asn:Sequence
+  xmlns:asn="http://schemas.dot.net/asnxml/201808/"
+  name="RecipientEncryptedKeyAsn"
+  namespace="System.Security.Cryptography.Pkcs.Asn1">
+
+  <!--
+    https://tools.ietf.org/html/rfc5652#section-6.2.2
+
+    RecipientEncryptedKey ::= SEQUENCE {
+        rid KeyAgreeRecipientIdentifier,
+        encryptedKey EncryptedKey
+    }
+
+    https://tools.ietf.org/html/rfc5652#section-6.2
+
+    EncryptedKey ::= OCTET STRING
+  -->
+  <asn:AsnType name="Rid" typeName="System.Security.Cryptography.Pkcs.Asn1.KeyAgreeRecipientIdentifierAsn" />
+  <asn:OctetString name="EncryptedKey" />
+</asn:Sequence>

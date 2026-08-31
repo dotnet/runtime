@@ -1,0 +1,53 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.1</TargetFrameworks>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
+    <IsPackable>true</IsPackable>
+    <AddNETFrameworkPlaceholderFileToPackage>true</AddNETFrameworkPlaceholderFileToPackage>
+    <AddNETFrameworkAssemblyReferenceToPackage>true</AddNETFrameworkAssemblyReferenceToPackage>
+    <PackageDescription>This namespace provides classes that constitute the core of the Managed Extensibility Framework, or MEF.
+
+Commonly Used Types:
+System.ComponentModel.Composition.Registration.RegistrationBuilder
+System.ComponentModel.Composition.Registration.PartBuilder
+System.ComponentModel.Composition.Registration.PartBuilder&lt;T&gt;
+System.ComponentModel.Composition.Registration.ParameterImportBuilder
+System.ComponentModel.Composition.Registration.ImportBuilder
+System.ComponentModel.Composition.Registration.ExportBuilder</PackageDescription>
+
+    <!-- TODO https://github.com/dotnet/runtime/issues/90400: Annotate for nullable reference types -->
+    <Nullable>disable</Nullable>
+    <NoWarn>$(NoWarn);nullable</NoWarn>
+    <!-- TODO: Add package README file: https://github.com/dotnet/runtime/issues/99358 -->
+    <EnableDefaultPackageReadmeFile>false</EnableDefaultPackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="System\ComponentModel\Composition\Registration\ExportBuilder.cs" />
+    <Compile Include="System\ComponentModel\Composition\Registration\ImportBuilder.cs" />
+    <Compile Include="System\ComponentModel\Composition\Registration\ParameterImportBuilder.cs" />
+    <Compile Include="System\ComponentModel\Composition\Registration\PartBuilder.cs" />
+    <Compile Include="System\ComponentModel\Composition\Registration\PartBuilderOfT.cs" />
+    <Compile Include="System\ComponentModel\Composition\Registration\RegistrationBuilder.cs" />
+    <Compile Include="System\Threading\ReadLock.cs" />
+    <Compile Include="System\Threading\ReadWriteLock.cs" />
+    <Compile Include="System\Threading\WriteLock.cs" />
+    <Compile Include="$(CommonPath)System\Composition\Diagnostics\CompositionTrace.cs"
+             Link="Common\System\Composition\Diagnostics\CompositionTrace.cs" />
+    <Compile Include="$(CommonPath)System\Composition\Diagnostics\CompositionTraceId.cs"
+             Link="Common\System\Composition\Diagnostics\CompositionTraceId.cs" />
+    <Compile Include="$(CommonPath)System\Composition\Diagnostics\CompositionTraceSource.cs"
+             Link="Common\System\Composition\Diagnostics\CompositionTraceSource.cs" />
+    <Compile Include="$(CommonPath)System\Composition\Diagnostics\DebuggerTraceWriter.cs"
+             Link="Common\System\Composition\Diagnostics\DebuggerTraceWriter.cs" />
+    <Compile Include="$(CommonPath)System\Composition\Diagnostics\TraceWriter.cs"
+             Link="Common\System\Composition\Diagnostics\TraceWriter.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.ComponentModel.Composition\src\System.ComponentModel.Composition.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Reflection.Context\src\System.Reflection.Context.csproj" />
+  </ItemGroup>
+
+</Project>

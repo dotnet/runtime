@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="System\Security\Claims\Claim.cs" />
+    <Compile Include="System\Security\Claims\ClaimsIdentity.cs" />
+    <Compile Include="System\Security\Claims\ClaimsPrincipal.cs" />
+    <Compile Include="System\Security\Claims\ClaimTypes.cs" />
+    <Compile Include="System\Security\Claims\ClaimValueTypes.cs" />
+    <Compile Include="System\Security\Claims\GenericIdentity.cs" />
+    <Compile Include="System\Security\Claims\GenericPrincipal.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections\src\System.Collections.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Memory\src\System.Memory.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.Thread\src\System.Threading.Thread.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Needed for CMakeProjectReference -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <!-- TODO: Re-enable when browser runtime-test payloads can relink per-test native components.
+         Tracked by https://github.com/dotnet/runtime/issues/123946. -->
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">true</CLRTestTargetUnsupported>
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="out_of_range_fp_to_int_conversions.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <CMakeProjectReference Include="CMakeLists.txt" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Needed for GC measurement accuracy: test captures GC indices and asserts no ephemeral GC
+         occurred between measurements; other tests in a merged runner can trigger ephemeral GCs,
+         violating that assumption. -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <DebugType>PdbOnly</DebugType>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="GetGCMemoryInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+</Project>

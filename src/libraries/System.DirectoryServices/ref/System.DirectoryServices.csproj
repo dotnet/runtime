@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0</TargetFrameworks>
+    <IncludeInternalObsoleteAttribute>true</IncludeInternalObsoleteAttribute>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="System.DirectoryServices.cs" />
+    <Compile Include="System.DirectoryServices.manual.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Use of 'PrivateAssets=all' removes the package reference to S.S.P since S.S.P has references to other packages that are not desired.
+    S.S.P only contains DirectoryServices obsolete types including DirectoryServicesPermission.-->
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Permissions\ref\System.Security.Permissions.csproj" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <PackageReference Include="System.IO.FileSystem.AccessControl" Version="$(SystemIOFileSystemAccessControlVersion)" />
+    <PackageReference Include="System.Security.AccessControl" Version="$(SystemSecurityAccessControlVersion)" />
+    <PackageReference Include="System.Security.Principal.Windows" Version="$(SystemSecurityPrincipalWindowsVersion)" />
+  </ItemGroup>
+</Project>

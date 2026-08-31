@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetFrameworkCurrent)</TargetFrameworks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.Constants.cs"
+             Link="Interop\Windows\Kernel32\Interop.Constants.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MAX_PATH.cs"
+             Link="Interop\Windows\Kernel32\Interop.MAX_PATH.cs" />
+    <Compile Include="AclTests.cs" />
+    <Compile Include="EventWaitHandleAclTests.cs" />
+    <Compile Include="MutexAclTests.cs" />
+    <Compile Include="MutexSecurityTests.cs" />
+    <Compile Include="SemaphoreAclTests.cs" />
+    <Compile Include="ThreadingAclExtensionsTests.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <ProjectReference Include="..\src\System.Threading.AccessControl.csproj" />
+  </ItemGroup>
+
+</Project>

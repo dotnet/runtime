@@ -1,0 +1,2524 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+//
+
+#include "jitpch.h"
+#include "rangecheck.h"
+
+//------------------------------------------------------------------------
+// rangeCheckPhase: optimize bounds checks via range analysis
+//
+// Returns:
+//    Suitable phase status
+//
+PhaseStatus Compiler::rangeCheckPhase()
+{
+    if (!doesMethodHaveBoundsChecks() || (fgSsaPassesCompleted == 0))
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    const bool madeChanges = GetRangeCheck()->OptimizeRangeChecks();
+    return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
+}
+
+// Max stack depth (path length) in walking the UD chain.
+static const int MAX_SEARCH_DEPTH = 100;
+
+// Max nodes to visit in the UD chain for the current method being compiled.
+static const int MAX_VISIT_BUDGET = 8192;
+
+//------------------------------------------------------------------------
+// GetRangeCheck: get the RangeCheck instance
+//
+// Returns:
+//    The range check object
+//
+RangeCheck* Compiler::GetRangeCheck(int customBudget)
+{
+    if (optRangeCheck == nullptr)
+    {
+        optRangeCheck = new (this, CMK_Generic) RangeCheck(this);
+    }
+    optRangeCheck->SetBudget(customBudget > 0 ? customBudget : MAX_VISIT_BUDGET);
+    return optRangeCheck;
+}
+
+// RangeCheck constructor.
+RangeCheck::RangeCheck(Compiler* pCompiler)
+    : m_preferredBound(ValueNumStore::NoVN)
+    , m_pRangeMap(nullptr)
+    , m_pSearchPath(nullptr)
+    , m_compiler(pCompiler)
+    , m_alloc(pCompiler->getAllocator(CMK_RangeCheck))
+    , m_nVisitBudget(MAX_VISIT_BUDGET)
+    , m_updateStmt(false)
+{
+}
+
+bool RangeCheck::IsOverBudget()
+{
+    return (m_nVisitBudget <= 0);
+}
+
+// Get the range map in which computed ranges are cached.
+RangeCheck::RangeMap* RangeCheck::GetRangeMap()
+{
+    if (m_pRangeMap == nullptr)
+    {
+        m_pRangeMap = new (m_alloc) RangeMap(m_alloc);
+    }
+    return m_pRangeMap;
+}
+
+void RangeCheck::ClearRangeMap()
+{
+    if (m_pRangeMap != nullptr)
+    {
+        m_pRangeMap->RemoveAll();
+    }
+}
+
+RangeCheck::SearchPath* RangeCheck::GetSearchPath()
+{
+    if (m_pSearchPath == nullptr)
+    {
+        m_pSearchPath = new (m_alloc) SearchPath(m_alloc);
+    }
+    return m_pSearchPath;
+}
+
+void RangeCheck::ClearSearchPath()
+{
+    if (m_pSearchPath != nullptr)
+    {
+        m_pSearchPath->RemoveAll();
+    }
+}
+
+// Get the length of the array vn, if it is new.
+int RangeCheck::GetArrLength(ValueNum vn)
+{
+    ValueNum arrRefVN = m_compiler->vnStore->GetArrForLenVn(vn);
+    int      size;
+    return m_compiler->vnStore->TryGetNewArrSize(arrRefVN, &size) ? size : 0;
+}
+
+//------------------------------------------------------------------------
+// BetweenBounds: Check if the computed range is within bounds
+//
+// Arguments:
+//    Range - the range to check if in bounds
+//    upper - the array length vn
+//    arrSize - the length of the array if known, or <= 0
+//
+// Return Value:
+//    True iff range is between [0 and vn - 1] or [0, arrSize - 1]
+//
+// notes:
+//    This function assumes that the lower range is resolved and upper range is symbolic as in an
+//    increasing loop.
+//
+// TODO-CQ: This is not general enough.
+//
+bool RangeCheck::BetweenBounds(Range& range, GenTree* upper, int arrSize)
+{
+#ifdef DEBUG
+    assert(range.IsValid());
+    if (m_compiler->verbose)
+    {
+        printf("%s BetweenBounds <%d, ", range.ToString(m_compiler), 0);
+        Compiler::printTreeID(upper);
+        printf(">\n");
+    }
+#endif // DEBUG
+
+    ValueNumStore* vnStore = m_compiler->vnStore;
+
+    // Get the VN for the upper limit.
+    ValueNum uLimitVN = vnStore->VNConservativeNormalValue(upper->gtVNPair);
+
+#ifdef DEBUG
+    JITDUMP(FMT_VN " upper bound is: ", uLimitVN);
+    if (m_compiler->verbose)
+    {
+        vnStore->vnDump(m_compiler, uLimitVN);
+    }
+    JITDUMP("\n");
+#endif
+
+    if ((arrSize <= 0) && !vnStore->IsVNCheckedBound(uLimitVN))
+    {
+        // If we don't know the array size and the upper limit is not known, then bail.
+        return false;
+    }
+
+    JITDUMP("Array size is: %d\n", arrSize);
+
+    // Upper limit: len + ucns (upper limit constant).
+    if (range.UpperLimit().IsBinOpArray())
+    {
+        if (range.UpperLimit().vn != uLimitVN)
+        {
+            return false;
+        }
+
+        int ucns = range.UpperLimit().GetConstant();
+
+        // Upper limit: Len + [0..n]
+        if (ucns >= 0)
+        {
+            return false;
+        }
+
+        // Since upper limit is bounded by the array, return true if lower bound is good.
+        if (range.LowerLimit().IsConstant() && range.LowerLimit().GetConstant() >= 0)
+        {
+            return true;
+        }
+
+        // Check if we have the array size allocated by new.
+        if (arrSize <= 0)
+        {
+            return false;
+        }
+
+        // At this point,
+        // upper limit = len + ucns. ucns < 0
+        // lower limit = len + lcns.
+        if (range.LowerLimit().IsBinOpArray())
+        {
+            int lcns = range.LowerLimit().GetConstant();
+            // Use "lcns < -arrSize" rather than "-lcns > arrSize" to avoid signed
+            // overflow when lcns == INT_MIN.
+            assert(arrSize > 0);
+            if (lcns >= 0 || lcns < -arrSize)
+            {
+                return false;
+            }
+            return (range.LowerLimit().vn == uLimitVN && lcns <= ucns);
+        }
+    }
+    // If upper limit is constant
+    else if (range.UpperLimit().IsConstant())
+    {
+        if (arrSize <= 0)
+        {
+            return false;
+        }
+        int ucns = range.UpperLimit().GetConstant();
+        if (ucns >= arrSize)
+        {
+            return false;
+        }
+        if (range.LowerLimit().IsConstant())
+        {
+            int lcns = range.LowerLimit().GetConstant();
+            // Make sure lcns < ucns which is already less than arrSize.
+            return (lcns >= 0 && lcns <= ucns);
+        }
+        if (range.LowerLimit().IsBinOpArray())
+        {
+            int lcns = range.LowerLimit().GetConstant();
+            // len + lcns, make sure we don't subtract too much from len. Use
+            // "lcns < -arrSize" rather than "-lcns > arrSize" to avoid signed
+            // overflow when lcns == INT_MIN.
+            assert(arrSize > 0);
+            if (lcns >= 0 || lcns < -arrSize)
+            {
+                return false;
+            }
+            // Make sure a.len + lcns <= ucns.
+            return (range.LowerLimit().vn == uLimitVN && (arrSize + lcns) <= ucns);
+        }
+    }
+
+    return false;
+}
+
+void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree* treeParent)
+{
+    // Check if we are dealing with a bounds check node.
+    bool isComma        = treeParent->OperIs(GT_COMMA);
+    bool isTopLevelNode = treeParent == stmt->GetRootNode();
+    if (!(isComma || isTopLevelNode))
+    {
+        return;
+    }
+
+    // If we are not looking at array bounds check, bail.
+    GenTree* tree = isComma ? treeParent->AsOp()->gtOp1 : treeParent;
+    if (!tree->OperIs(GT_BOUNDS_CHECK))
+    {
+        return;
+    }
+
+    GenTree*          comma     = treeParent->OperIs(GT_COMMA) ? treeParent : nullptr;
+    GenTreeBoundsChk* bndsChk   = tree->AsBoundsChk();
+    GenTree*          treeIndex = bndsChk->GetIndex();
+
+    ValueNum arrLenVn = m_compiler->optConservativeNormalVN(bndsChk->GetArrayLength());
+
+    // Get the range for this index.
+    Range range = Range(Limit(Limit::keUndef));
+    if (!TryGetRange(block, treeIndex, &range, arrLenVn))
+    {
+        JITDUMP("Failed to get range\n");
+        return;
+    }
+
+    Range arrSizeRng = GetRangeFromAssertions(m_compiler, bndsChk->GetArrayLength(), block->bbAssertionIn);
+
+    if (arrSizeRng.IsConstantRange())
+    {
+        int arrSize = arrSizeRng.LowerLimit().GetConstant();
+
+        // Is the range between the lower and upper bound values.
+        if (BetweenBounds(range, bndsChk->GetArrayLength(), arrSize))
+        {
+            JITDUMP("[RangeCheck::OptimizeRangeCheck] Between bounds\n");
+            m_compiler->optRemoveRangeCheck(bndsChk, comma, stmt);
+            m_updateStmt = true;
+        }
+    }
+}
+
+void RangeCheck::Widen(BasicBlock* block, GenTree* tree, Range* pRange)
+{
+#ifdef DEBUG
+    if (m_compiler->verbose)
+    {
+        printf("[RangeCheck::Widen] " FMT_BB ", \n", block->bbNum);
+        Compiler::printTreeID(tree);
+        printf("\n");
+    }
+#endif // DEBUG
+
+    Range& range = *pRange;
+
+    // Try to deduce the lower bound, if it is not known already.
+    if (range.LowerLimit().IsDependent() || range.LowerLimit().IsUnknown())
+    {
+        // To determine the lower bound, ask if the loop increases monotonically.
+        bool increasing = IsMonotonicallyIncreasing(tree, false);
+        if (increasing)
+        {
+            JITDUMP("[%06d] is monotonically increasing.\n", Compiler::dspTreeID(tree));
+            ClearRangeMap();
+            *pRange = GetRangeWorker(block, tree, true DEBUGARG(0));
+        }
+    }
+}
+
+bool RangeCheck::IsBinOpMonotonicallyIncreasing(GenTreeOp* binop)
+{
+    assert(binop->OperIs(GT_ADD));
+
+    GenTree* op1 = binop->gtGetOp1();
+    GenTree* op2 = binop->gtGetOp2();
+
+    JITDUMP("[RangeCheck::IsBinOpMonotonicallyIncreasing] [%06d], [%06d]\n", Compiler::dspTreeID(op1),
+            Compiler::dspTreeID(op2));
+
+    // Canonicalize to (lclVar + {lclVar|const}).
+    if (op2->OperIs(GT_LCL_VAR))
+    {
+        std::swap(op1, op2);
+    }
+
+    if (!op1->OperIs(GT_LCL_VAR))
+    {
+        JITDUMP("Not monotonically increasing because op1 is not lclVar.\n");
+        return false;
+    }
+    switch (op2->OperGet())
+    {
+        case GT_LCL_VAR:
+            // When adding two local variables, we also must ensure that any constant is non-negative.
+            return IsMonotonicallyIncreasing(op1, true) && IsMonotonicallyIncreasing(op2, true);
+
+        case GT_CNS_INT:
+            if (op2->AsIntConCommon()->IconValue() < 0)
+            {
+                JITDUMP("Not monotonically increasing because of encountered negative constant\n");
+                return false;
+            }
+
+            return IsMonotonicallyIncreasing(op1, false);
+
+        default:
+            JITDUMP("Not monotonically increasing because expression is not recognized.\n");
+            return false;
+    }
+}
+
+// The parameter rejectNegativeConst is true when we are adding two local vars (see above)
+bool RangeCheck::IsMonotonicallyIncreasing(GenTree* expr, bool rejectNegativeConst)
+{
+    JITDUMP("[RangeCheck::IsMonotonicallyIncreasing] [%06d]\n", Compiler::dspTreeID(expr));
+
+    if (IsOverBudget())
+    {
+        return false;
+    }
+    m_nVisitBudget--;
+
+    // Add hashtable entry for expr.
+    bool alreadyPresent = GetSearchPath()->Set(expr, nullptr, SearchPath::Overwrite);
+    if (alreadyPresent)
+    {
+        return true;
+    }
+
+    // Remove hashtable entry for expr when we exit the present scope.
+    auto code = [this, expr] {
+        GetSearchPath()->Remove(expr);
+    };
+    jitstd::utility::scoped_code<decltype(code)> finally(code);
+
+    if (GetSearchPath()->GetCount() > MAX_SEARCH_DEPTH)
+    {
+        return false;
+    }
+
+    // If expr is constant, then it is not part of the dependency
+    // loop which has to increase monotonically.
+    ValueNum vn = expr->gtVNPair.GetConservative();
+    if (m_compiler->vnStore->IsVNInt32Constant(vn))
+    {
+        if (rejectNegativeConst)
+        {
+            int cons = m_compiler->vnStore->ConstantValue<int>(vn);
+            return (cons >= 0);
+        }
+        else
+        {
+            return true;
+        }
+    }
+    // If the expr is local, then try to find the def of the local.
+    else if (expr->IsLocal())
+    {
+        LclSsaVarDsc* ssaDef = GetSsaDefStore(expr->AsLclVarCommon());
+        return (ssaDef != nullptr) && IsMonotonicallyIncreasing(ssaDef->GetDefNode()->Data(), rejectNegativeConst);
+    }
+    else if (expr->OperIs(GT_ADD))
+    {
+        return IsBinOpMonotonicallyIncreasing(expr->AsOp());
+    }
+    else if (expr->OperIs(GT_PHI))
+    {
+        for (GenTreePhi::Use& use : expr->AsPhi()->Uses())
+        {
+            // If the arg is already in the path, skip.
+            if (GetSearchPath()->Lookup(use.GetNode()))
+            {
+                continue;
+            }
+            if (!IsMonotonicallyIncreasing(use.GetNode(), rejectNegativeConst))
+            {
+                JITDUMP("Phi argument not monotonically increasing\n");
+                return false;
+            }
+        }
+        return true;
+    }
+    else if (expr->OperIs(GT_COMMA))
+    {
+        return IsMonotonicallyIncreasing(expr->gtEffectiveVal(), rejectNegativeConst);
+    }
+    JITDUMP("Unknown tree type\n");
+    return false;
+}
+
+// Given a lclvar use, try to find the lclvar's defining store and its containing block.
+LclSsaVarDsc* RangeCheck::GetSsaDefStore(GenTreeLclVarCommon* lclUse)
+{
+    // RangeCheck does not understand reads through LCL_FLD nodes: a LCL_FLD use reads a
+    // sub-range of the local (a different offset and/or a narrower type), so the value
+    // produced by the (full-width) definition does not describe the value being read.
+    if (lclUse->OperIs(GT_LCL_FLD))
+    {
+        return nullptr;
+    }
+
+    unsigned ssaNum = lclUse->GetSsaNum();
+
+    if (ssaNum == SsaConfig::RESERVED_SSA_NUM)
+    {
+        return nullptr;
+    }
+
+    unsigned      lclNum = lclUse->GetLclNum();
+    LclVarDsc*    varDsc = m_compiler->lvaGetDesc(lclNum);
+    LclSsaVarDsc* ssaDef = varDsc->GetPerSsaData(ssaNum);
+
+    // RangeCheck does not care about uninitialized variables.
+    if (ssaDef->GetDefNode() == nullptr)
+    {
+        // Parameters are expected to be defined in fgFirstBB if FIRST_SSA_NUM is set
+        if (varDsc->lvIsParam && (ssaNum == SsaConfig::FIRST_SSA_NUM))
+        {
+            assert(ssaDef->GetBlock() == m_compiler->fgFirstBB);
+        }
+        return nullptr;
+    }
+
+    // RangeCheck does not understand definitions generated by LCL_FLD nodes
+    // nor definitions generated by indirect stores to local variables, nor
+    // stores through parent structs.
+    GenTreeLclVarCommon* defStore = ssaDef->GetDefNode();
+    if (!defStore->OperIs(GT_STORE_LCL_VAR) || !defStore->HasSsaName())
+    {
+        return nullptr;
+    }
+
+    return ssaDef;
+}
+
+//------------------------------------------------------------------------
+// MergeEdgeAssertions: Merge assertions on the edge flowing into the block about a variable
+//
+// Arguments:
+//    GenTreeLclVarCommon - the variable to look for assertions for
+//    assertions - the assertions to use
+//    pRange - the range to tighten with assertions
+//
+void RangeCheck::MergeEdgeAssertions(GenTreeLclVarCommon* lcl, ASSERT_VALARG_TP assertions, Range* pRange)
+{
+    if (lcl->GetSsaNum() == SsaConfig::RESERVED_SSA_NUM)
+    {
+        return;
+    }
+
+    LclSsaVarDsc* ssaData     = m_compiler->lvaGetDesc(lcl)->GetPerSsaData(lcl->GetSsaNum());
+    ValueNum      normalLclVN = m_compiler->vnStore->VNConservativeNormalValue(ssaData->m_vnPair);
+    MergeEdgeAssertions(m_compiler, normalLclVN, m_preferredBound, assertions, pRange);
+}
+
+//------------------------------------------------------------------------
+// GetRangeFromAssertions: Cheaper version of TryGetRange that is based purely on assertions
+//    and does not require a full range analysis based on SSA.
+//
+// Arguments:
+//    comp             - the compiler instance
+//    tree             - the tree to analyze range for
+//    assertions       - the assertions to use
+//    budget           - the remaining budget for recursive analysis
+//
+// Return Value:
+//    The computed range
+//
+Range RangeCheck::GetRangeFromAssertions(Compiler* comp, GenTree* tree, ASSERT_VALARG_TP assertions, int budget)
+{
+    var_types type = tree->TypeGet();
+
+    if (!varTypeIsIntegral(type))
+    {
+        return Limit(Limit::keUnknown);
+    }
+
+    ValueNum num = comp->vnStore->VNConservativeNormalValue(tree->gtVNPair);
+
+    if (num == ValueNumStore::NoVN)
+    {
+        // Use the widest supported constant range for type
+        return GetRangeFromType(type);
+    }
+
+    ValueNumStore::SmallValueNumSet set;
+    return GetRangeFromAssertionsWorker(comp, num, assertions, budget, &set);
+}
+
+//------------------------------------------------------------------------
+// GetRangeFromAssertions: Cheaper version of TryGetRange that is based purely on assertions
+//    and does not require a full range analysis based on SSA.
+//
+// Arguments:
+//    comp             - the compiler instance
+//    vn               - the value number to analyze range for
+//    assertions       - the assertions to use
+//    budget           - the remaining budget for recursive analysis
+//
+// Return Value:
+//    The computed range
+//
+Range RangeCheck::GetRangeFromAssertions(Compiler* comp, ValueNum vn, ASSERT_VALARG_TP assertions, int budget)
+{
+    if (vn == ValueNumStore::NoVN)
+    {
+        return Limit(Limit::keUnknown);
+    }
+
+    ValueNumStore::SmallValueNumSet set;
+    return GetRangeFromAssertionsWorker(comp, vn, assertions, budget, &set);
+}
+
+//------------------------------------------------------------------------
+// GetRangeFromAssertionsWorker: Cheaper version of TryGetRange that is based purely on assertions
+//    and does not require a full range analysis based on SSA.
+//
+// Arguments:
+//    comp             - the compiler instance
+//    num              - the value number to analyze range for
+//    assertions       - the assertions to use
+//    budget           - the remaining budget for recursive analysis
+//    visited          - the set of value numbers already visited in the current search
+//                       path to prevent infinite recursion
+//
+// Return Value:
+//    The computed range
+//
+Range RangeCheck::GetRangeFromAssertionsWorker(
+    Compiler* comp, ValueNum num, ASSERT_VALARG_TP assertions, int budget, ValueNumStore::SmallValueNumSet* visited)
+{
+    assert(num != ValueNumStore::NoVN);
+
+    var_types vnType = comp->vnStore->TypeOfVN(num);
+    Range     result = GetRangeFromType(vnType);
+
+    if (budget <= 0)
+    {
+        return result;
+    }
+
+    if (varTypeIsGC(vnType))
+    {
+#if TARGET_64BIT
+        return Limit(Limit::keUnknown);
+#else
+        // On 32-bit targets TYP_BYREF/TYP_REF and TYP_INT are all 4 bytes, so the JIT can
+        // legally store a byref-valued expression (e.g. LCL_ADDR) into an int-typed local.
+        // The local itself is TYP_INT, but its VN is a TYP_BYREF function like PtrToLoc.
+        // The PhiDef visitor below recurses into reaching VNs, so a BYREF VN can show up
+        // here even though our public callers only pass us int-typed trees.
+        // We have no useful integer range to derive from a pointer, so just give up.
+
+        return GetRangeFromType(TYP_INT);
+#endif
+    }
+
+    //
+    // First, let's see if we can tighten the range based on VN information.
+    //
+
+    // If it's a constant, it's already as tight as it can get.
+    if (comp->vnStore->IsVNConstant(num))
+    {
+        int cns;
+        if (comp->vnStore->IsVNIntegralConstant(num, &cns))
+        {
+            return Range(Limit(Limit::keConstant, cns));
+        }
+        else
+        {
+            // TODO: We could return `0, keUnknown` if the constant is known positive
+            // but this would require more handling in other places to take advantage of.
+            return Limit(Limit::keUnknown);
+        }
+    }
+
+    VNFuncApp funcApp;
+    if (comp->vnStore->GetVNFunc(num, &funcApp))
+    {
+#if defined(FEATURE_HW_INTRINSICS)
+        // Some HWIntrinsic functions have known result ranges that can be queried via flags.
+        NamedIntrinsic id;
+        unsigned       simdSize;
+        var_types      simdBaseType;
+        if (comp->vnStore->IsVNHWIntrinsicFunc(num, &funcApp, &id, &simdSize, &simdBaseType))
+        {
+            if (HWIntrinsicInfo::ReturnsBoolean(id))
+            {
+                // A boolean [0, 1]
+                result.lLimit = Limit(Limit::keConstant, 0);
+                result.uLimit = Limit(Limit::keConstant, 1);
+            }
+            else if (HWIntrinsicInfo::ReturnsScalarT(id) && varTypeIsSmall(simdBaseType))
+            {
+                // We are extracting a value of the base types width and sign
+                result = GetRangeFromType(simdBaseType);
+            }
+        }
+#endif // FEATURE_HW_INTRINSICS
+
+        switch (funcApp.GetFunc())
+        {
+            case VNF_Cast:
+            {
+                var_types castToType;
+                bool      srcIsUnsigned;
+                comp->vnStore->GetCastOperFromVN(funcApp.GetArg(1), &castToType, &srcIsUnsigned);
+
+                ValueNum  arg0VN  = funcApp.GetArg(0);
+                var_types arg0Typ = comp->vnStore->TypeOfVN(arg0VN);
+
+                var_types castFromType = srcIsUnsigned ? varTypeToUnsigned(arg0Typ) : arg0Typ;
+
+                // A zero-extending cast (srcIsUnsigned) of a signed sub-int source is unsound to bound by the
+                // small unsigned type: small signed types are held sign-extended in their int-width stack slot,
+                // so the zero-extension applies to that wider value. E.g. (uint)(sbyte)(-1) == 0xFFFFFFFF, which
+                // is far outside the [0..255] range of the unsigned small type. Use the unsigned form of the
+                // actual (int) source width so we fall back to an unknown range instead of an unsound one.
+                if (srcIsUnsigned && varTypeIsSigned(arg0Typ) && (genTypeSize(arg0Typ) < genTypeSize(TYP_INT)))
+                {
+                    castFromType = varTypeToUnsigned(genActualType(arg0Typ));
+                }
+
+                // Widening preserves the source value (so we can reuse the source range) UNLESS we widen a
+                // signed source into a smaller-than-int unsigned type (e.g. (ushort)(sbyte)). There, negative
+                // source values are zero-extended into large positive values (e.g. (ushort)(-1) == 65535), so
+                // the source range no longer bounds the result.
+                bool widensToSmallUnsigned = varTypeIsUnsigned(castToType) &&
+                                             (genTypeSize(castToType) < genTypeSize(TYP_INT)) &&
+                                             varTypeIsSigned(castFromType);
+
+                if ((genTypeSize(castFromType) < genTypeSize(castToType)) && !widensToSmallUnsigned)
+                {
+                    // We're going from a small type to a large type
+                    // and so regardless of whether we zero or sign-extend
+                    // the value is preserved within the confines of its
+                    // original input for the destination, i.e. it always
+                    // passes the FitsIn<fromType> check.
+
+                    result = GetRangeFromType(castFromType);
+                }
+                else
+                {
+                    // We're either going from a big type to a small type
+                    // or between signed and unsigned types of the same size
+                    // so we want to use toType as the range.
+
+                    result = GetRangeFromType((castToType == TYP_UINT) ? TYP_INT : castToType);
+                }
+
+                // Now see if we can do better by looking at the cast source.
+                // if its range is within the castTo range, we can use that (and the cast is basically a no-op).
+                Range castOpRange = GetRangeFromAssertionsWorker(comp, arg0VN, assertions, --budget, visited);
+
+                if (castOpRange.IsConstantRange())
+                {
+                    if (!result.IsConstantRange())
+                    {
+                        if (!srcIsUnsigned || (castOpRange.LowerLimit().GetConstant() >= 0))
+                        {
+                            result = castOpRange;
+                        }
+                    }
+                    else if ((castOpRange.LowerLimit().GetConstant() >= result.LowerLimit().GetConstant()) &&
+                             (castOpRange.UpperLimit().GetConstant() <= result.UpperLimit().GetConstant()))
+                    {
+                        result = castOpRange;
+                    }
+                }
+            }
+            break;
+
+            case VNF_NEG:
+            {
+                Range r1 = GetRangeFromAssertionsWorker(comp, funcApp.GetArg(0), assertions, --budget, visited);
+                Range unaryOpResult = RangeOps::Negate(r1);
+
+                // We can use the result only if it never overflows.
+                result = unaryOpResult.IsConstantRange() ? unaryOpResult : result;
+                break;
+            }
+
+            case VNF_LSH:
+            case VNF_ADD:
+            case VNF_MUL:
+            case VNF_SUB:
+            case VNF_AND:
+            case VNF_OR:
+            case VNF_RSH:
+            case VNF_RSZ:
+            case VNF_UMOD:
+            case VNF_UDIV:
+            {
+                // Get ranges of both operands and perform the same operation on the ranges.
+                Range r1 = GetRangeFromAssertionsWorker(comp, funcApp.GetArg(0), assertions, --budget, visited);
+                Range r2 = GetRangeFromAssertionsWorker(comp, funcApp.GetArg(1), assertions, --budget, visited);
+                Range binOpResult = Range(Limit(Limit::keUnknown));
+                switch (funcApp.GetFunc())
+                {
+                    case VNF_ADD:
+                        binOpResult = RangeOps::Add(r1, r2);
+                        break;
+                    case VNF_MUL:
+                        binOpResult = RangeOps::Multiply(r1, r2);
+                        break;
+                    case VNF_SUB:
+                        binOpResult = RangeOps::Subtract(r1, r2);
+                        break;
+                    case VNF_AND:
+                        binOpResult = RangeOps::And(r1, r2);
+                        break;
+                    case VNF_OR:
+                        binOpResult = RangeOps::Or(r1, r2);
+                        break;
+                    case VNF_LSH:
+                    {
+                        if (varTypeIsLong(vnType))
+                        {
+                            // We can't handle LSH for long since we don't know the state of the upper 32-bits
+                            return Limit(Limit::keUnknown);
+                        }
+
+                        binOpResult = RangeOps::ShiftLeft(r1, r2);
+                        break;
+                    }
+                    case VNF_RSH:
+                    {
+                        if (varTypeIsLong(vnType))
+                        {
+                            int shiftAmount;
+
+                            if (r2.IsSingleValueConstant(&shiftAmount) && (shiftAmount >= 32) && (shiftAmount < 64))
+                            {
+                                // The upper 33-bits will all match post shift, so we are within [INT32_MIN, INT32_MAX]
+                                binOpResult = GetRangeFromType(TYP_INT);
+                                break;
+                            }
+                            else
+                            {
+                                return Range(Limit::keUnknown);
+                            }
+                        }
+
+                        binOpResult = RangeOps::ShiftRight(r1, r2, /*logical*/ false);
+                        break;
+                    }
+                    case VNF_RSZ:
+                    {
+                        if (varTypeIsLong(vnType))
+                        {
+                            int shiftAmount;
+
+                            if (r2.IsSingleValueConstant(&shiftAmount) && (shiftAmount >= 33) && (shiftAmount < 64))
+                            {
+                                // The upper 33-bits must all be zero post shift, so we are within [0, INT32_MAX]
+                                // and can further reduce based on the remaining shift amount. This is notably one
+                                // higher than RSH since we'd otherwise get a value within [INT32_MAX + 1, UINT32_MAX]
+
+                                r1 = Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, INT32_MAX));
+                                r2 = Range(Limit(Limit::keConstant, shiftAmount - 33));
+                            }
+                            else
+                            {
+                                return Range(Limit::keUnknown);
+                            }
+                        }
+
+                        binOpResult = RangeOps::ShiftRight(r1, r2, /*logical*/ true);
+                        break;
+                    }
+                    case VNF_UMOD:
+                        binOpResult = RangeOps::UnsignedMod(r1, r2);
+                        break;
+                    case VNF_UDIV:
+                        binOpResult = RangeOps::UnsignedDivide(r1, r2);
+                        break;
+                    default:
+                        unreached();
+                }
+
+                // We can use the result only if it never overflows.
+                result = binOpResult.IsConstantRange() ? binOpResult : result;
+                break;
+            }
+
+            case VNF_MDARR_LENGTH:
+            case VNF_ARR_LENGTH:
+                result.lLimit = Limit(Limit::keConstant, 0);
+                result.uLimit = Limit(Limit::keConstant, CORINFO_Array_MaxLength);
+                break;
+
+            case VNF_GT:
+            case VNF_GT_UN:
+            case VNF_GE:
+            case VNF_GE_UN:
+            case VNF_LT:
+            case VNF_LT_UN:
+            case VNF_LE:
+            case VNF_LE_UN:
+            case VNF_EQ:
+            case VNF_NE:
+            {
+                // These always return 0 or 1 (range is [0..1])
+                result.lLimit = Limit(Limit::keConstant, 0);
+                result.uLimit = Limit(Limit::keConstant, 1);
+
+                // But maybe we can do better and determine if they are always true or always false,
+                // hence, return [1..1] or [0..0]
+                Range r1 = GetRangeFromAssertionsWorker(comp, funcApp.GetArg(0), assertions, --budget, visited);
+                Range r2 = GetRangeFromAssertionsWorker(comp, funcApp.GetArg(1), assertions, --budget, visited);
+
+                if (r1.IsConstantRange() && r2.IsConstantRange())
+                {
+                    bool       isUnsigned = true;
+                    genTreeOps cmpOper;
+
+                    // Normalize the unsigned comparison operators.
+                    if (funcApp.FuncIs(VNF_GT_UN))
+                        cmpOper = GT_GT;
+                    else if (funcApp.FuncIs(VNF_GE_UN))
+                        cmpOper = GT_GE;
+                    else if (funcApp.FuncIs(VNF_LT_UN))
+                        cmpOper = GT_LT;
+                    else if (funcApp.FuncIs(VNF_LE_UN))
+                        cmpOper = GT_LE;
+                    else
+                    {
+                        isUnsigned = false;
+                        cmpOper    = static_cast<genTreeOps>(funcApp.GetFunc());
+                    }
+
+                    result = RangeOps::EvalRelop(cmpOper, isUnsigned, r1, r2);
+
+                    // Example: "(uint)(length - 4) > (uint)length" folds to false when
+                    // length >= 4 (the typical Slice(length - cns) bounds check).
+                    if (!result.IsSingleValueConstant() && (genActualType(vnType) == TYP_INT))
+                    {
+                        ValueNum op1VN = funcApp.GetArg(0);
+                        ValueNum op2VN = funcApp.GetArg(1);
+                        ValueNum addOpVN;
+                        int      addCns;
+
+                        if (comp->vnStore->IsVNBinFuncWithConst(op1VN, VNF_ADD, &addOpVN, &addCns) &&
+                            (addOpVN == op2VN) && (addCns < 0) && (addCns > INT32_MIN))
+                        {
+                            if (r2.LowerLimit().IsConstant() && (r2.LowerLimit().GetConstant() >= -addCns))
+                            {
+                                // ADD(A, K) < A is proven (both signed and unsigned).
+                                switch (cmpOper)
+                                {
+                                    case GT_LT:
+                                    case GT_LE:
+                                    case GT_NE:
+                                        result = Range(Limit(Limit::keConstant, 1));
+                                        break;
+
+                                    case GT_GT:
+                                    case GT_GE:
+                                    case GT_EQ:
+                                        result = Range(Limit(Limit::keConstant, 0));
+                                        break;
+
+                                    default:
+                                        break;
+                                }
+                            }
+                        }
+                    }
+                }
+                break;
+            }
+
+#if defined(FEATURE_HW_INTRINSICS)
+            case VNF_HWI_Vector_ExtractMostSignificantBits:
+#if defined(TARGET_XARCH)
+            case VNF_HWI_X86Base_MoveMask:
+            case VNF_HWI_AVX_MoveMask:
+            case VNF_HWI_AVX2_MoveMask:
+            case VNF_HWI_AVX512_MoveMask:
+#endif
+            {
+                // We have 1 bit per element, remaining upper bits are 0
+
+                var_types simdBaseType;
+                uint32_t  simdSize = comp->vnStore->GetVNHWIntrinsicSizeAndBaseType(funcApp, &simdBaseType);
+
+                size_t elementSize  = genTypeSize(simdBaseType);
+                size_t elementCount = simdSize / elementSize;
+
+                if (elementCount <= 16)
+                {
+                    result.lLimit = Limit(Limit::keConstant, 0);
+                    result.uLimit = Limit(Limit::keConstant, (1 << elementCount) - 1);
+                }
+                else
+                {
+                    // TODO: We could return `0, keUnknown` for `elementCount == 32` if the result is TYP_LONG
+                    // but this would require more handling in other places to take advantage of.
+                }
+                break;
+            }
+
+#if defined(TARGET_XARCH)
+            case VNF_HWI_AVX2_LeadingZeroCount:
+            case VNF_HWI_AVX2_TrailingZeroCount:
+            case VNF_HWI_AVX2_X64_LeadingZeroCount:
+            case VNF_HWI_AVX2_X64_TrailingZeroCount:
+            case VNF_HWI_X86Base_PopCount:
+            case VNF_HWI_X86Base_X64_PopCount:
+#elif defined(TARGET_ARM64)
+            case VNF_HWI_ArmBase_LeadingZeroCount:
+            case VNF_HWI_ArmBase_Arm64_LeadingZeroCount:
+            case VNF_HWI_ArmBase_Arm64_LeadingSignCount:
+#endif
+#endif
+            case VNF_LeadingZeroCount:
+            case VNF_TrailingZeroCount:
+            case VNF_PopCount:
+            {
+                // The actual range is [0..32] or [0..64]
+                var_types baseType = comp->vnStore->TypeOfVN(funcApp.GetArg(0));
+
+                result.lLimit = Limit(Limit::keConstant, 0);
+                result.uLimit = Limit(Limit::keConstant, varTypeIsLong(baseType) ? 64 : 32);
+                break;
+            }
+
+            default:
+                break;
+        }
+    }
+
+    if (result.IsSingleValueConstant())
+    {
+        // If it was evaluated to a single constant value by now, return it, we can't do better anyway.
+        return result;
+    }
+
+    Range phiRange = Range(Limit(Limit::keUndef));
+    auto  visitor  = [comp, vnType, &phiRange, &budget, visited](ValueNum reachingVN, ASSERT_TP reachingAssertions) {
+        // call GetRangeFromAssertionsWorker for each reaching VN using reachingAssertions
+        Range edgeRange = GetRangeFromType(vnType);
+
+        if (reachingVN != ValueNumStore::NoVN)
+        {
+            edgeRange = GetRangeFromAssertionsWorker(comp, reachingVN, reachingAssertions, --budget, visited);
+        }
+
+        // If phiRange is not yet set, set it to the first edgeRange
+        // else merge it with the new edgeRange. Example: [10..100] U [50..150] = [10..150]
+        phiRange = phiRange.IsUndef() ? edgeRange : RangeOps::Merge(phiRange, edgeRange, false);
+
+        // if any edge produces a non-constant range, we abort further processing
+        // We also give up if the range is full, as it won't help tighten the result.
+        if (edgeRange.IsConstantRange() && !edgeRange.IsFullRange())
+        {
+            return Compiler::AssertVisit::Continue;
+        }
+
+        return Compiler::AssertVisit::Abort;
+    };
+
+    // If it's a phi, we need to look at the reaching assertions for each of the phi args and merge them together.
+    if (comp->vnStore->IsPhiDef(num) && visited->Add(comp, num) &&
+        (comp->optVisitReachingAssertions(num, visitor) == Compiler::AssertVisit::Continue) && !phiRange.IsUndef())
+    {
+        assert(phiRange.IsConstantRange());
+        result = phiRange;
+    }
+
+    // MergeEdgeAssertionsWorker may recursively call back to GetRangeFromAssertionsWorker for other VN-to-VN assertion
+    // lookups.
+    int edgeAssertionsBudget = min(3, budget);
+    MergeEdgeAssertionsWorker(comp, num, ValueNumStore::NoVN, assertions, &result, /* canUseCheckedBounds */ false,
+                              edgeAssertionsBudget, visited);
+
+    return result.IsConstantRange() ? result : Limit(Limit::keUnknown);
+}
+
+//------------------------------------------------------------------------
+// TightenLimit: Given two limits for the same variable, return a tighter limit
+//    Example: l1: 10 and l2: 20. For lower limit, we can tighten to 20. For upper limit, we can tighten to 10.
+//
+// Arguments:
+//    l1             - The first limit
+//    l2             - The second limit
+//    preferredBound - We might prefer this VN limit over the other.
+//    isLower        - true if the limits are lower limits, false if the limits are upper limits.
+//
+// Return Value:
+//    The more tightened limit between l1 and l2.
+//
+Limit RangeCheck::TightenLimit(Limit l1, Limit l2, ValueNum preferredBound, bool isLower)
+{
+    // 1) One of the limits is undef, unknown or dependent
+    if (l1.IsUndef() || l2.IsUndef())
+    {
+        // Anything is better than undef.
+        return l1.IsUndef() ? l2 : l1;
+    }
+    if (l1.IsUnknown() || l2.IsUnknown())
+    {
+        // Anything is better than unknown.
+        return l1.IsUnknown() ? l2 : l1;
+    }
+    if (l1.IsDependent() || l2.IsDependent())
+    {
+        // Anything is better than dependent.
+        return l1.IsDependent() ? l2 : l1;
+    }
+
+    // 2) Both limits are constants
+    if (l1.IsConstant() && l2.IsConstant())
+    {
+        //  isLower: whatever is higher is better.
+        // !isLower: whatever is lower is better.
+        return isLower ? (l1.cns > l2.cns ? l1 : l2) : (l1.cns < l2.cns ? l1 : l2);
+    }
+
+    // 3) Both limits are BinOpArray (which is "arrLen + cns")
+    if (l1.IsBinOpArray() && l2.IsBinOpArray())
+    {
+        assert((l1.vn != ValueNumStore::NoVN) && (l2.vn != ValueNumStore::NoVN));
+
+        // If one of them is preferredBound and the other is not, use the preferredBound.
+        if ((l1.vn == preferredBound) && (l2.vn != preferredBound))
+        {
+            return l1;
+        }
+        if ((l2.vn == preferredBound) && (l1.vn != preferredBound))
+        {
+            return l2;
+        }
+
+        // Otherwise, just use the one with the higher/lower constant.
+        // even if they use different arrLen.
+        return isLower ? (l1.cns > l2.cns ? l1 : l2) : (l1.cns < l2.cns ? l1 : l2);
+    }
+
+    // 4) One of the limits is a constant and the other is BinOpArray
+    if ((l1.IsConstant() && l2.IsBinOpArray()) || (l2.IsConstant() && l1.IsBinOpArray()))
+    {
+        // l1 - BinOpArray, l2 - constant
+        if (l1.IsConstant())
+        {
+            std::swap(l1, l2);
+        }
+
+        assert(l1.vn != ValueNumStore::NoVN);
+        if (l1.vn != preferredBound)
+        {
+            // if we don't have a preferred bound,
+            // or it doesn't match l1.vn, use the constant (l2).
+            return l2;
+        }
+
+        // Otherwise, prefer the BinOpArray(preferredBound) over the constant for the upper bound
+        // and the constant for the lower bound.
+        return isLower ? l2 : l1;
+    }
+    unreached();
+}
+
+//------------------------------------------------------------------------
+// MergeEdgeAssertions: Merge assertions on the edge flowing into the block about a variable
+//
+// Arguments:
+//    comp                - the compiler instance
+//    normalLclVN         - the value number to look for assertions for
+//    preferredBoundVN    - when this VN is set, it will be given preference over constant limits
+//    assertions          - the assertions to use
+//    pRange              - the range to tighten with assertions
+//    canUseCheckedBounds - true if we can use checked bounds assertions (cache)
+//
+void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
+                                     ValueNum         normalLclVN,
+                                     ValueNum         preferredBoundVN,
+                                     ASSERT_VALARG_TP assertions,
+                                     Range*           pRange,
+                                     bool             canUseCheckedBounds)
+{
+    // Public entry point: no shared visited set; create a fresh one and use a small recursion
+    // budget for VN-to-VN assertion lookups.
+    ValueNumStore::SmallValueNumSet visited;
+    MergeEdgeAssertionsWorker(comp, normalLclVN, preferredBoundVN, assertions, pRange, canUseCheckedBounds,
+                              /* budget */ 3, &visited);
+}
+
+//------------------------------------------------------------------------
+// MergeEdgeAssertionsWorker: Worker for MergeEdgeAssertions that takes a visited set and recursion
+//    budget for VN-to-VN assertion lookups.
+//
+// Arguments:
+//    comp                - the compiler instance
+//    normalLclVN         - the value number to look for assertions for
+//    preferredBoundVN    - when this VN is set, it will be given preference over constant limits
+//    assertions          - the assertions to use
+//    pRange              - the range to tighten with assertions
+//    canUseCheckedBounds - true if we can use checked bounds assertions (cache)
+//    budget               - the remaining budget for recursive VN-to-VN assertion lookups
+//    visited              - the set of value numbers already visited in the current search path to prevent infinite
+//    recursion
+//
+void RangeCheck::MergeEdgeAssertionsWorker(Compiler*                        comp,
+                                           ValueNum                         normalLclVN,
+                                           ValueNum                         preferredBoundVN,
+                                           ASSERT_VALARG_TP                 assertions,
+                                           Range*                           pRange,
+                                           bool                             canUseCheckedBounds,
+                                           int                              budget,
+                                           ValueNumStore::SmallValueNumSet* visited)
+{
+    Range assertedRange = Range(Limit(Limit::keUnknown));
+    if (BitVecOps::MayBeUninit(assertions) || BitVecOps::IsEmpty(comp->apTraits, assertions))
+    {
+        return;
+    }
+
+    if (!comp->optAssertionHasAssertionsForVN(normalLclVN))
+    {
+        return;
+    }
+
+    assert(canUseCheckedBounds || (preferredBoundVN == ValueNumStore::NoVN));
+
+    // Walk through the "assertions" to check if they apply.
+    BitVecOps::Iter iter(comp->apTraits, assertions);
+    unsigned        index = 0;
+    while (iter.NextElem(&index))
+    {
+        AssertionIndex assertionIndex = GetAssertionIndex(index);
+
+        const Compiler::AssertionDsc& curAssertion = comp->optGetAssertion(assertionIndex);
+
+        Limit      limit(Limit::keUndef);
+        genTreeOps cmpOper    = GT_NONE;
+        bool       isUnsigned = false;
+
+        // o1: (normalLclVN + CNS1) - OAK_LT_UN - o2: (preferredBoundVN + 0)
+        // We can deduce normalLclVN's upper bound to be preferredBoundVN - CNS1
+        // Example: "(uint)(i + 2) < (uint)span.Length"
+        if (canUseCheckedBounds && curAssertion.KindIs(Compiler::OAK_LT_UN) &&
+            curAssertion.GetOp2().KindIs(Compiler::O2K_VN_ADD_CNS) &&
+            // Normally, checked bound doesn't directly imply non-negativity, so we check
+            // that explicitly here:
+            curAssertion.GetOp2().IsVNNeverNegative() && (curAssertion.GetOp2().GetVN() == preferredBoundVN) &&
+            (curAssertion.GetOp1().GetVN() != normalLclVN))
+        {
+            ValueNum addOpVN;
+            int      addOpCns;
+            if (comp->vnStore->IsVNBinFuncWithConst(curAssertion.GetOp1().GetVN(), VNF_ADD, &addOpVN, &addOpCns) &&
+                (addOpVN == normalLclVN))
+            {
+                if (addOpCns >= 0)
+                {
+                    cmpOper    = GT_LT;
+                    limit      = Limit(Limit::keBinOpArray, preferredBoundVN, -addOpCns);
+                    isUnsigned = false;
+                }
+                else if (addOpCns > INT32_MIN)
+                {
+                    // (normalLclVN + negConst) u< bound, with bound non-negative.
+                    // Since the comparison is unsigned, (normalLclVN + negConst) must not have wrapped,
+                    // which means normalLclVN >= -negConst.
+                    cmpOper    = GT_GE;
+                    limit      = Limit(Limit::keConstant, -addOpCns);
+                    isUnsigned = false;
+                }
+                else
+                {
+                    continue;
+                }
+            }
+            else
+            {
+                continue;
+            }
+        }
+        // If we're not allowed to emit keBinOpArray, we still can deduce something useful from
+        // O2K_VN_ADD_CNS for never negative checked bounds
+        //
+        //  Example: "(uint)normalLclVN < span.Length"   means normalLclVN's range is [0..INT32_MAX-1]
+        //  Example: "(uint)normalLclVN <= array.Length" means normalLclVN's range is [0..Array.MaxLength]
+        //
+        // This is restricted to upper-bound (LT/LE) relops: we substitute op2 with its upper bound
+        // (maxValue), which is only valid when op2 bounds normalLclVN from above. GT/GE relops (where
+        // op2 is a lower bound) would need op2's lower bound instead, so they fall through to the
+        // general "X <relop> Y" branch below.
+        else if (!canUseCheckedBounds &&
+                 curAssertion.KindIs(Compiler::OAK_LT, Compiler::OAK_LE, Compiler::OAK_LT_UN, Compiler::OAK_LE_UN) &&
+                 (curAssertion.GetOp1().GetVN() == normalLclVN) &&
+                 (curAssertion.GetOp2().KindIs(Compiler::O2K_VN_ADD_CNS)) &&
+                 (curAssertion.GetOp2().IsVNNeverNegative()) && (curAssertion.GetOp2().GetCns() == 0))
+        {
+            // We can assume that the checked bound is within [0..INT32_MAX] thanks to IsVNNeverNegative,
+            // but let's see if we can do better: we could call GetRangeFromAssertions on the checked bound's VN,
+            // but that may lead to infinite recursion. Also, the checked bound is usually either arr.Length or
+            // span.Length anyway.
+            ValueNum checkedBoundVN = curAssertion.GetOp2().GetVN();
+
+            int maxValue = INT32_MAX;
+            if (comp->vnStore->IsVNArrLen(checkedBoundVN))
+            {
+                maxValue = CORINFO_Array_MaxLength;
+            }
+            else
+            {
+                int cns;
+                if (comp->vnStore->IsVNIntegralConstant(checkedBoundVN, &cns) && (cns >= 0))
+                {
+                    maxValue = cns;
+                }
+            }
+
+            cmpOper = Compiler::AssertionDsc::ToCompareOper(curAssertion.GetKind(), &isUnsigned);
+            limit   = Limit(Limit::keConstant, maxValue);
+        }
+        // Current assertion is of the form "i <relop> (vn + cns)" where vn is a real
+        // (length-like) checked bound. The arbitrary-VN sub-form of O2K_VN_ADD_CNS (created by
+        // CreateRelopVN, where op2.vn is not a checked bound) is intentionally excluded here so
+        // that it never flows into a keBinOpArray Limit, whose Range::IsValid / Range::Widen
+        // rules implicitly assume the VN refers to a length-like (checked-bound-shaped) quantity.
+        // Such cases fall through to the general "X <relop> Y" branch below.
+        else if (curAssertion.KindIs(Compiler::OAK_GE, Compiler::OAK_GT, Compiler::OAK_LE, Compiler::OAK_LT) &&
+                 curAssertion.GetOp2().KindIs(Compiler::O2K_VN_ADD_CNS) &&
+                 comp->vnStore->IsVNCheckedBound(curAssertion.GetOp2().GetVN()))
+        {
+            const ValueNum boundVN  = curAssertion.GetOp2().GetVN();
+            const int      boundCns = curAssertion.GetOp2().GetCns();
+
+            // Check whether normalLclVN VN-equals the op2 expression "(boundVN + boundCns)":
+            //  - trivially, when boundCns is 0 and normalLclVN == boundVN, or
+            //  - when normalLclVN itself is the value-number "ADD(boundVN, boundCns)".
+            //
+            // The general case commonly arises on a loop back-edge where the induction variable
+            // is e.g. V = phi(V0, V - 8), and the back-edge JTRUE generates an assertion of the
+            // form "8 <= (V + -8)" against the phi's VN. We want to apply that assertion to the
+            // value of the back-edge phi-arg "(V - 8)" itself.
+            //
+            // Note: when boundCns == 0, the trivial check above is exhaustive -- VN normalizes
+            // ADD(x, 0) to x, so any IsVNBinFuncWithConst match would also have to satisfy
+            // normalLclVN == boundVN, which the trivial check already covers. Skip the lookup
+            // in that case to keep this fast-path cheap.
+            ValueNum   addOp;
+            int        addCns;
+            const bool normalLclVNMatchesOp2 =
+                ((normalLclVN == boundVN) && (boundCns == 0)) ||
+                ((boundCns != 0) && comp->vnStore->IsVNBinFuncWithConst(normalLclVN, VNF_ADD, &addOp, &addCns) &&
+                 (addOp == boundVN) && (addCns == boundCns));
+
+            if (canUseCheckedBounds && (normalLclVN == curAssertion.GetOp1().GetVN()))
+            {
+                cmpOper = Compiler::AssertionDsc::ToCompareOper(curAssertion.GetKind(), &isUnsigned);
+                limit   = Limit(Limit::keBinOpArray, boundVN, boundCns);
+            }
+            else if (normalLclVNMatchesOp2)
+            {
+                // Check if it's "Const <relop> (checkedBndVN + cns)" or in other words "Const <relop> normalLclVN"
+                // If normalLclVN VN-equals (checkedBndVN + cns), we can deduce "normalLclVN <relop> Const"
+                //
+                // Example: We created "O1K_VN(vn1) - OAK_GT - O2K_VN_ADD_CNS(vn2, 0)"
+                // if vn1 is a constant (say, 100) and vn2 is our normalLclVN, we can deduce "normalLclVN < 100"
+                //
+                if (comp->vnStore->IsVNInt32Constant(curAssertion.GetOp1().GetVN()))
+                {
+                    // Since we are swapping the operands, we also need to swap the comparison operator
+                    cmpOper =
+                        GenTree::SwapRelop(Compiler::AssertionDsc::ToCompareOper(curAssertion.GetKind(), &isUnsigned));
+                    limit = Limit(Limit::keConstant, comp->vnStore->ConstantValue<int>(curAssertion.GetOp1().GetVN()));
+                }
+                // Otherwise, report it as "normalLclVN <relop> some-other-checked-bound (op1.vn)".
+                else if (canUseCheckedBounds && comp->vnStore->IsVNCheckedBound(curAssertion.GetOp1().GetVN()))
+                {
+                    // Since we are swapping the operands, we also need to swap the comparison operator
+                    cmpOper =
+                        GenTree::SwapRelop(Compiler::AssertionDsc::ToCompareOper(curAssertion.GetKind(), &isUnsigned));
+                    limit = Limit(Limit::keBinOpArray, curAssertion.GetOp1().GetVN(), 0);
+                }
+                else
+                {
+                    continue;
+                }
+            }
+            else
+            {
+                continue;
+            }
+            assert(!isUnsigned);
+        }
+        // Current assertion is of the form "i <relop> cns"
+        else if (curAssertion.IsRelop() && curAssertion.GetOp2().KindIs(Compiler::O2K_CONST_INT) &&
+                 (curAssertion.GetOp1().GetVN() == normalLclVN) && FitsIn<int>(curAssertion.GetOp2().GetIntConstant()))
+        {
+            cmpOper = Compiler::AssertionDsc::ToCompareOper(curAssertion.GetKind(), &isUnsigned);
+            limit   = Limit(Limit::keConstant, static_cast<int>(curAssertion.GetOp2().GetIntConstant()));
+
+            // Make sure we don't deal with non-positive constants for unsigned comparisons
+            assert((curAssertion.GetOp2().GetIntConstant() > 0) || !isUnsigned);
+        }
+        // Current assertion is of the form "i == cns" or "i != cns"
+        else if (curAssertion.IsConstantInt32Assertion() && (curAssertion.GetOp1().GetVN() == normalLclVN))
+        {
+            // Ignore GC values/NULL caught by IsConstantInt32Assertion assertion (may happen on 32bit)
+            if (varTypeIsGC(comp->vnStore->TypeOfVN(curAssertion.GetOp2().GetVN())))
+            {
+                continue;
+            }
+
+            int cnstLimit = (int)curAssertion.GetOp2().GetIntConstant();
+            assert(cnstLimit == comp->vnStore->CoercedConstantValue<int>(curAssertion.GetOp2().GetVN()));
+
+            if (curAssertion.KindIs(Compiler::OAK_EQUAL))
+            {
+                limit   = Limit(Limit::keConstant, cnstLimit);
+                cmpOper = GT_EQ;
+            }
+            else
+            {
+                assert(curAssertion.KindIs(Compiler::OAK_NOT_EQUAL));
+
+                // We have an assertion of the form "X != constLimit".
+                // For example, if the assertion is "X != 100" and the current range for X is [100, X],
+                // we can tighten the range to [101, X].
+                // Similarly, if the range is [Y, 100], we can tighten it to [Y, 99].
+
+                if (pRange->LowerLimit().IsConstant() && pRange->LowerLimit().GetConstant() == cnstLimit)
+                {
+                    limit   = Limit(Limit::keConstant, cnstLimit);
+                    cmpOper = GT_GT;
+                }
+                else if (pRange->UpperLimit().IsConstant() && pRange->UpperLimit().GetConstant() == cnstLimit)
+                {
+                    limit   = Limit(Limit::keConstant, cnstLimit);
+                    cmpOper = GT_LT;
+                }
+                else
+                {
+                    // We can't make any useful deduction from this assertion.
+                    continue;
+                }
+            }
+        }
+        // Current assertion is of the form "X != (BoundVN + 0)" or "X == (BoundVN + 0)"
+        // where BoundVN is a length-like checked bound (e.g. an array length). These are
+        // generated from loop exit tests written as "i != arr.Length"; we can tighten the
+        // induction variable's range when its current upper/lower limit equals the bound.
+        else if (canUseCheckedBounds && curAssertion.KindIs(Compiler::OAK_EQUAL, Compiler::OAK_NOT_EQUAL) &&
+                 (curAssertion.GetOp1().GetVN() == normalLclVN) &&
+                 curAssertion.GetOp2().KindIs(Compiler::O2K_VN_ADD_CNS) && (curAssertion.GetOp2().GetCns() == 0) &&
+                 comp->vnStore->IsVNCheckedBound(curAssertion.GetOp2().GetVN()))
+        {
+            const ValueNum boundVN = curAssertion.GetOp2().GetVN();
+
+            if (curAssertion.KindIs(Compiler::OAK_EQUAL))
+            {
+                // X == bound: range tightens to exactly [bound, bound].
+                limit   = Limit(Limit::keBinOpArray, boundVN, 0);
+                cmpOper = GT_EQ;
+            }
+            else
+            {
+                // X != bound: only useful when pRange's upper or lower limit already equals
+                // the bound. Tighten:
+                //   [lo, bound] -> [lo, bound - 1]
+                //   [bound, hi] -> [bound + 1, hi]
+                if (pRange->UpperLimit().IsBinOpArray() && (pRange->UpperLimit().vn == boundVN) &&
+                    (pRange->UpperLimit().GetConstant() == 0))
+                {
+                    limit   = Limit(Limit::keBinOpArray, boundVN, -1);
+                    cmpOper = GT_LE;
+                }
+                else if (pRange->LowerLimit().IsBinOpArray() && (pRange->LowerLimit().vn == boundVN) &&
+                         (pRange->LowerLimit().GetConstant() == 0))
+                {
+                    limit   = Limit(Limit::keBinOpArray, boundVN, 1);
+                    cmpOper = GT_GE;
+                }
+                else
+                {
+                    // Nothing to deduce from this assertion at this site.
+                    continue;
+                }
+            }
+        }
+        // Current assertion asserts a bounds check does not throw
+        else if (curAssertion.IsBoundsCheckNoThrow())
+        {
+            // IsBoundsCheckNoThrow is "op1VN (Idx) LT_UN op2VN (Len)"
+            ValueNum indexVN = curAssertion.GetOp1().GetVN();
+            ValueNum lenVN   = curAssertion.GetOp2().GetVN();
+
+            assert(curAssertion.GetOp2().GetCns() == 0);
+            assert(curAssertion.GetOp2().IsVNNeverNegative());
+
+            if (normalLclVN == indexVN)
+            {
+                if (canUseCheckedBounds)
+                {
+                    isUnsigned = true;
+                    cmpOper    = GT_LT;
+                    limit      = Limit(Limit::keBinOpArray, lenVN, 0);
+                }
+                else
+                {
+                    // We're not interested in keBinOpArray limits if canUseCheckedBounds is false.
+                    // Instead, see if we can deduce anything keConstant out if this BoundsCheckNoThrow
+                    int len = 0;
+                    if (comp->vnStore->IsVNIntegralConstant(lenVN, &len) && (len >= 0))
+                    {
+                        // length is a constant, so we know "index u< lengthCNS"
+                        isUnsigned = true;
+                        cmpOper    = GT_LT;
+                        limit      = Limit(Limit::keConstant, len);
+                    }
+                    else
+                    {
+                        // otherwise, the only thing we can deduce is "index >= 0"
+                        cmpOper = GT_GE;
+                        limit   = Limit(Limit::keConstant, 0);
+                    }
+                }
+            }
+            else if (normalLclVN == lenVN)
+            {
+                ValueNum indexOp1VN;
+                int      indexOp2Cns;
+
+                if (comp->vnStore->IsVNInt32Constant(indexVN))
+                {
+                    // We have "Const < arr.Length" assertion, it means that "arr.Length > Const"
+                    int indexCns = comp->vnStore->GetConstantInt32(indexVN);
+                    if (indexCns >= 0)
+                    {
+                        cmpOper = GT_GT;
+                        limit   = Limit(Limit::keConstant, indexCns);
+                    }
+                    else
+                    {
+                        continue;
+                    }
+                }
+                // arr[arr.Length - CNS] means arr.Length >= CNS, so we can deduce "normalLclVN >= CNS"
+                // On the VN level it's VNF_ADD(normalLclVN, -CNS).
+                else if (comp->vnStore->IsVNBinFuncWithConst(indexVN, VNF_ADD, &indexOp1VN, &indexOp2Cns) &&
+                         (indexOp1VN == normalLclVN) && (indexOp2Cns < 0) && (indexOp2Cns > INT32_MIN))
+                {
+                    cmpOper = GT_GE;
+                    limit   = Limit(Limit::keConstant, -indexOp2Cns);
+                }
+                else
+                {
+                    // We've seen arr[unknown_index] assertion while normalLclVN == arr.Length.
+                    // This means the array has at least one element, so we can deduce "normalLclVN > 0".
+                    cmpOper = GT_GT;
+                    limit   = Limit(Limit::keConstant, 0);
+                }
+            }
+            else
+            {
+                continue;
+            }
+        }
+        // Current assertion is of the form "X <relop> Y" where both X and Y are arbitrary VNs
+        // We try to derive a bound on normalLclVN by recursively computing the range of the other operand.
+        //
+        // Example:
+        //
+        // if (a > 10 && a < 100)
+        // {
+        //    if (normalLclVN > a) // a is an unknown VN with [11..99] range derived from assertions.
+        //    {
+        //
+        else if (curAssertion.IsRelop() && curAssertion.GetOp2().KindIs(Compiler::O2K_VN_ADD_CNS) &&
+                 (curAssertion.GetOp2().GetCns() == 0) &&
+                 (curAssertion.GetOp1().GetVN() == normalLclVN || curAssertion.GetOp2().GetVN() == normalLclVN))
+        {
+            ValueNum op1VN = curAssertion.GetOp1().GetVN();
+            ValueNum op2VN = curAssertion.GetOp2().GetVN();
+
+            cmpOper = Compiler::AssertionDsc::ToCompareOper(curAssertion.GetKind(), &isUnsigned);
+            if (isUnsigned)
+            {
+                continue;
+            }
+
+            ValueNum otherVN;
+            if (op1VN == normalLclVN)
+            {
+                // Assertion is "normalLclVN <cmpOper> otherVN" - keep cmpOper as-is.
+                otherVN = op2VN;
+            }
+            else
+            {
+                // Assertion is "otherVN <cmpOper> normalLclVN" - swap to get
+                // "normalLclVN <swappedCmpOper> otherVN".
+                assert(op2VN == normalLclVN);
+                otherVN = op1VN;
+                cmpOper = GenTree::SwapRelop(cmpOper);
+            }
+
+            if (budget <= 0)
+            {
+                continue;
+            }
+
+            budget--;
+            Range otherRange = GetRangeFromAssertionsWorker(comp, otherVN, assertions, budget, visited);
+            if (!otherRange.IsConstantRange())
+            {
+                continue;
+            }
+
+            // Derive a constant limit for normalLclVN from the constant range of otherVN.
+            // We use the most useful bound for each direction of the comparison.
+            int derivedLimit;
+            switch (cmpOper)
+            {
+                case GT_LT:
+                case GT_LE:
+                    // normalLclVN < otherVN (or <=)  =>  normalLclVN <(=) otherVN.UpperLimit
+                    derivedLimit = otherRange.UpperLimit().GetConstant();
+                    break;
+                case GT_GT:
+                case GT_GE:
+                    // normalLclVN > otherVN (or >=)  =>  normalLclVN >(=) otherVN.LowerLimit
+                    derivedLimit = otherRange.LowerLimit().GetConstant();
+                    break;
+
+                default:
+                    continue;
+            }
+            limit = Limit(Limit::keConstant, derivedLimit);
+        }
+        // Current assertion is not supported, ignore it
+        else
+        {
+            continue;
+        }
+
+        assert(limit.IsBinOpArray() || limit.IsConstant());
+#ifdef DEBUG
+        if (comp->verbose)
+        {
+            comp->optPrintAssertion(curAssertion, assertionIndex);
+        }
+#endif
+
+        // Limits are sometimes made with the form vn + constant, where vn is a known constant
+        // see if we can simplify this to just a constant
+        if (limit.IsBinOpArray() && comp->vnStore->IsVNInt32Constant(limit.vn))
+        {
+            Limit tempLimit = Limit(Limit::keConstant, comp->vnStore->ConstantValue<int>(limit.vn));
+            if (tempLimit.AddConstant(limit.cns))
+            {
+                limit = tempLimit;
+            }
+        }
+
+        ValueNum arrLenVN = preferredBoundVN;
+
+        if (comp->vnStore->IsVNConstant(arrLenVN))
+        {
+            // Set arrLenVN to NoVN; this will make it match the "vn" recorded on
+            // constant limits (where we explicitly track the constant and don't
+            // redundantly store its VN in the "vn" field).
+            arrLenVN = ValueNumStore::NoVN;
+        }
+
+        assert(cmpOper != GT_NONE);
+
+        // Bounds are inclusive, so add -1 for upper bound when "<". But make sure we won't underflow.
+        if (cmpOper == GT_LT && !limit.AddConstant(-1))
+        {
+            continue;
+        }
+        // Bounds are inclusive, so add +1 for lower bound when ">". But make sure we won't overflow.
+        if (cmpOper == GT_GT && !limit.AddConstant(1))
+        {
+            continue;
+        }
+
+        // cmpOp (loop index i) cmpOper len +/- cns
+        switch (cmpOper)
+        {
+            case GT_LT:
+            case GT_LE:
+                assertedRange.uLimit = limit;
+                if (isUnsigned)
+                {
+                    assertedRange.lLimit = Limit(Limit::keConstant, 0);
+                }
+                break;
+
+            case GT_GT:
+            case GT_GE:
+                // GT/GE being unsigned creates a non-contiguous range which we can't represent
+                // using single Range object.
+                if (!isUnsigned)
+                {
+                    assertedRange.lLimit = limit;
+                }
+                break;
+
+            case GT_EQ:
+                assertedRange.uLimit = limit;
+                assertedRange.lLimit = limit;
+                break;
+
+            default:
+                // All other 'cmpOper' kinds leave lLimit/uLimit unchanged
+                break;
+        }
+
+        if (!assertedRange.IsValid())
+        {
+            JITDUMP("assertedRange is invalid: [%s] - bail out\n", assertedRange.ToString(comp));
+            return;
+        }
+
+        JITDUMP("Tightening pRange: [%s] with assertedRange: [%s] into ", pRange->ToString(comp),
+                assertedRange.ToString(comp));
+
+        Range copy  = *pRange;
+        copy.lLimit = TightenLimit(assertedRange.lLimit, copy.lLimit, preferredBoundVN, true);
+        copy.uLimit = TightenLimit(assertedRange.uLimit, copy.uLimit, preferredBoundVN, false);
+
+        JITDUMP("[%s]\n", copy.ToString(comp));
+        if (copy.IsValid())
+        {
+            *pRange = copy;
+        }
+        else
+        {
+            JITDUMP("invalid range after tightening\n");
+            return;
+        }
+    }
+}
+
+class AssertionsAccumulator final : public GenTreeVisitor<AssertionsAccumulator>
+{
+    int        m_Budget;
+    ASSERT_TP* m_pAssertions;
+    GenTree*   m_op;
+
+public:
+    enum
+    {
+        DoPostOrder       = true,
+        UseExecutionOrder = true
+    };
+
+    int GetBudgetLeft() const
+    {
+        return m_Budget;
+    }
+
+    AssertionsAccumulator(Compiler* compiler, int budget, ASSERT_TP* pAssertions, GenTree* op)
+        : GenTreeVisitor(compiler)
+        , m_Budget(budget)
+        , m_pAssertions(pAssertions)
+        , m_op(op)
+    {
+    }
+
+    fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
+    {
+        if ((*use == m_op) || (--m_Budget <= 0))
+        {
+            // We've found the op or run out of budget -> abort.
+            return fgWalkResult::WALK_ABORT;
+        }
+
+        if ((*use)->GeneratesAssertion())
+        {
+            AssertionInfo info = (*use)->GetAssertionInfo();
+            BitVecOps::AddElemD(m_compiler->apTraits, *m_pAssertions, info.GetAssertionIndex() - 1);
+        }
+        return fgWalkResult::WALK_CONTINUE;
+    }
+};
+
+// Merge assertions from the pred edges of the block, i.e., check for any assertions about "op's" value numbers for phi
+// arguments. If not a phi argument, check if we have assertions about local variables.
+void RangeCheck::MergeAssertion(BasicBlock* block, GenTree* op, Range* pRange DEBUGARG(int indent))
+{
+    JITDUMP("Merging assertions from pred edges of " FMT_BB " for op [%06d] " FMT_VN "\n", block->bbNum,
+            Compiler::dspTreeID(op), m_compiler->vnStore->VNConservativeNormalValue(op->gtVNPair));
+    ASSERT_TP assertions = BitVecOps::UninitVal();
+
+    if (m_compiler->GetAssertionCount() < 1)
+    {
+        return;
+    }
+
+    // If we have a phi arg, we can get to the block from it and use its assertion out.
+    if (op->OperIs(GT_PHI_ARG))
+    {
+        const BasicBlock* pred = op->AsPhiArg()->gtPredBB;
+
+        // Flow edits (e.g. RBO jump threading) can orphan a block without removing it or
+        // updating phis that name it as gtPredBB. Assertions on an edge out of an unreachable
+        // block don't hold, so don't merge them. Symmetric to the guard in
+        // Compiler::optVisitReachingAssertions (compiler.hpp).
+        if ((pred->bbPreds == nullptr) && (pred != m_compiler->fgFirstBB) && !m_compiler->bbIsHandlerBeg(pred))
+        {
+            return;
+        }
+
+        assertions = m_compiler->optGetEdgeAssertions(block, pred);
+        if (!BitVecOps::MayBeUninit(assertions))
+        {
+            JITDUMP("Merge assertions created by " FMT_BB " for " FMT_BB "\n", pred->bbNum, block->bbNum);
+            Compiler::optDumpAssertionIndices(assertions, "\n");
+        }
+    }
+    // Get assertions from bbAssertionIn.
+    else if (op->IsLocal())
+    {
+        assertions = block->bbAssertionIn;
+
+        // bbAssertionIn is a bit conservative and will not include intra-block assertions.
+        // e.g. created by GT_BOUNDS_CHECK nodes prior to the 'op' in the current block.
+        // For that, we walk the trees in the block until we find "op" and collect assertions
+        // along the way. It doesn't seem to be profitable for anything other than bounds checks
+        // (ArrBnds assertions), so we limit the search to only those blocks that may have bounds
+        // checks. It also helps reduce the cost of this search as it's not cheap.
+        //
+        if (block->HasFlag(BBF_MAY_HAVE_BOUNDS_CHECKS))
+        {
+            // We're going to be adding to 'assertions', so make a copy first.
+            assertions = BitVecOps::MakeCopy(m_compiler->apTraits, assertions);
+
+            // JIT-TP: Limit the search budget to avoid spending too much time here.
+            int budget = 50;
+            for (Statement* stmt : block->Statements())
+            {
+                AssertionsAccumulator visitor(m_compiler, budget, &assertions, op);
+                if (visitor.WalkTree(stmt->GetRootNodePointer(), nullptr) == Compiler::fgWalkResult::WALK_ABORT)
+                {
+                    break;
+                }
+                budget = visitor.GetBudgetLeft();
+            }
+        }
+    }
+
+    if (!BitVecOps::MayBeUninit(assertions))
+    {
+        // Perform the merge step to fine tune the range value.
+        MergeEdgeAssertions(op->AsLclVarCommon(), assertions, pRange);
+    }
+}
+
+// Compute the range for a binary operation.
+Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool monIncreasing DEBUGARG(int indent))
+{
+    assert(genActualType(binop) == TYP_INT);
+    assert(binop->OperIs(GT_ADD, GT_OR, GT_XOR, GT_AND, GT_RSH, GT_RSZ, GT_LSH, GT_UMOD, GT_MUL));
+
+    // For XOR we only care about Log2 pattern for now
+    if (binop->OperIs(GT_XOR))
+    {
+        int upperBound;
+        if (m_compiler->vnStore->IsVNLog2(m_compiler->vnStore->VNConservativeNormalValue(binop->gtVNPair), &upperBound))
+        {
+            assert(upperBound > 0);
+            return Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, upperBound));
+        }
+        return Range(Limit(Limit::keUnknown));
+    }
+
+    GenTree* op1 = binop->gtGetOp1();
+    GenTree* op2 = binop->gtGetOp2();
+
+    ValueNum op1VN = op1->gtVNPair.GetConservative();
+    ValueNum op2VN = op2->gtVNPair.GetConservative();
+
+    ValueNumStore* vnStore = m_compiler->vnStore;
+
+    bool op1IsCns = vnStore->IsVNConstant(op1VN);
+    bool op2IsCns = vnStore->IsVNConstant(op2VN);
+
+    if (binop->OperIsCommutative() && op1IsCns && !op2IsCns)
+    {
+        // Normalize constants to the right for commutative operators.
+        std::swap(op1, op2);
+        std::swap(op1VN, op2VN);
+        std::swap(op1IsCns, op2IsCns);
+    }
+
+    // Get range (cached or compute) for an operand, merging assertions as needed.
+    auto getRange = [this, block, monIncreasing DEBUGARG(indent)](GenTree* op) -> Range {
+        Range* opRangeCached = nullptr;
+        Range  opRange       = Limit(Limit::keUndef);
+        // Check if the range value is already cached.
+        if (!GetRangeMap()->Lookup(op, &opRangeCached))
+        {
+            // If we already have the op in the path, then, just rely on assertions, else
+            // find the range.
+            opRange = GetSearchPath()->Lookup(op) ? Range(Limit(Limit::keDependent))
+                                                  : GetRangeWorker(block, op, monIncreasing DEBUGARG(indent));
+            MergeAssertion(block, op, &opRange DEBUGARG(indent + 1));
+        }
+        else
+        {
+            opRange = *opRangeCached;
+        }
+        assert(opRange.IsValid());
+        return opRange;
+    };
+
+    Range op1Range = getRange(op1);
+    Range op2Range = getRange(op2);
+
+    Range r = Range(Limit::keUnknown);
+    switch (binop->OperGet())
+    {
+        case GT_ADD:
+            r = RangeOps::Add(op1Range, op2Range);
+            break;
+        case GT_MUL:
+            r = RangeOps::Multiply(op1Range, op2Range);
+            break;
+        case GT_RSH:
+            r = RangeOps::ShiftRight(op1Range, op2Range, /*logical*/ false);
+            break;
+        case GT_RSZ:
+            r = RangeOps::ShiftRight(op1Range, op2Range, /*logical*/ true);
+            break;
+        case GT_LSH:
+            r = RangeOps::ShiftLeft(op1Range, op2Range);
+            break;
+        case GT_AND:
+            r = RangeOps::And(op1Range, op2Range);
+            break;
+        case GT_OR:
+            r = RangeOps::Or(op1Range, op2Range);
+            break;
+        case GT_UMOD:
+            r = RangeOps::UnsignedMod(op1Range, op2Range);
+            break;
+        default:
+            return Range(Limit::keUnknown);
+    }
+
+    JITDUMP("BinOp %s %s %s = %s\n", op1Range.ToString(m_compiler), GenTree::OpName(binop->OperGet()),
+            op2Range.ToString(m_compiler), r.ToString(m_compiler));
+
+    // Some binops may produce invalid ranges, e.g. <0, 1> * <-1, -1> = <0, -1>
+    if (!r.IsValid())
+    {
+        JITDUMP("BinOp range is invalid: %s\n", r.ToString(m_compiler));
+        return Range(Limit::keUnknown);
+    }
+    return r;
+}
+
+//------------------------------------------------------------------------
+// GetRangeFromType: Compute the range from the given type
+//
+// Arguments:
+//   type - input type
+//
+// Return value:
+//   range that represents the values given type allows
+//
+Range RangeCheck::GetRangeFromType(var_types type)
+{
+    switch (type)
+    {
+        case TYP_UBYTE:
+            return Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, BYTE_MAX));
+        case TYP_BYTE:
+            return Range(Limit(Limit::keConstant, INT8_MIN), Limit(Limit::keConstant, INT8_MAX));
+        case TYP_USHORT:
+            return Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, UINT16_MAX));
+        case TYP_SHORT:
+            return Range(Limit(Limit::keConstant, INT16_MIN), Limit(Limit::keConstant, INT16_MAX));
+        case TYP_INT:
+            return Range(Limit(Limit::keConstant, INT32_MIN), Limit(Limit::keConstant, INT32_MAX));
+        default:
+            return Range(Limit(Limit::keUnknown));
+    }
+}
+
+// Compute the range for a local var definition.
+Range RangeCheck::ComputeRangeForLocalDef(BasicBlock*          block,
+                                          GenTreeLclVarCommon* lcl,
+                                          bool monIncreasing   DEBUGARG(int indent))
+{
+    LclSsaVarDsc* ssaDef = GetSsaDefStore(lcl);
+    if (ssaDef == nullptr)
+    {
+        return Range(Limit(Limit::keUnknown));
+    }
+#ifdef DEBUG
+    if (m_compiler->verbose)
+    {
+        JITDUMP("----------------------------------------------------\n");
+        m_compiler->gtDispTree(ssaDef->GetDefNode());
+        JITDUMP("----------------------------------------------------\n");
+    }
+#endif
+    Range range = GetRangeWorker(ssaDef->GetBlock(), ssaDef->GetDefNode()->Data(), monIncreasing DEBUGARG(indent));
+    if (!BitVecOps::MayBeUninit(block->bbAssertionIn) && (m_compiler->GetAssertionCount() > 0))
+    {
+        JITDUMP("Merge assertions from " FMT_BB ": ", block->bbNum);
+        Compiler::optDumpAssertionIndices(block->bbAssertionIn, " ");
+        JITDUMP("for definition [%06d]\n", Compiler::dspTreeID(ssaDef->GetDefNode()))
+
+        MergeEdgeAssertions(ssaDef->GetDefNode(), block->bbAssertionIn, &range);
+        JITDUMP("done merging\n");
+    }
+    return range;
+}
+
+// Get the limit's maximum possible value.
+bool RangeCheck::GetLimitMax(Limit& limit, int* pMax)
+{
+    int& max1 = *pMax;
+    switch (limit.type)
+    {
+        case Limit::keConstant:
+            max1 = limit.GetConstant();
+            break;
+
+        case Limit::keBinOpArray:
+        {
+            int tmp = GetArrLength(limit.vn);
+            if (tmp <= 0)
+            {
+                // If we can't figure out the array length, use the maximum array length,
+                // CORINFO_Array_MaxLength (0x7FFFFFC7). However, we get here also when
+                // we can't find a Span/ReadOnlySpan bounds check length, and these have
+                // a maximum length of INT_MAX (0x7FFFFFFF). If limit.vn refers to a
+                // GT_ARR_LENGTH node, then it's an array length, otherwise use the INT_MAX value.
+
+                if (m_compiler->vnStore->IsVNArrLen(limit.vn))
+                {
+                    tmp = CORINFO_Array_MaxLength;
+                }
+                else
+                {
+                    const int MaxSpanLength = 0x7FFFFFFF;
+                    tmp                     = MaxSpanLength;
+                }
+            }
+            if (IntAddOverflows(tmp, limit.GetConstant()))
+            {
+                return false;
+            }
+            max1 = tmp + limit.GetConstant();
+        }
+        break;
+
+        default:
+            return false;
+    }
+    return true;
+}
+
+// Check if the arithmetic overflows.
+bool RangeCheck::AddOverflows(Limit& limit1, Limit& limit2)
+{
+    int max1;
+    if (!GetLimitMax(limit1, &max1))
+    {
+        return true;
+    }
+
+    int max2;
+    if (!GetLimitMax(limit2, &max2))
+    {
+        return true;
+    }
+
+    return IntAddOverflows(max1, max2);
+}
+
+// Check if the arithmetic overflows.
+bool RangeCheck::MultiplyOverflows(Limit& limit1, Limit& limit2)
+{
+    int max1;
+    if (!GetLimitMax(limit1, &max1))
+    {
+        return true;
+    }
+
+    int max2;
+    if (!GetLimitMax(limit2, &max2))
+    {
+        return true;
+    }
+
+    return CheckedOps::MulOverflows(max1, max2, CheckedOps::Signed);
+}
+
+// Does the bin operation overflow.
+bool RangeCheck::DoesBinOpOverflow(BasicBlock* block, GenTreeOp* binop, const Range& range)
+{
+    GenTree* op1 = binop->gtGetOp1();
+    GenTree* op2 = binop->gtGetOp2();
+
+    if (!GetSearchPath()->Lookup(op1) && ComputeDoesOverflow(block, op1, range))
+    {
+        return true;
+    }
+
+    if (!GetSearchPath()->Lookup(op2) && ComputeDoesOverflow(block, op2, range))
+    {
+        return true;
+    }
+
+    // Get the cached ranges of op1
+    Range* op1Range = nullptr;
+    if (!GetRangeMap()->Lookup(op1, &op1Range))
+    {
+        return true;
+    }
+    // Get the cached ranges of op2
+    Range* op2Range = nullptr;
+    if (!GetRangeMap()->Lookup(op2, &op2Range))
+    {
+        return true;
+    }
+
+    JITDUMP("Checking bin op overflow %s %s %s\n", GenTree::OpName(binop->OperGet()), op1Range->ToString(m_compiler),
+            op2Range->ToString(m_compiler));
+
+    if (binop->OperIs(GT_ADD))
+    {
+        return AddOverflows(op1Range->UpperLimit(), op2Range->UpperLimit());
+    }
+    if (binop->OperIs(GT_MUL))
+    {
+        return MultiplyOverflows(op1Range->UpperLimit(), op2Range->UpperLimit());
+    }
+    if (binop->OperIs(GT_LSH))
+    {
+        // Convert LSH(X, CNS) to MUL(X, CNS) if possible and check that,
+        // otherwise, report as "may overflow".
+        Range convertedOp2Range = RangeOps::ConvertShiftToMultiply(*op2Range);
+        return MultiplyOverflows(op1Range->UpperLimit(), convertedOp2Range.UpperLimit());
+    }
+    if (binop->OperIs(GT_OR))
+    {
+        // Conservatively give up on possibly negative operands.
+        if (op1Range->LowerLimit().IsConstant() && op2Range->LowerLimit().IsConstant() &&
+            (op1Range->LowerLimit().GetConstant() >= 0) && (op2Range->LowerLimit().GetConstant() >= 0))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+// Check if the var definition the rhs involves arithmetic that overflows.
+bool RangeCheck::DoesVarDefOverflow(BasicBlock* block, GenTreeLclVarCommon* lcl, const Range& range)
+{
+    LclSsaVarDsc* ssaDef = GetSsaDefStore(lcl);
+    if (ssaDef == nullptr)
+    {
+        if ((lcl->GetSsaNum() == SsaConfig::FIRST_SSA_NUM) && m_compiler->lvaIsParameter(lcl->GetLclNum()))
+        {
+            // Parameter definitions that come from outside the method could not have overflown.
+            return false;
+        }
+        return true;
+    }
+
+    // We can use intermediate assertions about the local to prove that any
+    // overflow on this path does not matter for the range computed.
+    Range assertionRange = Range(Limit(Limit::keUnknown));
+    MergeAssertion(block, lcl, &assertionRange DEBUGARG(0));
+
+    // But only if the range from the assertion is more strict than the global
+    // range computed; otherwise we might still have used the def's value to
+    // tighten the range of the global range.
+    Range merged = RangeOps::Merge(range, assertionRange, false);
+    if (merged.LowerLimit().Equals(range.LowerLimit()) && merged.UpperLimit().Equals(range.UpperLimit()))
+    {
+        return false;
+    }
+
+    return ComputeDoesOverflow(ssaDef->GetBlock(), ssaDef->GetDefNode()->Data(), range);
+}
+
+bool RangeCheck::DoesPhiOverflow(BasicBlock* block, GenTree* expr, const Range& range)
+{
+    for (GenTreePhi::Use& use : expr->AsPhi()->Uses())
+    {
+        GenTree* arg = use.GetNode();
+        if (GetSearchPath()->Lookup(arg))
+        {
+            continue;
+        }
+        if (ComputeDoesOverflow(block, arg, range))
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+//------------------------------------------------------------------------
+// ComputeDoesOverflow: Check if the computation of "expr" may have overflowed.
+//
+// Arguments:
+//   block - the block that contains `expr`
+//   expr  - expression to check overflow of
+//   range - range that we believe "expr" to be in without accounting for
+//           overflow; used to ignore potential overflow on paths where
+//           we can prove the value is in this range regardless.
+//
+// Return value:
+//   True if the computation may have involved an impactful overflow.
+//
+bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTree* expr, const Range& range)
+{
+    ValueNumStore* vnStore = m_compiler->vnStore;
+
+    JITDUMP("Does overflow [%06d]?\n", Compiler::dspTreeID(expr));
+
+    if (IsOverBudget())
+    {
+        return true;
+    }
+    m_nVisitBudget--;
+
+    GetSearchPath()->Set(expr, block, SearchPath::Overwrite);
+
+    bool overflows = true;
+
+    if (GetSearchPath()->GetCount() > MAX_SEARCH_DEPTH)
+    {
+        overflows = true;
+    }
+    // If the definition chain resolves to a constant, it doesn't overflow.
+    else if (vnStore->IsVNConstant(expr->gtVNPair.GetConservative()))
+    {
+        overflows = false;
+    }
+    else if (expr->OperIs(GT_IND, GT_ARR_LENGTH))
+    {
+        overflows = false;
+    }
+    else if (expr->OperIs(GT_COMMA))
+    {
+        overflows = ComputeDoesOverflow(block, expr->gtEffectiveVal(), range);
+    }
+    // Check if the var def has rhs involving arithmetic that overflows.
+    else if (expr->IsLocal())
+    {
+        overflows = DoesVarDefOverflow(block, expr->AsLclVarCommon(), range);
+    }
+    // Check if these bin ops overflow.
+    else if (expr->OperIs(GT_ADD, GT_OR, GT_MUL, GT_LSH))
+    {
+        overflows = DoesBinOpOverflow(block, expr->AsOp(), range);
+    }
+    // These operators don't overflow.
+    else if (expr->OperIs(GT_AND, GT_RSH, GT_RSZ, GT_UMOD, GT_NEG))
+    {
+        overflows = false;
+    }
+    else if (expr->OperIs(GT_XOR) && vnStore->IsVNLog2(m_compiler->vnStore->VNConservativeNormalValue(expr->gtVNPair)))
+    {
+        // For XOR we only care about Log2 pattern for now, which never overflows.
+        overflows = false;
+    }
+    // Walk through phi arguments to check if phi arguments involve arithmetic that overflows.
+    else if (expr->OperIs(GT_PHI))
+    {
+        overflows = DoesPhiOverflow(block, expr, range);
+    }
+    else if (expr->OperIs(GT_CAST))
+    {
+        overflows = ComputeDoesOverflow(block, expr->gtGetOp1(), range);
+    }
+    GetSearchPath()->Remove(expr);
+    JITDUMP("[%06d] %s\n", Compiler::dspTreeID(expr), ((overflows) ? "overflows" : "does not overflow"));
+    return overflows;
+}
+
+//------------------------------------------------------------------------
+// ComputeRange: Compute the range recursively by asking for the range of each variable in the dependency chain.
+//
+// Arguments:
+//   block - the block that contains `expr`;
+//   expr - expression to compute the range for;
+//   monIncreasing - true if `expr` is proven to be monotonically increasing;
+//   indent - debug printing indent.
+//
+// Return value:
+//   'expr' range as lower and upper limits.
+//
+// Notes:
+//   eg.: c = a + b; ask range of "a" and "b" and add the results.
+//   If the result cannot be determined i.e., the dependency chain does not terminate in a value,
+//   but continues to loop, which will happen with phi nodes we end the looping by calling the
+//   value as "dependent" (dep).
+//   If the loop is proven to be "monIncreasing", then make liberal decisions for the lower bound
+//   while merging phi node. eg.: merge((0, dep), (dep, dep)) = (0, dep),
+//   merge((0, 1), (dep, dep)) = (0, dep), merge((0, 5), (dep, 10)) = (0, 10).
+//
+Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreasing DEBUGARG(int indent))
+{
+    bool  newlyAdded = !GetSearchPath()->Set(expr, block, SearchPath::Overwrite);
+    Range range      = Limit(Limit::keUndef);
+
+    ValueNum vn = m_compiler->vnStore->VNConservativeNormalValue(expr->gtVNPair);
+
+    // If we just added 'expr' in the current search path, then reduce the budget.
+    if (newlyAdded)
+    {
+        // Assert that we are not re-entrant for a node which has been
+        // visited and resolved before and not currently on the search path.
+        noway_assert(!GetRangeMap()->Lookup(expr));
+        m_nVisitBudget--;
+    }
+    // Prevent quadratic behavior.
+    if (IsOverBudget())
+    {
+        // Set to unknown, since an Unknown range resolution, will stop further
+        // searches. This is because anything that merges with Unknown will
+        // yield Unknown. Unknown is lattice top.
+        range = Range(Limit(Limit::keUnknown));
+        JITDUMP("GetRangeWorker not tractable within max node visit budget.\n");
+    }
+    // Prevent unbounded recursion.
+    else if (GetSearchPath()->GetCount() > MAX_SEARCH_DEPTH)
+    {
+        // Unknown is lattice top, anything that merges with Unknown will yield Unknown.
+        range = Range(Limit(Limit::keUnknown));
+        JITDUMP("GetRangeWorker not tractable within max stack depth.\n");
+    }
+    else if (genActualType(expr) != TYP_INT)
+    {
+        // TYP_LONG and other expressions are only supported for non dependent/symbolic ranges
+        range = GetRangeFromAssertions(m_compiler, expr, block->bbAssertionIn);
+    }
+    // If VN is constant return range as constant.
+    else if (m_compiler->vnStore->IsVNConstant(vn))
+    {
+        // We want to handle constants first since it can avoid other more expensive work
+
+        int cns;
+        if (m_compiler->vnStore->IsVNIntegralConstant(vn, &cns))
+        {
+            range = Range(Limit(Limit::keConstant, cns));
+        }
+        else
+        {
+            // TODO: We could return `0, keUnknown` if the constant is known positive
+            // but this would require more handling in other places to take advantage of.
+            range = Limit(Limit::keUnknown);
+        }
+    }
+    // If this value IS the caller-provided preferred bound, represent it as [bound, bound]
+    else if ((m_preferredBound != ValueNumStore::NoVN) && (vn == m_preferredBound))
+    {
+        range = Range(Limit(Limit::keBinOpArray, m_preferredBound, 0));
+    }
+    // If local, find the definition from the def map and evaluate the range for rhs.
+    else if (expr->IsLocal())
+    {
+        range = ComputeRangeForLocalDef(block, expr->AsLclVarCommon(), monIncreasing DEBUGARG(indent + 1));
+        MergeAssertion(block, expr, &range DEBUGARG(indent + 1));
+    }
+    // compute the range for binary operation
+    else if (expr->OperIs(GT_XOR, GT_OR, GT_ADD, GT_AND, GT_RSH, GT_RSZ, GT_LSH, GT_UMOD, GT_MUL))
+    {
+        range = ComputeRangeForBinOp(block, expr->AsOp(), monIncreasing DEBUGARG(indent + 1));
+    }
+    else if (expr->OperIs(GT_NEG))
+    {
+        // Compute range for negation, e.g.: [0..8] -> [-8..0]
+        Range op1Range = GetRangeWorker(block, expr->gtGetOp1(), monIncreasing DEBUGARG(indent + 1));
+        range          = RangeOps::Negate(op1Range);
+    }
+    // If phi, then compute the range for arguments, calling the result "dependent" when looping begins.
+    else if (expr->OperIs(GT_PHI))
+    {
+        for (GenTreePhi::Use& use : expr->AsPhi()->Uses())
+        {
+            Range argRange = Range(Limit(Limit::keUndef));
+            if (GetSearchPath()->Lookup(use.GetNode()))
+            {
+                JITDUMP("PhiArg [%06d] is already being computed\n", Compiler::dspTreeID(use.GetNode()));
+                argRange = Range(Limit(Limit::keDependent));
+            }
+            else
+            {
+                argRange = GetRangeWorker(block, use.GetNode(), monIncreasing DEBUGARG(indent + 1));
+            }
+            assert(!argRange.LowerLimit().IsUndef());
+            assert(!argRange.UpperLimit().IsUndef());
+            MergeAssertion(block, use.GetNode(), &argRange DEBUGARG(indent + 1));
+            JITDUMP("Merging ranges %s %s:", range.ToString(m_compiler), argRange.ToString(m_compiler));
+            range = RangeOps::Merge(range, argRange, monIncreasing);
+            JITDUMP("%s\n", range.ToString(m_compiler));
+        }
+    }
+    else if (expr->OperIs(GT_COMMA))
+    {
+        range = GetRangeWorker(block, expr->gtEffectiveVal(), monIncreasing DEBUGARG(indent + 1));
+    }
+    else if (expr->OperIs(GT_ARR_LENGTH))
+    {
+        range = Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, CORINFO_Array_MaxLength));
+    }
+    else
+    {
+        // Use GetRangeFromAssertions for everything else since they won't produce dependent or symbolic ranges
+        range = GetRangeFromAssertions(m_compiler, expr, block->bbAssertionIn);
+    }
+
+    GetRangeMap()->Set(expr, new (m_alloc) Range(range), RangeMap::Overwrite);
+    GetSearchPath()->Remove(expr);
+    return range;
+}
+
+#ifdef DEBUG
+void Indent(int indent)
+{
+    for (int i = 0; i < indent; ++i)
+    {
+        JITDUMP("   ");
+    }
+}
+#endif
+
+//------------------------------------------------------------------------
+// TryGetRange: Try to obtain the range of an expression.
+//
+// Arguments:
+//    block            - the block that contains `expr`;
+//    expr             - expression to compute the range for;
+//    pRange           - [Out] range of the expression;
+//    preferredBoundVN - a value number of the preferred bound.
+//
+// Return Value:
+//    false if the range is unknown or determined to overflow.
+//
+bool RangeCheck::TryGetRange(BasicBlock* block, GenTree* expr, Range* pRange, ValueNum preferredBoundVN)
+{
+    // Fast path for constants
+    if (expr->IsIntCnsFitsInI32())
+    {
+        *pRange = Limit(Limit::keConstant, (int)expr->AsIntCon()->IconValue());
+        return true;
+    }
+
+    m_preferredBound = preferredBoundVN;
+
+    // Reset the maps.
+    ClearRangeMap();
+    ClearSearchPath();
+
+    Range range = GetRangeWorker(block, expr, false DEBUGARG(0));
+    assert(range.IsValid());
+    if (range.UpperLimit().IsUnknown() || range.LowerLimit().IsUnknown())
+    {
+        JITDUMP("Range is completely unknown.\n");
+        return false;
+    }
+
+    if (ComputeDoesOverflow(block, expr, range))
+    {
+        JITDUMP("Range determined to overflow.\n");
+        return false;
+    }
+
+    assert(range.IsValid());
+
+    JITDUMP("Range value %s\n", range.ToString(m_compiler));
+    ClearSearchPath();
+    Widen(block, expr, &range);
+
+    // If upper or lower limit is unknown, then return.
+    if (range.UpperLimit().IsUnknown() || range.LowerLimit().IsUnknown())
+    {
+        return false;
+    }
+
+    *pRange = range;
+    return true;
+}
+
+//------------------------------------------------------------------------
+// GetRangeWorker: Internal worker for TryGetRange. Does not reset the internal state
+//    needed to obtain cached ranges quickly.
+//
+// Arguments:
+//    block         - the block that contains `expr`;
+//    expr          - expression to compute the range for;
+//    monIncreasing - true if `expr` is proven to be monotonically increasing;
+//    indent        - debug printing indent.
+//
+// Return Value:
+//    expr's range
+//
+Range RangeCheck::GetRangeWorker(BasicBlock* block, GenTree* expr, bool monIncreasing DEBUGARG(int indent))
+{
+#ifdef DEBUG
+    if (m_compiler->verbose)
+    {
+        Indent(indent);
+        JITDUMP("[RangeCheck::GetRangeWorker] " FMT_BB " ", block->bbNum);
+        m_compiler->gtDispTree(expr);
+        Indent(indent);
+        JITDUMP("{\n");
+    }
+#endif
+
+    Range* pRange = nullptr;
+    Range  range =
+        GetRangeMap()->Lookup(expr, &pRange) ? *pRange : ComputeRange(block, expr, monIncreasing DEBUGARG(indent));
+
+#ifdef DEBUG
+    if (m_compiler->verbose)
+    {
+        Indent(indent);
+        JITDUMP("   %s Range [%06d] => %s\n", (pRange == nullptr) ? "Computed" : "Cached", Compiler::dspTreeID(expr),
+                range.ToString(m_compiler));
+        Indent(indent);
+        JITDUMP("}\n");
+    }
+#endif
+    return range;
+}
+
+// Entry point to range check optimizations.
+bool RangeCheck::OptimizeRangeChecks()
+{
+    // Reset the budget in case of JitOptRepeat.
+    m_nVisitBudget   = MAX_VISIT_BUDGET;
+    m_preferredBound = ValueNumStore::NoVN;
+
+    bool madeChanges = false;
+
+    // Walk through trees looking for arrBndsChk node and check if it can be optimized.
+    for (BasicBlock* const block : m_compiler->Blocks())
+    {
+        for (Statement* const stmt : block->Statements())
+        {
+            m_updateStmt = false;
+
+            for (GenTree* const tree : stmt->TreeList())
+            {
+                if (IsOverBudget() && !m_updateStmt)
+                {
+                    return madeChanges;
+                }
+
+                if (tree->OperIs(GT_BOUNDS_CHECK))
+                {
+                    // Leave a hint for optRangeCheckCloning to improve the JIT TP.
+                    // NOTE: it doesn't have to be precise and being properly maintained
+                    // during transformations, it's just a hint.
+                    block->SetFlags(BBF_MAY_HAVE_BOUNDS_CHECKS);
+                }
+
+                OptimizeRangeCheck(block, stmt, tree);
+            }
+
+            if (m_updateStmt)
+            {
+                m_compiler->gtSetStmtInfo(stmt);
+                m_compiler->fgSetStmtSeq(stmt);
+                madeChanges = true;
+            }
+        }
+    }
+
+    return madeChanges;
+}

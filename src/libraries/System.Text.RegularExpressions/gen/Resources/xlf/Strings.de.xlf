@@ -1,0 +1,267 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
+  <file datatype="xml" source-language="en" target-language="de" original="../Strings.resx">
+    <body>
+      <trans-unit id="AlternationHasComment">
+        <source>Alternation conditions cannot be comments.</source>
+        <target state="translated">Alternierungsbedingungen können keine Kommentare sein.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="AlternationHasMalformedCondition">
+        <source>Illegal conditional (?(...)) expression.</source>
+        <target state="translated">Unzulässiger bedingter (?(...))-Ausdruck.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="AlternationHasMalformedReference">
+        <source>Conditional alternation is missing a closing parenthesis after the group number {0}.</source>
+        <target state="translated">Bei der bedingten Alternierung fehlt eine runde Klammer rechts nach der Gruppennummer {0}.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="AlternationHasNamedCapture">
+        <source>Alternation conditions do not capture and cannot be named.</source>
+        <target state="translated">Alternierungsbedingungen werden nicht aufgefangen und können nicht benannt werden.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="AlternationHasTooManyConditions">
+        <source>Too many | in (?()|).</source>
+        <target state="translated">Zu viele | in (?()|).</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="AlternationHasUndefinedReference">
+        <source>Conditional alternation refers to an undefined group number {0}.</source>
+        <target state="translated">Die bedingte Alternierung bezieht sich auf eine nicht definierte Gruppennummer {0}.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Arg_ArrayPlusOffTooSmall">
+        <source>Destination array is not long enough to copy all the items in the collection. Check array index and length.</source>
+        <target state="translated">Das Zielarray ist nicht lang genug, um alle Elemente in der Sammlung zu kopieren. Prüfen Sie den Index und die Länge des Arrays.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="BeginIndexNotNegative">
+        <source>Start index cannot be less than 0 or greater than input length.</source>
+        <target state="translated">Der Startindex darf nicht kleiner als 0 oder größer als die Eingabelänge sein.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CaptureGroupNameInvalid">
+        <source>Invalid group name: Group names must begin with a word character.</source>
+        <target state="translated">Ungültiger Gruppenname: Gruppennamen müssen mit einem Buchstaben beginnen.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CaptureGroupOfZero">
+        <source>Capture number cannot be zero.</source>
+        <target state="translated">Aufzeichnungsnummer darf nicht 0 (null) sein.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CountTooSmall">
+        <source>Count cannot be less than -1.</source>
+        <target state="translated">Die Anzahl darf nicht kleiner als -1 sein.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="EnumNotStarted">
+        <source>Enumeration has either not started or has already finished.</source>
+        <target state="translated">Entweder wurde die Enumeration noch nicht gestartet oder bereits beendet.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ExclusionGroupNotLast">
+        <source>A subtraction must be the last element in a character class.</source>
+        <target state="translated">Eine Subtraktion muss das letzte Element in einer Zeichenklasse sein.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Generic">
+        <source>Regular expression parser error '{0}' at offset {1}.</source>
+        <target state="translated">Analysefehler des regulären Ausdrucks "{0}" bei Offset {1}.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="IllegalDefaultRegexMatchTimeoutInAppDomain">
+        <source>AppDomain data '{0}' contains the invalid value or object '{1}' for specifying a default matching timeout for System.Text.RegularExpressions.Regex.</source>
+        <target state="translated">AppDomain-Daten '{0}' enthalten einen ungültigen Wert oder ein ungültiges Objekt '{1}' für die Angabe eines übereinstimmenden Standardtimeouts für System.Text.RegularExpressions.Regex.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InsufficientClosingParentheses">
+        <source>Not enough )'s.</source>
+        <target state="translated">Nicht genügend )-Zeichen.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InsufficientOpeningParentheses">
+        <source>Too many )'s.</source>
+        <target state="translated">Zu viele )-Zeichen.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InsufficientOrInvalidHexDigits">
+        <source>Insufficient or invalid hexadecimal digits.</source>
+        <target state="translated">Unzureichende oder ungültige Hexadezimalziffern.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidGroupingConstruct">
+        <source>Unrecognized grouping construct.</source>
+        <target state="translated">Unbekanntes Gruppierungskonstrukt.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidRegexArgumentsMessage">
+        <source>The specified regex is invalid. '{0}'</source>
+        <target state="translated">Der angegebene Regex ist ungültig. "{0}"</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidGeneratedRegexAttributeMessage">
+        <source>The GeneratedRegexAttribute is malformed</source>
+        <target state="translated">Das GeneratedRegexAttribute ist nicht wohlgeformt.</target>
+        <note>{Locked="GeneratedRegexAttribute"}</note>
+      </trans-unit>
+      <trans-unit id="InvalidGeneratedRegexAttributeTitle">
+        <source>Invalid GeneratedRegexAttribute usage</source>
+        <target state="translated">Ungültige GeneratedRegexAttribute-Verwendung</target>
+        <note>{Locked="GeneratedRegexAttribute"}</note>
+      </trans-unit>
+      <trans-unit id="InvalidUnicodePropertyEscape">
+        <source>Incomplete \p{X} character escape.</source>
+        <target state="translated">Unvollständiges \p{X}-Escape-Zeichen.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LengthNotNegative">
+        <source>Length cannot be less than 0 or exceed input length.</source>
+        <target state="translated">Die Länge darf nicht kleiner als 0 sein oder die Eingabelänge überschreiten.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LimitedSourceGenerationMessage">
+        <source>The regex generator couldn't generate a complete source implementation for the specified regular expression due to an internal limitation. See the explanation in the generated source for more details.</source>
+        <target state="translated">Der RegEx-Generator konnte aufgrund einer internen Begrenzung keine vollständige Quellimplementierung für den angegebenen regulären Ausdruck generieren. Weitere Details finden Sie in der Erklärung in der generierten Quelle.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LimitedSourceGenerationTitle">
+        <source>Regex generator limitation reached.</source>
+        <target state="translated">Die Begrenzung des RegEx-Generators wurde erreicht.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MakeException">
+        <source>Invalid pattern '{0}' at offset {1}. {2}</source>
+        <target state="translated">Ungültiges Muster "{0}" bei Offset {1}. {2}</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MalformedNamedReference">
+        <source>Malformed \k&lt;...&gt; named back reference.</source>
+        <target state="translated">Falsch formatierter \k&lt;...&gt; benannter Verweis.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MalformedUnicodePropertyEscape">
+        <source>Malformed \p{X} character escape.</source>
+        <target state="translated">Falsch formatiertes \p{X}-Escape-Zeichen.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MissingControlCharacter">
+        <source>Missing control character.</source>
+        <target state="translated">Fehlendes Steuerzeichen.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleGeneratedRegexAttributesMessage">
+        <source>Multiple GeneratedRegexAttributes were applied to the same method, but only one is allowed.</source>
+        <target state="translated">Mehrere GeneratedRegexAttributes wurden auf dieselbe Methode angewendet, aber nur eine ist zulässig.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="NestedQuantifiersNotParenthesized">
+        <source>Nested quantifier '{0}'.</source>
+        <target state="translated">Geschachtelter Quantifizierer „{0}“.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="NoResultOnFailed">
+        <source>Result cannot be called on a failed Match.</source>
+        <target state="translated">Das Ergebnis kann nicht für eine fehlgeschlagene Übereinstimmung aufgerufen werden.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="NotSupported_ReadOnlyCollection">
+        <source>Collection is read-only.</source>
+        <target state="translated">Die Sammlung ist schreibgeschützt.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="PlatformNotSupported_CompileToAssembly">
+        <source>This platform does not support writing compiled regular expressions to an assembly.</source>
+        <target state="translated">Diese Plattform unterstützt das Schreiben kompilierter regulärer Ausdrücke in eine Assembly nicht.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="QuantifierAfterNothing">
+        <source>Quantifier '{0}' following nothing.</source>
+        <target state="translated">Quantifizierer „{0}“ nach nichts.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="QuantifierOrCaptureGroupOutOfRange">
+        <source>Quantifier and capture group numbers must be less than or equal to Int32.MaxValue.</source>
+        <target state="translated">Quantifizierer- und Erfassungsgruppennummern müssen kleiner oder gleich „Int32.MaxValue“ sein.</target>
+        <note>{Locked="Int32.MaxValue"}</note>
+      </trans-unit>
+      <trans-unit id="RegexMatchTimeoutException_Occurred">
+        <source>The Regex engine has timed out while trying to match a pattern to an input string. This can occur for many reasons, including very large inputs or excessive backtracking caused by nested quantifiers, back-references and other factors.</source>
+        <target state="translated">Zeitüberschreitung des RegEx-Moduls beim Versuch, ein Muster mit einer Eingabezeichenfolge in Übereinstimmung zu bringen. Dies kann viele Ursachen haben, darunter sehr große Eingaben oder übermäßige Rückverfolgung aufgrund von geschachtelten Quantifizierern, Rückverweisen und anderen Faktoren.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RegexMemberMustHaveValidSignatureMessage">
+        <source>GeneratedRegexAttribute method or property must be partial, parameterless, non-generic, non-abstract, and return Regex. If a property, it must also be get-only.</source>
+        <target state="translated">Die GeneratedRegexAttribute-Methode oder -Eigenschaft muss partiell, parameterlos, nicht generisch, nicht abstrakt sein und RegEx zurückgeben. Wenn eine Eigenschaft, muss sie auch "get-only" sein.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ReversedCharacterRange">
+        <source>[x-y] range in reverse order.</source>
+        <target state="translated">[x-y]-Bereich in umgekehrter Reihenfolge.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ReversedQuantifierRange">
+        <source>Illegal {x,y} with x &gt; y.</source>
+        <target state="translated">Unzulässige {x,y} mit x &gt; y.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ShorthandClassInCharacterRange">
+        <source>Cannot include class \{0} in character range.</source>
+        <target state="translated">Die Klasse \{0} kann nicht in den Zeichenbereich eingeschlossen werden.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UndefinedNamedReference">
+        <source>Reference to undefined group name '{0}'.</source>
+        <target state="translated">Verweis auf nicht definierten Gruppennamen „{0}“.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UndefinedNumberedReference">
+        <source>Reference to undefined group number {0}.</source>
+        <target state="translated">Verweis auf die nicht definierte Gruppenzahl {0}.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnescapedEndingBackslash">
+        <source>Illegal \ at end of pattern.</source>
+        <target state="translated">Unzulässiger \ am Ende des Musters.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnrecognizedControlCharacter">
+        <source>Unrecognized control character.</source>
+        <target state="translated">Unbekanntes Steuerzeichen.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnrecognizedEscape">
+        <source>Unrecognized escape sequence \{0}.</source>
+        <target state="translated">Nicht erkannte Escapesequenz \{0}.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnrecognizedUnicodeProperty">
+        <source>Unknown property '{0}'.</source>
+        <target state="translated">Unbekannte Eigenschaft '{0}'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnterminatedBracket">
+        <source>Unterminated [] set.</source>
+        <target state="translated">Nicht abgeschlossener []-Satz.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnterminatedComment">
+        <source>Unterminated (?#...) comment.</source>
+        <target state="translated">Nicht abgeschlossener (?#...)-Kommentar.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UseRegexSourceGeneratorMessage">
+        <source>Use 'GeneratedRegexAttribute' to generate the regular expression implementation at compile-time.</source>
+        <target state="translated">Verwenden Sie „GeneratedRegexAttribute“, um die Implementierung regulärer Ausdrücke zur Kompilierzeit zu generieren.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UseRegexSourceGeneratorTitle">
+        <source>Convert to 'GeneratedRegexAttribute'.</source>
+        <target state="translated">In „GeneratedRegexAttribute“ konvertieren.</target>
+        <note />
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

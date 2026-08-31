@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+    <DebugType>PdbOnly</DebugType>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="conv_ovf_i4.il" />
+  </ItemGroup>
+</Project>

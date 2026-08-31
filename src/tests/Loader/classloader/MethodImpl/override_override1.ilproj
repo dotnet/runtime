@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+    <CLRTestPriority>1</CLRTestPriority>
+    <!-- Testing TypeLoad exceptions in situations that are expensive to detect -->
+    <NativeAotIncompatible>true</NativeAotIncompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="override_override1.il" />
+  </ItemGroup>
+</Project>

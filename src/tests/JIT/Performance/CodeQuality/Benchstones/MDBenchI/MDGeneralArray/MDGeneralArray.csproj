@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+    <Compile Include="$(MSBuildProjectName).cs" />
+  </ItemGroup>
+  <PropertyGroup>
+    <ProjectAssetsFile>$(JitPackagesConfigFileDirectory)benchmark\obj\project.assets.json</ProjectAssetsFile>
+  </PropertyGroup>
+</Project>

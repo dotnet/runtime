@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>library</OutputType>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="*.cs" />
+    <Compile Include="../ServerContracts/Server.Contracts.cs" />
+    <Compile Include="../ServerContracts/ServerGuids.cs" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,17 @@
+<Project>
+  <PropertyGroup>
+    <SkipConfigureTrimming>true</SkipConfigureTrimming>
+    <PublishTrimmed>true</PublishTrimmed>
+    <TrimMode>full</TrimMode>
+    <TrimmerRemoveSymbols>false</TrimmerRemoveSymbols>
+    <SelfContained>true</SelfContained>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <!-- Enable NuGet static graph evaluation to optimize incremental restore -->
+    <RestoreUseStaticGraphEvaluation>true</RestoreUseStaticGraphEvaluation>
+    <!-- Suppress analyzer and trimming warnings as these are tests -->
+    <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
+    <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
+    <SuppressAotAnalysisWarnings>true</SuppressAotAnalysisWarnings>
+    <NoWarn>$(NoWarn);IL2121</NoWarn>
+  </PropertyGroup>
+</Project>

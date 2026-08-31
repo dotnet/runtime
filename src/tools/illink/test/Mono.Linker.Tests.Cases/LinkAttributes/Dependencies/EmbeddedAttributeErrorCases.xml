@@ -1,0 +1,10 @@
+<linker xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../../src/ILLink.Shared/ILLink.LinkAttributes.xsd">
+  <!-- IL2100 -->
+  <assembly fullname="*" />
+  <!-- IL2101 -->
+  <assembly fullname="test">
+    <type fullname="Mono.Linker.Tests.Cases.LinkAttributes.LinkAttributeErrorCases/ReferencedFromOtherAssembly">
+      <attribute fullname="Mono.Linker.Tests.Cases.LinkAttributes.LinkAttributeErrorCases/FirstAttribute" />
+    </type>
+  </assembly>
+</linker>

@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <CLRTestPriority>1</CLRTestPriority>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>Full</DebugType>
+    <Optimize>True</Optimize>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <NoWarn>$(NoWarn),8002</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="BadUnwind2.cs" />
+    <ProjectReference Include="ilpart.ilproj" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <StrongNameKeyId>Microsoft</StrongNameKeyId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ForwardedType Include="System.Security.Cryptography.CryptographicAttributeObject" />
+    <ForwardedType Include="System.Security.Cryptography.CryptographicAttributeObjectCollection" />
+    <ForwardedType Include="System.Security.Cryptography.CryptographicAttributeObjectEnumerator" />
+    <ForwardedType Include="System.Security.Cryptography.Pkcs.AlgorithmIdentifier" />
+    <ForwardedType Include="System.Security.Cryptography.Pkcs.CmsRecipient" />
+    <ForwardedType Include="System.Security.Cryptography.Pkcs.CmsRecipientCollection" />
+    <ForwardedType Include="System.Security.Cryptography.Pkcs.CmsRecipientEnumerator" />
+    <ForwardedType Include="System.Security.Cryptography.Pkcs.CmsSigner" />
+    <ForwardedType Include="System.Security.Cryptography.Pkcs.ContentInfo" />
+    <ForwardedType Include="System.Security.Cryptography.Pkcs.EnvelopedCms" />
+    <ForwardedType Include="System.Security.Cryptography.Pkcs.KeyAgreeRecipientInfo" />
+    <ForwardedType Include="System.Security.Cryptography.Pkcs.KeyTransRecipientInfo" />
+    <ForwardedType Include="System.Security.Cryptography.Pkcs.Pkcs9AttributeObject" />
+    <ForwardedType Include="System.Security.Cryptography.Pkcs.Pkcs9ContentType" />
+    <ForwardedType Include="System.Security.Cryptography.Pkcs.Pkcs9DocumentDescription" />
+    <ForwardedType Include="System.Security.Cryptography.Pkcs.Pkcs9DocumentName" />
+    <ForwardedType Include="System.Security.Cryptography.Pkcs.Pkcs9MessageDigest" />
+    <ForwardedType Include="System.Security.Cryptography.Pkcs.Pkcs9SigningTime" />
+    <ForwardedType Include="System.Security.Cryptography.Pkcs.PublicKeyInfo" />
+    <ForwardedType Include="System.Security.Cryptography.Pkcs.RecipientInfo" />
+    <ForwardedType Include="System.Security.Cryptography.Pkcs.RecipientInfoCollection" />
+    <ForwardedType Include="System.Security.Cryptography.Pkcs.RecipientInfoEnumerator" />
+    <ForwardedType Include="System.Security.Cryptography.Pkcs.RecipientInfoType" />
+    <ForwardedType Include="System.Security.Cryptography.Pkcs.SignedCms" />
+    <ForwardedType Include="System.Security.Cryptography.Pkcs.SignerInfo" />
+    <ForwardedType Include="System.Security.Cryptography.Pkcs.SignerInfoCollection" />
+    <ForwardedType Include="System.Security.Cryptography.Pkcs.SignerInfoEnumerator" />
+    <ForwardedType Include="System.Security.Cryptography.Pkcs.SubjectIdentifier" />
+    <ForwardedType Include="System.Security.Cryptography.Pkcs.SubjectIdentifierOrKey" />
+    <ForwardedType Include="System.Security.Cryptography.Pkcs.SubjectIdentifierOrKeyType" />
+    <ForwardedType Include="System.Security.Cryptography.Pkcs.SubjectIdentifierType" />
+    <ForwardedType Include="System.Security.Cryptography.Xml.X509IssuerSerial" />
+  </ItemGroup>
+
+</Project>

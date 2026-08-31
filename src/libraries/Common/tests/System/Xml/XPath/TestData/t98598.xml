@@ -1,0 +1,6 @@
+<root>
+
+  <a xmlns="f0" xmlns:foo1="f1" xmlns:foo2="f2"/>
+  <b xmlns="b0" xmlns:bar1="b1" xmlns:bar2="b2"/>
+
+</root>

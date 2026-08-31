@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="interop.cs" />
+    <Compile Include="testattribute.cs" />
+    <Compile Include="testcase.cs" />
+    <Compile Include="testexception.cs" />
+    <Compile Include="testitem.cs" />
+    <Compile Include="testlog.cs" />
+    <Compile Include="testmodule.cs" />
+    <Compile Include="testparser.cs" />
+    <Compile Include="testproperties.cs" />
+    <Compile Include="testspec.cs" />
+    <Compile Include="testvariation.cs" />
+    <Compile Include="util.cs" />
+  </ItemGroup>
+</Project>

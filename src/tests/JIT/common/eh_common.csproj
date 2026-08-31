@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <Optimize>False</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="eh_common.cs" />
+  </ItemGroup>
+</Project>

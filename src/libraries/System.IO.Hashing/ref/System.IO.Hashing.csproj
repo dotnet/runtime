@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <NoWarn>$(NoWarn);CS0809</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="System.IO.Hashing.cs" />
+    <Compile Include="System.IO.Hashing.netcoreapp.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
+  </ItemGroup>
+
+</Project>

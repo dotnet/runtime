@@ -1,0 +1,63 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+namespace DefaultNamespace {
+    using System.Threading;
+    using System;
+    using System.IO;
+
+    public class LivingObject
+    {
+
+        internal byte [ ]GlobalContainer;
+        internal bool Switch = true;
+        internal static int iCounter = 0;
+
+        public LivingObject( )
+        {
+            Thread Mv_Thread = new Thread( new ThreadStart(this.ThreadStart) );
+            Mv_Thread.Start( );
+        }
+
+
+        public void ThreadStart( )
+        {
+            // console synchronization Console.SetOut(TextWriter.Synchronized(Console.Out));
+
+            if( Volatile.Read( ref iCounter )%100 == 0)
+            {
+                Console.Out.WriteLine( iCounter + " number of threads has been started" );
+            }
+
+            byte [ ]MethodContainer = new byte[ 1024 ]; // 1K
+
+            if( Switch )
+            {
+                GlobalContainer = new byte[ 1024 ]; // 1K
+            }
+            Switch = !Switch;
+
+            GlobalContainer[ 0 ] = ( byte ) 1;
+            GlobalContainer[ GlobalContainer.Length - 1 ] = ( byte ) 1;
+
+            MethodContainer[ 0 ] = ( byte ) 1;
+            MethodContainer[ MethodContainer.Length - 1 ] = ( byte ) 1;
+
+            // Atomically reserve a thread creation slot before starting a successor thread,
+            // so that no more than ThdChaos.iThrd successor threads are ever created.
+            if( IncreatCount( ) <= ThdChaos.iThrd )
+            {
+                Thread Mv_Thread = new Thread( new ThreadStart (this.ThreadStart) );
+                Mv_Thread.Start( );
+            }
+
+        }
+
+
+        public int IncreatCount()
+        {
+            return Interlocked.Increment( ref iCounter );
+        }
+
+    }
+}

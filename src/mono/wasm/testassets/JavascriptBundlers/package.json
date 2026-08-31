@@ -1,0 +1,26 @@
+{
+    "name": "project1",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "type": "module",
+    "scripts": {
+        "build": "rollup -c"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+    },
+    "devDependencies": {
+        "@babel/core": "^7.21.3",
+        "@rollup/plugin-babel": "^6.0.4",
+        "@rollup/plugin-commonjs": "^28.0.2",
+        "@rollup/plugin-image": "^3.0.3",
+        "@rollup/plugin-node-resolve": "^16.0.0",
+        "@rollup/plugin-replace": "^6.0.2",
+        "@rollup/plugin-url": "^8.0.2",
+        "rollup": "^4.34.6",
+        "rollup-plugin-import-file": "^1.0.1"
+    }
+}

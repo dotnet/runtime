@@ -1,0 +1,14 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+	<xs:import namespace="a" schemaLocation="a.xsd" />
+	<xs:import namespace="b" schemaLocation="b.xsd" />
+	<xs:element name="doc">
+		<xs:complexType>
+			<xs:sequence maxOccurs="3">
+				<xs:element ref="e" minOccurs="0" maxOccurs="1"/>
+				<xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+				<xs:element name="e" type="xs:string" default="2" minOccurs="0" maxOccurs="2"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="e" type="xs:string" fixed="1"/>
+</xs:schema>

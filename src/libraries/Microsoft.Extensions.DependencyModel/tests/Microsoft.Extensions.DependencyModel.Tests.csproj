@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <EnableDefaultItems>true</EnableDefaultItems>
+    <DefaultItemExcludes>$(DefaultItemExcludes);nonentrypointassembly\*</DefaultItemExcludes>
+    <!-- Needed for .NET Framework. -->
+    <GenerateDependencyFile>true</GenerateDependencyFile>
+
+    <!-- FluentAssertions library has a generic recursion and the warning breaks NativeAOT build -->
+    <NoWarn>$(NoWarn);IL3054</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AwesomeAssertions" Version="$(AwesomeAssertionsVersion)" />
+    <PackageReference Include="Moq" Version="$(MoqVersion)" />
+    <ProjectReference Include="..\src\Microsoft.Extensions.DependencyModel.csproj" SkipUseReferenceAssembly="true" />
+    <ProjectReference Include="nonentrypointassembly\nonentrypointassembly.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetsAppleMobile)' == 'true' and '$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true'" >
+    <TrimmerRootAssembly Include="nonentrypointassembly" />
+  </ItemGroup>
+
+</Project>

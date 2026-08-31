@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Needed for IsLongRunningGCTest -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <IsLongRunningGCTest>true</IsLongRunningGCTest>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>PdbOnly</DebugType>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="NoGC.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+</Project>

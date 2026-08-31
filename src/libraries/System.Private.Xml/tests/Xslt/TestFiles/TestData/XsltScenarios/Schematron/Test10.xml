@@ -1,0 +1,5 @@
+<!--ex:Name must occur before ex:Gender-->
+<ex:Person Title="Mr" xmlns:ex="http://www.topologi.com/example">
+    <ex:Gender>Male</ex:Gender>
+    <ex:Name>Eddie</ex:Name>
+</ex:Person>

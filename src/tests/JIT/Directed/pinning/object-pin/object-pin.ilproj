@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+    <!-- Needed for CMakeProjectReference -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <CLRTestPriority>1</CLRTestPriority>
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">true</CLRTestTargetUnsupported>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>PdbOnly</DebugType>
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Object-Pin.il" />
+  </ItemGroup>
+  <ItemGroup>
+    <CMakeProjectReference Include="CMakelists.txt" />
+  </ItemGroup>
+</Project>

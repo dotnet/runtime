@@ -1,0 +1,53 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <RootNamespace>ILCompiler.DependencyAnalysisFramework</RootNamespace>
+    <AssemblyName>ILCompiler.DependencyAnalysisFramework</AssemblyName>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <Platforms>x64;x86</Platforms>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+
+    <!-- We're binplacing these into an existing publish layout so that F5 build in VS updates
+         the same bits tests expect to see in artifacts/crossgen2. That way we never need to wonder which
+         binaries are up to date and which are stale. -->
+    <GenerateDependencyFile>false</GenerateDependencyFile>
+    <Configurations>Debug;Release;Checked</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="ComputedStaticDependencyNode.cs" />
+    <Compile Include="DependencyAnalyzer.cs" />
+    <Compile Include="DependencyAnalyzerBase.cs" />
+    <Compile Include="DependencyNode.cs" />
+    <Compile Include="DependencyNodeCore.cs" />
+    <Compile Include="DgmlWriter.cs" />
+    <Compile Include="EventSourceLogStrategy.cs" />
+    <Compile Include="FirstMarkLogStrategy.cs" />
+    <Compile Include="FullGraphLogStrategy.cs" />
+    <Compile Include="IDependencyAnalyzerLogEdgeVisitor.cs" />
+    <Compile Include="IDependencyAnalyzerLogNodeVisitor.cs" />
+    <Compile Include="IDependencyAnalysisMarkStrategy.cs" />
+    <Compile Include="IDependencyNode.cs" />
+    <Compile Include="NoLogStrategy.cs" />
+    <Compile Include="PerfEventSource.cs" />
+    <Compile Include="..\..\Common\Sorting\ArrayAccessor.cs">
+      <Link>Sorting\ArrayAccessor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\Sorting\ICompareAsEqualAction.cs">
+      <Link>Sorting\ICompareAsEqualAction.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\Sorting\ISortableDataStructureAccessor.cs">
+      <Link>Sorting\ISortableDataStructureAccessor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\Sorting\ListAccessor.cs">
+      <Link>Sorting\ListAccessor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\Sorting\MergeSort.cs">
+      <Link>Sorting\MergeSort.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\Sorting\MergeSortCore.cs">
+      <Link>Sorting\MergeSortCore.cs</Link>
+    </Compile>
+  </ItemGroup>
+</Project>

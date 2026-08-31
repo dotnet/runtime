@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <Features>$(Features);updated-memory-safety-rules</Features>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="System.Numerics.Vectors.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
+  </ItemGroup>
+</Project>

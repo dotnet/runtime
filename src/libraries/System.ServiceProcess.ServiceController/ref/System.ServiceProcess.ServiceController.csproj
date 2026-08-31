@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="System.ServiceProcess.ServiceController.cs" Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework'" />
+    <Compile Include="System.ServiceProcess.ServiceController.netframework.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" />
+    <Compile Include="System.ServiceProcess.ServiceController.netcoreapp.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Diagnostics.EventLog\ref\System.Diagnostics.EventLog.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <Reference Include="System.ServiceProcess" />
+  </ItemGroup>
+</Project>

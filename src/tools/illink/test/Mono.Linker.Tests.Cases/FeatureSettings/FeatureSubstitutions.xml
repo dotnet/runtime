@@ -1,0 +1,19 @@
+<linker feature="OptionalFeature" featurevalue="false">
+  <assembly fullname="test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+    <type fullname="Mono.Linker.Tests.Cases.FeatureSettings.FeatureSubstitutions">
+      <method signature="System.Boolean get_IsOptionalFeatureEnabled()" body="stub" value="false" />
+    </type>
+  </assembly>
+  <!-- Check that a feature condition can be used by default -->
+  <assembly fullname="test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null" feature="DefaultFeature" featurevalue="true" featuredefault="true">
+    <type fullname="Mono.Linker.Tests.Cases.FeatureSettings.FeatureSubstitutions">
+      <method signature ="System.Boolean get_IsDefaultFeatureEnabled()" body="stub" value="true" />
+    </type>
+  </assembly>
+  <!-- Else case for the default condition -->
+  <assembly fullname="test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null" feature="DefaultFeature" featurevalue="false">
+    <type fullname="Mono.Linker.Tests.Cases.FeatureSettings.FeatureSubstitutions">
+      <method signature ="System.Boolean get_IsDefaultFeatureEnabled()" body="stub" value="false" />
+    </type>
+  </assembly>
+</linker>

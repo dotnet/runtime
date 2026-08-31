@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <MergedWrapperProjectReference Include="*/**/*.??proj" />
+    <MergedWrapperProjectReference Remove="LargeMemory/Regressions/largearraytest.csproj" />
+    <MergedWrapperProjectReference Remove="Features/**/*.??proj" />
+    <MergedWrapperProjectReference Remove="Scenarios/**/*.??proj" />
+  </ItemGroup>
+
+  <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
+</Project>

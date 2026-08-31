@@ -1,0 +1,8 @@
+﻿<linker>
+  <assembly fullname="Microsoft.VisualBasic.Core">
+    <!-- Workaround for https://github.com/mono/linker/issues/378 -->
+    <type fullname="Microsoft.VisualBasic.CompilerServices.UnsafeNativeMethods/IDispatch"/>
+    <type fullname="Microsoft.VisualBasic.CompilerServices.UnsafeNativeMethods/IProvideClassInfo"/>
+    <type fullname="Microsoft.VisualBasic.CompilerServices.UnsafeNativeMethods/ITypeInfo"/>
+  </assembly>
+</linker>

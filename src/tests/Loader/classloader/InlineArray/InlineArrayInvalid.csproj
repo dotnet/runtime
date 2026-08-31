@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- Make sure that invalid operations are not optimized out by Roslyn -->
+    <Optimize>false</Optimize>
+    <CLRTestPriority>0</CLRTestPriority>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="InlineArrayInvalid.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="InvalidCSharpInlineArray.ilproj" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+</Project>

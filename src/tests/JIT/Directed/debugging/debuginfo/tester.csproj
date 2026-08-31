@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Needed for CLRTestTargetUnsupported, UnloadabilityIncompatible, NativeAotIncompatible, CLRTestEnvironmentVariable -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <!-- TODO: Re-enable when browser diagnostics exposes the required interpreter or JIT debug maps.
+         Tracked by https://github.com/dotnet/runtime/issues/131321. -->
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">true</CLRTestTargetUnsupported>
+    <DebugType>PdbOnly</DebugType>
+    <Optimize>True</Optimize>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+    <NativeAotIncompatible>true</NativeAotIncompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="tests_d.ilproj" Aliases="tests_d" />
+    <ProjectReference Include="tests_r.ilproj" Aliases="tests_r" />
+    <ProjectReference Include="attribute.csproj" />
+    <ProjectReference Include="../../../../tracing/eventpipe/common/eventpipe_common.csproj" />
+    <ProjectReference Include="../../../../tracing/eventpipe/common/Microsoft.Diagnostics.NETCore.Client/Microsoft.Diagnostics.NETCore.Client.csproj" />
+    <Compile Include="$(MSBuildProjectName).cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+</Project>

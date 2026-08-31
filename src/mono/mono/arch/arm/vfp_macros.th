@@ -1,0 +1,15 @@
+/* -- <Op> -- */
+
+
+/* Fd := Fn <Op> Fm */
+#define ARM_VFP_<Op>D_COND(p, rd, rn, rm, cond) \
+	ARM_EMIT((p), ARM_DEF_VFP_DYADIC(cond,ARM_VFP_COPROC_DOUBLE,ARM_VFP_<Op>,rd,rn,rm))
+#define ARM_VFP_<Op>D(p, rd, rn, rm) \
+	ARM_VFP_<Op>D_COND(p, rd, rn, rm, ARMCOND_AL)
+
+#define ARM_VFP_<Op>S_COND(p, rd, rn, rm, cond) \
+	ARM_EMIT((p), ARM_DEF_VFP_DYADIC(cond,ARM_VFP_COPROC_SINGLE,ARM_VFP_<Op>,rd,rn,rm))
+#define ARM_VFP_<Op>S(p, rd, rn, rm) \
+	ARM_VFP_<Op>S_COND(p, rd, rn, rm, ARMCOND_AL)
+
+

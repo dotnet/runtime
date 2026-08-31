@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Optimize>True</Optimize>
+    <!-- Needed for TrimMode=partial -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <TrimMode>partial</TrimMode>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="UnrollEqualsStartsWith.cs" />
+    <Compile Include="UnrollEqualsStartsWith_Tests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+</Project>

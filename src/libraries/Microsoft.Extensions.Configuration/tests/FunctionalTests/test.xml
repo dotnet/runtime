@@ -1,0 +1,12 @@
+<settings XmlKey1="XmlValue1">
+  <!-- Comments -->
+  <XmlKey2 XmlKey3="XmlValue2">
+    <!-- Comments -->
+    <XmlKey4>XmlValue3</XmlKey4>
+    <XmlKey5 Name="XmlKey6">XmlValue4</XmlKey5>
+  </XmlKey2>
+  <CommonKey1 Name="CommonKey2" XmlKey7="XmlValue5">
+    <!-- Comments -->
+    <CommonKey3 CommonKey4="XmlValue6" />
+  </CommonKey1>
+</settings>

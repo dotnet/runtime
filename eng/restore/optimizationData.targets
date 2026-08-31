@@ -1,0 +1,53 @@
+<Project>
+  <ItemGroup>
+    <!-- Mibc data to use when exact architecture match is available -->
+    <MIBCPackageDef Include="optimization.windows_nt-x86.mibc.runtime" Version="$(optimizationwindows_ntx86MIBCRuntimeVersion)" MibcArchitecture="windows/x86"/>
+    <MIBCPackageDef Include="optimization.windows_nt-x64.mibc.runtime" Version="$(optimizationwindows_ntx64MIBCRuntimeVersion)" MibcArchitecture="windows/x64"/>
+    <MIBCPackageDef Include="optimization.windows_nt-arm64.mibc.runtime" Version="$(optimizationwindows_ntarm64MIBCRuntimeVersion)" MibcArchitecture="windows/arm64"/>
+    <MIBCPackageDef Include="optimization.linux-x64.mibc.runtime" Version="$(optimizationlinuxx64MIBCRuntimeVersion)" MibcArchitecture="linux/x64"/>
+    <MIBCPackageDef Include="optimization.linux-arm64.mibc.runtime" Version="$(optimizationlinuxarm64MIBCRuntimeVersion)" MibcArchitecture="linux/arm64"/>
+
+    <!-- Mibc data to use when exact architecture match not available -->
+    <MIBCPackageDef Include="optimization.windows_nt-x64.mibc.runtime" Version="$(optimizationwindows_ntx64MIBCRuntimeVersion)" MibcArchitecture="windows"/>
+    <MIBCPackageDef Include="optimization.linux-x64.mibc.runtime" Version="$(optimizationlinuxx64MIBCRuntimeVersion)" MibcArchitecture="linux"/>
+    <MIBCPackageDef Include="optimization.linux-x64.mibc.runtime" Version="$(optimizationlinuxx64MIBCRuntimeVersion)" MibcArchitecture="osx"/>
+
+    <MIBCPackage Include="@(MIBCPackageDef->HasMetadata('MibcArchitecture')->WithMetadataValue('MibcArchitecture','$(TargetOS)/$(TargetArchitecture)'))" />
+    <MIBCPackage Include="@(MIBCPackageDef->HasMetadata('MibcArchitecture')->WithMetadataValue('MibcArchitecture','$(TargetOS)'))" Condition="'@(MIBCPackage)' == ''" />
+
+    <!-- Fallback in case no os specific data is available-->
+    <MIBCPackage Include="optimization.linux-x64.mibc.runtime" Version="$(optimizationlinuxx64MIBCRuntimeVersion)" Condition="'@(MIBCPackage)' == ''" />
+
+    <PackageDownload Include="@(MIBCPackage)" Version="[%(Version)]" />
+  </ItemGroup>
+
+  <!-- IBC data packages don't follow NuGet conventions.  -->
+  <Target Name="GetMIBCData"
+          AfterTargets="Restore">
+
+    <PropertyGroup>
+      <_MergeMibcFilesCacheFile>$(MibcOptimizationDataDir)/$(TargetOS)/$(TargetArchitecture)/merge_mibc_files.cache</_MergeMibcFilesCacheFile>
+    </PropertyGroup>
+    <ItemGroup>
+      <MIBCPackage>
+        <PackagePath>$(NuGetPackageRoot)%(MIBCPackage.Identity)/%(MIBCPackage.Version)</PackagePath>
+      </MIBCPackage>
+      <_optimizationMibcFile Include="%(MIBCPackage.PackagePath)/**/*.mibc" SubdirectoryName="$(TargetOS)/$(TargetArchitecture)" />
+      <_optimizationMibcDestinationFile Include="@(_optimizationMibcFile->'$(MibcOptimizationDataDir)%(SubdirectoryName)/%(RecursiveDir)%(Filename)%(Extension)')" />
+      <ExcessFilesCurrentlyPresent Include="$(MibcOptimizationDataDir)/**" 
+                                   Exclude="@(_optimizationMibcDestinationFile);$(_MergeMibcFilesCacheFile)"/>
+    </ItemGroup>
+
+    <Error Condition="'@(_optimizationMibcFile)' == ''" Text="Failed to restore Mibc optimization data" />
+
+    <!-- Clean mibc restore directory so that no extra mibc files are present. Improves incremental build resiliency -->
+    <Delete Files="@(ExcessFilesCurrentlyPresent)" />
+
+    <!-- Copy the correct mibc files into place -->
+    <Copy SourceFiles="@(_optimizationMibcFile)"
+          DestinationFiles="@(_optimizationMibcDestinationFile)"
+          SkipUnchangedFiles="true"
+          UseHardlinksIfPossible="true" />
+
+  </Target>
+</Project>

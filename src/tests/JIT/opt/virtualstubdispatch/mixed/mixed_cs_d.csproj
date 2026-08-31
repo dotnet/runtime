@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Needed for GC.WaitForPendingFinalizers -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <CLRTestPriority>1</CLRTestPriority>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>Full</DebugType>
+    <Optimize>False</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="mixed.cs" />
+  </ItemGroup>
+</Project>

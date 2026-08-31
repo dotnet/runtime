@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<asn:Choice
+  xmlns:asn="http://schemas.dot.net/asnxml/201808/"
+  name="SignedAttributesSet"
+  namespace="System.Security.Cryptography.Pkcs">
+
+  <!--
+    This type is not properly from the ASN module, but it exists to allow for
+    deserialization on demand of the signed attributes, so the deserialization
+    and reserialization process does not modify the contents of the signed
+    attributes.
+  -->
+  <asn:SetOf name="SignedAttributes" implicitTag="0">
+    <asn:AsnType typeName="System.Security.Cryptography.Asn1.AttributeAsn"/>
+  </asn:SetOf>
+</asn:Choice>

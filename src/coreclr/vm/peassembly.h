@@ -1,0 +1,421 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// --------------------------------------------------------------------------------
+// PEAssembly.h
+//
+
+// --------------------------------------------------------------------------------
+
+
+#ifndef PEASSEMBLY_H_
+#define PEASSEMBLY_H_
+
+// --------------------------------------------------------------------------------
+// Required headers
+// --------------------------------------------------------------------------------
+
+#include <windef.h>
+
+#include "sstring.h"
+#include "peimage.h"
+#include "metadata.h"
+#include "../binder/inc/assembly.hpp"
+#include <contract.h>
+
+#include "assemblybinderutil.h"
+
+// --------------------------------------------------------------------------------
+// Forward declared classes
+// --------------------------------------------------------------------------------
+
+class PEAssembly;
+typedef DPTR(PEAssembly) PTR_PEAssembly;
+
+// --------------------------------------------------------------------------------
+// A PEAssembly is an input to the CLR loader. It is produced as a result of binding.
+//
+// Although a PEAssembly is usually a disk based PE file, it is not
+// always the case. Thus it is a conscious decision to not export access to the PE
+// file directly; rather the specific information required should be provided via
+// individual query API.
+//
+// A PEAssembly is one of two kinds, distinguished by IsReflectionEmit():
+//
+// 1. Bound to a PE image - the result of an AssemblyBinder bind
+//    It holds the BINDER_SPACE::Assembly that the binder produced, and takes
+//    both its PEImage and its metadata from that bind result.
+//
+//    The PEImage may come from:
+//      - File on disk - loaded via binding to an assembly name or an explicit path
+//      - Byte array - via an API such as AssemblyLoadContext.LoadFromStream
+//      - HMODULE - IJW module already loaded into memory by the OS (Windows)
+//    The source of the PEImage does not change the PEAssembly itself.
+//
+// 2. Dynamic - a reflection emit assembly
+//    It has no PEImage. Its metadata comes from an IMetaDataEmit and it uses the binder
+//    of the assembly that created it.
+//
+// See also file:..\inc\corhdr.h#ManagedHeader for more on the format of managed images.
+// --------------------------------------------------------------------------------
+
+class PEAssembly final
+{
+public:
+
+    // ------------------------------------------------------------
+    // Public API
+    // ------------------------------------------------------------
+
+    STDMETHOD_(ULONG, AddRef)();
+    STDMETHOD_(ULONG, Release)();
+
+#ifdef DACCESS_COMPILE
+    void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
+#endif
+
+#if CHECK_INVARIANTS
+    CHECK Invariant();
+#endif
+
+    // ------------------------------------------------------------
+    // Identity
+    // ------------------------------------------------------------
+
+#ifndef DACCESS_COMPILE
+    BOOL Equals(PEAssembly *pPEAssembly);
+    BOOL Equals(PEImage *pImage);
+#endif // DACCESS_COMPILE
+
+    // ------------------------------------------------------------
+    // Descriptive strings
+    // ------------------------------------------------------------
+
+    // Path is the file path to the file; empty if not a file
+    const SString& GetPath();
+    const SString& GetIdentityPath();
+
+    // This is the module file name. Used as a hint as file name.
+    // For assemblies loaded from a path or single-file bundle, this is the file name portion of the path
+    // For assemblies loaded from memory, this is the module file name from metadata
+    // For reflection emitted assemblies, this is an empty string
+    const SString &GetModuleFileNameHint();
+
+    LPCWSTR GetPathForErrorMessages();
+
+    // Codebase is the fusion codebase or path for the assembly.  It is in URL format.
+    // Note this may be obtained from the parent PEAssembly if we don't have a path or fusion
+    // assembly.
+    BOOL GetCodeBase(SString& result);
+
+    // Full name is the most descriptive name available (path, codebase, or name as appropriate)
+    void GetPathOrCodeBase(SString& result);
+
+    // Display name is the fusion binding name for an assembly
+    void GetDisplayName(SString& result, DWORD flags = 0);
+
+#ifdef LOGGING
+    // This is useful for log messages
+    LPCUTF8 GetDebugName();
+#endif // LOGGING
+
+    // ------------------------------------------------------------
+    // Checks
+    // ------------------------------------------------------------
+
+    void ValidateForExecution();
+    BOOL IsMarkedAsNoPlatform();
+
+    // ------------------------------------------------------------
+    // Classification
+    // ------------------------------------------------------------
+
+    bool IsSystem() const;
+    BOOL IsReflectionEmit() const;
+
+    // ------------------------------------------------------------
+    // Metadata access
+    // ------------------------------------------------------------
+
+    IMDInternalImport *GetMDImport();
+
+#ifndef DACCESS_COMPILE
+    IMetaDataEmit *GetEmitter();
+    IMetaDataImport2 *GetRWImporter();
+#else
+    TADDR GetMDInternalRWAddress();
+    BOOL HasReadWriteMetadata()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return m_MDImportIsRW_Debugger_Use_Only;
+    }
+#endif // DACCESS_COMPILE
+
+    void ConvertMDInternalToReadWrite();
+
+    void GetMVID(GUID* pMvid);
+    ULONG GetHashAlgId();
+    HRESULT GetVersion(USHORT* pMajor, USHORT* pMinor, USHORT* pBuild, USHORT* pRevision);
+    LPCUTF8 GetSimpleName();
+    HRESULT GetScopeName(LPCUTF8 * pszName);
+    const void *GetPublicKey(DWORD *pcbPK);
+    LPCSTR GetLocale();
+    DWORD GetFlags();
+
+    // ------------------------------------------------------------
+    // PE file access
+    // ------------------------------------------------------------
+
+    BOOL IsReadyToRun();
+    mdToken GetEntryPointToken();
+
+    BOOL IsILOnly();
+    TADDR GetIL(RVA il);
+
+    PTR_VOID GetRvaField(RVA field);
+    CHECK CheckRvaField(RVA field);
+    CHECK CheckRvaField(RVA field, COUNT_T size);
+
+    BOOL HasTls();
+    BOOL IsRvaFieldTls(RVA field);
+    UINT32 GetFieldTlsOffset(RVA field);
+    UINT32 GetTlsIndex();
+
+    const void *GetInternalPInvokeTarget(RVA target);
+    CHECK CheckInternalPInvokeTarget(RVA target);
+
+    IMAGE_COR_VTABLEFIXUP *GetVTableFixups(COUNT_T *pCount = NULL);
+    void *GetVTable(RVA rva);
+
+    BOOL GetResource(LPCSTR szName, DWORD *cbResource,
+                     PBYTE *pbInMemoryResource, Assembly** pAssemblyRef,
+                     LPCSTR *szFileName, DWORD *dwLocation,
+                     Assembly* pAssembly);
+
+#ifndef DACCESS_COMPILE
+    PTR_CVOID GetMetadata(COUNT_T *pSize);
+#endif
+
+    PTR_CVOID GetLoadedMetadata(COUNT_T *pSize);
+    void GetPEKindAndMachine(DWORD* pdwKind, DWORD* pdwMachine);
+    ULONG GetPEImageTimeDateStamp();
+
+    // ------------------------------------------------------------
+    // Image memory access
+    //
+    // WARNING: do not abuse these.  There are scenarios where the image
+    // is not in memory as an optimization.
+    //
+    // In general, you should add an entry point to get the specific info
+    // you are interested in, rather than using these general purpose
+    // entry points.  The info can then be extracted from the native image
+    // in the no-IL image case.
+    // ------------------------------------------------------------
+
+    BOOL HasPEImage()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return m_PEImage != NULL;
+    }
+
+    PEImage* GetPEImage()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return m_PEImage;
+    }
+
+    void EnsureLoaded();
+
+    BOOL HasLoadedPEImage()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return HasPEImage() && GetPEImage()->HasLoadedLayout();
+    }
+
+    PTR_PEImageLayout GetLoadedLayout()
+    {
+        LIMITED_METHOD_CONTRACT;
+        SUPPORTS_DAC;
+
+        _ASSERTE(HasPEImage());
+        return GetPEImage()->GetLoadedLayout();
+    };
+
+    BOOL IsLoaded()
+    {
+        return IsReflectionEmit() || HasLoadedPEImage();
+    }
+
+    BOOL IsPtrInPEImage(PTR_CVOID data);
+
+    // For IJW purposes only - this asserts that we have an IJW image.
+    HMODULE GetIJWBase();
+
+    // The debugger can tolerate a null value here for native only loading cases
+    PTR_VOID GetDebuggerContents(COUNT_T* pSize = NULL);
+
+#ifndef DACCESS_COMPILE
+    // Returns the IL image range; may force a LoadLibrary
+    const void* GetManagedFileContents(COUNT_T* pSize = NULL);
+#endif // DACCESS_COMPILE
+
+    PTR_CVOID GetLoadedImageContents(COUNT_T* pSize = NULL);
+
+    // ------------------------------------------------------------
+    // Resource access
+    // ------------------------------------------------------------
+
+    void GetEmbeddedResource(DWORD dwOffset, DWORD *cbResource, PBYTE *pbInMemoryResource);
+
+    // ------------------------------------------------------------
+    // File loading
+    // ------------------------------------------------------------
+
+    PEAssembly * LoadAssembly(mdAssemblyRef kAssemblyRef);
+
+    // ------------------------------------------------------------
+    // Assembly Binder and host assembly (BINDER_SPACE::Assembly)
+    // ------------------------------------------------------------
+
+    bool HasHostAssembly()
+    {
+        STATIC_CONTRACT_WRAPPER;
+        return GetHostAssembly() != NULL;
+    }
+
+    // Returns a non-AddRef'ed BINDER_SPACE::Assembly*
+    PTR_BINDER_SPACE_Assembly GetHostAssembly()
+    {
+        STATIC_CONTRACT_LIMITED_METHOD;
+        return m_pHostAssembly;
+    }
+
+    // Returns the AssemblyBinder* instance associated with the PEAssembly
+    // which owns the context into which the current PEAssembly was loaded.
+    // For dynamic assemblies this is the binder of the assembly that created them.
+    PTR_AssemblyBinder GetAssemblyBinder();
+
+    // ------------------------------------------------------------
+    // Creation entry points
+    // ------------------------------------------------------------
+
+    // This opens the canonical System.Private.CoreLib.dll
+    static PEAssembly* OpenSystem();
+
+    static PEAssembly* Open(BINDER_SPACE::Assembly* pBoundAssembly);
+
+    static PEAssembly* Create(IMetaDataAssemblyEmit* pEmit, AssemblyBinder* pDynamicAssemblyBinder);
+
+      // ------------------------------------------------------------
+      // Utility functions
+      // ------------------------------------------------------------
+
+      static void PathToUrl(SString& string);
+
+private:
+    // ------------------------------------------------------------
+    // Loader access API
+    // ------------------------------------------------------------
+
+    // Private helper for crufty exception handling reasons
+    static PEAssembly* DoOpenSystem();
+
+    // ------------------------------------------------------------
+    // Internal routines
+    // ------------------------------------------------------------
+
+#ifdef DACCESS_COMPILE
+    // just to make the DAC and GCC happy.
+    ~PEAssembly() = default;
+    PEAssembly() = default;
+#else
+    PEAssembly(
+        BINDER_SPACE::Assembly* pBoundAssembly,
+        IMetaDataEmit* pEmit,
+        AssemblyBinder* pDynamicAssemblyBinder = NULL
+    );
+
+    ~PEAssembly();
+#endif
+
+    void OpenMDImport();
+    void OpenImporter();
+    void OpenEmitter();
+
+private:
+
+ // ------------------------------------------------------------
+ // Instance fields
+ // ------------------------------------------------------------
+
+#ifdef LOGGING
+    LPCUTF8                 m_pDebugName;
+    SString                 m_debugName;
+#endif // LOGGING
+
+    // IL image, NULL if dynamic
+    PTR_PEImage              m_PEImage;
+
+    // This flag is not updated atomically with m_pMDImport. Its fine for debugger usage
+    // but don't rely on it in the runtime. In runtime try QI'ing the m_pMDImport for
+    // IID_IMDInternalImportENC
+    BOOL                     m_MDImportIsRW_Debugger_Use_Only;
+
+    union
+    {
+#ifndef DACCESS_COMPILE
+        IMDInternalImport* m_pMDImport;
+#else
+        // NB: m_pMDImport_UseAccessor appears to be never assigned a value, but its purpose is just
+        //     to be a placeholder that has the same type and offset as m_pMDImport.
+        //
+        //     The field has a different name so it would be an error to use directly.
+        //     Only GetMDInternalRWAddress is supposed to use it via (TADDR)m_pMDImport_UseAccessor,
+        //     which at that point will match the m_pMDImport on the debuggee side.
+        //     See more scary comments in GetMDInternalRWAddress.
+        IMDInternalImport* m_pMDImport_UseAccessor;
+#endif
+    };
+
+    IMetaDataImport2* m_pImporter;
+    IMetaDataEmit* m_pEmitter;
+
+    Volatile<LONG>           m_refCount;
+
+    PTR_BINDER_SPACE_Assembly m_pHostAssembly;
+    PTR_AssemblyBinder m_pAssemblyBinder;
+
+    friend struct cdac_data<PEAssembly>;
+};  // class PEAssembly
+
+template<>
+struct cdac_data<PEAssembly>
+{
+    static constexpr size_t PEImage = offsetof(PEAssembly, m_PEImage);
+    static constexpr size_t AssemblyBinder = offsetof(PEAssembly, m_pAssemblyBinder);
+    static constexpr size_t MDImportIsRW = offsetof(PEAssembly, m_MDImportIsRW_Debugger_Use_Only);
+#ifndef DACCESS_COMPILE
+    static constexpr size_t MDImport = offsetof(PEAssembly, m_pMDImport);
+#endif
+};
+
+struct PEAssemblyHolderTraits final
+{
+    using Type = PEAssembly*;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type value)
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_TRIGGERS;
+            MODE_ANY;
+        } CONTRACTL_END;
+
+        if (value != NULL)
+            value->Release();
+    }
+};
+
+typedef LifetimeHolder<PEAssemblyHolderTraits> PEAssemblyHolder;
+
+#endif  // PEASSEMBLY_H_

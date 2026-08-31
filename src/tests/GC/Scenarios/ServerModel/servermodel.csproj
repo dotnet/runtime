@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Needed for GCStressIncompatible -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+
+    <!-- Test needs explicit Main as it uses command-line parameters -->
+    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
+    <CLRTestExecutionArguments>/numrequests:100</CLRTestExecutionArguments>
+
+    <GCStressIncompatible>true</GCStressIncompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="cache.cs" />
+    <Compile Include="parameters.cs" />
+    <Compile Include="request.cs" />
+    <Compile Include="server.cs" />
+    <Compile Include="servermodel.cs" />
+    <Compile Include="settings.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+</Project>

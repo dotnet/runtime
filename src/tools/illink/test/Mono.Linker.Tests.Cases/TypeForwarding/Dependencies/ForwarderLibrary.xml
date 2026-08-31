@@ -1,0 +1,7 @@
+<linker>
+  <assembly fullname="test">
+    <type fullname="Mono.Linker.Tests.Cases.TypeForwarding.UsedForwarderIsRemovedWhenLink">
+      <method name="ReferencedByForwarderXml" />
+    </type>
+  </assembly>
+</linker>

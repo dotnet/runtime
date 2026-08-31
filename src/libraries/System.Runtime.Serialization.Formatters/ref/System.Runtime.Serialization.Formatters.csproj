@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppMinimum);$(NetCoreAppCurrent)</TargetFrameworks>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="System.Runtime.Serialization.Formatters.cs" />
+    <Compile Include="System.Runtime.Serialization.Formatters.Forwards.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+    <ProjectReference Include="..\..\System.Collections.NonGeneric\ref\System.Collections.NonGeneric.csproj" />
+    <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
+  </ItemGroup>
+</Project>

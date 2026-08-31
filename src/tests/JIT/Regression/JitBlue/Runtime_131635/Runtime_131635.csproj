@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Optimize>True</Optimize>
+    <!-- The bug is wasm R2R (crossgen) codegen, and it only reproduces with optimization
+         enabled. Force crossgen on the browser leg so this actually runs as wasm R2R;
+         otherwise a plain browser leg runs it as normal JIT and silently false-passes. -->
+    <AlwaysUseCrossGen2 Condition="'$(TargetOS)' == 'browser'">true</AlwaysUseCrossGen2>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildProjectName).cs" />
+  </ItemGroup>
+</Project>

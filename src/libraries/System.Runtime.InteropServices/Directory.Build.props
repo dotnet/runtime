@@ -1,0 +1,7 @@
+﻿<Project>
+  <Import Project="..\Directory.Build.props" />
+  <PropertyGroup>
+    <StrongNameKeyId>Microsoft</StrongNameKeyId>
+    <IncludePlatformAttributes>true</IncludePlatformAttributes>
+  </PropertyGroup>
+</Project>

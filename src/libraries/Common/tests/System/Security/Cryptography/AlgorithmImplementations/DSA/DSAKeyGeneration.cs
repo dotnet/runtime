@@ -1,0 +1,144 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using Microsoft.DotNet.XUnitExtensions;
+using Test.Cryptography;
+using Xunit;
+
+namespace System.Security.Cryptography.Dsa.Tests
+{
+    [ConditionalClass(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
+    public abstract class DSAKeyGeneration
+    {
+        protected abstract DSAProvider DSAFactory { get; }
+
+        [Fact]
+        public void VerifyDefaultKeySize_Fips186_2()
+        {
+            if (!DSAFactory.SupportsFips186_3)
+            {
+                using (DSA dsa = DSAFactory.Create())
+                {
+                    Assert.True(dsa.KeySize <= 1024); // KeySize must be <= 1024 for FIPS 186-2
+                }
+            }
+        }
+
+        [Fact]
+        public void GenerateMinKey()
+        {
+            GenerateKey(dsa => GetMin(dsa.LegalKeySizes));
+        }
+
+        [ConditionalFact]
+        public void GenerateSecondMinKey()
+        {
+            if (!HasSecondMinSize())
+            {
+                throw new SkipTestException("Provider does not have a second minimum key size.");
+            }
+
+            GenerateKey(dsa => GetSecondMin(dsa.LegalKeySizes));
+        }
+
+        [Fact]
+        public void GenerateKey_1024()
+        {
+            GenerateKey(1024);
+        }
+
+        private void GenerateKey(int size)
+        {
+            GenerateKey(dsa => size);
+        }
+
+        private void GenerateKey(Func<DSA, int> getSize)
+        {
+            int keySize;
+
+            using (DSA dsa = DSAFactory.Create())
+            {
+                keySize = getSize(dsa);
+            }
+
+            using (DSA dsa = DSAFactory.Create(keySize))
+            {
+                Assert.Equal(keySize, dsa.KeySize);
+
+                // Some providers may generate the key in the constructor, but
+                // all of them should have generated it before answering ExportParameters.
+                DSAParameters keyParameters = dsa.ExportParameters(false);
+                DSAImportExport.ValidateParameters(ref keyParameters);
+
+                // KeySize should still be what we set it to originally.
+                Assert.Equal(keySize, dsa.KeySize);
+
+                dsa.ImportParameters(keyParameters);
+                Assert.Equal(keySize, dsa.KeySize);
+            }
+        }
+
+        private static int GetMin(KeySizes[] keySizes)
+        {
+            int min = int.MaxValue;
+
+            foreach (var keySize in keySizes)
+            {
+                if (keySize.MinSize < min)
+                {
+                    min = keySize.MinSize;
+                }
+            }
+
+            return min;
+        }
+
+        private static int GetSecondMin(KeySizes[] keySizes)
+        {
+            int secondMin = int.MaxValue;
+            int min = secondMin;
+
+            foreach (var keySize in keySizes)
+            {
+                int localMin = keySize.MinSize;
+
+                if (localMin < min)
+                {
+                    secondMin = min;
+                    min = localMin;
+                }
+                else if (localMin < secondMin)
+                {
+                    secondMin = localMin;
+                }
+
+                if (keySize.MaxSize != keySize.MinSize)
+                {
+                    int secondLocal = localMin + keySize.SkipSize;
+
+                    if (secondLocal < secondMin)
+                    {
+                        secondMin = secondLocal;
+                    }
+                }
+            }
+
+            return secondMin;
+        }
+
+        private bool HasSecondMinSize()
+        {
+            try
+            {
+                using (DSA dsa = DSAFactory.Create())
+                {
+                    return GetSecondMin(dsa.LegalKeySizes) != int.MaxValue;
+                }
+            }
+            catch (PlatformNotSupportedException)
+            {
+                return false;
+            }
+        }
+    }
+}

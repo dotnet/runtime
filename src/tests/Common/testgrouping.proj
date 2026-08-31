@@ -1,0 +1,24 @@
+<Project>
+  <ItemGroup>
+    <XUnitWrapperGrouping Include="$(TestBinDir)Exceptions\**\*.XUnitWrapper.dll;
+                                   $(TestBinDir)GC\**\*.XUnitWrapper.dll;
+                                   $(TestBinDir)hosting\**\*.XUnitWrapper.dll;
+                                   $(TestBinDir)ilasm\**\*.XUnitWrapper.dll;
+                                   $(TestBinDir)Loader\**\*.XUnitWrapper.dll;
+                                   $(TestBinDir)managed\**\*.XUnitWrapper.dll">
+      <PayloadGroup>PayloadGroup0</PayloadGroup>
+    </XUnitWrapperGrouping>
+
+    <XUnitWrapperGrouping Include="$(TestBinDir)Interop\**\Interop.*.XUnitWrapper.dll">
+      <PayloadGroup>Interop</PayloadGroup>
+    </XUnitWrapperGrouping>
+
+    <XUnitWrapperGrouping Include="$(TestBinDir)JIT\BBT\*.XUnitWrapper.dll;
+                                   $(TestBinDir)JIT\CheckProjects\*.XUnitWrapper.dll;
+                                   $(TestBinDir)JIT\Intrinsics\*.XUnitWrapper.dll;
+                                   $(TestBinDir)JIT\RyuJIT\*.XUnitWrapper.dll;
+                                   $(TestBinDir)JIT\superpmi\*.XUnitWrapper.dll">
+      <PayloadGroup>JIT.1</PayloadGroup>
+    </XUnitWrapperGrouping>
+  </ItemGroup>
+</Project>

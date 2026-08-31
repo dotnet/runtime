@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Needed for UnloadabilityIncompatible -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- This test has a secondary thread with an infinite loop -->
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="incrementingeventcounter.cs" />
+    <ProjectReference Include="../common/tracing_common.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+</Project>

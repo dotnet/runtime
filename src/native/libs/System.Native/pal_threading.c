@@ -1,0 +1,315 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+#include "pal_config.h"
+#include "pal_errno.h"
+#include "pal_threading.h"
+
+#include <limits.h>
+#include <sched.h>
+#include <assert.h>
+#include <stdbool.h>
+#include <stdlib.h>
+#include <errno.h>
+#include <time.h>
+#include <minipal/conditionvariable.h>
+#include <minipal/mutex.h>
+#include <minipal/thread.h>
+#if HAVE_SCHED_GETCPU
+#include <sched.h>
+#endif
+
+#if defined(TARGET_LINUX)
+#include <linux/futex.h>      /* Definition of FUTEX_* constants */
+#include <sys/syscall.h>      /* Definition of SYS_* constants */
+#include <unistd.h>           /* Declaration of syscall */
+#endif
+
+#include <pthread.h>
+
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wjump-misses-init"
+#endif
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// LowLevelMonitor - Represents a non-recursive mutex and condition
+
+struct LowLevelMonitor
+{
+    minipal_nonrecursive_mutex Mutex;
+    minipal_condition_variable Condition;
+#ifdef DEBUG
+    bool IsLocked;
+#endif
+};
+
+static void SetIsLocked(LowLevelMonitor* monitor, bool isLocked)
+{
+#ifdef DEBUG
+    assert(monitor->IsLocked != isLocked);
+    monitor->IsLocked = isLocked;
+#else
+    (void)monitor; // unused in release build
+    (void)isLocked; // unused in release build
+#endif
+}
+
+LowLevelMonitor* SystemNative_LowLevelMonitor_Create(void)
+{
+    LowLevelMonitor* monitor = (LowLevelMonitor *)malloc(sizeof(LowLevelMonitor));
+    if (monitor == NULL)
+    {
+        return NULL;
+    }
+
+    if (!minipal_nonrecursive_mutex_init(&monitor->Mutex))
+    {
+        free(monitor);
+        return NULL;
+    }
+
+    if (!minipal_condition_variable_init(&monitor->Condition))
+    {
+        minipal_nonrecursive_mutex_destroy(&monitor->Mutex);
+        free(monitor);
+        return NULL;
+    }
+
+#ifdef DEBUG
+    monitor->IsLocked = false;
+#endif
+
+    return monitor;
+}
+
+void SystemNative_LowLevelMonitor_Destroy(LowLevelMonitor* monitor)
+{
+    assert(monitor != NULL);
+
+    minipal_condition_variable_destroy(&monitor->Condition);
+    minipal_nonrecursive_mutex_destroy(&monitor->Mutex);
+
+    free(monitor);
+}
+
+void SystemNative_LowLevelMonitor_Acquire(LowLevelMonitor* monitor)
+{
+    assert(monitor != NULL);
+
+    minipal_nonrecursive_mutex_enter(&monitor->Mutex);
+
+    SetIsLocked(monitor, true);
+}
+
+void SystemNative_LowLevelMonitor_Release(LowLevelMonitor* monitor)
+{
+    assert(monitor != NULL);
+
+    SetIsLocked(monitor, false);
+
+    minipal_nonrecursive_mutex_leave(&monitor->Mutex);
+}
+
+void SystemNative_LowLevelMonitor_Wait(LowLevelMonitor* monitor)
+{
+    assert(monitor != NULL);
+
+    SetIsLocked(monitor, false);
+
+    minipal_condition_variable_result result =
+        minipal_condition_variable_wait_nonrecursive(
+            &monitor->Condition,
+            &monitor->Mutex,
+            MINIPAL_CONDITION_VARIABLE_INFINITE);
+    assert(result == MINIPAL_CONDITION_VARIABLE_SIGNALED);
+
+    SetIsLocked(monitor, true);
+}
+
+int32_t SystemNative_LowLevelMonitor_TimedWait(LowLevelMonitor *monitor, int32_t timeoutMilliseconds)
+{
+    assert(timeoutMilliseconds >= 0);
+
+    SetIsLocked(monitor, false);
+
+    minipal_condition_variable_result result =
+        minipal_condition_variable_wait_nonrecursive(
+            &monitor->Condition,
+            &monitor->Mutex,
+            (uint32_t)timeoutMilliseconds);
+    assert(
+        result == MINIPAL_CONDITION_VARIABLE_SIGNALED ||
+        result == MINIPAL_CONDITION_VARIABLE_TIMED_OUT);
+
+    SetIsLocked(monitor, true);
+
+    return result == MINIPAL_CONDITION_VARIABLE_SIGNALED;
+}
+
+void SystemNative_LowLevelMonitor_Signal_Release(LowLevelMonitor* monitor)
+{
+    assert(monitor != NULL);
+
+    bool result = minipal_condition_variable_signal(&monitor->Condition);
+    assert(result);
+
+    SetIsLocked(monitor, false);
+
+    minipal_nonrecursive_mutex_leave(&monitor->Mutex);
+}
+
+#if defined(TARGET_LINUX)
+void SystemNative_LowLevelFutex_WaitOnAddress(int32_t* address, int32_t comparand)
+{
+    syscall(SYS_futex, address, FUTEX_WAIT_PRIVATE, comparand, NULL, NULL, 0);
+}
+
+int32_t SystemNative_LowLevelFutex_WaitOnAddressTimeout(int32_t* address, int32_t comparand, int32_t timeoutMilliseconds)
+{
+    assert(timeoutMilliseconds >= 0);
+
+    struct timespec timeoutTimeSpec;
+    timeoutTimeSpec.tv_sec  = (uint32_t)timeoutMilliseconds / 1000;
+    timeoutTimeSpec.tv_nsec = ((uint32_t)timeoutMilliseconds % 1000) * 1000 * 1000;
+
+    // the timeoutTimeSpec is relative timeout with CLOCK_MONOTONIC clock by default.
+    long waitResult = syscall(SYS_futex, address, FUTEX_WAIT_PRIVATE, comparand, &timeoutTimeSpec, NULL, 0);
+
+    // possible results: woken, not blocking, interrupted, timeout
+    assert(waitResult == 0 || errno == EAGAIN || errno == EINTR || errno == ETIMEDOUT);
+
+    // normal/immediate/spurious wakes are not timeouts
+    // in release treat unexpected results as spurious wakes
+    return waitResult == 0 || errno != ETIMEDOUT;
+}
+
+void SystemNative_LowLevelFutex_WakeByAddressSingle(int32_t* address)
+{
+    syscall(SYS_futex, address, FUTEX_WAKE_PRIVATE, 1, NULL, NULL, 0);
+}
+#else // defined(TARGET_LINUX)
+
+// On illumos/Solaris libc's assert is not annotated noreturn, so marking these stubs noreturn would
+// trigger -Winvalid-noreturn there. Only apply the attribute on other platforms.
+#if defined(DEBUG) && !defined(TARGET_SUNOS)
+#define DEBUGNOTRETURN __attribute__((noreturn))
+#else
+#define DEBUGNOTRETURN
+#endif
+
+DEBUGNOTRETURN
+void SystemNative_LowLevelFutex_WaitOnAddress(int32_t* address, int32_t comparand)
+{
+    (void)address; // unused
+    (void)comparand; // unused
+    assert_msg(false, "Futex is not supported on this platform", 0);
+    // trivial implementation of Wait always wakes spuriously.
+}
+
+DEBUGNOTRETURN
+int32_t SystemNative_LowLevelFutex_WaitOnAddressTimeout(int32_t* address, int32_t comparand, int32_t timeoutMilliseconds)
+{
+    (void)address; // unused
+    (void)comparand; // unused
+    (void)timeoutMilliseconds; // unused
+    assert_msg(false, "Futex is not supported on this platform", 0);
+#if !defined(DEBUG) || defined(TARGET_SUNOS)
+    // trivial implementation of Wait always wakes spuriously.
+    return 1;
+#endif
+}
+
+DEBUGNOTRETURN
+void SystemNative_LowLevelFutex_WakeByAddressSingle(int32_t* address)
+{
+    (void)address; // unused
+    assert_msg(false, "Futex is not supported on this platform", 0);
+    // trivial implementation of Wake does nothing.
+}
+
+#undef DEBUGNOTRETURN
+
+#endif  // defined(TARGET_LINUX)
+
+int32_t SystemNative_CreateThread(uintptr_t stackSize, void *(*startAddress)(void*), void *parameter)
+{
+    bool result = false;
+    pthread_attr_t attrs;
+
+    int error = pthread_attr_init(&attrs);
+    if (error != 0)
+    {
+        // Do not call pthread_attr_destroy
+        return false;
+    }
+
+    error = pthread_attr_setdetachstate(&attrs, PTHREAD_CREATE_DETACHED);
+    assert(error == 0);
+
+#ifdef HOST_APPLE
+    // Match Windows stack size
+    if (stackSize == 0)
+    {
+        stackSize = 1536 * 1024;
+    }
+#endif
+
+    if (stackSize > 0)
+    {
+        if (stackSize < (uintptr_t)PTHREAD_STACK_MIN)
+        {
+            stackSize = (uintptr_t)PTHREAD_STACK_MIN;
+        }
+
+        error = pthread_attr_setstacksize(&attrs, stackSize);
+        if (error != 0) goto CreateThreadExit;
+    }
+
+    pthread_t threadId;
+    error = pthread_create(&threadId, &attrs, startAddress, parameter);
+    if (error != 0) goto CreateThreadExit;
+
+    result = true;
+
+CreateThreadExit:
+    error = pthread_attr_destroy(&attrs);
+    assert(error == 0);
+
+    return result;
+}
+
+int32_t SystemNative_SchedGetCpu(void)
+{
+#if HAVE_SCHED_GETCPU
+    return sched_getcpu();
+#else
+    return -1;
+#endif
+}
+
+__attribute__((noreturn))
+void SystemNative_Exit(int32_t exitCode)
+{
+    exit(exitCode);
+}
+
+__attribute__((noreturn))
+void SystemNative_Abort(void)
+{
+    abort();
+}
+
+// Gets a non-truncated OS thread ID that is also suitable for diagnostics, for platforms that offer a 64-bit ID
+uint64_t SystemNative_GetUInt64OSThreadId(void)
+{
+    return (uint64_t)minipal_get_current_thread_id();
+}
+
+// Tries to get a non-truncated OS thread ID that is also suitable for diagnostics, for platforms that offer a 32-bit ID.
+// Returns (uint32_t)-1 when the implementation does not know how to get the OS thread ID.
+uint32_t SystemNative_TryGetUInt32OSThreadId(void)
+{
+    uint32_t result = (uint32_t)minipal_get_current_thread_id();
+    return result == 0 ? (uint32_t)-1 : result;
+}

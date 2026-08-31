@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TestRuntime>true</TestRuntime>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <TargetOS Condition="'$(TargetOS)' == ''">ios</TargetOS>
+    <TargetArchitecture Condition="'$(TargetArchitecture)' == ''">arm64</TargetArchitecture>
+    <IncludesTestRunner>false</IncludesTestRunner>
+    <ExpectedExitCode>42</ExpectedExitCode>
+    <UseConsoleUITemplate>true</UseConsoleUITemplate>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(RuntimeFlavor)' == 'Mono'">
+    <MonoForceInterpreter>true</MonoForceInterpreter>
+    <RunAOTCompilation>false</RunAOTCompilation>
+    <MainLibraryFileName>iOS.Device.ParallelForEachAsync.Test.dll</MainLibraryFileName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,13 @@
+<Doc>
+ <Title>XPath test</Title>
+ <Summary>This shall test XPath test</Summary>
+ <Chap>
+   <Title>XPath test</Title>
+   <Para>First paragraph <Para> Nested <Origin/> Paragraph </Para> End of first paragraph </Para>
+   <Para>Second paragraph </Para>
+ </Chap>
+ <Chap>
+   <Title>XPath test</Title>
+   Direct content
+ </Chap>
+</Doc>

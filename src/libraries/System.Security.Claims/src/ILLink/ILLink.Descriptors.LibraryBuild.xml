@@ -1,0 +1,8 @@
+<linker>
+  <assembly fullname="System.Security.Claims">
+    <type fullname="System.Security.Principal.GenericPrincipal">
+      <!-- called through reflection by AppDomain -->
+      <method name="GetDefaultInstance" />
+    </type>
+  </assembly>
+</linker>

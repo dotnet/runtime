@@ -1,0 +1,91 @@
+﻿<!-- <?xml version="1.0" encoding="UTF-16"?> -->
+<instrumentationManifest xsi:schemaLocation="http://schemas.microsoft.com/win/2004/08/events eventman.xsd"
+     xmlns:win="http://manifests.microsoft.com/win/2004/08/windows/events"
+     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xmlns:xs="http://www.w3.org/2001/XMLSchema"
+     xmlns:trace="http://schemas.microsoft.com/win/2004/08/events/trace">
+    <instrumentation>
+        <counters xmlns="http://schemas.microsoft.com/win/2005/12/counters">
+            <provider
+              applicationIdentity = "System.Diagnostics.PerformanceCounter.Tests.dll"
+              providerType = "userMode"
+              providerGuid = "{51D1685C-35ED-45be-99FE-17261A4F27F3}">
+
+                <counterSet guid = "{582803C9-AACD-45e5-8C30-571141A22092}"
+                   uri = "Microsoft.Windows.System.PerfCounters.Typing"
+                   name = "$(string.CounterSet1.Name)"
+                   description = "$(string.CounterSet1.Description)"
+                   instances = "single">
+
+                    <counter id = "1"
+                      uri = "Microsoft.Windows.System.PerfCounters.Typing.TotalWords"
+                      name = "$(string.CS1.Counter1.Name)"
+                      description = "$(string.CS1.Counter1.Description)"
+                      type = "perf_counter_rawcount"
+                      detailLevel = "standard"/>
+
+                    <counter id = "2"
+                      uri = "Microsoft.Windows.System.PerfCounters.Typing.WordsInInterval"
+                      name = "$(string.CS1.Counter2.Name)"
+                      description = "$(string.CS1.Counter2.Description)"
+                      type = "perf_counter_delta"
+                      detailLevel = "standard"/>
+
+                    <counter id = "3"
+                      uri = "Microsoft.Windows.System.PerfCounters.Typing.LetterAPressed"
+                      name = "$(string.CS1.Counter3.Name)"
+                      description = "$(string.CS1.Counter3.Description)"
+                      type = "perf_counter_rawcount"
+                      detailLevel = "standard"/>
+
+                    <counter id = "4"
+                      uri = "Microsoft.Windows.System.PerfCounters.Typing.WordsContainingLetterA"
+                      name = "$(string.CS1.Counter4.Name)"
+                      description = "$(string.CS1.Counter4.Description)"
+                      type = "perf_counter_rawcount"
+                      detailLevel = "standard"/>
+
+                    <counter id = "5"
+                      uri = "Microsoft.Windows.System.PerfCounters.Typing.PercentOfWordsContainingLetterA"
+                      name = "$(string.CS1.Counter5.Name)"
+                      description = "$(string.CS1.Counter5.Description)"
+                      type = "perf_sample_fraction"
+                      baseID = "6"
+                      detailLevel = "standard">
+                        <counterAttributes>
+                            <counterAttribute name = "displayAsReal" />
+                        </counterAttributes>
+                    </counter>
+
+                    <counter id = "6"
+                      uri = "Microsoft.Windows.System.PerfCounters.Typing.PercentBase"
+                      type = "perf_sample_base"
+                      detailLevel = "standard">
+                        <counterAttributes>
+                            <counterAttribute name = "noDisplay" />
+                        </counterAttributes>
+                    </counter>
+
+                </counterSet>
+            </provider>
+        </counters>
+    </instrumentation>
+    <localization>
+        <resources culture="en-US">
+            <stringTable>
+                <string id="CounterSet1.Name" value="Typing"/>
+                <string id="CounterSet1.Description" value="Captures simple typing metrics."/>
+                <string id="CS1.Counter1.Name" value="Total Words Typed"/>
+                <string id="CS1.Counter1.Description" value="The total number of words typed."/>
+                <string id="CS1.Counter2.Name" value="Words Typed In Interval"/>
+                <string id="CS1.Counter2.Description" value="The total number of words typed in the interval."/>
+                <string id="CS1.Counter3.Name" value="Letter A Pressed"/>
+                <string id="CS1.Counter3.Description" value="The number of times that the letter A is pressed."/>
+                <string id="CS1.Counter4.Name" value="Words Containing A"/>
+                <string id="CS1.Counter4.Description" value="The number of words that contain the letter A."/>
+                <string id="CS1.Counter5.Name" value="Percent of Words Containing A"/>
+                <string id="CS1.Counter5.Description" value="The percent of words that contain the letter A in the last interval."/>
+            </stringTable>
+        </resources>
+    </localization>
+</instrumentationManifest>

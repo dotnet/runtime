@@ -1,0 +1,78 @@
+<Project>
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets, $(MSBuildThisFileDirectory)..))" />
+
+  <ItemGroup Condition="'$(RuntimeFlavor)' == '$(PrimaryRuntimeFlavor)' and '$(TargetsMobile)' != 'true'">
+    <PackageReference Condition="'$(SkipInstallersPackageReference)' != 'true'" Include="Microsoft.DotNet.Build.Tasks.Installers" Version="$(MicrosoftDotNetBuildTasksInstallersVersion)" />
+
+    <!-- Microsoft.Wix is a dotnet tool package, so exclude its assets. -->
+    <PackageReference Condition="'$(GenerateInstallers)' == 'true'" Include="Microsoft.Wix" Version="$(MicrosoftWixVersion)" ExcludeAssets="all" />
+    <!-- Installers needs the $(PkgMicrosoftWixToolsetUIwixext) property to locate the extension. -->
+    <PackageReference Condition="'$(GenerateInstallers)' == 'true'" Include="Microsoft.WixToolset.UI.wixext" Version="$(MicrosoftWixToolsetUIWixextVersion)" GeneratePathProperty="true" />
+    <PackageReference Condition="'$(GenerateInstallers)' == 'true'" Include="Microsoft.WixToolset.Dependency.wixext" Version="$(MicrosoftWixToolsetDependencyWixextVersion)" GeneratePathProperty="true" />
+    <PackageReference Condition="'$(GenerateInstallers)' == 'true'" Include="Microsoft.WixToolset.Util.wixext" Version="$(MicrosoftWixToolsetUtilWixextVersion)" GeneratePathProperty="true" />
+    <PackageReference Condition="'$(GenerateInstallers)' == 'true'" Include="Microsoft.WixToolset.Bal.wixext" Version="$(MicrosoftWixToolsetBalWixextVersion)" GeneratePathProperty="true" />
+    <PackageReference Condition="'$(GenerateInstallers)' == 'true'" Include="Microsoft.WixToolset.Heat" Version="$(MicrosoftWixToolsetHeatVersion)" />
+  </ItemGroup>
+
+  <!--
+    Generate a catalog (.cat) file covering the .js files that ship in a runtime pack. These
+    .js files are customer-modifiable runtime/toolchain files that cannot be directly
+    Authenticode-signed; the .cat provides integrity verification without preventing
+    modification. -->
+  <Target Name="GenerateJsFileCatalog"
+          AfterTargets="_GenerateFrameworkList"
+          Condition="'$(PlatformPackageType)' == 'RuntimePack'">
+    <PropertyGroup>
+      <_JsCatalogOutputPath>$(IntermediateOutputPath)runtime-js.cat</_JsCatalogOutputPath>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_JsCatalogFile Include="@(FilesToPackage)" Condition="'%(Extension)' == '.js'" />
+    </ItemGroup>
+
+    <!-- Remove a stale catalog from a previous build so a pack without .js can't ship one. -->
+    <Delete Condition="'@(_JsCatalogFile)' == '' and Exists('$(_JsCatalogOutputPath)')"
+            Files="$(_JsCatalogOutputPath)" />
+
+    <GenerateFileCatalog Condition="'@(_JsCatalogFile)' != ''"
+                         Files="@(_JsCatalogFile)"
+                         OutputPath="$(_JsCatalogOutputPath)" />
+
+    <ItemGroup Condition="'@(_JsCatalogFile)' != '' and Exists('$(_JsCatalogOutputPath)')">
+      <FilesToPackage Include="$(_JsCatalogOutputPath)"
+                      TargetPath="data/runtime-js.cat" />
+    </ItemGroup>
+    <Message Condition="'@(_JsCatalogFile)' != '' and Exists('$(_JsCatalogOutputPath)')" Importance="High" Text="Generated JS catalog file: $(_JsCatalogOutputPath)" />
+  </Target>
+
+  <Target Name="AddLongNameDacToPlatformManifest" DependsOnTargets="GetAssemblyVersion" BeforeTargets="GetFilesToPackage">
+    <ItemGroup>
+      <PlatformManifestFileEntry Include="mscordaccore_$(_hostArch)_$(_longNameTargetArch)_$(FileVersion).dll" />
+      <PlatformManifestFileEntry Include="mscordaccore_$(_longNameTargetArch)_$(_longNameTargetArch)_$(FileVersion).dll" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="ReturnProductVersion" Returns="$(Version)" />
+
+  <Target Name="CreatePackageOverrides">
+    <PropertyGroup>
+      <PackageOverridesInputPath>$(MSBuildThisFileDirectory)PackageOverrides.txt</PackageOverridesInputPath>
+      <PackageOverridesOutputPath>$(BaseOutputPath)PackageOverrides.txt</PackageOverridesOutputPath>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <CreatePackageOverridesTemplateProperty Include="ProductVersion=$(Version)" />
+    </ItemGroup>
+
+    <GenerateFileFromTemplate
+      TemplateFile="$(PackageOverridesInputPath)"
+      Properties="@(CreatePackageOverridesTemplateProperty)"
+      OutputPath="$(PackageOverridesOutputPath)" />
+
+    <ItemGroup>
+      <PackageOverridesFile Include="$(PackageOverridesOutputPath)" />
+    </ItemGroup>
+  </Target>
+
+</Project>

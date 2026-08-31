@@ -1,0 +1,881 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+/*++
+
+Module Name:
+
+    init/pal.cpp
+
+Abstract:
+
+    Implementation of PAL exported functions not part of the Win32 API.
+
+--*/
+
+#include "pal/dbgmsg.h"
+SET_DEFAULT_DEBUG_CHANNEL(PAL); // some headers have code with asserts, so do this first
+
+#include "pal/thread.hpp"
+#include "pal/synchobjects.hpp"
+#include "pal/procobj.hpp"
+#include "pal/file.hpp"
+#include "pal/map.hpp"
+#include "../objmgr/listedobjectmanager.hpp"
+#include "pal/seh.hpp"
+#include "pal/palinternal.h"
+#include "pal/process.h"
+#include "../thread/procprivate.hpp"
+#include "pal/module.h"
+#include "pal/virtual.h"
+#include "pal/environ.h"
+#include "pal/utils.h"
+#include "pal/debug.h"
+#include "pal/init.h"
+#include "pal/stackstring.hpp"
+#include "pal/cgroup.h"
+#include <minipal/getexepath.h>
+#include <minipal/memorybarrierprocesswide.h>
+#include <minipal/descriptorlimit.h>
+
+#if HAVE_MACH_EXCEPTIONS
+#include "../exception/machexception.h"
+#endif
+
+#include <stdlib.h>
+#include <unistd.h>
+#if defined(TARGET_WASI)
+#include "pal/wasi/pal_wasi_missing.h"
+#else
+#include <pwd.h>
+#endif
+#include <errno.h>
+#include <sys/types.h>
+#include <sys/param.h>
+#include <sys/stat.h>
+#include <limits.h>
+#include <string.h>
+#include <fcntl.h>
+
+#if HAVE_POLL
+#include <poll.h>
+#else
+#include "pal/fakepoll.h"
+#endif  // HAVE_POLL
+
+#if defined(__APPLE__)
+#include <sys/sysctl.h>
+int CacheLineSize;
+#endif //__APPLE__
+
+#ifdef __APPLE__
+#include <mach-o/dyld.h>
+#endif // __APPLE__
+
+#ifdef __NetBSD__
+#include <sys/cdefs.h>
+#include <sys/param.h>
+#include <sys/sysctl.h>
+#include <kvm.h>
+#endif
+
+#if defined(__sun)
+#include <procfs.h>
+#endif
+
+#ifdef __FreeBSD__
+#include <sys/user.h>
+#endif
+
+#include <algorithm>
+#include <clrconfignocache.h>
+
+using namespace CorUnix;
+
+extern bool g_running_in_exe;
+
+#if defined(HOST_ARM64)
+// Flag to check if atomics feature is available on
+// the machine
+bool g_arm64_atomics_present = false;
+#endif
+
+Volatile<INT> init_count = 0;
+Volatile<BOOL> shutdown_intent = 0;
+Volatile<LONG> g_coreclrInitialized = 0;
+static BOOL g_fThreadDataAvailable = FALSE;
+static pthread_mutex_t init_critsec_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+// The default minimum stack size
+SIZE_T g_defaultStackSize = 0;
+
+// The default value of parameter, whether to mmap images at default base address or not
+BOOL g_useDefaultBaseAddr = FALSE;
+
+/* critical section to protect access to init_count. This is allocated on the
+   very first PAL_Initialize call, and is freed afterward. */
+static minipal_mutex* init_critsec = NULL;
+
+static DWORD g_initializeDLLFlags = PAL_INITIALIZE_DLL;
+
+static int Initialize(DWORD flags);
+static LPWSTR INIT_GetCurrentEXEPath();
+
+/*++
+Function:
+  PAL_Initialize
+
+Abstract:
+  This function is the first function of the PAL to be called.
+  Internal structure initialization is done here. It could be called
+  several time by the same process, a reference count is kept.
+
+Return:
+  0 if successful
+  -1 if it failed
+
+--*/
+int
+PALAPI
+PAL_Initialize(
+    int argc,
+    char *const argv[])
+{
+    return Initialize(PAL_INITIALIZE);
+}
+
+/*++
+Function:
+  PAL_InitializeWithFlags
+
+Abstract:
+  This function is the first function of the PAL to be called.
+  Internal structure initialization is done here. It could be called
+  several time by the same process, a reference count is kept.
+
+Return:
+  0 if successful
+  -1 if it failed
+
+--*/
+int
+PALAPI
+PAL_InitializeWithFlags(
+    int argc,
+    const char *const argv[],
+    DWORD flags)
+{
+    return Initialize(flags);
+}
+
+/*++
+Function:
+  PAL_InitializeDLL
+
+Abstract:
+    Initializes the non-runtime DLLs/modules like the DAC and SOS.
+
+Return:
+  0 if successful
+  -1 if it failed
+
+--*/
+int
+PALAPI
+PAL_InitializeDLL()
+{
+    return Initialize(g_initializeDLLFlags);
+}
+
+/*++
+Function:
+  PAL_SetInitializeDLLFlags
+
+Abstract:
+  This sets the global PAL_INITIALIZE flags that PAL_InitializeDLL
+  will use. It needs to be called before any PAL_InitializeDLL call
+  is made so typical it is used in a __attribute__((constructor))
+  function to make sure.
+
+Return:
+  none
+
+--*/
+void
+PALAPI
+PAL_SetInitializeDLLFlags(
+    DWORD flags)
+{
+    g_initializeDLLFlags = flags;
+}
+
+#ifdef ENSURE_PRIMARY_STACK_SIZE
+/*++
+Function:
+  EnsureStackSize
+
+Abstract:
+  This fixes a problem on MUSL where the initial stack size reported by the
+  pthread_attr_getstack is about 128kB, but this limit is not fixed and
+  the stack can grow dynamically. The problem is that it makes the
+  functions ReflectionInvocation::[Try]EnsureSufficientExecutionStack
+  to fail for real life scenarios like e.g. compilation of corefx.
+  Since there is no real fixed limit for the stack, the code below
+  ensures moving the stack limit to a value that makes reasonable
+  real life scenarios work.
+
+--*/
+__attribute__((noinline,NOOPT_ATTRIBUTE))
+void
+EnsureStackSize(SIZE_T stackSize)
+{
+    volatile uint8_t *s = (uint8_t *)_alloca(stackSize);
+    *s = 0;
+}
+#endif // ENSURE_PRIMARY_STACK_SIZE
+
+/*++
+Function:
+  InitializeDefaultStackSize
+
+Abstract:
+  Initializes the default stack size.
+
+--*/
+void
+InitializeDefaultStackSize()
+{
+    CLRConfigNoCache defStackSize = CLRConfigNoCache::Get("Thread_DefaultStackSize", /*noprefix*/ false, &getenv);
+    if (defStackSize.IsSet())
+    {
+        DWORD size;
+        if (defStackSize.TryAsInteger(16, size))
+        {
+            g_defaultStackSize = std::max(size, (DWORD)PTHREAD_STACK_MIN);
+        }
+    }
+
+#ifdef HOST_APPLE
+    // Match Windows stack size
+    if (g_defaultStackSize == 0)
+    {
+        g_defaultStackSize = 1536 * 1024;
+    }
+#endif
+
+#ifdef ENSURE_PRIMARY_STACK_SIZE
+    if (g_defaultStackSize == 0)
+    {
+        // Set the default minimum stack size for MUSL to the same value as we
+        // use on Windows.
+        g_defaultStackSize = 1536 * 1024;
+    }
+#endif // ENSURE_PRIMARY_STACK_SIZE
+}
+
+/*++
+Function:
+  Initialize
+
+Abstract:
+  Common PAL initialization function.
+
+Return:
+  0 if successful
+  -1 if it failed
+
+--*/
+int
+Initialize(
+    DWORD flags)
+{
+    PAL_ERROR palError = ERROR_GEN_FAILURE;
+    CPalThread *pThread = nullptr;
+    CListedObjectManager *plom = nullptr;
+    LPWSTR exe_path = nullptr;
+    int retval = -1;
+    bool fFirstTimeInit = false;
+
+    /* the first ENTRY within the first call to PAL_Initialize is a special
+       case, since debug channels are not initialized yet. So in that case the
+       ENTRY will be called after the DBG channels initialization */
+    ENTRY_EXTERNAL("PAL_Initialize\n");
+
+    /*Firstly initiate a lastError */
+    SetLastError(ERROR_GEN_FAILURE);
+
+    if(nullptr == init_critsec)
+    {
+        pthread_mutex_lock(&init_critsec_mutex); // prevents race condition of two threads
+                                                 // initializing the critical section.
+        if(nullptr == init_critsec)
+        {
+            static minipal_mutex temp_critsec;
+
+            // Want this critical section to NOT be internal to avoid the use of unsafe region markers.
+            minipal_mutex_init(&temp_critsec);
+
+            if(nullptr != InterlockedCompareExchangePointer(&init_critsec, &temp_critsec, nullptr))
+            {
+                // Another thread got in before us! shouldn't happen, if the PAL
+                // isn't initialized there shouldn't be any other threads
+                WARN("Another thread initialized the critical section\n");
+                minipal_mutex_destroy(&temp_critsec);
+            }
+        }
+        pthread_mutex_unlock(&init_critsec_mutex);
+    }
+
+    minipal_mutex_enter(init_critsec);
+
+    if (init_count == 0)
+    {
+        // Set our pid.
+        gPID = getpid();
+
+        // Initialize the thread local storage
+        if (FALSE == TLSInitialize())
+        {
+            palError = ERROR_PALINIT_TLS;
+            goto done;
+        }
+
+        // Initialize debug channel settings before anything else.
+        if (FALSE == DBG_init_channels())
+        {
+            palError = ERROR_PALINIT_DBG_CHANNELS;
+            goto CLEANUP0a;
+        }
+
+        fFirstTimeInit = true;
+
+        InitializeDefaultStackSize();
+
+#ifdef ENSURE_PRIMARY_STACK_SIZE
+        if (flags & PAL_INITIALIZE_ENSURE_STACK_SIZE)
+        {
+            EnsureStackSize(g_defaultStackSize);
+        }
+#endif // ENSURE_PRIMARY_STACK_SIZE
+
+#ifdef FEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION
+        CLRConfigNoCache useDefaultBaseAddr = CLRConfigNoCache::Get("UseDefaultBaseAddr", /*noprefix*/ false, &getenv);
+        if (useDefaultBaseAddr.IsSet())
+        {
+            DWORD flag;
+            if (useDefaultBaseAddr.TryAsInteger(16, flag))
+            {
+                g_useDefaultBaseAddr = (BOOL) flag;
+            }
+        }
+#endif // FEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION
+
+        InitializeCGroup();
+
+        // Initialize the environment.
+        if (FALSE == EnvironInitialize())
+        {
+            palError = ERROR_PALINIT_ENV;
+            goto CLEANUP1;
+        }
+
+        if (!minipal_increase_descriptor_limit())
+        {
+            ERROR("Unable to increase the file descriptor limit!\n");
+            // We can continue if this fails; we'll just have problems if
+            // we use large numbers of threads or have many open files.
+        }
+
+#if HAVE_MACH_EXCEPTIONS
+        // Mach exception port needs to be set up before the thread
+        // data or threads are set up.
+        if (!SEHInitializeMachExceptions(flags))
+        {
+            ERROR("SEHInitializeMachExceptions failed!\n");
+            palError = ERROR_PALINIT_INITIALIZE_MACH_EXCEPTION;
+            goto CLEANUP1;
+        }
+#endif // HAVE_MACH_EXCEPTIONS
+
+        //
+        // Allocate the initial thread data
+        //
+
+        palError = CreateThreadData(&pThread);
+        if (NO_ERROR != palError)
+        {
+            ERROR("Unable to create initial thread data\n");
+            goto CLEANUP1a;
+        }
+
+        //
+        // It's now safe to access our thread data
+        //
+
+        g_fThreadDataAvailable = TRUE;
+
+        //
+        // Initialize module manager
+        //
+        if (FALSE == LOADInitializeModules())
+        {
+            ERROR("Unable to initialize module manager\n");
+            palError = ERROR_PALINIT_MODULE_MANAGER;
+            goto CLEANUP1b;
+        }
+
+        //
+        // Initialize the object manager
+        //
+
+        plom = new(std::nothrow) CListedObjectManager();
+        if (nullptr == plom)
+        {
+            ERROR("Unable to allocate new object manager\n");
+            palError = ERROR_OUTOFMEMORY;
+            goto CLEANUP1b;
+        }
+
+        palError = plom->Initialize();
+        if (NO_ERROR != palError)
+        {
+            ERROR("object manager initialization failed!\n");
+            delete plom;
+            goto CLEANUP1b;
+        }
+
+        g_pObjectManager = plom;
+
+        //
+        // Initialize the synchronization manager
+        //
+        g_pSynchronizationManager =
+            CPalSynchMgrController::CreatePalSynchronizationManager();
+
+        if (nullptr == g_pSynchronizationManager)
+        {
+            palError = ERROR_NOT_ENOUGH_MEMORY;
+            ERROR("Failure creating synchronization manager\n");
+            goto CLEANUP1c;
+        }
+    }
+    else
+    {
+        pThread = InternalGetCurrentThread();
+    }
+
+    palError = ERROR_GEN_FAILURE;
+
+    /* find out the application's full path */
+    exe_path = INIT_GetCurrentEXEPath();
+    if (nullptr == exe_path)
+    {
+        ERROR("Unable to find exe path\n");
+        palError = ERROR_PALINIT_CONVERT_EXE_PATH;
+        goto CLEANUP1e;
+    }
+
+    if (!LOADSetExeName(exe_path))
+    {
+        ERROR("Unable to set exe name\n");
+        palError = ERROR_PALINIT_SET_EXE_NAME;
+        goto CLEANUP2;
+    }
+
+    // LOADSetExeName took ownership of this memory.
+    exe_path = nullptr;
+
+    if (init_count == 0)
+    {
+        //
+        // Create the initial process and thread objects
+        //
+        palError = CreateInitialProcessAndThreadObjects(pThread);
+        if (NO_ERROR != palError)
+        {
+            ERROR("Unable to create initial process and thread objects\n");
+            goto CLEANUP2;
+        }
+
+        palError = ERROR_GEN_FAILURE;
+
+        /* Initialize the File mapping critical section. */
+        if (FALSE == MAPInitialize())
+        {
+            ERROR("Unable to initialize file mapping support\n");
+            palError = ERROR_PALINIT_MAP;
+            goto CLEANUP6;
+        }
+
+        /* Initialize the Virtual* functions. */
+        bool initializeExecutableMemoryAllocator = (flags & PAL_INITIALIZE_EXEC_ALLOCATOR) != 0;
+        if (FALSE == VIRTUALInitialize(initializeExecutableMemoryAllocator))
+        {
+            ERROR("Unable to initialize virtual memory support\n");
+            palError = ERROR_PALINIT_VIRTUAL;
+            goto CLEANUP10;
+        }
+
+        if (flags & PAL_INITIALIZE_FLUSH_PROCESS_WRITE_BUFFERS)
+        {
+            // Initialize before first thread is created for faster load on Linux
+            if (!minipal_initialize_memory_barrier_process_wide())
+            {
+                ERROR("Unable to initialize flush process write buffers\n");
+                palError = ERROR_PALINIT_INITIALIZE_FLUSH_PROCESS_WRITE_BUFFERS;
+                goto CLEANUP10;
+            }
+        }
+
+        /* initialize structured exception handling stuff (signals, etc) */
+        if (FALSE == SEHInitialize(pThread, flags))
+        {
+            ERROR("Unable to initialize SEH support\n");
+            palError = ERROR_PALINIT_SEH;
+            goto CLEANUP13;
+        }
+
+        if (flags & PAL_INITIALIZE_STD_HANDLES)
+        {
+            /* create file objects for standard handles */
+            if (!FILEInitStdHandles())
+            {
+                ERROR("Unable to initialize standard file handles\n");
+                palError = ERROR_PALINIT_STD_HANDLES;
+                goto CLEANUP14;
+            }
+        }
+
+        TRACE("First-time PAL initialization complete.\n");
+        // Incrementing the init_count here serves as a synchronization point,
+        // since it is a Volatile<T> variable, and modifying it will have release semantics.
+        init_count.Store(init_count.Load() + 1);
+
+        /* Set LastError to a non-good value - functions within the
+           PAL startup may set lasterror to a nonzero value. */
+        SetLastError(NO_ERROR);
+        retval = 0;
+    }
+    else
+    {
+        init_count.Store(init_count.Load() + 1);
+
+        TRACE("Initialization count increases to %d\n", init_count.Load());
+
+        SetLastError(NO_ERROR);
+        retval = 0;
+    }
+    goto done;
+
+CLEANUP14:
+    SEHCleanup();
+CLEANUP13:
+    VIRTUALCleanup();
+CLEANUP10:
+    MAPCleanup();
+CLEANUP6:
+    // Cleanup initial process data
+CLEANUP2:
+    free(exe_path);
+CLEANUP1e:
+    // Cleanup synchronization manager
+CLEANUP1c:
+    // Cleanup object manager
+CLEANUP1b:
+    // Cleanup initial thread data
+CLEANUP1a:
+    // Cleanup global process data
+CLEANUP1:
+    CleanupCGroup();
+CLEANUP0a:
+    TLSCleanup();
+    ERROR("PAL_Initialize failed\n");
+    SetLastError(palError);
+done:
+    minipal_mutex_leave(init_critsec);
+
+    if (fFirstTimeInit && 0 == retval)
+    {
+        _ASSERTE(nullptr != pThread);
+    }
+
+    if (retval != 0 && GetLastError() == ERROR_SUCCESS)
+    {
+        ASSERT("returning failure, but last error not set\n");
+    }
+
+    LOGEXIT("PAL_Initialize returns int %d\n", retval);
+    return retval;
+}
+
+
+/*++
+Function:
+  PAL_InitializeCoreCLR
+
+Abstract:
+  A replacement for PAL_Initialize when loading CoreCLR.
+
+  This routine also makes sure the psuedo dynamic libraries PALRT and mscorwks have their initialization
+  methods called.
+
+Return:
+  ERROR_SUCCESS if successful
+  An error code, if it failed
+
+--*/
+PAL_ERROR
+PALAPI
+PAL_InitializeCoreCLR(BOOL runningInExe)
+{
+    g_running_in_exe = runningInExe;
+
+    int result = Initialize(PAL_INITIALIZE_CORECLR);
+    if (result != 0)
+    {
+        return GetLastError();
+    }
+
+    // Check for a repeated call (this is a no-op).
+    if (InterlockedIncrement(&g_coreclrInitialized) > 1)
+    {
+        return ERROR_SUCCESS;
+    }
+
+#ifndef TARGET_WASM // we don't use shared libraries on wasm and don't support dbg mini dump
+    // Now that the PAL is initialized it's safe to call the initialization methods for the code that used to
+    // be dynamically loaded libraries but is now statically linked into CoreCLR just like the PAL, i.e. the
+    // PAL RT and mscorwks.
+    if (!LOADInitializeCoreCLRModule())
+    {
+        return ERROR_DLL_INIT_FAILED;
+    }
+    if (!PROCAbortInitialize())
+    {
+        printf("PROCAbortInitialize FAILED %d (%s)\n", errno, strerror(errno));
+        return ERROR_PALINIT_PROCABORT_INITIALIZE;
+    }
+#endif // !TARGET_WASM
+
+    return ERROR_SUCCESS;
+}
+
+/*++
+Function:
+  PAL_Shutdown
+
+Abstract:
+  This function shuts down the PAL WITHOUT exiting the current process.
+--*/
+void
+PALAPI
+PAL_Shutdown(
+    void)
+{
+    TerminateCurrentProcessNoExit(FALSE /* bTerminateUnconditionally */);
+}
+
+/*++
+Function:
+  PAL_Terminate
+
+Abstract:
+  This function is the called when a thread has finished using the PAL
+  library. It shuts down PAL and exits the current process.
+--*/
+void
+PALAPI
+PAL_Terminate(
+    void)
+{
+    PAL_TerminateEx(0);
+}
+
+/*++
+Function:
+PAL_TerminateEx
+
+Abstract:
+This function is the called when a thread has finished using the PAL
+library. It shuts down PAL and exits the current process with
+the specified exit code.
+--*/
+void
+PALAPI
+PAL_TerminateEx(
+    int exitCode)
+{
+    ENTRY_EXTERNAL("PAL_TerminateEx()\n");
+
+    if (nullptr == init_critsec)
+    {
+        /* note that these macros probably won't output anything, since the
+        debug channels haven't been initialized yet */
+        ASSERT("PAL_Initialize has never been called!\n");
+        LOGEXIT("PAL_Terminate returns.\n");
+    }
+
+    // Declare the beginning of shutdown
+    PALSetShutdownIntent();
+
+    LOGEXIT("PAL_TerminateEx is exiting the current process.\n");
+    exit(exitCode);
+}
+
+/*++
+Function:
+  PALIsThreadDataInitialized
+
+Returns TRUE if startup has reached a point where thread data is available
+--*/
+BOOL PALIsThreadDataInitialized()
+{
+    return g_fThreadDataAvailable;
+}
+
+/*++
+Function:
+  PALCommonCleanup
+
+  Utility function to prepare for shutdown.
+
+--*/
+void
+PALCommonCleanup()
+{
+    static bool cleanupDone = false;
+
+    // Declare the beginning of shutdown
+    PALSetShutdownIntent();
+
+    if (!cleanupDone)
+    {
+        cleanupDone = true;
+
+        //
+        // Let the synchronization manager know we're about to shutdown
+        //
+        CPalSynchMgrController::PrepareForShutdown();
+    }
+}
+
+BOOL PALIsShuttingDown()
+{
+    /* TODO: This function may be used to provide a reader/writer-like
+       mechanism (or a ref counting one) to prevent PAL APIs that need to access
+       PAL runtime data, from working when PAL is shutting down. Each of those API
+       should acquire a read access while executing. The shutting down code would
+       acquire a write lock, i.e. suspending any new incoming reader, and waiting
+       for the current readers to be done. That would allow us to get rid of the
+       dangerous suspend-all-other-threads at shutdown time */
+    return shutdown_intent;
+}
+
+void PALSetShutdownIntent()
+{
+    /* TODO: See comment in PALIsShuttingDown */
+    shutdown_intent = TRUE;
+}
+
+/*++
+Function:
+  PALInitLock
+
+Take the initialization critical section (init_critsec). necessary to serialize
+TerminateProcess along with PAL_Terminate and PAL_Initialize
+
+(no parameters)
+
+Return value :
+    TRUE if critical section existed (and was acquired)
+    FALSE if critical section doesn't exist yet
+--*/
+BOOL PALInitLock(void)
+{
+    if(!init_critsec)
+    {
+        return FALSE;
+    }
+
+    minipal_mutex_enter(init_critsec);
+    return TRUE;
+}
+
+/*++
+Function:
+  PALInitUnlock
+
+Release the initialization critical section (init_critsec).
+
+(no parameters, no return value)
+--*/
+void PALInitUnlock(void)
+{
+    if(!init_critsec)
+    {
+        return;
+    }
+
+    minipal_mutex_leave(init_critsec);
+}
+
+/* Internal functions *********************************************************/
+
+/*++
+Function:
+  INIT_GetCurrentEXEPath
+
+Abstract:
+    Get the current exe path
+
+Return:
+    pointer to buffer containing the full path. This buffer must be released
+    by the caller using free()
+
+--*/
+static LPWSTR INIT_GetCurrentEXEPath()
+{
+    LPWSTR return_value;
+    INT return_size;
+
+    char* path = minipal_getexepath();
+    if (!path)
+    {
+        ERROR( "Cannot get current exe path\n" );
+        return nullptr;
+    }
+
+    PathCharString real_path;
+    real_path.Set(path, strlen(path));
+    free(path);
+
+    return_size = MultiByteToWideChar(CP_ACP, 0, real_path, -1, nullptr, 0);
+    if (0 == return_size)
+    {
+        ASSERT("MultiByteToWideChar failure\n");
+        return nullptr;
+    }
+
+    return_value = reinterpret_cast<LPWSTR>(malloc((return_size*sizeof(WCHAR))));
+    if (nullptr == return_value)
+    {
+        ERROR("Not enough memory to create full path\n");
+        return nullptr;
+    }
+    else
+    {
+        if (!MultiByteToWideChar(CP_ACP, 0, real_path, -1,
+                                return_value, return_size))
+        {
+            ASSERT("MultiByteToWideChar failure\n");
+            free(return_value);
+            return_value = nullptr;
+        }
+        else
+        {
+            TRACE("full path to executable is %s\n", real_path.GetString());
+        }
+    }
+
+    return return_value;
+}

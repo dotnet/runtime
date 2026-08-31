@@ -1,0 +1,83 @@
+.\" *********************************** start of \input{common.tex}
+.\" *********************************** end of \input{common.tex}
+'\" t
+.\" Manual page created with latex2man on Tue Aug 29 11:10:10 2023
+.\" NOTE: This file is generated, DO NOT EDIT.
+.de Vb
+.ft CW
+.nf
+..
+.de Ve
+.ft R
+
+.fi
+..
+.TH "UNW\\_SET\\_ITERATE\\_PHDR\\_FUNCTION" "3libunwind" "29 August 2023" "Programming Library " "Programming Library "
+.SH NAME
+unw_set_iterate_phdr_function
+\-\- set dl_iterate_phdr
+implementation 
+.PP
+.SH SYNOPSIS
+
+.PP
+#include <libunwind.h>
+.br
+.PP
+typedef int
+(*unw_iterate_phdr_callback_t)(struct dl_phdr_info *,
+size_t,
+void *);
+.br
+typedef int
+(*unw_iterate_phdr_func_t)(unw_iterate_phdr_callback_t,
+void *);
+.br
+.PP
+void
+unw_set_iterate_phdr_function(unw_addr_space_t
+as,
+unw_iterate_phdr_func_t
+function);
+.br
+.PP
+.SH DESCRIPTION
+
+.PP
+The unw_set_iterate_phdr_function()
+routine sets the dl_iterate_phdr
+implementation of address space as
+to the function by argument function\&.
+The function
+will be called whenever libunwind
+needs to iterate over the program headers of the application. 
+This is normally done by calling dl_iterate_phdr,
+but this function is not signal safe. 
+With the help of a custom implementation caching and iterating over the program headers is also possible in an signal\-safe manner. 
+Though the burden lies on the user of libunwind\&.
+.PP
+.SH THREAD AND SIGNAL SAFETY
+
+.PP
+unw_set_iterate_phdr_function()
+is thread safe. If the local address space 
+is passed in argument as,
+this routine is also safe to use from 
+a signal handler. 
+.PP
+.SH SEE ALSO
+
+.PP
+libunwind(3libunwind),
+unw_create_addr_space(3libunwind),
+dl_iterate_phdr(3libunwind),
+.PP
+.SH AUTHOR
+
+.PP
+Bert Wesarg
+.br
+Email: \fBbert.wesarg@googlemail.com\fP
+.br
+WWW: \fBhttp://www.nongnu.org/libunwind/\fP\&.
+.\" NOTE: This file is generated, DO NOT EDIT.

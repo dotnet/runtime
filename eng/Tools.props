@@ -1,0 +1,8 @@
+<Project>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Packaging" Version="$(MicrosoftDotNetBuildTasksPackagingVersion)" />
+    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Templating" Version="$(MicrosoftDotNetBuildTasksTemplatingVersion)" />
+  </ItemGroup>
+
+</Project>

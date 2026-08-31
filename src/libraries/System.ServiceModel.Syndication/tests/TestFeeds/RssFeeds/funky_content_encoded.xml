@@ -1,0 +1,19 @@
+<!--
+  Description:  Funky content
+  Expect:       !DuplicateDescriptionSemantics{element:content:encoded}
+-->
+
+<rss version="2.0" xmlns:content="http://contoso.com/rss/1.0/modules/content/">
+<channel>
+<title>Duplicate semantics</title>
+<link>http://contoso.com/rss/2.0/</link>
+<description>Funky content</description>
+<item>
+<title>Duplicate semantics</title>
+<link>http://contoso.com/rss/2.0/?item</link>
+<guid isPermaLink="false">uuid:43481a10-d881-40d1-adf2-99b438c57e21;id=1</guid>
+<description>Foo</description>
+<content:encoded>Bar</content:encoded>
+</item>
+</channel>
+</rss>

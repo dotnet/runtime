@@ -1,0 +1,7 @@
+<Project>
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets, '$(MSBuildThisFileDirectory)..'))" />
+
+  <PropertyGroup>
+    <WasmAppDir>$(OutputPath)\$(Configuration)\AppBundle\</WasmAppDir>
+  </PropertyGroup>
+</Project>

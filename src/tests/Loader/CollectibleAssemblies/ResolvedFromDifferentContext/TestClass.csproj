@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+   <Compile Include="Class.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="TestInterface.csproj" />
+  </ItemGroup>
+
+</Project>

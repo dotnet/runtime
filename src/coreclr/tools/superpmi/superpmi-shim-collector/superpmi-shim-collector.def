@@ -1,0 +1,4 @@
+LIBRARY
+EXPORTS
+    getJit
+    jitStartup

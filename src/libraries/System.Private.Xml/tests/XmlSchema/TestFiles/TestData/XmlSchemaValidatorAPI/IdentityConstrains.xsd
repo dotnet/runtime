@@ -1,0 +1,69 @@
+﻿<?xml version="1.0" encoding="utf-8" ?> 
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+	<xs:element name="root">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="desc" type="descType">
+					<xs:keyref name="kr1" refer="numberKey">
+						<xs:selector xpath="elemDesc" />
+						<xs:field xpath="@number" />
+					</xs:keyref>
+				</xs:element>
+							
+				<xs:element name="elem" type="elemType" minOccurs="0" maxOccurs="unbounded" />
+			</xs:sequence>			
+		</xs:complexType>
+		
+		<xs:key name="numberKey">
+			<xs:selector xpath="elem" />
+			<xs:field xpath="@number" />
+		</xs:key>
+	</xs:element>
+	
+	<xs:element name="rootIDs">
+	    <xs:complexType>
+	        <xs:sequence>
+	            <xs:element name="foo" maxOccurs="unbounded">
+	                <xs:complexType>
+	                    <xs:attribute name="attr" type="xs:ID" />
+	                </xs:complexType>
+	            </xs:element>
+	        </xs:sequence>
+	    </xs:complexType>
+	</xs:element>
+	
+	<xs:element name="rootIDREFs">
+	    <xs:complexType>
+	        <xs:sequence>
+	            <xs:element name="foo" maxOccurs="unbounded">
+	                <xs:complexType>
+	                    <xs:attribute name="attr" type="xs:IDREF" />
+	                </xs:complexType>
+	            </xs:element>
+	        </xs:sequence>
+	    </xs:complexType>
+	</xs:element>
+	
+	<xs:complexType name="descType">
+		<xs:sequence>
+			<xs:element name="elemDesc" minOccurs="0" maxOccurs="unbounded">
+				<xs:complexType>
+					<xs:simpleContent>
+						<xs:extension base="xs:string">
+							<xs:attribute name="number" type="xs:int" />
+						</xs:extension>
+					</xs:simpleContent>
+				</xs:complexType>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:complexType name="elemType">
+		<xs:sequence>
+			<xs:element name="bar" type="xs:string" />
+		</xs:sequence>
+		<xs:attribute name="number" type="xs:int" />
+	</xs:complexType>
+	
+</xs:schema>

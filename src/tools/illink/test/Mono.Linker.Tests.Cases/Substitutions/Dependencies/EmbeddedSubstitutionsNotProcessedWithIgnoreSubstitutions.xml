@@ -1,0 +1,7 @@
+<linker>
+  <assembly fullname="test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+    <type fullname="Mono.Linker.Tests.Cases.Substitutions.EmbeddedSubstitutionsNotProcessedWithIgnoreSubstitutions">
+      <method signature="System.Void ConvertToThrowMethod()" body="remove" />
+    </type>
+  </assembly>
+</linker>

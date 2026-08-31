@@ -1,0 +1,31 @@
+<Project>
+  <Target Name="_{TargetPrefix}GatherAnalyzers">
+
+    <ItemGroup>
+      <_{TargetPrefix}Analyzer Include="@(Analyzer)" Condition="'%(Analyzer.NuGetPackageId)' == '{NuGetPackageId}'" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="_{TargetPrefix}AnalyzerMultiTargeting" 
+          Condition="'$(SupportsRoslynComponentVersioning)' != 'true'" 
+          AfterTargets="ResolvePackageDependenciesForBuild;ResolveNuGetPackageAssets"
+          DependsOnTargets="_{TargetPrefix}GatherAnalyzers">
+
+    <ItemGroup>
+      <!-- Remove our analyzers targeting roslyn4.x -->
+      <Analyzer Remove="@(_{TargetPrefix}Analyzer)"
+                Condition="$([System.String]::Copy('%(_{TargetPrefix}Analyzer.Identity)').IndexOf('roslyn4')) &gt;= 0"/>
+    </ItemGroup>
+  </Target>
+
+  <Target Name="_{TargetPrefix}RemoveAnalyzers" 
+          Condition="'$({DisableSourceGeneratorPropertyName})' == 'true'"
+          AfterTargets="ResolvePackageDependenciesForBuild;ResolveNuGetPackageAssets"
+          DependsOnTargets="_{TargetPrefix}GatherAnalyzers">
+
+    <!-- Remove all our analyzers -->
+    <ItemGroup>
+      <Analyzer Remove="@(_{TargetPrefix}Analyzer)" />
+    </ItemGroup>
+  </Target>
+</Project>

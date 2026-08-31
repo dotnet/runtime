@@ -1,0 +1,117 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>$(NoWarn);169;649</NoWarn>
+    <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-browser</TargetFrameworks>
+  </PropertyGroup>
+  <PropertyGroup>
+    <!-- SYSTEM_NET_PRIMITIVES_DLL is required to allow source-level code sharing for types defined within the
+         System.Net.Internals namespace. -->
+    <DefineConstants>$(DefineConstants);SYSTEM_NET_PRIMITIVES_DLL</DefineConstants>
+  </PropertyGroup>
+  <!-- Do not reference these assemblies from the TargetingPack since we are building part of the source code for tests. -->
+  <ItemGroup>
+    <DefaultReferenceExclusion Include="System.Net.Primitives" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="CookieExceptionTest.cs" />
+    <Compile Include="CookieInternalTest.cs" />
+    <Compile Include="CookieContainerTest.cs" />
+    <Compile Include="..\..\src\System\Net\CookieCollection.cs"
+             Link="ProductionCode\System\Net\CookieCollection.cs" />
+    <Compile Include="..\..\src\System\Net\Cookie.cs"
+             Link="ProductionCode\System\Net\Cookie.cs" />
+    <Compile Include="..\..\src\System\Net\CookieContainer.cs"
+             Link="ProductionCode\System\Net\CookieContainer.cs" />
+    <Compile Include="..\..\src\System\Net\Sockets\SocketError.cs"
+             Link="ProductionCode\System\Net\Sockets\SocketError.cs" />
+    <Compile Include="..\..\src\System\Net\IPAddress.cs"
+             Link="ProductionCode\System\Net\IPAddress.cs" />
+    <Compile Include="$(CommonPath)System\Net\IPv4AddressHelper.Common.cs"
+             Link="ProductionCode\Common\System\Net\IPv4AddressHelper.Common.cs" />
+    <Compile Include="$(CommonPath)System\Net\IPv6AddressHelper.Common.cs"
+             Link="ProductionCode\Common\System\Net\IPv6AddressHelper.Common.cs" />
+    <Compile Include="..\..\src\System\Net\EndPoint.cs"
+             Link="ProductionCode\System\Net\EndPoint.cs" />
+    <Compile Include="..\..\src\System\Net\Sockets\AddressFamily.cs"
+             Link="ProductionCode\System\Net\Sockets\AddressFamily.cs" />
+    <Compile Include="$(CommonPath)System\Net\CookieComparer.cs"
+             Link="ProductionCode\System\Net\CookieComparer.cs" />
+    <Compile Include="$(CommonPath)System\Net\CookieFields.cs"
+             Link="Common\System\Net\CookieFields.cs" />
+    <Compile Include="$(CommonPath)System\Net\CookieParser.cs"
+             Link="ProductionCode\System\Net\CookieParser.cs" />
+    <Compile Include="$(CommonPath)System\Net\SocketAddress.cs"
+             Link="ProductionCode\System\Net\SocketAddress.cs" />
+    <Compile Include="..\..\src\System\Net\IPEndPoint.cs"
+             Link="ProductionCode\System\Net\IPEndPoint.cs" />
+    <Compile Include="..\..\src\System\Net\SocketException.cs"
+             Link="ProductionCode\System\Net\SocketException.cs" />
+    <Compile Include="..\..\src\System\Net\IPAddressParser.cs"
+             Link="ProductionCode\System\Net\IPAddressParser.cs" />
+    <Compile Include="$(CommonPath)System\HexConverter.cs"
+             Link="Common\System\HexConverter.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs"
+             Link="Common\System\Obsoletions.cs" />
+    <Compile Include="$(CommonPath)System\Net\IPEndPointExtensions.cs"
+             Link="Common\System\Net\IPEndPointExtensions.cs" />
+    <Compile Include="$(CommonPath)System\Net\SocketAddressExtensions.cs"
+             Link="Common\System\Net\SocketAddressExtensions.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="CookieCollectionTest.cs" />
+    <Compile Include="Fakes\CookieException.cs" />
+    <Compile Include="$(CommonPath)System\Net\HttpKnownHeaderNames.cs"
+             Link="ProductionCode\Common\System\Net\HttpKnownHeaderNames.cs" />
+    <Compile Include="$(CommonPath)System\Net\IPAddressParserStatics.cs"
+             Link="ProductionCode\Common\System\Net\IPAddressParserStatics.cs" />
+    <Compile Include="$(CommonPath)System\Net\TcpValidationHelpers.cs"
+             Link="ProductionCode\Common\System\Net\TcpValidationHelpers.cs" />
+    <Compile Include="$(CommonPath)System\Net\UriScheme.cs"
+             Link="ProductionCode\Common\System\Net\UriScheme.cs" />
+    <Compile Include="$(CommonPath)System\Text\StringBuilderCache.cs"
+             Link="Common\System\Text\StringBuilderCache.cs" />
+    <!-- Logging -->
+    <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs"
+             Link="ProductionCode\Common\System\Net\Logging\NetEventSource.Common.cs" />
+    <Compile Include="$(CommonPath)System\Net\InternalException.cs"
+             Link="ProductionCode\Common\System\Net\InternalException.cs" />
+    <Compile Include="$(CommonPath)System\NotImplemented.cs"
+             Link="ProductionCode\Common\System\NotImplemented.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\WinSock\Interop.ErrorCodes.cs"
+             Link="ProductionCode\Common\Interop\Windows\WinSock\Interop.ErrorCodes.cs" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetPlatformIdentifier)' == 'windows'">
+    <Compile Include="..\..\src\System\Net\SocketException.Windows.cs"
+             Link="ProductionCode\System\Net\SocketException.Unix.cs" />
+    <Compile Include="$(CommonPath)System\Net\SocketAddressPal.Windows.cs"
+             Link="Common\System\Net\SocketAddressPal.Windows.cs" />
+    <Compile Include="$(CommonPath)System\Net\NetworkInformation\InterfaceInfoPal.Windows.cs"
+             Link="ProductionCode\System\Net\NetworkInformation\InterfaceInfoPal.Windows.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\IpHlpApi\Interop.ConvertInterfaceLuidToIndex.cs"
+             Link="Common\Interop\Windows\IpHlpApi\Interop.ConvertInterfaceLuidToIndex.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\IpHlpApi\Interop.ConvertInterfaceNameToLuid.cs"
+             Link="Common\Interop\Windows\IpHlpApi\Interop.ConvertInterfaceNameToLuid.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
+             Link="ProductionCode\Common\Interop\Windows\Interop.Libraries.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix' or '$(TargetPlatformIdentifier)' == 'browser'">
+    <Compile Include="..\..\src\System\Net\SocketException.Unix.cs"
+             Link="ProductionCode\System\Net\SocketException.Unix.cs" />
+    <Compile Include="$(CommonPath)System\Net\NetworkInformation\InterfaceInfoPal.Unix.cs"
+             Link="ProductionCode\System\Net\NetworkInformation\InterfaceInfoPal.Unix.cs" />
+    <Compile Include="$(CommonPath)System\Net\SocketAddressPal.Unix.cs"
+             Link="Common\System\Net\SocketAddressPal.Unix.cs" />
+    <Compile Include="$(CommonPath)System\Net\Sockets\SocketErrorPal.Unix.cs"
+             Link="ProductionCode\Common\System\Net\Sockets\SocketErrorPal.Unix.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
+             Link="ProductionCode\Common\Interop\Unix\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs"
+             Link="ProductionCode\Interop\Unix\Interop.Errors.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SocketAddress.cs"
+             Link="ProductionCode\Common\Interop\Unix\System.Native\Interop.SocketAddress.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.InterfaceNameToIndex.cs"
+             Link="ProductionCode\Common\Interop\Unix\System.Native\Interop.InterfaceNameToIndex.cs" />
+  </ItemGroup>
+</Project>

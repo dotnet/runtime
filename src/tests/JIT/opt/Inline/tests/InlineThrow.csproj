@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <DebugType>None</DebugType>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Inlinethrow.cs" />
+  </ItemGroup>
+</Project>

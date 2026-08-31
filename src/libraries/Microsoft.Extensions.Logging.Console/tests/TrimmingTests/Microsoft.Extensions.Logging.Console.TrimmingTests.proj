@@ -1,0 +1,15 @@
+<Project DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
+
+  <PropertyGroup>
+    <AdditionalProjectReferences>Microsoft.Extensions.Logging.Console</AdditionalProjectReferences>
+    <SkipOnTestRuntimes>browser-wasm</SkipOnTestRuntimes> <!-- Justification: This depends on ConsoleLogger.Processor which requires System.Threading.Thread.Start() which throws PNSE on wasm. -->
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <TestConsoleAppSourceFiles Include="AddConsoleFormatterTests.cs" />
+    <TestConsoleAppSourceFiles Include="JsonFormattingTests.cs" />
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
+</Project>

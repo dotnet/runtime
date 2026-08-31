@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+    <!-- The test leaves a secondary thread running -->
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <CLRTestPriority>1</CLRTestPriority>
+    <!-- TODO: Re-enable when CoreCLR WebAssembly supports background GC and managed threads.
+         Tracked by https://github.com/dotnet/runtime/issues/131321. -->
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">true</CLRTestTargetUnsupported>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>Full</DebugType>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="concurgc_d.il" />
+    <Compile Include="concurgc.il" />
+  </ItemGroup>
+</Project>

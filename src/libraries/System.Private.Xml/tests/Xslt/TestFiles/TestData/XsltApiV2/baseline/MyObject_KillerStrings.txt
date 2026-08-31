@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="utf-8"?><result xmlns:myObj="urn:my-object"><Gun>&gt;" $tmp &gt;;'	 
+&amp;</Gun><Missle>&lt;xsl:variable name="tmp"/&gt;</Missle><Nuclear>&lt;/xsl:stylesheet&gt;</Nuclear><End>Wow...survived all killer ammo.</End></result>

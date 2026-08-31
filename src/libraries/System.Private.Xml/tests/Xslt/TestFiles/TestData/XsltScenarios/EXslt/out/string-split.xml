@@ -1,0 +1,23 @@
+﻿<out>
+  <test1>
+    <token>a</token>
+    <token>simple</token>
+    <token>list</token>
+  </test1>
+  <test2>
+    <token>date</token>
+    <token>math</token>
+    <token>str</token>
+  </test2>
+  <test3>
+    <token>f</token>
+    <token>o</token>
+    <token>o</token>
+  </test3>
+  <test4>
+    <token>cats</token>
+    <token>dogs</token>
+  </test4>
+  <test5>
+  </test5>
+</out>

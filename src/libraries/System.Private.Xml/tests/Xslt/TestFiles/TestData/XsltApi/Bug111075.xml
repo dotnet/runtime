@@ -1,0 +1,22 @@
+<doc>
+   <city name="Paris"
+         country="France"/>
+   <city name="Madrid"
+         country="Spain"/>
+   <city name="Vienna"
+         country="Austria"/>
+   <city name="Barcelona"
+         country="Spain"/>
+   <city name="Salzburg"
+         country="Austria"/>
+   <city name="Bonn"
+         country="Germany"/>
+   <city name="Lyon"
+         country="France"/>
+   <city name="Hannover"
+         country="Germany"/>
+   <city name="Calais"
+         country="France"/>
+   <city name="Berlin"
+         country="Germany"/>
+</doc>

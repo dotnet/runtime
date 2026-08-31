@@ -1,0 +1,9 @@
+﻿<Project>
+  <Import Project="..\Directory.Build.props" />
+  <PropertyGroup>
+    <StrongNameKeyId>Microsoft</StrongNameKeyId>
+    <IncludePlatformAttributes>true</IncludePlatformAttributes>
+    <UnsupportedOSPlatforms>browser;wasi;ios;tvos</UnsupportedOSPlatforms>
+    <SupportedOSPlatforms>maccatalyst</SupportedOSPlatforms>
+  </PropertyGroup>
+</Project>

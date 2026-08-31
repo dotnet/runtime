@@ -1,0 +1,146 @@
+# Contract ReJIT
+
+This contract encapsulates support for [ReJIT](../features/code-versioning.md) in the runtime.
+
+## APIs of contract
+
+```csharp
+public enum RejitState
+{
+    Requested,
+    Active
+}
+```
+
+```csharp
+bool IsEnabled();
+
+RejitState GetRejitState(ILCodeVersionHandle codeVersionHandle);
+
+bool IsDeoptimized(ILCodeVersionHandle codeVersionHandle);
+
+TargetNUInt GetRejitId(ILCodeVersionHandle codeVersionHandle);
+
+IEnumerable<TargetNUInt> GetRejitIds(TargetPointer methodDesc)
+```
+
+## Version 1
+
+<!-- BEGIN GENERATED: usage contract=ReJIT version=c1 -->
+### Data descriptors used
+
+| Data Descriptor | Field | Type | Meaning |
+| --- | --- | --- | --- |
+| `ILCodeVersionNode` | `Deoptimized` | `uint32` | whether this IL code version has been deoptimized |
+| `ILCodeVersionNode` | `RejitState` | `uint32` | a RejitFlags value |
+| `ILCodeVersionNode` | `VersionId` | `nuint` | Unique IL code version ID of the IL code version node (used as a ReJIT ID when Source is ReJIT) |
+| `ProfControlBlock` | `GlobalEventMask` | `uint64` | an ICorProfiler COR_PRF_MONITOR value |
+| `ProfControlBlock` | `RejitOnAttachEnabled` | `uint8` | cached value of the ProfAPI_RejitOnAttach configuration knob |
+
+### Global variables used
+
+| Global | Type | Meaning |
+| --- | --- | --- |
+| `ProfilerControlBlock` | `pointer` | pointer to the ProfControlBlock |
+
+### Contracts used
+
+_None._
+<!-- END GENERATED: usage contract=ReJIT version=c1 -->
+
+
+```csharp
+// see src/coreclr/inc/corprof.idl
+[Flags]
+private enum COR_PRF_MONITOR
+{
+    COR_PRF_ENABLE_REJIT = 0x00040000,
+}
+
+// see src/coreclr/vm/codeversion.h
+[Flags]
+public enum RejitFlags : uint
+{
+    kStateRequested = 0x00000000,
+
+    kStateActive = 0x00000002,
+
+    kStateMask = 0x0000000F
+}
+
+bool IsEnabled()
+{
+    TargetPointer address = target.ReadGlobalPointer("ProfilerControlBlock");
+    ulong globalEventMask = target.Read<ulong>(address + /* ProfControlBlock::GlobalEventMask offset*/);
+    bool profEnabledReJIT = (globalEventMask & (ulong)COR_PRF_MONITOR.COR_PRF_ENABLE_REJIT) != 0;
+    bool rejitOnAttachEnabled = target.Read<uint>(address + /* ProfControlBlock::RejitOnAttachEnabled offset*/) != 0;
+    return profEnabledReJIT || rejitOnAttachEnabled;
+}
+
+RejitState GetRejitState(ILCodeVersionHandle codeVersion)
+{
+    // ILCodeVersion::GetRejitState
+    if (codeVersion is not explicit)
+    {
+        // for non explicit ILCodeVersions, ReJITState is always kStateActive
+        return RejitState.Active;
+    }
+    else
+    {
+        // ILCodeVersionNode::GetRejitState
+        ILCodeVersionNode codeVersionNode = AsNode(codeVersion);
+        return ((RejitFlags)ilCodeVersionNode.RejitState & RejitFlags.kStateMask) switch
+        {
+            RejitFlags.kStateRequested => RejitState.Requested,
+            RejitFlags.kStateActive => RejitState.Active,
+            _ => throw new NotImplementedException($"Unknown ReJIT state: {ilCodeVersionNode.RejitState}"),
+        };
+    }
+}
+
+bool IsDeoptimized(ILCodeVersionHandle codeVersion)
+{
+    // ILCodeVersion::IsDeoptimized
+    if (codeVersion is not explicit)
+    {
+        return false;
+    }
+    else
+    {
+        // ILCodeVersionNode::IsDeoptimized
+        ILCodeVersionNode codeVersionNode = AsNode(codeVersion);
+        return codeVersionNode.Deoptimized;
+    }
+}
+
+TargetNUInt GetRejitId(ILCodeVersionHandle codeVersion)
+{
+    // ILCodeVersion::GetVersionId
+    if (codeVersion is not explicit)
+    {
+        // for non explicit ILCodeVersions, ReJITId is always 0
+        return new TargetNUInt(0);
+    }
+    else
+    {
+        // ILCodeVersionNode::GetVersionId
+        ILCodeVersionNode codeVersionNode = AsNode(codeVersion);
+        return codeVersionNode.VersionId;
+    }
+}
+
+IEnumerable<TargetNUInt> GetRejitIds(TargetPointer methodDesc)
+{
+    // ReJitManager::GetReJITIDs
+    ICodeVersions cv = _target.Contracts.CodeVersions;
+    IEnumerable<ILCodeVersionHandle> ilCodeVersions = cv.GetILCodeVersions(methodDesc);
+
+    foreach (ILCodeVersionHandle ilCodeVersionHandle in ilCodeVersions)
+    {
+        if (GetRejitState(ilCodeVersionHandle) == RejitState.Active)
+        {
+            yield return GetRejitId(ilCodeVersionHandle);
+        }
+    }
+}
+```

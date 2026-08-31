@@ -1,0 +1,238 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Reflection;
+using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Threading;
+using Xunit;
+using TestLibrary;
+
+public unsafe class UnmanagedCallersOnlyBasicTest
+{
+    public static class UnmanagedCallersOnlyDll
+    {
+        [DllImport(nameof(UnmanagedCallersOnlyDll))]
+        public static extern int DoubleImplNative(int n);
+
+        [DllImport(nameof(UnmanagedCallersOnlyDll))]
+        public static extern int CallManagedProc(IntPtr callbackProc, int n);
+
+        [DllImport(nameof(UnmanagedCallersOnlyDll))]
+        public static extern int CallManagedProc_Stdcall_SingleArg(delegate* unmanaged[Stdcall]<int, int> callbackProc, int n);
+
+        [DllImport(nameof(UnmanagedCallersOnlyDll))]
+        public static extern int CallManagedProc_Stdcall(delegate* unmanaged[Stdcall]<int, int, int, int> callbackProc, int m, int n, int o);
+
+        [DllImport(nameof(UnmanagedCallersOnlyDll))]
+        public static extern int CallManagedProc_Cdecl(delegate* unmanaged[Cdecl]<int, int, int, int> callbackProc, int m, int n, int o);
+
+        [DllImport(nameof(UnmanagedCallersOnlyDll))]
+        public static extern int CallManagedProc_Fastcall(delegate* unmanaged[Fastcall]<int, int, int, int> callbackProc, int m, int n, int o);
+
+        [DllImport(nameof(UnmanagedCallersOnlyDll))]
+        public static extern int CallManagedProcMultipleTimes(int m, IntPtr callbackProc, int n);
+
+        [DllImport(nameof(UnmanagedCallersOnlyDll))]
+        public static extern int CallManagedProcOnNewThread(IntPtr callbackProc, int n);
+    }
+
+    private static int DoubleImpl(int n)
+    {
+        return 2 * n;
+    }
+
+    [UnmanagedCallersOnly]
+    public static int ManagedDoubleCallback(int n)
+    {
+        return DoubleImpl(n);
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)], EntryPoint = "IgnoredEntryPoint", AssociatedSourceType = typeof(UnmanagedCallersOnlyDll))]
+    public static int ManagedDoubleCallback_AllOptionalParameters(int n)
+    {
+        return DoubleImpl(n);
+    }
+
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+    [ActiveIssue("Needs coreclr build", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
+    [ActiveIssue("needs triage", TestPlatforms.Android)]
+    [ActiveIssue("needs triage", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+    [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+    public static void TestUnmanagedCallersOnlyValid()
+    {
+        Console.WriteLine($"Running {nameof(TestUnmanagedCallersOnlyValid)}...");
+
+        int n = 12345;
+        int expected = DoubleImpl(n);
+        Assert.Equal(expected, UnmanagedCallersOnlyDll.CallManagedProc((IntPtr)(delegate* unmanaged<int, int>)&ManagedDoubleCallback, n));
+    }
+
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+    [ActiveIssue("Needs coreclr build", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
+    [ActiveIssue("needs triage", TestPlatforms.Android)]
+    [ActiveIssue("needs triage", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+    [Fact]
+    public static void TestUnmanagedCallersOnlyValid_AllOptionalParameters()
+    {
+        Console.WriteLine($"Running {nameof(TestUnmanagedCallersOnlyValid_AllOptionalParameters)}...");
+
+        int n = 12345;
+        int expected = DoubleImpl(n);
+        int actual = UnmanagedCallersOnlyDll.CallManagedProc_Stdcall_SingleArg(&ManagedDoubleCallback_AllOptionalParameters, n);
+
+        Assert.Equal(expected, actual);
+    }
+
+    private static int MixSum(int m, int n, int o)
+    {
+        return (2 * m) + (3 * n) + (5 * o);
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
+    public static int ManagedMixSumCallback_Stdcall(int m, int n, int o)
+    {
+        return MixSum(m, n, o);
+    }
+
+    [ActiveIssue("Needs coreclr build", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+    [ActiveIssue("needs triage", TestPlatforms.Android)]
+    [ActiveIssue("needs triage", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+    [Fact]
+    public static void TestUnmanagedCallersOnlyValid_CallConvStdcall()
+    {
+        Console.WriteLine($"Running {nameof(TestUnmanagedCallersOnlyValid_CallConvStdcall)}...");
+
+        int m = 3;
+        int n = 4;
+        int o = 5;
+        int expected = MixSum(m, n, o);
+        int actual = UnmanagedCallersOnlyDll.CallManagedProc_Stdcall(&ManagedMixSumCallback_Stdcall, m, n, o);
+
+        Assert.Equal(expected, actual);
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
+    public static int ManagedMixSumCallback_Cdecl(int m, int n, int o)
+    {
+        return MixSum(m, n, o);
+    }
+
+    [ActiveIssue("Needs coreclr build", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+    [ActiveIssue("needs triage", TestPlatforms.Android)]
+    [ActiveIssue("needs triage", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+    [Fact]
+    public static void TestUnmanagedCallersOnlyValid_CallConvCdecl()
+    {
+        Console.WriteLine($"Running {nameof(TestUnmanagedCallersOnlyValid_CallConvCdecl)}...");
+
+        int m = 3;
+        int n = 4;
+        int o = 5;
+        int expected = MixSum(m, n, o);
+        int actual = UnmanagedCallersOnlyDll.CallManagedProc_Cdecl(&ManagedMixSumCallback_Cdecl, m, n, o);
+
+        Assert.Equal(expected, actual);
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvFastcall)])]
+    public static int ManagedMixSumCallback_Fastcall(int m, int n, int o)
+    {
+        return MixSum(m, n, o);
+    }
+
+    [ActiveIssue("Needs coreclr build", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+    public static void TestUnmanagedCallersOnlyValid_CallConvFastcall()
+    {
+        Console.WriteLine($"Running {nameof(TestUnmanagedCallersOnlyValid_CallConvFastcall)}...");
+
+        int m = 3;
+        int n = 4;
+        int o = 5;
+        int expected = MixSum(m, n, o);
+        int actual = UnmanagedCallersOnlyDll.CallManagedProc_Fastcall(&ManagedMixSumCallback_Fastcall, m, n, o);
+
+        Assert.Equal(expected, actual);
+    }
+
+    [ActiveIssue("Needs coreclr build", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+    [ActiveIssue("needs triage", TestPlatforms.Android)]
+    [ActiveIssue("needs triage", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+    [Fact]
+    public static void TestUnmanagedCallersOnlyValid_OnNewNativeThread()
+    {
+        Console.WriteLine($"Running {nameof(TestUnmanagedCallersOnlyValid_OnNewNativeThread)}...");
+
+        int n = 12345;
+        int expected = DoubleImpl(n);
+        Assert.Equal(expected, UnmanagedCallersOnlyDll.CallManagedProcOnNewThread((IntPtr)(delegate* unmanaged<int, int>)&ManagedDoubleCallback, n));
+    }
+
+    [UnmanagedCallersOnly]
+    public static int ManagedCallback_Prepared(int n)
+    {
+        return DoubleImpl(n);
+    }
+
+    [ActiveIssue("Needs coreclr build", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+    [ActiveIssue("needs triage", TestPlatforms.Android)]
+    [ActiveIssue("needs triage", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+    [Fact]
+    // This test is about the interaction between Tiered Compilation and the UnmanagedCallersOnlyAttribute.
+    public static void TestUnmanagedCallersOnlyValid_PrepareMethod()
+    {
+        Console.WriteLine($"Running {nameof(TestUnmanagedCallersOnlyValid_PrepareMethod)}...");
+        // Prepare the managed callback.
+        var preparedCallback = typeof(UnmanagedCallersOnlyBasicTest).GetMethod(nameof(ManagedCallback_Prepared));
+        RuntimeHelpers.PrepareMethod(preparedCallback.MethodHandle);
+
+        UnmanagedCallersOnlyOnNewNativeThread(12345);
+
+        static void UnmanagedCallersOnlyOnNewNativeThread(int n)
+        {
+            // Call enough to attempt to trigger Tiered Compilation from a new thread.
+            for (int i = 0; i < 100; ++i)
+            {
+                UnmanagedCallersOnlyDll.CallManagedProcOnNewThread((IntPtr)(delegate* unmanaged<int, int>)&ManagedCallback_Prepared, n);
+            }
+        }
+    }
+
+    [UnmanagedCallersOnly]
+    public static int ManagedDoubleInNativeCallback(int n)
+    {
+        // This callback is designed to test if the JIT handles
+        // cases where a P/Invoke is inlined into a function
+        // marked with UnmanagedCallersOnly.
+        return UnmanagedCallersOnlyDll.DoubleImplNative(n);
+    }
+
+    [ActiveIssue("Needs coreclr build", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+    [ActiveIssue("needs triage", TestPlatforms.Android)]
+    [ActiveIssue("needs triage", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+    [Fact]
+    public static void TestUnmanagedCallersOnlyMultipleTimesValid()
+    {
+        Console.WriteLine($"Running {nameof(TestUnmanagedCallersOnlyMultipleTimesValid)}...");
+
+        int callCount = 7;
+        int n = 12345;
+        int expected = 0;
+        for (int i = 0; i < callCount; ++i)
+        {
+            expected += DoubleImpl(n);
+        }
+        Assert.Equal(expected, UnmanagedCallersOnlyDll.CallManagedProcMultipleTimes(callCount, (IntPtr)(delegate* unmanaged<int, int>)&ManagedDoubleInNativeCallback, n));
+    }
+}

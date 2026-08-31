@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="System\Runtime\Serialization\CollectionDataContractAttribute.cs" />
+    <Compile Include="System\Runtime\Serialization\ContractNamespaceAttribute.cs" />
+    <Compile Include="System\Runtime\Serialization\DataContractAttribute.cs" />
+    <Compile Include="System\Runtime\Serialization\DataMemberAttribute.cs" />
+    <Compile Include="System\Runtime\Serialization\EnumMemberAttribute.cs" />
+    <Compile Include="System\Runtime\Serialization\IgnoreDataMemberAttribute.cs" />
+    <Compile Include="System\Runtime\Serialization\InvalidDataContractException.cs" />
+    <Compile Include="System\Runtime\Serialization\ISerializationSurrogateProvider2.cs" />
+    <Compile Include="System\Runtime\Serialization\ISerializationSurrogateProvider.cs" />
+    <Compile Include="System\Runtime\Serialization\KnownTypeAttribute.cs" />
+    <Compile Include="System.Runtime.Serialization.Primitives.TypeForwards.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Memory\src\System.Memory.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
+  </ItemGroup>
+
+</Project>

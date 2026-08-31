@@ -1,0 +1,8 @@
+<Project>
+  <Import Project="..\Directory.Merged.props" />
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, $(MSBuildThisFileDirectory)..))" />
+
+  <PropertyGroup>
+    <JitPackagesConfigFileDirectory>$(MSBuildThisFileDirectory)config\</JitPackagesConfigFileDirectory>
+  </PropertyGroup>
+</Project>

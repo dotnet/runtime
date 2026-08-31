@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<asn:Sequence
+  xmlns:asn="http://schemas.dot.net/asnxml/201808/"
+  name="RecipientKeyIdentifier"
+  namespace="System.Security.Cryptography.Pkcs.Asn1">
+
+  <!--
+    https://tools.ietf.org/html/rfc5652#section-6.2.2
+
+    RecipientKeyIdentifier ::= SEQUENCE {
+        subjectKeyIdentifier SubjectKeyIdentifier,
+        date GeneralizedTime OPTIONAL,
+        other OtherKeyAttribute OPTIONAL
+    }
+
+    SubjectKeyIdentifier ::= OCTET STRING
+  -->
+  <asn:OctetString name="SubjectKeyIdentifier" />
+  <asn:GeneralizedTime name="Date" optional="true" />
+  <asn:AsnType name="Other" typeName="System.Security.Cryptography.Pkcs.Asn1.OtherKeyAttributeAsn" optional="true" />
+</asn:Sequence>

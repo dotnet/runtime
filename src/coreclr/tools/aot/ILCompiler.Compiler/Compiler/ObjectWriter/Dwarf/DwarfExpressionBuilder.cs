@@ -1,0 +1,262 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
+using System.Buffers;
+using Internal.TypeSystem;
+using static ILCompiler.ObjectWriter.DwarfNative;
+
+namespace ILCompiler.ObjectWriter
+{
+    internal ref struct DwarfExpressionBuilder
+    {
+        private readonly TargetArchitecture _architecture;
+        private readonly byte _targetPointerSize;
+        private readonly IBufferWriter<byte> _writer;
+
+        public DwarfExpressionBuilder(TargetArchitecture architecture, byte targetPointerSize, IBufferWriter<byte> writer)
+        {
+            _architecture = architecture;
+            _targetPointerSize = targetPointerSize;
+            _writer = writer;
+        }
+
+        public void OpReg(int register) => OpDwarfReg(DwarfRegNum(_architecture, register));
+
+        public void OpBReg(int register, int offset = 0) => OpBDwarfReg(DwarfRegNum(_architecture, register), offset);
+
+        // Emit a stack-slot location described by a base register and offset. If the base
+        // register is the "ambient SP" pseudo-register (REGNUM_AMBIENT_SP), emit a
+        // CFA-relative expression instead of routing the pseudo-register through
+        // DwarfRegNum (which has no valid DWARF number for it).
+        public void OpStackLocation(int baseRegister, int offset = 0)
+        {
+            if (baseRegister == AmbientSpRegNum(_architecture))
+            {
+                OpCallFrameCfa(offset);
+            }
+            else
+            {
+                OpBReg(baseRegister, offset);
+            }
+        }
+
+        public void OpDwarfReg(int register)
+        {
+            if (register <= 31)
+            {
+                OpCode((byte)(DW_OP_reg0 + register));
+            }
+            else
+            {
+                OpCode(DW_OP_regx);
+                AppendULEB128((ulong)register);
+            }
+        }
+
+        public void OpBDwarfReg(int register, int offset = 0)
+        {
+            if (register <= 31)
+            {
+                OpCode((byte)(DW_OP_breg0 + register));
+            }
+            else
+            {
+                OpCode(DW_OP_bregx);
+                AppendULEB128((ulong)register);
+            }
+            AppendSLEB128(offset);
+        }
+
+        public void OpDeref() => OpCode(DW_OP_deref);
+
+        // Emits a location relative to the Canonical Frame Address (CFA). This is used
+        // for stack slots whose base register is the "ambient SP" pseudo-register
+        // (REGNUM_AMBIENT_SP), which represents the caller's stack pointer rather than
+        // a physical register.
+        public void OpCallFrameCfa(int offset = 0)
+        {
+            OpCode(DW_OP_call_frame_cfa);
+            if (offset != 0)
+            {
+                OpCode(DW_OP_consts);
+                AppendSLEB128(offset);
+                OpCode(DW_OP_plus);
+            }
+        }
+
+        // Returns the RegNum value used for the "ambient SP" pseudo-register on the
+        // given architecture. It is defined as REGNUM_COUNT + 1 in ICorDebugInfo::RegNum
+        // and must match DBG_TARGET_REGNUM_AMBIENT_SP in debug/inc/DbgIPCEvents.h.
+        private static int AmbientSpRegNum(TargetArchitecture architecture)
+        {
+            return architecture switch
+            {
+                TargetArchitecture.X86 => (int)RegNumX86.REGNUM_COUNT + 1,
+                TargetArchitecture.X64 => (int)RegNumAmd64.REGNUM_COUNT + 1,
+                TargetArchitecture.ARM64 => 66, // 33 int registers + 32 V registers, +1
+                TargetArchitecture.ARM => 17,   // 16 int registers (R0-R12, SP, LR, PC), +1
+                TargetArchitecture.LoongArch64 => 34, // 33 int registers, +1
+                TargetArchitecture.RiscV64 => 34,     // 33 int registers, +1
+                _ => -1
+            };
+        }
+
+        public void OpPiece(uint size = 0)
+        {
+            OpCode(DW_OP_piece);
+            AppendULEB128(size == 0 ? (uint)_targetPointerSize : size);
+        }
+
+        private void OpCode(byte opcode)
+        {
+            var b = _writer.GetSpan(1);
+            b[0] = opcode;
+            _writer.Advance(1);
+        }
+
+        private void AppendULEB128(ulong value) => DwarfHelper.WriteULEB128(_writer, value);
+
+        private void AppendSLEB128(long value) => DwarfHelper.WriteSLEB128(_writer, value);
+
+        private enum RegNumX86 : int
+        {
+            REGNUM_EAX,
+            REGNUM_ECX,
+            REGNUM_EDX,
+            REGNUM_EBX,
+            REGNUM_ESP,
+            REGNUM_EBP,
+            REGNUM_ESI,
+            REGNUM_EDI,
+            REGNUM_COUNT,
+            REGNUM_FP = REGNUM_EBP,
+            REGNUM_SP = REGNUM_ESP
+        };
+
+        private enum RegNumAmd64 : int
+        {
+            REGNUM_RAX,
+            REGNUM_RCX,
+            REGNUM_RDX,
+            REGNUM_RBX,
+            REGNUM_RSP,
+            REGNUM_RBP,
+            REGNUM_RSI,
+            REGNUM_RDI,
+            REGNUM_R8,
+            REGNUM_R9,
+            REGNUM_R10,
+            REGNUM_R11,
+            REGNUM_R12,
+            REGNUM_R13,
+            REGNUM_R14,
+            REGNUM_R15,
+            REGNUM_FP_FIRST,
+            REGNUM_XMM0 = REGNUM_FP_FIRST,
+            REGNUM_XMM1,
+            REGNUM_XMM2,
+            REGNUM_XMM3,
+            REGNUM_XMM4,
+            REGNUM_XMM5,
+            REGNUM_XMM6,
+            REGNUM_XMM7,
+            REGNUM_XMM8,
+            REGNUM_XMM9,
+            REGNUM_XMM10,
+            REGNUM_XMM11,
+            REGNUM_XMM12,
+            REGNUM_XMM13,
+            REGNUM_XMM14,
+            REGNUM_XMM15,
+            REGNUM_COUNT,
+            REGNUM_SP = REGNUM_RSP,
+            REGNUM_FP = REGNUM_RBP
+        };
+
+        public static int DwarfRegNum(TargetArchitecture architecture, int regNum)
+        {
+            switch (architecture)
+            {
+                case TargetArchitecture.ARM64:
+                    // Integer registers map to DWARF 0-32, FP V registers to 64+
+                    return regNum switch
+                    {
+                        >= 33 and <= 64 => regNum - 33 + 64, // V0-V31 → DWARF 64-95
+                        _ => regNum                            // X0-PC → DWARF 0-32
+                    };
+
+                case TargetArchitecture.ARM:
+                    // Integer registers map directly, FP D registers to DWARF 256+
+                    return regNum switch
+                    {
+                        >= 16 => ((regNum - 16) / 2) + 256, // D0-D7 → DWARF 256+
+                        _ => regNum                           // R0-PC → DWARF 0-15
+                    };
+
+                case TargetArchitecture.X64:
+                    return (RegNumAmd64)regNum switch
+                    {
+                        RegNumAmd64.REGNUM_RAX => 0,
+                        RegNumAmd64.REGNUM_RDX => 1,
+                        RegNumAmd64.REGNUM_RCX => 2,
+                        RegNumAmd64.REGNUM_RBX => 3,
+                        RegNumAmd64.REGNUM_RSI => 4,
+                        RegNumAmd64.REGNUM_RDI => 5,
+                        RegNumAmd64.REGNUM_RBP => 6,
+                        RegNumAmd64.REGNUM_RSP => 7,
+                        RegNumAmd64.REGNUM_R8 => 8,
+                        RegNumAmd64.REGNUM_R9 => 9,
+                        RegNumAmd64.REGNUM_R10 => 10,
+                        RegNumAmd64.REGNUM_R11 => 11,
+                        RegNumAmd64.REGNUM_R12 => 12,
+                        RegNumAmd64.REGNUM_R13 => 13,
+                        RegNumAmd64.REGNUM_R14 => 14,
+                        RegNumAmd64.REGNUM_R15 => 15,
+                        RegNumAmd64.REGNUM_XMM0 => 17,
+                        RegNumAmd64.REGNUM_XMM1 => 18,
+                        RegNumAmd64.REGNUM_XMM2 => 19,
+                        RegNumAmd64.REGNUM_XMM3 => 20,
+                        RegNumAmd64.REGNUM_XMM4 => 21,
+                        RegNumAmd64.REGNUM_XMM5 => 22,
+                        RegNumAmd64.REGNUM_XMM6 => 23,
+                        RegNumAmd64.REGNUM_XMM7 => 24,
+                        RegNumAmd64.REGNUM_XMM8 => 25,
+                        RegNumAmd64.REGNUM_XMM9 => 26,
+                        RegNumAmd64.REGNUM_XMM10 => 27,
+                        RegNumAmd64.REGNUM_XMM11 => 28,
+                        RegNumAmd64.REGNUM_XMM12 => 29,
+                        RegNumAmd64.REGNUM_XMM13 => 30,
+                        RegNumAmd64.REGNUM_XMM14 => 31,
+                        RegNumAmd64.REGNUM_XMM15 => 32,
+                        _ => throw new NotSupportedException($"Unsupported AMD64 register {regNum}")
+                    };
+
+                case TargetArchitecture.X86:
+                    return (RegNumX86)regNum switch
+                    {
+                        RegNumX86.REGNUM_EAX => 0,
+                        RegNumX86.REGNUM_ECX => 1,
+                        RegNumX86.REGNUM_EDX => 2,
+                        RegNumX86.REGNUM_EBX => 3,
+                        RegNumX86.REGNUM_ESP => 4,
+                        RegNumX86.REGNUM_EBP => 5,
+                        RegNumX86.REGNUM_ESI => 6,
+                        RegNumX86.REGNUM_EDI => 7,
+                        _ => throw new NotSupportedException($"Unsupported x86 register {regNum}")
+                    };
+
+                case TargetArchitecture.LoongArch64:
+                    // Normal registers are directly mapped
+                    return regNum;
+
+                case TargetArchitecture.RiscV64:
+                    // Normal registers are directly mapped
+                    return regNum;
+
+                default:
+                    throw new NotSupportedException();
+            }
+        }
+    }
+}

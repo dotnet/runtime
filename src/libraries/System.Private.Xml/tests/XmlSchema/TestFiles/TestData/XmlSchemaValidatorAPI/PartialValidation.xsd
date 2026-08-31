@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8" ?> 
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+	<xs:element name="PartialElement" type="xs:int"/>
+
+	<xs:element name="PartialElement2" type="xs:string" />
+	
+	<xs:complexType name="PartialType" />
+
+	<xs:complexType name="PartialType2">
+		<xs:sequence>
+			<xs:element name="bar" />
+		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:attribute name="PartialAttribute" type="xs:int" />
+	<xs:attribute name="PartialAttribute2" type="xs:string" />
+
+</xs:schema>

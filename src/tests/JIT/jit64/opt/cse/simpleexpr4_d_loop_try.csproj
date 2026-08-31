@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <CLRTestPriority>1</CLRTestPriority>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>Full</DebugType>
+    <Optimize>False</Optimize>
+    <DefineConstants>$(DefineConstants);LOOP;TRY</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="simpleexpr4.cs" />
+  </ItemGroup>
+</Project>

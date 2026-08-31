@@ -1,0 +1,10 @@
+Thread running
+ThreadAbortException finally
+Thread running
+Aborting child thread
+Abort reset!
+ThreadAbortException finally
+Thread running
+ThreadAbortException finally
+Thread running
+Main thread returns

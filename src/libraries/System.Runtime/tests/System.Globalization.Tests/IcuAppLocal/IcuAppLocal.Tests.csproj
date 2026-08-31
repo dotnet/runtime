@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <TestRuntime>true</TestRuntime>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="IcuAppLocal.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.ICU.ICU4C.Runtime" Version="68.2.0.9" />
+
+    <!--
+      We define this switch dynamically during the runtime using RemoteExecutor.
+      The reason is, if we enable ICU app-local here, this test will compile and run
+      on all supported OSs even the ICU NuGet package not have native bits support such OSs.
+      Note, it doesn't matter if we have test case conditioned to not run on such OSs, because
+      the test has to start running first before filtering the test cases and the globalization
+      code will run and fail fast at that time.
+
+      <RuntimeHostConfigurationOption Include="System.Globalization.AppLocalIcu" Value="68.2.0.9" />
+    -->
+  </ItemGroup>
+</Project>

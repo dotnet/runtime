@@ -1,0 +1,31 @@
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+targetNamespace="ns-a"
+xmlns:a="ns-a"
+elementFormDefault="qualified"
+>
+
+	<xsd:include id="a1" schemaLocation="include_v8_b.xsd"/>
+	<xsd:include id="a2" schemaLocation="include_v8_b.xsd"/>
+
+	<xsd:complexType name="ct-A">
+		<xsd:sequence minOccurs="1">
+			<xsd:element name="a1" type="xsd:int" />
+			<xsd:element name="a2" type="xsd:boolean" />
+		</xsd:sequence>
+	</xsd:complexType>
+
+	<xsd:element name="e1" type="a:ct-A" />
+	
+	<xsd:element name="root">
+		<xsd:complexType>
+			<xsd:choice maxOccurs="unbounded">
+				<xsd:any namespace="##any" processContents="strict"/>
+			</xsd:choice>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="a-e2" type="a:ct-B" />
+
+</xsd:schema>
+
+

@@ -1,0 +1,12 @@
+
+<xs:schema xmlns:xs='http://www.w3.org/2001/XMLSchema' targetNamespace="a" xmlns="a">
+
+  <xs:element name='doc' type='dttype' />
+  <xs:simpleType name='dttype' > 
+    <xs:restriction base="xs:dateTime">
+	<xs:enumeration value="2002-01-01T12:01:01.12358"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:element name="ea2" />
+</xs:schema>

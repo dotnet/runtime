@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="System.Security.Cryptography.ProtectedData.cs" Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework'" />
+    <Compile Include="System.Security.Cryptography.ProtectedData.netframework.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <Reference Include="System.Security" />
+  </ItemGroup>
+</Project>

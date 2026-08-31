@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <MonoAotIncompatible>true</MonoAotIncompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="PInvokeAssemblyMarshallingEnabled/*.cs" />
+    <Compile Include="AutoLayout.cs" />
+    <Compile Include="FunctionPointers.cs" />
+    <Compile Include="RuntimeMarshallingDisabledAttribute.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="Native_Default/DisabledRuntimeMarshallingNative_Default.csproj" />
+    <CMakeProjectReference Include="CMakeLists.txt" />
+  </ItemGroup>
+</Project>

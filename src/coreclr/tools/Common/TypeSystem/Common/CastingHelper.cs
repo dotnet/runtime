@@ -1,0 +1,661 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using Debug = System.Diagnostics.Debug;
+
+namespace Internal.TypeSystem
+{
+    public static partial class CastingHelper
+    {
+        /// <summary>
+        /// Returns true if '<paramref name="thisType"/>' can be cast to '<paramref name="otherType"/>'.
+        /// Assumes '<paramref name="thisType"/>' is in it's boxed form if it's a value type (i.e.
+        /// [System.Int32].CanCastTo([System.Object]) will return true).
+        /// </summary>
+        public static bool CanCastTo(this TypeDesc thisType, TypeDesc otherType)
+        {
+            return CastingHelper<INonCanonicalTypeCastingHandler>.CanCastToInternal(thisType, otherType, null);
+        }
+
+        /// <summary>
+        /// Returns true if '<paramref name="thisType"/>' can be cast to '<paramref name="otherType"/>'.
+        /// Assumes '<paramref name="thisType"/>' is in it's boxed form if it's a value type (i.e.
+        /// [System.Int32].CanCastTo([System.Object]) will return true).
+        /// Handles canonical types, so [System.Object].CanCastTo([System.__UniversalCanon]) will be true.
+        /// </summary>
+        public static bool CanCastToWithCanon(this TypeDesc thisType, TypeDesc otherType)
+        {
+            return CastingHelper<CanonicalTypeCastingHandler>.CanCastToInternal(thisType, otherType, null);
+        }
+
+        public static bool IsArrayElementTypeCastableBySize(TypeDesc elementType)
+        {
+            switch (elementType.UnderlyingType.Category)
+            {
+                case TypeFlags.Byte:
+                case TypeFlags.SByte:
+                case TypeFlags.UInt16:
+                case TypeFlags.Int16:
+                case TypeFlags.UInt32:
+                case TypeFlags.Int32:
+                case TypeFlags.UInt64:
+                case TypeFlags.Int64:
+                case TypeFlags.UIntPtr:
+                case TypeFlags.IntPtr:
+                    return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Get TypeFlags of the reduced type of a type.
+        /// The reduced type concept is described in ECMA 335 chapter I.8.7
+        /// </summary>
+        private static TypeFlags GetReducedTypeElementType(TypeDesc type)
+        {
+            TypeFlags elemType = type.GetTypeFlags(TypeFlags.CategoryMask);
+            switch (elemType)
+            {
+                case TypeFlags.Byte:
+                    return TypeFlags.SByte;
+                case TypeFlags.UInt16:
+                    return TypeFlags.Int16;
+                case TypeFlags.UInt32:
+                    return TypeFlags.Int32;
+                case TypeFlags.UInt64:
+                    return TypeFlags.Int64;
+                case TypeFlags.UIntPtr:
+                    return TypeFlags.IntPtr;
+            }
+
+            return elemType;
+        }
+
+        /// <summary>
+        /// Get CorElementType of the verification type of a type.
+        /// The verification type concepts is described in ECMA 335 chapter I.8.7
+        /// </summary>
+        private static TypeFlags GetVerificationTypeElementType(TypeDesc type)
+        {
+            TypeFlags reducedTypeElementType = GetReducedTypeElementType(type);
+
+            switch (reducedTypeElementType)
+            {
+                case TypeFlags.Boolean:
+                    return TypeFlags.SByte;
+                case TypeFlags.Char:
+                    return TypeFlags.Int16;
+            }
+
+            return reducedTypeElementType;
+        }
+
+        /// <summary>
+        /// Check if verification types of two types are equal
+        /// </summary>
+        private static bool AreVerificationTypesEqual(TypeDesc type1, TypeDesc type2)
+        {
+            if (type1 == type2)
+            {
+                return true;
+            }
+
+            if (type1.IsPrimitive && type2.IsPrimitive)
+            {
+                TypeFlags e1 = GetVerificationTypeElementType(type1);
+                TypeFlags e2 = GetVerificationTypeElementType(type2);
+
+                return e1 == e2;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Check if signatures of two function pointers are compatible
+        /// Note - this is a simplified version of what's described in the ECMA spec and it considers
+        /// pointers to be method-signature-compatible-with only if the signatures are the same.
+        /// </summary>
+        private static bool IsMethodSignatureCompatibleWith(TypeDesc fn1Ttype, TypeDesc fn2Type)
+        {
+            Debug.Assert(fn1Ttype.IsFunctionPointer && fn2Type.IsFunctionPointer);
+            return fn1Ttype == fn2Type;
+        }
+
+        /// <summary>
+        /// Checks if two types are compatible according to compatible-with as described in ECMA 335 I.8.7.1
+        /// Most of the checks are performed by the CanCastTo, but some cases are pre-filtered out.
+        /// </summary>
+        public static bool IsCompatibleWith(this TypeDesc thisType, TypeDesc otherType)
+        {
+            return thisType.IsCompatibleWith(otherType, null);
+        }
+
+        internal static bool IsCompatibleWith(this TypeDesc thisType, TypeDesc otherType, StackOverflowProtect visited)
+        {
+            // Structs can be cast to the interfaces they implement, but they are not compatible according to ECMA I.8.7.1
+            bool isCastFromValueTypeToReferenceType = otherType.IsValueType && !thisType.IsValueType;
+            if (isCastFromValueTypeToReferenceType)
+            {
+                return false;
+            }
+
+            // Managed pointers are compatible only if they are pointer-element-compatible-with as described in ECMA I.8.7.2
+            if (thisType.IsByRef && otherType.IsByRef)
+            {
+                return AreVerificationTypesEqual(thisType.GetParameterType(), otherType.GetParameterType());
+            }
+
+            // Unmanaged pointers are handled the same way as managed pointers
+            if (thisType.IsPointer && otherType.IsPointer)
+            {
+                return AreVerificationTypesEqual(thisType.GetParameterType(), otherType.GetParameterType());
+            }
+
+            // Function pointers are compatible only if they are method-signature-compatible-with as described in ECMA I.8.7.1
+            if (thisType.IsFunctionPointer && otherType.IsFunctionPointer)
+            {
+                return IsMethodSignatureCompatibleWith(thisType, otherType);
+            }
+
+            // None of the types can be a managed pointer, a pointer or a function pointer here,
+            // all the valid cases were handled above.
+            if (thisType.IsByRef || otherType.IsByRef ||
+                thisType.IsPointer || otherType.IsPointer ||
+                thisType.IsFunctionPointer || otherType.IsFunctionPointer)
+            {
+                return false;
+            }
+
+            // Nullable<T> can be cast to T, but this is not compatible according to ECMA I.8.7.1
+            bool isCastFromNullableOfTtoT = thisType.IsNullable && otherType.IsEquivalentTo(thisType.Instantiation[0], visited);
+            if (isCastFromNullableOfTtoT)
+            {
+                return false;
+            }
+
+            return otherType.CanCastTo(thisType);
+        }
+
+        public static bool IsEquivalentTo(this TypeDesc thisType, TypeDesc otherType)
+        {
+            bool isEquivalentTo = thisType == otherType;
+            if (!isEquivalentTo)
+                thisType.IsEquivalentTo(otherType, (StackOverflowProtect)null, ref isEquivalentTo);
+
+            return isEquivalentTo;
+        }
+
+        internal static bool IsEquivalentTo(this TypeDesc thisType, TypeDesc otherType, StackOverflowProtect visited)
+        {
+            bool isEquivalentTo = thisType == otherType;
+            if (!isEquivalentTo)
+                thisType.IsEquivalentTo(otherType, visited, ref isEquivalentTo);
+
+            return isEquivalentTo;
+        }
+
+        static partial void IsEquivalentTo(this TypeDesc thisType, TypeDesc otherType, StackOverflowProtect visited, ref bool isEquivalentTo);
+    }
+
+    internal interface ICanonicalTypeCastingHandler
+    {
+        static abstract bool IsCanonicalCastTarget(TypeDesc thisType, TypeDesc otherType);
+        static abstract bool IsCanonicalTypeArgMatch(TypeDesc type, TypeDesc otherType);
+        static abstract bool IsCanonEquivalent(TypeDesc thisType, TypeDesc otherType);
+
+    }
+
+    internal interface INonCanonicalTypeCastingHandler : ICanonicalTypeCastingHandler
+    {
+        static bool ICanonicalTypeCastingHandler.IsCanonicalCastTarget(TypeDesc thisType, TypeDesc otherType) => false;
+        static bool ICanonicalTypeCastingHandler.IsCanonicalTypeArgMatch(TypeDesc type, TypeDesc otherType) => false;
+        static bool ICanonicalTypeCastingHandler.IsCanonEquivalent(TypeDesc thisType, TypeDesc otherType) => false;
+    }
+
+    internal static class CastingHelper<T> where T : ICanonicalTypeCastingHandler
+    {
+        internal static bool CanCastToInternal(TypeDesc thisType, TypeDesc otherType, StackOverflowProtect protect)
+        {
+            if (thisType == otherType)
+            {
+                return true;
+            }
+
+            if (T.IsCanonicalCastTarget(thisType, otherType))
+            {
+                return true;
+            }
+
+            switch (thisType.Category)
+            {
+                case TypeFlags.GenericParameter:
+                    return CanCastGenericParameterTo((GenericParameterDesc)thisType, otherType, protect);
+
+                case TypeFlags.Array:
+                case TypeFlags.SzArray:
+                    return CanCastArrayTo((ArrayType)thisType, otherType, protect);
+
+                case TypeFlags.ByRef:
+                case TypeFlags.Pointer:
+                    if (otherType.Category == thisType.Category)
+                    {
+                        return CanCastParamTo((ParameterizedType)thisType, ((ParameterizedType)otherType).ParameterType, protect);
+                    }
+                    return false;
+
+                case TypeFlags.FunctionPointer:
+                    return false;
+
+                default:
+                    Debug.Assert(thisType.IsDefType);
+                    return CanCastToClassOrInterface(thisType, otherType, protect);
+            }
+        }
+
+        private static bool CanCastGenericParameterTo(GenericParameterDesc thisType, TypeDesc otherType, StackOverflowProtect protect)
+        {
+            // A boxed variable type can be cast to any of its constraints, or object, if none are specified
+            if (otherType.IsObject)
+            {
+                return true;
+            }
+
+            if (thisType.HasNotNullableValueTypeConstraint &&
+                otherType.IsWellKnownType(WellKnownType.ValueType))
+            {
+                return true;
+            }
+
+            Instantiation typeInstantiation;
+            Instantiation methodInstantiation = default(Instantiation);
+            if (thisType.AssociatedTypeOrMethod is MethodDesc method)
+            {
+                typeInstantiation = method.OwningType.Instantiation;
+                methodInstantiation = method.Instantiation;
+            }
+            else
+            {
+                typeInstantiation = ((TypeDesc)thisType.AssociatedTypeOrMethod).Instantiation;
+            }
+            foreach (var typeConstraint in thisType.TypeConstraints)
+            {
+                TypeDesc instantiatedConstraint = typeConstraint.InstantiateSignature(typeInstantiation, methodInstantiation);
+                if (CanCastToInternal(instantiatedConstraint, otherType, protect))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool CanCastArrayTo(ArrayType thisType, TypeDesc otherType, StackOverflowProtect protect)
+        {
+            // Casting the array to one of the base types or interfaces?
+            if (otherType.IsDefType)
+            {
+                return CanCastToClassOrInterface(thisType, otherType, protect);
+            }
+
+            // Casting array to something else (between SzArray and Array, for example)?
+            if (thisType.Category != otherType.Category)
+            {
+                // An SzArray is castable to MdArray rank 1. We follow the same casting rules as SzArray to SzArray.
+                if (thisType.Category == TypeFlags.SzArray
+                    && otherType.Category == TypeFlags.Array
+                    && ((ArrayType)otherType).Rank == 1)
+                {
+                    return CanCastParamTo(thisType, ((ArrayType)otherType).ParameterType, protect);
+                }
+
+                return false;
+            }
+
+            ArrayType otherArrayType = (ArrayType)otherType;
+
+            // Check ranks if we're casting multidim arrays
+            if (!thisType.IsSzArray && thisType.Rank != otherArrayType.Rank)
+            {
+                return false;
+            }
+
+            return CanCastParamTo(thisType, otherArrayType.ParameterType, protect);
+        }
+
+        private static bool CanCastParamTo(ParameterizedType thisType, TypeDesc paramType, StackOverflowProtect protect)
+        {
+            // While boxed value classes inherit from object their
+            // unboxed versions do not.  Parameterized types have the
+            // unboxed version, thus, if the from type parameter is value
+            // class then only an exact match/equivalence works.
+            if (thisType.ParameterType.IsEquivalentTo(paramType))
+            {
+                return true;
+            }
+
+            TypeDesc curTypesParm = thisType.ParameterType;
+
+            // Object parameters don't need an exact match but only inheritance, check for that
+            TypeDesc fromParamUnderlyingType = curTypesParm.UnderlyingType;
+            if (fromParamUnderlyingType.IsGCPointer)
+            {
+                return CanCastToInternal(curTypesParm, paramType, protect);
+            }
+            else if (curTypesParm.IsGenericParameter)
+            {
+                var genericVariableFromParam = (GenericParameterDesc)curTypesParm;
+                if (genericVariableFromParam.HasReferenceTypeConstraint || IsConstrainedAsGCPointer(genericVariableFromParam))
+                {
+                    return CanCastToInternal(genericVariableFromParam, paramType, protect);
+                }
+            }
+            else if (fromParamUnderlyingType.IsPrimitive)
+            {
+                TypeDesc toParamUnderlyingType = paramType.UnderlyingType;
+                if (GetNormalizedIntegralArrayElementType(fromParamUnderlyingType) == GetNormalizedIntegralArrayElementType(toParamUnderlyingType))
+                {
+                    return true;
+                }
+            }
+
+            // Anything else is not a match
+            return false;
+        }
+
+        private static bool IsConstrainedAsGCPointer(GenericParameterDesc type)
+        {
+            foreach (var typeConstraint in type.TypeConstraints)
+            {
+                if (typeConstraint.IsGenericParameter)
+                {
+                    if (IsConstrainedAsGCPointer((GenericParameterDesc)typeConstraint))
+                        return true;
+                }
+
+                if (!typeConstraint.IsInterface && typeConstraint.IsGCPointer)
+                {
+                    // Object, ValueType, and Enum are GCPointers but they do not constrain the type to GCPointer!
+                    if (!typeConstraint.IsWellKnownType(WellKnownType.Object) &&
+                        !typeConstraint.IsWellKnownType(WellKnownType.ValueType) &&
+                        !typeConstraint.IsWellKnownType(WellKnownType.Enum))
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        private static TypeFlags GetNormalizedIntegralArrayElementType(TypeDesc type)
+        {
+            Debug.Assert(!type.IsEnum);
+
+            // Primitive types such as E_T_I4 and E_T_U4 are interchangeable
+            // Enums with interchangeable underlying types are interchangeable
+            // BOOL is NOT interchangeable with I1/U1, neither CHAR -- with I2/U2
+            // Float and double are not interchangeable here.
+
+            TypeFlags elementType = type.Category;
+            switch (elementType)
+            {
+                case TypeFlags.Byte:
+                case TypeFlags.UInt16:
+                case TypeFlags.UInt32:
+                case TypeFlags.UInt64:
+                case TypeFlags.UIntPtr:
+                    return elementType - 1;
+            }
+
+            return elementType;
+        }
+
+        private static bool CanCastToClassOrInterface(TypeDesc thisType, TypeDesc otherType, StackOverflowProtect protect)
+        {
+            if (otherType.IsInterface)
+            {
+                return CanCastToInterface(thisType, otherType, protect);
+            }
+            else
+            {
+                return CanCastToClass(thisType, otherType, protect);
+            }
+        }
+
+        private static bool CanCastToInterface(TypeDesc thisType, TypeDesc otherType, StackOverflowProtect protect)
+        {
+            // Interfaces that don't have variance can still behave variantly when arrays are involved.
+            bool arrayCovariance = thisType.IsSzArray && otherType.HasInstantiation;
+            if (!otherType.HasVariance && !arrayCovariance)
+            {
+                return CanCastToNonVariantInterface(thisType, otherType);
+            }
+            else
+            {
+                if (CanCastByVarianceToInterfaceOrDelegate(thisType, otherType, protect))
+                {
+                    return true;
+                }
+
+                foreach (var interfaceType in thisType.RuntimeInterfaces)
+                {
+                    if (CanCastByVarianceToInterfaceOrDelegate(interfaceType, otherType, protect, arrayCovariance))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private static bool CanCastToNonVariantInterface(TypeDesc thisType, TypeDesc otherType)
+        {
+            if (otherType.IsEquivalentTo(thisType) || T.IsCanonEquivalent(thisType, otherType))
+            {
+                return true;
+            }
+
+            foreach (var interfaceType in thisType.RuntimeInterfaces)
+            {
+                if (interfaceType.IsEquivalentTo(otherType) || T.IsCanonEquivalent(interfaceType, otherType))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool CanCastByVarianceToInterfaceOrDelegate(TypeDesc thisType, TypeDesc otherType, StackOverflowProtect protectInput, bool arrayCovariance = false)
+        {
+            if (thisType == otherType)
+            {
+                return true;
+            }
+
+            if (!thisType.HasSameTypeDefinition(otherType))
+            {
+                return false;
+            }
+
+            var stackOverflowProtectKey = new CastingPair(thisType, otherType);
+            if (protectInput != null)
+            {
+                if (protectInput.Contains(stackOverflowProtectKey))
+                    return false;
+            }
+
+            StackOverflowProtect protect = new StackOverflowProtect(stackOverflowProtectKey, protectInput);
+
+            Instantiation instantiationThis = thisType.Instantiation;
+            Instantiation instantiationTarget = otherType.Instantiation;
+            Instantiation instantiationOpen = thisType.GetTypeDefinition().Instantiation;
+
+            Debug.Assert(instantiationThis.Length == instantiationTarget.Length &&
+                instantiationThis.Length == instantiationOpen.Length);
+
+            for (int i = 0; i < instantiationThis.Length; i++)
+            {
+                TypeDesc arg = instantiationThis[i];
+                TypeDesc targetArg = instantiationTarget[i];
+
+                if (!arg.IsEquivalentTo(targetArg))
+                {
+                    if (T.IsCanonicalTypeArgMatch(arg, targetArg))
+                        continue;
+
+                    GenericVariance variance = arrayCovariance
+                        ? GenericVariance.Covariant : ((GenericParameterDesc)instantiationOpen[i]).Variance;
+
+                    switch (variance)
+                    {
+                        case GenericVariance.Covariant:
+                            if (!IsBoxedAndCanCastTo(arg, targetArg, protect, arrayCovariance))
+                                return false;
+                            break;
+
+                        case GenericVariance.Contravariant:
+                            if (!IsBoxedAndCanCastTo(targetArg, arg, protect, arrayCovariance))
+                                return false;
+                            break;
+
+                        default:
+                            // non-variant
+                            Debug.Assert(variance == GenericVariance.None);
+                            return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        private static bool CanCastToClass(TypeDesc thisType, TypeDesc otherType, StackOverflowProtect protect)
+        {
+            TypeDesc curType = thisType;
+
+            if (curType.IsInterface && otherType.IsObject)
+            {
+                return true;
+            }
+
+            // If the target type has variant type parameters, we take a slower path
+            if (curType.HasVariance)
+            {
+                // First chase inheritance hierarchy until we hit a class that only differs in its instantiation
+                do
+                {
+                    if (curType.IsEquivalentTo(otherType))
+                    {
+                        return true;
+                    }
+
+                    if (CanCastByVarianceToInterfaceOrDelegate(curType, otherType, protect))
+                    {
+                        return true;
+                    }
+
+                    curType = curType.BaseType;
+                }
+                while (curType != null);
+            }
+            else
+            {
+                // If there are no variant type parameters, just chase the hierarchy
+
+                // Allow curType to be nullable, which means this method
+                // will additionally return true if curType is Nullable<T> && (
+                //    currType == otherType
+                // OR otherType is System.ValueType or System.Object)
+
+                // Always strip Nullable from the otherType, if present
+                if (otherType.IsNullable && !curType.IsNullable)
+                {
+                    return CanCastToInternal(thisType, otherType.Instantiation[0], protect);
+                }
+
+                do
+                {
+                    if (curType.IsEquivalentTo(otherType) || T.IsCanonEquivalent(curType, otherType))
+                        return true;
+
+                    curType = curType.BaseType;
+                } while (curType != null);
+            }
+
+            return false;
+        }
+
+        private static bool IsBoxedAndCanCastTo(TypeDesc thisType, TypeDesc otherType, StackOverflowProtect protect, bool arrayCovariance)
+        {
+            TypeDesc fromUnderlyingType = thisType.UnderlyingType;
+
+            if (fromUnderlyingType.IsGCPointer)
+            {
+                return CanCastToInternal(thisType, otherType, protect);
+            }
+            else if (thisType.IsGenericParameter)
+            {
+                var genericVariableFromParam = (GenericParameterDesc)thisType;
+                if (genericVariableFromParam.HasReferenceTypeConstraint || IsConstrainedAsGCPointer(genericVariableFromParam))
+                {
+                    return CanCastToInternal(genericVariableFromParam, otherType, protect);
+                }
+            }
+            else if (arrayCovariance && fromUnderlyingType.IsPrimitive)
+            {
+                TypeDesc toUnderlyingType = otherType.UnderlyingType;
+                if (GetNormalizedIntegralArrayElementType(fromUnderlyingType) == GetNormalizedIntegralArrayElementType(toUnderlyingType))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+    }
+
+    internal sealed class StackOverflowProtect
+    {
+        private CastingPair _value;
+        private StackOverflowProtect _previous;
+
+        public StackOverflowProtect(CastingPair value, StackOverflowProtect previous)
+        {
+            _value = value;
+            _previous = previous;
+        }
+
+        public static StackOverflowProtect GetTypeEquivalentForbiddenScope(StackOverflowProtect previous)
+        {
+            var protect = new StackOverflowProtect(default(CastingPair), previous);
+            return protect;
+        }
+
+        public bool Contains(CastingPair value)
+        {
+            for (var current = this; current != null; current = current._previous)
+            {
+                if (current._value.Equals(value))
+                    return true;
+            }
+            return false;
+        }
+    }
+
+    internal struct CastingPair
+    {
+        public readonly TypeDesc FromType;
+        public readonly TypeDesc ToType;
+
+        public CastingPair(TypeDesc fromType, TypeDesc toType)
+        {
+            FromType = fromType;
+            ToType = toType;
+        }
+
+        public bool Equals(CastingPair other) => FromType == other.FromType && ToType == other.ToType;
+    }
+}

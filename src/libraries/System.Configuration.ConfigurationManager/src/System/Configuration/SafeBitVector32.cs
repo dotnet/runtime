@@ -1,0 +1,40 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System.Threading;
+
+namespace System.Configuration
+{
+    // This is a multithreadsafe version of System.Collections.Specialized.BitVector32.
+    internal struct SafeBitVector32
+    {
+        private volatile int _data;
+
+        internal SafeBitVector32(int data)
+        {
+            _data = data;
+        }
+
+        internal bool this[int bit]
+        {
+            get
+            {
+                int data = _data;
+                return (data & bit) == bit;
+            }
+            set
+            {
+                while (true)
+                {
+                    int oldData = _data;
+                    int newData;
+                    if (value) newData = oldData | bit;
+                    else newData = oldData & ~bit;
+
+                    int result = Interlocked.CompareExchange(ref _data, newData, oldData);
+                    if (result == oldData) break;
+                }
+            }
+        }
+    }
+}

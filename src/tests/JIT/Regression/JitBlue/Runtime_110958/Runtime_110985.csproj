@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Optimize>True</Optimize>
+    <!-- Needed for CLRTestEnvironmentVariable -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildProjectName).cs" />
+
+    <CLRTestEnvironmentVariable Include="DOTNET_TieredCompilation" Value="0" />
+    <CLRTestEnvironmentVariable Include="DOTNET_JitStress" Value="2" />
+    <CLRTestEnvironmentVariable Include="DOTNET_JitRandomEdgeCounts" Value="1" />
+  </ItemGroup>
+</Project>

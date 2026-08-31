@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AssemblyVersion>4.0.0.0</AssemblyVersion>
+    <StrongNameKeyId>ECMA</StrongNameKeyId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Xml.XDocument\src\System.Xml.XDocument.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Xml.XPath.XDocument\src\System.Xml.XPath.XDocument.csproj" />
+  </ItemGroup>
+
+</Project>

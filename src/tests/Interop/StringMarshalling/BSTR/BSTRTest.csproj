@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants>$(DefineConstants);BSTR</DefineConstants>
+    <!-- Tracking issue: https://github.com/dotnet/runtime/issues/90427 -->
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'mono' and ('$(RuntimeVariant)' == 'minifullaot' or '$(RuntimeVariant)' == 'llvmfullaot')">true</CLRTestTargetUnsupported>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="*.cs" />
+    <Compile Include="../Common/Helpers.cs" />
+    <Compile Include="../Common/StringTests.cs" />
+    <Compile Include="../Common/StringInStructTests.cs" />
+    <Compile Include="../Native/StringMarshalingTestNative.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+    <CMakeProjectReference Include="./CMakeLists.txt" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,52 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-browser</TargetFrameworks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IgnoreForCI Condition="'$(TargetOS)' == 'browser'">true</IgnoreForCI>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Checked in test binaries for FileVersionInfoTest -->
+    <Content Include="NativeConsoleApp.exe">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="NativeLibrary.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="SecondNativeLibrary.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <EmbeddedResource Include="..\System.Diagnostics.FileVersionInfo.TestAssembly\Assembly1.cs">
+      <LogicalName>Assembly1.cs</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup Condition="'$(RunAOTCompilation)' == 'true'">
+    <!-- Identifies native libraries that should be skipped during AOT -->
+    <NativeLibraries Include="NativeLibrary.dll" />
+    <NativeLibraries Include="SecondNativeLibrary.dll" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="FileVersionInfoTest.cs" />
+    <Compile Include="AssemblyInfo.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\ReparsePointUtilities.cs"
+             Link="Common\System\IO\ReparsePointUtilities.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
+    <Compile Include="FileVersionInfoTest.Windows.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
+             Link="ProductionCode\Common\Interop\Windows\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.VerLanguageName.cs"
+             Link="ProductionCode\Common\Interop\Windows\Kernel32\Interop.VerLanguageName.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix' or '$(TargetPlatformIdentifier)' == 'browser'">
+    <Compile Include="FileVersionInfoTest.Unix.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Embed the test assembly as a managed resource. FileVersionInfoTest writes it to a temp file at run time and
+         inspects that. -->
+    <ProjectReference Include="..\System.Diagnostics.FileVersionInfo.TestAssembly\System.Diagnostics.FileVersionInfo.TestAssembly.csproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <OutputItemType>EmbeddedResource</OutputItemType>
+      <LogicalName>System.Diagnostics.FileVersionInfo.TestAssembly.dll</LogicalName>
+    </ProjectReference>
+  </ItemGroup>
+</Project>

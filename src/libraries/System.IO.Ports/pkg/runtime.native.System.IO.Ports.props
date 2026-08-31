@@ -1,0 +1,52 @@
+<Project Sdk="Microsoft.Build.NoTargets">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    <!-- IncludeBuildOutput needs to be set to true to make NuGet include the passed in debug symbol files. -->
+    <IncludeBuildOutput>true</IncludeBuildOutput>
+    <IsPackable>true</IsPackable>
+    <AllowedOutputExtensionsInSymbolsPackageBuildOutputFolder>$(SymbolsSuffix)</AllowedOutputExtensionsInSymbolsPackageBuildOutputFolder>
+    <!-- When KeepNativeSymbols is set, debug symbols are kept in the .so files.  Separate symbol files do not exist that need to be packed. -->
+    <TargetsForTfmSpecificDebugSymbolsInPackage Condition="'$(KeepNativeSymbols)' != 'true'">$(TargetsForTfmSpecificDebugSymbolsInPackage);AddRuntimeSpecificNativeSymbolToPackage</TargetsForTfmSpecificDebugSymbolsInPackage>
+    <UseRuntimePackageDisclaimer>true</UseRuntimePackageDisclaimer>
+    <!-- This is a native package and doesn't contain any ref/lib assets. -->
+    <NoWarn>$(NoWarn);NU5128</NoWarn>
+    <!-- Disabling baseline validation since this is  binary blob -nd we do not need API compat. -->
+    <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
+    <PackageReadmeFilePath>$(MSBuildThisFileDirectory)../src/PACKAGE.md</PackageReadmeFilePath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Extract supported RIDs from the .proj file names -->
+    <RIDSpecificProject Include="$(MSBuildThisFileDirectory)runtime.*.runtime.native.System.IO.Ports.proj" />
+    <PackageSupportedRID Include="@(RIDSpecificProject->'%(Filename)'->Replace('.runtime.native.System.IO.Ports', '')->Replace('runtime.', ''))" />
+
+    <!-- We need to add a placeholder file for all RIDs except the one that is actually included in the RID-specific package.
+         This prevents an issue where during publish the SDK would select e.g. both linux-x64 and linux-musl-x64 assets because of the fallback path in the RID graph. -->
+    <PackagePlaceholderRID Include="@(PackageSupportedRID)" Exclude="$(TargetRid)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="$(NativeBinDir)$(LibPrefix)System.IO.Ports.Native$(LibSuffix)"
+          PackagePath="runtimes/$(TargetRid)/native"
+          Pack="true" />
+    <None Include="$(PlaceholderFile)"
+          PackagePath="@(PackagePlaceholderRID->'runtimes/%(Identity)/native')"
+          Pack="true" />
+  </ItemGroup>
+
+  <Target Name="ValidatePackageSupportedRID" BeforeTargets="Build">
+    <Error Text="$(TargetRid) is missing from PackageSupportedRID."
+           Condition="!@(PackageSupportedRID->AnyHaveMetadataValue('Identity', '$(TargetRid)'))" />
+  </Target>
+
+  <Target Name="AddRuntimeSpecificNativeSymbolToPackage">
+    <ItemGroup>
+      <TfmSpecificDebugSymbolsFile Include="$(NativeBinDir)$(LibPrefix)System.IO.Ports.Native$(LibSuffix)$(SymbolsSuffix)"
+                                   TargetPath="/runtimes/$(TargetRid)/native"
+                                   TargetFramework="$(TargetFramework)" />
+    </ItemGroup>
+  </Target>
+
+</Project>

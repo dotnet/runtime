@@ -1,0 +1,242 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Runtime.ExceptionServices;
+using System.Text;
+using System.Threading.Tasks;
+using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.FileProviders.Physical;
+using Microsoft.Extensions.Primitives;
+
+namespace Microsoft.Extensions.Configuration
+{
+    /// <summary>
+    /// Provides the base class for file-based <see cref="ConfigurationProvider"/> providers.
+    /// </summary>
+    public abstract class FileConfigurationProvider : ConfigurationProvider, IDisposable
+    {
+        private readonly IDisposable? _changeTokenRegistration;
+
+        /// <summary>
+        /// Initializes a new instance with the specified source.
+        /// </summary>
+        /// <param name="source">The source settings.</param>
+        public FileConfigurationProvider(FileConfigurationSource source)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+
+            Source = source;
+
+            if (Source.ReloadOnChange && Source.FileProvider != null)
+            {
+                _changeTokenRegistration = ChangeToken.OnChange(
+                    () => Source.FileProvider.Watch(Source.Path!),
+                    async () =>
+                    {
+                        await Task.Delay(Source.ReloadDelay).ConfigureAwait(false);
+                        try
+                        {
+                            Load(reload: true);
+                        }
+                        catch
+                        {
+                            // Load already surfaces reload failures through the
+                            // FileConfigurationSource.OnLoadException callback. Any exception that
+                            // escapes here is usually swallowed by OnChange or by the FileProvider,
+                            // so swallow it here instead, to make it clear this is the intended behavior
+                            // and to make it more consistent.
+                        }
+                    });
+            }
+        }
+
+        /// <summary>
+        /// Gets the source settings for this provider.
+        /// </summary>
+        public FileConfigurationSource Source { get; }
+
+        /// <summary>
+        /// Generates a string representing this provider name and relevant details.
+        /// </summary>
+        /// <returns>The configuration name.</returns>
+        public override string ToString()
+            => $"{GetType().Name} for '{Source.Path}' ({(Source.Optional ? "Optional" : "Required")})";
+
+        private void Load(bool reload)
+        {
+            IFileInfo? file = Source.FileProvider?.GetFileInfo(Source.Path ?? string.Empty);
+            if (file == null || !file.Exists)
+            {
+                HandleLoadingNonExisting(reload, file);
+                return;
+            }
+
+            static Stream OpenRead(IFileInfo fileInfo)
+            {
+                // The type is compared exactly because a derived type could hide
+                // CreateReadStream. Deliberately checking the file info rather than the file provider
+                // keeps this path available to providers that delegate to a PhysicalFileProvider and
+                // surface its PhysicalFileInfo unchanged, as a composite file provider does.
+                if (fileInfo.GetType() == typeof(PhysicalFileInfo))
+                {
+                    var physicalFileInfo = (PhysicalFileInfo)fileInfo;
+
+                    // The default physical file info assumes asynchronous IO which results in unnecessary overhead
+                    // especially since the configuration system is synchronous. This uses the same settings
+                    // and disables async IO.
+                    return new FileStream(
+                        physicalFileInfo.PhysicalPath,
+                        FileMode.Open,
+                        FileAccess.Read,
+                        FileShare.ReadWrite,
+                        bufferSize: 1,
+                        FileOptions.SequentialScan);
+                }
+
+                return fileInfo.CreateReadStream();
+            }
+
+            Stream stream;
+            try
+            {
+                stream = OpenRead(file);
+            }
+            catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException)
+            {
+                // assuming file was deleted in meantime, we already checked existence at the beginning once
+                HandleLoadingNonExisting(reload, file, ex is DirectoryNotFoundException);
+                return;
+            }
+            catch (Exception ex)
+            {
+                // IO error on file open, preserve existing Data
+                HandleException(ExceptionDispatchInfo.Capture(ex));
+                return;
+            }
+
+            bool updated = false;
+
+            using (stream)
+            {
+                try
+                {
+                    Load(stream);
+                    updated = true;
+                }
+                catch (Exception ex)
+                {
+                    if (reload)
+                    {
+                        ClearData();
+                        updated = true;
+                    }
+                    string filePath = file.PhysicalPath ?? Source.Path ?? file.Name;
+                    var wrapped = new InvalidDataException(SR.Format(SR.Error_FailedToLoad, filePath), ex);
+                    HandleException(ExceptionDispatchInfo.Capture(wrapped));
+                }
+            }
+
+            if (updated)
+            {
+                OnReload();
+            }
+        }
+
+        /// <summary>
+        /// Handles a missing configuration file during the initial load or a reload.
+        /// </summary>
+        /// <param name="reload"><see langword="true"/> when the provider is reloading after a change notification;
+        /// <see langword="false"/> when loading for first time.</param>
+        /// <param name="file">The file information returned by the <see cref="FileConfigurationSource.FileProvider"/>,
+        /// or <see langword="null"/> if no file information is available.</param>
+        /// <param name="directoryException">Determines if <see cref="FileNotFoundException"/> or
+        /// <see cref="DirectoryNotFoundException"/> is thrown on error.</param>
+        private void HandleLoadingNonExisting(bool reload, IFileInfo? file, bool directoryException = false)
+        {
+            if (Source.Optional || reload) // Always optional on reload
+            {
+                ClearData();
+                OnReload();
+            }
+            else
+            {
+                var error = new StringBuilder(SR.Format(SR.Error_FileNotFound, Source.Path ?? file?.Name));
+                if (!string.IsNullOrEmpty(file?.PhysicalPath))
+                {
+                    error.Append(SR.Format(SR.Error_ExpectedPhysicalPath, file.PhysicalPath));
+                }
+                if (!directoryException)
+                {
+                    HandleException(ExceptionDispatchInfo.Capture(new FileNotFoundException(error.ToString())));
+                }
+                else
+                {
+                    HandleException(ExceptionDispatchInfo.Capture(new DirectoryNotFoundException(error.ToString())));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Loads the contents of the file at <see cref="Path"/>.
+        /// </summary>
+        /// <exception cref="DirectoryNotFoundException">Optional is <c>false</c> on the source and a
+        /// directory cannot be found at the specified Path.</exception>
+        /// <exception cref="FileNotFoundException">Optional is <c>false</c> on the source and a
+        /// file does not exist at specified Path.</exception>
+        /// <exception cref="InvalidDataException">An exception was thrown by the concrete implementation of the
+        /// <see cref="Load()"/> method. Use the source <see cref="FileConfigurationSource.OnLoadException"/> callback
+        /// if you need more control over the exception.</exception>
+        /// <exception cref="IOException">An I/O error occurred when opening the file. Other exceptions from the
+        /// underlying file provider may also be thrown. Use the source <see cref="FileConfigurationSource.OnLoadException"/>
+        /// callback if you need more control over the exception.</exception>
+        public override void Load()
+        {
+            Load(reload: false);
+        }
+
+        /// <summary>
+        /// Loads this provider's data from a stream.
+        /// </summary>
+        /// <param name="stream">The stream to read.</param>
+        public abstract void Load(Stream stream);
+
+        private void HandleException(ExceptionDispatchInfo info)
+        {
+            bool ignoreException = false;
+            if (Source.OnLoadException != null)
+            {
+                var exceptionContext = new FileLoadExceptionContext
+                {
+                    Provider = this,
+                    Exception = info.SourceException
+                };
+                Source.OnLoadException.Invoke(exceptionContext);
+                ignoreException = exceptionContext.Ignore;
+            }
+            if (!ignoreException)
+            {
+                info.Throw();
+            }
+        }
+
+        private void ClearData()
+        {
+            Data = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+        }
+
+        /// <inheritdoc />
+        public void Dispose() => Dispose(true);
+
+        /// <summary>
+        /// Disposes the provider.
+        /// </summary>
+        /// <param name="disposing"><c>true</c> if invoked from <see cref="IDisposable.Dispose"/>.</param>
+        protected virtual void Dispose(bool disposing)
+        {
+            _changeTokenRegistration?.Dispose();
+        }
+    }
+}

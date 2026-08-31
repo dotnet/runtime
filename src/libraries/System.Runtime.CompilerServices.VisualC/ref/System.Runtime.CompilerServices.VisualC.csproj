@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="System.Runtime.CompilerServices.VisualC.cs" />
+    <Compile Include="System.Runtime.CompilerServices.VisualC.manual.cs" />
+    <Compile Include="System.Runtime.CompilerServices.VisualC.TypeForwards.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
+  </ItemGroup>
+</Project>

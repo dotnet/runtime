@@ -1,0 +1,81 @@
+<Project Sdk="Microsoft.DotNet.Helix.Sdk" DefaultTargets="Test">
+  <PropertyGroup>
+    <IncludeXHarnessCli>true</IncludeXHarnessCli>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(AGENT_OS)' != 'Windows_NT'">
+    <Python>python3</Python>
+    <HelixPreCommands>$(HelixPreCommands);chmod +x $HELIX_WORKITEM_PAYLOAD/SOD/SizeOnDisk</HelixPreCommands>
+    <HelixPreCommands>$(HelixPreCommands);chmod +x $HELIX_WORKITEM_PAYLOAD/startup/Startup</HelixPreCommands>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <HelixCorrelationPayload Include="$(CorrelationPayloadDirectory)">
+      <PayloadDirectory>%(Identity)</PayloadDirectory>
+    </HelixCorrelationPayload>
+  </ItemGroup>
+
+  <PropertyGroup>
+    <LlvmPath> nollvm</LlvmPath>
+    <LlvmPath Condition="'$(iOSLlvmBuild)' == 'True'"> llvm</LlvmPath>
+    <SymbolsPath> symbols</SymbolsPath>
+    <SymbolsPath Condition="'$(iOSStripSymbols)' == 'True'"> nosymbols</SymbolsPath>
+    <!-- For non-default configurations, add the configuration to the name of the test (in the matching format), otherwise don't add anything.
+    This will ensure that PowerBI's using the test name rather than the run configuration for the data continue to work properly and defaults are connected -->
+    <RunConfigsString>$(LlvmPath)$(SymbolsPath)</RunConfigsString>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(AGENT_OS)' == 'Windows_NT'">
+    <ScenarioDirectory>%HELIX_WORKITEM_ROOT%\performance\src\scenarios\</ScenarioDirectory>
+
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(AGENT_OS)' != 'Windows_NT'">
+    <ScenarioDirectory>$HELIX_WORKITEM_ROOT/performance/src/scenarios/</ScenarioDirectory>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <HelixWorkItem Include="SOD - iOS HelloWorld $(RuntimeType) .app Size$(RunConfigsString)">
+      <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
+      <PreCommands>cd $(ScenarioDirectory)helloios;cp -rf $HELIX_CORRELATION_PAYLOAD/iosHelloWorld ./app;$(Python) pre.py --name app</PreCommands>
+      <Command>$(Python) test.py sod --scenario-name &quot;%(Identity)&quot; $(ScenarioArgs)</Command>
+      <PostCommands>$(Python) post.py</PostCommands>
+    </HelixWorkItem>
+    <HelixWorkItem Include="SOD - iOS HelloWorld $(RuntimeType) Zip Size$(RunConfigsString)">
+      <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
+      <PreCommands>cd $(ScenarioDirectory)helloios;cp -v $HELIX_CORRELATION_PAYLOAD/iosHelloWorldZip/iOSSampleApp.zip .;$(Python) pre.py --name iOSSampleApp.zip</PreCommands>
+      <Command>$(Python) test.py sod --scenario-name &quot;%(Identity)&quot; $(ScenarioArgs)</Command>
+      <PostCommands>$(Python) post.py</PostCommands>
+    </HelixWorkItem>
+    <XHarnessAppBundleToTest Include="Device Startup - iOS $(RuntimeType) HelloWorld$(RunConfigsString)">
+      <AppBundlePath>$(WorkItemDirectory).zip</AppBundlePath>
+      <WorkItemTimeout>00:15:00</WorkItemTimeout>
+      <TestTarget>ios-device</TestTarget>
+      <CustomCommands>
+        <![CDATA[
+          # PreCommands
+          export XHARNESSPATH=$XHARNESS_CLI_PATH
+
+          cp -r $HELIX_CORRELATION_PAYLOAD/iosHelloWorld/iosHelloWorld/HelloiOS.app $(ScenarioDirectory)helloios/HelloiOS.app
+          cp -f embedded.mobileprovision $(ScenarioDirectory)helloios/HelloiOS.app
+          cd $(ScenarioDirectory)helloios
+          sign HelloiOS.app
+
+          $(Python) pre.py --name HelloiOS.app
+
+          # Testing commands
+          $(Python) test.py devicestartup --device-type ios --package-path HelloiOS.app --package-name net.dot.HelloiOS --scenario-name "%(Identity)" $(ScenarioArgs)
+          ((result=$?))
+
+          # Post commands
+          $(Python) post.py
+          exit $result
+        ]]>
+      </CustomCommands>
+    </XHarnessAppBundleToTest>
+    <HelixWorkItem Include="Build Time - iOS $(RuntimeType) HelloWorld$(RunConfigsString)">
+      <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
+      <PreCommands>cd $(ScenarioDirectory)helloios;mkdir traces;cp -v $HELIX_CORRELATION_PAYLOAD/iosHelloWorldBinlog/msbuild.binlog traces</PreCommands>
+      <Command>$(Python) test.py buildtime --scenario-name &quot;%(Identity)&quot; $(ScenarioArgs) --binlog-path ./msbuild.binlog</Command>
+      <PostCommands>$(Python) post.py</PostCommands>
+    </HelixWorkItem>
+  </ItemGroup>
+</Project>

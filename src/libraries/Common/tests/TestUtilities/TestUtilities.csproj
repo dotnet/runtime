@@ -1,0 +1,128 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppMinimum);$(NetFrameworkCurrent)</TargetFrameworks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- For some reason, xunit.core.props isn't excluded in VS and sets this to true. -->
+    <IsTestProject>false</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="$(MSBuildThisFileDirectory)ILLink.Substitutions.AggressiveTrimming.xml"
+                      LogicalName="ILLink.Substitutions.xml"
+                      Condition="'$(EnableAggressiveTrimming)' == 'true'" />
+
+    <Compile Include="System\AdminHelpers.cs" />
+    <Compile Include="System\AssertExtensions.cs" />
+    <Compile Include="System\IO\StreamExtensions.cs" />
+    <Compile Include="System\IO\PathGenerator.cs" />
+    <Compile Include="System\RetryHelper.cs" />
+    <Compile Include="System\Buffers\BoundedMemory.cs" />
+    <Compile Include="System\Buffers\BoundedMemory.Creation.cs" />
+    <Compile Include="System\Buffers\BoundedMemory.Unix.cs" />
+    <Compile Include="System\Buffers\BoundedMemory.Windows.cs" />
+    <Compile Include="System\Buffers\BoundedMemory.Default.cs" />
+    <Compile Include="System\Buffers\PoisonPagePlacement.cs" />
+    <Compile Include="System\Runtime\InteropServices\SafeBufferUtil.cs" />
+    <Compile Include="System\IO\FileCleanupTestBase.cs" />
+    <Compile Include="System\LineEndingsHelper.cs" />
+    <Compile Include="System\TestEnvironment.cs" />
+    <Compile Include="System\ThreadCultureChange.cs" />
+    <Compile Include="System\AssemblyPathHelper.cs" />
+    <!-- We don't compile per but and instead use runtime platform checks. -->
+    <Compile Include="System\PlatformDetection.cs" />
+    <Compile Include="System\PlatformDetection.Unix.cs" />
+    <Compile Include="System\PlatformDetection.Windows.cs" />
+    <Compile Include="System\WindowsIdentityFixture.cs" />
+
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
+             Link="Common\System\Text\ValueStringBuilder.cs" />
+    <!--
+      Interop.Library is not designed to support runtime checks therefore we are picking the Windows
+      variant from the Common folder and adding the missing members manually.
+    -->
+    <Compile Include="Interop\Interop.Libraries.cs" />
+
+    <Compile Include="RandomTestCaseOrderer.cs" />
+    <Compile Include="RandomTestCollectionOrderer.cs" />
+
+    <Compile Include="TestEventListener.cs" />
+  </ItemGroup>
+
+  <!-- Windows imports -->
+  <ItemGroup>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateFile.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.CreateFile.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FileOperations.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.FileOperations.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCurrentProcess.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.GetCurrentProcess.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetFinalPathNameByHandle.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.GetFinalPathNameByHandle.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\NtDll\Interop.RtlGetVersion.cs"
+             Link="Common\Interop\Windows\NtDll\Interop.RtlGetVersion.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.OpenProcessToken.cs"
+             Link="Common\Interop\Windows\Advapi32\Interop.OpenProcessToken.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
+             Link="Common\Interop\Windows\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CloseHandle.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.CloseHandle.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.TOKEN_INFORMATION_CLASS.cs"
+             Link="Common\Interop\Windows\Advapi32\Interop.TOKEN_INFORMATION_CLASS.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.GetTokenInformation_void.cs"
+             Link="Common\Interop\Windows\Advapi32\Interop.GetTokenInformation_void.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.TOKEN_ELEVATION.cs"
+             Link="Common\Interop\Windows\Advapi32\Interop.TOKEN_ELEVATION.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs"
+             Link="Common\Interop\Windows\Interop.BOOL.cs" />
+
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeTokenHandle.cs"
+             Link="Common\Microsoft\Win32\SafeHandles\SafeTokenHandle.cs"/>
+    <Compile Include="$(CommonPath)System\IO\PathInternal.Windows.cs"
+             Link="Common\System\IO\PathInternal.Windows.cs" />
+  </ItemGroup>
+
+  <!-- Unix imports -->
+  <ItemGroup>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs"
+             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslAvailable.cs"
+             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslAvailable.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslVersion.cs"
+             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslVersion.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslGetProtocolSupport.cs"
+             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslGetProtocolSupport.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetEUid.cs"
+             Link="Common\Interop\Unix\Interop.GetEUid.cs" />
+  </ItemGroup>
+
+  <!-- Android imports -->
+  <ItemGroup>
+    <Compile Include="$(CommonPath)Interop\Android\Interop.Libraries.cs"
+             Link="Common\Interop\Android\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.Ssl.ProtocolSupport.cs"
+             Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.Ssl.ProtocolSupport.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.DotNet.XUnitExtensions" Version="$(MicrosoftDotNetXUnitExtensionsVersion)" />
+    <PackageReference Include="xunit.core" Version="$(XUnitVersion)" ExcludeAssets="build" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <!-- Use the arcade fork of xunit.assert for AOT-compat -->
+    <PackageReference Include="Microsoft.DotNet.XUnitAssert" Version="$(MicrosoftDotNetXUnitAssertVersion)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\CallerArgumentExpressionAttribute.cs"
+            Link="Common\System\Runtime\CompilerServices\CallerArgumentExpressionAttribute.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
+    <PackageReference Include="xunit.assert" Version="$(XUnitVersion)" />
+  </ItemGroup>
+
+</Project>

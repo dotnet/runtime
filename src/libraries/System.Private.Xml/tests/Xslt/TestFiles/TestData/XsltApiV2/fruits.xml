@@ -1,0 +1,11 @@
+<?xml version='1.0'?>
+<FruitRack>
+  <apple>
+    <color>Red</color>
+    <calories>50</calories>
+  </apple>
+  <orange>
+    <color>Orange</color>
+    <calories>25</calories>
+  </orange>
+</FruitRack>	

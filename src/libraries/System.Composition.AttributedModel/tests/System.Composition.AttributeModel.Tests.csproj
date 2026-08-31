@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="SharingBoundaryAttributeTests.cs" />
+    <Compile Include="SharedAttributeTests.cs" />
+    <Compile Include="PartNotDiscoverableAttributeTests.cs" />
+    <Compile Include="PartMetadataAttributeTests.cs" />
+    <Compile Include="MetadataAttributeAttributeTests.cs" />
+    <Compile Include="ImportMetadataConstraintAttributeTests.cs" />
+    <Compile Include="ImportManyAttributeTests.cs" />
+    <Compile Include="ImportingConstructorAttributeTests.cs" />
+    <Compile Include="ImportAttributeTests.cs" />
+    <Compile Include="ExportMetadataAttributeTests.cs" />
+    <Compile Include="ExportAttributeTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Composition.AttributedModel.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+    <ProjectReference Include="$(LibrariesProjectRoot)System.ComponentModel.Composition\src\System.ComponentModel.Composition.csproj" />
+  </ItemGroup>
+</Project>

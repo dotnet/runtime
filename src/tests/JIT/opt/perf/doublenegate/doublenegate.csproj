@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <DebugType>None</DebugType>
+  </PropertyGroup>
+  <PropertyGroup>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="doublenegate.cs" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<EncryptedData Type="http://www.w3.org/2001/04/xmlenc#Element" xmlns="http://www.w3.org/2001/04/xmlenc#">
+  <EncryptionMethod Algorithm="http://www.w3.org/2001/04/xmlenc#aes256-cbc" />
+  <CipherData>
+    <CipherValue>pBUM5P03rZ6AE4ZK5EyBr2iA7eYSJuVHCFBPMoSToOAh3EZAC62WZunZyBJH72M4nWBibM5C3u/Oe1X2S5VmyQ==</CipherValue>
+  </CipherData>
+</EncryptedData>

@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppToolCurrent);$(NetFrameworkToolCurrent)</TargetFrameworks>
+    <NoWarn>$(NoWarn),CA1050,CA1850</NoWarn>
+    <!-- Emit into stable, version-independent folder names instead of the TFM so the package layout and its
+         consumers don't need updating whenever the .NET Core TFM bumps. -->
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <OutputPath Condition="'$(TargetFramework)' == '$(NetCoreAppToolCurrent)'">$(OutputPath)net\</OutputPath>
+    <OutputPath Condition="'$(NetFrameworkToolCurrent)' != '' and '$(TargetFramework)' == '$(NetFrameworkToolCurrent)'">$(OutputPath)netframework\</OutputPath>
+    <IntermediateOutputPath Condition="'$(TargetFramework)' == '$(NetCoreAppToolCurrent)'">$(IntermediateOutputPath)net\</IntermediateOutputPath>
+    <IntermediateOutputPath Condition="'$(NetFrameworkToolCurrent)' != '' and '$(TargetFramework)' == '$(NetFrameworkToolCurrent)'">$(IntermediateOutputPath)netframework\</IntermediateOutputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AssemblyStripper\AssemblyStripper.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Templates\*.*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Common\Utils.cs" />
+    <Compile Include="..\Common\LogAsErrorException.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\NullableAttributes.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" />
+  </ItemGroup>
+
+  <!-- GetFilesToPackage assists to place `MonoTargetsTasks.dll` in a NuGet package in Microsoft.NET.Runtime.MonoTargets.Sdk.pkgproj for external use -->
+  <Target Name="GetFilesToPackage" Returns="@(FilesToPackage)">
+    <ItemGroup>
+      <!-- Copies every assembly that is in the artifacts/bin/MonoTargetsTasks/ subfolders.  Be careful not to include too much. -->
+      <FilesToPackage Include="$(OutputPath)net\*.dll" TargetPath="tasks\net" />
+      <FilesToPackage Include="$(OutputPath)net\*.pdb" TargetPath="tasks\net" />
+      <FilesToPackage Condition="'$(NetFrameworkToolCurrent)' != ''" Include="$(OutputPath)netframework\*.dll" TargetPath="tasks\netframework" />
+      <FilesToPackage Condition="'$(NetFrameworkToolCurrent)' != ''" Include="$(OutputPath)netframework\*.pdb" TargetPath="tasks\netframework" />
+    </ItemGroup>
+  </Target>
+
+</Project>

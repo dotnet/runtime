@@ -1,0 +1,9 @@
+﻿<Project>
+  <Import Project="..\Directory.Build.targets" />
+  <PropertyGroup>
+    <!-- This assembly is inbox in .NETFramework, ensure that the .NETStandard assembly 
+         remains <= the .NETFramework version.
+         4.0.3.0 breaks this causing https://github.com/dotnet/runtime/issues/84320  -->
+    <AssemblyVersion Condition="'$(TargetFramework)' == 'netstandard2.0'">4.0.3.0</AssemblyVersion>
+  </PropertyGroup>
+</Project>

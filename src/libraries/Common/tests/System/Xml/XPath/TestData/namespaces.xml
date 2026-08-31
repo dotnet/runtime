@@ -1,0 +1,23 @@
+<companies xmlns="http://companies_default.htm">
+	<company name="Microsoft" xmlns:ms="http://www.microsoft.com" xmlns="">
+		<uri>http://www.microsoft.com</uri>
+		<nasdaq>msft</nasdaq>
+		<ms:company name="Expedia" xmlns:exp="http://www.expedia.com">
+			<uri>http://expedia.com</uri>
+			<nasdaq>expe</nasdaq>
+		</ms:company>		
+	</company>
+	<company name="America Online" xmlns:aol="http://www.aol.com" xmlns="">
+		<uri>http://www.aol.com</uri>
+		<nasdaq>aol</nasdaq>
+		<aol:company name="Time Warner" xmlns:tw="http://www.timewarner.com" xmlns="">
+			<uri>http://timewarner.com</uri>
+			<nasdaq>tw</nasdaq>
+			<tw:company name="CNN" xmlns:cnn="http://www.cnn.com">
+				<uri>http://www.cnn.com</uri>
+			</tw:company>			
+		</aol:company>
+	</company>
+</companies>
+	
+	

@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Needed for NativeAotIncompatible, CMakeProjectReference -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <MonoAotIncompatible>true</MonoAotIncompatible>
+    <NativeAotIncompatible>true</NativeAotIncompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="UnmanagedCallersOnlyTest.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- This is needed to make sure native binary gets installed in the right location -->
+    <CMakeProjectReference Include="CMakeLists.txt" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+    <ProjectReference Include="InvalidCSharp.ilproj" />
+  </ItemGroup>
+</Project>

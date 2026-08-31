@@ -1,0 +1,6 @@
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="xsdauthor"
+    targetNamespace="xsdauthor"
+    version="1.0"
+    >
+    <xsd:element name="author" type="xsd:boolean"/>
+</xsd:schema>

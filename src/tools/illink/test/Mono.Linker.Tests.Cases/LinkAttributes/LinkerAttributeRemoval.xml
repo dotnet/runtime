@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<linker xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../src/ILLink.Shared/ILLink.LinkAttributes.xsd">
+  <assembly fullname="*"> 
+    <type fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute">
+      <attribute internal="RemoveAttributeInstances"/>
+    </type>
+    <type fullname="System.ComponentModel.EditorBrowsableAttribute">
+      <!-- Must use wildcard assembly for this type since it can come either from System.Private.CoreLib or mscorlib -->
+      <attribute internal="RemoveAttributeInstances"/>
+    </type>
+
+    <!-- Intentionally uses wildcard assembly to verify that lazy loading assembly still applies these attributes -->
+    <type fullname="Mono.Linker.Tests.Cases.LinkAttributes.Dependencies.EmbeddedAttributeToBeRemoved">
+      <attribute internal="RemoveAttributeInstances"/>
+    </type>
+  </assembly>
+  <assembly fullname="test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+    <!-- IL2049 -->
+    <type fullname="Mono.Linker.Tests.Cases.LinkAttributes.TestRemoveAttribute">
+      <attribute internal="RemoveAttributeInstances"/>
+      <attribute internal="InvalidInternal"/>
+    </type>
+    <!-- IL2048 -->
+    <type fullname="Mono.Linker.Tests.Cases.LinkAttributes.LinkerAttributeRemoval">
+      <method signature="methodWithCustomAttribute (System.String)">
+        <attribute internal="RemoveAttributeInstances"/>
+      </method>
+    </type>
+    <type fullname="Mono.Linker.Tests.Cases.LinkAttributes.TestMarkAllRemoveAttribute">
+      <attribute internal="RemoveAttributeInstances"/>
+    </type>
+  </assembly>
+  <assembly fullname="attribute, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+    <type fullname="Mono.Linker.Tests.Cases.LinkAttributes.Dependencies.TestAttributeUsedFromCopyAssemblyAttribute">
+      <attribute internal="RemoveAttributeInstances"/>
+    </type>
+    <type fullname="Mono.Linker.Tests.Cases.LinkAttributes.Dependencies.TestAttributeReferencedAsTypeFromCopyAssemblyAttribute">
+      <attribute internal="RemoveAttributeInstances"/>
+    </type>
+  </assembly>
+  <assembly fullname="copyattribute, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+    <type fullname="Mono.Linker.Tests.Cases.LinkAttributes.Dependencies.AttributeFromCopyAssemblyAttribute">
+      <attribute internal="RemoveAttributeInstances"/>
+    </type>
+  </assembly>
+</linker>

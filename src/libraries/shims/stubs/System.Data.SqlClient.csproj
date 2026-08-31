@@ -1,0 +1,62 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <StrongNameKeyId>Microsoft</StrongNameKeyId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ForwardedType Include="Microsoft.SqlServer.Server.DataAccessKind" />
+    <ForwardedType Include="Microsoft.SqlServer.Server.Format" />
+    <ForwardedType Include="Microsoft.SqlServer.Server.IBinarySerialize" />
+    <ForwardedType Include="Microsoft.SqlServer.Server.InvalidUdtException" />
+    <ForwardedType Include="Microsoft.SqlServer.Server.SqlDataRecord" />
+    <ForwardedType Include="Microsoft.SqlServer.Server.SqlFacetAttribute" />
+    <ForwardedType Include="Microsoft.SqlServer.Server.SqlFunctionAttribute" />
+    <ForwardedType Include="Microsoft.SqlServer.Server.SqlMetaData" />
+    <ForwardedType Include="Microsoft.SqlServer.Server.SqlMethodAttribute" />
+    <ForwardedType Include="Microsoft.SqlServer.Server.SqlUserDefinedAggregateAttribute" />
+    <ForwardedType Include="Microsoft.SqlServer.Server.SqlUserDefinedTypeAttribute" />
+    <ForwardedType Include="Microsoft.SqlServer.Server.SystemDataAccessKind" />
+    <ForwardedType Include="System.Data.OperationAbortedException" />
+    <ForwardedType Include="System.Data.Sql.SqlNotificationRequest" />
+    <ForwardedType Include="System.Data.SqlClient.ApplicationIntent" />
+    <ForwardedType Include="System.Data.SqlClient.OnChangeEventHandler" />
+    <ForwardedType Include="System.Data.SqlClient.PoolBlockingPeriod" />
+    <ForwardedType Include="System.Data.SqlClient.SortOrder" />
+    <ForwardedType Include="System.Data.SqlClient.SqlBulkCopy" />
+    <ForwardedType Include="System.Data.SqlClient.SqlBulkCopyColumnMapping" />
+    <ForwardedType Include="System.Data.SqlClient.SqlBulkCopyColumnMappingCollection" />
+    <ForwardedType Include="System.Data.SqlClient.SqlBulkCopyOptions" />
+    <ForwardedType Include="System.Data.SqlClient.SqlClientFactory" />
+    <ForwardedType Include="System.Data.SqlClient.SqlClientMetaDataCollectionNames" />
+    <ForwardedType Include="System.Data.SqlClient.SqlCommand" />
+    <ForwardedType Include="System.Data.SqlClient.SqlCommandBuilder" />
+    <ForwardedType Include="System.Data.SqlClient.SqlConnection" />
+    <ForwardedType Include="System.Data.SqlClient.SqlConnectionStringBuilder" />
+    <ForwardedType Include="System.Data.SqlClient.SqlCredential" />
+    <ForwardedType Include="System.Data.SqlClient.SqlDataAdapter" />
+    <ForwardedType Include="System.Data.SqlClient.SqlDataReader" />
+    <ForwardedType Include="System.Data.SqlClient.SqlDependency" />
+    <ForwardedType Include="System.Data.SqlClient.SqlError" />
+    <ForwardedType Include="System.Data.SqlClient.SqlErrorCollection" />
+    <ForwardedType Include="System.Data.SqlClient.SqlException" />
+    <ForwardedType Include="System.Data.SqlClient.SqlInfoMessageEventArgs" />
+    <ForwardedType Include="System.Data.SqlClient.SqlInfoMessageEventHandler" />
+    <ForwardedType Include="System.Data.SqlClient.SqlNotificationEventArgs" />
+    <ForwardedType Include="System.Data.SqlClient.SqlNotificationInfo" />
+    <ForwardedType Include="System.Data.SqlClient.SqlNotificationSource" />
+    <ForwardedType Include="System.Data.SqlClient.SqlNotificationType" />
+    <ForwardedType Include="System.Data.SqlClient.SqlParameter"
+                   InnerClass="SqlParameterConverter" />
+    <ForwardedType Include="System.Data.SqlClient.SqlParameterCollection" />
+    <ForwardedType Include="System.Data.SqlClient.SqlRowUpdatedEventArgs" />
+    <ForwardedType Include="System.Data.SqlClient.SqlRowUpdatedEventHandler" />
+    <ForwardedType Include="System.Data.SqlClient.SqlRowUpdatingEventArgs" />
+    <ForwardedType Include="System.Data.SqlClient.SqlRowUpdatingEventHandler" />
+    <ForwardedType Include="System.Data.SqlClient.SqlRowsCopiedEventArgs" />
+    <ForwardedType Include="System.Data.SqlClient.SqlRowsCopiedEventHandler" />
+    <ForwardedType Include="System.Data.SqlClient.SqlTransaction" />
+    <ForwardedType Include="System.Data.SqlTypes.SqlFileStream" />
+  </ItemGroup>
+
+</Project>

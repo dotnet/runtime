@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppToolCurrent);$(NetFrameworkToolCurrent)</TargetFrameworks>
+    <NoWarn>$(NoWarn),CA1050,CA1850</NoWarn>
+    <!-- Emit into stable, version-independent folder names instead of the TFM so the package layout and its
+         consumers don't need updating whenever the .NET Core TFM bumps. -->
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <OutputPath Condition="'$(TargetFramework)' == '$(NetCoreAppToolCurrent)'">$(OutputPath)net\</OutputPath>
+    <OutputPath Condition="'$(NetFrameworkToolCurrent)' != '' and '$(TargetFramework)' == '$(NetFrameworkToolCurrent)'">$(OutputPath)netframework\</OutputPath>
+    <IntermediateOutputPath Condition="'$(TargetFramework)' == '$(NetCoreAppToolCurrent)'">$(IntermediateOutputPath)net\</IntermediateOutputPath>
+    <IntermediateOutputPath Condition="'$(NetFrameworkToolCurrent)' != '' and '$(TargetFramework)' == '$(NetFrameworkToolCurrent)'">$(IntermediateOutputPath)netframework\</IntermediateOutputPath>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <Compile Include="..\Common\IsExternalInit.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\NullableAttributes.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Common\Utils.cs" />
+  </ItemGroup>
+
+  <Target Name="GetFilesToPackage" Returns="@(FilesToPackage)">
+    <ItemGroup>
+      <!-- .NETCoreApp -->
+      <FilesToPackage Include="$(OutputPath)net\$(MSBuildProjectName)*" TargetPath="tasks\net" />
+
+      <!-- For .NETFramework we need all the dependent assemblies too, so copy from the publish folder -->
+      <FilesToPackage Condition="'$(NetFrameworkToolCurrent)' != ''" Include="$(OutputPath)netframework\*" TargetPath="tasks\netframework" />
+    </ItemGroup>
+  </Target>
+
+</Project>

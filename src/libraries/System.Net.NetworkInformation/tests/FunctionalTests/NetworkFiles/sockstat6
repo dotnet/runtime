@@ -1,0 +1,5 @@
+TCP6: inuse 6
+UDP6: inuse 3
+UDPLITE6: inuse 0
+RAW6: inuse 1
+FRAG6: inuse 0 memory 0

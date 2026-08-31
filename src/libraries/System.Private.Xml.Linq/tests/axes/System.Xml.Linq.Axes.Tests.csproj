@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="AxisOrderValidation.cs" />
+    <Compile Include="Utils.cs" />
+    <Compile Include="TestData.cs" />
+    <Compile Include="InvalidParamValidation.cs" />
+  </ItemGroup>
+</Project>

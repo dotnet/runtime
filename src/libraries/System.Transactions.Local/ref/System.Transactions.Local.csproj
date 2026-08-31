@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Features>$(Features);updated-memory-safety-rules</Features>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="System.Transactions.Local.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
+    <ProjectReference Include="..\..\System.Runtime.InteropServices\ref\System.Runtime.InteropServices.csproj" />
+  </ItemGroup>
+</Project>

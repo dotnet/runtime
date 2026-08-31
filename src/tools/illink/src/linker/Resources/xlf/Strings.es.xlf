@@ -1,0 +1,142 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
+  <file datatype="xml" source-language="en" target-language="es" original="../Strings.resx">
+    <body>
+      <trans-unit id="IL2060">
+        <source>Call to '{0}' can not be statically analyzed. It's not possible to guarantee the availability of requirements of the generic method.</source>
+        <target state="translated">La llamada a "{0}" no se puede analizar estáticamente. No es posible garantizar la disponibilidad de los requisitos del método genérico.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="IL2067">
+        <source>'{0}' argument does not satisfy {4} in call to '{1}'. The parameter '{2}' of method '{3}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</source>
+        <target state="translated">El argumento "{0}" no satisface {4} en la llamada a "{1}". El parámetro "{2}" del método "{3}" no tiene anotaciones coincidentes. El valor de origen debe declarar al menos los mismos requisitos que los declarados en la ubicación de destino a la que está asignado.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="IL2068">
+        <source>'{0}' method return value does not satisfy {3} requirements. The parameter '{1}' of method '{2}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</source>
+        <target state="translated">El valor devuelto del método "{0}" no cumple los requisitos de {3}. El parámetro "{1}" del método "{2}" no tiene anotaciones coincidentes. El valor de origen debe declarar al menos los mismos requisitos que los declarados en la ubicación de destino a la que está asignado.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="IL2069">
+        <source>value stored in field '{0}' does not satisfy {3} requirements. The parameter '{1}' of method '{2}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</source>
+        <target state="translated">El valor almacenado en el campo "{0}" no satisface los requisitos de {3}. El parámetro "{1}" del método "{2}" no tiene anotaciones coincidentes. El valor de origen debe declarar al menos los mismos requisitos que los declarados en la ubicación de destino a la que está asignado.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="IL2070">
+        <source>'this' argument does not satisfy {3} in call to '{0}'. The parameter '{1}' of method '{2}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</source>
+        <target state="translated">El argumento "this" no satisface {3} en la llamada a "{0}". El parámetro "{1}" del método "{2}" no tiene anotaciones coincidentes. El valor de origen debe declarar al menos los mismos requisitos que los declarados en la ubicación de destino a la que está asignado.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="IL2071">
+        <source>'{0}' generic argument does not satisfy {4} in '{1}'. The parameter '{2}' of method '{3}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</source>
+        <target state="translated">El argumento genérico "{0}" no satisface {4} en "{1}". El parámetro "{2}" del método "{3}" no tiene anotaciones coincidentes. El valor de origen debe declarar al menos los mismos requisitos que los declarados en la ubicación de destino a la que está asignado.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="IL2072">
+        <source>'{0}' argument does not satisfy {3} in call to '{1}'. The return value of method '{2}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</source>
+        <target state="translated">El argumento "{0}" no satisface {3} en la llamada a "{1}". El valor devuelto del método "{2}" no tiene anotaciones coincidentes. El valor de origen debe declarar al menos los mismos requisitos que los declarados en la ubicación de destino a la que está asignado.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="IL2073">
+        <source>'{0}' method return value does not satisfy {2} requirements. The return value of method '{1}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</source>
+        <target state="translated">El valor devuelto del método "{0}" no cumple los requisitos de {2}. El valor devuelto del método "{1}" no tiene anotaciones coincidentes. El valor de origen debe declarar al menos los mismos requisitos que los declarados en la ubicación de destino a la que está asignado.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="IL2074">
+        <source>value stored in field '{0}' does not satisfy {2} requirements. The return value of method '{1}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</source>
+        <target state="translated">El valor almacenado en el campo "{0}" no satisface los requisitos de {2}. El valor devuelto del método "{1}" no tiene anotaciones coincidentes. El valor de origen debe declarar al menos los mismos requisitos que los declarados en la ubicación de destino a la que está asignado.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="IL2075">
+        <source>'this' argument does not satisfy {2} in call to '{0}'. The return value of method '{1}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</source>
+        <target state="translated">El argumento "this" no satisface {2} en la llamada a "{0}". El valor devuelto del método "{1}" no tiene anotaciones coincidentes. El valor de origen debe declarar al menos los mismos requisitos que los declarados en la ubicación de destino a la que está asignado.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="IL2076">
+        <source>'{0}' generic argument does not satisfy {3} in '{1}'. The return value of method '{2}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</source>
+        <target state="translated">El argumento genérico "{0}" no satisface {3} en "{1}". El valor devuelto del método "{2}" no tiene anotaciones coincidentes. El valor de origen debe declarar al menos los mismos requisitos que los declarados en la ubicación de destino a la que está asignado.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="IL2077">
+        <source>'{0}' argument does not satisfy {3} in call to '{1}'. The field '{2}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</source>
+        <target state="translated">El argumento "{0}" no satisface {3} en la llamada a "{1}". El campo "{2}" no tiene anotaciones coincidentes. El valor de origen debe declarar al menos los mismos requisitos que los declarados en la ubicación de destino a la que está asignado.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="IL2078">
+        <source>'{0}' method return value does not satisfy {2} requirements. The field '{1}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</source>
+        <target state="translated">El valor devuelto del método "{0}" no cumple los requisitos de {2}. El campo "{1}" no tiene anotaciones coincidentes. El valor de origen debe declarar al menos los mismos requisitos que los declarados en la ubicación de destino a la que está asignado.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="IL2079">
+        <source>value stored in field '{0}' does not satisfy {2} requirements. The field '{1}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</source>
+        <target state="translated">El valor almacenado en el campo "{0}" no satisface los requisitos de {2}. El campo "{1}" no tiene anotaciones coincidentes. El valor de origen debe declarar al menos los mismos requisitos que los declarados en la ubicación de destino a la que está asignado.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="IL2080">
+        <source>'this' argument does not satisfy {2} in call to '{0}'. The field '{1}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</source>
+        <target state="translated">El argumento "this" no satisface {2} en la llamada a "{0}". El campo "{1}" no tiene anotaciones coincidentes. El valor de origen debe declarar al menos los mismos requisitos que los declarados en la ubicación de destino a la que está asignado.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="IL2081">
+        <source>'{0}' generic argument does not satisfy {3} in '{1}'. The field '{2}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</source>
+        <target state="translated">El argumento genérico "{0}" no satisface {3} en "{1}". El campo "{2}" no tiene anotaciones coincidentes. El valor de origen debe declarar al menos los mismos requisitos que los declarados en la ubicación de destino a la que está asignado.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="IL2082">
+        <source>'{0}' argument does not satisfy {3} in call to '{1}'. The implicit 'this' argument of method '{2}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</source>
+        <target state="translated">El argumento "{0}" no satisface {3} en la llamada a "{1}". El argumento "this" implícito del método "{2}" no tiene anotaciones coincidentes. El valor de origen debe declarar al menos los mismos requisitos que los declarados en la ubicación de destino a la que está asignado.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="IL2083">
+        <source>'{0}' method return value does not satisfy {2} requirements. The implicit 'this' argument of method '{1}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</source>
+        <target state="translated">El valor devuelto del método "{0}" no cumple los requisitos de {2}. El argumento "this" implícito del método "{1}" no tiene anotaciones coincidentes. El valor de origen debe declarar al menos los mismos requisitos que los declarados en la ubicación de destino a la que está asignado.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="IL2084">
+        <source>value stored in field '{0}' does not satisfy {2} requirements. The implicit 'this' argument of method '{1}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</source>
+        <target state="translated">El valor almacenado en el campo "{0}" no satisface los requisitos de {2}. El argumento "this" implícito del método "{1}" no tiene anotaciones coincidentes. El valor de origen debe declarar al menos los mismos requisitos que los declarados en la ubicación de destino a la que está asignado.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="IL2085">
+        <source>'this' argument does not satisfy {2} in call to '{0}'. The implicit 'this' argument of method '{1}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</source>
+        <target state="translated">El argumento "this" no satisface {2} en la llamada a "{0}". El argumento "this" implícito del método "{1}" no tiene anotaciones coincidentes. El valor de origen debe declarar al menos los mismos requisitos que los declarados en la ubicación de destino a la que está asignado.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="IL2086">
+        <source>'{0}' generic argument does not satisfy {3} in '{1}'. The implicit 'this' argument of method '{2}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</source>
+        <target state="translated">El argumento genérico "{0}" no satisface {3} en "{1}". El argumento "this" implícito del método "{2}" no tiene anotaciones coincidentes. El valor de origen debe declarar al menos los mismos requisitos que los declarados en la ubicación de destino a la que está asignado.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="IL2087">
+        <source>'{0}' argument does not satisfy {4} in call to '{1}'. The generic parameter '{2}' of '{3}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</source>
+        <target state="translated">El argumento "{0}" no satisface {4} en la llamada a "{1}". El parámetro genérico "{2}" de "{3}" no tiene anotaciones coincidentes. El valor de origen debe declarar al menos los mismos requisitos que los declarados en la ubicación de destino a la que está asignado.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="IL2088">
+        <source>'{0}' method return value does not satisfy {3} requirements. The generic parameter '{1}' of '{2}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</source>
+        <target state="translated">El valor devuelto del método "{0}" no cumple los requisitos de {3}. El parámetro genérico "{1}" de "{2}" no tiene anotaciones coincidentes. El valor de origen debe declarar al menos los mismos requisitos que los declarados en la ubicación de destino a la que está asignado.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="IL2089">
+        <source>value stored in field '{0}' does not satisfy {3} requirements. The generic parameter '{1}' of '{2}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</source>
+        <target state="translated">El valor almacenado en el campo "{0}" no satisface los requisitos de {3}. El parámetro genérico "{1}" de "{2}" no tiene anotaciones coincidentes. El valor de origen debe declarar al menos los mismos requisitos que los declarados en la ubicación de destino a la que está asignado.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="IL2090">
+        <source>'this' argument does not satisfy {3} in call to '{0}'. The generic parameter '{1}' of '{2}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</source>
+        <target state="translated">El argumento "this" no satisface {3} en la llamada a "{0}". El parámetro genérico "{1}" de "{2}" no tiene anotaciones coincidentes. El valor de origen debe declarar al menos los mismos requisitos que los declarados en la ubicación de destino a la que está asignado.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="IL2091">
+        <source>'{0}' generic argument does not satisfy {4} in '{1}'. The generic parameter '{2}' of '{3}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</source>
+        <target state="translated">El argumento genérico "{0}" no satisface {4} en "{1}". El parámetro genérico "{2}" de "{3}" no tiene anotaciones coincidentes. El valor de origen debe declarar al menos los mismos requisitos que los declarados en la ubicación de destino a la que está asignado.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="IL2103">
+        <source>Value passed to the '{0}' parameter of method '{1}' cannot be statically determined as a property accessor.</source>
+        <target state="translated">El valor pasado al parámetro "{0}" del método "{1}" no se puede determinar estáticamente como descriptor de acceso de propiedades.</target>
+        <note />
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

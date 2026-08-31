@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Needed for CLRTestTargetUnsupported, UnloadabilityIncompatible, CMakeProjectReference -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <!-- TODO: Re-enable when CoreCLR browser supports ALC unmanaged-library resolution.
+         Tracked by https://github.com/dotnet/runtime/issues/131321. -->
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">true</CLRTestTargetUnsupported>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- The test leaves AssemblyLoadContext.Default.ResolvingUnmanagedDll event registered to a method in the test at exit -->
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="*.cs" />
+    <Compile Include="../NativeLibraryToLoad/NativeLibraryToLoad.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <CMakeProjectReference Include="../NativeLibraryToLoad/CMakeLists.txt" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+    <ProjectReference Include="TestAsm/TestAsm.csproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <OutputItemType>Content</OutputItemType>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </ProjectReference>
+  </ItemGroup>
+</Project>

@@ -1,0 +1,43 @@
+digraph "SimpleDependencyGraph" {
+
+ordering=out;
+rankdir=LR;
+
+node [shape=box]; 
+Code_Program_Main[label="Program::Main"];
+Code_Bar__ctor[label="Bar::.ctor"];
+Code_Bar_VirtualMethod[label="Bar::VirtualMethod"];
+Code_Bar_UnusedVirtualMethod[label="Bar::UnusedVirtualMethod"];
+Code_Foo_UnusedVirtualMethod[label="Foo::UnusedVirtualMethod"];
+Code_Foo__ctor[label="Foo::.ctor"];
+Code_Object__ctor[label="Object::.ctor"];
+
+node [shape=ellipse];
+Type_Bar[label="Bar"];
+Type_Foo[label="Foo"];
+Type_Object[label="Object"];
+
+node [shape=ellipse, style=dotted]
+Type_Baz[label="Baz"]
+
+node [shape=box, style=dashed];
+Virtual_Foo_VirtualMethod[label="Foo::VirtualMethod"];
+
+Code_Program_Main -> Code_Bar__ctor;
+Code_Program_Main -> Type_Bar;
+Code_Program_Main -> Virtual_Foo_VirtualMethod;
+Code_Program_Main -> Type_Baz;
+Type_Baz -> Type_Foo;
+
+Type_Bar -> Type_Foo;
+Type_Foo -> Type_Object;
+Type_Bar -> Code_Bar_VirtualMethod[label="Foo::VirtualMethod is used", style=dashed];
+Type_Bar -> Code_Bar_UnusedVirtualMethod[label="Foo::UnusedVirtualMethod is used", style=dashed];
+Type_Foo -> Code_Foo_UnusedVirtualMethod[label="Foo::UnusedVirtualMethod is used", style=dashed];
+Code_Bar__ctor -> Code_Foo__ctor;
+Code_Foo__ctor -> Code_Object__ctor;
+
+overlap=false;
+fontsize=12;
+
+}

@@ -1,0 +1,57 @@
+﻿<Project>
+  <PropertyGroup>
+    <AssemblyName>ilc</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>$(BundledNETCoreAppTargetFramework)</TargetFramework>
+    <NoWarn>8002,NU1701</NoWarn>
+    <Platforms>x64;x86</Platforms>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AppendTargetFrameworkToOutputPath Condition="'$(BuildingInsideVisualStudio)' == 'true'">true</AppendTargetFrameworkToOutputPath>
+    <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+    <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
+    <Configurations>Debug;Release;Checked</Configurations>
+  </PropertyGroup>
+
+  <Import Project="../AotCompilerCommon.props" />
+
+  <PropertyGroup>
+    <!-- CoreDisTools are used in debugging visualizers. -->
+    <IncludeCoreDisTools Condition="'$(Configuration)' != 'Release' and '$(CrossHostArch)' == ''">true</IncludeCoreDisTools>
+  </PropertyGroup>
+
+  <Import Project="$(RepositoryEngineeringDir)coredistools.targets" Condition="'$(DotNetBuildSourceOnly)' != 'true' and '$(IncludeCoreDisTools)' == 'true'" />
+
+  <ItemGroup>
+    <Content Include="$(CoreDisToolsLibrary)"
+      CopyToOutputDirectory="PreserveNewest"
+      ExcludeFromSingleFile="$(PublishSingleFile)"
+      Condition="Exists('$(CoreDisToolsLibrary)') and '$(IncludeCoreDisTools)' == 'true'"
+      />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ILCompiler.DependencyAnalysisFramework\ILCompiler.DependencyAnalysisFramework.csproj" />
+    <ProjectReference Include="..\ILCompiler.MetadataTransform\ILCompiler.MetadataTransform.csproj" />
+    <ProjectReference Include="..\ILCompiler.RyuJit\ILCompiler.RyuJit.csproj" />
+    <ProjectReference Include="..\ILCompiler.TypeSystem\ILCompiler.TypeSystem.csproj" />
+    <ProjectReference Include="..\ILCompiler.Compiler\ILCompiler.Compiler.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\Common\CommandLineHelpers.cs" Link="CommandLineHelpers.cs" />
+    <Compile Include="..\..\Common\InstructionSetHelpers.cs" Link="InstructionSetHelpers.cs" />
+    <Compile Include="..\..\Common\TypeSystem\IL\HelperExtensions.cs" Link="HelperExtensions.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.CommandLine" Version="$(SystemCommandLineVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="repro\*" />
+    <Compile Remove="reproZero\*" />
+  </ItemGroup>
+</Project>

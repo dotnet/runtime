@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)-windows</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="DirectoryObjectSecurityTests.cs" />
+    <Compile Include="FileSystemAccessRuleTests.cs" />
+    <Compile Include="FileSystemAclExtensionsTests.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\TempFile.cs"
+             Link="Common\System\IO\TempFile.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\TempDirectory.cs"
+             Link="Common\System\IO\TempDirectory.cs" />
+    <Compile Include="FileSystemAuditRuleTests.cs" />
+    <Compile Include="FileSystemSecurityTests.cs" />
+    <Compile Include="Helpers.cs" />
+    <Compile Include="TempAclDirectory.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.IO.FileSystem.AccessControl.csproj" SkipUseReferenceAssembly="true" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.DirectoryServices\src\System.DirectoryServices.csproj" />
+  </ItemGroup>
+</Project>

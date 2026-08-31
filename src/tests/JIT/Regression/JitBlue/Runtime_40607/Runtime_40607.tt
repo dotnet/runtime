@@ -1,0 +1,204 @@
+<#@ template debug="false" hostspecific="true" language="C#" #>
+<#@ output extension=".il" #>
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+.assembly extern System.Console
+{
+}
+.assembly extern System.Runtime
+{
+}
+.assembly Runtime_40607
+{
+}
+.module Runtime_40607.dll
+
+.class private auto ansi beforefieldinit Runtime_40607.Program extends [System.Runtime]System.Object
+{
+<#
+    foreach ((string varType, int sizeInBytes) in new [] { ("bool", sizeof(bool)), ("int8", sizeof(sbyte)), ("uint8", sizeof(byte)), ("int16", sizeof(short)), ("uint16", sizeof(ushort)), ("int32", sizeof(int)), ("uint32", sizeof(uint)) })
+    {
+#>
+  .method private hidebysig static int32 DependsOnUnInitValue(<#= varType #> valueToWrite) cil managed noinlining
+  {
+    .maxstack  8
+    .locals (int32 V_0, <#= varType #> V_1)
+
+    IL_0000:  ldc.i4.1
+    IL_0001:  stloc.0
+    IL_0002:  br.s       IL_000b
+
+    IL_0004:  ldloc.1
+    IL_0005:  brfalse.s  IL_0011
+
+    IL_0007:  ldc.i4.0
+    IL_0008:  stloc.0
+    IL_0009:  br.s       IL_0011
+
+    IL_000b:  ldloca.s   V_1
+    IL_000d:  ldarg.0
+    IL_000e:  stind.i<#= sizeInBytes #>
+    IL_000f:  br.s       IL_0004
+
+    IL_0011:  ldloc.0
+    IL_0012:  ret
+  }
+
+<#
+    }
+
+    foreach ((string varType, int sizeInBytes) in new [] { ("int8", sizeof(sbyte)), ("uint8", sizeof(byte)), ("int16", sizeof(short)), ("uint16", sizeof(ushort)) })
+    {
+#>
+  .method private hidebysig static int32 SignExtendsWrittenValue(<#= varType #> valueToWrite) cil managed noinlining
+  {
+    .maxstack  8
+    .locals (<#= varType #> V_0)
+
+    IL_0000:  br.s       IL_0007
+
+    IL_0002:  ldloca.s   V_0
+    IL_0004:  ldind.i<#= sizeInBytes #>
+    IL_0005:  br.s       IL_000d
+
+    IL_0007:  ldloca.s   V_0
+    IL_0009:  ldarg.0
+    IL_000a:  stind.i<#= sizeInBytes #>
+    IL_000b:  br.s       IL_0002
+
+    IL_000d:  ret
+  }
+
+  .method private hidebysig static int32 ZeroExtendsWrittenValue(<#= varType #> valueToWrite) cil managed noinlining
+  {
+    .maxstack  8
+    .locals (<#= varType #> V_0)
+
+    IL_0000:  br.s       IL_0007
+
+    IL_0002:  ldloca.s   V_0
+    IL_0004:  ldind.u<#= sizeInBytes #>
+    IL_0005:  br.s       IL_000d
+
+    IL_0007:  ldloca.s   V_0
+    IL_0009:  ldarg.0
+    IL_000a:  stind.i<#= sizeInBytes #>
+    IL_000b:  br.s       IL_0002
+
+    IL_000d:  ret
+  }
+
+<#
+    }
+#>
+
+  .method private hidebysig static int32 PoisonStackWith(int32 valueToWrite) cil managed noinlining
+  {
+    .maxstack  8
+    .locals (int32 V_0, int32 V_1)
+
+    IL_0000:  ldc.i4.1
+    IL_0001:  stloc.0
+    IL_0002:  br.s       IL_000b
+
+    IL_0004:  ldloc.1
+    IL_0005:  brfalse.s  IL_0014
+
+    IL_0007:  ldc.i4.0
+    IL_0008:  stloc.0
+    IL_0009:  br.s       IL_0014
+
+    IL_000b:  ldloca.s   V_1
+    IL_000d:  conv.u
+    IL_000e:  ldc.i4.0
+    IL_000f:  add
+    IL_0010:  ldarg.0
+    IL_0011:  stind.i4
+    IL_0012:  br.s       IL_0004
+
+    IL_0014:  ldloc.0
+    IL_0015:  ret
+  }
+
+  .method private hidebysig static int32 Main(string[] args) cil managed
+  {
+    .entrypoint
+    .maxstack  2
+    .locals init (int32 V_0)
+
+    ldc.i4.s   100
+    stloc.0
+<#
+    foreach (string varType in new [] { "bool", "int8", "uint8", "int16", "uint16", "int32", "uint32" })
+    {
+        string testName = $"DependsOnUnInitValue_{varType}";
+#>
+// BEGIN_<#= testName #>
+    ldc.i4     0xdeadbeef
+    call       int32 Runtime_40607.Program::PoisonStackWith(int32)
+    pop
+
+    ldc.i4.0
+    call       int32 Runtime_40607.Program::DependsOnUnInitValue(<#= varType #>)
+    brtrue.s   END_<#= testName #>
+
+    ldstr      "DependsOnUnInitValue(<#= varType #>) has failed"
+    call       void [System.Console]System.Console::WriteLine(string)
+
+    ldc.i4.0
+    stloc.0
+END_<#= testName #>:
+
+<#
+    }
+
+    foreach ((string varType, int sizeInBytes, int valueToWrite) in new [] {
+        ("int8", sizeof(sbyte), 0x7f),
+        ("int8", sizeof(sbyte), 0x80),
+        ("uint8", sizeof(byte), 0x7f),
+        ("uint8", sizeof(byte), 0x80),
+        ("int16", sizeof(short), 0x7fff),
+        ("int16", sizeof(short), 0x8000),
+        ("uint16", sizeof(ushort), 0x7fff),
+        ("uint16", sizeof(ushort), 0x8000) })
+    foreach ((string testName, int expectedResult) in new[] {
+        ("SignExtendsWrittenValue", SignExtend(valueToWrite, sizeInBytes)),
+        ("ZeroExtendsWrittenValue", valueToWrite) })
+    {
+        string lblName = $"{testName}_{varType}_0x{valueToWrite:x}";
+#>
+// BEGIN_<#= lblName #>:
+    ldc.i4     0x<#= valueToWrite.ToString("x") #>
+    call       int32 Runtime_40607.Program::<#= testName #>(<#= varType #>)
+    ldc.i4     0x<#= expectedResult.ToString("x") #>
+    beq.s      END_<#= lblName #>
+
+    ldstr      "<#= testName #>(<#= varType #>) has failed"
+    call       void [System.Console]System.Console::WriteLine(string)
+
+    ldc.i4.0
+    stloc.0
+END_<#= lblName #>:
+
+<#
+    }
+#>
+    ldloc.0
+    ret
+  }
+}
+
+<#+
+    int SignExtend(int value, int sizeInBytes)
+    {
+        if ((value & (1 << (8 * sizeInBytes - 1))) != 0)
+        {
+            for (int i = 8 * sizeInBytes; i < 8 * sizeof(int); i++)
+            {
+                value |= (1 << i);
+            }
+        }
+        return value;
+    }
+#>

@@ -1,0 +1,38 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+
+if (CLR_CMAKE_HOST_APPLE)
+    # Prevent exporting symbols from dotnet. This is necessary to avoid a problem with
+    # local typeinfo for standard C++ EH types like std::bad_alloc, std::out_of_range etc.
+    # being exposed for binding for external shared libraries and causing mismatch in
+    # catch type matching.
+    add_link_options(LINKER:-no_exported_symbols)
+endif()
+
+if(CLR_CMAKE_TARGET_WIN32)
+    list(APPEND SOURCES
+        dotnet.manifest
+        dotnet.rc)
+endif()
+
+list(APPEND SOURCES
+    hostfxr_resolver.cpp
+    dotnet.cpp
+)
+
+add_executable(dotnet ${SOURCES})
+
+target_link_libraries(dotnet PRIVATE hostmisc fxr_resolver)
+
+add_sanitizer_runtime_support(dotnet)
+
+if(NOT CLR_CMAKE_TARGET_WIN32)
+    disable_pax_mprotect(dotnet)
+endif()
+
+install_with_stripped_symbols(dotnet TARGETS corehost)
+add_version_info_to_target(dotnet)
+
+if (CLR_CMAKE_HOST_APPLE)
+    adhoc_sign_with_entitlements(dotnet "${CLR_ENG_NATIVE_DIR}/entitlements.plist")
+endif()

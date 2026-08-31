@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="AppleTestRunner.cs" />
+    <PackageReference Include="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="$(MicrosoftDotNetXHarnessTestRunnersXunitVersion)" />
+  </ItemGroup>
+</Project>
