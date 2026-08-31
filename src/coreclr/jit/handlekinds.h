@@ -16,7 +16,6 @@ HANDLE_KIND(GTF_ICON_OBJ_HDL         , "object"                     , 0)        
 HANDLE_KIND(GTF_ICON_CONST_PTR       , "const ptr"                  , HKF_INVARIANT) // pointer to immutable data, (e.g. IAT_PPVALUE)
 HANDLE_KIND(GTF_ICON_GLOBAL_PTR      , "global ptr"                 , 0)             // pointer to mutable data (e.g. from the VM state)
 HANDLE_KIND(GTF_ICON_VARG_HDL        , "vararg"                     , HKF_INVARIANT) // var arg cookie handle
-HANDLE_KIND(GTF_ICON_PINVKI_HDL      , "pinvoke"                    , 0)             // pinvoke calli handle
 HANDLE_KIND(GTF_ICON_TOKEN_HDL       , "token"                      , HKF_INVARIANT) // token handle (other than class, method or field)
 HANDLE_KIND(GTF_ICON_TLS_HDL         , "tls"                        , HKF_INVARIANT) // TLS ref with offset
 HANDLE_KIND(GTF_ICON_FTN_ADDR        , "ftn"                        , 0)             // function address

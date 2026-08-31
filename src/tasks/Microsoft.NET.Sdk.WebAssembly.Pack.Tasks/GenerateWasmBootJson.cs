@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -61,6 +62,8 @@ public class GenerateWasmBootJson : Task
 
     public string? RuntimeConfigJsonPath { get; set; }
 
+    public string? RuntimeConfigDevJsonPath { get; set; }
+
     public string Jiterpreter { get; set; }
 
     public string RuntimeOptions { get; set; }
@@ -101,8 +104,6 @@ public class GenerateWasmBootJson : Task
 
     public bool AsyncFlushOnExit { get; set; }
 
-    public bool ForwardConsole { get; set; }
-
     public override bool Execute()
     {
         var entryAssemblyName = AssemblyName.GetAssemblyName(AssemblyPath).Name;
@@ -124,6 +125,12 @@ public class GenerateWasmBootJson : Task
         bool isMonoRuntime = string.IsNullOrEmpty(UseMonoRuntime) || string.Equals(UseMonoRuntime, "true", StringComparison.OrdinalIgnoreCase);
         var helper = new BootJsonBuilderHelper(Log, DebugLevel, IsMultiThreaded, IsPublish, ParsedTargetFrameworkVersion, isMonoRuntime);
 
+        // ReadyToRun webcil-in-wasm images carry payload/table sizes that the loader needs before
+        // instantiation. Record them (keyed by fingerprinted route) so they can be emitted into the
+        // boot config, letting the loader stream-instantiate instead of buffering and parsing. The
+        // AttachWebcilSizes task attaches these as PayloadSize/TableSize metadata on the resources.
+        var webcilSizes = new Dictionary<string, (int tableSize, int payloadSize)>();
+
         var result = new BootJsonData
         {
             resources = new ResourcesData(),
@@ -140,7 +147,6 @@ public class GenerateWasmBootJson : Task
             if (AppendElementOnExit) result.appendElementOnExit = true;
             if (LogExitCode) result.logExitCode = true;
             if (AsyncFlushOnExit) result.asyncFlushOnExit = true;
-            if (ForwardConsole) result.forwardConsole = true;
         }
 
         if (IsTargeting80OrLater())
@@ -231,6 +237,12 @@ public class GenerateWasmBootJson : Task
                 var resourceName = Path.GetFileName(resource.GetMetadata("OriginalItemSpec"));
                 var resourceEndpoint = endpointByAsset[resource.ItemSpec].ItemSpec;
                 var resourceRoute = Path.GetFileName(resourceEndpoint);
+
+                // Store key for the webcil payload/table sizes: satellites share a file name across
+                // cultures, so qualify by culture to avoid collisions. It matches how
+                // BootJsonBuilderHelper resolves webcilSizes per (culture subfolder, route).
+                string webcilCulture = string.Equals("Culture", assetTraitName, StringComparison.OrdinalIgnoreCase) ? assetTraitValue : null;
+                string r2rSizeStoreKey = webcilCulture != null ? webcilCulture + "/" + resourceRoute : resourceRoute;
 
                 if (TryGetLazyLoadedAssembly(lazyLoadAssembliesWithoutExtension, resourceName, out var lazyLoad))
                 {
@@ -348,7 +360,7 @@ public class GenerateWasmBootJson : Task
                             resourceList = resourceData.modulesAfterConfigLoaded ??= new();
                         }
 
-                        string newTargetPath = "../" + targetPath; // This needs condition once WasmRuntimeAssetsLocation is supported in Wasm SDK
+                        string newTargetPath = "../" + targetPath;
                         AddResourceToList(resource, resourceList, newTargetPath);
                     }
 
@@ -390,6 +402,29 @@ public class GenerateWasmBootJson : Task
                 if (resourceList != null)
                 {
                     AddResourceToList(resource, resourceList, resourceRoute);
+
+                    // Webcil-in-wasm assemblies (startup, lazy, satellite) carry payload/table sizes
+                    // so the runtime loader can instantiate without parsing the wasm. payloadSize is
+                    // emitted for every webcil; tableSize only for R2R. Identify them by the produced
+                    // ".wasm" extension, excluding native wasm (dotnet.native.wasm) which is handled
+                    // separately and is not a webcil module. The AttachWebcilSizes task has already
+                    // read the sizes off disk and attached them as PayloadSize/TableSize metadata.
+                    bool isWebcilInWasmAssembly = IsTargeting110OrLater()
+                        && string.Equals(fileExtension, ".wasm", StringComparison.OrdinalIgnoreCase)
+                        && !(string.Equals(assetTraitName, "WasmResource", StringComparison.OrdinalIgnoreCase)
+                             && string.Equals(assetTraitValue, "native", StringComparison.OrdinalIgnoreCase));
+
+                    if (isWebcilInWasmAssembly)
+                    {
+                        if (!int.TryParse(resource.GetMetadata("PayloadSize"), NumberStyles.Integer, CultureInfo.InvariantCulture, out int ps) || ps <= 0)
+                        {
+                            Log.LogError($"Webcil asset '{resourceName}' is missing the PayloadSize metadata produced by AttachWebcilSizes; the runtime loader requires payloadSize for every webcil-in-wasm assembly.");
+                            continue;
+                        }
+
+                        int.TryParse(resource.GetMetadata("TableSize"), NumberStyles.Integer, CultureInfo.InvariantCulture, out int ts);
+                        webcilSizes[r2rSizeStoreKey] = (ts, ps);
+                    }
                 }
 
                 if (!string.IsNullOrEmpty(behavior))
@@ -434,7 +469,7 @@ public class GenerateWasmBootJson : Task
                 {
                     result.appsettings ??= new();
 
-                    configUrl = "../" + configUrl; // This needs condition once WasmRuntimeAssetsLocation is supported in Wasm SDK
+                    configUrl = "../" + configUrl;
                     result.appsettings.Add(configUrl);
                 }
                 else
@@ -466,12 +501,7 @@ public class GenerateWasmBootJson : Task
             }
         }
 
-        if (RuntimeConfigJsonPath != null && File.Exists(RuntimeConfigJsonPath))
-        {
-            using var fs = File.OpenRead(RuntimeConfigJsonPath);
-            var runtimeConfig = JsonSerializer.Deserialize<RuntimeConfigData>(fs, BootJsonBuilderHelper.JsonOptions);
-            result.runtimeConfig = runtimeConfig;
-        }
+        result.runtimeConfig = ReadRuntimeConfigFiles(RuntimeConfigJsonPath, IsPublish ? null : RuntimeConfigDevJsonPath);
 
         Profilers ??= Array.Empty<string>();
         var browserProfiler = Profilers.FirstOrDefault(p => p.StartsWith("browser:"));
@@ -485,7 +515,7 @@ public class GenerateWasmBootJson : Task
 
         string? imports = null;
         if (IsTargeting100OrLater())
-            imports = helper.TransformResourcesToAssets(result, BundlerFriendly);
+            imports = helper.TransformResourcesToAssets(result, BundlerFriendly, webcilSizes);
 
         helper.WriteConfigToFile(result, OutputPath, mergeWith: MergeWith, imports: imports);
 
@@ -572,4 +602,36 @@ public class GenerateWasmBootJson : Task
     private bool IsTargeting90OrLater() => ParsedTargetFrameworkVersion >= version90;
     private bool IsTargeting100OrLater() => ParsedTargetFrameworkVersion >= version100;
     private bool IsTargeting110OrLater() => ParsedTargetFrameworkVersion >= version110;
+
+    /// <summary>
+    /// Reads the main runtimeconfig.json and merges <c>configProperties</c> from the companion
+    /// runtimeconfig.dev.json (when it exists) into the result. Dev config values take precedence.
+    /// </summary>
+    internal static RuntimeConfigData? ReadRuntimeConfigFiles(string? mainConfigPath, string? devConfigPath)
+    {
+        if (!File.Exists(mainConfigPath))
+            return null;
+
+        using var fs = File.OpenRead(mainConfigPath);
+        var runtimeConfig = JsonSerializer.Deserialize<RuntimeConfigData>(fs, BootJsonBuilderHelper.JsonOptions);
+
+        if (File.Exists(devConfigPath))
+        {
+            // Merge overrides from runtimeconfig.dev.json (e.g. Hot Reload switches set by the SDK in debug builds).
+            using var devFs = File.OpenRead(devConfigPath);
+            var devRuntimeConfig = JsonSerializer.Deserialize<RuntimeConfigData>(devFs, BootJsonBuilderHelper.JsonOptions);
+            if (devRuntimeConfig?.runtimeOptions?.configProperties is { } devProps && devProps.Count > 0)
+            {
+                runtimeConfig ??= new RuntimeConfigData();
+                runtimeConfig.runtimeOptions ??= new RuntimeOptionsData();
+                runtimeConfig.runtimeOptions.configProperties ??= new Dictionary<string, object>();
+                foreach (var kvp in devProps)
+                {
+                    runtimeConfig.runtimeOptions.configProperties[kvp.Key] = kvp.Value;
+                }
+            }
+        }
+
+        return runtimeConfig;
+    }
 }

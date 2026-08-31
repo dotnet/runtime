@@ -364,6 +364,11 @@ namespace ILCompiler.DependencyAnalysis
                 return new DelegateTargetVirtualMethodNode(method, reflected: false);
             });
 
+            _reflectableVirtualMethodImpls = new NodeCache<(MethodDesc Declaration, MethodDesc Implementation), ReflectableVirtualMethodImplNode>(methods =>
+            {
+                return new ReflectableVirtualMethodImplNode(methods.Declaration, methods.Implementation);
+            });
+
             _reflectedDelegates = new NodeCache<TypeDesc, ReflectedDelegateNode>(type =>
             {
                 return new ReflectedDelegateNode(type);
@@ -1235,6 +1240,12 @@ namespace ILCompiler.DependencyAnalysis
             return _delegateTargetMethods.GetOrAdd(method);
         }
 
+        private NodeCache<(MethodDesc Declaration, MethodDesc Implementation), ReflectableVirtualMethodImplNode> _reflectableVirtualMethodImpls;
+        public ReflectableVirtualMethodImplNode ReflectableVirtualMethodImpl(MethodDesc declaration, MethodDesc implementation)
+        {
+            return _reflectableVirtualMethodImpls.GetOrAdd((declaration, implementation));
+        }
+
         private ReflectedDelegateNode _unknownReflectedDelegate = new ReflectedDelegateNode(null);
         private NodeCache<TypeDesc, ReflectedDelegateNode> _reflectedDelegates;
         public ReflectedDelegateNode ReflectedDelegate(TypeDesc type)
@@ -1700,7 +1711,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             public Vertex EncodeReferenceToMethod(NativeWriter writer, MethodDesc method)
                 => writer.GetUnsignedConstant(table.GetIndex(factory.MethodEntrypoint(method)));
-            public Vertex EncodeReferenceToType(NativeWriter writer, TypeDesc type)
+            public Vertex EncodeReferenceToType(NativeWriter writer, TypeDesc type, ModuleDesc module)
                 => writer.GetUnsignedConstant(table.GetIndex(factory.NecessaryTypeSymbol(type)));
         }
 

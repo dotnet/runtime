@@ -63,46 +63,7 @@ namespace System.IO.Compression
         public static void ExtractToFile(this ZipArchiveEntry source, string destinationFileName, bool overwrite)
         {
             ExtractToFileInitialize(source, destinationFileName, overwrite, useAsync: false, out FileStreamOptions fileStreamOptions);
-
-            // When overwriting, extract to a temporary file first to avoid corrupting the destination file
-            // if an exception occurs during extraction (e.g., password-protected archive, corrupted data).
-            string extractPath = destinationFileName;
-            string? tempPath = null;
-
-            if (overwrite && File.Exists(destinationFileName))
-            {
-                // Use GetTempFileName for a unique temp file in the system temp directory.
-                // This avoids conflicts and ensures cleanup by the OS if the process crashes.
-                tempPath = Path.GetTempFileName();
-                extractPath = tempPath;
-            }
-
-            try
-            {
-                using (FileStream fs = new FileStream(extractPath, fileStreamOptions))
-                {
-                    using (Stream es = source.Open())
-                        es.CopyTo(fs);
-                }
-
-                // Move the temporary file to the destination only after successful extraction
-                if (tempPath is not null)
-                {
-                    File.Move(tempPath, destinationFileName, overwrite: true);
-                }
-
-                ExtractToFileFinalize(source, destinationFileName);
-            }
-            catch
-            {
-                // Clean up the temporary file if extraction failed
-                if (tempPath is not null)
-                {
-                    // Ignore exceptions during cleanup; the original exception is more important
-                    try { File.Delete(tempPath); } catch { }
-                }
-                throw;
-            }
+            ExtractToFileCore(source, destinationFileName, overwrite, fileStreamOptions, password: default, usePassword: false);
         }
 
         /// <summary>
@@ -122,14 +83,21 @@ namespace System.IO.Compression
         private static void ExtractToFile(ZipArchiveEntry source, string destinationFileName, bool overwrite, ReadOnlySpan<char> password)
         {
             ExtractToFileInitialize(source, destinationFileName, overwrite, useAsync: false, out FileStreamOptions fileStreamOptions);
+            ExtractToFileCore(source, destinationFileName, overwrite, fileStreamOptions, password, usePassword: true);
+        }
 
-            // When overwriting, extract to a temporary file first to avoid corrupting the destination file
-            // if an exception occurs during extraction (e.g., password-protected archive, corrupted data).
+        // Shared implementation for extracting an entry's contents to a file, with or without a password.
+        // When overwriting, extraction happens to a temporary file first, so that the destination file isn't
+        // corrupted if an exception occurs during extraction (e.g., password-protected archive, corrupted data).
+        private static void ExtractToFileCore(ZipArchiveEntry source, string destinationFileName, bool overwrite, FileStreamOptions fileStreamOptions, ReadOnlySpan<char> password, bool usePassword)
+        {
             string extractPath = destinationFileName;
             string? tempPath = null;
 
             if (overwrite && File.Exists(destinationFileName))
             {
+                // Use GetTempFileName for a unique temp file in the system temp directory.
+                // This avoids conflicts; we attempt to delete the temp file if extraction fails.
                 tempPath = Path.GetTempFileName();
                 extractPath = tempPath;
             }
@@ -138,7 +106,7 @@ namespace System.IO.Compression
             {
                 using (FileStream fs = new FileStream(extractPath, fileStreamOptions))
                 {
-                    using (Stream es = source.Open(password))
+                    using (Stream es = usePassword ? source.Open(password) : source.Open(FileAccess.Read))
                         es.CopyTo(fs);
                 }
 
@@ -155,6 +123,7 @@ namespace System.IO.Compression
                 // Clean up the temporary file if extraction failed
                 if (tempPath is not null)
                 {
+                    // Ignore exceptions during cleanup; the original exception is more important
                     try { File.Delete(tempPath); } catch { }
                 }
                 throw;
@@ -219,16 +188,21 @@ namespace System.IO.Compression
 
             // Note that this will give us a good DirectoryInfo even if destinationDirectoryName exists:
             DirectoryInfo di = Directory.CreateDirectory(destinationDirectoryName);
-            string destinationDirectoryFullPath = di.FullName;
-            if (!destinationDirectoryFullPath.EndsWith(Path.DirectorySeparatorChar))
-            {
-                char sep = Path.DirectorySeparatorChar;
-                destinationDirectoryFullPath = string.Concat(destinationDirectoryFullPath, new ReadOnlySpan<char>(in sep));
-            }
+            string fullDestination = Path.GetFullPath(di.FullName);
 
-            fileDestinationPath = Path.GetFullPath(Path.Combine(destinationDirectoryFullPath, ArchivingUtils.SanitizeEntryFilePath(source.FullName)));
+            string sanitizedEntryPath = ArchivingUtils.SanitizeEntryFilePath(source.FullName);
+            fileDestinationPath = Path.GetFullPath(Path.Combine(fullDestination, sanitizedEntryPath));
 
-            if (!fileDestinationPath.StartsWith(destinationDirectoryFullPath, PathInternal.StringComparison))
+            // Build a destination prefix that always ends in a separator, so that the comparison below
+            // doesn't produce false positives for roots (e.g. "C:\" or "\\server\share\") that already end
+            // in a separator, and doesn't allow a sibling directory with a matching prefix (e.g. "Dest" vs
+            // "Destinations") to be treated as being inside the destination.
+            string destinationPrefix = fullDestination.EndsWith(Path.DirectorySeparatorChar)
+                ? fullDestination
+                : fullDestination + Path.DirectorySeparatorChar;
+
+            // Ensure the path stays within the destination directory boundary.
+            if (!fileDestinationPath.StartsWith(destinationPrefix, StringComparison.Ordinal))
             {
                 throw new IOException(SR.IO_ExtractingResultsInOutside);
             }

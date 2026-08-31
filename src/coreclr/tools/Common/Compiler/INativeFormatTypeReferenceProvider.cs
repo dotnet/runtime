@@ -8,7 +8,7 @@ namespace ILCompiler.DependencyAnalysis
 {
     public interface INativeFormatTypeReferenceProvider
     {
-        internal Vertex EncodeReferenceToType(NativeWriter writer, TypeDesc type);
+        internal Vertex EncodeReferenceToType(NativeWriter writer, TypeDesc type, ModuleDesc module);
         internal Vertex EncodeReferenceToMethod(NativeWriter writer, MethodDesc method);
     }
 }
