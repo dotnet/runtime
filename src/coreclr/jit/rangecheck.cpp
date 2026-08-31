@@ -30,6 +30,47 @@ static const int MAX_SEARCH_DEPTH = 100;
 static const int MAX_VISIT_BUDGET = 8192;
 
 //------------------------------------------------------------------------
+// IsVNUnsignedRemainder: Check whether a VN is an unsigned division remainder
+//
+// Return Value:
+//    True if the VN has the form dividend - (dividend / divisor) * divisor
+//
+static bool IsVNUnsignedRemainder(ValueNumStore* vnStore, ValueNum vn, ValueNum* divisorVN)
+{
+    ValueNum dividendVN;
+    ValueNum productVN;
+    if (!vnStore->IsVNBinFunc(vn, VNF_SUB, &dividendVN, &productVN))
+    {
+        return false;
+    }
+
+    ValueNum productOp1VN;
+    ValueNum productOp2VN;
+    if (!vnStore->IsVNBinFunc(productVN, VNF_MUL, &productOp1VN, &productOp2VN))
+    {
+        return false;
+    }
+
+    ValueNum quotientDividendVN;
+    ValueNum quotientDivisorVN;
+    if (vnStore->IsVNBinFunc(productOp1VN, VNF_UDIV, &quotientDividendVN, &quotientDivisorVN) &&
+        (quotientDividendVN == dividendVN) && (quotientDivisorVN == productOp2VN))
+    {
+        *divisorVN = quotientDivisorVN;
+        return true;
+    }
+
+    if (vnStore->IsVNBinFunc(productOp2VN, VNF_UDIV, &quotientDividendVN, &quotientDivisorVN) &&
+        (quotientDividendVN == dividendVN) && (quotientDivisorVN == productOp1VN))
+    {
+        *divisorVN = quotientDivisorVN;
+        return true;
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
 // GetRangeCheck: get the RangeCheck instance
 //
 // Returns:
@@ -806,10 +847,23 @@ Range RangeCheck::GetRangeFromAssertionsWorker(
             case VNF_UMOD:
             case VNF_UDIV:
             {
+                ValueNum divisorVN;
+                if ((funcApp.GetFunc() == VNF_SUB) && IsVNUnsignedRemainder(comp->vnStore, num, &divisorVN))
+                {
+                    Range divisorRange   = GetRangeFromAssertionsWorker(comp, divisorVN, assertions, --budget, visited);
+                    Range remainderRange = RangeOps::UnsignedMod(result, divisorRange);
+                    if (remainderRange.IsConstantRange())
+                    {
+                        result = remainderRange;
+                        break;
+                    }
+                }
+
                 // Get ranges of both operands and perform the same operation on the ranges.
                 Range r1 = GetRangeFromAssertionsWorker(comp, funcApp.GetArg(0), assertions, --budget, visited);
                 Range r2 = GetRangeFromAssertionsWorker(comp, funcApp.GetArg(1), assertions, --budget, visited);
                 Range binOpResult = Range(Limit(Limit::keUnknown));
+
                 switch (funcApp.GetFunc())
                 {
                     case VNF_ADD:
@@ -1895,6 +1949,18 @@ Range RangeCheck::ComputeRangeForBinOp(BasicBlock*               block,
 
     GenTree* op1 = binop->gtGetOp1();
     GenTree* op2 = binop->gtGetOp2();
+
+    ValueNum divisorVN;
+    ValueNum binopVN = m_compiler->vnStore->VNConservativeNormalValue(binop->gtVNPair);
+    if (binop->OperIs(GT_SUB) && IsVNUnsignedRemainder(m_compiler->vnStore, binopVN, &divisorVN))
+    {
+        Range divisorRange   = GetRangeFromAssertions(m_compiler, divisorVN, block->bbAssertionIn);
+        Range remainderRange = RangeOps::UnsignedMod(Limit(Limit::keUnknown), divisorRange);
+        if (remainderRange.IsConstantRange())
+        {
+            return remainderRange;
+        }
+    }
 
     ValueNum op1VN = op1->gtVNPair.GetConservative();
     ValueNum op2VN = op2->gtVNPair.GetConservative();

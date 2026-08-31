@@ -67,6 +67,27 @@ public class ElidedBoundsChecks
         return span[i & (span.Length - 1)];
     }
 
+    static ReadOnlySpan<byte> RemainderValues =>
+        "0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789"u8;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static byte UnsignedDivRem32(uint value)
+    {
+        // X64-NOT: CORINFO_HELP_RNGCHKFAIL
+        // ARM64-NOT: CORINFO_HELP_RNGCHKFAIL
+        (_, uint remainder) = Math.DivRem(value, 100);
+        return RemainderValues[(int)remainder];
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static byte UnsignedDivRem64(ulong value)
+    {
+        // X64-NOT: CORINFO_HELP_RNGCHKFAIL
+        // ARM64-NOT: CORINFO_HELP_RNGCHKFAIL
+        (_, ulong remainder) = Math.DivRem(value, 100);
+        return RemainderValues[(int)remainder];
+    }
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     static void FillPairs(Span<int> buffer)
     {
@@ -302,6 +323,12 @@ public class ElidedBoundsChecks
             return 0;
 
         if (AndByLength(255) != 4)
+            return 0;
+
+        if (UnsignedDivRem32(uint.MaxValue) != (byte)'5')
+            return 0;
+
+        if (UnsignedDivRem64(ulong.MaxValue) != (byte)'5')
             return 0;
 
         for (int length = 2; length <= 6; length += 2)
