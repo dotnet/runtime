@@ -1782,7 +1782,7 @@ namespace System
             {
                 i -= 2;
                 (value, uint remainder) = Math.DivRem(value, 100);
-                WriteTwoDigits(remainder, MemoryMarshal.CreateSpan(ref buffer[i], 2));
+                WriteTwoDigits(remainder, buffer.Slice(i, 2));
             }
 
             Debug.Assert(value < 100);
@@ -2306,7 +2306,7 @@ namespace System
             {
                 i -= 2;
                 (value, ulong remainder) = Math.DivRem(value, 100);
-                WriteTwoDigits((uint)remainder, MemoryMarshal.CreateSpan(ref buffer[i], 2));
+                WriteTwoDigits((uint)remainder, buffer.Slice(i, 2));
             }
 
             Debug.Assert(value < 100);
