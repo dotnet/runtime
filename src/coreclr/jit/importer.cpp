@@ -10275,7 +10275,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             elemCorType = info.compCompHnd->getChildType(resolvedToken.hClass, &elemClsHnd);
                         });
 
-                        if ((JITtype2varType(elemCorType) == TYP_STRUCT) && (elemClsHnd != NO_CLASS_HANDLE))
+                        // CORINFO_TYPE_VALUECLASS is the only type JITtype2varType maps to
+                        // TYP_STRUCT. Test it directly, since JITtype2varType asserts if the
+                        // query above was trapped and left elemCorType as CORINFO_TYPE_UNDEF.
+                        //
+                        if ((elemCorType == CORINFO_TYPE_VALUECLASS) && (elemClsHnd != NO_CLASS_HANDLE))
                         {
                             // JIT work, so deliberately not trapped. It can set compFloatingPointUsed
                             // via ClassLayout::Create -> impNormStructType, which would let the queries

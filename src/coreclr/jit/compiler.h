@@ -9862,20 +9862,14 @@ public:
     //    would then import less IL than a later replay does, and the context it recorded
     //    would be missing the data that replay goes on to ask for.
     //
-    //    The inner trap absorbs such an EE failure during collection. The outer one absorbs
-    //    SuperPMI's own "missing data" failure, for a replay that re-enables the queries
-    //    against a context collected without them.
-    //
-    //    Wrap only EE queries. JIT work must stay outside, because neither trap discriminates
-    //    by origin: a noway_assert, NOMEM or assert raised inside the functor would be quietly
-    //    absorbed instead of failing the method.
+    //    Wrap only EE queries. JIT work must stay outside, because the trap does not
+    //    discriminate by origin: a noway_assert, NOMEM or assert raised inside the functor
+    //    would be quietly absorbed instead of failing the method.
     //
     template <typename Functor>
     void eeRunExtraSuperPmiQueries(Functor f)
     {
-        eeRunFunctorWithSPMIErrorTrap([&]() {
-            eeRunFunctorWithErrorTrap(f);
-        });
+        eeRunFunctorWithErrorTrap(f);
     }
 #endif // DEBUG
 
