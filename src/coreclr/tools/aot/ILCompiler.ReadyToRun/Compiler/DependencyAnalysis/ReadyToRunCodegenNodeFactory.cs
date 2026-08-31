@@ -66,6 +66,7 @@ namespace ILCompiler.DependencyAnalysis
         public int DeterminismStress;
         public bool PrintReproArgs;
         public bool EnableCachedInterfaceDispatchSupport;
+        public bool GenerateUnboxingStubs;
         public bool IsComponentModule;
         public bool StripInliningInfo;
         public bool StripDebugInfo;
@@ -160,7 +161,8 @@ namespace ILCompiler.DependencyAnalysis
         /// </summary>
         public bool NeedsUnboxingStub(MethodDesc method)
         {
-            return method.OwningType.IsValueType
+            return OptimizationFlags.GenerateUnboxingStubs
+                && method.OwningType.IsValueType
                 && !method.Signature.IsStatic
                 && method.IsVirtual
                 && CanPrecompileUnboxingStub(method);
@@ -168,7 +170,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public MethodWithGCInfo UnboxingStub(MethodDesc targetMethod)
         {
-            Debug.Assert(CanPrecompileUnboxingStub(targetMethod));
+            Debug.Assert(NeedsUnboxingStub(targetMethod));
             ModuleDesc ownerModule = ((MetadataType)targetMethod.GetTypicalMethodDefinition().OwningType).Module;
             MethodDesc thunk = targetMethod.IsSharedByGenericInstantiations && !targetMethod.HasInstantiation
                 ? TypeSystemContext.GetSpecialUnboxingThunk(targetMethod, ownerModule)

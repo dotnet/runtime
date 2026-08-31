@@ -1757,6 +1757,7 @@ public class R2RTestSuites
             [
                 new(nameof(VirtualMethodGenericsNonGVM), [new CrossgenAssembly(nonGvmLib)])
                 {
+                    Options = [Crossgen2Option.GenerateUnboxingStubs],
                     Validate = Validate,
                 },
             ]));
@@ -1816,6 +1817,7 @@ public class R2RTestSuites
             [
                 new(nameof(VirtualMethodGenericsGVM), [new CrossgenAssembly(gvmLib)])
                 {
+                    Options = [Crossgen2Option.GenerateUnboxingStubs],
                     Validate = Validate,
                 },
             ]));
