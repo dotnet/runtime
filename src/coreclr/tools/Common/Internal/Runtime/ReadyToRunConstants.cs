@@ -127,6 +127,7 @@ namespace Internal.ReadyToRunConstants
         // Only used by ReadyToRun signatures (ReadyToRunFixupKind.DeclaringTypeHandle). The signature encodes a
         // method and the slot is populated with the type which declares that method.
         DeclaringTypeHandleFromMethodSlot = 8,
+        DevirtualizedMethodDescSlot = 9,
     }
 
     public enum ReadyToRunFixupKind

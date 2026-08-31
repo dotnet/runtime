@@ -2799,11 +2799,12 @@ namespace Internal.JitInterface
                     break;
 
                 case DictionaryEntryKind.MethodDescSlot:
+                case DictionaryEntryKind.DevirtualizedMethodDescSlot:
                 case DictionaryEntryKind.MethodEntrySlot:
                 case DictionaryEntryKind.ConstrainedMethodEntrySlot:
                 case DictionaryEntryKind.DispatchStubAddrSlot:
                 {
-                    if (entryKind == DictionaryEntryKind.MethodDescSlot)
+                    if (entryKind == DictionaryEntryKind.MethodDescSlot || entryKind == DictionaryEntryKind.DevirtualizedMethodDescSlot)
                     {
                         helperId = ReadyToRunHelperId.MethodHandle;
                     }
@@ -2831,46 +2832,63 @@ namespace Internal.JitInterface
                     throw new NotImplementedException(entryKind.ToString());
             }
 
-            object helperArg = GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
-            if (helperArg is MethodDesc methodDesc)
+            object helperArg;
+            if (entryKind == DictionaryEntryKind.DevirtualizedMethodDescSlot)
             {
-                var methodIL = HandleToObject(pResolvedToken.tokenScope);
-                MethodDesc sharedMethod = methodIL.OwningMethod.GetSharedRuntimeFormMethodTarget();
-                // We shouldn't be needing shared generics in resumption stubs - generics info should all be stored in the continuation
-                Debug.Assert(MethodBeingCompiled is not AsyncResumptionStub);
-                _compilation.NodeFactory.DetectGenericCycles(MethodBeingCompiled, sharedMethod);
-                helperArg = new MethodWithToken(methodDesc, HandleToModuleToken(ref pResolvedToken, out bool strippedInstantiation), constrainedType, unboxing: false, genericContextObject: sharedMethod, forceOwningTypeFromMethodDesc: strippedInstantiation);
-
-                if (helperId == ReadyToRunHelperId.TypeHandle && !CanEncodeTypeInSignature(methodDesc.OwningType))
+                Debug.Assert(templateMethod != null);
+                MethodDesc tokenMethod = (MethodDesc)GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
+                if (tokenMethod.HasInstantiation)
                 {
-                    // The type handle being looked up is the type which declares the method described by the token. That
-                    // type isn't necessarily referenceable from the modules being compiled - the method may have moved to
-                    // a base type which is invisible to the version bubble of the token. Encode the method instead and let
-                    // the runtime compute the type which declares it.
-                    helperId = ReadyToRunHelperId.DeclaringTypeHandle;
+                    templateMethod = _compilation.TypeSystemContext.GetInstantiatedMethod(templateMethod.GetMethodDefinition(), tokenMethod.Instantiation);
                 }
+                _compilation.NodeFactory.DetectGenericCycles(MethodBeingCompiled, templateMethod);
+                ModuleToken templateMethodToken =
+                    _compilation.NodeFactory.Resolver.GetModuleTokenForMethod(templateMethod.GetTypicalMethodDefinition(), allowDynamicallyCreatedReference: false, throwIfNotFound: true);
+                helperArg = new MethodWithToken(templateMethod, templateMethodToken, constrainedType: null, unboxing: false, genericContextObject: null);
             }
-            else if (helperArg is FieldDesc fieldDesc)
+            else
             {
-                ModuleToken fieldToken = HandleToModuleToken(ref pResolvedToken, out bool strippedInstantiation);
-                Debug.Assert(!strippedInstantiation);
-                helperArg = new FieldWithToken(fieldDesc, fieldToken, forceOwningTypeNotDerivedFromToken: strippedInstantiation);
-            }
-            else if (helperId == ReadyToRunHelperId.TypeHandle &&
-                helperArg is TypeDesc typeDesc &&
-                pResolvedToken.hMethod != null &&
-                HandleToObject(pResolvedToken.hMethod) is MethodDesc declaringMethod &&
-                declaringMethod.OwningType == typeDesc &&
-                !CanEncodeTypeInSignature(typeDesc))
-            {
-                // The type handle being looked up is the type which declares the method described by the token. Encode
-                // the method instead when the declaring type isn't referenceable from the modules being compiled.
-                helperId = ReadyToRunHelperId.DeclaringTypeHandle;
-                helperArg = ComputeMethodWithToken(
-                    declaringMethod,
-                    ref pResolvedToken,
-                    constrainedType: null,
-                    unboxing: false);
+                helperArg = GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
+                if (helperArg is MethodDesc methodDesc)
+                {
+                    var methodIL = HandleToObject(pResolvedToken.tokenScope);
+                    MethodDesc sharedMethod = methodIL.OwningMethod.GetSharedRuntimeFormMethodTarget();
+                    // We shouldn't be needing shared generics in resumption stubs - generics info should all be stored in the continuation
+                    Debug.Assert(MethodBeingCompiled is not AsyncResumptionStub);
+                    _compilation.NodeFactory.DetectGenericCycles(MethodBeingCompiled, sharedMethod);
+                    helperArg = new MethodWithToken(methodDesc, HandleToModuleToken(ref pResolvedToken, out bool strippedInstantiation), constrainedType, unboxing: false, genericContextObject: sharedMethod, forceOwningTypeFromMethodDesc: strippedInstantiation);
+                  
+                    if (helperId == ReadyToRunHelperId.TypeHandle && !CanEncodeTypeInSignature(methodDesc.OwningType))
+                    {
+                        // The type handle being looked up is the type which declares the method described by the token. That
+                        // type isn't necessarily referenceable from the modules being compiled - the method may have moved to
+                        // a base type which is invisible to the version bubble of the token. Encode the method instead and let
+                        // the runtime compute the type which declares it.
+                        helperId = ReadyToRunHelperId.DeclaringTypeHandle;
+                    }
+                }
+                else if (helperArg is FieldDesc fieldDesc)
+                {
+                    ModuleToken fieldToken = HandleToModuleToken(ref pResolvedToken, out bool strippedInstantiation);
+                    Debug.Assert(!strippedInstantiation);
+                    helperArg = new FieldWithToken(fieldDesc, fieldToken, forceOwningTypeNotDerivedFromToken: strippedInstantiation);
+                }
+                else if (helperId == ReadyToRunHelperId.TypeHandle &&
+                    helperArg is TypeDesc typeDesc &&
+                    pResolvedToken.hMethod != null &&
+                    HandleToObject(pResolvedToken.hMethod) is MethodDesc declaringMethod &&
+                    declaringMethod.OwningType == typeDesc &&
+                    !CanEncodeTypeInSignature(typeDesc))
+                {
+                    // The type handle being looked up is the type which declares the method described by the token. Encode
+                    // the method instead when the declaring type isn't referenceable from the modules being compiled.
+                    helperId = ReadyToRunHelperId.DeclaringTypeHandle;
+                    helperArg = ComputeMethodWithToken(
+                        declaringMethod,
+                        ref pResolvedToken,
+                        constrainedType: null,
+                        unboxing: false);
+                }
             }
 
             var methodContext = new GenericContext(callerHandle);
