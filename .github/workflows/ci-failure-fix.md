@@ -289,7 +289,11 @@ Per KBE, append one outcome line to `/tmp/gh-aw/agent/coverage.txt`:
 
 `<outcome>` is one of: `fix-PR #aw_<id>` (confident), `help-PR #aw_<id>` (needs review), `loopin-comment #<kbe>`, `skipped: <reason>`.
 
+<<<<<<< ours
+Recognized skip reasons (reuse these phrasings so the feedback workflow's aggregation stays stable): `not yet area-labeled`, `KBE too fresh, defer to next run`, `open fix PR #<n> already exists`, `fix PR #<n> already merged; KBE may be stale`, `prior fix PR #<n> closed without merge within 30d`, `human PR #<n> already addressing`, `author already engaged on #<kbe>`, `loop-in comment already posted`, `signature no longer reproduces in cited build`, `candidate fix already present in source`, `no producible diff (JIT/GC/security/API/infra) — comment`, `cap reached`, `integrity-filtered candidate, needs human review`. The list is non-exhaustive but additions SHOULD reuse one of these phrasings.
+=======
 Recognized skip reasons (reuse these phrasings so the feedback workflow's aggregation stays stable): `not yet area-labeled`, `KBE too fresh, defer to next run`, `open fix PR #<n> already exists`, `fix PR #<n> already merged; KBE may be stale`, `prior fix PR #<n> closed without merge within 30d`, `human PR #<n> already addressing`, `author already engaged on #<kbe>`, `loop-in comment already posted`, `signature no longer reproduces in cited build`, `no occurrence in last 14d, likely already fixed or retired`, `failing leg retired, no longer runs at HEAD`, `fix already present at HEAD; KBE stale`, `candidate fix already present in source`, `no producible diff (JIT/GC/security/API/infra) — comment`, `cap reached`, `integrity-filtered candidate, needs human review`. The list is non-exhaustive but additions SHOULD reuse one of these phrasings.
+>>>>>>> theirs
 
 At end of run, print this table to the agent log:
 
