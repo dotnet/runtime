@@ -221,7 +221,7 @@ namespace System
 #endif
 
         /// <summary>
-        /// Indicates whether the current application is running on HarmonyOS (OpenHarmony).
+        /// Indicates whether the current application is running on OpenHarmony.
         /// </summary>
         [NonVersionable]
         internal static bool IsOpenHarmony() =>

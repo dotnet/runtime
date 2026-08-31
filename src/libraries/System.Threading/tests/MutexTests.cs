@@ -1041,7 +1041,7 @@ namespace System.Threading.Tests
 
         // The runtime places global shared memory files under {SharedFilesPath}/.dotnet/shm/global
         // (see SharedMemoryManager.Unix.cs). SharedFilesPath is /tmp/ on non-Apple platforms except
-        // on HarmonyOS, where it honors TMPDIR. Mirror the runtime's derivation so these tests
+        // on OpenHarmony, where it honors TMPDIR. Mirror the runtime's derivation so these tests
         // always target the same directory the runtime uses.
         private static string GlobalSharedMemoryDirectory =>
 #if TARGET_OPENHARMONY
