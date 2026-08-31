@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <CLRTestPriority>0</CLRTestPriority>
+    <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true' or '$(TargetArchitecture)' != 'x64'">true</CLRTestTargetUnsupported>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="IncrementalCompilation.cs" />
+  </ItemGroup>
+
+  <Target Name="IlcCompileIncrementalDifferential"
+      Condition="'$(TargetsWindows)' == 'true' and '$(TargetArchitecture)' == 'x64' and '$(ControlFlowGuard)' == ''"
+      AfterTargets="IlcCompile">
+    <Exec Command="powershell -NoProfile -ExecutionPolicy ByPass -File &quot;$(MSBuildThisFileDirectory)..\..\..\..\coreclr\tools\aot\ILCompiler\experiments\IncrementalCompilation\run-differential.ps1&quot; -IlcPath &quot;$(IlcToolsPath)\ilc&quot; -ResponseFile &quot;%(ManagedBinary.IlcRspFile)&quot; -BaselineAssembly &quot;%(ManagedBinary.Identity)&quot; -OutputDirectory &quot;$(NativeIntermediateOutputPath).&quot;" />
+  </Target>
+</Project>

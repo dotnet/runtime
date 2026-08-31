@@ -18,7 +18,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-if ($IsWindows -and ![IO.Path]::HasExtension($IlcPath)) {
+if ($env:OS -eq 'Windows_NT' -and ![IO.Path]::HasExtension($IlcPath)) {
     $IlcPath += '.exe'
 }
 $IlcPath = (Resolve-Path -LiteralPath $IlcPath).Path
@@ -93,7 +93,7 @@ function New-ResponseFile(
             $foundOutput = $true
             continue
         }
-        if ($trimmed -match '(?i)^(--parallelism|-O|--optimize|--optimize-space|--optimize-time|--debug|-g|--exportsfile|--export-dynamic-symbol|--export-unmanaged-entrypoints|--generateunmanagedentrypoints|--dgmllog|--scandgmllog|--ildump|--map|--mstat|--sourcelink|--metadatalog|--methodbodyfolding|--reachability|--resilient)(:.*)?$') {
+        if ($trimmed -match '(?i)^(--parallelism|-O|--Os|--Ot|--optimize|--optimize-space|--optimize-time|--debug|-g|--exportsfile|--export-dynamic-symbol|--export-unmanaged-entrypoints|--generateunmanagedentrypoints|--dgmllog|--scandgmllog|--guard|--ildump|--map|--mstat|--sourcelink|--metadatalog|--methodbodyfolding|--reachability|--resilient)(:.*)?$') {
             continue
         }
         if ((Get-NormalizedPath $trimmed) -eq $BaselineAssembly) {
@@ -116,6 +116,11 @@ function New-ResponseFile(
 New-ResponseFile $baselineResponseFile $BaselineAssembly $baselineObject
 New-ResponseFile $cleanResponseFile $updatedAssembly $cleanUpdatedObject
 
+function Write-LogLine([string]$value) {
+    [IO.File]::AppendAllText($logPath, $value + [Environment]::NewLine)
+    Write-Host $value
+}
+
 function Invoke-Ilc(
     [string]$label,
     [string]$response,
@@ -137,11 +142,30 @@ function Invoke-Ilc(
         }
 
         $stopwatch = [Diagnostics.Stopwatch]::StartNew()
-        & $IlcPath "@$response" *>> $logPath
-        $exitCode = $LASTEXITCODE
+        $startInfo = New-Object Diagnostics.ProcessStartInfo
+        $startInfo.FileName = $IlcPath
+        $startInfo.Arguments = '@"' + $response + '"'
+        $startInfo.WorkingDirectory = (Get-Location).Path
+        $startInfo.UseShellExecute = $false
+        $startInfo.CreateNoWindow = $true
+        $startInfo.RedirectStandardOutput = $true
+        $startInfo.RedirectStandardError = $true
+        $process = New-Object Diagnostics.Process
+        $process.StartInfo = $startInfo
+        try {
+            $null = $process.Start()
+            $standardOutput = $process.StandardOutput.ReadToEndAsync()
+            $standardError = $process.StandardError.ReadToEndAsync()
+            $process.WaitForExit()
+            [IO.File]::AppendAllText($logPath, $standardOutput.Result)
+            [IO.File]::AppendAllText($logPath, $standardError.Result)
+            $exitCode = $process.ExitCode
+        }
+        finally {
+            $process.Dispose()
+        }
         $stopwatch.Stop()
-        "$label milliseconds=$($stopwatch.Elapsed.TotalMilliseconds.ToString('F3', [Globalization.CultureInfo]::InvariantCulture)) exit=$exitCode" |
-            Tee-Object -FilePath $logPath -Append
+        Write-LogLine "$label milliseconds=$($stopwatch.Elapsed.TotalMilliseconds.ToString('F3', [Globalization.CultureInfo]::InvariantCulture)) exit=$exitCode"
         if ($exitCode -ne 0) {
             if ($exitCode -eq 85) {
                 throw "$label requested an explicit clean fallback (exit 85). See '$logPath'."
@@ -156,6 +180,22 @@ function Invoke-Ilc(
     }
 }
 
+function Get-Sha256([string]$path) {
+    $stream = [IO.File]::OpenRead($path)
+    try {
+        $algorithm = [Security.Cryptography.SHA256]::Create()
+        try {
+            return [BitConverter]::ToString($algorithm.ComputeHash($stream)).Replace('-', '')
+        }
+        finally {
+            $algorithm.Dispose()
+        }
+    }
+    finally {
+        $stream.Dispose()
+    }
+}
+
 $separator = [IO.Path]::PathSeparator
 Invoke-Ilc `
     'incremental-edit-revert' `
@@ -164,10 +204,10 @@ Invoke-Ilc `
     "$incrementalUpdatedObject$separator$incrementalRevertedObject"
 Invoke-Ilc 'clean-updated' $cleanResponseFile $null $null
 
-$baselineHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $baselineObject).Hash
-$updatedHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $incrementalUpdatedObject).Hash
-$cleanHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $cleanUpdatedObject).Hash
-$revertedHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $incrementalRevertedObject).Hash
+$baselineHash = Get-Sha256 $baselineObject
+$updatedHash = Get-Sha256 $incrementalUpdatedObject
+$cleanHash = Get-Sha256 $cleanUpdatedObject
+$revertedHash = Get-Sha256 $incrementalRevertedObject
 
 if ($updatedHash -ne $cleanHash) {
     throw "Incremental and clean updated objects differ: $updatedHash != $cleanHash"
@@ -176,8 +216,8 @@ if ($revertedHash -ne $baselineHash) {
     throw "Incremental revert and baseline objects differ: $revertedHash != $baselineHash"
 }
 
-"baseline_sha256=$baselineHash" | Tee-Object -FilePath $logPath -Append
-"incremental_updated_sha256=$updatedHash" | Tee-Object -FilePath $logPath -Append
-"clean_updated_sha256=$cleanHash" | Tee-Object -FilePath $logPath -Append
-"incremental_reverted_sha256=$revertedHash" | Tee-Object -FilePath $logPath -Append
+Write-LogLine "baseline_sha256=$baselineHash"
+Write-LogLine "incremental_updated_sha256=$updatedHash"
+Write-LogLine "clean_updated_sha256=$cleanHash"
+Write-LogLine "incremental_reverted_sha256=$revertedHash"
 Write-Host "Incremental differential comparison passed. Log: $logPath"

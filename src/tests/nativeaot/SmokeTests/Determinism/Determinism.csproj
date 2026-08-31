@@ -7,16 +7,14 @@
     <CLRTestTargetUnsupported Condition="'$(TargetsAppleMobile)' == 'true' or '$(TargetsAndroid)' == 'true'">true</CLRTestTargetUnsupported>
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
-    <DefineConstants Condition="'$(RunIncrementalCompilationExperiment)' == 'true'">$(DefineConstants);INCREMENTAL_COMPILATION_EXPERIMENT</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Determinism.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(RunIncrementalCompilationExperiment)' != 'true'">
     <Compile Include="../UnitTests/Delegates.cs" />
     <Compile Include="../UnitTests/Devirtualization.cs" />
     <Compile Include="../UnitTests/Generics.cs" />
     <Compile Include="../UnitTests/Interfaces.cs" />
+
   </ItemGroup>
 
   <Target Name="IlcCompileSingleThreaded"
@@ -44,11 +42,5 @@
 
     <Copy SourceFiles="$(OldObjectFileName)" DestinationFiles="$(OutDir)\baseline.object" />
     <Copy SourceFiles="$(NewObjectFileName)" DestinationFiles="$(OutDir)\compare.object" />
-  </Target>
-
-  <Target Name="IlcCompileIncrementalDifferential"
-      Condition="'$(RunIncrementalCompilationExperiment)' == 'true' and '$(TargetOS)' == 'windows' and '$(TargetArchitecture)' == 'x64'"
-      AfterTargets="IlcCompileSingleThreaded">
-    <Exec Command="pwsh -NoProfile -File &quot;$(MSBuildThisFileDirectory)..\..\..\..\coreclr\tools\aot\ILCompiler\experiments\IncrementalCompilation\run-differential.ps1&quot; -IlcPath &quot;$(IlcToolsPath)\ilc&quot; -ResponseFile &quot;%(ManagedBinary.IlcRspFile)&quot; -BaselineAssembly &quot;%(ManagedBinary.Identity)&quot; -OutputDirectory &quot;$(OutDir).&quot;" />
   </Target>
 </Project>

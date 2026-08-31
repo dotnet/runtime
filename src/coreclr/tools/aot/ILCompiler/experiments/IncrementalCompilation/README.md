@@ -74,27 +74,28 @@ patches. Any failure after IL provider replacement poisons the session permanent
 
 ## Differential validation
 
-The `Determinism` smoke-test project contains an opt-in tiny fixture. The harness changes one IL
-constant without changing the PE identity or body shape, performs an edit and revert in one
-retained compilation, independently clean-compiles the edited assembly, and compares complete
-object-file SHA-256 hashes.
+The `IncrementalCompilation` smoke-test project contains a tiny Windows x64 fixture. The harness
+changes one IL constant without changing the PE identity or body shape, performs an edit and
+revert in one retained compilation, independently clean-compiles the edited assembly, and
+compares complete object-file SHA-256 hashes. The project is a priority-0 NativeAOT test, so the
+incremental path runs automatically when this test is built on its supported platform.
 
 After building `ILCompiler_publish`, run on Windows x64:
 
 ```powershell
-$env:RunIncrementalCompilationExperiment = 'true'
-src\tests\build.cmd nativeaot Release test nativeaot\SmokeTests\Determinism\Determinism.csproj
-Remove-Item Env:RunIncrementalCompilationExperiment
+src\tests\build.cmd nativeaot Release test `
+    nativeaot\SmokeTests\IncrementalCompilation\IncrementalCompilation.csproj
 ```
 
 The harness writes
-`artifacts\tests\coreclr\windows.x64.Release\nativeaot\SmokeTests\Determinism\Determinism\incremental-differential\run.log`
-and the four compared objects beside it. A local validation run took 3,869.293 ms for the clean
-baseline plus retained edit/revert and 2,575.470 ms for the independent clean edited compilation.
+`artifacts\tests\coreclr\obj\windows.x64.Release\Managed\nativeaot\SmokeTests\IncrementalCompilation\IncrementalCompilation\native\incremental-differential\run.log`
+and the four compared objects beside it. These build-only artifacts stay outside the Helix
+payload. A local validation run took 2,424.021 ms for the clean
+baseline plus retained edit/revert and 2,185.357 ms for the independent clean edited compilation.
 These end-to-end totals validate correctness and do not measure isolated update latency. The
 updated objects both hashed
-`F65A302648638A253D25BB3A67407023531BDFC8C3846B1F650E9F45E967CE52`; the baseline and reverted
-objects both hashed `561072F6353A6AF6360AB259C9DD3C0CCB20D1B0D30E6123A71B1C63A1B79F89`.
+`0BE481A1B058F826D4FCD0E013DEFC544BF4382E16CE8C5549EF94AE1F73666F`; the baseline and reverted
+objects both hashed `0CB70EB6CAA77ABC4C6F120AE64C1AF3F6370A37AEC4FD54FBF8A96179E44497`.
 
 ## Original experiment evidence
 
