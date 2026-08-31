@@ -150,19 +150,13 @@ int RangeCheck::GetArrLength(ValueNum vn)
 // BetweenBounds: Check if the computed range is within bounds
 //
 // Arguments:
-//    Range - the range to check if in bounds
-//    uLimitVN - the array length vn
-//    arrSize - the length of the array if known, or <= 0
+//    range - the range of possible starting indices
+//    uLimitVN - the value number of the exclusive upper bound
+//    arrSize - the constant upper bound if known, or <= 0
 //    accessWidth - the number of elements accessed starting at the lower bound
 //
 // Return Value:
-//    True iff the accessed range is between [0 and vn - 1] or [0, arrSize - 1]
-//
-// notes:
-//    This function assumes that the lower range is resolved and upper range is symbolic as in an
-//    increasing loop.
-//
-// TODO-CQ: This is not general enough.
+//    True iff every possible access is within [0, uLimitVN) or [0, arrSize)
 //
 bool RangeCheck::BetweenBounds(Range& range, ValueNum uLimitVN, int arrSize, unsigned accessWidth)
 {
