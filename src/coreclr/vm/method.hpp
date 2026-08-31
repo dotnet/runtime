@@ -1867,11 +1867,6 @@ public:
     //================================================================
     // Running the Prestub preparation step.
 
-    // The stub produced by prestub requires method desc to be passed
-    // in dedicated register.
-    // See HasMDContextArg() for the related stub version.
-    BOOL RequiresMDContextArg();
-
     // Returns true if the method has to have stable entrypoint always.
     BOOL RequiresStableEntryPoint();
 private:
@@ -3216,14 +3211,6 @@ public:
         return type == DynamicMethodDesc::StubAsyncResume;
     }
 
-    // Whether the stub takes a context argument that is an interop MethodDesc.
-    // See RequiresMDContextArg() for the non-stub version.
-    bool HasMDContextArg() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return IsPInvokeVarArgStub();
-    }
-
     //
     // following implementations defined in DynamicMethod.cpp
     //
@@ -3369,7 +3356,7 @@ public:
         kLastError                      = 0x0080,   // setLastError keyword specified
         kNativeNoMangle                 = 0x0100,   // nomangle keyword specified
 
-        kVarArgs                        = 0x0200,
+        //unused                        = 0x0200,
         kStdCall                        = 0x0400,
         kThisCall                       = 0x0800,
 
@@ -3452,13 +3439,6 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
 
         return m_pszEntrypointName;
-    }
-
-    BOOL IsVarArgs() const
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        return (m_wPInvokeFlags & kVarArgs) != 0;
     }
 
     BOOL IsStdCall() const

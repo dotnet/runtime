@@ -9,8 +9,8 @@ namespace System.Runtime.InteropServices
     {
         ReturnValue = 0,
         LastParameter = 1,
-        SystemError = 2,
-        HiddenReturnValue = 3,
+        HiddenReturnValue = 2,
+        HiddenLastParameter = 3,
     }
 
     [AttributeUsage(AttributeTargets.Method)]

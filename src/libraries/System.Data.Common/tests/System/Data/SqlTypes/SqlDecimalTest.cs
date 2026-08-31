@@ -58,7 +58,7 @@ namespace System.Data.Tests.SqlTypes
         {
             // SqlDecimal (decimal)
             SqlDecimal test = new SqlDecimal(30.3098m);
-            Assert.Equal((decimal)30.3098, test.Value);
+            Assert.Equal(30.3098m, test.Value);
 
             // SqlDecimal (double)
             test = new SqlDecimal(1E11d);
@@ -312,7 +312,7 @@ namespace System.Data.Tests.SqlTypes
             Assert.Equal(6464, _test1.ToSqlInt64().Value);
 
             // ToSqlMoney ()
-            Assert.Equal((decimal)6464.6464, _test1.ToSqlMoney().Value);
+            Assert.Equal(6464.6464m, _test1.ToSqlMoney().Value);
 
             Assert.Throws<OverflowException>(() => SqlDecimal.MaxValue.ToSqlMoney().Value);
 

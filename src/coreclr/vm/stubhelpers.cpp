@@ -534,6 +534,7 @@ extern "C" QCallExceptionStatus QCALLTYPE StubHelpers_ProfilerEndTransitionCallb
 }
 #endif // PROFILING_SUPPORTED
 
+#ifdef FEATURE_VARARGS
 extern "C" QCallExceptionStatus QCALLTYPE StubHelpers_MarshalToManagedVaList(va_list va, VARARGS* pArgIterator)
 {
     QCALL_CONTRACT;
@@ -551,6 +552,7 @@ extern "C" QCallExceptionStatus QCALLTYPE StubHelpers_MarshalToUnmanagedVaList(v
     VARARGS::MarshalToUnmanagedVaList(va, cbVaListSize, pArgIterator);
     END_QCALL;
 }
+#endif // FEATURE_VARARGS
 
 extern "C" QCallExceptionStatus QCALLTYPE StubHelpers_ValidateObject(QCall::ObjectHandleOnStack pObj, MethodDesc *pMD)
 {
@@ -663,6 +665,7 @@ FCIMPL2(void, StubHelpers::LogPinnedArgument, MethodDesc *target, Object *pinned
 }
 FCIMPLEND
 
+#ifdef FEATURE_VARARGS
 FCIMPL1(DWORD, StubHelpers::CalcVaListSize, VARARGS *varargs)
 {
     FCALL_CONTRACT;
@@ -670,6 +673,7 @@ FCIMPL1(DWORD, StubHelpers::CalcVaListSize, VARARGS *varargs)
     return VARARGS::CalcVaListSize(varargs);
 }
 FCIMPLEND
+#endif // FEATURE_VARARGS
 
 extern "C" QCallExceptionStatus QCALLTYPE StubHelpers_MulticastDebuggerTraceHelper(QCall::ObjectHandleOnStack element, INT32 count)
 {

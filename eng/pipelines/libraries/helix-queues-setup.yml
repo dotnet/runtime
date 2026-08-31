@@ -131,8 +131,8 @@ jobs:
             - ${{ if ne(parameters.jobParameters.testScope, 'outerloop') }}:
               - (Windows.10.Amd64.ServerRS5.Open)windows.10.amd64.serverrs5.open@mcr.microsoft.com/dotnet-buildtools/prereqs:windowsservercore-ltsc2019-helix-amd64@sha256:bcb63785d77922c0c50ccffb3b9883036ba5f3a10e3c513e380109b08b0844ad
           - ${{ if or(ne(parameters.jobParameters.isExtraPlatformsBuild, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
-            # Primary Windows versions for all builds: newest server + Nano (distinct environment)
-            - Windows.Server2025.Amd64.Open
+            # Primary Windows queues for all builds: latest + Nano (distinct environment)
+            - $(helix_windows_x64_latest)
             - ${{ if ne(parameters.jobParameters.runtimeFlavor, 'mono') }}:
               - (Windows.Nano.1809.Amd64.Open)windows.10.amd64.serverrs5.open@mcr.microsoft.com/dotnet-buildtools/prereqs:nanoserver-1809-helix-amd64@sha256:0d775842615e5642149c6f2e03a269b5bf217eba50297318b47dd706fce2d9b0
             # Additional Windows versions on non-PR builds for broader coverage

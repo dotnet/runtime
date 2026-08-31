@@ -2514,8 +2514,8 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
     } // end else if (IsIL() || IsNoMetadata() || (IsPInvoke() && !IsVarArg()) || IsCLRToCOMCall())
     else if (IsPInvoke())
     {
+        _ASSERTE(IsVarArg());
         pCode = GetStubForInteropMethod(this);
-        _ASSERTE(static_cast<PInvokeMethodDesc*>(this)->IsVarArgs());
     }
     else if (IsFCall())
     {
@@ -2695,11 +2695,12 @@ PCODE TheUMThunkPreStub()
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 }
 
+#ifdef FEATURE_VARARGS
 PCODE TheVarargPInvokeStub(BOOL hasRetBuffArg)
 {
     LIMITED_METHOD_CONTRACT;
 
-#if !defined(TARGET_X86) && !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
+#if !defined(TARGET_X86) && !defined(TARGET_ARM64)
     if (hasRetBuffArg)
     {
         return GetEEFuncEntryPoint(VarargPInvokeStub_RetBuffArg);
@@ -2710,6 +2711,7 @@ PCODE TheVarargPInvokeStub(BOOL hasRetBuffArg)
         return GetEEFuncEntryPoint(VarargPInvokeStub);
     }
 }
+#endif // FEATURE_VARARGS
 
 static PCODE PatchNonVirtualExternalMethod(MethodDesc * pMD, PCODE pCode, PTR_READYTORUN_IMPORT_SECTION pImportSection, TADDR pIndirection)
 {

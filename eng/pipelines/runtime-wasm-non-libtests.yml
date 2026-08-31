@@ -3,7 +3,7 @@ trigger: none
 variables:
   - template: /eng/pipelines/common/variables.yml
   - name: enableHelixJobMonitor
-    value: false
+    value: true
 
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
@@ -17,11 +17,12 @@ extends:
 
     - stage: Build
       jobs:
-      - template: /eng/common/core-templates/job/helix-job-monitor.yml
-        parameters:
-          helixAccessToken: $(HelixApiAccessToken)
-          timeoutInMinutes: 540
-          allowNoHelixJobs: true
+      - ${{ if eq(variables['enableHelixJobMonitor'], true) }}:
+        - template: /eng/common/core-templates/job/helix-job-monitor.yml
+          parameters:
+            helixAccessToken: $(HelixApiAccessToken)
+            timeoutInMinutes: 540
+            allowNoHelixJobs: true
 
       - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-wasm.yml
         parameters:
