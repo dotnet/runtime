@@ -253,6 +253,9 @@ if(CLR_CMAKE_TARGET_WIN32)
         # make CLRDEBUGINFO resource
         COMMAND powershell -NoProfile -ExecutionPolicy ByPass -File "${CMAKE_CURRENT_SOURCE_DIR}/GenClrDebugResource.ps1" -dac "${CLRDEBUGINFO_DAC_PATH}" -dbi $<TARGET_FILE:mscordbi> -out ${CLRDEBUGINFO_RESOURCE_PATH}
     )
+    if(NOT CLR_DUMP_COLLECT_PROVIDER_PATH)
+        add_dependencies(clr_debug_resources mscordaccore)
+    endif()
 
     configure_file(dump_helper_resource.rc.in ${CMAKE_CURRENT_BINARY_DIR}/dump_helper_resource.rc)
 
@@ -265,9 +268,6 @@ if(CLR_CMAKE_TARGET_WIN32)
 
     add_dependencies(coreclr clr_debug_resources)
     add_dependencies(coreclr_static clr_debug_resources)
-    if(NOT CLR_DUMP_COLLECT_PROVIDER_PATH)
-        add_dependencies(clr_debug_resources mscordaccore)
-    endif()
 endif(CLR_CMAKE_TARGET_WIN32)
 
 # add the install targets
