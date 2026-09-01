@@ -1096,7 +1096,7 @@ static bool SigMatchesMethodDesc(MethodDesc* pMD, SigPointer &sig, ModuleBase * 
         return false;
 
     bool sigIsUnboxingStub = (methodFlags & ENCODE_METHOD_SIG_UnboxingStub) != 0;
-    if (sigIsUnboxingStub != (bool)pMD->IsUnboxingStub())
+    if (sigIsUnboxingStub != pMD->IsUnboxingStub())
         return false;
 
     _ASSERTE((methodFlags & ENCODE_METHOD_SIG_SlotInsteadOfToken) == 0);

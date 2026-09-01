@@ -916,7 +916,7 @@ public:
     // Additionally, if the non-BoxedEntryPointStub is RequiresInstMethodTableArg()
     // then pass on the MethodTable as an extra argument to the
     // underlying unboxed-this-MethodDesc.
-    BOOL IsUnboxingStub()
+    bool IsUnboxingStub()
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
