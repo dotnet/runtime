@@ -357,360 +357,385 @@ namespace ILCompiler
 
             using (PerfEventSource.StartStopEvents.CompilationEvents())
             {
-                ICompilation compilation;
-                using (PerfEventSource.StartStopEvents.LoadingEvents())
+                bool determinismCheckFailed;
+                using var compilation = (ReadyToRunCodegenCompilation)BuildCompilation(
+                    inFilePaths,
+                    versionBubbleModulesHash,
+                    unrootedInputFilePaths,
+                    compositeRootPath,
+                    typeSystemContext,
+                    dgmlLogFileName,
+                    outFile,
+                    logger,
+                    instructionSetSupport
+                );
+                compilation.Compile(outFile);
+
+                if (dgmlLogFileName != null)
+                    compilation.WriteDependencyLog(dgmlLogFileName);
+
+                determinismCheckFailed = compilation.DeterminismCheckFailed;
+
+                if (determinismCheckFailed)
+                    throw new Exception("Determinism Check Failed");
+            }
+        }
+
+        private ICompilation BuildCompilation(
+            Dictionary<string, string> inFilePaths,
+            HashSet<ModuleDesc> versionBubbleModulesHash,
+            Dictionary<string, string> unrootedInputFilePaths,
+            string compositeRootPath,
+            ReadyToRunCompilerContext typeSystemContext,
+            string dgmlLogFileName,
+            string outFile,
+            Logger logger,
+            InstructionSetSupport instructionSetSupport
+        )
+        {
+            using (PerfEventSource.StartStopEvents.LoadingEvents())
+            {
+                List<EcmaModule> inputModules = new List<EcmaModule>();
+                List<EcmaModule> rootingModules = new List<EcmaModule>();
+                HashSet<EcmaModule> crossModuleInlineableCode = new HashSet<EcmaModule>();
+
+                foreach (var inputFile in inFilePaths)
                 {
-                    List<EcmaModule> inputModules = new List<EcmaModule>();
-                    List<EcmaModule> rootingModules = new List<EcmaModule>();
-                    HashSet<EcmaModule> crossModuleInlineableCode = new HashSet<EcmaModule>();
+                    EcmaModule module = typeSystemContext.GetModuleFromPath(inputFile.Value);
+                    inputModules.Add(module);
+                    rootingModules.Add(module);
+                    versionBubbleModulesHash.Add(module);
 
-                    foreach (var inputFile in inFilePaths)
+
+                    if (!_command.CompositeOrInputBubble)
                     {
-                        EcmaModule module = typeSystemContext.GetModuleFromPath(inputFile.Value);
-                        inputModules.Add(module);
-                        rootingModules.Add(module);
-                        versionBubbleModulesHash.Add(module);
-
-
-                        if (!_command.CompositeOrInputBubble)
-                        {
-                            break;
-                        }
+                        break;
                     }
+                }
 
-                    foreach (var unrootedInputFile in unrootedInputFilePaths)
-                    {
-                        EcmaModule module = typeSystemContext.GetModuleFromPath(unrootedInputFile.Value);
-                        inputModules.Add(module);
-                        versionBubbleModulesHash.Add(module);
-                    }
+                foreach (var unrootedInputFile in unrootedInputFilePaths)
+                {
+                    EcmaModule module = typeSystemContext.GetModuleFromPath(unrootedInputFile.Value);
+                    inputModules.Add(module);
+                    versionBubbleModulesHash.Add(module);
+                }
 
-                    string[] crossModuleInlining = Get(_command.CrossModuleInlining);
-                    if (crossModuleInlining.Length > 0)
+                string[] crossModuleInlining = Get(_command.CrossModuleInlining);
+                if (crossModuleInlining.Length > 0)
+                {
+                    foreach (var crossModulePgoAssemblyName in crossModuleInlining)
                     {
-                        foreach (var crossModulePgoAssemblyName in crossModuleInlining)
+                        foreach (var module in _referenceableModules)
                         {
-                            foreach (var module in _referenceableModules)
+                            if (!versionBubbleModulesHash.Contains(module))
                             {
-                                if (!versionBubbleModulesHash.Contains(module))
+                                if (crossModulePgoAssemblyName == "*" ||
+                                        (String.Compare(crossModulePgoAssemblyName, module.Assembly.GetName().Name, StringComparison.OrdinalIgnoreCase) == 0))
                                 {
-                                    if (crossModulePgoAssemblyName == "*" ||
-                                            (String.Compare(crossModulePgoAssemblyName, module.Assembly.GetName().Name, StringComparison.OrdinalIgnoreCase) == 0))
-                                    {
-                                        crossModuleInlineableCode.Add((EcmaModule)module);
-                                    }
+                                    crossModuleInlineableCode.Add((EcmaModule)module);
                                 }
                             }
                         }
                     }
+                }
 
-                    //
-                    // Initialize compilation group and compilation roots
-                    //
+                //
+                // Initialize compilation group and compilation roots
+                //
 
-                    // Single method mode?
-                    MethodDesc singleMethod = CheckAndParseSingleMethodModeArguments(typeSystemContext);
+                // Single method mode?
+                MethodDesc singleMethod = CheckAndParseSingleMethodModeArguments(typeSystemContext);
 
-                    List<string> mibcFiles = new List<string>();
-                    foreach (var file in Get(_command.MibcFilePaths))
+                List<string> mibcFiles = new List<string>();
+                foreach (var file in Get(_command.MibcFilePaths))
+                {
+                    mibcFiles.Add(file);
+                }
+
+                List<ModuleDesc> versionBubbleModules = new List<ModuleDesc>(versionBubbleModulesHash);
+                bool composite = Get(_command.Composite);
+                if (!composite && inputModules.Count != 1)
+                {
+                    throw new Exception(string.Format(SR.ErrorMultipleInputFilesCompositeModeOnly, string.Join("; ", inputModules)));
+                }
+
+                string rtrHeaderSymbolName = Get(_command.ReadyToRunHeaderSymbolName);
+
+                ReadyToRunContainerFormat format = Get(_command.OutputFormat);
+                if (format == ReadyToRunContainerFormat.PE && typeSystemContext.Target.Architecture == TargetArchitecture.Wasm32)
+                {
+                    format = ReadyToRunContainerFormat.Wasm;
+                }
+                if (!composite && format != ReadyToRunContainerFormat.PE && format != ReadyToRunContainerFormat.Wasm)
+                {
+                    throw new Exception(string.Format(SR.ErrorContainerFormatRequiresComposite, format));
+                }
+
+                if (rtrHeaderSymbolName is not null)
+                {
+                    if (!composite)
                     {
-                        mibcFiles.Add(file);
+                        throw new Exception(SR.ErrorReadyToRunHeaderSymbolNameRequiresComposite);
                     }
 
-                    List<ModuleDesc> versionBubbleModules = new List<ModuleDesc>(versionBubbleModulesHash);
-                    bool composite = Get(_command.Composite);
-                    if (!composite && inputModules.Count != 1)
+                    if (string.IsNullOrWhiteSpace(rtrHeaderSymbolName))
                     {
-                        throw new Exception(string.Format(SR.ErrorMultipleInputFilesCompositeModeOnly, string.Join("; ", inputModules)));
+                        throw new Exception(SR.ErrorReadyToRunHeaderSymbolNameEmpty);
                     }
+                }
 
-                    string rtrHeaderSymbolName = Get(_command.ReadyToRunHeaderSymbolName);
+                bool compileBubbleGenerics = Get(_command.CompileBubbleGenerics);
+                ReadyToRunCompilationModuleGroupBase compilationGroup;
+                List<ICompilationRootProvider> compilationRoots = new List<ICompilationRootProvider>();
+                ReadyToRunCompilationModuleGroupConfig groupConfig = new ReadyToRunCompilationModuleGroupConfig();
+                groupConfig.Context = typeSystemContext;
+                groupConfig.IsCompositeBuildMode = composite;
+                groupConfig.IsInputBubble = _inputBubble;
+                groupConfig.CompilationModuleSet = inputModules;
+                groupConfig.VersionBubbleModuleSet = versionBubbleModules;
+                groupConfig.CompileGenericDependenciesFromVersionBubbleModuleSet = compileBubbleGenerics;
+                groupConfig.CrossModuleGenericCompilation = crossModuleInlineableCode.Count > 0;
+                groupConfig.CrossModuleInlining = groupConfig.CrossModuleGenericCompilation; // Currently we set these flags to the same values
+                groupConfig.CrossModuleInlineable = crossModuleInlineableCode;
+                groupConfig.CompileAllPossibleCrossModuleCode = false;
+                groupConfig.InstructionSetSupport = instructionSetSupport;
 
-                    ReadyToRunContainerFormat format = Get(_command.OutputFormat);
-                    if (format == ReadyToRunContainerFormat.PE && typeSystemContext.Target.Architecture == TargetArchitecture.Wasm32)
-                    {
-                        format = ReadyToRunContainerFormat.Wasm;
-                    }
-                    if (!composite && format != ReadyToRunContainerFormat.PE && format != ReadyToRunContainerFormat.Wasm)
-                    {
-                        throw new Exception(string.Format(SR.ErrorContainerFormatRequiresComposite, format));
-                    }
+                // Handle non-local generics command line option
+                ModuleDesc nonLocalGenericsHome = compileBubbleGenerics ? inputModules[0] : null;
+                string nonLocalGenericsModule = Get(_command.NonLocalGenericsModule);
+                if (nonLocalGenericsModule == "*")
+                {
+                    groupConfig.CompileAllPossibleCrossModuleCode = true;
+                    nonLocalGenericsHome = inputModules[0];
+                }
+                else if (nonLocalGenericsModule == "")
+                {
+                    // Nothing was specified
+                }
+                else
+                {
+                    bool matchFound = false;
 
-                    if (rtrHeaderSymbolName is not null)
+                    // Allow module to be specified by assembly name or by filename
+                    if (nonLocalGenericsModule.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+                        nonLocalGenericsModule = Path.GetFileNameWithoutExtension(nonLocalGenericsModule);
+                    foreach (var module in inputModules)
                     {
-                        if (!composite)
+                        if (String.Compare(module.Assembly.GetName().Name, nonLocalGenericsModule, StringComparison.OrdinalIgnoreCase) == 0)
                         {
-                            throw new Exception(SR.ErrorReadyToRunHeaderSymbolNameRequiresComposite);
-                        }
-
-                        if (string.IsNullOrWhiteSpace(rtrHeaderSymbolName))
-                        {
-                            throw new Exception(SR.ErrorReadyToRunHeaderSymbolNameEmpty);
+                            matchFound = true;
+                            nonLocalGenericsHome = module;
+                            groupConfig.CompileAllPossibleCrossModuleCode = true;
+                            break;
                         }
                     }
 
-                    bool compileBubbleGenerics = Get(_command.CompileBubbleGenerics);
-                    ReadyToRunCompilationModuleGroupBase compilationGroup;
-                    List<ICompilationRootProvider> compilationRoots = new List<ICompilationRootProvider>();
-                    ReadyToRunCompilationModuleGroupConfig groupConfig = new ReadyToRunCompilationModuleGroupConfig();
-                    groupConfig.Context = typeSystemContext;
-                    groupConfig.IsCompositeBuildMode = composite;
-                    groupConfig.IsInputBubble = _inputBubble;
-                    groupConfig.CompilationModuleSet = inputModules;
-                    groupConfig.VersionBubbleModuleSet = versionBubbleModules;
-                    groupConfig.CompileGenericDependenciesFromVersionBubbleModuleSet = compileBubbleGenerics;
-                    groupConfig.CrossModuleGenericCompilation = crossModuleInlineableCode.Count > 0;
-                    groupConfig.CrossModuleInlining = groupConfig.CrossModuleGenericCompilation; // Currently we set these flags to the same values
-                    groupConfig.CrossModuleInlineable = crossModuleInlineableCode;
-                    groupConfig.CompileAllPossibleCrossModuleCode = false;
-                    groupConfig.InstructionSetSupport = instructionSetSupport;
-
-                    // Handle non-local generics command line option
-                    ModuleDesc nonLocalGenericsHome = compileBubbleGenerics ? inputModules[0] : null;
-                    string nonLocalGenericsModule = Get(_command.NonLocalGenericsModule);
-                    if (nonLocalGenericsModule == "*")
+                    if (!matchFound)
                     {
-                        groupConfig.CompileAllPossibleCrossModuleCode = true;
-                        nonLocalGenericsHome = inputModules[0];
-                    }
-                    else if (nonLocalGenericsModule == "")
-                    {
-                        // Nothing was specified
-                    }
-                    else
-                    {
-                        bool matchFound = false;
-
-                        // Allow module to be specified by assembly name or by filename
-                        if (nonLocalGenericsModule.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
-                            nonLocalGenericsModule = Path.GetFileNameWithoutExtension(nonLocalGenericsModule);
-                        foreach (var module in inputModules)
+                        foreach (var module in _referenceableModules)
                         {
                             if (String.Compare(module.Assembly.GetName().Name, nonLocalGenericsModule, StringComparison.OrdinalIgnoreCase) == 0)
                             {
                                 matchFound = true;
-                                nonLocalGenericsHome = module;
-                                groupConfig.CompileAllPossibleCrossModuleCode = true;
                                 break;
                             }
                         }
 
                         if (!matchFound)
                         {
-                            foreach (var module in _referenceableModules)
-                            {
-                                if (String.Compare(module.Assembly.GetName().Name, nonLocalGenericsModule, StringComparison.OrdinalIgnoreCase) == 0)
-                                {
-                                    matchFound = true;
-                                    break;
-                                }
-                            }
-
-                            if (!matchFound)
-                            {
-                                throw new CommandLineException(string.Format(SR.ErrorNonLocalGenericsModule, nonLocalGenericsModule));
-                            }
+                            throw new CommandLineException(string.Format(SR.ErrorNonLocalGenericsModule, nonLocalGenericsModule));
                         }
                     }
-
-                    bool compileNoMethods = Get(_command.CompileNoMethods);
-                    if (singleMethod != null)
-                    {
-                        // Compiling just a single method
-                        compilationGroup = new SingleMethodCompilationModuleGroup(
-                            groupConfig,
-                            singleMethod);
-                        compilationRoots.Add(new SingleMethodRootProvider(singleMethod));
-                    }
-                    else if (compileNoMethods)
-                    {
-                        compilationGroup = new NoMethodsCompilationModuleGroup(groupConfig);
-                    }
-                    else
-                    {
-                        // Single assembly compilation.
-                        compilationGroup = new ReadyToRunSingleAssemblyCompilationModuleGroup(groupConfig);
-                    }
-
-                    // R2R field layout needs compilation group information
-                    typeSystemContext.SetCompilationGroup(compilationGroup);
-
-                    // Load any profiles generated by method call chain analyis
-                    CallChainProfile jsonProfile = null;
-                    string callChainProfileFile = Get(_command.CallChainProfileFile);
-                    if (!string.IsNullOrEmpty(callChainProfileFile))
-                    {
-                        jsonProfile = new CallChainProfile(callChainProfileFile, typeSystemContext, _referenceableModules);
-                    }
-
-                    // Examine profile guided information as appropriate
-                    MIbcProfileParser.MibcGroupParseRules parseRule;
-                    if (nonLocalGenericsHome != null)
-                    {
-                        parseRule = MIbcProfileParser.MibcGroupParseRules.VersionBubbleWithCrossModule2;
-                    }
-                    else
-                    {
-                        parseRule = MIbcProfileParser.MibcGroupParseRules.VersionBubbleWithCrossModule1;
-                    }
-
-                    ProfileDataManager profileDataManager =
-                        new ProfileDataManager(logger,
-                        _referenceableModules,
-                        inputModules,
-                        versionBubbleModules,
-                        crossModuleInlineableCode,
-                        nonLocalGenericsHome,
-                        mibcFiles,
-                        parseRule,
-                        jsonProfile,
-                        typeSystemContext,
-                        compilationGroup,
-                        Get(_command.EmbedPgoData),
-                        Get(_command.SupportIbc),
-                        crossModuleInlineableCode.Count == 0 ? compilationGroup.VersionsWithMethodBody : compilationGroup.CrossModuleInlineable,
-                        Get(_command.SynthesizeRandomMibc));
-
-                    bool partial = Get(_command.Partial);
-                    compilationGroup.ApplyProfileGuidedOptimizationData(profileDataManager, partial);
-
-                    if ((singleMethod == null) && !compileNoMethods)
-                    {
-                        // For normal compilations add compilation roots.
-                        foreach (var module in rootingModules)
-                        {
-                            compilationRoots.Add(new ReadyToRunProfilingRootProvider(module, profileDataManager));
-                            // If we're doing partial precompilation, only use profile data.
-                            if (!partial)
-                            {
-                                if (ReadyToRunVisibilityRootProvider.UseVisibilityBasedRootProvider(module))
-                                {
-                                    compilationRoots.Add(new ReadyToRunVisibilityRootProvider(module));
-
-                                    if (ReadyToRunXmlRootProvider.TryCreateRootProviderFromEmbeddedDescriptorFile(module, out ReadyToRunXmlRootProvider xmlProvider))
-                                    {
-                                        compilationRoots.Add(xmlProvider);
-                                    }
-                                }
-                                else
-                                {
-                                    compilationRoots.Add(new ReadyToRunLibraryRootProvider(module));
-                                }
-                            }
-
-                            if (!_command.CompositeOrInputBubble)
-                            {
-                                break;
-                            }
-                        }
-                    }
-
-                    if (!typeSystemContext.TargetAllowsRuntimeCodeGeneration && typeSystemContext.BubbleIncludesCoreModule)
-                    {
-                        // For some platforms, we cannot JIT.
-                        // As a result, we need to ensure that we have a fallback implementation for all hardware intrinsics
-                        // that are marked as supported.
-                        // Otherwise, the interpreter won't have an implementation it can call for any non-ReadyToRun code.
-                        compilationRoots.Add(new ReadyToRunHardwareIntrinsicRootProvider(typeSystemContext));
-                    }
-
-                    // In single-file compilation mode, use the assembly's DebuggableAttribute to determine whether to optimize
-                    // or produce debuggable code if an explicit optimization level was not specified on the command line
-                    OptimizationMode optimizationMode = _command.OptimizationMode;
-                    if (optimizationMode == OptimizationMode.None && !Get(_command.OptimizeDisabled) && !composite)
-                    {
-                        System.Diagnostics.Debug.Assert(inputModules.Count == 1);
-                        optimizationMode = ((EcmaAssembly)inputModules[0].Assembly).HasOptimizationsDisabled() ? OptimizationMode.None : OptimizationMode.Blended;
-                    }
-
-                    CompositeImageSettings compositeImageSettings = new CompositeImageSettings();
-                    string compositeKeyFile = Get(_command.CompositeKeyFile);
-                    if (compositeKeyFile != null)
-                    {
-                        byte[] compositeStrongNameKey = File.ReadAllBytes(compositeKeyFile);
-                        if (!IsValidPublicKey(compositeStrongNameKey))
-                        {
-                            throw new Exception(string.Format(SR.ErrorCompositeKeyFileNotPublicKey));
-                        }
-
-                        compositeImageSettings.PublicKey = compositeStrongNameKey.ToImmutableArray();
-                    }
-
-                    if (rtrHeaderSymbolName != null)
-                    {
-                        compositeImageSettings.ReadyToRunHeaderSymbolName = rtrHeaderSymbolName;
-                    }
-
-                    //
-                    // Compile
-                    //
-
-                    ReadyToRunCodegenCompilationBuilder builder = new ReadyToRunCodegenCompilationBuilder(
-                        typeSystemContext, compilationGroup, _allInputFilePaths.Values, compositeRootPath);
-                    string compilationUnitPrefix = "";
-                    builder.UseCompilationUnitPrefix(compilationUnitPrefix);
-
-                    ILProvider ilProvider = new ReadyToRunILProvider(compilationGroup);
-
-                    DependencyTrackingLevel trackingLevel = dgmlLogFileName == null ?
-                        DependencyTrackingLevel.None : (Get(_command.GenerateFullDgmlLog) ? DependencyTrackingLevel.All : DependencyTrackingLevel.First);
-
-                    NodeFactoryOptimizationFlags nodeFactoryFlags = new NodeFactoryOptimizationFlags();
-                    nodeFactoryFlags.OptimizeAsyncMethods = Get(_command.AsyncMethodOptimization);
-                    nodeFactoryFlags.TypeValidation = Get(_command.TypeValidation);
-                    nodeFactoryFlags.DeterminismStress = Get(_command.DeterminismStress);
-                    nodeFactoryFlags.PrintReproArgs = Get(_command.PrintReproInstructions);
-                    nodeFactoryFlags.EnableCachedInterfaceDispatchSupport = Get(_command.EnableCachedInterfaceDispatchSupport) ?? !typeSystemContext.TargetAllowsRuntimeCodeGeneration;
-                    nodeFactoryFlags.StripInliningInfo = Get(_command.StripInliningInfo);
-                    nodeFactoryFlags.StripDebugInfo = Get(_command.StripDebugInfo);
-                    nodeFactoryFlags.StripILBodies = Get(_command.StripILBodies);
-
-                    builder
-                        .UseMapFile(Get(_command.Map))
-                        .UseMapCsvFile(Get(_command.MapCsv))
-                        .UsePdbFile(Get(_command.Pdb), Get(_command.PdbPath))
-                        .UsePerfMapFile(Get(_command.PerfMap), Get(_command.PerfMapPath), Get(_command.PerfMapFormatVersion))
-                        .UseProfileFile(jsonProfile != null)
-                        .UseProfileData(profileDataManager)
-                        .UseNodeFactoryOptimizationFlags(nodeFactoryFlags)
-                        .FileLayoutAlgorithms(Get(_command.MethodLayout), Get(_command.FileLayout))
-                        .UseCompositeImageSettings(compositeImageSettings)
-                        .UseJitPath(Get(_command.JitPath))
-                        .UseInstructionSetSupport(instructionSetSupport)
-                        .UseCustomPESectionAlignment(Get(_command.CustomPESectionAlignment))
-                        .UseVerifyTypeAndFieldLayout(Get(_command.VerifyTypeAndFieldLayout))
-                        .UseHotColdSplitting(Get(_command.HotColdSplitting))
-                        .GenerateOutputFile(outFile)
-                        .UseImageBase(_imageBase)
-                        .UseContainerFormat(format)
-                        .UseILProvider(ilProvider)
-                        .UseBackendOptions(Get(_command.CodegenOptions))
-                        .UseLogger(logger)
-                        .UseParallelism(Get(_command.Parallelism))
-                        .UseResilience(Get(_command.Resilient))
-                        .UseDependencyTracking(trackingLevel)
-                        .UseCompilationRoots(compilationRoots)
-                        .UseOptimizationMode(optimizationMode);
-
-                    builder.UseGenericCycleDetection(
-                        depthCutoff: Get(_command.GenericCycleDepthCutoff),
-                        breadthCutoff: Get(_command.GenericCycleBreadthCutoff));
-
-                    builder.UsePrintReproInstructions(CreateReproArgumentString);
-
-                    compilation = builder.ToCompilation();
-
                 }
-                compilation.Compile(outFile);
 
-                if (dgmlLogFileName != null)
-                    compilation.WriteDependencyLog(dgmlLogFileName);
+                bool compileNoMethods = Get(_command.CompileNoMethods);
+                if (singleMethod != null)
+                {
+                    // Compiling just a single method
+                    compilationGroup = new SingleMethodCompilationModuleGroup(
+                        groupConfig,
+                        singleMethod);
+                    compilationRoots.Add(new SingleMethodRootProvider(singleMethod));
+                }
+                else if (compileNoMethods)
+                {
+                    compilationGroup = new NoMethodsCompilationModuleGroup(groupConfig);
+                }
+                else
+                {
+                    // Single assembly compilation.
+                    compilationGroup = new ReadyToRunSingleAssemblyCompilationModuleGroup(groupConfig);
+                }
 
-                compilation.Dispose();
+                // R2R field layout needs compilation group information
+                typeSystemContext.SetCompilationGroup(compilationGroup);
 
-                if (((ReadyToRunCodegenCompilation)compilation).DeterminismCheckFailed)
-                    throw new Exception("Determinism Check Failed");
+                // Load any profiles generated by method call chain analyis
+                CallChainProfile jsonProfile = null;
+                string callChainProfileFile = Get(_command.CallChainProfileFile);
+                if (!string.IsNullOrEmpty(callChainProfileFile))
+                {
+                    jsonProfile = new CallChainProfile(callChainProfileFile, typeSystemContext, _referenceableModules);
+                }
+
+                // Examine profile guided information as appropriate
+                MIbcProfileParser.MibcGroupParseRules parseRule;
+                if (nonLocalGenericsHome != null)
+                {
+                    parseRule = MIbcProfileParser.MibcGroupParseRules.VersionBubbleWithCrossModule2;
+                }
+                else
+                {
+                    parseRule = MIbcProfileParser.MibcGroupParseRules.VersionBubbleWithCrossModule1;
+                }
+
+                ProfileDataManager profileDataManager =
+                    new ProfileDataManager(logger,
+                    _referenceableModules,
+                    inputModules,
+                    versionBubbleModules,
+                    crossModuleInlineableCode,
+                    nonLocalGenericsHome,
+                    mibcFiles,
+                    parseRule,
+                    jsonProfile,
+                    typeSystemContext,
+                    compilationGroup,
+                    Get(_command.EmbedPgoData),
+                    Get(_command.SupportIbc),
+                    crossModuleInlineableCode.Count == 0 ? compilationGroup.VersionsWithMethodBody : compilationGroup.CrossModuleInlineable,
+                    Get(_command.SynthesizeRandomMibc));
+
+                bool partial = Get(_command.Partial);
+                compilationGroup.ApplyProfileGuidedOptimizationData(profileDataManager, partial);
+
+                if ((singleMethod == null) && !compileNoMethods)
+                {
+                    // For normal compilations add compilation roots.
+                    foreach (var module in rootingModules)
+                    {
+                        compilationRoots.Add(new ReadyToRunProfilingRootProvider(module, profileDataManager));
+                        // If we're doing partial precompilation, only use profile data.
+                        if (!partial)
+                        {
+                            if (ReadyToRunVisibilityRootProvider.UseVisibilityBasedRootProvider(module))
+                            {
+                                compilationRoots.Add(new ReadyToRunVisibilityRootProvider(module));
+
+                                if (ReadyToRunXmlRootProvider.TryCreateRootProviderFromEmbeddedDescriptorFile(module, out ReadyToRunXmlRootProvider xmlProvider))
+                                {
+                                    compilationRoots.Add(xmlProvider);
+                                }
+                            }
+                            else
+                            {
+                                compilationRoots.Add(new ReadyToRunLibraryRootProvider(module));
+                            }
+                        }
+
+                        if (!_command.CompositeOrInputBubble)
+                        {
+                            break;
+                        }
+                    }
+                }
+
+                if (!typeSystemContext.TargetAllowsRuntimeCodeGeneration && typeSystemContext.BubbleIncludesCoreModule)
+                {
+                    // For some platforms, we cannot JIT.
+                    // As a result, we need to ensure that we have a fallback implementation for all hardware intrinsics
+                    // that are marked as supported.
+                    // Otherwise, the interpreter won't have an implementation it can call for any non-ReadyToRun code.
+                    compilationRoots.Add(new ReadyToRunHardwareIntrinsicRootProvider(typeSystemContext));
+                }
+
+                // In single-file compilation mode, use the assembly's DebuggableAttribute to determine whether to optimize
+                // or produce debuggable code if an explicit optimization level was not specified on the command line
+                OptimizationMode optimizationMode = _command.OptimizationMode;
+                if (optimizationMode == OptimizationMode.None && !Get(_command.OptimizeDisabled) && !composite)
+                {
+                    System.Diagnostics.Debug.Assert(inputModules.Count == 1);
+                    optimizationMode = ((EcmaAssembly)inputModules[0].Assembly).HasOptimizationsDisabled() ? OptimizationMode.None : OptimizationMode.Blended;
+                }
+
+                CompositeImageSettings compositeImageSettings = new CompositeImageSettings();
+                string compositeKeyFile = Get(_command.CompositeKeyFile);
+                if (compositeKeyFile != null)
+                {
+                    byte[] compositeStrongNameKey = File.ReadAllBytes(compositeKeyFile);
+                    if (!IsValidPublicKey(compositeStrongNameKey))
+                    {
+                        throw new Exception(string.Format(SR.ErrorCompositeKeyFileNotPublicKey));
+                    }
+
+                    compositeImageSettings.PublicKey = compositeStrongNameKey.ToImmutableArray();
+                }
+
+                if (rtrHeaderSymbolName != null)
+                {
+                    compositeImageSettings.ReadyToRunHeaderSymbolName = rtrHeaderSymbolName;
+                }
+
+                //
+                // Compile
+                //
+
+                ReadyToRunCodegenCompilationBuilder builder = new ReadyToRunCodegenCompilationBuilder(
+                    typeSystemContext, compilationGroup, _allInputFilePaths.Values, compositeRootPath);
+                string compilationUnitPrefix = "";
+                builder.UseCompilationUnitPrefix(compilationUnitPrefix);
+
+                ILProvider ilProvider = new ReadyToRunILProvider(compilationGroup);
+
+                DependencyTrackingLevel trackingLevel = dgmlLogFileName == null ?
+                    DependencyTrackingLevel.None : (Get(_command.GenerateFullDgmlLog) ? DependencyTrackingLevel.All : DependencyTrackingLevel.First);
+
+                NodeFactoryOptimizationFlags nodeFactoryFlags = new NodeFactoryOptimizationFlags();
+                nodeFactoryFlags.OptimizeAsyncMethods = Get(_command.AsyncMethodOptimization);
+                nodeFactoryFlags.TypeValidation = Get(_command.TypeValidation);
+                nodeFactoryFlags.DeterminismStress = Get(_command.DeterminismStress);
+                nodeFactoryFlags.PrintReproArgs = Get(_command.PrintReproInstructions);
+                nodeFactoryFlags.EnableCachedInterfaceDispatchSupport = Get(_command.EnableCachedInterfaceDispatchSupport) ?? !typeSystemContext.TargetAllowsRuntimeCodeGeneration;
+                nodeFactoryFlags.StripInliningInfo = Get(_command.StripInliningInfo);
+                nodeFactoryFlags.StripDebugInfo = Get(_command.StripDebugInfo);
+                nodeFactoryFlags.StripILBodies = Get(_command.StripILBodies);
+
+                builder
+                    .UseMapFile(Get(_command.Map))
+                    .UseMapCsvFile(Get(_command.MapCsv))
+                    .UsePdbFile(Get(_command.Pdb), Get(_command.PdbPath))
+                    .UsePerfMapFile(Get(_command.PerfMap), Get(_command.PerfMapPath), Get(_command.PerfMapFormatVersion))
+                    .UseProfileFile(jsonProfile != null)
+                    .UseProfileData(profileDataManager)
+                    .UseNodeFactoryOptimizationFlags(nodeFactoryFlags)
+                    .FileLayoutAlgorithms(Get(_command.MethodLayout), Get(_command.FileLayout))
+                    .UseCompositeImageSettings(compositeImageSettings)
+                    .UseJitPath(Get(_command.JitPath))
+                    .UseInstructionSetSupport(instructionSetSupport)
+                    .UseCustomPESectionAlignment(Get(_command.CustomPESectionAlignment))
+                    .UseVerifyTypeAndFieldLayout(Get(_command.VerifyTypeAndFieldLayout))
+                    .UseHotColdSplitting(Get(_command.HotColdSplitting))
+                    .GenerateOutputFile(outFile)
+                    .UseImageBase(_imageBase)
+                    .UseContainerFormat(format)
+                    .UseILProvider(ilProvider)
+                    .UseBackendOptions(Get(_command.CodegenOptions))
+                    .UseLogger(logger)
+                    .UseParallelism(Get(_command.Parallelism))
+                    .UseResilience(Get(_command.Resilient))
+                    .UseDependencyTracking(trackingLevel)
+                    .UseCompilationRoots(compilationRoots)
+                    .UseOptimizationMode(optimizationMode);
+
+                builder.UseGenericCycleDetection(
+                    depthCutoff: Get(_command.GenericCycleDepthCutoff),
+                    breadthCutoff: Get(_command.GenericCycleBreadthCutoff));
+
+                builder.UsePrintReproInstructions(CreateReproArgumentString);
+
+                return builder.ToCompilation();
             }
+
         }
 
         private static bool GetTargetAllowsRuntimeCodeGeneration(TargetOS operatingSystem, TargetArchitecture architecture)
