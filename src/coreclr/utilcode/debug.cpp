@@ -26,7 +26,7 @@
 
 #ifdef HOST_WINDOWS
 extern "C" _CRTIMP int __cdecl _flushall(void);
-void CreateCrashDumpIfEnabled(bool stackoverflow = false);
+void CreateCrashDumpIfEnabled(EXCEPTION_POINTERS* pExceptionInfo = nullptr, bool stackoverflow = false);
 #endif
 
 // Global state counter to implement SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE.

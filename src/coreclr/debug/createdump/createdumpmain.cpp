@@ -29,13 +29,15 @@ const char* g_help = "createdump [options]\n"
 "-d, --diag - enable diagnostic messages.\n"
 "-v, --verbose - enable verbose diagnostic messages.\n"
 "-l, --logtofile - file path and name to log diagnostic messages.\n"
+"--crashthread <id> - the thread id of the crashing thread.\n"
 #ifdef HOST_UNIX
 "--crashreport - write crash report file (dump file path + .crashreport.json).\n"
 "--crashreportonly - write crash report file only (no dump).\n"
-"--crashthread <id> - the thread id of the crashing thread.\n"
 "--signal <code> - the signal code of the crash.\n"
 "--singlefile - single-file app model.\n"
 "--nativeaot - native AOT app model.\n"
+#else
+"--exception-pointers <address> - the address of the crash EXCEPTION_POINTERS in the target process (requires --crashthread).\n"
 #endif
 ;
 
@@ -74,6 +76,7 @@ int createdump_main(const int argc, const char* argv[])
     options.SignalErrno = 0;
     options.SignalAddress = 0;
     options.ExceptionRecord = 0;
+    options.ExceptionPointers = 0;
     bool help = false;
     int exitCode = 0;
 
@@ -103,6 +106,16 @@ int createdump_main(const int argc, const char* argv[])
             {
                 options.DumpType = DumpType::Full;
             }
+            else if (strcmp(*argv, "--crashthread") == 0)
+            {
+                options.CrashThread = (int)strtoul(*++argv, nullptr, 10);
+            }
+#ifdef HOST_WINDOWS
+            else if (strcmp(*argv, "--exception-pointers") == 0)
+            {
+                options.ExceptionPointers = strtoull(*++argv, nullptr, 10);
+            }
+#endif
 #ifdef HOST_UNIX
             else if (strcmp(*argv, "--crashreport") == 0)
             {
@@ -112,10 +125,6 @@ int createdump_main(const int argc, const char* argv[])
             {
                 options.CrashReport = true;
                 options.CreateDump = false;
-            }
-            else if (strcmp(*argv, "--crashthread") == 0)
-            {
-                options.CrashThread = atoi(*++argv);
             }
             else if (strcmp(*argv, "--signal") == 0)
             {
