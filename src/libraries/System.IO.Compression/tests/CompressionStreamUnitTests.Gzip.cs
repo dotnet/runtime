@@ -211,6 +211,93 @@ namespace System.IO.Compression
             Assert.Equal(-1, stream.ReadByte());
         }
 
+        [InlineData(TestScenario.Read)]
+        [InlineData(TestScenario.ReadAsync)]
+        [InlineData(TestScenario.Copy)]
+        [InlineData(TestScenario.CopyAsync)]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TrailingLoneGZipId1_StrictValidation_RewindsWhenSeekableThrowsWhenNot(TestScenario testScenario)
+        {
+            // Guards the intentional strict-validation behavior change for a trailing lone GZip ID1 (0x1F).
+            // The switch is read once into a static readonly field, so it must be set before the type loads;
+            // RemoteExecutor gives each case a fresh process to avoid global switch contamination.
+            RemoteExecutor.Invoke(async (testScenario) =>
+            {
+                TestScenario scenario = Enum.Parse<TestScenario>(testScenario);
+
+                AppContext.SetSwitch("System.IO.Compression.UseStrictValidation", true);
+
+                byte[] payload = "hello"u8.ToArray();
+                byte[] gzip;
+                using (var ms = new MemoryStream())
+                {
+                    using (var gz = new GZipStream(ms, CompressionLevel.SmallestSize, leaveOpen: true))
+                    {
+                        gz.Write(payload);
+                    }
+                    gzip = ms.ToArray();
+                }
+
+                // A single trailing GZip ID1 (0x1F) byte: speculatively consumed as a possible concatenated
+                // member, but it is actually trailing data.
+                byte[] combined = new byte[gzip.Length + 1];
+                gzip.CopyTo(combined, 0);
+                combined[^1] = 0x1F;
+
+                static async Task<byte[]> DecompressAsync(Stream source, TestScenario scenario)
+                {
+                    using var gz = new GZipStream(source, CompressionMode.Decompress, leaveOpen: true);
+                    using var output = new MemoryStream();
+                    switch (scenario)
+                    {
+                        case TestScenario.Copy:
+                            gz.CopyTo(output);
+                            break;
+                        case TestScenario.CopyAsync:
+                            await gz.CopyToAsync(output);
+                            break;
+                        case TestScenario.Read:
+                        {
+                            byte[] buffer = new byte[64];
+                            int n;
+                            while ((n = gz.Read(buffer, 0, buffer.Length)) > 0)
+                            {
+                                output.Write(buffer, 0, n);
+                            }
+                            break;
+                        }
+                        case TestScenario.ReadAsync:
+                        {
+                            byte[] buffer = new byte[64];
+                            int n;
+                            while ((n = await gz.ReadAsync(buffer)) > 0)
+                            {
+                                output.Write(buffer, 0, n);
+                            }
+                            break;
+                        }
+                    }
+                    return output.ToArray();
+                }
+
+                // Seekable: even under strict validation the trailing 0x1F is rewound and preserved, not thrown on.
+                var seekable = new LocalMemoryStream();
+                seekable.Write(combined, 0, combined.Length);
+                seekable.Position = 0;
+                byte[] decompressed = await DecompressAsync(seekable, scenario);
+                Assert.Equal(payload, decompressed);
+                Assert.Equal(gzip.Length, seekable.Position);
+                Assert.Equal(0x1F, seekable.ReadByte());
+
+                // Non-seekable: the probe byte cannot be rewound, so strict validation must still throw.
+                var nonSeekable = new LocalMemoryStream();
+                nonSeekable.Write(combined, 0, combined.Length);
+                nonSeekable.Position = 0;
+                nonSeekable.SetCanSeek(false);
+                await Assert.ThrowsAsync<InvalidDataException>(() => DecompressAsync(nonSeekable, scenario));
+            }, testScenario.ToString()).Dispose();
+        }
+
         [Theory]
         [InlineData(1000, TestScenario.Read, 1000, 1)]
         [InlineData(1000, TestScenario.ReadByte, 0, 1)]
