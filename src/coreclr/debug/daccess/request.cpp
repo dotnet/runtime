@@ -2890,7 +2890,8 @@ ClrDataAccess::GetGCHeapStaticData(struct DacpGcHeapDetails *detailsData)
 
     detailsData->alloc_allocated = (CLRDATA_ADDRESS)*g_gcDacGlobals->alloc_allocated;
     detailsData->ephemeral_heap_segment = (CLRDATA_ADDRESS)*g_gcDacGlobals->ephemeral_heap_segment;
-    if (g_gcDacGlobals->minor_version_number >= 9)
+    if (g_gcDacGlobals->minor_version_number >= 9 &&
+        g_gcDacGlobals->card_table.IsValid())
     {
         detailsData->card_table = (CLRDATA_ADDRESS)*g_gcDacGlobals->card_table;
     }
