@@ -192,6 +192,30 @@ namespace Internal.Cryptography
             return recipientIdentifier;
         }
 
+#if NET11_0_OR_GREATER
+        internal static bool IsMLKemAlgorithm(string? oid) =>
+            oid is Oids.MlKem512 or
+                Oids.MlKem768 or
+                Oids.MlKem1024;
+
+        internal static bool IsCompositeMLKemAlgorithm(string? oid) =>
+            oid is Oids.MLKem768WithRsaOaep2048Sha3_256 or
+                Oids.MLKem768WithRsaOaep3072Sha3_256 or
+                Oids.MLKem768WithRsaOaep4096Sha3_256 or
+                Oids.MLKem768WithX25519Sha3_256 or
+                Oids.MLKem768WithECDiffieHellmanP256Sha3_256 or
+                Oids.MLKem768WithECDiffieHellmanP384Sha3_256 or
+                Oids.MLKem768WithECDiffieHellmanBrainpoolP256r1Sha3_256 or
+                Oids.MLKem1024WithRsaOaep3072Sha3_256 or
+                Oids.MLKem1024WithECDiffieHellmanP384Sha3_256 or
+                Oids.MLKem1024WithECDiffieHellmanBrainpoolP384r1Sha3_256 or
+                Oids.MLKem1024WithX448Sha3_256 or
+                Oids.MLKem1024WithECDiffieHellmanP521Sha3_256;
+
+        internal static bool IsKeyEncapsulationAlgorithm(string? oid) =>
+            IsMLKemAlgorithm(oid) || IsCompositeMLKemAlgorithm(oid);
+#endif
+
         public static X509Certificate2Collection GetStoreCertificates(StoreName storeName, StoreLocation storeLocation, bool openExistingOnly)
         {
             using (X509Store store = new X509Store(storeName, storeLocation))

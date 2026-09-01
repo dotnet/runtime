@@ -11,7 +11,7 @@ namespace System.Security.Cryptography.Pkcs
     public sealed partial class EnvelopedCms
     {
         /// <summary>
-        /// Decrypts the content using the specified recipient information and ML-KEM private key.
+        ///   Decrypts the content using the specified recipient information and ML-KEM private key.
         /// </summary>
         /// <param name="recipientInfo">The recipient information that identifies the encrypted key.</param>
         /// <param name="privateKey">The private key to use for decapsulation.</param>
@@ -24,7 +24,7 @@ namespace System.Security.Cryptography.Pkcs
         }
 
         /// <summary>
-        /// Decrypts the content using the specified recipient information and Composite ML-KEM private key.
+        ///   Decrypts the content using the specified recipient information and Composite ML-KEM private key.
         /// </summary>
         /// <param name="recipientInfo">The recipient information that identifies the encrypted key.</param>
         /// <param name="privateKey">The private key to use for decapsulation.</param>

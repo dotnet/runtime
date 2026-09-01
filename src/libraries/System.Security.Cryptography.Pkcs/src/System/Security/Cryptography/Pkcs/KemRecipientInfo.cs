@@ -8,7 +8,7 @@ using Internal.Cryptography;
 namespace System.Security.Cryptography.Pkcs
 {
     /// <summary>
-    /// Represents information about a key encapsulation recipient.
+    ///   Represents information about a key encapsulation recipient.
     /// </summary>
     public sealed class KemRecipientInfo : RecipientInfo
     {
@@ -38,36 +38,36 @@ namespace System.Security.Cryptography.Pkcs
         public override byte[] EncryptedKey => _lazyEncryptedKey ??= Pal.EncryptedKey;
 
         /// <summary>
-        /// Gets the key encapsulation algorithm.
+        ///   Gets the key encapsulation algorithm.
         /// </summary>
         /// <value>The key encapsulation algorithm.</value>
         public AlgorithmIdentifier KeyEncapsulationAlgorithm =>
             _lazyKeyEncapsulationAlgorithm ??= Pal.KeyEncapsulationAlgorithm;
 
         /// <summary>
-        /// Gets the key encapsulation ciphertext.
+        ///   Gets the key encapsulation ciphertext.
         /// </summary>
         /// <value>The key encapsulation ciphertext.</value>
         public ReadOnlyMemory<byte> KeyEncapsulationCiphertext => Pal.KeyEncapsulationCiphertext;
 
         /// <summary>
-        /// Gets the key derivation algorithm.
+        ///   Gets the key derivation algorithm.
         /// </summary>
         /// <value>The key derivation algorithm.</value>
         public AlgorithmIdentifier KeyDerivationAlgorithm =>
             _lazyKeyDerivationAlgorithm ??= Pal.KeyDerivationAlgorithm;
 
         /// <summary>
-        /// Gets the key-encryption key length, in bytes.
+        ///   Gets the key-encryption key length, in bytes.
         /// </summary>
         /// <value>The key-encryption key length, in bytes.</value>
         public int KeyEncryptionKeyLengthInBytes => Pal.KeyEncryptionKeyLengthInBytes;
 
         /// <summary>
-        /// Gets the optional user keying material.
+        ///   Gets the optional user keying material.
         /// </summary>
         /// <value>
-        /// The user keying material, or <see langword="null"/> when the optional value is not present.
+        ///   The user keying material, or <see langword="null"/> when the optional value is not present.
         /// </value>
         public ReadOnlyMemory<byte>? UserKeyingMaterial => Pal.UserKeyingMaterial;
 

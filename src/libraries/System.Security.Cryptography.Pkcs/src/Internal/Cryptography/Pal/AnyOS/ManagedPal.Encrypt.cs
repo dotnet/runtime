@@ -111,7 +111,7 @@ namespace Internal.Cryptography.Pal.AnyOS
 
 #if NET11_0_OR_GREATER
                 if (recipient.IsKeyEncapsulation ||
-                    CmsRecipient.IsKeyEncapsulationAlgorithm(recipient.Certificate.GetKeyAlgorithm()))
+                    PkcsHelpers.IsKeyEncapsulationAlgorithm(recipient.Certificate.GetKeyAlgorithm()))
                 {
                     envelopedData.RecipientInfos[i] = MakeKemRecipientInfo(cek, recipient);
                     hasOtherRecipientInfo = true;

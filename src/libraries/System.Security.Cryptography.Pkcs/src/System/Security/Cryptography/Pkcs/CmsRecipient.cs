@@ -5,6 +5,8 @@ using System;
 using System.Diagnostics;
 using System.Security.Cryptography.X509Certificates;
 
+using Internal.Cryptography;
+
 namespace System.Security.Cryptography.Pkcs
 {
     public sealed class CmsRecipient
@@ -77,52 +79,41 @@ namespace System.Security.Cryptography.Pkcs
         internal ReadOnlyMemory<byte>? KeyEncapsulationUserKeyingMaterial { get; private set; }
 
         /// <summary>
-        /// Creates a recipient that uses key encapsulation.
+        ///   Creates a recipient that uses key encapsulation.
         /// </summary>
         /// <param name="certificate">The recipient certificate.</param>
-        /// <param name="userKeyingMaterial">The optional user keying material.</param>
+        /// <param name="userKeyingMaterial">The user keying material to include.</param>
         /// <returns>A recipient that uses key encapsulation.</returns>
+        /// <remarks>
+        ///   This method always includes the user keying material field, including when
+        ///   <paramref name="userKeyingMaterial"/> is empty. Empty user keying material is distinct from
+        ///   absent user keying material. To omit the field, use <see cref="CmsRecipient(X509Certificate2)"/>.
+        /// </remarks>
         public static CmsRecipient CreateForKeyEncapsulation(
             X509Certificate2 certificate,
             ReadOnlySpan<byte> userKeyingMaterial) =>
             new CmsRecipient(SubjectIdentifierType.IssuerAndSerialNumber, certificate, userKeyingMaterial);
 
         /// <summary>
-        /// Creates a recipient that uses key encapsulation.
+        ///   Creates a recipient that uses key encapsulation.
         /// </summary>
         /// <param name="recipientIdentifierType">
-        /// One of the enumeration values that specifies how the recipient is identified.
+        ///   One of the enumeration values that specifies how the recipient is identified.
         /// </param>
         /// <param name="certificate">The recipient certificate.</param>
-        /// <param name="userKeyingMaterial">The optional user keying material.</param>
+        /// <param name="userKeyingMaterial">The user keying material to include.</param>
         /// <returns>A recipient that uses key encapsulation.</returns>
+        /// <remarks>
+        ///   This method always includes the user keying material field, including when
+        ///   <paramref name="userKeyingMaterial"/> is empty. Empty user keying material is distinct from
+        ///   absent user keying material. To omit the field, use
+        ///   <see cref="CmsRecipient(SubjectIdentifierType, X509Certificate2)"/>.
+        /// </remarks>
         public static CmsRecipient CreateForKeyEncapsulation(
             SubjectIdentifierType recipientIdentifierType,
             X509Certificate2 certificate,
             ReadOnlySpan<byte> userKeyingMaterial) =>
             new CmsRecipient(recipientIdentifierType, certificate, userKeyingMaterial);
-
-        internal static bool IsMLKemAlgorithm(string? oid) =>
-            oid is Oids.MlKem512 or
-                Oids.MlKem768 or
-                Oids.MlKem1024;
-
-        internal static bool IsCompositeMLKemAlgorithm(string? oid) =>
-            oid is Oids.MLKem768WithRsaOaep2048Sha3_256 or
-                Oids.MLKem768WithRsaOaep3072Sha3_256 or
-                Oids.MLKem768WithRsaOaep4096Sha3_256 or
-                Oids.MLKem768WithX25519Sha3_256 or
-                Oids.MLKem768WithECDiffieHellmanP256Sha3_256 or
-                Oids.MLKem768WithECDiffieHellmanP384Sha3_256 or
-                Oids.MLKem768WithECDiffieHellmanBrainpoolP256r1Sha3_256 or
-                Oids.MLKem1024WithRsaOaep3072Sha3_256 or
-                Oids.MLKem1024WithECDiffieHellmanP384Sha3_256 or
-                Oids.MLKem1024WithECDiffieHellmanBrainpoolP384r1Sha3_256 or
-                Oids.MLKem1024WithX448Sha3_256 or
-                Oids.MLKem1024WithECDiffieHellmanP521Sha3_256;
-
-        internal static bool IsKeyEncapsulationAlgorithm(string? oid) =>
-            IsMLKemAlgorithm(oid) || IsCompositeMLKemAlgorithm(oid);
 
         private CmsRecipient(
             SubjectIdentifierType recipientIdentifierType,
@@ -132,7 +123,7 @@ namespace System.Security.Cryptography.Pkcs
         {
             string keyAlgorithm = certificate.GetKeyAlgorithm();
 
-            if (!IsKeyEncapsulationAlgorithm(keyAlgorithm))
+            if (!PkcsHelpers.IsKeyEncapsulationAlgorithm(keyAlgorithm))
             {
                 throw new CryptographicException(SR.Cryptography_Cms_UnknownAlgorithm, keyAlgorithm);
             }

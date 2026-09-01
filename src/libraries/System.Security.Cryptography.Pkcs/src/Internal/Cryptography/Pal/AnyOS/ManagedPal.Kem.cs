@@ -60,7 +60,7 @@ namespace Internal.Cryptography.Pal.AnyOS
             {
                 string keyAlgorithm = recipient.Certificate.GetKeyAlgorithm();
 
-                if (CmsRecipient.IsCompositeMLKemAlgorithm(keyAlgorithm))
+                if (PkcsHelpers.IsCompositeMLKemAlgorithm(keyAlgorithm))
                 {
                     throw new PlatformNotSupportedException(
                         SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(CompositeMLKem)));
@@ -165,7 +165,7 @@ namespace Internal.Cryptography.Pal.AnyOS
             {
                 string kemAlgorithm = _asn.Kem.Algorithm;
 
-                if (CmsRecipient.IsCompositeMLKemAlgorithm(kemAlgorithm))
+                if (PkcsHelpers.IsCompositeMLKemAlgorithm(kemAlgorithm))
                 {
                     exception = new PlatformNotSupportedException(
                         SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(CompositeMLKem)));
@@ -173,7 +173,7 @@ namespace Internal.Cryptography.Pal.AnyOS
                     return null;
                 }
 
-                if (CmsRecipient.IsMLKemAlgorithm(kemAlgorithm))
+                if (PkcsHelpers.IsMLKemAlgorithm(kemAlgorithm))
                 {
                     using (MLKem? certificatePrivateKey = cert.GetMLKemPrivateKey())
                     {
@@ -354,19 +354,15 @@ namespace Internal.Cryptography.Pal.AnyOS
         where T2 : allows ref struct
         where T3 : allows ref struct
     {
-        private T1 _item1 { get; }
-        private T2 _item2 { get; }
-        private T3 _item3 { get; }
+        internal T1 Item1 { get; }
+        internal T2 Item2 { get; }
+        internal T3 Item3 { get; }
 
-        internal State3(T1 Item1, T2 Item2, T3 Item3)
+        internal State3(T1 item1, T2 item2, T3 item3)
         {
-            _item1 = Item1;
-            _item2 = Item2;
-            _item3 = Item3;
+            Item1 = item1;
+            Item2 = item2;
+            Item3 = item3;
         }
-
-        internal T1 Item1 => _item1;
-        internal T2 Item2 => _item2;
-        internal T3 Item3 => _item3;
     }
 }
