@@ -168,6 +168,7 @@ namespace LibraryImportGenerator.UnitTests
                     [return: MarshalAs(UnmanagedType.FunctionPtr)]
                     public static partial bool {|#1:Method2|}(int i);
                 }
+
                 """;
 
             await VerifyCS.VerifyAnalyzerAsync(source,
@@ -177,6 +178,110 @@ namespace LibraryImportGenerator.UnitTests
                 VerifyCS.Diagnostic(GeneratorDiagnostics.MarshalAsReturnConfigurationNotSupported)
                     .WithLocation(1)
                     .WithArguments(nameof(MarshalAsAttribute), "Method2"));
+        }
+
+        [Fact]
+        public async Task InvalidErrorHandlerAttribute_ReportsDiagnostic()
+        {
+            string source = """
+
+                using System;
+                using System.Runtime.InteropServices;
+
+                namespace System.Runtime.InteropServices
+                {
+                    [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
+                    internal sealed class ErrorHandlerAttribute : Attribute
+                    {
+                        public ErrorHandlerAttribute(Type marshallerType)
+                        {
+                        }
+
+                        public ErrorHandlerAttribute(Type marshallerType, int location)
+                        {
+                        }
+                    }
+                }
+
+                partial class Test
+                {
+                    [LibraryImport("DoesNotExist")]
+                    [{|#0:ErrorHandler(typeof(int))|}]
+                    public static partial void Method1();
+
+                    [LibraryImport("DoesNotExist")]
+                    [{|#1:ErrorHandler(typeof(int), 4)|}]
+                    public static partial void Method2();
+
+                    [LibraryImport("DoesNotExist")]
+                    [ErrorHandler(typeof(int), 0)]
+                    [{|#2:ErrorHandler(typeof(int), 1)|}]
+                    public static partial void Method3();
+                }
+                """;
+
+            await VerifyCS.VerifyAnalyzerAsync(source,
+                VerifyCS.Diagnostic(GeneratorDiagnostics.ConfigurationNotSupported)
+                    .WithLocation(0)
+                    .WithArguments("ErrorHandlerAttribute"),
+                VerifyCS.Diagnostic(GeneratorDiagnostics.ConfigurationNotSupported)
+                    .WithLocation(1)
+                    .WithArguments("ErrorHandlerAttribute"),
+                VerifyCS.Diagnostic(GeneratorDiagnostics.ConfigurationNotSupported)
+                    .WithLocation(2)
+                    .WithArguments("ErrorHandlerAttribute"));
+        }
+
+        [Fact]
+        public async Task ErrorHandlerWithMismatchedManagedType_ReportsDiagnostic()
+        {
+            string source = """
+
+                using System;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                namespace System.Runtime.InteropServices
+                {
+                    [AttributeUsage(AttributeTargets.Method)]
+                    internal sealed class ErrorHandlerAttribute : Attribute
+                    {
+                        public ErrorHandlerAttribute(Type marshallerType, int location)
+                        {
+                        }
+                    }
+                }
+
+                struct CustomError
+                {
+                }
+
+                [CustomMarshaller(typeof(CustomError), MarshalMode.Default, typeof(CustomErrorMarshaller))]
+                static class CustomErrorMarshaller
+                {
+                    public static int ConvertToUnmanaged(CustomError error) => 0;
+                    public static CustomError ConvertToManaged(int error) => default;
+                }
+
+                partial class Test
+                {
+                    [LibraryImport("DoesNotExist")]
+                    [{|#0:ErrorHandler(typeof(CustomErrorMarshaller), 0)|}]
+                    public static partial int Method1();
+
+                    [LibraryImport("DoesNotExist")]
+                    [{|#1:ErrorHandler(typeof(CustomErrorMarshaller), 1)|}]
+                    public static partial void Method2(out int error);
+                }
+                """;
+
+            await VerifyCS.VerifyAnalyzerAsync(source,
+                VerifyCS.Diagnostic(GeneratorDiagnostics.ConfigurationNotSupported)
+                    .WithLocation(0)
+                    .WithArguments("ErrorHandlerAttribute"),
+                VerifyCS.Diagnostic(GeneratorDiagnostics.ConfigurationNotSupported)
+                    .WithLocation(1)
+                    .WithArguments("ErrorHandlerAttribute"));
         }
 
         [Fact]
