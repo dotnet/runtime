@@ -1,11 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.IO;
 using System.Reflection.Runtime.Assemblies;
 using System.Reflection.Runtime.Assemblies.NativeFormat;
-using System.Reflection.Runtime.CustomAttributes.NativeFormat;
 using System.Reflection.Runtime.Dispensers;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.PropertyInfos;
@@ -166,26 +164,6 @@ namespace System.Reflection.Runtime.ParameterInfos.NativeFormat
         internal static NativeFormatMethodParameterInfo GetNativeFormatMethodParameterInfo(MethodBase member, int position, ParameterHandle parameterHandle, QSignatureTypeHandle qualifiedParameterType, TypeContext typeContext)
         {
             return new NativeFormatMethodParameterInfo(member, position, parameterHandle, qualifiedParameterType, typeContext);
-        }
-    }
-}
-
-namespace System.Reflection.Runtime.CustomAttributes
-{
-    //-----------------------------------------------------------------------------------------------------------
-    // CustomAttributeData objects returned by various CustomAttributes properties.
-    //-----------------------------------------------------------------------------------------------------------
-    internal abstract partial class RuntimeCustomAttributeData
-    {
-        internal static IEnumerable<CustomAttributeData> GetCustomAttributes(MetadataReader reader, CustomAttributeHandleCollection customAttributeHandles)
-        {
-            foreach (CustomAttributeHandle customAttributeHandle in customAttributeHandles)
-                yield return GetCustomAttributeData(reader, customAttributeHandle);
-        }
-
-        private static NativeFormatCustomAttributeData GetCustomAttributeData(MetadataReader reader, CustomAttributeHandle customAttributeHandle)
-        {
-            return new NativeFormatCustomAttributeData(reader, customAttributeHandle);
         }
     }
 }

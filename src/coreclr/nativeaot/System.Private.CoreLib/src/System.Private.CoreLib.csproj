@@ -64,6 +64,7 @@
   </ItemGroup>
   <ItemGroup>
     <!-- TODO: (async) once we know which helpers can actually be shared, move those to libraries partition -->
+    <Compile Include="$(CoreClrProjectRoot)System.Private.CoreLib\src\System\Reflection\RuntimeCustomAttributeData.cs" />
     <Compile Include="$(CoreClrProjectRoot)System.Private.CoreLib\src\System\Runtime\CompilerServices\AsyncHelpers.CoreCLR.cs" />
     <Compile Include="$(CoreClrProjectRoot)System.Private.CoreLib\src\System\Runtime\CompilerServices\AsyncHelpers.ValueTaskSourceContinuation.cs" />
     <Compile Include="$(CoreClrProjectRoot)System.Private.CoreLib\src\System\Runtime\CompilerServices\AsyncHelpers.RuntimeAsyncYielder.cs" />
@@ -382,9 +383,6 @@
     <Compile Include="System\Reflection\Runtime\BindingFlagSupport\QueryResult.cs" />
     <Compile Include="System\Reflection\Runtime\BindingFlagSupport\QueryResult.Enumerator.cs" />
     <Compile Include="System\Reflection\Runtime\BindingFlagSupport\Shared.cs" />
-    <Compile Include="System\Reflection\Runtime\CustomAttributes\NativeFormat\NativeFormatCustomAttributeData.cs" />
-    <Compile Include="System\Reflection\Runtime\CustomAttributes\RuntimeCustomAttributeData.cs" />
-    <Compile Include="System\Reflection\Runtime\CustomAttributes\RuntimePseudoCustomAttributeData.cs" />
     <Compile Include="System\Reflection\Runtime\Dispensers\DefaultDispenserPolicy.cs" />
     <Compile Include="System\Reflection\Runtime\Dispensers\Dispenser.cs" />
     <Compile Include="System\Reflection\Runtime\Dispensers\DispenserAlgorithm.cs" />

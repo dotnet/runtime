@@ -7,7 +7,6 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
 using System.Reflection.Runtime.BindingFlagSupport;
-using System.Reflection.Runtime.CustomAttributes;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
 using System.Runtime.CompilerServices;
@@ -57,14 +56,14 @@ namespace System.Reflection.Runtime.FieldInfos
                 {
                     int offset = ExplicitLayoutFieldOffsetData;
                     CustomAttributeTypedArgument offsetArgument = new CustomAttributeTypedArgument(typeof(int), offset);
-                    yield return new RuntimePseudoCustomAttributeData(typeof(FieldOffsetAttribute), new CustomAttributeTypedArgument[] { offsetArgument });
+                    yield return new RuntimeCustomAttributeData(typeof(FieldOffsetAttribute), new CustomAttributeTypedArgument[] { offsetArgument });
                 }
 
                 FieldAttributes attributes = Attributes;
 #pragma warning disable SYSLIB0050 // Legacy serialization infrastructure is obsolete
                 if (0 != (attributes & FieldAttributes.NotSerialized))
                 {
-                    yield return new RuntimePseudoCustomAttributeData(typeof(NonSerializedAttribute), null);
+                    yield return new RuntimeCustomAttributeData(typeof(NonSerializedAttribute), null);
                 }
 #pragma warning restore SYSLIB0050
             }
