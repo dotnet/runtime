@@ -102,22 +102,23 @@ public:
     }
 
     //-------------------------------------------------------------------
-    // SequenceCall: Post-process a call that may define a local.
+    // SequenceCall: Post-process a call that may define locals.
     //
     // Arguments:
     //     call - the call
     //
     // Remarks:
-    //     calls may also define a local that we would like to see
-    //     after all other operands of the call have been evaluated.
+    //     calls may also define locals that we would like to see after all
+    //     other operands of the call have been evaluated.
     //
     void SequenceCall(GenTreeCall* call)
     {
-        if (call->IsOptimizingRetBufAsLocal())
-        {
-            // Correct the point at which the definition of the retbuf local appears.
-            MoveNodeToEnd(m_compiler->gtCallGetDefinedRetBufLclAddr(call));
-        }
+        auto moveToEnd = [&](GenTreeLclVarCommon* def) {
+            MoveNodeToEnd(def);
+            return GenTree::VisitResult::Continue;
+        };
+
+        call->VisitLocalDefNodes(m_compiler, moveToEnd);
     }
 
     //-------------------------------------------------------------------
@@ -1495,32 +1496,47 @@ private:
         GenTreeFlags defFlag    = GTF_EMPTY;
         GenTreeCall* callUser   = (user != nullptr) && user->IsCall() ? user->AsCall() : nullptr;
         bool         escapeAddr = true;
-        if (m_compiler->opts.compJitOptimizeStructHiddenBuffer && (callUser != nullptr) &&
-            m_compiler->IsValidLclAddr(lclNum, val.Offset()))
+        if ((callUser != nullptr) && m_compiler->IsValidLclAddr(lclNum, val.Offset()))
         {
-            // We will only attempt this optimization for locals that do not
-            // later turn into indirections.
-            bool isSuitableLocal =
-                varTypeIsStruct(varDsc) && !m_compiler->lvaIsImplicitByRefLocal(lclNum) &&
-                (!varDsc->lvIsStructField || !m_compiler->lvaIsImplicitByRefLocal(varDsc->lvParentLcl));
-#ifdef TARGET_X86
-            if (m_compiler->lvaIsArgAccessedViaVarArgsCookie(lclNum))
+            unsigned defSize = UINT_MAX;
+            if (callUser->gtArgs.HasRetBuffer() && (val.Node() == callUser->gtArgs.GetRetBufferArg()->GetNode()))
             {
-                isSuitableLocal = false;
-            }
+                // We will only attempt this optimization for locals that do not
+                // later turn into indirections.
+                bool isSuitableLocal =
+                    m_compiler->opts.compJitOptimizeStructHiddenBuffer && varTypeIsStruct(varDsc) &&
+                    !m_compiler->lvaIsUnknownSizeLocal(lclNum) && !m_compiler->lvaIsImplicitByRefLocal(lclNum) &&
+                    (!varDsc->lvIsStructField || !m_compiler->lvaIsImplicitByRefLocal(varDsc->lvParentLcl));
+#ifdef TARGET_X86
+                if (m_compiler->lvaIsArgAccessedViaVarArgsCookie(lclNum))
+                {
+                    isSuitableLocal = false;
+                }
 #endif // TARGET_X86
 
-            if (isSuitableLocal && callUser->gtArgs.HasRetBuffer() &&
-                (val.Node() == callUser->gtArgs.GetRetBufferArg()->GetNode()))
+                if (isSuitableLocal)
+                {
+                    m_compiler->lvaSetHiddenBufferStructArg(lclNum);
+                    callUser->gtCallMoreFlags |= GTF_CALL_M_RETBUFFARG_LCLOPT;
+                    defSize = m_compiler->typGetObjLayout(callUser->gtRetClsHnd)->GetSize();
+                }
+            }
+            else if (callUser->IsAsync())
             {
-                m_compiler->lvaSetHiddenBufferStructArg(lclNum);
+                CallArg* asyncResumedDef = callUser->gtArgs.FindWellKnownArg(WellKnownArg::AsyncResumedDef);
+                if ((asyncResumedDef != nullptr) && (val.Node() == asyncResumedDef->GetNode()))
+                {
+                    defSize = TARGET_POINTER_SIZE;
+                }
+            }
+
+            if (defSize != UINT_MAX)
+            {
+                INDEBUG(varDsc->SetDefinedViaAddress(true));
                 escapeAddr = false;
-                callUser->gtCallMoreFlags |= GTF_CALL_M_RETBUFFARG_LCLOPT;
-                defFlag = GTF_VAR_DEF;
+                defFlag    = GTF_VAR_DEF;
 
-                unsigned storeSize = m_compiler->typGetObjLayout(callUser->gtRetClsHnd)->GetSize();
-
-                if (!m_compiler->IsEntireAccess(lclNum, val.Offset(), ValueSize(storeSize)))
+                if (!m_compiler->IsEntireAccess(lclNum, val.Offset(), ValueSize(defSize)))
                 {
                     defFlag |= GTF_VAR_USEASG;
                 }
@@ -1961,11 +1977,6 @@ private:
                 return IndirTransform::LclFld;
             }
 
-#if defined(TARGET_WASM)
-            // TODO-WASM-SIMD: Handle once GetElement and WithElement are supported
-            return IndirTransform::LclFld;
-#endif
-
 #ifdef FEATURE_HW_INTRINSICS
             if (varTypeIsSIMD(varDsc))
             {
@@ -2107,14 +2118,12 @@ private:
     //
     unsigned MorphStructFieldAddress(GenTree* node, ValueSize accessSize)
     {
-        unsigned offset       = 0;
-        bool     isSpanLength = false;
-        GenTree* addr         = node;
+        unsigned offset = 0;
+        GenTree* addr   = node;
         if (addr->OperIs(GT_FIELD_ADDR) && addr->AsFieldAddr()->IsInstance())
         {
-            offset       = addr->AsFieldAddr()->gtFldOffset;
-            isSpanLength = addr->AsFieldAddr()->IsSpanLength();
-            addr         = addr->AsFieldAddr()->GetFldObj();
+            offset = addr->AsFieldAddr()->gtFldOffset;
+            addr   = addr->AsFieldAddr()->GetFldObj();
         }
 
         if (addr->OperIs(GT_LCL_ADDR))
@@ -2130,16 +2139,6 @@ private:
                     // Access a promoted struct's field with an offset that doesn't correspond to any field.
                     // It can happen if the struct was cast to another struct with different offsets.
                     return BAD_VAR_NUM;
-                }
-
-                LclVarDsc* fieldVarDsc = m_compiler->lvaGetDesc(fieldLclNum);
-                ValueSize  fieldSize   = fieldVarDsc->lvValueSize();
-
-                // Span's Length is never negative unconditionally
-                if (isSpanLength && (accessSize.GetExact() == genTypeSize(TYP_INT)))
-                {
-                    unsigned exactSize      = accessSize.GetExact();
-                    unsigned exactFieldSize = fieldSize.GetExact();
                 }
 
                 if (!accessSize.IsNull() && m_compiler->IsWideAccess(fieldLclNum, 0, accessSize))

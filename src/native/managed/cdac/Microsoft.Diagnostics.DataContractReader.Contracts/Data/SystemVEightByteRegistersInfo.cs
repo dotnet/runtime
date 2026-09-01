@@ -7,9 +7,9 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 internal sealed partial class SystemVEightByteRegistersInfo : IData<SystemVEightByteRegistersInfo>
 {
     // Slots beyond NumEightBytes are undefined.
-    [Field] public byte NumEightBytes { get; }
-    [Field] public byte EightByteClassification0 { get; }
-    [Field] public byte EightByteClassification1 { get; }
-    [Field] public byte EightByteSize0 { get; }
-    [Field] public byte EightByteSize1 { get; }
+    [Field] public partial byte NumEightBytes { get; }
+    [Field] public partial byte EightByteClassification0 { get; }
+    [Field] public partial byte EightByteClassification1 { get; }
+    [Field] public partial byte EightByteSize0 { get; }
+    [Field] public partial byte EightByteSize1 { get; }
 }

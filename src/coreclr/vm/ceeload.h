@@ -326,9 +326,10 @@ typedef DPTR(class MemberRef) PTR_MemberRef;
 
 
 // flag used to mark member ref pointers to field descriptors in the member ref cache
-#define IS_FIELD_MEMBER_REF ((TADDR)0x00000002)
+#define IS_FIELD_MEMBER_REF ((TADDR)0x00000002) // [cDAC] [Loader]: Contract depends on this value.
 
 
+#ifdef FEATURE_VARARGS
 //
 // VASigCookies are allocated to encapsulate a varargs call signature.
 // A reference to the cookie is embedded in the code stream.  Cookies
@@ -376,6 +377,7 @@ struct VASigCookieBlock final
     UINT                 m_numCookies;
     VASigCookie          m_cookies[kVASigCookieBlockSize];
 };
+#endif // FEATURE_VARARGS
 
 
 // Hashtable of absolute addresses of IL blobs for dynamics, keyed by token
@@ -693,13 +695,20 @@ private:
         RUNTIME_MARSHALLING_ENABLED = 0x00010000,
 
         SKIP_TYPE_VALIDATION = 0x00020000,
+
+        //If the RefSafetyRules >= v11 setting has been cached
+        REF_SAFETY_RULES_V11_IS_CACHED = 0x00040000,
+        //If this module opted into RefSafetyRules version 11 or above
+        REF_SAFETY_RULES_V11 = 0x00080000,
     };
 
     Volatile<DWORD>          m_dwTransientFlags;
     Volatile<DWORD>          m_dwPersistedFlags;
 
+#ifdef FEATURE_VARARGS
     // Linked list of VASig cookie blocks: protected by m_pStubListCrst
     VASigCookieBlock        *m_pVASigCookieBlock;
+#endif // FEATURE_VARARGS
 
     PTR_Assembly            m_pAssembly;
 
@@ -918,7 +927,7 @@ protected:
 #endif
 
     BOOL IsReflectionEmit() const { WRAPPER_NO_CONTRACT; SUPPORTS_DAC; return (m_dwTransientFlags & IS_REFLECTION_EMIT) != 0; }
-    BOOL IsSystem() { WRAPPER_NO_CONTRACT; SUPPORTS_DAC; return m_pPEAssembly->IsSystem(); }
+    bool IsSystem() { WRAPPER_NO_CONTRACT; SUPPORTS_DAC; return m_pPEAssembly->IsSystem(); }
 
     virtual BOOL IsEditAndContinueCapable() const { return FALSE; }
 
@@ -1205,13 +1214,13 @@ public:
 #ifndef DACCESS_COMPILE
     VOID EnsureTypeDefCanBeStored(mdTypeDef token)
     {
-        WRAPPER_NO_CONTRACT; // THROWS/GC_NOTRIGGER/INJECT_FAULT()/MODE_ANY
+        WRAPPER_NO_CONTRACT; // THROWS/GC_NOTRIGGER/MODE_ANY
         m_TypeDefToMethodTableMap.EnsureElementCanBeStored(this, RidFromToken(token));
     }
 
     void EnsuredStoreTypeDef(mdTypeDef token, TypeHandle value)
     {
-        WRAPPER_NO_CONTRACT; // NOTHROW/GC_NOTRIGGER/FORBID_FAULT/MODE_ANY
+        WRAPPER_NO_CONTRACT; // NOTHROW/GC_NOTRIGGER/MODE_ANY
 
         _ASSERTE(TypeFromToken(token) == mdtTypeDef);
         m_TypeDefToMethodTableMap.SetElement(RidFromToken(token), value.AsMethodTable());
@@ -1230,7 +1239,7 @@ public:
 
     void EnsureTypeRefCanBeStored(mdTypeRef token)
     {
-        WRAPPER_NO_CONTRACT; // THROWS/GC_NOTRIGGER/INJECT_FAULT()/MODE_ANY
+        WRAPPER_NO_CONTRACT; // THROWS/GC_NOTRIGGER/MODE_ANY
 
         _ASSERTE(TypeFromToken(token) == mdtTypeRef);
         m_TypeRefToMethodTableMap.EnsureElementCanBeStored(this, RidFromToken(token));
@@ -1242,13 +1251,13 @@ public:
 #ifndef DACCESS_COMPILE
     void EnsureMethodDefCanBeStored(mdMethodDef token)
     {
-        WRAPPER_NO_CONTRACT; // THROWS/GC_NOTRIGGER/INJECT_FAULT()/MODE_ANY
+        WRAPPER_NO_CONTRACT; // THROWS/GC_NOTRIGGER/MODE_ANY
         m_MethodDefToDescMap.EnsureElementCanBeStored(this, RidFromToken(token));
     }
 
     void EnsuredStoreMethodDef(mdMethodDef token, MethodDesc *value)
     {
-        WRAPPER_NO_CONTRACT; // NOTHROW/GC_NOTRIGGER/FORBID_FAULT/MODE_ANY
+        WRAPPER_NO_CONTRACT; // NOTHROW/GC_NOTRIGGER/MODE_ANY
 
         _ASSERTE(TypeFromToken(token) == mdtMethodDef);
         m_MethodDefToDescMap.SetElement(RidFromToken(token), value);
@@ -1261,14 +1270,14 @@ public:
 #ifndef DACCESS_COMPILE
     void EnsureILCodeVersioningStateCanBeStored(mdMethodDef token)
     {
-        WRAPPER_NO_CONTRACT; // THROWS/GC_NOTRIGGER/INJECT_FAULT()/MODE_ANY
+        WRAPPER_NO_CONTRACT; // THROWS/GC_NOTRIGGER/MODE_ANY
         _ASSERTE(CodeVersionManager::IsLockOwnedByCurrentThread());
         m_ILCodeVersioningStateMap.EnsureElementCanBeStored(this, RidFromToken(token));
     }
 
     void EnsuredStoreILCodeVersioningState(mdMethodDef token, PTR_ILCodeVersioningState value)
     {
-        WRAPPER_NO_CONTRACT; // NOTHROW/GC_NOTRIGGER/FORBID_FAULT/MODE_ANY
+        WRAPPER_NO_CONTRACT; // NOTHROW/GC_NOTRIGGER/MODE_ANY
         _ASSERTE(CodeVersionManager::IsLockOwnedByCurrentThread());
         _ASSERTE(TypeFromToken(token) == mdtMethodDef);
         m_ILCodeVersioningStateMap.SetElement(RidFromToken(token), value);
@@ -1292,13 +1301,13 @@ public:
 #ifndef DACCESS_COMPILE
     void EnsureFieldDefCanBeStored(mdFieldDef token)
     {
-        WRAPPER_NO_CONTRACT; // THROWS/GC_NOTRIGGER/INJECT_FAULT()/MODE_ANY
+        WRAPPER_NO_CONTRACT; // THROWS/GC_NOTRIGGER/MODE_ANY
         m_FieldDefToDescMap.EnsureElementCanBeStored(this, RidFromToken(token));
     }
 
     void EnsuredStoreFieldDef(mdFieldDef token, FieldDesc *value)
     {
-        WRAPPER_NO_CONTRACT; // NOTHROW/GC_NOTRIGGER/FORBID_FAULT/MODE_ANY
+        WRAPPER_NO_CONTRACT; // NOTHROW/GC_NOTRIGGER/MODE_ANY
 
         _ASSERTE(TypeFromToken(token) == mdtFieldDef);
         m_FieldDefToDescMap.SetElement(RidFromToken(token), value);
@@ -1346,7 +1355,7 @@ public:
 
     void EnsureAssemblyRefCanBeStored(mdAssemblyRef token)
     {
-        WRAPPER_NO_CONTRACT; // THROWS/GC_NOTRIGGER/INJECT_FAULT()/MODE_ANY
+        WRAPPER_NO_CONTRACT; // THROWS/GC_NOTRIGGER/MODE_ANY
 
         _ASSERTE(TypeFromToken(token) == mdtAssemblyRef);
         m_ManifestModuleReferencesMap.EnsureElementCanBeStored(this, RidFromToken(token));
@@ -1411,10 +1420,17 @@ public:
 public:
     void NotifyEtwLoadFinished(HRESULT hr);
 
+    // Computes the module that owns runtime artifacts created for a standalone signature.
+    // Clears *pTypeContext if the signature does not actually use the generic context.
+    Module* GetLoaderModuleForSignature(Signature signature, SigTypeContext* pTypeContext);
+
+#ifdef FEATURE_VARARGS
     // Enregisters a VASig.
     VASigCookie *GetVASigCookie(Signature vaSignature, const SigTypeContext* typeContext);
+
 private:
     static VASigCookie *GetVASigCookieWorker(Module* pDefiningModule, Module* pLoaderModule, Signature vaSignature, const SigTypeContext* typeContext);
+#endif // FEATURE_VARARGS
 
 public:
 #ifndef DACCESS_COMPILE
@@ -1568,12 +1584,6 @@ protected:
 
 public:
     //-----------------------------------------------------------------------------------------
-    // Returns a BOOL to indicate if we have computed whether compiler has instructed us to
-    // wrap the non-CLS compliant exceptions or not.
-    //-----------------------------------------------------------------------------------------
-    BOOL                    IsRuntimeWrapExceptionsStatusComputed();
-
-    //-----------------------------------------------------------------------------------------
     // If true,  any non-CLSCompliant exceptions (i.e. ones which derive from something other
     // than System.Exception) are wrapped in a RuntimeWrappedException instance.  In other
     // words, they become compliant
@@ -1588,11 +1598,11 @@ public:
     //-----------------------------------------------------------------------------------------
     BOOL                    IsRuntimeMarshallingEnabled();
 
-    BOOL                    IsRuntimeMarshallingEnabledCached()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_dwPersistedFlags & RUNTIME_MARSHALLING_ENABLED_IS_CACHED);
-    }
+    //-----------------------------------------------------------------------------------------
+    // If true, this module opted into the ECMA-335 augment tied to RefSafetyRulesAttribute with a
+    // version of at least 11 (i.e. RefSafetyRulesAttribute(version) with version >= 11).
+    //-----------------------------------------------------------------------------------------
+    BOOL                    OptsIntoRefSafetyRulesV11();
 
 protected:
     // For reflection emit modules we set this flag when we emit the attribute, and always consider
@@ -1605,12 +1615,6 @@ protected:
 public:
 
     BOOL                    HasDefaultDllImportSearchPathsAttribute();
-
-    BOOL IsDefaultDllImportSearchPathsAttributeCached()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_dwPersistedFlags & DEFAULT_DLL_IMPORT_SEARCH_PATHS_IS_CACHED) != 0;
-    }
 
     ULONG DefaultDllImportSearchPathsAttributeCachedValue()
     {
@@ -1681,6 +1685,10 @@ private:
 protected:
     TADDR m_pDynamicMetadata;
 
+    // Incremented each time a module's metadata is updated.
+    // Indicates update to out-of-process readers.
+    uint32_t m_dwMetadataGeneration;
+
 public:
 #if !defined(DACCESS_COMPILE)
     PTR_Assembly GetNativeMetadataAssemblyRefFromCache(DWORD rid)
@@ -1711,6 +1719,7 @@ struct cdac_data<Module>
     static constexpr size_t Flags = offsetof(Module, m_dwTransientFlags);
     static constexpr size_t LoaderAllocator = offsetof(Module, m_loaderAllocator);
     static constexpr size_t DynamicMetadata = offsetof(Module, m_pDynamicMetadata);
+    static constexpr size_t MetadataGeneration = offsetof(Module, m_dwMetadataGeneration);
     static constexpr size_t SimpleName = offsetof(Module, m_pSimpleName);
     static constexpr size_t Path = offsetof(Module, m_path);
     static constexpr size_t FileName = offsetof(Module, m_fileName);
@@ -1818,18 +1827,6 @@ struct ReflectionModuleHolderTraits final
 };
 
 using ReflectionModuleHolder = LifetimeHolder<ReflectionModuleHolderTraits>;
-
-
-
-//----------------------------------------------------------------------
-// VASigCookieEx (used to create a fake VASigCookie for unmanaged->managed
-// calls to vararg functions. These fakes are distinguished from the
-// real thing by having a null mdVASig.
-//----------------------------------------------------------------------
-struct VASigCookieEx : public VASigCookie
-{
-    const BYTE *m_pArgs;        // pointer to first unfixed unmanaged arg
-};
 
 // Save the command line for the current process.
 void SaveManagedCommandLine(LPCWSTR pwzAssemblyPath, int argc, LPCWSTR *argv);

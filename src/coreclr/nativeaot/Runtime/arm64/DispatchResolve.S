@@ -20,7 +20,7 @@ LEAF_ENTRY \DispatchName, _TEXT
         // the subsequent load of Code will see the value written before it.
         ldar    x13, [\DispatchCellReg] // load-acquire cached MethodTable
         cmp     x13, x12                // is this the monomorphic MethodTable?
-        bne     1f
+        bne     LOCAL_LABEL(Hashtable\@)
 
         ldr     x9, [\DispatchCellReg, #8] // load the cached monomorphic resolved code address
 .if \ReturnTarget
@@ -30,7 +30,7 @@ LEAF_ENTRY \DispatchName, _TEXT
         br      x9
 .endif
 
-1:
+LOCAL_LABEL(Hashtable\@):
 
         // x12 = MethodTable, DispatchCellReg = indirection cell address
         // Look up the target in the dispatch cache hashtable (GenericCache<Key, nint>).
@@ -61,7 +61,7 @@ LEAF_ENTRY \DispatchName, _TEXT
         add     x13, x13, #0x10
         mov     w15, wzr                // loop counter i = 0
 
-2:
+LOCAL_LABEL(ProbeLoop\@):
         // Compute entry address: Element(table, index) = base + (index + 1) * 0x20
         add     w9, w14, #1
         sbfiz   x9, x9, #5, #32        // sign-extend and shift left by 5 in one instruction
@@ -70,14 +70,14 @@ LEAF_ENTRY \DispatchName, _TEXT
         // Read version snapshot with load-acquire (seqlock protocol, ARM64 memory model).
         // This ensures subsequent loads of key and value see data written before this version.
         ldar    w10, [x9]
-        tbnz    w10, #0, 3f            // skip if odd (entry being written)
+        tbnz    w10, #0, LOCAL_LABEL(ProbeMiss\@) // skip if odd (entry being written)
 
         // Compare key (dispatchCell, objectType) — load both fields with a single ldp.
         ldp     x16, x17, [x9, #8]
         cmp     x16, \DispatchCellReg
-        bne     3f
+        bne     LOCAL_LABEL(ProbeMiss\@)
         cmp     x17, x12
-        bne     3f
+        bne     LOCAL_LABEL(ProbeMiss\@)
 
         // Read the cached code pointer.
         ldr     x16, [x9, #0x18]
@@ -88,7 +88,7 @@ LEAF_ENTRY \DispatchName, _TEXT
         // Re-verify version has not changed.
         ldr     w17, [x9]
         cmp     w10, w17
-        bne     4f
+        bne     LOCAL_LABEL(CacheMiss\@)
 
         // Dispatch to cached target.
         mov     x9, x16
@@ -99,9 +99,9 @@ LEAF_ENTRY \DispatchName, _TEXT
         br      x9
 .endif
 
-3:
+LOCAL_LABEL(ProbeMiss\@):
         // If version is zero the rest of the bucket is unclaimed — stop probing.
-        cbz     w10, 4f
+        cbz     w10, LOCAL_LABEL(CacheMiss\@)
 
         // Quadratic reprobe: i++; index = (index + i) & tableMask
         add     w15, w15, #1
@@ -110,9 +110,9 @@ LEAF_ENTRY \DispatchName, _TEXT
         sub     w9, w9, #2              // TableMask = Length - 2
         and     w14, w14, w9
         cmp     w15, #8
-        blt     2b
+        blt     LOCAL_LABEL(ProbeLoop\@)
 
-4:
+LOCAL_LABEL(CacheMiss\@):
 .if \ReturnTarget
         b       C_FUNC(RhpCidResolve_Worker)
 .else

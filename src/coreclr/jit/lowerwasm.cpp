@@ -35,11 +35,11 @@ void Lowering::SetMultiplyUsed(GenTree* node DEBUGARG(const char* reason))
 // IsCallTargetInRange: Can a call target address be encoded in-place?
 //
 // Return Value:
-//    Always true since there are no encoding range considerations on WASM.
+//    Currently always false for Wasm, all managed calls are indirect through the PEP.
 //
 bool Lowering::IsCallTargetInRange(void* addr)
 {
-    return true;
+    return false;
 }
 
 //---------------------------------------------------------------------------------------------
@@ -154,6 +154,84 @@ GenTree* Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
 }
 
 //------------------------------------------------------------------------
+// GetFoldableAddrMode: Get the address mode of an indirection whose offset can fold into the memarg.
+//
+// Arguments:
+//    indirNode - The indirection node of interest
+//
+// Return Value:
+//    The address node, or nullptr if its offset cannot be folded.
+//
+// Notes:
+//    The memarg offset is added in infinite precision, while "i32.add" wraps, so the two only differ when
+//    "base + offset" would exceed the address space. Require a GC-typed base and a non-negative offset: a
+//    GC-typed base points into a live object, so an address that far out of range is already invalid, and
+//    morph keeps such addresses with their base (see the "varTypeIsGC" guards in "fgOptimizeAddition" and
+//    "fgMorphSmpOp"). Where they differ we now trap instead of reading wrapped low memory. Note the offset
+//    must be checked here rather than on the original constant, because "SetOffset" truncates it to "int".
+//
+//    SIMD12 indirections re-materialize the address for the trailing lane access, and write barriers pass the
+//    whole address to a helper, so neither can fold.
+//
+GenTreeAddrMode* Lowering::GetFoldableAddrMode(GenTreeIndir* indirNode)
+{
+    GenTree* const addr = indirNode->Addr();
+
+    if (!addr->OperIs(GT_LEA) || indirNode->TypeIs(TYP_SIMD12) ||
+        ((addr->gtLIRFlags & LIR::Flags::MultiplyUsed) != LIR::Flags::None))
+    {
+        return nullptr;
+    }
+
+    GenTreeAddrMode* const lea = addr->AsAddrMode();
+
+    if (!lea->HasBase() || lea->HasIndex() || !varTypeIsGC(lea->Base()) || (lea->Offset() < 0))
+    {
+        return nullptr;
+    }
+
+    if (indirNode->OperIs(GT_STOREIND) &&
+        m_compiler->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(indirNode->AsStoreInd()))
+    {
+        return nullptr;
+    }
+
+    return lea;
+}
+
+//------------------------------------------------------------------------
+// TryFoldLclAddrOffset: Fold a local address's frame offset into its indirection's memarg.
+//
+// Arguments:
+//    indirNode - The indirection node of interest
+//
+// Notes:
+//    Codegen for GT_LCL_ADDR is "local.get $FP; i32.const <frame offset>; i32.add". Flagging the node makes
+//    it emit just the frame pointer, and the indirection supplies the frame offset as its memarg instead.
+//    The frame pointer plus a non-negative frame offset stays within the shadow stack, so the memarg's
+//    infinite-precision addition cannot differ from the "i32.add" it replaces.
+//
+//    SIMD12 indirections re-materialize the address for the trailing lane access, and a multiply-used
+//    address is read back from a wasm local that would no longer hold the full address, so neither folds.
+//
+//    Folding relies on the flagged node keeping its single use: because GT_LCL_ADDR is invariant, neither
+//    the stackifier ("CanMoveForward") nor "fgWasmSpillRefs" can replace it with a temporary.
+//
+void Lowering::TryFoldLclAddrOffset(GenTreeIndir* indirNode)
+{
+    GenTree* const addr = indirNode->Addr();
+
+    if (!indirNode->OperIs(GT_IND, GT_STOREIND) || !addr->OperIs(GT_LCL_ADDR) || indirNode->TypeIs(TYP_SIMD12) ||
+        ((addr->gtLIRFlags & LIR::Flags::MultiplyUsed) != LIR::Flags::None))
+    {
+        return;
+    }
+
+    assert(addr->IsInvariant());
+    addr->gtLIRFlags |= LIR::Flags::FoldedAddr;
+}
+
+//------------------------------------------------------------------------
 // LowerStoreIndir: Determine addressing mode for an indirection, and whether operands are contained.
 //
 // Arguments:
@@ -164,10 +242,18 @@ GenTree* Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
 //
 GenTree* Lowering::LowerStoreIndir(GenTreeStoreInd* node)
 {
-    if ((node->gtFlags & GTF_IND_NONFAULTING) == 0)
+    if (((node->gtFlags & GTF_IND_NONFAULTING) == 0) ||
+        (node->TypeIs(TYP_SIMD12) && !node->Addr()->OperIs(GT_LCL_ADDR)))
     {
         // We need to be able to null check the address, and that requires multiple uses of the address operand.
-        SetMultiplyUsed(node->Addr() DEBUGARG("LowerStoreIndir faulting Addr"));
+        // SIMD12 stores also re-materialize the address for the trailing lane store, so force it there as well -
+        // unless the address is a re-materializable LCL_ADDR (the local-to-stack store rewrite), which codegen
+        // re-emits directly.
+        // A foldable address is never materialized, so the base is what gets re-used.
+        //
+        GenTreeAddrMode* const foldable = GetFoldableAddrMode(node);
+        SetMultiplyUsed((foldable != nullptr ? foldable->Base() : node->Addr())
+                            DEBUGARG("LowerStoreIndir Addr (null check or simd12 lane store)"));
     }
 
     ContainCheckStoreIndir(node);
@@ -459,13 +545,42 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
         return;
     }
 
-    if (indirNode->OperIs(GT_IND) && ((indirNode->gtFlags & GTF_IND_NONFAULTING) == 0))
+    GenTreeAddrMode* const foldable = GetFoldableAddrMode(indirNode);
+
+    if (indirNode->OperIs(GT_IND) &&
+        (((indirNode->gtFlags & GTF_IND_NONFAULTING) == 0) || indirNode->TypeIs(TYP_SIMD12)))
     {
-        SetMultiplyUsed(indirNode->Addr() DEBUGARG("ContainCheckIndir faulting load Addr"));
+        // SIMD12 loads re-materialize the address for the trailing lane load, so force it there regardless.
+        // A foldable address is never materialized, so the base is what gets re-used.
+        //
+        SetMultiplyUsed((foldable != nullptr ? foldable->Base() : indirNode->Addr())
+                            DEBUGARG("ContainCheckIndir load Addr (null check or simd12 lane load)"));
     }
 
-    // TODO-WASM-CQ: contain suitable LEAs here. Take note of the fact that for this to be correct we must prove the
-    // LEA doesn't overflow. It will involve creating a new frontend node to represent "nuw" (offset) addition.
+    if (foldable != nullptr)
+    {
+        MakeSrcContained(indirNode, foldable);
+    }
+    else
+    {
+        TryFoldLclAddrOffset(indirNode);
+    }
+
+    // Contain a relocatable address constant so it folds into the load's memarg offset.
+    //
+    // Codegen for such a constant is "global.get $imageBase; i32.const <reloc>; i32.add"; containing it lets
+    // genCodeForIndir emit just the image base and put the relocated address in the memarg instead. Only loads
+    // can do this: the parent emits the base in place of the address, and a store cannot because its value
+    // operand has already been pushed. A multiply-used address is excluded because codegen re-materializes it
+    // from a register that would no longer hold the full address.
+    //
+    GenTree* addr = indirNode->Addr();
+    if (indirNode->OperIs(GT_IND) && !indirNode->TypeIs(TYP_SIMD12) && addr->IsIconHandle() &&
+        addr->AsIntConCommon()->ImmedValNeedsReloc(m_compiler) &&
+        ((addr->gtLIRFlags & LIR::Flags::MultiplyUsed) == LIR::Flags::None))
+    {
+        MakeSrcContained(indirNode, addr);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -828,6 +943,13 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 {
     NamedIntrinsic      intrinsic = node->GetHWIntrinsicId();
     HWIntrinsicCategory category  = HWIntrinsicInfo::lookupCategory(intrinsic);
+    bool                hasImmOp  = HWIntrinsicInfo::HasImmediateOperand(intrinsic);
+    GenTree*            addr      = nullptr;
+
+    if (node->OperIsMemoryLoad(&addr) || node->OperIsMemoryStore(&addr))
+    {
+        SetMultiplyUsed(addr DEBUGARG("LowerHWIntrinsic memory address (null check)"));
+    }
 
     switch (intrinsic)
     {
@@ -840,6 +962,14 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
         case NI_Vector_CreateScalar:
         {
             return LowerHWIntrinsicCreate(node);
+        }
+
+        case NI_Vector_CreateScalarUnsafe:
+        {
+            // CreateScalarUnsafe leaves the upper elements undefined, so we can broadcast the value
+            // across every lane. This maps directly to a single splat instruction.
+            node->ChangeHWIntrinsicId(NI_PackedSimd_Splat);
+            return LowerNode(node);
         }
 
         case NI_Vector_op_Equality:
@@ -866,11 +996,59 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             break;
         }
 
+        case NI_Vector_GetElement:
+        {
+            // GetElement(vector, index) maps directly to ExtractScalar(vector, imm).
+            node->ChangeHWIntrinsicId(NI_PackedSimd_ExtractScalar);
+            return LowerHWIntrinsicWithImm(node);
+        }
+
+        case NI_Vector_ToScalar:
+        {
+            // ToScalar(vector) is GetElement(vector, 0), i.e. ExtractScalar(vector, 0).
+            GenTree* idx = m_compiler->gtNewIconNode(0);
+            BlockRange().InsertBefore(node, idx);
+            LowerNode(idx);
+
+            node->ResetHWIntrinsicId(NI_PackedSimd_ExtractScalar, m_compiler, node->Op(1), idx);
+            return LowerHWIntrinsicWithImm(node);
+        }
+
+        case NI_Vector_WithElement:
+        {
+            // WithElement(vector, index, value) maps directly to ReplaceScalar(vector, imm, value).
+            node->ChangeHWIntrinsicId(NI_PackedSimd_ReplaceScalar);
+            return LowerHWIntrinsicWithImm(node);
+        }
+
         case NI_PackedSimd_ExtractScalar:
         case NI_PackedSimd_ReplaceScalar:
+        case NI_PackedSimd_LoadScalarAndInsert:
+        case NI_PackedSimd_StoreSelectedScalar:
         {
-            assert(category == HW_Category_IMM);
+            assert(hasImmOp);
             return LowerHWIntrinsicWithImm(node);
+        }
+
+        case NI_PackedSimd_Shuffle:
+        {
+            return LowerHWIntrinsicNativeShuffle(node);
+        }
+
+        case NI_PackedSimd_LoadScalarAndSplatVector128:
+        case NI_PackedSimd_LoadScalarVector128:
+        case NI_PackedSimd_LoadWideningVector128:
+        {
+            // These intrinsics don't require an immediate operand
+            assert(!hasImmOp);
+            break;
+        }
+
+        case NI_PackedSimd_Swizzle:
+        {
+            assert(category == HW_Category_SIMD);
+            LowerHWIntrinsicSwizzle(node);
+            return node->gtNext;
         }
 
         default:
@@ -898,6 +1076,8 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 GenTree* Lowering::LowerHWIntrinsicWithImm(GenTreeHWIntrinsic* node)
 {
     GenTree* immOp = node->GetImmOp();
+    assert(varTypeIsIntegral(immOp->TypeGet()) && "Immediate operand must be an integral type");
+
     if (!immOp->IsCnsIntOrI())
     {
         // This node has a non-constant immediate operand, so it will need a jump table
@@ -912,6 +1092,56 @@ GenTree* Lowering::LowerHWIntrinsicWithImm(GenTreeHWIntrinsic* node)
 
     ContainCheckHWIntrinsic(node);
     return node->gtNext;
+}
+
+//----------------------------------------------------------------------------------------------
+// LowerHWIntrinsicSwizzle: Rewrite a constant-mask PackedSimd Swizzle into an i8x16.shuffle.
+//
+// Wasm's i8x16.swizzle takes a runtime byte-index mask, whereas i8x16.shuffle encodes the 16
+// lane selectors as an immediate. When the mask is a compile-time constant with no out-of-range
+// lanes, emitting i8x16.shuffle lets the underlying wasm engine pattern-match the known
+// permutation into an optimal native sequence instead of a generic table lookup.
+//
+// i8x16.shuffle selects from two vectors (lanes 0-15 from the first, 16-31 from the second), so
+// for a single-source swizzle we feed the source vector as both operands. On the wasm value
+// stack that requires the source twice, so it is marked multiply-used (materialized into a local)
+// and the codegen side emits the extra local.get. Out-of-range masks are left as a swizzle, whose
+// native "index >= 16 -> 0" behavior i8x16.shuffle cannot reproduce without a zero operand.
+//
+// Arguments:
+//    node - The PackedSimd Swizzle node.
+//
+void Lowering::LowerHWIntrinsicSwizzle(GenTreeHWIntrinsic* node)
+{
+    assert(node->GetHWIntrinsicId() == NI_PackedSimd_Swizzle);
+
+    GenTree* op1 = node->Op(1);
+    GenTree* op2 = node->Op(2);
+
+    if (op2->IsCnsVec())
+    {
+        const simd_t& mask       = op2->AsVecCon()->gtSimdVal;
+        bool          allInRange = true;
+
+        for (int i = 0; i < 16; i++)
+        {
+            if (mask.u8[i] >= 16)
+            {
+                allInRange = false;
+                break;
+            }
+        }
+
+        if (allInRange)
+        {
+            // The mask becomes the i8x16.shuffle immediate; the source is consumed as both
+            // shuffle operands, so it must be available twice on the value stack.
+            MakeSrcContained(node, op2);
+            SetMultiplyUsed(op1 DEBUGARG("i8x16.shuffle reuses the source as both operands"));
+        }
+    }
+
+    ContainCheckHWIntrinsic(node);
 }
 
 //----------------------------------------------------------------------------------------------
@@ -1202,6 +1432,169 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
     return LowerNode(node);
 }
 
+// --------------------------------------------------------------------------------
+// LowerHWIntrinsicNativeShuffle: Lowers a PackedSimd Shuffle call with a possibly non-constant mask
+//
+// Arguments:
+//    node - The hardware intrinsic node.
+//
+// Notes:
+//  If the shuffle mask is a constant vector, it can be contained as an immediate and emitted. Otherwise,
+//  the shuffle is rewritten into two swizzles for the upper and lower input vectors and combined into the final result.
+GenTree* Lowering::LowerHWIntrinsicNativeShuffle(GenTreeHWIntrinsic* node)
+{
+    assert(node->GetHWIntrinsicId() == NI_PackedSimd_Shuffle);
+
+    GenTree*  op1         = node->Op(1);
+    GenTree*  shuffleMask = node->Op(3);
+    var_types resultType  = node->TypeGet();
+
+    // No extra work to do if the shuffle is an in-range constant vector, it can be contained as an immediate and
+    // emitted.
+    if (shuffleMask->IsCnsVec())
+    {
+        const simd_t& mask       = shuffleMask->AsVecCon()->gtSimdVal;
+        bool          allInRange = true;
+        for (int i = 0; i < 16; i++)
+        {
+            if (mask.u8[i] >= 32)
+            {
+                allInRange = false;
+                break;
+            }
+        }
+        if (allInRange)
+        {
+            ContainCheckHWIntrinsic(node);
+            return node->gtNext;
+        }
+    }
+
+    // If the shuffle mask is not a constant vector or the mask is not in range, we will need to rewrite the shuffle
+    // into a BOUNDS_CHECK around the mask, and two swizzles: 1 to handle elements from the first vector, and 1 to
+    // handle elements from the second vector. The two swizzles will then be or'd together to produce the final result.
+    // We will be constructing IR like the following:
+    //  op1             = ...
+    //  op2             = ...
+    //                  /--* op2
+    //                  /--* LCL_VAR op2Tmp
+    //                  STORE_LCL_VAR op2Tmp
+    // originalMask     = ...
+    //                  /--* originalMask
+    //                  /--* LCL_VAR originalMaskTmp
+    //                  STORE_LCL_VAR originalMaskTmp
+    //  m0        = *   LCL_VAR originalMaskTmp
+    //  b0        = *   CNS_INT       int    32
+    //                  /--* m0 simd
+    //                  +--* b0  int
+    //                  GT_BOUNDS_CHECK RNG_CHK_FAIL
+    //  m1        = *   LCL_VAR originalMaskTmp
+    //                  /--*  op1 simd
+    //                  +--*  m1  simd
+    //   tmp1      = *  HWINTRINSIC   simd   byte    PackedSimd.Swizzle
+    //   op2Reload = *  LCL_VAR op2tmp
+    //   m2        = *  LCL_VAR originalMaskTmp
+    //   upperBnd  = *  CNS_VEC      simd   byte    <0x10, 0x10, ...>
+    //                   /--*  m2 simd
+    //                   +--*  upperBnd simd
+    //   upperMask = *  HWINTRINSIC   simd    byte    PackedSimd.Subtract
+    //                   /--*  op2Reload simd
+    //                   +--*  upperMask simd
+    //   tmp3      = *  HWINTRINSIC   simd   byte    PackedSimd.Swizzle
+    //                   /--*  tmp1 simd
+    //                   +--*  tmp3 simd
+    //   res       =  *  HWINTRINSIC   simd   byte    PackedSimd.Or
+    //
+    // This is roughly equivalent to the following C#:
+    // ...
+    // if (GreaterThanAny(originalMask, 31)) { throw new ArrayIndexOutOfBoundsException(); }
+    // tmp1 = PackedSimd.Swizzle(op1, originalMask);
+    // tmp2 = PackedSimd.Swizzle(op2, PackedSimd.Subtract(originalMask, PackedSimd.Splat(0x10)));
+    // result  = PackedSimd.Or(tmp1, tmp2);
+    //...
+
+    // op2 needs to be moved, replace with a local, but don't immediately reload
+    LIR::Use op2Use(BlockRange(), &node->Op(2), node);
+    op2Use.ReplaceWithLclVar(m_compiler);
+    GenTree* op2Reload = node->Op(2);
+    BlockRange().Remove(op2Reload);
+
+    // Shuffle mask will be used several times, replace with a local
+    LIR::Use     shuffleMaskUse(BlockRange(), &node->Op(3), node);
+    unsigned int shuffleMaskTmp   = shuffleMaskUse.ReplaceWithLclVar(m_compiler);
+    GenTree*     maskReloadForChk = node->Op(3);
+
+    // Insert a bounds check for the shuffle mask. A bounds check against a simd value will be handled by codegen as a
+    // GreaterThanAny(vec, bound) type operation.
+    GenTree* bound = m_compiler->gtNewIconNode(32);
+    BlockRange().InsertBefore(node, bound);
+    LowerNode(bound);
+
+    GenTree* boundsCheck =
+        new (m_compiler, GT_BOUNDS_CHECK) GenTreeBoundsChk(maskReloadForChk, bound, SCK_ARG_RNG_EXCPN);
+    BlockRange().InsertBefore(node, boundsCheck);
+    LowerNode(boundsCheck);
+
+    // Do a swizzle of the first vector with the original shuffle mask (now loaded from a local), which will produce a
+    // vector with the elements from the first vector in the correct order, and zero's for all elements which correspond
+    // to the second vector.
+    GenTree* maskReload1 = m_compiler->gtNewLclVarNode(shuffleMaskTmp, shuffleMask->TypeGet());
+    BlockRange().InsertBefore(node, maskReload1);
+    LowerNode(maskReload1);
+
+    GenTree* swizzle1 =
+        m_compiler->gtNewSimdHWIntrinsicNode(resultType, op1, maskReload1, NI_PackedSimd_Swizzle, TYP_BYTE, 16);
+    BlockRange().InsertBefore(node, swizzle1);
+    LowerNode(swizzle1);
+
+    // Re-load op2
+    BlockRange().InsertBefore(node, op2Reload);
+    LowerNode(op2Reload);
+
+    // Re-load the original shuffle mask
+    GenTreeLclVar* maskReload2 = m_compiler->gtNewLclVarNode(shuffleMaskTmp, shuffleMask->TypeGet());
+    BlockRange().InsertBefore(node, maskReload2);
+    LowerNode(maskReload2);
+
+    // Create constant upper bound vector of <16, 16, ..., 16>
+    GenTreeVecCon* upperBound = m_compiler->gtNewVconNode(shuffleMask->TypeGet());
+    upperBound->EvaluateBroadcastInPlace(TYP_BYTE, static_cast<int64_t>(16));
+    BlockRange().InsertBefore(node, upperBound);
+    LowerNode(upperBound);
+
+    // Use the above to subtract 16 from each mask element to mark each element which corresponds to the lower vector as
+    // unused, leading to a zero in the result of the swizzle.
+    GenTree* upperMask = m_compiler->gtNewSimdHWIntrinsicNode(shuffleMask->TypeGet(), maskReload2, upperBound,
+                                                              NI_PackedSimd_Subtract, TYP_BYTE, 16);
+    BlockRange().InsertBefore(node, upperMask);
+    LowerNode(upperMask);
+
+    GenTree* swizzle2 =
+        m_compiler->gtNewSimdHWIntrinsicNode(resultType, op2Reload, upperMask, NI_PackedSimd_Swizzle, TYP_BYTE, 16);
+    BlockRange().InsertBefore(node, swizzle2);
+    LowerNode(swizzle2);
+
+    // Since we've left zero's for all the elements which correspond to the upper vector, we can just or the two
+    // swizzles together to get the final result.
+    GenTreeHWIntrinsic* result =
+        m_compiler->gtNewSimdHWIntrinsicNode(resultType, swizzle1, swizzle2, NI_PackedSimd_Or, TYP_BYTE, 16);
+    BlockRange().InsertBefore(node, result);
+
+    LIR::Use use;
+    if (BlockRange().TryGetUse(node, &use))
+    {
+        use.ReplaceWith(result);
+    }
+    else
+    {
+        result->SetUnusedValue();
+    }
+
+    BlockRange().Remove(node);
+
+    return LowerNode(result);
+}
+
 //----------------------------------------------------------------------------------------------
 // ContainCheckHWIntrinsic: Perform containment analysis for a hardware intrinsic node.
 //
@@ -1210,21 +1603,20 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 //
 void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 {
-    HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(node->GetHWIntrinsicId());
-    switch (category)
+    NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
+    if (HWIntrinsicInfo::HasImmediateOperand(intrinsicId))
     {
-        case HWIntrinsicCategory::HW_Category_IMM:
+        GenTree* immOp = node->GetImmOp();
+        if (immOp->IsCnsIntOrI())
         {
-            GenTree* immOp = node->GetImmOp();
-            if (immOp->IsCnsIntOrI())
-            {
-                MakeSrcContained(node, immOp);
-            }
-            break;
+            MakeSrcContained(node, immOp);
         }
-        default:
-        {
-            break;
-        }
+    }
+    else if (intrinsicId == NI_PackedSimd_Shuffle && node->Op(3)->IsCnsVec())
+    {
+        // Shuffle is a special case where the mask is a constant vector immediate
+        // which must be contained. If the mask is non-constant we will re-write the shuffle into a fallback equivalent
+        // operation. (see LowerHWIntrinsicNativeShuffle).
+        MakeSrcContained(node, node->Op(3));
     }
 }

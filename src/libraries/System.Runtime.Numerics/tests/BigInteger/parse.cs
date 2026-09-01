@@ -1332,29 +1332,79 @@ namespace System.Numerics.Tests
             Assert.Equal(expected, actual);
         }
 
-        [Fact]
-        public static void ParseWithNBSPAsGroupSeparator()
+        [Theory]
+        [InlineData("\u00A0", " ")]
+        [InlineData("\u202F", " ")]
+        [InlineData(" ", "\u00A0")]
+        [InlineData(" ", "\u202F")]
+        [InlineData("\u00A0", "\u202F")]
+        [InlineData("\u202F", "\u00A0")]
+        public static void ParseWithSpaceReplacingGroupSeparator(string groupSeparator, string inputSeparator)
         {
-            // Culture has NBSP as group separator; input has regular spaces.
-            // Exercises MatchChars path: cp=='\u0020' && IsSpaceReplacingChar(val=='\u00A0')
-            CultureInfo nbspCulture = new CultureInfo("en-US");
-            nbspCulture.NumberFormat.NumberGroupSeparator = "\u00A0";
+            CultureInfo culture = new("en-US");
+            culture.NumberFormat.NumberGroupSeparator = groupSeparator;
+            string value = $"1{inputSeparator}234";
+            byte[] utf8Value = Encoding.UTF8.GetBytes(value);
 
-            BigInteger result = BigInteger.Parse("1 234 567", NumberStyles.AllowThousands, nbspCulture);
-            Assert.Equal((BigInteger)1234567, result);
+            Assert.Equal((BigInteger)1234, BigInteger.Parse(value, NumberStyles.AllowThousands, culture));
+            Assert.Equal((BigInteger)1234, BigInteger.Parse(utf8Value, NumberStyles.AllowThousands, culture));
 
-            // Culture has regular space as group separator; input has NBSP.
-            // Exercises MatchChars path: val=='\u0020' && IsSpaceReplacingChar(cp=='\u00A0')
-            CultureInfo spaceCulture = new CultureInfo("en-US");
-            spaceCulture.NumberFormat.NumberGroupSeparator = " ";
+            Assert.True(NumberBaseHelper<BigInteger>.TryParsePartial(value + "x", NumberStyles.AllowThousands, culture, out BigInteger result, out int charsConsumed));
+            Assert.Equal((BigInteger)1234, result);
+            Assert.Equal(value.Length, charsConsumed);
 
-            result = BigInteger.Parse("1\u00A0234\u00A0567", NumberStyles.AllowThousands, spaceCulture);
-            Assert.Equal((BigInteger)1234567, result);
+            Assert.True(NumberBaseHelper<BigInteger>.TryParsePartial([.. utf8Value, (byte)'x'], NumberStyles.AllowThousands, culture, out result, out int bytesConsumed));
+            Assert.Equal((BigInteger)1234, result);
+            Assert.Equal(utf8Value.Length, bytesConsumed);
 
-            // Culture has regular space as group separator; input has narrow NBSP (U+202F).
-            // Exercises IsSpaceReplacingChar matching U+202F against U+0020
-            result = BigInteger.Parse("1\u202F234\u202F567", NumberStyles.AllowThousands, spaceCulture);
-            Assert.Equal((BigInteger)1234567, result);
+            string trailingSeparatorValue = $"1{inputSeparator}";
+            Assert.Equal(BigInteger.One, BigInteger.Parse(Encoding.UTF8.GetBytes(trailingSeparatorValue), NumberStyles.AllowThousands, culture));
+        }
+
+        [Fact]
+        public static void ParseUtf8WithInvalidGroupSeparator()
+        {
+            NumberFormatInfo format = new() { NumberGroupSeparator = " " };
+
+            Assert.False(BigInteger.TryParse([(byte)'1', 0xA0, (byte)'2'], NumberStyles.AllowThousands, format, out _));
+        }
+
+        [Theory]
+        [InlineData("99 +", NumberStyles.AllowTrailingSign, 99)]
+        [InlineData("99 -", NumberStyles.AllowTrailingSign, -99)]
+        [InlineData("99 $", NumberStyles.AllowCurrencySymbol, 99)]
+        public static void ParseWithWhitespacePrefixedTrailingToken(string value, NumberStyles style, int expected)
+        {
+            NumberFormatInfo format = new()
+            {
+                CurrencySymbol = " $",
+                PositiveSign = " +",
+                NegativeSign = " -"
+            };
+
+            Assert.True(BigInteger.TryParse(value, style, format, out BigInteger result));
+            Assert.Equal(expected, result);
+
+            Assert.True(BigInteger.TryParse(Encoding.UTF8.GetBytes(value), style, format, out result));
+            Assert.Equal(expected, result);
+        }
+
+        [Theory]
+        [InlineData("99 +,", NumberStyles.AllowTrailingSign)]
+        [InlineData("99 -+", NumberStyles.AllowTrailingSign)]
+        [InlineData("99 +k", NumberStyles.AllowTrailingSign)]
+        [InlineData("99 $,", NumberStyles.AllowCurrencySymbol)]
+        public static void ParseWithWhitespacePrefixedTrailingToken_Invalid(string value, NumberStyles style)
+        {
+            NumberFormatInfo format = new()
+            {
+                CurrencySymbol = " $",
+                PositiveSign = " +",
+                NegativeSign = " -"
+            };
+
+            Assert.False(BigInteger.TryParse(value, style, format, out _));
+            Assert.False(BigInteger.TryParse(Encoding.UTF8.GetBytes(value), style, format, out _));
         }
     }
 
@@ -1408,64 +1458,64 @@ namespace System.Numerics.Tests
             }));
         }
 
-        public static IEnumerable<object[]> Parse_AllowTrailingInvalidCharacters_TestData()
+        public static IEnumerable<object[]> TryParsePartial_TestData()
         {
             // Basic BigInteger parsing with trailing invalid characters
-            yield return new object[] { "123abc", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null, new BigInteger(123), 3 };
-            yield return new object[] { "456789xyz", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null, new BigInteger(456789), 6 };
-            yield return new object[] { "0abc", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null, BigInteger.Zero, 1 };
+            yield return new object[] { "123abc", NumberStyles.Integer, null, new BigInteger(123), 3 };
+            yield return new object[] { "456789xyz", NumberStyles.Integer, null, new BigInteger(456789), 6 };
+            yield return new object[] { "0abc", NumberStyles.Integer, null, BigInteger.Zero, 1 };
 
             // With leading whitespace
-            yield return new object[] { "  123abc", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null, new BigInteger(123), 5 };
+            yield return new object[] { "  123abc", NumberStyles.Integer, null, new BigInteger(123), 5 };
 
             // With signs
-            yield return new object[] { "+123abc", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null, new BigInteger(123), 4 };
-            yield return new object[] { "-456xyz", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null, new BigInteger(-456), 4 };
+            yield return new object[] { "+123abc", NumberStyles.Integer, null, new BigInteger(123), 4 };
+            yield return new object[] { "-456xyz", NumberStyles.Integer, null, new BigInteger(-456), 4 };
 
             // HexNumber with trailing invalid characters
-            yield return new object[] { "ABCDEFxyz", NumberStyles.HexNumber | NumberStyles.AllowTrailingInvalidCharacters, null, BigInteger.Parse("ABCDEF", NumberStyles.HexNumber), 6 };
-            yield return new object[] { "FFGHxyz", NumberStyles.HexNumber | NumberStyles.AllowTrailingInvalidCharacters, null, BigInteger.Parse("FF", NumberStyles.HexNumber), 2 };
+            yield return new object[] { "ABCDEFxyz", NumberStyles.HexNumber, null, BigInteger.Parse("ABCDEF", NumberStyles.HexNumber), 6 };
+            yield return new object[] { "FFGHxyz", NumberStyles.HexNumber, null, BigInteger.Parse("FF", NumberStyles.HexNumber), 2 };
 
             // HexNumber consumes trailing whitespace (AllowTrailingWhite) before stopping on the first invalid non-whitespace character
-            yield return new object[] { "FF  G", NumberStyles.HexNumber | NumberStyles.AllowTrailingInvalidCharacters, null, BigInteger.Parse("FF", NumberStyles.HexNumber), 4 };
-            yield return new object[] { "FF  ", NumberStyles.HexNumber | NumberStyles.AllowTrailingInvalidCharacters, null, BigInteger.Parse("FF", NumberStyles.HexNumber), 4 };
-            yield return new object[] { "FF  G  ", NumberStyles.HexNumber | NumberStyles.AllowTrailingInvalidCharacters, null, BigInteger.Parse("FF", NumberStyles.HexNumber), 4 };
+            yield return new object[] { "FF  G", NumberStyles.HexNumber, null, BigInteger.Parse("FF", NumberStyles.HexNumber), 4 };
+            yield return new object[] { "FF  ", NumberStyles.HexNumber, null, BigInteger.Parse("FF", NumberStyles.HexNumber), 4 };
+            yield return new object[] { "FF  G  ", NumberStyles.HexNumber, null, BigInteger.Parse("FF", NumberStyles.HexNumber), 4 };
 
             // BinaryNumber with trailing invalid characters
-            yield return new object[] { "101010abc", NumberStyles.BinaryNumber | NumberStyles.AllowTrailingInvalidCharacters, null, BigInteger.Parse("101010", NumberStyles.BinaryNumber), 6 };
-            yield return new object[] { "1112", NumberStyles.BinaryNumber | NumberStyles.AllowTrailingInvalidCharacters, null, BigInteger.Parse("111", NumberStyles.BinaryNumber), 3 };
+            yield return new object[] { "101010abc", NumberStyles.BinaryNumber, null, BigInteger.Parse("101010", NumberStyles.BinaryNumber), 6 };
+            yield return new object[] { "1112", NumberStyles.BinaryNumber, null, BigInteger.Parse("111", NumberStyles.BinaryNumber), 3 };
 
             // BinaryNumber consumes trailing whitespace (AllowTrailingWhite) before stopping on the first invalid non-whitespace character
-            yield return new object[] { "101  2", NumberStyles.BinaryNumber | NumberStyles.AllowTrailingInvalidCharacters, null, BigInteger.Parse("101", NumberStyles.BinaryNumber), 5 };
+            yield return new object[] { "101  2", NumberStyles.BinaryNumber, null, BigInteger.Parse("101", NumberStyles.BinaryNumber), 5 };
 
             // Large numbers with trailing characters
-            yield return new object[] { "123456789012345678901234567890abc", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null, BigInteger.Parse("123456789012345678901234567890"), 30 };
+            yield return new object[] { "123456789012345678901234567890abc", NumberStyles.Integer, null, BigInteger.Parse("123456789012345678901234567890"), 30 };
 
             // Valid number without trailing characters
-            yield return new object[] { "123456", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null, new BigInteger(123456), 6 };
+            yield return new object[] { "123456", NumberStyles.Integer, null, new BigInteger(123456), 6 };
         }
 
         [Theory]
-        [MemberData(nameof(Parse_AllowTrailingInvalidCharacters_TestData))]
-        public static void Parse_AllowTrailingInvalidCharacters(string value, NumberStyles style, IFormatProvider provider, BigInteger expectedValue, int expectedCharsConsumed)
+        [MemberData(nameof(TryParsePartial_TestData))]
+        public static void TryParsePartial(string value, NumberStyles style, IFormatProvider provider, BigInteger expectedValue, int expectedCharsConsumed)
         {
             BigInteger result;
             int charsConsumed;
 
             // Test string overload with charsConsumed
-            Assert.True(NumberBaseHelper<BigInteger>.TryParse(value, style, provider, out result, out charsConsumed));
+            Assert.True(NumberBaseHelper<BigInteger>.TryParsePartial(value, style, provider, out result, out charsConsumed));
             Assert.Equal(expectedValue, result);
             Assert.Equal(expectedCharsConsumed, charsConsumed);
 
             // Test ReadOnlySpan<char> overload with charsConsumed
-            Assert.True(NumberBaseHelper<BigInteger>.TryParse(value.AsSpan(), style, provider, out result, out charsConsumed));
+            Assert.True(NumberBaseHelper<BigInteger>.TryParsePartial(value.AsSpan(), style, provider, out result, out charsConsumed));
             Assert.Equal(expectedValue, result);
             Assert.Equal(expectedCharsConsumed, charsConsumed);
 
             // Test UTF-8 overload with bytesConsumed
             byte[] utf8Bytes = Encoding.UTF8.GetBytes(value);
             int bytesConsumed;
-            Assert.True(NumberBaseHelper<BigInteger>.TryParse(utf8Bytes.AsSpan(), style, provider, out result, out bytesConsumed));
+            Assert.True(NumberBaseHelper<BigInteger>.TryParsePartial(utf8Bytes.AsSpan(), style, provider, out result, out bytesConsumed));
             Assert.Equal(expectedValue, result);
             // For ASCII characters, bytes consumed should equal chars consumed
             if (value.All(c => c < 128))
@@ -1474,39 +1524,61 @@ namespace System.Numerics.Tests
             }
         }
 
-        public static IEnumerable<object[]> Parse_AllowTrailingInvalidCharacters_Invalid_TestData()
+        public static IEnumerable<object[]> TryParsePartial_Invalid_TestData()
         {
             // Empty string
-            yield return new object[] { "", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null };
+            yield return new object[] { "", NumberStyles.Integer, null };
 
             // Only invalid characters (no valid number)
-            yield return new object[] { "abc", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null };
-            yield return new object[] { "xyz", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null };
+            yield return new object[] { "abc", NumberStyles.Integer, null };
+            yield return new object[] { "xyz", NumberStyles.Integer, null };
+
+            // Values that scan successfully but aren't representable as a BigInteger
+            yield return new object[] { "1.5", NumberStyles.Float, CultureInfo.InvariantCulture };
+            yield return new object[] { "3.14159abc", NumberStyles.Float, CultureInfo.InvariantCulture };
+            yield return new object[] { "1E1000000000", NumberStyles.Float, CultureInfo.InvariantCulture };
         }
 
         [Theory]
-        [MemberData(nameof(Parse_AllowTrailingInvalidCharacters_Invalid_TestData))]
-        public static void Parse_AllowTrailingInvalidCharacters_Invalid(string value, NumberStyles style, IFormatProvider provider)
+        [MemberData(nameof(TryParsePartial_Invalid_TestData))]
+        public static void TryParsePartial_Invalid(string value, NumberStyles style, IFormatProvider provider)
         {
             BigInteger result;
             int charsConsumed;
 
             // Test string overload with charsConsumed
-            Assert.False(NumberBaseHelper<BigInteger>.TryParse(value, style, provider, out result, out charsConsumed));
+            Assert.False(NumberBaseHelper<BigInteger>.TryParsePartial(value, style, provider, out result, out charsConsumed));
             Assert.Equal(BigInteger.Zero, result);
             Assert.Equal(0, charsConsumed);
 
             // Test ReadOnlySpan<char> overload with charsConsumed
-            Assert.False(NumberBaseHelper<BigInteger>.TryParse(value.AsSpan(), style, provider, out result, out charsConsumed));
+            Assert.False(NumberBaseHelper<BigInteger>.TryParsePartial(value.AsSpan(), style, provider, out result, out charsConsumed));
             Assert.Equal(BigInteger.Zero, result);
             Assert.Equal(0, charsConsumed);
 
             // Test UTF-8 overload with bytesConsumed
             byte[] utf8Bytes = Encoding.UTF8.GetBytes(value);
             int bytesConsumed;
-            Assert.False(NumberBaseHelper<BigInteger>.TryParse(utf8Bytes.AsSpan(), style, provider, out result, out bytesConsumed));
+            Assert.False(NumberBaseHelper<BigInteger>.TryParsePartial(utf8Bytes.AsSpan(), style, provider, out result, out bytesConsumed));
             Assert.Equal(BigInteger.Zero, result);
             Assert.Equal(0, bytesConsumed);
+        }
+
+        [Fact]
+        public static void PublicParse_RejectsInternalTrailingInvalidCharactersSentinel()
+        {
+            // 0x8000_0000 is the internal-only AllowTrailingInvalidCharacters sentinel used to
+            // implement TryParsePartial. It must never be honored through a public entry point,
+            // otherwise callers could opt into stop-at-first-invalid parsing via a raw cast.
+            NumberStyles sentinel = unchecked((NumberStyles)0x8000_0000);
+
+            AssertExtensions.Throws<ArgumentException>("style", () => BigInteger.Parse("1x", sentinel));
+            AssertExtensions.Throws<ArgumentException>("style", () => BigInteger.Parse("1x".AsSpan(), sentinel));
+            AssertExtensions.Throws<ArgumentException>("style", () => BigInteger.Parse("1x"u8, sentinel));
+
+            AssertExtensions.Throws<ArgumentException>("style", () => BigInteger.TryParse("1x", sentinel, null, out _));
+            AssertExtensions.Throws<ArgumentException>("style", () => BigInteger.TryParse("1x".AsSpan(), sentinel, null, out _));
+            AssertExtensions.Throws<ArgumentException>("style", () => BigInteger.TryParse("1x"u8, sentinel, null, out _));
         }
     }
 }

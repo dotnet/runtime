@@ -24,6 +24,9 @@ public:
 bool isIntrinsic(
           CORINFO_METHOD_HANDLE ftn) override;
 
+bool canValueClassInstancePointerEscape(
+          CORINFO_METHOD_HANDLE ftn) override;
+
 bool notifyMethodInfoUsage(
           CORINFO_METHOD_HANDLE ftn) override;
 
@@ -503,6 +506,13 @@ CORINFO_METHOD_HANDLE getAwaitReturnCall(
           CORINFO_CONTEXT_HANDLE* contextHandle,
           CORINFO_LOOKUP* instArg) override;
 
+CORINFO_METHOD_HANDLE getAwaitAwaiterInContinuationCall(
+          CORINFO_METHOD_HANDLE callerHandle,
+          CORINFO_RESOLVED_TOKEN* pResolvedToken,
+          bool isUnsafe,
+          CORINFO_CONTEXT_HANDLE* contextHandle,
+          CORINFO_LOOKUP* instArg) override;
+
 mdMethodDef getMethodDefFromMethod(
           CORINFO_METHOD_HANDLE hMethod) override;
 
@@ -539,6 +549,9 @@ CorInfoWasmType getWasmLowering(
 
 uint32_t getAddressAlignment(
           void* address) override;
+
+void getWasmWellKnownGlobals(
+          CORINFO_WASM_WELLKNOWN_GLOBALS* pWellKnownGlobalsOut) override;
 
 uint32_t getThreadTLSIndex(
           void** ppIndirection) override;
@@ -590,10 +603,6 @@ void getLocationOfThisType(
 void getAddressOfPInvokeTarget(
           CORINFO_METHOD_HANDLE method,
           CORINFO_CONST_LOOKUP* pLookup) override;
-
-void* GetCookieForPInvokeCalliSig(
-          CORINFO_SIG_INFO* szMetaSig,
-          void** ppIndirection) override;
 
 void* GetCookieForInterpreterCalliSig(
           CORINFO_SIG_INFO* szMetaSig) override;
