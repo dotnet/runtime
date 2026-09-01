@@ -361,7 +361,7 @@ namespace ILCompiler.PortableCallHelpers
 
         private bool IsBlittableUncached(TypeDesc type)
         {
-            // MarshalUtils only considers DefTypes, so pointers and function pointers never reach it.
+            // MarshalUtils only considers DefTypes, so neither of these reaches its rules.
             if (type.IsPointer || type.IsFunctionPointer)
                 return true;
 
@@ -377,34 +377,6 @@ namespace ILCompiler.PortableCallHelpers
             }
 
             return true;
-        }
-
-        private bool IsBlittableSignature(MethodSignature signature)
-        {
-            if (!signature.ReturnType.IsVoid && !IsBlittable(signature.ReturnType))
-                return false;
-
-            foreach (TypeDesc parameterType in signature)
-            {
-                if (!IsBlittable(parameterType))
-                    return false;
-            }
-
-            return true;
-        }
-
-        /// <summary>
-        /// Whether the GC has a stake in what a pointer addresses.
-        /// </summary>
-        private static bool IsUnmanaged(TypeDesc type)
-        {
-            if (type.IsVoid || type.IsPointer || type.IsFunctionPointer)
-                return true;
-
-            if (type.IsGCPointer || type.IsByRef)
-                return false;
-
-            return type is not DefType defType || !defType.ContainsGCPointers;
         }
     }
 }
