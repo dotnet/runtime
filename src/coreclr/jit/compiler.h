@@ -8239,6 +8239,8 @@ public:
                                              CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                              CORINFO_RESOLVED_TOKEN* pUnboxedResolvedToken);
 
+    bool canKeepNonInlineableGdvCandidate(GenTreeCall* call);
+
     int getGDVMaxTypeChecks()
     {
         int typeChecks = JitConfig.JitGuardedDevirtualizationMaxTypeChecks();

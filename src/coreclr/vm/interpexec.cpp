@@ -2912,6 +2912,30 @@ SWITCH_OPCODE:
                     INTOP_NEXT;
                 }
 
+                INTOP_CASE(INTOP_GET_RUNTIME_TYPE_FROM_HANDLE)
+                {
+                    void* typeHandle = LOCAL_VAR(ip[2], void*);
+
+                    if (typeHandle == nullptr)
+                    {
+                        LOCAL_VAR(ip[1], OBJECTREF) = nullptr;
+                    }
+                    else
+                    {
+                        TypeHandle handle = TypeHandle::FromPtr(typeHandle);
+                        OBJECTREF runtimeType = handle.GetManagedClassObjectIfExists();
+                        if (runtimeType == nullptr)
+                        {
+                            pFrame->ip = ip;
+                            runtimeType = handle.GetManagedClassObject();
+                        }
+                        LOCAL_VAR(ip[1], OBJECTREF) = runtimeType;
+                    }
+
+                    ip += 3;
+                    INTOP_NEXT;
+                }
+
                 INTOP_CASE(INTOP_CALL_HELPER_P_PS)
                 {
                     pFrame->ip = ip;
