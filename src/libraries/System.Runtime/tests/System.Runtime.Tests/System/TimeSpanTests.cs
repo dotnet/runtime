@@ -1888,6 +1888,41 @@ namespace System.Tests
         }
 
         [Theory]
+        [InlineData("'é'", "é")]
+        [InlineData("'\\é'", "é")]
+        [InlineData("\\é", "é")]
+        [InlineData("'\U0001F600'", "\U0001F600")]
+        [InlineData("'\\\U0001F600'", "\U0001F600")]
+        [InlineData("\\\U0001F600", "\U0001F600")]
+        public static void TryFormat_CustomFormatWithUnicodeLiteral(string format, string expected)
+        {
+            Span<char> chars = new char[expected.Length];
+            Assert.True(TimeSpan.Zero.TryFormat(chars, out int charsWritten, format));
+            Assert.Equal(expected, new string(chars[..charsWritten]));
+
+            Span<byte> bytes = new byte[Encoding.UTF8.GetByteCount(expected)];
+            Assert.True(TimeSpan.Zero.TryFormat(bytes, out int bytesWritten, format));
+            Assert.Equal(expected, Encoding.UTF8.GetString(bytes[..bytesWritten]));
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static void TryFormat_CustomFormatWithUnpairedSurrogate(bool highSurrogate)
+        {
+            string literal = new(highSurrogate ? '\uD83D' : '\uDE00', 1);
+            string format = $"'{literal}'";
+
+            Span<char> chars = new char[literal.Length];
+            Assert.True(TimeSpan.Zero.TryFormat(chars, out int charsWritten, format));
+            Assert.Equal(literal, new string(chars[..charsWritten]));
+
+            Span<byte> bytes = stackalloc byte[3];
+            Assert.True(TimeSpan.Zero.TryFormat(bytes, out int bytesWritten, format));
+            Assert.Equal("\uFFFD", Encoding.UTF8.GetString(bytes[..bytesWritten]));
+        }
+
+        [Theory]
         [MemberData(nameof(ToString_InvalidFormat_TestData))]
         public void TryFormat_InvalidFormat_ThrowsFormatException(string invalidFormat)
         {

@@ -43,6 +43,10 @@ Search open `dotnet/runtime` issues with the `Known Build Error` label. Try
 these variations in order, scanning the first ~10 results of each. GitHub
 best-match ranking can place noisier hits above the correct one.
 
+For every `search_issues` call in this flow, include `user` in the requested
+`fields`, even when the author is not otherwise needed. The integrity gateway
+uses `user.login` to recognize trusted bots before filtering search results.
+
 1. Full `[FAIL]` line.
 2. Assertion text.
 3. Exception class + test name.
@@ -52,8 +56,16 @@ best-match ranking can place noisier hits above the correct one.
    `SocketBlockingModeTransitionTests label:area-System.Net.Sockets`.
 6. Stripped test-family stem. Strip platform/arch suffixes (`_linux_arm`,
    `_osx_arm64`) and type-width suffixes (`_byte_short`, `_long_ulong`,
-   `_8bit`, `_16bit`, `_32bit`); search the stem in `in:title` and `in:body`.
-   Catches sibling KBEs at different bit widths or instantiations.
+   `_8bit`, `_16bit`, `_32bit`). For coreclr slash-delimited runtime-test
+   paths, also strip trailing script-runner suffixes (`.cmd`, `.dll`, `.sh`,
+   `.exe`) and exit-code/signal descriptors (`exit 134`, `exit 101`,
+   `SIGABRT`); search the bare stem in `in:title` and `in:body`. For example,
+   search `GC/API/Refresh/Refresh/Refresh` for both
+   `GC/API/Refresh/Refresh/Refresh` and `GC/API/Refresh/Refresh/Refresh.cmd`
+   failures with `exit 101`, and search
+   `JIT/Methodical/Arrays/misc/arrres_il_r/arrres_il_r` for the same test with
+   or without `.cmd` and `exit 134`. Catches sibling KBEs at different bit
+   widths, instantiations, script runners, or exit/signal descriptors.
 7. Bare signature, open issues, no label filter:
    `is:issue is:open in:title "<test-name>"` and
    `is:issue is:open "<assertion-text>" in:body`. Catches a pre-existing
@@ -63,15 +75,15 @@ best-match ranking can place noisier hits above the correct one.
 
 When a failure includes a complete test method identifier, search that
 identifier verbatim before deriving any shorter stem. Do not truncate
-underscore-delimited identifiers;
-GitHub search does not reliably prefix-match them. Only strip the specific
-platform, architecture, and type-width suffixes described in variation 6.
+underscore-delimited identifiers; GitHub search does not reliably prefix-match
+them. Only strip the specific platform, architecture, type-width,
+script-runner, and exit-code/signal suffixes described in variation 6.
 
 Variations 4 and 5 catch sibling failures filed for the same test class on a
 different platform or runtime variant, plus pre-existing area-team trackers
 that lack the `Known Build Error` label. Variation 6 catches siblings at
-different bit widths or instantiations. Variation 7 catches an open human
-report with no label at all.
+different bit widths, instantiations, script runners, or exit/signal
+descriptors. Variation 7 catches an open human report with no label at all.
 
 If two candidate KBEs share more than 70% of their `ErrorMessage` /
 `ErrorPattern` tokens, do **not** guess: record
@@ -285,6 +297,13 @@ single literal line is specific enough.
 
 ### KBE issue body - literal substring match
 
+Paste the full stack trace or exception output in `Error Details` so readers can
+understand the failure at a glance. That section is for humans; Build Analysis
+only parses `Error Message`. The JSON block is parsed by Build Analysis for
+automatic matching: `ErrorMessage` is a case-sensitive ordinal
+`String.Contains` substring. Set `BuildRetry` to `true` only for clear infra
+flakes; `ExcludeConsoleLog` skips Helix log scanning.
+
 Title:
 
 - `[ci-scan] Test failure: <fully.qualified.TestName>` for test failures
@@ -303,20 +322,23 @@ Build: <link to the relevant dev.azure.com build>
 Build error leg or test failing: <AzDO leg name>-<assembly or test name>
 Pull request: <link to the PR if this is a PR build, otherwise omit this line>
 
-## Error Details
+<details>
+<summary>KBE authoring guidance (ci-failure-scan)</summary>
 
-<!-- Paste the full stack trace or exception output below so readers can understand the failure at a glance.
-     This section is for humans — Build Analysis only parses the ## Error Message section. -->
+- `Error Details` is for readers. Paste the full exception, stack trace, or build error excerpt so the failure is understandable without opening the raw log.
+- Build Analysis parses only the single JSON block under `Error Message`.
+- `ErrorMessage` is a case-sensitive ordinal `String.Contains` substring copied verbatim from the failing log.
+- Set `BuildRetry` to `true` only for a clear infrastructure retry case. `ExcludeConsoleLog` disables Helix console-log scanning.
+
+</details>
+
+## Error Details
 
 ```
 <full exception / stack trace excerpt; sanitize as needed>
 ```
 
 ## Error Message
-
-<!-- The JSON blob below is parsed by Build Analysis for automatic matching.
-     ErrorMessage is a literal String.Contains substring (case-sensitive, ordinal).
-     Set BuildRetry to `true` only for clear infra flakes. ExcludeConsoleLog skips helix log scanning. -->
 
 ```json
 {
@@ -326,6 +348,15 @@ Pull request: <link to the PR if this is a PR build, otherwise omit this line>
   "ExcludeConsoleLog": false
 }
 ```
+
+<details>
+<summary>Agentic workflow metadata (ci-failure-scan)</summary>
+
+Workflow artifact: ci-failure-scan
+Artifact kind: kbe-verification
+Verified match count: <N> hits in failure.log
+
+</details>
 ````
 
 <a id="regex-kbe-template"></a>
@@ -334,6 +365,11 @@ Pull request: <link to the PR if this is a PR build, otherwise omit this line>
 
 Pick only when no single literal line is specific enough. Keep the regex
 anchored, prefer `[^\n]*` over `.*`, and avoid catastrophic backtracking.
+Include the same human-readable `Error Details` guidance as the literal
+template. The JSON block is parsed by Build Analysis using .NET options
+`Singleline | IgnoreCase | NonBacktracking` with a 50ms-per-line timeout. Set
+`BuildRetry` to `true` only for clear infra flakes; `ExcludeConsoleLog` skips
+Helix log scanning.
 
 ````markdown
 ## Build Information
@@ -341,19 +377,24 @@ Build: <link>
 Build error leg or test failing: <AzDO leg name>-<assembly or test name>
 Pull request: <link, omit if not a PR build>
 
-## Error Details
+<details>
+<summary>KBE authoring guidance (ci-failure-scan)</summary>
 
-<!-- Same human-readable guidance as the literal template. -->
+- `Error Details` is for readers. Paste the full exception, stack trace, or build error excerpt so the failure is understandable without opening the raw log.
+- Build Analysis parses only the single JSON block under `Error Message`.
+- `ErrorPattern` uses .NET `Singleline | IgnoreCase | NonBacktracking` matching with a 50ms-per-line timeout.
+- Keep the regex anchored, prefer `[^\n]*` over `.*`, and avoid catastrophic backtracking.
+- Set `BuildRetry` to `true` only for a clear infrastructure retry case. `ExcludeConsoleLog` disables Helix console-log scanning.
+
+</details>
+
+## Error Details
 
 ```
 <full exception / stack trace excerpt>
 ```
 
 ## Error Message
-
-<!-- The JSON blob below is parsed by Build Analysis for automatic matching.
-     ErrorPattern is a regex with .NET options Singleline | IgnoreCase | NonBacktracking and a 50ms-per-line timeout.
-     Set BuildRetry to `true` only for clear infra flakes. ExcludeConsoleLog skips helix log scanning. -->
 
 ```json
 {
@@ -363,6 +404,15 @@ Pull request: <link, omit if not a PR build>
   "ExcludeConsoleLog": false
 }
 ```
+
+<details>
+<summary>Agentic workflow metadata (ci-failure-scan)</summary>
+
+Workflow artifact: ci-failure-scan
+Artifact kind: kbe-verification
+Verified match count: <N> hits in failure.log
+
+</details>
 ````
 
 <a id="kbe-array-form"></a>
@@ -371,7 +421,9 @@ Pull request: <link, omit if not a PR build>
 
 Use array form when the failure is best described by multiple ordered log lines.
 Each element matches one line, in order, with arbitrary lines allowed between
-matched elements.
+matched elements. Use the literal-substring KBE body shell above, including its
+collapsed authoring-guidance and workflow-metadata blocks, and replace only its
+`Error Message` JSON with this array form:
 
 ```json
 {
@@ -425,16 +477,22 @@ Walk all nine checks before creating a new KBE:
    For array form, repeat the positive `grep -Fc` for every element. Swap
    `-F` for `-E` when verifying `ErrorPattern`.
 
-   The KBE body MUST embed
-   `<!-- ci-scan-match-count: <N> hits in failure.log -->` where `<N>` is the
-   positive count of the most-specific element. If you cannot produce this
-   marker — positive count is 0 for any element, OR the failure log is
-   unavailable (no log saved, log too large, redaction), OR the log you have
-   is a test-runner xunit log but the actual error is a JIT, runtime, or
-   build-level assert that does not appear there — do **not** emit the KBE.
-   Record `skipped: signature did not match failure.log (N=<count>)` and stop.
-   A KBE without a verified positive count is guaranteed Build Analysis
-   noise.
+   Immediately after the `Error Message` fenced JSON block, the KBE body MUST
+   include the collapsed `Agentic workflow metadata (ci-failure-scan)` block
+   from the template. It identifies the workflow and artifact kind and contains
+   `Verified match count: <N> hits in failure.log`, where `<N>` is the positive
+   count of the most-specific element.
+
+   If you cannot produce a positive count — the count is 0 for any element,
+   OR the failure log is unavailable (no log saved, log too large, redaction),
+   OR the log you have is a test-runner xunit log but the actual error is a
+   JIT, runtime, or build-level assert that does not appear there — do **not**
+   emit the KBE. Record
+   `skipped: signature did not match failure.log (N=<count>)` and stop. A KBE
+   without a verified positive count is guaranteed Build Analysis noise.
+   Keep this as plain text inside the collapsed block rather than
+   `safe-outputs.data`: Build Analysis requires the KBE body to contain exactly
+   one fenced JSON block.
 
    JIT, runtime, and build-level asserts: the per-workitem xunit log Build
    Analysis indexes typically does NOT contain native assert output from

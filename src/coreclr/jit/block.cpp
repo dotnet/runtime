@@ -550,6 +550,7 @@ void BasicBlock::dspFlags() const
         {BBF_ASYNC_RESUMPTION, "a-resume"},
         {BBF_CATCH_RESUMPTION, "c-resume"},
         {BBF_THROW_HELPER, "throw-hlpr"},
+        {BBF_STALE_PREDICATE, "stale-pred"},
     };
 
     bool first = true;

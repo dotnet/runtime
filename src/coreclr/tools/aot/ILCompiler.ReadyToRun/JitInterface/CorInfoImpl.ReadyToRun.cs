@@ -1328,8 +1328,6 @@ namespace Internal.JitInterface
 
                 case CorInfoHelpFunc.CORINFO_HELP_GETSYNCFROMCLASSHANDLE:
                 case CorInfoHelpFunc.CORINFO_HELP_GETCLASSFROMMETHODPARAM:
-                case CorInfoHelpFunc.CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE_MAYBENULL:
-                case CorInfoHelpFunc.CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL:
                 case CorInfoHelpFunc.CORINFO_HELP_GETREFANY:
                 case CorInfoHelpFunc.CORINFO_HELP_NEW_MDARR_RARE:
                 // For x86 tailcall where helper is required we need runtime JIT.
@@ -2473,6 +2471,9 @@ namespace Internal.JitInterface
 
         private void getCallInfo(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_CALLINFO_FLAGS flags, CORINFO_CALL_INFO* pResult)
         {
+            // Constraint resolution may update tokenType for internal bookkeeping, but getCallInfo
+            // treats the resolved token as input and must not expose that mutation to the caller.
+            CORINFO_RESOLVED_TOKEN resolvedToken = pResolvedToken;
             MethodDesc methodToCall;
             MethodDesc targetMethod;
             TypeDesc constrainedType;
@@ -2482,7 +2483,7 @@ namespace Internal.JitInterface
             EcmaModule callerModule;
             bool useInstantiatingStub;
             ceeInfoGetCallInfo(
-                ref pResolvedToken,
+                ref resolvedToken,
                 pConstrainedResolvedToken,
                 callerHandle,
                 flags,
@@ -2550,7 +2551,7 @@ namespace Internal.JitInterface
 
                         pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
                             _compilation.SymbolNodeFactory.DispatchCell(
-                                ComputeMethodWithToken(targetMethod, ref pResolvedToken, constrainedType: null, unboxing: false),
+                                ComputeMethodWithToken(targetMethod, ref resolvedToken, constrainedType: null, unboxing: false),
                                 MethodBeingCompiled));
 
                         // If the abi of the method isn't stable, this will cause a usage of the RequiresRuntimeJitSymbol, which will trigger a RequiresRuntimeJitException
@@ -2611,7 +2612,7 @@ namespace Internal.JitInterface
                             // READYTORUN: FUTURE: Direct calls if possible
                             pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
                                 _compilation.NodeFactory.MethodEntrypoint(
-                                    ComputeMethodWithToken(nonUnboxingMethod, ref pResolvedToken, constrainedType, unboxing: isUnboxingStub),
+                                    ComputeMethodWithToken(nonUnboxingMethod, ref resolvedToken, constrainedType, unboxing: isUnboxingStub),
                                     isInstantiatingStub: useInstantiatingStub,
                                     isPrecodeImportRequired: (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0,
                                     isJumpableImportRequired: false));
@@ -2635,7 +2636,7 @@ namespace Internal.JitInterface
                     {
                         pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
                             _compilation.NodeFactory.DynamicHelperCell(
-                                ComputeMethodWithToken(targetMethod, ref pResolvedToken, constrainedType: null, unboxing: false),
+                                ComputeMethodWithToken(targetMethod, ref resolvedToken, constrainedType: null, unboxing: false),
                                 useInstantiatingStub));
 
                         // Wasm routes all virtual calls through LDVIRTFTN (stub dispatch is unsupported),
@@ -2665,16 +2666,78 @@ namespace Internal.JitInterface
                     {
                         pResult->instParamLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(
                             ReadyToRunHelperId.MethodDictionary,
-                            ComputeMethodWithToken(targetMethod, ref pResolvedToken, constrainedType: constrainedType, unboxing: false)));
+                            ComputeMethodWithToken(targetMethod, ref resolvedToken, constrainedType: constrainedType, unboxing: false)));
                     }
                     else
                     {
-                        pResult->instParamLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(
-                            ReadyToRunHelperId.TypeDictionary,
-                            exactType));
+                        ISymbolNode instParamLookup;
+                        if (targetMethod.OwningType == exactType && !CanEncodeTypeInSignature(exactType))
+                        {
+                            instParamLookup = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(
+                                ReadyToRunHelperId.DeclaringTypeHandle,
+                                ComputeMethodWithToken(targetMethod, ref resolvedToken, constrainedType, unboxing: false));
+                        }
+                        else
+                        {
+                            instParamLookup = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(
+                                ReadyToRunHelperId.TypeDictionary,
+                                exactType);
+                        }
+                        pResult->instParamLookup = CreateConstLookupToSymbol(instParamLookup);
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Determine whether a type can be encoded as a type signature in the compiled image. Encoding a named type
+        /// requires a metadata token for it which is resolvable from within the version bubble being compiled.
+        /// This must be kept in sync with <see cref="SignatureBuilder.EmitTypeSignature"/>.
+        /// </summary>
+        private bool CanEncodeTypeInSignature(TypeDesc type)
+        {
+            switch (type)
+            {
+                case RuntimeDeterminedType:
+                    return true;
+
+                case ParameterizedType parameterizedType:
+                    return CanEncodeTypeInSignature(parameterizedType.ParameterType);
+
+                case FunctionPointerType functionPointerType:
+                    MethodSignature signature = functionPointerType.Signature;
+                    if (!CanEncodeTypeInSignature(signature.ReturnType))
+                        return false;
+                    for (int argIndex = 0; argIndex < signature.Length; argIndex++)
+                    {
+                        if (!CanEncodeTypeInSignature(signature[argIndex]))
+                            return false;
+                    }
+                    return true;
+            }
+
+            if (type.HasInstantiation && !type.IsGenericDefinition)
+            {
+                foreach (TypeDesc instantiationArgument in type.Instantiation)
+                {
+                    if (!CanEncodeTypeInSignature(instantiationArgument))
+                        return false;
+                }
+            }
+
+            TypeDesc typeDefinition = type.GetTypeDefinition();
+            if (typeDefinition.IsPrimitive || typeDefinition.IsVoid || typeDefinition.IsString || typeDefinition.IsObject
+                || typeDefinition.IsWellKnownType(WellKnownType.TypedReference)
+                || typeDefinition.IsCanonicalDefinitionType(CanonicalFormKind.Specific))
+            {
+                return true;
+            }
+
+            if (typeDefinition is not EcmaType ecmaTypeDefinition)
+                return true;
+
+            return !_compilation.NodeFactory.Resolver.GetModuleTokenForType(
+                ecmaTypeDefinition, allowDynamicallyCreatedReference: true, throwIfNotFound: false).IsNull;
         }
 
         private void ComputeRuntimeLookupForSharedGenericToken(
@@ -2775,12 +2838,37 @@ namespace Internal.JitInterface
                 Debug.Assert(MethodBeingCompiled is not AsyncResumptionStub);
                 _compilation.NodeFactory.DetectGenericCycles(MethodBeingCompiled, sharedMethod);
                 helperArg = new MethodWithToken(methodDesc, HandleToModuleToken(ref pResolvedToken, out bool strippedInstantiation), constrainedType, unboxing: false, genericContextObject: sharedMethod, forceOwningTypeFromMethodDesc: strippedInstantiation);
+
+                if (helperId == ReadyToRunHelperId.TypeHandle && !CanEncodeTypeInSignature(methodDesc.OwningType))
+                {
+                    // The type handle being looked up is the type which declares the method described by the token. That
+                    // type isn't necessarily referenceable from the modules being compiled - the method may have moved to
+                    // a base type which is invisible to the version bubble of the token. Encode the method instead and let
+                    // the runtime compute the type which declares it.
+                    helperId = ReadyToRunHelperId.DeclaringTypeHandle;
+                }
             }
             else if (helperArg is FieldDesc fieldDesc)
             {
                 ModuleToken fieldToken = HandleToModuleToken(ref pResolvedToken, out bool strippedInstantiation);
                 Debug.Assert(!strippedInstantiation);
                 helperArg = new FieldWithToken(fieldDesc, fieldToken, forceOwningTypeNotDerivedFromToken: strippedInstantiation);
+            }
+            else if (helperId == ReadyToRunHelperId.TypeHandle &&
+                helperArg is TypeDesc typeDesc &&
+                pResolvedToken.hMethod != null &&
+                HandleToObject(pResolvedToken.hMethod) is MethodDesc declaringMethod &&
+                declaringMethod.OwningType == typeDesc &&
+                !CanEncodeTypeInSignature(typeDesc))
+            {
+                // The type handle being looked up is the type which declares the method described by the token. Encode
+                // the method instead when the declaring type isn't referenceable from the modules being compiled.
+                helperId = ReadyToRunHelperId.DeclaringTypeHandle;
+                helperArg = ComputeMethodWithToken(
+                    declaringMethod,
+                    ref pResolvedToken,
+                    constrainedType: null,
+                    unboxing: false);
             }
 
             var methodContext = new GenericContext(callerHandle);
@@ -2938,9 +3026,25 @@ namespace Internal.JitInterface
                 switch (pResult.handleType)
                 {
                     case CorInfoGenericHandleType.CORINFO_HANDLETYPE_CLASS:
-                        symbolNode = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(
-                            ReadyToRunHelperId.TypeHandle,
-                            HandleToObject(pResolvedToken.hClass));
+                        {
+                            TypeDesc typeHandleType = HandleToObject(pResolvedToken.hClass);
+                            if (fEmbedParent && pResolvedToken.hMethod != null && !CanEncodeTypeInSignature(typeHandleType))
+                            {
+                                // The type handle being embedded is the type which declares the method described by the
+                                // token. That type isn't necessarily referenceable from the modules being compiled - the
+                                // method may have moved to a base type which is invisible to the version bubble of the
+                                // token. Encode the method instead and let the runtime compute the declaring type.
+                                symbolNode = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(
+                                    ReadyToRunHelperId.DeclaringTypeHandle,
+                                    ComputeMethodWithToken(HandleToObject(pResolvedToken.hMethod), ref pResolvedToken, constrainedType: null, unboxing: false));
+                            }
+                            else
+                            {
+                                symbolNode = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(
+                                    ReadyToRunHelperId.TypeHandle,
+                                    typeHandleType);
+                            }
+                        }
                         break;
 
                     case CorInfoGenericHandleType.CORINFO_HANDLETYPE_METHOD:
@@ -3332,7 +3436,33 @@ namespace Internal.JitInterface
 
         private bool convertPInvokeCalliToCall(ref CORINFO_RESOLVED_TOKEN pResolvedToken, bool mustConvert)
         {
-            throw new NotImplementedException();
+            var methodIL = (MethodIL)HandleToObject((void*)pResolvedToken.tokenScope);
+            var signature = (MethodSignature)methodIL.GetObject((int)pResolvedToken.token);
+
+            switch (signature.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask)
+            {
+                case MethodSignatureFlags.None:
+                case MethodSignatureFlags.CallingConventionVarargs:
+                    // Not an unmanaged call site.
+                    return false;
+            }
+
+            CorInfoCallConvExtension unmanagedCallConv = GetUnmanagedCallConv(signature, out _);
+
+            // ReadyToRun has no way to refer to the marshalling stub the runtime creates for an unmanaged
+            // calli, so the JIT has to expand the call site inline. Everything it cannot expand - a call site
+            // where an inline P/Invoke frame is not allowed, a calling convention the JIT refuses to inline,
+            // an unmanaged signature carrying an instance 'this', or a signature that needs marshalling -
+            // leaves the method to the runtime JIT.
+            if (mustConvert ||
+                !signature.IsStatic || signature.IsExplicitThis ||
+                unmanagedCallConv is CorInfoCallConvExtension.Fastcall or CorInfoCallConvExtension.FastcallMemberFunction ||
+                Marshaller.IsMarshallingRequired(signature, Array.Empty<ParameterMetadata>(), ((MetadataType)methodIL.OwningMethod.OwningType).Module))
+            {
+                throw new RequiresRuntimeJitException($"{MethodBeingCompiled} -> {nameof(convertPInvokeCalliToCall)}");
+            }
+
+            return false;
         }
 
         private int SizeOfPInvokeTransitionFrame => ReadyToRunRuntimeConstants.READYTORUN_PInvokeTransitionFrameSizeInPointerUnits * PointerSize;

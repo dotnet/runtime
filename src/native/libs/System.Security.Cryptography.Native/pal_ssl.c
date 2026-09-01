@@ -954,35 +954,6 @@ int32_t CryptoNative_SslCtxSetCiphers(SSL_CTX* ctx, const char* cipherList, cons
     return ret;
 }
 
-int32_t CryptoNative_SetCiphers(SSL* ssl, const char* cipherList, const char* cipherSuites)
-{
-    ERR_clear_error();
-
-    int32_t ret = true;
-
-    // for < TLS 1.3
-    if (cipherList != NULL)
-    {
-        ret &= SSL_set_cipher_list(ssl, cipherList);
-        if (!ret)
-        {
-            return ret;
-        }
-    }
-
-    // for TLS 1.3
-#if HAVE_OPENSSL_SET_CIPHERSUITES
-    if (CryptoNative_Tls13Supported() && cipherSuites != NULL)
-    {
-        ret &= SSL_set_ciphersuites(ssl, cipherSuites);
-    }
-#else
-    (void)cipherSuites;
-#endif
-
-    return ret;
-}
-
 const char* CryptoNative_GetOpenSslCipherSuiteName(SSL* ssl, int32_t cipherSuite, int32_t* isTls12OrLower)
 {
     // No error queue impact.

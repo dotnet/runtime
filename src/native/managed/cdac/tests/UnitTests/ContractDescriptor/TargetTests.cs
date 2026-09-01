@@ -246,8 +246,26 @@ public unsafe partial class TargetTests
         ContractDescriptorHelpers.Fill(descriptor, targetTestHelpers.Arch, descriptorJson.Length, 0xdddddddd, 0, 0xeeeeeeee);
 
         FormatException ex = Assert.Throws<FormatException>(() => builder.CreateTargetFromRawDescriptor(descriptor, descriptorJson, []));
-        Assert.IsType<System.Text.Json.JsonException>(ex.InnerException);
+        Assert.IsAssignableFrom<System.Text.Json.JsonException>(ex.InnerException);
         Assert.Equal(CdacHResults.CDAC_E_DESCRIPTOR_MALFORMED, ex.HResult);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void Create_UnsupportedDataDescriptorVersion_ThrowsFormatException(MockTarget.Architecture arch)
+    {
+        int?[] unsupportedVersions = [null, 0, 1, 3];
+
+        foreach (int? version in unsupportedVersions)
+        {
+            TargetTestHelpers targetTestHelpers = new(arch);
+            ContractDescriptorBuilder builder = new(targetTestHelpers);
+            ContractDescriptorBuilder.DescriptorBuilder descriptorBuilder = new(builder);
+            descriptorBuilder.SetVersion(version);
+
+            FormatException ex = Assert.Throws<FormatException>(() => builder.CreateTarget(descriptorBuilder));
+            Assert.Equal(CdacHResults.CDAC_E_DESCRIPTOR_MALFORMED, ex.HResult);
+        }
     }
 
     [Theory]
