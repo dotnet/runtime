@@ -110,7 +110,7 @@ namespace System.Formats.Tar.Tests
 
 
         [Fact]
-        public void LongEndMarkers_DoNotAdvanceStream(bool async)
+        public async Task LongEndMarkers_DoNotAdvanceStream(bool async)
         {
             using MemoryStream archive = new MemoryStream();
             TarWriter writer = CreateTarWriter(archive, TarEntryFormat.Ustar, leaveOpen: true);
