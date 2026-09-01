@@ -1176,6 +1176,25 @@ namespace System.Numerics
             return result;
         }
 
+        /// <summary>Finds the least common multiple of two <see cref="BigInteger" /> values.</summary>
+        /// <param name="left">The first value.</param>
+        /// <param name="right">The second value.</param>
+        /// <returns>The smallest non-negative integer that is a multiple of both <paramref name="left" /> and <paramref name="right" />.</returns>
+        /// <remarks>
+        ///   <para>
+        ///     The result is always non-negative, because the sign of either operand does not affect the
+        ///     set of their common multiples.
+        ///   </para>
+        ///   <para>
+        ///     Zero is a multiple of every integer, so the result is <see cref="Zero" /> when either
+        ///     <paramref name="left" /> or <paramref name="right" /> is <see cref="Zero" />.
+        ///   </para>
+        /// </remarks>
+        public static BigInteger LeastCommonMultiple(BigInteger left, BigInteger right)
+        {
+            throw new NotImplementedException();
+        }
+
         public static BigInteger Max(BigInteger left, BigInteger right)
         {
             return left.CompareTo(right) < 0 ? right : left;
@@ -1297,6 +1316,36 @@ namespace System.Numerics
                     bits[digitShift + length] = carry;
                 }
             }
+        }
+
+        /// <summary>Finds the modular multiplicative inverse of a <see cref="BigInteger" /> value.</summary>
+        /// <param name="value">The value to invert.</param>
+        /// <param name="modulus">The modulus.</param>
+        /// <returns>
+        ///   The least non-negative integer <c>x</c> in the range <c>[0, modulus)</c> that satisfies
+        ///   <c>value * x == 1 (mod modulus)</c>, or <see cref="Zero" /> when <paramref name="modulus" /> is one.
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="modulus" /> is less than or equal to zero.</exception>
+        /// <exception cref="ArithmeticException"><paramref name="value" /> and <paramref name="modulus" /> are not coprime, so no inverse exists.</exception>
+        /// <remarks>
+        ///   <para>
+        ///     <paramref name="value" /> is first reduced to its canonical representative in the range
+        ///     <c>[0, modulus)</c>, so a negative <paramref name="value" /> is inverted as though the
+        ///     appropriate multiple of <paramref name="modulus" /> had been added to it.
+        ///   </para>
+        ///   <para>
+        ///     Every integer is congruent to zero modulo one, so the result is <see cref="Zero" /> for any
+        ///     <paramref name="value" /> when <paramref name="modulus" /> is one.
+        ///   </para>
+        ///   <para>
+        ///     An inverse exists only when <paramref name="value" /> and <paramref name="modulus" /> are
+        ///     coprime. This excludes the case where <paramref name="value" /> is congruent to zero modulo
+        ///     <paramref name="modulus" />, including when <paramref name="value" /> is itself <see cref="Zero" />.
+        ///   </para>
+        /// </remarks>
+        public static BigInteger ModInverse(BigInteger value, BigInteger modulus)
+        {
+            throw new NotImplementedException();
         }
 
         public static BigInteger ModPow(BigInteger value, BigInteger exponent, BigInteger modulus)
