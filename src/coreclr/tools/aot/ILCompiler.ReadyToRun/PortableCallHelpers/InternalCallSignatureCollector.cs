@@ -69,12 +69,13 @@ namespace ILCompiler.PortableCallHelpers
                 if (method.IsConstructor && method.OwningType.IsWellKnownType(WellKnownType.String))
                     continue;
 
-                // An uninstantiated generic has no single signature to generate a thunk from, because
-                // its parameters stand for whatever the instantiation supplies.
+                // A generic has no single signature to generate a thunk from, so the interpreter
+                // would find none at call time - and a release build does not even assert on the
+                // miss, it takes the null cookie. CoreLib declares no such method today.
                 if (method.HasInstantiation || method.OwningType.HasInstantiation)
                 {
-                    log.Warning("WASM0001", $"Skipping generic InternalCall method '{type}::{method.Name.ToString()}', which has no single signature");
-                    continue;
+                    throw new LogAsErrorException(
+                        $"Generic InternalCall method '{type}::{method.Name.ToString()}' has no single signature to generate a thunk from.");
                 }
 
                 try
