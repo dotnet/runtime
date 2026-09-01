@@ -410,8 +410,14 @@ namespace System.Runtime.InteropServices
             protected override bool TryGetOrLoadTypeFromPreCachedDictionary(RuntimeModule module, string key, [NotNullWhen(true)] out Type? type)
             {
                 IntPtr handle = FindPrecachedExternalTypeMapEntry(new QCallModule(ref module), new QCallTypeHandle(ref _groupType), key);
-                type = RuntimeTypeHandle.GetRuntimeTypeFromHandleMaybeNull(handle);
-                return type != null;
+                if (handle == IntPtr.Zero)
+                {
+                    type = null;
+                    return false;
+                }
+
+                type = RuntimeTypeHandle.GetRuntimeTypeFromHandle(handle);
+                return true;
             }
 
             protected override bool TryGetOrLoadType(string key, [NotNullWhen(true)] out Type? type)
@@ -485,8 +491,13 @@ namespace System.Runtime.InteropServices
             {
                 RuntimeType rtKey = (RuntimeType)key;
                 IntPtr handle = FindPrecachedProxyTypeMapEntry(new QCallModule(ref module), new QCallTypeHandle(ref _groupType), new QCallTypeHandle(ref rtKey));
-                type = RuntimeTypeHandle.GetRuntimeTypeFromHandleMaybeNull(handle);
-                return type != null;
+                if (handle == IntPtr.Zero)
+                {
+                    type = null;
+                    return false;
+                }
+                type = RuntimeTypeHandle.GetRuntimeTypeFromHandle(handle);
+                return true;
             }
 
             protected override bool TryGetOrLoadType(Type key, [NotNullWhen(true)] out Type? type)
