@@ -359,7 +359,11 @@ public partial class ZipArchiveEntry
 
             ValidateUncompressedSizeIsPlausible();
 
-            _storedUncompressedData = new MemoryStream((int)_uncompressedSize);
+            // _compressedSize is already validated against the archive's real length (above), so
+            // capping capacity to it avoids a huge allocation from a small archive; the stream
+            // still grows normally if the entry decompresses larger than this.
+            int initialCapacity = (int)Math.Min(_uncompressedSize, _compressedSize);
+            _storedUncompressedData = new MemoryStream(initialCapacity);
 
             if (_originallyInArchive)
             {
@@ -607,7 +611,11 @@ public partial class ZipArchiveEntry
 
         ValidateUncompressedSizeIsPlausible();
 
-        _storedUncompressedData = new MemoryStream((int)_uncompressedSize);
+        // _compressedSize is already validated against the archive's real length (above), so
+        // capping capacity to it avoids a huge allocation from a small archive; the stream
+        // still grows normally if the entry decompresses larger than this.
+        int initialCapacity = (int)Math.Min(_uncompressedSize, _compressedSize);
+        _storedUncompressedData = new MemoryStream(initialCapacity);
 
         Stream decompressed = BuildDecompressionPipeline(decryptedStream);
 

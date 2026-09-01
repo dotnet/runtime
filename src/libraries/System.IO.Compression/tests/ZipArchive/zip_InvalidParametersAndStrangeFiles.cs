@@ -526,6 +526,66 @@ namespace System.IO.Compression.Tests
 
         [Theory]
         [MemberData(nameof(Get_Booleans_Data))]
+        public static async Task ZipArchiveEntry_OpenInUpdateMode_LargePlausibleClaimedSize_DoesNotPreallocateFullClaimedSize(bool async)
+        {
+            // A mathematically-plausible but untrue _uncompressedSize claim should not cause the initial
+            // MemoryStream to be pre-allocated to that claimed size; it should be capped at
+            // _compressedSize instead, and grow normally only as real data is copied in.
+            //
+            // The payload is incompressible so _compressedSize stays close to its length, keeping
+            // IsOpenableFinalVerifications satisfied while we lie about _uncompressedSize below.
+            byte[] payload = new byte[900_000];
+            new Random(42).NextBytes(payload);
+            MemoryStream stream = new MemoryStream();
+
+            ZipArchive archive = await CreateZipArchive(async, stream, ZipArchiveMode.Create, leaveOpen: true);
+            ZipArchiveEntry entry = archive.CreateEntry("entry.bin", CompressionLevel.Fastest);
+            Stream entryStream = await OpenEntryStream(async, entry);
+            await entryStream.WriteAsync(payload);
+            await DisposeStream(async, entryStream);
+            await DisposeZipArchive(async, archive);
+
+            stream.Position = 0;
+            archive = await CreateZipArchive(async, stream, ZipArchiveMode.Update, leaveOpen: true);
+            entry = archive.GetEntry("entry.bin");
+
+            // The real _compressedSize (~900,000 bytes) makes a 500 MB claim mathematically plausible
+            // under ValidateUncompressedSizeIsPlausible, even though the real content is far smaller.
+            FieldInfo uncompressedSizeField = typeof(ZipArchiveEntry).GetField("_uncompressedSize", BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.NotNull(uncompressedSizeField);
+            uncompressedSizeField.SetValue(entry, 500_000_000L);
+
+            FieldInfo compressedSizeField = typeof(ZipArchiveEntry).GetField("_compressedSize", BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.NotNull(compressedSizeField);
+            long realCompressedSize = Assert.IsType<long>(compressedSizeField.GetValue(entry));
+
+            Stream source = await OpenEntryStream(async, entry);
+
+            using (MemoryStream ms = new MemoryStream())
+            {
+                await source.CopyToAsync(ms);
+                Assert.Equal(payload.Length, ms.Length);
+                Assert.Equal(payload, ms.ToArray());
+            }
+
+            await DisposeStream(async, source);
+
+            FieldInfo storedUncompressedDataField = typeof(ZipArchiveEntry).GetField("_storedUncompressedData", BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.NotNull(storedUncompressedDataField);
+            MemoryStream storedUncompressedData = Assert.IsType<MemoryStream>(storedUncompressedDataField.GetValue(entry));
+
+            // The real capacity should track the physically-supplied compressed size, not the untrusted
+            // 500 MB claim. Bound this against realCompressedSize rather than asserting exact equality:
+            // exact equality would depend on Deflate never compressing this payload below its original
+            // length, which isn't a guaranteed property of the compressor.
+            Assert.True(storedUncompressedData.Capacity <= realCompressedSize * 2);
+            Assert.True(storedUncompressedData.Capacity < 500_000_000 / 10);
+
+            await DisposeZipArchive(async, archive);
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
         [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on browser.")]
         public static async Task ZipArchiveEntry_OpenWithPasswordInUpdateMode_UncompressedSizeImplausibleGivenCompressedSize_ThrowsInvalidData(bool async)
         {
