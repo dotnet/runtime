@@ -4623,11 +4623,14 @@ bool Compiler::impIsImplicitTailCallCandidate(
 //------------------------------------------------------------------------
 // impFixupStructReturnType: Adjust a struct value being returned.
 //
-// In the multi-reg case, we we force IR to be one of the following:
+// In the multi-reg case, we force IR to be one of the following:
 // GT_RETURN(LCL_VAR) or GT_RETURN(CALL). If op is anything other than
 // a lclvar or call, it is assigned to a temp, which is then returned.
-// In the non-multireg case, the two special helpers with "fake" return
-// buffers are handled ("GETFIELDSTRUCT" and "UNBOX_NULLABLE").
+// In the non-multireg case, calls that return via a return buffer are
+// materialized into an address-taken temp. Such a call can reach here when
+// an intrinsic such as "Unsafe.BitCast" forwards it as the return value of
+// a method whose own return type does not use a return buffer; it may be a
+// GT_CALL or the GT_RET_EXPR placeholder of an inline candidate.
 //
 // Arguments:
 //    op - the return value
@@ -4643,19 +4646,30 @@ GenTree* Compiler::impFixupStructReturnType(GenTree* op)
     JITDUMP("\nimpFixupStructReturnType: retyping\n");
     DISPTREE(op);
 
-    if (op->IsCall() && op->AsCall()->ShouldHaveRetBufArg())
+    GenTreeCall* retBufCall = nullptr;
+
+    if (op->IsCall())
     {
-        // This must be one of those 'special' helpers that don't really have a return buffer, but instead
-        // use it as a way to keep the trees cleaner with fewer address-taken temps. Well now we have to
-        // materialize the return buffer as an address-taken temp. Then we can return the temp.
-        //
+        retBufCall = op->AsCall();
+    }
+    else if (op->OperIs(GT_RET_EXPR))
+    {
+        // The placeholder was created during this importation, so it cannot have been
+        // substituted yet; only "gtSubstExpr" can form chains of GT_RET_EXPRs, and those
+        // are walked later by "UpdateInlineReturnExpressionPlaceHolder".
+        assert(op->AsRetExpr()->gtSubstExpr == nullptr);
+        retBufCall = op->AsRetExpr()->gtInlineCandidate;
+    }
+
+    if ((retBufCall != nullptr) && retBufCall->ShouldHaveRetBufArg())
+    {
         unsigned tmpNum = lvaGrabTemp(true DEBUGARG("pseudo return buffer"));
 
         // No need to spill anything as we're about to return.
         impStoreToTemp(tmpNum, op, CHECK_SPILL_NONE);
 
         op = gtNewLclvNode(tmpNum, info.compRetType);
-        JITDUMP("\nimpFixupStructReturnType: created a pseudo-return buffer for a special helper\n");
+        JITDUMP("\nimpFixupStructReturnType: created a pseudo-return buffer\n");
         DISPTREE(op);
 
         return op;
