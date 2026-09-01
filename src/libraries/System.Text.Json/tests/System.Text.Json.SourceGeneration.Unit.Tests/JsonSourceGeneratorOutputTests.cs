@@ -175,8 +175,8 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         public void RecursiveNullableUnionType()
         {
             // Same as RecursiveUnionType, but the self-referential case is nullable, so it is
-            // also the union's null case. The emitted arm has to pattern match the unwrapped
-            // Nat while still reporting typeof(Nat?) as the case type.
+            // also the union's null case. The emitted root-level arm has to pattern match the
+            // unwrapped Nat while still reporting typeof(Nat?) as the case type.
             VerifyAgainstBaseline("""
                 using System.Runtime.CompilerServices;
                 using System.Text.Json.Serialization;
@@ -200,8 +200,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         public void SubclassCaseUnionType()
         {
             // A class union is not sealed, so a case type can derive from the union itself.
-            // The union instance is pattern compatible with Circle by the opposite subtyping
-            // direction to a self-referential case, and needs the same property-pattern arm.
+            // The root-level union pattern must match its payload rather than the union instance.
             VerifyAgainstBaseline("""
                 using System.Runtime.CompilerServices;
                 using System.Text.Json.Serialization;
