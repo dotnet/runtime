@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Reflection.Runtime.CustomAttributes;
 using System.Reflection.Runtime.General;
 using System.Runtime.InteropServices;
 
@@ -29,11 +28,11 @@ namespace System.Reflection.Runtime.ParameterInfos
 
                 ParameterAttributes attributes = Attributes;
                 if (0 != (attributes & ParameterAttributes.In))
-                    yield return new RuntimePseudoCustomAttributeData(typeof(InAttribute), null);
+                    yield return new RuntimeCustomAttributeData(typeof(InAttribute), null);
                 if (0 != (attributes & ParameterAttributes.Out))
-                    yield return new RuntimePseudoCustomAttributeData(typeof(OutAttribute), null);
+                    yield return new RuntimeCustomAttributeData(typeof(OutAttribute), null);
                 if (0 != (attributes & ParameterAttributes.Optional))
-                    yield return new RuntimePseudoCustomAttributeData(typeof(OptionalAttribute), null);
+                    yield return new RuntimeCustomAttributeData(typeof(OptionalAttribute), null);
             }
         }
 

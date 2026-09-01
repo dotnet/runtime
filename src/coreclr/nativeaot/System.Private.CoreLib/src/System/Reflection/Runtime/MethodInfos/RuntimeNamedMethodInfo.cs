@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-using System.Reflection.Runtime.CustomAttributes;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.ParameterInfos;
 using System.Reflection.Runtime.TypeInfos;
@@ -82,7 +81,7 @@ namespace System.Reflection.Runtime.MethodInfos
 
                 MethodImplAttributes implAttributes = _common.MethodImplementationFlags;
                 if (0 != (implAttributes & MethodImplAttributes.PreserveSig))
-                    yield return new RuntimePseudoCustomAttributeData(typeof(PreserveSigAttribute), null);
+                    yield return new RuntimeCustomAttributeData(typeof(PreserveSigAttribute), null);
             }
         }
 
