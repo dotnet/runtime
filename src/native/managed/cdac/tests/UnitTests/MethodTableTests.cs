@@ -357,7 +357,7 @@ public class MethodTableTests
                 methodTable.EEClassOrCanonMT = tinyEEClass.Address;
             });
 
-        ISOSDacInterface sosDac = new SOSDacImpl(target, legacyObj: null);
+        ISOSDacInterface sosDac = new SOSDacImpl(target, legacyObj: null, new());
         DacpMethodTableData mtData = default;
         int hr = sosDac.GetMethodTableData(new ClrDataAddress(methodTablePtr), &mtData);
         AssertHResult(HResults.E_INVALIDARG, hr);
@@ -440,7 +440,7 @@ public class MethodTableTests
                     helpers.PointerSize), tinyMethodTableAddr);
             });
 
-        ISOSDacInterface sosDac = new SOSDacImpl(target, legacyObj: null);
+        ISOSDacInterface sosDac = new SOSDacImpl(target, legacyObj: null, new());
         DacpMethodTableData mtData = default;
         int hr = sosDac.GetMethodTableData(new ClrDataAddress(tinyMethodTableAddr), &mtData);
         AssertHResult(HResults.E_INVALIDARG, hr);

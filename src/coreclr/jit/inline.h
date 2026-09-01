@@ -623,6 +623,13 @@ struct InlineCandidateInfo : public HandleHistogramProfileCandidateInfo
 
     CorInfoInitClassResult initClassResult;
     InlineContext*         inlinersContext;
+
+#ifdef DEBUG
+    // Position of this candidate in its enclosing body's shuffled group of async inline
+    // candidates, under async inlining stress. -1 means the candidate is not part of any
+    // group and so is left to the normal policy; see Compiler::fgAsyncStressPrepare.
+    int asyncStressIndex = -1;
+#endif // DEBUG
 };
 
 // LateDevirtualizationInfo
@@ -862,6 +869,11 @@ public:
     {
         return m_Unboxed;
     }
+
+    bool IsAsyncCall() const
+    {
+        return m_IsAsyncCall;
+    }
 #endif
 
     unsigned GetImportedILSize() const
@@ -926,6 +938,7 @@ private:
     bool          m_Devirtualized : 1; // true if this was a devirtualized call
     bool          m_Guarded       : 1; // true if this was a guarded call
     bool          m_Unboxed       : 1; // true if this call now invokes the unboxed entry
+    bool          m_IsAsyncCall   : 1; // true if the call being inlined was an async call
 
 #endif // defined(DEBUG)
 

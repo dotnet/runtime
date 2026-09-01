@@ -325,9 +325,10 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     NamedIntrinsic ni = NI_Illegal;
 
     CORINFO_SIG_INFO calliSig;
-    GenTree*         varArgsCookie     = nullptr;
-    GenTree*         instParam         = nullptr;
-    GenTree*         asyncContinuation = nullptr;
+    GenTree*         varArgsCookie            = nullptr;
+    GenTree*         instParam                = nullptr;
+    GenTree*         asyncContinuation        = nullptr;
+    bool             asyncCallUsesOwnContexts = false;
 
     // Swift calls that might throw use a SwiftError* arg that requires additional IR to handle,
     // so if we're importing a Swift call, look for this type in the signature
@@ -335,17 +336,17 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
     /*-------------------------------------------------------------------------
      * First create the call node
+     *
+     * Initialize operation side effects for direct calls before attaching operands,
+     * since gtUpdateNodeOperSideEffects does not preserve operand-derived flags.
      */
 
     if (opcode == CEE_CALLI)
     {
-        if (IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+        if (info.compCompHnd->convertPInvokeCalliToCall(pResolvedToken, !impCanPInvokeInlineCallSite(compCurBB)))
         {
-            if (info.compCompHnd->convertPInvokeCalliToCall(pResolvedToken, !impCanPInvokeInlineCallSite(compCurBB)))
-            {
-                eeGetCallInfo(pResolvedToken, nullptr, CORINFO_CALLINFO_ALLOWINSTPARAM, callInfo);
-                return impImportCall(CEE_CALL, pResolvedToken, nullptr, nullptr, prefixFlags, callInfo, rawILOffset);
-            }
+            eeGetCallInfo(pResolvedToken, nullptr, CORINFO_CALLINFO_ALLOWINSTPARAM, callInfo);
+            return impImportCall(CEE_CALL, pResolvedToken, nullptr, nullptr, prefixFlags, callInfo, rawILOffset);
         }
 
         /* Get the call site sig */
@@ -557,7 +558,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
                     call = gtNewIndCallNode(stubAddr, callRetTyp, di);
 
-                    call->gtFlags |= GTF_EXCEPT | (stubAddr->gtFlags & GTF_GLOB_EFFECT);
+                    call->gtFlags |= stubAddr->gtFlags & GTF_ALL_EFFECT;
                     call->gtFlags |= GTF_CALL_VIRT_STUB;
 
 #ifdef TARGET_X86
@@ -630,7 +631,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
                 if (sig->isAsyncCall())
                 {
-                    impSetupAsyncCall(call->AsCall(), methHnd, opcode, prefixFlags, ni, di);
+                    impSetupAsyncCall(call->AsCall(), methHnd, opcode, prefixFlags, ni, di, &asyncCallUsesOwnContexts);
 
                     if (compDonotInline())
                     {
@@ -642,7 +643,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
                 if (call->AsCall()->IsAsync())
                 {
-                    impInsertAsyncArgsForLdvirtftnCall(call->AsCall());
+                    impInsertAsyncArgsForLdvirtftnCall(call->AsCall(), asyncCallUsesOwnContexts);
                 }
 
                 GenTree* thisPtr = impPopStack().val;
@@ -668,10 +669,11 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
                 call->AsCall()
                     ->gtArgs.PushFront(this, NewCallArg::Primitive(thisPtrCopy).WellKnown(WellKnownArg::ThisPointer));
+                call->gtFlags |= thisPtrCopy->gtFlags & GTF_ALL_EFFECT;
 
                 // Now make an indirect call through the function pointer
                 call->AsCall()->gtControlExpr = fptr;
-                call->gtFlags |= GTF_EXCEPT | (fptr->gtFlags & GTF_GLOB_EFFECT);
+                call->gtFlags |= fptr->gtFlags & GTF_ALL_EFFECT;
 
                 if (needsFatPointerHandling)
                 {
@@ -771,7 +773,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 fptr = gtNewLclvNode(lclNum, TYP_I_IMPL);
 
                 call = gtNewIndCallNode(fptr, callRetTyp, di);
-                call->gtFlags |= GTF_EXCEPT | (fptr->gtFlags & GTF_GLOB_EFFECT);
+                call->gtFlags |= fptr->gtFlags & GTF_ALL_EFFECT;
                 if (callInfo->nullInstanceCheck)
                 {
                     call->gtFlags |= GTF_CALL_NULLCHECK;
@@ -935,24 +937,10 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
         goto DONE;
     }
-    else if ((opcode == CEE_CALLI) && ((sig->callConv & CORINFO_CALLCONV_MASK) != CORINFO_CALLCONV_DEFAULT) &&
-             ((sig->callConv & CORINFO_CALLCONV_MASK) != CORINFO_CALLCONV_VARARG))
-    {
-        void*                pCookie;
-        void*                cookie       = info.compCompHnd->GetCookieForPInvokeCalliSig(sig, &pCookie);
-        CORINFO_CONST_LOOKUP cookieLookup = eeConvertToLookup(cookie, pCookie);
-        call->AsCall()->gtCallCookie      = new (getAllocator(CMK_ASTNode)) CORINFO_CONST_LOOKUP(cookieLookup);
-
-        if (canTailCall)
-        {
-            canTailCall             = false;
-            szCanTailCallFailReason = "PInvoke calli";
-        }
-    }
 
     if (sig->isAsyncCall())
     {
-        impSetupAsyncCall(call->AsCall(), methHnd, opcode, prefixFlags, ni, di);
+        impSetupAsyncCall(call->AsCall(), methHnd, opcode, prefixFlags, ni, di, &asyncCallUsesOwnContexts);
 
         if (compDonotInline())
         {
@@ -1077,18 +1065,21 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             {
                 call->AsCall()->gtArgs.PushFront(this, NewCallArg::Primitive(varArgsCookie)
                                                            .WellKnown(WellKnownArg::VarArgsCookie));
+                call->gtFlags |= varArgsCookie->gtFlags & GTF_ALL_EFFECT;
             }
 
             if (asyncContinuation != nullptr)
             {
                 call->AsCall()->gtArgs.PushFront(this, NewCallArg::Primitive(asyncContinuation)
                                                            .WellKnown(WellKnownArg::AsyncContinuation));
+                call->gtFlags |= asyncContinuation->gtFlags & GTF_ALL_EFFECT;
             }
 
             if (instParam != nullptr)
             {
                 call->AsCall()->gtArgs.PushFront(this,
                                                  NewCallArg::Primitive(instParam).WellKnown(WellKnownArg::InstParam));
+                call->gtFlags |= instParam->gtFlags & GTF_ALL_EFFECT;
             }
         }
         else
@@ -1097,23 +1088,26 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             {
                 call->AsCall()->gtArgs.PushBack(this, NewCallArg::Primitive(asyncContinuation)
                                                           .WellKnown(WellKnownArg::AsyncContinuation));
+                call->gtFlags |= asyncContinuation->gtFlags & GTF_ALL_EFFECT;
             }
 
             if (instParam != nullptr)
             {
                 call->AsCall()->gtArgs.PushBack(this,
                                                 NewCallArg::Primitive(instParam).WellKnown(WellKnownArg::InstParam));
+                call->gtFlags |= instParam->gtFlags & GTF_ALL_EFFECT;
             }
 
             if (varArgsCookie != nullptr)
             {
                 call->AsCall()->gtArgs.PushBack(this, NewCallArg::Primitive(varArgsCookie)
                                                           .WellKnown(WellKnownArg::VarArgsCookie));
+                call->gtFlags |= varArgsCookie->gtFlags & GTF_ALL_EFFECT;
             }
         }
     }
 
-    if (asyncContinuation != nullptr)
+    if ((asyncContinuation != nullptr) && !asyncCallUsesOwnContexts)
     {
         impInheritAsyncContextsFromInliner(call->AsCall());
     }
@@ -1140,7 +1134,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         }
 
         // Store the "this" value in the call
-        call->gtFlags |= obj->gtFlags & GTF_GLOB_EFFECT;
+        call->gtFlags |= obj->gtFlags & GTF_ALL_EFFECT;
         call->AsCall()->gtArgs.PushFront(this, NewCallArg::Primitive(obj).WellKnown(WellKnownArg::ThisPointer));
 
         if (impIsThis(obj))
@@ -1933,7 +1927,7 @@ GenTree* Compiler::impDuplicateWithProfiledArg(GenTreeCall* call, IL_OFFSET ilOf
     JITDUMP("%u likely values:\n", valuesCount)
     for (UINT32 i = 0; i < valuesCount; i++)
     {
-        JITDUMP("  %u) %u - %u%%\n", i, likelyValues[i].value, likelyValues[i].likelihood)
+        JITDUMP("  %u) %zd - %u%%\n", i, likelyValues[i].value, likelyValues[i].likelihood)
     }
 
     // For now, we only do a single guess, but it's pretty straightforward to
@@ -1984,7 +1978,7 @@ GenTree* Compiler::impDuplicateWithProfiledArg(GenTreeCall* call, IL_OFFSET ilOf
 
         if ((profiledValue >= minValue) && (profiledValue <= maxValue))
         {
-            JITDUMP("Duplicating for popular value = %u\n", profiledValue)
+            JITDUMP("Duplicating for popular value = %zd\n", profiledValue)
             DISPTREE(call)
 
             if (call->gtArgs.GetUserArgByIndex(argNum)->GetNode()->OperIsConst())
@@ -2210,7 +2204,7 @@ GenTreeCall* Compiler::impImportIndirectCall(CORINFO_SIG_INFO* sig, const DebugI
 
     GenTreeCall* call = gtNewIndCallNode(fptr, callRetTyp, di);
 
-    call->gtFlags |= GTF_EXCEPT | (fptr->gtFlags & GTF_GLOB_EFFECT);
+    call->gtFlags |= fptr->gtFlags & GTF_ALL_EFFECT;
 #ifdef UNIX_X86_ABI
     call->gtFlags &= ~GTF_CALL_POP_ARGS;
 #endif
@@ -2601,7 +2595,7 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
             }
             else
             {
-                JITDUMP("  Argument %d of type %s must be passed as %d primitive(s)\n", argIndex,
+                JITDUMP("  Argument %d of type %s must be passed as %zu primitive(s)\n", argIndex,
                         typGetObjLayout(arg->GetSignatureClassHandle())->GetClassName(), lowering->numLoweredElements);
                 for (size_t i = 0; i < lowering->numLoweredElements; i++)
                 {
@@ -2734,7 +2728,7 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
         }
         else
         {
-            printf("  Call returns %s as %d primitive(s) in registers\n",
+            printf("  Call returns %s as %zu primitive(s) in registers\n",
                    typGetObjLayout(sig->retTypeClass)->GetClassName(), lowering->numLoweredElements);
             for (size_t i = 0; i < lowering->numLoweredElements; i++)
             {
@@ -3426,11 +3420,9 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 {
                     CORINFO_CLASS_HANDLE typeArgHnd;
                     CorInfoType          simdBaseJitType;
-                    unsigned             simdSize;
 
                     typeArgHnd      = info.compCompHnd->getTypeInstantiationArgument(clsHnd, 0);
                     simdBaseJitType = info.compCompHnd->getTypeForPrimitiveNumericClass(typeArgHnd);
-                    simdSize        = info.compCompHnd->getClassSize(clsHnd);
 
                     switch (simdBaseJitType)
                     {
@@ -3447,15 +3439,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                         case CORINFO_TYPE_NATIVEINT:
                         case CORINFO_TYPE_NATIVEUINT:
                         {
-                            var_types      simdBaseType = JitType2PreciseVarType(simdBaseJitType);
-                            unsigned       elementSize  = genTypeSize(simdBaseType);
-                            GenTreeIntCon* countNode    = gtNewIconNode(simdSize / elementSize, TYP_INT);
-
-#if defined(FEATURE_SIMD)
-                            countNode->gtFlags |= GTF_ICON_SIMD_COUNT;
-#endif // FEATURE_SIMD
-
-                            return countNode;
+                            return evalVectorCount(clsHnd, JitType2PreciseVarType(simdBaseJitType));
                         }
 
                         default:
@@ -3746,6 +3730,8 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             // Intrinsics that we should make every effort to expand for NativeAOT.
             // If the intrinsic cannot possibly be expanded, it's fine, but
             // if it can be, it should expand.
+            // ILScanner mirrors the expansion checks before omitting dependencies.
+            // Keep new bailout conditions in sync with ILImporter.Scanner.cs.
             case NI_System_Runtime_CompilerServices_RuntimeHelpers_CreateSpan:
             case NI_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray:
                 betterToExpand = true;
@@ -4196,7 +4182,8 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     // Skip roundtrip "handle -> RuntimeType -> handle" for
                     // RuntimeTypeHandle.ToIntPtr(typeof(T).TypeHandle)
                     GenTreeCall* call = op1->IsCall() ? op1->AsCall() : op1->AsRetExpr()->gtInlineCandidate;
-                    if (lookupNamedIntrinsic(call->gtCallMethHnd) == NI_System_RuntimeType_get_TypeHandle)
+                    if ((call->gtCallType == CT_USER_FUNC) &&
+                        (lookupNamedIntrinsic(call->gtCallMethHnd) == NI_System_RuntimeType_get_TypeHandle))
                     {
                         // Check that the arg is CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE helper call
                         GenTree* arg = call->gtArgs.GetArgByIndex(0)->GetNode();
@@ -4224,21 +4211,12 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     gtIsTypeHandleToRuntimeTypeHandleHelper(op1->AsCall(), &typeHandleHelper))
                 {
                     op1 = impPopStack().val;
-                    // Replace helper with a more specialized helper that returns RuntimeType
-                    if (typeHandleHelper == CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE)
-                    {
-                        typeHandleHelper = CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE;
-                    }
-                    else
-                    {
-                        assert(typeHandleHelper == CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL);
-                        typeHandleHelper = CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE_MAYBENULL;
-                    }
                     assert(op1->AsCall()->gtArgs.CountArgs() == 1);
-                    op1         = gtNewHelperCallNode(typeHandleHelper, TYP_REF,
-                                                      op1->AsCall()->gtArgs.GetArgByIndex(0)->GetEarlyNode());
-                    op1->gtType = TYP_REF;
-                    retNode     = op1;
+
+                    // Replace helper with a more specialized helper that returns RuntimeType
+                    assert(typeHandleHelper == CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE);
+                    retNode = gtNewHelperCallNode(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE, TYP_REF,
+                                                  op1->AsCall()->gtArgs.GetArgByIndex(0)->GetEarlyNode());
                 }
                 else if (GetRuntimeHandleUnderlyingType() == TYP_I_IMPL)
                 {
@@ -7113,6 +7091,7 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
 
                 GenTree* fallback =
                     new (this, GT_INTRINSIC) GenTreeIntrinsic(retType, op1Dup, intrinsic, method R2RARG(*entryPoint));
+                fallback->gtFlags |= GTF_CALL;
                 GenTree*      cond  = gtNewOperNode(GT_LT, TYP_INT, op1, gtNewZeroConNode(isLong ? TYP_LONG : TYP_INT));
                 GenTreeColon* colon = gtNewColonNode(retType, fallback, result);
                 GenTreeQmark* qmark = gtNewQmarkNode(retType, cond, colon);
@@ -7362,7 +7341,7 @@ void Compiler::impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call)
 
     struct SigParamInfo
     {
-        CorInfoType          CorType;
+        CorInfoTypeWithMod   CorType;
         CORINFO_CLASS_HANDLE ClassHandle;
     };
 
@@ -7374,13 +7353,29 @@ void Compiler::impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call)
     // JIT-EE interface only allows us to iterate the signature forwards. We
     // will collect the needed information here and at the same time notify the
     // EE that the signature types need to be loaded.
-    CORINFO_ARG_LIST_HANDLE sigArg = sig->args;
+    CORINFO_ARG_LIST_HANDLE sigArg                = sig->args;
+    bool                    hasSecretStubArgument = false;
     for (unsigned i = 0; i < sig->numArgs; i++)
     {
-        params[i].CorType = strip(info.compCompHnd->getArgType(sig, sigArg, &params[i].ClassHandle));
+        params[i].CorType   = info.compCompHnd->getArgType(sig, sigArg, &params[i].ClassHandle);
+        CorInfoType corType = strip(params[i].CorType);
 
-        if (params[i].CorType != CORINFO_TYPE_CLASS && params[i].CorType != CORINFO_TYPE_BYREF &&
-            params[i].CorType != CORINFO_TYPE_PTR)
+        if ((params[i].CorType & CORINFO_TYPE_MOD_SECRET_STUB_ARGUMENT) != 0)
+        {
+            if (corType != CORINFO_TYPE_NATIVEINT)
+            {
+                BADCODE("SecretStubArgument modifier must be applied to a native int parameter");
+            }
+
+            if (hasSecretStubArgument)
+            {
+                BADCODE("Duplicate SecretStubArgument modifier");
+            }
+
+            hasSecretStubArgument = true;
+        }
+
+        if (corType != CORINFO_TYPE_CLASS && corType != CORINFO_TYPE_BYREF && corType != CORINFO_TYPE_PTR)
         {
             CORINFO_CLASS_HANDLE argRealClass = info.compCompHnd->getArgClass(sig, sigArg);
             if (argRealClass != nullptr)
@@ -7415,7 +7410,7 @@ void Compiler::impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call)
         typeInfo   ti      = se.seTypeInfo;
         GenTree*   argNode = se.val;
 
-        var_types            jitSigType = JITtype2varType(params[i - 1].CorType);
+        var_types            jitSigType = JITtype2varType(strip(params[i - 1].CorType));
         CORINFO_CLASS_HANDLE classHnd   = params[i - 1].ClassHandle;
 
         if (!impCheckImplicitArgumentCoercion(jitSigType, argNode->TypeGet()))
@@ -7472,8 +7467,18 @@ void Compiler::impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call)
             }
         }
 
+        if ((params[i - 1].CorType & CORINFO_TYPE_MOD_SECRET_STUB_ARGUMENT) != 0)
+        {
+            if (arg.WellKnownArg != WellKnownArg::None)
+            {
+                BADCODE("SecretStubArgument modifier conflicts with another special argument");
+            }
+
+            arg = arg.WellKnown(WellKnownArg::SecretStubParam);
+        }
+
         call->gtArgs.PushFront(this, arg);
-        call->gtFlags |= argNode->gtFlags & GTF_GLOB_EFFECT;
+        call->gtFlags |= argNode->gtFlags & GTF_ALL_EFFECT;
     }
 }
 
@@ -7701,8 +7706,6 @@ void Compiler::impCheckForPInvokeCall(
         }
 
         unmanagedCallConv = info.compCompHnd->getUnmanagedCallConv(nullptr, sig, &suppressGCTransition);
-
-        assert(!call->gtCallCookie);
     }
 
     if (suppressGCTransition)
@@ -7725,13 +7728,11 @@ void Compiler::impCheckForPInvokeCall(
     }
     optNativeCallCount++;
 
-    if (methHnd == nullptr && (IsTargetAbi(CORINFO_NATIVEAOT_ABI) ||
-                               (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB) && !compIsForInlining())))
+    if (methHnd == nullptr)
     {
-        // PInvoke CALLI in NativeAOT ABI must be always inlined. Non-inlineable CALLI cases have been
-        // converted to regular method calls earlier using convertPInvokeCalliToCall.
-
-        // PInvoke CALLI in IL stubs must be inlined
+        // PInvoke CALLI must always be inlined. Call sites that cannot be inlined have been converted
+        // to a call to a marshalling stub earlier using convertPInvokeCalliToCall, or, in ReadyToRun,
+        // have aborted the compilation of this method.
     }
     else if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB) && IsReadyToRun())
     {
@@ -7797,21 +7798,28 @@ void Compiler::impCheckForPInvokeCall(
 //   Register a call as being async and set up context handling information depending on the IL.
 //
 // Arguments:
-//    call        - The call
-//    methHnd     - Method handle being called
-//    opcode      - The IL opcode for the call
-//    prefixFlags - Flags containing context handling information from IL
-//    ni          - Named intrinsic recognized for the callee (or NI_Illegal)
-//    callDI      - Debug info for the async call
+//    call            - The call
+//    methHnd         - Method handle being called
+//    opcode          - The IL opcode for the call
+//    prefixFlags     - Flags containing context handling information from IL
+//    ni              - Named intrinsic recognized for the callee (or NI_Illegal)
+//    callDI          - Debug info for the async call
+//    usesOwnContexts - [out] Set to true if the call gets the contexts of the frame it is
+//                      in, which is the case for an await that may suspend in an inlinee's
+//                      own frame. Set to false if it should instead inherit the inlining
+//                      call's contexts, which the caller does via
+//                      impInheritAsyncContextsFromInliner.
 //
 void Compiler::impSetupAsyncCall(GenTreeCall*          call,
                                  CORINFO_METHOD_HANDLE methHnd,
                                  OPCODE                opcode,
                                  unsigned              prefixFlags,
                                  NamedIntrinsic        ni,
-                                 const DebugInfo&      callDI)
+                                 const DebugInfo&      callDI,
+                                 bool*                 usesOwnContexts)
 {
     AsyncCallInfo asyncInfo;
+    *usesOwnContexts = false;
 
     // Some async helpers always suspend when called. For these we can skip the
     // check for a null continuation after the call and suspend unconditionally.
@@ -7829,38 +7837,100 @@ void Compiler::impSetupAsyncCall(GenTreeCall*          call,
 
     if (compIsForInlining())
     {
-        if (!m_nextAwaitIsTail && !compIsAsyncVersion())
-        {
-            compInlineResult->NoteFatal(InlineObservation::CALLEE_AWAIT);
-            return;
-        }
+        // Two cases are inlined cheaply: async versions of synchronous methods, where
+        // all async calls are in tail position, and explicit tail awaits. In both the
+        // inlinee's tail can run in the caller's context, so we can inherit all context
+        // handling from the inlining call and no logical frame transition is needed when
+        // the inlinee returns.
+        bool inheritsCallerContexts = m_nextAwaitIsTail || compIsAsyncVersion();
 
-        // We cannot inline if the callee returns valueTask.AsTask() in an
-        // async version. We need to preserve the continuation in this case to
-        // be able to mark it with CORINFO_CONTINUATION_VALUETASK_ADAPTED_TO_TASK.
+        // We cannot inline if the callee returns valueTask.AsTask(). We need to preserve
+        // the continuation in this case to be able to mark it with
+        // CORINFO_CONTINUATION_VALUETASK_ADAPTED_TO_TASK.
         if ((prefixFlags & PREFIX_IS_ADAPTED_FROM_VALUETASK) != 0)
         {
             compInlineResult->NoteFatal(InlineObservation::CALLEE_AWAIT);
             return;
         }
 
-        // For async versions of synchronous methods all async calls are in
-        // tail position. Inlining is simple for these cases: we can just
-        // inherit all context handling from the inlining call.
-        assert(!compIsAsyncVersion() || ((prefixFlags & PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT) != 0));
+        if (!inheritsCallerContexts)
+        {
+            if (!generalAsyncInliningEnabled())
+            {
+                compInlineResult->NoteFatal(InlineObservation::CALLEE_AWAIT);
+                return;
+            }
 
-        GenTreeCall* inlCall = impInlineInfo->iciCall;
-        JITDUMP("Call [%06u] is to function with a tail async call [%06u]\n", dspTreeID(inlCall), dspTreeID(call));
+            // Calls from non-async into async go through thunks that are passed the
+            // continuation explicitly, so they cannot be inlined. This is a property of
+            // the root method being compiled, not of the callee, which inlines fine into
+            // an async root.
+            if (!impInlineRoot()->compIsAsync())
+            {
+                JITDUMP("Cannot inline an await into a non-async root method\n");
+                compInlineResult->NoteFatal(InlineObservation::CALLSITE_AWAIT_IN_NON_ASYNC_ROOT);
+                return;
+            }
 
-        assert(inlCall->IsAsync());
+            // General case: this is a real await inside the inlinee that may suspend. It
+            // gets its own context handling below, exactly like an await in a non-inlined
+            // method, and the inlinee's own contexts (created by its SaveAsyncContexts)
+            // are used rather than the caller's.
 
-        asyncInfo.ContinuationContextHandling = inlCall->GetAsyncInfo().ContinuationContextHandling;
-        // Validate that below code won't override the handling
-        assert((prefixFlags & PREFIX_IS_TASK_AWAIT) == 0);
+            // The inlined frame must not end up inside a protected region of the caller.
+            // An exception unwinding out of it skips the post-inline handling, and getting
+            // back onto the caller's continuation context cannot be recovered from a
+            // handler because it may suspend. A user 'catch' between the frame and the
+            // resumption would then run on the wrong continuation context. Doing this
+            // correctly needs the catch-and-rethrow expansion described in
+            // docs/design/coreclr/jit/runtime-async-inlining.md, which is not implemented
+            // yet.
+            //
+            // This covers nesting as well: a caller that is itself inlined into a
+            // protected region was rejected by this same check.
+            //
+            // Only user EH matters here. Every async frame has a context restore
+            // try-fault wrapped around its whole body by SaveAsyncContexts, which by
+            // this point has run both for the caller and for every frame it was inlined
+            // into, so those clauses must be ignored.
+            //
+            // This is a property of the call site, not of the callee: the same callee
+            // inlines fine at a call site outside a protected region.
+            BasicBlock* const callSiteBlock = impInlineInfo->iciBlock;
+            if (impInlineInfo->InlinerCompiler->ehIsInsideNonAsyncContextRestoreRegion(callSiteBlock))
+            {
+                compInlineResult->NoteFatal(InlineObservation::CALLSITE_AWAIT_IN_TRY_REGION);
+                return;
+            }
 
-        asyncInfo.IsTailAwait =
-            inlCall->GetAsyncInfo().IsTailAwait && (m_nextAwaitIsTail || (call->gtReturnType == info.compRetType));
-        m_nextAwaitIsTail = false;
+            // Suspending inside a protected region of the inlinee itself is not handled
+            // yet either.
+            if ((compCurBB != nullptr) && (compCurBB->hasTryIndex() || compCurBB->hasHndIndex()))
+            {
+                compInlineResult->NoteFatal(InlineObservation::CALLEE_AWAIT_IN_TRY);
+                return;
+            }
+
+            JITDUMP("Call [%06u] is an await in an inlinee that may suspend\n", dspTreeID(call));
+            *usesOwnContexts = true;
+        }
+        else
+        {
+            assert(!compIsAsyncVersion() || ((prefixFlags & PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT) != 0));
+
+            GenTreeCall* inlCall = impInlineInfo->iciCall;
+            JITDUMP("Call [%06u] is to function with a tail async call [%06u]\n", dspTreeID(inlCall), dspTreeID(call));
+
+            assert(inlCall->IsAsync());
+
+            asyncInfo.ContinuationContextHandling = inlCall->GetAsyncInfo().ContinuationContextHandling;
+            // Validate that below code won't override the handling
+            assert((prefixFlags & PREFIX_IS_TASK_AWAIT) == 0);
+
+            asyncInfo.IsTailAwait =
+                inlCall->GetAsyncInfo().IsTailAwait && (m_nextAwaitIsTail || (call->gtReturnType == info.compRetType));
+            m_nextAwaitIsTail = false;
+        }
     }
     else
     {
@@ -7934,9 +8004,14 @@ void Compiler::impSetupAsyncCall(GenTreeCall*          call,
 //   call - The async call
 //
 // Remarks:
-//   Currently we only allow inlining of async calls when all awaits are tail
-//   awaits. In that case inlining is simplified as we can just inherit
-//   everything from the inlining call.
+//   For an await that runs in the inlining call's frame rather than a frame of its own,
+//   which is the case for a tail await of the inlinee and for the transparent await an
+//   async version forwards through. Such an await has no contexts to use, so it takes the
+//   inlining call's: a suspension in it then runs exactly the handling that the frame it
+//   ended up in would have run.
+//
+//   Awaits that may suspend in a frame of their own instead get their own contexts, from
+//   that frame's SaveAsyncContexts, and are skipped here.
 //
 void Compiler::impInheritAsyncContextsFromInliner(GenTreeCall* call)
 {
@@ -7959,12 +8034,8 @@ void Compiler::impInheritAsyncContextsFromInliner(GenTreeCall* call)
         return;
     }
 
-    // We are inlining an async call that does not save contexts into a call
-    // that does. We currently allow this only in cases where the tail of the
-    // inlinee can run in the caller's context, and hence we propagate the
-    // caller's context here. It means we do not need to worry about switching
-    // into the caller's context when the inlinee is returning to the caller
-    // after the await.
+    // Take the values as they appear in the inlining call, so a suspension restores and
+    // captures exactly what the frame this await ended up in would have.
     assert(resumedUseArg->GetNode()->OperIs(GT_LCL_VAR) && resumedDefArg->GetNode()->OperIs(GT_LCL_ADDR) &&
            execArg->GetNode()->OperIs(GT_LCL_VAR) && syncArg->GetNode()->OperIs(GT_LCL_VAR));
     JITDUMP("Inheriting resumed use [%06u], resumed def [%06u], and contexts [%06u] and [%06u] from caller node\n",
@@ -7975,10 +8046,48 @@ void Compiler::impInheritAsyncContextsFromInliner(GenTreeCall* call)
     GenTree* resumedDefNode = gtCloneExpr(resumedDefArg->GetNode());
     GenTree* execNode       = gtCloneExpr(execArg->GetNode());
     GenTree* syncNode       = gtCloneExpr(syncArg->GetNode());
+    call->gtFlags |=
+        (resumedUseNode->gtFlags | resumedDefNode->gtFlags | execNode->gtFlags | syncNode->gtFlags) & GTF_ALL_EFFECT;
     call->gtArgs.PushFront(this, NewCallArg::Primitive(syncNode).WellKnown(WellKnownArg::AsyncSynchronizationContext));
     call->gtArgs.PushFront(this, NewCallArg::Primitive(execNode).WellKnown(WellKnownArg::AsyncExecutionContext));
-    call->gtArgs.PushFront(this, NewCallArg::Primitive(resumedDefNode).WellKnown(WellKnownArg::AsyncResumedDef));
     call->gtArgs.PushFront(this, NewCallArg::Primitive(resumedUseNode).WellKnown(WellKnownArg::AsyncResumedUse));
+    call->gtArgs.PushFront(this, NewCallArg::Primitive(resumedDefNode).WellKnown(WellKnownArg::AsyncResumedDef));
+
+    // The inlining call may carry further sets describing the frames enclosing it, which
+    // this call inherits as well: it ends up in the same frame, so a suspension in it has
+    // to run the same chain of frame transitions. Dropping them would silently lose the
+    // handling for every frame outside the immediate one.
+    bool skippedFirst = false;
+    for (CallArg& arg : inlCall->gtArgs.Args())
+    {
+        WellKnownArg wka = arg.GetWellKnownArg();
+        if ((wka != WellKnownArg::AsyncResumedUse) && (wka != WellKnownArg::AsyncExecutionContext) &&
+            (wka != WellKnownArg::AsyncSynchronizationContext))
+        {
+            continue;
+        }
+
+        if ((wka == WellKnownArg::AsyncResumedUse) && !skippedFirst)
+        {
+            // Already inherited above, along with the resumed def that only the innermost
+            // frame has.
+            skippedFirst = true;
+            continue;
+        }
+
+        if (&arg == execArg || &arg == syncArg)
+        {
+            continue;
+        }
+
+        GenTree* argNode = gtCloneExpr(arg.GetNode());
+        call->gtArgs.PushBack(this, NewCallArg::Primitive(argNode).WellKnown(wka));
+        call->gtFlags |= argNode->gtFlags & GTF_ALL_EFFECT;
+    }
+
+    // This call ends up in the same frame as the inlining call, so it hands off through
+    // the same chain of frames in the same way.
+    call->GetAsyncInfo().InlineFrameContextHandling = inlCall->GetAsyncInfo().InlineFrameContextHandling;
 }
 
 //------------------------------------------------------------------------
@@ -7987,13 +8096,15 @@ void Compiler::impInheritAsyncContextsFromInliner(GenTreeCall* call)
 //   ldvirtftn.
 //
 // Arguments:
-//    call - The call
+//    call            - The call
+//    usesOwnContexts - Whether the call is an await in an inlinee that gets its own
+//                      contexts, as reported by impSetupAsyncCall
 //
 // Remarks:
 //   Should be called before the 'this' arg is inserted, but after other IL args
 //   have been inserted.
 //
-void Compiler::impInsertAsyncArgsForLdvirtftnCall(GenTreeCall* call)
+void Compiler::impInsertAsyncArgsForLdvirtftnCall(GenTreeCall* call, bool usesOwnContexts)
 {
     assert(call->AsCall()->IsAsync());
 
@@ -8008,17 +8119,26 @@ void Compiler::impInsertAsyncArgsForLdvirtftnCall(GenTreeCall* call)
                                                   .WellKnown(WellKnownArg::AsyncContinuation));
     }
 
-    impInheritAsyncContextsFromInliner(call);
+    if (!usesOwnContexts)
+    {
+        impInheritAsyncContextsFromInliner(call);
+    }
 }
 
 //------------------------------------------------------------------------
 // SpillRetExprHelper: iterate through arguments tree and spill ret_expr to local variables.
 //
-class SpillRetExprHelper
+class SpillRetExprHelper final : public GenTreeVisitor<SpillRetExprHelper>
 {
 public:
+    enum
+    {
+        DoPreOrder        = true,
+        UseExecutionOrder = true,
+    };
+
     SpillRetExprHelper(Compiler* comp)
-        : m_compiler(comp)
+        : GenTreeVisitor<SpillRetExprHelper>(comp)
     {
     }
 
@@ -8026,28 +8146,27 @@ public:
     {
         for (CallArg& arg : call->gtArgs.Args())
         {
-            m_compiler->fgWalkTreePre(&arg.EarlyNodeRef(), SpillRetExprVisitor, this);
+            WalkTree(&arg.EarlyNodeRef(), nullptr);
         }
     }
 
-private:
-    static Compiler::fgWalkResult SpillRetExprVisitor(GenTree** pTree, Compiler::fgWalkData* fgWalkPre)
+    fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
     {
-        assert((pTree != nullptr) && (*pTree != nullptr));
-        GenTree* tree = *pTree;
+        assert((use != nullptr) && (*use != nullptr));
+        GenTree* tree = *use;
         if ((tree->gtFlags & GTF_CALL) == 0)
         {
             // Trees with ret_expr are marked as GTF_CALL.
-            return Compiler::WALK_SKIP_SUBTREES;
+            return fgWalkResult::WALK_SKIP_SUBTREES;
         }
         if (tree->OperIs(GT_RET_EXPR))
         {
-            SpillRetExprHelper* walker = static_cast<SpillRetExprHelper*>(fgWalkPre->pCallbackData);
-            walker->StoreRetExprAsLocalVar(pTree);
+            StoreRetExprAsLocalVar(use);
         }
-        return Compiler::WALK_CONTINUE;
+        return fgWalkResult::WALK_CONTINUE;
     }
 
+private:
     void StoreRetExprAsLocalVar(GenTree** pRetExpr)
     {
         GenTree* retExpr = *pRetExpr;
@@ -8075,9 +8194,6 @@ private:
             }
         }
     }
-
-private:
-    Compiler* m_compiler;
 };
 
 //------------------------------------------------------------------------
@@ -8216,7 +8332,7 @@ void Compiler::pickGDV(GenTreeCall*           call,
         for (UINT32 i = 0; i < numberOfClasses; i++)
         {
             const char* className = eeGetClassName((CORINFO_CLASS_HANDLE)likelyClasses[i].handle);
-            JITDUMP("  %u) %p (%s) [likelihood:%u%%]\n", i + 1, likelyClasses[i].handle, className,
+            JITDUMP("  %u) %p (%s) [likelihood:%u%%]\n", i + 1, (void*)likelyClasses[i].handle, className,
                     likelyClasses[i].likelihood);
         }
     }
@@ -8918,17 +9034,6 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*            call,
         return;
     }
 
-    // CT_INDIRECT calls may use the cookie, bail if so...
-    //
-    // If transforming these provides a benefit, we could save this off in the same way
-    // we save the stub address below.
-    if ((call->gtCallType == CT_INDIRECT) && (call->AsCall()->gtCallCookie != nullptr))
-    {
-        JITDUMP("NOT Marking call [%06u] as guarded devirtualization candidate -- CT_INDIRECT with cookie\n",
-                dspTreeID(call));
-        return;
-    }
-
 #ifdef DEBUG
 
     // See if disabled by range
@@ -9013,6 +9118,7 @@ void Compiler::impConvertToUserCallAndMarkForInlining(GenTreeCall* call)
     {
         call->gtCallMethHnd = managedCallHnd;
         call->gtCallType    = CT_USER_FUNC;
+        gtUpdateNodeSideEffects(call);
 
         CORINFO_CALL_INFO hCallInfo = {};
         hCallInfo.hMethod           = managedCallHnd;
@@ -9588,16 +9694,17 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
 }
 
 /******************************************************************************/
-// Returns true if the given intrinsic will be implemented by calling System.Math
-// methods.
+// Returns true if the given intrinsic will be implemented by a user call.
 
 bool Compiler::IsIntrinsicImplementedByUserCall(NamedIntrinsic intrinsicName)
 {
     // Currently, if a math intrinsic is not implemented by target-specific
     // instructions, it will be implemented by a System.Math call. In the
     // future, if we turn to implementing some of them with helper calls,
-    // this predicate needs to be revisited.
-    return !IsTargetIntrinsic(intrinsicName);
+    // this predicate needs to be revisited. IsKnownConstant is instead folded
+    // during importation or morph.
+    return (intrinsicName != NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant) &&
+           !IsTargetIntrinsic(intrinsicName);
 }
 
 bool Compiler::IsMathIntrinsic(NamedIntrinsic intrinsicName)
@@ -11894,7 +12001,7 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                                 }
                             }
 
-                            uint32_t size = getVectorTByteLength();
+                            uint32_t size = getCompileTimeVectorTByteLength();
 #ifdef TARGET_ARM64
                             assert((size == 16) || (size == SIZE_UNKNOWN));
 #else
@@ -13358,6 +13465,31 @@ GenTree* Compiler::impUnsupportedNamedIntrinsic(unsigned              helper,
     {
         return nullptr;
     }
+}
+
+//-------------------------------------------------------------------------
+// evalVectorCount: Evaluate the Count property of a vector intrinsic class using
+//                  EE metadata.
+//
+// Arguments:
+//     vectorHandle -- handle to the vector class to query for size
+//     simdBaseType -- base type, whose size to use as the divisor
+//
+// Returns:
+//     The number of elements in the vector with this base type, expressed as a constant
+//     signed integer IR node.
+GenTree* Compiler::evalVectorCount(CORINFO_CLASS_HANDLE vectorHandle, var_types simdBaseType)
+{
+    unsigned simdSize = info.compCompHnd->getClassSize(vectorHandle);
+
+    unsigned       elementSize = genTypeSize(simdBaseType);
+    GenTreeIntCon* countNode   = gtNewIconNode(simdSize / elementSize, TYP_INT);
+
+#if defined(FEATURE_SIMD)
+    countNode->gtFlags |= GTF_ICON_SIMD_COUNT;
+#endif // FEATURE_SIMD
+
+    return countNode;
 }
 
 //------------------------------------------------------------------------

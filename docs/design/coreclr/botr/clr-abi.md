@@ -148,8 +148,6 @@ ARM64-only: When a method returns a structure that is larger than 16 bytes the c
 
 *Stub dispatch* - when a virtual call uses a VSD stub, rather than back-patching the calling code (or disassembling it), the JIT must place the address of the stub used to load the call target, the "stub indirection cell", in (x86) `EAX` / (AMD64) `R11` / (ARM) `R12` / (ARM64) `R11`. In the JIT, this is encapsulated in the `VirtualStubParamInfo` class.
 
-*Calli Pinvoke* - The VM wants the address of the PInvoke in (AMD64) `R10` / (ARM) `R12` / (ARM64) `R14` (In the JIT: `REG_PINVOKE_TARGET_PARAM`), and the signature (the pinvoke cookie) in (AMD64) `R11` / (ARM) `R4` / (ARM64) `R15` (in the JIT: `REG_PINVOKE_COOKIE_PARAM`).
-
 *Normal PInvoke* - The VM shares IL stubs based on signatures, but wants the right method to show up in call stack and exceptions, so the MethodDesc for the exact PInvoke is passed in the (x86) `EAX` / (AMD64) `R10` / (ARM, ARM64) `R12` (in the JIT: `REG_SECRET_STUB_PARAM`). Then in the IL stub, when the JIT gets `CORJIT_FLG_PUBLISH_SECRET_PARAM`, it must move the register into a compiler temp. The value is returned for the intrinsic `NI_System_StubHelpers_GetStubContext`.
 
 ## Small primitive returns
@@ -717,9 +715,7 @@ A frame pointer, if used, points at the bottom of the "fixed" portion of the sta
 
 Arguments and return values are processed via the Type Lowering algorithm below.
 
-If a struct is returned via a hidden buffer, the address is supplied by the caller and passed just after the managed `this`, or after `$sp` argument when `this` is not present. In such cases the return value of the method is the address of the return value. But if the struct can be passed on the Wasm stack it is returned on the Wasm stack per the Type Lowering rules.
-
-(TBD: ABI for vector types)
+If a struct is returned via a hidden buffer, the address is supplied by the caller and passed just after the managed `this`, or after `$sp` argument when `this` is not present. In such cases the return value of the method is the address of the return value. Structs passed by value across multiple Wasm parameters are still returned through a hidden buffer.
 
 ### Type Lowering
 
@@ -735,22 +731,28 @@ Managed types are lowered to WebAssembly value types according to the following 
 | `nint`, `nuint`, pointer, byref, function pointer | `i32` (pointer-sized) |
 | Reference types (class, string, array, szarray, interface) | `i32` (pointer-sized) |
 | Value type (struct) — single primitive field, no padding | Unwrap recursively to the field's wasm type |
-| Value type (struct) — single field with padding, multiple fields, or SIMD type | Passed by reference (`i32` pointer) |
+| `Vector64<T>` | `i64` |
+| `Vector128<T>`, or a 16-byte `Vector<T>` | `v128` |
+| `Int128`, `UInt128`, `Decimal128` | Two `i64` parameters |
+| `Vector256<T>` | Two `v128` parameters |
+| `Vector512<T>` | Four `v128` parameters |
+| Value type (struct) — single field with padding, multiple fields, or another non-unwrappable SIMD type | Passed by reference (`i32` pointer) |
 | Empty struct (zero instance fields) | Not currently elided; since .NET empty structs have size 1, they are treated as non-unwrappable structs and passed by reference.|
 
 **Struct unwrapping** is recursive: a struct containing a single struct field, where the inner struct
 has the same size as the outer, is unwrapped until a primitive is reached or the rule no longer applies.
 For example, a struct `Wrapper { Inner value; }` where `Inner { int x; }` is unwrapped all the way
-to `i32`.
+to `i32`. A single-field struct wrapping one of the multi-parameter types above is passed the same
+way as the type it wraps.
 
 A struct is **not** unwrapped when:
 - It has more than one instance field.
 - It has exactly one instance field but the field's size differs from the struct's size (i.e., the
   struct has padding due to explicit layout or alignment attributes).
 
-Structs that cannot be unwrapped, including SIMD types for now, are passed by reference. The caller
-allocates space on the linear stack and passes a pointer. For return values, the caller provides a
-hidden return buffer pointer.
+Structs that cannot be unwrapped are passed by reference. The caller allocates space on the linear
+stack and passes a pointer. All multi-parameter types above, and structs that cannot be unwrapped,
+are returned through a hidden return buffer.
 
 ### Prolog
 

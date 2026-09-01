@@ -199,7 +199,6 @@ private:
 #endif // WINDOWS_AMD64_ABI
     GenTree* LowerDelegateInvoke(GenTreeCall* call);
     void     OptimizeCallIndirectTargetEvaluation(GenTreeCall* call);
-    GenTree* LowerIndirectNonvirtCall(GenTreeCall* call);
     GenTree* LowerDirectCall(GenTreeCall* call);
     GenTree* LowerNonvirtPinvokeCall(GenTreeCall* call);
     GenTree* LowerTailCallViaJitHelper(GenTreeCall* callNode, GenTree* callTarget);
@@ -453,6 +452,7 @@ private:
 #ifdef TARGET_WASM
     static void      SetMultiplyUsed(GenTree* node DEBUGARG(const char* reason));
     GenTreeAddrMode* GetFoldableAddrMode(GenTreeIndir* indirNode);
+    void             TryFoldLclAddrOffset(GenTreeIndir* indirNode);
     GenTree*         LowerNeg(GenTreeOp* node);
     void             LowerIndexAddr(GenTreeIndexAddr* indexAddr);
     void             LowerCkfinite(GenTreeOp* node);
