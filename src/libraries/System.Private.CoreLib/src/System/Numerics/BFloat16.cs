@@ -2045,22 +2045,10 @@ namespace System.Numerics
         public static BFloat16 CosPi(BFloat16 x) => (BFloat16)float.CosPi((float)x);
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.DegreesToRadians(TSelf)" />
-        public static BFloat16 DegreesToRadians(BFloat16 degrees)
-        {
-            // NOTE: Don't change the algorithm without consulting the DIM
-            // which elaborates on why this implementation was chosen
-
-            return (BFloat16)float.DegreesToRadians((float)degrees);
-        }
+        public static BFloat16 DegreesToRadians(BFloat16 degrees) => (BFloat16)float.DegreesToRadians((float)degrees);
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.RadiansToDegrees(TSelf)" />
-        public static BFloat16 RadiansToDegrees(BFloat16 radians)
-        {
-            // NOTE: Don't change the algorithm without consulting the DIM
-            // which elaborates on why this implementation was chosen
-
-            return (BFloat16)float.RadiansToDegrees((float)radians);
-        }
+        public static BFloat16 RadiansToDegrees(BFloat16 radians) => (BFloat16)float.RadiansToDegrees((float)radians);
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Sin(TSelf)" />
         public static BFloat16 Sin(BFloat16 x) => (BFloat16)float.Sin((float)x);

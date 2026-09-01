@@ -8,6 +8,9 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
+using ArmAes = System.Runtime.Intrinsics.Arm.Aes;
+using X86Aes = System.Runtime.Intrinsics.X86.Aes;
+
 public static class StripILBodies
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -80,6 +83,12 @@ public static class StripILBodies
     public static int PlainStrippableMethod(int a, int b)
     {
         return a + b + ComputeTag();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static bool UsesRuntimeCheckedInstructionSet()
+    {
+        return X86Aes.IsSupported || ArmAes.IsSupported || ArmAes.Arm64.IsSupported;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

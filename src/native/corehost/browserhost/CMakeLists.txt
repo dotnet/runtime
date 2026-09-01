@@ -33,6 +33,19 @@ install(TARGETS BrowserHost-Static DESTINATION sharedFramework COMPONENT runtime
 # the executable
 set(DOTNET_PROJECT_NAME "browserhost")
 
+# Memory settings are supplied by eng/native.wasm.targets so that the values baked into
+# dotnet.native.wasm and the runtime-pack defaults consumed by the per-app relink
+# (BrowserHost* properties in native.wasm.targets) cannot drift apart. Fail loudly
+# rather than silently linking with different values than the ones advertised to app builds.
+foreach (_browserhost_required_setting
+         CMAKE_BROWSERHOST_INITIAL_MEMORY
+         CMAKE_BROWSERHOST_MAXIMUM_MEMORY
+         CMAKE_BROWSERHOST_STACK_SIZE)
+    if (NOT DEFINED ${_browserhost_required_setting} OR "${${_browserhost_required_setting}}" STREQUAL "")
+        message(FATAL_ERROR "${_browserhost_required_setting} must be set (see eng/native.wasm.targets).")
+    endif ()
+endforeach ()
+
 set(BROWSERHOST_SOURCES
     empty.c
 )
@@ -108,11 +121,11 @@ if (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG)
 endif ()
 
 target_link_options(browserhost PRIVATE
-    -sINITIAL_MEMORY=33554432
-    -sMAXIMUM_MEMORY=2147483648
+    -sINITIAL_MEMORY=${CMAKE_BROWSERHOST_INITIAL_MEMORY}
+    -sMAXIMUM_MEMORY=${CMAKE_BROWSERHOST_MAXIMUM_MEMORY}
     -sALLOW_MEMORY_GROWTH=1
     -sGROWABLE_ARRAYBUFFERS=0
-    -sSTACK_SIZE=2MB
+    -sSTACK_SIZE=${CMAKE_BROWSERHOST_STACK_SIZE}
     -sWASM_BIGINT=1
     -sMODULARIZE=1
     -sEXPORT_ES6=1
@@ -140,6 +153,11 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/dotnet.native.wasm DESTINATION corehos
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/dotnet.native.wasm DESTINATION sharedFramework COMPONENT runtime)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/dotnet.native.js.symbols DESTINATION corehost COMPONENT runtime)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/dotnet.native.js.symbols DESTINATION sharedFramework COMPONENT runtime)
+
+# Headers included by the CoreCLR native relink generated sources (see BrowserWasmApp.CoreCLR.targets).
+install(FILES ${CLR_REPO_ROOT_DIR}/src/coreclr/vm/wasm/callhelpers.hpp DESTINATION sharedFramework/include COMPONENT runtime)
+install(FILES ${CLR_SRC_NATIVE_DIR}/minipal/entrypoints.h DESTINATION sharedFramework/include/minipal COMPONENT runtime)
+install(FILES ${CLR_SRC_NATIVE_DIR}/minipal/utils.h DESTINATION sharedFramework/include/minipal COMPONENT runtime)
 
 set_source_files_properties(${BROWSERHOST_SOURCES} PROPERTIES OBJECT_DEPENDS
     "${JS_SYSTEM_NATIVE_BROWSER};${JS_SYSTEM_BROWSER_UTILS};${JS_SYSTEM_RUNTIME_INTEROPSERVICES_JAVASCRIPT_NATIVE};${JS_BROWSER_HOST};${JS_SYSTEM_NATIVE_BROWSER_EXPOST}")
