@@ -8,24 +8,19 @@ using Xunit;
 
 namespace System.Formats.Tar.Tests
 {
-    public class TarWriter_WriteEntry_Base : TarTestsBase
+    public abstract class TarWriter_WriteEntry_Base : TarTestsBase
     {
-        protected void WriteEntry_Null_Throws_Internal(TarEntryFormat format)
+        protected virtual TarEntryFormat TestFormat => TarEntryFormat.Pax;
+
+        [Theory]
+        [MemberData(nameof(GetBooleanData))]
+        public async Task WriteEntry_Null_Throws(bool async)
         {
             using MemoryStream archiveStream = new MemoryStream();
-            using TarWriter writer = new TarWriter(archiveStream, format, leaveOpen: false);
-            Assert.Throws<ArgumentNullException>(() => writer.WriteEntry(null));
-        }
+            await using TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, TestFormat, leaveOpen: false);
+            TarWriter writer = writerHolder;
 
-        protected async Task WriteEntry_Null_Throws_Async_Internal(TarEntryFormat format)
-        {
-            await using (MemoryStream archiveStream = new MemoryStream())
-            {
-                await using (TarWriter writer = new TarWriter(archiveStream, format, leaveOpen: false))
-                {
-                    await Assert.ThrowsAsync<ArgumentNullException>(() => writer.WriteEntryAsync(null));
-                }
-            }
+            await Assert.ThrowsAsync<ArgumentNullException>(() => WriteEntry(writer, null, async));
         }
 
         protected void VerifyDirectory(TarEntry entry, TarEntryFormat format, string name)

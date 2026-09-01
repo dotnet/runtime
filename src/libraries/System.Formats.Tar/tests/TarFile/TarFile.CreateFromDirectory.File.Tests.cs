@@ -56,82 +56,78 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public async Task VerifyIncludeBaseDirectory(bool includeBaseDirectory)
+        [MemberData(nameof(GetTwoBooleansData))]
+        public async Task VerifyIncludeBaseDirectory(bool includeBaseDirectory, bool async)
         {
-            foreach (bool async in Booleans)
+            using TempDirectory source = new TempDirectory();
+            using TempDirectory destination = new TempDirectory();
+
+            UnixFileMode baseDirectoryMode = TestPermission1;
+            SetUnixFileMode(source.Path, baseDirectoryMode);
+
+            string fileName1 = "file1.txt";
+            string filePath1 = Path.Join(source.Path, fileName1);
+            File.Create(filePath1).Dispose();
+            UnixFileMode filename1Mode = TestPermission2;
+            SetUnixFileMode(filePath1, filename1Mode);
+
+            string subDirectoryName = "dir/"; // The trailing separator is preserved in the TarEntry.Name
+            string subDirectoryPath = Path.Join(source.Path, subDirectoryName);
+            Directory.CreateDirectory(subDirectoryPath);
+            UnixFileMode subDirectoryMode = TestPermission3;
+            SetUnixFileMode(subDirectoryPath, subDirectoryMode);
+
+            string fileName2 = "file2.txt";
+            string filePath2 = Path.Join(subDirectoryPath, fileName2);
+            File.Create(filePath2).Dispose();
+            UnixFileMode filename2Mode = TestPermission4;
+            SetUnixFileMode(filePath2, filename2Mode);
+
+            string destinationArchiveFileName = Path.Join(destination.Path, "output.tar");
+            await CreateFromDirectory(source.Path, destinationArchiveFileName, includeBaseDirectory, async);
+
+            using FileStream fileStream = File.OpenRead(destinationArchiveFileName);
+            using TarReader reader = new TarReader(fileStream);
+
+            List<TarEntry> entries = new List<TarEntry>();
+            TarEntry entry;
+            while ((entry = reader.GetNextEntry()) != null)
             {
-                using TempDirectory source = new TempDirectory();
-                using TempDirectory destination = new TempDirectory();
-
-                UnixFileMode baseDirectoryMode = TestPermission1;
-                SetUnixFileMode(source.Path, baseDirectoryMode);
-
-                string fileName1 = "file1.txt";
-                string filePath1 = Path.Join(source.Path, fileName1);
-                File.Create(filePath1).Dispose();
-                UnixFileMode filename1Mode = TestPermission2;
-                SetUnixFileMode(filePath1, filename1Mode);
-
-                string subDirectoryName = "dir/";
-                string subDirectoryPath = Path.Join(source.Path, subDirectoryName);
-                Directory.CreateDirectory(subDirectoryPath);
-                UnixFileMode subDirectoryMode = TestPermission3;
-                SetUnixFileMode(subDirectoryPath, subDirectoryMode);
-
-                string fileName2 = "file2.txt";
-                string filePath2 = Path.Join(subDirectoryPath, fileName2);
-                File.Create(filePath2).Dispose();
-                UnixFileMode filename2Mode = TestPermission4;
-                SetUnixFileMode(filePath2, filename2Mode);
-
-                string destinationArchiveFileName = Path.Join(destination.Path, "output.tar");
-                await CreateFromDirectory(source.Path, destinationArchiveFileName, includeBaseDirectory, async);
-
-                using FileStream fileStream = File.OpenRead(destinationArchiveFileName);
-                using TarReader reader = new TarReader(fileStream);
-
-                List<TarEntry> entries = new List<TarEntry>();
-                TarEntry entry;
-                while ((entry = reader.GetNextEntry()) != null)
-                {
-                    entries.Add(entry);
-                }
-
-                int expectedCount = 3 + (includeBaseDirectory ? 1 : 0);
-                Assert.Equal(expectedCount, entries.Count);
-
-                string prefix = includeBaseDirectory ? Path.GetFileName(source.Path) + '/' : string.Empty;
-
-                if (includeBaseDirectory)
-                {
-                    TarEntry baseEntry = entries.FirstOrDefault(x =>
-                        x.EntryType == TarEntryType.Directory &&
-                        x.Name == prefix);
-                    Assert.NotNull(baseEntry);
-                    AssertEntryModeFromFileSystemEquals(baseEntry, baseDirectoryMode);
-                }
-
-                TarEntry entry1 = entries.FirstOrDefault(x =>
-                    x.EntryType == TarEntryType.RegularFile &&
-                    x.Name == prefix + fileName1);
-                Assert.NotNull(entry1);
-                AssertEntryModeFromFileSystemEquals(entry1, filename1Mode);
-
-                TarEntry directory = entries.FirstOrDefault(x =>
-                    x.EntryType == TarEntryType.Directory &&
-                    x.Name == prefix + subDirectoryName);
-                Assert.NotNull(directory);
-                AssertEntryModeFromFileSystemEquals(directory, subDirectoryMode);
-
-                string actualFileName2 = subDirectoryName + fileName2;
-                TarEntry entry2 = entries.FirstOrDefault(x =>
-                    x.EntryType == TarEntryType.RegularFile &&
-                    x.Name == prefix + actualFileName2);
-                Assert.NotNull(entry2);
-                AssertEntryModeFromFileSystemEquals(entry2, filename2Mode);
+                entries.Add(entry);
             }
+
+            int expectedCount = 3 + (includeBaseDirectory ? 1 : 0);
+            Assert.Equal(expectedCount, entries.Count);
+
+            string prefix = includeBaseDirectory ? Path.GetFileName(source.Path) + '/' : string.Empty;
+
+            if (includeBaseDirectory)
+            {
+                TarEntry baseEntry = entries.FirstOrDefault(x =>
+                    x.EntryType == TarEntryType.Directory &&
+                    x.Name == prefix);
+                Assert.NotNull(baseEntry);
+                AssertEntryModeFromFileSystemEquals(baseEntry, baseDirectoryMode);
+            }
+
+            TarEntry entry1 = entries.FirstOrDefault(x =>
+                x.EntryType == TarEntryType.RegularFile &&
+                x.Name == prefix + fileName1);
+            Assert.NotNull(entry1);
+            AssertEntryModeFromFileSystemEquals(entry1, filename1Mode);
+
+            TarEntry directory = entries.FirstOrDefault(x =>
+                x.EntryType == TarEntryType.Directory &&
+                x.Name == prefix + subDirectoryName);
+            Assert.NotNull(directory);
+            AssertEntryModeFromFileSystemEquals(directory, subDirectoryMode);
+
+            string actualFileName2 = subDirectoryName + fileName2; // Notice the trailing separator in subDirectoryName
+            TarEntry entry2 = entries.FirstOrDefault(x =>
+                x.EntryType == TarEntryType.RegularFile &&
+                x.Name == prefix + actualFileName2);
+            Assert.NotNull(entry2);
+            AssertEntryModeFromFileSystemEquals(entry2, filename2Mode);
         }
 
         [Theory]
@@ -156,57 +152,53 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public async Task IncludeAllSegmentsOfPath(bool includeBaseDirectory)
+        [MemberData(nameof(GetTwoBooleansData))]
+        public async Task IncludeAllSegmentsOfPath(bool includeBaseDirectory, bool async)
         {
-            foreach (bool async in Booleans)
+            using TempDirectory source = new TempDirectory();
+            using TempDirectory destination = new TempDirectory();
+
+            string segment1 = Path.Join(source.Path, "segment1");
+            Directory.CreateDirectory(segment1);
+            string segment2 = Path.Join(segment1, "segment2");
+            Directory.CreateDirectory(segment2);
+            string textFile = Path.Join(segment2, "file.txt");
+            File.Create(textFile).Dispose();
+
+            string destinationArchiveFileName = Path.Join(destination.Path, "output.tar");
+            await CreateFromDirectory(source.Path, destinationArchiveFileName, includeBaseDirectory, async);
+
+            using FileStream fileStream = File.OpenRead(destinationArchiveFileName);
+            using TarReader reader = new TarReader(fileStream);
+
+            string prefix = includeBaseDirectory ? Path.GetFileName(source.Path) + '/' : string.Empty;
+
+            TarEntry entry;
+
+            if (includeBaseDirectory)
             {
-                using TempDirectory source = new TempDirectory();
-                using TempDirectory destination = new TempDirectory();
-
-                string segment1 = Path.Join(source.Path, "segment1");
-                Directory.CreateDirectory(segment1);
-                string segment2 = Path.Join(segment1, "segment2");
-                Directory.CreateDirectory(segment2);
-                string textFile = Path.Join(segment2, "file.txt");
-                File.Create(textFile).Dispose();
-
-                string destinationArchiveFileName = Path.Join(destination.Path, "output.tar");
-                await CreateFromDirectory(source.Path, destinationArchiveFileName, includeBaseDirectory, async);
-
-                using FileStream fileStream = File.OpenRead(destinationArchiveFileName);
-                using TarReader reader = new TarReader(fileStream);
-
-                string prefix = includeBaseDirectory ? Path.GetFileName(source.Path) + '/' : string.Empty;
-
-                TarEntry entry;
-
-                if (includeBaseDirectory)
-                {
-                    entry = reader.GetNextEntry();
-                    Assert.NotNull(entry);
-                    Assert.Equal(TarEntryType.Directory, entry.EntryType);
-                    Assert.Equal(prefix, entry.Name);
-                }
-
                 entry = reader.GetNextEntry();
                 Assert.NotNull(entry);
                 Assert.Equal(TarEntryType.Directory, entry.EntryType);
-                Assert.Equal(prefix + "segment1/", entry.Name);
-
-                entry = reader.GetNextEntry();
-                Assert.NotNull(entry);
-                Assert.Equal(TarEntryType.Directory, entry.EntryType);
-                Assert.Equal(prefix + "segment1/segment2/", entry.Name);
-
-                entry = reader.GetNextEntry();
-                Assert.NotNull(entry);
-                Assert.Equal(TarEntryType.RegularFile, entry.EntryType);
-                Assert.Equal(prefix + "segment1/segment2/file.txt", entry.Name);
-
-                Assert.Null(reader.GetNextEntry());
+                Assert.Equal(prefix, entry.Name);
             }
+
+            entry = reader.GetNextEntry();
+            Assert.NotNull(entry);
+            Assert.Equal(TarEntryType.Directory, entry.EntryType);
+            Assert.Equal(prefix + "segment1/", entry.Name);
+
+            entry = reader.GetNextEntry();
+            Assert.NotNull(entry);
+            Assert.Equal(TarEntryType.Directory, entry.EntryType);
+            Assert.Equal(prefix + "segment1/segment2/", entry.Name);
+
+            entry = reader.GetNextEntry();
+            Assert.NotNull(entry);
+            Assert.Equal(TarEntryType.RegularFile, entry.EntryType);
+            Assert.Equal(prefix + "segment1/segment2/file.txt", entry.Name);
+
+            Assert.Null(reader.GetNextEntry());
         }
 
         [ConditionalTheory(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
@@ -226,7 +218,7 @@ namespace System.Formats.Tar.Tests
             Directory.CreateDirectory(sourceDirectoryName);
 
             string subDirectory = Path.Join(sourceDirectoryName, "subDirectory");
-            Directory.CreateSymbolicLink(subDirectory, externalDirectory);
+            Directory.CreateSymbolicLink(subDirectory, externalDirectory); // Should not recurse here
 
             await CreateFromDirectory(sourceDirectoryName, destinationArchive, includeBaseDirectory: false, async);
 
@@ -238,7 +230,7 @@ namespace System.Formats.Tar.Tests
             Assert.Equal("subDirectory", entry.Name);
             Assert.Equal(TarEntryType.SymbolicLink, entry.EntryType);
 
-            Assert.Null(reader.GetNextEntry());
+            Assert.Null(reader.GetNextEntry()); // file.txt should not be found
         }
 
         [ConditionalTheory(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
@@ -258,7 +250,7 @@ namespace System.Formats.Tar.Tests
             string sourceDirectoryName = Path.Join(root.Path, "baseDirectory");
             Directory.CreateSymbolicLink(sourceDirectoryName, externalDirectory);
 
-            await CreateFromDirectory(sourceDirectoryName, destinationArchive, includeBaseDirectory: true, async);
+            await CreateFromDirectory(sourceDirectoryName, destinationArchive, includeBaseDirectory: true, async); // Base directory is a symlink, do not recurse
 
             using FileStream archiveStream = File.OpenRead(destinationArchive);
             using TarReader reader = new TarReader(archiveStream, leaveOpen: false);
@@ -268,74 +260,65 @@ namespace System.Formats.Tar.Tests
             Assert.Equal("baseDirectory/", entry.Name);
             Assert.Equal(TarEntryType.SymbolicLink, entry.EntryType);
 
+            Assert.Null(reader.GetNextEntry()); // subDirectory should not be found
+        }
+
+        [Theory]
+        [MemberData(nameof(GetTarEntryFormatsAndBooleanData))]
+        public async Task CreateFromDirectory_WithFormat(TarEntryFormat format, bool async)
+        {
+            using TempDirectory source = new TempDirectory();
+            using TempDirectory destination = new TempDirectory();
+
+            string fileName = "file.txt";
+            File.Create(Path.Join(source.Path, fileName)).Dispose();
+
+            string destinationArchiveFileName = Path.Join(destination.Path, "output.tar");
+            await CreateFromDirectory(source.Path, destinationArchiveFileName, includeBaseDirectory: false, format, async);
+
+            using FileStream fileStream = File.OpenRead(destinationArchiveFileName);
+            using TarReader reader = new TarReader(fileStream);
+
+            TarEntry entry = reader.GetNextEntry();
+            Assert.NotNull(entry);
+            Assert.Equal(format, entry.Format);
+            Assert.Equal(fileName, entry.Name);
+
             Assert.Null(reader.GetNextEntry());
         }
 
         [Theory]
-        [MemberData(nameof(GetTarEntryFormats))]
-        public async Task CreateFromDirectory_WithFormat(TarEntryFormat format)
+        [MemberData(nameof(GetInvalidTarEntryFormatsAndBooleanData))]
+        public async Task CreateFromDirectory_InvalidFormat_Throws(TarEntryFormat format, bool async)
         {
-            foreach (bool async in Booleans)
-            {
-                using TempDirectory source = new TempDirectory();
-                using TempDirectory destination = new TempDirectory();
+            using TempDirectory source = new TempDirectory();
+            using TempDirectory destination = new TempDirectory();
+            string destinationArchiveFileName = Path.Join(destination.Path, "output.tar");
 
-                string fileName = "file.txt";
-                File.Create(Path.Join(source.Path, fileName)).Dispose();
-
-                string destinationArchiveFileName = Path.Join(destination.Path, "output.tar");
-                await CreateFromDirectory(source.Path, destinationArchiveFileName, includeBaseDirectory: false, format, async);
-
-                using FileStream fileStream = File.OpenRead(destinationArchiveFileName);
-                using TarReader reader = new TarReader(fileStream);
-
-                TarEntry entry = reader.GetNextEntry();
-                Assert.NotNull(entry);
-                Assert.Equal(format, entry.Format);
-                Assert.Equal(fileName, entry.Name);
-
-                Assert.Null(reader.GetNextEntry());
-            }
-        }
-
-        [Theory]
-        [MemberData(nameof(GetInvalidTarEntryFormats))]
-        public async Task CreateFromDirectory_InvalidFormat_Throws(TarEntryFormat format)
-        {
-            foreach (bool async in Booleans)
-            {
-                using TempDirectory source = new TempDirectory();
-                using TempDirectory destination = new TempDirectory();
-                string destinationArchiveFileName = Path.Join(destination.Path, "output.tar");
-
-                await Assert.ThrowsAsync<ArgumentOutOfRangeException>("format", () =>
-                    CreateFromDirectory(source.Path, destinationArchiveFileName, includeBaseDirectory: false, format, async));
-            }
+            await Assert.ThrowsAsync<ArgumentOutOfRangeException>("format", () =>
+                CreateFromDirectory(source.Path, destinationArchiveFileName, includeBaseDirectory: false, format, async));
         }
 
         [ConditionalTheory(typeof(MountHelper), nameof(MountHelper.CanCreateHardLinks))]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task CreateFromDirectory_UsesWriterOptions(bool toggle)
+        [MemberData(nameof(GetTwoBooleansData))]
+        public async Task CreateFromDirectory_UsesWriterOptions(bool toggle, bool async)
         {
-            foreach (bool async in Booleans)
+            // Toggle an option property to verify changing options changes the produced archive.
+            bool preserveLinks = toggle;
+
+            using TempDirectory source = CreateSourceDirectoryForCreateFromDirectory_UsesWriterOptions();
+            using TempDirectory destination = new TempDirectory();
+
+            TarWriterOptions options = new TarWriterOptions()
             {
-                bool preserveLinks = toggle;
+                HardLinkMode = preserveLinks ? TarHardLinkMode.PreserveLink : TarHardLinkMode.CopyContents
+            };
 
-                using TempDirectory source = CreateSourceDirectoryForCreateFromDirectory_UsesWriterOptions();
-                using TempDirectory destination = new TempDirectory();
+            string destinationArchiveFileName = Path.Join(destination.Path, "output.tar");
+            await CreateFromDirectory(source.Path, destinationArchiveFileName, includeBaseDirectory: false, options, async);
 
-                TarWriterOptions options = new TarWriterOptions()
-                {
-                    HardLinkMode = preserveLinks ? TarHardLinkMode.PreserveLink : TarHardLinkMode.CopyContents
-                };
-
-                string destinationArchiveFileName = Path.Join(destination.Path, "output.tar");
-                await CreateFromDirectory(source.Path, destinationArchiveFileName, includeBaseDirectory: false, options, async);
-
-                using FileStream fileStream = File.OpenRead(destinationArchiveFileName);
-                VerifyCreateFromDirectory_UsesWriterOptions(fileStream, preserveLinks);
-            }
+            using FileStream fileStream = File.OpenRead(destinationArchiveFileName);
+            VerifyCreateFromDirectory_UsesWriterOptions(fileStream, preserveLinks);
         }
     }
 }

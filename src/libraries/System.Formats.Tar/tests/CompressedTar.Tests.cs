@@ -20,6 +20,7 @@ namespace System.Formats.Tar.Tests
 
             string fileName = "file.txt";
             string filePath = Path.Join(root.Path, fileName);
+            // Create tar.gz archive
             File.Create(filePath).Dispose();
 
             FileStreamOptions createOptions = new()
@@ -32,20 +33,18 @@ namespace System.Formats.Tar.Tests
             using (FileStream streamToCompress = File.Open(archivePath, createOptions))
             using (GZipStream compressorStream = new GZipStream(streamToCompress, CompressionMode.Compress))
             {
-                TarWriter writer = CreateTarWriter(compressorStream);
-                try
                 {
+                    await using TarWriterHolder writerHolder = CreateTarWriter(compressorStream, async);
+                    TarWriter writer = writerHolder;
+
                     await WriteEntry(writer, filePath, fileName, async);
-                }
-                finally
-                {
-                    await DisposeTarWriter(writer, async);
-                }
+                                }
             }
 
             FileInfo fileInfo = new FileInfo(archivePath);
             Assert.True(fileInfo.Exists);
             Assert.True(fileInfo.Length > 0);
+            // Verify tar.gz archive contents
 
             FileStreamOptions readOptions = new()
             {
@@ -57,19 +56,16 @@ namespace System.Formats.Tar.Tests
             using (FileStream streamToDecompress = File.Open(archivePath, readOptions))
             using (GZipStream decompressorStream = new GZipStream(streamToDecompress, CompressionMode.Decompress))
             {
-                TarReader reader = CreateTarReader(decompressorStream);
-                try
                 {
+                    await using TarReaderHolder readerHolder = CreateTarReader(decompressorStream, async, leaveOpen: false);
+                    TarReader reader = readerHolder;
+
                     TarEntry entry = await GetNextEntry(reader, async: async);
                     Assert.NotNull(entry);
                     Assert.Equal(TarEntryFormat.Pax, entry.Format);
                     Assert.Equal(fileName, entry.Name);
                     Assert.Null(await GetNextEntry(reader, async: async));
-                }
-                finally
-                {
-                    await DisposeTarReader(reader, async);
-                }
+                                }
             }
         }
 

@@ -34,6 +34,7 @@ namespace System.Formats.Tar.Tests
             using TempDirectory root = new TempDirectory();
             string destDir = Path.Combine(root.Path, "dest");
             Directory.CreateDirectory(destDir);
+            // A rooted but ambiguous path.
             string rootedLinkTarget = @"\Temp\temp.ini";
             string tarPath = Path.Combine(root.Path, "windows_symlink.tar");
             using (FileStream stream = new FileStream(tarPath, FileMode.Create, FileAccess.Write))

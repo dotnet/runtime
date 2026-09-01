@@ -79,17 +79,14 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [MemberData(nameof(GetInvalidTarEntryFormats))]
-        public async Task CreateFromDirectory_InvalidFormat_Throws(TarEntryFormat format)
+        [MemberData(nameof(GetInvalidTarEntryFormatsAndBooleanData))]
+        public async Task CreateFromDirectory_InvalidFormat_Throws(TarEntryFormat format, bool async)
         {
-            foreach (bool async in Booleans)
-            {
-                using TempDirectory source = new TempDirectory();
-                using MemoryStream archive = new MemoryStream();
+            using TempDirectory source = new TempDirectory();
+            using MemoryStream archive = new MemoryStream();
 
-                await Assert.ThrowsAsync<ArgumentOutOfRangeException>("format", () =>
-                    CreateFromDirectory(source.Path, archive, includeBaseDirectory: false, format, async));
-            }
+            await Assert.ThrowsAsync<ArgumentOutOfRangeException>("format", () =>
+                CreateFromDirectory(source.Path, archive, includeBaseDirectory: false, format, async));
         }
 
         [ConditionalTheory(typeof(MountHelper), nameof(MountHelper.CanCreateHardLinks))]

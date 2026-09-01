@@ -24,9 +24,89 @@ namespace System.Formats.Tar.Tests
                     yield return new object[] { format, async };
         }
 
+        protected static IEnumerable<object[]> GetDataAndBooleanData(IEnumerable<object[]> data)
+        {
+            foreach (object[] values in data)
+            {
+                foreach (bool isAsync in Booleans)
+                {
+                    yield return values.Append((object)isAsync).ToArray();
+                }
+            }
+        }
+
+        // Yields all four combinations of two independent boolean parameters (e.g. some test-specific
+        // flag combined with the sync/async flag).
+        public static IEnumerable<object[]> GetTwoBooleansData() => GetDataAndBooleanData(GetBooleanData());
+
+        public static IEnumerable<object[]> GetNonV7FormatBooleanData()
+        {
+            foreach (TarEntryFormat format in new[] { TarEntryFormat.Ustar, TarEntryFormat.Pax, TarEntryFormat.Gnu })
+                foreach (bool isAsync in Booleans)
+                    yield return new object[] { format, isAsync };
+        }
+
+        public static IEnumerable<object[]> GetPaxAndGnuFormatBooleanData()
+        {
+            foreach (TarEntryFormat format in new[] { TarEntryFormat.Pax, TarEntryFormat.Gnu })
+                foreach (bool isAsync in Booleans)
+                    yield return new object[] { format, isAsync };
+        }
+
+        public static IEnumerable<object[]> GetUstarPaxFormatBooleanData()
+        {
+            foreach (TarEntryFormat format in new[] { TarEntryFormat.Ustar, TarEntryFormat.Pax })
+                foreach (bool isAsync in Booleans)
+                    yield return new object[] { format, isAsync };
+        }
+
+        public static IEnumerable<object[]> GetV7UstarPaxFormatBooleanData()
+        {
+            foreach (TarEntryFormat format in new[] { TarEntryFormat.V7, TarEntryFormat.Ustar, TarEntryFormat.Pax })
+                foreach (bool isAsync in Booleans)
+                    yield return new object[] { format, isAsync };
+        }
+
+        public static IEnumerable<object[]> GetFormatsAndFilesAndBooleanData() => GetDataAndBooleanData(GetFormatsAndFiles());
+
+        public static IEnumerable<object[]> GetFormatsAndLinksAndBooleanData() => GetDataAndBooleanData(GetFormatsAndLinks());
+
+        public static IEnumerable<object[]> GetInvalidTarEntryFormatsAndBooleanData() => GetDataAndBooleanData(GetInvalidTarEntryFormats());
+
+        public static IEnumerable<object[]> GetPaxExtendedAttributesRoundtripTestDataAndBooleanData() => GetDataAndBooleanData(GetPaxExtendedAttributesRoundtripTestData());
+
+        public static IEnumerable<object[]> GetTarEntryFormatsAndBooleanData() => GetDataAndBooleanData(GetTarEntryFormats());
+
+        public static IEnumerable<object[]> GetTestTarFormatsAndBooleanData() => GetDataAndBooleanData(GetTestTarFormats());
+
         protected static TarReader CreateTarReader(Stream archiveStream, bool leaveOpen = false)
         {
             return new TarReader(archiveStream, leaveOpen);
+        }
+
+        // Wraps a TarReader together with the sync/async flag that should be used to dispose it,
+        // so tests can write "await using TarReaderHolder reader = CreateTarReader(...)" instead of
+        // a manual try/finally block calling DisposeTarReader. Implicitly converts to TarReader so
+        // it can be used anywhere a TarReader is expected.
+        protected readonly struct TarReaderHolder : IAsyncDisposable
+        {
+            private readonly TarReader _reader;
+            private readonly bool _async;
+
+            public TarReaderHolder(TarReader reader, bool async)
+            {
+                _reader = reader;
+                _async = async;
+            }
+
+            public static implicit operator TarReader(TarReaderHolder holder) => holder._reader;
+
+            public async ValueTask DisposeAsync() => await DisposeTarReader(_reader, _async);
+        }
+
+        protected static TarReaderHolder CreateTarReader(Stream archiveStream, bool async, bool leaveOpen = false)
+        {
+            return new TarReaderHolder(new TarReader(archiveStream, leaveOpen), async);
         }
 
         protected static async Task DisposeTarReader(TarReader reader, bool async = false)
@@ -51,6 +131,31 @@ namespace System.Formats.Tar.Tests
         protected static TarWriter CreateTarWriter(Stream archiveStream, TarEntryFormat format = TarEntryFormat.Pax, bool leaveOpen = false)
         {
             return new TarWriter(archiveStream, format, leaveOpen);
+        }
+
+        // Wraps a TarWriter together with the sync/async flag that should be used to dispose it,
+        // so tests can write "await using TarWriterHolder writer = CreateTarWriter(...)" instead of
+        // a manual try/finally block calling DisposeTarWriter. Implicitly converts to TarWriter so
+        // it can be used anywhere a TarWriter is expected.
+        protected readonly struct TarWriterHolder : IAsyncDisposable
+        {
+            private readonly TarWriter _writer;
+            private readonly bool _async;
+
+            public TarWriterHolder(TarWriter writer, bool async)
+            {
+                _writer = writer;
+                _async = async;
+            }
+
+            public static implicit operator TarWriter(TarWriterHolder holder) => holder._writer;
+
+            public async ValueTask DisposeAsync() => await DisposeTarWriter(_writer, _async);
+        }
+
+        protected static TarWriterHolder CreateTarWriter(Stream archiveStream, bool async, TarEntryFormat format = TarEntryFormat.Pax, bool leaveOpen = false)
+        {
+            return new TarWriterHolder(new TarWriter(archiveStream, format, leaveOpen), async);
         }
 
         protected static async Task DisposeTarWriter(TarWriter writer, bool async = false)

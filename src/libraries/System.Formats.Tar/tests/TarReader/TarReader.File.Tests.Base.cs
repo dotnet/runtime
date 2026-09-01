@@ -18,9 +18,10 @@ namespace System.Formats.Tar.Tests
             string testCaseName = "file";
             using MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, testFormat, testCaseName);
 
-            TarReader reader = CreateTarReader(ms);
-            try
             {
+                await using TarReaderHolder readerHolder = CreateTarReader(ms, async, leaveOpen: false);
+                TarReader reader = readerHolder;
+
                 if (testFormat is TestTarFormat.pax_gea)
                 {
                     VerifyGlobalExtendedAttributes(await GetNextEntry(reader, async: async));
@@ -32,10 +33,6 @@ namespace System.Formats.Tar.Tests
 
                 Assert.Null(await GetNextEntry(reader, async: async));
             }
-            finally
-            {
-                await DisposeTarReader(reader, async);
-            }
         }
 
         protected async Task Read_Archive_File_HardLink_Internal(TarEntryFormat format, TestTarFormat testFormat, bool async)
@@ -43,9 +40,10 @@ namespace System.Formats.Tar.Tests
             string testCaseName = "file_hardlink";
             using MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, testFormat, testCaseName);
 
-            TarReader reader = CreateTarReader(ms);
-            try
             {
+                await using TarReaderHolder readerHolder = CreateTarReader(ms, async, leaveOpen: false);
+                TarReader reader = readerHolder;
+
                 if (testFormat is TestTarFormat.pax_gea)
                 {
                     VerifyGlobalExtendedAttributes(await GetNextEntry(reader, async: async));
@@ -61,10 +59,6 @@ namespace System.Formats.Tar.Tests
 
                 Assert.Null(await GetNextEntry(reader, async: async));
             }
-            finally
-            {
-                await DisposeTarReader(reader, async);
-            }
         }
 
         protected async Task Read_Archive_File_SymbolicLink_Internal(TarEntryFormat format, TestTarFormat testFormat, bool async)
@@ -72,9 +66,10 @@ namespace System.Formats.Tar.Tests
             string testCaseName = "file_symlink";
             using MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, testFormat, testCaseName);
 
-            TarReader reader = CreateTarReader(ms);
-            try
             {
+                await using TarReaderHolder readerHolder = CreateTarReader(ms, async, leaveOpen: false);
+                TarReader reader = readerHolder;
+
                 if (testFormat is TestTarFormat.pax_gea)
                 {
                     VerifyGlobalExtendedAttributes(await GetNextEntry(reader, async: async));
@@ -89,10 +84,6 @@ namespace System.Formats.Tar.Tests
 
                 Assert.Null(await GetNextEntry(reader, async: async));
             }
-            finally
-            {
-                await DisposeTarReader(reader, async);
-            }
         }
 
         protected async Task Read_Archive_Folder_File_Internal(TarEntryFormat format, TestTarFormat testFormat, bool async)
@@ -100,9 +91,10 @@ namespace System.Formats.Tar.Tests
             string testCaseName = "folder_file";
             using MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, testFormat, testCaseName);
 
-            TarReader reader = CreateTarReader(ms);
-            try
             {
+                await using TarReaderHolder readerHolder = CreateTarReader(ms, async, leaveOpen: false);
+                TarReader reader = readerHolder;
+
                 if (testFormat is TestTarFormat.pax_gea)
                 {
                     VerifyGlobalExtendedAttributes(await GetNextEntry(reader, async: async));
@@ -117,10 +109,6 @@ namespace System.Formats.Tar.Tests
 
                 Assert.Null(await GetNextEntry(reader, async: async));
             }
-            finally
-            {
-                await DisposeTarReader(reader, async);
-            }
         }
 
         protected async Task Read_Archive_Folder_File_Utf8_Internal(TarEntryFormat format, TestTarFormat testFormat, bool async)
@@ -128,9 +116,10 @@ namespace System.Formats.Tar.Tests
             string testCaseName = "folder_file_utf8";
             using MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, testFormat, testCaseName);
 
-            TarReader reader = CreateTarReader(ms);
-            try
             {
+                await using TarReaderHolder readerHolder = CreateTarReader(ms, async, leaveOpen: false);
+                TarReader reader = readerHolder;
+
                 if (testFormat is TestTarFormat.pax_gea)
                 {
                     VerifyGlobalExtendedAttributes(await GetNextEntry(reader, async: async));
@@ -145,10 +134,6 @@ namespace System.Formats.Tar.Tests
 
                 Assert.Null(await GetNextEntry(reader, async: async));
             }
-            finally
-            {
-                await DisposeTarReader(reader, async);
-            }
         }
 
         protected async Task Read_Archive_Folder_Subfolder_File_Internal(TarEntryFormat format, TestTarFormat testFormat, bool async)
@@ -156,9 +141,10 @@ namespace System.Formats.Tar.Tests
             string testCaseName = "folder_subfolder_file";
             using MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, testFormat, testCaseName);
 
-            TarReader reader = CreateTarReader(ms);
-            try
             {
+                await using TarReaderHolder readerHolder = CreateTarReader(ms, async, leaveOpen: false);
+                TarReader reader = readerHolder;
+
                 if (testFormat is TestTarFormat.pax_gea)
                 {
                     VerifyGlobalExtendedAttributes(await GetNextEntry(reader, async: async));
@@ -176,10 +162,6 @@ namespace System.Formats.Tar.Tests
 
                 Assert.Null(await GetNextEntry(reader, async: async));
             }
-            finally
-            {
-                await DisposeTarReader(reader, async);
-            }
         }
 
         protected async Task Read_Archive_FolderSymbolicLink_Folder_Subfolder_File_Internal(TarEntryFormat format, TestTarFormat testFormat, bool async)
@@ -187,9 +169,10 @@ namespace System.Formats.Tar.Tests
             string testCaseName = "foldersymlink_folder_subfolder_file";
             using MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, testFormat, testCaseName);
 
-            TarReader reader = CreateTarReader(ms);
-            try
             {
+                await using TarReaderHolder readerHolder = CreateTarReader(ms, async, leaveOpen: false);
+                TarReader reader = readerHolder;
+
                 if (testFormat is TestTarFormat.pax_gea)
                 {
                     VerifyGlobalExtendedAttributes(await GetNextEntry(reader, async: async));
@@ -210,10 +193,6 @@ namespace System.Formats.Tar.Tests
 
                 Assert.Null(await GetNextEntry(reader, async: async));
             }
-            finally
-            {
-                await DisposeTarReader(reader, async);
-            }
         }
 
         protected async Task Read_Archive_Many_Small_Files_Internal(TarEntryFormat format, TestTarFormat testFormat, bool async)
@@ -221,9 +200,10 @@ namespace System.Formats.Tar.Tests
             string testCaseName = "many_small_files";
             using MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, testFormat, testCaseName);
 
-            TarReader reader = CreateTarReader(ms);
-            try
             {
+                await using TarReaderHolder readerHolder = CreateTarReader(ms, async, leaveOpen: false);
+                TarReader reader = readerHolder;
+
                 if (testFormat is TestTarFormat.pax_gea)
                 {
                     VerifyGlobalExtendedAttributes(await GetNextEntry(reader, async: async));
@@ -253,10 +233,6 @@ namespace System.Formats.Tar.Tests
                     Assert.Equal(10, filesCount);
                 }
             }
-            finally
-            {
-                await DisposeTarReader(reader, async);
-            }
         }
 
         protected async Task Read_Archive_LongPath_Splitable_Under255_Internal(TarEntryFormat format, TestTarFormat testFormat, bool async)
@@ -264,9 +240,10 @@ namespace System.Formats.Tar.Tests
             string testCaseName = "longpath_splitable_under255";
             using MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, testFormat, testCaseName);
 
-            TarReader reader = CreateTarReader(ms);
-            try
             {
+                await using TarReaderHolder readerHolder = CreateTarReader(ms, async, leaveOpen: false);
+                TarReader reader = readerHolder;
+
                 if (testFormat is TestTarFormat.pax_gea)
                 {
                     VerifyGlobalExtendedAttributes(await GetNextEntry(reader, async: async));
@@ -284,10 +261,6 @@ namespace System.Formats.Tar.Tests
 
                 Assert.Null(await GetNextEntry(reader, async: async));
             }
-            finally
-            {
-                await DisposeTarReader(reader, async);
-            }
         }
 
         protected async Task Read_Archive_SpecialFiles_Internal(TarEntryFormat format, TestTarFormat testFormat, bool async)
@@ -295,9 +268,10 @@ namespace System.Formats.Tar.Tests
             string testCaseName = "specialfiles";
             using MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, testFormat, testCaseName);
 
-            TarReader reader = CreateTarReader(ms);
-            try
             {
+                await using TarReaderHolder readerHolder = CreateTarReader(ms, async, leaveOpen: false);
+                TarReader reader = readerHolder;
+
                 if (testFormat is TestTarFormat.pax_gea)
                 {
                     VerifyGlobalExtendedAttributes(await GetNextEntry(reader, async: async));
@@ -315,10 +289,6 @@ namespace System.Formats.Tar.Tests
 
                 Assert.Null(await GetNextEntry(reader, async: async));
             }
-            finally
-            {
-                await DisposeTarReader(reader, async);
-            }
         }
 
         protected async Task Read_Archive_File_LongSymbolicLink_Internal(TarEntryFormat format, TestTarFormat testFormat, bool async)
@@ -326,9 +296,10 @@ namespace System.Formats.Tar.Tests
             string testCaseName = "file_longsymlink";
             using MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, testFormat, testCaseName);
 
-            TarReader reader = CreateTarReader(ms);
-            try
             {
+                await using TarReaderHolder readerHolder = CreateTarReader(ms, async, leaveOpen: false);
+                TarReader reader = readerHolder;
+
                 if (testFormat is TestTarFormat.pax_gea)
                 {
                     VerifyGlobalExtendedAttributes(await GetNextEntry(reader, async: async));
@@ -351,10 +322,6 @@ namespace System.Formats.Tar.Tests
 
                 Assert.Null(await GetNextEntry(reader, async: async));
             }
-            finally
-            {
-                await DisposeTarReader(reader, async);
-            }
         }
 
         protected async Task Read_Archive_LongFileName_Over100_Under255_Internal(TarEntryFormat format, TestTarFormat testFormat, bool async)
@@ -362,9 +329,10 @@ namespace System.Formats.Tar.Tests
             string testCaseName = "longfilename_over100_under255";
             using MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, testFormat, testCaseName);
 
-            TarReader reader = CreateTarReader(ms);
-            try
             {
+                await using TarReaderHolder readerHolder = CreateTarReader(ms, async, leaveOpen: false);
+                TarReader reader = readerHolder;
+
                 if (testFormat is TestTarFormat.pax_gea)
                 {
                     VerifyGlobalExtendedAttributes(await GetNextEntry(reader, async: async));
@@ -378,10 +346,6 @@ namespace System.Formats.Tar.Tests
 
                 Assert.Null(await GetNextEntry(reader, async: async));
             }
-            finally
-            {
-                await DisposeTarReader(reader, async);
-            }
         }
 
         protected async Task Read_Archive_LongPath_Over255_Internal(TarEntryFormat format, TestTarFormat testFormat, bool async)
@@ -389,9 +353,10 @@ namespace System.Formats.Tar.Tests
             string testCaseName = "longpath_over255";
             using MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, testFormat, testCaseName);
 
-            TarReader reader = CreateTarReader(ms);
-            try
             {
+                await using TarReaderHolder readerHolder = CreateTarReader(ms, async, leaveOpen: false);
+                TarReader reader = readerHolder;
+
                 if (testFormat is TestTarFormat.pax_gea)
                 {
                     VerifyGlobalExtendedAttributes(await GetNextEntry(reader, async: async));
@@ -408,10 +373,6 @@ namespace System.Formats.Tar.Tests
                 $"Hello {testCaseName}");
 
                 Assert.Null(await GetNextEntry(reader, async: async));
-            }
-            finally
-            {
-                await DisposeTarReader(reader, async);
             }
         }
         private void VerifyType(TarEntry entry, TarEntryFormat format, bool isGea = false)

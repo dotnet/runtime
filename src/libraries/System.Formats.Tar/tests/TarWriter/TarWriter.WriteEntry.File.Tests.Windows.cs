@@ -11,64 +11,49 @@ namespace System.Formats.Tar.Tests;
 public partial class TarWriter_WriteEntry_File_Tests : TarWriter_File_Base
 {
     [Theory]
-    [InlineData(TarEntryFormat.V7)]
-    [InlineData(TarEntryFormat.Ustar)]
-    [InlineData(TarEntryFormat.Pax)]
-    [InlineData(TarEntryFormat.Gnu)]
-    public async Task Add_Junction_As_SymbolicLink(TarEntryFormat format)
+    [MemberData(nameof(GetFormatBooleanData))]
+    public async Task Add_Junction_As_SymbolicLink(TarEntryFormat format, bool async)
     {
-        foreach (bool async in Booleans)
+        using TempDirectory root = new TempDirectory();
+        string targetName = "TargetDirectory";
+        string junctionName = "JunctionDirectory";
+        string targetPath = Path.Join(root.Path, targetName);
+        string junctionPath = Path.Join(root.Path, junctionName);
+
+        Directory.CreateDirectory(targetPath);
+
+        Assert.True(MountHelper.CreateJunction(junctionPath, targetPath));
+
+        using MemoryStream archive = new MemoryStream();
         {
-            using TempDirectory root = new TempDirectory();
-            string targetName = "TargetDirectory";
-            string junctionName = "JunctionDirectory";
-            string targetPath = Path.Join(root.Path, targetName);
-            string junctionPath = Path.Join(root.Path, junctionName);
+            await using TarWriterHolder writerHolder = CreateTarWriter(archive, async, format, leaveOpen: true);
+            TarWriter writer = writerHolder;
 
-            Directory.CreateDirectory(targetPath);
+            await WriteEntry(writer, junctionPath, junctionPath, async);
+        }
 
-            Assert.True(MountHelper.CreateJunction(junctionPath, targetPath));
+        archive.Position = 0;
+        {
+            await using TarReaderHolder readerHolder = CreateTarReader(archive, async, leaveOpen: false);
+            TarReader reader = readerHolder;
 
-            using MemoryStream archive = new MemoryStream();
-            TarWriter writer = CreateTarWriter(archive, format, leaveOpen: true);
-            try
-            {
-                await WriteEntry(writer, junctionPath, junctionPath, async);
-            }
-            finally
-            {
-                await DisposeTarWriter(writer, async);
-            }
+            TarEntry entry = await GetNextEntry(reader, async: async);
+            Assert.NotNull(entry);
+            Assert.Equal(format, entry.Format);
+            Assert.Equal(junctionPath, entry.Name);
+            Assert.Equal(targetPath, entry.LinkName);
+            Assert.Equal(TarEntryType.SymbolicLink, entry.EntryType);
+            Assert.Null(entry.DataStream);
 
-            archive.Position = 0;
-            TarReader reader = CreateTarReader(archive);
-            try
-            {
-                TarEntry entry = await GetNextEntry(reader, async: async);
-                Assert.NotNull(entry);
-                Assert.Equal(format, entry.Format);
-                Assert.Equal(junctionPath, entry.Name);
-                Assert.Equal(targetPath, entry.LinkName);
-                Assert.Equal(TarEntryType.SymbolicLink, entry.EntryType);
-                Assert.Null(entry.DataStream);
+            VerifyPlatformSpecificMetadata(junctionPath, entry);
 
-                VerifyPlatformSpecificMetadata(junctionPath, entry);
-
-                Assert.Null(await GetNextEntry(reader, async: async));
-            }
-            finally
-            {
-                await DisposeTarReader(reader, async);
-            }
+            Assert.Null(await GetNextEntry(reader, async: async));
         }
     }
 
     [ConditionalTheory]
-    [InlineData(TarEntryFormat.V7)]
-    [InlineData(TarEntryFormat.Ustar)]
-    [InlineData(TarEntryFormat.Pax)]
-    [InlineData(TarEntryFormat.Gnu)]
-    public async Task Add_Non_Symlink_ReparsePoint_Throws(TarEntryFormat format)
+    [MemberData(nameof(GetFormatBooleanData))]
+    public async Task Add_Non_Symlink_ReparsePoint_Throws(TarEntryFormat format, bool async)
     {
         string? appExecLinkPath = MountHelper.GetAppExecLinkPath();
         if (appExecLinkPath is null)
@@ -76,25 +61,12 @@ public partial class TarWriter_WriteEntry_File_Tests : TarWriter_File_Base
             throw new SkipTestException("Could not find an appexeclink in this machine.");
         }
 
-        foreach (bool async in Booleans)
+        using MemoryStream archive = new MemoryStream();
         {
-            using MemoryStream archive = new MemoryStream();
-            TarWriter writer = CreateTarWriter(archive, format);
-            try
-            {
-                if (async)
-                {
-                    await Assert.ThrowsAsync<IOException>(() => writer.WriteEntryAsync(fileName: appExecLinkPath, "NonSymlinkReparsePoint"));
-                }
-                else
-                {
-                    Assert.Throws<IOException>(() => writer.WriteEntry(fileName: appExecLinkPath, "NonSymlinkReparsePoint"));
-                }
-            }
-            finally
-            {
-                await DisposeTarWriter(writer, async);
-            }
+            await using TarWriterHolder writerHolder = CreateTarWriter(archive, async, format);
+            TarWriter writer = writerHolder;
+
+            await Assert.ThrowsAsync<IOException>(() => WriteEntry(writer, appExecLinkPath, "NonSymlinkReparsePoint", async));
         }
     }
 }

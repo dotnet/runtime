@@ -83,39 +83,33 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [MemberData(nameof(GetFormatsAndLinks))]
-        public async Task ExtractToFile_Link_Throws(TarEntryFormat format, TarEntryType entryType)
+        [MemberData(nameof(GetFormatsAndLinksAndBooleanData))]
+        public async Task ExtractToFile_Link_Throws(TarEntryFormat format, TarEntryType entryType, bool async)
         {
-            foreach (bool async in Booleans)
-            {
-                using TempDirectory root = new TempDirectory();
-                string fileName = "mylink";
+            using TempDirectory root = new TempDirectory();
+            string fileName = "mylink";
 
-                string linkTarget = PlatformDetection.IsWindows ? @"C:\Windows\system32\notepad.exe" : "/usr/bin/nano";
+            string linkTarget = PlatformDetection.IsWindows ? @"C:\Windows\system32\notepad.exe" : "/usr/bin/nano";
 
-                TarEntry entry = InvokeTarEntryCreationConstructor(format, entryType, fileName);
-                entry.LinkName = linkTarget;
+            TarEntry entry = InvokeTarEntryCreationConstructor(format, entryType, fileName);
+            entry.LinkName = linkTarget;
 
-                await Assert.ThrowsAsync<InvalidOperationException>(() => ExtractToFile(entry, fileName, overwrite: false, async));
+            await Assert.ThrowsAsync<InvalidOperationException>(() => ExtractToFile(entry, fileName, overwrite: false, async));
 
-                Assert.Equal(0, Directory.GetFileSystemEntries(root.Path).Count());
-            }
+            Assert.Equal(0, Directory.GetFileSystemEntries(root.Path).Count());
         }
 
         [Theory]
-        [MemberData(nameof(GetFormatsAndFiles))]
-        public async Task Extract(TarEntryFormat format, TarEntryType entryType)
+        [MemberData(nameof(GetFormatsAndFilesAndBooleanData))]
+        public async Task Extract(TarEntryFormat format, TarEntryType entryType, bool async)
         {
-            foreach (bool async in Booleans)
-            {
-                using TempDirectory root = new TempDirectory();
+            using TempDirectory root = new TempDirectory();
 
-                (string entryName, string destination, TarEntry entry) = Prepare_Extract(root, format, entryType);
+            (string entryName, string destination, TarEntry entry) = Prepare_Extract(root, format, entryType);
 
-                await ExtractToFile(entry, destination, overwrite: true, async);
+            await ExtractToFile(entry, destination, overwrite: true, async);
 
-                Verify_Extract(destination, entry, entryType);
-            }
+            Verify_Extract(destination, entry, entryType);
         }
     }
 }

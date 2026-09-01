@@ -82,30 +82,24 @@ namespace System.Formats.Tar.Tests
         {
             using TempDirectory root = new TempDirectory();
             using MemoryStream archiveStream = new MemoryStream();
-            TarWriter writer = CreateTarWriter(archiveStream, leaveOpen: true);
-            try
             {
+                await using TarWriterHolder writerHolder = CreateTarWriter(archiveStream, async, leaveOpen: true);
+                TarWriter writer = writerHolder;
+
                 PaxGlobalExtendedAttributesTarEntry gea = new PaxGlobalExtendedAttributesTarEntry(new Dictionary<string, string>());
                 await WriteEntry(writer, gea, async);
-            }
-            finally
-            {
-                await DisposeTarWriter(writer, async);
-            }
+                        }
 
             archiveStream.Position = 0;
 
-            TarReader reader = CreateTarReader(archiveStream, leaveOpen: false);
-            try
             {
+                await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
+                TarReader reader = readerHolder;
+
                 TarEntry entry = await GetNextEntry(reader, async: async);
                 Assert.NotNull(entry);
                 await Assert.ThrowsAsync<InvalidOperationException>(() => ExtractToFile(entry, Path.Join(root.Path, "file"), overwrite: true, async));
-            }
-            finally
-            {
-                await DisposeTarReader(reader, async);
-            }
+                        }
         }
 
         [Theory]

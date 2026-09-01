@@ -15,9 +15,10 @@ namespace System.Formats.Tar.Tests
         {
             using TempDirectory root = new TempDirectory();
             using MemoryStream archiveStream = GetStrangeTarMemoryStream("prefixDotSlashAndCurrentFolderEntry");
-            TarReader reader = CreateTarReader(archiveStream, leaveOpen: false);
-            try
             {
+                await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
+                TarReader reader = readerHolder;
+
                 string rootPath = Path.TrimEndingDirectorySeparator(root.Path);
                 TarEntry entry;
                 while ((entry = await GetNextEntry(reader, async: async)) != null)
@@ -31,11 +32,7 @@ namespace System.Formats.Tar.Tests
                         Assert.True(Path.Exists(entryPath), $"Entry was not extracted: {entryPath}");
                     }
                 }
-            }
-            finally
-            {
-                await DisposeTarReader(reader, async);
-            }
+                        }
         }
     }
 }

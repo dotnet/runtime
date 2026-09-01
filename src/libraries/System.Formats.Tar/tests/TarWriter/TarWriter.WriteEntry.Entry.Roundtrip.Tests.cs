@@ -13,25 +13,31 @@ namespace System.Formats.Tar.Tests
     {
         public static IEnumerable<object[]> NameRoundtripsTheoryData()
         {
-            foreach (bool unseekableStream in new[] { false, true })
+            foreach (object[] asyncData in GetBooleanData())
             {
+                bool async = (bool)asyncData[0];
+
                 foreach (TarEntryType entryType in new[] { TarEntryType.RegularFile, TarEntryType.Directory })
                 {
                     foreach (string name in GetNamesNonAsciiTestData(NameCapabilities.Name).Concat(GetNamesPrefixedTestData(NameCapabilities.Name)))
                     {
                         TarEntryType v7EntryType = entryType is TarEntryType.RegularFile ? TarEntryType.V7RegularFile : entryType;
-                        yield return new object[] { TarEntryFormat.V7, v7EntryType, unseekableStream, name };
+                        yield return new object[] { TarEntryFormat.V7, v7EntryType, false, name, async };
+                        yield return new object[] { TarEntryFormat.V7, v7EntryType, true, name, async };
                     }
 
                     foreach (string name in GetNamesNonAsciiTestData(NameCapabilities.NameAndPrefix).Concat(GetNamesPrefixedTestData(NameCapabilities.NameAndPrefix)))
                     {
-                        yield return new object[] { TarEntryFormat.Ustar, entryType, unseekableStream, name };
+                        yield return new object[] { TarEntryFormat.Ustar, entryType, false, name, async };
+                        yield return new object[] { TarEntryFormat.Ustar, entryType, true, name, async };
                     }
 
                     foreach (string name in GetNamesNonAsciiTestData(NameCapabilities.Unlimited).Concat(GetNamesPrefixedTestData(NameCapabilities.Unlimited)))
                     {
-                        yield return new object[] { TarEntryFormat.Pax, entryType, unseekableStream, name };
-                        yield return new object[] { TarEntryFormat.Gnu, entryType, unseekableStream, name };
+                        yield return new object[] { TarEntryFormat.Pax, entryType, false, name, async };
+                        yield return new object[] { TarEntryFormat.Pax, entryType, true, name, async };
+                        yield return new object[] { TarEntryFormat.Gnu, entryType, false, name, async };
+                        yield return new object[] { TarEntryFormat.Gnu, entryType, true, name, async };
                     }
                 }
             }
@@ -39,57 +45,54 @@ namespace System.Formats.Tar.Tests
 
         [Theory]
         [MemberData(nameof(NameRoundtripsTheoryData))]
-        public async Task NameRoundtrips(TarEntryFormat entryFormat, TarEntryType entryType, bool unseekableStream, string name)
+        public async Task NameRoundtrips(TarEntryFormat entryFormat, TarEntryType entryType, bool unseekableStream, string name, bool async)
         {
-            foreach (bool async in Booleans)
+            TarEntry entry = InvokeTarEntryCreationConstructor(entryFormat, entryType, name);
+            entry.Name = name;
+
+            using MemoryStream ms = new();
+            Stream s = unseekableStream ? new WrappedStream(ms, ms.CanRead, ms.CanWrite, canSeek: false) : ms;
+
             {
-                TarEntry entry = InvokeTarEntryCreationConstructor(entryFormat, entryType, name);
-                entry.Name = name;
+                await using TarWriterHolder writerHolder = CreateTarWriter(s, async, TarEntryFormat.Pax, leaveOpen: true);
+                TarWriter writer = writerHolder;
 
-                using MemoryStream ms = new();
-                Stream s = unseekableStream ? new WrappedStream(ms, ms.CanRead, ms.CanWrite, canSeek: false) : ms;
+                await WriteEntry(writer, entry, async);
+            }
 
-                TarWriter writer = CreateTarWriter(s, TarEntryFormat.Pax, leaveOpen: true);
-                try
-                {
-                    await WriteEntry(writer, entry, async);
-                }
-                finally
-                {
-                    await DisposeTarWriter(writer, async);
-                }
+            ms.Position = 0;
+            {
+                await using TarReaderHolder readerHolder = CreateTarReader(s, async, leaveOpen: false);
+                TarReader reader = readerHolder;
 
-                ms.Position = 0;
-                TarReader reader = CreateTarReader(s);
-                try
-                {
-                    entry = await GetNextEntry(reader, async: async);
-                    Assert.Null(await GetNextEntry(reader, async: async));
-                    Assert.Equal(name, entry.Name);
-                }
-                finally
-                {
-                    await DisposeTarReader(reader, async);
-                }
+                entry = await GetNextEntry(reader, async: async);
+                Assert.Null(await GetNextEntry(reader, async: async));
+                Assert.Equal(name, entry.Name);
             }
         }
 
         public static IEnumerable<object[]> LinkNameRoundtripsTheoryData()
         {
-            foreach (bool unseekableStream in new[] { false, true })
+            foreach (object[] asyncData in GetBooleanData())
             {
+                bool async = (bool)asyncData[0];
+
                 foreach (TarEntryType entryType in new[] { TarEntryType.SymbolicLink, TarEntryType.HardLink })
                 {
                     foreach (string name in GetNamesNonAsciiTestData(NameCapabilities.Name).Concat(GetNamesPrefixedTestData(NameCapabilities.Name)))
                     {
-                        yield return new object[] { TarEntryFormat.V7, entryType, unseekableStream, name };
-                        yield return new object[] { TarEntryFormat.Ustar, entryType, unseekableStream, name };
+                        yield return new object[] { TarEntryFormat.V7, entryType, false, name, async };
+                        yield return new object[] { TarEntryFormat.V7, entryType, true, name, async };
+                        yield return new object[] { TarEntryFormat.Ustar, entryType, false, name, async };
+                        yield return new object[] { TarEntryFormat.Ustar, entryType, true, name, async };
                     }
 
                     foreach (string name in GetNamesNonAsciiTestData(NameCapabilities.Unlimited).Concat(GetNamesPrefixedTestData(NameCapabilities.Unlimited)))
                     {
-                        yield return new object[] { TarEntryFormat.Pax, entryType, unseekableStream, name };
-                        yield return new object[] { TarEntryFormat.Gnu, entryType, unseekableStream, name };
+                        yield return new object[] { TarEntryFormat.Pax, entryType, false, name, async };
+                        yield return new object[] { TarEntryFormat.Pax, entryType, true, name, async };
+                        yield return new object[] { TarEntryFormat.Gnu, entryType, false, name, async };
+                        yield return new object[] { TarEntryFormat.Gnu, entryType, true, name, async };
                     }
                 }
             }
@@ -97,223 +100,202 @@ namespace System.Formats.Tar.Tests
 
         [Theory]
         [MemberData(nameof(LinkNameRoundtripsTheoryData))]
-        public async Task LinkNameRoundtrips(TarEntryFormat entryFormat, TarEntryType entryType, bool unseekableStream, string linkName)
+        public async Task LinkNameRoundtrips(TarEntryFormat entryFormat, TarEntryType entryType, bool unseekableStream, string linkName, bool async)
         {
-            foreach (bool async in Booleans)
+            string name = "foo";
+            TarEntry entry = InvokeTarEntryCreationConstructor(entryFormat, entryType, name);
+            entry.LinkName = linkName;
+
+            using MemoryStream ms = new();
+            Stream s = unseekableStream ? new WrappedStream(ms, ms.CanRead, ms.CanWrite, canSeek: false) : ms;
+
             {
-                string name = "foo";
-                TarEntry entry = InvokeTarEntryCreationConstructor(entryFormat, entryType, name);
-                entry.LinkName = linkName;
+                await using TarWriterHolder writerHolder = CreateTarWriter(s, async, TarEntryFormat.Pax, leaveOpen: true);
+                TarWriter writer = writerHolder;
 
-                using MemoryStream ms = new();
-                Stream s = unseekableStream ? new WrappedStream(ms, ms.CanRead, ms.CanWrite, canSeek: false) : ms;
+                await WriteEntry(writer, entry, async);
+            }
 
-                TarWriter writer = CreateTarWriter(s, TarEntryFormat.Pax, leaveOpen: true);
-                try
-                {
-                    await WriteEntry(writer, entry, async);
-                }
-                finally
-                {
-                    await DisposeTarWriter(writer, async);
-                }
+            ms.Position = 0;
+            {
+                await using TarReaderHolder readerHolder = CreateTarReader(s, async, leaveOpen: false);
+                TarReader reader = readerHolder;
 
-                ms.Position = 0;
-                TarReader reader = CreateTarReader(s);
-                try
-                {
-                    entry = await GetNextEntry(reader, async: async);
-                    Assert.Null(await GetNextEntry(reader, async: async));
-                    Assert.Equal(name, entry.Name);
-                    Assert.Equal(linkName, entry.LinkName);
-                }
-                finally
-                {
-                    await DisposeTarReader(reader, async);
-                }
+                entry = await GetNextEntry(reader, async: async);
+                Assert.Null(await GetNextEntry(reader, async: async));
+                Assert.Equal(name, entry.Name);
+                Assert.Equal(linkName, entry.LinkName);
             }
         }
 
         public static IEnumerable<object[]> UserNameGroupNameRoundtripsTheoryData()
         {
-            foreach (bool unseekableStream in new[] { false, true })
+            foreach (object[] asyncData in GetBooleanData())
             {
+                bool async = (bool)asyncData[0];
+
                 foreach (TarEntryFormat entryFormat in new[] { TarEntryFormat.Ustar, TarEntryFormat.Pax, TarEntryFormat.Gnu })
                 {
-                    yield return new object[] { entryFormat, unseekableStream, Repeat(OneByteCharacter, 32) };
-                    yield return new object[] { entryFormat, unseekableStream, Repeat(TwoBytesCharacter, 32 / 2) };
-                    yield return new object[] { entryFormat, unseekableStream, Repeat(FourBytesCharacter, 32 / 4) };
+                    yield return new object[] { entryFormat, false, Repeat(OneByteCharacter, 32), async };
+                    yield return new object[] { entryFormat, true, Repeat(OneByteCharacter, 32), async };
+                    yield return new object[] { entryFormat, false, Repeat(TwoBytesCharacter, 32 / 2), async };
+                    yield return new object[] { entryFormat, true, Repeat(TwoBytesCharacter, 32 / 2), async };
+                    yield return new object[] { entryFormat, false, Repeat(FourBytesCharacter, 32 / 4), async };
+                    yield return new object[] { entryFormat, true, Repeat(FourBytesCharacter, 32 / 4), async };
                 }
             }
         }
 
         [Theory]
         [MemberData(nameof(UserNameGroupNameRoundtripsTheoryData))]
-        public async Task UserNameGroupNameRoundtrips(TarEntryFormat entryFormat, bool unseekableStream, string userGroupName)
+        public async Task UserNameGroupNameRoundtrips(TarEntryFormat entryFormat, bool unseekableStream, string userGroupName, bool async)
         {
-            foreach (bool async in Booleans)
+            string name = "foo";
+            TarEntry entry = InvokeTarEntryCreationConstructor(entryFormat, TarEntryType.RegularFile, name);
+            PosixTarEntry posixEntry = Assert.IsAssignableFrom<PosixTarEntry>(entry);
+            posixEntry.UserName = userGroupName;
+            posixEntry.GroupName = userGroupName;
+
+            using MemoryStream ms = new();
+            Stream s = unseekableStream ? new WrappedStream(ms, ms.CanRead, ms.CanWrite, canSeek: false) : ms;
+
             {
-                string name = "foo";
-                TarEntry entry = InvokeTarEntryCreationConstructor(entryFormat, TarEntryType.RegularFile, name);
-                PosixTarEntry posixEntry = Assert.IsAssignableFrom<PosixTarEntry>(entry);
-                posixEntry.UserName = userGroupName;
-                posixEntry.GroupName = userGroupName;
+                await using TarWriterHolder writerHolder = CreateTarWriter(s, async, TarEntryFormat.Pax, leaveOpen: true);
+                TarWriter writer = writerHolder;
 
-                using MemoryStream ms = new();
-                Stream s = unseekableStream ? new WrappedStream(ms, ms.CanRead, ms.CanWrite, canSeek: false) : ms;
+                await WriteEntry(writer, posixEntry, async);
+            }
 
-                TarWriter writer = CreateTarWriter(s, TarEntryFormat.Pax, leaveOpen: true);
-                try
-                {
-                    await WriteEntry(writer, posixEntry, async);
-                }
-                finally
-                {
-                    await DisposeTarWriter(writer, async);
-                }
+            ms.Position = 0;
+            {
+                await using TarReaderHolder readerHolder = CreateTarReader(s, async, leaveOpen: false);
+                TarReader reader = readerHolder;
 
-                ms.Position = 0;
-                TarReader reader = CreateTarReader(s);
-                try
-                {
-                    entry = await GetNextEntry(reader, async: async);
-                    posixEntry = Assert.IsAssignableFrom<PosixTarEntry>(entry);
-                    Assert.Null(await GetNextEntry(reader, async: async));
+                entry = await GetNextEntry(reader, async: async);
+                posixEntry = Assert.IsAssignableFrom<PosixTarEntry>(entry);
+                Assert.Null(await GetNextEntry(reader, async: async));
 
-                    Assert.Equal(name, posixEntry.Name);
-                    Assert.Equal(userGroupName, posixEntry.UserName);
-                    Assert.Equal(userGroupName, posixEntry.GroupName);
-                }
-                finally
-                {
-                    await DisposeTarReader(reader, async);
-                }
+                Assert.Equal(name, posixEntry.Name);
+                Assert.Equal(userGroupName, posixEntry.UserName);
+                Assert.Equal(userGroupName, posixEntry.GroupName);
+            }
+        }
+
+        public static IEnumerable<object[]> PaxExtendedAttributesEntryTypeAndBooleanData()
+        {
+            foreach (object[] data in GetDataAndBooleanData(new[]
+            {
+                new object[] { TarEntryType.RegularFile },
+                new object[] { TarEntryType.Directory },
+                new object[] { TarEntryType.HardLink },
+                new object[] { TarEntryType.SymbolicLink }
+            }))
+            {
+                yield return data;
             }
         }
 
         [Theory]
-        [InlineData(TarEntryType.RegularFile)]
-        [InlineData(TarEntryType.Directory)]
-        [InlineData(TarEntryType.HardLink)]
-        [InlineData(TarEntryType.SymbolicLink)]
-        public async Task PaxExtendedAttributes_DoNotOverwritePublicProperties_WhenTheyFitOnLegacyFields(TarEntryType entryType)
+        [MemberData(nameof(PaxExtendedAttributesEntryTypeAndBooleanData))]
+        public async Task PaxExtendedAttributes_DoNotOverwritePublicProperties_WhenTheyFitOnLegacyFields(TarEntryType entryType, bool async)
         {
-            foreach (bool async in Booleans)
+            Dictionary<string, string> extendedAttributes = new();
+            extendedAttributes[PaxEaGName] = "ea_gname";
+            extendedAttributes[PaxEaUName] = "ea_uname";
+            extendedAttributes[PaxEaMTime] = GetTimestampStringFromDateTimeOffset(TestModificationTime);
+            extendedAttributes[PaxEaSize] = 42.ToString();
+
+            if (entryType is TarEntryType.HardLink or TarEntryType.SymbolicLink)
             {
-                Dictionary<string, string> extendedAttributes = new();
-                extendedAttributes[PaxEaGName] = "ea_gname";
-                extendedAttributes[PaxEaUName] = "ea_uname";
-                extendedAttributes[PaxEaMTime] = GetTimestampStringFromDateTimeOffset(TestModificationTime);
-                extendedAttributes[PaxEaSize] = 42.ToString();
+                extendedAttributes[PaxEaLinkName] = "ea_linkname";
+            }
 
-                if (entryType is TarEntryType.HardLink or TarEntryType.SymbolicLink)
-                {
-                    extendedAttributes[PaxEaLinkName] = "ea_linkname";
-                }
+            PaxTarEntry writeEntry = new PaxTarEntry(entryType, "name", extendedAttributes);
+            writeEntry.Name = new string('a', 100);
+            // GName and UName must be longer than 32 to be written as extended attribute.
+            writeEntry.GroupName = new string('b', 32);
+            writeEntry.UserName = new string('c', 32);
+            // There's no limit on MTime, we just ensure it roundtrips.
+            writeEntry.ModificationTime = TestModificationTime.AddDays(1);
 
-                PaxTarEntry writeEntry = new PaxTarEntry(entryType, "name", extendedAttributes);
-                writeEntry.Name = new string('a', 100);
-                writeEntry.GroupName = new string('b', 32);
-                writeEntry.UserName = new string('c', 32);
-                writeEntry.ModificationTime = TestModificationTime.AddDays(1);
+            if (entryType is TarEntryType.HardLink or TarEntryType.SymbolicLink)
+            {
+                writeEntry.LinkName = new string('d', 100);
+            }
 
-                if (entryType is TarEntryType.HardLink or TarEntryType.SymbolicLink)
-                {
-                    writeEntry.LinkName = new string('d', 100);
-                }
+            using MemoryStream ms = new();
+            {
+                await using TarWriterHolder writerHolder = CreateTarWriter(ms, async, TarEntryFormat.Pax, leaveOpen: true);
+                TarWriter writer = writerHolder;
 
-                using MemoryStream ms = new();
-                TarWriter writer = CreateTarWriter(ms, TarEntryFormat.Pax, leaveOpen: true);
-                try
-                {
-                    await WriteEntry(writer, writeEntry, async);
-                }
-                finally
-                {
-                    await DisposeTarWriter(writer, async);
-                }
-                ms.Position = 0;
+                await WriteEntry(writer, writeEntry, async);
+            }
+            ms.Position = 0;
 
-                TarReader reader = CreateTarReader(ms);
-                try
-                {
-                    PaxTarEntry readEntry = Assert.IsType<PaxTarEntry>(await GetNextEntry(reader, async: async));
-                    Assert.Null(await GetNextEntry(reader, async: async));
+            {
+                await using TarReaderHolder readerHolder = CreateTarReader(ms, async, leaveOpen: false);
+                TarReader reader = readerHolder;
 
-                    Assert.Equal(writeEntry.Name, readEntry.Name);
-                    Assert.Equal(writeEntry.GroupName, readEntry.GroupName);
-                    Assert.Equal(writeEntry.UserName, readEntry.UserName);
-                    Assert.Equal(writeEntry.ModificationTime, readEntry.ModificationTime);
-                    Assert.Equal(writeEntry.LinkName, readEntry.LinkName);
+                PaxTarEntry readEntry = Assert.IsType<PaxTarEntry>(await GetNextEntry(reader, async: async));
+                Assert.Null(await GetNextEntry(reader, async: async));
 
-                    Assert.Equal(0, writeEntry.Length);
-                    Assert.Equal(0, readEntry.Length);
-                }
-                finally
-                {
-                    await DisposeTarReader(reader, async);
-                }
+                Assert.Equal(writeEntry.Name, readEntry.Name);
+                Assert.Equal(writeEntry.GroupName, readEntry.GroupName);
+                Assert.Equal(writeEntry.UserName, readEntry.UserName);
+                Assert.Equal(writeEntry.ModificationTime, readEntry.ModificationTime);
+                Assert.Equal(writeEntry.LinkName, readEntry.LinkName);
+
+                Assert.Equal(0, writeEntry.Length);
+                Assert.Equal(0, readEntry.Length);
             }
         }
 
         [Theory]
-        [InlineData(TarEntryType.RegularFile)]
-        [InlineData(TarEntryType.Directory)]
-        [InlineData(TarEntryType.HardLink)]
-        [InlineData(TarEntryType.SymbolicLink)]
-        public async Task PaxExtendedAttributes_DoNotOverwritePublicProperties_WhenLargerThanLegacyFields(TarEntryType entryType)
+        [MemberData(nameof(PaxExtendedAttributesEntryTypeAndBooleanData))]
+        public async Task PaxExtendedAttributes_DoNotOverwritePublicProperties_WhenLargerThanLegacyFields(TarEntryType entryType, bool async)
         {
-            foreach (bool async in Booleans)
+            Dictionary<string, string> extendedAttributes = new();
+            extendedAttributes[PaxEaGName] = "ea_gname";
+            extendedAttributes[PaxEaUName] = "ea_uname";
+            extendedAttributes[PaxEaMTime] = GetTimestampStringFromDateTimeOffset(TestModificationTime);
+
+            if (entryType is TarEntryType.HardLink or TarEntryType.SymbolicLink)
             {
-                Dictionary<string, string> extendedAttributes = new();
-                extendedAttributes[PaxEaGName] = "ea_gname";
-                extendedAttributes[PaxEaUName] = "ea_uname";
-                extendedAttributes[PaxEaMTime] = GetTimestampStringFromDateTimeOffset(TestModificationTime);
+                extendedAttributes[PaxEaLinkName] = "ea_linkname";
+            }
 
-                if (entryType is TarEntryType.HardLink or TarEntryType.SymbolicLink)
-                {
-                    extendedAttributes[PaxEaLinkName] = "ea_linkname";
-                }
+            PaxTarEntry writeEntry = new PaxTarEntry(entryType, "name", extendedAttributes);
+            writeEntry.Name = new string('a', MaxPathComponent);
+            writeEntry.GroupName = new string('b', 32 + 1);
+            writeEntry.UserName = new string('c', 32 + 1);
+            writeEntry.ModificationTime = TestModificationTime.AddDays(1);
 
-                PaxTarEntry writeEntry = new PaxTarEntry(entryType, "name", extendedAttributes);
-                writeEntry.Name = new string('a', MaxPathComponent);
-                writeEntry.GroupName = new string('b', 32 + 1);
-                writeEntry.UserName = new string('c', 32 + 1);
-                writeEntry.ModificationTime = TestModificationTime.AddDays(1);
+            if (entryType is TarEntryType.HardLink or TarEntryType.SymbolicLink)
+            {
+                writeEntry.LinkName = new string('d', 100 + 1);
+            }
 
-                if (entryType is TarEntryType.HardLink or TarEntryType.SymbolicLink)
-                {
-                    writeEntry.LinkName = new string('d', 100 + 1);
-                }
+            using MemoryStream ms = new();
+            {
+                await using TarWriterHolder writerHolder = CreateTarWriter(ms, async, TarEntryFormat.Pax, leaveOpen: true);
+                TarWriter writer = writerHolder;
 
-                using MemoryStream ms = new();
-                TarWriter writer = CreateTarWriter(ms, TarEntryFormat.Pax, leaveOpen: true);
-                try
-                {
-                    await WriteEntry(writer, writeEntry, async);
-                }
-                finally
-                {
-                    await DisposeTarWriter(writer, async);
-                }
-                ms.Position = 0;
+                await WriteEntry(writer, writeEntry, async);
+            }
+            ms.Position = 0;
 
-                TarReader reader = CreateTarReader(ms);
-                try
-                {
-                    PaxTarEntry readEntry = Assert.IsType<PaxTarEntry>(await GetNextEntry(reader, async: async));
-                    Assert.Null(await GetNextEntry(reader, async: async));
+            {
+                await using TarReaderHolder readerHolder = CreateTarReader(ms, async, leaveOpen: false);
+                TarReader reader = readerHolder;
 
-                    Assert.Equal(writeEntry.Name, readEntry.Name);
-                    Assert.Equal(writeEntry.GroupName, readEntry.GroupName);
-                    Assert.Equal(writeEntry.UserName, readEntry.UserName);
-                    Assert.Equal(writeEntry.ModificationTime, readEntry.ModificationTime);
-                    Assert.Equal(writeEntry.LinkName, readEntry.LinkName);
-                }
-                finally
-                {
-                    await DisposeTarReader(reader, async);
-                }
+                PaxTarEntry readEntry = Assert.IsType<PaxTarEntry>(await GetNextEntry(reader, async: async));
+                Assert.Null(await GetNextEntry(reader, async: async));
+
+                Assert.Equal(writeEntry.Name, readEntry.Name);
+                Assert.Equal(writeEntry.GroupName, readEntry.GroupName);
+                Assert.Equal(writeEntry.UserName, readEntry.UserName);
+                Assert.Equal(writeEntry.ModificationTime, readEntry.ModificationTime);
+                Assert.Equal(writeEntry.LinkName, readEntry.LinkName);
             }
         }
     }
