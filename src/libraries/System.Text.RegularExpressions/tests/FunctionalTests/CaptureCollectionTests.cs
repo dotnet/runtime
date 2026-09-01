@@ -57,6 +57,15 @@ namespace System.Text.RegularExpressions.Tests
 
             Assert.Equal(3, captures.Count);
             Assert.Equal(["a", "b", "c"], [captures[0].Value, captures[1].Value, captures[2].Value]);
+
+            // Symmetric "|X" form, with the capture as the second alternative. A trailing $ anchor forces
+            // every iteration to take the capturing branch, since taking the empty branch on any iteration
+            // would leave the match short of the end of the input.
+            Regex nonEmptyCaptureSecondAlternative = await RegexHelpers.GetRegexAsync(engine, @"(?n)(|(?'G'\w)){3}$");
+            CaptureCollection secondAlternativeCaptures = nonEmptyCaptureSecondAlternative.Match("abc").Groups["G"].Captures;
+
+            Assert.Equal(3, secondAlternativeCaptures.Count);
+            Assert.Equal(["a", "b", "c"], [secondAlternativeCaptures[0].Value, secondAlternativeCaptures[1].Value, secondAlternativeCaptures[2].Value]);
         }
 
         [Theory]
