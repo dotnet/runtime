@@ -92,42 +92,14 @@ namespace System.Reflection
                 }
 
                 MetadataReader reader = _reader!;
-                HandleType constructorHandleType = _customAttribute.Constructor.HandleType;
+                if (_customAttribute.Constructor.HandleType != HandleType.QualifiedMethod)
+                    throw new BadImageFormatException();
 
-                if (constructorHandleType == HandleType.QualifiedMethod)
-                {
-                    QualifiedMethod qualifiedMethod = _customAttribute.Constructor.ToQualifiedMethodHandle(reader).GetQualifiedMethod(reader);
-                    TypeDefinitionHandle declaringType = qualifiedMethod.EnclosingType;
-                    MethodHandle methodHandle = qualifiedMethod.Method;
-                    NativeFormatRuntimeNamedTypeInfo attributeType = NativeFormatRuntimeNamedTypeInfo.GetRuntimeNamedTypeInfo(reader, declaringType, default(RuntimeTypeHandle));
-                    return RuntimePlainConstructorInfo<NativeFormatMethodCommon>.GetRuntimePlainConstructorInfo(new NativeFormatMethodCommon(methodHandle, attributeType, attributeType));
-                }
-
-                if (constructorHandleType == HandleType.MemberReference)
-                {
-                    MemberReference memberReference = _customAttribute.Constructor.ToMemberReferenceHandle(reader).GetMemberReference(reader);
-
-                    // There is no chance a custom attribute type will be an open type specification so we can safely pass in the empty context here.
-                    TypeContext typeContext = new TypeContext(Array.Empty<RuntimeTypeInfo>(), Array.Empty<RuntimeTypeInfo>());
-                    RuntimeTypeInfo attributeRuntimeTypeInfo = memberReference.Parent.Resolve(reader, typeContext);
-                    Type attributeType = attributeRuntimeTypeInfo.ToType();
-                    MethodSignature sig = memberReference.Signature.ParseMethodSignature(reader);
-                    HandleCollection parameters = sig.Parameters;
-                    int numParameters = parameters.Count;
-                    if (numParameters == 0)
-                        return ResolveAttributeConstructor(attributeType, Array.Empty<Type>());
-
-                    Type[] expectedParameterTypes = new Type[numParameters];
-                    int index = 0;
-                    foreach (Handle parameterHandle in parameters)
-                    {
-                        expectedParameterTypes[index++] = parameterHandle.Resolve(reader, attributeRuntimeTypeInfo.TypeContext).ToType();
-                    }
-
-                    return ResolveAttributeConstructor(attributeType, expectedParameterTypes);
-                }
-
-                throw new BadImageFormatException();
+                QualifiedMethod qualifiedMethod = _customAttribute.Constructor.ToQualifiedMethodHandle(reader).GetQualifiedMethod(reader);
+                TypeDefinitionHandle declaringType = qualifiedMethod.EnclosingType;
+                MethodHandle methodHandle = qualifiedMethod.Method;
+                NativeFormatRuntimeNamedTypeInfo attributeType = NativeFormatRuntimeNamedTypeInfo.GetRuntimeNamedTypeInfo(reader, declaringType, default(RuntimeTypeHandle));
+                return RuntimePlainConstructorInfo<NativeFormatMethodCommon>.GetRuntimePlainConstructorInfo(new NativeFormatMethodCommon(methodHandle, attributeType, attributeType));
             }
         }
 
@@ -139,12 +111,11 @@ namespace System.Reflection
                     return _constructorArguments;
 
                 MetadataReader reader = _reader!;
-                HandleCollection parameterTypeSignatureHandles = _customAttribute.Constructor.HandleType switch
-                {
-                    HandleType.QualifiedMethod => _customAttribute.Constructor.ToQualifiedMethodHandle(reader).GetQualifiedMethod(reader).Method.GetMethod(reader).Signature.GetMethodSignature(reader).Parameters,
-                    HandleType.MemberReference => _customAttribute.Constructor.ToMemberReferenceHandle(reader).GetMemberReference(reader).Signature.ToMethodSignatureHandle(reader).GetMethodSignature(reader).Parameters,
-                    _ => throw new BadImageFormatException(),
-                };
+                if (_customAttribute.Constructor.HandleType != HandleType.QualifiedMethod)
+                    throw new BadImageFormatException();
+
+                HandleCollection parameterTypeSignatureHandles =
+                    _customAttribute.Constructor.ToQualifiedMethodHandle(reader).GetQualifiedMethod(reader).Method.GetMethod(reader).Signature.GetMethodSignature(reader).Parameters;
                 Handle[] ctorTypeHandles = parameterTypeSignatureHandles.ToArray();
 
                 int index = 0;
