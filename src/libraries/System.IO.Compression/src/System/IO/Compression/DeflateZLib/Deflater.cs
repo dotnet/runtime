@@ -156,9 +156,18 @@ namespace System.IO.Compression
         /// <summary>
         /// Discards any unconsumed input previously set via SetInput, releasing the pinned reference (if any).
         /// Must be called if an in-progress operation is abandoned (e.g. due to an exception or cancellation) so
-        /// the deflater doesn't retain a dangling reference to a buffer the caller may since have reused or freed.
+        /// the deflater doesn't retain a dangling reference to a buffer the caller may have since reused or freed.
         /// </summary>
-        internal void UnsetInput() => DeallocateInputBufferHandle(resetStreamHandle: true);
+        internal void UnsetInput()
+        {
+            // On the common success path all input has already been consumed (NeedsInput() is true),
+            // so avoid taking the lock and touching the stream. Only when an operation is abandoned
+            // mid-input do we need to reset state and release any pinned reference.
+            if (!NeedsInput())
+            {
+                DeallocateInputBufferHandle(resetStreamHandle: true);
+            }
+        }
 
         private void DeallocateInputBufferHandle(bool resetStreamHandle)
         {
