@@ -8,6 +8,7 @@ using X509IssuerSerial = System.Security.Cryptography.Xml.X509IssuerSerial;
 
 namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
 {
+    [PlatformSpecific(~TestPlatforms.Windows)]
     public static class KemGeneralTests
     {
         [Fact]
