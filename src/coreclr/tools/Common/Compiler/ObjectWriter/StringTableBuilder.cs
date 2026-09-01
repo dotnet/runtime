@@ -6,6 +6,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text;
 using Internal.Text;
 
@@ -14,8 +15,8 @@ namespace ILCompiler.ObjectWriter
     internal class StringTableBuilder
     {
         private readonly MemoryStream _stream = new();
-        private readonly HashSet<Utf8String> _reservedStrings = new();
         private readonly Dictionary<Utf8String, uint> _stringToOffset = new();
+        private List<Utf8String> _reservedStrings;
 
         public void Write(Stream stream)
         {
@@ -34,39 +35,38 @@ namespace ILCompiler.ObjectWriter
 
         public void ReserveString(Utf8String text)
         {
-            if (!text.IsNull && !_stringToOffset.ContainsKey(text))
+            if (!text.IsNull && _stringToOffset.TryAdd(text, uint.MaxValue))
             {
-                _reservedStrings.Add(text);
+                (_reservedStrings ??= new List<Utf8String>()).Add(text);
             }
         }
 
         private void FlushReservedStrings()
         {
-            if (_reservedStrings.Count == 0)
+            if (_reservedStrings is not List<Utf8String> reservedStrings)
             {
                 return;
             }
 
-            Utf8String[] reservedStrings = new Utf8String[_reservedStrings.Count];
-            _reservedStrings.CopyTo(reservedStrings);
+            Span<Utf8String> reservedStringsSpan = CollectionsMarshal.AsSpan(reservedStrings);
 
             // Establish a deterministic order before the in-place suffix sort.
-            Array.Sort(reservedStrings);
+            reservedStringsSpan.Sort();
 
             // Sort strings so matching suffixes are adjacent.
-            MultiKeySort(reservedStrings, 0);
+            MultiKeySort(reservedStringsSpan, 0);
 
             // Add the strings to string table
             Utf8String lastText = default;
-            for (int i = 0; i < reservedStrings.Length; i++)
+            for (int i = 0; i < reservedStringsSpan.Length; i++)
             {
-                var text = reservedStrings[i];
+                var text = reservedStringsSpan[i];
                 uint index;
                 if (!lastText.IsNull && lastText.AsSpan().EndsWith(text.AsSpan()))
                 {
                     // Suffix matches the last symbol
                     index = (uint)(_stream.Length - text.Length - 1);
-                    _stringToOffset.Add(text, index);
+                    _stringToOffset[text] = index;
                 }
                 else
                 {
@@ -75,7 +75,7 @@ namespace ILCompiler.ObjectWriter
                 }
             }
 
-            _reservedStrings.Clear();
+            _reservedStrings = null;
 
             static byte TailCharacter(Utf8String str, int pos)
             {
@@ -175,7 +175,7 @@ namespace ILCompiler.ObjectWriter
 
         public uint GetStringOffset(Utf8String text)
         {
-            if (_reservedStrings.Count > 0)
+            if (_reservedStrings is not null)
             {
                 FlushReservedStrings();
             }
