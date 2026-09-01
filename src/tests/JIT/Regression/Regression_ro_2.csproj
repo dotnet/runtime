@@ -132,6 +132,7 @@
     <Compile Include="JitBlue\Runtime_132370\Runtime_132370.cs" />
     <Compile Include="JitBlue\Runtime_132243\Runtime_132243.cs" />
     <Compile Include="JitBlue\Runtime_132784\Runtime_132784.cs" />
+    <Compile Include="JitBlue\Runtime_132841\Runtime_132841.cs" />
     <Compile Include="JitBlue\Runtime_132785\Runtime_132785.cs" />
     <Compile Include="JitBlue\Runtime_132902\Runtime_132902.cs" />
   </ItemGroup>
