@@ -112,8 +112,7 @@ namespace System.Diagnostics.Tracing
             EventPipeSessionInfo sessionInfo;
             unsafe
             {
-                if (!EventPipeInternal.GetSessionInfo(sessionID, &sessionInfo
-                ))
+                if (!EventPipeInternal.GetSessionInfo(sessionID, &sessionInfo))
                 {
                     Debug.Fail("GetSessionInfo returned false.");
                 }
@@ -155,8 +154,7 @@ namespace System.Diagnostics.Tracing
             EventPipeEventInstanceData instanceData;
 
                 // Get the next event.
-                while (!token.IsCancellationRequested && EventPipeInternal.GetNextEvent(sessionID, &instanceData
-                ))
+                while (!token.IsCancellationRequested && EventPipeInternal.GetNextEvent(sessionID, &instanceData))
                 {
                     eventsReceived = true;
 

@@ -6575,7 +6575,7 @@ void CLRAddVectoredHandlers(void)
 }
 
 //
-// This does the work of the Unwind and Continue Hanlder inside the catch clause of that handler. The stack has not
+// This does the work of the Unwind and Continue Handler inside the catch clause of that handler. The stack has not
 // been unwound when this is called. Keep that in mind when deciding where to put new code :)
 //
 void UnwindAndContinueRethrowHelperInsideCatch(Frame* pEntryFrame, Exception* pException)
@@ -6613,7 +6613,7 @@ void UnwindAndContinueRethrowHelperInsideCatch(Frame* pEntryFrame, Exception* pE
 }
 
 //
-// This does the work of the Unwind and Continue Hanlder inside the catch clause of that handler. The stack has not
+// This does the work of the Unwind and Continue Handler inside the catch clause of that handler. The stack has not
 // been unwound when this is called. Keep that in mind when deciding where to put new code :)
 //
 void UnwindAndContinueRethrowHelperInsideQcallCatch(
@@ -6681,7 +6681,7 @@ void CaptureQCallExceptionFromPALException(PAL_SEHException& exception, QCallExc
 #endif
 
 //
-// This does the work of the Unwind and Continue Hanlder after the catch clause of that handler. The stack has been
+// This does the work of the Unwind and Continue Handler after the catch clause of that handler. The stack has been
 // unwound by the time this is called. Keep that in mind when deciding where to put new code :)
 //
 VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFrame, Exception* pException, bool nativeRethrow)

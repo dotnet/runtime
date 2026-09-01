@@ -376,11 +376,7 @@ namespace System.Threading
 
 #if !NATIVEAOT
         /// <summary>Returns the operating system identifier for the current thread.</summary>
-#if CORECLR
         internal static ulong CurrentOSThreadId => GetCurrentOSThreadId();
-#else
-        internal static ulong CurrentOSThreadId => GetCurrentOSThreadId();
-#endif
 #endif
 
 #if !MONO

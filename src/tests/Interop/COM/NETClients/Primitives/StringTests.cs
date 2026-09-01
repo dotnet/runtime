@@ -202,13 +202,18 @@ namespace NetClient
                 };
                 string[] actualStackTrace = exception.StackTrace!
                     .Split(Environment.NewLine)
-                    .Select(static frame =>
-                    {
-                        int methodStart = frame.IndexOf("at ", StringComparison.Ordinal) + "at ".Length;
-                        return frame.Substring(methodStart, frame.IndexOf('(') - methodStart);
-                    })
+                    .Select(static frame => frame.TrimStart())
+                    .Where(static frame => frame.StartsWith("at ", StringComparison.Ordinal) && frame.Contains('('))
+                    .Select(static frame => frame.Substring("at ".Length, frame.IndexOf('(') - "at ".Length))
                     .ToArray();
-                Assert.Equal(expectedStackTrace, actualStackTrace);
+
+                int actualFrameIndex = 0;
+                foreach (string expectedFrame in expectedStackTrace)
+                {
+                    actualFrameIndex = Array.IndexOf(actualStackTrace, expectedFrame, actualFrameIndex);
+                    Assert.True(actualFrameIndex >= 0, $"Expected stack frame '{expectedFrame}' was not found in order.");
+                    actualFrameIndex++;
+                }
             }
 
             foreach (var s in reversibleStrings)

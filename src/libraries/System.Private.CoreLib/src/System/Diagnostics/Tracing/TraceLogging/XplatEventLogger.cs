@@ -19,8 +19,7 @@ namespace System.Diagnostics.Tracing
         private static readonly string s_eventSourceNameFilter = GetClrConfig("EventSourceFilter");
         private static readonly string s_eventSourceEventFilter = GetClrConfig("EventNameFilter");
 
-        private static unsafe string GetClrConfig(string configName) => new string(EventSource_GetClrConfig(configName
-        ));
+        private static unsafe string GetClrConfig(string configName) => new string(EventSource_GetClrConfig(configName));
 
 #if CORECLR
         [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]

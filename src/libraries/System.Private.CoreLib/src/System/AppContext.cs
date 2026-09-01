@@ -53,8 +53,7 @@ namespace System
             if (IsKnownHostProperty(name))
             {
                 string? value = null;
-                if (TryGetHostPropertyValue(name, new StringHandleOnStack(ref value)
-                ))
+                if (TryGetHostPropertyValue(name, new StringHandleOnStack(ref value)))
                 {
                     lock (s_dataStore)
                     {

@@ -479,11 +479,7 @@ namespace System.Runtime.InteropServices
         {
             static ManagedObjectWrapperHolder()
             {
-#if CORECLR
                 RegisterIsRootedCallback();
-#else
-                RegisterIsRootedCallback();
-#endif
             }
 
             private readonly ManagedObjectWrapperReleaser _releaser;
