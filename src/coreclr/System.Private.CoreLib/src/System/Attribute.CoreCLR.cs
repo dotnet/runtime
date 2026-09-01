@@ -418,7 +418,7 @@ namespace System
             }
         }
 
-        private static AttributeUsageAttribute InternalGetAttributeUsage(Type type)
+        internal static AttributeUsageAttribute InternalGetAttributeUsage(Type type)
         {
             // Check if the custom attributes is Inheritable
             object[] obj = type.GetCustomAttributes(typeof(AttributeUsageAttribute), false);
@@ -433,6 +433,8 @@ namespace System
                 SR.Format(SR.Format_AttributeUsage, type));
         }
 
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
+            Justification = "Array.CreateInstance is only used with reference types (attribute types) here.")]
         private static Attribute[] CreateAttributeArrayHelper(Type elementType, int elementCount) =>
             elementType.ContainsGenericParameters ? new Attribute[elementCount] : (Attribute[])Array.CreateInstance(elementType, elementCount);
         #endregion
