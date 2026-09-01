@@ -64,7 +64,6 @@
   </ItemGroup>
   <ItemGroup>
     <!-- TODO: (async) once we know which helpers can actually be shared, move those to libraries partition -->
-    <Compile Include="$(CoreClrProjectRoot)System.Private.CoreLib\src\System\Attribute.CoreCLR.cs" />
     <Compile Include="$(CoreClrProjectRoot)System.Private.CoreLib\src\System\Runtime\CompilerServices\AsyncHelpers.CoreCLR.cs" />
     <Compile Include="$(CoreClrProjectRoot)System.Private.CoreLib\src\System\Runtime\CompilerServices\AsyncHelpers.ValueTaskSourceContinuation.cs" />
     <Compile Include="$(CoreClrProjectRoot)System.Private.CoreLib\src\System\Runtime\CompilerServices\AsyncHelpers.RuntimeAsyncYielder.cs" />
