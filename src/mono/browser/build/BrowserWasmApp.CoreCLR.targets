@@ -691,8 +691,7 @@
     </ItemGroup>
 
     <!-- crossgen2 has the type system that knows the wasm ABI, so it generates the helpers itself.
-         Generation does not load the JIT, so a host-targeting crossgen2 answers wasm questions
-         correctly. In the repo it comes from the build output; outside it, from the crossgen2 pack
+         In the repo it comes from the build output; outside it, from the crossgen2 pack
          the wasm-tools workload acquires, which sets $(Crossgen2ToolPath) from its Sdk.props. -->
     <PropertyGroup>
       <_PortableCallHelpersGeneratorExeSuffix Condition="'$(OS)' == 'Windows_NT'">.exe</_PortableCallHelpersGeneratorExeSuffix>
