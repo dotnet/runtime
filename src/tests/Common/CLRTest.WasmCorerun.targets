@@ -326,6 +326,8 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
       <_WasmCorerunGeneratorPath Condition="'$(_WasmCorerunGeneratorPath)' == '' and '$(Crossgen2InBuildDir)' != ''">$([MSBuild]::NormalizePath('$(Crossgen2InBuildDir)', 'crossgen2$(_WasmCorerunGeneratorExeSuffix)'))</_WasmCorerunGeneratorPath>
     </PropertyGroup>
 
+    <Error Condition="'$(_WasmCorerunGeneratorPath)' == ''"
+           Text="crossgen2 was not found, so the test's portable call helpers cannot be generated. It is built by the 'clr' subset, or set %24(_WasmCorerunGeneratorPath) to a crossgen2 executable." />
     <Error Condition="!Exists('$(_WasmCorerunGeneratorPath)')"
            Text="crossgen2 was not found at '$(_WasmCorerunGeneratorPath)', so the test's portable call helpers cannot be generated. It is built by the 'clr' subset." />
     <Error Condition="'$([System.IO.Path]::GetExtension(`$(_WasmCorerunGeneratorPath)`))' == '.dll'"
