@@ -39,11 +39,11 @@ namespace System.Reflection.Runtime.TypeInfos
 
                 TypeAttributes attributes = Attributes;
                 if (0 != (attributes & TypeAttributes.Import))
-                    yield return new RuntimeCustomAttributeData(typeof(ComImportAttribute), null);
+                    yield return new RuntimeCustomAttributeData(new ComImportAttribute());
 
 #pragma warning disable SYSLIB0050 // Legacy serialization infrastructure is obsolete
                 if (0 != (attributes & TypeAttributes.Serializable))
-                    yield return new RuntimeCustomAttributeData(typeof(SerializableAttribute), null);
+                    yield return new RuntimeCustomAttributeData(new SerializableAttribute());
 #pragma warning restore SYSLIB0050
             }
         }

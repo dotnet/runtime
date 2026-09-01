@@ -28,11 +28,11 @@ namespace System.Reflection.Runtime.ParameterInfos
 
                 ParameterAttributes attributes = Attributes;
                 if (0 != (attributes & ParameterAttributes.In))
-                    yield return new RuntimeCustomAttributeData(typeof(InAttribute), null);
+                    yield return new RuntimeCustomAttributeData(new InAttribute());
                 if (0 != (attributes & ParameterAttributes.Out))
-                    yield return new RuntimeCustomAttributeData(typeof(OutAttribute), null);
+                    yield return new RuntimeCustomAttributeData(new OutAttribute());
                 if (0 != (attributes & ParameterAttributes.Optional))
-                    yield return new RuntimeCustomAttributeData(typeof(OptionalAttribute), null);
+                    yield return new RuntimeCustomAttributeData(new OptionalAttribute());
             }
         }
 
