@@ -641,6 +641,7 @@ namespace System.Runtime.InteropServices
             /// outlive every entry referring to it.
             /// </summary>
             internal WeakGCHandle<object> ProxyHandle => _proxyHandle;
+
             internal bool IsUniqueInstance => _uniqueInstance;
             internal bool IsAggregatedWithManagedObjectWrapper => _aggregatedManagedObjectWrapper;
 
@@ -1261,41 +1262,41 @@ namespace System.Runtime.InteropServices
                 flags,
                 ref referenceTrackerMaybe);
 
-            NativeObjectWrapper actualWrapper;
-            object? actualProxy;
+            NativeObjectWrapper actualWrapper = nativeObjectWrapper;
+            object actualProxy = comProxy;
+            bool reserved = false;
 
-            if (nativeObjectWrapper.IsUniqueInstance)
+            if (!nativeObjectWrapper.IsUniqueInstance)
             {
-                // A unique instance is never published in the RCW cache, so its registration has nothing to be
-                // atomic with, and there is no cache entry for another thread to win.
-                actualWrapper = s_nativeObjectWrapperTable.GetOrAdd(comProxy, nativeObjectWrapper);
-                actualProxy = actualWrapper == nativeObjectWrapper ? comProxy : null;
+                // Reserve the entry for this COM instance, or pick up the one another thread got in first
+                // with. The entry stays marked as pending until the registration below has run, because
+                // that is what lets an entry be resolved back to the wrapper tracking its RCW.
+                (actualWrapper, actualProxy, reserved) = _rcwCache.GetOrAddProxyForComInstance(identity, nativeObjectWrapper, comProxy);
+
+                if (actualWrapper != nativeObjectWrapper)
+                {
+                    // We raced with another thread to map identity to nativeObjectWrapper
+                    // and lost the race. We will use the other thread's nativeObjectWrapper, so we can release ours.
+                    nativeObjectWrapper.Release();
+                }
             }
-            else
-            {
-                // Add our entry to the cache here, using an already existing entry if someone else beat us to it.
-                // The RCW is registered in the wrapper table in there as well, so that no thread can ever find the
-                // entry before the registration it needs to resolve that entry back to a wrapper.
-                (actualWrapper, actualProxy) = _rcwCache.GetOrAddProxyForComInstance(identity, nativeObjectWrapper, comProxy);
-            }
 
-            if (actualProxy is null)
-            {
-                // The object 'CreateObject' handed back is already the RCW for another COM instance, which is not
-                // something ComWrappers can represent. This is reported out here rather than where it is detected,
-                // because releasing the wrapper takes the same cache lock the registration above runs under.
-                Debug.Assert(actualWrapper.ExternalComObject != nativeObjectWrapper.ExternalComObject);
+            // Register the RCW so it can be resolved back to the wrapper tracking it. Every thread that gets
+            // here for the same COM instance does this with the same pair, so whichever arrives first wins and
+            // the rest are no-ops. This is deliberately not done while holding a cache lock: it takes a lock
+            // covering the whole table, and holding a bucket lock across that would put every bucket behind it.
+            NativeObjectWrapper registeredWrapper = s_nativeObjectWrapperTable.GetOrAdd(actualProxy, actualWrapper);
 
-                nativeObjectWrapper.Release();
+            if (registeredWrapper != actualWrapper)
+            {
+                // The object 'CreateObject' handed back is already the RCW for another COM instance, which is
+                // not something ComWrappers can represent. Releasing the wrapper also drops the entry reserved
+                // for it above, if this thread is the one that reserved it.
+                Debug.Assert(registeredWrapper.ExternalComObject != actualWrapper.ExternalComObject);
+
+                actualWrapper.Release();
 
                 throw new NotSupportedException();
-            }
-
-            if (actualWrapper != nativeObjectWrapper)
-            {
-                // We raced with another thread to map identity to nativeObjectWrapper
-                // and lost the race. We will use the other thread's nativeObjectWrapper, so we can release ours.
-                nativeObjectWrapper.Release();
             }
 
             // At this point, actualProxy is the RCW object for the identity
@@ -1307,6 +1308,12 @@ namespace System.Runtime.InteropServices
             // TrackerObjectManager and we could end up missing a section of the object graph.
             // This cache deduplicates, so it is okay that the wrapper will be registered multiple times.
             AddWrapperToReferenceTrackerHandleCache(actualWrapper);
+
+            if (reserved)
+            {
+                // The RCW resolves back to this wrapper now, so the entry no longer has to carry it.
+                _rcwCache.CommitProxyForComInstance(identity, nativeObjectWrapper);
+            }
 
             return actualProxy;
         }
@@ -1331,8 +1338,10 @@ namespace System.Runtime.InteropServices
         /// <para>
         /// An entry names the RCW rather than the <see cref="NativeObjectWrapper"/> tracking it, and does so through
         /// a copy of the handle that wrapper already keeps to it, so that a cached RCW costs no handle of its own.
-        /// The wrapper for a cached RCW is resolved through <see cref="s_nativeObjectWrapperTable"/>, which is why
-        /// an RCW is put in there before its entry is published rather than after.
+        /// The wrapper for a cached RCW is resolved through <see cref="s_nativeObjectWrapperTable"/>, so an entry is
+        /// reserved before its RCW is registered there and only becomes usable once it has been. Registering is
+        /// deliberately left outside the bucket lock: it takes a lock covering that whole table, and holding a
+        /// bucket lock across it would serialize every bucket behind a single process wide lock.
         /// </para>
         /// <para>
         /// The cache is partitioned into several independent buckets, each with its own lock, so that operations on
@@ -1392,18 +1401,31 @@ namespace System.Runtime.InteropServices
             }
 
             /// <summary>
-            /// Gets the current RCW proxy object for <paramref name="comPointer"/> if it exists in the cache or inserts a new entry with <paramref name="comProxy"/>.
+            /// Reserves the entry for <paramref name="comPointer"/> for <paramref name="wrapper"/>, or gets the RCW another thread has already put there.
             /// </summary>
             /// <param name="comPointer">The com instance we want to get or record an RCW for.</param>
             /// <param name="wrapper">The <see cref="NativeObjectWrapper"/> for <paramref name="comProxy"/>.</param>
             /// <param name="comProxy">The proxy object that is associated with <paramref name="wrapper"/>.</param>
             /// <returns>
-            /// The proxy object currently in the cache for <paramref name="comPointer"/> or the proxy object owned by <paramref name="wrapper"/> if no entry exists and the corresponding native wrapper.
-            /// The proxy object is <see langword="null"/> if <paramref name="comProxy"/> is already registered with another wrapper, in which case that wrapper is returned.
+            /// The proxy object currently in the cache for <paramref name="comPointer"/> and the wrapper tracking it, or
+            /// <paramref name="comProxy"/> and <paramref name="wrapper"/> if this call is the one that reserved the entry.
+            /// The last item says which of the two happened, and is <see langword="true"/> when the entry was reserved here,
+            /// in which case the caller must complete it with <see cref="CommitProxyForComInstance"/> or release
+            /// <paramref name="wrapper"/>.
             /// </returns>
-            public (NativeObjectWrapper actualWrapper, object? actualProxy) GetOrAddProxyForComInstance(IntPtr comPointer, NativeObjectWrapper wrapper, object comProxy)
+            public (NativeObjectWrapper actualWrapper, object actualProxy, bool reserved) GetOrAddProxyForComInstance(IntPtr comPointer, NativeObjectWrapper wrapper, object comProxy)
             {
                 return GetBucket(comPointer).GetOrAddProxyForComInstance(comPointer, wrapper, comProxy);
+            }
+
+            /// <summary>
+            /// Marks the entry <paramref name="wrapper"/> reserved for <paramref name="comPointer"/> as usable, once its RCW has been registered.
+            /// </summary>
+            /// <param name="comPointer">The com instance to complete the entry for.</param>
+            /// <param name="wrapper">The <see cref="NativeObjectWrapper"/> that reserved the entry.</param>
+            public void CommitProxyForComInstance(IntPtr comPointer, NativeObjectWrapper wrapper)
+            {
+                GetBucket(comPointer).CommitProxyForComInstance(comPointer, wrapper);
             }
 
             /// <summary>
@@ -1455,7 +1477,7 @@ namespace System.Runtime.InteropServices
             private readonly struct Bucket
             {
                 private readonly ReaderWriterLockSlim _lock;
-                private readonly Dictionary<IntPtr, WeakGCHandle<object>> _cache;
+                private readonly Dictionary<IntPtr, Entry> _cache;
 
                 public Bucket()
                 {
@@ -1463,73 +1485,97 @@ namespace System.Runtime.InteropServices
                     _cache = [];
                 }
 
+                /// <summary>
+                /// An entry in a bucket: the RCW cached for a COM instance, plus the wrapper publishing it for as
+                /// long as that publication is still in flight.
+                /// </summary>
+                private struct Entry
+                {
+                    /// <summary>
+                    /// A copy of the handle its wrapper keeps to the RCW. That wrapper owns it and is what frees it.
+                    /// </summary>
+                    public WeakGCHandle<object> ProxyHandle;
+
+                    /// <summary>
+                    /// The wrapper that reserved this entry, until it has registered its RCW in the wrapper table,
+                    /// and <see langword="null"/> from then on. It is carried here for the threads that come across
+                    /// the entry during that window, as they cannot resolve it through the table yet. It has to be
+                    /// dropped afterwards, because the cache may not be what keeps a wrapper alive: one that
+                    /// outlived its RCW would never be finalized, and its finalizer is what removes this entry.
+                    /// </summary>
+                    public NativeObjectWrapper? PendingWrapper;
+                }
+
                 /// <inheritdoc cref="RcwCache.GetOrAddProxyForComInstance"/>
-                public (NativeObjectWrapper actualWrapper, object? actualProxy) GetOrAddProxyForComInstance(IntPtr comPointer, NativeObjectWrapper wrapper, object comProxy)
+                public (NativeObjectWrapper actualWrapper, object actualProxy, bool reserved) GetOrAddProxyForComInstance(IntPtr comPointer, NativeObjectWrapper wrapper, object comProxy)
                 {
                     _lock.EnterWriteLock();
                     try
                     {
                         Debug.Assert(wrapper.ProxyHandle.TryGetTarget(out object? proxyTarget) && proxyTarget == comProxy);
 
-                        ref WeakGCHandle<object> rcwEntry = ref CollectionsMarshal.GetValueRefOrAddDefault(_cache, comPointer, out bool exists);
+                        ref Entry rcwEntry = ref CollectionsMarshal.GetValueRefOrAddDefault(_cache, comPointer, out bool exists);
 
-                        if (exists && rcwEntry.TryGetTarget(out object? existingProxy))
+                        if (exists && rcwEntry.ProxyHandle.TryGetTarget(out object? existingProxy))
                         {
-                            // Someone else beat us to adding the entry and their RCW is still alive, so that is the
-                            // one to use. Its wrapper was put in the table under this same lock before the entry was
-                            // published, so it is guaranteed to be visible here.
-                            bool found = s_nativeObjectWrapperTable.TryGetValue(existingProxy, out NativeObjectWrapper? existingWrapper);
+                            // Someone else beat us to the entry and their RCW is still alive, so that is the one to
+                            // use. While they are still registering it, their wrapper is on the entry, because it
+                            // cannot be reached through the table yet. Reading that table here is fine even though
+                            // this lock is held: only mutating it takes its own lock, lookups are free of it.
+                            NativeObjectWrapper? existingWrapper = rcwEntry.PendingWrapper;
 
-                            Debug.Assert(found);
-
-                            return (existingWrapper!, existingProxy);
-                        }
-
-                        // Register the RCW and publish the entry as a single step. The entry only names the RCW, and
-                        // whoever finds it resolves the wrapper through the table, so no thread may ever be able to
-                        // observe one of the two without the other. Reserving the entry above is what makes that
-                        // possible: growing the dictionary is the only part of publishing that can fail on its own,
-                        // and it has already happened by the time the registration is made. All that remains is to
-                        // undo the reservation if the registration doesn't go through.
-                        NativeObjectWrapper registeredWrapper;
-
-                        try
-                        {
-                            registeredWrapper = s_nativeObjectWrapperTable.GetOrAdd(comProxy, wrapper);
-                        }
-                        catch
-                        {
-                            if (!exists)
+                            if (existingWrapper is null)
                             {
-                                _cache.Remove(comPointer);
+                                bool found = s_nativeObjectWrapperTable.TryGetValue(existingProxy, out existingWrapper);
+
+                                Debug.Assert(found);
                             }
 
-                            throw;
-                        }
-
-                        if (registeredWrapper != wrapper)
-                        {
-                            // This RCW is already the proxy for another COM instance, so it cannot be published. The
-                            // caller reports that once it is out of this lock, as rejecting it releases the wrapper,
-                            // which would take this lock again to remove an entry that was never added.
-                            if (!exists)
-                            {
-                                _cache.Remove(comPointer);
-                            }
-
-                            return (registeredWrapper, null);
+                            return (existingWrapper!, existingProxy, false);
                         }
 
                         // There was either no entry, or one whose RCW has been collected, so ours takes its place.
                         // The handle that gets overwritten is not freed here: every handle in this cache belongs to
                         // the wrapper that created it, which is what frees it, from 'NativeObjectWrapper.Release'.
-                        rcwEntry = wrapper.ProxyHandle;
+                        // Reserving the slot now rather than once the registration has run means the only part of
+                        // publishing that can fail on its own, growing the dictionary, has already happened by then.
+                        rcwEntry.ProxyHandle = wrapper.ProxyHandle;
+                        rcwEntry.PendingWrapper = wrapper;
 
-                        return (wrapper, comProxy);
+                        return (wrapper, comProxy, true);
                     }
                     finally
                     {
                         _lock.ExitWriteLock();
+                    }
+                }
+
+                /// <inheritdoc cref="RcwCache.CommitProxyForComInstance"/>
+                public void CommitProxyForComInstance(IntPtr comPointer, NativeObjectWrapper wrapper)
+                {
+                    // Completing a reservation only overwrites one reference field of one entry. It never adds or
+                    // removes anything, so the dictionary's layout doesn't change and this doesn't have to exclude
+                    // the lookups running alongside it, only the writers that could move the entry out from under
+                    // it. A lookup racing this either reads the wrapper, which is the right one anyway, or reads
+                    // 'null' and resolves the same wrapper through the table, which by now certainly has it. Taking
+                    // the read lock rather than the write lock is what keeps concurrent creations from serializing
+                    // here after they have just been let through the write lock above.
+                    _lock.EnterReadLock();
+                    try
+                    {
+                        ref Entry rcwEntry = ref CollectionsMarshal.GetValueRefOrNullRef(_cache, comPointer);
+
+                        // Only ever clear the reservation this wrapper made. Its RCW may have been collected while
+                        // the registration ran, letting another wrapper take the entry over, and that one is still
+                        // pending on its own registration.
+                        if (!Unsafe.IsNullRef(ref rcwEntry) && ReferenceEquals(rcwEntry.PendingWrapper, wrapper))
+                        {
+                            rcwEntry.PendingWrapper = null;
+                        }
+                    }
+                    finally
+                    {
+                        _lock.ExitReadLock();
                     }
                 }
 
@@ -1539,12 +1585,26 @@ namespace System.Runtime.InteropServices
                     _lock.EnterReadLock();
                     try
                     {
-                        if (!_cache.TryGetValue(comPointer, out WeakGCHandle<object> existingHandle))
+                        // Read the entry in place rather than copying it out. It carries a reference as well as
+                        // the handle now, and this runs on essentially every transition from native code, so the
+                        // copy is worth avoiding. Holding the read lock is what makes the reference safe to use:
+                        // it keeps out the writers that could move the entry.
+                        ref Entry existingEntry = ref CollectionsMarshal.GetValueRefOrNullRef(_cache, comPointer);
+
+                        if (Unsafe.IsNullRef(ref existingEntry))
                         {
                             // No entry in the cache.
                             return null;
                         }
-                        if (existingHandle.TryGetTarget(out object? cachedProxy))
+                        if (existingEntry.PendingWrapper is not null)
+                        {
+                            // The entry is reserved but its RCW is not registered yet, so it cannot be handed out:
+                            // the thread that reserved it may still fail and release the wrapper backing it.
+                            // Reporting it as absent sends the caller down the creation path, which resolves the
+                            // entry under the write lock, where the wrapper that reserved it is reachable.
+                            return null;
+                        }
+                        if (existingEntry.ProxyHandle.TryGetTarget(out object? cachedProxy))
                         {
                             // The target exists and is still alive. Return it.
                             return cachedProxy;
@@ -1564,8 +1624,11 @@ namespace System.Runtime.InteropServices
                     {
                         // Someone else could have removed the entry or added a new one in the time
                         // between us releasing the read lock and acquiring the write lock.
-                        if (_cache.TryGetValue(comPointer, out WeakGCHandle<object> existingHandle)
-                            && !existingHandle.TryGetTarget(out _))
+                        ref Entry existingEntry = ref CollectionsMarshal.GetValueRefOrNullRef(_cache, comPointer);
+
+                        if (!Unsafe.IsNullRef(ref existingEntry)
+                            && existingEntry.PendingWrapper is null
+                            && !existingEntry.ProxyHandle.TryGetTarget(out _))
                         {
                             // There's still a dead entry in the cache, remove it. Only the entry is dropped, as
                             // the handle belongs to the wrapper that created it and is freed along with it.
@@ -1590,9 +1653,12 @@ namespace System.Runtime.InteropServices
                         // in the time between the GC clearing the contents of the GC handle and the
                         // NativeObjectWrapper finalizer running. Only the entry this wrapper published may be
                         // removed, and comparing the handles rather than their targets identifies it exactly,
-                        // including once the RCW it refers to has been collected.
-                        if (_cache.TryGetValue(comPointer, out WeakGCHandle<object> cachedHandle)
-                            && cachedHandle.Equals(wrapper.ProxyHandle))
+                        // including once the RCW it refers to has been collected. That covers an entry this
+                        // wrapper only reserved as well, as a reservation already carries its handle.
+                        ref Entry cachedEntry = ref CollectionsMarshal.GetValueRefOrNullRef(_cache, comPointer);
+
+                        if (!Unsafe.IsNullRef(ref cachedEntry)
+                            && cachedEntry.ProxyHandle.Equals(wrapper.ProxyHandle))
                         {
                             _cache.Remove(comPointer);
                         }
