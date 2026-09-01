@@ -362,11 +362,8 @@ namespace ILCompiler.PortableCallHelpers
         private bool IsBlittableUncached(TypeDesc type)
         {
             // MarshalUtils only considers DefTypes, so pointers and function pointers never reach it.
-            if (type.IsPointer)
-                return IsUnmanaged(type.GetParameterType());
-
-            if (type is FunctionPointerType functionPointer)
-                return IsBlittableSignature(functionPointer.Signature);
+            if (type.IsPointer || type.IsFunctionPointer)
+                return true;
 
             // MarshalUtils accepts an enum as a field but not on its own: System.Enum is a class,
             // so the parent check rejects it before the layout is looked at.
