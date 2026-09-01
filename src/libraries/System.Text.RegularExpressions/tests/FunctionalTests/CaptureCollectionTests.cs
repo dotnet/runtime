@@ -23,7 +23,7 @@ namespace System.Text.RegularExpressions.Tests
 
         [Theory]
         [MemberData(nameof(BacktrackingEngines))]
-        public static async Task CaptureInEmptyAlternationIsPreserved(RegexEngine engine)
+        public static async Task CaptureInEmptyAlternationIsPreservedInBacktrackingEngines(RegexEngine engine)
         {
             Regex withoutEmptyAlternative = await RegexHelpers.GetRegexAsync(engine, @"\w(?n)((?'G')){3}");
             Regex withEmptyAlternative = await RegexHelpers.GetRegexAsync(engine, @"\w(?n)((?'G')|){3}");
@@ -48,6 +48,19 @@ namespace System.Text.RegularExpressions.Tests
 
             Assert.Equal(3, captures.Count);
             Assert.Equal(["a", "b", "c"], [captures[0].Value, captures[1].Value, captures[2].Value]);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        public static void CaptureInEmptyAlternationReducesToLastCaptureInNonBacktrackingEngines()
+        {
+            Regex regex = new Regex(@"(?n)((?'G'\w)|){3}", RegexHelpers.RegexOptionNonBacktracking);
+            CaptureCollection captures = regex.Match("abc").Groups["G"].Captures;
+
+            Assert.Single(captures);
+            Assert.Equal("c", captures[0].Value);
+            Assert.Equal(2, captures[0].Index);
+            Assert.Equal(1, captures[0].Length);
+            Assert.DoesNotContain(captures, capture => capture.Value is "a" or "b");
         }
 
         [Fact]
