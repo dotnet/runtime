@@ -8,7 +8,6 @@ using System.Linq.Expressions;
 using System.Numerics;
 using System.Reflection;
 using System.Reflection.Metadata;
-using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -569,22 +568,22 @@ public class Program
         return true;
     }
 
-    private static bool DisposeEnumeratorTestWithConstrainedCall()
+    private static unsafe bool DisposeEnumeratorTestWithConstrainedCall()
     {
-        string thisAssembly = Assembly.GetExecutingAssembly().Location;
-
-        using (var fs = new FileStream(thisAssembly, FileMode.Open, FileAccess.Read))
+        Assembly assembly = Assembly.GetExecutingAssembly();
+        if (!assembly.TryGetRawMetadata(out byte* metadata, out int length))
         {
-            using (var pereader = new PEReader(fs))
-            {
-                var reader = pereader.GetMetadataReader();
-                var methodDefinitionHandleCollection = reader.MethodDefinitions;
-                foreach (var methodDefinitionHandle in methodDefinitionHandleCollection)
-                {
-                    break;
-                }
-            }
+            return false;
         }
+
+        MetadataReader reader = new MetadataReader(metadata, length);
+        MethodDefinitionHandleCollection methodDefinitionHandleCollection = reader.MethodDefinitions;
+        foreach (MethodDefinitionHandle methodDefinitionHandle in methodDefinitionHandleCollection)
+        {
+            break;
+        }
+
+        GC.KeepAlive(assembly);
         return true;
     }
 
@@ -770,10 +769,9 @@ public class Program
         Console.WriteLine("Int result: {0}, expected: {1}", intResult, ExpectedIntResult);
 
         int stringResult = InstanceMethodCaller<string>.Compare("hello", "world");
-        const int ExpectedStringResult = -1;
-        Console.WriteLine("String result: {0}, expected: {1}", stringResult, ExpectedStringResult);
+        Console.WriteLine("String result: {0}, expected: less than zero", stringResult);
 
-        return intResult == ExpectedIntResult && stringResult == ExpectedStringResult;
+        return intResult == ExpectedIntResult && stringResult < 0;
     }
 
     private static string GetTypeName<T>()

@@ -56,8 +56,14 @@ RiscV64Classifier::RiscV64Classifier(const ClassifierInfo& info)
 ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
                                                   var_types    type,
                                                   ClassLayout* structLayout,
-                                                  WellKnownArg /*wellKnownParam*/)
+                                                  WellKnownArg wellKnownParam)
 {
+    if (wellKnownParam == WellKnownArg::SecretStubParam)
+    {
+        return ABIPassingInformation::FromSegmentByValue(comp, ABIPassingSegment::InRegister(REG_SECRET_STUB_PARAM, 0,
+                                                                                             TARGET_POINTER_SIZE));
+    }
+
     const CORINFO_FPSTRUCT_LOWERING* lowering = nullptr;
 
     unsigned intFields = 0, floatFields = 0;

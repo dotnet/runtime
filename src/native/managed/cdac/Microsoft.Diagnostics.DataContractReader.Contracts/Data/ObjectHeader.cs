@@ -6,5 +6,5 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.ObjectHeader))]
 internal sealed partial class ObjectHeader : IData<ObjectHeader>
 {
-    [Field] public uint SyncBlockValue { get; }
+    [Field] public partial uint SyncBlockValue { get; }
 }

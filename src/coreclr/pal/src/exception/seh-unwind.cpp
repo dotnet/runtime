@@ -22,7 +22,6 @@ Abstract:
 #else // HOST_UNIX
 
 #include <windows.h>
-#define __STDC_FORMAT_MACROS
 #include <inttypes.h>
 #include <libunwind.h>
 #include "debugmacros.h"

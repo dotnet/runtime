@@ -2031,15 +2031,41 @@ namespace System.Numerics
             return checked((decimal)(Int128)value);
         }
 
-        public static explicit operator double(BigInteger value) => ConvertToDouble(value, roundToOdd: false);
-
-        // Converts a big integer to an IEEE 754 double. When `roundToOdd` is false the result is the
-        // correctly rounded (round-to-nearest, ties-to-even) double. When it is true the result is
-        // instead rounded to odd: the mantissa's least significant bit is forced set whenever any
-        // information is discarded. Re-rounding such a value to a narrower type (float, Half,
-        // BFloat16) then yields the correctly rounded narrow value, avoiding double rounding.
-        private static double ConvertToDouble(BigInteger value, bool roundToOdd)
+        public static explicit operator double(BigInteger value)
         {
+            int sign = value._sign;
+            nuint[]? bits = value._bits;
+
+            if (bits is null)
+            {
+                return sign;
+            }
+
+            // Magnitudes that fit in a single 64-bit value convert directly through the correctly
+            // rounded ulong -> double conversion, which the hardware handles far more cheaply than
+            // the general limb scan below. Anything wider falls through to that scan, which stays
+            // cheap until the lower limbs actually have to be examined for rounding.
+            if (bits.Length <= 64 / BigIntegerCalculator.BitsPerLimb)
+            {
+                double result = (double)ToUInt64(bits);
+                return sign < 0 ? -result : result;
+            }
+
+            return ConvertToDouble(value, precision: 53);
+        }
+
+        // Converts a big integer to an IEEE 754 double whose significand is rounded to `precision`
+        // significant bits using round-to-nearest, ties-to-even. For `precision` == 53 this is the
+        // correctly rounded double. For a narrower target (24 for float, 8 for BFloat16) the result is
+        // a double that already lies exactly on that target's grid, so the subsequent narrowing cast
+        // is exact and no double rounding can occur. This relies on every bits[]-backed magnitude
+        // being at least 2^31, which is comfortably within the normal range of every target, so a
+        // target subnormal (which would need more significand bits than the target holds) is never
+        // produced and rounding a single time at `precision` bits is sufficient.
+        private static double ConvertToDouble(BigInteger value, int precision)
+        {
+            Debug.Assert(precision is > 0 and <= 53);
+
             int sign = value._sign;
             nuint[]? bits = value._bits;
 
@@ -2061,15 +2087,17 @@ namespace System.Numerics
             }
 
             // Gather the top 64 significant bits of the magnitude into `man`, with the most
-            // significant set bit at bit 63, the position of that bit within the full magnitude
-            // in `topBit`, and whether any lower (uncaptured) bits are set in `sticky`. These are
-            // everything needed to round to the nearest double using round-to-nearest, ties-to-even.
-            // `man` must be 64 bits wide regardless of the limb width, since a single 32-bit limb
-            // cannot hold the full significand. The top limb is always non-zero, so the leading
-            // zero count is strictly less than the limb width.
+            // significant set bit at bit 63, and the position of that bit within the full magnitude
+            // in `topBit`. `man` must be 64 bits wide regardless of the limb width, since a single
+            // 32-bit limb cannot hold the full significand. The top limb is always non-zero, so the
+            // leading zero count is strictly less than the limb width. `sticky` records whether any
+            // bit below `man` is set; the bits captured within the top limbs are folded in here and
+            // the remaining `lowerLimbCount` limbs are scanned lazily below, only when the rounding
+            // decision actually depends on them.
             ulong man;
             int topBit;
             bool sticky;
+            int lowerLimbCount;
 
             if (nint.Size == 8)
             {
@@ -2080,9 +2108,10 @@ namespace System.Numerics
                 topBit = (length - 1) * 64 + (63 - z);
                 man = z == 0 ? h : (h << z) | (m >> (64 - z));
 
-                // Any bits of `m` not captured in `man`, plus all lower limbs, are sticky.
+                // Any bits of `m` not captured in `man` are sticky; lower limbs are scanned later.
                 ulong mLow = z == 0 ? m : (m & ((1UL << (64 - z)) - 1));
-                sticky = mLow != 0 || (length > 2 && bits.AsSpan(0, length - 2).ContainsAnyExcept((nuint)0));
+                sticky = mLow != 0;
+                lowerLimbCount = length - 2;
             }
             else
             {
@@ -2094,32 +2123,33 @@ namespace System.Numerics
                 topBit = (length - 1) * 32 + (31 - z);
                 man = (h << (32 + z)) | (m << z) | (l >> (32 - z));
 
-                // Any bits of `l` not captured in `man`, plus all lower limbs, are sticky.
+                // Any bits of `l` not captured in `man` are sticky; lower limbs are scanned later.
                 ulong lLow = l & ((1UL << (32 - z)) - 1);
-                sticky = lLow != 0 || (length > 3 && bits.AsSpan(0, length - 3).ContainsAnyExcept((nuint)0));
+                sticky = lLow != 0;
+                lowerLimbCount = length - 3;
             }
 
-            // `man` holds 64 bits with the leading 1 at bit 63; a double keeps 53 significant
-            // bits, so bits [63:11] form the significand, bit 10 is the round bit, and bits
-            // [9:0] (together with `sticky`) determine whether we round up.
-            sticky |= (man & 0x3FF) != 0;
-            ulong roundBit = (man >> 10) & 1;
-            ulong mantissa = man >> 11;
+            // `man` holds 64 bits with the leading 1 at bit 63. Keep the top `precision` bits as the
+            // significand; the next bit down is the round bit and everything below it (together with
+            // `sticky`) determines whether we round up.
+            int shift = 64 - precision;
+            sticky |= (man & ((1UL << (shift - 1)) - 1)) != 0;
+            ulong roundBit = (man >> (shift - 1)) & 1;
+            ulong mantissa = man >> shift;
 
-            if (roundToOdd)
+            // The lower limbs only affect the result when `sticky` is not already set and we are at
+            // the halfway point (the round bit is set); otherwise the rounding decision is already
+            // determined. Scanning them is O(n), so skip it whenever we can.
+            if (!sticky && lowerLimbCount > 0 && roundBit != 0)
             {
-                // Force the least significant bit set whenever anything was discarded. This never
-                // carries, so `topBit` is unchanged and the value stays normalized.
-                if (roundBit != 0 || sticky)
-                {
-                    mantissa |= 1;
-                }
+                sticky = bits.AsSpan(0, lowerLimbCount).ContainsAnyExcept((nuint)0);
             }
-            else if (roundBit != 0 && (sticky || (mantissa & 1) != 0))
+
+            if (roundBit != 0 && (sticky || (mantissa & 1) != 0))
             {
                 mantissa++;
 
-                if ((mantissa >> 53) != 0)
+                if ((mantissa >> precision) != 0)
                 {
                     // Rounding carried into a new leading bit; renormalize.
                     mantissa >>= 1;
@@ -2135,7 +2165,11 @@ namespace System.Numerics
                 return sign == 1 ? double.PositiveInfinity : double.NegativeInfinity;
             }
 
-            ulong result = (mantissa & 0x000F_FFFF_FFFF_FFFF) | ((ulong)biasedExp << 52);
+            // `mantissa` holds `precision` significant bits with the leading 1 at bit `precision - 1`.
+            // Shift it up so that leading 1 lands at bit 52, then drop it to form the stored 52-bit
+            // significand. For a narrower `precision` the low bits are left zero, placing the value
+            // exactly on the target type's grid.
+            ulong result = ((mantissa << (53 - precision)) & 0x000F_FFFF_FFFF_FFFF) | ((ulong)biasedExp << 52);
 
             if (sign < 0)
             {
@@ -2145,15 +2179,65 @@ namespace System.Numerics
             return BitConverter.UInt64BitsToDouble(result);
         }
 
+        // Reconstructs the unsigned magnitude of a bits[]-backed BigInteger that is known to fit in
+        // 64 bits (a single 64-bit limb, or at most two 32-bit limbs).
+        private static ulong ToUInt64(nuint[] bits)
+        {
+            Debug.Assert((uint)bits.Length <= 64 / BigIntegerCalculator.BitsPerLimb);
+
+            ulong result = bits[0];
+
+            if (BigIntegerCalculator.BitsPerLimb == 32 && bits.Length > 1)
+            {
+                result |= (ulong)bits[1] << 32;
+            }
+
+            return result;
+        }
+
         /// <summary>Explicitly converts a big integer to a <see cref="Half" /> value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to <see cref="Half" /> value.</returns>
-        public static explicit operator Half(BigInteger value) => (Half)ConvertToDouble(value, roundToOdd: true);
+        public static explicit operator Half(BigInteger value)
+        {
+            int sign = value._sign;
+            nuint[]? bits = value._bits;
+
+            if (bits is null)
+            {
+                return (Half)sign;
+            }
+
+            // Every bits[]-backed magnitude is at least 2^31, which is far outside Half's finite
+            // range, so the result is always an infinity carrying the value's sign. There is no
+            // finite Half to round to, so skip the limb scan entirely.
+            return sign < 0 ? Half.NegativeInfinity : Half.PositiveInfinity;
+        }
 
         /// <summary>Explicitly converts a big integer to a <see cref="BFloat16" /> value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to <see cref="BFloat16" /> value.</returns>
-        public static explicit operator BFloat16(BigInteger value) => (BFloat16)ConvertToDouble(value, roundToOdd: true);
+        public static explicit operator BFloat16(BigInteger value)
+        {
+            int sign = value._sign;
+            nuint[]? bits = value._bits;
+
+            if (bits is null)
+            {
+                return (BFloat16)sign;
+            }
+
+            // Magnitudes up to 64 bits convert directly through the correctly rounded ulong ->
+            // BFloat16 conversion. Wider magnitudes round directly at BFloat16's 8-bit significand,
+            // so the narrowing cast is exact and cannot double round.
+            if (bits.Length <= 64 / BigIntegerCalculator.BitsPerLimb)
+            {
+                BFloat16 result = (BFloat16)ToUInt64(bits);
+                return sign < 0 ? -result : result;
+            }
+
+            return (BFloat16)ConvertToDouble(value, precision: 8);
+        }
 
         public static explicit operator short(BigInteger value) => checked((short)((int)value));
 
@@ -2278,7 +2362,32 @@ namespace System.Numerics
         [CLSCompliant(false)]
         public static explicit operator sbyte(BigInteger value) => checked((sbyte)((int)value));
 
-        public static explicit operator float(BigInteger value) => (float)ConvertToDouble(value, roundToOdd: true);
+        public static explicit operator float(BigInteger value)
+        {
+            int sign = value._sign;
+            nuint[]? bits = value._bits;
+
+            if (bits is null)
+            {
+                return sign;
+            }
+
+#if !MONO
+            // Magnitudes up to 64 bits convert directly through the correctly rounded ulong -> float
+            // conversion. Wider magnitudes round directly at float's 24-bit significand, so the
+            // narrowing cast is exact and cannot double round. Mono routes ulong -> float through
+            // double, which double rounds, so it is excluded and always rounds directly below.
+            if (bits.Length <= 64 / BigIntegerCalculator.BitsPerLimb)
+            {
+                float result = (float)ToUInt64(bits);
+                return sign < 0 ? -result : result;
+            }
+#endif
+
+            // Round directly at float's 24-bit significand so the double we produce already lies on
+            // float's grid and the narrowing cast is exact, avoiding any double rounding.
+            return (float)ConvertToDouble(value, precision: 24);
+        }
 
         [CLSCompliant(false)]
         public static explicit operator ushort(BigInteger value) => checked((ushort)((int)value));

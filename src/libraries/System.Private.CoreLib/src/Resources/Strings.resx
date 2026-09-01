@@ -1949,6 +1949,9 @@
   <data name="ArgumentOutOfRange_StreamLength" xml:space="preserve">
     <value>Stream length must be non-negative and less than the maximum array length {0} - origin.</value>
   </data>
+  <data name="ArgumentOutOfRange_StreamPosition" xml:space="preserve">
+    <value>Stream position must be non-negative and less than or equal to {0}.</value>
+  </data>
   <data name="ArgumentOutOfRange_UIntPtrMax" xml:space="preserve">
     <value>The length of the buffer must be less than the maximum UIntPtr value for your platform.</value>
   </data>
@@ -2736,7 +2739,7 @@
     <value>Underlying type information on enumeration is not specified.</value>
   </data>
   <data name="InvalidOperation_NoValue" xml:space="preserve">
-    <value>Nullable object must have a value.</value>
+    <value>Cannot read the Value property of a Nullable object that has no value. Check HasValue before reading Value.</value>
   </data>
   <data name="InvalidOperation_NullArray" xml:space="preserve">
     <value>The underlying array is null.</value>

@@ -312,7 +312,7 @@ namespace {Namespace}
 
             for (var i = 0; i < firstOp.Length; i++)
             {
-                if (firstOp[i] != result[i])
+                if (!Helpers.BitwiseEqual(firstOp[i], result[i]))
                 {
                     succeeded = false;
                     break;
