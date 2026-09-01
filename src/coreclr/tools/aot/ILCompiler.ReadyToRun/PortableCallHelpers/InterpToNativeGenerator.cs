@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
+using Internal.JitInterface;
 using Internal.TypeSystem;
 
 namespace ILCompiler.PortableCallHelpers
@@ -105,7 +106,7 @@ namespace ILCompiler.PortableCallHelpers
                 catch (InvalidSignatureCharException e)
                 {
                     throw new LogAsErrorException(
-                        $"Cannot generate an interop thunk for '{cookies[signature]}': its signature '{signature}' contains {e.Description}, " +
+                        $"Cannot generate an interop thunk for '{cookies[signature]}': its signature '{signature}' contains {WasmLowering.DescribeSigChar(e.Char)}, " +
                         "which interop thunks cannot pass. Take it by reference, or wrap it in a blittable struct.");
                 }
                 catch (LogAsErrorException e)

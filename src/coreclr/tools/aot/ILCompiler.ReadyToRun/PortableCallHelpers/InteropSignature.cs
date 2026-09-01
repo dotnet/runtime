@@ -19,10 +19,6 @@ namespace ILCompiler.PortableCallHelpers
         : Exception($"Can't handle signature '{c}'")
     {
         public char Char { get; } = c;
-
-        /// <summary>The element in the caller's terms, worded by the lowering that spells it.</summary>
-        public string Description
-            => WasmLowering.DescribeSigChar(Char) ?? $"the unrecognized element '{Char}'";
     }
 
     /// <summary>

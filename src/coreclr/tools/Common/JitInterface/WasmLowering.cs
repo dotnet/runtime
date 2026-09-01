@@ -424,7 +424,7 @@ namespace Internal.JitInterface
             'p' => "the portable entry point argument",
             'a' => "the async continuation argument",
             'e' => "an empty struct",
-            _ => null
+            _ => $"an unrecognized element '{c}'"
         };
 
         private static int ParseStructSize(string sig, ref int pos)
