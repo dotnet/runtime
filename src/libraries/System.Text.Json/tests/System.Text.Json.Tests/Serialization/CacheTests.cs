@@ -166,6 +166,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
+        [InlineData(0)]
         [InlineData(1)]
         [InlineData(2)]
         [InlineData(3)]
@@ -183,16 +184,23 @@ namespace System.Text.Json.Serialization.Tests
 
             Assert.Equal(256, longName.Length - shortName.Length);
 
-            var resolver = new DefaultJsonTypeInfoResolver();
-            resolver.Modifiers.Add(typeInfo =>
+            var options = new JsonSerializerOptions
             {
-                if (typeInfo.Type == typeof(PropertyKeyLengthPoco))
+                TypeInfoResolver = new DefaultJsonTypeInfoResolver
                 {
-                    typeInfo.Properties[0].Name = shortName;
+                    Modifiers =
+                    {
+                        // Customize the name so the theory can exercise every length with one POCO type.
+                        typeInfo =>
+                        {
+                            if (typeInfo.Type == typeof(PropertyKeyLengthPoco))
+                            {
+                                typeInfo.Properties[0].Name = shortName;
+                            }
+                        }
+                    }
                 }
-            });
-
-            var options = new JsonSerializerOptions { TypeInfoResolver = resolver };
+            };
 
             string json = JsonSerializer.Serialize(new Dictionary<string, string> { [longName] = "42" });
             Assert.Null(JsonSerializer.Deserialize<PropertyKeyLengthPoco>(json, options).Value);
@@ -203,6 +211,7 @@ namespace System.Text.Json.Serialization.Tests
 
         private class PropertyKeyLengthPoco
         {
+            // The declared name is irrelevant because the resolver replaces it.
             public string Value { get; set; }
         }
 
