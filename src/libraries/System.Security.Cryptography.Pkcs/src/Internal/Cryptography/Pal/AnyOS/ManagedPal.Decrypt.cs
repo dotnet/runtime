@@ -65,20 +65,22 @@ namespace Internal.Cryptography.Pal.AnyOS
                     {
                         cek = kemRecipientInfo.DecryptCek(compositeMLKem, out exception);
                     }
+                    else if (privateKey is MLKem mlKem)
+                    {
+                        cek = kemRecipientInfo.DecryptCek(mlKem, out exception);
+                    }
+                    else if (privateKey is EnvelopedCmsKey.None)
+                    {
+                        Debug.Assert(cert is not null);
+                        cek = kemRecipientInfo.DecryptCek(cert, out exception);
+                    }
                     else
                     {
-                        MLKem? mlKem = privateKey is MLKem key ? key : null;
+                        exception = new CryptographicException(
+                            SR.Cryptography_Cms_RecipientType_NotSupported,
+                            recipientInfo.Type.ToString());
 
-                        if (privateKey is not EnvelopedCmsKey.None && mlKem is null)
-                        {
-                            exception = new CryptographicException(
-                                SR.Cryptography_Cms_RecipientType_NotSupported,
-                                recipientInfo.Type.ToString());
-
-                            return null;
-                        }
-
-                        cek = kemRecipientInfo.DecryptCek(cert, mlKem, out exception);
+                        return null;
                     }
                 }
 #endif
