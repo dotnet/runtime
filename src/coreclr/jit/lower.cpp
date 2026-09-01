@@ -5217,6 +5217,32 @@ void Lowering::LowerCallStruct(GenTreeCall* call)
     CORINFO_CLASS_HANDLE        retClsHnd = call->gtRetClsHnd;
     Compiler::structPassingKind howToReturnStruct;
     var_types returnType = comp->getReturnTypeForStruct(retClsHnd, call->GetUnmanagedCallConv(), &howToReturnStruct);
+    // on s390x, the structs are always returned by references
+    // For other architectures also when any structs are returned by reference,
+    // the type is set is set to TYP_UNKNOWN in getReturnTypeForStruct, hence assserting when returnType != TYP_UNKNOWN
+    // looks incorrect for structs when they are returned by reference.
+    if (howToReturnStruct == Compiler::SPK_ByReference)
+    {
+        assert(returnType == TYP_UNKNOWN);
+
+        // Some helper calls are typed TYP_STRUCT in the IR for flexibility but
+        // actually return a pointer-sized value in a register (not via retbuf).
+        // These have gtReturnType set to the actual primitive (e.g. TYP_REF).
+        // Retype the call to that primitive so LSRA sees a non-struct node.
+        // Examples: CORINFO_HELP_FIELDDESC_TO_STUBRUNTIMEFIELD,
+        //           CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL.
+        if (!varTypeIsStruct(call->gtReturnType) && call->gtReturnType != TYP_UNKNOWN)
+        {
+            JITDUMP("LowerCallStruct: retyping pseudo-struct helper [%06u] from TYP_STRUCT to %s\n",
+                    comp->dspTreeID(call), varTypeName(call->gtReturnType));
+            call->gtType = call->gtReturnType;
+            return;
+        }
+
+        // Normal retbuf case — flag and arg must have been set up earlier.
+        assert(call->gtCallMoreFlags & GTF_CALL_M_RETBUFFARG);
+        return;
+    }
     assert(returnType != TYP_STRUCT && returnType != TYP_UNKNOWN);
     var_types origType = call->TypeGet();
     call->gtType       = genActualType(returnType);

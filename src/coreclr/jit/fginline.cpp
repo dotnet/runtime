@@ -426,6 +426,26 @@ private:
             m_madeChanges = true;
         }
 #endif
+	// If an inline was rejected and the call returns a struct by reference
+        // (e.g. on s390x where FEATURE_MULTIREG_RET==0 but all structs are
+        // returned via a hidden return buffer), the GTF_CALL_M_RETBUFFARG flag
+        // was deferred at import time. Set it now so that lowering sees a
+        // consistent call node.
+        if ((*use)->IsCall() && varTypeIsStruct(*use) &&
+            !((*use)->AsCall()->gtCallMoreFlags & GTF_CALL_M_RETBUFFARG))
+        {
+            GenTreeCall*                call = (*use)->AsCall();
+            Compiler::structPassingKind howToReturnStruct;
+            var_types returnType = m_compiler->getReturnTypeForStruct(
+                call->gtRetClsHnd, call->GetUnmanagedCallConv(), &howToReturnStruct);
+
+            if (howToReturnStruct == Compiler::SPK_ByReference)
+            {
+                assert(returnType == TYP_UNKNOWN);
+                call->gtCallMoreFlags |= GTF_CALL_M_RETBUFFARG;
+                m_madeChanges = true;
+            }
+        }
     }
 
 #if FEATURE_MULTIREG_RET

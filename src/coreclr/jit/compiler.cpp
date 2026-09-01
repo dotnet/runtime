@@ -947,7 +947,10 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
             }
         }
     }
-
+#elif defined (TARGET_S390X)
+        canReturnInRegister = false;
+        howToReturnStruct   = SPK_ByReference;
+        useType             = TYP_UNKNOWN;
 #endif
     if (TargetOS::IsWindows && !TargetArchitecture::IsArm32 && callConvIsInstanceMethodCallConv(callConv) &&
         !isNativePrimitiveStructType(clsHnd))
@@ -1095,10 +1098,6 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
                 // On LOONGARCH64/RISCV64 struct that is 1-16 bytes is returned by value in one/two register(s)
                 howToReturnStruct = SPK_ByValue;
                 useType           = TYP_STRUCT;
-
-#elif defined (TARGET_S390X)
-                howToReturnStruct = SPK_ByReference;
-                useType           = TYP_UNKNOWN;
 
 #else //  TARGET_XXX
 

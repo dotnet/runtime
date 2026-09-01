@@ -7044,7 +7044,40 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
     // From this point on disallow shared temps to be reused until we are done
     // processing the call.
     SharedTempsScope sharedTemps(this);
+    // On platforms where all structs are returned via a hidden retbuf (e.g. s390x),
+    // GTF_CALL_M_RETBUFFARG may have been set (by fginline.cpp or elsewhere) but the
+    // actual WellKnownArg::RetBuffer arg node was not yet added. Wire it up now so
+    // that AddFinalArgsAndDetermineABIInfo sees a consistent call.
+    if (call->ShouldHaveRetBufArg() && !call->gtArgs.HasRetBuffer() &&
+        (call->gtRetClsHnd != NO_CLASS_HANDLE))
+    {
+        JITDUMP("fgMorphCall: adding missing retbuf arg for [%06u]\n", dspTreeID(call));
 
+        // Allocate a temp to hold the returned struct.
+        unsigned tmpNum = lvaGrabTemp(false DEBUGARG("missing retbuf for struct call"));
+        lvaSetStruct(tmpNum, call->gtRetClsHnd, false);
+
+        // Build and insert the retbuf address arg.
+        GenTree*   destAddr  = gtNewLclVarAddrNode(tmpNum, TYP_BYREF);
+        NewCallArg retBufArg = NewCallArg::Primitive(destAddr).WellKnown(WellKnownArg::RetBuffer);
+        call->gtArgs.InsertAfterThisOrFirst(this, retBufArg);
+
+        // Change call type to void — result is now in the retbuf temp.
+        call->gtType = TYP_VOID;
+
+        // Insert "tmp = call(...)" as a new statement, return "tmp".
+        GenTree*   store     = gtNewStoreLclVarNode(tmpNum, call);
+        store                = fgMorphTree(store);
+        Statement* storeStmt = gtNewStmt(store, compCurStmt->GetDebugInfo());
+        fgInsertStmtBefore(compCurBB, compCurStmt, storeStmt);
+
+        compCurBB->SetFlags(BBF_HAS_CALL);
+
+        GenTree* result = gtNewLclvNode(tmpNum, lvaGetDesc(tmpNum)->TypeGet());
+        result->gtFlags |= GTF_DONT_CSE;
+        INDEBUG(result->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+        return result;
+    }
     // Process the "normal" argument list
     call = fgMorphArgs(call);
     noway_assert(call->gtOper == GT_CALL);
