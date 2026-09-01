@@ -4010,7 +4010,8 @@ ClrDataAccess::EnumWksGlobalMemoryRegions(CLRDataEnumMemoryFlags flags)
 
     Dereference(g_gcDacGlobals->ephemeral_heap_segment).EnumMem();
     g_gcDacGlobals->alloc_allocated.EnumMem();
-    if (g_gcDacGlobals->minor_version_number >= 9)
+    if (g_gcDacGlobals->minor_version_number >= 9 &&
+        g_gcDacGlobals->card_table.IsValid())
     {
         g_gcDacGlobals->card_table.EnumMem();
     }
