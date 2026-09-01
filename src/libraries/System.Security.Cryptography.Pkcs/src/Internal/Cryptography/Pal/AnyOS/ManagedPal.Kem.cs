@@ -35,7 +35,7 @@ namespace Internal.Cryptography.Pal.AnyOS
 
         private static KemRecipientInfoAsn MakeKeri(byte[] cek, CmsRecipient recipient)
         {
-            if (cek.Length < ManagedKemRecipientInfoPal.MinimumKeySizeInBytes ||
+            if (cek.Length < ManagedKemRecipientInfoPal.Aes128KeySizeInBytes ||
                 cek.Length % 8 != 0 ||
                 cek.Length > ManagedKemRecipientInfoPal.Aes256KeySizeInBytes)
             {
@@ -59,6 +59,12 @@ namespace Internal.Cryptography.Pal.AnyOS
             try
             {
                 string keyAlgorithm = recipient.Certificate.GetKeyAlgorithm();
+
+                if (CmsRecipient.IsCompositeMLKemAlgorithm(keyAlgorithm))
+                {
+                    throw new PlatformNotSupportedException(
+                        SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(CompositeMLKem)));
+                }
 
                 switch (keyAlgorithm)
                 {
@@ -163,6 +169,25 @@ namespace Internal.Cryptography.Pal.AnyOS
                 }
 
                 Debug.Assert(cert is not null);
+
+                string kemAlgorithm = _asn.Kem.Algorithm;
+
+                if (CmsRecipient.IsCompositeMLKemAlgorithm(kemAlgorithm))
+                {
+                    exception = new PlatformNotSupportedException(
+                        SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(CompositeMLKem)));
+
+                    return null;
+                }
+
+                if (!CmsRecipient.IsMLKemAlgorithm(kemAlgorithm))
+                {
+                    exception = new CryptographicException(
+                        SR.Cryptography_Cms_UnknownAlgorithm,
+                        kemAlgorithm);
+
+                    return null;
+                }
 
                 using (MLKem? certificatePrivateKey = cert.GetMLKemPrivateKey())
                 {

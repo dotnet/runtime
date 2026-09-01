@@ -102,11 +102,13 @@ namespace System.Security.Cryptography.Pkcs
             ReadOnlySpan<byte> userKeyingMaterial) =>
             new CmsRecipient(recipientIdentifierType, certificate, userKeyingMaterial);
 
-        internal static bool IsKeyEncapsulationAlgorithm(string? oid) =>
+        internal static bool IsMLKemAlgorithm(string? oid) =>
             oid is Oids.MlKem512 or
                 Oids.MlKem768 or
-                Oids.MlKem1024 or
-                Oids.MLKem768WithRsaOaep2048Sha3_256 or
+                Oids.MlKem1024;
+
+        internal static bool IsCompositeMLKemAlgorithm(string? oid) =>
+            oid is Oids.MLKem768WithRsaOaep2048Sha3_256 or
                 Oids.MLKem768WithRsaOaep3072Sha3_256 or
                 Oids.MLKem768WithRsaOaep4096Sha3_256 or
                 Oids.MLKem768WithX25519Sha3_256 or
@@ -118,6 +120,9 @@ namespace System.Security.Cryptography.Pkcs
                 Oids.MLKem1024WithECDiffieHellmanBrainpoolP384r1Sha3_256 or
                 Oids.MLKem1024WithX448Sha3_256 or
                 Oids.MLKem1024WithECDiffieHellmanP521Sha3_256;
+
+        internal static bool IsKeyEncapsulationAlgorithm(string? oid) =>
+            IsMLKemAlgorithm(oid) || IsCompositeMLKemAlgorithm(oid);
 
         private CmsRecipient(
             SubjectIdentifierType recipientIdentifierType,

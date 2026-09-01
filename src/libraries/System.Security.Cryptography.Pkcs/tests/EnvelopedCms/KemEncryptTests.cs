@@ -6,21 +6,29 @@ using System.Security.Cryptography.X509Certificates;
 
 using Xunit;
 
+using TestOids = System.Security.Cryptography.Pkcs.Tests.Oids;
+
 namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
 {
     [PlatformSpecific(~TestPlatforms.Windows)]
     [ConditionalClass(typeof(MLKem), nameof(MLKem.IsSupported))]
     public static class KemEncryptTests
     {
-        [Fact]
-        public static void EncryptAndDecrypt()
+        [Theory]
+        [InlineData(TestOids.Aes128)]
+        [InlineData(TestOids.Aes192)]
+        [InlineData(TestOids.Aes256)]
+        public static void EncryptAndDecrypt(string contentEncryptionAlgorithm)
         {
             byte[] content = "hello world!"u8.ToArray();
 
             using (X509Certificate2 certificate = X509Certificate2.CreateFromPem(
                 MLKemTestData.IetfMlKem768CertificatePem))
             {
-                EnvelopedCms cms = new EnvelopedCms(new ContentInfo(content));
+                EnvelopedCms cms = new EnvelopedCms(
+                    new ContentInfo(content),
+                    new AlgorithmIdentifier(new Oid(contentEncryptionAlgorithm)));
+
                 cms.Encrypt(new CmsRecipient(certificate));
                 byte[] encoded = cms.Encode();
 

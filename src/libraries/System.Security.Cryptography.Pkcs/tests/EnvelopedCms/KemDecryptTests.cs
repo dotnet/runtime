@@ -99,6 +99,20 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
+        public static void DecryptCompositeMLKemNotSupported()
+        {
+            EnvelopedCms cms = new EnvelopedCms();
+            cms.Decode(KemTestDocuments.MlKem768);
+
+            KemRecipientInfo recipientInfo = Assert.IsType<KemRecipientInfo>(Assert.Single(cms.RecipientInfos));
+
+            using (TestCompositeMLKem key = new TestCompositeMLKem(CompositeMLKemAlgorithm.MLKem768WithRsaOaep2048))
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => cms.Decrypt(recipientInfo, key));
+            }
+        }
+
+        [Fact]
         public static void DecryptInvalidVersion()
         {
             const string Document = """
@@ -412,6 +426,33 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
                 throw new NotSupportedException();
 
             protected override void ExportPrivateSeedCore(Span<byte> destination) =>
+                throw new NotSupportedException();
+
+            protected override bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten) =>
+                throw new NotSupportedException();
+        }
+
+        private sealed class TestCompositeMLKem : CompositeMLKem
+        {
+            internal TestCompositeMLKem(CompositeMLKemAlgorithm algorithm)
+                : base(algorithm)
+            {
+            }
+
+            protected override void DecapsulateCore(ReadOnlySpan<byte> ciphertext, Span<byte> sharedSecret) =>
+                throw new NotSupportedException();
+
+            protected override void Dispose(bool disposing)
+            {
+            }
+
+            protected override void EncapsulateCore(Span<byte> ciphertext, Span<byte> sharedSecret) =>
+                throw new NotSupportedException();
+
+            protected override int ExportDecapsulationKeyCore(Span<byte> destination) =>
+                throw new NotSupportedException();
+
+            protected override int ExportEncapsulationKeyCore(Span<byte> destination) =>
                 throw new NotSupportedException();
 
             protected override bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten) =>

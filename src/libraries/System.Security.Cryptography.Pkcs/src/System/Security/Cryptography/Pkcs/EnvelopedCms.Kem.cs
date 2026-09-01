@@ -29,7 +29,13 @@ namespace System.Security.Cryptography.Pkcs
         /// <param name="recipientInfo">The recipient information that identifies the encrypted key.</param>
         /// <param name="privateKey">The private key to use for decapsulation.</param>
         [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
-        public void Decrypt(KemRecipientInfo recipientInfo, CompositeMLKem privateKey) =>
-            throw new NotImplementedException();
+        public void Decrypt(KemRecipientInfo recipientInfo, CompositeMLKem privateKey)
+        {
+            ArgumentNullException.ThrowIfNull(recipientInfo);
+            ArgumentNullException.ThrowIfNull(privateKey);
+
+            throw new PlatformNotSupportedException(
+                SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(CompositeMLKem)));
+        }
     }
 }
