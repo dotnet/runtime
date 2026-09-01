@@ -15,6 +15,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma hdrstop
 #endif
 
+#include <inttypes.h>
+
 #if defined(TARGET_LOONGARCH64)
 
 /*****************************************************************************/
@@ -119,7 +121,15 @@ inline bool emitter::emitInsMayWriteToGCReg(instruction ins)
 {
     assert(ins != INS_invalid);
     // NOTE: please reference the file "instrsloongarch64.h" for details !!!
-    return (INS_mov <= ins) && (ins <= INS_jirl) ? true : false;
+    return (((INS_mov <= ins) && (ins <= INS_jirl)) || (ins == INS_movfcsr2gr) || (ins == INS_movcf2gr)
+#ifdef FEATURE_SIMD
+            || ((INS_vpickve2gr_d <= ins) && (ins <= INS_vpickve2gr_wu)) ||
+            ((INS_vpickve2gr_h <= ins) && (ins <= INS_vpickve2gr_bu)) ||
+            ((INS_xvpickve2gr_d <= ins) && (ins <= INS_xvpickve2gr_wu))
+#endif
+                )
+               ? true
+               : false;
 }
 
 bool emitter::emitInsWritesToLclVarStackLoc(instrDesc* id)
@@ -1257,7 +1267,7 @@ void emitter::emitIns_R_R_I(
         code |= (reg2 & 0x1f) << 5;  // rj
         code |= (imm & 0xfff) << 10; // si12
     }
-    else if (((INS_vinsgr2vr_d <= ins) && (ins <= INS_vreplvei_d)) || (INS_xvrepl128vei_d == ins))
+    else if (((INS_vinsgr2vr_d <= ins) && (ins <= INS_vpickve2gr_du)) || (INS_xvrepl128vei_d == ins))
     {
 #ifdef DEBUG
         if (INS_vinsgr2vr_d == ins)
@@ -1282,7 +1292,7 @@ void emitter::emitIns_R_R_I(
         code |= (reg2 & 0x1f) << 5;
         code |= (imm & 0x1) << 10; // ui1
     }
-    else if (((INS_vinsgr2vr_w <= ins) && (ins <= INS_vreplvei_w)) ||
+    else if (((INS_vpickve2gr_w <= ins) && (ins <= INS_vreplvei_w)) ||
              ((INS_xvinsve0_d <= ins) && (ins <= INS_xvpickve2gr_du)))
     {
 #ifdef DEBUG
@@ -1328,7 +1338,8 @@ void emitter::emitIns_R_R_I(
         code |= (reg2 & 0x1f) << 5; // xj/vj/rj
         code |= (imm & 0x3) << 10;  // ui2
     }
-    else if (((INS_vslli_b <= ins) && (ins <= INS_vreplvei_h)) || ((INS_xvslli_b <= ins) && (ins <= INS_xvsat_bu)))
+    else if (((INS_vslli_b <= ins) && (ins <= INS_vpickve2gr_hu)) ||
+             ((INS_xvpickve2gr_w <= ins) && (ins <= INS_xvsat_bu)))
     {
 #ifdef DEBUG
         if ((INS_vinsgr2vr_h == ins) || (INS_xvinsgr2vr_w == ins))
@@ -1356,7 +1367,7 @@ void emitter::emitIns_R_R_I(
         code |= (reg2 & 0x1f) << 5; // vj(xj)
         code |= (imm & 0x7) << 10;  // ui3
     }
-    else if (((INS_vslli_h <= ins) && (ins <= INS_vreplvei_b)) || ((INS_xvslli_h <= ins) && (ins <= INS_xvsat_hu)))
+    else if (((INS_vpickve2gr_b <= ins) && (ins <= INS_vreplvei_b)) || ((INS_xvslli_h <= ins) && (ins <= INS_xvsat_hu)))
     {
 #ifdef DEBUG
         if (INS_vinsgr2vr_b == ins)
@@ -1364,12 +1375,7 @@ void emitter::emitIns_R_R_I(
             assert(isVectorRegister(reg1));      // vd/xd
             assert(isGeneralRegisterOrR0(reg2)); // rj
         }
-        else if (INS_vpickve2gr_b == ins)
-        {
-            assert(isGeneralRegisterOrR0(reg1)); // rd
-            assert(isVectorRegister(reg2));      // vj/xj
-        }
-        else if (INS_vpickve2gr_bu == ins)
+        else if ((INS_vpickve2gr_b == ins) || (INS_vpickve2gr_bu == ins))
         {
             assert(isGeneralRegisterOrR0(reg1)); // rd
             assert(isVectorRegister(reg2));      // vj/xj
@@ -2087,6 +2093,11 @@ void emitter::emitIns_R_AI(instruction  ins,
         id->idGCref(GCT_BYREF);
         id->idOpSize(EA_PTRSIZE);
     }
+
+#ifdef DEBUG
+    id->idDebugOnlyInfo()->idMemCookie = targetHandle;
+    id->idDebugOnlyInfo()->idFlags     = gtFlags;
+#endif
 
     id->idAddr()->iiaAddr = (BYTE*)addr;
     id->idCodeSize(8);
@@ -3027,7 +3038,7 @@ AGAIN:
             }
             if (EMITVERBOSE)
             {
-                printf("Estimate of fwd jump [%08X/%03u]: %04X -> %04X = %04X\n", dspPtr(jmp),
+                printf("Estimate of fwd jump [%p/%03u]: %04X -> %04X = %04X\n", (void*)dspPtr(jmp),
                        jmp->idDebugOnlyInfo()->idNum, srcInstrOffs, dstOffs, jmpDist);
             }
 #endif // DEBUG_EMIT
@@ -3115,7 +3126,7 @@ AGAIN:
             }
             if (EMITVERBOSE)
             {
-                printf("Estimate of bwd jump [%08X/%03u]: %04X -> %04X = %04X\n", dspPtr(jmp),
+                printf("Estimate of bwd jump [%p/%03u]: %04X -> %04X = %04X\n", (void*)dspPtr(jmp),
                        jmp->idDebugOnlyInfo()->idNum, srcInstrOffs, dstOffs, jmpDist);
             }
 #endif // DEBUG_EMIT
@@ -3875,6 +3886,12 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     // for stores, but we ignore those cases here.)
     if (emitInsMayWriteToGCReg(ins)) // True if "id->idIns()" writes to a register than can hold GC ref.
     {
+        if (INS_OPTS_RELOC == id->idInsOpt())
+        {
+            // For relocation case (pcalau12i + addi.d/ld.d), the GCReg should update after calculation completed.
+            dstRW2 += 4;
+        }
+
         // We assume that "idReg1" is the primary destination register for all instructions
         if (id->idGCref() != GCT_NONE)
         {
@@ -4040,7 +4057,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
 #ifdef DEBUG
     if (m_compiler->opts.disAddr)
     {
-        printf("  0x%llx", insAdr);
+        printf("  %p", (void*)insAdr);
     }
 
     printf("  ");
@@ -4114,7 +4131,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
             }
             else if (ins == INS_jirl)
             {
-                printf("%s, %s, 0x%lx\n", RegNames[regd], RegNames[regj], offs16);
+                printf("%s, %s, 0x%x\n", RegNames[regd], RegNames[regj], offs16);
             }
             // only for prolog
             else if (emitPrologEndPos.Valid() && ((unsigned)(addr - emitCodeBlock) < emitPrologEndPos.CodeOffset(this)))
@@ -4130,7 +4147,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
             }
             else
             {
-                printf("%s, %s, 0x%llx\n", RegNames[regj], RegNames[regd], (int64_t)insAdr + offs16);
+                printf("%s, %s, 0x%" PRIx64 "\n", RegNames[regj], RegNames[regd], (int64_t)insAdr + offs16);
             }
             return;
         }
@@ -4153,7 +4170,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
             }
             else
             {
-                printf("%s, 0x%llx\n", RegNames[regj], (int64_t)insAdr + tmp);
+                printf("%s, 0x%" PRIx64 "\n", RegNames[regj], (int64_t)insAdr + tmp);
             }
             return;
         }
@@ -4183,7 +4200,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
             }
             else
             {
-                printf("0x%llx\n", (int64_t)insAdr + tmp);
+                printf("0x%" PRIx64 "\n", (int64_t)insAdr + tmp);
             }
             return;
         }
@@ -4261,7 +4278,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
         {
             int offs21 = (((code >> 10) & 0xffff) | ((code & 0x1f) << 16)) << 11;
             offs21 >>= 9;
-            printf("fcc%d, 0x%llx\n", (code >> 5) & 0x7, (int64_t)insAdr + offs21);
+            printf("fcc%d, 0x%" PRIx64 "\n", (code >> 5) & 0x7, (int64_t)insAdr + offs21);
             return;
         }
         case DF_F_GR:

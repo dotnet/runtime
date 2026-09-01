@@ -219,7 +219,6 @@ CONFIG_DWORD_INFO(INTERNAL_ConditionalContracts, W("ConditionalContracts"), 0, "
 CONFIG_DWORD_INFO(INTERNAL_ConsistencyCheck, W("ConsistencyCheck"), 0, "")
 CONFIG_DWORD_INFO(INTERNAL_ContinueOnAssert, W("ContinueOnAssert"), 0, "If set, doesn't break on asserts.")
 CONFIG_DWORD_INFO(INTERNAL_InjectFatalError, W("InjectFatalError"), 0, "")
-CONFIG_DWORD_INFO(INTERNAL_InjectFault, W("InjectFault"), 0, "")
 CONFIG_DWORD_INFO(INTERNAL_SuppressChecks, W("SuppressChecks"),0,  "")
 CONFIG_DWORD_INFO(INTERNAL_SuppressLockViolationsOnReentryFromOS, W("SuppressLockViolationsOnReentryFromOS"), 0, "64 bit OOM tests re-enter the CLR via RtlVirtualUnwind.  This indicates whether to suppress resulting locking violations.")
 
@@ -263,13 +262,6 @@ RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_HeapVerify, W("HeapVerify"), 0, "When set v
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_GCCpuGroup, W("GCCpuGroup"), 0, "Specifies if to enable GC to support CPU groups")
 RETAIL_CONFIG_STRING_INFO(EXTERNAL_GCName, W("GCName"), "")
 RETAIL_CONFIG_STRING_INFO(EXTERNAL_GCPath, W("GCPath"), "")
-/**
- * This flag allows us to force the runtime to use global allocation context on Windows x86/amd64 instead of thread allocation context just for testing purpose.
- * The flag is unsafe for a subtle reason. Although the access to the g_global_alloc_context is protected under a lock. The implementation of
- * that lock in the JIT helpers are not multi-core safe (in particular, it used and inc instruction without using the LOCK prefix). This is
- * only useful for ad-hoc testing.
- */
-CONFIG_DWORD_INFO(INTERNAL_GCUseGlobalAllocationContext, W("GCUseGlobalAllocationContext"), 0, "Force using the global allocation context for testing only")
 
 ///
 /// JIT
@@ -701,6 +693,7 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Atomics,           W("EnableArm64At
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Crc32,             W("EnableArm64Crc32"),          1, "Allows Arm64 Crc32+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Dczva,             W("EnableArm64Dczva"),          1, "Allows Arm64 Dczva+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Dp,                W("EnableArm64Dp"),             1, "Allows Arm64 Dp+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Fp16,              W("EnableArm64Fp16"),           1, "Allows Arm64 Fp16+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Rdm,               W("EnableArm64Rdm"),            1, "Allows Arm64 Rdm+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Sha1,              W("EnableArm64Sha1"),           1, "Allows Arm64 Sha1+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Sha256,            W("EnableArm64Sha256"),         1, "Allows Arm64 Sha256+ hardware intrinsics to be disabled")

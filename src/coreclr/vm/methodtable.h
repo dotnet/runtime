@@ -45,7 +45,6 @@ class    MethodDescChunk;
 class    MethodTable;
 class    Module;
 class    Object;
-class    Stub;
 class    Substitution;
 class    TypeHandle;
 class   Dictionary;
@@ -1873,6 +1872,9 @@ public:
 
     // Only accurate on types which are not auto layout
     inline BOOL IsInt128OrHasInt128Fields();
+
+    // Only accurate on types which are not auto layout
+    inline BOOL IsDecimalFloatingPointOrHasDecimalFloatingPointFields();
 
     UINT32 GetNativeSize();
 

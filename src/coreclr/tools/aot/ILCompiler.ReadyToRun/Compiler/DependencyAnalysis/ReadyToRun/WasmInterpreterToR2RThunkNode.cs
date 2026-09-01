@@ -41,6 +41,36 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         bool INodeWithTypeSignature.IsAsyncCall => false;
         bool INodeWithTypeSignature.HasGenericContextArg => false;
 
+        private bool HasAsyncContinuation => _wasmSignature.SignatureString.Contains('a');
+        private bool HasGenericContextBeforeAsync
+        {
+            get
+            {
+                int asyncMarkerIndex = _wasmSignature.SignatureString.IndexOf('a');
+                if (asyncMarkerIndex < 0)
+                {
+                    return false;
+                }
+
+                int pos = 1;
+                if (_wasmSignature.SignatureString[0] == 'S')
+                {
+                    while ((pos < _wasmSignature.SignatureString.Length) && char.IsDigit(_wasmSignature.SignatureString[pos]))
+                    {
+                        pos++;
+                    }
+                }
+
+                if ((pos < _wasmSignature.SignatureString.Length) && (_wasmSignature.SignatureString[pos] == 'T'))
+                {
+                    pos++;
+                }
+
+                char hiddenParamChar = (_context.Target.PointerSize == 4) ? 'i' : 'l';
+                return (pos < asyncMarkerIndex) && (_wasmSignature.SignatureString[pos] == hiddenParamChar);
+            }
+        }
+
         public WasmInterpreterToR2RThunkNode(NodeFactory factory, WasmSignature wasmSignature)
         {
             _context = factory.TypeSystemContext;
@@ -83,12 +113,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             Debug.Assert(!instructionEncoder.Is64Bit);
 
             ISymbolNode targetTypeIndex = _targetTypeNode;
+            bool hasAsyncContinuation = HasAsyncContinuation;
 
             MethodSignature methodSignature = WasmLowering.RaiseSignature(_wasmSignature, _context);
-            (ArgIterator<TypeHandle> argit, TransitionBlock transitionBlock) = GCRefMapBuilder.BuildArgIterator(methodSignature, _context);
+            (ArgIterator<TypeHandle> argit, TransitionBlock transitionBlock) = GCRefMapBuilder.BuildArgIterator(methodSignature, _context, methodIsAsyncCall: hasAsyncContinuation);
 
             bool hasRetBuffArg = _wasmSignature.SignatureString[0] == 'S';
             bool hasThis = !methodSignature.IsStatic;
+            bool hasGenericContextBeforeAsync = HasGenericContextBeforeAsync;
 
             // Gather explicit-arg offsets and indirectness from ArgIterator.
             // ArgIterator offsets are relative to the TransitionBlock base; the interpreter
@@ -118,24 +150,24 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             const int LocalPortableEntrypoint = 0;
             const int LocalPArgs = 1;
             const int LocalPRet = 2;
-            const int LocalSavedSp = 3;
+            int localSavedSp = 3;
 
             const int FrameSize = 16; // 16-byte aligned allocation for framePointer
 
             List<WasmExpr> expressions = new List<WasmExpr>();
 
             // Save the current stack pointer global
-            expressions.Add(Global.Get(WasmObjectWriter.StackPointerGlobalIndex));
-            expressions.Add(Local.Set(LocalSavedSp));
+            expressions.Add(Global.Get(WebCilObjectWriter.StackPointerGlobalIndex));
+            expressions.Add(Local.Set(localSavedSp));
 
             // Allocate frame space: sp -= FrameSize
-            expressions.Add(Local.Get(LocalSavedSp));
+            expressions.Add(Local.Get(localSavedSp));
             expressions.Add(I32.Const(FrameSize));
             expressions.Add(I32.Sub);
-            expressions.Add(Global.Set(WasmObjectWriter.StackPointerGlobalIndex));
+            expressions.Add(Global.Set(WebCilObjectWriter.StackPointerGlobalIndex));
 
             // Write TERMINATE_R2R_STACK_WALK (1) into the framePointer at new SP
-            expressions.Add(Global.Get(WasmObjectWriter.StackPointerGlobalIndex));
+            expressions.Add(Global.Get(WebCilObjectWriter.StackPointerGlobalIndex));
             expressions.Add(I32.Const(TerminateR2RStackWalk));
             expressions.Add(I32.Store(0));
 
@@ -153,7 +185,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
 
             // Param 0: $sp — pointer to the framePointer on the shadow stack
-            expressions.Add(Global.Get(WasmObjectWriter.StackPointerGlobalIndex));
+            expressions.Add(Global.Get(WebCilObjectWriter.StackPointerGlobalIndex));
             targetParamIndex++;
 
             // If the method has a 'this' pointer, load it from pArgs at offset 0
@@ -173,7 +205,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 targetParamIndex++;
             }
 
-            // Explicit parameters — load each from pArgs at the ArgIterator-derived offset
+            if (hasAsyncContinuation && !hasGenericContextBeforeAsync)
+            {
+                expressions.Add(I32.Const(0));
+                targetParamIndex++;
+            }
+
+            // Explicit parameters — load each from pArgs at the ArgIterator-derived offset.
+            // A generic context is parameter 0; the async continuation follows it.
             for (int i = 0; i < methodSignature.Length; i++)
             {
                 TypeDesc paramType = methodSignature[i];
@@ -183,7 +222,19 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     continue;
                 }
 
-                if (isIndirectStructArg[i])
+                if (WasmLowering.TryGetMultiSegmentLayout(paramType, out WasmValueType slotType, out int slotCount))
+                {
+                    // Passed by value across several wasm parameters — load each slot.
+                    int slotSize = WasmLowering.GetMultiSegmentSlotSize(slotType);
+                    for (int slot = 0; slot < slotCount; slot++)
+                    {
+                        expressions.Add(Local.Get(LocalPArgs));
+                        ulong slotOffset = (ulong)(interpOffsets[i] + (slot * slotSize));
+                        expressions.Add(slotType == WasmValueType.I64 ? I64.Load(slotOffset) : V128.Load(slotOffset));
+                        targetParamIndex++;
+                    }
+                }
+                else if (isIndirectStructArg[i])
                 {
                     // Byreference struct — pass a pointer into the incoming pArgs buffer
                     expressions.Add(Local.Get(LocalPArgs));
@@ -215,6 +266,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         default:
                             throw new Exception("Unexpected wasm type for interpreter-to-R2R arg");
                     }
+                    targetParamIndex++;
+                }
+
+                if (hasAsyncContinuation && hasGenericContextBeforeAsync && (i == 0))
+                {
+                    expressions.Add(I32.Const(0));
                     targetParamIndex++;
                 }
             }
@@ -256,30 +313,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 }
             }
 
-            // For struct returns via retbuf: the R2R function has already written the struct
-            // into pRet. Zero-pad to the appropriate alignment boundary.
-            if (hasRetBuffArg)
-            {
-                TypeDesc returnType = methodSignature.ReturnType;
-                int structSize = returnType.GetElementSize().AsInt;
-                int alignment = structSize <= 4 ? 4 : 8;
-                int padding = AlignmentHelper.AlignUp(structSize, alignment) - structSize;
-                if (padding > 0)
-                {
-                    expressions.Add(Local.Get(LocalPRet));
-                    expressions.Add(I32.Const(structSize));
-                    expressions.Add(I32.Add);
-                    expressions.Add(I32.Const(0));
-                    expressions.Add(I32.Const(padding));
-                    expressions.Add(Memory.Fill());
-                }
-            }
+            // For struct returns via retbuf the R2R function has already written the struct into
+            // pRet, and there is nothing more to do.
 
             // Restore the stack pointer global
-            expressions.Add(Local.Get(LocalSavedSp));
-            expressions.Add(Global.Set(WasmObjectWriter.StackPointerGlobalIndex));
+            expressions.Add(Local.Get(localSavedSp));
+            expressions.Add(Global.Set(WebCilObjectWriter.StackPointerGlobalIndex));
 
-            instructionEncoder.FunctionBody = new WasmFunctionBody(sigForInterpToR2RThunks.FuncType,
+            instructionEncoder.FunctionBody = new WasmFunctionBody(
+                sigForInterpToR2RThunks.FuncType,
                 new[] { WasmValueType.I32 },
                 expressions.ToArray());
         }

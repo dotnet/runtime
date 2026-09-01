@@ -26,11 +26,11 @@ enum StackTraceElementFlags
     STEF_LAST_FRAME_FROM_FOREIGN_STACK_TRACE = 0x0001, // [cDAC] [Exception]: Contract depends on this value.
 
     // Set if the "ip" field has already been adjusted (decremented)
-    STEF_IP_ADJUSTED = 0x0002,
+    STEF_IP_ADJUSTED = 0x0002, // [cDAC] [Exception]: Contract depends on this value.
 
     // Set if the element references a method that needs a keep alive object
     STEF_KEEPALIVE = 0x0004,
-    STEF_CONTINUATION = 0x0008,
+    STEF_CONTINUATION = 0x0008, // [cDAC] [Exception]: Contract depends on this value.
 };
 
 // This struct is used by SOS in the diagnostic repo.
@@ -668,8 +668,7 @@ class EEFileLoadException : public EEException
   public:
 
     EEFileLoadException(const SString &name, HRESULT hr, Exception *pInnerException = NULL);
-    EEFileLoadException(const SString &name, HRESULT hr, const SString &diagnosticInfo, Exception *pInnerException = NULL);
-    ~EEFileLoadException();
+    EEFileLoadException(const SString &name, HRESULT hr, const SString &diagnosticInfo);
 
     void SetRequestingAssemblyChain(const SString &requestingAssemblyChain)
     {
@@ -843,18 +842,6 @@ LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv);
 #define EX_ENDTRY                                           \
     PAL_CPP_ENDTRY
 
-
-// CLRException::GetErrorInfo below invokes GetComIPFromObjectRef
-// that invokes ObjHeader::GetSyncBlock which has the INJECT_FAULT contract.
-//
-// This EX_CATCH_HRESULT implementation can be used in functions
-// that have FORBID_FAULT contracts.
-//
-// However, failure due to OOM (or any other potential exception) in GetErrorInfo
-// implies that we couldnt get the interface pointer from the objectRef and would be
-// returned NULL.
-//
-// Thus, the scoped use of FAULT_NOT_FATAL macro.
 #undef EX_CATCH_HRESULT
 #ifdef FEATURE_COMINTEROP
 #define EX_CATCH_HRESULT(_hr)                                                   \
@@ -862,7 +849,6 @@ LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv);
     {                                                                           \
         (_hr) = GET_EXCEPTION()->GetHR();                                       \
         {                                                                       \
-            FAULT_NOT_FATAL();                                                  \
             HRESULT hrErrorInfo = GET_EXCEPTION()->SetErrorInfo();              \
             if (FAILED(hrErrorInfo))                                            \
             {                                                                   \
@@ -966,7 +952,7 @@ inline CLRException::CLRException()
 
 inline void CLRException::SetThrowableHandle(OBJECTHANDLE throwable)
 {
-    STRESS_LOG1(LF_EH, LL_INFO100, "in CLRException::SetThrowableHandle: obj = %x\n", throwable);
+    STRESS_LOG1(LF_EH, LL_INFO100, "in CLRException::SetThrowableHandle: obj = %p\n", (void*)throwable);
     m_throwableHandle = throwable;
 }
 

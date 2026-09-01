@@ -6,6 +6,7 @@
 #pragma hdrstop
 #endif
 
+#include <inttypes.h>
 #include "codegen.h"
 
 // clang-format off
@@ -89,6 +90,17 @@ void emitter::emitIns_BlockTy(instruction ins, WasmValueType valType)
 //
 void emitter::emitIns_I(instruction ins, emitAttr attr, cnsval_ssize_t imm)
 {
+    // Rewrite `local.set N; local.get N` as `local.tee N`.
+    //
+    if ((ins == INS_local_get) && m_compiler->opts.OptimizationEnabled() && emitCanPeepholeLastIns() &&
+        (emitLastIns->idIns() == INS_local_set) && (emitGetInsSC(emitLastIns) == imm))
+    {
+        JITDUMP("\n -- rewriting 'local.set %d' as 'local.tee %d' since it is followed by a get of the same local.\n",
+                (int)imm, (int)imm);
+        emitLastIns->idIns(INS_local_tee);
+        return;
+    }
+
     instrDesc* id  = emitNewInstrSC(attr, imm);
     insFormat  fmt = emitInsFormat(ins);
 
@@ -153,33 +165,32 @@ void emitter::emitIns_S(instruction ins, emitAttr attr, int varx, int offs)
 
 void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg)
 {
-    NYI_WASM("emitIns_R");
+    unreached();
 }
 
 void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, cnsval_ssize_t imm)
 {
-    NYI_WASM("emitIns_R_I");
+    unreached();
 }
 
 void emitter::emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regNumber srcReg, bool canSkip)
 {
-    NYI_WASM("emitIns_Mov");
+    unreached();
 }
 
 void emitter::emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2)
 {
-    NYI_WASM("emitIns_R_R");
+    unreached();
 }
 
 void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber ireg, int varx, int offs)
 {
-    NYI_WASM("emitIns_S_R");
+    unreached();
 }
 
 bool emitter::emitInsIsStore(instruction ins)
 {
-    NYI_WASM("emitInsIsStore");
-    return false;
+    unreached();
 }
 
 //------------------------------------------------------------------------
@@ -228,6 +239,34 @@ void emitter::emitFuncletAddressConstant(cnsval_ssize_t funcletId)
     emitIns_I(INS_global_get, EA_HANDLE_CNS_RELOC,
               (cnsval_ssize_t)(size_t)m_compiler->eeGetWasmWellKnownGlobals()->tableBase);
     emitIns_I(INS_i32_const_funcletptr, EA_PTRSIZE, (cnsval_ssize_t)funcletId);
+    emitIns(INS_i32_add);
+}
+
+//------------------------------------------------------------------------
+// emitDataOffsetConstant: Emit a constant whose value is the linear-memory
+// address of an entry in this method's JIT-emitted data (constants) section.
+//
+// The encoding mirrors emitAddressConstant: we load the image base global
+// (the module image base), emit a relocated i32.const for the entry's offset,
+// then add them. At output time the reloc target is resolved to the host
+// pointer of the data section entry, which crossgen2 maps to the per-method
+// read-only data symbol + offset.
+//
+// Arguments:
+//    dataOffs - JIT data section offset of the entry (from
+//               Compiler::eeGetJitDataOffs / emitter::emitDataGenBeg).
+//
+void emitter::emitDataOffsetConstant(UNATIVE_OFFSET dataOffs)
+{
+    emitIns_I(INS_global_get, EA_HANDLE_CNS_RELOC,
+              (cnsval_ssize_t)(size_t)m_compiler->eeGetWasmWellKnownGlobals()->imageBase);
+
+    instrDesc* id = emitNewInstrSC(EA_SET_FLG(EA_PTRSIZE, EA_CNS_RELOC_FLG), (cnsval_ssize_t)dataOffs);
+    id->idIns(INS_i32_const_dataoffs);
+    id->idInsFmt(IF_DATAOFFS);
+    dispIns(id);
+    appendToCurIG(id);
+
     emitIns(INS_i32_add);
 }
 
@@ -711,6 +750,9 @@ unsigned emitter::instrDesc::idCodeSize() const
         case IF_FUNCLETIDX:
             size += PADDED_RELOC_SIZE; // funclet indices and pointers are always emitted as relocations
             break;
+        case IF_DATAOFFS:
+            size += PADDED_RELOC_SIZE; // data-section offsets are always emitted as relocations
+            break;
         case IF_CALL_INDIRECT:
         {
             size += idIsCnsReloc() ? PADDED_RELOC_SIZE : SizeOfULEB128(emitGetInsSC(this));
@@ -775,7 +817,7 @@ unsigned emitter::instrDesc::idCodeSize() const
 
 void emitter::emitSetShortJump(instrDescJmp* id)
 {
-    NYI_WASM("emitSetShortJump");
+    unreached();
 }
 
 size_t emitter::emitOutputULEB128(uint8_t* destination, uint64_t value)
@@ -975,6 +1017,17 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += emitOutputConstantFunclet(dst, id, CorInfoReloc::WASM_TABLE_INDEX_SLEB);
             break;
         }
+        case IF_DATAOFFS:
+        {
+            // Resolve the JIT data-section offset to a host pointer and record a
+            // memory-address reloc (same shape as IF_MEMADDR).
+            dst += emitOutputOpcode(dst, ins);
+            UNATIVE_OFFSET dataOffs = (UNATIVE_OFFSET)emitGetInsSC(id);
+            BYTE*          target   = emitDataOffsetToPtr(dataOffs);
+            emitRecordRelocation(dst, target, CorInfoReloc::WASM_MEMORY_ADDR_REL_SLEB);
+            dst += emitOutputPaddedReloc(dst);
+            break;
+        }
         case IF_FUNCPTR:
         {
             dst += emitOutputOpcode(dst, ins);
@@ -1129,8 +1182,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             break;
         }
         default:
-            NYI_WASM("emitOutputInstr");
-            break;
+            unreached();
     }
 
 #ifdef DEBUG
@@ -1281,7 +1333,7 @@ void emitter::emitDispIns(
         case IF_GLOBALIDX:
         {
             cnsval_ssize_t imm = emitGetInsSC(id);
-            printf(" %llu", (uint64_t)imm);
+            printf(" %" PRIu64, (uint64_t)imm);
             dispJumpTargetIfAny();
             dispHandleIfAny();
             dispLclVarInfoIfAny();
@@ -1291,14 +1343,14 @@ void emitter::emitDispIns(
         case IF_CALL_INDIRECT:
         {
             cnsval_ssize_t imm = emitGetInsSC(id);
-            printf(" %llu 0", (uint64_t)imm);
+            printf(" %" PRIu64 " 0", (uint64_t)imm);
             dispHandleIfAny();
         }
         break;
         case IF_MEMIDX_MEMIDX:
         {
             cnsval_ssize_t imm = emitGetInsSC(id);
-            printf(" %llu %llu", (uint64_t)imm, (uint64_t)imm);
+            printf(" %" PRIu64 " %" PRIu64, (uint64_t)imm, (uint64_t)imm);
         }
         break;
         case IF_LOCAL_DECL:
@@ -1333,7 +1385,7 @@ void emitter::emitDispIns(
         case IF_SLEB128:
         {
             cnsval_ssize_t imm = emitGetInsSC(id);
-            printf(" %lli", (int64_t)imm);
+            printf(" %" PRId64, (int64_t)imm);
             dispLclVarInfoIfAny();
         }
         break;
@@ -1342,7 +1394,15 @@ void emitter::emitDispIns(
         case IF_FUNCLETIDX:
         {
             cnsval_ssize_t imm = emitGetInsSC(id);
-            printf("funclet %lli", (int64_t)imm);
+            printf("funclet %lli", static_cast<long long>(imm));
+            dispLclVarInfoIfAny();
+        }
+        break;
+
+        case IF_DATAOFFS:
+        {
+            cnsval_ssize_t imm = emitGetInsSC(id);
+            printf("data 0x%llx", static_cast<unsigned long long>(imm));
             dispLclVarInfoIfAny();
         }
         break;
@@ -1363,11 +1423,11 @@ void emitter::emitDispIns(
             cnsval_ssize_t offset    = emitGetInsSC(id);
             if (id->idIsCnsReloc())
             {
-                printf(" %u reloc 0x%llx", log2align, (uint64_t)offset);
+                printf(" %u reloc 0x%" PRIx64, log2align, (uint64_t)offset);
             }
             else
             {
-                printf(" %u %llu", log2align, (uint64_t)offset);
+                printf(" %u %" PRIu64, log2align, (uint64_t)offset);
             }
             dispLclVarInfoIfAny();
         }
@@ -1442,7 +1502,7 @@ void emitter::emitDispIns(
         {
             unsigned       log2align = emitGetAlignHintLog2(id);
             cnsval_ssize_t offset    = emitGetInsSC(id);
-            printf(" %u %llu", log2align, (uint64_t)offset);
+            printf(" %u %llu", log2align, static_cast<unsigned long long>(offset));
             dispLclVarInfoIfAny();
 
             uint8_t lane = emitGetLaneImmValue(id);

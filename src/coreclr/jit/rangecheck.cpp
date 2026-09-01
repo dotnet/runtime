@@ -1742,7 +1742,17 @@ void RangeCheck::MergeAssertion(BasicBlock* block, GenTree* op, Range* pRange DE
     if (op->OperIs(GT_PHI_ARG))
     {
         const BasicBlock* pred = op->AsPhiArg()->gtPredBB;
-        assertions             = m_compiler->optGetEdgeAssertions(block, pred);
+
+        // Flow edits (e.g. RBO jump threading) can orphan a block without removing it or
+        // updating phis that name it as gtPredBB. Assertions on an edge out of an unreachable
+        // block don't hold, so don't merge them. Symmetric to the guard in
+        // Compiler::optVisitReachingAssertions (compiler.hpp).
+        if ((pred->bbPreds == nullptr) && (pred != m_compiler->fgFirstBB) && !m_compiler->bbIsHandlerBeg(pred))
+        {
+            return;
+        }
+
+        assertions = m_compiler->optGetEdgeAssertions(block, pred);
         if (!BitVecOps::MayBeUninit(assertions))
         {
             JITDUMP("Merge assertions created by " FMT_BB " for " FMT_BB "\n", pred->bbNum, block->bbNum);
@@ -2195,10 +2205,19 @@ bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTree* expr, const Ran
     {
         overflows = DoesBinOpOverflow(block, expr->AsOp(), range);
     }
-    // These operators don't overflow.
+    // These operators don't overflow themselves, but their ranges are derived from the operands'
+    // ranges, so an overflow in an operand's def chain still invalidates the result.
     else if (expr->OperIs(GT_AND, GT_RSH, GT_RSZ, GT_UMOD, GT_NEG))
     {
         overflows = false;
+        for (GenTree* operand : expr->Operands())
+        {
+            if (!GetSearchPath()->Lookup(operand) && ComputeDoesOverflow(block, operand, range))
+            {
+                overflows = true;
+                break;
+            }
+        }
     }
     else if (expr->OperIs(GT_XOR) && vnStore->IsVNLog2(m_compiler->vnStore->VNConservativeNormalValue(expr->gtVNPair)))
     {

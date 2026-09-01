@@ -1162,11 +1162,6 @@ FCIMPL1(Object*, RuntimeTypeHandle::InternalAllocNoChecks_FastPath, MethodTable*
 
     _ASSERTE(pMT != nullptr);
 
-    if (!GCHeapUtilities::UseThreadAllocationContexts())
-    {
-        return NULL;
-    }
-
     if (pMT->HasFinalizer())
     {
         return NULL;
@@ -2070,7 +2065,7 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_GetMethodBody(MethodDesc* pMethod,
             pMethodIL = pMethod->GetWrappedMethodDesc();
         }
 
-        pILHeader = pMethodIL->GetILHeader();
+        pILHeader = pMethodIL->GetActiveILHeader();
     }
 
     if (pILHeader)

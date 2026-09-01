@@ -1178,14 +1178,6 @@ void Compiler::fgCompactBlock(BasicBlock* block)
     }
 
     assert(block->KindIs(target->GetKind()));
-
-#if DEBUG
-    if (JitConfig.JitSlowDebugChecksEnabled() != 0)
-    {
-        // Make sure that the predecessor lists are accurate
-        fgDebugCheckBBlist();
-    }
-#endif // DEBUG
 }
 
 //-------------------------------------------------------------
@@ -1293,13 +1285,32 @@ bool Compiler::fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBloc
 
     BasicBlock* const bDestTarget = bDest->GetTarget();
 
-    // Don't redirect 'block' to 'bDestTarget' if the latter jumps to 'bDest'.
-    // This will lead the JIT to consider optimizing 'block' -> 'bDestTarget' -> 'bDest',
-    // entering an infinite loop.
-    //
-    if (bDestTarget->GetUniqueSucc() == bDest)
+    // Don't redirect 'block' into a cycle of empty unconditional blocks. The next invocation
+    // would redirect it again, indefinitely rotating its target around the cycle.
+    BasicBlock* slow = bDest;
+    BasicBlock* fast = bDest;
+    while (true)
     {
-        optimizeJump = false;
+        if (!slow->isEmpty() || !slow->KindIs(BBJ_ALWAYS) || !fast->isEmpty() || !fast->KindIs(BBJ_ALWAYS))
+        {
+            break;
+        }
+
+        slow = slow->GetTarget();
+        fast = fast->GetTarget();
+
+        if (!fast->isEmpty() || !fast->KindIs(BBJ_ALWAYS))
+        {
+            break;
+        }
+
+        fast = fast->GetTarget();
+
+        if (slow == fast)
+        {
+            optimizeJump = false;
+            break;
+        }
     }
 
     // We do not optimize jumps between two different try regions.
@@ -2893,13 +2904,16 @@ void Compiler::fgPeelSwitch(BasicBlock* block)
 
     // Set up a compare in the upstream block, "stealing" the switch value tree.
     //
-    GenTree* const   dominantCaseCompare = gtNewOperNode(GT_EQ, TYP_INT, switchValue, gtNewIconNode(dominantCase));
-    GenTree* const   jmpTree             = gtNewOperNode(GT_JTRUE, TYP_VOID, dominantCaseCompare);
-    Statement* const jmpStmt             = fgNewStmtFromTree(jmpTree, switchStmt->GetDebugInfo());
-    fgInsertStmtAtEnd(block, jmpStmt);
+    GenTree* const dominantCaseCompare = gtNewOperNode(GT_EQ, TYP_INT, switchValue, gtNewIconNode(dominantCase));
+    GenTree* const jmpTree             = gtNewOperNode(GT_JTRUE, TYP_VOID, dominantCaseCompare);
 
     // Reattach switch value to the switch. This may introduce a comma
     // in the upstream compare tree, if the switch value expression is complex.
+    //
+    // Note this must happen before the compare is put into a statement below: creating the
+    // statement sequences the tree via gtSetEvalOrder, which is allowed to swap the operands
+    // of the compare (and does so when the switch value is a constant). After that point
+    // "gtOp1" is no longer guaranteed to be the switch value.
     //
     switchTree->AsOp()->gtOp1 = fgMakeMultiUse(&dominantCaseCompare->AsOp()->gtOp1);
 
@@ -2909,6 +2923,9 @@ void Compiler::fgPeelSwitch(BasicBlock* block)
     dominantCaseCompare->gtFlags |= dominantCaseCompare->gtGetOp1()->gtFlags & GTF_ALL_EFFECT;
     jmpTree->gtFlags |= dominantCaseCompare->gtFlags & GTF_ALL_EFFECT;
     dominantCaseCompare->gtFlags |= GTF_RELOP_JMP_USED | GTF_DONT_CSE;
+
+    Statement* const jmpStmt = fgNewStmtFromTree(jmpTree, switchStmt->GetDebugInfo());
+    fgInsertStmtAtEnd(block, jmpStmt);
 
     // Wire up the new control flow.
     //
@@ -2952,11 +2969,8 @@ void Compiler::fgPeelSwitch(BasicBlock* block)
         gtSetStmtInfo(switchStmt);
         fgSetStmtSeq(switchStmt);
 
-        // fgNewStmtFromTree() already threaded the tree, but calling fgMakeMultiUse() might have
-        // added new nodes if a COMMA was introduced.
-        JITDUMP("Rethreading " FMT_STMT "\n", jmpStmt->GetID());
-        gtSetStmtInfo(jmpStmt);
-        fgSetStmtSeq(jmpStmt);
+        // Note the compare does not need rethreading here: it was fully built (including any
+        // nodes fgMakeMultiUse() added) before fgNewStmtFromTree() sequenced it.
     }
 }
 
@@ -4563,6 +4577,15 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPh
 
                     bool optimizeJump = isJumpAroundEmpty || isJumpToJoinFree;
 
+#ifdef TARGET_WASM
+                    // Don't reverse a wasm try/catch header's GT_WASM_JEXCEPT.
+                    //
+                    if (block->lastNode()->OperIs(GT_WASM_JEXCEPT))
+                    {
+                        optimizeJump = false;
+                    }
+#endif // TARGET_WASM
+
                     // We do not optimize jumps between two different try regions.
                     // However jumping to a block that is not in any try region is OK
                     //
@@ -4852,14 +4875,6 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPh
             fgDispHandlerTab();
         }
 
-        if (compRationalIRForm)
-        {
-            for (BasicBlock* const block : Blocks())
-            {
-                LIR::AsRange(block).CheckLIR(this);
-            }
-        }
-
         fgVerifyHandlerTab();
         // Make sure that the predecessor lists are accurate
         fgDebugCheckBBlist();
@@ -5017,6 +5032,28 @@ unsigned Compiler::fgGetCodeEstimate(BasicBlock* block)
 
 #ifdef FEATURE_JIT_METHOD_PERF
 
+class NodeCountVisitor final : public GenTreeVisitor<NodeCountVisitor>
+{
+public:
+    enum
+    {
+        DoPreOrder = true,
+    };
+
+    unsigned m_nodeCount = 0;
+
+    NodeCountVisitor(Compiler* compiler)
+        : GenTreeVisitor<NodeCountVisitor>(compiler)
+    {
+    }
+
+    fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+    {
+        m_nodeCount++;
+        return fgWalkResult::WALK_CONTINUE;
+    }
+};
+
 //------------------------------------------------------------------------
 // fgMeasureIR: count and return the number of IR nodes in the function.
 //
@@ -5025,7 +5062,7 @@ unsigned Compiler::fgGetCodeEstimate(BasicBlock* block)
 //
 unsigned Compiler::fgMeasureIR()
 {
-    unsigned nodeCount = 0;
+    NodeCountVisitor visitor(this);
 
     for (BasicBlock* const block : Blocks())
     {
@@ -5033,25 +5070,19 @@ unsigned Compiler::fgMeasureIR()
         {
             for (Statement* const stmt : block->Statements())
             {
-                fgWalkTreePre(
-                    stmt->GetRootNodePointer(),
-                    [](GenTree** slot, fgWalkData* data) -> Compiler::fgWalkResult {
-                    (*reinterpret_cast<unsigned*>(data->pCallbackData))++;
-                    return Compiler::WALK_CONTINUE;
-                },
-                    &nodeCount);
+                visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
             }
         }
         else
         {
             for (GenTree* node : LIR::AsRange(block))
             {
-                nodeCount++;
+                visitor.m_nodeCount++;
             }
         }
     }
 
-    return nodeCount;
+    return visitor.m_nodeCount;
 }
 
 #endif // FEATURE_JIT_METHOD_PERF

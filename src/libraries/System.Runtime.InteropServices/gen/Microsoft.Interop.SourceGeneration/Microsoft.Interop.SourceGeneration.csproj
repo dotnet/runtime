@@ -13,6 +13,7 @@
   <ItemGroup>
     <Compile Include="$(CoreLibSharedDir)System\Runtime\InteropServices\StringMarshalling.cs" Link="Production\StringMarshalling.cs" />
     <Compile Include="$(CoreLibSharedDir)\System\Runtime\InteropServices\Marshalling\MarshalMode.cs" Link="Production\MarshalMode.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\src\System\Runtime\InteropServices\Marshalling\ComInterfaceOptions.cs" Link="Production\ComInterfaceOptions.cs" />
   </ItemGroup>
 
   <ItemGroup>

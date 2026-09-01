@@ -22,6 +22,20 @@ public unsafe partial interface ICorDebugDataTarget
     int GetThreadContext(uint threadId, uint contextFlags, uint contextSize, byte* pContext);
 }
 
+[GeneratedComInterface]
+[Guid("A1B8A756-3CB6-4CCB-979F-3DF999673A59")]
+public unsafe partial interface ICorDebugMutableDataTarget : ICorDebugDataTarget
+{
+    [PreserveSig]
+    int WriteVirtual(ulong address, byte* pBuffer, uint bytesRequested);
+
+    [PreserveSig]
+    int SetThreadContext(uint threadId, uint contextSize, byte* pContext);
+
+    [PreserveSig]
+    int ContinueStatusChanged(uint threadId, uint continueStatus);
+}
+
 [StructLayout(LayoutKind.Sequential)]
 public struct COR_TYPEID
 {
@@ -142,6 +156,16 @@ public struct DacDbiTargetBuffer
 {
     public ulong pAddress;
     public uint cbSize;
+}
+
+[StructLayout(LayoutKind.Sequential)]
+public struct NativeCodeFunctionData
+{
+    public DacDbiTargetBuffer hotRegion;
+    public DacDbiTargetBuffer coldRegion;
+    public Interop.BOOL isInstantiatedGeneric;
+    public ulong vmNativeCodeMethodDescToken;
+    public ulong encVersion;
 }
 
 [StructLayout(LayoutKind.Sequential)]
@@ -533,6 +557,9 @@ public unsafe partial interface IDacDbiInterface
     int FlushCache();
 
     [PreserveSig]
+    int Destroy();
+
+    [PreserveSig]
     int DacSetTargetConsistencyChecks(Interop.BOOL fEnableAsserts);
 
     [PreserveSig]
@@ -707,10 +734,10 @@ public unsafe partial interface IDacDbiInterface
     int GetILCodeAndSig(ulong vmAssembly, uint functionToken, DacDbiTargetBuffer* pTargetBuffer, uint* pLocalSigToken);
 
     [PreserveSig]
-    int GetNativeCodeInfo(ulong vmAssembly, uint functionToken, nint pJitManagerList);
+    int GetNativeCodeInfo(ulong vmAssembly, uint functionToken, NativeCodeFunctionData* pCodeInfo);
 
     [PreserveSig]
-    int GetNativeCodeInfoForAddr(ulong codeAddress, nint pCodeInfo, ulong* pVmModule, uint* pFunctionToken);
+    int GetNativeCodeInfoForAddr(ulong codeAddress, NativeCodeFunctionData* pCodeInfo, ulong* pVmModule, uint* pFunctionToken);
 
     [PreserveSig]
     int IsValueType(ulong vmTypeHandle, Interop.BOOL* pResult);
@@ -859,19 +886,16 @@ public unsafe partial interface IDacDbiInterface
     int GetGCHeapInformation(COR_HEAPINFO* pHeapInfo);
 
     [PreserveSig]
-    int GetPEFileMDInternalRW(ulong vmPEAssembly, ulong* pAddrMDInternalRW);
+    int HasReadWriteMetadata(ulong vmPEAssembly, Interop.BOOL* pHasReadWriteMetadata);
 
     [PreserveSig]
     int AreOptimizationsDisabled(ulong vmModule, uint methodTk, Interop.BOOL* pOptimizationsDisabled);
 
     [PreserveSig]
-    int GetDefinesBitField(uint* pDefines);
-
-    [PreserveSig]
-    int GetMDStructuresVersion(uint* pMDStructuresVersion);
-
-    [PreserveSig]
     int GetActiveRejitILCodeVersionNode(ulong vmModule, uint methodTk, ulong* pVmILCodeVersionNode);
+
+    [PreserveSig]
+    int GetEnCILCodeAndSig(ulong vmModule, uint methodTk, nuint enCVersion, DacDbiTargetBuffer* pCodeInfo, uint* pLocalSigToken);
 
     [PreserveSig]
     int GetNativeCodeVersionNode(ulong vmMethod, ulong codeStartAddress, ulong* pVmNativeCodeVersionNode);
@@ -912,4 +936,10 @@ public unsafe partial interface IDacDbiInterface
 
     [PreserveSig]
     int GetGenericArgTokenIndex(ulong vmMethod, uint* pIndex);
+
+    [PreserveSig]
+    int GetReadWriteMetadataSize(ulong vmModule, uint* pSize);
+
+    [PreserveSig]
+    int FillReadWriteMetadata(ulong vmModule, byte* pBuffer, uint cbBuffer);
 }
