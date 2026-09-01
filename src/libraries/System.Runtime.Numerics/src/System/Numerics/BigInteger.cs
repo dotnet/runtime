@@ -1192,7 +1192,21 @@ namespace System.Numerics
         /// </remarks>
         public static BigInteger LeastCommonMultiple(BigInteger left, BigInteger right)
         {
-            throw new NotImplementedException();
+            if (left.IsZero || right.IsZero)
+            {
+                return s_zero;
+            }
+
+            if (TryGetPowerOfTwoExponent(left, out int leftExponent)
+                && TryGetPowerOfTwoExponent(right, out int rightExponent))
+            {
+                return CreatePowerOfTwo(Math.Max(leftExponent, rightExponent), negative: false);
+            }
+
+            // Divide before multiplying so the intermediate never exceeds the result.
+            // The greatest common divisor always divides left exactly, so the quotient is exact.
+            BigInteger greatestCommonDivisor = GreatestCommonDivisor(left, right);
+            return Abs(left / greatestCommonDivisor) * Abs(right);
         }
 
         public static BigInteger Max(BigInteger left, BigInteger right)
