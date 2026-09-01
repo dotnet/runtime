@@ -720,7 +720,9 @@ void SystemDomain::Attach()
 #ifdef FEATURE_COMINTEROP
     CLRToCOMStubManager::Init();
 #endif // FEATURE_COMINTEROP
+#ifdef FEATURE_VARARGS
     InteropDispatchStubManager::Init();
+#endif // FEATURE_VARARGS
     StubLinkStubManager::Init();
     TailCallStubManager::Init();
     AsyncThunkStubManager::Init();

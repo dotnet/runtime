@@ -196,7 +196,7 @@ function libCoreRunFactory() {
             } catch (e) {
                 const errorMessage = e instanceof Error ? e.message : String(e);
                 console.error("Failed to construct WebAssembly module for Webcil image:", { wasmPath, errorMessage });
-                return false;
+                throw new Error(`Failed to construct WebAssembly module for Webcil image '${wasmPath}': ${errorMessage}`);
             }
 
             const tableStartIndex = wasmTable.length;

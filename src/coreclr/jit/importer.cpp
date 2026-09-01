@@ -10523,17 +10523,38 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                     gtNewIconNode(OFFSETOF__CORINFO_TypedReference__type, TYP_I_IMPL));
                 op1 = gtNewIndir(TYP_BYREF, op1, indirFlags);
 
+                unsigned handleTemp = lvaGrabTemp(true DEBUGARG("spill result of REFANYTYPE for null check"));
+                impStoreToTemp(handleTemp, op1, CHECK_SPILL_ALL);
+
                 // Convert native TypeHandle to RuntimeTypeHandle.
-                op1 = gtNewHelperCallNode(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL, TYP_STRUCT, op1);
 
                 CORINFO_CLASS_HANDLE classHandle = impGetTypeHandleClass();
 
+                GenTree* helperCall = gtNewHelperCallNode(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE, TYP_STRUCT,
+                                                          gtNewLclVarNode(handleTemp, TYP_BYREF));
                 // The handle struct is returned in register
-                op1->AsCall()->gtReturnType = GetRuntimeHandleUnderlyingType();
-                op1->AsCall()->gtRetClsHnd  = classHandle;
+                helperCall->AsCall()->gtReturnType = GetRuntimeHandleUnderlyingType();
+                helperCall->AsCall()->gtRetClsHnd  = classHandle;
 #if FEATURE_MULTIREG_RET
-                op1->AsCall()->InitializeStructReturnType(this, classHandle, op1->AsCall()->GetUnmanagedCallConv());
+                helperCall->AsCall()->InitializeStructReturnType(this, classHandle,
+                                                                 helperCall->AsCall()->GetUnmanagedCallConv());
 #endif
+
+                unsigned resultTmp = lvaGrabTemp(true DEBUGARG("result of REFANYTYPE"));
+                lvaSetStruct(resultTmp, classHandle, false);
+
+                GenTree* storeResult  = gtNewStoreLclVarNode(resultTmp, helperCall);
+                GenTree* storeDefault = gtNewStoreLclVarNode(resultTmp, gtNewIconNode(0));
+
+                // wrap helper call in inline null check, essentially
+                //          (handle == 0) ? default(RuntimeTypeHandle) :
+                //          CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE(handle)
+                GenTree* cond =
+                    gtNewOperNode(GT_NE, TYP_INT, gtNewLclVarNode(handleTemp, TYP_BYREF), gtNewZeroConNode(TYP_BYREF));
+                GenTree* qmark = gtNewQmarkNode(TYP_VOID, cond, gtNewColonNode(TYP_VOID, storeResult, storeDefault));
+
+                impAppendTree(qmark, CHECK_SPILL_ALL, impCurStmtDI);
+                op1 = gtNewLclVarNode(resultTmp, TYP_STRUCT);
 
                 tiRetVal = typeInfo(TYP_STRUCT);
                 impPushOnStack(op1, tiRetVal);
