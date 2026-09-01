@@ -765,7 +765,25 @@ namespace System.Formats.Tar
                 return 0;
             }
 
-            return Length;
+            long length = Length;
+
+            if (length > 0 && _header._dataStream is SubReadStream subReadStream)
+            {
+                long remainingDeclared = Math.Max(0, length - subReadStream.Position);
+                long? availableLength = subReadStream.AvailableLengthInSuperStream;
+                if (availableLength.HasValue)
+                {
+                    long availableFromCurrentPosition = Math.Max(0, availableLength.Value - subReadStream.Position);
+                    if (availableFromCurrentPosition < remainingDeclared)
+                    {
+                        return availableFromCurrentPosition;
+                    }
+                }
+
+                return remainingDeclared;
+            }
+
+            return length;
         }
     }
 }
