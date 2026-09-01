@@ -103,22 +103,18 @@ namespace System.IO.Packaging.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Desktop's built-in System.IO.Packaging implementation wraps the size-mismatch error in a FileFormatException instead of throwing InvalidDataException directly")]
-        public void Open_ContentTypesEntryWithImplausibleDeclaredUncompressedSize_ThrowsInvalidDataException()
+        public void Open_ContentTypesEntryDeclaredSizeExceedsMaximum_ThrowsFileFormatException()
         {
             // Regression test: Package.Open's default ReadWrite access automatically parses the mandatory
-            // [Content_Types].xml part during Open(). If that entry's declared (but untrusted) uncompressed
-            // size is implausible relative to its actual compressed size - as would happen with a corrupt
-            // or maliciously crafted header - Open() must reject the archive instead of eagerly allocating
-            // a buffer sized to the attacker-controlled value.
+            // [Content_Types].xml part during Open(). This part is package metadata, not user content, so
+            // its declared (but untrusted) uncompressed size must be bounded to a sane maximum. Otherwise a
+            // small, corrupt, or maliciously crafted archive could declare an implausibly large entry that
+            // gets eagerly buffered in memory (as a MemoryStream sized to the declared value) when the
+            // package is opened for ReadWrite access.
             FileInfo file = GetTempFileInfoWithExtension(".zip");
 
             using (Package package = Package.Open(file.FullName, FileMode.Create, FileAccess.ReadWrite))
             {
-                // The [Content_Types].xml entry inherits its compression level from the first part added
-                // to the package, so a compressed option (rather than the default NotCompressed/Stored) is
-                // required here for the entry to be Deflate-compressed and therefore subject to the
-                // uncompressed-size plausibility check under test.
                 PackagePart part = package.CreatePart(
                     PackUriHelper.CreatePartUri(new Uri("MyFile.xml", UriKind.Relative)),
                     Mime_MediaTypeNames_Text_Xml,
@@ -129,15 +125,17 @@ namespace System.IO.Packaging.Tests
             }
 
             byte[] archiveBytes = File.ReadAllBytes(file.FullName);
-            PatchContentTypesUncompressedSize(archiveBytes, implausibleUncompressedSize: 500_000_000);
+            // Comfortably above the 4 MB cap, but small enough that a regression in the guard would not
+            // risk a large allocation while running this test.
+            PatchContentTypesUncompressedSize(archiveBytes, oversizedUncompressedSize: 5_000_000);
             File.WriteAllBytes(file.FullName, archiveBytes);
 
-            Assert.Throws<InvalidDataException>(() => Package.Open(file.FullName, FileMode.Open, FileAccess.ReadWrite));
+            Assert.Throws<FileFormatException>(() => Package.Open(file.FullName, FileMode.Open, FileAccess.ReadWrite));
         }
 
         // Patches the declared uncompressed size field (in both the local file header and the central
         // directory record) for the "[Content_Types].xml" entry within a raw, in-memory zip byte array.
-        private static void PatchContentTypesUncompressedSize(byte[] archiveBytes, uint implausibleUncompressedSize)
+        private static void PatchContentTypesUncompressedSize(byte[] archiveBytes, uint oversizedUncompressedSize)
         {
             const string EntryName = "[Content_Types].xml";
             byte[] nameBytes = Encoding.ASCII.GetBytes(EntryName);
@@ -161,14 +159,14 @@ namespace System.IO.Packaging.Tests
                 // uncompressed size field is the 4 bytes located 8 bytes before the file name starts.
                 if (nameIndex >= 30 && archiveSpan.Slice(nameIndex - 30, 4).SequenceEqual(localHeaderSignature))
                 {
-                    BinaryPrimitives.WriteUInt32LittleEndian(archiveSpan.Slice(nameIndex - 8, 4), implausibleUncompressedSize);
+                    BinaryPrimitives.WriteUInt32LittleEndian(archiveSpan.Slice(nameIndex - 8, 4), oversizedUncompressedSize);
                     patchedCount++;
                 }
                 // Central directory file header: fixed 46-byte header immediately precedes the file name;
                 // the uncompressed size field is the 4 bytes located 22 bytes before the file name starts.
                 else if (nameIndex >= 46 && archiveSpan.Slice(nameIndex - 46, 4).SequenceEqual(centralDirectorySignature))
                 {
-                    BinaryPrimitives.WriteUInt32LittleEndian(archiveSpan.Slice(nameIndex - 22, 4), implausibleUncompressedSize);
+                    BinaryPrimitives.WriteUInt32LittleEndian(archiveSpan.Slice(nameIndex - 22, 4), oversizedUncompressedSize);
                     patchedCount++;
                 }
             }

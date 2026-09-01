@@ -213,9 +213,6 @@
   <data name="EntryTooLarge" xml:space="preserve">
     <value>Entries larger than 4GB are not supported in Update mode.</value>
   </data>
-  <data name="EntryUncompressedSizeImplausible" xml:space="preserve">
-    <value>The entry's declared uncompressed size ({0}) is implausible given its compressed size ({1}). The archive header may be corrupt or malicious.</value>
-  </data>
   <data name="EntryUncompressedSizeTooLargeForUpdateMode" xml:space="preserve">
     <value>Entries with uncompressed data larger than 2GB are not supported in Update mode.</value>
   </data>
