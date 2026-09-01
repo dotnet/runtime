@@ -352,7 +352,12 @@ void RangeCheck::Widen(BasicBlock* block, GenTree* tree, Range* pRange)
         {
             JITDUMP("[%06d] is monotonically increasing.\n", Compiler::dspTreeID(tree));
             ClearRangeMap();
-            range.LowerLimit() = GetRangeWorker(block, tree, Monotonicity::Increasing DEBUGARG(0)).LowerLimit();
+            Range widenedRange(GetRangeWorker(block, tree, Monotonicity::Increasing DEBUGARG(0)).LowerLimit(),
+                               range.UpperLimit());
+            if (widenedRange.IsValid())
+            {
+                range = widenedRange;
+            }
         }
     }
 
@@ -364,7 +369,12 @@ void RangeCheck::Widen(BasicBlock* block, GenTree* tree, Range* pRange)
         {
             JITDUMP("[%06d] is monotonically decreasing.\n", Compiler::dspTreeID(tree));
             ClearRangeMap();
-            range.UpperLimit() = GetRangeWorker(block, tree, Monotonicity::Decreasing DEBUGARG(0)).UpperLimit();
+            Range widenedRange(range.LowerLimit(),
+                               GetRangeWorker(block, tree, Monotonicity::Decreasing DEBUGARG(0)).UpperLimit());
+            if (widenedRange.IsValid())
+            {
+                range = widenedRange;
+            }
         }
     }
 }
