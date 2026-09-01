@@ -48,6 +48,11 @@ namespace ILCompiler.PortableCallHelpers
 
             try
             {
+                // An empty directory would quietly write the files next to whatever the current
+                // directory happens to be, so name it as the error it is.
+                if (string.IsNullOrEmpty(options.OutputDirectory))
+                    throw new LogAsErrorException("--generate-portable-callhelpers needs a directory to write to.");
+
                 Generate(context, options, log);
                 return 0;
             }
