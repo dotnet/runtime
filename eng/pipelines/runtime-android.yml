@@ -27,3 +27,4 @@ extends:
           isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
           isAndroidOnlyBuild: ${{ variables.isAndroidOnlyBuild }}
           isRollingBuild: ${{ variables.isRollingBuild }}
+          useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
