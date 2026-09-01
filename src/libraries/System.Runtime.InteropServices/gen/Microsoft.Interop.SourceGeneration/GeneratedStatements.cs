@@ -18,9 +18,12 @@ namespace Microsoft.Interop
         public ImmutableArray<FixedStatementSyntax> Pin { get; init; }
         public ImmutableArray<StatementSyntax> PinnedMarshal { get; init; }
         public StatementSyntax InvokeStatement { get; init; }
+        public ImmutableArray<StatementSyntax> ErrorUnmarshalCapture { get; init; }
+        public ImmutableArray<StatementSyntax> ErrorUnmarshal { get; init; }
         public ImmutableArray<StatementSyntax> Unmarshal { get; init; }
         public ImmutableArray<StatementSyntax> NotifyForSuccessfulInvoke { get; init; }
         public ImmutableArray<StatementSyntax> GuaranteedUnmarshal { get; init; }
+        public ImmutableArray<StatementSyntax> ErrorCleanupCalleeAllocated { get; init; }
         public ImmutableArray<StatementSyntax> CleanupCallerAllocated { get; init; }
         public ImmutableArray<StatementSyntax> CleanupCalleeAllocated { get; init; }
 
@@ -35,10 +38,13 @@ namespace Microsoft.Interop
                 Pin = GenerateStatementsForStubContext(marshallers, context with { CurrentStage = StubIdentifierContext.Stage.Pin }).Cast<FixedStatementSyntax>().ToImmutableArray(),
                 PinnedMarshal = GenerateStatementsForStubContext(marshallers, context with { CurrentStage = StubIdentifierContext.Stage.PinnedMarshal }),
                 InvokeStatement = EmptyStatement(),
+                ErrorUnmarshalCapture = GenerateStatementsForStubContext(marshallers, context with { CurrentStage = StubIdentifierContext.Stage.UnmarshalCapture }, errorHandlingOnly: true),
+                ErrorUnmarshal = GenerateStatementsForStubContext(marshallers, context with { CurrentStage = StubIdentifierContext.Stage.Unmarshal }, errorHandlingOnly: true),
                 Unmarshal = GenerateStatementsForStubContext(marshallers, context with { CurrentStage = StubIdentifierContext.Stage.UnmarshalCapture })
                             .AddRange(GenerateStatementsForStubContext(marshallers, context with { CurrentStage = StubIdentifierContext.Stage.Unmarshal })),
                 NotifyForSuccessfulInvoke = GenerateStatementsForStubContext(marshallers, context with { CurrentStage = StubIdentifierContext.Stage.NotifyForSuccessfulInvoke }),
                 GuaranteedUnmarshal = GenerateStatementsForStubContext(marshallers, context with { CurrentStage = StubIdentifierContext.Stage.GuaranteedUnmarshal }),
+                ErrorCleanupCalleeAllocated = GenerateStatementsForStubContext(marshallers, context with { CurrentStage = StubIdentifierContext.Stage.CleanupCalleeAllocated }, errorHandlingOnly: true),
                 CleanupCallerAllocated = GenerateStatementsForStubContext(marshallers, context with { CurrentStage = StubIdentifierContext.Stage.CleanupCallerAllocated }),
                 CleanupCalleeAllocated = GenerateStatementsForStubContext(marshallers, context with { CurrentStage = StubIdentifierContext.Stage.CleanupCalleeAllocated }),
                 ManagedExceptionCatchClauses = GenerateCatchClauseForManagedException(marshallers, context)
@@ -69,11 +75,44 @@ namespace Microsoft.Interop
             }
         }
 
-        private static ImmutableArray<StatementSyntax> GenerateStatementsForStubContext(BoundGenerators marshallers, StubIdentifierContext context)
+        /// <summary>
+        /// Create the standard set of generated statements for an unmanaged-to-managed stub whose
+        /// managed-side invocation is a property or indexer accessor. For a getter the body assigns the
+        /// read expression into the return identifier (<c>__retVal = propertyAccess</c>); for a setter
+        /// it assigns the value parameter into the access expression (<c>propertyAccess = value</c>).
+        /// </summary>
+        /// <remarks>
+        /// For indexers the caller is expected to bake the index arguments into
+        /// <paramref name="propertyAccess"/> (as an <c>ElementAccessExpression</c>) before passing it in;
+        /// the value parameter — which is the LAST entry in <c>ManagedParameterMarshallers</c> for both
+        /// property and indexer setters — is consumed here.
+        /// </remarks>
+        public static GeneratedStatements CreateForProperty(BoundGenerators marshallers, StubIdentifierContext context, ExpressionSyntax propertyAccess, bool isSetter)
+        {
+            GeneratedStatements statements = Create(marshallers, context);
+            return statements with
+            {
+                InvokeStatement = GenerateStatementForProperty(marshallers, context with { CurrentStage = StubIdentifierContext.Stage.Invoke }, propertyAccess, isSetter)
+            };
+        }
+
+        private static ImmutableArray<StatementSyntax> GenerateStatementsForStubContext(
+            BoundGenerators marshallers,
+            StubIdentifierContext context,
+            bool errorHandlingOnly = false)
         {
             ImmutableArray<StatementSyntax>.Builder statementsToUpdate = ImmutableArray.CreateBuilder<StatementSyntax>();
             foreach (IBoundMarshallingGenerator marshaller in marshallers.SignatureMarshallers)
             {
+                if (context.CurrentStage is
+                        StubIdentifierContext.Stage.UnmarshalCapture
+                        or StubIdentifierContext.Stage.Unmarshal
+                        or StubIdentifierContext.Stage.CleanupCalleeAllocated
+                    && marshaller.TypeInfo.IsErrorHandlingPosition != errorHandlingOnly)
+                {
+                    continue;
+                }
+
                 statementsToUpdate.AddRange(marshaller.Generate(context));
             }
 
@@ -147,6 +186,39 @@ namespace Microsoft.Interop
                         SyntaxKind.SimpleAssignmentExpression,
                         IdentifierName(context.GetIdentifiers(marshallers.ManagedReturnMarshaller.TypeInfo).managed),
                         invoke));
+        }
+
+        private static ExpressionStatementSyntax GenerateStatementForProperty(BoundGenerators marshallers, StubIdentifierContext context, ExpressionSyntax propertyAccess, bool isSetter)
+        {
+            if (context.CurrentStage != StubIdentifierContext.Stage.Invoke)
+            {
+                throw new ArgumentException("CurrentStage must be Invoke");
+            }
+
+            if (isSetter)
+            {
+                // Setter: assign the value parameter into the access expression.
+                //   propertyAccess = <managedValueIdentifier>;
+                //
+                // For property setters the only managed parameter IS the value parameter, so .Last() is
+                // identical to .Single(). For indexer setters the value parameter is appended LAST after
+                // the index parameters (Roslyn convention), so .Last() correctly picks it out.
+                IBoundMarshallingGenerator valueParameterMarshaller = marshallers.ManagedParameterMarshallers.Last();
+                ExpressionSyntax valueExpression = valueParameterMarshaller.AsManagedArgument(context).Expression;
+                return ExpressionStatement(
+                    AssignmentExpression(
+                        SyntaxKind.SimpleAssignmentExpression,
+                        propertyAccess,
+                        valueExpression));
+            }
+
+            // Getter: assign the property read into the managed return identifier.
+            //   <managedReturnIdentifier> = propertyAccess;
+            return ExpressionStatement(
+                AssignmentExpression(
+                    SyntaxKind.SimpleAssignmentExpression,
+                    IdentifierName(context.GetIdentifiers(marshallers.ManagedReturnMarshaller.TypeInfo).managed),
+                    propertyAccess));
         }
 
         private static ImmutableArray<CatchClauseSyntax> GenerateCatchClauseForManagedException(BoundGenerators marshallers, StubIdentifierContext context)

@@ -11,7 +11,7 @@ namespace System
         {
             get
             {
-                Interop.Process.kinfo_proc* processInfo = Interop.Process.GetProcInfo(ProcessId, out int count);
+                Interop.Process.kinfo_proc* processInfo = Interop.Process.GetProcInfo(ProcessId, false, out int count);
                 try
                 {
                     // p_vm_rssize is the current resident set size in pages.

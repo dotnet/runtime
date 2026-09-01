@@ -4498,9 +4498,19 @@ namespace System.Text.RegularExpressions
                 // to something prior to the lazy loop, then we need to pop off that state here.
                 if (doneLabel == originalDoneLabel)
                 {
-                    // stackpos -= entriesPerIteration;
+                    // Each iteration of the lazy loop pushed entriesPerIteration values onto the stack, and all
+                    // iterationCount iterations' worth of that state is still on the stack at this point. As we're
+                    // backtracking out of the whole loop, we need to remove all of it.
+
+                    // stackpos -= iterationCount * entriesPerIteration;
+                    Debug.Assert(entriesPerIteration >= 1);
                     Ldloc(stackpos);
-                    Ldc(entriesPerIteration);
+                    Ldloc(iterationCount);
+                    if (entriesPerIteration > 1)
+                    {
+                        Ldc(entriesPerIteration);
+                        Mul();
+                    }
                     Sub();
                     Stloc(stackpos);
                 }

@@ -107,7 +107,6 @@ BOOL ShouldOurUEFDisplayUI(PEXCEPTION_POINTERS pExceptionInfo)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     // Test first for the canned SO EXCEPTION_POINTERS structure as it has a NULL context record and will break the code below.
     extern EXCEPTION_POINTERS g_SOExceptionPointers;
@@ -137,7 +136,6 @@ BOOL ExceptionIsOfRightType(TypeHandle clauseType, TypeHandle thrownType)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        FORBID_FAULT;
     }
     CONTRACTL_END;
 
@@ -172,7 +170,6 @@ ULONG GetExceptionMessage(OBJECTREF throwable,
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(ThrowOutOfMemory());
     }
     CONTRACTL_END;
 
@@ -212,7 +209,6 @@ void GetExceptionMessage(OBJECTREF throwable, SString &result)
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(ThrowOutOfMemory());
     }
     CONTRACTL_END;
 
@@ -230,7 +226,6 @@ STRINGREF GetExceptionMessage(OBJECTREF throwable)
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(ThrowOutOfMemory());
     }
     CONTRACTL_END;
 
@@ -370,7 +365,6 @@ void ExceptionPreserveStackTrace(   // No return.
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(ThrowOutOfMemory());
     }
     CONTRACTL_END;
 
@@ -462,21 +456,17 @@ void WrapNonCompliantException(OBJECTREF *ppThrowable)
 // assembly level setting.
 OBJECTREF PossiblyUnwrapThrowable(OBJECTREF throwable, Assembly *pAssembly)
 {
-    // Check if we are required to compute the RuntimeWrapExceptions status.
-    BOOL fIsRuntimeWrappedException = ((throwable != NULL) && (throwable->GetMethodTable() == pMT_RuntimeWrappedException));
-    BOOL fRequiresComputingRuntimeWrapExceptionsStatus = (fIsRuntimeWrappedException &&
-                                                          (!(pAssembly->GetModule()->IsRuntimeWrapExceptionsStatusComputed())));
-
     CONTRACTL
     {
         THROWS;
-        // If we are required to compute the status of RuntimeWrapExceptions, then the operation could trigger a GC.
-        // Thus, conditionally setup the contract.
-        if (fRequiresComputingRuntimeWrapExceptionsStatus) GC_TRIGGERS; else GC_NOTRIGGER;
+        GC_TRIGGERS;
         MODE_COOPERATIVE;
         PRECONDITION(CheckPointer(pAssembly));
     }
     CONTRACTL_END;
+
+    // Check if we are required to compute the RuntimeWrapExceptions status.
+    BOOL fIsRuntimeWrappedException = ((throwable != NULL) && (throwable->GetMethodTable() == pMT_RuntimeWrappedException));
 
     if (fIsRuntimeWrappedException && (!pAssembly->GetModule()->IsRuntimeWrapExceptionsDuringEH()))
     {
@@ -600,7 +590,6 @@ DWORD ComputeEnclosingHandlerNestingLevel(IJitManager *pIJM,
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        FORBID_FAULT;
     }
     CONTRACTL_END;
 
@@ -1093,7 +1082,6 @@ HRESULT EHRangeTreeNode::AddNode(EHRangeTreeNode *pNode)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT(return E_OUTOFMEMORY;);
         PRECONDITION(pNode != NULL);
     }
     CONTRACTL_END;
@@ -1142,7 +1130,7 @@ EHRangeTree::EHRangeTree(IJitManager* pIJM,
         }
     }
 
-    LOG((LF_CORDB, LL_INFO10000, "EHRT::CC: m_ehcount:0x%x, m_rgClauses:0%x\n",
+    LOG((LF_CORDB, LL_INFO10000, "EHRT::CC: m_ehcount:0x%x, m_rgClauses:%p\n",
          m_EHCount, m_rgClauses));
 
     m_rgNodes = new (nothrow) EHRangeTreeNode[m_EHCount+1];
@@ -1156,7 +1144,7 @@ EHRangeTree::EHRangeTree(IJitManager* pIJM,
     m_root = &(m_rgNodes[m_EHCount]);
     m_root->MarkAsRoot(methodSize + 1);
 
-    LOG((LF_CORDB, LL_INFO10000, "EHRT::CC: rgNodes:0x%x\n", m_rgNodes));
+    LOG((LF_CORDB, LL_INFO10000, "EHRT::CC: rgNodes:%p\n", m_rgNodes));
 
     if (m_EHCount ==0)
     {
@@ -1175,10 +1163,10 @@ EHRangeTree::EHRangeTree(IJitManager* pIJM,
 
         pIJM->GetNextEHClause(&pEnumState, pEHClause);
 
-        LOG((LF_CORDB, LL_INFO10000, "EHRT::CC: EHRTT_JIT_MANAGER got clause\n", i));
+        LOG((LF_CORDB, LL_INFO10000, "EHRT::CC: EHRTT_JIT_MANAGER got clause\n"));
 
         LOG((LF_CORDB, LL_INFO10000, "EHRT::CC: clause 0x%x,"
-                    "addrof:0x%x\n", i, pEHClause ));
+                "addrof:%p\n", i, pEHClause ));
 
         _ASSERTE(pEHClause->HandlerEndPC != (DWORD) -1);  // <TODO> remove, only protects against a deprecated convention</TODO>
 
@@ -1443,7 +1431,6 @@ TRY_CATCH_FINALLY GetTcf(EHRangeTreeNode *pNode,
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        FORBID_FAULT;
     }
     CONTRACTL_END;
 
@@ -1669,7 +1656,6 @@ HRESULT DestinationIsValid(void *pDjiToken,
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        FORBID_FAULT;
     }
     CONTRACTL_END;
 
@@ -1703,7 +1689,6 @@ HRESULT SetIPFromSrcToDst(Thread *pThread,
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(return E_OUTOFMEMORY;);
     }
     CONTRACTL_END;
 
@@ -1848,7 +1833,6 @@ BOOL IsInFirstFrameOfHandler(Thread *pThread, IJitManager *pJitManager, const ME
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        FORBID_FAULT;
     }
     CONTRACTL_END;
 
@@ -1926,7 +1910,7 @@ ReplaceExceptionContextRecord(CONTEXT *pTarget, CONTEXT *pSource)
         memcpy(pTarget, pSource, offsetof(CONTEXT, ExtendedRegisters));
     }
     STRESS_LOG3(LF_SYNC, LL_INFO1000, "ReSet thread context EIP = %p ESP = %p EBP = %p\n",
-        GetIP((CONTEXT*)pTarget), GetSP((CONTEXT*)pTarget), GetFP((CONTEXT*)pTarget));
+        (void*)GetIP((CONTEXT*)pTarget), (void*)GetSP((CONTEXT*)pTarget), (void*)GetFP((CONTEXT*)pTarget));
 
 #else // !CONTEXT_EXTENDED_REGISTERS
 
@@ -2573,7 +2557,8 @@ void StackTraceInfo::AppendElement(OBJECTREF pThrowable, UINT_PTR currentIP, UIN
     BOOL fRaisingForeignException = pCurTES->IsRaisingForeignException();
     pCurTES->ResetRaisingForeignException();
 
-    LOG((LF_EH, LL_INFO10000, "StackTraceInfo::AppendElement IP = %p, SP = %p, %s::%s\n", currentIP, currentSP, pFunc ? pFunc->m_pszDebugClassName : "", pFunc ? pFunc->m_pszDebugMethodName : "" ));
+    LOG((LF_EH, LL_INFO10000, "StackTraceInfo::AppendElement IP = %p, SP = %p, %s::%s\n", (void*)currentIP,
+        (void*)currentSP, pFunc ? pFunc->m_pszDebugClassName : "", pFunc ? pFunc->m_pszDebugMethodName : "" ));
 
     // Do not save stacktrace to preallocated exception.  These are shared.
     if (CLRException::IsPreallocatedExceptionObject(pThrowable))
@@ -2620,8 +2605,13 @@ void StackTraceInfo::AppendElement(OBJECTREF pThrowable, UINT_PTR currentIP, UIN
         }
         else if (!pCf->HasFaulted() && stackTraceElem.ip != 0)
         {
-            stackTraceElem.ip -= STACKWALK_CONTROLPC_ADJUST_OFFSET;
-            stackTraceElem.flags |= STEF_IP_ADJUSTED;
+#ifdef TARGET_WASM
+            if (!ExecutionManager::IsVirtualIP(stackTraceElem.ip))
+#endif
+            {
+                stackTraceElem.ip -= STACKWALK_CONTROLPC_ADJUST_OFFSET;
+                stackTraceElem.flags |= STEF_IP_ADJUSTED;
+            }
         }
     }
     else
@@ -2747,7 +2737,6 @@ BOOL IsExceptionOfType(RuntimeExceptionKind reKind, Exception *pException)
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_MODE_ANY;
-    STATIC_CONTRACT_FORBID_FAULT;
 
       if (pException->IsType(reKind))
         return TRUE;
@@ -2772,7 +2761,6 @@ BOOL IsExceptionOfType(RuntimeExceptionKind reKind, OBJECTREF *pThrowable)
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_MODE_COOPERATIVE;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     _ASSERTE(pThrowable != NULL);
 
@@ -2790,7 +2778,6 @@ BOOL IsUncatchable(OBJECTREF *pThrowable)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
-        FORBID_FAULT;
     } CONTRACTL_END;
 
     _ASSERTE(pThrowable != NULL);
@@ -3404,8 +3391,8 @@ CreateCrashDumpIfEnabled(bool stackoverflow)
     {
         if (stackoverflow)
         {
-            HandleHolder createDumpThreadHandle = Thread::CreateUtilityThread(Thread::StackSize_Small, (LPTHREAD_START_ROUTINE)LaunchCreateDump, (void*)createDumpCommandLine, W(".NET SO Dumper"));
-            if (createDumpThreadHandle != INVALID_HANDLE_VALUE)
+            HandleHolder createDumpThreadHandle{ Thread::CreateUtilityThread(Thread::StackSize_Small, (LPTHREAD_START_ROUTINE)LaunchCreateDump, (void*)createDumpCommandLine, W(".NET SO Dumper")) };
+            if (createDumpThreadHandle != NULL)
             {
                 // Wait for the dump to be generated
                 DWORD res = WaitForSingleObject(createDumpThreadHandle, INFINITE);
@@ -3486,14 +3473,14 @@ bool GenerateDump(
 void CrashDumpAndTerminateProcess(UINT exitCode)
 {
 #ifdef FEATURE_INPROC_CRASHREPORT
-    if (exitCode == COR_E_STACKOVERFLOW)
+    if (exitCode == static_cast<UINT>(COR_E_STACKOVERFLOW))
     {
         InProcCrashReportSetCrashKind(InProcCrashReportCrashKind::StackOverflow);
     }
 #endif
 
 #ifdef HOST_WINDOWS
-    CreateCrashDumpIfEnabled(exitCode == COR_E_STACKOVERFLOW);
+    CreateCrashDumpIfEnabled(exitCode == static_cast<UINT>(COR_E_STACKOVERFLOW));
 #endif
     TerminateProcess(GetCurrentProcess(), exitCode);
 }
@@ -3585,7 +3572,6 @@ LONG UserBreakpointFilter(EXCEPTION_POINTERS* pEP)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        FORBID_FAULT;
     }
     CONTRACTL_END;
 
@@ -3594,7 +3580,7 @@ LONG UserBreakpointFilter(EXCEPTION_POINTERS* pEP)
     // user breakpoints as if they're unhandled exceptions right away.
     //
     // @todo: The InternalUnhandledExceptionFilter can trigger.
-    CONTRACT_VIOLATION(GCViolation | ThrowsViolation | ModeViolation | FaultViolation | FaultNotFatal);
+    CONTRACT_VIOLATION(GCViolation | ThrowsViolation | ModeViolation);
 
 #ifdef TARGET_UNIX
     int result = COMUnhandledExceptionFilter(pEP);
@@ -3658,7 +3644,6 @@ LONG DefaultCatchFilter(EXCEPTION_POINTERS *ep, PVOID pv)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        FORBID_FAULT;
     }
     CONTRACTL_END;
 
@@ -3751,7 +3736,6 @@ BOOL InstallUnhandledExceptionFilter() {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_MODE_ANY;
-    STATIC_CONTRACT_FORBID_FAULT;
 
 #ifndef TARGET_UNIX
     g_pOriginalUnhandledExceptionFilter = SetUnhandledExceptionFilter(COMUnhandledExceptionFilter);
@@ -4928,7 +4912,6 @@ BOOL IsThreadHijackedForThreadStop(Thread* pThread, EXCEPTION_RECORD* pException
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        FORBID_FAULT;
     }
     CONTRACTL_END;
 
@@ -4969,7 +4952,6 @@ void AdjustContextForThreadStop(Thread* pThread,
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        FORBID_FAULT;
     }
     CONTRACTL_END;
 
@@ -5002,7 +4984,6 @@ CreateCOMPlusExceptionObject(Thread *pThread, EXCEPTION_RECORD *pExceptionRecord
         NOTHROW;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        FORBID_FAULT;
     }
     CONTRACTL_END;
 
@@ -5032,7 +5013,6 @@ CreateCOMPlusExceptionObject(Thread *pThread, EXCEPTION_RECORD *pExceptionRecord
     {
         EX_TRY
         {
-            FAULT_NOT_FATAL();
 
             ThreadPreventAsyncHolder preventAsync;
             ResetProcessorStateHolder procState;
@@ -5759,8 +5739,6 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo
     Thread *pThread;
 
     {
-        MAYBE_FAULT_FORBID_NO_ALLOC((pExceptionInfo->ExceptionRecord->ExceptionCode == STATUS_NO_MEMORY));
-
         pThread = GetThreadNULLOk();
 
         //
@@ -5847,16 +5825,6 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo
         return VEH_CONTINUE_SEARCH;
     }
 
-    // We can't probe here, because we won't return from the CLRVectoredExceptionHandlerPhase2
-    // on WIN64
-    //
-
-    if (pThread)
-    {
-        FAULT_FORBID_NO_ALLOC();
-        CantAllocHolder caHolder;
-    }
-
     return CLRVectoredExceptionHandlerPhase2(pExceptionInfo);
 }
 
@@ -5888,9 +5856,7 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase2(PEXCEPTION_POINTERS pExcepti
     VEH_ACTION action;
 
     {
-        MAYBE_FAULT_FORBID_NO_ALLOC((pExceptionRecord->ExceptionCode == STATUS_NO_MEMORY));
         CantAllocHolder caHolder;
-
         action = CLRVectoredExceptionHandlerPhase3(pExceptionInfo);
     }
 
@@ -5908,7 +5874,6 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase2(PEXCEPTION_POINTERS pExcepti
     // In OOM situations, this call better not fault.
     //
     {
-        MAYBE_FAULT_FORBID_NO_ALLOC((pExceptionRecord->ExceptionCode == STATUS_NO_MEMORY));
         CantAllocHolder caHolder;
 
         // Give the debugger a chance. Note that its okay for this call to trigger a GC, since the debugger will take
@@ -5960,7 +5925,6 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase2(PEXCEPTION_POINTERS pExcepti
     BOOL fShouldHandleManagedFault;
 
     {
-        MAYBE_FAULT_FORBID_NO_ALLOC((pExceptionRecord->ExceptionCode == STATUS_NO_MEMORY));
         CantAllocHolder caHolder;
         fShouldHandleManagedFault = ShouldHandleManagedFault(pExceptionInfo->ExceptionRecord,
                                                              pExceptionInfo->ContextRecord,
@@ -6105,7 +6069,7 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase3(PEXCEPTION_POINTERS pExcepti
                 PCODE ip = (PCODE)GetIP(pContext);
                 if (IsIPInModule(GetClrModuleBase(), ip) || IsIPInModule(GCHeapUtilities::GetGCModuleBase(), ip))
                 {
-                    CONTRACT_VIOLATION(ThrowsViolation|FaultViolation);
+                    CONTRACT_VIOLATION(ThrowsViolation);
 
                     //
                     // If you're debugging, set the debugger to catch first-chance AV's, then simply hit F5 or
@@ -6831,8 +6795,9 @@ LONG NotifyOfCHFFilterWrapper(
         if (pThread)
         {
             LOG((LF_EH, LL_INFO1000, ", Thread SP: %p, Exception SP: %p",
-                 pThread->GetExceptionState()->GetContextRecord() ? GetSP(pThread->GetExceptionState()->GetContextRecord()) : (TADDR)NULL,
-                 pExceptionInfo->ContextRecord ? GetSP(pExceptionInfo->ContextRecord) : (TADDR)NULL ));
+                 (void*)(pThread->GetExceptionState()->GetContextRecord() ?
+                     GetSP(pThread->GetExceptionState()->GetContextRecord()) : (TADDR)NULL),
+                 (void*)(pExceptionInfo->ContextRecord ? GetSP(pExceptionInfo->ContextRecord) : (TADDR)NULL) ));
         }
         LOG((LF_EH, LL_INFO1000, "\n"));
         return ret;
@@ -9433,7 +9398,6 @@ VOID ThrowBadFormatWorker(UINT resID, LPCWSTR imageName DEBUGARG(_In_z_ const ch
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         SUPPORTS_DAC;
     }
     CONTRACTL_END
@@ -9551,7 +9515,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowWin32()
     CONTRACTL
     {
         THROWS;
-        DISABLED(GC_NOTRIGGER);  // Must sanitize first pass handling to enable this
+        GC_NOTRIGGER;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -9567,7 +9531,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowWin32(HRESULT hr)
     CONTRACTL
     {
         THROWS;
-        DISABLED(GC_NOTRIGGER);  // Must sanitize first pass handling to enable this
+        GC_NOTRIGGER;
         MODE_ANY;
 }
     CONTRACTL_END;
@@ -9588,7 +9552,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowOM()
     CONTRACTL
     {
         THROWS;
-        DISABLED(GC_NOTRIGGER);  // Must sanitize first pass handling to enable this
+        GC_NOTRIGGER;
         CANNOT_TAKE_LOCK;
         MODE_ANY;
         SUPPORTS_DAC;
@@ -9606,7 +9570,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrow(RuntimeExceptionKind reKind)
     CONTRACTL
     {
         THROWS;
-        DISABLED(GC_NOTRIGGER);  // Must sanitize first pass handling to enable this
+        GC_NOTRIGGER;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -9626,7 +9590,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowNonLocalized(RuntimeExceptionKind reKind,
     CONTRACTL
     {
         THROWS;
-        DISABLED(GC_NOTRIGGER);  // Must sanitize first pass handling to enable this
+        GC_NOTRIGGER;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -9707,33 +9671,13 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr)
 
     EX_THROW(EEMessageException, (hr));
 }
-
-VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr, tagGetErrorInfo)
-{
-    CONTRACTL
-    {
-        THROWS;
-        DISABLED(GC_NOTRIGGER);  // Must sanitize first pass handling to enable this
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    // Get an IErrorInfo if one is available.
-    IErrorInfo *pErrInfo = NULL;
-
-    if (SafeGetErrorInfo(&pErrInfo) != S_OK)
-        pErrInfo = NULL;
-
-    // Throw the exception.
-    RealCOMPlusThrowHR(hr, pErrInfo);
-}
 #else // FEATURE_COMINTEROP
 VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr)
 {
     CONTRACTL
     {
         THROWS;
-        DISABLED(GC_NOTRIGGER);  // Must sanitize first pass handling to enable this
+        GC_NOTRIGGER;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -9776,12 +9720,12 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr, UINT resID, LPCWSTR wszArg
 // Throw a decorated runtime exception with a localized message.
 // Queries the ResourceManager for a corresponding resource value.
 //==========================================================================
-VOID DECLSPEC_NORETURN RealCOMPlusThrow(RuntimeExceptionKind reKind, LPCWSTR wszResourceName, Exception * pInnerException)
+VOID DECLSPEC_NORETURN RealCOMPlusThrow(RuntimeExceptionKind reKind, LPCWSTR wszResourceName)
 {
     CONTRACTL
     {
         THROWS;
-        DISABLED(GC_NOTRIGGER);  // Must sanitize first pass handling to enable this
+        GC_NOTRIGGER;
         MODE_ANY;
         PRECONDITION(CheckPointer(wszResourceName));
     }
@@ -9789,20 +9733,8 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrow(RuntimeExceptionKind reKind, LPCWSTR wsz
 
     _ASSERTE((reKind != kExecutionEngineException) ||
              !"ExecutionEngineException shouldn't be thrown. Use EEPolicy to failfast or a better exception. The caller of this function should modify their code.");
-    //
-    // For some reason, the compiler complains about unreachable code if
-    // we don't split the new from the throw.  So we're left with this
-    // unnecessarily verbose syntax.
-    //
 
-    if (pInnerException == NULL)
-    {
-        EX_THROW(EEResourceException, (reKind, wszResourceName));
-    }
-    else
-    {
-        EX_THROW_WITH_INNER(EEResourceException, (reKind, wszResourceName), pInnerException);
-    }
+    EX_THROW(EEResourceException, (reKind, wszResourceName));
 }
 
 //==========================================================================
@@ -9821,7 +9753,7 @@ VOID DECLSPEC_NORETURN ThrowTypeLoadException(LPCWSTR pFullTypeName,
     CONTRACTL
     {
         THROWS;
-        DISABLED(GC_NOTRIGGER);  // Must sanitize first pass handling to enable this
+        GC_NOTRIGGER;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -9841,7 +9773,7 @@ VOID DECLSPEC_NORETURN ThrowFieldLayoutError(mdTypeDef cl,                // cl 
     CONTRACTL
     {
         THROWS;
-        DISABLED(GC_NOTRIGGER);  // Must sanitize first pass handling to enable this
+        GC_NOTRIGGER;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -9872,7 +9804,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowArithmetic()
     CONTRACTL
     {
         THROWS;
-        DISABLED(GC_NOTRIGGER);  // Must sanitize first pass handling to enable this
+        GC_NOTRIGGER;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -9888,7 +9820,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowArgumentNull(LPCWSTR argName, LPCWSTR wsz
     CONTRACTL
     {
         THROWS;
-        DISABLED(GC_NOTRIGGER);  // Must sanitize first pass handling to enable this
+        GC_NOTRIGGER;
         MODE_ANY;
         PRECONDITION(CheckPointer(wszResourceName));
     }
@@ -9903,7 +9835,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowArgumentNull(LPCWSTR argName)
     CONTRACTL
     {
         THROWS;
-        DISABLED(GC_NOTRIGGER);  // Must sanitize first pass handling to enable this
+        GC_NOTRIGGER;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -9920,7 +9852,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowArgumentOutOfRange(LPCWSTR argName, LPCWS
     CONTRACTL
     {
         THROWS;
-        DISABLED(GC_NOTRIGGER);  // Must sanitize first pass handling to enable this
+        GC_NOTRIGGER;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -9936,7 +9868,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowArgumentException(LPCWSTR argName, LPCWST
     CONTRACTL
     {
         THROWS;
-        DISABLED(GC_NOTRIGGER);  // Must sanitize first pass handling to enable this
+        GC_NOTRIGGER;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -9961,7 +9893,7 @@ VOID DECLSPEC_NORETURN ThrowTypeLoadException(LPCUTF8 pszNameSpace,
     CONTRACTL
     {
         THROWS;
-        DISABLED(GC_NOTRIGGER);  // Must sanitize first pass handling to enable this
+        GC_NOTRIGGER;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -9979,7 +9911,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrow(RuntimeExceptionKind  reKind, UINT resID
     CONTRACTL
     {
         THROWS;
-        DISABLED(GC_NOTRIGGER);  // Must sanitize first pass handling to enable this
+        GC_NOTRIGGER;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -10019,7 +9951,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(EXCEPINFO *pExcepInfo)
     CONTRACTL
     {
         THROWS;
-        DISABLED(GC_NOTRIGGER);  // Must sanitize first pass handling to enable this
+        GC_NOTRIGGER;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -10297,6 +10229,7 @@ void SoftwareExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
+#ifndef TARGET_WASM
 #define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContext->regname = *dac_cast<PTR_SIZE_T>((TADDR)m_ContextPointers.regname);
     ENUM_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
@@ -10314,6 +10247,11 @@ void SoftwareExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
 #define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContext->regname = m_Context.regname;
     ENUM_FP_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
+#else // TARGET_WASM
+#define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContext->regname = m_Context.regname;
+    ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+#endif // !TARGET_WASM
 
     SetIP(pRD->pCurrentContext, ::GetIP(&m_Context));
     SetSP(pRD->pCurrentContext, ::GetSP(&m_Context));
@@ -10325,6 +10263,22 @@ void SoftwareExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
 }
 
 #ifndef DACCESS_COMPILE
+
+void SoftwareExceptionFrame::SetContext(T_CONTEXT *pContext)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    m_Context = *pContext;
+
+#ifndef TARGET_WASM
+#define CALLEE_SAVED_REGISTER(regname) m_ContextPointers.regname = &m_Context.regname;
+    ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+#endif // !TARGET_WASM
+
+    m_ReturnAddress = ::GetIP(&m_Context);
+}
+
 #ifdef TARGET_X86
 
 void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *pTransitionBlock)
@@ -10723,7 +10677,6 @@ void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *p
 }
 
 #elif defined(TARGET_WASM)
-
 void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *pTransitionBlock)
 {
     LIMITED_METHOD_CONTRACT;
@@ -10735,8 +10688,9 @@ void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *p
     if (pTransitionBlock != nullptr)
     {
         m_Context.InterpreterSP = pTransitionBlock->m_StackPointer;
-        m_Context.InterpreterFP = 0;
         m_Context.InterpreterIP = GetWasmVirtualIPFromStackPointer(pTransitionBlock->m_StackPointer);
+        _ASSERTE(m_Context.InterpreterIP != 0); // We should only ever reach here with a valid VirtualIP
+        m_Context.InterpreterFP = GetWasmFramePointerFromStackPointer(m_Context.InterpreterSP, (PCODE)m_Context.InterpreterIP);
         m_ReturnAddress = m_Context.InterpreterIP;
         m_Context.InterpreterWalkFramePointer = 0;
     }

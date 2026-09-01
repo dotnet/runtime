@@ -20,9 +20,7 @@
 #include "ilstubcache.h"
 #include "sigbuilder.h"
 
-#ifdef FEATURE_PERFMAP
 #include "perfmap.h"
-#endif
 
 #ifndef DACCESS_COMPILE
 extern "C" PCODE g_pMethodWithSlotAndModule;
@@ -277,12 +275,12 @@ BOOL ReadyToRunInfo::GetEnclosingToken(IMDInternalImport * pImport, ModuleBase* 
 
     case mdtTypeRef:
         if (SUCCEEDED(pImport->GetResolutionScopeOfTypeRef(mdType, pEnclosingToken)))
-            return ((TypeFromToken(*pEnclosingToken) == mdtTypeRef) && (*pEnclosingToken != mdTypeRefNil));
+            return (TypeFromToken(*pEnclosingToken) == mdtTypeRef) && (*pEnclosingToken != mdTypeRefNil);
         break;
 
     case mdtExportedType:
         if (SUCCEEDED(pImport->GetExportedTypeProps(mdType, NULL, NULL, pEnclosingToken, NULL, NULL)))
-            return ((TypeFromToken(*pEnclosingToken) == mdtExportedType) && (*pEnclosingToken != mdExportedTypeNil));
+            return (TypeFromToken(*pEnclosingToken) == mdtExportedType) && (*pEnclosingToken != mdExportedTypeNil);
         break;
     }
 
@@ -368,9 +366,14 @@ PTR_MethodDesc ReadyToRunInfo::GetMethodDescForEntryPointInNativeImage(PCODE ent
     }
     CONTRACTL_END;
 
-#if defined(TARGET_AMD64) || defined(TARGET_X86)
+#if (defined(TARGET_AMD64) || defined(TARGET_X86)) && !defined(DACCESS_COMPILE)
     // A normal method entry point is always 8 byte aligned, but a funclet can start at an odd address.
-    // Since PtrHashMap can't handle odd pointers, check for this case and return NULL.
+    // The map only contains true method entry points, so a lookup for an odd (funclet) address is
+    // always a miss. Skip the guaranteed-miss lookup as a performance optimization.
+    //
+    // This is intentionally limited to non-DAC builds. The DAC must perform the lookup so that the
+    // hashmap bucket pages it touches are enumerated into triage minidumps; otherwise a consumer
+    // (such as the cDAC) faults when it later probes those not-in-dump pages. See dotnet/diagnostics#5910.
     if ((entryPoint & 0x1) != 0)
         return NULL;
 #endif
@@ -453,7 +456,11 @@ static void LogR2r(const char *msg, PEAssembly *pPEAssembly)
         return;
 
     SString assemblyPath{ pPEAssembly->GetPath() };
-    fprintf(r2rLogFile, "%s: \"%s\".\n", msg, assemblyPath.GetUTF8());
+    // On some hosts (e.g. wasm) assemblies are loaded from memory and have no
+    // file path, which would otherwise log as an empty string. Fall back to the
+    // assembly simple name so the log identifies which module the entry is for.
+    LPCUTF8 assemblyName = assemblyPath.IsEmpty() ? pPEAssembly->GetSimpleName() : assemblyPath.GetUTF8();
+    fprintf(r2rLogFile, "%s: \"%s\".\n", msg, assemblyName);
     fflush(r2rLogFile);
 }
 
@@ -528,7 +535,14 @@ static NativeImage *AcquireCompositeImage(Module * pModule, PEImageLayout * pLay
         return NULL;
 
     LPCUTF8 ownerCompositeExecutableName = NULL;
-    if (pLayout->IsMapped())
+    if (pLayout->IsWebcilFormat())
+    {
+        // Webcil is wasm-only and flat-mapped by construction (PointerToRawData == VirtualAddress),
+        // so this is equivalent to GetBase() + virtualAddress; use the decoder's GetRvaData as the
+        // format-correct idiom for resolving an RVA.
+        ownerCompositeExecutableName = (LPCUTF8)pLayout->GetRvaData(virtualAddress);
+    }
+    else if (pLayout->IsMapped())
     {
         ownerCompositeExecutableName = (LPCUTF8)pLayout->GetBase() + virtualAddress;
     }
@@ -1268,6 +1282,11 @@ void ReadyToRunInfo::RegisterResumptionStub(PCODE stubEntryPoint)
         sizeof(s_resumptionStubSig),
         &amTracker);
 
+#ifdef TARGET_WASM
+    // SetMethodDescForEntryPointInNativeImage needs to have the virtual IP
+    uint32_t id = stubEntryPoint - m_pCompositeInfo->GetMinFunctionTableIndex();
+    stubEntryPoint = R2RRelativeFunctionIndexToVirtualIP(id);
+#endif
     // Register the stub's entry point so GC can find it during stack walks.
     // SetMethodDescForEntryPointInNativeImage handles the race - if another thread
     // already registered a MethodDesc for this entry point, ours is simply discarded
@@ -1410,7 +1429,7 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
     PCODE actualEntryPoint;
     actualEntryPoint = GetMinFunctionTableIndex() + id;
     PCODE virtualEntrypointIP;
-    virtualEntrypointIP = GetMinVirtualIP() + RUNTIME_FUNCTION__BeginAddress(&m_pRuntimeFunctions[id]);
+    virtualEntrypointIP = R2RRelativeFunctionIndexToVirtualIP(id);
     pEntryPoint = pMD->GetTemporaryEntryPoint();
     PortableEntryPoint::SetActualCode(pEntryPoint, actualEntryPoint);
     m_pCompositeInfo->SetMethodDescForEntryPointInNativeImage(virtualEntrypointIP, pMD);
@@ -1616,7 +1635,7 @@ MethodDesc * ReadyToRunInfo::MethodIterator::GetMethodDesc_NoRestore()
 
     _ASSERTE(id < m_pInfo->m_nRuntimeFunctions);
 #ifdef TARGET_WASM
-    PCODE pEntryPoint = m_pInfo->GetMinVirtualIP() + RUNTIME_FUNCTION__BeginAddress(&m_pInfo->m_pRuntimeFunctions[id]);
+    PCODE pEntryPoint = m_pInfo->R2RRelativeFunctionIndexToVirtualIP(id);
 #else
     PCODE pEntryPoint = dac_cast<TADDR>(m_pInfo->GetImage()->GetBase()) + RUNTIME_FUNCTION__BeginAddress(&m_pInfo->m_pRuntimeFunctions[id]);
 #endif
@@ -1678,7 +1697,7 @@ bool ReadyToRunInfo::MayHaveCustomAttribute(WellKnownAttribute attribute, mdToke
             s_wellKnownAttributeHashes[(DWORD)attribute] = wellKnownHash = ComputeNameHashCode(GetWellKnownAttributeName(attribute));
         }
 
-        hash = CombineTwoValuesIntoHash(wellKnownHash, token);
+        hash = CombineTwoValuesIntoHash<xxHashVersionResilientTraits>(wellKnownHash, token);
         fingerprint = hash >> 16;
     }
 
@@ -2190,7 +2209,7 @@ public:
     }
     Module *GetModuleIfLoaded(mdFile kFile) final
     {
-        CONTRACT(Module *)
+        CONTRACTL
         {
             INSTANCE_CHECK;
             NOTHROW;
@@ -2198,11 +2217,9 @@ public:
             MODE_ANY;
             PRECONDITION(TypeFromToken(kFile) == mdtFile
                         || TypeFromToken(kFile) == mdtModuleRef);
-            POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
-            FORBID_FAULT;
             SUPPORTS_DAC;
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
         // Native manifest module functionality isn't actually multi-module assemblies, and File tokens are not useable
         if (TypeFromToken(kFile) == mdtFile)
@@ -2211,12 +2228,14 @@ public:
         _ASSERTE(TypeFromToken(kFile) == mdtModuleRef);
         Module* module = m_ModuleReferencesMap.GetElement(RidFromToken(kFile));
         if (module != NULL)
-            RETURN module;
+            {
+                return module;
+            }
 
         LPCSTR moduleName;
         if (FAILED(GetMDImport()->GetModuleRefProps(kFile, &moduleName)))
         {
-            RETURN NULL;
+            return NULL;
         }
 
         LPCSTR assemblyNameInModuleRef;
@@ -2245,7 +2264,7 @@ public:
                     mdToken assemblyRef;
                     if (FAILED(GetAssemblyRefTokenOfIndirectDependency(module, assemblyNameInModuleRef, assemblyNameLen, &assemblyRef)))
                     {
-                        RETURN NULL;
+                        return NULL;
                     }
 
                     if (assemblyRef == mdTokenNil)
@@ -2266,7 +2285,7 @@ public:
         if (module != NULL)
             m_ModuleReferencesMap.TrySetElement(RidFromToken(kFile), module);
 #endif
-        RETURN module;
+        return module;
     }
 
     Module *LoadModule(mdFile kFile) final
@@ -2429,7 +2448,7 @@ bool ReadyToRun_TypeGenericInfoMap::IsGeneric(mdTypeDef input, IMDInternalImport
     {
         HENUMInternalHolder hEnumTyPars(pImport);
         hEnumTyPars.EnumInit(mdtGenericParam, input);
-        return (pImport->EnumGetCount(&hEnumTyPars) != 0);
+        return pImport->EnumGetCount(&hEnumTyPars) != 0;
     }
     return !!((uint8_t)typeGenericInfo & (uint8_t)ReadyToRunTypeGenericInfo::GenericCountMask);
 }
@@ -2533,9 +2552,7 @@ PCODE CreateDynamicHelperPrecode(LoaderAllocator *pAllocator, AllocMemTracker *p
 
     FlushCacheForDynamicMappedStub(pPrecode, sizeof(StubPrecode));
 
-#ifdef FEATURE_PERFMAP
     PerfMap::LogStubs(__FUNCTION__, "DynamicHelper", (PCODE)pPrecode, size, PerfMapStubType::IndividualWithinBlock);
-#endif
 
     return ((Precode*)pPrecode)->GetEntryPoint();
 }
@@ -2748,9 +2765,16 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
             else
             {
                 _ASSERTE(pLookup->sizeOffset == CORINFO_NO_SIZE_CHECK);
+                // SecondIndir is in bytes, but actual indirections into the table are always pointer aligned. 
+                // A value of 0 indicates that the second indirection is into the first generic dictionary of
+                // the type, which is the most common access pattern for generics. For Dictionary<TKey,TValue>,
+                // a SecondIndir of 0, and a LastIndir of 0 would indicate the MethodTable pointer of TKey,
+                // and if LastIndir was sizeof(TADDR) it would access the MethodTable pointer of TValue and so on.
                 if ((dictLookupData.SecondIndir == 0) && (dictLookupData.LastIndir <= sizeof(TADDR) * 3))
                 {
                     needsDictLookupData = false;
+                    // Since LastIndir is in bytes, but actual indirections into the table are always pointer
+                    // aligned, we can divide by sizeof(TADDR) to compute the possible cases here.
                     switch (dictLookupData.LastIndir / sizeof(TADDR))
                     {
                         case 0:
@@ -2780,6 +2804,7 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
             _ASSERTE(helperAddress == g_pMethodWithSlotAndModule);
             _ASSERTE(pLookup->offsets[0] == offsetof(InstantiatedMethodDesc, m_pPerInstInfo));
             dictLookupData.LastIndir = (UINT32)pLookup->offsets[1];
+            _ASSERTE(dictLookupData.SecondIndir == 0); // There are only 2 indirections, so there is no "SecondIndir" value to set, and it should be 0.
             if (pLookup->testForNull && pLookup->sizeOffset != CORINFO_NO_SIZE_CHECK)
             {
                 helper = (PCODE)DynamicHelper_GenericDictionaryLookup_Method_SizeCheck_TestForNull;
@@ -2793,9 +2818,10 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
             else
             {
                 _ASSERTE(pLookup->sizeOffset == CORINFO_NO_SIZE_CHECK);
-                if ((dictLookupData.SecondIndir == 0) && (dictLookupData.LastIndir <= sizeof(TADDR) * 3))
+                if (dictLookupData.LastIndir <= sizeof(TADDR) * 3)
                 {
                     needsDictLookupData = false;
+                    // Since LastIndir is in bytes, but actual indirections into the table are always pointer aligned, we can divide by sizeof(TADDR) to compute the possible cases here.
                     switch (dictLookupData.LastIndir / sizeof(TADDR))
                     {
                         case 0:
@@ -2875,30 +2901,35 @@ void ReadyToRunInfo::RegisterVirtualIPRange(Module* pModule)
     if (m_nRuntimeFunctions == 0)
         return;
 
-    TADDR imageBase = dac_cast<TADDR>(m_pComposite->GetLayout()->GetBase());
+    if (!m_pComposite->MinVirtualIPSet())
+    {
+        TADDR imageBase = dac_cast<TADDR>(m_pComposite->GetLayout()->GetBase());
 
-    // The last RUNTIME_FUNCTION entry's BeginAddress is the virtual IP index of that entry.
-    // Total virtual IPs = lastEntry.BeginAddress + virtualIPCount(lastEntry)
-    T_RUNTIME_FUNCTION* pLastEntry = &m_pRuntimeFunctions[m_nRuntimeFunctions - 1];
-    UINT32 lastEntryVirtualIPIndex = RUNTIME_FUNCTION__BeginAddress(pLastEntry);
+        // The last RUNTIME_FUNCTION entry's BeginAddress is the virtual IP index of that entry.
+        // Total virtual IPs = lastEntry.BeginAddress + virtualIPCount(lastEntry)
+        T_RUNTIME_FUNCTION* pLastEntry = &m_pRuntimeFunctions[m_nRuntimeFunctions - 1];
+        UINT32 lastEntryVirtualIPIndex = RUNTIME_FUNCTION__BeginAddress(pLastEntry);
 
-    // Decode the virtual IP count from the last entry's unwind data.
-    // Unwind format: ULEB128(frameSize) ULEB128(virtualIPCount)
-    PTR_BYTE pUnwindData = dac_cast<PTR_BYTE>(imageBase + pLastEntry->UnwindData);
-    DecodeULEB128AsU32(&pUnwindData); // skip frame size
-    UINT32 lastEntryVIPCount = DecodeULEB128AsU32(&pUnwindData) * 2; // Multiply by 2 to force all virtual IPs to be an even number.
+        // Decode the virtual IP count from the last entry's unwind data.
+        // Unwind format: ULEB128(frameSize) ULEB128(virtualIPCount)
+        PTR_BYTE pUnwindData = dac_cast<PTR_BYTE>(imageBase + pLastEntry->UnwindData);
+        DecodeULEB128AsU32(&pUnwindData); // skip frame size
+        UINT32 lastEntryVIPCount = DecodeULEB128AsU32(&pUnwindData) * 2; // Multiply by 2 to force all virtual IPs to be an even number.
 
-    UINT32 totalVirtualIPs = lastEntryVirtualIPIndex + lastEntryVIPCount;
+        UINT32 totalVirtualIPs = lastEntryVirtualIPIndex + lastEntryVIPCount;
 
-    m_minVirtualIP = ExecutionManager::AddVirtualIPRange(
-        totalVirtualIPs,
-        ExecutionManager::GetReadyToRunJitManager(),
-        pModule);
+        m_pComposite->SetMinVirtualIP(ExecutionManager::AddVirtualIPRange(
+            totalVirtualIPs,
+            ExecutionManager::GetReadyToRunJitManager(),
+            pModule));
 
-    ExecutionManager::AddFunctionTableIndexRange(
-        m_minFunctionTableIndex,
-        m_nRuntimeFunctions,
-        pModule);
+        ExecutionManager::AddFunctionTableIndexRange(
+            m_minFunctionTableIndex,
+            m_nRuntimeFunctions,
+            pModule);
+    }
+
+    m_minVirtualIP = m_pComposite->GetMinVirtualIP();
 }
 #endif // TARGET_WASM
 

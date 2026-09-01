@@ -43,12 +43,34 @@ namespace System
             if (s_dataStore == null)
                 return null;
 
-            object? data;
             lock (s_dataStore)
             {
-                s_dataStore.TryGetValue(name, out data);
+                if (s_dataStore.TryGetValue(name, out object? data))
+                    return data;
             }
-            return data;
+
+#if !MONO && !NATIVEAOT
+            if (IsKnownHostProperty(name))
+            {
+                string? value = null;
+                if (TryGetHostPropertyValue(name, new StringHandleOnStack(ref value)))
+                {
+                    lock (s_dataStore)
+                    {
+                        if (s_dataStore.TryGetValue(name, out object? existing))
+                        {
+                            Debug.Assert(existing is string existingValue && existingValue == value);
+                            return existing;
+                        }
+
+                        s_dataStore[name] = value;
+                        return value;
+                    }
+                }
+            }
+#endif
+
+            return null;
         }
 
         /// <summary>
@@ -108,20 +130,43 @@ namespace System
             }
         }
 
+        [ThreadStatic]
+        private static bool t_deliveringFirstChanceNotification;
+
         private static void OnFirstChanceException(Exception e, object? sender)
         {
             if (FirstChanceException is EventHandler<FirstChanceExceptionEventArgs> handlers)
             {
-                FirstChanceExceptionEventArgs args = new(e);
-                foreach (EventHandler<FirstChanceExceptionEventArgs> handler in Delegate.EnumerateInvocationList(handlers))
+                // Guard against reentrancy. Allocating the event args below or running a
+                // handler may itself throw (e.g. OutOfMemoryException in a low-memory
+                // situation). That exception would trigger another first-chance
+                // notification on this same thread, allocate again, throw again, and
+                // recurse until the stack overflows. Skip nested notifications to break
+                // the recursion.
+                if (t_deliveringFirstChanceNotification)
                 {
-                    try
+                    return;
+                }
+
+                t_deliveringFirstChanceNotification = true;
+                try
+                {
+                    FirstChanceExceptionEventArgs args = new(e);
+
+                    foreach (EventHandler<FirstChanceExceptionEventArgs> handler in Delegate.EnumerateInvocationList(handlers))
                     {
-                        handler(sender, args);
+                        try
+                        {
+                            handler(sender, args);
+                        }
+                        catch
+                        {
+                        }
                     }
-                    catch
-                    {
-                    }
+                }
+                finally
+                {
+                    t_deliveringFirstChanceNotification = false;
                 }
             }
         }
@@ -205,7 +250,14 @@ namespace System
                 s_dataStore = new Dictionary<string, object?>(count);
                 for (int i = 0; i < count; i++)
                 {
-                    s_dataStore.Add(new string(pNames[i]), new string(pValues[i]));
+                    string name = new string(pNames[i]);
+
+                    // Avoid retaining a managed string copy of known host properties.
+                    // They will be retrieved if explicitly requested.
+                    if (IsKnownHostProperty(name))
+                        continue;
+
+                    s_dataStore.Add(name, new string(pValues[i]));
                 }
             }
             catch (Exception ex)

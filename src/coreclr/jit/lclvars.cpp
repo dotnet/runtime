@@ -131,7 +131,7 @@ void Compiler::lvaInitTypeRef()
         }
         else
         {
-            printf("Swift compilation returns %s as %d primitive(s) in registers\n",
+            printf("Swift compilation returns %s as %zu primitive(s) in registers\n",
                    typGetObjLayout(retTypeHnd)->GetClassName(), lowering->numLoweredElements);
             for (size_t i = 0; i < lowering->numLoweredElements; i++)
             {
@@ -609,6 +609,21 @@ void Compiler::lvaInitUserArgs(unsigned* curVarNum, unsigned skipArgs, unsigned 
         CorInfoTypeWithMod corInfoType = info.compCompHnd->getArgType(&info.compMethodInfo->args, argLst, &typeHnd);
         varDsc->lvIsParam              = 1;
 
+        if ((corInfoType & CORINFO_TYPE_MOD_SECRET_STUB_ARGUMENT) != 0)
+        {
+            if (strip(corInfoType) != CORINFO_TYPE_NATIVEINT)
+            {
+                BADCODE("SecretStubArgument modifier must be applied to a native int parameter");
+            }
+
+            if (lvaSecretStubArg != BAD_VAR_NUM)
+            {
+                BADCODE("Duplicate SecretStubArgument modifier");
+            }
+
+            lvaSecretStubArg = *curVarNum;
+        }
+
 #if defined(TARGET_X86) && defined(FEATURE_IJW)
         if ((corInfoType & CORINFO_TYPE_MOD_COPY_WITH_HELPER) != 0)
         {
@@ -930,6 +945,10 @@ void Compiler::lvaClassifyParameterABI(Classifier& classifier)
         if (i == info.compRetBuffArg)
         {
             wellKnownArg = WellKnownArg::RetBuffer;
+        }
+        else if (i == lvaSecretStubArg)
+        {
+            wellKnownArg = WellKnownArg::SecretStubParam;
         }
 #ifdef SWIFT_SUPPORT
         else if (i == lvaSwiftSelfArg)
@@ -1615,7 +1634,7 @@ var_types Compiler::StructPromotionHelper::TryPromoteValueClassAsPrimitive(CORIN
             // We will only promote fields of SIMD types that fit into a SIMD register.
             if (simdBaseType != TYP_UNDEF)
             {
-                if (m_compiler->structSizeMightRepresentSIMDType(simdSize))
+                if (m_compiler->structMightRepresentSIMDType(node.simdTypeHnd))
                 {
                     return m_compiler->getSIMDTypeForSize(simdSize);
                 }
@@ -1729,12 +1748,27 @@ bool Compiler::StructPromotionHelper::CanPromoteStructVar(unsigned lclNum)
     assert(varTypeIsStruct(varDsc));
     assert(!varDsc->lvPromoted); // Don't ask again :)
 
-    // If this lclVar is used in a SIMD intrinsic, then we don't want to struct promote it.
-    // Note, however, that SIMD lclVars that are NOT used in a SIMD intrinsic may be
-    // profitably promoted.
-    if (varDsc->lvIsUsedInSIMDIntrinsic())
+    if (varTypeIsSIMDOrMask(varDsc->lvType))
     {
-        JITDUMP("  struct promotion of V%02u is disabled because lvIsUsedInSIMDIntrinsic()\n", lclNum);
+        // TYP_SIMD and TYP_MASK locals should never be promoted because they either don't have accessible fields
+        // or they have specialized IR support that transforms those field accesses into appropriate codegen. While
+        // could potentially be a little smarter here if the user is only touching the fields, this is not a recommended
+        // pattern in the first place and so its not something we want to spend effort optimizing. Rather, developers
+        // should treat it as a proper SIMD primitive type and do the "right" thing.
+
+        JITDUMP("  struct promotion of V%02u is disabled because it is a SIMD or MASK type\n", lclNum);
+        return false;
+    }
+
+    if (varDsc->IsBitcastToSimd())
+    {
+        // The local is effectively bitcast to one of the recognized TYP_SIMD structs and so we use this as a hint that
+        // it is likely a user-defined vector wrapper and they want it to be optimized accordingly. This may pessimize
+        // some rare edge cases where devs are mixing SIMD and non-SIMD patterns, but as with the comment above we want
+        // to discourage doing that and for them to pick one pattern, because it otherwise ends up non-optimal no matter
+        // what we do.
+
+        JITDUMP("  struct promotion of V%02u is disabled because IsBitcastToSimd()\n", lclNum);
         return false;
     }
 
@@ -1792,7 +1826,7 @@ bool Compiler::StructPromotionHelper::CanPromoteStructVar(unsigned lclNum)
     // (which would result in dependent promotion anyway).
     if ((m_compiler->info.compCallConv == CorInfoCallConvExtension::Swift) && varDsc->lvIsParam)
     {
-        JITDUMP("  struct promotion of V%02u is disabled because it is a parameter to a Swift function");
+        JITDUMP("  struct promotion of V%02u is disabled because it is a parameter to a Swift function", lclNum);
         return false;
     }
 #endif
@@ -1824,16 +1858,6 @@ bool Compiler::StructPromotionHelper::CanPromoteStructVar(unsigned lclNum)
                 {
                     canPromote = false;
                 }
-#if defined(FEATURE_SIMD)
-                // If we have a register-passed struct with mixed non-opaque SIMD types (i.e. with defined fields)
-                // and non-SIMD types, we don't currently handle that case in the prolog, so we can't promote.
-                else if ((fieldCnt > 1) && varTypeIsStruct(fieldType) &&
-                         (structPromotionInfo.fields[i].fldSIMDTypeHnd != NO_CLASS_HANDLE) &&
-                         !m_compiler->isOpaqueSIMDType(structPromotionInfo.fields[i].fldSIMDTypeHnd))
-                {
-                    canPromote = false;
-                }
-#endif // FEATURE_SIMD
             }
         }
 #elif defined(UNIX_AMD64_ABI)
@@ -2271,9 +2295,7 @@ void Compiler::lvaSetHiddenBufferStructArg(unsigned varNum)
 {
     LclVarDsc* varDsc = lvaGetDesc(varNum);
 
-#ifdef DEBUG
-    varDsc->SetDefinedViaAddress(true);
-#endif
+    INDEBUG(varDsc->SetDefinedViaAddress(true));
 
     if (varDsc->lvPromoted)
     {
@@ -5325,7 +5347,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
                 continue;
             }
 
-            if ((lclNum == lvaMonAcquired) || (lclNum == lvaAsyncThreadObjectVar) ||
+            if ((lclNum == lvaMonAcquired) || (lclNum == lvaResumedIndicator) || (lclNum == lvaAsyncThreadObjectVar) ||
                 (lclNum == lvaAsyncExecutionContextVar) || (lclNum == lvaAsyncSynchronizationContextVar))
             {
                 continue;
@@ -5715,8 +5737,10 @@ bool Compiler::lvaParamHasLocalStackSpace(unsigned lclNum)
 #endif
 
 #if defined(WINDOWS_AMD64_ABI)
-    // On Windows AMD64 we can use the caller-reserved stack area that is already setup
-    return false;
+    // On Windows AMD64, standard register arguments have caller-reserved stack space.
+    unsigned paramLclNum = varDsc->lvIsStructField ? varDsc->lvParentLcl : lclNum;
+    int      callerOffset;
+    return !lvaGetRelativeOffsetToCallerAllocatedSpaceForParameter(paramLclNum, &callerOffset);
 #else // !WINDOWS_AMD64_ABI
 
     //  A register argument that is not enregistered ends up as
@@ -5748,7 +5772,9 @@ int Compiler::lvaAllocLocalAndSetVirtualOffset(unsigned lclNum, unsigned size, i
     noway_assert(lclNum != BAD_VAR_NUM);
 
     LclVarDsc* lcl = lvaGetDesc(lclNum);
-#ifdef TARGET_64BIT
+#if defined(TARGET_64BIT) || defined(TARGET_WASM)
+    // Align >=8 byte locals to 8 bytes.
+    //
     // Before final frame layout, assume the worst case, that every >=8 byte local will need
     // maximum padding to be aligned. This is because we generate code based on the stack offset
     // computed during tentative frame layout. These offsets cannot get bigger during final
@@ -5820,7 +5846,7 @@ int Compiler::lvaAllocLocalAndSetVirtualOffset(unsigned lclNum, unsigned size, i
         }
 #endif
     }
-#endif // TARGET_64BIT
+#endif // TARGET_64BIT || TARGET_WASM
 
     /* Reserve space on the stack by bumping the frame size */
 
@@ -5852,6 +5878,18 @@ int Compiler::lvaAllocLocalAndSetVirtualOffset(unsigned lclNum, unsigned size, i
 //
 int Compiler::lvaAllocAsyncContexts(int stkOffs)
 {
+    if (lvaResumedIndicator != BAD_VAR_NUM)
+    {
+        stkOffs =
+            lvaAllocLocalAndSetVirtualOffset(lvaResumedIndicator, lvaLclStackHomeSize(lvaResumedIndicator), stkOffs);
+    }
+    else
+    {
+        // For x86 EnC the VM expects that we always allocate stack space
+        // for these locals when contexts were saved.
+        assert((info.compMethodInfo->options & CORINFO_ASYNC_SAVE_CONTEXTS) == 0);
+    }
+
     if (lvaAsyncThreadObjectVar != BAD_VAR_NUM)
     {
         stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaAsyncThreadObjectVar,
@@ -5859,8 +5897,6 @@ int Compiler::lvaAllocAsyncContexts(int stkOffs)
     }
     else
     {
-        // For x86 EnC the VM expects that we always allocate stack space
-        // for this local when contexts were saved.
         assert((info.compMethodInfo->options & CORINFO_ASYNC_SAVE_CONTEXTS) == 0);
     }
 
@@ -5871,8 +5907,6 @@ int Compiler::lvaAllocAsyncContexts(int stkOffs)
     }
     else
     {
-        // For x86 EnC the VM expects that we always allocate stack space
-        // for this local when contexts were saved.
         assert((info.compMethodInfo->options & CORINFO_ASYNC_SAVE_CONTEXTS) == 0);
     }
 
@@ -6041,8 +6075,35 @@ void Compiler::lvaAlignFrame()
         }
     }
 #elif defined(TARGET_WASM)
-    // TODO-WASM: decide what the stack alignment strategy should be. In the native ABI, the alignment is 16, but that
-    // may be suboptimal for the managed ABI, since it may imply zeroing the padding slots.
+    // Keep the stack aligned to STACK_ALIGN.
+    unsigned pad = 0;
+    if ((compLclFrameSize % STACK_ALIGN) != 0)
+    {
+        pad = STACK_ALIGN - (compLclFrameSize % STACK_ALIGN);
+    }
+    else if (lvaDoneFrameLayout != FINAL_FRAME_LAYOUT)
+    {
+        // Reserve a full STACK_ALIGN so the offsets computed now are upper bounds.
+        pad = STACK_ALIGN;
+    }
+
+    if (pad != 0)
+    {
+        lvaIncrementFrameSize(pad);
+
+        // The Wasm EH slots are read at fixed offsets and must stay at the frame bottom,
+        // so shift them down past the padding.
+        unsigned const ehSlots[] = {lvaWasmFunctionIndex, lvaWasmVirtualIP, lvaWasmResumeIP};
+        for (unsigned ehSlot : ehSlots)
+        {
+            if (ehSlot != BAD_VAR_NUM)
+            {
+                LclVarDsc* const ehSlotDsc = lvaGetDesc(ehSlot);
+                ehSlotDsc->SetStackOffset(ehSlotDsc->GetStackOffset() - (int)pad);
+            }
+        }
+    }
+    assert((compLclFrameSize % STACK_ALIGN) == 0);
 #else
     NYI("TARGET specific lvaAlignFrame");
 #endif
@@ -6062,7 +6123,7 @@ void Compiler::lvaAssignFrameOffsetsToPromotedStructs()
         // This is not true for the System V systems since there is no
         // outgoing args space. Assign the dependently promoted fields properly.
 
-#if defined(UNIX_AMD64_ABI) || defined(TARGET_ARM) || defined(TARGET_X86)
+#if defined(UNIX_AMD64_ABI) || defined(TARGET_ARM) || defined(TARGET_X86) || defined(TARGET_WASM)
         // ARM: lo/hi parts of a promoted long arg need to be updated.
         //
         // For System V platforms there is no outgoing args space.
@@ -6071,12 +6132,17 @@ void Compiler::lvaAssignFrameOffsetsToPromotedStructs()
         // The offset of these structs is already calculated in lvaAssignVirtualFrameOffsetToArg method.
         // Make sure the code below is not executed for these structs and the offset is not changed.
         //
+        // Wasm: params arrive in Wasm locals and are homed by the prolog, so parameter fields never get an
+        // offset from lvaAssignVirtualFrameOffsetToArg. Without processing them here a dependently promoted
+        // parameter field keeps offset zero and, once the frame delta is applied, aliases the end of the
+        // frame instead of its parent's home.
+        //
         const bool mustProcessParams = true;
 #else
         // OSR/Swift must also assign offsets here.
         //
         const bool mustProcessParams = opts.IsOSR() || (info.compCallConv == CorInfoCallConvExtension::Swift);
-#endif // defined(UNIX_AMD64_ABI) || defined(TARGET_ARM) || defined(TARGET_X86)
+#endif // defined(UNIX_AMD64_ABI) || defined(TARGET_ARM) || defined(TARGET_X86) || defined(TARGET_WASM)
 
         if (varDsc->lvIsStructField && (!varDsc->lvIsParam || mustProcessParams))
         {
@@ -6638,7 +6704,7 @@ void Compiler::lvaTableDump(FrameLayoutState curState)
     assert(codeGen->regSet.tmpAllFree());
     for (TempDsc* temp = codeGen->regSet.tmpListBeg(); temp != nullptr; temp = codeGen->regSet.tmpListNxt(temp))
     {
-        printf(";  TEMP_%02u %26s%*s%7s  -> ", -temp->tdTempNum(), " ", refCntWtdWidth, " ",
+        printf(";  TEMP_%02u %26s%*s%7s  -> ", -temp->tdTempNum(), " ", static_cast<int>(refCntWtdWidth), " ",
                varTypeName(temp->tdTempType()));
         int offset = temp->tdTempOffs();
         printf(" [%2s%1s0x%02X]\n", isFramePointerUsed() ? STR_FPBASE : STR_SPBASE, (offset < 0 ? "-" : "+"),
@@ -6909,11 +6975,11 @@ unsigned Compiler::lvaStressLclFldPadding(unsigned lclNum)
 }
 
 //-----------------------------------------------------------------------------
-// lvaStressLclFldCB: Convert GT_LCL_VAR's to GT_LCL_FLD's
+// lvaStressLclFldNode: Convert GT_LCL_VAR's to GT_LCL_FLD's
 //
 // Arguments:
-//    pTree -- pointer to tree to possibly convert
-//    data  -- walker data
+//    pTree      -- pointer to tree to possibly convert
+//    bFirstPass -- whether this is the first of the two stress passes
 //
 // Notes:
 //    The stress mode does 2 passes.
@@ -6921,7 +6987,7 @@ unsigned Compiler::lvaStressLclFldPadding(unsigned lclNum)
 //    In the first pass we will mark the locals where we CAN't apply the stress mode.
 //    In the second pass we will do the appropriate morphing wherever we've not determined we can't do it.
 //
-Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* data)
+Compiler::fgWalkResult Compiler::lvaStressLclFldNode(GenTree** pTree, bool bFirstPass)
 {
     GenTree* const       tree = *pTree;
     GenTreeLclVarCommon* lcl  = tree->OperIsAnyLocal() ? tree->AsLclVarCommon() : nullptr;
@@ -6931,12 +6997,11 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
         return WALK_CONTINUE;
     }
 
-    Compiler* const  pComp      = ((lvaStressLclFldArgs*)data->pCallbackData)->m_compiler;
-    bool const       bFirstPass = ((lvaStressLclFldArgs*)data->pCallbackData)->m_bFirstPass;
-    unsigned const   lclNum     = lcl->GetLclNum();
-    LclVarDsc* const varDsc     = pComp->lvaGetDesc(lclNum);
-    var_types const  lclType    = lcl->TypeGet();
-    var_types const  varType    = varDsc->TypeGet();
+    Compiler* const  pComp   = this;
+    unsigned const   lclNum  = lcl->GetLclNum();
+    LclVarDsc* const varDsc  = pComp->lvaGetDesc(lclNum);
+    var_types const  lclType = lcl->TypeGet();
+    var_types const  varType = varDsc->TypeGet();
 
     if (varDsc->lvNoLclFldStress)
     {
@@ -7115,6 +7180,28 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
 
 /*****************************************************************************/
 
+class StressLclFldVisitor final : public GenTreeVisitor<StressLclFldVisitor>
+{
+    bool m_bFirstPass;
+
+public:
+    enum
+    {
+        DoPreOrder = true,
+    };
+
+    StressLclFldVisitor(Compiler* compiler, bool bFirstPass)
+        : GenTreeVisitor<StressLclFldVisitor>(compiler)
+        , m_bFirstPass(bFirstPass)
+    {
+    }
+
+    fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+    {
+        return m_compiler->lvaStressLclFldNode(use, m_bFirstPass);
+    }
+};
+
 void Compiler::lvaStressLclFld()
 {
     if (!compStressCompile(STRESS_LCL_FLDS, 5))
@@ -7122,16 +7209,19 @@ void Compiler::lvaStressLclFld()
         return;
     }
 
-    lvaStressLclFldArgs Args;
-    Args.m_compiler   = this;
-    Args.m_bFirstPass = true;
+    // The stress mode does 2 passes; see lvaStressLclFldNode.
+    for (bool bFirstPass : {true, false})
+    {
+        StressLclFldVisitor visitor(this, bFirstPass);
 
-    // Do First pass
-    fgWalkAllTreesPre(lvaStressLclFldCB, &Args);
-
-    // Second pass
-    Args.m_bFirstPass = false;
-    fgWalkAllTreesPre(lvaStressLclFldCB, &Args);
+        for (BasicBlock* const block : Blocks())
+        {
+            for (Statement* const stmt : block->Statements())
+            {
+                visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
+            }
+        }
+    }
 }
 
 #endif // DEBUG

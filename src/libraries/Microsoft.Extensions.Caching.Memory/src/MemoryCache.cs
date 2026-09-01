@@ -122,6 +122,11 @@ namespace Microsoft.Extensions.Caching.Memory
 
         internal void SetEntry(CacheEntry entry)
         {
+            // Size accounting adds entry.Size here and subtracts it again on removal, so the entry must
+            // already be frozen against further size changes by the time it gets here. CacheEntry.Dispose
+            // sets _isDisposed before calling in, which is what makes those two reads agree.
+            Debug.Assert(entry.IsDisposed, "Entry must be disposed before it is committed to the cache.");
+
             if (_disposed)
             {
                 // No-op instead of throwing since this is called during CacheEntry.Dispose
@@ -177,11 +182,25 @@ namespace Microsoft.Extensions.Caching.Memory
                     // Try to update with the new entry if a previous entries exist.
                     entryAdded = coherentState.TryUpdate(entry.Key, entry, priorEntry);
 
-                    if (!entryAdded)
+                    if (entryAdded)
+                    {
+                        if (_options.HasSizeLimit)
+                        {
+                            // The prior entry was atomically replaced by this entry via TryUpdate, so
+                            // no other path can also remove (and decrement) it. Decrement its size here
+                            // exactly once, tied to the swap we performed. Doing this speculatively
+                            // inside UpdateCacheSizeExceedsCapacity (before the swap) races with a
+                            // concurrent RemoveEntry of the prior entry and double-counts the decrement,
+                            // drifting CacheSize negative and permanently blocking all future inserts.
+                            Interlocked.Add(ref coherentState.CacheSize, -priorEntry.Size);
+                        }
+                    }
+                    else
                     {
                         // The update will fail if the previous entry was removed after retrieval.
                         // Adding the new entry will succeed only if no entry has been added since.
                         // This guarantees removing an old entry does not prevent adding a new entry.
+                        // The prior entry's size is decremented by whichever path removed it, not here.
                         entryAdded = coherentState.TryAdd(entry.Key, entry);
                     }
                 }
@@ -194,8 +213,8 @@ namespace Microsoft.Extensions.Caching.Memory
                 {
                     if (_options.HasSizeLimit)
                     {
-                        // Entry could not be added, reset cache size
-                        Interlocked.Add(ref coherentState._cacheSize, -entry.Size + (priorEntry?.Size).GetValueOrDefault());
+                        // Entry could not be added, roll back the size increment for this entry only.
+                        Interlocked.Add(ref coherentState.CacheSize, -entry.Size);
                     }
                     entry.SetExpired(EvictionReason.Replaced);
                     entry.InvokeEvictionCallbacks();
@@ -347,7 +366,7 @@ namespace Microsoft.Extensions.Caching.Memory
             {
                 if (_options.HasSizeLimit)
                 {
-                    Interlocked.Add(ref coherentState._cacheSize, -entry.Size);
+                    Interlocked.Add(ref coherentState.CacheSize, -entry.Size);
                 }
 
                 entry.SetExpired(EvictionReason.Removed);
@@ -534,23 +553,27 @@ namespace Microsoft.Extensions.Caching.Memory
                 return false;
             }
 
+            long priorSize = priorEntry?.Size ?? 0;
             long sizeRead = coherentState.Size;
             for (int i = 0; i < 100; i++)
             {
-                long newSize = sizeRead + entry.Size;
-                if (priorEntry != null)
-                {
-                    Debug.Assert(entry.Key == priorEntry.Key);
-                    newSize -= priorEntry.Size;
-                }
+                // The capacity decision still accounts for the prior entry being replaced (its size is
+                // freed by the replace), so a same-or-smaller replacement at the size limit is admitted.
+                // However, only the new entry's size is committed to CacheSize here. The prior entry's
+                // size is decremented by the caller, atomically with the dictionary swap that actually
+                // removes it. Decrementing the prior size here (before the swap) races with a concurrent
+                // RemoveEntry of the same prior entry and double-counts the decrement, drifting
+                // CacheSize negative and permanently blocking all future inserts.
+                long sizeAfterReplace = sizeRead + entry.Size - priorSize;
 
-                if ((ulong)newSize > (ulong)sizeLimit)
+                if ((ulong)sizeAfterReplace > (ulong)sizeLimit)
                 {
-                    // Overflow occurred, return true without updating the cache size
+                    // Exceeds the limit (or overflow); return true without updating the cache size.
                     return true;
                 }
 
-                long original = Interlocked.CompareExchange(ref coherentState._cacheSize, newSize, sizeRead);
+                long committedSize = sizeRead + entry.Size;
+                long original = Interlocked.CompareExchange(ref coherentState.CacheSize, committedSize, sizeRead);
                 if (sizeRead == original)
                 {
                     return false;
@@ -780,7 +803,21 @@ namespace Microsoft.Extensions.Caching.Memory
             }
 #endif
 
-            internal long _cacheSize;
+            // CacheSize is Interlocked-updated on every Set/Remove when SizeLimit is set, while
+            // _stringEntries/_nonStringEntries are read on every TryGetValue; the padding keeps the
+            // write-hot atomic off the line holding those read-mostly references. It has to live in
+            // a struct -- layout attributes on a class only affect marshaling, and the runtime
+            // reorders class fields freely. 64 is the size of a cache line on many systems; larger
+            // ones may see a little more false sharing.
+            private CacheSizePadded _cacheSizePadded;
+
+            [StructLayout(LayoutKind.Explicit, Size = 128)]
+            private struct CacheSizePadded
+            {
+                [FieldOffset(64)] public long Value;
+            }
+
+            internal ref long CacheSize => ref _cacheSizePadded.Value;
 
             internal bool TryGetValue(object key, [NotNullWhen(true)] out CacheEntry? entry)
                 => key is string s ? _stringEntries.TryGetValue(s, out entry) : _nonStringEntries.TryGetValue(key, out entry);
@@ -830,7 +867,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
             internal int Count => _stringEntries.Count + _nonStringEntries.Count;
 
-            internal long Size => Volatile.Read(ref _cacheSize);
+            internal long Size => Volatile.Read(ref CacheSize);
 
             internal bool RemoveEntry(CacheEntry entry, MemoryCacheOptions options)
             {
@@ -844,7 +881,7 @@ namespace Microsoft.Extensions.Caching.Memory
                 {
                     if (options.HasSizeLimit)
                     {
-                        Interlocked.Add(ref _cacheSize, -entry.Size);
+                        Interlocked.Add(ref CacheSize, -entry.Size);
                     }
                     entry.InvokeEvictionCallbacks();
                     return true;

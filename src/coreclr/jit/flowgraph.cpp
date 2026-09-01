@@ -758,11 +758,15 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
 
         case CORINFO_HELP_GETPINNED_GCSTATIC_BASE:
         case CORINFO_HELP_GETPINNED_NONGCSTATIC_BASE:
-            type = TYP_I_IMPL;
+            // In async calls we model these helpers as byrefs to get "killed
+            // across suspensions" behavior for free, while also properly
+            // ensuring derived addresses are byref typed and are treated
+            // similarly.
+            type = impInlineRoot()->compIsAsync() ? TYP_BYREF : TYP_I_IMPL;
             break;
 
         case CORINFO_HELP_INITCLASS:
-            type = TYP_VOID;
+            type = HelperInitClassRetType;
             break;
 
         default:
@@ -989,11 +993,7 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
 //
 bool Compiler::fgAddrCouldBeHeap(GenTree* addr)
 {
-    GenTree* op = addr;
-    while (op->OperIs(GT_FIELD_ADDR) && op->AsFieldAddr()->IsInstance())
-    {
-        op = op->AsFieldAddr()->GetFldObj();
-    }
+    GenTree* op = gtPeelFieldAddrs(addr);
 
     target_ssize_t offset;
     gtPeelOffsets(&op, &offset);
@@ -1618,9 +1618,11 @@ void Compiler::fgAddSyncMethodEnterExit()
     // For EnC this is part of the frame header. Furthermore, this is allocated above PSP on ARM64.
     // To avoid complicated reasoning about alignment we always allocate a full pointer sized slot for this.
     var_types typeMonAcquired = TYP_I_IMPL;
-    this->lvaMonAcquired      = lvaGrabTemp(true DEBUGARG("Synchronized method monitor acquired boolean"));
-
-    lvaTable[lvaMonAcquired].lvType = typeMonAcquired;
+    if (lvaMonAcquired == BAD_VAR_NUM)
+    {
+        lvaMonAcquired                  = lvaGrabTemp(true DEBUGARG("Synchronized method monitor acquired boolean"));
+        lvaTable[lvaMonAcquired].lvType = typeMonAcquired;
+    }
 
     if (opts.IsOSR())
     {
@@ -1674,11 +1676,15 @@ void Compiler::fgAddSyncMethodEnterExit()
                         false /*exit*/);
 
     // non-exceptional cases
-    for (BasicBlock* const block : Blocks())
+    // For async versions we created these directly in import
+    if (!compIsAsyncVersion())
     {
-        if (block->KindIs(BBJ_RETURN))
+        for (BasicBlock* const block : Blocks())
         {
-            fgCreateMonitorTree(lvaMonAcquired, info.compThisArg, block, false /*exit*/);
+            if (block->KindIs(BBJ_RETURN))
+            {
+                fgCreateMonitorTree(lvaMonAcquired, info.compThisArg, block, false /*exit*/);
+            }
         }
     }
 }
@@ -3153,7 +3159,8 @@ PhaseStatus Compiler::fgCreateFunclets()
         funcInfo[i].funFramePointerReg = REG_NA;
 #endif
 #ifdef TARGET_WASM
-        funcInfo[i].funWasmLocalDecls = nullptr;
+        funcInfo[i].funWasmLocalDecls       = nullptr;
+        funcInfo[i].funWasmExnRefLocalIndex = UINT_MAX;
 #endif
     }
 #endif
@@ -3899,11 +3906,11 @@ unsigned Compiler::bbThrowIndex(BasicBlock* blk, AcdKeyDesignator* dsg)
     if (ehGetDsc(hndIndex - 1)->InFilterRegionBBRange(blk))
     {
         *dsg = AcdKeyDesignator::KD_FLT;
-        return hndIndex | 0x80000000;
+        return hndIndex | AddCodeDscKey::AcdFilterFlag;
     }
 
     *dsg = AcdKeyDesignator::KD_HND;
-    return hndIndex | 0x40000000;
+    return hndIndex | AddCodeDscKey::AcdHandlerFlag;
 }
 
 //------------------------------------------------------------------------
@@ -3957,10 +3964,10 @@ Compiler::AddCodeDscKey::AddCodeDscKey(AddCodeDsc* add)
                 acdData = add->acdTryIndex;
                 break;
             case AcdKeyDesignator::KD_HND:
-                acdData = add->acdHndIndex | 0x40000000;
+                acdData = add->acdHndIndex | AcdHandlerFlag;
                 break;
             case AcdKeyDesignator::KD_FLT:
-                acdData = add->acdHndIndex | 0x80000000;
+                acdData = add->acdHndIndex | AcdFilterFlag;
                 break;
             default:
                 unreached();
@@ -5777,6 +5784,8 @@ bool FlowGraphNaturalLoop::AnalyzeIteration(NaturalLoopIterInfo* info, bool allo
             printf("invariant local limit ");
         if (info->HasArrayLengthLimit)
             printf("array length limit ");
+        if (info->LimitOffset != 0)
+            printf("offset %d ", info->LimitOffset);
         printf(")\n");
     }
 #endif
@@ -5806,6 +5815,7 @@ bool FlowGraphNaturalLoop::MatchLimit(unsigned iterVar, GenTree* test, NaturalLo
     info->HasSimdLimit           = false;
     info->HasArrayLengthLimit    = false;
     info->HasInvariantLocalLimit = false;
+    info->LimitOffset            = 0;
 
     Compiler* comp = m_dfsTree->GetCompiler();
 
@@ -5848,6 +5858,46 @@ bool FlowGraphNaturalLoop::MatchLimit(unsigned iterVar, GenTree* test, NaturalLo
     if (!iterOp->TypeIs(TYP_INT))
     {
         return false;
+    }
+
+    // Recognize `base ± const` limits (e.g. `arr.Length - 4`, `lcl + 8`) by
+    // peeling the constant into LimitOffset and form-checking the base.
+    // Morph canonicalizes commutative ops so that any constant operand sits on
+    // op2, and folds `base ± 0`, so we only need to look for `base op2-cns`.
+    int      peeledOffset = 0;
+    GenTree* peeledBase   = nullptr;
+    if (limitOp->OperIs(GT_ADD, GT_SUB) && limitOp->TypeIs(TYP_INT))
+    {
+        GenTree* lop1 = limitOp->gtGetOp1();
+        GenTree* lop2 = limitOp->gtGetOp2();
+        if (lop2->IsCnsIntOrI() && lop2->TypeIs(TYP_INT) && !lop1->IsCnsIntOrI())
+        {
+            ssize_t cns = lop2->AsIntCon()->IconValue();
+            if ((cns >= INT32_MIN) && (cns <= INT32_MAX))
+            {
+                int signedCns = (int)cns;
+                if (limitOp->OperIs(GT_SUB))
+                {
+                    // Guard against the -INT32_MIN overflow.
+                    if (signedCns != INT32_MIN)
+                    {
+                        peeledOffset = -signedCns;
+                        peeledBase   = lop1;
+                    }
+                }
+                else
+                {
+                    peeledOffset = signedCns;
+                    peeledBase   = lop1;
+                }
+            }
+        }
+    }
+
+    if ((peeledBase != nullptr) && (peeledOffset != 0))
+    {
+        limitOp           = peeledBase;
+        info->LimitOffset = peeledOffset;
     }
 
     // Check what type of limit we have - constant, variable or arr-len.
@@ -6920,6 +6970,33 @@ GenTree* NaturalLoopIterInfo::Limit()
 }
 
 //------------------------------------------------------------------------
+// LimitBase: Get the base subtree of the loop limit, with the LimitOffset
+// peeled off.
+//
+// Returns:
+//   The form-checked base tree (CNS_INT / LCL_VAR / ARR_LENGTH); identical
+//   to Limit() when LimitOffset == 0.
+//
+GenTree* NaturalLoopIterInfo::LimitBase()
+{
+    GenTree* lim = Limit();
+    if (LimitOffset == 0)
+    {
+        return lim;
+    }
+
+    assert(lim->OperIs(GT_ADD, GT_SUB) && lim->TypeIs(TYP_INT));
+    GenTree* op1 = lim->gtGetOp1();
+    GenTree* op2 = lim->gtGetOp2();
+    if (op2->IsCnsIntOrI())
+    {
+        return op1;
+    }
+    assert(op1->IsCnsIntOrI() && lim->OperIs(GT_ADD));
+    return op2;
+}
+
+//------------------------------------------------------------------------
 // ConstLimit: Get the constant value of the iterator limit, i.e. when the loop
 // condition is "i RELOP const".
 //
@@ -6932,7 +7009,8 @@ GenTree* NaturalLoopIterInfo::Limit()
 int NaturalLoopIterInfo::ConstLimit()
 {
     assert(HasConstLimit);
-    GenTree* limit = Limit();
+    assert(LimitOffset == 0);
+    GenTree* limit = LimitBase();
     assert(limit->OperIsConst());
     return (int)limit->AsIntCon()->IconValue();
 }
@@ -6951,7 +7029,7 @@ unsigned NaturalLoopIterInfo::VarLimit()
 {
     assert(HasInvariantLocalLimit);
 
-    GenTree* limit = Limit();
+    GenTree* limit = LimitBase();
     assert(limit->OperIs(GT_LCL_VAR));
     return limit->AsLclVarCommon()->GetLclNum();
 }
@@ -6974,7 +7052,7 @@ bool NaturalLoopIterInfo::ArrLenLimit(Compiler* comp, ArrIndex* index)
 {
     assert(HasArrayLengthLimit);
 
-    GenTree* limit = Limit();
+    GenTree* limit = LimitBase();
     assert(limit->OperIs(GT_ARR_LENGTH));
 
     // Check if we have a.length or a[i][j].length
@@ -7664,7 +7742,7 @@ FlowGraphTryRegions::FlowGraphTryRegions(Compiler* comp, FlowGraphDfsTree* dfsTr
     , m_numRegions(0)
     , m_numTryCatchRegions(0)
     , m_tryRegionsIncludeHandlerBlocks(false)
-    , m_hasMultipleEntryTryRegions(false)
+    , m_hasSideEntry(false)
     , m_traits((dfsTree == nullptr) ? comp->fgBBNumMax + 1 : dfsTree->GetPostOrderCount(), comp)
 {
 }
@@ -7709,8 +7787,8 @@ FlowGraphTryRegion::FlowGraphTryRegion(EHblkDsc* ehDsc, FlowGraphTryRegions* reg
     , m_ehDsc(ehDsc)
     , m_blocks(BitVecOps::UninitVal())
     , m_entryEdges(regions->GetCompiler()->getAllocator(CMK_BasicBlock))
+    , m_unreachableBlocks(regions->GetCompiler()->getAllocator(CMK_BasicBlock))
     , m_requiresRuntimeResumption(false)
-    , m_hasSideEntry(false)
 {
     BitVecTraits* const traits = regions->GetBlockBitVecTraits();
     m_blocks                   = BitVecOps::MakeEmpty(traits);
@@ -7798,6 +7876,20 @@ FlowGraphTryRegions* FlowGraphTryRegions::Build(Compiler* comp, FlowGraphDfsTree
             FlowGraphTryRegion* region = regions->m_tryRegions[dsc->ebdID];
             assert(region != nullptr);
 
+            // In-try blocks that won't be reached by the DFS need to be tracked
+            // so wasm codegen can attach them as fake successors of the try
+            // entry. Use DFS membership when available; otherwise fall back to
+            // pred-less as a conservative heuristic. When truly unreachable,
+            // skip the rest of the per-block work (the block's DFS index is
+            // meaningless and would corrupt the region's bit set).
+            //
+            bool isUnreachable = (dfsTree != nullptr) ? !dfsTree->Contains(block) : (block->bbPreds == nullptr);
+            if (isUnreachable && (block != dsc->ebdTryBeg) && !block->HasFlag(BBF_THROW_HELPER))
+            {
+                region->m_unreachableBlocks.push_back(block);
+                continue;
+            }
+
             // A block may be in more than one region, so walk up the ancestor chain
             // adding the postorder number to each.
             //
@@ -7834,23 +7926,14 @@ FlowGraphTryRegions* FlowGraphTryRegions::Build(Compiler* comp, FlowGraphDfsTree
                         continue;
                     }
 
-                    // Async resumption and catch resumption entry edges
+                    // Any other edge is a side entry, which fgWasmRepairTryEntries
+                    // should already have routed through the region header. Record it
+                    // so wasm codegen can bail out rather than emit a region that
+                    // cannot be expressed.
                     //
-                    if (predBlock->HasAnyFlag(BBF_ASYNC_RESUMPTION | BBF_CATCH_RESUMPTION))
-                    {
-                        JITDUMP("Found %s resumption edge from " FMT_BB " to " FMT_BB "\n",
-                                predBlock->HasFlag(BBF_ASYNC_RESUMPTION) ? "async" : "catch", predBlock->bbNum,
-                                block->bbNum);
-
-                        region->AddEntryEdge(edge);
-                        region->SetHasSideEntry();
-                        regions->SetHasMultipleEntryTryRegions();
-                        continue;
-                    }
-
                     JITDUMP("Unexpected try region entry edge from " FMT_BB " to " FMT_BB "\n", predBlock->bbNum,
                             block->bbNum);
-                    assert(!"Unexpected try region entry edge");
+                    regions->SetHasSideEntry();
                 }
 
                 region = region->m_parent;
@@ -7879,59 +7962,6 @@ FlowGraphTryRegions* FlowGraphTryRegions::Build(Compiler* comp, FlowGraphDfsTree
     }
 
     return regions;
-}
-
-//------------------------------------------------------------------------
-// FlowGraphTryRegions::AddMultipleEntryRegionEdges: Add temporary
-//    edges for multiple entry try regions.
-//
-// Arguments:
-//    edges -- collection of temporary edges to augment
-//
-void FlowGraphTryRegions::AddMultipleEntryRegionEdges(ArrayStack<FlowEdge*>& edges)
-{
-    for (FlowGraphTryRegion* region : m_tryRegions)
-    {
-        if (region != nullptr && region->HasCatchHandler() && region->HasSideEntry())
-        {
-            BasicBlock* const headerBlock = region->GetHeaderBlock();
-
-            for (FlowEdge* edge : region->EntryEdges())
-            {
-                BasicBlock* const destBlock = edge->getDestinationBlock();
-
-                // Skip the normal entry edges.
-                //
-                if (destBlock == headerBlock)
-                {
-                    continue;
-                }
-
-                // We need an edge from dest to try header.
-                FlowEdge* const destheaderEdge = m_compiler->fgAddRefPred(headerBlock, destBlock);
-                edges.Push(destheaderEdge);
-
-                // And an edge from method entry to dest.
-                FlowEdge* const entryDestEdge = m_compiler->fgAddRefPred(destBlock, m_compiler->fgFirstBB);
-                edges.Push(entryDestEdge);
-            }
-        }
-    }
-}
-
-//------------------------------------------------------------------------
-// FlowGraphTryRegions::RemoveMultipleEntryRegionEdges: Remove temporary
-//    edges added for multiple entry try regions.
-//
-// Arguments:
-//    edges -- collection of edges to remove
-//
-void FlowGraphTryRegions::RemoveMultipleEntryRegionEdges(ArrayStack<FlowEdge*>& edges)
-{
-    for (FlowEdge* const edge : edges.BottomUpOrder())
-    {
-        m_compiler->fgRemoveRefPred(edge);
-    }
 }
 
 //------------------------------------------------------------------------

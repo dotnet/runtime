@@ -126,11 +126,91 @@ The .NET Foundation licenses this file to you under the MIT license.
       <LinkerArg Include="/OPT:ICF" Shim="true" />
     </ItemGroup>
 
-    <Exec Condition="'$(IlcUseEnvironmentalTools)' != 'true'" Command="&quot;$(MSBuildThisFileDirectory)findvcvarsall.bat&quot; $(_targetArchitecture)"
+    <PropertyGroup Condition="'$(IlcUseEnvironmentalTools)' != 'true'">
+      <_VCVarsAllFound>1</_VCVarsAllFound>
+      <_FindVCVarsallCacheFile>$(NativeIntermediateOutputPath)findvcvarsall.$(_targetArchitecture).txt</_FindVCVarsallCacheFile>
+      <_FindVCVarsallVSWherePath>$([System.Environment]::GetEnvironmentVariable('ProgramFiles(x86)'))\Microsoft Visual Studio\Installer\vswhere.exe</_FindVCVarsallVSWherePath>
+      <_FindVCVarsallToolsSuffix>x86.x64</_FindVCVarsallToolsSuffix>
+      <_FindVCVarsallToolsSuffix Condition="'$(_targetArchitecture)' == 'arm64'">ARM64</_FindVCVarsallToolsSuffix>
+      <_FindVCVarsallHostArchitecture>amd64</_FindVCVarsallHostArchitecture>
+      <_FindVCVarsallHostArchitecture Condition="'$(_hostArchitecture)' == 'arm64'">arm64</_FindVCVarsallHostArchitecture>
+      <_FindVCVarsallTargetArchitecture>$([System.String]::Copy('$(_targetArchitecture)').Replace('x64', 'amd64'))</_FindVCVarsallTargetArchitecture>
+      <_FindVCVarsallVCEnvironment>$(_FindVCVarsallHostArchitecture)_$(_FindVCVarsallTargetArchitecture)</_FindVCVarsallVCEnvironment>
+      <_FindVCVarsallVCEnvironment Condition="'$(_FindVCVarsallHostArchitecture)' == '$(_FindVCVarsallTargetArchitecture)'">$(_FindVCVarsallHostArchitecture)</_FindVCVarsallVCEnvironment>
+    </PropertyGroup>
+
+    <Error Condition="'$(IlcUseEnvironmentalTools)' != 'true' and !Exists('$(_FindVCVarsallVSWherePath)')"
+      Text="vswhere.exe not found at '$(_FindVCVarsallVSWherePath)'. Ensure you have all the required prerequisites documented at https://aka.ms/nativeaot-prerequisites." />
+
+    <Exec Condition="'$(IlcUseEnvironmentalTools)' != 'true'"
+      Command="&quot;$(_FindVCVarsallVSWherePath)&quot; -latest -prerelease -products * -requires Microsoft.VisualStudio.Component.VC.Tools.$(_FindVCVarsallToolsSuffix) -property installationPath"
+      IgnoreExitCode="true" ConsoleToMSBuild="true" StandardOutputImportance="Low">
+      <Output TaskParameter="ConsoleOutput" PropertyName="_FindVCVarsallVSInstallationPath" />
+      <Output TaskParameter="ExitCode" PropertyName="_FindVCVarsallVSInstallationPathExitCode" />
+    </Exec>
+
+    <Error Condition="'$(IlcUseEnvironmentalTools)' != 'true' and ('$(_FindVCVarsallVSInstallationPathExitCode)' != '0' or '$(_FindVCVarsallVSInstallationPath)' == '')"
+      Text="vswhere.exe failed to locate Visual Studio with Microsoft.VisualStudio.Component.VC.Tools.$(_FindVCVarsallToolsSuffix). Ensure you have all the required prerequisites documented at https://aka.ms/nativeaot-prerequisites, in particular the Desktop Development for C++ workload in Visual Studio. For ARM64 development also install C++ ARM64 build tools." />
+
+    <Exec Condition="'$(IlcUseEnvironmentalTools)' != 'true'"
+      Command="&quot;$(_FindVCVarsallVSWherePath)&quot; -latest -prerelease -products * -requires Microsoft.VisualStudio.Component.VC.Tools.$(_FindVCVarsallToolsSuffix) -property installationVersion"
+      ConsoleToMSBuild="true" StandardOutputImportance="Low">
+      <Output TaskParameter="ConsoleOutput" PropertyName="_FindVCVarsallVSInstallationVersion" />
+    </Exec>
+
+    <ReadLinesFromFile Condition="'$(IlcUseEnvironmentalTools)' != 'true' and Exists('$(_FindVCVarsallCacheFile)')"
+      File="$(_FindVCVarsallCacheFile)">
+      <Output TaskParameter="Lines" ItemName="_FindVCVarsallCacheLine" />
+    </ReadLinesFromFile>
+
+    <ItemGroup Condition="'$(IlcUseEnvironmentalTools)' != 'true'">
+      <_FindVCVarsallCachedVSInstallationPathLine Include="VSInstallationPath" Condition="$([System.String]::Copy('%(_FindVCVarsallCacheLine.Identity)').StartsWith('VSInstallationPath='))">
+        <Value>$([System.String]::Copy('%(_FindVCVarsallCacheLine.Identity)').Substring(19))</Value>
+      </_FindVCVarsallCachedVSInstallationPathLine>
+      <_FindVCVarsallCachedVSInstallationVersionLine Include="VSInstallationVersion" Condition="$([System.String]::Copy('%(_FindVCVarsallCacheLine.Identity)').StartsWith('VSInstallationVersion='))">
+        <Value>$([System.String]::Copy('%(_FindVCVarsallCacheLine.Identity)').Substring(22))</Value>
+      </_FindVCVarsallCachedVSInstallationVersionLine>
+      <_FindVCVarsallCachedOutputLine Include="_FindVCVarsallOutput" Condition="$([System.String]::Copy('%(_FindVCVarsallCacheLine.Identity)').StartsWith('_FindVCVarsallOutput='))">
+        <Value>$([System.String]::Copy('%(_FindVCVarsallCacheLine.Identity)').Substring(21))</Value>
+      </_FindVCVarsallCachedOutputLine>
+    </ItemGroup>
+
+    <PropertyGroup Condition="'$(IlcUseEnvironmentalTools)' != 'true'">
+      <_FindVCVarsallCachedVSInstallationPath Condition="'@(_FindVCVarsallCachedVSInstallationPathLine)' != ''">@(_FindVCVarsallCachedVSInstallationPathLine->'%(Value)', '')</_FindVCVarsallCachedVSInstallationPath>
+      <_FindVCVarsallCachedVSInstallationVersion Condition="'@(_FindVCVarsallCachedVSInstallationVersionLine)' != ''">@(_FindVCVarsallCachedVSInstallationVersionLine->'%(Value)', '')</_FindVCVarsallCachedVSInstallationVersion>
+      <_FindVCVarsallCachedOutput Condition="'@(_FindVCVarsallCachedOutputLine)' != ''">@(_FindVCVarsallCachedOutputLine->'%(Value)', '')</_FindVCVarsallCachedOutput>
+      <_FindVCVarsallCacheValid Condition="'$(_FindVCVarsallCachedVSInstallationPath)' == '$(_FindVCVarsallVSInstallationPath)' and '$(_FindVCVarsallCachedVSInstallationVersion)' == '$(_FindVCVarsallVSInstallationVersion)' and '$(_FindVCVarsallCachedOutput)' != ''">true</_FindVCVarsallCacheValid>
+      <_FindVCVarsallOutput Condition="'$(_FindVCVarsallCacheValid)' == 'true'">$(_FindVCVarsallCachedOutput)</_FindVCVarsallOutput>
+      <_VCVarsAllFound Condition="'$(_FindVCVarsallCacheValid)' == 'true'">0</_VCVarsAllFound>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(IlcUseEnvironmentalTools)' != 'true' and '$(_FindVCVarsallCacheValid)' != 'true'">
+      <_FindVCVarsallCommand><![CDATA[
+call "$(_FindVCVarsallVSInstallationPath)\vc\Auxiliary\Build\vcvarsall.bat" $(_FindVCVarsallVCEnvironment) > NUL 2> NUL
+if errorlevel 1 exit /b 1
+for /F "delims=" %%W in ('where link') do (
+  for %%A in ("%%W") do echo %%~dpA#
+  goto :CAPTURE_LIB_PATHS
+)
+exit /b 1
+:CAPTURE_LIB_PATHS
+if "%LIB%" == "" exit /b 1
+echo %LIB%
+]]></_FindVCVarsallCommand>
+    </PropertyGroup>
+
+    <Exec Condition="'$(IlcUseEnvironmentalTools)' != 'true' and '$(_FindVCVarsallCacheValid)' != 'true'"
+      Command="$(_FindVCVarsallCommand)"
       IgnoreExitCode="true" ConsoleToMSBuild="true" StandardOutputImportance="Low">
       <Output TaskParameter="ConsoleOutput" PropertyName="_FindVCVarsallOutput" />
       <Output TaskParameter="ExitCode" PropertyName="_VCVarsAllFound" />
     </Exec>
+
+    <MakeDir Directories="$(NativeIntermediateOutputPath)" Condition="'$(IlcUseEnvironmentalTools)' != 'true' and '$(_VCVarsAllFound)' == '0' and '$(_FindVCVarsallCacheValid)' != 'true'" />
+    <WriteLinesToFile Condition="'$(IlcUseEnvironmentalTools)' != 'true' and '$(_VCVarsAllFound)' == '0' and '$(_FindVCVarsallCacheValid)' != 'true'"
+      File="$(_FindVCVarsallCacheFile)"
+      Lines="$([MSBuild]::Escape('VSInstallationPath=$(_FindVCVarsallVSInstallationPath)'));$([MSBuild]::Escape('VSInstallationVersion=$(_FindVCVarsallVSInstallationVersion)'));$([MSBuild]::Escape('_FindVCVarsallOutput=$(_FindVCVarsallOutput)'))"
+      Overwrite="true" Encoding="utf-8" WriteOnlyWhenDifferent="true" />
 
     <ItemGroup Condition="'$(_VCVarsAllFound)' == '0'">
       <AdditionalNativeLibraryDirectories Include="$(_FindVCVarsallOutput.Split(`#`)[1].Split(';'))" />

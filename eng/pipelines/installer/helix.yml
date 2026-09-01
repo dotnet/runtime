@@ -1,20 +1,30 @@
 parameters:
   archType: ''
   osGroup: ''
+  osSubgroup: ''
   creator: ''
   helixQueues: ''
+  condition: always()
+  useHelixMonitor: false
 
 steps:
   - template: /eng/common/templates/steps/send-to-helix.yml
     parameters:
       DisplayNamePrefix: Send to Helix
       HelixProjectPath: src/installer/tests/helixpublish.proj
-      ${{ if ne(parameters.osGroup, 'windows') }}:
+      ${{ if and(ne(parameters.osGroup, 'windows'), ne(parameters.osSubgroup, '_musl')) }}:
         HelixProjectArguments: >-
           --ci
           /p:Configuration=$(_BuildConfig)
           /p:TargetArchitecture=${{ parameters.archType }}
           /p:TargetOS=${{ parameters.osGroup }}
+      ${{ if and(ne(parameters.osGroup, 'windows'), eq(parameters.osSubgroup, '_musl')) }}:
+        HelixProjectArguments: >-
+          --ci
+          /p:Configuration=$(_BuildConfig)
+          /p:TargetArchitecture=${{ parameters.archType }}
+          /p:TargetOS=${{ parameters.osGroup }}
+          /p:__PortableTargetOS=linux-musl
       ${{ if eq(parameters.osGroup, 'windows') }}:
         HelixProjectArguments: >-
           -ci
@@ -28,3 +38,5 @@ steps:
       ${{ if eq(variables['System.TeamProject'], 'public') }}:
         Creator: ${{ parameters.creator }}
         HelixTargetQueues: ${{ join('+', parameters.helixQueues) }}
+      UseHelixMonitor: ${{ parameters.useHelixMonitor }}
+      condition: and(succeeded(), ${{ parameters.condition }})

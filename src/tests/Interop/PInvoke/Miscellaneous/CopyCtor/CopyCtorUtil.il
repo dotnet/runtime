@@ -36,7 +36,39 @@
   {
   } // end of method CopyCtorUtil.TestDelegate::EndInvoke
 
-} // end of classCopyCtorUtil. TestDelegate
+} // end of class CopyCtorUtil.TestDelegate
+
+.class auto ansi sealed public CopyCtorUtil.DelegateWithMissingParameterMetadata
+       extends [mscorlib]System.MulticastDelegate
+{
+  .custom instance void [mscorlib]System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute::.ctor(valuetype [mscorlib]System.Runtime.InteropServices.CallingConvention) = ( 01 00 03 00 00 00 00 00 )
+  .method public hidebysig specialname rtspecialname
+          instance void  .ctor(object 'object',
+                               native int 'method') runtime managed
+  {
+  } // end of method CopyCtorUtil.DelegateWithMissingParameterMetadata::.ctor
+
+  .method public hidebysig newslot virtual
+          instance int32  Invoke(int32*,
+                                 valuetype [CopyCtorUtil]StructWithCtor modreq([mscorlib]System.Runtime.CompilerServices.IsCopyConstructed)*) runtime managed
+  {
+  } // end of method CopyCtorUtil.DelegateWithMissingParameterMetadata::Invoke
+
+  .method public hidebysig newslot virtual
+          instance class [mscorlib]System.IAsyncResult
+          BeginInvoke(int32*,
+                      valuetype [CopyCtorUtil]StructWithCtor modreq([mscorlib]System.Runtime.CompilerServices.IsCopyConstructed)*,
+                      class [mscorlib]System.AsyncCallback callback,
+                      object 'object') runtime managed
+  {
+  } // end of method CopyCtorUtil.DelegateWithMissingParameterMetadata::BeginInvoke
+
+  .method public hidebysig newslot virtual
+          instance int32  EndInvoke(class [mscorlib]System.IAsyncResult result) runtime managed
+  {
+  } // end of method CopyCtorUtil.DelegateWithMissingParameterMetadata::EndInvoke
+
+} // end of class CopyCtorUtil.DelegateWithMissingParameterMetadata
 
 .class public sealed sequential ansi beforefieldinit StructWithCtor
        extends [mscorlib]System.ValueType
@@ -92,6 +124,16 @@
         calli unmanaged stdcall int32 (valuetype StructWithCtor modreq([mscorlib]System.Runtime.CompilerServices.IsCopyConstructed)*, valuetype StructWithCtor modreq([mscorlib]System.Runtime.CompilerServices.IsCopyConstructed)&)
         ret
     }
+
+    .method public hidebysig static int32  Call_FunctionPointer_MissingParameterMetadata(native int fptr,
+                                                 int32* arg1,
+                                                 valuetype StructWithCtor* arg2) cil managed
+    {
+        .maxstack  8
+        ldarg.1
+        ldarg.2
+        ldarg.0
+        calli unmanaged stdcall int32 (int32*, valuetype StructWithCtor modreq([mscorlib]System.Runtime.CompilerServices.IsCopyConstructed)*)
+        ret
+    }
 }
-
-

@@ -137,7 +137,7 @@ inline bool MethodDesc::IsInteropStub()
 {
     WRAPPER_NO_CONTRACT;
 
-    if (IsPInvoke())
+    if (IsPInvoke() || IsCLRToCOMCall())
         return true;
 
     if (!IsILStub())
@@ -150,7 +150,6 @@ inline bool MethodDesc::IsInteropStub()
         case DynamicMethodDesc::StubPInvokeCalli:
         case DynamicMethodDesc::StubPInvokeVarArg:
         case DynamicMethodDesc::StubReversePInvoke:
-        case DynamicMethodDesc::StubCLRToCOMInterop:
         case DynamicMethodDesc::StubCOMToCLRInterop:
         case DynamicMethodDesc::StubStructMarshalInterop:
             return true;
@@ -178,7 +177,30 @@ inline bool MethodDesc::IsDiagnosticsHidden()
     //   tolerate if the runtime-implemented frame is missing because they can still see the managed target method.
 
     WRAPPER_NO_CONTRACT;
-    return IsILStub() || IsAsyncThunkMethod() || IsWrapperStub();
+    if (IsILStub())
+    {
+        return true;
+    }
+
+    if (IsAsyncThunkMethod())
+    {
+        if (IsReturnDroppingThunk())
+        {
+            return true;
+        }
+
+        if (!SupportsAsyncVersionCodegen())
+        {
+            return true;
+        }
+    }
+
+    if (IsWrapperStub())
+    {
+        return true;
+    }
+
+    return false;
 }
 
 inline BOOL MethodDesc::IsQCall()
@@ -193,15 +215,8 @@ inline BOOL MethodDesc::IsQCall()
 inline CLRToCOMCallInfo *CLRToCOMCallInfo::FromMethodDesc(MethodDesc *pMD)
 {
     LIMITED_METHOD_CONTRACT;
-    if (pMD->IsCLRToCOMCall())
-    {
-        return ((CLRToCOMCallMethodDesc *)pMD)->m_pCLRToCOMCallInfo;
-    }
-    else
-    {
-        _ASSERTE(pMD->IsEEImpl());
-        return ((DelegateEEClass *)pMD->GetClass())->m_pCLRToCOMCallInfo;
-    }
+    _ASSERTE(pMD->IsCLRToCOMCall());
+    return ((CLRToCOMCallMethodDesc *)pMD)->m_pCLRToCOMCallInfo;
 }
 
 #endif //FEATURE_COMINTEROP

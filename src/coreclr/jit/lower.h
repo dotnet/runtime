@@ -96,6 +96,9 @@ private:
     bool      TryLowerNegToMulLongOp(GenTreeOp* op, GenTree** next);
     bool      TryContainingCselOp(GenTreeHWIntrinsic* parentNode, GenTreeHWIntrinsic* childNode);
 #endif
+#if defined(TARGET_ARM64)
+    bool TryLowerAndRshToBFX(GenTreeOp* tree, GenTree** next);
+#endif
 #ifdef TARGET_RISCV64
     bool TryLowerShiftAddToShxadd(GenTreeOp* tree, GenTree** next);
     bool TryLowerZextAddToAddUw(GenTreeOp* tree, GenTree** next);
@@ -123,6 +126,7 @@ private:
     void ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node);
 #ifdef TARGET_XARCH
     void TryFoldCnsVecForEmbeddedBroadcast(GenTreeHWIntrinsic* parentNode, GenTreeVecCon* cnsVec);
+    void ContainHWIntrinsicOperand(GenTreeHWIntrinsic* parentNode, GenTree* childNode);
 #endif // TARGET_XARCH
 #endif // FEATURE_HW_INTRINSICS
 
@@ -195,7 +199,6 @@ private:
 #endif // WINDOWS_AMD64_ABI
     GenTree* LowerDelegateInvoke(GenTreeCall* call);
     void     OptimizeCallIndirectTargetEvaluation(GenTreeCall* call);
-    GenTree* LowerIndirectNonvirtCall(GenTreeCall* call);
     GenTree* LowerDirectCall(GenTreeCall* call);
     GenTree* LowerNonvirtPinvokeCall(GenTreeCall* call);
     GenTree* LowerTailCallViaJitHelper(GenTreeCall* callNode, GenTree* callTarget);
@@ -248,21 +251,10 @@ private:
         return m_compiler->gtNewPhysRegNode(reg, type);
     }
 
-    GenTree* ThisReg(GenTreeCall* call)
-    {
-        return PhysReg(m_compiler->codeGen->genGetThisArgReg(call), TYP_REF);
-    }
-
     GenTree* Offset(GenTree* base, unsigned offset)
     {
         var_types resultType = base->TypeIs(TYP_REF) ? TYP_BYREF : base->TypeGet();
         return new (m_compiler, GT_LEA) GenTreeAddrMode(resultType, base, nullptr, 0, offset);
-    }
-
-    GenTree* OffsetByIndex(GenTree* base, GenTree* index)
-    {
-        var_types resultType = base->TypeIs(TYP_REF) ? TYP_BYREF : base->TypeGet();
-        return new (m_compiler, GT_LEA) GenTreeAddrMode(resultType, base, index, 0, 0);
     }
 
     GenTree* OffsetByIndexWithScale(GenTree* base, GenTree* index, unsigned scale)
@@ -358,7 +350,7 @@ private:
         GenTree*     index            = nullptr;
         GenTree*     value            = nullptr;
         uint32_t     scale            = 1;
-        int          offset           = 0;
+        ssize_t      offset           = 0;
         unsigned     accessSize       = 0;
         unsigned     lclNum           = BAD_VAR_NUM;
         GenTreeFlags storeFlags       = GTF_EMPTY;
@@ -449,15 +441,21 @@ private:
     bool TryRemoveCast(GenTreeCast* node);
     bool TryRemoveBitCast(GenTreeUnOp* node);
 
+#if defined(TARGET_XARCH) || defined(TARGET_RISCV64)
+    GenTree* TryLowerBitwiseOpToBitOp(GenTreeOp* binOp);
+#endif // TARGET_XARCH || TARGET_RISCV64
+
 #ifdef TARGET_XARCH
     GenTree* TryLowerMulWithConstant(GenTreeOp* node);
 #endif // TARGET_XARCH
 
 #ifdef TARGET_WASM
-    static void SetMultiplyUsed(GenTree* node DEBUGARG(const char* reason));
-    GenTree*    LowerNeg(GenTreeOp* node);
-    void        LowerIndexAddr(GenTreeIndexAddr* indexAddr);
-    void        LowerCkfinite(GenTreeOp* node);
+    static void      SetMultiplyUsed(GenTree* node DEBUGARG(const char* reason));
+    GenTreeAddrMode* GetFoldableAddrMode(GenTreeIndir* indirNode);
+    void             TryFoldLclAddrOffset(GenTreeIndir* indirNode);
+    GenTree*         LowerNeg(GenTreeOp* node);
+    void             LowerIndexAddr(GenTreeIndexAddr* indexAddr);
+    void             LowerCkfinite(GenTreeOp* node);
 #endif
 
     bool TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* parent);
@@ -488,6 +486,7 @@ private:
     GenTree* LowerStoreLoc(GenTreeLclVarCommon* tree);
     void     LowerRotate(GenTree* tree);
     void     LowerShift(GenTreeOp* shift);
+    void     TryRemoveShiftRotateMask(GenTreeOp* op);
     bool     TryFoldBinop(GenTreeOp* node);
 #ifdef FEATURE_HW_INTRINSICS
     GenTree* LowerHWIntrinsic(GenTreeHWIntrinsic* node);
@@ -506,6 +505,7 @@ private:
     GenTree* TryLowerAndOpToResetLowestSetBit(GenTreeOp* andNode);
     GenTree* TryLowerAndOpToExtractLowestSetBit(GenTreeOp* andNode);
     GenTree* TryLowerAndOpToAndNot(GenTreeOp* andNode);
+    GenTree* TryLowerAndOpToZeroHighBits(GenTreeOp* andNode);
     GenTree* TryLowerXorOpToGetMaskUpToLowestSetBit(GenTreeOp* xorNode);
     void     LowerBswapOp(GenTreeOp* node);
     GenTree* LowerHWIntrinsicDotInnerMulSum(GenTreeHWIntrinsic* node);
@@ -516,6 +516,11 @@ private:
     GenTree* LowerCnsMask(GenTreeMskCon* mask);
     bool     TryLowerAddForPossibleContainment(GenTreeOp* node, GenTree** next);
     void     StoreFFRValue(GenTreeHWIntrinsic* node);
+#elif defined(TARGET_WASM)
+    GenTree* LowerHWIntrinsicCompareUnsignedLong(GenTreeHWIntrinsic* node);
+    GenTree* LowerHWIntrinsicWithImm(GenTreeHWIntrinsic* node);
+    GenTree* LowerHWIntrinsicNativeShuffle(GenTreeHWIntrinsic* node);
+    void     LowerHWIntrinsicSwizzle(GenTreeHWIntrinsic* node);
 #endif // !TARGET_XARCH && !TARGET_ARM64
     GenTree* InsertNewSimdCreateScalarUnsafeNode(var_types type,
                                                  GenTree*  op1,

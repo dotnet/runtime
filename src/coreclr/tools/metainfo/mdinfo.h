@@ -8,10 +8,6 @@
 #include "cor.h"
 #include "corhlprpriv.h"
 
-#ifdef TARGET_UNIX
-#include <oleauto.h>
-#endif
-
 #define STRING_BUFFER_LEN 4096
 
 typedef void (*strPassBackFn)(const char *str);

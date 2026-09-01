@@ -199,7 +199,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
 
-        return (m_pRCW != NULL);
+        return m_pRCW != NULL;
     }
 #else // !DACCESS_COMPILE
     TADDR DacGetRawRCW()
@@ -450,14 +450,13 @@ class SyncBlock
     // Gets the InteropInfo block, creates a new one if none is present.
     InteropSyncBlockInfo* GetInteropInfo()
     {
-        CONTRACT (InteropSyncBlockInfo*)
+        CONTRACTL
         {
             THROWS;
             GC_TRIGGERS;
             MODE_ANY;
-            POSTCONDITION(CheckPointer(RETVAL));
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
         if (!m_pInteropInfo)
         {
@@ -467,22 +466,22 @@ class SyncBlock
                 pInteropInfo.SuppressRelease();
         }
 
-        RETURN m_pInteropInfo;
+        _ASSERTE(m_pInteropInfo != NULL);
+        return m_pInteropInfo;
     }
 
     PTR_InteropSyncBlockInfo GetInteropInfoNoCreate()
     {
-        CONTRACT (PTR_InteropSyncBlockInfo)
+        CONTRACTL
         {
             NOTHROW;
             GC_NOTRIGGER;
             MODE_ANY;
             SUPPORTS_DAC;
-            POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
-        RETURN m_pInteropInfo;
+        return m_pInteropInfo;
     }
 
     // Returns false if the InteropInfo block was already set - does not overwrite the previous value.
@@ -555,7 +554,9 @@ struct cdac_data<SyncBlock>
     static constexpr size_t ThinLock = offsetof(SyncBlock, m_thinLock);
     static constexpr size_t LinkNext = offsetof(SyncBlock, m_pNext);
     static constexpr size_t HashCode = offsetof(SyncBlock, m_dwHashCode);
-
+#ifdef FEATURE_METADATA_UPDATER
+    static constexpr size_t EnCInfo = offsetof(SyncBlock, m_pEnCInfo);
+#endif // FEATURE_METADATA_UPDATER
 };
 
 class SyncTableEntry
@@ -770,7 +771,6 @@ class ObjHeader
             INSTANCE_CHECK;
             NOTHROW;
             GC_NOTRIGGER;
-            FORBID_FAULT;
             MODE_ANY;
             PRECONDITION(GetHeaderSyncBlockIndex() == 0);
             PRECONDITION(m_SyncBlockValue & BIT_SBLK_SPIN_LOCK);
@@ -884,7 +884,7 @@ class ObjHeader
     BOOL HasSyncBlockIndex()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return (GetHeaderSyncBlockIndex() != 0);
+        return GetHeaderSyncBlockIndex() != 0;
     }
 
     // retrieve or allocate a sync block for this object
@@ -910,17 +910,6 @@ class ObjHeader
 
     BOOL Validate (BOOL bVerifySyncBlkIndex = TRUE);
 
-    // These must match the values in ObjectHeader.CoreCLR.cs
-    enum class HeaderLockResult : int32_t {
-        Success = 0,
-        Failure = 1,
-        UseSlowPath = 2
-    };
-
-    HeaderLockResult AcquireHeaderThinLock(Thread* pCurThread);
-
-    HeaderLockResult ReleaseHeaderThinLock(Thread* pCurThread);
-
     friend struct ::cdac_data<ObjHeader>;
 };
 
@@ -937,5 +926,3 @@ typedef DPTR(class ObjHeader) PTR_ObjHeader;
 #endif // TARGET_X86
 
 #endif // _SYNCBLK_H_
-
-

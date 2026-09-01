@@ -33,6 +33,8 @@ class LoadedMethodDescIterator
     mdMethodDef  m_md;
     MethodDesc * m_mainMD;
     AppDomain *  m_pAppDomain;
+    AsyncVariantLookup m_asyncVariantLookup;
+    bool m_filterAsyncVariant;
 
     // The following hold the state of the iteration....
     // Yes we iterate everything for the moment - we need
@@ -69,6 +71,12 @@ public:
                mdMethodDef md,
                AssemblyIterationFlags assemIterationFlags = (AssemblyIterationFlags)(kIncludeLoaded | kIncludeExecution));
     void Start(AppDomain * pAppDomain, Module *pModule, mdMethodDef md, MethodDesc *pDesc);
+    void StartForAsyncVariant(
+        AppDomain * pAppDomain,
+        Module *pModule,
+        mdMethodDef md,
+        MethodDesc *pDesc,
+        AssemblyIterationFlags assemIterationFlags);
 
     LoadedMethodDescIterator(
         AppDomain * pAppDomain,

@@ -43,6 +43,7 @@ internal static partial class Interop
             public IntPtr OutgoingPreviousAuthenticationInformation;
         }
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Advapi32)]
         internal static partial uint LsaCreateTrustedDomainEx(SafeLsaPolicyHandle handle, in TRUSTED_DOMAIN_INFORMATION_EX domainEx, in TRUSTED_DOMAIN_AUTH_INFORMATION authInfo, int desiredAccess, out IntPtr domainHandle);
     }

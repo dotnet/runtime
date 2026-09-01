@@ -39,7 +39,7 @@ void NativeWalker::Decode()
         // execute. Just return WALK_UNKNOWN so the caller will invoke single-step to update the register
         // context correctly for the next instruction.
 
-        LOG((LF_CORDB, LL_INFO100000, "ArmWalker::Decode: IT block at %x\n", m_ip));
+        LOG((LF_CORDB, LL_INFO100000, "ArmWalker::Decode: IT block at %p\n", (void*)m_ip));
         return;
     }
 
@@ -59,7 +59,7 @@ void NativeWalker::Decode()
         // Fetch second word of 32-bit instruction.
         WORD opcode2 = CORDbgGetInstruction((BYTE*)((DWORD)m_ip) + 2);
 
-        LOG((LF_CORDB, LL_INFO100000, "ArmWalker::Decode 32bit instruction at %x, opcode: %x%x\n", m_ip, (DWORD)opcode1, (DWORD)opcode2));
+        LOG((LF_CORDB, LL_INFO100000, "ArmWalker::Decode 32bit instruction at %p, opcode: %x%x\n", (void*)m_ip, (DWORD)opcode1, (DWORD)opcode2));
 
         // WALK_RETURN
         if (((opcode1 & 0xffd0) == 0xe890) &&
@@ -247,7 +247,7 @@ void NativeWalker::Decode()
     }
     else
     {
-        LOG((LF_CORDB, LL_INFO100000, "ArmWalker::Decode 16bit instruction at %x, opcode: %x\n", m_ip, (DWORD)opcode1));
+        LOG((LF_CORDB, LL_INFO100000, "ArmWalker::Decode 16bit instruction at %p, opcode: %x\n", (void*)m_ip, (DWORD)opcode1));
         // WALK_RETURN
         if ((opcode1 & 0xfe00) == 0xbc00)
         {

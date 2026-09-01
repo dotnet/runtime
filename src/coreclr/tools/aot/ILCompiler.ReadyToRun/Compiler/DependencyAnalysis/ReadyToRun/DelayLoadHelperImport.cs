@@ -41,15 +41,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _useJumpableStub = useJumpableStub;
             if (factory.Target.Architecture == TargetArchitecture.Wasm32)
             {
-                if (instanceSignature is GenericLookupSignature)
-                {
-                    // Generic lookups are resolved via eager fixups and don't need import thunks
-                    _delayLoadHelper = null;
-                }
-                else
-                {
-                    _delayLoadHelper = factory.WasmImportThunkPortableEntrypoint(this);
-                }
+                _delayLoadHelper = factory.WasmImportThunkPortableEntrypoint(this);
             }
             else
             {
