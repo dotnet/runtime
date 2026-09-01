@@ -5,6 +5,7 @@ namespace ComWrappersTests
 {
     using System;
     using System.Collections;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Runtime.CompilerServices;
@@ -538,6 +539,111 @@ namespace ComWrappersTests
             Assert.NotEqual(trackerObj1, trackerObj3);
         }
 
+        // The RCW cache shares the GC handle that the NativeObjectWrapper keeps to its RCW, rather than
+        // allocating one of its own. That handle is freed by the wrapper, so this hammers the paths that
+        // publish, read and remove those entries from several threads at once, while collections and
+        // finalizers run underneath, to catch a cache entry ever being read after its owner freed it.
+        [ActiveIssue("Not supported on Mono", TestRuntimes.Mono)]
+        [Fact]
+        public void ValidateCreateObjectConcurrentCacheAccess()
+        {
+            Console.WriteLine($"Running {nameof(ValidateCreateObjectConcurrentCacheAccess)}...");
+
+            const int ThreadCount = 8;
+            const int IterationCount = 300;
+            const int InstanceCount = 4;
+
+            var cw = new TestComWrappers();
+
+            IntPtr[] instances = new IntPtr[InstanceCount];
+            IntPtr[] identities = new IntPtr[InstanceCount];
+
+            for (int i = 0; i < instances.Length; i++)
+            {
+                instances[i] = MockReferenceTrackerRuntime.CreateTrackerObject();
+
+                // ComWrappers keys the cache on the identity IUnknown, which is what a round trip back to
+                // native produces, and that is not necessarily the pointer the object was created as.
+                Assert.Equal(0, Marshal.QueryInterface(instances[i], IUnknownVtbl.IID_IUnknown, out identities[i]));
+            }
+
+            using var start = new Barrier(ThreadCount + 1);
+            var failures = new ConcurrentQueue<Exception>();
+            var threads = new Thread[ThreadCount];
+
+            for (int t = 0; t < threads.Length; t++)
+            {
+                int index = t;
+
+                threads[t] = new Thread(() =>
+                {
+                    start.SignalAndWait();
+
+                    try
+                    {
+                        for (int i = 0; i < IterationCount; i++)
+                        {
+                            // Every thread walks the instances from a different offset, so the threads are
+                            // spread over the buckets rather than all queueing on one of them.
+                            int slot = (i + index) % instances.Length;
+
+                            var wrapper = (ITrackerObjectWrapper)cw.GetOrCreateObjectForComInstance(instances[slot], CreateObjectFlags.None);
+
+                            Assert.NotNull(wrapper);
+
+                            // Asking again while this thread still holds the wrapper has to produce the same
+                            // object, which is the guarantee the cache exists to provide.
+                            var again = (ITrackerObjectWrapper)cw.GetOrCreateObjectForComInstance(instances[slot], CreateObjectFlags.None);
+
+                            Assert.Same(wrapper, again);
+
+                            // Round trip it back to a native pointer, which reads the wrapper the cache entry
+                            // resolves to, and has to name the instance this thread asked for.
+                            Assert.True(ComWrappers.TryGetComInstance(wrapper, out IntPtr unknown));
+                            Assert.Equal(identities[slot], unknown);
+                            Marshal.Release(unknown);
+
+                            if ((i % 16) == index % 16)
+                            {
+                                // Drop everything this thread is holding and collect, so that entries go dead
+                                // and wrapper finalizers run while the other threads are still using the cache.
+                                GC.Collect();
+                                GC.WaitForPendingFinalizers();
+                            }
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        failures.Enqueue(e);
+                    }
+                })
+                { IsBackground = true, Name = $"ComWrappers cache {index}" };
+
+                threads[t].Start();
+            }
+
+            start.SignalAndWait();
+
+            foreach (Thread thread in threads)
+            {
+                Assert.True(thread.Join(TimeSpan.FromMinutes(2)), "A worker thread did not finish, which suggests a deadlock in the RCW cache.");
+            }
+
+            Assert.Empty(failures);
+
+            ForceGC();
+
+            foreach (IntPtr identity in identities)
+            {
+                Marshal.Release(identity);
+            }
+
+            foreach (IntPtr instance in instances)
+            {
+                Marshal.Release(instance);
+            }
+        }
+
         // Verify that if a GC nulls the contents of a weak GCHandle but has not yet
         // run finializers to remove that GCHandle from the cache, the state of the system is valid.
         [ActiveIssue("Not supported on Mono", TestRuntimes.Mono)]
@@ -571,6 +677,53 @@ namespace ComWrappersTests
             static void CreateObject(ComWrappers cw, IntPtr trackerObj)
             {
                 var obj = (ITrackerObjectWrapper)cw.GetOrCreateObjectForComInstance(trackerObj, CreateObjectFlags.None);
+                Assert.NotNull(obj);
+            }
+        }
+
+        // A dead cache entry is replaced in place by the next RCW created for the same COM instance, so for a
+        // while the entry under that key belongs to a different wrapper than the one that is about to finalize.
+        // The old wrapper must remove only the entry it published, which is why entries are identified by the
+        // handle itself rather than by what it points at, since by then both point at nothing.
+        [ActiveIssue("Not supported on Mono", TestRuntimes.Mono)]
+        [Fact]
+        public void ValidateReplacedCacheEntrySurvivesOldWrapperCleanUp()
+        {
+            Console.WriteLine($"Running {nameof(ValidateReplacedCacheEntrySurvivesOldWrapperCleanUp)}...");
+
+            var cw = new TestComWrappers();
+
+            IntPtr trackerObjRaw = MockReferenceTrackerRuntime.CreateTrackerObject();
+
+            CreateAndAbandonWrapper(cw, trackerObjRaw);
+
+            // Collect without draining finalizers, so the entry goes dead while the wrapper that owns it has
+            // most likely not run its finalizer yet.
+            GC.Collect();
+
+            // This takes over the dead entry, replacing the handle stored under that key.
+            var replacement = (ITrackerObjectWrapper)cw.GetOrCreateObjectForComInstance(trackerObjRaw, CreateObjectFlags.None);
+            Assert.NotNull(replacement);
+
+            // Now let the abandoned wrapper finalize and release, which removes its own cache entry.
+            ForceGC();
+
+            // The replacement is still alive, so it has to still be cached.
+            var lookup = (ITrackerObjectWrapper)cw.GetOrCreateObjectForComInstance(trackerObjRaw, CreateObjectFlags.None);
+            Assert.Same(replacement, lookup);
+
+            // It also has to still resolve back to the COM instance it wraps.
+            Assert.True(ComWrappers.TryGetComInstance(replacement, out IntPtr unknown));
+            Marshal.Release(unknown);
+
+            GC.KeepAlive(replacement);
+
+            Marshal.Release(trackerObjRaw);
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static void CreateAndAbandonWrapper(ComWrappers cw, IntPtr instance)
+            {
+                var obj = (ITrackerObjectWrapper)cw.GetOrCreateObjectForComInstance(instance, CreateObjectFlags.None);
                 Assert.NotNull(obj);
             }
         }
@@ -774,6 +927,18 @@ namespace ComWrappersTests
                 {
                     cw.GetOrRegisterObjectForComInstance(trackerObjRaw2, CreateObjectFlags.None, nativeWrapper2);
                 });
+
+            // The rejected registration must not leave anything behind for that COM instance, so creating a
+            // wrapper for it now has to work and has to produce a usable object.
+            var recovered = (ITrackerObjectWrapper)cw.GetOrCreateObjectForComInstance(trackerObjRaw2, CreateObjectFlags.None);
+            Assert.NotNull(recovered);
+            Assert.NotEqual(nativeWrapper2, recovered);
+
+            // Asking again returns the same wrapper, which confirms the entry that was just created is the live
+            // one rather than something left over from the rejected attempt.
+            var recoveredAgain = (ITrackerObjectWrapper)cw.GetOrCreateObjectForComInstance(trackerObjRaw2, CreateObjectFlags.None);
+            Assert.Equal(recovered, recoveredAgain);
+
             Marshal.Release(trackerObjRaw2);
 
             // Validate passing null wrapper fails.
