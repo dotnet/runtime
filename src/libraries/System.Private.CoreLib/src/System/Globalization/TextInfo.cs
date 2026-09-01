@@ -669,7 +669,7 @@ namespace System.Globalization
                             }
                             i += charLen;
                         }
-                        else if (str[i] == '\'')
+                        else if (IsApostrophe(str[i]))
                         {
                             i++;
                             if (hasLowerCase)
@@ -853,6 +853,18 @@ namespace System.Globalization
         private static bool IsWordSeparator(UnicodeCategory category)
         {
             return (c_wordSeparatorMask & (1 << (int)category)) != 0;
+        }
+
+        // Characters that behave like an apostrophe within a word (e.g. contractions such
+        // as "can't" or possessives such as "Grandma's") and therefore must not be treated
+        // as a word separator during titlecasing. These share Unicode's Word_Break=MidNumLet
+        // property with the ASCII apostrophe (U+0027):
+        //   U+2019 RIGHT SINGLE QUOTATION MARK - the typographic curly apostrophe
+        //   U+2018 LEFT SINGLE QUOTATION MARK
+        //   U+FF07 FULLWIDTH APOSTROPHE
+        private static bool IsApostrophe(char c)
+        {
+            return c is '\'' or '\u2019' or '\u2018' or '\uFF07';
         }
 
         private static bool IsLetterCategory(UnicodeCategory uc)
