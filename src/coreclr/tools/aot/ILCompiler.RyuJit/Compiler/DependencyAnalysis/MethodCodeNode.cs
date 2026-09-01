@@ -72,6 +72,43 @@ namespace ILCompiler.DependencyAnalysis
             CodeBasedDependencyAlgorithm.AddConditionalDependenciesDueToMethodCodePresence(sink, factory, _method);
         }
 
+        public void AddRuntimeDeterminedStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory, MethodDesc concreteMethod)
+        {
+            if (_nonRelocationDependencies is not null)
+            {
+                foreach (DependencyListEntry dependency in _nonRelocationDependencies)
+                {
+                    AddRuntimeDeterminedDependency(sink, factory, concreteMethod, dependency.Node);
+                }
+            }
+
+            if (_methodCode.Relocs is not null)
+            {
+                foreach (Relocation relocation in _methodCode.Relocs)
+                {
+                    AddRuntimeDeterminedDependency(sink, factory, concreteMethod, relocation.Target);
+                }
+            }
+        }
+
+        public void AddRuntimeDeterminedConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory, MethodDesc concreteMethod)
+        {
+        }
+
+        private static void AddRuntimeDeterminedDependency(DependencySink<NodeFactory> sink, NodeFactory factory, MethodDesc concreteMethod, object dependency)
+        {
+            if (dependency is INodeWithRuntimeDeterminedDependencies runtimeDeterminedDependency)
+            {
+                runtimeDeterminedDependency.AddDependencies(
+                    sink,
+                    factory,
+                    concreteMethod.OwningType.Instantiation,
+                    concreteMethod.Instantiation,
+                    isConcreteInstantiation: !concreteMethod.IsSharedByGenericInstantiations,
+                    otherReasonNode: null);
+            }
+        }
+
         protected override void ComputeNonRelocationBasedDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
             DependencySink<NodeFactory> dependencies = sink;

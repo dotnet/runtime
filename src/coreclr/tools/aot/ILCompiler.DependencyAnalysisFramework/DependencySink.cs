@@ -45,7 +45,6 @@ namespace ILCompiler.DependencyAnalysisFramework
 
         private readonly List<Dependency> _dependencies = new List<Dependency>();
         private readonly DependencyNodeCore<DependencyContextType>.DependencyList? _staticDependencies;
-        private readonly DependencyNodeCore<DependencyContextType>.CombinedDependencyList? _conditionalDependencies;
         private DependencyNodeCore<DependencyContextType>? _source;
         private DependencyNodeCore<DependencyContextType>? _otherReasonNode;
         private DependencyKind _kind;
@@ -57,11 +56,6 @@ namespace ILCompiler.DependencyAnalysisFramework
         public DependencySink(DependencyNodeCore<DependencyContextType>.DependencyList dependencies)
         {
             _staticDependencies = dependencies;
-        }
-
-        public DependencySink(DependencyNodeCore<DependencyContextType>.CombinedDependencyList dependencies)
-        {
-            _conditionalDependencies = dependencies;
         }
 
         internal List<Dependency> Dependencies => _dependencies;
@@ -82,7 +76,6 @@ namespace ILCompiler.DependencyAnalysisFramework
         internal void ClearDependencies()
         {
             Debug.Assert(_staticDependencies is null);
-            Debug.Assert(_conditionalDependencies is null);
             _dependencies.Clear();
             _source = null;
             _otherReasonNode = null;
@@ -93,15 +86,6 @@ namespace ILCompiler.DependencyAnalysisFramework
             if (_staticDependencies is not null)
             {
                 _staticDependencies.Add(node, reason);
-                return;
-            }
-
-            if (_conditionalDependencies is not null)
-            {
-                _conditionalDependencies.Add(new DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry(
-                    node,
-                    _otherReasonNode,
-                    reason));
                 return;
             }
 
@@ -118,15 +102,6 @@ namespace ILCompiler.DependencyAnalysisFramework
             DependencyNodeCore<DependencyContextType>? otherReasonNode,
             string reason)
         {
-            if (_conditionalDependencies is not null)
-            {
-                _conditionalDependencies.Add(new DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry(
-                    node,
-                    otherReasonNode,
-                    reason));
-                return;
-            }
-
             _dependencies.Add(new Dependency(_source, node, otherReasonNode, reason, _kind));
         }
 

@@ -93,6 +93,42 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+        public void AddRuntimeDeterminedStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory, MethodDesc concreteMethod)
+        {
+            foreach (DependencyListEntry dependency in _dependencies)
+            {
+                AddRuntimeDeterminedDependency(sink, factory, concreteMethod, dependency.Node, otherReasonNode: null);
+            }
+        }
+
+        public void AddRuntimeDeterminedConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory, MethodDesc concreteMethod)
+        {
+            foreach (CombinedDependencyListEntry dependency in _conditionalDependencies)
+            {
+                Debug.Assert(dependency.OtherReasonNode is not INodeWithRuntimeDeterminedDependencies);
+                AddRuntimeDeterminedDependency(sink, factory, concreteMethod, dependency.Node, dependency.OtherReasonNode);
+            }
+        }
+
+        private static void AddRuntimeDeterminedDependency(
+            DependencySink<NodeFactory> sink,
+            NodeFactory factory,
+            MethodDesc concreteMethod,
+            DependencyNodeCore<NodeFactory> dependency,
+            DependencyNodeCore<NodeFactory> otherReasonNode)
+        {
+            if (dependency is INodeWithRuntimeDeterminedDependencies runtimeDeterminedDependency)
+            {
+                runtimeDeterminedDependency.AddDependencies(
+                    sink,
+                    factory,
+                    concreteMethod.OwningType.Instantiation,
+                    concreteMethod.Instantiation,
+                    isConcreteInstantiation: !concreteMethod.IsSharedByGenericInstantiations,
+                    otherReasonNode);
+            }
+        }
+
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
         public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink<NodeFactory> sink, NodeFactory factory) { }
