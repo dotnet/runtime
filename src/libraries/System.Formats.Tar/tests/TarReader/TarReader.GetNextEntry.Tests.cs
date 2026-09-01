@@ -108,8 +108,8 @@ namespace System.Formats.Tar.Tests
             Assert.Throws<InvalidDataException>(() => reader.GetNextEntry(copyData: true));
         }
 
-
-        [Fact]
+        [Theory]
+        [MemberData(nameof(GetBooleanData))]
         public async Task LongEndMarkers_DoNotAdvanceStream(bool async)
         {
             using MemoryStream archive = new MemoryStream();
