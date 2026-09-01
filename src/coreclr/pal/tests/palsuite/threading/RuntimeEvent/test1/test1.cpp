@@ -8,16 +8,15 @@
 static DWORD PALAPI SignalRuntimeEvent(LPVOID context)
 {
     PAL_Sleep(10);
-    return PAL_SetEvent(context) ? 0 : 1;
+    return static_cast<CLREventBase*>(context)->Set() ? 0 : 1;
 }
 
-static void VerifyWait(void* event, uint32_t timeout, uint32_t expected)
+static void VerifyWait(CLREventBase& event, uint32_t timeout, uint32_t expected)
 {
-    void* events[] = { event };
-    uint32_t result = PAL_WaitForMultipleObjectsEx(1, events, false, timeout, false);
+    uint32_t result = event.Wait(timeout);
     if (result != expected)
     {
-        Fail("PAL_WaitForMultipleObjectsEx returned %u instead of %u\n", result, expected);
+        Fail("CLREventBase::Wait returned %u instead of %u\n", result, expected);
     }
 }
 
@@ -28,16 +27,16 @@ PALTEST(threading_RuntimeEvent_test1_paltest_runtimeevent_test1, "threading/Runt
         return FAIL;
     }
 
-    void* autoResetEvent = PAL_CreateEvent(nullptr, false, false);
-    if (autoResetEvent == nullptr)
+    CLREventBase autoResetEvent;
+    if (!autoResetEvent.CreateAutoEventNoThrow(false))
     {
-        Fail("PAL_CreateEvent failed to create an auto-reset event\n");
+        Fail("CLREventBase failed to create an auto-reset event\n");
     }
 
     VerifyWait(autoResetEvent, 0, WAIT_TIMEOUT);
 
     DWORD threadId;
-    HANDLE thread = CreateThread(nullptr, 0, SignalRuntimeEvent, autoResetEvent, 0, &threadId);
+    HANDLE thread = CreateThread(nullptr, 0, SignalRuntimeEvent, &autoResetEvent, 0, &threadId);
     if (thread == nullptr)
     {
         Fail("CreateThread failed with error %u\n", GetLastError());
@@ -49,46 +48,40 @@ PALTEST(threading_RuntimeEvent_test1_paltest_runtimeevent_test1, "threading/Runt
 
     VerifyWait(autoResetEvent, 0, WAIT_TIMEOUT);
 
-    if (!PAL_SetEvent(autoResetEvent))
+    if (!autoResetEvent.Set())
     {
-        Fail("PAL_SetEvent failed for an auto-reset event\n");
+        Fail("CLREventBase::Set failed for an auto-reset event\n");
     }
 
     VerifyWait(autoResetEvent, 0, WAIT_OBJECT_0);
     VerifyWait(autoResetEvent, 0, WAIT_TIMEOUT);
 
-    if (!PAL_CloseEvent(autoResetEvent))
-    {
-        Fail("PAL_CloseEvent failed for an auto-reset event\n");
-    }
+    autoResetEvent.CloseEvent();
 
-    void* manualResetEvent = PAL_CreateEvent(nullptr, true, false);
-    if (manualResetEvent == nullptr)
+    CLREventBase manualResetEvent;
+    if (!manualResetEvent.CreateManualEventNoThrow(false))
     {
-        Fail("PAL_CreateEvent failed to create a manual-reset event\n");
+        Fail("CLREventBase failed to create a manual-reset event\n");
     }
 
     VerifyWait(manualResetEvent, 0, WAIT_TIMEOUT);
 
-    if (!PAL_SetEvent(manualResetEvent))
+    if (!manualResetEvent.Set())
     {
-        Fail("PAL_SetEvent failed for a manual-reset event\n");
+        Fail("CLREventBase::Set failed for a manual-reset event\n");
     }
 
     VerifyWait(manualResetEvent, 0, WAIT_OBJECT_0);
     VerifyWait(manualResetEvent, 0, WAIT_OBJECT_0);
 
-    if (!PAL_ResetEvent(manualResetEvent))
+    if (!manualResetEvent.Reset())
     {
-        Fail("PAL_ResetEvent failed for a manual-reset event\n");
+        Fail("CLREventBase::Reset failed for a manual-reset event\n");
     }
 
     VerifyWait(manualResetEvent, 0, WAIT_TIMEOUT);
 
-    if (!PAL_CloseEvent(manualResetEvent))
-    {
-        Fail("PAL_CloseEvent failed for a manual-reset event\n");
-    }
+    manualResetEvent.CloseEvent();
 
     PAL_Terminate();
     return PASS;

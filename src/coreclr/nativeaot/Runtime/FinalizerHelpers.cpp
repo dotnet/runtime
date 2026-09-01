@@ -44,7 +44,7 @@ uint32_t WINAPI FinalizerStart(void* pContext)
 #ifdef TARGET_WINDOWS
     g_ComAndFlsInitSucceeded = PalInitComAndFlsSlot();
     // handshake with EE initialization, as now we can attach Thread objects to native threads.
-    bool res = PAL_SetEvent(g_FinalizerDoneEvent.GetOSEvent());
+    bool res = g_FinalizerDoneEvent.Set();
     ASSERT(res);
 
     // if FLS initialization failed do not attach the current thread and just exit instead.
@@ -67,13 +67,12 @@ uint32_t WINAPI FinalizerStart(void* pContext)
     g_pFinalizerThread = PTR_Thread(pThread);
 
     // Wait for a finalization request.
-    HANDLE waitHandles[] = { hFinalizerEvent };
-    uint32_t uResult = PAL_WaitForMultipleObjectsEx(1, waitHandles, false, INFINITE, false);
+    uint32_t uResult = CLREventBase::Wait(hFinalizerEvent, INFINITE);
     ASSERT(uResult == WAIT_OBJECT_0);
 
     // Since we just consumed the request (and the event is auto-reset) we must set the event again so the
     // managed finalizer code will immediately start processing the queue when we run it.
-    bool fResult = PAL_SetEvent(hFinalizerEvent);
+    bool fResult = CLREventBase::Set(hFinalizerEvent);
     ASSERT(fResult);
 
     // Run the managed portion of the finalizer. This call will never return.
@@ -195,7 +194,12 @@ EXTERN_C UInt32_BOOL QCALLTYPE RhpWaitForFinalizerRequest()
         uint32_t  cWaitHandles = (fLastEventWasLowMemory || (lowMemEvent == NULL)) ? 1 : 2;
         uint32_t  uTimeout = fLastEventWasLowMemory ? 2000 : INFINITE;
 
-        uint32_t uResult = PAL_WaitForMultipleObjectsEx(cWaitHandles, rgWaitHandles, false, uTimeout, false);
+#ifdef TARGET_WINDOWS
+        uint32_t uResult = WaitForMultipleObjectsEx(cWaitHandles, rgWaitHandles, false, uTimeout, false);
+#else
+        ASSERT(cWaitHandles == 1);
+        uint32_t uResult = CLREventBase::Wait(rgWaitHandles[0], uTimeout);
+#endif
 
         switch (uResult)
         {
@@ -228,7 +232,7 @@ EXTERN_C UInt32_BOOL QCALLTYPE RhpWaitForFinalizerRequest()
             break;
 
         default:
-            ASSERT(!"Unexpected PAL_WaitForMultipleObjectsEx() result");
+            ASSERT(!"Unexpected event wait result");
             return FALSE;
         }
     } while (true);

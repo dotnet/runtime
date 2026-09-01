@@ -53,16 +53,16 @@ ShimProcess::ShimProcess() :
 
     m_machineInfo.Clear();
 
-    m_markAttachPendingEvent = PAL_CreateEvent(NULL, true, false);
+    m_markAttachPendingEvent = CLREventBase::CreateEvent(NULL, true, false);
     if (m_markAttachPendingEvent == NULL)
     {
         ThrowOutOfMemory();
     }
 
-    m_terminatingEvent = PAL_CreateEvent(NULL, true, false);
+    m_terminatingEvent = CLREventBase::CreateEvent(NULL, true, false);
     if (m_terminatingEvent == NULL)
     {
-        PAL_CloseEvent(m_markAttachPendingEvent);
+        CLREventBase::CloseEvent(m_markAttachPendingEvent);
         m_markAttachPendingEvent = NULL;
         ThrowOutOfMemory();
     }
@@ -87,13 +87,13 @@ ShimProcess::~ShimProcess()
 
     if (m_markAttachPendingEvent != NULL)
     {
-        PAL_CloseEvent(m_markAttachPendingEvent);
+        CLREventBase::CloseEvent(m_markAttachPendingEvent);
         m_markAttachPendingEvent = NULL;
     }
 
     if (m_terminatingEvent != NULL)
     {
-        PAL_CloseEvent(m_terminatingEvent);
+        CLREventBase::CloseEvent(m_terminatingEvent);
         m_terminatingEvent = NULL;
     }
 
@@ -1615,12 +1615,12 @@ MachineInfo ShimProcess::GetMachineInfo()
 
 void ShimProcess::SetMarkAttachPendingEvent()
 {
-    PAL_SetEvent(m_markAttachPendingEvent);
+    CLREventBase::Set(m_markAttachPendingEvent);
 }
 
 void ShimProcess::SetTerminatingEvent()
 {
-    PAL_SetEvent(m_terminatingEvent);
+    CLREventBase::Set(m_terminatingEvent);
 }
 
 RSLock * ShimProcess::GetShimLock()

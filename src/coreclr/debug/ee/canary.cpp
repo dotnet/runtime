@@ -41,26 +41,25 @@ HelperCanary::~HelperCanary()
     m_fStop = true;
     if (m_hPingEvent != NULL)
     {
-        PAL_SetEvent(m_hPingEvent);
+        CLREventBase::Set(m_hPingEvent);
     }
 
     if (m_hCanaryThread != NULL)
     {
-        HANDLE waitHandles[] = { m_hCanaryThreadExitedEvent };
-        PAL_WaitForMultipleObjectsEx(1, waitHandles, false, INFINITE, false);
+        CLREventBase::Wait(m_hCanaryThreadExitedEvent, INFINITE);
         CloseHandle(m_hCanaryThread);
     }
     if (m_hPingEvent != NULL)
     {
-        PAL_CloseEvent(m_hPingEvent);
+        CLREventBase::CloseEvent(m_hPingEvent);
     }
     if (m_hCanaryThreadExitedEvent != NULL)
     {
-        PAL_CloseEvent(m_hCanaryThreadExitedEvent);
+        CLREventBase::CloseEvent(m_hCanaryThreadExitedEvent);
     }
     if (m_hWaitEvent != NULL)
     {
-        PAL_CloseEvent(m_hWaitEvent);
+        CLREventBase::CloseEvent(m_hWaitEvent);
     }
 }
 
@@ -142,7 +141,7 @@ void HelperCanary::Init()
         m_initialized = true;
     }
 
-    m_hPingEvent = PAL_CreateEvent(NULL, false, false);
+    m_hPingEvent = CLREventBase::CreateEvent(NULL, false, false);
     if (m_hPingEvent == NULL)
     {
         STRESS_LOG1(LF_CORDB, LL_ALWAYS, "Canary failed to create ping event. gle=%d\n", GetLastError());
@@ -153,7 +152,7 @@ void HelperCanary::Init()
         return;
     }
 
-    m_hWaitEvent = PAL_CreateEvent(NULL, true, false);
+    m_hWaitEvent = CLREventBase::CreateEvent(NULL, true, false);
     if (m_hWaitEvent == NULL)
     {
         STRESS_LOG1(LF_CORDB, LL_ALWAYS, "Canary failed to create wait event. gle=%d\n", GetLastError());
@@ -164,7 +163,7 @@ void HelperCanary::Init()
         return;
     }
 
-    m_hCanaryThreadExitedEvent = PAL_CreateEvent(NULL, true, false);
+    m_hCanaryThreadExitedEvent = CLREventBase::CreateEvent(NULL, true, false);
     if (m_hCanaryThreadExitedEvent == NULL)
     {
         STRESS_LOG1(LF_CORDB, LL_ALWAYS, "Canary failed to create thread-exited event. gle=%d\n", GetLastError());
@@ -234,8 +233,8 @@ bool HelperCanary::AreLocksAvailableWorker()
 
     // Canary will take the locks of interest and then set the Answer counter equal to our request counter.
     m_RequestCounter = m_RequestCounter + 1;
-    PAL_ResetEvent(m_hWaitEvent);
-    PAL_SetEvent(m_hPingEvent);
+    CLREventBase::Reset(m_hWaitEvent);
+    CLREventBase::Set(m_hPingEvent);
 
     // Spin waiting for answer. If canary gets back to us, then the locks must be free and so it's safe for helper-thread.
     // If we timeout, then we err on the side of safety and assume canary blocked on a lock and so it's not safe
@@ -270,12 +269,11 @@ bool HelperCanary::AreLocksAvailableWorker()
 
         // We'll either timeout (in which case it's like a Sleep(), or
         // get the event, which shortcuts the sleep.
-        HANDLE waitHandles[] = { m_hWaitEvent };
-        PAL_WaitForMultipleObjectsEx(1, waitHandles, false, msSleep, false);
+        CLREventBase::Wait(m_hWaitEvent, msSleep);
 
         // In case a stale answer sets the wait event high, reset it now to avoid us doing
         // a live spin-lock.
-        PAL_ResetEvent(m_hWaitEvent);
+        CLREventBase::Reset(m_hWaitEvent);
 
 
         msSleep = msSleepSteadyState;
@@ -298,7 +296,7 @@ DWORD HelperCanary::ThreadProc(LPVOID param)
     HelperCanary * pThis = reinterpret_cast<HelperCanary*> (param);
     pThis->ThreadProc();
     _ASSERTE(pThis->m_fStop);
-    PAL_SetEvent(pThis->m_hCanaryThreadExitedEvent);
+    CLREventBase::Set(pThis->m_hCanaryThreadExitedEvent);
     STRESS_LOG0(LF_CORDB, LL_ALWAYS, "Canary thread exiting\n");
 
     return 0;
@@ -314,8 +312,7 @@ void HelperCanary::ThreadProc()
 
     while(true)
     {
-        HANDLE waitHandles[] = { m_hPingEvent };
-        PAL_WaitForMultipleObjectsEx(1, waitHandles, false, INFINITE, false);
+        CLREventBase::Wait(m_hPingEvent, INFINITE);
 
         m_AnswerCounter = 0;
         DWORD dwRequest = m_RequestCounter;
@@ -334,7 +331,7 @@ void HelperCanary::ThreadProc()
         // Set wait event to let Requesting thread shortcut its spin lock. This is purely an
         // optimization because requesting thread will still check Answer/Request counters.
         // That protects us from recyling bugs.
-        PAL_SetEvent(m_hWaitEvent);
+        CLREventBase::Set(m_hWaitEvent);
     }
 }
 

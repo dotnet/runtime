@@ -6,18 +6,43 @@
 
 #include <stdint.h>
 
-void* PAL_CreateEvent(void* eventAttributes, bool manualReset, bool initialState);
-bool PAL_CloseEvent(void* event);
-bool PAL_SetEvent(void* event);
-bool PAL_ResetEvent(void* event);
-void PAL_Sleep(uint32_t milliseconds);
+class CLREventBase
+{
+public:
+    CLREventBase();
 
-// Unix supports a single event and waitAll must be false. Windows forwards to the OS implementation.
-uint32_t PAL_WaitForMultipleObjectsEx(
-    uint32_t count,
-    void* const* events,
-    bool waitAll,
-    uint32_t milliseconds,
-    bool alertable);
+    void CreateAutoEvent(bool initialState);
+    void CreateManualEvent(bool initialState);
+    bool CreateAutoEventNoThrow(bool initialState);
+    bool CreateManualEventNoThrow(bool initialState);
+    bool CreateOSAutoEventNoThrow(bool initialState);
+    bool CreateOSManualEventNoThrow(bool initialState);
+
+    void CloseEvent();
+    bool IsValid() const;
+    bool Set();
+    bool Reset();
+
+    uint32_t Wait(uint32_t milliseconds);
+    uint32_t Wait(uint32_t milliseconds, bool alertable, bool allowReentrantWait = false);
+    uint32_t WaitEx(uint32_t milliseconds, uint32_t mode);
+
+    void* GetOSEvent();
+
+    static void* CreateEvent(void* eventAttributes, bool manualReset, bool initialState);
+    static bool CloseEvent(void* event);
+    static bool Set(void* event);
+    static bool Reset(void* event);
+#ifdef HOST_WINDOWS
+    static uint32_t Wait(void* event, uint32_t milliseconds, bool alertable = false);
+#else
+    static uint32_t Wait(void* event, uint32_t milliseconds);
+#endif
+
+protected:
+    void* m_handle;
+};
+
+void PAL_Sleep(uint32_t milliseconds);
 
 #endif // __RUNTIME_EVENT_H__

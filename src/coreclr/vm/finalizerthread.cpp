@@ -459,20 +459,31 @@ void FinalizerThread::WaitForFinalizerEvent (CLREvent *event)
             cEventsForWait--;
         }
 
-        switch (PAL_WaitForMultipleObjectsEx(
-            cEventsForWait,                           // # objects to wait on
-            &(MHandles[uiEventIndexOffsetForWait]),   // array of objects to wait on
-            FALSE,          // bWaitAll == FALSE, so wait for first signal
+        DWORD waitResult;
+#ifdef TARGET_WINDOWS
+        waitResult = WaitForMultipleObjectsEx(
+            cEventsForWait,
+            &(MHandles[uiEventIndexOffsetForWait]),
+            FALSE,
 #if defined(__linux__) && defined(FEATURE_EVENT_TRACE)
             LINUX_HEAP_DUMP_TIME_OUT,
 #else
-            INFINITE,       // timeout
+            INFINITE,
 #endif
-            FALSE)          // alertable
+            FALSE);
+#else
+        _ASSERTE(cEventsForWait == 1);
+        waitResult = CLREventBase::Wait(
+            MHandles[uiEventIndexOffsetForWait],
+#if defined(__linux__) && defined(FEATURE_EVENT_TRACE)
+            LINUX_HEAP_DUMP_TIME_OUT
+#else
+            INFINITE
+#endif
+            );
+#endif
 
-            // Adjust the returned array index for the offset we used, so the return
-            // value is relative to entire MHandles array
-            + uiEventIndexOffsetForWait)
+        switch (waitResult + uiEventIndexOffsetForWait)
         {
         case (WAIT_OBJECT_0 + kLowMemoryNotification):
             //short on memory GC immediately

@@ -10,7 +10,6 @@ add_library(coreclrminipal_objects
     OBJECT
     ${SOURCES}
 )
-target_include_directories(coreclrminipal_objects PRIVATE ${CMAKE_BINARY_DIR}/shared_minipal)
 
 add_library(coreclrminipal
     STATIC
