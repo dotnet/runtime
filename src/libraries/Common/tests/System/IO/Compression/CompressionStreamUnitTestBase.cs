@@ -77,8 +77,8 @@ namespace System.IO.Compression
             }
 
             // Simulate the caller returning the (now partially-consumed) buffer to a pool and someone else reusing it.
+            buffer.AsSpan(0, dataLength).Clear();
             ArrayPool<byte>.Shared.Return(buffer);
-            buffer.AsSpan().Clear();
 
             faultyStream.StopThrowing();
 
