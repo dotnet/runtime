@@ -2362,11 +2362,23 @@ namespace System.Net.Security
             });
 
         private protected TlsOperationStatus RequestClientCertificateSocketCore()
-            => DriveBufferedOpOverSocket(dest =>
+        {
+            ThrowIfDisposed();
+            ThrowIfNotSocketBound();
+
+            TlsOperationStatus? fast = null;
+            TryFastRequestClientCertificate(ref fast);
+            if (fast.HasValue)
+            {
+                return fast.Value;
+            }
+
+            return DriveBufferedOpOverSocket(dest =>
             {
                 TlsOperationStatus s = RequestClientCertificateBufferedCore(dest, out int w);
                 return (s, w);
             });
+        }
 
         // Platform hooks. Implemented by the OpenSSL partial (TlsSession.OpenSsl.cs)
         // to bind the socket fd directly to the SSL object and drive ciphertext
@@ -2374,6 +2386,7 @@ namespace System.Net.Security
         // ProcessHandshake/Encrypt/Decrypt path above is used unchanged.
         partial void EnableNativeSocketBinding(SafeSocketHandle socket, ref bool nativeBindingEnabled);
         partial void TryFastHandshake(ref TlsOperationStatus? result);
+        partial void TryFastRequestClientCertificate(ref TlsOperationStatus? result);
         partial void TryPeekClientHello(ref TlsOperationStatus? result);
         partial void TryFastRead(Span<byte> buffer, ref int bytesRead, ref TlsOperationStatus? result);
         partial void TryFastWrite(ReadOnlySpan<byte> buffer, ref int bytesWritten, ref TlsOperationStatus? result);

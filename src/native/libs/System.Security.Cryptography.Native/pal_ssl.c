@@ -517,6 +517,12 @@ void CryptoNative_SslSetAcceptMovingWriteBuffer(SSL* ssl)
 int32_t CryptoNative_SslDoHandshake(SSL* ssl, int32_t* errorCode)
 {
     ERR_clear_error();
+    // this peek ensures that the SSL handshake state machine starts processing
+    // renegotiation and post-handshake client cert requests (mirrors
+    // CryptoNative_SslHandshake; this entry point drives socket-bound sessions
+    // where OpenSSL owns the fd)
+    SSL_peek(ssl, NULL, 0);
+
     int32_t ret = SSL_do_handshake(ssl);
     // See CryptoNative_SslWrite: preserve errno across SSL_get_error.
     int savedErrno = errno;
