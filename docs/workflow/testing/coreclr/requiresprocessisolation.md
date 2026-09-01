@@ -55,9 +55,11 @@ min-opts, or tiered compilation are active. The skip check is per-process.
 
 The test is skipped during SuperPMI collection runs. The skip check is per-process.
 
-### 9. Project sets `<IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>`
+### 9. Project sets an IL round-trip incompatibility property
 
-The test is skipped during IL round-trip validation runs. The skip check is per-process.
+`IlasmRoundTripIncompatible` skips the test during all IL round-trip validation runs and
+implies `ManagedIlasmRoundTripIncompatible`. `ManagedIlasmRoundTripIncompatible` skips
+the test only when managed ilasm performs the round trip. Both skip checks are per-process.
 
 ### 10. Project sets `<UnloadabilityIncompatible>true</UnloadabilityIncompatible>`
 
@@ -203,6 +205,7 @@ If the project file contains **any** of the following MSBuild properties or item
 | `JitOptimizationSensitive` | Per-process skip check |
 | `SuperPMICollectIncompatible` | Per-process skip check |
 | `IlasmRoundTripIncompatible` | Per-process skip check |
+| `ManagedIlasmRoundTripIncompatible` | Per-process skip check |
 | `UnloadabilityIncompatible` | Per-process skip check |
 | `IsLongRunningGCTest` | Per-process skip pre-command |
 | `CLRTestExecutionArguments` (non-empty) | Per-process invocation arguments |
