@@ -102,10 +102,12 @@ DEFINE_METHOD(APPCONTEXT,   ON_PROCESS_EXIT,    OnProcessExit,  SM_PtrException_
 DEFINE_METHOD(APPCONTEXT,   ON_UNHANDLED_EXCEPTION,     OnUnhandledException,  SM_PtrObj_PtrException_RetVoid)
 DEFINE_METHOD(APPCONTEXT,   ON_FIRST_CHANCE_EXCEPTION,  OnFirstChanceException, SM_PtrException_PtrException_RetVoid)
 
+#ifdef FEATURE_VARARGS
 DEFINE_CLASS(ARG_ITERATOR,          System,                 ArgIterator)
 DEFINE_CLASS_U(System,              ArgIterator,            VARARGS)  // Includes a SigPointer.
 
 DEFINE_CLASS(ARGUMENT_HANDLE,       System,                 RuntimeArgumentHandle)
+#endif // FEATURE_VARARGS
 
 DEFINE_CLASS(ARRAY,                 System,                 Array)
 DEFINE_METHOD(ARRAY,                CTOR,                   Ctor,                       NoSig)
@@ -227,20 +229,36 @@ DEFINE_METHOD(DATE_TIME,            LONG_CTOR,              .ctor,              
 DEFINE_CLASS(DECIMAL,               System,                 Decimal)
 DEFINE_METHOD(DECIMAL,              CURRENCY_CTOR,          .ctor,                      IM_Currency_RetVoid)
 
-DEFINE_CLASS_U(System,                 Delegate,            NoClass)
-DEFINE_FIELD_U(_target,                    DelegateObject,   _target)
-DEFINE_FIELD_U(_helperObject,               DelegateObject,   _helperObject)
-DEFINE_FIELD_U(_methodPtr,                 DelegateObject,   _methodPtr)
-DEFINE_FIELD_U(_methodPtrAux,              DelegateObject,   _methodPtrAux)
-DEFINE_CLASS(DELEGATE,              System,                 Delegate)
-DEFINE_FIELD(DELEGATE,            TARGET,                 _target)
-DEFINE_FIELD(DELEGATE,            METHOD_PTR,             _methodPtr)
-DEFINE_FIELD(DELEGATE,            METHOD_PTR_AUX,         _methodPtrAux)
-DEFINE_METHOD(DELEGATE,             CONSTRUCT_DELEGATE,     DelegateConstruct,          IM_Obj_IntPtr_RetVoid)
-DEFINE_METHOD(DELEGATE,             GET_INVOKE_METHOD,      GetInvokeMethod,            IM_RetIntPtr)
+DEFINE_CLASS_U(System,        Delegate,           NoClass)
+DEFINE_FIELD_U(_helperObject, DelegateObject,     _helperObject)
+DEFINE_FIELD_U(_target,       DelegateObject,     _target)
+DEFINE_FIELD_U(_methodPtr,    DelegateObject,     _methodPtr)
+DEFINE_FIELD_U(_methodPtrAux, DelegateObject,     _methodPtrAux)
+DEFINE_FIELD_U(_extraData,    DelegateObject,     _extraData)
+DEFINE_CLASS(DELEGATE,        System,             Delegate)
+DEFINE_FIELD(DELEGATE,        HELPER_OBJECT,      _helperObject)
+DEFINE_FIELD(DELEGATE,        TARGET,             _target)
+DEFINE_FIELD(DELEGATE,        METHOD_PTR,         _methodPtr)
+DEFINE_FIELD(DELEGATE,        METHOD_PTR_AUX,     _methodPtrAux)
+DEFINE_FIELD(DELEGATE,        EXTRA_DATA,         _extraData)
+DEFINE_METHOD(DELEGATE,       CONSTRUCT_DELEGATE, DelegateConstruct, IM_Obj_IntPtr_RetVoid)
+DEFINE_METHOD(DELEGATE,       GET_INVOKE_METHOD,  GetInvokeMethod,   IM_RetIntPtr)
+DEFINE_METHOD(DELEGATE,       CTOR_CLOSED,            CtorClosed,                 NoSig)
+DEFINE_METHOD(DELEGATE,       CTOR_CLOSED_STATIC,     CtorClosedStatic,           NoSig)
+DEFINE_METHOD(DELEGATE,       CTOR_RT_CLOSED,         CtorRTClosed,               NoSig)
+DEFINE_METHOD(DELEGATE,       CTOR_OPEN,              CtorOpen,                   NoSig)
+DEFINE_METHOD(DELEGATE,       CTOR_VIRTUAL_DISPATCH,  CtorVirtualDispatch,        NoSig)
+DEFINE_METHOD(DELEGATE,       CTOR_COLLECTIBLE_CLOSED_STATIC,     CtorCollectibleClosedStatic,           NoSig)
+DEFINE_METHOD(DELEGATE,       CTOR_COLLECTIBLE_OPEN,              CtorCollectibleOpen,                   NoSig)
+DEFINE_METHOD(DELEGATE,       CTOR_COLLECTIBLE_VIRTUAL_DISPATCH,  CtorCollectibleVirtualDispatch,        NoSig)
+
+DEFINE_CLASS(DELEGATEWRAPPER, System,             Delegate+Wrapper)
+DEFINE_FIELD(DELEGATEWRAPPER, VALUE,              Value)
 
 DEFINE_CLASS(INT128,               System,                 Int128)
 DEFINE_CLASS(UINT128,              System,                 UInt128)
+
+DEFINE_CLASS(DECIMAL128,           Numerics,               Decimal128)
 
 DEFINE_CLASS(MATH,                  System,                 Math)
 DEFINE_METHOD(MATH,                 CONVERT_TO_INT32_CHECKED,    ConvertToInt32Checked,    NoSig)
@@ -348,7 +366,6 @@ DEFINE_METHOD(TASK, GET_ISCOMPLETED, get_IsCompleted, NoSig)
 DEFINE_CLASS(TYPE_HANDLE,           System,                 RuntimeTypeHandle)
 DEFINE_CLASS(RT_TYPE_HANDLE,        System,                 RuntimeTypeHandle)
 DEFINE_METHOD(RT_TYPE_HANDLE,       GETRUNTIMETYPEFROMHANDLE,GetRuntimeTypeFromHandle,  SM_IntPtr_RetRuntimeType)
-DEFINE_METHOD(RT_TYPE_HANDLE,       GETRUNTIMETYPEFROMHANDLEMAYBENULL,GetRuntimeTypeFromHandleMaybeNull,  SM_IntPtr_RetRuntimeType)
 DEFINE_METHOD(RT_TYPE_HANDLE,       TO_INTPTR,              ToIntPtr,                   SM_RuntimeTypeHandle_RetIntPtr)
 #ifdef FEATURE_COMINTEROP
 DEFINE_METHOD(RT_TYPE_HANDLE,       ALLOCATECOMOBJECT,      AllocateComObject,          SM_VoidPtr_RetObj)
@@ -585,20 +602,7 @@ DEFINE_CLASS(MODULE,                Reflection,             RuntimeModule)
 DEFINE_CLASS(TYPE_BUILDER,          ReflectionEmit,         TypeBuilder)
 DEFINE_CLASS(ENUM_BUILDER,          ReflectionEmit,         EnumBuilder)
 
-DEFINE_CLASS_U(System,                 MulticastDelegate,          DelegateObject)
-DEFINE_FIELD_U(_invocationList,            DelegateObject,   _invocationList)
-DEFINE_FIELD_U(_invocationCount,           DelegateObject,   _invocationCount)
 DEFINE_CLASS(MULTICAST_DELEGATE,    System,                 MulticastDelegate)
-DEFINE_FIELD(MULTICAST_DELEGATE,    INVOCATION_LIST,        _invocationList)
-DEFINE_FIELD(MULTICAST_DELEGATE,    INVOCATION_COUNT,       _invocationCount)
-DEFINE_METHOD(MULTICAST_DELEGATE,   CTOR_CLOSED,            CtorClosed,                 IM_Obj_IntPtr_RetVoid)
-DEFINE_METHOD(MULTICAST_DELEGATE,   CTOR_CLOSED_STATIC,     CtorClosedStatic,           IM_Obj_IntPtr_RetVoid)
-DEFINE_METHOD(MULTICAST_DELEGATE,   CTOR_RT_CLOSED,         CtorRTClosed,               IM_Obj_IntPtr_RetVoid)
-DEFINE_METHOD(MULTICAST_DELEGATE,   CTOR_OPENED,            CtorOpened,                 IM_Obj_IntPtr_IntPtr_RetVoid)
-DEFINE_METHOD(MULTICAST_DELEGATE,   CTOR_VIRTUAL_DISPATCH,  CtorVirtualDispatch,        IM_Obj_IntPtr_IntPtr_RetVoid)
-DEFINE_METHOD(MULTICAST_DELEGATE,   CTOR_COLLECTIBLE_CLOSED_STATIC,     CtorCollectibleClosedStatic,           IM_Obj_IntPtr_IntPtr_RetVoid)
-DEFINE_METHOD(MULTICAST_DELEGATE,   CTOR_COLLECTIBLE_OPENED,            CtorCollectibleOpened,                 IM_Obj_IntPtr_IntPtr_IntPtr_RetVoid)
-DEFINE_METHOD(MULTICAST_DELEGATE,   CTOR_COLLECTIBLE_VIRTUAL_DISPATCH,  CtorCollectibleVirtualDispatch,        IM_Obj_IntPtr_IntPtr_IntPtr_RetVoid)
 
 DEFINE_CLASS(NULL,                  System,                 DBNull)
 
@@ -722,11 +726,17 @@ DEFINE_METHOD(ASYNC_HELPERS,      TRANSPARENT_AWAIT_TASK,                Transpa
 DEFINE_METHOD(ASYNC_HELPERS,      TRANSPARENT_AWAIT_VALUETASK,           TransparentAwait, SM_ValueTask_RetVoid)
 DEFINE_METHOD(ASYNC_HELPERS,      TRANSPARENT_AWAIT_TASK_OF_T,           TransparentAwait, GM_TaskOfT_RetT)
 DEFINE_METHOD(ASYNC_HELPERS,      TRANSPARENT_AWAIT_VALUETASK_OF_T,      TransparentAwait, GM_ValueTaskOfT_RetT)
+DEFINE_METHOD(ASYNC_HELPERS,      AWAIT_AWAITER_IN_CONTINUATION,          AwaitAwaiterInContinuation, NoSig)
+DEFINE_METHOD(ASYNC_HELPERS,      UNSAFE_AWAIT_AWAITER_IN_CONTINUATION,   UnsafeAwaitAwaiterInContinuation, NoSig)
 DEFINE_METHOD(ASYNC_HELPERS,      CAPTURE_EXECUTION_CONTEXT, CaptureExecutionContext, NoSig)
 DEFINE_METHOD(ASYNC_HELPERS,      CAPTURE_CONTINUATION_CONTEXT, CaptureContinuationContext, NoSig)
 DEFINE_METHOD(ASYNC_HELPERS,      CAPTURE_CONTEXTS,          CaptureContexts, NoSig)
 DEFINE_METHOD(ASYNC_HELPERS,      RESTORE_CONTEXTS,          RestoreContexts, NoSig)
 DEFINE_METHOD(ASYNC_HELPERS,      RESTORE_CONTEXTS_ON_SUSPENSION, RestoreContextsOnSuspension, NoSig)
+DEFINE_METHOD(ASYNC_HELPERS,      RESTORE_INLINED_FRAME_CONTEXTS, RestoreInlinedFrameContexts, NoSig)
+DEFINE_METHOD(ASYNC_HELPERS,      CAPTURE_INLINED_FRAME_TRANSITION_WITH_CONTINUATION_CONTEXT, CaptureInlinedFrameTransitionWithContinuationContext, NoSig)
+DEFINE_METHOD(ASYNC_HELPERS,      CAPTURE_INLINED_FRAME_TRANSITION_NO_CONTINUATION_CONTEXT, CaptureInlinedFrameTransitionNoContinuationContext, NoSig)
+DEFINE_METHOD(ASYNC_HELPERS,      CAPTURE_INLINED_FRAME_TRANSITION_CONTINUE_ON_THREAD_POOL, CaptureInlinedFrameTransitionContinueOnThreadPool, NoSig)
 DEFINE_METHOD(ASYNC_HELPERS,      FINISH_SUSPENSION_NO_CONTINUATION_CONTEXT, FinishSuspensionNoContinuationContext, NoSig)
 DEFINE_METHOD(ASYNC_HELPERS,      FINISH_SUSPENSION_WITH_CONTINUATION_CONTEXT, FinishSuspensionWithContinuationContext, NoSig)
 DEFINE_METHOD(ASYNC_HELPERS,      ASYNC_CALL_CONTINUATION,   AsyncCallContinuation, NoSig)
@@ -881,6 +891,7 @@ DEFINE_CLASS(CALLCONV_FASTCALL,              CompilerServices,       CallConvFas
 DEFINE_CLASS(CALLCONV_SUPPRESSGCTRANSITION,  CompilerServices,       CallConvSuppressGCTransition)
 DEFINE_CLASS(CALLCONV_MEMBERFUNCTION,        CompilerServices,       CallConvMemberFunction)
 DEFINE_CLASS(CALLCONV_SWIFT,                 CompilerServices,       CallConvSwift)
+DEFINE_CLASS(SECRET_STUB_ARGUMENT,           CompilerServices,       SecretStubArgument)
 
 #ifdef TARGET_APPLE
 DEFINE_CLASS(SWIFT_SELF,                     Swift,                  SwiftSelf)
@@ -1054,15 +1065,15 @@ DEFINE_METHOD(BUFFER,               MEMCPY,                 Memcpy,             
 DEFINE_METHOD(BUFFER,               MEMCOPYGC,              BulkMoveWithWriteBarrier, SM_RefByte_RefByte_UIntPtr_RetVoid)
 
 DEFINE_CLASS(STUBHELPERS,           StubHelpers,            StubHelpers)
-DEFINE_METHOD(STUBHELPERS,          GET_DELEGATE_TARGET,    GetDelegateTarget,          SM_Delegate_RetIntPtr)
 #ifdef FEATURE_COMINTEROP
-DEFINE_METHOD(STUBHELPERS,          GET_COM_HR_EXCEPTION_OBJECT,              GetCOMHRExceptionObject,            SM_Int_IntPtr_IntPtr_RetException)
-DEFINE_METHOD(STUBHELPERS,          GET_COM_IP_FROM_RCW,                      GetCOMIPFromRCW,                    SM_Obj_IntPtr_RefIntPtr_RefBool_RetIntPtr)
+DEFINE_METHOD(STUBHELPERS,          GET_COM_HR_EXCEPTION_OBJECT,              GetCOMHRExceptionObject,            SM_Int_RuntimeTypeHandle_IntPtr_RetException)
+DEFINE_METHOD(STUBHELPERS,          GET_COM_IP_FROM_RCW,                      GetCOMIPFromRCW,                    SM_Obj_IntPtr_Int_RefIntPtr_RefBool_RetIntPtr)
 #endif // FEATURE_COMINTEROP
 DEFINE_METHOD(STUBHELPERS,          SET_LAST_ERROR,         SetLastError,               SM_RetVoid)
 DEFINE_METHOD(STUBHELPERS,          CLEAR_LAST_ERROR,       ClearLastError,             SM_RetVoid)
 
 DEFINE_METHOD(STUBHELPERS,          THROW_INTEROP_PARAM_EXCEPTION, ThrowInteropParamException,   SM_Int_Int_RetVoid)
+DEFINE_METHOD(STUBHELPERS,          THROW_INTEROP_EXCEPTION,    ThrowInteropException,        SM_Int_Int_RetVoid)
 DEFINE_METHOD(STUBHELPERS,          ADD_TO_CLEANUP_LIST_SAFEHANDLE,    AddToCleanupList,           SM_RefCleanupWorkListElement_SafeHandle_RetIntPtr)
 DEFINE_METHOD(STUBHELPERS,          DESTROY_CLEANUP_LIST,   DestroyCleanupList,         SM_RefCleanupWorkListElement_RetVoid)
 DEFINE_METHOD(STUBHELPERS,          GET_HR_EXCEPTION_OBJECT, GetHRExceptionObject,      SM_Int_RetException)
@@ -1110,11 +1121,13 @@ DEFINE_METHOD(IDISPATCHHELPERS,     GET_DISPATCH_METHODS, GetDispatchMethods, SM
 DEFINE_METHOD(IDISPATCHHELPERS,     GET_DISPATCH_INNER_EXCEPTION, GetDispatchInnerException, SM_PtrException_PtrException_PtrException_RetVoid)
 #endif // FEATURE_COMINTEROP
 
+#ifdef FEATURE_VARARGS
 DEFINE_METHOD(STUBHELPERS,          MARSHAL_TO_MANAGED_VA_LIST,         MarshalToManagedVaList,         SM_IntPtr_IntPtr_RetVoid)
 DEFINE_METHOD(STUBHELPERS,          MARSHAL_TO_UNMANAGED_VA_LIST,       MarshalToUnmanagedVaList,       SM_IntPtr_UInt_IntPtr_RetVoid)
 DEFINE_METHOD(STUBHELPERS,          CALC_VA_LIST_SIZE,                  CalcVaListSize,                 SM_IntPtr_RetUInt)
-DEFINE_METHOD(STUBHELPERS,          VALIDATE_OBJECT,                    ValidateObject,                 SM_Obj_IntPtr_Obj_RetVoid)
-DEFINE_METHOD(STUBHELPERS,          VALIDATE_BYREF,                     ValidateByref,                  SM_IntPtr_IntPtr_Obj_RetVoid)
+#endif // FEATURE_VARARGS
+DEFINE_METHOD(STUBHELPERS,          VALIDATE_OBJECT,                    ValidateObject,                 SM_Obj_IntPtr_RetVoid)
+DEFINE_METHOD(STUBHELPERS,          VALIDATE_BYREF,                     ValidateByref,                  SM_IntPtr_IntPtr_RetVoid)
 DEFINE_METHOD(STUBHELPERS,          GET_STUB_CONTEXT,                   GetStubContext,                 SM_RetIntPtr)
 DEFINE_METHOD(STUBHELPERS,          LOG_PINNED_ARGUMENT,                LogPinnedArgument,              SM_IntPtr_IntPtr_RetVoid)
 DEFINE_METHOD(STUBHELPERS,          NEXT_CALL_RETURN_ADDRESS,           NextCallReturnAddress,          SM_RetIntPtr)
@@ -1440,13 +1453,8 @@ DEFINE_FIELD_U(_generation, GCMemoryInfoData, generation)
 DEFINE_FIELD_U(_pauseTimePercentage, GCMemoryInfoData, pauseTimePercent)
 DEFINE_FIELD_U(_compacted, GCMemoryInfoData, isCompaction)
 DEFINE_FIELD_U(_concurrent, GCMemoryInfoData, isConcurrent)
-DEFINE_FIELD_U(_pauseDuration0, GCMemoryInfoData, pauseDuration0)
-DEFINE_FIELD_U(_pauseDuration1, GCMemoryInfoData, pauseDuration1)
-DEFINE_FIELD_U(_generationInfo0, GCMemoryInfoData, generationInfo0)
-DEFINE_FIELD_U(_generationInfo1, GCMemoryInfoData, generationInfo1)
-DEFINE_FIELD_U(_generationInfo2, GCMemoryInfoData, generationInfo2)
-DEFINE_FIELD_U(_generationInfo3, GCMemoryInfoData, generationInfo3)
-DEFINE_FIELD_U(_generationInfo4, GCMemoryInfoData, generationInfo4)
+DEFINE_FIELD_U(_pauseDurations, GCMemoryInfoData, pauseDurations)
+DEFINE_FIELD_U(_generationInfo, GCMemoryInfoData, generationInfo)
 
 #undef DEFINE_CLASS
 #undef DEFINE_METHOD

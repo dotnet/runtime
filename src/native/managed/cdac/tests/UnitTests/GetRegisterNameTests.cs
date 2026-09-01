@@ -21,7 +21,7 @@ public unsafe class GetRegisterNameTests
             .AddContract<IRuntimeInfo>(version: "c1")
             .Build();
 
-        return new SOSDacImpl(target, legacyObj: null);
+        return new SOSDacImpl(target, legacyObj: null, new());
     }
 
     public static IEnumerable<object[]> BasicRegisterNameData()
@@ -158,7 +158,7 @@ public unsafe class GetRegisterNameTests
             hr = sos.GetRegisterName(regNum, (uint)buffer.Length, pBuffer, &needed);
         }
 
-        Assert.Equal(unchecked((int)0x8000FFFF), hr); // E_UNEXPECTED
+        Assert.Equal(CorDbgHResults.E_UNEXPECTED, hr);
     }
 
     [Fact]

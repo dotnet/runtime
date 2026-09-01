@@ -974,7 +974,8 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr       size,
     if (EA_IS_RELOC(size))
     {
         assert(genIsValidIntReg(reg));
-        emit->emitIns_R_AI(INS_bl, size, reg, imm); // for example: EA_PTR_DSP_RELOC
+        // for example: EA_PTR_DSP_RELOC
+        emit->emitIns_R_AI(INS_bl, size, reg, imm DEBUGARG(targetHandle) DEBUGARG(gtFlags));
     }
     else
     {
@@ -3126,7 +3127,6 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
             assert(!tree->TypeIs(TYP_VOID));
             assert(emitter::isGeneralRegister(targetReg));
 
-            emit->emitIns_R_R(INS_mov, EA_PTRSIZE, targetReg, REG_R0);
             emit->emitIns_R_I(INS_movcf2gr, EA_PTRSIZE, targetReg, 1 /*cc*/);
             genProduceReg(tree);
         }
@@ -3269,6 +3269,12 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
                     emit->emitIns_R_R_I(INS_xori, EA_PTRSIZE, targetReg, regOp1, imm);
                     emit->emitIns_R_R_R(INS_sltu, EA_PTRSIZE, targetReg, REG_R0, targetReg);
                 }
+                else if (emitter::isValidSimm12(imm) && (imm != -2048))
+                {
+                    instruction ins = (cmpSize == EA_4BYTE) ? INS_addi_w : INS_addi_d;
+                    emit->emitIns_R_R_I(ins, EA_PTRSIZE, targetReg, regOp1, -imm);
+                    emit->emitIns_R_R_R(INS_sltu, EA_PTRSIZE, targetReg, REG_R0, targetReg);
+                }
                 else
                 {
                     emit->emitIns_I_la(EA_PTRSIZE, REG_RA, imm);
@@ -3285,6 +3291,12 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
                 else if (emitter::isValidUimm12(imm))
                 {
                     emit->emitIns_R_R_I(INS_xori, EA_PTRSIZE, targetReg, regOp1, imm);
+                    emit->emitIns_R_R_I(INS_sltui, EA_PTRSIZE, targetReg, targetReg, 1);
+                }
+                else if (emitter::isValidSimm12(imm) && (imm != -2048))
+                {
+                    instruction ins = (cmpSize == EA_4BYTE) ? INS_addi_w : INS_addi_d;
+                    emit->emitIns_R_R_I(ins, EA_PTRSIZE, targetReg, regOp1, -imm);
                     emit->emitIns_R_R_I(INS_sltui, EA_PTRSIZE, targetReg, targetReg, 1);
                 }
                 else
@@ -3609,8 +3621,6 @@ int CodeGenInterface::genTotalFrameSize() const
     // since we don't use "push" instructions to save them, we don't have to do the
     // save of these varargs register arguments as the first thing in the prolog.
 
-    assert(!IsUninitialized(m_compiler->compCalleeRegsPushed));
-
     int totalFrameSize = m_compiler->compCalleeRegsPushed * REGSIZE_BYTES + m_compiler->compLclFrameSize;
 
     assert(totalFrameSize > 0);
@@ -3689,7 +3699,9 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
         if (m_compiler->opts.compReloc)
         {
             // TODO-LOONGARCH64: here the bl is special flag rather than a real instruction.
-            GetEmitter()->emitIns_R_AI(INS_bl, EA_PTR_DSP_RELOC, callTargetReg, (ssize_t)pAddr);
+            GetEmitter()->emitIns_R_AI(INS_bl, EA_PTR_DSP_RELOC, callTargetReg,
+                                       (ssize_t)pAddr DEBUGARG((size_t)m_compiler->eeFindHelper(helper))
+                                           DEBUGARG(GTF_ICON_METHOD_HDL));
         }
         else
         {
@@ -4444,7 +4456,94 @@ void CodeGen::genEmitGSCookieCheck(bool tailCall)
 //
 void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
 {
-    NYI("unimplemented on LOONGARCH64 yet");
+    GenTree* op1 = treeNode->gtGetOp1();
+    GenTree* op2 = treeNode->gtGetOp2IfPresent();
+
+    // Handle integer-domain saturation intrinsics separately; they use branches
+    // and a temporary register rather than the single-instruction FP pattern below.
+    switch (treeNode->gtIntrinsicName)
+    {
+        case NI_PRIMITIVE_SaturateToInt8:
+        case NI_PRIMITIVE_SaturateToInt16:
+        case NI_PRIMITIVE_SaturateToUInt8:
+        case NI_PRIMITIVE_SaturateToUInt16:
+        {
+            ssize_t minVal, maxVal;
+            switch (treeNode->gtIntrinsicName)
+            {
+                case NI_PRIMITIVE_SaturateToInt8:
+                    minVal = INT8_MIN;
+                    maxVal = INT8_MAX;
+                    break;
+                case NI_PRIMITIVE_SaturateToInt16:
+                    minVal = INT16_MIN;
+                    maxVal = INT16_MAX;
+                    break;
+                case NI_PRIMITIVE_SaturateToUInt8:
+                    minVal = 0;
+                    maxVal = UINT8_MAX;
+                    break;
+                case NI_PRIMITIVE_SaturateToUInt16:
+                    minVal = 0;
+                    maxVal = UINT16_MAX;
+                    break;
+                default:
+                    unreached();
+            }
+
+            genConsumeOperands(treeNode->AsOp());
+            regNumber dst    = treeNode->GetRegNum();
+            regNumber src    = op1->GetRegNum();
+            regNumber tmpReg = internalRegisters.GetSingle(treeNode);
+            emitter*  emit   = GetEmitter();
+
+            // Copy src to dst, normalizing to a sign-extended 32-bit value so the
+            // subsequent full-register bge compares against the (signed) clamp bounds
+            // are well-defined. `slli.w rd, rs, 0` sign-extends bits[31:0] into rd[63:0].
+            emit->emitIns_R_R_I(INS_slli_w, EA_4BYTE, dst, src, 0);
+
+            // Clamp lower bound: if dst < minVal, dst = minVal.
+            BasicBlock* skipLo = genCreateTempLabel();
+            instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, minVal);
+            emit->emitIns_J_cond_la(INS_bge, skipLo, dst, tmpReg); // skip if dst >= minVal
+            emit->emitIns_R_R(INS_mov, EA_PTRSIZE, dst, tmpReg);   // dst = minVal
+            genDefineTempLabel(skipLo);
+
+            // Clamp upper bound: if dst > maxVal, dst = maxVal.
+            BasicBlock* skipHi = genCreateTempLabel();
+            instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, maxVal);
+            emit->emitIns_J_cond_la(INS_bge, skipHi, tmpReg, dst); // skip if maxVal >= dst
+            emit->emitIns_R_R(INS_mov, EA_PTRSIZE, dst, tmpReg);   // dst = maxVal
+            genDefineTempLabel(skipHi);
+
+            genProduceReg(treeNode);
+            return;
+        }
+
+        default:
+            break;
+    }
+
+    emitAttr    attr = emitActualTypeSize(treeNode);
+    instruction instr;
+
+    // All remaining intrinsics are binary floating-point operations.
+    assert(op2 != nullptr);
+
+    switch (treeNode->gtIntrinsicName)
+    {
+        case NI_System_Math_MaxNative:
+            instr = (attr == EA_4BYTE) ? INS_fmax_s : INS_fmax_d;
+            break;
+        case NI_System_Math_MinNative:
+            instr = (attr == EA_4BYTE) ? INS_fmin_s : INS_fmin_d;
+            break;
+        default:
+            NO_WAY("Unknown intrinsic");
+    }
+    genConsumeOperands(treeNode->AsOp());
+    GetEmitter()->emitIns_R_R_R(instr, attr, treeNode->GetRegNum(), op1->GetRegNum(), op2->GetRegNum());
+    genProduceReg(treeNode);
 }
 
 //---------------------------------------------------------------------
@@ -5717,46 +5816,56 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
 
     switch (desc.CheckKind())
     {
+        // int -> uint/ulong
+        // uint -> int
+        // long -> ulong
+        // ulong -> long
         case GenIntCastDesc::CHECK_POSITIVE:
         {
             if (desc.CheckSrcSize() == 4) // (u)int
             {
-                // If uint is UINT32_MAX then it will be treated as a signed
+                // If uint is bigger than INT32_MAX then it will be treated as a signed
                 // number so overflow will also be triggered
                 GetEmitter()->emitIns_R_R_I(INS_slli_w, EA_4BYTE, REG_R21, reg, 0);
                 reg = REG_R21;
             }
+            // Check if integral is smaller than zero
             genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_blt, reg);
         }
         break;
 
+        // ulong/long -> uint
         case GenIntCastDesc::CHECK_UINT_RANGE:
         {
-            // We need to check if the value is not greater than 0xFFFFFFFF
-            // if the upper 32 bits are zero.
+            // Check if upper 32-bits are zeros
             GetEmitter()->emitIns_R_R_I(INS_srli_d, EA_8BYTE, REG_R21, reg, 32);
             genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, REG_R21);
         }
         break;
 
+        // ulong -> int
         case GenIntCastDesc::CHECK_POSITIVE_INT_RANGE:
         {
-            // We need to check if the value is not greater than 0x7FFFFFFF
-            // if the upper 33 bits are zero.
+            // Check if upper 33-bits are zeros (biggest allowed value is 0x7FFFFFFF)
             GetEmitter()->emitIns_R_R_I(INS_srli_d, EA_8BYTE, REG_R21, reg, 31);
             genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, REG_R21);
         }
         break;
 
+        // long -> int
         case GenIntCastDesc::CHECK_INT_RANGE:
         {
-            // Emit "if ((long)(int)x != x) goto OVERFLOW"
+            // Extend sign of lower half of long so that it overrides its upper half
+            // If a new value differs from the original then the upper half was not
+            // a pure sign extension so there is an overflow
+            // "if ((long)(int)x != x) goto OVERFLOW"
             GetEmitter()->emitIns_R_R_I(INS_slli_w, EA_4BYTE, REG_R21, reg, 0);
             genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, reg, nullptr, REG_R21);
         }
         break;
 
-        default:
+        // * -> short/ushort/byte/ubyte
+        default: // CHECK_SMALL_INT_RANGE
         {
             assert(desc.CheckKind() == GenIntCastDesc::CHECK_SMALL_INT_RANGE);
             const unsigned castSize           = genTypeSize(cast->gtCastType);
@@ -5778,6 +5887,11 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
                 const auto extensionSize = (8 - castSize) * 8;
                 GetEmitter()->emitIns_R_R_I(INS_slli_d, EA_8BYTE, REG_R21, reg, extensionSize);
                 GetEmitter()->emitIns_R_R_I(INS_srai_d, EA_8BYTE, REG_R21, REG_R21, extensionSize);
+                if (desc.CheckSrcSize() == 4) // int
+                {
+                    GetEmitter()->emitIns_R_R_I(INS_slli_w, EA_4BYTE, REG_RA, reg, 0);
+                    reg = REG_RA;
+                }
                 genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, REG_R21, nullptr, reg);
             }
         }
@@ -6693,11 +6807,12 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
         if ((localFrameSize + (m_compiler->compCalleeRegsPushed << 3)) > 2040)
         {
             remainingSPSize = localFrameSize & -16;
-            genStackPointerAdjustment(remainingSPSize, REG_RA, nullptr, /* reportUnwindData */ true);
+            genStackPointerAdjustment(remainingSPSize, REG_RA, nullptr, /* reportUnwindData */ false);
 
             remainingSPSize = totalFrameSize - remainingSPSize;
             FP_offset       = localFrameSize & 0xf;
         }
+        m_compiler->unwindSetFrameReg(REG_FPBASE, FP_offset);
     }
 
     JITDUMP("    calleeSaveSPOffset=%d\n", FP_offset + 16);

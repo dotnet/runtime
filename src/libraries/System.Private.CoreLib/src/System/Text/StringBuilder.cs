@@ -335,7 +335,7 @@ namespace System.Text
                     // Check that we will not overrun our boundaries.
                     if ((uint)(chunkLength + chunkOffset) > (uint)result.Length || (uint)chunkLength > (uint)sourceArray.Length)
                     {
-                        throw new ArgumentOutOfRangeException(nameof(chunkLength), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
+                        throw new ArgumentOutOfRangeException(null, SR.InvalidOperation_ConcurrentOperationsNotSupported);
                     }
 
                     Buffer.Memmove(
@@ -487,46 +487,23 @@ namespace System.Text
         {
             get
             {
-                StringBuilder? chunk = this;
-                while (true)
+                if ((uint)index >= (uint)Length)
                 {
-                    int indexInBlock = index - chunk.m_ChunkOffset;
-                    if (indexInBlock >= 0)
-                    {
-                        if (indexInBlock >= chunk.m_ChunkLength)
-                        {
-                            throw new IndexOutOfRangeException();
-                        }
-                        return chunk.m_ChunkChars[indexInBlock];
-                    }
-                    chunk = chunk.m_ChunkPrevious;
-                    if (chunk == null)
-                    {
-                        throw new IndexOutOfRangeException();
-                    }
+                    ThrowHelper.ThrowIndexOutOfRangeException();
                 }
+
+                StringBuilder chunk = FindChunkForIndex(index);
+                return chunk.m_ChunkChars[index - chunk.m_ChunkOffset];
             }
             set
             {
-                StringBuilder? chunk = this;
-                while (true)
+                if ((uint)index >= (uint)Length)
                 {
-                    int indexInBlock = index - chunk.m_ChunkOffset;
-                    if (indexInBlock >= 0)
-                    {
-                        if (indexInBlock >= chunk.m_ChunkLength)
-                        {
-                            throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLess);
-                        }
-                        chunk.m_ChunkChars[indexInBlock] = value;
-                        return;
-                    }
-                    chunk = chunk.m_ChunkPrevious;
-                    if (chunk == null)
-                    {
-                        throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLess);
-                    }
+                    ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessException();
                 }
+
+                StringBuilder chunk = FindChunkForIndex(index);
+                chunk.m_ChunkChars[index - chunk.m_ChunkOffset] = value;
             }
         }
 

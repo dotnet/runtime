@@ -248,7 +248,6 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         MODE_COOPERATIVE;
         PRECONDITION(GetAppDomain()->CheckCanExecuteManagedCode(m_pMD));
         PRECONDITION(m_pMD->CheckActivated());          // EnsureActive will trigger, so we must already be activated
@@ -282,9 +281,7 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
         GCX_FORBID();
 
         //
-        // All types must already be loaded. This macro also sets up a FAULT_FORBID region which is
-        // also required for critical calls since we cannot inject any failure points between the
-        // caller of MethodDesc::CallDescr and the actual transition to managed code.
+        // All types must already be loaded.
         //
         ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
 
@@ -399,6 +396,15 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
                 m_argIt.GetArgType(&th);
 
                 argDest.CopyStructToRegisters(pSrc, th.AsMethodTable()->GetNumInstanceFieldBytes(), 0);
+            }
+            else
+#elif defined(TARGET_ARM64)
+            if (argDest.IsHFA())
+            {
+                // An HFA/HVA struct argument is enregistered with each field in its own
+                // floating-point/vector register. Expand the packed struct data into the
+                // register slots instead of copying it verbatim.
+                argDest.CopyHFAStructToRegister(pSrc, stackSize);
             }
             else
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
@@ -559,11 +565,23 @@ void CallDefaultConstructor(OBJECTREF ref)
 
     GCPROTECT_BEGIN (ref);
 
-    MethodDesc *pMD = pMT->GetDefaultConstructor();
+
+    PCODE ctorCode;
+    {
+        GCX_PREEMP();
+        MethodDesc *pMD = pMT->GetDefaultConstructor();
+        ctorCode = pMD->GetSingleCallableAddrOfCode();
+    }
 
     UnmanagedCallersOnlyCaller defaultCtorInvoker{METHOD__RUNTIME_HELPERS__CALL_DEFAULT_CONSTRUCTOR};
 
-    defaultCtorInvoker.InvokeThrowing(&ref, pMD->GetSingleCallableAddrOfCode());
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    // CallDefaultConstructor invokes the ctor via the function pointer, so its portable entrypoint
+    // must resolve to real code if possible.
+    MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(ctorCode);
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+
+    defaultCtorInvoker.InvokeThrowing(&ref, ctorCode);
 
     GCPROTECT_END ();
 }

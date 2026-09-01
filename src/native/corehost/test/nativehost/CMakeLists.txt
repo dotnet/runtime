@@ -67,10 +67,19 @@ target_compile_definitions(nativehost_static PRIVATE NETHOST_USE_AS_STATIC)
 
 target_link_libraries(nativehost_static PRIVATE
     libnethost
-    hostmisc
+    hostmisc_public
     $<$<BOOL:${PTHREAD_LIB}>:${PTHREAD_LIB}>)
 
 if (CLR_CMAKE_TARGET_WIN32)
     target_link_libraries(nativehost_static PRIVATE ole32 oleaut32)
+endif()
+
+if (MSVC)
+    # Add a linker hook to validate that modules with LTCG are not found.
+    # Shipped static libraries (libnethost) must have LTCG disabled to ensure
+    # that non-MSVC toolchains can work with them.
+    set_target_properties(nativehost_static PROPERTIES
+        INTERPROCEDURAL_OPTIMIZATION OFF
+        CXX_LINKER_LAUNCHER "${CMAKE_COMMAND};-P;${CMAKE_CURRENT_SOURCE_DIR}/run-linker-verify-no-ltcg.cmake")
 endif()
 

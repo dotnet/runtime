@@ -26,18 +26,16 @@ PtrHashMap *PEImage::s_ijwFixupDataHash;
 /* static */
 void PEImage::Startup()
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        POSTCONDITION(CheckStartup());
-        INJECT_FAULT(COMPlusThrowOM(););
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     if (CheckStartup())
-        RETURN;
+        return;
 
     s_hashLock.Init(CrstPEImage, (CrstFlags)(CRST_REENTRANCY|CRST_TAKEN_DURING_SHUTDOWN));
     LockOwner lock = { &s_hashLock, IsOwnerOfCrst };
@@ -49,7 +47,15 @@ void PEImage::Startup()
     s_ijwFixupDataHash = ::new PtrHashMap;
     s_ijwFixupDataHash->Init(CompareIJWDataBase, FALSE, &ijwLock);
 
-    RETURN;
+#ifdef TARGET_WASM
+    PEImageLayout::Startup();
+#endif // TARGET_WASM
+
+#ifdef TARGET_WASM
+    PEImageLayout::Startup();
+#endif // TARGET_WASM
+
+    _ASSERTE(CheckStartup());
 }
 
 /* static */
@@ -117,7 +123,7 @@ BOOL PEImage::CompareIJWDataBase(UPTR base, UPTR mapping)
         MODE_ANY;
     } CONTRACTL_END;
 
-    return ((BYTE *)(base << 1) == ((IJWFixupData*)mapping)->GetBase());
+    return (BYTE *)(base << 1) == ((IJWFixupData*)mapping)->GetBase();
 }
 
 ULONG PEImage::Release()
@@ -127,11 +133,10 @@ ULONG PEImage::Release()
         DESTRUCTOR_CHECK;
         NOTHROW;
         MODE_ANY;
-        FORBID_FAULT;
     }
     CONTRACTL_END;
 
-    CONTRACT_VIOLATION(FaultViolation|ThrowsViolation);
+    CONTRACT_VIOLATION(ThrowsViolation);
     COUNT_T result = 0;
     {
         // Use scoping to hold the hash lock
@@ -297,7 +302,6 @@ void PEImage::OpenMDImport()
         GC_TRIGGERS;
         THROWS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
     if (m_pMDImport==NULL)
@@ -354,7 +358,6 @@ void PEImage::GetMVID(GUID *pMvid)
         GC_TRIGGERS;
         THROWS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -368,7 +371,7 @@ void PEImage::GetMVID(GUID *pMvid)
     if (pMeta == NULL)
         ThrowHR(COR_E_BADIMAGEFORMAT);
 
-    ComHolderAnyMode<IMDInternalImport> pMDImport;
+    ReleaseHolderAnyMode<IMDInternalImport> pMDImport;
 
     IfFailThrow(GetMDInternalInterface((void *) pMeta,
                                        cMeta,
@@ -422,7 +425,6 @@ PEImage::IJWFixupData *PEImage::GetIJWData(void *pBase)
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     } CONTRACTL_END
 
     // Take the IJW hash lock
@@ -439,7 +441,7 @@ PEImage::IJWFixupData *PEImage::GetIJWData(void *pBase)
     }
 
     // Return the new data
-    return (pData);
+    return pData;
 }
 
 #endif // #ifndef DACCESS_COMPILE
@@ -711,11 +713,11 @@ PTR_PEImageLayout PEImage::CreateFlatLayout()
 /* static */
 PTR_PEImage PEImage::CreateFromByteArray(const BYTE* array, COUNT_T size)
 {
-    CONTRACT(PTR_PEImage)
+    CONTRACTL
     {
         STANDARD_VM_CHECK;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     PEImageHolder pImage(new PEImage(NULL /*path*/));
     PTR_PEImageLayout pLayout = PEImageLayout::CreateFromByteArray(pImage, array, size);
@@ -723,20 +725,19 @@ PTR_PEImage PEImage::CreateFromByteArray(const BYTE* array, COUNT_T size)
 
     SimpleWriteLockHolder lock(pImage->m_pLayoutLock);
     pImage->SetLayout(IMAGE_FLAT,pLayout);
-    RETURN dac_cast<PTR_PEImage>(pImage.Detach());
+    return dac_cast<PTR_PEImage>(pImage.Detach());
 }
 
 #ifndef TARGET_UNIX
 /* static */
 PTR_PEImage PEImage::CreateFromHMODULE(HMODULE hMod)
 {
-    CONTRACT(PTR_PEImage)
+    CONTRACTL
     {
         STANDARD_VM_CHECK;
         PRECONDITION(hMod!=NULL);
-        POSTCONDITION(RETVAL->HasLoadedLayout());
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     StackSString path;
     WszGetModuleFileName(hMod, path);
@@ -756,7 +757,8 @@ PTR_PEImage PEImage::CreateFromHMODULE(HMODULE hMod)
     }
 
     _ASSERTE(pImage->m_pLayouts[IMAGE_FLAT] != NULL);
-    RETURN dac_cast<PTR_PEImage>(pImage.Detach());
+    _ASSERTE(pImage->HasLoadedLayout());
+    return dac_cast<PTR_PEImage>(pImage.Detach());
 }
 #endif // !TARGET_UNIX
 
@@ -825,7 +827,6 @@ BOOL PEImage::IsPtrInImage(PTR_CVOID data)
         INSTANCE_CHECK;
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;

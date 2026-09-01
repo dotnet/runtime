@@ -112,7 +112,12 @@ namespace ILCompiler.DependencyAnalysis
                    return new NativeLayoutInterfaceDispatchGenericDictionarySlotNode(_factory, method);
                });
 
-                _methodDictionary_GenericDictionarySlots = new NodeCache<MethodDesc, NativeLayoutMethodDictionaryGenericDictionarySlotNode>(method =>
+               _gvmCell_GenericDictionarySlots = new NodeCache<MethodDesc, NativeLayoutGvmDispatchGenericDictionarySlotNode>(method =>
+               {
+                   return new NativeLayoutGvmDispatchGenericDictionarySlotNode(_factory, method);
+               });
+
+               _methodDictionary_GenericDictionarySlots = new NodeCache<MethodDesc, NativeLayoutMethodDictionaryGenericDictionarySlotNode>(method =>
                {
                    return new NativeLayoutMethodDictionaryGenericDictionarySlotNode(_factory, method);
                });
@@ -377,6 +382,12 @@ namespace ILCompiler.DependencyAnalysis
             public NativeLayoutInterfaceDispatchGenericDictionarySlotNode InterfaceCellDictionarySlot(MethodDesc method)
             {
                 return _interfaceCell_GenericDictionarySlots.GetOrAdd(method);
+            }
+
+            private NodeCache<MethodDesc, NativeLayoutGvmDispatchGenericDictionarySlotNode> _gvmCell_GenericDictionarySlots;
+            public NativeLayoutGvmDispatchGenericDictionarySlotNode GvmCellDictionarySlot(MethodDesc method)
+            {
+                return _gvmCell_GenericDictionarySlots.GetOrAdd(method);
             }
 
             private NodeCache<MethodDesc, NativeLayoutMethodDictionaryGenericDictionarySlotNode> _methodDictionary_GenericDictionarySlots;

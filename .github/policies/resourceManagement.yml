@@ -395,7 +395,6 @@ configuration:
             - JulieLeeMSFT
             - brzvlad
             - janvorli
-            - kg
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 

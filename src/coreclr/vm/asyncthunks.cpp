@@ -366,62 +366,68 @@ int MethodDesc::GetTokenForGenericMethodCallWithAsyncReturnType(ILCodeStream* pC
 
 int MethodDesc::GetTokenForThunkTarget(ILCodeStream* pCode, MethodDesc* md)
 {
-    int token;
     _ASSERTE(!md->IsWrapperStub());
-    if (md->HasClassOrMethodInstantiation())
+
+    if (!md->HasClassOrMethodInstantiation())
     {
-        // For generic code emit generic signatures.
-        int typeSigToken = mdTokenNil;
-        if (md->HasClassInstantiation())
-        {
-            SigBuilder typeSigBuilder;
-            typeSigBuilder.AppendElementType(ELEMENT_TYPE_GENERICINST);
-            typeSigBuilder.AppendElementType(ELEMENT_TYPE_INTERNAL);
-            // TODO: (async) Encoding potentially shared method tables in
-            // signatures of tokens seems odd, but this hits assert
-            // with the typical method table.
-            typeSigBuilder.AppendPointer(md->GetMethodTable());
-            DWORD numClassTypeArgs = md->GetNumGenericClassArgs();
-            typeSigBuilder.AppendData(numClassTypeArgs);
-            for (DWORD i = 0; i < numClassTypeArgs; ++i)
-            {
-                typeSigBuilder.AppendElementType(ELEMENT_TYPE_VAR);
-                typeSigBuilder.AppendData(i);
-            }
-
-            DWORD typeSigLen;
-            PCCOR_SIGNATURE typeSig = (PCCOR_SIGNATURE)typeSigBuilder.GetSignature(&typeSigLen);
-            typeSigToken = pCode->GetSigToken(typeSig, typeSigLen);
-        }
-
-        if (md->HasMethodInstantiation())
-        {
-            SigBuilder methodSigBuilder;
-            DWORD numMethodTypeArgs = md->GetNumGenericMethodArgs();
-            methodSigBuilder.AppendByte(IMAGE_CEE_CS_CALLCONV_GENERICINST);
-            methodSigBuilder.AppendData(numMethodTypeArgs);
-            for (DWORD i = 0; i < numMethodTypeArgs; ++i)
-            {
-                methodSigBuilder.AppendElementType(ELEMENT_TYPE_MVAR);
-                methodSigBuilder.AppendData(i);
-            }
-
-            DWORD sigLen;
-            PCCOR_SIGNATURE sig = (PCCOR_SIGNATURE)methodSigBuilder.GetSignature(&sigLen);
-            int methodSigToken = pCode->GetSigToken(sig, sigLen);
-            token = pCode->GetToken(md, typeSigToken, methodSigToken);
-        }
-        else
-        {
-            token = pCode->GetToken(md, typeSigToken);
-        }
-    }
-    else
-    {
-        token = pCode->GetToken(md);
+        return pCode->GetToken(md);
     }
 
-    return token;
+    // Emit trivial forwarding class/method instantiations. For tokens
+    // ILStubResolver::ResolveToken returns the MethodDesc* and its
+    // MethodTable* directly, without doing any instantiation. Here we match
+    // the instantiation that MemberLoader::GetMethodDescFromMethodSpec would
+    // apply when handling a normal MethodSpec from metadata specifying this
+    // trivial forwarding instantiation.
+    md = FindOrCreateAssociatedMethodDesc(
+        md,
+        md->GetMethodTable(),
+        /* forceBoxedEntryPoint */ FALSE,
+        md->GetMethodInstantiation(),
+        /* allowInstParam */ FALSE);
+
+    int typeSigToken = mdTokenNil;
+    if (md->HasClassInstantiation())
+    {
+        SigBuilder typeSigBuilder;
+        typeSigBuilder.AppendElementType(ELEMENT_TYPE_GENERICINST);
+        typeSigBuilder.AppendElementType(ELEMENT_TYPE_INTERNAL);
+
+        // Like above we want the preinstantiated method table here to get the
+        // instantiation that does not happen for ILStubResolver's resolution.
+        typeSigBuilder.AppendPointer(md->GetMethodTable());
+        DWORD numClassTypeArgs = md->GetNumGenericClassArgs();
+        typeSigBuilder.AppendData(numClassTypeArgs);
+        for (DWORD i = 0; i < numClassTypeArgs; ++i)
+        {
+            typeSigBuilder.AppendElementType(ELEMENT_TYPE_VAR);
+            typeSigBuilder.AppendData(i);
+        }
+
+        DWORD typeSigLen;
+        PCCOR_SIGNATURE typeSig = (PCCOR_SIGNATURE)typeSigBuilder.GetSignature(&typeSigLen);
+        typeSigToken = pCode->GetSigToken(typeSig, typeSigLen);
+    }
+
+    if (!md->HasMethodInstantiation())
+    {
+        return pCode->GetToken(md, typeSigToken);
+    }
+
+    SigBuilder methodSigBuilder;
+    DWORD numMethodTypeArgs = md->GetNumGenericMethodArgs();
+    methodSigBuilder.AppendByte(IMAGE_CEE_CS_CALLCONV_GENERICINST);
+    methodSigBuilder.AppendData(numMethodTypeArgs);
+    for (DWORD i = 0; i < numMethodTypeArgs; ++i)
+    {
+        methodSigBuilder.AppendElementType(ELEMENT_TYPE_MVAR);
+        methodSigBuilder.AppendData(i);
+    }
+
+    DWORD sigLen;
+    PCCOR_SIGNATURE sig = (PCCOR_SIGNATURE)methodSigBuilder.GetSignature(&sigLen);
+    int methodSigToken = pCode->GetSigToken(sig, sigLen);
+    return pCode->GetToken(md, typeSigToken, methodSigToken);
 }
 
 // Provided an async variant, emits an async wrapper that drops the returned value.

@@ -9,18 +9,16 @@
 
 struct framework_info
 {
-    framework_info(pal::string_t name, pal::string_t path, fx_ver_t version, int32_t hive_depth, bool disabled)
+    framework_info(pal::string_t name, pal::string_t path, fx_ver_t version, bool disabled)
         : name(name)
         , path(path)
         , version(version)
-        , hive_depth(hive_depth)
         , disabled(disabled)
     { }
 
     static void get_all_framework_infos(
         const pal::string_t& dotnet_dir,
         const pal::char_t* fx_name,
-        bool disable_multilevel_lookup,
         bool include_disabled_versions,
         std::vector<framework_info>* framework_infos);
 
@@ -29,7 +27,6 @@ struct framework_info
     pal::string_t name;
     pal::string_t path;
     fx_ver_t version;
-    int32_t hive_depth;
     bool disabled;
 };
 

@@ -2,12 +2,83 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "jitpch.h"
+#include "async.h"
 
 #ifdef _MSC_VER
 #pragma hdrstop
 #endif
 
 // Flowgraph Inline Support
+
+#ifdef DEBUG
+
+//------------------------------------------------------------------------
+// fgAsyncStressPrepare: pick the async inline candidates of this method body
+//   for async inlining stress.
+//
+// Arguments:
+//    depth - inline depth the body's candidates would be inlined at; the
+//            candidates of the root method are at depth 1
+//
+// Notes:
+//    Called once per body, before any of its candidates is inlined, so the IR
+//    holds the complete set and every call in it has its final async-ness. The
+//    candidates are shuffled and numbered here; AsyncStressPolicy then turns the
+//    number into a probability.
+//
+//    Shuffling is what makes the choice vary between seeds. Without it the
+//    decay would always favor the first call site in a body.
+//
+//    Candidates created after this runs, such as the frame transition call or ones
+//    from late devirtualization, keep the default index and are left to the normal
+//    policy.
+//
+void Compiler::fgAsyncStressPrepare(unsigned depth)
+{
+    assert(compAsyncInliningStress());
+
+    ArrayStack<InlineCandidateInfo*> candidates(getAllocator(CMK_Inlining));
+
+    for (BasicBlock* const block : Blocks())
+    {
+        for (Statement* const stmt : block->Statements())
+        {
+            GenTree* const expr = stmt->GetRootNode();
+
+            // The importer makes every inline candidate its own statement.
+            //
+            if (expr->IsCall() && expr->AsCall()->IsAsync() && expr->AsCall()->IsInlineCandidate() &&
+                !expr->AsCall()->IsGuardedDevirtualizationCandidate())
+            {
+                candidates.Push(expr->AsCall()->GetSingleInlineCandidateInfo());
+            }
+        }
+    }
+
+    if (candidates.Height() <= 0)
+    {
+        return;
+    }
+
+    CLRRandom* const random = impInlineRoot()->m_inlineStrategy->GetRandom(JitConfig.JitStressAsyncInlining());
+
+    // Fisher-Yates.
+    for (int i = candidates.Height() - 1; i > 0; i--)
+    {
+        int j = random->Next(i + 1);
+        std::swap(candidates.BottomRef(i), candidates.BottomRef(j));
+    }
+
+    for (int i = 0; i < candidates.Height(); i++)
+    {
+        candidates.Bottom(i)->asyncStressIndex = i;
+    }
+
+    JITDUMP("Async inlining stress: %d async candidate(s) in this body, to be inlined at depth %u\n",
+            candidates.Height(), depth);
+}
+
+#endif // DEBUG
 
 //------------------------------------------------------------------------
 // fgCheckInlineDepthAndRecursion: compute depth of the candidate, and
@@ -815,6 +886,68 @@ private:
 //   Inline arguments may be directly substituted into the body of the inlinee
 //   in some cases. See impInlineFetchArg.
 //
+#ifdef DEBUG
+
+class FindNonInlineCandidateVisitor final : public GenTreeVisitor<FindNonInlineCandidateVisitor>
+{
+    Statement* m_stmt;
+
+public:
+    enum
+    {
+        DoPreOrder        = true,
+        UseExecutionOrder = true,
+    };
+
+    FindNonInlineCandidateVisitor(Compiler* compiler, Statement* stmt)
+        : GenTreeVisitor<FindNonInlineCandidateVisitor>(compiler)
+        , m_stmt(stmt)
+    {
+    }
+
+    fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+    {
+        GenTree* tree = *use;
+        if (tree->OperIs(GT_CALL))
+        {
+            m_compiler->fgNoteNonInlineCandidate(m_stmt, tree->AsCall());
+        }
+
+        return fgWalkResult::WALK_CONTINUE;
+    }
+};
+
+class CheckInlineCandidatesVisitor final : public GenTreeVisitor<CheckInlineCandidatesVisitor>
+{
+public:
+    enum
+    {
+        DoPreOrder = true,
+    };
+
+    CheckInlineCandidatesVisitor(Compiler* compiler)
+        : GenTreeVisitor<CheckInlineCandidatesVisitor>(compiler)
+    {
+    }
+
+    fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+    {
+        GenTree* tree = *use;
+        if (tree->OperIs(GT_CALL))
+        {
+            assert((tree->gtFlags & GTF_CALL_INLINE_CANDIDATE) == 0);
+        }
+        else
+        {
+            assert(!tree->OperIs(GT_RET_EXPR));
+        }
+
+        return fgWalkResult::WALK_CONTINUE;
+    }
+};
+
+#endif // DEBUG
+
 PhaseStatus Compiler::fgInline()
 {
     if (!opts.OptEnabled(CLFLG_INLINING))
@@ -844,6 +977,13 @@ PhaseStatus Compiler::fgInline()
     }
 
     noway_assert(fgFirstBB != nullptr);
+
+#ifdef DEBUG
+    if (compAsyncInliningStress())
+    {
+        fgAsyncStressPrepare(1);
+    }
+#endif // DEBUG
 
     BasicBlock*                                 block = fgFirstBB;
     SubstitutePlaceholdersAndDevirtualizeWalker walker(this);
@@ -923,7 +1063,8 @@ PhaseStatus Compiler::fgInline()
 #if defined(DEBUG)
             // In debug builds we want the inline tree to show all failed
             // inlines.
-            fgWalkTreePre(stmt->GetRootNodePointer(), fgFindNonInlineCandidate, stmt);
+            FindNonInlineCandidateVisitor findNonInlineCandidate(this, stmt);
+            findNonInlineCandidate.WalkTree(stmt->GetRootNodePointer(), nullptr);
 #endif
             stmt = stmt->GetNextStmt();
         }
@@ -943,10 +1084,11 @@ PhaseStatus Compiler::fgInline()
 
     do
     {
+        CheckInlineCandidatesVisitor checkInlineCandidates(this);
+
         for (Statement* const stmt : block->Statements())
         {
-            // Call Compiler::fgDebugCheckInlineCandidates on each node
-            fgWalkTreePre(stmt->GetRootNodePointer(), fgDebugCheckInlineCandidates);
+            checkInlineCandidates.WalkTree(stmt->GetRootNodePointer(), nullptr);
         }
 
         block = block->Next();
@@ -1202,34 +1344,6 @@ void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result, 
 #if defined(DEBUG)
 
 //------------------------------------------------------------------------
-// fgFindNonInlineCandidate: tree walk helper to ensure that a tree node
-// that is not an inline candidate is noted as a failed inline.
-//
-// Arguments:
-//    pTree - pointer to pointer tree node being walked
-//    data  - contextual data for the walk
-//
-// Return Value:
-//    walk result
-//
-// Note:
-//    Invokes fgNoteNonInlineCandidate on the nodes it finds.
-
-Compiler::fgWalkResult Compiler::fgFindNonInlineCandidate(GenTree** pTree, fgWalkData* data)
-{
-    GenTree* tree = *pTree;
-    if (tree->OperIs(GT_CALL))
-    {
-        Compiler*    compiler = data->m_compiler;
-        Statement*   stmt     = (Statement*)data->pCallbackData;
-        GenTreeCall* call     = tree->AsCall();
-
-        compiler->fgNoteNonInlineCandidate(stmt, call);
-    }
-    return WALK_CONTINUE;
-}
-
-//------------------------------------------------------------------------
 // fgNoteNonInlineCandidate: account for inlining failures in calls
 // not marked as inline candidates.
 //
@@ -1270,37 +1384,6 @@ void Compiler::fgNoteNonInlineCandidate(Statement* stmt, GenTreeCall* call)
 }
 
 #endif
-
-#ifdef DEBUG
-
-//------------------------------------------------------------------------
-// fgDebugCheckInlineCandidates: Callback to make sure there is no more
-//    GT_RET_EXPR and GTF_CALL_INLINE_CANDIDATE nodes.
-//
-// Arguments:
-//    pTree - pointer to the tree node being walked
-//    data  - walk data
-//
-// Return Value:
-//    WALK_CONTINUE
-//
-// static
-Compiler::fgWalkResult Compiler::fgDebugCheckInlineCandidates(GenTree** pTree, fgWalkData* data)
-{
-    GenTree* tree = *pTree;
-    if (tree->OperIs(GT_CALL))
-    {
-        assert((tree->gtFlags & GTF_CALL_INLINE_CANDIDATE) == 0);
-    }
-    else
-    {
-        assert(!tree->OperIs(GT_RET_EXPR));
-    }
-
-    return WALK_CONTINUE;
-}
-
-#endif // DEBUG
 
 //------------------------------------------------------------------------
 // fgInvokeInlineeCompiler: Invoke the compiler for an inlinee method and
@@ -1503,6 +1586,17 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
 
     // We've successfully obtained the list of inlinee's basic blocks.
     // Let's insert it to inliner's basic block list.
+
+#ifdef DEBUG
+    // The inlinee's own async candidates are all in its IR now, and this inline can no
+    // longer fail, so this is the point where its body's group is complete.
+    //
+    if (compAsyncInliningStress())
+    {
+        InlineeCompiler->fgAsyncStressPrepare(inlineDepth + 1);
+    }
+#endif // DEBUG
+
     fgInsertInlineeBlocks(&inlineInfo);
 
 #ifdef DEBUG
@@ -1644,6 +1738,10 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
 
             // Append statements to null out gc ref locals, if necessary.
             fgInlineAppendStatements(pInlineInfo, iciBlock, stmtAfter);
+
+            // An inlinee that does async context handling always has multiple blocks: its
+            // SaveAsyncContexts creates a try/fault region and a merged return block.
+            assert(InlineeCompiler->lvaResumedIndicator == BAD_VAR_NUM);
             insertInlineeBlocks = false;
         }
         else
@@ -1890,6 +1988,9 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
         // Append statements to null out gc ref locals, if necessary.
         fgInlineAppendStatements(pInlineInfo, bottomBlock, nullptr);
         JITDUMPEXEC(fgDispBasicBlocks(InlineeCompiler->fgFirstBB, InlineeCompiler->fgLastBB, true));
+
+        // Handle the inlined async frame logically returning to its caller.
+        fgInlineAppendAsyncFrameStatements(pInlineInfo, bottomBlock);
     }
 
     //
@@ -2150,8 +2251,16 @@ void Compiler::fgInsertInlineeArgument(
             {
                 // Don't put GT_BLK node under a GT_COMMA.
                 // Codegen can't deal with it.
-                // Just hang the address here in case there are side-effect.
-                *newStmt = gtNewStmt(gtUnusedValNode(argNode->AsOp()->gtOp1), callDI);
+                // If the indirection may fault, preserve the null check.
+                GenTree* addr = argNode->AsOp()->gtOp1;
+                if (argNode->IndirMayFault(this))
+                {
+                    *newStmt = gtNewStmt(gtNewNullCheck(addr), callDI);
+                }
+                else
+                {
+                    *newStmt = gtNewStmt(gtUnusedValNode(addr), callDI);
+                }
             }
             else
             {
@@ -2412,6 +2521,248 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
     }
 
     return afterStmt;
+}
+
+//------------------------------------------------------------------------
+// fgSetupAsyncFrameTransitionCall: Turn a call to AsyncHelpers.RestoreInlinedFrameContexts
+//   into a proper async call.
+//
+// Arguments:
+//    call - the call, with its user arguments already added
+//    di   - debug info to use
+//
+// Notes:
+//    The call is an await: it suspends when it has to switch continuation context.
+//
+//    Unlike normal awaits it gets no context pseudo-args. Those model what a frame
+//    captures and restores when a suspension unwinds through it, and none of that applies
+//    here: we only run at all because the frame we are returning out of was resumed, so
+//    every frame in the chain already has a continuation holding the values it captured
+//    when it first suspended, and a suspension here returns straight back to the
+//    dispatcher, which restores the thread's contexts itself.
+//
+void Compiler::fgSetupAsyncFrameTransitionCall(GenTreeCall* call, const DebugInfo& di)
+{
+    AsyncCallInfo asyncInfo;
+    // The helper resumes on the requested context, so no further handling is attached to
+    // this await.
+    asyncInfo.ContinuationContextHandling = ContinuationContextHandling::None;
+    asyncInfo.CallAsyncDebugInfo          = di;
+    call->SetIsAsync(new (this, CMK_Async) AsyncCallInfo(asyncInfo));
+
+    NewCallArg continuationArg = NewCallArg::Primitive(gtNewNull(), TYP_REF).WellKnown(WellKnownArg::AsyncContinuation);
+
+    if (Target::g_tgtArgOrder == Target::ARG_ORDER_R2L)
+    {
+        call->gtArgs.PushFront(this, continuationArg);
+    }
+    else
+    {
+        call->gtArgs.PushBack(this, continuationArg);
+    }
+}
+
+//------------------------------------------------------------------------
+// gtNewContinuationMemberIndir: Create a load of a continuation member from the
+//   continuation this method was resumed with.
+//
+// Arguments:
+//    member - the continuation member to load
+//    type   - type of the member
+//
+// Returns:
+//    A load of the member.
+//
+// Notes:
+//    The member offset is not known until the async transformation has laid out the
+//    continuation, so it is represented symbolically until then. The offset is relative
+//    to the instance data, hence the additional object header adjustment.
+//
+GenTree* Compiler::gtNewContinuationMemberIndir(const ContinuationMember& member, var_types type)
+{
+    size_t const memberIndex = GetContinuationMemberIndex(member);
+
+    GenTree* const memberOffset =
+        new (this, GT_CONTINUATION_MEMBER_OFFSET) GenTreeVal(GT_CONTINUATION_MEMBER_OFFSET, TYP_I_IMPL, memberIndex);
+    GenTree* const headerSize = gtNewIconNode(SIZEOF__CORINFO_Object, TYP_I_IMPL);
+    GenTree* const offset     = gtNewOperNode(GT_ADD, TYP_I_IMPL, memberOffset, headerSize);
+
+    GenTree* const continuation = gtNewLclvNode(lvaAsyncContinuationArg, TYP_REF);
+    GenTree* const addr         = gtNewOperNode(GT_ADD, TYP_BYREF, continuation, offset);
+
+    GenTree* const indir = gtNewIndir(type, addr, GTF_IND_NONFAULTING);
+    return indir;
+}
+
+//------------------------------------------------------------------------
+// fgInlineAppendAsyncFrameStatements: Emit the IR that handles an inlined async
+//   frame logically returning to its caller.
+//
+// Arguments:
+//    inlineInfo - information about the inline
+//    joinBlock  - the block all of the inlinee's returns converge on
+//
+// Notes:
+//    When an inlined async callee is resumed inside its own body, the async
+//    infrastructure only restored the context of the suspension point itself. The work
+//    it would otherwise have done when the callee's frame returned to its caller has to
+//    be performed here instead:
+//
+//      if (resumed_callee)
+//      {
+//          await AsyncHelpers.RestoreInlinedFrameContexts(continuation.ExecutionContextFor<caller>,
+//                                                         continuation.ContinuationContextFor<caller>,
+//                                                         continuation.FlagsFor<caller>);
+//          resumed_caller = true;
+//      }
+//
+//    Only the check is expanded as IR; the restore itself is left as a single call. The
+//    synchronous case is the one worth optimizing, and by the time we get past the check
+//    we have already suspended and resumed at least once, so one more call is cheap. In
+//    particular the "are we already on the right context?" test, which is what actually
+//    decides whether we suspend, stays inside the helper.
+//
+void Compiler::fgInlineAppendAsyncFrameStatements(InlineInfo* inlineInfo, BasicBlock* joinBlock)
+{
+    if (!generalAsyncInliningEnabled())
+    {
+        return;
+    }
+
+    if (InlineeCompiler->lvaResumedIndicator == BAD_VAR_NUM)
+    {
+        // Inlinee does not do context handling, so it inherited everything from this
+        // call and there is no logical frame transition to handle.
+        return;
+    }
+
+    if (!InlineeCompiler->compAsyncBodyMaySuspend)
+    {
+        // The inlinee has no suspension point, so its resumed indicator is provably
+        // always false and all of the below would be dead code.
+        JITDUMP("Inlinee cannot suspend; no async frame transition IR needed\n");
+        return;
+    }
+
+    // The resumed indicator of the frame we are logically returning into. The inlining
+    // call carries the address of it as the definition of its own frame's indicator, so
+    // it is something we can store through.
+    CallArg* const resumedDefArg = inlineInfo->iciCall->gtArgs.FindWellKnownArg(WellKnownArg::AsyncResumedDef);
+    if (resumedDefArg == nullptr)
+    {
+        // The inlining call does no context handling, so there is no enclosing logical
+        // async frame to hand anything back to.
+        JITDUMP("Inlining call does no context handling; no async frame transition IR needed\n");
+        return;
+    }
+
+    GenTree* const resumedCallerAddr = resumedDefArg->GetNode();
+
+    // The depth of the frame being inlined. The inlining call describes the chain of
+    // frames it sits in, from the frame the call is in out to the root, so the inlinee is
+    // one frame deeper than the chain is long.
+    unsigned numCallerSets = 0;
+    for (CallArg& arg : inlineInfo->iciCall->gtArgs.Args())
+    {
+        if (arg.GetWellKnownArg() == WellKnownArg::AsyncResumedUse)
+        {
+            numCallerSets++;
+        }
+    }
+
+    assert(numCallerSets >= 1);
+    unsigned const inlineDepth = numCallerSets;
+
+    unsigned const resumedInlinee = InlineeCompiler->lvaResumedIndicator;
+
+    JITDUMP("Adding async frame transition IR for async frame depth %u: resumed V%02u -> [%06u]\n", inlineDepth,
+            resumedInlinee, dspTreeID(resumedCallerAddr));
+
+    const DebugInfo& di = inlineInfo->iciStmt->GetDebugInfo();
+
+    // An exception unwinding out of the inlinee never reaches the logical return below,
+    // so mark the caller as resumed from the inlinee's context restore handler instead.
+    // That handler is the fault half of the try-finally SaveAsyncContexts wrapped the
+    // inlinee's body in, and it survives inlining as its own clause in this method.
+    //
+    // We only need to propagate the indicator here since that's the only state parent
+    // fault handlers can depend on.
+    if (InlineeCompiler->asyncContextRestoreEHID != USHRT_MAX)
+    {
+        EHblkDsc* const inlineeContextRestore = ehFindEHblkDscById(InlineeCompiler->asyncContextRestoreEHID);
+        assert((inlineeContextRestore != nullptr) && inlineeContextRestore->HasFaultHandler());
+
+        // The resumed indicators are always TYP_I_IMPL, and the definition the inlining
+        // call carries is the address of one.
+        GenTree* const callerResumed    = gtNewLoadValueNode(TYP_I_IMPL, gtCloneExpr(resumedCallerAddr));
+        GenTree* const inlineeDidResume = gtNewLclvNode(resumedInlinee, TYP_I_IMPL);
+        GenTree* const merged           = gtNewOperNode(GT_OR, TYP_I_IMPL, callerResumed, inlineeDidResume);
+        GenTree* const store            = gtNewStoreValueNode(TYP_I_IMPL, gtCloneExpr(resumedCallerAddr), merged);
+
+        fgInsertStmtAtBeg(inlineeContextRestore->ebdHndBeg, gtNewStmt(store));
+
+        JITDUMP("Marking [%06u] as resumed from the inlinee's context restore handler " FMT_BB "\n",
+                dspTreeID(resumedCallerAddr), inlineeContextRestore->ebdHndBeg->bbNum);
+    }
+
+    // Split so that the transition IR precedes the remainder of the caller's code.
+    BasicBlock* const restBlock = fgSplitBlockAtBeginning(joinBlock);
+
+    // joinBlock is now empty and jumps to restBlock. Turn it into the "did we resume
+    // inside the inlinee?" test.
+    BasicBlock* const restoreBlock = fgNewBBafter(BBJ_ALWAYS, joinBlock, /* extendRegion */ true);
+    restoreBlock->inheritWeightPercentage(joinBlock, 0);
+
+    // joinBlock: if (resumed_callee == 0) goto restBlock; else goto restoreBlock
+    {
+        GenTree* const resumed = gtNewLclvNode(resumedInlinee, TYP_INT);
+        GenTree* const isZero  = gtNewOperNode(GT_EQ, TYP_INT, resumed, gtNewIconNode(0));
+        GenTree* const jtrue   = gtNewOperNode(GT_JTRUE, TYP_VOID, isZero);
+        fgInsertStmtAtEnd(joinBlock, gtNewStmt(jtrue));
+
+        fgRemoveRefPred(joinBlock->GetTargetEdge());
+        FlowEdge* const toRest    = fgAddRefPred(restBlock, joinBlock);
+        FlowEdge* const toRestore = fgAddRefPred(restoreBlock, joinBlock);
+        joinBlock->SetCond(toRest, toRestore);
+        // Resuming inside the inlinee is the cold path.
+        toRest->setLikelihood(1.0);
+        toRestore->setLikelihood(0.0);
+    }
+
+    // restoreBlock: restore the contexts the caller's continuation captured, then record
+    // that the caller's frame has observed a resumption too.
+    {
+        CORINFO_ASYNC_INFO* const asyncInfo = eeGetAsyncInfo();
+
+        GenTree* const execCtx =
+            gtNewContinuationMemberIndir(ContinuationMember::InlineFrameExecutionContext(inlineDepth), TYP_REF);
+        GenTree* const contContext =
+            gtNewContinuationMemberIndir(ContinuationMember::InlineFrameContinuationContext(inlineDepth), TYP_REF);
+        GenTree* const flags = gtNewContinuationMemberIndir(ContinuationMember::InlineFrameFlags(inlineDepth), TYP_INT);
+
+        GenTreeCall* const restoreCall = gtNewUserCallNode(asyncInfo->restoreInlinedFrameContextsMethHnd, TYP_VOID);
+        restoreCall->gtArgs.PushFront(this, NewCallArg::Primitive(flags));
+        restoreCall->gtArgs.PushFront(this, NewCallArg::Primitive(contContext));
+        restoreCall->gtArgs.PushFront(this, NewCallArg::Primitive(execCtx));
+        fgSetupAsyncFrameTransitionCall(restoreCall, di);
+
+        // The helper is small on the path that does not suspend, which is the one we care
+        // about, so let the inliner have a look at it.
+        CORINFO_CALL_INFO callInfo = {};
+        callInfo.hMethod           = restoreCall->gtCallMethHnd;
+        callInfo.methodFlags       = info.compCompHnd->getMethodAttribs(callInfo.hMethod);
+        impMarkInlineCandidate(restoreCall, MAKE_METHODCONTEXT(callInfo.hMethod), &callInfo, compInlineContext);
+
+        fgInsertStmtAtEnd(restoreBlock, gtNewStmt(restoreCall));
+
+        GenTree* const store =
+            gtNewStoreValueNode(TYP_I_IMPL, gtCloneExpr(resumedCallerAddr), gtNewIconNode(1, TYP_I_IMPL));
+        fgInsertStmtAtEnd(restoreBlock, gtNewStmt(store));
+
+        restoreBlock->SetKindAndTargetEdge(BBJ_ALWAYS, fgAddRefPred(restBlock, restoreBlock));
+    }
+
+    JITDUMPEXEC(fgDispBasicBlocks(joinBlock, restBlock, true));
 }
 
 //------------------------------------------------------------------------

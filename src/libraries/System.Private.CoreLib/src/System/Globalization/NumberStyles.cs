@@ -54,14 +54,15 @@ namespace System.Globalization
         /// Indicates that the numeric string represents a binary value. Valid binary values include the numeric digits 0 and 1.
         /// Strings that are parsed using this style do not employ a prefix; "0b" cannot be used. A string that is parsed with
         /// the <see cref="AllowBinarySpecifier"/> style will always be interpreted as a binary value. The only flags that can
-        /// be combined with <see cref="AllowBinarySpecifier"/> are <see cref="AllowLeadingWhite"/>, <see cref="AllowTrailingWhite"/>,
-        /// and <see cref="AllowTrailingInvalidCharacters"/>. The <see cref="NumberStyles"/> enumeration includes a composite style,
-        /// <see cref="BinaryNumber"/>, that consists of the whitespace and binary-specifier flags.
+        /// be combined with <see cref="AllowBinarySpecifier"/> are <see cref="AllowLeadingWhite"/> and <see cref="AllowTrailingWhite"/>.
+        /// The <see cref="NumberStyles"/> enumeration includes a composite style, <see cref="BinaryNumber"/>, that consists of
+        /// these three flags.
         /// </summary>
         AllowBinarySpecifier = 0x00000400,
 
-        /// <summary>Indicates that the numeric string is allowed to contain otherwise invalid characters and that parsing should treat such characters as terminating the input.</summary>
-        AllowTrailingInvalidCharacters = 0x00000800,
+        // NOTE: The highest bit (0x8000_0000) is reserved for the runtime-internal Number.AllowTrailingInvalidCharacters
+        // style used by the INumberBase.TryParsePartial implementations. Do not assign it to a public flag; new public
+        // flags should continue upward from 0x00000800 so they don't stomp the reserved bit.
 
         Integer = AllowLeadingWhite | AllowTrailingWhite | AllowLeadingSign,
 

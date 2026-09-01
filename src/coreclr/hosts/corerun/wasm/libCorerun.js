@@ -8,6 +8,8 @@ function libCoreRunFactory() {
         "$ENV",
         "$FS",
         "corerun_shutdown",
+        "__stack_pointer",
+        "__async_continuation",
         "$UTF8ToString"
     ];
     if (LibraryManager.library.$NODEFS) {
@@ -30,6 +32,16 @@ function libCoreRunFactory() {
                 }
 
                 ENV["DOTNET_SYSTEM_GLOBALIZATION_INVARIANT"] = "true";
+
+                if (ENVIRONMENT_IS_NODE) {
+                    const original_proc_exit = _proc_exit;
+                    _proc_exit = (code) => {
+                        if (!keepRuntimeAlive()) {
+                            process.exit(code);
+                        }
+                        return original_proc_exit(code);
+                    };
+                }
             },
         },
         $CORERUN__postset: "CORERUN.selfInitialize()",
@@ -55,7 +67,7 @@ function libCoreRunFactory() {
                 let value = 0;
                 let shift = 0;
 
-                for (;;) {
+                for (; ;) {
                     if (offset >= limit) {
                         throw new RangeError("Unexpected end of input while reading ULEB128");
                     }
@@ -183,8 +195,8 @@ function libCoreRunFactory() {
                 wasmModule = new WebAssembly.Module(wasmBytes);
             } catch (e) {
                 const errorMessage = e instanceof Error ? e.message : String(e);
-                console.error("Failed to construct WebAssembly module for Webcil image:", {wasmPath, errorMessage});
-                return false;
+                console.error("Failed to construct WebAssembly module for Webcil image:", { wasmPath, errorMessage });
+                throw new Error(`Failed to construct WebAssembly module for Webcil image '${wasmPath}': ${errorMessage}`);
             }
 
             const tableStartIndex = wasmTable.length;
@@ -208,7 +220,7 @@ function libCoreRunFactory() {
                 wasmTable.grow(tableSize);
             } catch (e) {
                 const errorMessage = e instanceof Error ? e.message : String(e);
-                console.error("Failed to grow WebAssembly table for Webcil image:", {wasmPath, errorMessage});
+                console.error("Failed to grow WebAssembly table for Webcil image:", { wasmPath, errorMessage });
                 return false;
             }
 
@@ -226,6 +238,9 @@ function libCoreRunFactory() {
                 if (typeof (wasmExports.__coreclr_wasm_rtlrestorecontext_tag) === "undefined") {
                     throw new Error("__coreclr_wasm_rtlrestorecontext_tag was not preserved by the linker or optimizer");
                 }
+                if (typeof (wasmExports.__async_continuation) === "undefined") {
+                    throw new Error("__async_continuation was not preserved by the linker or optimizer");
+                }
                 payloadPtr = HEAPU32[ptrPtr >>> 2 >>> 0];
                 wasmInstance = new WebAssembly.Instance(wasmModule, {
                     webcil: {
@@ -234,11 +249,14 @@ function libCoreRunFactory() {
                         rtlRestoreContextTag: wasmExports.__coreclr_wasm_rtlrestorecontext_tag,
                         table: wasmTable,
                         tableBase: new WebAssembly.Global({ value: "i32", mutable: false }, tableStartIndex),
-                        imageBase: new WebAssembly.Global({ value: "i32", mutable: false }, payloadPtr)
-                    }});
+                        imageBase: new WebAssembly.Global({ value: "i32", mutable: false }, payloadPtr),
+                        // Runtime-async continuation return value, shared with the runtime module.
+                        asyncContinuation: wasmExports.__async_continuation
+                    }
+                });
             } catch (e) {
                 const errorMessage = e instanceof Error ? e.message : String(e);
-                console.error("Failed to construct WebAssembly instance for Webcil image:", {wasmPath, errorMessage});
+                console.error("Failed to construct WebAssembly instance for Webcil image:", { wasmPath, errorMessage });
                 return false;
             } finally {
                 stackRestore(sp);
