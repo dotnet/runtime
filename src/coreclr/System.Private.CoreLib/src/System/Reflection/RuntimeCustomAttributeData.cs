@@ -21,7 +21,6 @@ using Internal.LowLevelLinq;
 using Internal.Metadata.NativeFormat;
 using Internal.Reflection.Augments;
 using Internal.Reflection.Core;
-using Internal.Reflection.Core.Execution;
 #else
 using System.Buffers.Binary;
 using System.Collections.Generic;
@@ -38,110 +37,56 @@ namespace System.Reflection
     internal sealed class RuntimeCustomAttributeData : CustomAttributeData
     {
 #if NATIVEAOT
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
+            Justification = "Property setters and fields referenced by custom attribute metadata are preserved.")]
         internal RuntimeCustomAttributeData(MetadataReader reader, CustomAttributeHandle customAttributeHandle)
         {
-            _reader = reader;
-            _customAttribute = customAttributeHandle.GetCustomAttribute(reader);
-        }
+            CustomAttribute customAttribute = customAttributeHandle.GetCustomAttribute(reader);
+            if (customAttribute.Constructor.HandleType != HandleType.QualifiedMethod)
+                throw new BadImageFormatException();
 
-        public override Type AttributeType
-        {
-            get
+            QualifiedMethod qualifiedMethod = customAttribute.Constructor.ToQualifiedMethodHandle(reader).GetQualifiedMethod(reader);
+            TypeDefinitionHandle declaringType = qualifiedMethod.EnclosingType;
+            MethodHandle methodHandle = qualifiedMethod.Method;
+            NativeFormatRuntimeNamedTypeInfo attributeType = NativeFormatRuntimeNamedTypeInfo.GetRuntimeNamedTypeInfo(reader, declaringType, default(RuntimeTypeHandle));
+            m_ctor = RuntimePlainConstructorInfo<NativeFormatMethodCommon>.GetRuntimePlainConstructorInfo(new NativeFormatMethodCommon(methodHandle, attributeType, attributeType));
+
+            ReadOnlySpan<ParameterInfo> parameters = m_ctor.GetParametersAsSpan();
+            if (parameters.Length != 0)
             {
-                if (m_ctor is not null)
-                    return m_ctor.DeclaringType!;
-
-                Type? lazyAttributeType = _lazyAttributeType;
-                if (lazyAttributeType is null)
-                {
-                    MetadataReader reader = _reader!;
-                    lazyAttributeType = _lazyAttributeType =
-                        _customAttribute.GetAttributeTypeHandle(reader).Resolve(reader, new TypeContext(null, null)).ToType();
-                }
-
-                return lazyAttributeType;
+                m_ctorParams = new CustomAttributeCtorParameter[parameters.Length];
+                for (int i = 0; i < parameters.Length; i++)
+                    m_ctorParams[i] = new CustomAttributeCtorParameter(new CustomAttributeType((RuntimeType)parameters[i].ParameterType));
             }
-        }
-
-        public override ConstructorInfo Constructor
-        {
-            get
+            else
             {
-                if (m_ctor is not null)
-                    return m_ctor;
-
-                MetadataReader reader = _reader!;
-                if (_customAttribute.Constructor.HandleType != HandleType.QualifiedMethod)
-                    throw new BadImageFormatException();
-
-                QualifiedMethod qualifiedMethod = _customAttribute.Constructor.ToQualifiedMethodHandle(reader).GetQualifiedMethod(reader);
-                TypeDefinitionHandle declaringType = qualifiedMethod.EnclosingType;
-                MethodHandle methodHandle = qualifiedMethod.Method;
-                NativeFormatRuntimeNamedTypeInfo attributeType = NativeFormatRuntimeNamedTypeInfo.GetRuntimeNamedTypeInfo(reader, declaringType, default(RuntimeTypeHandle));
-                return RuntimePlainConstructorInfo<NativeFormatMethodCommon>.GetRuntimePlainConstructorInfo(new NativeFormatMethodCommon(methodHandle, attributeType, attributeType));
+                m_ctorParams = [];
             }
-        }
 
-        public override IList<CustomAttributeTypedArgument> ConstructorArguments
-        {
-            get
+            FieldInfo[] fields = m_ctor.DeclaringType!.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            PropertyInfo[] properties = m_ctor.DeclaringType.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+            m_namedParams = new CustomAttributeNamedParameter[properties.Length + fields.Length];
+
+            int idx = 0;
+            foreach (FieldInfo fi in fields)
             {
-                if (m_typedCtorArgs is not null)
-                    return m_typedCtorArgs;
-
-                MetadataReader reader = _reader!;
-                if (_customAttribute.Constructor.HandleType != HandleType.QualifiedMethod)
-                    throw new BadImageFormatException();
-
-                HandleCollection parameterTypeSignatureHandles =
-                    _customAttribute.Constructor.ToQualifiedMethodHandle(reader).GetQualifiedMethod(reader).Method.GetMethod(reader).Signature.GetMethodSignature(reader).Parameters;
-                Handle[] ctorTypeHandles = parameterTypeSignatureHandles.ToArray();
-
-                int index = 0;
-                ArrayBuilder<CustomAttributeTypedArgument> customAttributeTypedArguments =
-                    new ArrayBuilder<CustomAttributeTypedArgument>(_customAttribute.FixedArguments.Count);
-                foreach (Handle fixedArgumentHandle in _customAttribute.FixedArguments)
-                {
-                    RuntimeTypeInfo argumentType = ctorTypeHandles[index].Resolve(reader, AttributeType.ToRuntimeTypeInfo().TypeContext);
-                    Exception? exception = fixedArgumentHandle.TryParseConstantValue(reader, out object? value);
-                    if (exception is not null)
-                        throw exception;
-
-                    customAttributeTypedArguments.Add(WrapInCustomAttributeTypedArgument(value, argumentType.ToType()));
-                    index++;
-                }
-
-                return Array.AsReadOnly(customAttributeTypedArguments.ToArray());
+                m_namedParams[idx++] = new CustomAttributeNamedParameter(
+                    fi,
+                    CustomAttributeEncoding.Field,
+                    new CustomAttributeType((RuntimeType)fi.FieldType));
             }
-        }
 
-        public override IList<CustomAttributeNamedArgument> NamedArguments
-        {
-            get
+            foreach (PropertyInfo pi in properties)
             {
-                if (m_namedArgs is not null)
-                    return m_namedArgs;
-
-                MetadataReader reader = _reader!;
-                ArrayBuilder<CustomAttributeNamedArgument> customAttributeNamedArguments =
-                    new ArrayBuilder<CustomAttributeNamedArgument>(_customAttribute.NamedArguments.Count);
-                foreach (NamedArgumentHandle namedArgumentHandle in _customAttribute.NamedArguments)
-                {
-                    NamedArgument namedArgument = namedArgumentHandle.GetNamedArgument(reader);
-                    string memberName = namedArgument.Name.GetString(reader);
-                    bool isField = namedArgument.Flags == NamedArgumentMemberKind.Field;
-                    RuntimeTypeInfo argumentType = namedArgument.Type.Resolve(reader, AttributeType.ToRuntimeTypeInfo().TypeContext);
-
-                    Exception? exception = namedArgument.Value.TryParseConstantValue(reader, out object? value);
-                    if (exception is not null)
-                        throw exception;
-
-                    CustomAttributeTypedArgument typedValue = WrapInCustomAttributeTypedArgument(value, argumentType.ToType());
-                    customAttributeNamedArguments.Add(CreateCustomAttributeNamedArgument(AttributeType, memberName, isField, typedValue));
-                }
-
-                return Array.AsReadOnly(customAttributeNamedArguments.ToArray());
+                m_namedParams[idx++] = new CustomAttributeNamedParameter(
+                    pi,
+                    CustomAttributeEncoding.Property,
+                    new CustomAttributeType((RuntimeType)pi.PropertyType));
             }
+
+            CustomAttributeEncodedArgument.ParseAttributeArguments(
+                customAttribute, m_ctorParams, m_namedParams, reader, attributeType.TypeContext);
         }
 
         internal static IEnumerable<CustomAttributeData> GetCustomAttributes(
@@ -151,22 +96,7 @@ namespace System.Reflection
                 yield return new RuntimeCustomAttributeData(reader, customAttributeHandle);
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
-            Justification = "Metadata generation ensures fields/properties referenced from attributes are preserved.")]
-        private static CustomAttributeNamedArgument CreateCustomAttributeNamedArgument(
-            Type attributeType, string memberName, bool isField, CustomAttributeTypedArgument typedValue)
-        {
-            MemberInfo? memberInfo = isField
-                ? attributeType.GetField(memberName, BindingFlags.Public | BindingFlags.Instance)
-                : attributeType.GetProperty(memberName, BindingFlags.Public | BindingFlags.Instance);
-
-            if (memberInfo is null)
-                throw ReflectionCoreExecution.ExecutionEnvironment.CreateMissingMetadataException(attributeType);
-
-            return new CustomAttributeNamedArgument(memberInfo, typedValue);
-        }
-
-        private static CustomAttributeTypedArgument WrapInCustomAttributeTypedArgument(object? value, Type argumentType)
+        internal static CustomAttributeTypedArgument WrapInCustomAttributeTypedArgument(object? value, Type argumentType)
         {
             if (argumentType == typeof(object))
             {
@@ -200,14 +130,12 @@ namespace System.Reflection
             return new CustomAttributeTypedArgument(argumentType, value);
         }
 
-        private readonly MetadataReader? _reader;
-        private readonly CustomAttribute _customAttribute;
-
         private ConstructorInfo m_ctor = null!;
+        private readonly object? m_scope;
+        private readonly CustomAttributeCtorParameter[] m_ctorParams = null!;
+        private readonly CustomAttributeNamedParameter[] m_namedParams = null!;
         private IList<CustomAttributeTypedArgument> m_typedCtorArgs = null!;
         private IList<CustomAttributeNamedArgument> m_namedArgs = null!;
-
-        private volatile Type? _lazyAttributeType;
 #else
         #region Internal Static Members
         internal static IList<CustomAttributeData> GetCustomAttributesInternal(RuntimeType target)
@@ -305,6 +233,7 @@ namespace System.Reflection
         }
         #endregion
 
+#endif
         internal static CustomAttributeEncoding TypeToCustomAttributeEncoding(RuntimeType type)
         {
             if (type == typeof(int))
@@ -374,6 +303,7 @@ namespace System.Reflection
             throw new ArgumentException(SR.Argument_InvalidKindOfTypeForCA, nameof(type));
         }
 
+#if !NATIVEAOT
         #region Private Static Methods
         private static IList<CustomAttributeData> GetCustomAttributes(RuntimeModule module, int tkTarget)
         {
@@ -607,7 +537,6 @@ namespace System.Reflection
         }
         #endregion
 
-#if !NATIVEAOT
         #region Public Members
         public override ConstructorInfo Constructor => m_ctor;
 
@@ -688,14 +617,11 @@ namespace System.Reflection
             }
         }
         #endregion
-#endif
     }
 
-#if !NATIVEAOT
     public readonly partial struct CustomAttributeTypedArgument
     {
-        #region Private Static Methods
-        private static Type CustomAttributeEncodingToType(CustomAttributeEncoding encodedType)
+        internal static Type CustomAttributeEncodingToType(CustomAttributeEncoding encodedType)
         {
             return encodedType switch
             {
@@ -720,6 +646,17 @@ namespace System.Reflection
             };
         }
 
+#if NATIVEAOT
+        internal CustomAttributeTypedArgument(object? _, CustomAttributeEncodedArgument encodedArg)
+        {
+            Exception? exception = encodedArg.Value.TryParseConstantValue(encodedArg.Reader, out object? value);
+            if (exception is not null)
+                throw exception;
+
+            this = RuntimeCustomAttributeData.WrapInCustomAttributeTypedArgument(value, encodedArg.ArgumentType);
+        }
+#else
+        #region Private Static Methods
         private static object EncodedValueToRawValue(PrimitiveValue val, CustomAttributeEncoding encodedType)
         {
             return encodedType switch
@@ -808,8 +745,10 @@ namespace System.Reflection
                 _value = EncodedValueToRawValue(encodedArg.PrimitiveValue, encodedType);
             }
         }
+#endif
     }
 
+#if !NATIVEAOT
     internal struct CustomAttributeRecord
     {
         internal ConstArray blob;
@@ -821,6 +760,7 @@ namespace System.Reflection
             this.blob = blob;
         }
     }
+#endif
 
     // See CorSerializationType in corhdr.h
     internal enum CustomAttributeEncoding : int
@@ -861,6 +801,69 @@ namespace System.Reflection
 
     internal sealed class CustomAttributeEncodedArgument
     {
+#if NATIVEAOT
+        internal static void ParseAttributeArguments(
+            CustomAttribute customAttribute,
+            CustomAttributeCtorParameter[] customAttributeCtorParameters,
+            CustomAttributeNamedParameter[] customAttributeNamedParameters,
+            MetadataReader reader,
+            TypeContext typeContext)
+        {
+            Debug.Assert(customAttributeCtorParameters is not null);
+            Debug.Assert(customAttributeNamedParameters is not null);
+
+            ParseCtorArgs(customAttribute, customAttributeCtorParameters, reader);
+            ParseNamedArgs(customAttribute, customAttributeNamedParameters, reader, typeContext);
+        }
+
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
+            Justification = "The compiler ensures we have array types referenced from custom attribute blobs")]
+        internal CustomAttributeEncodedArgument(MetadataReader reader, Handle value, CustomAttributeType type)
+        {
+            CustomAttributeEncoding encodedType = type.EncodedType;
+            Type argumentType;
+            if (encodedType == CustomAttributeEncoding.Enum)
+            {
+                argumentType = type.EnumType!;
+            }
+            else if (encodedType == CustomAttributeEncoding.Array)
+            {
+                encodedType = type.EncodedArrayType;
+                Type elementType = encodedType == CustomAttributeEncoding.Enum
+                    ? type.EnumType!
+                    : CustomAttributeTypedArgument.CustomAttributeEncodingToType(encodedType);
+                argumentType = elementType.MakeArrayType();
+            }
+            else
+            {
+                argumentType = CustomAttributeTypedArgument.CustomAttributeEncodingToType(encodedType);
+            }
+
+            Reader = reader;
+            Value = value;
+            ArgumentType = argumentType;
+            CustomAttributeType = type;
+        }
+
+        public MetadataReader Reader { get; }
+        public Handle Value { get; }
+        public Type ArgumentType { get; }
+        public CustomAttributeType CustomAttributeType { get; }
+
+        private static void ParseCtorArgs(
+            CustomAttribute customAttribute,
+            CustomAttributeCtorParameter[] customAttributeCtorParameters,
+            MetadataReader reader)
+        {
+            int index = 0;
+            foreach (Handle fixedArgument in customAttribute.FixedArguments)
+            {
+                CustomAttributeCtorParameter parameter = customAttributeCtorParameters[index++];
+                parameter.EncodedArgument = new CustomAttributeEncodedArgument(reader, fixedArgument, parameter.CustomAttributeType);
+            }
+        }
+
+#else
         internal static void ParseAttributeArguments(
             ConstArray attributeBlob,
             CustomAttributeCtorParameter[] customAttributeCtorParameters,
@@ -915,12 +918,31 @@ namespace System.Reflection
                     module);
             }
         }
+#endif
 
         private static void ParseNamedArgs(
+#if NATIVEAOT
+            CustomAttribute customAttribute,
+            CustomAttributeNamedParameter[] customAttributeNamedParameters,
+            MetadataReader reader,
+            TypeContext typeContext)
+#else
             ref CustomAttributeDataParser parser,
             CustomAttributeNamedParameter[] customAttributeNamedParameters,
             RuntimeModule module)
+#endif
         {
+#if NATIVEAOT
+            foreach (NamedArgumentHandle namedArgumentHandle in customAttribute.NamedArguments)
+            {
+                NamedArgument namedArgument = namedArgumentHandle.GetNamedArgument(reader);
+                CustomAttributeEncoding namedArgFieldOrProperty = namedArgument.Flags switch
+                {
+                    NamedArgumentMemberKind.Field => CustomAttributeEncoding.Field,
+                    NamedArgumentMemberKind.Property => CustomAttributeEncoding.Property,
+                    _ => CustomAttributeEncoding.Undefined,
+                };
+#else
             // Parse the named arguments in the custom attribute.
             int argCount = parser.GetI2();
 
@@ -928,6 +950,7 @@ namespace System.Reflection
             {
                 // Determine if a field or property.
                 CustomAttributeEncoding namedArgFieldOrProperty = parser.GetTag();
+#endif
                 if (namedArgFieldOrProperty is not CustomAttributeEncoding.Field
                     && namedArgFieldOrProperty is not CustomAttributeEncoding.Property)
                 {
@@ -935,9 +958,15 @@ namespace System.Reflection
                 }
 
                 // Parse the encoded type for the named argument.
+#if NATIVEAOT
+                RuntimeType argumentType = (RuntimeType)namedArgument.Type.Resolve(reader, typeContext).ToType();
+                CustomAttributeType argType = new CustomAttributeType(argumentType);
+                string? argName = namedArgument.Name.GetString(reader);
+#else
                 CustomAttributeType argType = ParseCustomAttributeType(ref parser, module);
 
                 string? argName = parser.GetString();
+#endif
 
                 // Argument name must be non-null and non-empty.
                 if (string.IsNullOrEmpty(argName))
@@ -1000,10 +1029,15 @@ namespace System.Reflection
                     throw new BadImageFormatException(SR.Arg_CustomAttributeDuplicateNamedArgument);
                 }
 
+#if NATIVEAOT
+                parameterToUpdate.EncodedArgument = new CustomAttributeEncodedArgument(reader, namedArgument.Value, argType);
+#else
                 parameterToUpdate.EncodedArgument = ParseCustomAttributeValue(ref parser, argType, module);
+#endif
             }
         }
 
+#if !NATIVEAOT
         private static CustomAttributeEncodedArgument ParseCustomAttributeValue(
             ref CustomAttributeDataParser parser,
             CustomAttributeType type,
@@ -1246,6 +1280,7 @@ namespace System.Reflection
                 throw new OverflowException();
             }
         }
+#endif
     }
 
     internal sealed class CustomAttributeCtorParameter(CustomAttributeType type)
@@ -1311,6 +1346,7 @@ namespace System.Reflection
         public Type? EnumType { get; }
     }
 
+#if !NATIVEAOT
     internal static unsafe partial class CustomAttribute
     {
         #region Internal Static Members
