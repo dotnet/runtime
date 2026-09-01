@@ -346,7 +346,7 @@ namespace ILCompiler.ObjectWriter
             WebcilPayloadDataSegment webcilPayloadSegment = new(webcilHeader, webcilSections);
 
             // Writing our memory import <- size of the webcil segment (for an accurate minimum size)
-            WriteMemoryImport((ulong)webcilPayloadSegment.RawContentSize);
+            WriteMemoryImport((ulong)webcilPayloadSegment.ContentSize);
             FinalizeSectionEntryCounts();
 
            /*********************************************************************
@@ -388,16 +388,16 @@ namespace ILCompiler.ObjectWriter
              * Emit Webcil segment at end of file to support ReadyToRun
              ****************************************************************/
 
-
             // Create passive data segment for encoding the size of the webcil payload (size must fit in 32-bit uint)
             byte[] lengthBuffer = new byte[sizeof(uint) * 2];
-            BinaryPrimitives.WriteUInt32LittleEndian(lengthBuffer, (uint)webcilPayloadSegment.RawContentSize);
+            BinaryPrimitives.WriteUInt32LittleEndian(lengthBuffer, (uint)webcilPayloadSegment.ContentSize);
             BinaryPrimitives.WriteUInt32LittleEndian(lengthBuffer.AsSpan().Slice(4), (uint)MethodCount);
-            WasmByteArrayDataSegment webcilSizeSegment = new WasmByteArrayDataSegment(lengthBuffer, new Utf8String("webcilCount"),
-                WasmDataSegmentType.Passive, WebcilSectionAlignment);
+            WasmByteArrayDataSegment webcilSizeSegment = new WasmByteArrayDataSegment(lengthBuffer, new Utf8String("webcilCount"), fileAlignment: 1);
 
             // Create combined data section and emit
-            WasmDataSection dataSection = new WasmDataSection([webcilSizeSegment, webcilPayloadSegment], new Utf8String("data"), contentAlign: 4);
+            WasmDataSection dataSection = new WasmDataSection([webcilSizeSegment, webcilPayloadSegment], new Utf8String("data"));
+            PaddingWasmSection paddingSection = new PaddingWasmSection(dataSection.FileAlignment, outputFileStream.Position);
+            paddingSection.EmitToStream(outputFileStream);
             dataSection.EmitToStream(outputFileStream);
 #endif
 
