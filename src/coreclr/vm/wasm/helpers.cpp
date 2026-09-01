@@ -517,7 +517,7 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
     }
 #endif // FEATURE_INTERPRETER
 
-    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    InlinedCallFrame::UpdateRegDisplay_Impl(rip:%p, rsp:%p)\n", pRD->ControlPC, pRD->SP));
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    InlinedCallFrame::UpdateRegDisplay_Impl(rip:%p, rsp:%p)\n", (void*)(size_t)pRD->ControlPC, (void*)(size_t)pRD->SP));
 }
 
 void FaultingExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
@@ -546,7 +546,7 @@ void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFl
 
     SyncRegDisplayToCurrentContext(pRD);
 
-    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TransitionFrame::UpdateRegDisplay_Impl(rip:%p, rsp:%p)\n", pRD->ControlPC, pRD->SP));
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TransitionFrame::UpdateRegDisplay_Impl(rip:%p, rsp:%p)\n", (void*)(size_t)pRD->ControlPC, (void*)(size_t)pRD->SP));
 }
 
 size_t CallDescrWorkerInternalReturnAddressOffset = 0;
@@ -670,16 +670,6 @@ extern "C" void TheUMEntryPrestub(void)
     PORTABILITY_ASSERT("TheUMEntryPrestub is not implemented on wasm");
 }
 
-extern "C" void STDCALL VarargPInvokeStub(void)
-{
-    PORTABILITY_ASSERT("VarargPInvokeStub is not implemented on wasm");
-}
-
-extern "C" void STDCALL VarargPInvokeStub_RetBuffArg(void)
-{
-    PORTABILITY_ASSERT("VarargPInvokeStub_RetBuffArg is not implemented on wasm");
-}
-
 extern "C" PCODE CID_VirtualOpenDelegateDispatch(TransitionBlock * pTransitionBlock)
 {
     PORTABILITY_ASSERT("CID_VirtualOpenDelegateDispatch is not implemented on wasm");
@@ -703,11 +693,6 @@ EXTERN_C void JIT_StackProbe_End()
 
 EXTERN_C VOID STDCALL ResetCurrentContext()
 {
-}
-
-extern "C" void STDCALL GenericPInvokeCalliHelper(void)
-{
-    PORTABILITY_ASSERT("GenericPInvokeCalliHelper is not implemented on wasm");
 }
 
 // Does the pinvoke frame transition; the naked wrappers below have already set the wasm
@@ -1049,14 +1034,15 @@ namespace
         ToV128,
         ToSlotsI64,  // Passed by value as several i64 slots (Int128/UInt128)
         ToSlotsV128, // Passed by value as several v128 slots (Vector256<T>, Vector512<T>)
-        ToStruct,   // S<N> — multi-field struct passed by pointer, structSize holds the size
+        ToStruct,   // S<N>/A<N> — multi-field struct passed by pointer
         ToEmpty,    // e — empty struct, takes no wasm argument
     };
 
     struct ConvertResult
     {
         ConvertType type;
-        uint32_t structSize; // only meaningful when type == ToStruct
+        uint32_t structSize;             // meaningful for struct and multi-slot types
+        bool requiresAlignedStructSlot; // only meaningful when type == ToStruct
     };
 
     // Lowers a TypeHandle to a ConvertResult, unwrapping single-field structs
@@ -1237,7 +1223,7 @@ namespace
             // One field with padding — treat as multi-field struct
         }
 
-        return { ConvertType::ToStruct, size };
+        return { ConvertType::ToStruct, size, CEEInfo::getClassAlignmentRequirementStatic(th) > INTERP_STACK_SLOT_SIZE };
     }
 
     ConvertResult ConvertibleTo(CorElementType argType, MetaSig& sig, bool isReturn)
@@ -1316,9 +1302,11 @@ namespace
             case ConvertType::ToEmpty:     c = 'e'; break;
             case ConvertType::ToStruct:
             {
-                // Encode as S<N> where N is the struct size in decimal
+                // A struct whose alignment exceeds 8 is placed at a 16-byte aligned transition-block
+                // slot. The interpreter stack does not support a larger placement alignment.
                 char sizeBuf[16];
-                int len = sprintf_s(sizeBuf, sizeof(sizeBuf), "S%u", cr.structSize);
+                int len = sprintf_s(sizeBuf, sizeof(sizeBuf), "%c%u",
+                                    cr.requiresAlignedStructSlot ? 'A' : 'S', cr.structSize);
                 for (int j = 0; j < len; j++)
                 {
                     if (pos + (uint32_t)j < maxSize)
@@ -1378,6 +1366,7 @@ namespace
             {
                 cr.type = ConvertType::ToStruct;
             }
+            cr.requiresAlignedStructSlot = false;
 
             pos += AppendTypeCode(cr, keyBuffer, pos, maxSize);
         }

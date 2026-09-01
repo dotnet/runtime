@@ -211,9 +211,9 @@ variables:
   # ===========================================
 
   # Windows x64
-  # Latest: Windows 11
+  # Latest: Rolling Windows runtime queue
   - name: helix_windows_x64_latest
-    value: Windows.11.Amd64.Client.Open
+    value: Windows.Amd64.Open.rt
 
   - name: helix_windows_x64_latest_internal
     value: Windows.11.Amd64

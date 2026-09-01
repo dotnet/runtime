@@ -77,8 +77,6 @@ RELEASE_CONFIG_INTEGER(JitCloneLoopsMinPerCallRatio, "JitCloneLoopsMinPerCallRat
                                                                                         // disables the gate.
 CONFIG_INTEGER(JitDebugLogLoopCloning, "JitDebugLogLoopCloning", 0) // In debug builds log places where loop cloning
                                                                     // optimizations are performed on the fast path.
-CONFIG_INTEGER(JitDefaultFill, "JitDefaultFill", 0xdd) // In debug builds, initialize the memory allocated by the nra
-                                                       // with this byte.
 
 // Minimum weight needed for the first block of a loop to make it a candidate for alignment.
 CONFIG_INTEGER(JitAlignLoopMinBlockWeight, "JitAlignLoopMinBlockWeight", DEFAULT_ALIGN_LOOP_MIN_BLOCK_WEIGHT)
@@ -198,7 +196,6 @@ CONFIG_INTEGER(JitProfileChecks, "JitProfileChecks", -1)
 CONFIG_INTEGER(JitRequired, "JITRequired", -1)
 CONFIG_INTEGER(JitStackAllocToLocalSize, "JitStackAllocToLocalSize", DEFAULT_MAX_LOCALLOC_TO_LOCAL_SIZE)
 CONFIG_INTEGER(JitSkipArrayBoundCheck, "JitSkipArrayBoundCheck", 0)
-CONFIG_INTEGER(JitSlowDebugChecksEnabled, "JitSlowDebugChecksEnabled", 1) // Turn on slow debug checks
 
 // On ARM, use this as the maximum function/funclet size for creating function fragments (and creating
 // multiple RUNTIME_FUNCTION entries)
@@ -621,6 +618,12 @@ OPT_CONFIG_STRING(JitAsyncDefaultValueAnalysisRange,
 // a continuation is being reused.
 OPT_CONFIG_STRING(JitAsyncPreservedValueAnalysisRange, "JitAsyncPreservedValueAnalysisRange")
 
+// Enable general inlining of runtime async calls, i.e. inlining of async
+// callees that may suspend. When zero, only the restricted cases are inlined:
+// callees without any awaits, async versions of synchronous methods, and tail
+// awaits.
+RELEASE_CONFIG_INTEGER(JitAsyncInlining, "JitAsyncInlining", 1)
+
 RELEASE_CONFIG_INTEGER(JitEnableOptRepeat, "JitEnableOptRepeat", 1) // If zero, do not allow JitOptRepeat
 RELEASE_CONFIG_METHODSET(JitOptRepeat, "JitOptRepeat")            // Runs optimizer multiple times on specified methods
 RELEASE_CONFIG_INTEGER(JitOptRepeatCount, "JitOptRepeatCount", 2) // Number of times to repeat opts when repeating
@@ -656,10 +659,10 @@ RELEASE_CONFIG_STRING(TailCallOpt, "TailCallOpt")
 // If set, allow fast tail calls; otherwise allow only helper-based calls for explicit tail calls.
 RELEASE_CONFIG_INTEGER(FastTailCalls, "FastTailCalls", 1)
 
-// Set to 1 to measure noway_assert usage. Only valid if MEASURE_NOWAY is defined.
+// Set to 1 to measure noway_assert usage. Only valid if MEASURE_NOWAY is defined to 1.
 RELEASE_CONFIG_INTEGER(JitMeasureNowayAssert, "JitMeasureNowayAssert", 0)
 
-// Set to file to write noway_assert usage to a file (if not set: stdout). Only valid if MEASURE_NOWAY is defined.
+// Set to file to write noway_assert usage to a file (if not set: stdout). Only valid if MEASURE_NOWAY is defined to 1.
 RELEASE_CONFIG_STRING(JitMeasureNowayAssertFile, "JitMeasureNowayAssertFile")
 
 CONFIG_INTEGER(EnableExtraSuperPmiQueries, "EnableExtraSuperPmiQueries", 0) // Make extra queries to somewhat
@@ -680,6 +683,15 @@ CONFIG_INTEGER(JitInlinePolicyRandom, "JitInlinePolicyRandom", 0) // nonzero ena
 CONFIG_INTEGER(JitInlinePolicyReplay, "JitInlinePolicyReplay", 0)
 CONFIG_STRING(JitNoInlineRange, "JitNoInlineRange")
 CONFIG_STRING(JitInlineReplayFile, "JitInlineReplayFile")
+
+// Stress general runtime async inlining: forcibly inline async callees that may suspend,
+// with a probability that decays with inline depth. Nonzero enables; the value is the
+// external random seed. See AsyncStressPolicy.
+CONFIG_INTEGER(JitStressAsyncInlining, "JitStressAsyncInlining", 0)
+CONFIG_INTEGER(JitStressAsyncInliningMaxDepth, "JitStressAsyncInliningMaxDepth", 8)
+// Probability, in percent, that the first async candidate of a body at depth 1 is inlined.
+// The n'th candidate of a body at depth d is inlined with probability (pct/100)^(d + n).
+CONFIG_INTEGER(JitStressAsyncInliningPct, "JitStressAsyncInliningPct", 75)
 
 // Extended version of DefaultPolicy that includes a more precise IL scan,
 // relies on PGO if it exists and generally is more aggressive.
@@ -729,6 +741,11 @@ RELEASE_CONFIG_INTEGER(JitEnableGuardedDevirtualization, "JitEnableGuardedDevirt
 // Number of types to probe for polymorphic virtual call-sites to devirtualize them,
 // Max number is MAX_GDV_TYPE_CHECKS defined above ^. -1 means it's up to JIT to decide
 RELEASE_CONFIG_INTEGER(JitGuardedDevirtualizationMaxTypeChecks, "JitGuardedDevirtualizationMaxTypeChecks", -1)
+
+// Whether a guarded devirtualization candidate has to be inlineable.
+// 0 - keep it even if we won't inline it, a direct call is still cheaper.
+// 1 - drop it if the target can't be inlined (legacy behavior).
+RELEASE_CONFIG_INTEGER(JitGuardedDevirtualizationRequireInlining, "JitGuardedDevirtualizationRequireInlining", 0)
 
 // Various policies for GuardedDevirtualization (0x4B == 75)
 RELEASE_CONFIG_INTEGER(JitGuardedDevirtualizationChainLikelihood, "JitGuardedDevirtualizationChainLikelihood", 0x4B)
