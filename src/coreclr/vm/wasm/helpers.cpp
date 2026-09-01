@@ -17,7 +17,7 @@
 void ExecuteInterpretedMethodWithArgs_PortableEntryPoint(PCODE portableEntrypoint, TransitionBlock* block, size_t argsSize, int8_t* retBuff);
 
 // -------------------------------------------------
-// The R2R to interpreter thunks are generated into callhelpers-portable-entrypoints.cpp by the
+// The native-to-interpreter thunks are generated into callhelpers-portable-entrypoints.cpp by the
 // WasmAppBuilder generator, one table per target.
 // -------------------------------------------------
 
@@ -1192,7 +1192,7 @@ namespace
             // Printed rather than only asserted: the caller's assert compiles out in release, where these
             // gaps surface, and cannot carry the key. A miss leaves the entry point's table index 0 and
             // traps later as "null function", far from here.
-            printf("WASM: no R2R-to-interpreter thunk for signature key '%s'. Add it to pregeneratedInterpreterToNativeSignatures in ManagedToNativeGenerator and regenerate.\n", keyBuffer);
+            printf("WASM: no native-to-interpreter thunk for signature key '%s'. Add it to pregeneratedInterpreterToNativeSignatures in ManagedToNativeGenerator and regenerate.\n", keyBuffer);
         }
         return thunk;
     }

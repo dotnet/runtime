@@ -127,7 +127,7 @@ public class WasmArgumentLayoutTests
 
     /// <summary>
     /// The 'V' encoding says nothing about which vector type produced it, so raising must resolve the
-    /// same type regardless of what lowering saw first. The wasm R2R-to-interpreter thunk derives its
+    /// same type regardless of what lowering saw first. The wasm native-to-interpreter thunk derives its
     /// whole frame layout from the raised signature.
     /// </summary>
     [Theory]
@@ -203,7 +203,7 @@ public class WasmArgumentLayoutTests
 
     /// <summary>
     /// The elevation digit says nothing about which type produced it, so raising must resolve one
-    /// with the same size and alignment regardless of what lowering saw. The wasm R2R-to-interpreter
+    /// with the same size and alignment regardless of what lowering saw. The wasm native-to-interpreter
     /// thunk derives its whole frame layout from the raised signature.
     /// </summary>
     [Theory]
@@ -547,7 +547,7 @@ public class WasmArgumentLayoutTests
     }
 
     /// <summary>
-    /// The R2R-to-interpreter thunks are written by the WasmAppBuilder generator but called by code
+    /// The native-to-interpreter thunks are written by the WasmAppBuilder generator but called by code
     /// crossgen2 emits, so the two have to agree on the wasm signature behind every key. This checks
     /// arity and types: a missing hidden return buffer — which is what returning the struct by value
     /// produces, since the compiler then inserts its own pointer ahead of the stack pointer — or a
@@ -589,7 +589,7 @@ public class WasmArgumentLayoutTests
 
     public static TheoryData<string[], bool, string[]> ThunkParameterOrder()
     {
-        // Transcribed from WasmR2RToInterpreterThunkNode.EmitCode, which stores 'this' from the
+        // Transcribed from WasmNativeToInterpreterThunkNode.EmitCode, which stores 'this' from the
         // local after the stack pointer and then reads the buffer from
         // retBufLocalIndex = 1 + (hasThis ? 1 : 0). A generic context is an ordinary slot that
         // follows the buffer, so it is spelled like any other argument here.
@@ -835,7 +835,7 @@ public class WasmArgumentLayoutTests
     }
 
     /// <summary>
-    /// Runs the same ArgIterator the wasm R2R-to-interpreter thunk uses, returning each argument's
+    /// Runs the same ArgIterator the wasm native-to-interpreter thunk uses, returning each argument's
     /// offset relative to the start of the arguments area.
     /// </summary>
     private static List<int> GetArgumentOffsets(TypeSystemContext context, MethodSignature signature)

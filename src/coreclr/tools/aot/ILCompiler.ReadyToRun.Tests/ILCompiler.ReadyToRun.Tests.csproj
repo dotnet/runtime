@@ -37,7 +37,7 @@
     <EmbeddedResource Include="TestCases/**/*.cs" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
 
-  <!-- The wasm R2R-to-interpreter thunks are emitted by these two files but called by code crossgen2
+  <!-- The wasm native-to-interpreter thunks are emitted by these two files but called by code crossgen2
        generates, so WasmArgumentLayoutTests checks the two agree. Only the MSBuild-free half of the
        generator is linked; the rest of WasmAppBuilder needs a TaskLoggingHelper. -->
   <ItemGroup>

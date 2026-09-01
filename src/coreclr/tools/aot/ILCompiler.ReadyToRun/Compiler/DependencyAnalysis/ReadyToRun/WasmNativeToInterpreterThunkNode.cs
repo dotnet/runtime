@@ -18,11 +18,14 @@ using ILCompiler.DependencyAnalysisFramework;
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
     /// <summary>
-    /// A thunk that captures all arguments and dispatches to the interpreter via
-    /// READYTORUN_HELPER_R2RToInterpreter. This node is string-discoverable so the
-    /// runtime can find it by WasmSignature string at execution time.
+    /// The native entry point of an interpreted method: a thunk that captures all wasm arguments and
+    /// dispatches into the interpreter. Any native caller reaching an interpreted method through a
+    /// materialized code address uses this - an R2R call, but also a delegate/ldftn, a vtable slot,
+    /// or the runtime's GetMultiCallableAddrOfCode path - so it is required even with no R2R present.
+    /// It is wired through the READYTORUN_HELPER_R2RToInterpreter helper cell and is string-discoverable
+    /// so the runtime can find it by WasmSignature string at execution time.
     /// </summary>
-    public class WasmR2RToInterpreterThunkNode : StringDiscoverableAssemblyStubNode, INodeWithTypeSignature, ISymbolDefinitionNode, ISortableSymbolNode
+    public class WasmNativeToInterpreterThunkNode : StringDiscoverableAssemblyStubNode, INodeWithTypeSignature, ISymbolDefinitionNode, ISortableSymbolNode
     {
         private readonly TypeSystemContext _context;
         private readonly WasmSignature _wasmSignature;
@@ -80,7 +83,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
         }
 
-        public WasmR2RToInterpreterThunkNode(NodeFactory factory, WasmSignature wasmSignature)
+        public WasmNativeToInterpreterThunkNode(NodeFactory factory, WasmSignature wasmSignature)
         {
             _context = factory.TypeSystemContext;
             _wasmSignature = wasmSignature;
@@ -90,7 +93,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append("WasmR2RToInterpreterThunk("u8);
+            sb.Append("WasmNativeToInterpreterThunk("u8);
             sb.Append(_wasmSignature.SignatureString);
             sb.Append(")"u8);
         }
@@ -106,14 +109,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
-            WasmR2RToInterpreterThunkNode otherNode = (WasmR2RToInterpreterThunkNode)other;
+            WasmNativeToInterpreterThunkNode otherNode = (WasmNativeToInterpreterThunkNode)other;
             return _wasmSignature.CompareTo(otherNode._wasmSignature);
         }
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
             DependencyList dependencies = base.ComputeNonRelocationBasedDependencies(factory);
-            dependencies.Add(_typeNode, "Wasm R2R to interpreter thunk requires type node");
+            dependencies.Add(_typeNode, "Wasm native-to-interpreter thunk requires type node");
             return dependencies;
         }
 

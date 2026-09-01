@@ -251,7 +251,7 @@ BOOL DoesSlotCallPrestub(PCODE pCode)
 {
     LIMITED_METHOD_CONTRACT;
 #ifdef TARGET_WASM
-    /* On WASM slots never directly call the prestub. Instead we have the R2R to interpreter thunks
+    /* On WASM slots never directly call the prestub. Instead we have the native-to-interpreter thunks
        which serve as the PreStub, but the characteristics are slightly different, and it appears this
        isn't necessary. */
     return FALSE;
