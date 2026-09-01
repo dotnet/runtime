@@ -11,22 +11,34 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.ObjectWriter
 {
+    // WasmDataSection should be aligned to the maximum file alignment of its segments,
+    // and each segment should be aligned to its own alignment within the section.
     internal sealed class WasmDataSection : IWasmEmittable, IWasmSection
     {
         private readonly List<IWasmDataSegment> _segments;
-        private readonly int _contentAlign;
         private bool _layoutAssigned;
 
-        public WasmDataSection(List<IWasmDataSegment> segments, Utf8String name, int contentAlign = 1)
+        public WasmDataSection(List<IWasmDataSegment> segments, Utf8String name)
         {
             _segments = segments;
-            _contentAlign = contentAlign;
             Name = name;
         }
 
         public Utf8String Name { get; }
         public WasmSectionType Type => WasmSectionType.Data;
         public int SegmentCount => _segments.Count;
+        public int FileAlignment
+        {
+            get
+            {
+                int alignment = 1;
+                foreach (IWasmDataSegment segment in _segments)
+                {
+                    alignment = Math.Max(alignment, segment.FileAlignment);
+                }
+                return alignment;
+            }
+        }
 
         public int ContentSize
         {
@@ -86,31 +98,46 @@ namespace ILCompiler.ObjectWriter
         }
 
         /// <summary>
-        /// Assign the layout of segments within the data section, placing active segments at the appropriate memory offsets.
+        /// Assign the layout of segments within the data section, padding segments for file alignment, and placing
+        /// active segments at the appropriate memory offsets.
         /// </summary>
         private void AssignSegmentLayout()
         {
             if (_layoutAssigned)
                 return;
 
-            // Assign memory offsets and padding for each segment to ensure that the next segment's content is aligned.
-            int currentOffset = 0;
+            // Assign sizes to ensure each segment's content is aligned to its FileAlignment.
+            // The first should have no alignment requirements - this simplifies that the alignment of the data section itself.
+            Debug.Assert(_segments.Count == 0 || _segments[0].FileAlignment == 1);
+            int fileOffset = HeaderSize + (int)DwarfHelper.SizeOfULEB128((ulong)_segments.Count);
+            int memoryOffset = 0;
+            for (int i = 1; i < _segments.Count; i++)
+            {
+                IWasmDataSegment segment = _segments[i];
+                IWasmDataSegment previousSegment = _segments[i - 1];
+                int previousSegmentEnd = fileOffset + previousSegment.HeaderSize + previousSegment.ContentSize;
+                int contentStart = previousSegmentEnd + segment.HeaderSize;
+                int padding = AlignmentHelper.AlignUp(contentStart, segment.FileAlignment) - contentStart;
+                previousSegment.SetTrailingPadding(padding);
+                // Use updated previous segment size as the file offset.
+                fileOffset = fileOffset + previousSegment.HeaderSize + previousSegment.ContentSize;
+                Debug.Assert((fileOffset + segment.HeaderSize) % segment.FileAlignment == 0);
+            }
+
             for (int i = 0; i < _segments.Count; i++)
             {
                 IWasmDataSegment segment = _segments[i];
+                // Handle memory layout for active segments
                 if (segment.SegmentType == WasmDataSegmentType.Passive)
                 {
                     // Passive segments are loaded at runtime and alignment requirements should be handled there.
                     continue;
                 }
-                // ActiveMemorySpecified segments are not supported yet
-                Debug.Assert(segment.SegmentType != WasmDataSegmentType.ActiveMemorySpecified);
-                int alignment = Math.Max(_contentAlign, segment.Alignment);
-                currentOffset = AlignmentHelper.AlignUp(currentOffset, alignment);
-                segment.SetMemoryOffset(currentOffset);
-                currentOffset += segment.RawContentSize;
-                // TODO: Do we need explicit padding between segments?
-                // TODO native aot: Generate relocations to __memory_base + segment offset
+                IWasmActiveDataSegment activeSegment = (IWasmActiveDataSegment)segment;
+                int alignment = activeSegment.MemoryAlignment;
+                memoryOffset = AlignmentHelper.AlignUp(memoryOffset, alignment);
+                activeSegment.SetMemoryOffset(memoryOffset);
+                memoryOffset += activeSegment.ContentSize;
             }
             _layoutAssigned = true;
         }

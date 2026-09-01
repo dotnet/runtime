@@ -17,6 +17,7 @@ namespace ILCompiler.ObjectWriter
         private readonly WebcilHeader _header;
         private readonly WebcilSection[] _sections;
         private readonly int _alignment;
+        private int _paddingBytesCount;
 
         public WebcilPayloadDataSegment(
             WebcilHeader header,
@@ -34,9 +35,9 @@ namespace ILCompiler.ObjectWriter
         public int HeaderSize =>
             WasmDataSegmentEncoding.GetHeaderSize(WasmDataSegmentType.Passive, initExpr: null);
 
-        public int Alignment => _alignment;
+        public int FileAlignment => _alignment;
 
-        public int RawContentSize
+        private int RawContentSize
         {
             get
             {
@@ -53,9 +54,11 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
+        public int ContentSize => checked(RawContentSize + _paddingBytesCount);
+
         public WasmDataSegmentType SegmentType => WasmDataSegmentType.Passive;
 
-        public int EncodeSize() => HeaderSize + RawContentSize;
+        public int EncodeSize() => HeaderSize + ContentSize;
 
         public int EmitToStream(Stream outputFileStream)
         {
@@ -64,7 +67,7 @@ namespace ILCompiler.ObjectWriter
                 headerBuffer,
                 WasmDataSegmentType.Passive,
                 initExpr: null,
-                RawContentSize);
+                ContentSize);
             Debug.Assert(headerSize == HeaderSize);
             outputFileStream.Write(headerBuffer);
 
@@ -90,11 +93,17 @@ namespace ILCompiler.ObjectWriter
             WasmDataSegmentEncoding.EmitPadding(
                 outputFileStream,
                 (int)(payloadEnd - outputFileStream.Position));
+            WasmDataSegmentEncoding.EmitPadding(outputFileStream, _paddingBytesCount);
 
             return EncodeSize();
         }
 
-        public void SetMemoryOffset(int offset) { }
+        public void SetTrailingPadding(int trailingBytesCount)
+        {
+            Debug.Assert(trailingBytesCount >= 0);
+            _paddingBytesCount = trailingBytesCount;
+        }
+
         public int GetMemoryAddressOfOffset(int offsetInSegment)
         {
             Debug.Assert(offsetInSegment >= 0 && offsetInSegment <= RawContentSize);

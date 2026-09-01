@@ -13,10 +13,11 @@ namespace ILCompiler.ObjectWriter
     /// <summary>
     /// A SectionDataEmitter for an ObjectNodeSection emits into a single WASM data segment.
     /// </summary>
-    internal sealed class WasmDataSegmentEmitter : SectionDataEmitter, IWasmDataSegment
+    internal sealed class WasmDataSegmentEmitter : SectionDataEmitter, IWasmActiveDataSegment
     {
         private int _alignment = 1;
         private int _memoryOffset;
+        private int _paddingBytesCount;
 
         public WasmDataSegmentEmitter(
             Stream contents,
@@ -26,9 +27,10 @@ namespace ILCompiler.ObjectWriter
         {
         }
 
-        public int Alignment => _alignment;
+        public int FileAlignment => 1;
         public int HeaderSize => WasmDataSegmentEncoding.GetHeaderSize(WasmDataSegmentType.Active, GetMemoryOffsetInitExpr());
-        public int RawContentSize => (int)ContentReadStream.Length;
+        public int ContentSize => checked((int)ContentReadStream.Length + _paddingBytesCount);
+        public int MemoryAlignment => _alignment;
         public WasmDataSegmentType SegmentType => WasmDataSegmentType.Active;
 
         public void UpdateAlignment(int alignment)
@@ -37,7 +39,7 @@ namespace ILCompiler.ObjectWriter
             _alignment = Math.Max(_alignment, alignment);
         }
 
-        public override int EncodeSize() => HeaderSize + RawContentSize;
+        public override int EncodeSize() => HeaderSize + ContentSize;
 
         public override int EmitToStream(Stream outputFileStream)
         {
@@ -46,14 +48,21 @@ namespace ILCompiler.ObjectWriter
                 headerBuffer,
                 WasmDataSegmentType.Active,
                 GetMemoryOffsetInitExpr(),
-                RawContentSize);
+                ContentSize);
             Debug.Assert(headerSize == HeaderSize);
             outputFileStream.Write(headerBuffer);
 
             ContentReadStream.Position = 0;
             ContentReadStream.CopyTo(outputFileStream);
+            WasmDataSegmentEncoding.EmitPadding(outputFileStream, _paddingBytesCount);
 
             return EncodeSize();
+        }
+
+        public void SetTrailingPadding(int trailingBytesCount)
+        {
+            Debug.Assert(trailingBytesCount >= 0);
+            _paddingBytesCount = trailingBytesCount;
         }
 
         public void SetMemoryOffset(int offset)
@@ -63,12 +72,12 @@ namespace ILCompiler.ObjectWriter
 
         private WasmInstructionGroup GetMemoryOffsetInitExpr()
         {
-            return new WasmInstructionGroup([I32.Const(_memoryOffset)]);
+            return new WasmInstructionGroup([I32.PaddedConst(_memoryOffset)]);
         }
 
         public int GetMemoryAddressOfOffset(int offsetInSegment)
         {
-            Debug.Assert(offsetInSegment >= 0 && offsetInSegment <= RawContentSize);
+            Debug.Assert(offsetInSegment >= 0 && offsetInSegment <= ContentReadStream.Length);
             return _memoryOffset + offsetInSegment;
         }
     }

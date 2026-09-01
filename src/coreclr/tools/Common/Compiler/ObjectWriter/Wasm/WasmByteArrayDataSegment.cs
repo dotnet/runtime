@@ -13,35 +13,28 @@ namespace ILCompiler.ObjectWriter
     /// <summary>
     /// A data segment that takes a byte array as its content.
     /// This is used for data segments that are known or constructed at compile time without any ObjectNodes.
+    /// It is always a passive segment.
     /// </summary>
     internal sealed class WasmByteArrayDataSegment : IWasmDataSegment
     {
-        private int _memoryOffset;
         private readonly byte[] _contents;
-        private readonly WasmDataSegmentType _type;
+        private int _paddingBytesCount;
 
         public WasmByteArrayDataSegment(
             byte[] contents,
             Utf8String name,
-            WasmDataSegmentType type,
-            int alignment)
+            int fileAlignment)
         {
-            // ActiveMemorySpecified isn't implemented yet and probably shouldn't be needed here.
-            Debug.Assert(type is WasmDataSegmentType.Active or WasmDataSegmentType.Passive);
-            Debug.Assert(BitOperations.IsPow2(alignment));
-
+            Debug.Assert(BitOperations.IsPow2(fileAlignment));
             _contents = contents;
-            _type = type;
             Name = name;
-            Alignment = alignment;
+            FileAlignment = fileAlignment;
         }
 
         public Utf8String Name { get; }
-        public int Alignment { get; }
-        public int HeaderSize => WasmDataSegmentEncoding.GetHeaderSize(_type, GetInitExpr());
-        public int ContentSize => _contents.Length;
-        public int RawContentSize => _contents.Length;
-        public WasmDataSegmentType SegmentType => _type;
+        public int FileAlignment { get; }
+        public int HeaderSize => WasmDataSegmentEncoding.GetHeaderSize(WasmDataSegmentType.Passive, initExpr: null);
+        public int ContentSize => checked(_contents.Length + _paddingBytesCount);
 
         public int EncodeSize() => HeaderSize + ContentSize;
 
@@ -50,23 +43,27 @@ namespace ILCompiler.ObjectWriter
             Span<byte> headerBuffer = stackalloc byte[HeaderSize];
             int headerSize = WasmDataSegmentEncoding.EncodeHeader(
                 headerBuffer,
-                _type,
-                GetInitExpr(),
+                WasmDataSegmentType.Passive,
+                initExpr: null,
                 ContentSize);
             Debug.Assert(headerSize == HeaderSize);
+
             outputFileStream.Write(headerBuffer);
-
             outputFileStream.Write(_contents);
-
-            return headerSize + _contents.Length;
+            WasmDataSegmentEncoding.EmitPadding(outputFileStream, _paddingBytesCount);
+            return headerSize + _contents.Length + _paddingBytesCount;
         }
-        private WasmInstructionGroup GetInitExpr() => _type == WasmDataSegmentType.Active ? new WasmInstructionGroup([I32.Const(_memoryOffset)]) : null;
 
-        public void SetMemoryOffset(int offset) => _memoryOffset = offset;
         public int GetMemoryAddressOfOffset(int offsetInSegment)
         {
-            Debug.Assert(offsetInSegment >= 0 && offsetInSegment <= RawContentSize);
-            return _memoryOffset + offsetInSegment;
+            Debug.Assert(offsetInSegment >= 0 && offsetInSegment <= _contents.Length);
+            return offsetInSegment;
+        }
+
+        public void SetTrailingPadding(int trailingBytesCount)
+        {
+            Debug.Assert(trailingBytesCount >= 0);
+            _paddingBytesCount = trailingBytesCount;
         }
     }
 }

@@ -11,9 +11,16 @@ namespace ILCompiler.ObjectWriter
 {
     internal enum WasmDataSegmentType : byte
     {
-        Active = 0,  // (data list(byte) (active offset-expr))
-        Passive = 1, // (data list(byte) passive)
-        ActiveMemorySpecified = 2 // (data list(byte) (active memidx offset-expr))
+        // (data list(byte) (active offset-expr))
+        // Active segments are loaded by the wasm runtime into linear memory at the specified offset.
+        Active = 0,
+        // (data list(byte) passive)
+        // Passive segments are not loaded into linear memory by the wasm runtime, but can be loaded by the program at runtime using the `memory.init` instruction.
+        Passive = 1,
+        // (data list(byte) (active memidx offset-expr))
+        // ActiveMemorySpecified sections are loaded by the wasm runtime into linear memory at the specified offset, but also specify a memory index to load into.
+        // We do not create or read any segments of this type.
+        // ActiveMemorySpecified = 2
     }
 
     /// <summary>
@@ -23,32 +30,49 @@ namespace ILCompiler.ObjectWriter
     internal interface IWasmDataSegment : IWasmEmittable
     {
         /// <summary>
-        /// The size of the header of the segment.
+        /// The size of the header of the segment. Alignment of the segments expects this to be constant for a given
+        /// segment, so it should not depend on the content size.
         /// </summary>
         int HeaderSize { get; }
 
         /// <summary>
-        /// The size of the content of the segment, excluding any padding.
+        /// The size of the content of the segment.
         /// </summary>
-        int RawContentSize { get; }
+        int ContentSize { get; }
 
         /// <summary>
         /// The required alignment of the segment content in the WASM module.
         /// </summary>
-        int Alignment { get; }
+        int FileAlignment { get; }
 
-        WasmDataSegmentType SegmentType { get; }
+        WasmDataSegmentType SegmentType => WasmDataSegmentType.Passive;
 
         /// <summary>
-        /// For active segments, sets the offset of the segment in linear memory. For passive segments, this is a no-op.
+        /// Sets the number of padding bytes to emit after the segment content. This is used to ensure that the next
+        /// segment is aligned properly.
         /// </summary>
-        void SetMemoryOffset(int offset);
+        void SetTrailingPadding(int trailingBytesCount);
 
         /// <summary>
         /// Gets the offset of the segment in linear memory when loaded.
         /// For passive segments, returns <paramref name="offsetInSegment"/>
         /// </summary>
         int GetMemoryAddressOfOffset(int offsetInSegment);
+    }
+
+    internal interface IWasmActiveDataSegment : IWasmDataSegment
+    {
+        WasmDataSegmentType IWasmDataSegment.SegmentType => WasmDataSegmentType.Active;
+
+        /// <summary>
+        /// The required alignment of the segment content in linear memory when loaded.
+        /// </summary>
+        int MemoryAlignment { get; }
+
+        /// <summary>
+        /// For active segments, sets the offset of the segment in linear memory. For passive segments, this is a no-op.
+        /// </summary>
+        void SetMemoryOffset(int offset);
     }
 
     internal static class WasmDataSegmentEncoding
@@ -76,15 +100,16 @@ namespace ILCompiler.ObjectWriter
             WasmInstructionGroup initExpr,
             int contentSize)
         {
-            Debug.Assert(type is not WasmDataSegmentType.ActiveMemorySpecified,
-                "ActiveMemorySpecified isn't implemented yet and probably shouldn't be needed here.");
             int length = DwarfHelper.WriteULEB128(headerBuffer, (ulong)type);
+            Debug.Assert(length == 1);
             if (type == WasmDataSegmentType.Active)
             {
                 length += initExpr.Encode(headerBuffer.Slice(length));
             }
 
             Debug.Assert(headerBuffer.Slice(length).Length == Relocation.WASM_PADDED_RELOC_SIZE_32);
+            // File alignment of data segments requires that the header doesn't change size based on the content size,
+            // so we use a padded ULEB128 here.
             DwarfHelper.WritePaddedULEB128(headerBuffer.Slice(length), (ulong)contentSize);
             return headerBuffer.Length;
         }
