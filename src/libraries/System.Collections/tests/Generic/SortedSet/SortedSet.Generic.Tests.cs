@@ -417,7 +417,7 @@ namespace System.Collections.Tests
             Assert.Equal(default(T), actualValue);
         }
 
-        #endregion
+#endregion
 
         #region SetEquals
 
