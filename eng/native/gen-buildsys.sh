@@ -64,7 +64,7 @@ cmake_extra_defines=
 if [[ "$CROSSCOMPILE" == "1" ]]; then
     platform="$(uname -s | tr '[:upper:]' '[:lower:]')"
     # OSX doesn't use rootfs; HarmonyOS uses its NDK toolchain
-    if ! [[ -n "$ROOTFS_DIR" || "$platform" == "darwin" || "$target_os" == "linux-ohos" ]]; then
+    if ! [[ -n "$ROOTFS_DIR" || "$platform" == "darwin" || "$target_os" == "ohos" ]]; then
         echo "ROOTFS_DIR not set for crosscompile"
         exit 1
     fi
@@ -76,7 +76,7 @@ if [[ "$CROSSCOMPILE" == "1" ]]; then
 
     if [[ "$platform" == "darwin" ]]; then
         cmake_extra_defines="$cmake_extra_defines -DCMAKE_SYSTEM_NAME=Darwin"
-    elif [[ "$target_os" == "linux-ohos" ]]; then
+    elif [[ "$target_os" == "ohos" ]]; then
         # HarmonyOS NDK toolchain is injected by build-commons.sh; do not override it.
         true
     else

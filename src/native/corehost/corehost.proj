@@ -62,7 +62,7 @@
 
       <_CoreHostUnixTargetOS>$(TargetOS)</_CoreHostUnixTargetOS>
       <_CoreHostUnixTargetOS Condition="'$(TargetsLinuxBionic)' == 'true'">linux-bionic</_CoreHostUnixTargetOS>
-      <_CoreHostUnixTargetOS Condition="'$(TargetsOpenHarmony)' == 'true'">linux-ohos</_CoreHostUnixTargetOS>
+      <_CoreHostUnixTargetOS Condition="'$(TargetsOpenHarmony)' == 'true'">ohos</_CoreHostUnixTargetOS>
       <BuildArgs>$(Configuration) $(TargetArchitecture) -commithash "$([MSBuild]::ValueOrDefault('$(SourceRevisionId)', 'N/A'))" -os $(_CoreHostUnixTargetOS)</BuildArgs>
       <BuildArgs>$(BuildArgs) -cmakeargs "-DVERSION_FILE_PATH=$(NativeVersionFile)"</BuildArgs>
     </PropertyGroup>
