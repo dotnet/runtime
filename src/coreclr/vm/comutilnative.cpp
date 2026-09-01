@@ -175,7 +175,6 @@ static void GetExceptionHelp(OBJECTREF objException, BSTR *pbstrHelpFile, DWORD 
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(IsException(objException->GetMethodTable()));
         PRECONDITION(CheckPointer(pbstrHelpFile));
         PRECONDITION(CheckPointer(pdwHelpContext));

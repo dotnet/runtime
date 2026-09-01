@@ -77,7 +77,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             int pointerSize = type.Context.Target.PointerSize;
             int size = defType.InstanceFieldSize.AsInt;
-            int alignment = Internal.JitInterface.CorInfoImpl.GetClassAlignmentRequirementStatic(defType);
+            int alignment = CompilerTypeSystemContext.GetClassAlignmentRequirementStatic(defType);
             ReadyToRunTypeLayoutFlags flags = ReadyToRunTypeLayoutFlags.READYTORUN_LAYOUT_Alignment | ReadyToRunTypeLayoutFlags.READYTORUN_LAYOUT_GCLayout;
             if (alignment == pointerSize)
             {

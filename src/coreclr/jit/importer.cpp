@@ -3838,11 +3838,12 @@ void Compiler::impImportNewObjArray(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORI
         lvaSetStruct(lvaNewObjArrayArgs, typGetBlkLayout(dimensionsSize), false);
     }
 
-    // Increase size of lvaNewObjArrayArgs to be the largest size needed to hold 'numArgs' integers
-    // for our call to CORINFO_HELP_NEW_MDARR.
+    // Use a new temp if the current one is too small. Growing the existing temp would make earlier
+    // full-width stores partial definitions after they have already been created.
     if (dimensionsSize > lvaTable[lvaNewObjArrayArgs].lvExactSize())
     {
-        lvaTable[lvaNewObjArrayArgs].GrowBlockLayout(typGetBlkLayout(dimensionsSize));
+        lvaNewObjArrayArgs = lvaGrabTemp(false DEBUGARG("NewObjArrayArgs"));
+        lvaSetStruct(lvaNewObjArrayArgs, typGetBlkLayout(dimensionsSize), false);
     }
 
     // The side-effects may include allocation of more multi-dimensional arrays. Spill all side-effects
@@ -4449,6 +4450,10 @@ void Compiler::impAnnotateFieldIndir(GenTreeIndir* indir)
         if (addr->IsInstance() && addr->GetFldObj()->OperIs(GT_LCL_ADDR))
         {
             indir->gtFlags &= ~GTF_GLOB_REF;
+            if (indir->OperIsStore())
+            {
+                indir->gtFlags |= indir->Data()->gtFlags & GTF_GLOB_REF;
+            }
         }
         else
         {
@@ -7775,6 +7780,10 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 type = genActualType(op1->TypeGet());
                 op1  = gtNewOperNode(oper, type, op1, op2);
+                if (op1->OperRequiresCallFlag(this))
+                {
+                    op1->gtFlags |= GTF_CALL;
+                }
 
                 // Fold result, if possible.
                 op1 = gtFoldExpr(op1);
@@ -10364,9 +10373,13 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         }
 
                         op1 = gtNewOperNode(GT_LCLHEAP, TYP_I_IMPL, op2);
-                        // We do not model stack overflow from localloc as an exception side effect.
+                        // We do not model stack overflow from localloc as an exception side effect,
+                        // but the allocation must not be reordered with, or made to execute under a
+                        // different condition than, the code around it: the dominating check is
+                        // typically what bounds its size. Mark it as a call and global reference,
+                        // much as is done for GT_KEEPALIVE.
                         // Obviously, we don't want locallocs to be CSE'd.
-                        op1->gtFlags |= GTF_DONT_CSE;
+                        op1->gtFlags |= GTF_DONT_CSE | GTF_CALL | GTF_GLOB_REF;
 
                         // Request stack security for this method.
                         setNeedsGSSecurityCookie();
@@ -10510,17 +10523,38 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                     gtNewIconNode(OFFSETOF__CORINFO_TypedReference__type, TYP_I_IMPL));
                 op1 = gtNewIndir(TYP_BYREF, op1, indirFlags);
 
+                unsigned handleTemp = lvaGrabTemp(true DEBUGARG("spill result of REFANYTYPE for null check"));
+                impStoreToTemp(handleTemp, op1, CHECK_SPILL_ALL);
+
                 // Convert native TypeHandle to RuntimeTypeHandle.
-                op1 = gtNewHelperCallNode(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL, TYP_STRUCT, op1);
 
                 CORINFO_CLASS_HANDLE classHandle = impGetTypeHandleClass();
 
+                GenTree* helperCall = gtNewHelperCallNode(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE, TYP_STRUCT,
+                                                          gtNewLclVarNode(handleTemp, TYP_BYREF));
                 // The handle struct is returned in register
-                op1->AsCall()->gtReturnType = GetRuntimeHandleUnderlyingType();
-                op1->AsCall()->gtRetClsHnd  = classHandle;
+                helperCall->AsCall()->gtReturnType = GetRuntimeHandleUnderlyingType();
+                helperCall->AsCall()->gtRetClsHnd  = classHandle;
 #if FEATURE_MULTIREG_RET
-                op1->AsCall()->InitializeStructReturnType(this, classHandle, op1->AsCall()->GetUnmanagedCallConv());
+                helperCall->AsCall()->InitializeStructReturnType(this, classHandle,
+                                                                 helperCall->AsCall()->GetUnmanagedCallConv());
 #endif
+
+                unsigned resultTmp = lvaGrabTemp(true DEBUGARG("result of REFANYTYPE"));
+                lvaSetStruct(resultTmp, classHandle, false);
+
+                GenTree* storeResult  = gtNewStoreLclVarNode(resultTmp, helperCall);
+                GenTree* storeDefault = gtNewStoreLclVarNode(resultTmp, gtNewIconNode(0));
+
+                // wrap helper call in inline null check, essentially
+                //          (handle == 0) ? default(RuntimeTypeHandle) :
+                //          CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE(handle)
+                GenTree* cond =
+                    gtNewOperNode(GT_NE, TYP_INT, gtNewLclVarNode(handleTemp, TYP_BYREF), gtNewZeroConNode(TYP_BYREF));
+                GenTree* qmark = gtNewQmarkNode(TYP_VOID, cond, gtNewColonNode(TYP_VOID, storeResult, storeDefault));
+
+                impAppendTree(qmark, CHECK_SPILL_ALL, impCurStmtDI);
+                op1 = gtNewLclVarNode(resultTmp, TYP_STRUCT);
 
                 tiRetVal = typeInfo(TYP_STRUCT);
                 impPushOnStack(op1, tiRetVal);
@@ -11951,6 +11985,7 @@ bool Compiler::impWrapTopOfStackInAwait()
     }
 
     awaitCall->gtArgs.PushFront(this, taskArg);
+    awaitCall->gtFlags |= taskArg.Node->gtFlags & GTF_ALL_EFFECT;
 
     NewCallArg asyncContArg = NewCallArg::Primitive(gtNewNull()).WellKnown(WellKnownArg::AsyncContinuation);
 
@@ -11965,6 +12000,7 @@ bool Compiler::impWrapTopOfStackInAwait()
         }
 
         instArg = NewCallArg::Primitive(instArgTree).WellKnown(WellKnownArg::InstParam);
+        awaitCall->gtFlags |= instArg.Node->gtFlags & GTF_ALL_EFFECT;
     }
 
     if (Target::g_tgtArgOrder == Target::ARG_ORDER_R2L)
