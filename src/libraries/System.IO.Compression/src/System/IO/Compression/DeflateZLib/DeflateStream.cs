@@ -981,7 +981,11 @@ namespace System.IO.Compression
 
                     // Now, use the source stream's CopyToAsync to push directly to our inflater via this helper stream
                     await _deflateStream._stream.CopyToAsync(this, _arrayPoolBuffer.Length, _cancellationToken).ConfigureAwait(false);
-                    if (s_useStrictValidation && !_deflateStream._inflater.Finished() && !_deflateStream._inflater.HasUnconfirmedGZipProbe)
+                    // A lone trailing GZip ID1 (0x1F) probe only suppresses the truncated-data error when the
+                    // base stream is seekable, since only then can the byte be rewound below. On non-seekable
+                    // streams strict validation still throws, preserving the existing behavior.
+                    if (s_useStrictValidation && !_deflateStream._inflater.Finished() &&
+                        !(_deflateStream._inflater.HasUnconfirmedGZipProbe && _deflateStream._stream.CanSeek))
                     {
                         ThrowTruncatedInvalidData();
                     }
@@ -1030,7 +1034,11 @@ namespace System.IO.Compression
 
                     // Now, use the source stream's CopyToAsync to push directly to our inflater via this helper stream
                     _deflateStream._stream.CopyTo(this, _arrayPoolBuffer.Length);
-                    if (s_useStrictValidation && !_deflateStream._inflater.Finished() && !_deflateStream._inflater.HasUnconfirmedGZipProbe)
+                    // A lone trailing GZip ID1 (0x1F) probe only suppresses the truncated-data error when the
+                    // base stream is seekable, since only then can the byte be rewound below. On non-seekable
+                    // streams strict validation still throws, preserving the existing behavior.
+                    if (s_useStrictValidation && !_deflateStream._inflater.Finished() &&
+                        !(_deflateStream._inflater.HasUnconfirmedGZipProbe && _deflateStream._stream.CanSeek))
                     {
                         ThrowTruncatedInvalidData();
                     }
