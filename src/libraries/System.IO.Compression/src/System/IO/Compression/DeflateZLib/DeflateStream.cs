@@ -964,6 +964,16 @@ namespace System.IO.Compression
                 try
                 {
                     Debug.Assert(_deflateStream._inflater != null);
+
+                    // If a lone trailing GZip ID1 (0x1F) probe was already resolved as end-of-stream and the
+                    // base stream rewound, the inflater is terminally finished. A subsequent CopyToAsync would
+                    // otherwise re-read the rewound byte from the base stream and spin (the inflater returns 0
+                    // without consuming input while NeedsInput stays false), so return without re-reading.
+                    if (_deflateStream._inflater.EndOfStreamReached)
+                    {
+                        return;
+                    }
+
                     // Flush any existing data in the inflater to the destination stream.
                     while (!_deflateStream._inflater.Finished())
                     {
@@ -1017,6 +1027,16 @@ namespace System.IO.Compression
                 try
                 {
                     Debug.Assert(_deflateStream._inflater != null);
+
+                    // If a lone trailing GZip ID1 (0x1F) probe was already resolved as end-of-stream and the
+                    // base stream rewound, the inflater is terminally finished. A subsequent CopyTo would
+                    // otherwise re-read the rewound byte from the base stream and spin (the inflater returns 0
+                    // without consuming input while NeedsInput stays false), so return without re-reading.
+                    if (_deflateStream._inflater.EndOfStreamReached)
+                    {
+                        return;
+                    }
+
                     // Flush any existing data in the inflater to the destination stream.
                     while (!_deflateStream._inflater.Finished())
                     {

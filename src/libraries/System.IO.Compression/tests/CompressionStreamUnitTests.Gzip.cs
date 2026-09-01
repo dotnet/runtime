@@ -211,6 +211,85 @@ namespace System.IO.Compression
             Assert.Equal(-1, stream.ReadByte());
         }
 
+        [Theory]
+        [InlineData(TestScenario.Read)]
+        [InlineData(TestScenario.ReadAsync)]
+        [InlineData(TestScenario.Copy)]
+        [InlineData(TestScenario.CopyAsync)]
+        public async Task TrailingLoneGZipId1_SecondConsume_IsNoOpAndDoesNotHang(TestScenario scenario)
+        {
+            // After a lone trailing GZip ID1 (0x1F) is rewound on a seekable stream, the inflater is
+            // terminally finished. A second decompression pass on the same GZipStream must be a no-op: it must
+            // not re-read and re-feed the rewound byte from the base stream. The copy paths previously spun
+            // forever in that case (the inflater returns 0 without consuming input while NeedsInput stays false).
+            byte[] payload = "hello"u8.ToArray();
+
+            byte[] gzip;
+            using (var ms = new MemoryStream())
+            {
+                using (var gz = new GZipStream(ms, CompressionLevel.SmallestSize, leaveOpen: true))
+                {
+                    gz.Write(payload);
+                }
+                gzip = ms.ToArray();
+            }
+
+            byte[] combined = new byte[gzip.Length + 1];
+            gzip.CopyTo(combined, 0);
+            combined[^1] = 0x1F;
+
+            static async Task<byte[]> DecompressOnce(GZipStream gzipStream, TestScenario scenario)
+            {
+                using var output = new MemoryStream();
+                switch (scenario)
+                {
+                    case TestScenario.Copy:
+                        gzipStream.CopyTo(output);
+                        break;
+                    case TestScenario.CopyAsync:
+                        await gzipStream.CopyToAsync(output);
+                        break;
+                    case TestScenario.Read:
+                    {
+                        byte[] buffer = new byte[64];
+                        int n;
+                        while ((n = gzipStream.Read(buffer, 0, buffer.Length)) > 0)
+                        {
+                            output.Write(buffer, 0, n);
+                        }
+                        break;
+                    }
+                    case TestScenario.ReadAsync:
+                    {
+                        byte[] buffer = new byte[64];
+                        int n;
+                        while ((n = await gzipStream.ReadAsync(buffer)) > 0)
+                        {
+                            output.Write(buffer, 0, n);
+                        }
+                        break;
+                    }
+                }
+                return output.ToArray();
+            }
+
+            using var stream = new MemoryStream(combined);
+            using var decompressor = new GZipStream(stream, CompressionMode.Decompress, leaveOpen: true);
+
+            byte[] first = await DecompressOnce(decompressor, scenario);
+            Assert.Equal(payload, first);
+            Assert.Equal(gzip.Length, stream.Position);
+
+            // Second pass must produce no data and must not hang re-reading the rewound 0x1F.
+            byte[] second = await DecompressOnce(decompressor, scenario);
+            Assert.Empty(second);
+
+            // The trailing byte is still available to the caller after both passes.
+            Assert.Equal(gzip.Length, stream.Position);
+            Assert.Equal(0x1F, stream.ReadByte());
+            Assert.Equal(-1, stream.ReadByte());
+        }
+
         [InlineData(TestScenario.Read)]
         [InlineData(TestScenario.ReadAsync)]
         [InlineData(TestScenario.Copy)]
