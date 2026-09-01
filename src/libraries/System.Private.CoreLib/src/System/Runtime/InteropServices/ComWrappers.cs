@@ -1285,34 +1285,43 @@ namespace System.Runtime.InteropServices
             // here for the same COM instance does this with the same pair, so whichever arrives first wins and
             // the rest are no-ops. This is deliberately not done while holding a cache lock: it takes a lock
             // covering the whole table, and holding a bucket lock across that would put every bucket behind it.
-            NativeObjectWrapper registeredWrapper = s_nativeObjectWrapperTable.GetOrAdd(actualProxy, actualWrapper);
-
-            if (registeredWrapper != actualWrapper)
+            try
             {
-                // The object 'CreateObject' handed back is already the RCW for another COM instance, which is
-                // not something ComWrappers can represent. Releasing the wrapper also drops the entry reserved
-                // for it above, if this thread is the one that reserved it.
-                Debug.Assert(registeredWrapper.ExternalComObject != actualWrapper.ExternalComObject);
+                NativeObjectWrapper registeredWrapper = s_nativeObjectWrapperTable.GetOrAdd(actualProxy, actualWrapper);
 
-                actualWrapper.Release();
+                if (registeredWrapper != actualWrapper)
+                {
+                    // The object 'CreateObject' handed back is already the RCW for another COM instance, which is
+                    // not something ComWrappers can represent. Releasing the wrapper also drops the entry reserved
+                    // for it above, if this thread is the one that reserved it.
+                    Debug.Assert(registeredWrapper.ExternalComObject != actualWrapper.ExternalComObject);
 
-                throw new NotSupportedException();
+                    actualWrapper.Release();
+
+                    throw new NotSupportedException();
+                }
+
+                // At this point, actualProxy is the RCW object for the identity
+                // and actualWrapper is the NativeObjectWrapper that is in the RCW cache (if not unique) that associates the identity with actualProxy.
+                //
+                // Always register our wrapper to the reference tracker handle cache here.
+                // We may not be the thread that registered the handle, but we need to ensure that the wrapper
+                // is registered before we return to user code. Otherwise the wrapper won't be walked by the
+                // TrackerObjectManager and we could end up missing a section of the object graph.
+                // This cache deduplicates, so it is okay that the wrapper will be registered multiple times.
+                AddWrapperToReferenceTrackerHandleCache(actualWrapper);
             }
-
-            // At this point, actualProxy is the RCW object for the identity
-            // and actualWrapper is the NativeObjectWrapper that is in the RCW cache (if not unique) that associates the identity with actualProxy.
-            //
-            // Always register our wrapper to the reference tracker handle cache here.
-            // We may not be the thread that registered the handle, but we need to ensure that the wrapper
-            // is registered before we return to user code. Otherwise the wrapper won't be walked by the
-            // TrackerObjectManager and we could end up missing a section of the object graph.
-            // This cache deduplicates, so it is okay that the wrapper will be registered multiple times.
-            AddWrapperToReferenceTrackerHandleCache(actualWrapper);
-
-            if (reserved)
+            finally
             {
-                // The RCW resolves back to this wrapper now, so the entry no longer has to carry it.
-                _rcwCache.CommitProxyForComInstance(identity, nativeObjectWrapper);
+                if (reserved)
+                {
+                    // The reservation is dropped whether the registration went through or not, because leaving
+                    // one behind would keep its wrapper alive, and a wrapper that outlives its RCW can never be
+                    // finalized, which is what removes the entry. Dropping it is right either way: if some other
+                    // thread picked the wrapper up and registered it, the entry is now usable, and if nobody did,
+                    // nothing is left referring to the wrapper, so it is finalized and takes the entry with it.
+                    _rcwCache.CommitProxyForComInstance(identity, nativeObjectWrapper);
+                }
             }
 
             return actualProxy;
@@ -1526,12 +1535,17 @@ namespace System.Runtime.InteropServices
 
                             if (existingWrapper is null)
                             {
-                                bool found = s_nativeObjectWrapperTable.TryGetValue(existingProxy, out existingWrapper);
-
-                                Debug.Assert(found);
+                                _ = s_nativeObjectWrapperTable.TryGetValue(existingProxy, out existingWrapper);
                             }
 
-                            return (existingWrapper!, existingProxy, false);
+                            if (existingWrapper is not null)
+                            {
+                                return (existingWrapper, existingProxy, false);
+                            }
+
+                            // The entry names an RCW that never made it into the table, which is what a thread
+                            // that failed part way through publishing leaves behind. It can't be resolved back to
+                            // a wrapper, so it is of no use to anyone and ours replaces it below.
                         }
 
                         // There was either no entry, or one whose RCW has been collected, so ours takes its place.
@@ -1556,10 +1570,11 @@ namespace System.Runtime.InteropServices
                     // Completing a reservation only overwrites one reference field of one entry. It never adds or
                     // removes anything, so the dictionary's layout doesn't change and this doesn't have to exclude
                     // the lookups running alongside it, only the writers that could move the entry out from under
-                    // it. A lookup racing this either reads the wrapper, which is the right one anyway, or reads
-                    // 'null' and resolves the same wrapper through the table, which by now certainly has it. Taking
-                    // the read lock rather than the write lock is what keeps concurrent creations from serializing
-                    // here after they have just been let through the write lock above.
+                    // it. The lookup that can overlap this is 'FindProxyForComInstance', which either still sees
+                    // the reservation and reports a miss, sending its caller down a path that takes the write lock
+                    // and resolves the entry properly, or sees it gone and hands out an RCW that is by then
+                    // registered. Taking the read lock rather than the write lock is what keeps concurrent
+                    // creations from serializing here after they have just been let through the write lock above.
                     _lock.EnterReadLock();
                     try
                     {
