@@ -4211,21 +4211,12 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     gtIsTypeHandleToRuntimeTypeHandleHelper(op1->AsCall(), &typeHandleHelper))
                 {
                     op1 = impPopStack().val;
-                    // Replace helper with a more specialized helper that returns RuntimeType
-                    if (typeHandleHelper == CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE)
-                    {
-                        typeHandleHelper = CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE;
-                    }
-                    else
-                    {
-                        assert(typeHandleHelper == CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL);
-                        typeHandleHelper = CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE_MAYBENULL;
-                    }
                     assert(op1->AsCall()->gtArgs.CountArgs() == 1);
-                    op1         = gtNewHelperCallNode(typeHandleHelper, TYP_REF,
-                                                      op1->AsCall()->gtArgs.GetArgByIndex(0)->GetEarlyNode());
-                    op1->gtType = TYP_REF;
-                    retNode     = op1;
+
+                    // Replace helper with a more specialized helper that returns RuntimeType
+                    assert(typeHandleHelper == CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE);
+                    retNode = gtNewHelperCallNode(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE, TYP_REF,
+                                                  op1->AsCall()->gtArgs.GetArgByIndex(0)->GetEarlyNode());
                 }
                 else if (GetRuntimeHandleUnderlyingType() == TYP_I_IMPL)
                 {

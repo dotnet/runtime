@@ -31,7 +31,7 @@ namespace System
         /// <param name="value">An IntPtr handle to a RuntimeType to create a <see cref="RuntimeTypeHandle"/> object from.</param>
         /// <returns>A new <see cref="RuntimeTypeHandle"/> object that corresponds to the value parameter.</returns>
         public static RuntimeTypeHandle FromIntPtr(IntPtr value) =>
-            new RuntimeTypeHandle(GetRuntimeTypeFromHandleMaybeNull(value));
+            new RuntimeTypeHandle(value != IntPtr.Zero ? GetRuntimeTypeFromHandle(value) : null);
 
         [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetRuntimeTypeFromHandleSlow")]
@@ -54,17 +54,6 @@ namespace System
             return (h.IsTypeDesc
                 ? h.AsTypeDesc()->ExposedClassObject
                 : h.AsMethodTable()->AuxiliaryData->ExposedClassObject) ?? GetRuntimeTypeFromHandleSlow(handle);
-        }
-
-        // implementation of CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE_MAYBENULL, CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL
-        internal static RuntimeType? GetRuntimeTypeFromHandleMaybeNull(IntPtr handle)
-        {
-            if (handle == IntPtr.Zero)
-            {
-                return null;
-            }
-
-            return GetRuntimeTypeFromHandle(handle);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
