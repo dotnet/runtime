@@ -6827,6 +6827,8 @@ PhaseStatus Compiler::optAssertionPropMain()
         if (!m_dfsTree->Contains(block))
         {
             BitVecOps::ClearD(apTraits, block->bbAssertionIn);
+            BitVecOps::ClearD(apTraits, block->bbAssertionOut);
+            BitVecOps::ClearD(apTraits, bbJtrueAssertionOut[block->bbNum]);
         }
     }
 
