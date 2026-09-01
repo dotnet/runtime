@@ -3090,7 +3090,13 @@ DWORD Thread::DoAppropriateAptStateWait(int numWaiters, HANDLE* pHandles, BOOL b
     }
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
-    return PAL_WaitForMultipleObjectsEx(numWaiters, pHandles, bWaitAll, timeout, alertable);
+#ifdef TARGET_WINDOWS
+    return WaitForMultipleObjectsEx(numWaiters, pHandles, bWaitAll, timeout, alertable);
+#else
+    _ASSERTE(numWaiters == 1);
+    _ASSERTE(!bWaitAll);
+    return CLREventBase::Wait(pHandles[0], timeout);
+#endif
 }
 
 #ifdef TARGET_WINDOWS

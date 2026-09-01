@@ -127,7 +127,7 @@ HANDLE CreateEventOrThrow(
     CONTRACTL_END;
 
     HANDLE h = NULL;
-    h = PAL_CreateEvent(lpEventAttributes, eType == kManualResetEvent, bInitialState);
+    h = CLREventBase::CreateEvent(lpEventAttributes, eType == kManualResetEvent, bInitialState);
 
     if (h == NULL)
         ThrowOutOfMemory();
@@ -695,8 +695,7 @@ void DebuggerRCThread::ThreadProc(void)
         debugLockHolder.Release();
 
         // Wait for the temporary helper thread to finish up.
-        HANDLE waitHandles[] = { m_helperThreadCanGoEvent };
-        DWORD dwWaitResult = PAL_WaitForMultipleObjectsEx(1, waitHandles, false, INFINITE, false);
+        DWORD dwWaitResult = CLREventBase::Wait(m_helperThreadCanGoEvent, INFINITE);
         (void)dwWaitResult; //prevent "unused variable" error from GCC
 
         LOG((LF_CORDB, LL_INFO1000, "DRCT::TP: done waiting for temp help to finish up.\n"));
@@ -801,7 +800,7 @@ bool DebuggerRCThread::HandleRSEA()
     {
         LOG((LF_CORDB, LL_INFO1000, "DRCT::ML: no reply required, letting Right Side go.\n"));
 
-        BOOL succ = PAL_SetEvent(m_pDCB->m_rightSideEventRead);
+        BOOL succ = CLREventBase::Set(m_pDCB->m_rightSideEventRead);
 
         if (!succ)
             CORDBDebuggerSetUnrecoverableWin32Error(m_debugger, 0, true);
@@ -1808,7 +1807,7 @@ HRESULT DebuggerRCThread::SendIPCReply()
 #endif
 
 #if !defined(FEATURE_DBGIPC_TRANSPORT_VM)
-    BOOL succ = PAL_SetEvent(m_pDCB->m_rightSideEventRead);
+    BOOL succ = CLREventBase::Set(m_pDCB->m_rightSideEventRead);
     if (!succ)
     {
         hr = CORDBDebuggerSetUnrecoverableWin32Error(m_debugger, 0, false);

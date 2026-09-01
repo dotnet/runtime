@@ -99,7 +99,6 @@ include_directories(.)
 include_directories(${GC_DIR})
 include_directories(${GC_DIR}/env)
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/eventpipe/inc)
-include_directories(${CMAKE_BINARY_DIR}/shared_minipal)
 include_directories(${RUNTIME_DIR})
 
 if (WIN32)

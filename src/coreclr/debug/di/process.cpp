@@ -271,7 +271,7 @@ inline DWORD SafeWaitForSingleObject(CordbProcess * p, HANDLE h, DWORD dwTimeout
     // Can't hold process lock while blocking
     _ASSERTE(!p->ThreadHoldsProcessLock());
 
-    return PAL_WaitForMultipleObjectsEx(1, &h, false, dwTimeout, false);
+    return CLREventBase::Wait(h, dwTimeout);
 }
 
 #define CORDB_WAIT_TIMEOUT 360000 // milliseconds
@@ -1279,7 +1279,7 @@ void CordbProcess::CloseIPCHandles()
 
     if (m_leftSideEventRead != NULL)
     {
-        PAL_CloseEvent(m_leftSideEventRead);
+        CLREventBase::CloseEvent(m_leftSideEventRead);
         m_leftSideEventRead = NULL;
     }
 
@@ -1292,21 +1292,21 @@ void CordbProcess::CloseIPCHandles()
 #if defined(FEATURE_INTEROP_DEBUGGING)
     if (m_leftSideUnmanagedWaitEvent != NULL)
     {
-        PAL_CloseEvent(m_leftSideUnmanagedWaitEvent);
+        CLREventBase::CloseEvent(m_leftSideUnmanagedWaitEvent);
         m_leftSideUnmanagedWaitEvent = NULL;
     }
 #endif // FEATURE_INTEROP_DEBUGGING
 
     if (m_stopWaitEvent != NULL)
     {
-        PAL_CloseEvent(m_stopWaitEvent);
+        CLREventBase::CloseEvent(m_stopWaitEvent);
         m_stopWaitEvent = NULL;
     }
 
 #ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
     if (m_detachSetThreadContextNeededEvent != NULL)
     {
-        PAL_CloseEvent(m_detachSetThreadContextNeededEvent);
+        CLREventBase::CloseEvent(m_detachSetThreadContextNeededEvent);
         m_detachSetThreadContextNeededEvent = NULL;
     }
 #endif
@@ -1629,20 +1629,20 @@ HRESULT CordbProcess::Init()
             ThrowOutOfMemory();
         }
 
-        m_leftSideEventRead = PAL_CreateEvent(NULL, false, false);
+        m_leftSideEventRead = CLREventBase::CreateEvent(NULL, false, false);
         if (m_leftSideEventRead == NULL)
         {
             ThrowOutOfMemory();
         }
 
-        m_stopWaitEvent = PAL_CreateEvent(NULL, true, false);
+        m_stopWaitEvent = CLREventBase::CreateEvent(NULL, true, false);
         if (m_stopWaitEvent == NULL)
         {
             ThrowOutOfMemory();
         }
 
 #ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
-        m_detachSetThreadContextNeededEvent = PAL_CreateEvent(NULL, false, false);
+        m_detachSetThreadContextNeededEvent = CLREventBase::CreateEvent(NULL, false, false);
         if (m_detachSetThreadContextNeededEvent == NULL)
         {
             ThrowOutOfMemory();
@@ -1777,9 +1777,9 @@ void CordbProcess::Terminating(BOOL fDetach)
     // Set events that may be blocking stuff.
     // But don't set RSER unless we actually read the event. We don't block on RSER
     // since that wait also checks the leftside's process handle.
-    PAL_SetEvent(m_leftSideEventRead);
+    CLREventBase::Set(m_leftSideEventRead);
     m_leftSideEventAvailable->Set();
-    PAL_SetEvent(m_stopWaitEvent);
+    CLREventBase::Set(m_stopWaitEvent);
 
     if (m_pShim != NULL)
         m_pShim->SetTerminatingEvent();
@@ -3761,7 +3761,7 @@ HRESULT CordbProcess::ContinueInternal(BOOL fIsOutOfBand)
     }
 
     // We're no longer stopped, so reset the m_stopWaitEvent.
-    PAL_ResetEvent(m_stopWaitEvent);
+    CLREventBase::Reset(m_stopWaitEvent);
 
     // If we're continuing from an uninitialized stop, then we don't need to do much at all. No event need be sent to
     // the Left Side (duh, it isn't even there yet.) We just need to get the RC Event Thread to start listening to the
@@ -7276,7 +7276,7 @@ void CordbProcess::ResumeHijackedThreads()
     // we let the hijacks run free.
     if (this->m_leftSideUnmanagedWaitEvent != NULL)
     {
-        PAL_SetEvent(this->m_leftSideUnmanagedWaitEvent);
+        CLREventBase::Set(this->m_leftSideUnmanagedWaitEvent);
     }
     else
     {
@@ -10101,7 +10101,7 @@ HRESULT CordbRCEventThread::WaitForIPCEventFromProcess(CordbProcess * pProcess,
         }
         EX_CATCH_HRESULT(hr)
 
-        PAL_SetEvent(pProcess->m_leftSideEventRead);
+        CLREventBase::Set(pProcess->m_leftSideEventRead);
 
         return hr;
     }
@@ -10252,7 +10252,7 @@ CordbWin32EventThread::~CordbWin32EventThread()
         delete m_threadExitedEvent;
 
     if (m_actionTakenEvent != NULL)
-        PAL_CloseEvent(m_actionTakenEvent);
+        CLREventBase::CloseEvent(m_actionTakenEvent);
 
     if (m_pNativePipeline != NULL)
     {
@@ -10292,7 +10292,7 @@ HRESULT CordbWin32EventThread::Init()
         return E_OUTOFMEMORY;
     }
 
-    m_actionTakenEvent = PAL_CreateEvent(NULL, false, false);
+    m_actionTakenEvent = CLREventBase::CreateEvent(NULL, false, false);
     if (m_actionTakenEvent == NULL)
         return E_OUTOFMEMORY;
 
@@ -10405,8 +10405,7 @@ void CordbProcess::FilterClrNotification(
         // Some other thread called code:CordbRCEventThread::WaitForIPCEventFromProcess, and
         // that will respond here and set the event.
 
-        HANDLE waitHandles[] = { this->m_leftSideEventRead };
-        DWORD dwResult = PAL_WaitForMultipleObjectsEx(1, waitHandles, false, CordbGetWaitTimeout(), false);
+        DWORD dwResult = CLREventBase::Wait(this->m_leftSideEventRead, CordbGetWaitTimeout());
         pLockHolder->Acquire();
         if (dwResult != WAIT_OBJECT_0)
         {
@@ -11464,13 +11463,13 @@ void CordbProcess::HandleSyncCompleteReceived()
     if (this->m_stopRequested)
     {
         this->SetSynchronized(true);
-        PAL_SetEvent(this->m_stopWaitEvent);
+        CLREventBase::Set(this->m_stopWaitEvent);
     }
     else
     {
         // Note: we set the m_stopWaitEvent all the time and leave it high while we're stopped. This
         // must be done after we've checked m_stopRequested.
-        PAL_SetEvent(this->m_stopWaitEvent);
+        CLREventBase::Set(this->m_stopWaitEvent);
 
         // Otherwise, simply mark that the state of the process has changed and let the
         // managed event dispatch logic take over.
@@ -13509,8 +13508,7 @@ HRESULT CordbWin32EventThread::SendDebugActiveProcessEvent(
 
     if (succ)
     {
-        HANDLE waitHandles[] = { m_actionTakenEvent };
-        DWORD ret = PAL_WaitForMultipleObjectsEx(1, waitHandles, false, INFINITE, false);
+        DWORD ret = CLREventBase::Wait(m_actionTakenEvent, INFINITE);
 
         if (ret == WAIT_OBJECT_0)
             hr = m_actionResult;
@@ -13725,7 +13723,7 @@ LExit:
     // Signal the hr to the caller.
     //
     m_actionResult = hr;
-    PAL_SetEvent(m_actionTakenEvent);
+    CLREventBase::Set(m_actionTakenEvent);
 }
 
 
@@ -13749,8 +13747,7 @@ HRESULT CordbWin32EventThread::SendDetachProcessEvent(CordbProcess *pProcess)
 
     if (succ)
     {
-        HANDLE waitHandles[] = { m_actionTakenEvent };
-        DWORD ret = PAL_WaitForMultipleObjectsEx(1, waitHandles, false, INFINITE, false);
+        DWORD ret = CLREventBase::Wait(m_actionTakenEvent, INFINITE);
 
         if (ret == WAIT_OBJECT_0)
             hr = m_actionResult;
@@ -13797,8 +13794,7 @@ HRESULT CordbWin32EventThread::SendUnmanagedContinue(CordbProcess *pProcess,
 
     if (succ)
     {
-        HANDLE waitHandles[] = { m_actionTakenEvent };
-        DWORD ret = PAL_WaitForMultipleObjectsEx(1, waitHandles, false, INFINITE, false);
+        DWORD ret = CLREventBase::Wait(m_actionTakenEvent, INFINITE);
 
         if (ret == WAIT_OBJECT_0)
             hr = m_actionResult;
@@ -13847,7 +13843,7 @@ void CordbWin32EventThread::HandleUnmanagedContinue()
 
     // Signal the hr to the caller.
     m_actionResult = hr;
-    PAL_SetEvent(m_actionTakenEvent);
+    CLREventBase::Set(m_actionTakenEvent);
 }
 
 //
@@ -14146,7 +14142,7 @@ void CordbWin32EventThread::ExitProcess(bool fDetach)
         if( FAILED(hr) )
         {
             m_actionResult = hr;
-            PAL_SetEvent(m_actionTakenEvent);
+            CLREventBase::Set(m_actionTakenEvent);
             return;
         }
     }
@@ -14172,7 +14168,7 @@ void CordbWin32EventThread::ExitProcess(bool fDetach)
         LOG((LF_CORDB, LL_INFO1000,"W32ET::EP: In EP(detach), but EP(exit) already called. Early failure\n"));
 
         m_actionResult = CORDBG_E_PROCESS_TERMINATED;
-        PAL_SetEvent(m_actionTakenEvent);
+        CLREventBase::Set(m_actionTakenEvent);
 
         return;
     }
@@ -14222,7 +14218,7 @@ void CordbWin32EventThread::ExitProcess(bool fDetach)
         LOG((LF_CORDB, LL_INFO1000,"W32ET::EP: Detach: send result back!\n"));
 
         m_actionResult = S_OK;
-        PAL_SetEvent(m_actionTakenEvent);
+        CLREventBase::Set(m_actionTakenEvent);
     }
 
     m_pProcess->Unlock();
@@ -14263,8 +14259,7 @@ HRESULT CordbWin32EventThread::SendCanDetach()
 
     if (succ)
     {
-        HANDLE waitHandles[] = { m_actionTakenEvent };
-        DWORD ret = PAL_WaitForMultipleObjectsEx(1, waitHandles, false, INFINITE, false);
+        DWORD ret = CLREventBase::Wait(m_actionTakenEvent, INFINITE);
 
         if (ret == WAIT_OBJECT_0)
             hr = m_actionResult;
@@ -14291,7 +14286,7 @@ void CordbWin32EventThread::HandleCanDetach()
 
     // Signal the hr to the caller.
     m_actionResult = canDetach ? S_OK : S_FALSE;
-    PAL_SetEvent(m_actionTakenEvent);
+    CLREventBase::Set(m_actionTakenEvent);
 }
 #endif
 
@@ -14690,7 +14685,7 @@ HRESULT CordbProcess::HijackIBEvent(CordbUnmanagedEvent * pUnmanagedEvent)
         return S_OK;
     }
 
-    PAL_ResetEvent(this->m_leftSideUnmanagedWaitEvent);
+    CLREventBase::Reset(this->m_leftSideUnmanagedWaitEvent);
     if (pUnmanagedEvent->m_currentDebugEvent.u.Exception.dwFirstChance)
     {
         HRESULT hr = pUnmanagedEvent->m_owner->SetupFirstChanceHijackForSync();
@@ -14896,6 +14891,6 @@ bool CordbProcess::CanDetach()
 
 void CordbProcess::TryDetach()
 {
-    PAL_SetEvent(m_detachSetThreadContextNeededEvent);
+    CLREventBase::Set(m_detachSetThreadContextNeededEvent);
 }
 #endif // OUT_OF_PROCESS_SETTHREADCONTEXT

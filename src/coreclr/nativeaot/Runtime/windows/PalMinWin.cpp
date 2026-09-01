@@ -259,7 +259,7 @@ uint32_t PalCompatibleWaitAny(UInt32_BOOL alertable, uint32_t timeout, uint32_t 
 {
     if (!allowReentrantWait)
     {
-        return PAL_WaitForMultipleObjectsEx(handleCount, pHandles, false, timeout, alertable);
+        return WaitForMultipleObjectsEx(handleCount, pHandles, false, timeout, alertable);
     }
     else
     {
