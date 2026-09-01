@@ -9141,14 +9141,9 @@ bool Compiler::canKeepNonInlineableGdvCandidate(GenTreeCall* call)
         return false;
     }
 
-    // An explicit tail call has to stay a tail call, so don't perturb its shape.
+    // Don't keep non-inlineable GDV candidates for tail calls.
     //
-    // Implicit ones are fine: fgMorphPotentialTailCall can tail call out of the
-    // BBJ_ALWAYS blocks the expansion produces. That includes recursive ones -
-    // the tail-recursion-to-loop transform requires a non-virtual callee, so
-    // devirtualizing here is what makes it possible in the first place.
-    //
-    if (call->IsTailPrefixedCall())
+    if (call->CanTailCall())
     {
         return false;
     }
