@@ -417,6 +417,20 @@ namespace System.Collections.Tests
             Assert.Equal(default(T), actualValue);
         }
 
-#endregion
+        #endregion
+
+        #region SetEquals
+
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void SortedSet_Generic_SetEquals_SameButAllElementsDuplicated(int setLength)
+        {
+            SortedSet<T> set = (SortedSet<T>)GenericISetFactory(setLength);
+            List<T> list = set.ToList();
+            list.AddRange(set); // Duplicate all elements
+            Assert.True(set.SetEquals(list));
+        }
+
+        #endregion
     }
 }
