@@ -14,6 +14,8 @@ using System.Reflection.Runtime.MethodInfos;
 using System.Reflection.Runtime.MethodInfos.NativeFormat;
 using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.TypeInfos.NativeFormat;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 using Internal.LowLevelLinq;
 using Internal.Metadata.NativeFormat;
@@ -42,21 +44,12 @@ namespace System.Reflection
             _customAttribute = customAttributeHandle.GetCustomAttribute(reader);
         }
 
-        internal RuntimeCustomAttributeData(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
-            Type attributeType, IList<CustomAttributeTypedArgument>? constructorArguments)
-        {
-            _attributeType = attributeType;
-            _constructorArguments = new ReadOnlyCollection<CustomAttributeTypedArgument>(
-                constructorArguments ?? Array.Empty<CustomAttributeTypedArgument>());
-        }
-
         public override Type AttributeType
         {
             get
             {
-                if (_attributeType is not null)
-                    return _attributeType;
+                if (m_ctor is not null)
+                    return m_ctor.DeclaringType!;
 
                 Type? lazyAttributeType = _lazyAttributeType;
                 if (lazyAttributeType is null)
@@ -72,24 +65,10 @@ namespace System.Reflection
 
         public override ConstructorInfo Constructor
         {
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",
-                Justification = "Metadata generation ensures custom attribute constructors are resolvable.")]
             get
             {
-                if (_attributeType is not null)
-                {
-                    int numArguments = _constructorArguments!.Count;
-                    if (numArguments == 0)
-                        return ResolveAttributeConstructor(_attributeType, Array.Empty<Type>());
-
-                    Type[] expectedParameterTypes = new Type[numArguments];
-                    for (int i = 0; i < numArguments; i++)
-                    {
-                        expectedParameterTypes[i] = _constructorArguments[i].ArgumentType;
-                    }
-
-                    return ResolveAttributeConstructor(_attributeType, expectedParameterTypes);
-                }
+                if (m_ctor is not null)
+                    return m_ctor;
 
                 MetadataReader reader = _reader!;
                 if (_customAttribute.Constructor.HandleType != HandleType.QualifiedMethod)
@@ -107,8 +86,8 @@ namespace System.Reflection
         {
             get
             {
-                if (_constructorArguments is not null)
-                    return _constructorArguments;
+                if (m_typedCtorArgs is not null)
+                    return m_typedCtorArgs;
 
                 MetadataReader reader = _reader!;
                 if (_customAttribute.Constructor.HandleType != HandleType.QualifiedMethod)
@@ -140,12 +119,8 @@ namespace System.Reflection
         {
             get
             {
-                if (_attributeType is not null)
-                {
-                    // Note: if we ever need to return non-empty named arguments, we need to ensure the reflection metadata for the
-                    // corresponding fields/properties is kept (we might have to bump the dataflow annotation on _attributeType).
-                    return Array.Empty<CustomAttributeNamedArgument>();
-                }
+                if (m_namedArgs is not null)
+                    return m_namedArgs;
 
                 MetadataReader reader = _reader!;
                 ArrayBuilder<CustomAttributeNamedArgument> customAttributeNamedArguments =
@@ -174,34 +149,6 @@ namespace System.Reflection
         {
             foreach (CustomAttributeHandle customAttributeHandle in customAttributeHandles)
                 yield return new RuntimeCustomAttributeData(reader, customAttributeHandle);
-        }
-
-        private static ConstructorInfo ResolveAttributeConstructor(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
-            Type attributeType, Type[] parameterTypes)
-        {
-            int parameterCount = parameterTypes.Length;
-            foreach (ConstructorInfo candidate in attributeType.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly))
-            {
-                ReadOnlySpan<ParameterInfo> candidateParameters = candidate.GetParametersAsSpan();
-                if (parameterCount != candidateParameters.Length)
-                    continue;
-
-                bool matches = true;
-                for (int i = 0; i < parameterCount; i++)
-                {
-                    if (!parameterTypes[i].Equals(candidateParameters[i].ParameterType))
-                    {
-                        matches = false;
-                        break;
-                    }
-                }
-
-                if (matches)
-                    return candidate;
-            }
-
-            throw new MissingMethodException();
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
@@ -256,9 +203,9 @@ namespace System.Reflection
         private readonly MetadataReader? _reader;
         private readonly CustomAttribute _customAttribute;
 
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
-        private readonly Type? _attributeType;
-        private readonly ReadOnlyCollection<CustomAttributeTypedArgument>? _constructorArguments;
+        private ConstructorInfo m_ctor = null!;
+        private IList<CustomAttributeTypedArgument> m_typedCtorArgs = null!;
+        private IList<CustomAttributeNamedArgument> m_namedArgs = null!;
 
         private volatile Type? _lazyAttributeType;
 #else
@@ -547,6 +494,7 @@ namespace System.Reflection
         }
         #endregion
 
+#endif
         #region Pseudo Custom Attribute Constructor
         internal RuntimeCustomAttributeData(Attribute attribute)
         {
@@ -659,6 +607,7 @@ namespace System.Reflection
         }
         #endregion
 
+#if !NATIVEAOT
         #region Public Members
         public override ConstructorInfo Constructor => m_ctor;
 

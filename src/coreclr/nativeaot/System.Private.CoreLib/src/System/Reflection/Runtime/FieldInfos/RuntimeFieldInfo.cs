@@ -55,15 +55,14 @@ namespace System.Reflection.Runtime.FieldInfos
                 if (DeclaringType.IsExplicitLayout)
                 {
                     int offset = ExplicitLayoutFieldOffsetData;
-                    CustomAttributeTypedArgument offsetArgument = new CustomAttributeTypedArgument(typeof(int), offset);
-                    yield return new RuntimeCustomAttributeData(typeof(FieldOffsetAttribute), new CustomAttributeTypedArgument[] { offsetArgument });
+                    yield return new RuntimeCustomAttributeData(new FieldOffsetAttribute(offset));
                 }
 
                 FieldAttributes attributes = Attributes;
 #pragma warning disable SYSLIB0050 // Legacy serialization infrastructure is obsolete
                 if (0 != (attributes & FieldAttributes.NotSerialized))
                 {
-                    yield return new RuntimeCustomAttributeData(typeof(NonSerializedAttribute), null);
+                    yield return new RuntimeCustomAttributeData(new NonSerializedAttribute());
                 }
 #pragma warning restore SYSLIB0050
             }
