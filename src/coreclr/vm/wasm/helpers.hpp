@@ -8,6 +8,6 @@ void InitializeWasmThunkCaches();
 
 class MethodDesc;
 
-// Look up a pregenerated native-to-interpreter thunk for the given MethodDesc.
+// Look up a pregenerated native-entry-point-to-interpreter thunk for the given MethodDesc.
 // Returns NULL if no thunk is available for the method's signature.
 void* GetPortableEntryPointToInterpreterThunk(MethodDesc *pMD);

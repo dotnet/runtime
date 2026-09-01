@@ -864,11 +864,11 @@ namespace Internal.JitInterface
 
                 // For managed methods on Wasm, add both interpreter transition thunks for this
                 // method's signature. The interpreter-to-R2R thunk lets the interpreter call into
-                // this R2R function. The native-to-interpreter thunk is keyed by signature, not method:
-                // a method of the same shape that runs interpreted must be enterable from native code
-                // (via a function pointer, delegate, virtual slot, an R2R call, or the interpreter's
-                // own GetMultiCallableAddrOfCode path), and its thunk is not otherwise rooted unless a
-                // call site happens to share the signature.
+                // this R2R function. The native-entry-point-to-interpreter thunk is keyed by signature,
+                // not method: a method of the same shape that runs interpreted must be enterable through
+                // a materialized code pointer (a calli/delegate/ldftn, a vtable slot, an R2R call, or the
+                // interpreter's own GetMultiCallableAddrOfCode path), and its thunk is not otherwise
+                // rooted unless a call site happens to share the signature.
                 if (_compilation.NodeFactory.Target.IsWasm && !MethodBeingCompiled.IsUnmanagedCallersOnly)
                 {
                     WasmSignature wasmSig = WasmLowering.GetSignature(MethodBeingCompiled);
@@ -876,8 +876,8 @@ namespace Internal.JitInterface
                         _compilation.NodeFactory.WasmInterpreterToR2RThunk(wasmSig),
                         "Interpreter-to-R2R thunk for compiled method");
                     AddAdditionalDependency(
-                        _compilation.NodeFactory.WasmNativeToInterpreterThunk(wasmSig),
-                        "Native-to-interpreter thunk for compiled method signature");
+                        _compilation.NodeFactory.WasmNativeEntryPointToInterpreterThunk(wasmSig),
+                        "Native-entry-point-to-interpreter thunk for compiled method signature");
                 }
 
                 var compilationResult = CompileMethodInternal(methodCodeNodeNeedingCode, methodIL);
@@ -3779,11 +3779,11 @@ namespace Internal.JitInterface
 
                 WasmSignature wasmSig = WasmLowering.GetSignature(sig, flags);
 
-                // Only create native-to-interpreter thunks for managed calls.
+                // Only create native-entry-point-to-interpreter thunks for managed calls.
                 // Unmanaged calls don't go through the interpreter transition.
                 if (!flags.HasFlag(WasmLowering.LoweringFlags.IsUnmanagedCallersOnly))
                 {
-                    AddAdditionalDependency(_compilation.NodeFactory.WasmNativeToInterpreterThunk(wasmSig), "Native-to-interpreter thunk for call site");
+                    AddAdditionalDependency(_compilation.NodeFactory.WasmNativeEntryPointToInterpreterThunk(wasmSig), "Native-entry-point-to-interpreter thunk for call site");
                 }
             }
         }
@@ -3822,11 +3822,11 @@ namespace Internal.JitInterface
 
                 WasmSignature wasmSig = WasmLowering.GetSignature(sig, flags);
 
-                // Only create native-to-interpreter thunks for managed calls.
+                // Only create native-entry-point-to-interpreter thunks for managed calls.
                 // Unmanaged calls don't go through the interpreter transition.
                 if (!flags.HasFlag(WasmLowering.LoweringFlags.IsUnmanagedCallersOnly))
                 {
-                    AddAdditionalDependency(_compilation.NodeFactory.WasmNativeToInterpreterThunk(wasmSig), "Native-to-interpreter thunk for call site");
+                    AddAdditionalDependency(_compilation.NodeFactory.WasmNativeEntryPointToInterpreterThunk(wasmSig), "Native-entry-point-to-interpreter thunk for call site");
                 }
             }
         }

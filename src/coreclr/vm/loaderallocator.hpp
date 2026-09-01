@@ -500,7 +500,7 @@ private:
     PTR_AsyncContinuationsManager m_asyncContinuationsManager;
 
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
-    // Methods whose PortableEntryPoint was initialized without a native-to-interpreter thunk
+    // Methods whose PortableEntryPoint was initialized without a native-entry-point-to-interpreter thunk
     // because the thunk wasn't yet loaded. When a new R2R module injects string thunks,
     // these methods are re-checked and resolved if a thunk is now available.
     // Protected by s_pendingThunkResolutionLock (not m_crstLoaderAllocator).
@@ -915,7 +915,7 @@ public:
     PTR_AsyncContinuationsManager GetAsyncContinuationsManager();
 
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
-    // Add a MethodDesc to the pending list of methods waiting for a native-to-interpreter thunk.
+    // Add a MethodDesc to the pending list of methods waiting for a native-entry-point-to-interpreter thunk.
     // Takes s_pendingThunkResolutionLock internally.
     void AddPendingPortableEntryPointThunk(MethodDesc* pMD);
 #endif // FEATURE_PORTABLE_ENTRYPOINTS

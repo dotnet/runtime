@@ -389,9 +389,9 @@ namespace ILCompiler.DependencyAnalysis
                 return new WasmImportThunkPortableEntrypoint(this, key.Import);
             });
 
-            _wasmNativeToInterpreterThunks = new NodeCache<WasmSignature, WasmNativeToInterpreterThunkNode>(key =>
+            _wasmNativeEntryPointToInterpreterThunks = new NodeCache<WasmSignature, WasmNativeEntryPointToInterpreterThunkNode>(key =>
             {
-                return new WasmNativeToInterpreterThunkNode(this, key);
+                return new WasmNativeEntryPointToInterpreterThunkNode(this, key);
             });
 
             _wasmInterpreterToR2RThunks = new NodeCache<WasmSignature, WasmInterpreterToR2RThunkNode>(key =>
@@ -929,10 +929,10 @@ namespace ILCompiler.DependencyAnalysis
             return _wasmImportThunkPortableEntrypoints.GetOrAdd(thunkKey);
         }
 
-        private NodeCache<WasmSignature, WasmNativeToInterpreterThunkNode> _wasmNativeToInterpreterThunks;
-        public WasmNativeToInterpreterThunkNode WasmNativeToInterpreterThunk(WasmSignature wasmSignature)
+        private NodeCache<WasmSignature, WasmNativeEntryPointToInterpreterThunkNode> _wasmNativeEntryPointToInterpreterThunks;
+        public WasmNativeEntryPointToInterpreterThunkNode WasmNativeEntryPointToInterpreterThunk(WasmSignature wasmSignature)
         {
-            return _wasmNativeToInterpreterThunks.GetOrAdd(wasmSignature);
+            return _wasmNativeEntryPointToInterpreterThunks.GetOrAdd(wasmSignature);
         }
 
         private NodeCache<WasmSignature, WasmInterpreterToR2RThunkNode> _wasmInterpreterToR2RThunks;

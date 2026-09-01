@@ -2169,7 +2169,7 @@ void ExecuteInterpretedMethodWithArgs(TADDR targetIp, int8_t* args, size_t argSi
 // We need to run DoPrestub to have the runtime either compile the interpreter code, or find the R2R implementation
 // then we need to dispatch onwards to the correct target.
 // Continuing on from here for interpreter targets is straightforward, but for R2R targets we need to dispatch back
-// to WebAssembly code. To avoid needing all of the native-to-interpreter thunks have logic for tail-calling onto more
+// to WebAssembly code. To avoid needing all of the native-entry-point-to-interpreter thunks have logic for tail-calling onto more
 // R2R functions, we utilize the InvokeManagedMethod path which will utilize an Interpreter to R2R thunk for this call.
 void ExecuteInterpretedMethodWithArgs_PortableEntryPoint(PCODE portableEntrypoint, TransitionBlock* block, size_t argsSize, int8_t* retBuff);
 

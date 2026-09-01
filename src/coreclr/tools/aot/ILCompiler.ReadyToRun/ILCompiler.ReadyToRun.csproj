@@ -333,7 +333,7 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\WasmImportThunkPortableEntrypoint.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\WasmImportThunk.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\WasmInterpreterToR2RThunkNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\WasmNativeToInterpreterThunkNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\WasmNativeEntryPointToInterpreterThunkNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\Win32ResourcesNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRunSymbolNodeFactory.cs" />
     <Compile Include="Compiler\DependencyAnalysis\TypeAndMethod.cs" />

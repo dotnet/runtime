@@ -173,7 +173,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             // Build the arguments for the R2R call_indirect.
             // Target R2R wasm params: ($sp, [this], [retbuf], explicit_params..., portableEntrypoint)
-            // (matches Compiler::lvaInitArgs / WasmNativeToInterpreterThunkNode local order.)
+            // (matches Compiler::lvaInitArgs / WasmNativeEntryPointToInterpreterThunkNode local order.)
             // We track targetParamIndex to look up the correct wasm type for each arg.
             int targetParamIndex = 0;
 
