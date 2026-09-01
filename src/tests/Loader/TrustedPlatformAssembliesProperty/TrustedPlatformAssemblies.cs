@@ -7,7 +7,9 @@ using Xunit;
 
 public class TrustedPlatformAssemblies
 {
-    [Fact]
+    public static bool HasSystemCoreLibFile => !string.IsNullOrEmpty(typeof(object).Assembly.Location);
+
+    [ConditionalFact(typeof(TrustedPlatformAssemblies), nameof(HasSystemCoreLibFile))]
     public static void IsAvailable()
     {
         string tpa = Assert.IsType<string>(AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES"));
