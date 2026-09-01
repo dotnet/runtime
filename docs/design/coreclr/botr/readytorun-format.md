@@ -782,7 +782,7 @@ State
 |------:|:-----|:-----------------|
 | 0 | Runtime attribute fallback | No precomputed map data. The runtime processes the type map attributes instead. |
 | 1 | Precomputed fixups | `ExternalTypeMapHashtable` only. |
-| 2 | Precomputed fixups and type names | `ExternalTypeMapHashtable` followed immediately by `NamedEntries`. Added in V27.1. |
+| 2 | Precomputed fixups and type names | `ExternalTypeMapHashtable` followed immediately by `NamedEntries`. Added in V28. |
 
 `ExternalTypeMapHashtable` is a native hashtable keyed by the name hash code of the external type map key. Each value contains:
 

@@ -1794,7 +1794,7 @@ namespace
 
             *pTypeMap = NativeHashtable(entryParser);
             *pNamedEntries = state == TypeMapState::PrecomputedFixupsAndTypeNames
-                ? entrpTypeMap->GetParserAfterTable()
+                ? pTypeMap->GetParserAfterTable()
                 : NativeParser();
             return true;
         }
