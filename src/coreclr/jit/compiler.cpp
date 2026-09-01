@@ -1745,48 +1745,6 @@ void Compiler::compDoComponentUnitTestsOnce()
 }
 
 //------------------------------------------------------------------------
-// compGetJitDefaultFill:
-//
-// Return Value:
-//    An unsigned char value used to initialize memory allocated by the JIT.
-//    The default value is taken from DOTNET_JitDefaultFill. If it is not set
-//    the value will be 0xdd. When JitStress is active a random value based
-//    on the method hash is used.
-//
-// Notes:
-//    Note that we can't use small values like zero, because we have some
-//    asserts that can fire for such values.
-//
-// static
-unsigned char Compiler::compGetJitDefaultFill(Compiler* comp)
-{
-    unsigned char defaultFill = (unsigned char)JitConfig.JitDefaultFill();
-
-    if (comp != nullptr && comp->compStressCompile(STRESS_GENERIC_VARN, 50))
-    {
-        unsigned temp;
-        temp = comp->info.compMethodHash();
-        temp = (temp >> 16) ^ temp;
-        temp = (temp >> 8) ^ temp;
-        temp = temp & 0xff;
-        // asserts like this: assert(!IsUninitialized(stkLvl));
-        // mean that small values for defaultFill are problematic
-        // so we make the value larger in that case.
-        if (temp < 0x20)
-        {
-            temp |= 0x80;
-        }
-
-        // Make a misaligned pointer value to reduce probability of getting a valid value and firing
-        // assert(!IsUninitialized(pointer)).
-        temp |= 0x1;
-
-        defaultFill = (unsigned char)temp;
-    }
-
-    return defaultFill;
-}
-
 /*****************************************************************************/
 
 VarName Compiler::compVarName(regNumber reg, bool isFloatReg)
@@ -4341,6 +4299,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Import: convert the instrs in each basic block to a tree based intermediate representation
     //
+    activePhaseChecks |= PhaseChecks::CHECK_IR | PhaseChecks::CHECK_IR_RELAXED;
     DoPhase(this, PHASE_IMPORTATION, &Compiler::fgImport);
 
     // If this is a failed inline attempt, we're done.
@@ -4378,6 +4337,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Transform indirect calls that require control flow expansion.
     //
     DoPhase(this, PHASE_INDXCALL, &Compiler::fgTransformIndirectCalls);
+
+    // Relaxed IR checks are currently only enabled through indirect call transformation.
+    activePhaseChecks &= ~(PhaseChecks::CHECK_IR | PhaseChecks::CHECK_IR_RELAXED);
 
     // Cleanup un-imported BBs, cleanup un-imported or
     // partially imported try regions, add OSR step blocks.
@@ -4642,10 +4604,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         //
         DoPhase(this, PHASE_COMPUTE_DOMINATORS, &Compiler::fgComputeDominators);
     }
-
-#ifdef DEBUG
-    fgDebugCheckLinks();
-#endif
 
     // Decide the kind of code we want to generate. Done here, after the second
     // round of empty-EH removal above, so that EH eliminated post-morph doesn't
@@ -4972,6 +4930,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     }
 #endif
 
+    activePhaseChecks |= PhaseChecks::CHECK_LIR_UNUSED_VALUES;
+
     // rationalize trees
     Rationalizer rat(this); // PHASE_RATIONALIZE
     rat.Run();
@@ -5045,6 +5005,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Now that lowering is completed we can proceed to perform register allocation
     //
+    // LSRA may insert nodes without users to model register saves/restores.
+    //
+    activePhaseChecks &= ~PhaseChecks::CHECK_LIR_UNUSED_VALUES;
+
     auto regAllocPhase = [this] {
         m_regAlloc->doRegisterAllocation();
     };

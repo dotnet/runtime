@@ -188,17 +188,19 @@ namespace System.Text.Json.Serialization.Tests
             Assert.NotNull(observedAtModifierTime);
         }
 
-        // Case type with a user-defined JsonConverter; runtime cannot classify it
-        // without a custom classifier.
         [JsonConverter(typeof(CustomConverter))]
         public class CustomCase
         {
+            public string? Value { get; init; }
         }
 
         public sealed class CustomConverter : JsonConverter<CustomCase>
         {
-            public override CustomCase? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => null;
-            public override void Write(Utf8JsonWriter writer, CustomCase value, JsonSerializerOptions options) { }
+            public override CustomCase? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
+                new() { Value = reader.GetString() };
+
+            public override void Write(Utf8JsonWriter writer, CustomCase value, JsonSerializerOptions options) =>
+                writer.WriteStringValue(value.Value);
         }
 
         public class OtherCase
@@ -261,13 +263,21 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task UnionWithCustomConverterCase_NoClassifier_DeserializeThrows()
         {
-            // Configure-time succeeds (serialization is allowed). Deserialization throws
-            // because a custom converter case can serialize as any JSON value type.
             JsonException ex = await Assert.ThrowsAsync<JsonException>(
                 () => Serializer.DeserializeWrapper<UnionWithCustomConverterCase>("{}"));
 
             Assert.Contains(nameof(UnionWithCustomConverterCase), ex.Message);
-            Assert.Contains("custom JsonConverter", ex.Message);
+            Assert.Contains("Object", ex.Message);
+        }
+
+        [Fact]
+        public async Task UnionWithCustomConverterCase_NoClassifier_UnambiguousShapeDispatches()
+        {
+            UnionWithCustomConverterCase? result =
+                await Serializer.DeserializeWrapper<UnionWithCustomConverterCase>("\"value\"");
+
+            CustomCase customCase = Assert.IsType<CustomCase>(GetUnionValue(result!));
+            Assert.Equal("value", customCase.Value);
         }
 
         [Fact]
@@ -2004,8 +2014,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task Union_ImplementingOwnCaseInterface_WithClassifier_RoundTrips()
         {
-            // The interface case carries a custom converter, so the union cannot be classified by
-            // value shape; supply a classifier explicitly, as UnionWithCustomConverterCase does.
+            // The custom converter case overlaps the numeric case, so supply a classifier.
             JsonSerializerOptions options = Serializer.GetDefaultOptionsWithMetadataModifier(typeInfo =>
             {
                 if (typeInfo.Type == typeof(WritableUnion))

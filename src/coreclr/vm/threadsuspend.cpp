@@ -2326,9 +2326,6 @@ void Thread::PerformPreemptiveGC()
         GCX_COOP();
         m_bGCStressing = TRUE;
 
-        // BUG(github #10318) - when not using allocation contexts, the alloc lock
-        // must be acquired here. Until fixed, this assert prevents random heap corruption.
-        _ASSERTE(GCHeapUtilities::UseThreadAllocationContexts());
         GCHeapUtilities::GetGCHeap()->StressHeap(&t_runtime_thread_locals.alloc_context.m_GCAllocContext);
         m_bGCStressing = FALSE;
     }
@@ -5853,7 +5850,7 @@ void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext)
             return;
         }
 
-        // Calling this turns off the GC_TRIGGERS/THROWS/INJECT_FAULT contract in LoadTypeHandle.
+        // Calling this turns off the GC_TRIGGERS/THROWS contract in LoadTypeHandle.
         // We should not trigger any loads for unresolved types.
         ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
 

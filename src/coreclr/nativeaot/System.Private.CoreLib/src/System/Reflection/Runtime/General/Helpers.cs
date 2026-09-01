@@ -136,35 +136,6 @@ namespace System.Reflection.Runtime.General
             return new BinderBundle(binder, cultureInfo);
         }
 
-        // Helper for ICustomAttributeProvider.GetCustomAttributes(). The result of this helper is returned directly to apps
-        // so it must always return a newly allocated array. Unlike most of the newer custom attribute apis, the attribute type
-        // need not derive from System.Attribute. (In particular, it can be an interface or System.Object.)
-        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
-            Justification = "Array.CreateInstance is only used with reference types here and is therefore safe.")]
-        public static object[] InstantiateAsArray(this IEnumerable<CustomAttributeData> cads, Type actualElementType)
-        {
-            ArrayBuilder<object> attributes = default;
-            foreach (CustomAttributeData cad in cads)
-            {
-                object instantiatedAttribute = cad.Instantiate();
-                attributes.Add(instantiatedAttribute);
-            }
-
-            if (actualElementType.ContainsGenericParameters || actualElementType.IsValueType)
-            {
-                // This is here for desktop compatibility. ICustomAttribute.GetCustomAttributes() normally returns an array of the
-                // exact attribute type requested except in two cases: when the passed in type is an open type and when
-                // it is a value type. In these two cases, it returns an array of type Object[].
-                return attributes.ToArray();
-            }
-            else
-            {
-                object[] result = (object[])Array.CreateInstance(actualElementType, attributes.Count);
-                attributes.CopyTo(result);
-                return result;
-            }
-        }
-
         private static object? GetRawDefaultValue(IEnumerable<CustomAttributeData> customAttributes)
         {
             foreach (CustomAttributeData attributeData in customAttributes)

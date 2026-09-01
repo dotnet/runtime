@@ -41,8 +41,6 @@
     <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
     <RuntimeMetadataVersion>v4.0.30319</RuntimeMetadataVersion>
     <NoWarn>$(NoWarn),0419,0649</NoWarn>
-    <!-- https://github.com/dotnet/dotnet/issues/5640 -->
-    <NoWarn>$(NoWarn);CS9368</NoWarn>
     <Nullable>enable</Nullable>
     <Features>$(Features);runtime-async=on</Features>
 
@@ -120,9 +118,8 @@
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\ComponentActivator.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\__Canon.cs" />
     <Compile Include="$(BclSourcesRoot)\System\AppContext.CoreCLR.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\ArgIterator.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\ArgIterator.cs" Condition="'$(FeatureVarargs)' == 'true'" />
     <Compile Include="$(BclSourcesRoot)\System\Array.CoreCLR.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Attribute.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\BadImageFormatException.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Buffer.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\CLRConfig.cs" />
