@@ -203,6 +203,77 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        public static void PowerOfTwoModulusExhaustiveBitLengths()
+        {
+            // Every bit length through 300, plus the neighbourhoods of the larger whole-limb
+            // multiples, so the power-of-two fast path is covered at, just below and just
+            // above each limb boundary on both 32-bit and 64-bit limb layouts.
+            List<int> bitLengths = new List<int>();
+
+            for (int bitLength = 1; bitLength <= 300; bitLength++)
+            {
+                bitLengths.Add(bitLength);
+            }
+
+            foreach (int bitLength in new int[] { 511, 512, 513, 1023, 1024, 1025, 2047, 2048, 2049, 4096 })
+            {
+                bitLengths.Add(bitLength);
+            }
+
+            foreach (int bitLength in bitLengths)
+            {
+                BigInteger modulus = BigInteger.One << bitLength;
+
+                // Small odd values stress the low limbs the lifting starts from, and
+                // modulus - 1 is its own inverse for every power-of-two modulus.
+                foreach (BigInteger candidate in new BigInteger[] { 1, 3, 5, 7, modulus - 1 })
+                {
+                    BigInteger value = candidate | BigInteger.One;
+
+                    Assert.Equal(BigInteger.One, Mod(value * BigInteger.ModInverse(value, modulus), modulus));
+                    Assert.Equal(BigInteger.One, Mod(-value * BigInteger.ModInverse(-value, modulus), modulus));
+                }
+
+                for (int i = 0; i < 4; i++)
+                {
+                    BigInteger value = RandomNonNegative((bitLength / 8) + 2) | BigInteger.One;
+
+                    BigInteger inverse = BigInteger.ModInverse(value, modulus);
+
+                    Assert.True(inverse.Sign > 0 && inverse < modulus);
+                    Assert.Equal(BigInteger.One, Mod(value * inverse, modulus));
+
+                    // Even values share the factor 2 with the modulus, so no inverse exists.
+                    Assert.Throws<ArithmeticException>(() => BigInteger.ModInverse(value << 1, modulus));
+                }
+            }
+        }
+
+        [Fact]
+        public static void PowerOfTwoModulusResultIsUniqueAndOdd()
+        {
+            // The inverse modulo a power of two is the unique representative in
+            // [0, 2^bitLength), is always odd because the value it inverts is, and inverting
+            // it again returns the reduced value.
+            foreach (int bitLength in new int[] { 1, 2, 3, 7, 8, 16, 31, 32, 33, 64, 65, 127, 128, 129, 192, 256, 320, 512, 1024, 2048 })
+            {
+                BigInteger modulus = BigInteger.One << bitLength;
+
+                for (int i = 0; i < Samples; i++)
+                {
+                    BigInteger value = RandomNonNegative((bitLength / 8) + 3) | BigInteger.One;
+
+                    BigInteger inverse = BigInteger.ModInverse(value, modulus);
+
+                    Assert.True(inverse.Sign > 0 && inverse < modulus);
+                    Assert.False(inverse.IsEven);
+                    Assert.Equal(BigInteger.One, Mod(value * inverse, modulus));
+                    Assert.Equal(Mod(value, modulus), BigInteger.ModInverse(inverse, modulus));
+                }
+            }
+        }
+
+        [Fact]
         public static void LargeOperands()
         {
             // Sizes chosen to straddle the small/large thresholds inside BigIntegerCalculator

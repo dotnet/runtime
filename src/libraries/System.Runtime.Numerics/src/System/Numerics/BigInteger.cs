@@ -1381,19 +1381,59 @@ namespace System.Numerics
                 throw new ArithmeticException(SR.Arithmetic_ModInverseDoesNotExist);
             }
 
-            nuint reducedLimb = 0;
+            BigInteger result = TryGetPowerOfTwoExponent(modulus, out int modulusExponent)
+                ? ModInversePowerOfTwo(reduced, modulusExponent)
+                : ModInverseGeneral(reduced, modulus);
+
+            Debug.Assert(result == ModInverseSchoolbook(reduced, modulus));
+
+            return result;
+        }
+
+        private static BigInteger ModInversePowerOfTwo(BigInteger value, int exponent)
+        {
+            Debug.Assert(exponent >= 1);
+            Debug.Assert(value.Sign > 0);
+
+            if (value.IsEven)
+            {
+                // The value and the modulus share the factor two.
+                throw new ArithmeticException(SR.Arithmetic_ModInverseDoesNotExist);
+            }
+
+            nuint valueLimb = 0;
+            ReadOnlySpan<nuint> valueBits = value._bits is null
+                ? CreateSingleLimb(ref valueLimb, NumericsHelpers.Abs(value._sign))
+                : value._bits;
+
+            // The inverse is reduced modulo 2^exponent, which needs one fewer limb than the
+            // modulus itself whenever the modulus is an exact multiple of the limb width.
+            int size = (exponent + BigIntegerCalculator.BitsPerLimb - 1) / BigIntegerCalculator.BitsPerLimb;
+            Span<nuint> bits = RentedBuffer.Create(size, out RentedBuffer bitsBuffer);
+
+            BigIntegerCalculator.ModInversePowerOfTwo(valueBits, exponent, bits);
+
+            BigInteger result = new BigInteger(bits, negative: false);
+            bitsBuffer.Dispose();
+
+            return result;
+        }
+
+        private static BigInteger ModInverseGeneral(BigInteger value, BigInteger modulus)
+        {
+            nuint valueLimb = 0;
             nuint modulusLimb = 0;
 
-            ReadOnlySpan<nuint> reducedBits = reduced._bits is null
-                ? CreateSingleLimb(ref reducedLimb, NumericsHelpers.Abs(reduced._sign))
-                : reduced._bits;
+            ReadOnlySpan<nuint> valueBits = value._bits is null
+                ? CreateSingleLimb(ref valueLimb, NumericsHelpers.Abs(value._sign))
+                : value._bits;
             ReadOnlySpan<nuint> modulusBits = modulus._bits is null
                 ? CreateSingleLimb(ref modulusLimb, NumericsHelpers.Abs(modulus._sign))
                 : modulus._bits;
 
             Span<nuint> bits = RentedBuffer.Create(modulusBits.Length, out RentedBuffer bitsBuffer);
 
-            if (!BigIntegerCalculator.ModInverse(reducedBits, modulusBits, bits))
+            if (!BigIntegerCalculator.ModInverse(valueBits, modulusBits, bits))
             {
                 bitsBuffer.Dispose();
                 throw new ArithmeticException(SR.Arithmetic_ModInverseDoesNotExist);
@@ -1401,8 +1441,6 @@ namespace System.Numerics
 
             BigInteger result = new BigInteger(bits, negative: false);
             bitsBuffer.Dispose();
-
-            Debug.Assert(result == ModInverseSchoolbook(reduced, modulus));
 
             return result;
         }

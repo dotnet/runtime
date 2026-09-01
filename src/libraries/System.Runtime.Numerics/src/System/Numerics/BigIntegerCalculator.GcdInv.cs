@@ -509,6 +509,121 @@ namespace System.Numerics
             return coprime;
         }
 
+        public static void ModInversePowerOfTwo(ReadOnlySpan<nuint> value, int exponent, Span<nuint> result)
+        {
+            Debug.Assert(value.Length >= 1);
+            Debug.Assert((value[0] & 1) != 0);
+            Debug.Assert(exponent >= 1);
+            Debug.Assert(result.Length == (exponent + BitsPerLimb - 1) / BitsPerLimb);
+            Debug.Assert(ActualLength(value) <= result.Length);
+
+            // Executes Hensel lifting, in the Newton iteration form, on the 2-adic inverse.
+            //
+            // If value * x == 1 (mod 2^m), then x' = x * (2 - value * x) satisfies
+            // value * x' == 1 (mod 2^2m): writing value * x = 1 + e * 2^m gives
+            //
+            //     value * x' = (1 + e * 2^m) * (1 - e * 2^m) = 1 - e^2 * 2^2m
+            //
+            // so each step doubles the number of correct bits. Only odd values are
+            // invertible modulo a power of two, which the caller has already established.
+
+            int limbCount = result.Length;
+
+            result.Clear();
+
+            // Seed with the inverse modulo a single limb. ComputeMontgomeryInverse runs the
+            // same iteration to full limb width, but returns the negated inverse because
+            // that is what Montgomery reduction consumes; negating it back recovers the
+            // plain 2-adic inverse of the low limb.
+            result[0] = (nuint)0 - ComputeMontgomeryInverse(value[0]);
+
+            if (limbCount > 1)
+            {
+                Span<nuint> factor = BigInteger.RentedBuffer.Create(limbCount, out BigInteger.RentedBuffer factorBuffer);
+                Span<nuint> product = BigInteger.RentedBuffer.Create(limbCount * 2, out BigInteger.RentedBuffer productBuffer);
+
+                int valueLength = ActualLength(value);
+
+                // The seed is correct to one whole limb, and the iteration doubles that
+                // until it covers the modulus, so this terminates after exactly
+                // ceil(log2(limbCount)) steps with correctLimbs == limbCount.
+                int correctLimbs = 1;
+
+                while (correctLimbs < limbCount)
+                {
+                    int nextLimbs = Math.Min(correctLimbs * 2, limbCount);
+                    int resultLength = ActualLength(result.Slice(0, correctLimbs));
+                    int valueFactorLength = Math.Min(valueLength, nextLimbs);
+
+                    // factor = 2 - value * result, modulo the limb radix to nextLimbs.
+                    // Dropping limbs above nextLimbs from either operand is exactly the
+                    // truncation the modular reduction asks for. Multiply wants a
+                    // destination of exactly the product width, so each call gets its own
+                    // slice; a product narrower than nextLimbs simply leaves the cleared
+                    // high limbs of the destination alone.
+                    int lowWidth = valueFactorLength + resultLength;
+                    Span<nuint> lowProduct = product.Slice(0, lowWidth);
+                    lowProduct.Clear();
+
+                    Multiply(value.Slice(0, valueFactorLength), result.Slice(0, resultLength), lowProduct);
+
+                    factor.Slice(0, nextLimbs).Clear();
+                    lowProduct.Slice(0, Math.Min(lowWidth, nextLimbs)).CopyTo(factor);
+                    SubtractFromTwo(factor.Slice(0, nextLimbs));
+
+                    // result = result * factor, again modulo the limb radix to nextLimbs.
+                    int highWidth = nextLimbs + resultLength;
+                    Span<nuint> highProduct = product.Slice(0, highWidth);
+                    highProduct.Clear();
+
+                    Multiply(factor.Slice(0, nextLimbs), result.Slice(0, resultLength), highProduct);
+
+                    Debug.Assert(highWidth >= nextLimbs);
+                    highProduct.Slice(0, nextLimbs).CopyTo(result);
+
+                    correctLimbs = nextLimbs;
+                }
+
+                Debug.Assert(correctLimbs == limbCount);
+
+                productBuffer.Dispose();
+                factorBuffer.Dispose();
+            }
+
+            // The lift works to whole limbs, so trim the top limb back to the bits the
+            // modulus actually spans. Reducing the inverse modulo 2^exponent leaves the
+            // congruence intact because 2^exponent divides the limb radix to limbCount.
+            int topBits = exponent - ((limbCount - 1) * BitsPerLimb);
+            Debug.Assert(topBits >= 1 && topBits <= BitsPerLimb);
+
+            if (topBits < BitsPerLimb)
+            {
+                result[limbCount - 1] &= ((nuint)1 << topBits) - 1;
+            }
+
+            // The inverse of an odd value is odd, so it is never zero.
+            Debug.Assert((result[0] & 1) != 0);
+        }
+
+        private static void SubtractFromTwo(Span<nuint> bits)
+        {
+            // Computes 2 - bits modulo the limb radix to bits.Length. The two's complement
+            // of t is ~t + 1, so 2 - t is ~t + 3, with the carry out of the top limb
+            // dropped because that is the modular reduction.
+
+            nuint carry = 3;
+
+            for (int i = 0; i < bits.Length; i++)
+            {
+                nuint complement = ~bits[i];
+                nuint digit = complement + carry;
+
+                // Unsigned addition wrapped exactly when the sum fell below an addend.
+                carry = digit < complement ? 1U : 0U;
+                bits[i] = digit;
+            }
+        }
+
         private static void CombineCofactors(ReadOnlySpan<nuint> left, ReadOnlySpan<nuint> right,
                                              nuint leftMultiplier, nuint rightMultiplier,
                                              Span<nuint> destination)
