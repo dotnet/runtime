@@ -158,7 +158,13 @@ namespace System.IO.Compression
         /// Must be called if an in-progress operation is abandoned (e.g. due to an exception or cancellation) so
         /// the deflater doesn't retain a dangling reference to a buffer the caller may since have reused or freed.
         /// </summary>
-        internal void UnsetInput() => DeallocateInputBufferHandle(resetStreamHandle: true);
+        internal void UnsetInput()
+        {
+            if (IsInputBufferHandleAllocated)
+            {
+                DeallocateInputBufferHandle(resetStreamHandle: true);
+            }
+        }
 
         private void DeallocateInputBufferHandle(bool resetStreamHandle)
         {
@@ -211,5 +217,7 @@ namespace System.IO.Compression
 
             return new Deflater(zlibStream);
         }
+
+        private unsafe bool IsInputBufferHandleAllocated => _inputBufferHandle.Pointer != default;
     }
 }
