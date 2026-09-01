@@ -64,6 +64,8 @@ namespace System.Globalization.Tests
         public static IEnumerable<object[]> DutchTitleCaseInfo_TestData()
         {
             yield return new object[] { "nl-NL", "IJ IJ IJ IJ", "ij iJ Ij IJ" };
+            yield return new object[] { "nl", "IJ IJ IJ IJ", "ij iJ Ij IJ" };
+            yield return new object[] { "nl", "De IJsvogel", "de ijsvogel" };
             yield return new object[] { "nl-be", "IJzeren Eigenschappen", "ijzeren eigenschappen" };
             yield return new object[] { "NL-NL", "Lake IJssel", "lake iJssel" };
             yield return new object[] { "NL-BE", "Boba N' IJango Fett PEW PEW", "Boba n' Ijango fett PEW PEW" };

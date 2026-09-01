@@ -625,8 +625,11 @@ namespace System.Globalization
 
             StringBuilder result = new StringBuilder();
             string? lowercaseData = null;
-            // Store if the current culture is Dutch (special case)
-            bool isDutchCulture = CultureName.StartsWith("nl-", StringComparison.OrdinalIgnoreCase);
+            // Store if the current culture is Dutch (special case). This covers both the
+            // neutral culture ("nl") and any specific Dutch culture ("nl-NL", "nl-BE", etc.).
+            string cultureName = CultureName;
+            bool isDutchCulture = cultureName.StartsWith("nl", StringComparison.OrdinalIgnoreCase) &&
+                (cultureName.Length == 2 || cultureName[2] == '-');
 
             for (int i = 0; i < str.Length; i++)
             {
