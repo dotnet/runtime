@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <!-- Installs a custom signal handler. -->
-
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <CLRTestTargetUnsupported Condition="'$(TargetsOSX)' != 'true'">true</CLRTestTargetUnsupported>
     <CLRTestPriority>1</CLRTestPriority>
