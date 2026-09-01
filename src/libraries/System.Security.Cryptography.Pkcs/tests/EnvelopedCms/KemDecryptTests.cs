@@ -788,4 +788,80 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
                 throw new NotSupportedException();
         }
     }
+
+    [PlatformSpecific(~TestPlatforms.Windows)]
+    public static class KemCustomImplementationTests
+    {
+        [Fact]
+        public static void Decrypt_CustomMLKemInstance()
+        {
+            // Even if MLKem.IsSupported returns false, a custom implementation of ML-KEM should work.
+            EnvelopedCms cms = new EnvelopedCms();
+            cms.Decode(KemTestDocuments.MlKem768);
+
+            KemRecipientInfo recipientInfo = Assert.IsType<KemRecipientInfo>(Assert.Single(cms.RecipientInfos));
+
+            using (MockMLKem privateKey = new MockMLKem())
+            {
+                cms.Decrypt(recipientInfo, privateKey);
+            }
+
+            Assert.Equal("hello world!"u8.ToArray(), cms.ContentInfo.Content);
+        }
+
+        private sealed class MockMLKem : MLKem
+        {
+            private static readonly byte[] s_expectedCiphertext = Convert.FromBase64String(
+                """
+                /CWxYsEnmFz2eZKijSJ34qIXzAY8lC5tfoZSI0zfaiuHYLyKUPowHax3SdYTpiLWeC7xhevz/qMat/hUmUmm38AVbsBjEv2IlMsT
+                1gTtFJqlk4a7ONoviBlNIa+coB5G+gBqT5vyHQ4uPE7TNTzQT5dUAQU2jNkwMW9zZ9tWtBLQfGwpiwIJwIxQu9mAeJKfvh8E2sie
+                p7ropveFZrj7jzgKRMCFYQxAiKU6BefzP2u8d9KrYAFwtc3B7AonZM8zvnpKrfJVj84FL7TZgyRrtpFGWo2TqhmLwak/JjskKUQa
+                CElBYfjOWBBNgzFsq0U+KY771AOZcKx3kg3T4mQGdkGjlhNduJ0X/oCRvAxtsyaqpmj+E7HD2/m7Pr/tPEH9GjY2cKSxug6rFMtO
+                uljJjqMoH/15csUBVyeh8QLINHKA/7bxO60fS9E4hJD45LDx8c6HH8UCtrQ9tpYjL3pkdoDtKlY6SGQJSM6vYifSfrKuZVqGkR1r
+                J/my86QYk7pSxO+NcxycuJwm/AQJQoPiTq4edGUKY6R3KCeF+DXS7kAzgqdrrRp8cUCON3KvpixWKyx/b3rQpLUbciiOYg7BiTFZ
+                HiM1JofiB7p1XBNZ05ookyJHm21RpBi8r/lyN8ekB0cEKI4zHq/24aE/K9dvRmDTDgEM0JtxcKTSywc6yI+9DZtnK2t57S/2jDD0
+                SNwhpYTHONOa969bW7H1XIKmjbFibI9j3FAyxSp2MNXMhL1GdcheDEbB4AmgDQsPc2FEI8VZ33nl13OdIajswA/2Wrs1VAHQUUaU
+                wdRHA5yOEURZbpIce3176NllFstLxHY9XzMPmyYRU0UCOeGXdDkvbRPH5uSuLTmkE7QiXljCOHGLlcvvPmRa8NWBs7UYKv7pn+8A
+                Tt8xnQGKhIat24PJZ/I4qTA+ME5kHJpBi9UdUMXiUl0AjWXjysCDGhhqYikyGaxBwEpH/V3G07XC9PRSyox86NhVuejTyZ1oNXE3
+                Rgh0/VQXE9OlXes5st6oxgku34kmbNe5auFMnP5T2HMftBNQieMzHAIPfoxAleXElGfh3kyqZmzzoC965/aFjhotL13CfHbSHzES
+                J7nh6jjsw2/RW6TBQ2dQGTGxrgoccWbY1TPYsNPJnP1iBdqmvbVSJBCl/GUA7iM/HvgtR02sBBWGdVwQajE8tAX2KWYU9Vv1CXua
+                4FAzSV1wb+S3T1oWT1xXqJggtNDtG6oqFFR6pMwe5tFbTR5JxGq9pLOac4oL6NQMHfXbIHXtVOGaUQiDAEe0Q+PK3PL0zUjReS37
+                w0oye1WSURKYaIN/WZlIVLjJd6HEzl3TQcEcdcadYGNDjoAV5LtQ0RTZJiZvjl+IDvc973ntAOJRzz87fsAxvBfJrC7PhRjw1p1D
+                9U1lchy1liE9VWfwK7xD+XjO49Fx/QmCJf+GdZ3F+tCbbjvnWKE=
+                """);
+
+            private static readonly byte[] s_sharedSecret =
+                Convert.FromBase64String("pTct2UThy1KN636LnF86ahCWlweRAKmeYDORxVk4NFs=");
+
+            internal MockMLKem()
+                : base(MLKemAlgorithm.MLKem768)
+            {
+            }
+
+            protected override void DecapsulateCore(ReadOnlySpan<byte> ciphertext, Span<byte> sharedSecret)
+            {
+                Assert.Equal<byte>(s_expectedCiphertext, ciphertext.ToArray());
+                s_sharedSecret.CopyTo(sharedSecret);
+            }
+
+            protected override void Dispose(bool disposing)
+            {
+            }
+
+            protected override void EncapsulateCore(Span<byte> ciphertext, Span<byte> sharedSecret) =>
+                throw new NotSupportedException();
+
+            protected override void ExportDecapsulationKeyCore(Span<byte> destination) =>
+                throw new NotSupportedException();
+
+            protected override void ExportEncapsulationKeyCore(Span<byte> destination) =>
+                throw new NotSupportedException();
+
+            protected override void ExportPrivateSeedCore(Span<byte> destination) =>
+                throw new NotSupportedException();
+
+            protected override bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten) =>
+                throw new NotSupportedException();
+        }
+    }
 }
