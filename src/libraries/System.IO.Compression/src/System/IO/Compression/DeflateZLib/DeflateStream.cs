@@ -603,12 +603,12 @@ namespace System.IO.Compression
                     }
                 }
             }
-            catch
+            finally
             {
                 // Discard any stale input reference so a later call (e.g. Dispose) doesn't read from a
-                // buffer the caller may have since mutated, reused, or freed.
+                // buffer the caller may have since mutated, reused, or freed. On the success path the input
+                // has already been fully consumed, so this is a no-op.
                 _deflater.UnsetInput();
-                throw;
             }
         }
 
@@ -897,12 +897,12 @@ namespace System.IO.Compression
                     }
                 }
             }
-            catch
+            finally
             {
                 // Discard any stale input reference so a later call (e.g. Dispose) doesn't read from a
-                // buffer the caller may have since mutated, reused, or freed.
+                // buffer the caller may have since mutated, reused, or freed. On the success path the input
+                // has already been fully consumed, so this is a no-op.
                 _deflater.UnsetInput();
-                throw;
             }
         }
 
