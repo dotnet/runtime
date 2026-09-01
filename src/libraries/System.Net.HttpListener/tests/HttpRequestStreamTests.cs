@@ -735,5 +735,32 @@ namespace System.Net.Tests
                 await Assert.ThrowsAsync<HttpListenerException>(() => ReadLengthAsync(context.Request.InputStream, buffer, 0, buffer.Length));
             }
         }
+
+        [ConditionalTheory(typeof(Helpers), nameof(Helpers.IsManagedImplementation))]
+        [InlineData("80000000")]
+        [InlineData("FFFFFFFF")]
+        [InlineData("80000000;foo=bar")]
+        public async Task Read_ChunkSizeOverflow_ThrowsHttpListenerException(string chunkSizeLine)
+        {
+            using (Socket client = _factory.GetConnectedSocket())
+            {
+                Uri listeningUri = new Uri(_factory.ListeningUrl);
+                string request =
+                    $"POST {listeningUri.PathAndQuery} HTTP/1.1\r\n" +
+                    $"Host: {listeningUri.Host}\r\n" +
+                    "Transfer-Encoding: chunked\r\n" +
+                    "\r\n" +
+                    $"{chunkSizeLine}\r\n" +
+                    "Hello\r\n" +
+                    "0\r\n" +
+                    "\r\n";
+
+                await client.SendAsync(Encoding.ASCII.GetBytes(request));
+                HttpListenerContext context = await _listener.GetContextAsync();
+
+                byte[] buffer = new byte[5];
+                await Assert.ThrowsAsync<HttpListenerException>(() => ReadLengthAsync(context.Request.InputStream, buffer, 0, buffer.Length));
+            }
+        }
     }
 }
