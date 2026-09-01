@@ -146,7 +146,7 @@ initDistroRid()
     local isCrossBuild="$3"
 
     # Only pass ROOTFS_DIR if __DoCrossArchBuild is specified and the current platform is not an Apple platform (that doesn't use rootfs)
-    # HarmonyOS uses its NDK toolchain, so no rootfs is required either.
+    # OpenHarmony uses its NDK toolchain, so no rootfs is required either.
     if [[ $isCrossBuild == 1 && "$targetOs" != "osx" && "$targetOs" != "android" && "$targetOs" != "ios" && "$targetOs" != "iossimulator" && "$targetOs" != "tvos" && "$targetOs" != "tvossimulator" && "$targetOs" != "maccatalyst" && "${__PortableTargetOS:-}" != "ohos" ]]; then
         passedRootfsDir=${ROOTFS_DIR:-}
     fi

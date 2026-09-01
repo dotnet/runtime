@@ -11,7 +11,7 @@ set(PRERELEASE 1)
 #----------------------------------------
 set(CLR_CMAKE_HOST_OS ${CMAKE_SYSTEM_NAME})
 string(TOLOWER ${CLR_CMAKE_HOST_OS} CLR_CMAKE_HOST_OS)
-# HarmonyOS (OpenHarmony) uses the OHOS NDK CMake toolchain which sets
+# OpenHarmony uses the OHOS NDK CMake toolchain which sets
 # CMAKE_SYSTEM_NAME=OHOS. Its libc is musl-based, so treat it as a linux/musl target.
 if(CLR_CMAKE_HOST_OS STREQUAL ohos)
     set(CLR_CMAKE_HOST_OS linux)

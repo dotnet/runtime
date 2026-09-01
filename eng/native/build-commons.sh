@@ -138,11 +138,11 @@ build_native()
             exit 1
         fi
     elif [[ "$targetOS" == ohos ]]; then
-        # HarmonyOS (OpenHarmony) NDK-style toolchain. The OHOS NDK provides its
+        # OpenHarmony NDK-style toolchain. The OHOS NDK provides its
         # own CMake toolchain file (ohos.toolchain.cmake) which sets CMAKE_SYSTEM_NAME=OHOS
         # and selects the aarch64/arm/x86_64 ohos clang wrappers + sysroot.
         if [[ -z "$OHOS_NDK_HOME" ]]; then
-            echo "Error: You need to set the OHOS_NDK_HOME environment variable pointing to the HarmonyOS NDK root."
+            echo "Error: You need to set the OHOS_NDK_HOME environment variable pointing to the OpenHarmony NDK root."
             exit 1
         fi
 
@@ -629,7 +629,7 @@ elif [[ "$__TargetOS" == android ]]; then
     # nothing to do here
     true
 elif [[ "$__TargetOS" == ohos ]]; then
-    # HarmonyOS uses its NDK toolchain, no rootfs required
+    # OpenHarmony uses its NDK toolchain, no rootfs required
     true
 else
     __CMakeArgs="-DFEATURE_DISTRO_AGNOSTIC_SSL=$__PortableBuild $__CMakeArgs"
@@ -639,7 +639,7 @@ fi
 if [[ "$__CrossBuild" == 1 ]]; then
     CROSSCOMPILE=1
     export CROSSCOMPILE
-    # Darwin that doesn't use rootfs; HarmonyOS uses its NDK toolchain
+    # Darwin that doesn't use rootfs; OpenHarmony uses its NDK toolchain
     if [[ -z "$ROOTFS_DIR" && "$platform" != "darwin" && "$__TargetOS" != "ohos" ]]; then
         ROOTFS_DIR="$__RepoRootDir/.tools/rootfs/$__TargetArch"
         export ROOTFS_DIR

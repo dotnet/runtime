@@ -28,7 +28,7 @@ if(NOT WIN32 AND NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI)
       return()
     endif()
 
-    # For NDK-style toolchains (HarmonyOS) the compiler lives outside PATH.
+    # For NDK-style toolchains (OpenHarmony) the compiler lives outside PATH.
     # Hint find_program at the compiler's directory so tools like llvm-ar/nm are located.
     # Guarded to OHOS only so other platforms keep their existing lookup behavior.
     if(CLR_CMAKE_HOST_OPENHARMONY)
