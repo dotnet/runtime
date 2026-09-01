@@ -4623,16 +4623,14 @@ bool Compiler::impIsImplicitTailCallCandidate(
 //------------------------------------------------------------------------
 // impFixupStructReturnType: Adjust a struct value being returned.
 //
-// In the multi-reg case, we we force IR to be one of the following:
+// In the multi-reg case, we force IR to be one of the following:
 // GT_RETURN(LCL_VAR) or GT_RETURN(CALL). If op is anything other than
 // a lclvar or call, it is assigned to a temp, which is then returned.
 // In the non-multireg case, calls that return via a return buffer are
-// handled. This covers the two special helpers with "fake" return buffers
-// ("GETFIELDSTRUCT" and "UNBOX_NULLABLE"), as well as inline candidates
-// whose ABI requires a real return buffer. The latter reach here when an
-// intrinsic such as "Unsafe.BitCast" forwards the candidate's GT_RET_EXPR
-// as the return value of a method whose own return type does not use a
-// return buffer.
+// materialized into an address-taken temp. Such a call can reach here when
+// an intrinsic such as "Unsafe.BitCast" forwards it as the return value of
+// a method whose own return type does not use a return buffer; it may be a
+// GT_CALL or the GT_RET_EXPR placeholder of an inline candidate.
 //
 // Arguments:
 //    op - the return value
@@ -4665,22 +4663,13 @@ GenTree* Compiler::impFixupStructReturnType(GenTree* op)
 
     if ((retBufCall != nullptr) && retBufCall->ShouldHaveRetBufArg())
     {
-        // This is either one of those 'special' helpers that don't really have a return buffer,
-        // but instead use it as a way to keep the trees cleaner with fewer address-taken temps,
-        // or a call that genuinely returns via a return buffer. Either way we now have to
-        // materialize the return buffer as an address-taken temp. Then we can return the temp.
-        //
-        // Note we store "op" itself rather than "retBufCall": for a GT_RET_EXPR this lets
-        // "impStoreStruct" insert the return buffer argument into the candidate and prune the
-        // placeholder, which is what establishes the argument the inliner later expects.
-        //
         unsigned tmpNum = lvaGrabTemp(true DEBUGARG("pseudo return buffer"));
 
         // No need to spill anything as we're about to return.
         impStoreToTemp(tmpNum, op, CHECK_SPILL_NONE);
 
         op = gtNewLclvNode(tmpNum, info.compRetType);
-        JITDUMP("\nimpFixupStructReturnType: created a pseudo-return buffer for a special helper\n");
+        JITDUMP("\nimpFixupStructReturnType: created a pseudo-return buffer\n");
         DISPTREE(op);
 
         return op;
