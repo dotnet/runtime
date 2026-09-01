@@ -212,6 +212,12 @@ namespace ILCompiler.PortableCallHelpers
                 return true;
 
             // No DisableRuntimeMarshalling attribute, so check if the params/ret-type are blittable
+            //
+            // WASM-TODO: asking about the type alone is not enough to know what it marshals into,
+            // because [MarshalAs] and the other interop attributes on a parameter can change that.
+            // Marshaller.IsMarshallingRequired, or a more lenient variant of it, is the question to
+            // ask instead. Requiring DisableRuntimeMarshalling on wasm would retire the check
+            // altogether, and let the runtime drop its built-in marshalling code with it.
             MethodSignature signature = method.Signature;
             if (!signature.ReturnType.IsVoid && !IsBlittable(signature.ReturnType))
                 throw new LogAsErrorException($"The return type '{signature.ReturnType}' of pinvoke callback method '{method}' needs to be blittable.");
@@ -346,8 +352,9 @@ namespace ILCompiler.PortableCallHelpers
         }
 
         /// <summary>
-        /// Whether a type can be handed to native code as-is. Results are cached so that a type used
-        /// by many P/Invokes only produces one diagnostic.
+        /// Whether a type has the same representation in managed and unmanaged memory. See
+        /// https://learn.microsoft.com/dotnet/standard/native-interop/blittable-and-non-blittable-types.
+        /// Results are cached so that a type used by many callbacks only produces one diagnostic.
         /// </summary>
         public bool IsBlittable(TypeDesc type)
         {
