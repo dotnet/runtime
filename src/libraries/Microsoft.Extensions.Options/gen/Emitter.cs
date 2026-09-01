@@ -209,6 +209,7 @@ namespace Microsoft.Extensions.Options.Generators
             OutGeneratedCodeAttribute();
 
             string qualifiedClassName = $"{prefix}{suffix}_{className}";
+            string formatMessageOverride = GenerateFormatMessageOverride("Length");
 
             OutLn($$"""
 [global::System.AttributeUsage(global::System.AttributeTargets.Property | global::System.AttributeTargets.Field | global::System.AttributeTargets.Parameter, AllowMultiple = false)]
@@ -220,7 +221,7 @@ namespace Microsoft.Extensions.Options.Generators
         public {{qualifiedClassName}}(): base(() => DefaultErrorMessageString) { Length = MaxAllowableLength; }
         public int Length { get; }
         public override string FormatErrorMessage(string name) => string.Format(global::System.Globalization.CultureInfo.CurrentCulture, ErrorMessageString, name, Length);
-        public override bool IsValid(object? value)
+{{formatMessageOverride}}        public override bool IsValid(object? value)
         {
             if (Length == 0 || Length < -1)
             {
@@ -256,6 +257,7 @@ namespace Microsoft.Extensions.Options.Generators
             OutGeneratedCodeAttribute();
 
             string qualifiedClassName = $"{prefix}{suffix}_{className}";
+            string formatMessageOverride = GenerateFormatMessageOverride("Length");
 
             OutLn($$"""
 [global::System.AttributeUsage(global::System.AttributeTargets.Property | global::System.AttributeTargets.Field | global::System.AttributeTargets.Parameter, AllowMultiple = false)]
@@ -293,7 +295,7 @@ namespace Microsoft.Extensions.Options.Generators
             return length >= Length;
         }
         public override string FormatErrorMessage(string name) => string.Format(global::System.Globalization.CultureInfo.CurrentCulture, ErrorMessageString, name, Length);
-    }
+{{formatMessageOverride}}    }
 """);
         }
 
@@ -302,6 +304,7 @@ namespace Microsoft.Extensions.Options.Generators
             OutGeneratedCodeAttribute();
 
             string qualifiedClassName = $"{prefix}{suffix}_{className}";
+            string formatMessageOverride = GenerateFormatMessageOverride("MinimumLength, MaximumLength");
 
             OutLn($$"""
 [global::System.AttributeUsage(global::System.AttributeTargets.Property | global::System.AttributeTargets.Field | global::System.AttributeTargets.Parameter, AllowMultiple = false)]
@@ -343,7 +346,7 @@ namespace Microsoft.Extensions.Options.Generators
             return (uint)(length - MinimumLength) <= (uint)(MaximumLength - MinimumLength);
         }
         public override string FormatErrorMessage(string name) => string.Format(global::System.Globalization.CultureInfo.CurrentCulture, ErrorMessageString, name, MinimumLength, MaximumLength);
-    }
+{{formatMessageOverride}}    }
 """);
         }
 
@@ -352,6 +355,7 @@ namespace Microsoft.Extensions.Options.Generators
             OutGeneratedCodeAttribute();
 
             string qualifiedClassName = $"{prefix}{suffix}_{className}";
+            string formatMessageOverride = GenerateFormatMessageOverride("OtherProperty");
 
             OutLn($$"""
 [global::System.AttributeUsage(global::System.AttributeTargets.Property, AllowMultiple = false)]
@@ -383,7 +387,7 @@ namespace Microsoft.Extensions.Options.Generators
             return null;
         }
         public override string FormatErrorMessage(string name) => string.Format(global::System.Globalization.CultureInfo.CurrentCulture, ErrorMessageString, name, OtherProperty);
-    }
+{{formatMessageOverride}}    }
 """);
         }
 
@@ -392,6 +396,7 @@ namespace Microsoft.Extensions.Options.Generators
             OutGeneratedCodeAttribute();
 
             string qualifiedClassName = $"{prefix}{suffix}_{className}";
+            string formatMessageOverride = GenerateFormatMessageOverride("Minimum, Maximum", ensureInitialized: true);
 
             string initializationString = emitTimeSpanSupport ?
             """
@@ -462,7 +467,50 @@ namespace Microsoft.Extensions.Options.Generators
                         }
             """;
 
+            string ensureInitializedBody = $$"""
+            if (!_initialized)
+            {
+                lock (_lock)
+                {
+                    if (!_initialized)
+                    {
+                        if (Minimum is null || Maximum is null)
+                        {
+                            throw new global::System.InvalidOperationException(MinMaxError);
+                        }
+                        if (_needToConvertMinMax)
+                        {
+                            global::System.Globalization.CultureInfo culture = ParseLimitsInInvariantCulture ? global::System.Globalization.CultureInfo.InvariantCulture : global::System.Globalization.CultureInfo.CurrentCulture;
+{{initializationString}}
+                        }
+                        int cmp = ((global::System.IComparable)Minimum).CompareTo((global::System.IComparable)Maximum);
+                        if (cmp > 0)
+                        {
+                            throw new global::System.InvalidOperationException("The maximum value '{Maximum}' must be greater than or equal to the minimum value '{Minimum}'.");
+                        }
+                        else if (cmp == 0 && (MinimumIsExclusive || MaximumIsExclusive))
+                        {
+                            throw new global::System.InvalidOperationException("Cannot use exclusive bounds when the maximum value is equal to the minimum value.");
+                        }
+                        _initialized = true;
+                    }
+                }
+            }
+""";
 
+            string initializeRange = ensureInitializedBody;
+            string ensureInitializedMethod = string.Empty;
+            if (_symbolHolder.HasValidationAttributeFormatMessageMethod)
+            {
+                initializeRange = "            EnsureInitialized();";
+
+                StringBuilder sb = new();
+                sb.AppendLine("        private void EnsureInitialized()");
+                sb.AppendLine("        {");
+                sb.AppendLine(ensureInitializedBody);
+                sb.AppendLine("        }");
+                ensureInitializedMethod = sb.ToString();
+            }
 
             OutLn($$"""
 [global::System.AttributeUsage(global::System.AttributeTargets.Property | global::System.AttributeTargets.Field | global::System.AttributeTargets.Parameter, AllowMultiple = false)]
@@ -496,41 +544,14 @@ namespace Microsoft.Extensions.Options.Generators
         public bool ConvertValueInInvariantCulture { get; set; }
         public override string FormatErrorMessage(string name) =>
                 string.Format(global::System.Globalization.CultureInfo.CurrentCulture, GetValidationErrorMessage(), name, Minimum, Maximum);
-        private readonly bool _needToConvertMinMax;
+{{formatMessageOverride}}        private readonly bool _needToConvertMinMax;
         private volatile bool _initialized;
         private readonly object _lock = new();
         private const string MinMaxError = "The minimum and maximum values must be set to valid values.";
 
         public override bool IsValid(object? value)
         {
-            if (!_initialized)
-            {
-                lock (_lock)
-                {
-                    if (!_initialized)
-                    {
-                        if (Minimum is null || Maximum is null)
-                        {
-                            throw new global::System.InvalidOperationException(MinMaxError);
-                        }
-                        if (_needToConvertMinMax)
-                        {
-                            global::System.Globalization.CultureInfo culture = ParseLimitsInInvariantCulture ? global::System.Globalization.CultureInfo.InvariantCulture : global::System.Globalization.CultureInfo.CurrentCulture;
-{{initializationString}}
-                        }
-                        int cmp = ((global::System.IComparable)Minimum).CompareTo((global::System.IComparable)Maximum);
-                        if (cmp > 0)
-                        {
-                            throw new global::System.InvalidOperationException("The maximum value '{Maximum}' must be greater than or equal to the minimum value '{Minimum}'.");
-                        }
-                        else if (cmp == 0 && (MinimumIsExclusive || MaximumIsExclusive))
-                        {
-                            throw new global::System.InvalidOperationException("Cannot use exclusive bounds when the maximum value is equal to the minimum value.");
-                        }
-                        _initialized = true;
-                    }
-                }
-            }
+{{initializeRange}}
 
             if (value is null or string { Length: 0 })
             {
@@ -549,7 +570,7 @@ namespace Microsoft.Extensions.Options.Generators
                 (MinimumIsExclusive ? min.CompareTo(convertedValue) < 0 : min.CompareTo(convertedValue) <= 0) &&
                 (MaximumIsExclusive ? max.CompareTo(convertedValue) > 0 : max.CompareTo(convertedValue) >= 0);
         }
-        private string GetValidationErrorMessage()
+{{ensureInitializedMethod}}        private string GetValidationErrorMessage()
         {
             return (MinimumIsExclusive, MaximumIsExclusive) switch
             {
@@ -573,6 +594,28 @@ namespace Microsoft.Extensions.Options.Generators
         }
     }
 """);
+        }
+
+        private string GenerateFormatMessageOverride(string arguments, bool ensureInitialized = false)
+        {
+            if (!_symbolHolder.HasValidationAttributeFormatMessageMethod)
+            {
+                return string.Empty;
+            }
+
+            StringBuilder sb = new();
+            sb.AppendLine("""        public override string FormatMessage([global::System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, string name)""");
+            sb.AppendLine("        {");
+
+            if (ensureInitialized)
+            {
+                sb.AppendLine("            EnsureInitialized();");
+                sb.AppendLine();
+            }
+
+            sb.AppendLine($"            return string.Format(global::System.Globalization.CultureInfo.CurrentCulture, format, name, {arguments});");
+            sb.AppendLine("        }");
+            return sb.ToString();
         }
 
         private string GenerateStronglyTypedCodeForLengthAttributes(HashSet<object> data)

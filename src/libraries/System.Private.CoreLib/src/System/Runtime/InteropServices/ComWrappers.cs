@@ -808,14 +808,20 @@ namespace System.Runtime.InteropServices
 
             ManagedObjectWrapperHolder managedObjectWrapper = _managedObjectWrapperTable.GetOrAdd(instance, static (c, state) =>
             {
-                ManagedObjectWrapper* value = state.This.CreateManagedObjectWrapper(c, state.flags);
+                ManagedObjectWrapper* value = state.ComWrappers.CreateManagedObjectWrapper(c, state.Flags);
                 return new ManagedObjectWrapperHolder(value, c);
-            }, new { This = this, flags });
+            }, new CreateManagedObjectWrapperState(this, flags));
 
             managedObjectWrapper.AddRef();
             RegisterManagedObjectWrapperForDiagnostics(instance, managedObjectWrapper);
 
             return managedObjectWrapper.ComIp;
+        }
+
+        private readonly struct CreateManagedObjectWrapperState(ComWrappers comWrappers, CreateComInterfaceFlags flags)
+        {
+            public readonly ComWrappers ComWrappers = comWrappers;
+            public readonly CreateComInterfaceFlags Flags = flags;
         }
 
         private static void RegisterManagedObjectWrapperForDiagnostics(object instance, ManagedObjectWrapperHolder wrapper)

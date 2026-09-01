@@ -39,25 +39,31 @@
     </ItemGroup>
     <PropertyGroup>
       <_BuildWasmAppsPayloadArchive>@(_WasmWorkItem)</_BuildWasmAppsPayloadArchive>
+      <!-- Lanes that run with the workload installed and with the default fingerprinting/bundler
+           settings fan out per test class (this includes the webcil permutations); every other
+           lane runs as a single work item. Identical for every runtime flavor - only
+           $(BuildWasmAppsJobsList) differs. -->
+      <_FanOutPerTestClass>false</_FanOutPerTestClass>
+      <_FanOutPerTestClass Condition="'$(TestUsingWorkloads)' == 'true' and '$(WasmFingerprintAssets)' == 'true' and '$(WasmBundlerFriendlyBootConfig)' == 'false'">true</_FanOutPerTestClass>
     </PropertyGroup>
 
-    <ReadLinesFromFile File="$(BuildWasmAppsJobsList)" Condition="Exists($(BuildWasmAppsJobsList))">
+    <!-- The fan-out lane has no catch-all work item, so a missing list means the tests silently do not run. -->
+    <Error Condition="'$(_FanOutPerTestClass)' == 'true' and !Exists('$(BuildWasmAppsJobsList)')"
+           Text="Test class list '$(BuildWasmAppsJobsList)' was not found, so no tests would be run. It is generated while building Wasm.Build.Tests." />
+
+    <ReadLinesFromFile File="$(BuildWasmAppsJobsList)" Condition="Exists('$(BuildWasmAppsJobsList)')">
       <Output TaskParameter="Lines" ItemName="BuildWasmApps_PerJobList" />
     </ReadLinesFromFile>
 
-    <!-- Lanes that run with the workload installed and with the default fingerprinting/bundler
-         settings fan out per test class (this includes the webcil permutations); every other
-         lane runs as a single work item. Identical for every runtime flavor - only
-         $(BuildWasmAppsJobsList) differs. -->
     <ItemGroup>
-      <HelixWorkItem Include="@(BuildWasmApps_PerJobList->'$(WorkItemPrefix)%(Identity)')" Condition="'$(TestUsingWorkloads)' == 'true' and '$(WasmFingerprintAssets)' == 'true' and '$(WasmBundlerFriendlyBootConfig)' == 'false'">
+      <HelixWorkItem Include="@(BuildWasmApps_PerJobList->'$(WorkItemPrefix)%(Identity)')" Condition="'$(_FanOutPerTestClass)' == 'true'">
         <PayloadArchive>$(_BuildWasmAppsPayloadArchive)</PayloadArchive>
         <PreCommands>$(EnvVarCommand) &quot;HELIX_XUNIT_ARGS=-class %(Identity)&quot;</PreCommands>
         <Command>$(HelixCommand)</Command>
         <Timeout>$(_workItemTimeout)</Timeout>
       </HelixWorkItem>
 
-      <HelixWorkItem Include="$(WorkItemPrefix)Wasm.Build.Tests" Condition="'$(TestUsingWorkloads)' != 'true' or '$(WasmFingerprintAssets)' != 'true' or '$(WasmBundlerFriendlyBootConfig)' != 'false'">
+      <HelixWorkItem Include="$(WorkItemPrefix)Wasm.Build.Tests" Condition="'$(_FanOutPerTestClass)' != 'true'">
         <PayloadArchive>$(_BuildWasmAppsPayloadArchive)</PayloadArchive>
         <Command>$(HelixCommand)</Command>
         <Timeout>$(_workItemTimeout)</Timeout>

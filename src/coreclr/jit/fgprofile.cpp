@@ -1859,6 +1859,29 @@ void EfficientEdgeCountInstrumentor::Instrument(BasicBlock* block, Schema& schem
 }
 
 //------------------------------------------------------------------------
+// UpdateNodeAndAncestorSideEffects: Update side effect flags after modifying a node.
+//
+// Arguments:
+//    compiler  - The compiler instance
+//    node      - The modified node
+//    ancestors - The visitor stack containing the node and its ancestors
+//
+// Notes:
+//    The profile instrumentation phase runs before parent links are available, so side effects
+//    introduced on the modified node must be propagated explicitly through the visitor stack.
+//
+static void UpdateNodeAndAncestorSideEffects(Compiler* compiler, GenTree* node, Compiler::GenTreeStack& ancestors)
+{
+    compiler->gtUpdateNodeSideEffects(node);
+
+    GenTreeFlags const effectFlags = node->gtFlags & GTF_ALL_EFFECT;
+    for (int i = 1; i < ancestors.Height(); i++)
+    {
+        ancestors.Top(i)->gtFlags |= effectFlags;
+    }
+}
+
+//------------------------------------------------------------------------
 // HandleHistogramProbeVisitor: invoke functor on each virtual call or cast-related
 //     helper calls in a tree
 //
@@ -1868,7 +1891,8 @@ class HandleHistogramProbeVisitor final : public GenTreeVisitor<HandleHistogramP
 public:
     enum
     {
-        DoPreOrder = true
+        DoPreOrder   = true,
+        ComputeStack = true
     };
 
     TFunctor& m_functor;
@@ -1886,7 +1910,7 @@ public:
         if (node->IsCall() && (m_compiler->compClassifyGDVProbeType(node->AsCall()) != Compiler::GDVProbeType::None))
         {
             assert(node->AsCall()->gtHandleHistogramProfileCandidateInfo != nullptr);
-            m_functor(m_compiler, node->AsCall());
+            m_functor(m_compiler, node->AsCall(), this->m_ancestors);
         }
 
         return Compiler::WALK_CONTINUE;
@@ -1902,7 +1926,8 @@ class ValueHistogramProbeVisitor final : public GenTreeVisitor<ValueHistogramPro
 public:
     enum
     {
-        DoPreOrder = true
+        DoPreOrder   = true,
+        ComputeStack = true
     };
 
     TFunctor& m_functor;
@@ -1923,7 +1948,7 @@ public:
             const NamedIntrinsic ni = m_compiler->lookupNamedIntrinsic(node->AsCall()->gtCallMethHnd);
             if ((ni == NI_System_SpanHelpers_Memmove) || (ni == NI_System_SpanHelpers_SequenceEqual))
             {
-                m_functor(m_compiler, node);
+                m_functor(m_compiler, node, this->m_ancestors);
             }
         }
         return Compiler::WALK_CONTINUE;
@@ -1946,7 +1971,7 @@ public:
     {
     }
 
-    void operator()(Compiler* compiler, GenTreeCall* call)
+    void operator()(Compiler* compiler, GenTreeCall* call, Compiler::GenTreeStack&)
     {
         Compiler::GDVProbeType probeType = compiler->compClassifyGDVProbeType(call);
 
@@ -2009,7 +2034,7 @@ public:
     {
     }
 
-    void operator()(Compiler* compiler, GenTree* call)
+    void operator()(Compiler* compiler, GenTree* call, Compiler::GenTreeStack&)
     {
         ICorJitInfo::PgoInstrumentationSchema schemaElem = {};
         schemaElem.Count                                 = 1;
@@ -2046,7 +2071,7 @@ public:
     {
     }
 
-    void operator()(Compiler* compiler, GenTreeCall* call)
+    void operator()(Compiler* compiler, GenTreeCall* call, Compiler::GenTreeStack& ancestors)
     {
         JITDUMP("Found call [%06u] with probe index %d and ilOffset 0x%X\n", compiler->dspTreeID(call),
                 call->gtHandleHistogramProfileCandidateInfo->probeIndex,
@@ -2154,6 +2179,7 @@ public:
         // Update the call
         //
         objUse->SetEarlyNode(storeCommaNode);
+        UpdateNodeAndAncestorSideEffects(compiler, call, ancestors);
 
         JITDUMP("Modified call is now\n");
         DISPTREE(call);
@@ -2243,7 +2269,7 @@ public:
     {
     }
 
-    void operator()(Compiler* compiler, GenTree* node)
+    void operator()(Compiler* compiler, GenTree* node, Compiler::GenTreeStack& ancestors)
     {
         if (*m_currentSchemaIndex >= (int)m_schema.size())
         {
@@ -2299,6 +2325,8 @@ public:
 
         *lenArgRef = compiler->gtNewOperNode(GT_COMMA, lengthLocal->TypeGet(), helperCallNode,
                                              compiler->gtCloneExpr(lengthLocal));
+        UpdateNodeAndAncestorSideEffects(compiler, node, ancestors);
+
         m_instrCount++;
     }
 };

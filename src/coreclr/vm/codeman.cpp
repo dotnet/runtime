@@ -630,8 +630,15 @@ CodeHeapIterator::CodeHeapIterator(EECodeGenManager* manager, HeapList* heapList
     , m_Iterator{}
     , m_Heaps{}
     , m_HeapsIndexNext{ 0 }
-    , m_pLoaderAllocatorFilter{ pLoaderAllocatorFilter }
+    , m_pIteratorHeap{ NULL }
+    , m_iteratorHeapEnd{ 0 }
+    , m_pNextCode{ NULL }
+    , m_pNextCodeHeap{ NULL }
+    , m_nextCodeHeapEnd{ 0 }
+    , m_pCurrentCode{ NULL }
     , m_pCurrent{ NULL }
+    , m_stubCodeBlockKind{ STUB_CODE_BLOCK_UNKNOWN }
+    , m_codeSize{ 0 }
     , m_codeType(manager->GetCodeType())
 {
     CONTRACTL
@@ -646,16 +653,19 @@ CodeHeapIterator::CodeHeapIterator(EECodeGenManager* manager, HeapList* heapList
     HeapList* current = heapList;
     while (current)
     {
-        HeapListState* state = m_Heaps.AppendThrowing();
-        state->Heap = current;
-        state->MapBase = (void*)current->mapBase;
-        state->HdrMap = current->pHdrMap;
-        state->MaxCodeHeapSize = current->maxCodeHeapSize;
+        if (pLoaderAllocatorFilter == NULL || current->pLoaderAllocator == pLoaderAllocatorFilter)
+        {
+            HeapListState* state = m_Heaps.AppendThrowing();
+            state->Heap = current;
+            state->MapBase = (void*)current->mapBase;
+            state->HdrMap = current->pHdrMap;
+            state->MaxCodeHeapSize = current->maxCodeHeapSize;
+            state->EndAddress = current->endAddress;
+        }
 
         current = current->GetNext();
     }
 
-    // Move to the first method section.
     (void)NextMethodSectionIterator();
 }
 
@@ -717,39 +727,102 @@ bool CodeHeapIterator::Next()
     }
     CONTRACTL_END;
 
-    while (true)
+    if (m_pNextCode == NULL && !AdvanceIterator(&m_pNextCode, &m_pNextCodeHeap, &m_nextCodeHeapEnd))
     {
-        if (!m_Iterator.Next())
+        return false;
+    }
+
+    m_pCurrentCode = m_pNextCode;
+    HeapList* currentCodeHeap = m_pNextCodeHeap;
+    TADDR currentCodeHeapEnd = m_nextCodeHeapEnd;
+
+    if (!AdvanceIterator(&m_pNextCode, &m_pNextCodeHeap, &m_nextCodeHeapEnd))
+    {
+        m_pNextCode = NULL;
+        m_pNextCodeHeap = NULL;
+        m_nextCodeHeapEnd = 0;
+    }
+
+    TADDR currentCodeEnd = currentCodeHeapEnd;
+    if (m_pNextCode != NULL && m_pNextCodeHeap == currentCodeHeap)
+    {
+        currentCodeEnd = (TADDR)m_pNextCode;
+    }
+
+    _ASSERTE((TADDR)m_pCurrentCode < currentCodeEnd);
+    size_t boundedCodeSize = currentCodeEnd - (TADDR)m_pCurrentCode;
+    m_stubCodeBlockKind = STUB_CODE_BLOCK_UNKNOWN;
+    m_codeSize = 0;
+
+#ifdef FEATURE_INTERPRETER
+    if (m_codeType == (miManaged | miIL | miOPTIL))
+    {
+        // Interpreter case
+        InterpreterCodeHeader* pHdr = (InterpreterCodeHeader*)(m_pCurrentCode - sizeof(InterpreterCodeHeader));
+        m_pCurrent = pHdr->GetMethodDesc();
+    }
+    else
+#endif
+    {
+        CodeHeader* pHdr = (CodeHeader*)(m_pCurrentCode - sizeof(CodeHeader));
+        if (pHdr->IsStubCodeBlock())
         {
-            if (!NextMethodSectionIterator())
-                return false;
+            m_pCurrent = NULL;
+            m_stubCodeBlockKind = pHdr->GetStubCodeBlockKind();
+
+            if (m_pNextCode != NULL && m_pNextCodeHeap == currentCodeHeap)
+            {
+                _ASSERTE(boundedCodeSize > sizeof(CodeHeader));
+                boundedCodeSize -= sizeof(CodeHeader);
+            }
+
+            if (m_stubCodeBlockKind == STUB_CODE_BLOCK_JUMPSTUB)
+            {
+                JumpStubBlockHeader* jumpStubBlock = (JumpStubBlockHeader*)m_pCurrentCode;
+                size_t jumpStubBlockSize = jumpStubBlock->GetBlockSize();
+                _ASSERTE(jumpStubBlockSize <= boundedCodeSize);
+                boundedCodeSize = jumpStubBlockSize;
+            }
+            _ASSERTE(FitsInU4(boundedCodeSize));
+            m_codeSize = static_cast<DWORD>(boundedCodeSize);
         }
         else
         {
-            BYTE* code = m_Iterator.GetMethodCode();
-#ifdef FEATURE_INTERPRETER
-            if (m_codeType == (miManaged | miIL | miOPTIL))
+            m_pCurrent = pHdr->GetMethodDesc();
+        }
+    }
+
+    return true;
+}
+
+bool CodeHeapIterator::AdvanceIterator(BYTE** code, HeapList** heap, TADDR* heapEnd)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    while (true)
+    {
+        while (m_Iterator.Next())
+        {
+            BYTE* nextCode = m_Iterator.GetMethodCode();
+            if ((TADDR)nextCode < m_iteratorHeapEnd)
             {
-                // Interpreter case
-                InterpreterCodeHeader* pHdr = (InterpreterCodeHeader*)(code - sizeof(InterpreterCodeHeader));
-                m_pCurrent = pHdr->GetMethodDesc();
-            }
-            else
-#endif
-            {
-                CodeHeader* pHdr = (CodeHeader*)(code - sizeof(CodeHeader));
-                m_pCurrent = !pHdr->IsStubCodeBlock() ? pHdr->GetMethodDesc() : NULL;
+                *code = nextCode;
+                *heap = m_pIteratorHeap;
+                *heapEnd = m_iteratorHeapEnd;
+                return true;
             }
 
-            // LoaderAllocator filter
-            if (m_pLoaderAllocatorFilter && m_pCurrent)
-            {
-                LoaderAllocator *pCurrentLoaderAllocator = m_pCurrent->GetLoaderAllocator();
-                if (pCurrentLoaderAllocator != m_pLoaderAllocatorFilter)
-                    continue;
-            }
+            break;
+        }
 
-            return true;
+        if (!NextMethodSectionIterator())
+        {
+            return false;
         }
     }
 }
@@ -766,10 +839,14 @@ bool CodeHeapIterator::NextMethodSectionIterator()
     if (m_HeapsIndexNext >= m_Heaps.Count())
     {
         m_Iterator = {};
+        m_pIteratorHeap = NULL;
+        m_iteratorHeapEnd = 0;
         return false;
     }
 
     HeapListState& curr = m_Heaps.Table()[m_HeapsIndexNext++];
+    m_pIteratorHeap = curr.Heap;
+    m_iteratorHeapEnd = curr.EndAddress;
     m_Iterator = MethodSectionIterator{
         curr.MapBase,
         (COUNT_T)curr.MaxCodeHeapSize,
@@ -2247,6 +2324,23 @@ BOOL EEJitManager::LoadJIT()
 
 //**************************************************************************
 
+static void ReportCodeHeapStubBlock(void* start, size_t size, StubCodeBlockKind kind)
+{
+    WRAPPER_NO_CONTRACT;
+
+    ReportStubBlock(start, size, kind);
+
+#if defined(FEATURE_EVENT_TRACE) && !defined(DACCESS_COMPILE)
+    if (FitsInU4(size))
+    {
+        ETW::MethodLog::HelperInitialized(
+            reinterpret_cast<ULONGLONG>(start),
+            static_cast<ULONG>(size),
+            GetStubCodeBlockKindStringW(kind));
+    }
+#endif // FEATURE_EVENT_TRACE && !DACCESS_COMPILE
+}
+
 CodeFragmentHeap::CodeFragmentHeap(LoaderAllocator * pAllocator, StubCodeBlockKind kind)
     : m_pAllocator(pAllocator), m_pFreeBlocks(NULL), m_kind(kind),
     // CRST_DEBUGGER_THREAD - We take this lock on debugger thread during EnC add meth
@@ -2307,7 +2401,6 @@ TaggedMemAllocPtr CodeFragmentHeap::RealAllocAlignedMem(size_t  dwRequestedSize
     dwRequestedSize = ALIGN_UP(dwRequestedSize, sizeof(TADDR));
 
     // We will try to batch up allocation of small blocks into one large allocation
-#define SMALL_BLOCK_THRESHOLD 0x100
     SIZE_T nFreeSmallBlocks = 0;
 
     FreeBlock ** ppBestFit = NULL;
@@ -2343,7 +2436,7 @@ TaggedMemAllocPtr CodeFragmentHeap::RealAllocAlignedMem(size_t  dwRequestedSize
         if (dwSize < SMALL_BLOCK_THRESHOLD)
             dwSize = 4 * SMALL_BLOCK_THRESHOLD;
         pMem = ExecutionManager::GetEEJitManager()->AllocCodeFragmentBlock(dwSize, dwAlignment, m_pAllocator, m_kind);
-        ReportStubBlock(pMem, dwSize, m_kind);
+        ReportCodeHeapStubBlock(pMem, dwSize, m_kind);
     }
 
     SIZE_T dwExtra = (BYTE *)ALIGN_UP(pMem, dwAlignment) - (BYTE *)pMem;
@@ -3481,22 +3574,22 @@ JumpStubBlockHeader *  EEJitManager::AllocJumpStubBlock(MethodDesc* pMD, DWORD n
         ExecutableWriterHolder<CodeHeader> codeHdrWriterHolder(pCodeHdr, sizeof(CodeHeader));
         codeHdrWriterHolder.GetRW()->SetStubCodeBlockKind(STUB_CODE_BLOCK_JUMPSTUB);
 
-        NibbleMapSetUnlocked(pCodeHeap, mem, blockSize);
-
         blockWriterHolder.AssignExecutableWriterHolder((JumpStubBlockHeader *)mem, sizeof(JumpStubBlockHeader));
 
         _ASSERTE(IS_ALIGNED(blockWriterHolder.GetRW(), CODE_SIZE_ALIGN));
+
+        blockWriterHolder.GetRW()->m_next = NULL;
+        blockWriterHolder.GetRW()->m_used = 0;
+        blockWriterHolder.GetRW()->m_allocated = numJumps;
+        if (pMD && pMD->IsLCGMethod())
+            blockWriterHolder.GetRW()->SetHostCodeHeap(static_cast<HostCodeHeap*>(pCodeHeap->pHeap));
+        else
+            blockWriterHolder.GetRW()->SetLoaderAllocator(pLoaderAllocator);
+
+        NibbleMapSetUnlocked(pCodeHeap, mem, blockSize);
     }
 
-    ReportStubBlock((void*)mem, blockSize, STUB_CODE_BLOCK_JUMPSTUB);
-
-    blockWriterHolder.GetRW()->m_next            = NULL;
-    blockWriterHolder.GetRW()->m_used            = 0;
-    blockWriterHolder.GetRW()->m_allocated       = numJumps;
-    if (pMD && pMD->IsLCGMethod())
-        blockWriterHolder.GetRW()->SetHostCodeHeap(static_cast<HostCodeHeap*>(pCodeHeap->pHeap));
-    else
-        blockWriterHolder.GetRW()->SetLoaderAllocator(pLoaderAllocator);
+    ReportCodeHeapStubBlock((void*)mem, blockSize, STUB_CODE_BLOCK_JUMPSTUB);
 
     LOG((LF_JIT, LL_INFO1000, "Allocated new JumpStubBlockHeader for %d stubs at" FMT_ADDR " in loader allocator " FMT_ADDR "\n",
          numJumps, DBG_ADDR(mem) , DBG_ADDR(pLoaderAllocator) ));
@@ -4161,6 +4254,39 @@ bool EECodeGenManager::TryFreeHostCodeHeapMemory(HostCodeHeap* pCodeHeap, void* 
     }
 
     FreeHostCodeHeapMemoryWorker(pCodeHeap, codeStart);
+    return true;
+}
+
+bool EECodeGenManager::TryFreeJumpStubBlock(HostCodeHeap* pCodeHeap, JumpStubBlockHeader* pJumpStubBlock)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        PRECONDITION(pCodeHeap != NULL);
+        PRECONDITION(pJumpStubBlock != NULL);
+    }
+    CONTRACTL_END;
+
+    CrstHolder ch(&m_CodeHeapLock);
+    if (m_iteratorCount != 0)
+    {
+        // If we are in the middle of an enumeration, we cannot destroy code heap memory.
+        return false;
+    }
+
+#if defined(FEATURE_EVENT_TRACE) && !defined(DACCESS_COMPILE)
+    size_t blockSize = pJumpStubBlock->GetBlockSize();
+    if (FitsInU4(blockSize))
+    {
+        ETW::MethodLog::HelperDestroyed(
+            reinterpret_cast<ULONGLONG>(pJumpStubBlock),
+            static_cast<ULONG>(blockSize),
+            GetStubCodeBlockKindStringW(STUB_CODE_BLOCK_JUMPSTUB));
+    }
+#endif // FEATURE_EVENT_TRACE && !DACCESS_COMPILE
+
+    FreeHostCodeHeapMemoryWorker(pCodeHeap, pJumpStubBlock);
     return true;
 }
 
