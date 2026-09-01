@@ -189,8 +189,20 @@ namespace ILCompiler.PortableCallHelpers
 
         private bool DoesMethodHaveCallbacks(EcmaMethod method)
         {
-            if (!MethodHasCallbackAttributes(method))
+            if (!method.HasCustomAttribute("System.Runtime.InteropServices", "UnmanagedCallersOnlyAttribute"))
+            {
+                // Mono matches [MonoPInvokeCallback] by simple name - no assembly declares it - and
+                // wraps such a method on wasm whether interpreted or AOT. Nothing here can dispatch
+                // one: a thunk is only ever looked up for a method carrying UnmanagedCallersOnly, so
+                // an entry emitted for it is unreachable.
+                if (HasAttributeByName(method, "MonoPInvokeCallbackAttribute"))
+                {
+                    log.Warning("WASM0065",
+                        $"Ignoring [MonoPInvokeCallback] on '{method}', which does not make it callable from native code. Use [UnmanagedCallersOnly] instead.");
+                }
+
                 return false;
+            }
 
             if (IsUnsupportedOnPlatform(method))
                 return false;
@@ -211,10 +223,6 @@ namespace ILCompiler.PortableCallHelpers
 
             return true;
         }
-
-        private static bool MethodHasCallbackAttributes(EcmaMethod method)
-            => method.HasCustomAttribute("System.Runtime.InteropServices", "UnmanagedCallersOnlyAttribute")
-                || HasAttributeByName(method, "MonoPInvokeCallbackAttribute");
 
         /// <summary>
         /// Matches an attribute by its simple name in any namespace, for attributes that are

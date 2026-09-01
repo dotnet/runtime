@@ -214,9 +214,8 @@ namespace ILCompiler.PortableCallHelpers
         public void EmitNativeToInterp(TextWriter w, List<PInvokeCallback> callbacks)
         {
             // Generate the native->interpreter entry functions. Native code calls these directly, so
-            // each one carries the native signature its caller expects, taken from the managed method
-            // it wraps - one marked [UnmanagedCallersOnly], or the [MonoPInvokeCallback] that
-            // MethodHasCallbackAttributes also accepts. Only blittable parameter and return types are
+            // each one carries the native signature its caller expects, taken from the
+            // [UnmanagedCallersOnly] method it wraps. Only blittable parameter and return types are
             // supported.
             //
             // Each wrapper caches the MethodDesc it dispatches to in a static and hands the arguments to
