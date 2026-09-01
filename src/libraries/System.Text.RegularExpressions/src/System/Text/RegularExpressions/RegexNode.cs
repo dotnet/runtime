@@ -846,9 +846,9 @@ namespace System.Text.RegularExpressions
                         }
 
                         // Force a re-reduction if we know we've exposed new opportunities that'll be handled.
-                        // If either side of the alternation is empty and the other side does not contain a capture,
-                        // the alternation can be transformed into a ? or ??. But if there is a capture, we cannot
-                        // reduce it as that would drop the capture.
+                        // If either side of the alternation is empty and the other side doesn't contain captures,
+                        // the alternation can be transformed into a ? or ??. When captures are present, that
+                        // transformation can change capture semantics (e.g., repeated captures), so avoid it.
                         reordered |=
                             child.ChildCount() == 2 &&
                             ((child.Child(0).Kind is RegexNodeKind.Empty && ContainsKind(child.Child(1), [RegexNodeKind.Capture]) is false) ||
