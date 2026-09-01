@@ -1664,7 +1664,7 @@ public:
 
     void ResetPortableEntryPoint();
     void SetPortableEntrypointInitialStateForMethod(PortableEntryPoint *portableEntry);
-    static void EnsurePortableEntryPointIsCallableFromR2R(PCODE entryPoint);
+    static void EnsurePortableEntryPointIsCallableFromNativeCode(PCODE entryPoint);
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 
     //*******************************************************************************

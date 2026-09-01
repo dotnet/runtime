@@ -11465,7 +11465,7 @@ PCODE CEECodeGenInfo::getHelperFtnStatic(CorInfoHelpFunc ftnNum)
         else
         {
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
-            MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(pfnHelper);
+            MethodDesc::EnsurePortableEntryPointIsCallableFromNativeCode(pfnHelper);
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
             VolatileStore(&hlpFuncEntryPoints[ftnNum], pfnHelper);
         }

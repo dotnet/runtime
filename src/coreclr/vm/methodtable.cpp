@@ -3577,7 +3577,7 @@ BOOL MethodTable::RunClassInitEx(OBJECTREF *pThrowable)
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
         // CallClassConstructor invokes the cctor via the function pointer, so its portable entrypoint
         // must resolve to real code if possible.
-        MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(pCctorCode);
+        MethodDesc::EnsurePortableEntryPointIsCallableFromNativeCode(pCctorCode);
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 
         UnmanagedCallersOnlyCaller caller(METHOD__INITHELPERS__CALLCLASSCONSTRUCTOR);

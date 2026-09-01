@@ -794,7 +794,7 @@ extern "C" void* QCALLTYPE GCInterface_GetNextFinalizableObject(QCall::ObjectHan
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
         // RunFinalizers invokes the finalizer via the function pointer, so its portable entrypoint must
         // resolve to real code if possible.
-        MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(funcPtr);
+        MethodDesc::EnsurePortableEntryPointIsCallableFromNativeCode(funcPtr);
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
     }
 

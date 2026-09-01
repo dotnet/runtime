@@ -2262,7 +2262,7 @@ PCODE MethodDesc::TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags
     else
     {
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
-        MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(entryPoint);
+        MethodDesc::EnsurePortableEntryPointIsCallableFromNativeCode(entryPoint);
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
     }
 
@@ -2960,15 +2960,16 @@ PCODE MethodDesc::GetPortableEntryPointIfExists()
     return GetTemporaryEntryPointIfExists();
 }
 
-// Prepare a portable entry point to be callable from R2R code. This doesn't necessarily
+// Prepare a portable entry point to be callable from native code (an R2R call, a delegate/ldftn,
+// a vtable slot, or the interpreter's own GetMultiCallableAddrOfCode path). This doesn't necessarily
 // fill in the native code slot, but if it is possible to do so it will.
-// This must be called before any R2R code may call the target method.
+// This must be called before any native code may call through the target method's address.
 //
 // Currently this is implemented by calling this in GetMultiCallableAddrOfCode
 // which works because current R2R codegen doesn't actually do direct vtable dispatch
 // If/When we fix that, we'll have to figure out the best way to ensure this is called
 // for virtual dispatches as well.
-void MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(PCODE entryPoint)
+void MethodDesc::EnsurePortableEntryPointIsCallableFromNativeCode(PCODE entryPoint)
 {
     WRAPPER_NO_CONTRACT;
 

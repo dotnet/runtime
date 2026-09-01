@@ -6020,7 +6020,7 @@ PCODE JitILStub(MethodDesc* pStubMD)
     else
     {
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
-        MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(pStubMD->GetPortableEntryPoint());
+        MethodDesc::EnsurePortableEntryPointIsCallableFromNativeCode(pStubMD->GetPortableEntryPoint());
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
     }
 

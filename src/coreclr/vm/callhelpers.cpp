@@ -578,7 +578,7 @@ void CallDefaultConstructor(OBJECTREF ref)
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
     // CallDefaultConstructor invokes the ctor via the function pointer, so its portable entrypoint
     // must resolve to real code if possible.
-    MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(ctorCode);
+    MethodDesc::EnsurePortableEntryPointIsCallableFromNativeCode(ctorCode);
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 
     defaultCtorInvoker.InvokeThrowing(&ref, ctorCode);
