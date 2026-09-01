@@ -99,6 +99,11 @@ namespace System.Net.Security
         private X509Certificate2Collection? _externalRemoteCertificates;
         private X509Certificate2? _externalPendingCert;
         private Exception? _externalValidationFault;
+        // Set when the caller explicitly rejected the peer certificate via
+        // SetRemoteCertificateValidationResult / AcceptWithDefaultValidation. Once set,
+        // GetRemoteCertificate must not surface the refused cert even though the underlying
+        // PAL security context may still hold it (SChannel keeps the peer cert on the context).
+        private bool _remoteCertificateRejected;
         private SslClientHelloInfo? _clientHelloInfo;
         private byte[]? _clientHelloBytesBuffered;
         // Session-local credentials handle. Non-null once SetClientCertificateContext
@@ -304,6 +309,13 @@ namespace System.Net.Security
                 return _externalPendingCert;
             }
 
+            // The caller rejected the peer certificate; do not fall back to the PAL, which would
+            // re-surface the refused cert still held on the underlying security context (SChannel).
+            if (_remoteCertificateRejected)
+            {
+                return null;
+            }
+
             if (_securityContext == null || _securityContext.IsInvalid)
             {
                 return null;
@@ -465,6 +477,10 @@ namespace System.Net.Security
             }
             else
             {
+                // The caller refused the peer certificate. Record the rejection so
+                // GetRemoteCertificate does not later re-surface it from the PAL security context.
+                _remoteCertificateRejected = true;
+
                 // Post-hoc rejection (handshake already wire-complete on OpenSSL 1.1.x or Schannel):
                 // surface the fault immediately so subsequent Encrypt/Decrypt throw. For the
                 // retry-verify path the handshake is still incomplete and the fault is set when

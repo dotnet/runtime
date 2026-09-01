@@ -2866,6 +2866,180 @@ namespace System.Net.Security.Tests
             Assert.Equal(ping, got);
         }
 
+        // Client-role socket-bound session that REJECTS the server certificate: with no callback,
+        // posting a non-None verdict via SetRemoteCertificateValidationResult must fault the session
+        // so subsequent Read/Write throw AuthenticationException and the rejected leaf is not
+        // surfaced by GetRemoteCertificate. Socket analog of the buffered
+        // ClientSession_ExternalValidation_CallbackRejectsCleanChain_FaultsSession reject path.
+        [Fact]
+        public async Task SocketBoundClientSession_ExternalValidation_RejectsServerCert_FaultsSession()
+        {
+            using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
+            string serverName = serverCert.GetNameInfo(X509NameType.SimpleName, forIssuer: false);
+
+            using Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+            listener.Listen(1);
+            int port = ((IPEndPoint)listener.LocalEndPoint!).Port;
+
+            using Socket clientUnderlying = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            Task connect = clientUnderlying.ConnectAsync(IPAddress.Loopback, port);
+            using Socket serverSocket = await listener.AcceptAsync();
+            await connect;
+
+            clientUnderlying.Blocking = false;
+            SafeSocketHandle clientHandle = clientUnderlying.SafeHandle;
+
+            using TlsContext ctx = TlsContext.CreateClient(new SslClientAuthenticationOptions
+            {
+                TargetHost = serverName,
+                EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                // No RemoteCertificateValidationCallback — caller drives validation externally.
+            });
+            using TlsSocketSession session = NewSocketSession(ctx, clientHandle);
+
+            using SslStream serverSsl = new SslStream(new NetworkStream(serverSocket, ownsSocket: false), leaveInnerStreamOpen: false);
+            Task serverHandshake = serverSsl.AuthenticateAsServerAsync(new SslServerAuthenticationOptions
+            {
+                ServerCertificate = serverCert,
+                EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                ClientCertificateRequired = false,
+            });
+
+            bool suspensionObserved = false;
+            AuthenticationException? clientFault = null;
+            Task clientHandshake = Task.Run(async () =>
+            {
+                try
+                {
+                    await DriveSocketHandshakeWithExternalValidationAsync(
+                        session,
+                        onSuspend: () =>
+                        {
+                            suspensionObserved = true;
+                            session.SetRemoteCertificateValidationResult(SslPolicyErrors.RemoteCertificateChainErrors);
+                        });
+                }
+                catch (AuthenticationException ex)
+                {
+                    // On PALs that fault the handshake mid-drive (OpenSSL 3.0+ retry-verify) the
+                    // rejection surfaces from Handshake() itself; capture it as the terminal state.
+                    clientFault = ex;
+                }
+            });
+
+            // The server (SslStream) completes its handshake on the wire before the client's
+            // app-level rejection lands (post-hoc reject path); let it finish, don't assert on it.
+            await serverHandshake.WaitAsync(TimeSpan.FromSeconds(30));
+            await clientHandshake.WaitAsync(TimeSpan.FromSeconds(30));
+
+            Assert.True(suspensionObserved, "Client never observed NeedsCertificateValidation on the socket path.");
+
+            // The rejection MUST fault the session. Either the drive threw AuthenticationException,
+            // or the next application operation does.
+            if (clientFault is null)
+            {
+                Assert.Throws<AuthenticationException>(() => session.Write("blocked"u8.ToArray(), out _));
+            }
+
+            // A refused certificate must not be surfaced to the caller.
+            Assert.Null(session.GetRemoteCertificate());
+        }
+
+        // Server-role socket-bound session that REJECTS the client certificate: with
+        // ClientCertificateRequired=true and no callback, the socket handshake must surface
+        // NeedsCertificateValidation with the presented client cert, and posting a non-None verdict
+        // must fault the server session (subsequent Write throws AuthenticationException). Socket
+        // analog of ServerSession_ExternalValidation_RejectsClientCert_ServerFaultsPostHoc.
+        [Theory]
+        [InlineData(SslProtocols.Tls12)]
+        [InlineData(SslProtocols.Tls13)]
+        public async Task SocketBoundServerSession_ExternalValidation_RejectsClientCert_ServerFaults(SslProtocols protocol)
+        {
+            if (protocol == SslProtocols.Tls13 && !PlatformDetection.SupportsTls13)
+            {
+                return;
+            }
+
+            using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
+            using X509Certificate2 clientCert = TestCertificates.GetClientCertificate();
+            string serverName = serverCert.GetNameInfo(X509NameType.SimpleName, forIssuer: false);
+
+            using Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+            listener.Listen(1);
+            int port = ((IPEndPoint)listener.LocalEndPoint!).Port;
+
+            using Socket clientUnderlying = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            Task connect = clientUnderlying.ConnectAsync(IPAddress.Loopback, port);
+            using Socket serverSocket = await listener.AcceptAsync();
+            await connect;
+
+            serverSocket.Blocking = false;
+            SafeSocketHandle serverHandle = serverSocket.SafeHandle;
+
+            using TlsContext ctx = TlsContext.CreateServer(new SslServerAuthenticationOptions
+            {
+                ServerCertificate = serverCert,
+                EnabledSslProtocols = protocol,
+                ClientCertificateRequired = true,
+                // No RemoteCertificateValidationCallback — caller drives validation externally.
+            });
+            using TlsSocketSession session = NewSocketSession(ctx, serverHandle);
+
+            using SslStream clientSsl = new SslStream(new NetworkStream(clientUnderlying, ownsSocket: false), leaveInnerStreamOpen: false, TestHelper.AllowAnyServerCertificate);
+            Task clientAuth = clientSsl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
+            {
+                TargetHost = serverName,
+                EnabledSslProtocols = protocol,
+                ClientCertificates = new X509CertificateCollection { clientCert },
+                RemoteCertificateValidationCallback = TestHelper.AllowAnyServerCertificate,
+            });
+
+            bool suspensionObserved = false;
+            string? observedClientCertThumbprint = null;
+            AuthenticationException? serverFault = null;
+            Task serverHandshake = Task.Run(async () =>
+            {
+                try
+                {
+                    await DriveSocketHandshakeWithExternalValidationAsync(
+                        session,
+                        onSuspend: () =>
+                        {
+                            suspensionObserved = true;
+                            // Capture the thumbprint before the reject verdict disposes the pending cert.
+                            using (X509Certificate2? observed = session.GetRemoteCertificate())
+                            {
+                                observedClientCertThumbprint = observed?.Thumbprint;
+                            }
+                            session.SetRemoteCertificateValidationResult(SslPolicyErrors.RemoteCertificateChainErrors);
+                        });
+                }
+                catch (AuthenticationException ex)
+                {
+                    serverFault = ex;
+                }
+            });
+
+            // The client's handshake completes on the wire (post-hoc reject path); let it finish.
+            await clientAuth.WaitAsync(TimeSpan.FromSeconds(30));
+            await serverHandshake.WaitAsync(TimeSpan.FromSeconds(30));
+
+            Assert.True(suspensionObserved, "Server never observed NeedsCertificateValidation on the socket path.");
+            Assert.NotNull(observedClientCertThumbprint);
+            Assert.Equal(clientCert.Thumbprint, observedClientCertThumbprint);
+
+            // The rejection MUST fault the server session — either from the drive or the next op.
+            if (serverFault is null)
+            {
+                Assert.Throws<AuthenticationException>(() => session.Write("blocked"u8.ToArray(), out _));
+            }
+
+            // A refused certificate must not be surfaced to the caller.
+            Assert.Null(session.GetRemoteCertificate());
+        }
+
         // Polls Handshake() on a non-blocking socket-bound session to completion. Resolves any
         // NeedsCertificateValidation suspension via AcceptWithDefaultValidation, first invoking
         // the optional onSuspend hook so callers can assert the suspension was surfaced.
