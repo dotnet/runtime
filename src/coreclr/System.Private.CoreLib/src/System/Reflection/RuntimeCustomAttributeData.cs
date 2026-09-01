@@ -39,17 +39,43 @@ namespace System.Reflection
 #if NATIVEAOT
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
             Justification = "Property setters and fields referenced by custom attribute metadata are preserved.")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",
+            Justification = "Metadata generation ensures custom attribute constructors are resolvable.")]
         internal RuntimeCustomAttributeData(MetadataReader reader, CustomAttributeHandle customAttributeHandle)
         {
             CustomAttribute customAttribute = customAttributeHandle.GetCustomAttribute(reader);
-            if (customAttribute.Constructor.HandleType != HandleType.QualifiedMethod)
-                throw new BadImageFormatException();
+            RuntimeTypeInfo attributeType;
+            if (customAttribute.Constructor.HandleType == HandleType.QualifiedMethod)
+            {
+                QualifiedMethod qualifiedMethod = customAttribute.Constructor.ToQualifiedMethodHandle(reader).GetQualifiedMethod(reader);
+                TypeDefinitionHandle declaringType = qualifiedMethod.EnclosingType;
+                MethodHandle methodHandle = qualifiedMethod.Method;
+                NativeFormatRuntimeNamedTypeInfo namedAttributeType = NativeFormatRuntimeNamedTypeInfo.GetRuntimeNamedTypeInfo(reader, declaringType, default(RuntimeTypeHandle));
+                attributeType = namedAttributeType;
+                m_ctor = RuntimePlainConstructorInfo<NativeFormatMethodCommon>.GetRuntimePlainConstructorInfo(new NativeFormatMethodCommon(methodHandle, namedAttributeType, namedAttributeType));
+            }
+            else if (customAttribute.Constructor.HandleType == HandleType.MemberReference)
+            {
+                MemberReference memberReference = customAttribute.Constructor.ToMemberReferenceHandle(reader).GetMemberReference(reader);
 
-            QualifiedMethod qualifiedMethod = customAttribute.Constructor.ToQualifiedMethodHandle(reader).GetQualifiedMethod(reader);
-            TypeDefinitionHandle declaringType = qualifiedMethod.EnclosingType;
-            MethodHandle methodHandle = qualifiedMethod.Method;
-            NativeFormatRuntimeNamedTypeInfo attributeType = NativeFormatRuntimeNamedTypeInfo.GetRuntimeNamedTypeInfo(reader, declaringType, default(RuntimeTypeHandle));
-            m_ctor = RuntimePlainConstructorInfo<NativeFormatMethodCommon>.GetRuntimePlainConstructorInfo(new NativeFormatMethodCommon(methodHandle, attributeType, attributeType));
+                // There is no chance a custom attribute type will be an open type specification so we can safely pass in the empty context here.
+                TypeContext typeContext = new TypeContext(Array.Empty<RuntimeTypeInfo>(), Array.Empty<RuntimeTypeInfo>());
+                attributeType = memberReference.Parent.Resolve(reader, typeContext);
+                MethodSignature signature = memberReference.Signature.ParseMethodSignature(reader);
+                HandleCollection signatureParameters = signature.Parameters;
+                Type[] expectedParameterTypes = new Type[signatureParameters.Count];
+                int index = 0;
+                foreach (Handle parameterHandle in signatureParameters)
+                {
+                    expectedParameterTypes[index++] = parameterHandle.Resolve(reader, attributeType.TypeContext).ToType();
+                }
+
+                m_ctor = ResolveAttributeConstructor(attributeType.ToType(), expectedParameterTypes);
+            }
+            else
+            {
+                throw new BadImageFormatException();
+            }
 
             ReadOnlySpan<ParameterInfo> parameters = m_ctor.GetParametersAsSpan();
             if (parameters.Length != 0)
@@ -94,6 +120,33 @@ namespace System.Reflection
         {
             foreach (CustomAttributeHandle customAttributeHandle in customAttributeHandles)
                 yield return new RuntimeCustomAttributeData(reader, customAttributeHandle);
+        }
+
+        private static ConstructorInfo ResolveAttributeConstructor(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
+            Type attributeType, Type[] parameterTypes)
+        {
+            foreach (ConstructorInfo candidate in attributeType.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly))
+            {
+                ReadOnlySpan<ParameterInfo> candidateParameters = candidate.GetParametersAsSpan();
+                if (parameterTypes.Length != candidateParameters.Length)
+                    continue;
+
+                bool matches = true;
+                for (int i = 0; i < parameterTypes.Length; i++)
+                {
+                    if (!parameterTypes[i].Equals(candidateParameters[i].ParameterType))
+                    {
+                        matches = false;
+                        break;
+                    }
+                }
+
+                if (matches)
+                    return candidate;
+            }
+
+            throw new MissingMethodException();
         }
 
         internal static CustomAttributeTypedArgument WrapInCustomAttributeTypedArgument(object? value, Type argumentType)
