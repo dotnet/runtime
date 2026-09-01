@@ -128,14 +128,20 @@ namespace System.Formats.Tar
         // If the specified fieldName is found in the provided dictionary and it is a valid decimal number, returns true and sets the value in 'dateTimeOffset'.
         internal static bool TryGetDateTimeOffsetFromTimestampString(Dictionary<string, string>? dict, string fieldName, out DateTimeOffset dateTimeOffset)
         {
-            dateTimeOffset = default;
-            if (dict != null &&
-                dict.TryGetValue(fieldName, out string? value) &&
-                decimal.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal secondsSinceEpoch))
+            return TryGetDateTimeOffsetFromTimestampString(
+                dict is not null && dict.TryGetValue(fieldName, out string? value) ? value : null,
+                out dateTimeOffset);
+        }
+
+        internal static bool TryGetDateTimeOffsetFromTimestampString(string? value, out DateTimeOffset dateTimeOffset)
+        {
+            if (decimal.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal secondsSinceEpoch))
             {
                 dateTimeOffset = GetDateTimeOffsetFromSecondsSinceEpoch(secondsSinceEpoch);
                 return true;
             }
+
+            dateTimeOffset = default;
             return false;
         }
 
@@ -148,12 +154,19 @@ namespace System.Formats.Tar
             return secondsSinceEpoch.ToString("G", CultureInfo.InvariantCulture);
         }
 
-        // If the specified fieldName is found in the provided dictionary and is a valid string representation of a number, returns true and sets the value in 'baseTenInteger'.
+        // If the specified fieldName has a non-empty value, parses it as a base-10 integer and returns true. Parsing exceptions propagate.
         internal static bool TryGetStringAsBaseTenInteger(IReadOnlyDictionary<string, string> dict, string fieldName, out int baseTenInteger)
         {
-            if (dict.TryGetValue(fieldName, out string? strNumber) && !string.IsNullOrEmpty(strNumber))
+            return TryGetStringAsBaseTenInteger(
+                dict.TryGetValue(fieldName, out string? value) ? value : null,
+                out baseTenInteger);
+        }
+
+        internal static bool TryGetStringAsBaseTenInteger(string? value, out int baseTenInteger)
+        {
+            if (!string.IsNullOrEmpty(value))
             {
-                baseTenInteger = int.Parse(strNumber, CultureInfo.InvariantCulture);
+                baseTenInteger = int.Parse(value, CultureInfo.InvariantCulture);
                 return true;
             }
 
@@ -161,12 +174,19 @@ namespace System.Formats.Tar
             return false;
         }
 
-        // If the specified fieldName is found in the provided dictionary and is a valid string representation of a number, returns true and sets the value in 'baseTenLong'.
+        // If the specified fieldName has a non-empty value, parses it as a base-10 long and returns true. Parsing exceptions propagate.
         internal static bool TryGetStringAsBaseTenLong(IReadOnlyDictionary<string, string> dict, string fieldName, out long baseTenLong)
         {
-            if (dict.TryGetValue(fieldName, out string? strNumber) && !string.IsNullOrEmpty(strNumber))
+            return TryGetStringAsBaseTenLong(
+                dict.TryGetValue(fieldName, out string? value) ? value : null,
+                out baseTenLong);
+        }
+
+        internal static bool TryGetStringAsBaseTenLong(string? value, out long baseTenLong)
+        {
+            if (!string.IsNullOrEmpty(value))
             {
-                baseTenLong = long.Parse(strNumber, CultureInfo.InvariantCulture);
+                baseTenLong = long.Parse(value, CultureInfo.InvariantCulture);
                 return true;
             }
 

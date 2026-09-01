@@ -328,10 +328,10 @@ struct RangeOps
     {
         if (unsignedAdd)
         {
-            bool r1StraddlesZero = r1.IsConstantRange() && (r1.LowerLimit().GetConstant() < 0) &&
-                                   (r1.UpperLimit().GetConstant() >= 0);
-            bool r2StraddlesZero = r2.IsConstantRange() && (r2.LowerLimit().GetConstant() < 0) &&
-                                   (r2.UpperLimit().GetConstant() >= 0);
+            bool r1StraddlesZero =
+                r1.IsConstantRange() && (r1.LowerLimit().GetConstant() < 0) && (r1.UpperLimit().GetConstant() >= 0);
+            bool r2StraddlesZero =
+                r2.IsConstantRange() && (r2.LowerLimit().GetConstant() < 0) && (r2.UpperLimit().GetConstant() >= 0);
             if (r1StraddlesZero || r2StraddlesZero)
             {
                 // Signed intervals that straddle zero are not monotonic when interpreted as unsigned.
@@ -355,7 +355,8 @@ struct RangeOps
                 static_assert(CheckedOps::Unsigned == true);
                 // For unsigned adds, require both unsigned and signed endpoint sums to not overflow.
                 bool requestedAddOverflows = CheckedOps::AddOverflows(a.GetConstant(), b.GetConstant(), unsignedAdd);
-                bool signedEndpointOverflows = unsignedAdd && CheckedOps::AddOverflows(a.GetConstant(), b.GetConstant(), CheckedOps::Signed);
+                bool signedEndpointOverflows =
+                    unsignedAdd && CheckedOps::AddOverflows(a.GetConstant(), b.GetConstant(), CheckedOps::Signed);
                 if (!requestedAddOverflows && !signedEndpointOverflows)
                 {
                     if (a.IsConstant() && b.IsConstant())

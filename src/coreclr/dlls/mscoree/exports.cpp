@@ -395,8 +395,7 @@ int coreclr_initialize(
 
     if (SUCCEEDED(hr))
     {
-        host.SuppressRelease();
-        *hostHandle = host;
+        *hostHandle = host.Detach();
 #ifdef FEATURE_GDBJIT
         HRESULT createDelegateResult;
         createDelegateResult = coreclr_create_delegate(*hostHandle,

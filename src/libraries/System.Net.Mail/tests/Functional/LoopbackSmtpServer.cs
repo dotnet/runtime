@@ -124,7 +124,9 @@ namespace System.Net.Mail.Tests
 
             async ValueTask SendMessageAsync(string text)
             {
-                var bytes = buffer.Slice(0, Encoding.UTF8.GetBytes(text, buffer.Span) + 2);
+                int byteCount = Encoding.UTF8.GetByteCount(text);
+                Memory<byte> bytes = byteCount + 2 <= buffer.Length ? buffer.Slice(0, byteCount + 2) : new byte[byteCount + 2];
+                Encoding.UTF8.GetBytes(text, bytes.Span);
                 bytes.Span[^2] = (byte)'\r';
                 bytes.Span[^1] = (byte)'\n';
 

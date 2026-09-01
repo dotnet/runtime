@@ -330,7 +330,7 @@ void GCInfo::gcDumpVarPtrDsc(varPtrDsc* desc)
     const GCtype gcType = (desc->vpdVarNum & byref_OFFSET_FLAG) ? GCT_BYREF : GCT_GCREF;
     const bool   isPin  = (desc->vpdVarNum & pinned_OFFSET_FLAG) != 0;
 
-    printf("[%08X] %s%s var at [%s", dspPtr(desc), GCtypeStr(gcType), isPin ? "pinned-ptr" : "",
+    printf("[%p] %s%s var at [%s", dspPtr(desc), GCtypeStr(gcType), isPin ? "pinned-ptr" : "",
            m_compiler->isFramePointerUsed() ? STR_FPBASE : STR_SPBASE);
 
     if (offs < 0)
@@ -4187,7 +4187,11 @@ void GCInfo::gcMakeRegPtrTable(
                 flags = (GcSlotFlags)(flags | GC_SLOT_INTERIOR);
             }
 
+            // Per the wasm ABI refs homed on the linear stack are reported pinned, since copies of them
+            //  on the wasm operand stack are invisible to the GC. See "GC References at Call Sites".
+#ifndef TARGET_WASM
             if (varDsc->lvPinned)
+#endif // !TARGET_WASM
             {
                 // Or in pinned_OFFSET_FLAG for 'pinned' pointer tracking
                 flags = (GcSlotFlags)(flags | GC_SLOT_PINNED);

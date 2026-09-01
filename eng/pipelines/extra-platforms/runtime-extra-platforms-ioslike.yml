@@ -41,6 +41,7 @@ jobs:
           parameters:
             creator: dotnet-bot
             testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
+            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
             extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
 
 #
@@ -76,6 +77,7 @@ jobs:
           parameters:
             creator: dotnet-bot
             testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
+            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
             extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
 
 #
@@ -119,6 +121,7 @@ jobs:
             creator: dotnet-bot
             testBuildArgs: /p:DevTeamProvisioning=- /p:UseMonoRuntime=false /p:UseNativeAOTRuntime=false /p:BuildTestsOnHelix=true
             testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
+            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
             extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
 
 #
@@ -154,4 +157,5 @@ jobs:
           parameters:
             creator: dotnet-bot
             testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
+            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
             extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
