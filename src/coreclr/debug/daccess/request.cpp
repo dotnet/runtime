@@ -4013,6 +4013,10 @@ ClrDataAccess::EnumWksGlobalMemoryRegions(CLRDataEnumMemoryFlags flags)
     {
         g_gcDacGlobals->card_table.EnumMem();
     }
+    DacEnumMemoryRegion(g_gcDacGlobals->interesting_data_per_heap.GetAddr(), sizeof(size_t) * NUM_GC_DATA_POINTS);
+    DacEnumMemoryRegion(g_gcDacGlobals->compact_reasons_per_heap.GetAddr(), sizeof(size_t) * MAX_COMPACT_REASONS_COUNT);
+    DacEnumMemoryRegion(g_gcDacGlobals->expand_mechanisms_per_heap.GetAddr(), sizeof(size_t) * MAX_EXPAND_MECHANISMS_COUNT);
+    DacEnumMemoryRegion(g_gcDacGlobals->interesting_mechanism_bits_per_heap.GetAddr(), sizeof(size_t) * MAX_GC_MECHANISM_BITS_COUNT);
     g_gcDacGlobals->gc_structures_invalid_cnt.EnumMem();
     Dereference(g_gcDacGlobals->finalize_queue).EnumMem();
 
