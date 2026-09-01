@@ -1375,10 +1375,45 @@ namespace System.Numerics
                 reduced += modulus;
             }
 
-            return ModInverseCore(reduced, modulus);
+            if (reduced.IsZero)
+            {
+                // The greatest common divisor is the modulus, which is greater than one.
+                throw new ArithmeticException(SR.Arithmetic_ModInverseDoesNotExist);
+            }
+
+            nuint reducedLimb = 0;
+            nuint modulusLimb = 0;
+
+            ReadOnlySpan<nuint> reducedBits = reduced._bits is null
+                ? CreateSingleLimb(ref reducedLimb, NumericsHelpers.Abs(reduced._sign))
+                : reduced._bits;
+            ReadOnlySpan<nuint> modulusBits = modulus._bits is null
+                ? CreateSingleLimb(ref modulusLimb, NumericsHelpers.Abs(modulus._sign))
+                : modulus._bits;
+
+            Span<nuint> bits = RentedBuffer.Create(modulusBits.Length, out RentedBuffer bitsBuffer);
+
+            if (!BigIntegerCalculator.ModInverse(reducedBits, modulusBits, bits))
+            {
+                bitsBuffer.Dispose();
+                throw new ArithmeticException(SR.Arithmetic_ModInverseDoesNotExist);
+            }
+
+            BigInteger result = new BigInteger(bits, negative: false);
+            bitsBuffer.Dispose();
+
+            Debug.Assert(result == ModInverseSchoolbook(reduced, modulus));
+
+            return result;
         }
 
-        private static BigInteger ModInverseCore(BigInteger value, BigInteger modulus)
+        private static ReadOnlySpan<nuint> CreateSingleLimb(ref nuint storage, nuint value)
+        {
+            storage = value;
+            return new ReadOnlySpan<nuint>(in storage);
+        }
+
+        private static BigInteger ModInverseSchoolbook(BigInteger value, BigInteger modulus)
         {
             Debug.Assert(value.Sign >= 0 && value < modulus);
             Debug.Assert(modulus > s_one);
