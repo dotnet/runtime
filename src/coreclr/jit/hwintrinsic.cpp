@@ -3030,6 +3030,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
     bool leftUpper         = false;
     bool rightUpper        = false;
 
+#if defined(TARGET_ARM64) || defined(TARGET_XARCH)
     auto vectorFirstArgMatchesSimdSize = [this, sig, simdSize]() {
         // Vector2/3/4 and the fixed-size Vector64/128 helpers share some method names. Make sure this importer
         // only handles the generic Vector64<T>/Vector128<T> methods whose first argument has the expected SIMD size.
@@ -3049,6 +3050,11 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
 
         return varTypeIsSIMD(argType) && (genTypeSize(argType) == simdSize);
     };
+#else
+    auto vectorFirstArgMatchesSimdSize = []() {
+        return false;
+    };
+#endif
 
     auto vectorValueEqualsMask = [this, simdSize](GenTree* vector, GenTree* value, var_types simdBaseType) -> GenTree* {
         var_types      simdType     = getSIMDTypeForSize(simdSize);
