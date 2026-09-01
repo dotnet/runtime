@@ -10,7 +10,7 @@
     <WasmEnableHotReload>false</WasmEnableHotReload>
     <CompressionEnabled>false</CompressionEnabled>
     <DisableBuildCompression>true</DisableBuildCompression>
-    <PublishTrimmed>false</PublishTrimmed>
+    <PublishTrimmed Condition="'$(ContinuousIntegrationBuild)' == 'true'">false</PublishTrimmed>
     <PublishTrimmed Condition="'$(RunAOTCompilation)' == 'true' or '$(TestTrimming)' == 'true'">true</PublishTrimmed>
     <_WasmInTreeDefaults>false</_WasmInTreeDefaults>
 

@@ -312,7 +312,7 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
     </ItemGroup>
 
     <!--
-      WarnOnUnresolvedPInvokeModules is off on purpose: tests may P/Invoke into a module that is
+      WasmWarnOnUnresolvedPInvokeModules is off on purpose: tests may P/Invoke into a module that is
       deliberately absent (JIT/interpreter checks that DllNotFoundException is thrown), and the
       framework assemblies reference modules that no wasm build links.
     -->
