@@ -9,6 +9,7 @@ using System.Reflection.Metadata.Ecma335;
 using Internal.JitInterface;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
+using Internal.TypeSystem.Interop;
 
 namespace ILCompiler.PortableCallHelpers
 {
@@ -360,49 +361,53 @@ namespace ILCompiler.PortableCallHelpers
 
         private bool IsBlittableUncached(TypeDesc type)
         {
-            if (type.IsPrimitive || type.IsByRef || type.IsPointer || type.IsEnum || type is FunctionPointerType)
-                return true;
+            // MarshalUtils only considers DefTypes, so pointers and function pointers never reach it.
+            if (type.IsPointer)
+                return IsUnmanaged(type.GetParameterType());
 
-            // HACK: SkiaSharp has pinvokes that rely on this
-            if (type is EcmaType delegateType
-                && delegateType.HasCustomAttribute("System.Runtime.InteropServices", "UnmanagedFunctionPointerAttribute"))
-                return true;
+            if (type is FunctionPointerType functionPointer)
+                return IsBlittableSignature(functionPointer.Signature);
 
-            if (!type.IsValueType)
+            // MarshalUtils accepts an enum as a field but not on its own: System.Enum is a class,
+            // so the parent check rejects it before the layout is looked at.
+            if (type.IsEnum)
+                return IsBlittable(type.UnderlyingType);
+
+            if (!MarshalUtils.IsBlittableType(type))
             {
-                log.InfoHigh("WASM0060", $"Type {type} is not blittable: Not a ValueType");
+                log.InfoHigh("WASM0060", $"Type {type} is not blittable");
                 return false;
-            }
-
-            if (type is not MetadataType metadataType)
-            {
-                log.InfoHigh("WASM0060", $"Type {type} is not blittable: No metadata");
-                return false;
-            }
-
-            List<FieldDesc> fields = [];
-            foreach (FieldDesc field in metadataType.GetFields())
-            {
-                if (!field.IsStatic)
-                    fields.Add(field);
-            }
-
-            if (!metadataType.IsSequentialLayout && fields.Count > 1)
-            {
-                log.InfoHigh("WASM0061", $"Type {type} is not blittable: LayoutKind is not Sequential");
-                return false;
-            }
-
-            foreach (FieldDesc field in fields)
-            {
-                if (!IsBlittable(field.FieldType))
-                {
-                    log.InfoHigh("WASM0062", $"Type {type} is not blittable: Field {field.Name.ToString()} is not blittable");
-                    return false;
-                }
             }
 
             return true;
+        }
+
+        private bool IsBlittableSignature(MethodSignature signature)
+        {
+            if (!signature.ReturnType.IsVoid && !IsBlittable(signature.ReturnType))
+                return false;
+
+            foreach (TypeDesc parameterType in signature)
+            {
+                if (!IsBlittable(parameterType))
+                    return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Whether the GC has a stake in what a pointer addresses.
+        /// </summary>
+        private static bool IsUnmanaged(TypeDesc type)
+        {
+            if (type.IsVoid || type.IsPointer || type.IsFunctionPointer)
+                return true;
+
+            if (type.IsGCPointer || type.IsByRef)
+                return false;
+
+            return type is not DefType defType || !defType.ContainsGCPointers;
         }
     }
 }
