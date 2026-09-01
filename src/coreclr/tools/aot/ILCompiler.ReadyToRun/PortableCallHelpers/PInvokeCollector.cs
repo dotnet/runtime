@@ -368,9 +368,6 @@ namespace ILCompiler.PortableCallHelpers
                 && delegateType.HasCustomAttribute("System.Runtime.InteropServices", "UnmanagedFunctionPointerAttribute"))
                 return true;
 
-            if (type is MetadataType nonBlittableMarker && nonBlittableMarker.Name.StringEquals("__NonBlittableTypeForAutomatedTests__"))
-                return false;
-
             if (!type.IsValueType)
             {
                 log.InfoHigh("WASM0060", $"Type {type} is not blittable: Not a ValueType");
