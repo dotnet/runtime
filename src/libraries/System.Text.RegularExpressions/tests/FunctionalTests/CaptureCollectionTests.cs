@@ -21,6 +21,15 @@ namespace System.Text.RegularExpressions.Tests
             }
         }
 
+        public static IEnumerable<object[]> BacktrackingEnginesAndCaptureOptions()
+        {
+            foreach (object[] engine in BacktrackingEngines())
+            {
+                yield return [engine[0], RegexOptions.None];
+                yield return [engine[0], RegexOptions.ExplicitCapture];
+            }
+        }
+
         [Theory]
         [MemberData(nameof(BacktrackingEngines))]
         public static async Task CaptureInEmptyAlternationIsPreservedInBacktrackingEngines(RegexEngine engine)
@@ -48,6 +57,29 @@ namespace System.Text.RegularExpressions.Tests
 
             Assert.Equal(3, captures.Count);
             Assert.Equal(["a", "b", "c"], [captures[0].Value, captures[1].Value, captures[2].Value]);
+        }
+
+        [Theory]
+        [MemberData(nameof(BacktrackingEnginesAndCaptureOptions))]
+        public static async Task CaptureInEmptyAlternationPreservesBalancingGroupSemantics(RegexEngine engine, RegexOptions options)
+        {
+            // A capture-containing "X|" alternation must not be reduced to "X?", as doing so would drop
+            // captures needed for balancing groups. The loop below pushes group "G" three times, so the
+            // three pops in "(?<-G>){3}" must all succeed for the overall match to succeed.
+            Regex regex = await RegexHelpers.GetRegexAsync(engine, @"^(?:(?'G')|){3}(?<-G>){3}$", options);
+
+            Assert.True(regex.IsMatch(""));
+        }
+
+        [Theory]
+        [MemberData(nameof(BacktrackingEnginesAndCaptureOptions))]
+        public static async Task CaptureInEmptyAlternationIsPreservedWithoutExplicitCaptureGroupName(RegexEngine engine, RegexOptions options)
+        {
+            Regex regex = await RegexHelpers.GetRegexAsync(engine, @"\w(?:(?'G')|){3}", options);
+            Match match = regex.Match("1");
+
+            Assert.True(match.Success);
+            Assert.Equal(3, match.Groups["G"].Captures.Count);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
