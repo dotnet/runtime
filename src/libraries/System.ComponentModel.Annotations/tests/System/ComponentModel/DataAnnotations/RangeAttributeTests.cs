@@ -872,6 +872,30 @@ namespace System.ComponentModel.DataAnnotations.Tests
             Assert.Equal(type, attribute.OperandType);
         }
 
+        [Fact]
+        public static void FormatMessage_UsesSuppliedFormatAndConvertedBounds()
+        {
+            const string ExternalFormat = "external {0}:{1:D2}:{2:D2}";
+            const string ErrorMessageFormat = "internal {0}:{1:D2}:{2:D2}";
+            var attribute = new RangeAttribute(typeof(int), "1", "3") { ErrorMessage = ErrorMessageFormat };
+
+            Assert.Equal("external name:01:03", attribute.FormatMessage(ExternalFormat, "name"));
+            Assert.Equal("internal name:01:03", attribute.FormatErrorMessage("name"));
+            Assert.IsType<int>(attribute.Minimum);
+            Assert.IsType<int>(attribute.Maximum);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
+        public static void FormatMessage_UsesCurrentCulture()
+        {
+            using (new ThreadCultureChange("fr-FR"))
+            {
+                var attribute = new RangeAttribute(1.5, 3.5);
+
+                Assert.Equal("name:1,5:3,5", attribute.FormatMessage("{0}:{1:F1}:{2:F1}", "name"));
+            }
+        }
+
         [Theory]
         [MemberData(nameof(GetRangeAttributeConstructorResults))]
         public static void ExclusiveBoundProperties_DefaultToFalse(RangeAttribute attribute)
