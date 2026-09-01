@@ -1359,7 +1359,55 @@ namespace System.Numerics
         /// </remarks>
         public static BigInteger ModInverse(BigInteger value, BigInteger modulus)
         {
-            throw new NotImplementedException();
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(modulus.Sign, nameof(modulus));
+
+            if (modulus.IsOne)
+            {
+                // Every integer is congruent to zero modulo one.
+                return s_zero;
+            }
+
+            // Reduce to the canonical representative in [0, modulus) so that a negative
+            // value is inverted as though a multiple of the modulus had been added to it.
+            BigInteger reduced = value % modulus;
+            if (reduced.Sign < 0)
+            {
+                reduced += modulus;
+            }
+
+            return ModInverseCore(reduced, modulus);
+        }
+
+        private static BigInteger ModInverseCore(BigInteger value, BigInteger modulus)
+        {
+            Debug.Assert(value.Sign >= 0 && value < modulus);
+            Debug.Assert(modulus > s_one);
+
+            // Executes the extended Euclidean algorithm, carrying the cofactor of value
+            // alongside the remainder sequence. On termination the last non-zero remainder
+            // is the greatest common divisor and its cofactor is the inverse.
+            // https://en.wikipedia.org/wiki/Extended_Euclidean_algorithm
+
+            BigInteger previousRemainder = modulus, remainder = value;
+            BigInteger previousCofactor = s_zero, cofactor = s_one;
+
+            while (!remainder.IsZero)
+            {
+                BigInteger quotient = DivRem(previousRemainder, remainder, out BigInteger nextRemainder);
+
+                (previousRemainder, remainder) = (remainder, nextRemainder);
+                (previousCofactor, cofactor) = (cofactor, previousCofactor - (quotient * cofactor));
+            }
+
+            if (!previousRemainder.IsOne)
+            {
+                // The greatest common divisor is not one, so value is not invertible.
+                // This covers the case where value is congruent to zero modulo the modulus.
+                throw new ArithmeticException(SR.Arithmetic_ModInverseDoesNotExist);
+            }
+
+            // The cofactor is bounded in magnitude by the modulus, but may be negative.
+            return previousCofactor.Sign < 0 ? previousCofactor + modulus : previousCofactor;
         }
 
         public static BigInteger ModPow(BigInteger value, BigInteger exponent, BigInteger modulus)
