@@ -3168,6 +3168,10 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
             }
             else if (TargetOS::IsUnix && data->IsIconHandle(GTF_ICON_TLS_HDL))
             {
+                // Apple platforms reach thread locals through the pthread TSD array rather than a
+                // thread pointer register, and never materialize the TLS handle on its own - see
+                // the GTF_ICON_TLS_HDL handling in emitInsLoadStoreOp.
+                noway_assert(!TargetOS::IsApplePlatform);
                 assert(data->AsIntCon()->IconValue() == 0);
                 emitAttr attr = emitActualTypeSize(targetType);
                 // On non-windows, need to load the address from system register.

@@ -868,6 +868,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     JITDUMP("threadVarsSection= %p\n", dspPtr(threadStaticBlocksInfo.threadVarsSection));
     JITDUMP("offsetOfThreadLocalStoragePointer= %u\n",
             dspOffset(threadStaticBlocksInfo.offsetOfThreadLocalStoragePointer));
+    JITDUMP("tlsPthreadKey= %u\n", threadStaticBlocksInfo.tlsPthreadKey);
     JITDUMP("offsetOfMaxThreadStaticBlocks= %u\n", dspOffset(threadStaticBlocksInfo.offsetOfMaxThreadStaticBlocks));
     JITDUMP("offsetOfThreadStaticBlocks= %u\n", dspOffset(threadStaticBlocksInfo.offsetOfThreadStaticBlocks));
     JITDUMP("offsetOfBaseOfThreadLocalData= %u\n", dspOffset(threadStaticBlocksInfo.offsetOfBaseOfThreadLocalData));
@@ -936,39 +937,76 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     }
     else if (TargetOS::IsApplePlatform)
     {
-        // For Apple x64/arm64, we need to get the address of relevant __thread_vars section of
-        // the thread local variable `t_ThreadStatics`. Address of `tlv_get_address` is stored
-        // in this entry, which we dereference and invoke it, passing the __thread_vars address
-        // present in `threadVarsSection`.
-        //
-        // Code sequence to access thread local variable on Apple/x64:
-        //
-        //      mov rdi, threadVarsSection
-        //      call     [rdi]
-        //
-        // Code sequence to access thread local variable on Apple/arm64:
-        //
-        //      mov x0, threadVarsSection
-        //      mov x1, [x0]
-        //      blr x1
-        //
-        size_t   threadVarsSectionVal = (size_t)threadStaticBlocksInfo.threadVarsSection;
-        GenTree* tls_get_addr_val     = gtNewIconHandleNode(threadVarsSectionVal, GTF_ICON_FTN_ADDR);
+        if (threadStaticBlocksInfo.tlsPthreadKey != 0)
+        {
+            // The thread local block that contains `t_ThreadStatics` lives in the pthread TSD array
+            // of the current thread at index `tlsPthreadKey`. This is the inlined fast path of
+            // dyld's `tlv_get_addr`; the offset of `t_ThreadStatics` within the block is folded
+            // into `offsetOfBaseOfThreadLocalData` by the VM.
+            //
+            // Unlike `tlv_get_addr` this has no null check and no lazy-allocation fallback, which
+            // relies on the TSD slot being populated on every thread that can run managed code:
+            // dyld allocates one block per image, so the slot covers all of coreclr's `__thread`
+            // state (`t_ThreadStatics`, `t_CurrentThreadInfo`, `t_runtime_thread_locals`, ...).
+            // A thread can only run managed code once it is attached, and attaching goes through
+            // `SetThread`/`InitializeCurrentThreadsStaticData`, which touch that state from the VM
+            // (i.e. through the thunk) and therefore instantiate the block. Conversely, if the
+            // block were released - dyld frees it from a pthread key destructor at thread exit -
+            // the thread also reads back as unattached, so re-entering managed code has to attach
+            // it again and re-instantiate the block first. This mirrors what the Windows expansion
+            // below/above assumes about `TEB->ThreadLocalStoragePointer[tlsIndex]`.
+            //
+            // Code sequence to access thread local variable on Apple/x64:
+            //
+            //      mov xd, gs:[tlsPthreadKey * 8]
+            //
+            // Code sequence to access thread local variable on Apple/arm64:
+            //
+            //      mrs xd, tpidrro_el0
+            //      and xd, xd, #~7                  ; the low bits hold the CPU number
+            //      ldr xd, [xd, #tlsPthreadKey * 8]
+            //
+            size_t tsdOffset = (size_t)threadStaticBlocksInfo.tlsPthreadKey * TARGET_POINTER_SIZE;
+            tlsValue         = gtNewIconHandleNode(tsdOffset, GTF_ICON_TLS_HDL);
+            tlsValue         = gtNewIndir(TYP_I_IMPL, tlsValue, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+        }
+        else
+        {
+            // The VM was not able to determine the pthread TSD key of the thread local block, so
+            // fall back to calling the thunk. We need to get the address of the relevant
+            // __thread_vars section of the thread local variable `t_ThreadStatics`. The address of
+            // `tlv_get_addr` is stored in this entry, which we dereference and invoke, passing
+            // the __thread_vars address present in `threadVarsSection`.
+            //
+            // Code sequence to access thread local variable on Apple/x64:
+            //
+            //      mov rdi, threadVarsSection
+            //      call     [rdi]
+            //
+            // Code sequence to access thread local variable on Apple/arm64:
+            //
+            //      mov x0, threadVarsSection
+            //      mov x1, [x0]
+            //      blr x1
+            //
+            size_t   threadVarsSectionVal = (size_t)threadStaticBlocksInfo.threadVarsSection;
+            GenTree* tls_get_addr_val     = gtNewIconHandleNode(threadVarsSectionVal, GTF_ICON_FTN_ADDR);
 
-        tls_get_addr_val = gtNewIndir(TYP_I_IMPL, tls_get_addr_val, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+            tls_get_addr_val = gtNewIndir(TYP_I_IMPL, tls_get_addr_val, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
 
-        tlsValue                = gtNewIndCallNode(tls_get_addr_val, TYP_I_IMPL);
-        GenTreeCall* tlsRefCall = tlsValue->AsCall();
+            tlsValue                = gtNewIndCallNode(tls_get_addr_val, TYP_I_IMPL);
+            GenTreeCall* tlsRefCall = tlsValue->AsCall();
 
-        // This is a call which takes an argument.
-        // Populate and set the ABI appropriately.
-        assert(opts.altJit || threadVarsSectionVal != 0);
-        GenTree* tlsArg = gtNewIconNode(threadVarsSectionVal, TYP_I_IMPL);
-        tlsRefCall->gtArgs.PushBack(this, NewCallArg::Primitive(tlsArg));
+            // This is a call which takes an argument.
+            // Populate and set the ABI appropriately.
+            assert(opts.altJit || threadVarsSectionVal != 0);
+            GenTree* tlsArg = gtNewIconNode(threadVarsSectionVal, TYP_I_IMPL);
+            tlsRefCall->gtArgs.PushBack(this, NewCallArg::Primitive(tlsArg));
 
-        fgMorphArgs(tlsRefCall);
+            fgMorphArgs(tlsRefCall);
 
-        tlsRefCall->gtFlags |= GTF_EXCEPT | (tls_get_addr_val->gtFlags & GTF_GLOB_EFFECT);
+            tlsRefCall->gtFlags |= GTF_EXCEPT | (tls_get_addr_val->gtFlags & GTF_GLOB_EFFECT);
+        }
     }
     else if (TargetOS::IsUnix)
     {

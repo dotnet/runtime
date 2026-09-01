@@ -1668,6 +1668,8 @@ struct CORINFO_THREAD_STATIC_BLOCKS_INFO
     void* tlsGetAddrFtnPtr;                     // linux/x64 specific - address of __tls_get_addr() function
     void* tlsIndexObject;                       // linux/x64 specific - address of tls_index object
     void* threadVarsSection;                    // osx x64/arm64 specific - address of __thread_vars section of `t_ThreadStatics`
+    uint32_t tlsPthreadKey;                     // osx x64/arm64 specific - pthread TSD key holding the thread local block that
+                                                // contains `t_ThreadStatics`. When zero, `threadVarsSection` has to be used instead.
     uint32_t offsetOfThreadLocalStoragePointer; // windows specific
     uint32_t offsetOfMaxThreadStaticBlocks;
     uint32_t offsetOfThreadStaticBlocks;

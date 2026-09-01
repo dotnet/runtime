@@ -1279,6 +1279,7 @@ namespace Internal.JitInterface
         public nuint tlsGetAddrFtnPtr;
         public nuint tlsIndexObject;
         public nuint threadVarsSection;
+        public uint tlsPthreadKey;
         public uint offsetOfThreadLocalStoragePointer;
         public uint offsetOfMaxThreadStaticBlocks;
         public uint offsetOfThreadStaticBlocks;

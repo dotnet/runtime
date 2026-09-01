@@ -1122,7 +1122,7 @@ bool emitter::emitInsMayWriteToGCReg(instrDesc* id)
             return (ins == INS_autia || ins == INS_autib || ins == INS_pacia || ins == INS_pacib);
 
         case IF_SR_1A: // SR_1A   ................ ...........ttttt      Rt       (dc zva, mrs)
-            return ins == INS_mrs_tpid0;
+            return (ins == INS_mrs_tpid0) || (ins == INS_mrs_tpidrro);
 
         // Below SVE instructions write to GPR and hence GC reg
         case IF_SVE_CO_3A: // clasta, clastb
@@ -3849,6 +3849,7 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg, insOpts o
             break;
 
         case INS_mrs_tpid0:
+        case INS_mrs_tpidrro:
             fmt = IF_SR_1A;
             break;
 
@@ -14949,6 +14950,11 @@ void emitter::emitDispInsHelp(
                 emitDispReg(id->idReg1(), size, true);
                 printf("tpidr_el0");
             }
+            else if (ins == INS_mrs_tpidrro)
+            {
+                emitDispReg(id->idReg1(), size, true);
+                printf("tpidrro_el0");
+            }
             else
             {
                 emitDispReg(id->idReg1(), size, false);
@@ -15151,8 +15157,29 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
             }
             else if (addr->IsIconHandle(GTF_ICON_TLS_HDL))
             {
-                // On Arm64, TEB is in r18, so load from the r18 as base.
-                emitIns_R_R_I(ins, attr, dataReg, REG_R18, addr->AsIntCon()->IconValue());
+                if (TargetOS::IsApplePlatform)
+                {
+                    // On Apple platforms, thread locals live in a block that is reachable through
+                    // the pthread TSD array of the current thread, and the icon holds the byte
+                    // offset of the owning slot in that array.
+                    //
+                    //      mrs  dataReg, tpidrro_el0
+                    //      and  dataReg, dataReg, #~7     ; the low bits hold the CPU number
+                    //      ldr  dataReg, [dataReg, #offs]
+                    //
+                    // `dataReg` doubles as the scratch register for the first two instructions,
+                    // which is only valid because this is a load.
+                    noway_assert(!emitInsIsStore(ins));
+                    noway_assert(isGeneralRegister(dataReg));
+                    emitIns_R(INS_mrs_tpidrro, EA_8BYTE, dataReg);
+                    emitIns_R_R_I(INS_and, EA_8BYTE, dataReg, dataReg, ~(ssize_t)7);
+                    emitIns_R_R_I(ins, attr, dataReg, dataReg, addr->AsIntCon()->IconValue());
+                }
+                else
+                {
+                    // On Arm64, TEB is in r18, so load from the r18 as base.
+                    emitIns_R_R_I(ins, attr, dataReg, REG_R18, addr->AsIntCon()->IconValue());
+                }
             }
             else if (emitIns_valid_imm_for_ldst_offset(offset, emitTypeSize(indir->TypeGet())))
             {

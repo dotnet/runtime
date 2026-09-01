@@ -3629,6 +3629,7 @@ void MethodContext::recGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOC
     value.tlsIndexObject                        = CastPointer(pInfo->tlsIndexObject);
     value.threadVarsSection                     = CastPointer(pInfo->threadVarsSection);
     value.offsetOfThreadLocalStoragePointer     = pInfo->offsetOfThreadLocalStoragePointer;
+    value.tlsPthreadKey                         = pInfo->tlsPthreadKey;
     value.offsetOfMaxThreadStaticBlocks         = pInfo->offsetOfMaxThreadStaticBlocks;
     value.offsetOfThreadStaticBlocks            = pInfo->offsetOfThreadStaticBlocks;
     value.offsetOfBaseOfThreadLocalData         = pInfo->offsetOfBaseOfThreadLocalData;
@@ -3645,12 +3646,14 @@ void MethodContext::dmpGetThreadLocalStaticBlocksInfo(DWORD key, const Agnostic_
            ", tlsGetAddrFtnPtr-%016" PRIX64 ", tlsIndexObject - %016" PRIX64
            ", threadVarsSection - %016" PRIX64
            ", offsetOfThreadLocalStoragePointer-%u"
+           ", tlsPthreadKey-%u"
            ", offsetOfMaxThreadStaticBlocks-%u"
            ", offsetOfThreadStaticBlocks-%u"
            ", offsetOfBaseOfThreadLocalData-%u",
            key, SpmiDumpHelper::DumpAgnostic_CORINFO_CONST_LOOKUP(value.tlsIndex).c_str(), value.tlsGetAddrFtnPtr,
            value.tlsIndexObject, value.threadVarsSection, value.offsetOfThreadLocalStoragePointer,
-           value.offsetOfMaxThreadStaticBlocks, value.offsetOfThreadStaticBlocks, value.offsetOfBaseOfThreadLocalData);
+           value.tlsPthreadKey, value.offsetOfMaxThreadStaticBlocks, value.offsetOfThreadStaticBlocks,
+           value.offsetOfBaseOfThreadLocalData);
 }
 
 void MethodContext::repGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
@@ -3665,6 +3668,7 @@ void MethodContext::repGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOC
     pInfo->tlsIndexObject                       = (void*)value.tlsIndexObject;
     pInfo->threadVarsSection                    = (void*)value.threadVarsSection;
     pInfo->offsetOfThreadLocalStoragePointer    = value.offsetOfThreadLocalStoragePointer;
+    pInfo->tlsPthreadKey                        = value.tlsPthreadKey;
     pInfo->offsetOfMaxThreadStaticBlocks        = value.offsetOfMaxThreadStaticBlocks;
     pInfo->offsetOfThreadStaticBlocks           = value.offsetOfThreadStaticBlocks;
     pInfo->offsetOfBaseOfThreadLocalData        = value.offsetOfBaseOfThreadLocalData;
