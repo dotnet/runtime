@@ -199,6 +199,120 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             }
         }
 
+        [Fact]
+        public static void CreateForKeyEncapsulationNullCertificate()
+        {
+            byte[] userKeyingMaterial = [];
+
+            Assert.Throws<ArgumentNullException>(() =>
+                CmsRecipient.CreateForKeyEncapsulation(null, userKeyingMaterial));
+
+            Assert.Throws<ArgumentNullException>(() =>
+                CmsRecipient.CreateForKeyEncapsulation(
+                    SubjectIdentifierType.SubjectKeyIdentifier,
+                    null,
+                    userKeyingMaterial));
+        }
+
+        [Fact]
+        public static void EncryptInvalidContentEncryptionKeySize()
+        {
+            using (X509Certificate2 certificate = X509Certificate2.CreateFromPem(
+                MLKemTestData.IetfMlKem768CertificatePem))
+            {
+                EnvelopedCms cms = new EnvelopedCms(
+                    new ContentInfo("hello world!"u8.ToArray()),
+                    new AlgorithmIdentifier(new Oid(TestOids.Des)));
+
+                Assert.Throws<CryptographicException>(() => cms.Encrypt(new CmsRecipient(certificate)));
+            }
+        }
+
+        [Fact]
+        public static void EncryptAndDecryptMixedRsaAndMlKemRecipients()
+        {
+            byte[] content = "hello world!"u8.ToArray();
+
+            using (X509Certificate2 mlKemCertificate = X509Certificate2.CreateFromPem(
+                MLKemTestData.IetfMlKem768CertificatePem))
+            using (X509Certificate2 rsaCertificate = TestCertificates.RSAKeyTransfer1.GetCertificate())
+            {
+                CmsRecipientCollection recipients = new CmsRecipientCollection
+                {
+                    new CmsRecipient(rsaCertificate),
+                    new CmsRecipient(mlKemCertificate),
+                };
+
+                EnvelopedCms cms = new EnvelopedCms(new ContentInfo(content));
+                cms.Encrypt(recipients);
+                byte[] encoded = cms.Encode();
+
+                cms = new EnvelopedCms();
+                cms.Decode(encoded);
+
+                Assert.Equal(2, cms.RecipientInfos.Count);
+                KemRecipientInfo? kemRecipientInfo = null;
+                KeyTransRecipientInfo? keyTransRecipientInfo = null;
+
+                foreach (RecipientInfo recipientInfo in cms.RecipientInfos)
+                {
+                    if (recipientInfo is KemRecipientInfo kem)
+                    {
+                        kemRecipientInfo = kem;
+                    }
+                    else if (recipientInfo is KeyTransRecipientInfo keyTrans)
+                    {
+                        keyTransRecipientInfo = keyTrans;
+                    }
+                }
+
+                Assert.NotNull(kemRecipientInfo);
+                Assert.NotNull(keyTransRecipientInfo);
+
+                using (MLKem privateKey = MLKem.ImportPkcs8PrivateKey(MLKemTestData.IetfMlKem768PrivateKeySeed))
+                {
+                    cms.Decrypt(kemRecipientInfo, privateKey);
+                }
+
+                Assert.Equal(content, cms.ContentInfo.Content);
+            }
+        }
+
+        [Fact]
+        public static void EncryptMultipleMlKemRecipientsUseDistinctCiphertexts()
+        {
+            byte[] content = "hello world!"u8.ToArray();
+
+            using (X509Certificate2 certificate = X509Certificate2.CreateFromPem(
+                MLKemTestData.IetfMlKem768CertificatePem))
+            {
+                CmsRecipientCollection recipients = new CmsRecipientCollection
+                {
+                    new CmsRecipient(certificate),
+                    new CmsRecipient(certificate),
+                };
+
+                EnvelopedCms cms = new EnvelopedCms(new ContentInfo(content));
+                cms.Encrypt(recipients);
+                byte[] encoded = cms.Encode();
+
+                cms = new EnvelopedCms();
+                cms.Decode(encoded);
+
+                Assert.Equal(2, cms.RecipientInfos.Count);
+                KemRecipientInfo first = Assert.IsType<KemRecipientInfo>(cms.RecipientInfos[0]);
+                KemRecipientInfo second = Assert.IsType<KemRecipientInfo>(cms.RecipientInfos[1]);
+                Assert.False(first.KeyEncapsulationCiphertext.Span.SequenceEqual(second.KeyEncapsulationCiphertext.Span));
+
+                using (MLKem privateKey = MLKem.ImportPkcs8PrivateKey(MLKemTestData.IetfMlKem768PrivateKeySeed))
+                {
+                    cms.Decrypt(first, privateKey);
+                }
+
+                Assert.Equal(content, cms.ContentInfo.Content);
+            }
+        }
+
         private static void EncryptAndDecrypt(
             CmsRecipient recipient,
             byte[] privateKey,
