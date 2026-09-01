@@ -6,6 +6,7 @@ using System.Security.Cryptography.X509Certificates;
 
 using Xunit;
 
+using TestCertificates = System.Security.Cryptography.Pkcs.Tests.Certificates;
 using TestOids = System.Security.Cryptography.Pkcs.Tests.Oids;
 
 namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
@@ -14,36 +15,243 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
     [ConditionalClass(typeof(MLKem), nameof(MLKem.IsSupported))]
     public static class KemEncryptTests
     {
+        public static TheoryData<string, byte[], string, int> MlKemParameterSets { get; } =
+            new TheoryData<string, byte[], string, int>
+            {
+                {
+                    MLKemTestData.IetfMlKem512CertificatePem,
+                    MLKemTestData.IetfMlKem512PrivateKeySeed,
+                    TestOids.MLKem512,
+                    768
+                },
+                {
+                    MLKemTestData.IetfMlKem768CertificatePem,
+                    MLKemTestData.IetfMlKem768PrivateKeySeed,
+                    TestOids.MLKem768,
+                    1088
+                },
+                {
+                    MLKemTestData.IetfMlKem1024CertificatePem,
+                    MLKemTestData.IetfMlKem1024PrivateKeySeed,
+                    TestOids.MLKem1024,
+                    1568
+                },
+            };
+
         [Theory]
-        [InlineData(TestOids.Aes128)]
-        [InlineData(TestOids.Aes192)]
-        [InlineData(TestOids.Aes256)]
-        public static void EncryptAndDecrypt(string contentEncryptionAlgorithm)
+        [InlineData(TestOids.Aes128, 16)]
+        [InlineData(TestOids.Aes192, 24)]
+        [InlineData(TestOids.Aes256, 32)]
+        public static void EncryptAndDecryptContentEncryptionAlgorithm(
+            string contentEncryptionAlgorithm,
+            int contentEncryptionKeyLength)
         {
-            byte[] content = "hello world!"u8.ToArray();
+            using (X509Certificate2 certificate = X509Certificate2.CreateFromPem(
+                MLKemTestData.IetfMlKem768CertificatePem))
+            {
+                CmsRecipient recipient = new CmsRecipient(certificate);
+
+                EncryptAndDecrypt(
+                    recipient,
+                    MLKemTestData.IetfMlKem768PrivateKeySeed,
+                    TestOids.MLKem768,
+                    1088,
+                    SubjectIdentifierType.IssuerAndSerialNumber,
+                    expectedUkm: null,
+                    contentEncryptionAlgorithm,
+                    contentEncryptionKeyLength);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(MlKemParameterSets))]
+        public static void EncryptAndDecryptMlKemParameterSet(
+            string certificatePem,
+            byte[] privateKey,
+            string expectedKemAlgorithm,
+            int expectedCiphertextLength)
+        {
+            using (X509Certificate2 certificate = X509Certificate2.CreateFromPem(certificatePem))
+            {
+                CmsRecipient recipient = new CmsRecipient(certificate);
+
+                EncryptAndDecrypt(
+                    recipient,
+                    privateKey,
+                    expectedKemAlgorithm,
+                    expectedCiphertextLength,
+                    SubjectIdentifierType.IssuerAndSerialNumber,
+                    expectedUkm: null,
+                    TestOids.Aes256,
+                    contentEncryptionKeyLength: 32);
+            }
+        }
+
+        [Fact]
+        public static void EncryptAndDecryptSubjectKeyIdentifier()
+        {
+            using (X509Certificate2 certificate = X509Certificate2.CreateFromPem(
+                MLKemTestData.IetfMlKem768CertificatePem))
+            {
+                CmsRecipient recipient = new CmsRecipient(SubjectIdentifierType.SubjectKeyIdentifier, certificate);
+
+                EncryptAndDecrypt(
+                    recipient,
+                    MLKemTestData.IetfMlKem768PrivateKeySeed,
+                    TestOids.MLKem768,
+                    1088,
+                    SubjectIdentifierType.SubjectKeyIdentifier,
+                    expectedUkm: null,
+                    TestOids.Aes256,
+                    contentEncryptionKeyLength: 32);
+            }
+        }
+
+        [Fact]
+        public static void EncryptAndDecryptFactoryWithEmptyUkm()
+        {
+            using (X509Certificate2 certificate = X509Certificate2.CreateFromPem(
+                MLKemTestData.IetfMlKem768CertificatePem))
+            {
+                CmsRecipient recipient = CmsRecipient.CreateForKeyEncapsulation(certificate, []);
+
+                EncryptAndDecrypt(
+                    recipient,
+                    MLKemTestData.IetfMlKem768PrivateKeySeed,
+                    TestOids.MLKem768,
+                    1088,
+                    SubjectIdentifierType.IssuerAndSerialNumber,
+                    expectedUkm: [],
+                    TestOids.Aes256,
+                    contentEncryptionKeyLength: 32);
+            }
+        }
+
+        [Fact]
+        public static void EncryptAndDecryptFactoryWithUkmAndSubjectKeyIdentifier()
+        {
+            byte[] userKeyingMaterial = [1, 2, 3, 4, 5];
 
             using (X509Certificate2 certificate = X509Certificate2.CreateFromPem(
                 MLKemTestData.IetfMlKem768CertificatePem))
             {
-                EnvelopedCms cms = new EnvelopedCms(
-                    new ContentInfo(content),
-                    new AlgorithmIdentifier(new Oid(contentEncryptionAlgorithm)));
+                CmsRecipient recipient = CmsRecipient.CreateForKeyEncapsulation(
+                    SubjectIdentifierType.SubjectKeyIdentifier,
+                    certificate,
+                    userKeyingMaterial);
 
-                cms.Encrypt(new CmsRecipient(certificate));
-                byte[] encoded = cms.Encode();
-
-                cms = new EnvelopedCms();
-                cms.Decode(encoded);
-
-                KemRecipientInfo recipientInfo = Assert.IsType<KemRecipientInfo>(Assert.Single(cms.RecipientInfos));
-
-                using (MLKem privateKey = MLKem.ImportPkcs8PrivateKey(MLKemTestData.IetfMlKem768PrivateKeySeed))
-                {
-                    cms.Decrypt(recipientInfo, privateKey);
-                }
-
-                Assert.Equal(content, cms.ContentInfo.Content);
+                EncryptAndDecrypt(
+                    recipient,
+                    MLKemTestData.IetfMlKem768PrivateKeySeed,
+                    TestOids.MLKem768,
+                    1088,
+                    SubjectIdentifierType.SubjectKeyIdentifier,
+                    userKeyingMaterial,
+                    TestOids.Aes256,
+                    contentEncryptionKeyLength: 32);
             }
+        }
+
+        [Fact]
+        public static void CreateForKeyEncapsulationCopiesUkm()
+        {
+            byte[] userKeyingMaterial = [1, 2, 3, 4, 5];
+            byte[] expectedUkm = userKeyingMaterial.AsSpan().ToArray();
+
+            using (X509Certificate2 certificate = X509Certificate2.CreateFromPem(
+                MLKemTestData.IetfMlKem768CertificatePem))
+            {
+                CmsRecipient recipient = CmsRecipient.CreateForKeyEncapsulation(certificate, userKeyingMaterial);
+                userKeyingMaterial.AsSpan().Fill(0xFF);
+
+                EncryptAndDecrypt(
+                    recipient,
+                    MLKemTestData.IetfMlKem768PrivateKeySeed,
+                    TestOids.MLKem768,
+                    1088,
+                    SubjectIdentifierType.IssuerAndSerialNumber,
+                    expectedUkm,
+                    TestOids.Aes256,
+                    contentEncryptionKeyLength: 32);
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void CreateForKeyEncapsulationRejectsNonKemCertificate(bool specifyRecipientIdentifier)
+        {
+            using (X509Certificate2 certificate = TestCertificates.RSAKeyTransfer1.GetCertificate())
+            {
+                if (specifyRecipientIdentifier)
+                {
+                    Assert.Throws<CryptographicException>(() =>
+                        CmsRecipient.CreateForKeyEncapsulation(
+                            SubjectIdentifierType.SubjectKeyIdentifier,
+                            certificate,
+                            []));
+                }
+                else
+                {
+                    Assert.Throws<CryptographicException>(() =>
+                        CmsRecipient.CreateForKeyEncapsulation(certificate, []));
+                }
+            }
+        }
+
+        private static void EncryptAndDecrypt(
+            CmsRecipient recipient,
+            byte[] privateKey,
+            string expectedKemAlgorithm,
+            int expectedCiphertextLength,
+            SubjectIdentifierType expectedRecipientIdentifierType,
+            byte[]? expectedUkm,
+            string contentEncryptionAlgorithm,
+            int contentEncryptionKeyLength)
+        {
+            byte[] content = "hello world!"u8.ToArray();
+            EnvelopedCms cms = new EnvelopedCms(
+                new ContentInfo(content),
+                new AlgorithmIdentifier(new Oid(contentEncryptionAlgorithm)));
+
+            cms.Encrypt(recipient);
+            byte[] encoded = cms.Encode();
+
+            cms = new EnvelopedCms();
+            cms.Decode(encoded);
+
+            Assert.Equal(3, cms.Version);
+            Assert.Equal(contentEncryptionAlgorithm, cms.ContentEncryptionAlgorithm.Oid.Value);
+
+            KemRecipientInfo recipientInfo = Assert.IsType<KemRecipientInfo>(Assert.Single(cms.RecipientInfos));
+            Assert.Equal(0, recipientInfo.Version);
+            Assert.Equal(expectedRecipientIdentifierType, recipientInfo.RecipientIdentifier.Type);
+            Assert.Equal(expectedKemAlgorithm, recipientInfo.KeyEncapsulationAlgorithm.Oid.Value);
+            Assert.Empty(recipientInfo.KeyEncapsulationAlgorithm.Parameters);
+            Assert.Equal(expectedCiphertextLength, recipientInfo.KeyEncapsulationCiphertext.Length);
+            Assert.Equal(TestOids.HkdfSha384, recipientInfo.KeyDerivationAlgorithm.Oid.Value);
+            Assert.Empty(recipientInfo.KeyDerivationAlgorithm.Parameters);
+            Assert.Equal(32, recipientInfo.KeyEncryptionKeyLengthInBytes);
+            Assert.Equal(TestOids.Aes256Wrap, recipientInfo.KeyEncryptionAlgorithm.Oid.Value);
+            Assert.Empty(recipientInfo.KeyEncryptionAlgorithm.Parameters);
+            Assert.Equal(contentEncryptionKeyLength + 8, recipientInfo.EncryptedKey.Length);
+
+            if (expectedUkm is null)
+            {
+                Assert.Null(recipientInfo.UserKeyingMaterial);
+            }
+            else
+            {
+                Assert.True(recipientInfo.UserKeyingMaterial.HasValue);
+                Assert.Equal<byte>(expectedUkm, recipientInfo.UserKeyingMaterial.Value.ToArray());
+            }
+
+            using (MLKem mlKem = MLKem.ImportPkcs8PrivateKey(privateKey))
+            {
+                cms.Decrypt(recipientInfo, mlKem);
+            }
+
+            Assert.Equal(content, cms.ContentInfo.Content);
         }
     }
 }

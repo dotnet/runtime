@@ -113,6 +113,53 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
+        public static void DecryptWrongPrivateKey()
+        {
+            EnvelopedCms cms = new EnvelopedCms();
+            cms.Decode(KemTestDocuments.MlKem768);
+
+            KemRecipientInfo recipientInfo = Assert.IsType<KemRecipientInfo>(Assert.Single(cms.RecipientInfos));
+
+            using (MLKem privateKey = MLKem.GenerateKey(MLKemAlgorithm.MLKem768))
+            {
+                Assert.ThrowsAny<CryptographicException>(() => cms.Decrypt(recipientInfo, privateKey));
+            }
+        }
+
+        [Fact]
+        public static void DecryptTamperedEncryptedKey()
+        {
+            const string Document = """
+                MIIFRgYJKoZIhvcNAQcDoIIFNzCCBTMCAQMxggTupIIE6gYLKoZIhvcNAQkQDQMwggTZAgEAMDowIjENMAsGA1UEChMESUVURjERMA8GA1UEAxMITEFN
+                UFMgV0cCFBWf/m8i/VzELFJN9v1eKNDeOPNPMAsGCWCGSAFlAwQEAgSCBED8JbFiwSeYXPZ5kqKNInfiohfMBjyULm1+hlIjTN9qK4dgvIpQ+jAdrHdJ
+                1hOmItZ4LvGF6/P+oxq3+FSZSabfwBVuwGMS/YiUyxPWBO0UmqWThrs42i+IGU0hr5ygHkb6AGpPm/IdDi48TtM1PNBPl1QBBTaM2TAxb3Nn21a0EtB8
+                bCmLAgnAjFC72YB4kp++HwTayJ6nuuim94VmuPuPOApEwIVhDECIpToF5/M/a7x30qtgAXC1zcHsCidkzzO+ekqt8lWPzgUvtNmDJGu2kUZajZOqGYvB
+                qT8mOyQpRBoISUFh+M5YEE2DMWyrRT4pjvvUA5lwrHeSDdPiZAZ2QaOWE124nRf+gJG8DG2zJqqmaP4TscPb+bs+v+08Qf0aNjZwpLG6DqsUy066WMmO
+                oygf/XlyxQFXJ6HxAsg0coD/tvE7rR9L0TiEkPjksPHxzocfxQK2tD22liMvemR2gO0qVjpIZAlIzq9iJ9J+sq5lWoaRHWsn+bLzpBiTulLE741zHJy4
+                nCb8BAlCg+JOrh50ZQpjpHcoJ4X4NdLuQDOCp2utGnxxQI43cq+mLFYrLH9vetCktRtyKI5iDsGJMVkeIzUmh+IHunVcE1nTmiiTIkebbVGkGLyv+XI3
+                x6QHRwQojjMer/bhoT8r129GYNMOAQzQm3FwpNLLBzrIj70Nm2cra3ntL/aMMPRI3CGlhMc405r3r1tbsfVcgqaNsWJsj2PcUDLFKnYw1cyEvUZ1yF4M
+                RsHgCaANCw9zYUQjxVnfeeXXc50hqOzAD/ZauzVUAdBRRpTB1EcDnI4RRFlukhx7fXvo2WUWy0vEdj1fMw+bJhFTRQI54Zd0OS9tE8fm5K4tOaQTtCJe
+                WMI4cYuVy+8+ZFrw1YGztRgq/umf7wBO3zGdAYqEhq3bg8ln8jipMD4wTmQcmkGL1R1QxeJSXQCNZePKwIMaGGpiKTIZrEHASkf9XcbTtcL09FLKjHzo
+                2FW56NPJnWg1cTdGCHT9VBcT06Vd6zmy3qjGCS7fiSZs17lq4Uyc/lPYcx+0E1CJ4zMcAg9+jECV5cSUZ+HeTKpmbPOgL3rn9oWOGi0vXcJ8dtIfMRIn
+                ueHqOOzDb9FbpMFDZ1AZMbGuChxxZtjVM9iw08mc/WIF2qa9tVIkEKX8ZQDuIz8e+C1HTawEFYZ1XBBqMTy0BfYpZhT1W/UJe5rgUDNJXXBv5LdPWhZP
+                XFeomCC00O0bqioUVHqkzB7m0VtNHknEar2ks5pzigvo1Awd9dsgde1U4ZpRCIMAR7RD48rc8vTNSNF5LfvDSjJ7VZJREphog39ZmUhUuMl3ocTOXdNB
+                wRx1xp1gY0OOgBXku1DRFNkmJm+OX4gO9z3vee0A4lHPPzt+wDG8F8msLs+FGPDWnUP1TWVyHLWWIT1VZ/ArvEP5eM7j0XH9CYIl/4Z1ncX60JtuO+dY
+                oTANBgsqhkiG9w0BCRADHQIBIDALBglghkgBZQMEAS0EKAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwPAYJKoZIhvcNAQcB
+                MB0GCWCGSAFlAwQBKgQQRxfJmVCr9TJ5HqocaVzdSoAQdyh9tjmrLR1M2m/QAzYr7w==
+                """;
+
+            EnvelopedCms cms = new EnvelopedCms();
+            cms.Decode(Convert.FromBase64String(Document));
+
+            KemRecipientInfo recipientInfo = Assert.IsType<KemRecipientInfo>(Assert.Single(cms.RecipientInfos));
+
+            using (MLKem privateKey = MLKem.ImportPkcs8PrivateKey(MLKemTestData.IetfMlKem768PrivateKeySeed))
+            {
+                Assert.ThrowsAny<CryptographicException>(() => cms.Decrypt(recipientInfo, privateKey));
+            }
+        }
+
+        [Fact]
         public static void DecryptInvalidVersion()
         {
             const string Document = """
