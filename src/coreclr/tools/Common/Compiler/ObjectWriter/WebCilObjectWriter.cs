@@ -87,44 +87,6 @@ namespace ILCompiler.ObjectWriter
             ]);
         }
 
-        static WasmFunctionBody GetWebcilSize = new WasmFunctionBody(
-            new WasmFuncType(new([WasmValueType.I32]), new([])), // (func (destPtr i32) (result))
-                [
-                    Local.Get(0), // (local.get $destPtr)
-                    I32.Const(0),
-                    I32.Const(4),
-                    Memory.Init(0)
-                ]
-        );
-
-        WasmFunctionBody FillWebcilTable(int tableSize) => new WasmFunctionBody(
-            new WasmFuncType(new([]), new([])), // (func)
-                [
-                    Global.Get(WebCilObjectWriter.TableBaseGlobalIndex),
-                    I32.Const(0),
-                    I32.Const(tableSize),
-                    Table.Init(0, 0)
-                ]
-        );
-
-        WasmFunctionBody GetWebcilPayload => new WasmFunctionBody(
-            new WasmFuncType(new([WasmValueType.I32, WasmValueType.I32]), new([])), // (func ($d i32) ($n i32))
-                [
-                    Local.Get(0), // (local.get $d)
-                    I32.Const(0),
-                    Local.Get(1), // (local.get $n)
-                    Memory.Init(1),
-                    Local.Get(1),
-                    I32.Const(32),
-                    I32.Ge_s,
-                    Block.If(WasmBlockType.Empty),
-                    Local.Get(0), // (local.get $d)
-                    Global.Get(WebCilObjectWriter.TableBaseGlobalIndex), // (global.get $tableBase)
-                    I32.Store((ulong)WebcilEncoder.TableBaseOffset), // i32.store offset=TableBaseOffset
-                    Block.End
-                ]
-        );
-
         private long ResolveSymbolRVA(WebcilSection[] sections, SymbolDefinition definition)
         {
             for (int i = 0; i < sections.Length; i++)
@@ -244,12 +206,6 @@ namespace ILCompiler.ObjectWriter
 
         private protected override void EmitSectionsAndLayout()
         {
-            int totalMethodCount = MethodCount + 3;
-            InsertWasmStub(new Utf8String("getWebcilSize"), GetWebcilSize);
-            InsertWasmStub(new Utf8String("getWebcilPayload"), GetWebcilPayload);
-            InsertWasmStub(new Utf8String("fillWebcilTable"), FillWebcilTable(totalMethodCount));
-            Debug.Assert(MethodCount == totalMethodCount);
-
             WriteDataCountSection();
         }
 
@@ -664,7 +620,7 @@ namespace ILCompiler.ObjectWriter
 #endif
         }
 
-        private unsafe int ResolveReloc(int sectionIndex, MemoryStream sourceStream, long srcPos, MemoryStream destStream, long destPos, SymbolicRelocation reloc,  byte[] relocScratchBuffer, bool shrink = false)
+        private unsafe int ResolveReloc(int sectionIndex, Stream sourceStream, long srcPos, MemoryStream destStream, long destPos, SymbolicRelocation reloc, byte[] relocScratchBuffer, bool shrink = false)
         {
             WebcilSection? curSectionAsWebcil = null;
             uint webcilVirtualStart = 0;
@@ -826,6 +782,13 @@ namespace ILCompiler.ObjectWriter
                         }
                         break;
                     }
+                    case RelocType.WASM_FUNCTION_COUNT_SLEB:
+                    {
+                        // We should only be using this in methods that can be shrunk at this point.
+                        Debug.Assert(shrink);
+                        actualLength = Relocation.WriteVariableLengthValue(reloc.Type, pData, MethodCount);
+                        break;
+                    }
                     default:
                         // TODO-WASM: add other cases as needed;
                         // ignoring other reloc types for now
@@ -875,6 +838,12 @@ namespace ILCompiler.ObjectWriter
                 return;
             }
 
+            if (shrink && _sections[sectionIndex] is WasmSection { Type: WasmSectionType.Function })
+            {
+                ResolveFunctionSectionRelocations(sectionIndex, sectionStream, dstStream, relocs);
+                return;
+            }
+
             byte[] relocScratchBuffer = new byte[Relocation.MaxSize];
 
             // Otherwise, we can resolve relocations on top of the copied in section stream, since the size and layout of the stream won't be changing.
@@ -886,6 +855,40 @@ namespace ILCompiler.ObjectWriter
                 ResolveReloc(sectionIndex, dstStream, srcPos: sectionStart + reloc.Offset, dstStream, destPos: sectionStart + reloc.Offset, reloc, relocScratchBuffer);
             }
             dstStream.Position = sectionStream.Length + startPos;
+        }
+
+        // The entire section is relocs, so we can shrink each reloc and skip copying any data between them.
+        private void ResolveFunctionSectionRelocations(
+            int sectionIndex,
+            Stream sourceStream,
+            MemoryStream destinationStream,
+            List<SymbolicRelocation> relocs)
+        {
+            byte[] relocScratchBuffer = new byte[Relocation.MaxSize];
+            relocs.Sort((left, right) => left.Offset.CompareTo(right.Offset));
+
+            sourceStream.Position = 0;
+
+            foreach (SymbolicRelocation reloc in relocs)
+            {
+                Debug.Assert(sourceStream.Position != reloc.Offset,
+                    $"Unexpected data in the WASM Function section between offsets {sourceStream.Position} and {reloc.Offset}.");
+
+                ResolveReloc(
+                    sectionIndex,
+                    sourceStream,
+                    reloc.Offset,
+                    destinationStream,
+                    destinationStream.Position,
+                    reloc,
+                    relocScratchBuffer,
+                    shrink: true);
+
+                sourceStream.Position = reloc.Offset + Relocation.GetSize(reloc.Type);
+            }
+
+            Debug.Assert(sourceStream.Position == sourceStream.Length,
+                $"Unexpected trailing data in the WASM Function section at offset {sourceStream.Position}.");
         }
 #nullable disable
 
