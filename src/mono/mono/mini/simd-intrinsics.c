@@ -6496,17 +6496,17 @@ static SimdIntrinsic packedsimd_methods [] = {
 };
 
 static SimdIntrinsic relaxedsimd_methods [] = {
-	{SN_ConvertToInt32},
-	{SN_ConvertToUInt32},
-	{SN_DotProduct, OP_XOP_X_X_X, INTRINS_WASM_RELAXED_DOT_I8X16_I7X16_SIGNED},
-	{SN_DotProductAdd, OP_XOP_X_X_X_X, INTRINS_WASM_RELAXED_DOT_I8X16_I7X16_ADD_SIGNED},
-	{SN_LaneSelect, OP_XOP_OVR_X_X_X_X, INTRINS_WASM_RELAXED_LANESELECT},
-	{SN_Max, OP_XOP_OVR_X_X_X, INTRINS_WASM_RELAXED_MAX},
-	{SN_Min, OP_XOP_OVR_X_X_X, INTRINS_WASM_RELAXED_MIN},
+	{SN_ConvertToInt32Native},
+	{SN_ConvertToUInt32Native},
+	{SN_DotProductAddNative, OP_XOP_X_X_X_X, INTRINS_WASM_RELAXED_DOT_I8X16_I7X16_ADD_SIGNED},
+	{SN_DotProductNative, OP_XOP_X_X_X, INTRINS_WASM_RELAXED_DOT_I8X16_I7X16_SIGNED},
+	{SN_LaneSelectNative, OP_XOP_OVR_X_X_X_X, INTRINS_WASM_RELAXED_LANESELECT},
+	{SN_MaxNative, OP_XOP_OVR_X_X_X, INTRINS_WASM_RELAXED_MAX},
+	{SN_MinNative, OP_XOP_OVR_X_X_X, INTRINS_WASM_RELAXED_MIN},
 	{SN_MultiplyAddEstimate, OP_XOP_OVR_X_X_X_X, INTRINS_WASM_RELAXED_MADD},
 	{SN_MultiplyAddNegatedEstimate, OP_XOP_OVR_X_X_X_X, INTRINS_WASM_RELAXED_NMADD},
-	{SN_MultiplyRoundedQ15, OP_XOP_X_X_X, INTRINS_WASM_RELAXED_Q15MULR_SIGNED},
-	{SN_Swizzle, OP_XOP_X_X_X, INTRINS_WASM_RELAXED_SWIZZLE},
+	{SN_MultiplyRoundedQ15Native, OP_XOP_X_X_X, INTRINS_WASM_RELAXED_Q15MULR_SIGNED},
+	{SN_SwizzleNative, OP_XOP_X_X_X, INTRINS_WASM_RELAXED_SWIZZLE},
 	{SN_get_IsSupported},
 };
 
@@ -6889,11 +6889,11 @@ emit_wasm_supported_intrinsics (
 		uint16_t c0 = info->default_instc0;
 
 		switch (id) {
-			case SN_ConvertToInt32:
+			case SN_ConvertToInt32Native:
 				op = OP_XOP_X_X;
 				c0 = arg0_type == MONO_TYPE_R8 ? INTRINS_WASM_RELAXED_TRUNC_SIGNED_ZERO : INTRINS_WASM_RELAXED_TRUNC_SIGNED;
 				break;
-			case SN_ConvertToUInt32:
+			case SN_ConvertToUInt32Native:
 				op = OP_XOP_X_X;
 				c0 = arg0_type == MONO_TYPE_R8 ? INTRINS_WASM_RELAXED_TRUNC_UNSIGNED_ZERO : INTRINS_WASM_RELAXED_TRUNC_UNSIGNED;
 				break;

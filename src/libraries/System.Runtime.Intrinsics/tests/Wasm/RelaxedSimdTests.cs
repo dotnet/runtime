@@ -23,7 +23,24 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
         }
 
         [ConditionalFact(typeof(RelaxedSimd), nameof(RelaxedSimd.IsSupported))]
-        public unsafe void DotProductByteSByteMatchesScalar()
+        public unsafe void ConvertToIntegerNativeInRangeMatchesExpected()
+        {
+            Assert.Equal(
+                Vector128.Create(1, -2, 3, -4),
+                RelaxedSimd.ConvertToInt32Native(Vector128.Create(1.75f, -2.25f, 3.0f, -4.99f)));
+            Assert.Equal(
+                Vector128.Create(5, -6, 0, 0),
+                RelaxedSimd.ConvertToInt32Native(Vector128.Create(5.75, -6.25)));
+            Assert.Equal(
+                Vector128.Create(1u, 2u, 3u, 4u),
+                RelaxedSimd.ConvertToUInt32Native(Vector128.Create(1.75f, 2.25f, 3.0f, 4.99f)));
+            Assert.Equal(
+                Vector128.Create(5u, 6u, 0u, 0u),
+                RelaxedSimd.ConvertToUInt32Native(Vector128.Create(5.75, 6.25)));
+        }
+
+        [ConditionalFact(typeof(RelaxedSimd), nameof(RelaxedSimd.IsSupported))]
+        public unsafe void DotProductNativeByteSByteMatchesScalar()
         {
             // Per the finished spec, `a` is signed and `b` is unsigned-7-bit. When every lane
             // of `b` is in [0, 127] every implementation must match a straightforward
@@ -31,7 +48,7 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
             var s = Vector128.Create((sbyte)-1, 2, -3, 4, -5, 6, -7, 8, -9, 10, -11, 12, -13, 14, -15, 16);
             var u = Vector128.Create((byte)2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 2, 3);
 
-            Vector128<short> actual = RelaxedSimd.DotProduct(s, u);
+            Vector128<short> actual = RelaxedSimd.DotProductNative(s, u);
 
             for (int i = 0; i < 8; i++)
             {
@@ -41,13 +58,13 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
         }
 
         [ConditionalFact(typeof(RelaxedSimd), nameof(RelaxedSimd.IsSupported))]
-        public unsafe void DotProductAddByteSByteMatchesScalar()
+        public unsafe void DotProductAddNativeByteSByteMatchesScalar()
         {
             var s = Vector128.Create((sbyte)-1, 2, -3, 4, -5, 6, -7, 8, -9, 10, -11, 12, -13, 14, -15, 16);
             var u = Vector128.Create((byte)2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 2, 3);
             var acc = Vector128.Create(100, 200, 300, 400);
 
-            Vector128<int> actual = RelaxedSimd.DotProductAdd(s, u, acc);
+            Vector128<int> actual = RelaxedSimd.DotProductAddNative(s, u, acc);
 
             for (int i = 0; i < 4; i++)
             {
@@ -82,7 +99,7 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
         }
 
         [ConditionalFact(typeof(RelaxedSimd), nameof(RelaxedSimd.IsSupported))]
-        public unsafe void LaneSelectAllOnesAllZerosBehavesLikeConditionalSelect()
+        public unsafe void LaneSelectNativeAllOnesAllZerosBehavesLikeConditionalSelect()
         {
             // For mask lanes that are all-ones or all-zeros the relaxed lane select must match
             // the deterministic semantics.
@@ -91,20 +108,20 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
             var mask = Vector128.Create((byte)0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00,
                                                    0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00);
 
-            Vector128<byte> actual = RelaxedSimd.LaneSelect(left, right, mask);
+            Vector128<byte> actual = RelaxedSimd.LaneSelectNative(left, right, mask);
             Vector128<byte> expected = Vector128.ConditionalSelect(mask, left, right);
 
             Assert.Equal(expected, actual);
         }
 
         [ConditionalFact(typeof(RelaxedSimd), nameof(RelaxedSimd.IsSupported))]
-        public unsafe void SwizzleInRangeMatchesVector128Shuffle()
+        public unsafe void SwizzleNativeInRangeMatchesVector128Shuffle()
         {
             // For index lanes in [0, 16) the relaxed swizzle must agree with Vector128.Shuffle.
             var v = Vector128.Create((byte)10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160);
             var idx = Vector128.Create((byte)15, 0, 14, 1, 13, 2, 12, 3, 11, 4, 10, 5, 9, 6, 8, 7);
 
-            Vector128<byte> actual = RelaxedSimd.Swizzle(v, idx);
+            Vector128<byte> actual = RelaxedSimd.SwizzleNative(v, idx);
             Vector128<byte> expected = Vector128.Shuffle(v, idx);
 
             Assert.Equal(expected, actual);

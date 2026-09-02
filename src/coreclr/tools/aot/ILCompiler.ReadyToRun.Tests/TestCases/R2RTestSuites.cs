@@ -215,26 +215,26 @@ public class R2RTestSuites
             foreach ((string name, uint opcode) in
                      new[]
                      {
-                         ("RelaxedSwizzle", 0x100u),
-                         ("RelaxedConvertF32ToInt32", 0x101u),
-                         ("RelaxedConvertF32ToUInt32", 0x102u),
-                         ("RelaxedConvertF64ToInt32", 0x103u),
-                         ("RelaxedConvertF64ToUInt32", 0x104u),
+                         ("RelaxedSwizzleNative", 0x100u),
+                         ("RelaxedConvertF32ToInt32Native", 0x101u),
+                         ("RelaxedConvertF32ToUInt32Native", 0x102u),
+                         ("RelaxedConvertF64ToInt32Native", 0x103u),
+                         ("RelaxedConvertF64ToUInt32Native", 0x104u),
                          ("RelaxedMultiplyAddF32", 0x105u),
                          ("RelaxedMultiplyAddNegatedF32", 0x106u),
                          ("RelaxedMultiplyAddF64", 0x107u),
                          ("RelaxedMultiplyAddNegatedF64", 0x108u),
-                         ("RelaxedLaneSelectI8", 0x109u),
-                         ("RelaxedLaneSelectI16", 0x10Au),
-                         ("RelaxedLaneSelectI32", 0x10Bu),
-                         ("RelaxedLaneSelectI64", 0x10Cu),
-                         ("RelaxedMinF32", 0x10Du),
-                         ("RelaxedMaxF32", 0x10Eu),
-                         ("RelaxedMinF64", 0x10Fu),
-                         ("RelaxedMaxF64", 0x110u),
-                         ("RelaxedMultiplyRoundedQ15", 0x111u),
-                         ("RelaxedDotProduct", 0x112u),
-                         ("RelaxedDotProductAdd", 0x113u),
+                         ("RelaxedLaneSelectI8Native", 0x109u),
+                         ("RelaxedLaneSelectI16Native", 0x10Au),
+                         ("RelaxedLaneSelectI32Native", 0x10Bu),
+                         ("RelaxedLaneSelectI64Native", 0x10Cu),
+                         ("RelaxedMinF32Native", 0x10Du),
+                         ("RelaxedMaxF32Native", 0x10Eu),
+                         ("RelaxedMinF64Native", 0x10Fu),
+                         ("RelaxedMaxF64Native", 0x110u),
+                         ("RelaxedMultiplyRoundedQ15Native", 0x111u),
+                         ("RelaxedDotProductNative", 0x112u),
+                         ("RelaxedDotProductAddNative", 0x113u),
                      })
             {
                 ReadyToRunMethod method = Assert.Single(
@@ -272,7 +272,7 @@ public class R2RTestSuites
             var webcilReader = Assert.IsType<WebcilImageReader>(reader.CompositeReader);
             List<ReadyToRunMethod> methods = R2RAssert.GetAllMethods(reader);
             ReadyToRunMethod method = Assert.Single(
-                methods, m => m.SignatureString.Contains(".RelaxedSwizzleIfSupported(", StringComparison.Ordinal));
+                methods, m => m.SignatureString.Contains(".RelaxedSwizzleNativeIfSupported(", StringComparison.Ordinal));
             WebcilImageReader.WasmFunctionInfo body = ResolveWasmBody(reader, webcilReader, method);
 
             Assert.False(

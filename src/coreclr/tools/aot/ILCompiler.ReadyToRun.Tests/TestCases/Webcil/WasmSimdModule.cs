@@ -52,33 +52,33 @@ public static class WasmSimdModule
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static Vector128<byte> RelaxedSwizzle(Vector128<byte> value, Vector128<byte> indices)
+    public static Vector128<byte> RelaxedSwizzleNative(Vector128<byte> value, Vector128<byte> indices)
     {
-        return RelaxedSimd.Swizzle(value, indices);
+        return RelaxedSimd.SwizzleNative(value, indices);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static Vector128<int> RelaxedConvertF32ToInt32(Vector128<float> value)
+    public static Vector128<int> RelaxedConvertF32ToInt32Native(Vector128<float> value)
     {
-        return RelaxedSimd.ConvertToInt32(value);
+        return RelaxedSimd.ConvertToInt32Native(value);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static Vector128<uint> RelaxedConvertF32ToUInt32(Vector128<float> value)
+    public static Vector128<uint> RelaxedConvertF32ToUInt32Native(Vector128<float> value)
     {
-        return RelaxedSimd.ConvertToUInt32(value);
+        return RelaxedSimd.ConvertToUInt32Native(value);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static Vector128<int> RelaxedConvertF64ToInt32(Vector128<double> value)
+    public static Vector128<int> RelaxedConvertF64ToInt32Native(Vector128<double> value)
     {
-        return RelaxedSimd.ConvertToInt32(value);
+        return RelaxedSimd.ConvertToInt32Native(value);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static Vector128<uint> RelaxedConvertF64ToUInt32(Vector128<double> value)
+    public static Vector128<uint> RelaxedConvertF64ToUInt32Native(Vector128<double> value)
     {
-        return RelaxedSimd.ConvertToUInt32(value);
+        return RelaxedSimd.ConvertToUInt32Native(value);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -110,80 +110,80 @@ public static class WasmSimdModule
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static Vector128<byte> RelaxedLaneSelectI8(
+    public static Vector128<byte> RelaxedLaneSelectI8Native(
         Vector128<byte> left, Vector128<byte> right, Vector128<byte> mask)
     {
-        return RelaxedSimd.LaneSelect(left, right, mask);
+        return RelaxedSimd.LaneSelectNative(left, right, mask);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static Vector128<short> RelaxedLaneSelectI16(
+    public static Vector128<short> RelaxedLaneSelectI16Native(
         Vector128<short> left, Vector128<short> right, Vector128<short> mask)
     {
-        return RelaxedSimd.LaneSelect(left, right, mask);
+        return RelaxedSimd.LaneSelectNative(left, right, mask);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static Vector128<int> RelaxedLaneSelectI32(
+    public static Vector128<int> RelaxedLaneSelectI32Native(
         Vector128<int> left, Vector128<int> right, Vector128<int> mask)
     {
-        return RelaxedSimd.LaneSelect(left, right, mask);
+        return RelaxedSimd.LaneSelectNative(left, right, mask);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static Vector128<long> RelaxedLaneSelectI64(
+    public static Vector128<long> RelaxedLaneSelectI64Native(
         Vector128<long> left, Vector128<long> right, Vector128<long> mask)
     {
-        return RelaxedSimd.LaneSelect(left, right, mask);
+        return RelaxedSimd.LaneSelectNative(left, right, mask);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static Vector128<float> RelaxedMinF32(Vector128<float> left, Vector128<float> right)
+    public static Vector128<float> RelaxedMinF32Native(Vector128<float> left, Vector128<float> right)
     {
-        return RelaxedSimd.Min(left, right);
+        return RelaxedSimd.MinNative(left, right);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static Vector128<float> RelaxedMaxF32(Vector128<float> left, Vector128<float> right)
+    public static Vector128<float> RelaxedMaxF32Native(Vector128<float> left, Vector128<float> right)
     {
-        return RelaxedSimd.Max(left, right);
+        return RelaxedSimd.MaxNative(left, right);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static Vector128<double> RelaxedMinF64(Vector128<double> left, Vector128<double> right)
+    public static Vector128<double> RelaxedMinF64Native(Vector128<double> left, Vector128<double> right)
     {
-        return RelaxedSimd.Min(left, right);
+        return RelaxedSimd.MinNative(left, right);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static Vector128<double> RelaxedMaxF64(Vector128<double> left, Vector128<double> right)
+    public static Vector128<double> RelaxedMaxF64Native(Vector128<double> left, Vector128<double> right)
     {
-        return RelaxedSimd.Max(left, right);
+        return RelaxedSimd.MaxNative(left, right);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static Vector128<short> RelaxedMultiplyRoundedQ15(Vector128<short> left, Vector128<short> right)
+    public static Vector128<short> RelaxedMultiplyRoundedQ15Native(Vector128<short> left, Vector128<short> right)
     {
-        return RelaxedSimd.MultiplyRoundedQ15(left, right);
+        return RelaxedSimd.MultiplyRoundedQ15Native(left, right);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static Vector128<short> RelaxedDotProduct(Vector128<sbyte> left, Vector128<byte> right)
+    public static Vector128<short> RelaxedDotProductNative(Vector128<sbyte> left, Vector128<byte> right)
     {
-        return RelaxedSimd.DotProduct(left, right);
+        return RelaxedSimd.DotProductNative(left, right);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static Vector128<int> RelaxedDotProductAdd(
+    public static Vector128<int> RelaxedDotProductAddNative(
         Vector128<sbyte> left, Vector128<byte> right, Vector128<int> accumulator)
     {
-        return RelaxedSimd.DotProductAdd(left, right, accumulator);
+        return RelaxedSimd.DotProductAddNative(left, right, accumulator);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static Vector128<byte> RelaxedSwizzleIfSupported(Vector128<byte> value, Vector128<byte> indices)
+    public static Vector128<byte> RelaxedSwizzleNativeIfSupported(Vector128<byte> value, Vector128<byte> indices)
     {
-        return RelaxedSimd.IsSupported ? RelaxedSimd.Swizzle(value, indices) : value;
+        return RelaxedSimd.IsSupported ? RelaxedSimd.SwizzleNative(value, indices) : value;
     }
 
     // A single-field struct wrapping a v128 is itself passed/returned as a v128, matching emscripten.
