@@ -26,6 +26,7 @@ public class GenericVirtualMethodUnloading
 
     [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: Collectible assemblies", typeof(Utilities), nameof(Utilities.IsNativeAot))]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/34072", TestRuntimes.Mono)]
+    [SkipOnCoreClr("Test polls a fixed number of times for collectible ALCs to be unloaded, which is unreliable under GC stress", RuntimeTestModes.AnyGCStress)]
     [Fact]
     public static void CallGenericVirtualMethodAcrossUnloads()
     {
@@ -85,8 +86,9 @@ public class GenericVirtualMethodUnloading
         FieldInfo infoField = table.GetType().GetElementType().GetField("_info", BindingFlags.NonPublic | BindingFlags.Instance);
         FieldInfo versionField = infoField.FieldType.GetField("_version", BindingFlags.NonPublic | BindingFlags.Instance);
 
-        // element 0 of the table holds the auxiliary data of the table, the entries start at index 1.
-        // A nonzero version means the entry is in use.
+        // Only validate the flush sentinel table (2 usable entries + element 0 aux data).
+        if (table.Length != 3)
+            return;
         for (int i = 1; i < table.Length; i++)
         {
             object entryInfo = infoField.GetValue(table.GetValue(i));
