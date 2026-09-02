@@ -188,9 +188,9 @@ namespace ILCompiler.PortableCallHelpers
                 log.Verbose($"Adding {kind} signature {signature} for method '{method.OwningType}.{method.Name.ToString()}'");
         }
 
-        private bool DoesMethodHaveCallbacks(EcmaMethod method)
+        private bool IsMethodCallback(EcmaMethod method)
         {
-            if (!method.HasCustomAttribute("System.Runtime.InteropServices", "UnmanagedCallersOnlyAttribute"))
+            if (!method.IsUnmanagedCallersOnly)
             {
                 // Mono matches [MonoPInvokeCallback] by simple name - no assembly declares it - and
                 // wraps such a method on wasm whether interpreted or AOT. Nothing here can dispatch
@@ -208,27 +208,7 @@ namespace ILCompiler.PortableCallHelpers
             if (IsUnsupportedOnPlatform(method))
                 return false;
 
-            if (HasAssemblyDisableRuntimeMarshallingAttribute((EcmaAssembly)method.Module))
-                return true;
-
-            // No DisableRuntimeMarshalling attribute, so check if the params/ret-type are blittable
-            //
-            // WASM-TODO: asking about the type alone is not enough to know what it marshals into,
-            // because [MarshalAs] and the other interop attributes on a parameter can change that.
-            // Marshaller.IsMarshallingRequired, or a more lenient variant of it, is the question to
-            // ask instead. Requiring DisableRuntimeMarshalling on wasm would retire the check
-            // altogether, and let the runtime drop its built-in marshalling code with it.
-            MethodSignature signature = method.Signature;
-            if (!signature.ReturnType.IsVoid && !IsBlittable(signature.ReturnType))
-                throw new LogAsErrorException($"The return type '{signature.ReturnType}' of pinvoke callback method '{method}' needs to be blittable.");
-
-            foreach (TypeDesc parameterType in signature)
-            {
-                if (!IsBlittable(parameterType))
-                    throw new LogAsErrorException($"Parameter types of pinvoke callback method '{method}' needs to be blittable.");
-            }
-
-            return true;
+            return false;
         }
 
         /// <summary>
