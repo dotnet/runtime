@@ -76,6 +76,7 @@ namespace ILAssembler
 #pragma warning disable CA1822 // Mark members as static
     internal sealed class GrammarVisitor : ICILVisitor<GrammarResult>
     {
+        private const int MaximumGenericParameterCount = ushort.MaxValue + 1;
         private const string NodeShouldNeverBeDirectlyVisited = "This node should never be directly visited. It should be directly processed by its parent node.";
         private readonly ImmutableArray<Diagnostic>.Builder _diagnostics = ImmutableArray.CreateBuilder<Diagnostic>();
         private readonly EntityRegistry _entityRegistry = new();
@@ -130,6 +131,38 @@ namespace ILAssembler
         private void ReportError(string id, string message, Antlr4.Runtime.ParserRuleContext context)
             => ReportDiagnostic(DiagnosticSeverity.Error, id, message, context);
 
+        private void ReportGenericParameterEncodingErrors(CILParser.TyparContext[] genericParameters)
+        {
+            if (genericParameters.Length <= MaximumGenericParameterCount)
+            {
+                return;
+            }
+
+            ReportError(
+                DiagnosticIds.TooManyGenericParameters,
+                string.Format(
+                    DiagnosticMessageTemplates.TooManyGenericParameters,
+                    genericParameters.Length,
+                    MaximumGenericParameterCount),
+                genericParameters[MaximumGenericParameterCount]);
+
+            for (int i = MaximumGenericParameterCount; i < genericParameters.Length; i++)
+            {
+                if (genericParameters[i].tyBound() is not CILParser.TyBoundContext constraint)
+                {
+                    continue;
+                }
+
+                ReportError(
+                    DiagnosticIds.GenericParameterConstraintOwnerOutOfRange,
+                    string.Format(
+                        DiagnosticMessageTemplates.GenericParameterConstraintOwnerOutOfRange,
+                        i,
+                        ushort.MaxValue),
+                    constraint);
+            }
+        }
+
         private void ReportWarning(string id, string message, Antlr4.Runtime.ParserRuleContext context)
             => ReportDiagnostic(DiagnosticSeverity.Warning, id, message, context);
 
@@ -176,7 +209,15 @@ namespace ILAssembler
 
             BlobBuilder ilStream = new();
             Blob mvidFixup = _entityRegistry.WriteContentTo(_metadataBuilder, ilStream, _mappedFieldDataNames, _options.Deterministic);
-            MetadataRootBuilder rootBuilder = new(_metadataBuilder, _options.MetadataVersion);
+            // MetadataRootBuilder only supports module-wide validation suppression, which is
+            // required because wrapped GenericParam numbers intentionally violate table ordering.
+            bool suppressMetadataValidation =
+                _options.ErrorTolerant &&
+                _diagnostics.Any(diagnostic => diagnostic.Id == DiagnosticIds.TooManyGenericParameters);
+            MetadataRootBuilder rootBuilder = new(
+                _metadataBuilder,
+                _options.MetadataVersion,
+                suppressValidation: suppressMetadataValidation);
 
             // Compute metadata size from the MetadataSizes
             // We need this for data label fixup RVA calculations
@@ -1620,6 +1661,7 @@ namespace ILAssembler
                     // Two-pass generic parameter processing:
                     // Pass 1: Register all parameter names (without resolving constraints)
                     var typarContexts = context.typarsClause()?.typars()?.typar() ?? Array.Empty<CILParser.TyparContext>();
+                    ReportGenericParameterEncodingErrors(typarContexts);
                     for (int i = 0; i < typarContexts.Length; i++)
                     {
                         var attributes = VisitTyparAttribs(typarContexts[i].typarAttribs()).Value;
@@ -1703,6 +1745,7 @@ namespace ILAssembler
                 {
                     // Two-pass generic parameter processing for forward-referenced types
                     var typarContexts = context.typarsClause()?.typars()?.typar() ?? Array.Empty<CILParser.TyparContext>();
+                    ReportGenericParameterEncodingErrors(typarContexts);
                     for (int i = 0; i < typarContexts.Length; i++)
                     {
                         var attributes = VisitTyparAttribs(typarContexts[i].typarAttribs()).Value;
@@ -4701,6 +4744,7 @@ namespace ILAssembler
             // Pass 1: Register all parameter names (without resolving constraints)
             _currentMethod = new(methodDefinition);
             var typarContexts = context.typarsClause()?.typars()?.typar() ?? Array.Empty<CILParser.TyparContext>();
+            ReportGenericParameterEncodingErrors(typarContexts);
             for (int i = 0; i < typarContexts.Length; i++)
             {
                 var attributes = VisitTyparAttribs(typarContexts[i].typarAttribs()).Value;

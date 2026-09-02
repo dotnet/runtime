@@ -190,10 +190,6 @@ namespace ILAssembler
 
             foreach (GenericParameterEntity genericParam in allGenericParams)
             {
-                // COMPAT: Native ilasm ignores generic parameters whose indices exceed the 2-byte metadata limit.
-                if (genericParam.Index > ushort.MaxValue)
-                    continue;
-
                 RecordEntityInTable(TableIndex.GenericParam, genericParam);
             }
 
@@ -208,12 +204,6 @@ namespace ILAssembler
 
             foreach (GenericParameterConstraintEntity constraint in allGenericConstraints)
             {
-                // COMPAT: Native ilasm ignores constraints on generic parameters whose indices exceed the 2-byte metadata limit.
-                if (constraint.Owner!.Index > ushort.MaxValue)
-                {
-                    continue;
-                }
-
                 RecordEntityInTable(TableIndex.GenericParamConstraint, constraint);
             }
 
@@ -540,12 +530,6 @@ namespace ILAssembler
 
             foreach (CustomAttributeEntity customAttr in GetSeenEntities(TableIndex.CustomAttribute))
             {
-                if (customAttr.Owner is GenericParameterEntity { Index: > ushort.MaxValue }
-                    or GenericParameterConstraintEntity { Owner.Index: > ushort.MaxValue })
-                {
-                    continue;
-                }
-
                 EntityHandle parent = customAttr.Owner switch
                 {
                     AssemblyEntity => EntityHandle.AssemblyDefinition,
@@ -676,14 +660,13 @@ namespace ILAssembler
 
             foreach (GenericParameterEntity genericParam in GetSeenEntities(TableIndex.GenericParam))
             {
-                // COMPAT: Native ilasm ignores generic parameters whose indices exceed the 2-byte metadata limit.
-                if (genericParam.Index > ushort.MaxValue)
-                    continue;
+                // Error-tolerant output preserves rows past the encodable index range by
+                // wrapping the value to the GenericParam table's 2-byte Number column.
                 builder.AddGenericParameter(
                     genericParam.Owner!.Handle,
                     genericParam.Attributes,
                     builder.GetOrAddString(genericParam.Name),
-                    genericParam.Index);
+                    unchecked((ushort)genericParam.Index));
             }
 
             foreach (GenericParameterConstraintEntity constraint in GetSeenEntities(TableIndex.GenericParamConstraint))
