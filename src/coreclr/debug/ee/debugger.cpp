@@ -4786,7 +4786,9 @@ HRESULT Debugger::MapAndBindFunctionPatches(DebuggerJitInfo *djiNew,
     // and then send the whole list when under the big lock.
     PATCH_UNORDERED_ARRAY listUnbindablePatches;
 
-    djiNew->GetSequenceMapCount();
+    // Ensure LazyInitBounds() runs before taking the controller lock; it may transition to COOP and
+    // wait for a debugger suspension (e.g. for ReadyToRun), which can deadlock if CrstDebuggerController is held.
+    (void)djiNew->GetSequenceMapCount();
 
     // First lock the patch table so it doesn't move while we're
     //  examining it.
