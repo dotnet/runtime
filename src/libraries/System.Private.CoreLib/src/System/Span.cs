@@ -77,7 +77,8 @@ namespace System
             }
             if (!typeof(T).IsValueType && array.GetType() != typeof(T[]))
                 ThrowHelper.ThrowArrayTypeMismatchException();
-            if (start < 0 || length < 0 || start > array.Length - length)
+            // See comment in Span<T>.Slice for how this works.
+            if ((ulong)(uint)start + (ulong)(uint)length > (ulong)(uint)array.Length)
                 ThrowHelper.ThrowArgumentOutOfRangeException();
 
             _reference = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), (nint)(uint)start /* force zero-extension */);
@@ -406,7 +407,12 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Span<T> Slice(int start, int length)
         {
-            if (start < 0 || length < 0 || start > _length - length)
+            // Since start and length are both 32-bit, their sum can be computed across a 64-bit domain
+            // without loss of fidelity. The cast to uint before the cast to ulong ensures that the
+            // extension from 32- to 64-bit is zero-extending rather than sign-extending. The end result
+            // of this is that if either input is negative or if the input sum overflows past Int32.MaxValue,
+            // that information is captured correctly in the comparison against the backing _length field.
+            if ((ulong)(uint)start + (ulong)(uint)length > (ulong)(uint)_length)
                 ThrowHelper.ThrowArgumentOutOfRangeException();
 
             return new Span<T>(ref Unsafe.Add(ref _reference, (nint)(uint)start /* force zero-extension */), length);
