@@ -652,6 +652,219 @@ bool FoldNeverNegativeRangeTest(
     return true;
 }
 
+#ifdef TARGET_64BIT
+//------------------------------------------------------------------------------
+// ZeroExtendToLong: Zero-extend the given 32-bit node to a 64-bit one.
+//
+// Arguments:
+//    comp - compiler instance
+//    node - the node to widen
+//
+// Returns:
+//    A TYP_LONG node holding the zero-extended value of "node".
+//
+static GenTree* ZeroExtendToLong(Compiler* comp, GenTree* node)
+{
+    assert(node->TypeIs(TYP_INT));
+
+    if (node->IsCnsIntOrI())
+    {
+        return comp->gtNewLconNode(static_cast<int64_t>(static_cast<uint32_t>(node->AsIntCon()->IconValue())));
+    }
+
+    return comp->gtNewCastNode(TYP_LONG, node, /* fromUnsigned */ true, TYP_LONG);
+}
+
+//------------------------------------------------------------------------------
+// FoldNonNegativeSumRangeTest: Given two compare nodes (cmp1 && cmp2) representing
+//    "X >= 0 && Y >= 0 && X <= BOUND - Y" (where BOUND is known to be never negative),
+//    fold them into a single unsigned compare:
+//
+//      "(ulong)(uint)X + (ulong)(uint)Y u<= (ulong)(uint)BOUND"
+//
+//    Zero-extending to 64 bits makes a negative X or Y exceed any non-negative BOUND, so
+//    both sign checks and the range check collapse into a single branch. This is the shape
+//    of the argument validation in Span<T>.Slice, the Span<T>(T[], int, int) constructor and
+//    their ReadOnlySpan<T> counterparts:
+//
+//      if (start < 0 || length < 0 || start > _length - length)
+//          ThrowHelper.ThrowArgumentOutOfRangeException();
+//
+//    When one of the two addends is zero the sum is not needed and a 32-bit unsigned compare
+//    is emitted instead, since a negative operand still zero-extends past any non-negative BOUND.
+//
+//    This is 64-bit only: the sum has to be computed in a wider type than its operands,
+//    which is not cheap on a 32-bit target.
+//
+// Arguments:
+//    comp           - compiler instance
+//    cmp1           - first compare node
+//    cmp1IsReversed - true if cmp1 is in fact reversed
+//    cmp2           - second compare node
+//    cmp2IsReversed - true if cmp2 is in fact reversed
+//
+// Returns:
+//    true if cmp1 now represents the folded range check and cmp2 can be removed.
+//
+bool FoldNonNegativeSumRangeTest(
+    Compiler* comp, GenTreeOp* cmp1, bool cmp1IsReversed, GenTreeOp* cmp2, bool cmp2IsReversed)
+{
+    // We drop one evaluation of cmp1's operands and evaluate BOUND unconditionally, so both
+    // conditions have to be free of side effects.
+    if ((((cmp1->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) | (cmp2->gtFlags & GTF_SIDE_EFFECT)) != 0) ||
+        !cmp2->OperIs(GT_LT, GT_LE, GT_GE, GT_GT) || cmp2->IsUnsigned())
+    {
+        return false;
+    }
+
+    // cmp1 has to be "GUARD >= 0" once normalized.
+    GenTree*       guard;
+    GenTreeIntCon* cns1Node;
+    genTreeOps     cmp1Op;
+    if (!IsConstantRangeTest(cmp1, &guard, &cns1Node, &cmp1Op))
+    {
+        return false;
+    }
+
+    cmp1Op = cmp1IsReversed ? GenTree::ReverseRelop(cmp1Op) : cmp1Op;
+    if ((cmp1Op != GT_GE) || !cns1Node->IsIntegralConst(0) || !guard->TypeIs(TYP_INT))
+    {
+        return false;
+    }
+
+    // cmp2 has to be "BOUND - Y >= X" once normalized.
+    genTreeOps cmp2Op    = cmp2IsReversed ? GenTree::ReverseRelop(cmp2->OperGet()) : cmp2->OperGet();
+    GenTree*   diff      = cmp2->gtGetOp1();
+    GenTree*   startNode = cmp2->gtGetOp2();
+
+    if (!diff->OperIs(GT_SUB, GT_ADD))
+    {
+        diff      = cmp2->gtGetOp2();
+        startNode = cmp2->gtGetOp1();
+        cmp2Op    = GenTree::SwapRelop(cmp2Op);
+    }
+
+    if (!diff->OperIs(GT_SUB, GT_ADD) || diff->gtOverflow() || (cmp2Op != GT_GE) || !diff->TypeIs(TYP_INT))
+    {
+        return false;
+    }
+
+    GenTree* boundNode;
+    GenTree* countNode;
+
+    if (diff->OperIs(GT_SUB))
+    {
+        boundNode = diff->gtGetOp1();
+        countNode = diff->gtGetOp2();
+    }
+    else
+    {
+        // Morph rewrites "BOUND - COUNT" into an addition when either operand is a constant.
+        GenTree* addOp1 = diff->gtGetOp1();
+        GenTree* addOp2 = diff->gtGetOp2();
+
+        if (!addOp2->IsCnsIntOrI())
+        {
+            return false;
+        }
+
+        ssize_t addCns = addOp2->AsIntCon()->IconValue();
+
+        if (addOp1->OperIs(GT_NEG) && (addCns >= 0))
+        {
+            // "CNS - COUNT" became "-COUNT + CNS".
+            boundNode = addOp2;
+            countNode = addOp1->gtGetOp1();
+        }
+        else if ((addCns < 0) && (addCns != INT32_MIN))
+        {
+            // "BOUND - CNS" became "BOUND + (-CNS)".
+            boundNode = addOp1;
+            countNode = comp->gtNewIconNode(static_cast<int32_t>(-addCns), TYP_INT);
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    if (!startNode->TypeIs(TYP_INT) || !countNode->TypeIs(TYP_INT) || !boundNode->TypeIs(TYP_INT))
+    {
+        return false;
+    }
+
+    // Moving a node that must not be reordered is only safe for the pinning that assertion
+    // propagation puts on a non-faulting array length: the null check that made it non-faulting
+    // still precedes the new evaluation point. Require the flag to come from the length node
+    // itself so that nothing else (a volatile load, say) becomes speculative.
+    if (((cmp2->gtFlags & GTF_ORDER_SIDEEFF) != 0) &&
+        (!boundNode->OperIs(GT_ARR_LENGTH, GT_MDARR_LENGTH) ||
+         (((boundNode->gtGetOp1()->gtFlags | startNode->gtFlags | countNode->gtFlags) & GTF_ORDER_SIDEEFF) != 0)))
+    {
+        return false;
+    }
+
+    // "BOUND - Y" must not overflow and the folded compare must reject negative operands,
+    // both of which require BOUND to be non-negative.
+    if (!boundNode->IsNeverNegative(comp))
+    {
+        return false;
+    }
+
+    // cmp1 has to guard exactly the operands we are about to widen, otherwise we would be
+    // dropping a check. "(X | Y) >= 0" proves both are non-negative, while a single
+    // "X >= 0" only suffices if the other operand is known to be non-negative on its own.
+    if (guard->OperIs(GT_OR))
+    {
+        GenTree* orOp1 = guard->gtGetOp1();
+        GenTree* orOp2 = guard->gtGetOp2();
+
+        if (!((GenTree::Compare(orOp1, startNode) && GenTree::Compare(orOp2, countNode)) ||
+              (GenTree::Compare(orOp1, countNode) && GenTree::Compare(orOp2, startNode))))
+        {
+            return false;
+        }
+    }
+    else if (GenTree::Compare(guard, startNode))
+    {
+        if (!countNode->IsNeverNegative(comp))
+        {
+            return false;
+        }
+    }
+    else if (GenTree::Compare(guard, countNode))
+    {
+        if (!startNode->IsNeverNegative(comp))
+        {
+            return false;
+        }
+    }
+    else
+    {
+        return false;
+    }
+
+    if (startNode->IsIntegralConst(0) || countNode->IsIntegralConst(0))
+    {
+        // The sum is redundant, a 32-bit unsigned compare is enough.
+        cmp1->gtOp1 = startNode->IsIntegralConst(0) ? countNode : startNode;
+        cmp1->gtOp2 = boundNode;
+    }
+    else
+    {
+        GenTree* startExt = ZeroExtendToLong(comp, startNode);
+        GenTree* countExt = ZeroExtendToLong(comp, countNode);
+
+        cmp1->gtOp1 = comp->gtNewOperNode(GT_ADD, TYP_LONG, startExt, countExt);
+        cmp1->gtOp2 = ZeroExtendToLong(comp, boundNode);
+    }
+
+    cmp1->SetOper(cmp2IsReversed ? GT_GT : GT_LE);
+    cmp1->SetUnsigned();
+    return true;
+}
+#endif // TARGET_64BIT
+
 //------------------------------------------------------------------------------
 // FoldRangeTests: Given two compare nodes (cmp1 && cmp2) that represent a range check,
 //    fold them into a single compare node if possible, e.g.:
@@ -836,7 +1049,13 @@ bool OptBoolsDsc::optOptimizeRangeTests()
     // cmp2 can be either reversed or not
     const bool cmp2IsReversed = m_b2->TrueTargetIs(notInRangeBb);
 
-    if (!FoldRangeTests(m_compiler, cmp1, cmp1IsReversed, cmp2, cmp2IsReversed))
+    bool folded = FoldRangeTests(m_compiler, cmp1, cmp1IsReversed, cmp2, cmp2IsReversed);
+
+#ifdef TARGET_64BIT
+    folded = folded || FoldNonNegativeSumRangeTest(m_compiler, cmp1, cmp1IsReversed, cmp2, cmp2IsReversed);
+#endif
+
+    if (!folded)
     {
         return false;
     }
