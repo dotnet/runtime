@@ -426,6 +426,10 @@
              Link="Common\System\Security\Cryptography\CompositeMLKem.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLKemAlgorithm.cs"
              Link="Common\System\Security\Cryptography\CompositeMLKemAlgorithm.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLKemCng.cs"
+             Link="Common\System\Security\Cryptography\CompositeMLKemCng.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLKemCng.Windows.cs"
+             Link="Common\System\Security\Cryptography\CompositeMLKemCng.Windows.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLKemImplementation.cs"
              Link="Common\System\Security\Cryptography\CompositeMLKemImplementation.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLKemImplementation.Windows.cs"
@@ -645,13 +649,6 @@
              Link="Common\System\Security\Cryptography\X25519DiffieHellmanCng.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\X25519DiffieHellmanCng.Windows.cs"
              Link="Common\System\Security\Cryptography\X25519DiffieHellmanCng.Windows.cs" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(BuildCompositeMLKem)' == 'true' and '$(TargetFrameworkIdentifier)' != '.NETStandard'">
-    <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLKemCng.cs"
-             Link="Common\System\Security\Cryptography\CompositeMLKemCng.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLKemCng.Windows.cs"
-             Link="Common\System\Security\Cryptography\CompositeMLKemCng.Windows.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">

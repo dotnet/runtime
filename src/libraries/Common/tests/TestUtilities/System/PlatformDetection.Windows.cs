@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Security;
@@ -121,33 +120,17 @@ namespace System
             }
         }
 
-        internal static string GetWindowsInstallationType()
-        {
-            string key = @"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion";
-            string value = "";
-
-            try
-            {
-                value = (string)Registry.GetValue(key, "InstallationType", defaultValue: "");
-            }
-            catch (Exception e) when (e is SecurityException || e is InvalidCastException)
-            {
-            }
-
-            return value;
-        }
-
-        private static int GetWindowsUpdateBuildRevision()
+        private static string GetWindowsInstallationType()
         {
             string key = @"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion";
 
             try
             {
-                return (int)Registry.GetValue(key, "UBR", defaultValue: -1);
+                return Registry.GetValue(key, "InstallationType", defaultValue: "") as string ?? "";
             }
-            catch (Exception e) when (e is SecurityException || e is InvalidCastException)
+            catch (SecurityException)
             {
-                return -1;
+                return "";
             }
         }
 
@@ -274,91 +257,5 @@ namespace System
 
         public static bool IsWindowsX86OrX64 => PlatformDetection.IsWindows && (PlatformDetection.IsX86Process || PlatformDetection.IsX64Process);
 
-        private static volatile byte s_isWindowsCompositeMLKemSupported;
-
-        public static bool IsWindowsCompositeMLKemSupported
-        {
-            get
-            {
-                const byte True = 1;
-                const byte False = 2;
-
-                if (s_isWindowsCompositeMLKemSupported == 0)
-                {
-                    s_isWindowsCompositeMLKemSupported = GetCompositeMLKemSupport() ? True : False;
-                }
-
-                return s_isWindowsCompositeMLKemSupported == True;
-
-                // This check is complicated right now because machines might not yet have applied the updates
-                // containing Composite ML-KEM. Once the updates have been widely deployed, we can change
-                // this entire check to something simple like `build >= Windows11Version24H2Build`.
-                static bool GetCompositeMLKemSupport()
-                {
-                    if (!IsWindows)
-                    {
-                        return false;
-                    }
-
-                    int ubr = GetWindowsUpdateBuildRevision();
-
-                    if (ubr < 0)
-                    {
-                        return false;
-                    }
-
-                    string installationType = GetWindowsInstallationType();
-                    bool isClient = installationType.Equals("Client", StringComparison.OrdinalIgnoreCase);
-                    bool isServer =
-                        installationType.Equals("Server", StringComparison.OrdinalIgnoreCase) ||
-                        installationType.Equals("Server Core", StringComparison.OrdinalIgnoreCase) ||
-                        installationType.Equals("Nano Server", StringComparison.OrdinalIgnoreCase);
-
-                    if (!isClient && !isServer)
-                    {
-                        return false;
-                    }
-
-                    uint build = GetWindowsBuildVersion();
-
-                    if (isClient)
-                    {
-                        // Windows 11, 24H2 and 25H2
-                        if (build is (>= 26100 and < 26200) or (>= 26200 and < 26300))
-                        {
-                            // https://support.microsoft.com/en-US/servicing/os/windows-11/2026/06/june-23-2026-kb5095093-os-builds-26200-8737-and-26100-8737-preview
-                            return ubr >= 8737;
-                        }
-
-                        // Windows 11, 26H1, Experimental and Beta
-                        if (build is (>= 28000 and < 28100) or (>= 28100 and < 28200))
-                        {
-                            // https://support.microsoft.com/en-US/servicing/os/windows-11/2026/06/june-23-2026-kb5095091-os-build-28000-2340-preview
-                            return ubr >= 2340;
-                        }
-
-                        Debug.Fail($"Unknown build {build}. This whole check can likely be greatly simplified if supported Windows versions have been widely deployed.");
-                        return false;
-                    }
-                    else if (isServer)
-                    {
-                        // Windows Server 2025
-                        if (build is >= 26100 and < 28200)
-                        {
-                            // https://support.microsoft.com/en-US/servicing/os/windows-server-2025/2026/06/june-23-2026-kb5099536-os-build-26100-33158-preview
-                            return ubr >= 33158;
-                        }
-
-                        Debug.Fail($"Unknown build {build}. This whole check can likely be greatly simplified if supported Windows versions have been widely deployed.");
-                        return false;
-                    }
-                    else
-                    {
-                        Debug.Fail($"Unknown installation type {installationType}.");
-                        return false;
-                    }
-                }
-            }
-        }
     }
 }

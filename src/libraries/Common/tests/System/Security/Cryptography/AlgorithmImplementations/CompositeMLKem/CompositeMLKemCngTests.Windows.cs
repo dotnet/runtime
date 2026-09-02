@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    [ConditionalClass(typeof(CompositeMLKemTestHelpers), nameof(CompositeMLKemTestHelpers.IsImplementationSupported))]
+    [ConditionalClass(typeof(CompositeMLKemTestHelpers), nameof(CompositeMLKemTestHelpers.IsCngSupported))]
     [PlatformSpecific(TestPlatforms.Windows)]
     public sealed class CompositeMLKemCngTests_AllowPlaintextExport : CompositeMLKemCngTestsWithExportPolicy
     {
@@ -17,7 +17,7 @@ namespace System.Security.Cryptography.Tests
 
     // Windows doesn't support PKCS#8 export so we can't implement encrypted exports.
     [ActiveIssue("https://github.com/dotnet/runtime/issues/129633")]
-    [ConditionalClass(typeof(CompositeMLKemTestHelpers), nameof(CompositeMLKemTestHelpers.IsImplementationSupported))]
+    [ConditionalClass(typeof(CompositeMLKemTestHelpers), nameof(CompositeMLKemTestHelpers.IsCngSupported))]
     [PlatformSpecific(TestPlatforms.Windows)]
     public sealed class CompositeMLKemCngTests_AllowExport : CompositeMLKemCngTestsWithExportPolicy
     {
@@ -58,11 +58,7 @@ namespace System.Security.Cryptography.Tests
             {
                 const int NTE_NO_KEY = unchecked((int)0x8009000D);
 
-#if NETFRAMEWORK
                 CryptographicException ex = Assert.ThrowsAny<CryptographicException>(test);
-#else
-                CryptographicException ex = Assert.Throws<CryptographicException>(test);
-#endif
 
                 Assert.Equal(NTE_NO_KEY, ex.HResult);
             }
@@ -73,7 +69,7 @@ namespace System.Security.Cryptography.Tests
         }
     }
 
-    [ConditionalClass(typeof(CompositeMLKemTestHelpers), nameof(CompositeMLKemTestHelpers.IsImplementationSupported))]
+    [ConditionalClass(typeof(CompositeMLKemTestHelpers), nameof(CompositeMLKemTestHelpers.IsCngSupported))]
     [PlatformSpecific(TestPlatforms.Windows)]
     public static class CompositeMLKemCngTests
     {
@@ -91,8 +87,7 @@ namespace System.Security.Cryptography.Tests
         {
             CompositeMLKemTestVector vector =
                 CompositeMLKemTestData.AllIetfVectors
-                    .Where(v => v.Algorithm == CompositeMLKemAlgorithm.MLKem768WithECDiffieHellmanP256)
-                    .First();
+                    .First(v => v.Algorithm == CompositeMLKemAlgorithm.MLKem768WithECDiffieHellmanP256);
 
             using (CngKey key = CompositeMLKemTestHelpers.ImportCngDecapsulationKey(vector.Algorithm, vector.DecapsulationKey, CngExportPolicies.None))
             using (CompositeMLKemCng kem = new(key))
@@ -115,8 +110,7 @@ namespace System.Security.Cryptography.Tests
         {
             CompositeMLKemTestVector vector =
                 CompositeMLKemTestData.AllIetfVectors
-                    .Where(v => v.Algorithm == CompositeMLKemAlgorithm.MLKem768WithECDiffieHellmanP256)
-                    .First();
+                    .First(v => v.Algorithm == CompositeMLKemAlgorithm.MLKem768WithECDiffieHellmanP256);
 
             CngKey key = PqcBlobHelpers.EncodeCompositeMLKemBlob(
                 PqcBlobHelpers.TryGetCompositeMLKemParameterSet(vector.Algorithm, out string? parameterSet)
@@ -138,7 +132,7 @@ namespace System.Security.Cryptography.Tests
                     creationParams.KeyCreationOptions = CngKeyCreationOptions.OverwriteExistingKey;
 
                     CngKey key = CngKey.Create(
-                        CompositeMLKemTestHelpers.CompositeMLKemCngAlgorithm,
+                        CngAlgorithm.CompositeMLKem,
                         $"{nameof(CompositeMLKemCngTests)}_{nameof(ImportDecapsulationKey_Persisted)}",
                         creationParams);
 
@@ -195,7 +189,14 @@ namespace System.Security.Cryptography.Tests
             }
             finally
             {
-                key.Delete();
+                if (name is null)
+                {
+                    key.Dispose();
+                }
+                else
+                {
+                    key.Delete();
+                }
             }
         }
 

@@ -602,11 +602,13 @@ namespace System.Security.Cryptography.Tests
             using (RSA rsa = RSA.Create())
             {
 #if NETFRAMEWORK
-                rsa.ImportParameters(RSATestHelpers.DecodeRsaPublicKey(rsaPublicKey));
-                int bytesRead = rsaPublicKey.Length;
+                // If RSA composites get support, update this to import the RSA public key correctly.
+                Assert.Fail("RSA composites not supported yet on .NET Framework.");
+                int bytesRead = 42;
 #else
                 rsa.ImportRSAPublicKey(rsaPublicKey, out int bytesRead);
 #endif
+
                 Assert.Equal(rsaPublicKey.Length, bytesRead);
                 rsaCiphertext = rsa.Encrypt(new byte[sharedSecretSizeInBytes], RSAEncryptionPadding.OaepSHA256);
             }
@@ -634,7 +636,9 @@ namespace System.Security.Cryptography.Tests
             using (RSA rsa = RSA.Create(wrongKeySizeInBits))
             {
 #if NETFRAMEWORK
-                traditionalKey = RSATestHelpers.EncodeRsaKey(rsa.ExportParameters(includePrivateKey), includePrivateKey);
+                // If RSA composites get support, update this to export the RSA key correctly.
+                Assert.Fail("RSA composites not supported yet on .NET Framework.");
+                traditionalKey = null!;
 #else
                 traditionalKey = includePrivateKey ? rsa.ExportRSAPrivateKey() : rsa.ExportRSAPublicKey();
 #endif
@@ -659,11 +663,13 @@ namespace System.Security.Cryptography.Tests
             using (RSA rsa = RSA.Create())
             {
 #if NETFRAMEWORK
-                rsa.ImportParameters(RSATestHelpers.DecodeRsaPrivateKey(rsaPrivateKey));
-                int bytesRead = rsaPrivateKey.Length;
+                // If RSA composites get support, update this to import the RSA private key correctly.
+                Assert.Fail("RSA composites not supported yet on .NET Framework.");
+                int bytesRead = 42;
 #else
                 rsa.ImportRSAPrivateKey(rsaPrivateKey, out int bytesRead);
 #endif
+
                 Assert.Equal(rsaPrivateKey.Length, bytesRead);
                 parameters = rsa.ExportParameters(includePrivateParameters: true);
             }

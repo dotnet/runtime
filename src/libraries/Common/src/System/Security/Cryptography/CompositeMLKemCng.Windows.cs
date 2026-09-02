@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Runtime.Versioning;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.Cryptography
@@ -13,7 +12,6 @@ namespace System.Security.Cryptography
         private const string NCRYPT_COMPOSITE_MLKEM_PARAMETER_SET_768_X25519 = PqcBlobHelpers.BCRYPT_COMPOSITE_MLKEM_PARAMETER_SET_768_X25519;
         private const string NCRYPT_COMPOSITE_MLKEM_PARAMETER_SET_1024_P384 = PqcBlobHelpers.BCRYPT_COMPOSITE_MLKEM_PARAMETER_SET_1024_P384;
 
-        [SupportedOSPlatform("windows")]
         private static partial CompositeMLKemAlgorithm AlgorithmFromHandle(CngKey key, out CngKey duplicateKey)
         {
             ArgumentNullException.ThrowIfNull(key);

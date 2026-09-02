@@ -3,7 +3,6 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using Internal.Cryptography;
 using Internal.NativeCrypto;
 using Microsoft.Win32.SafeHandles;
 
@@ -223,11 +222,6 @@ namespace System.Security.Cryptography
 
         private static SafeBCryptAlgorithmHandle? OpenAlgorithmHandle()
         {
-            if (!Helpers.IsOSPlatformWindows)
-            {
-                return null;
-            }
-
             NTSTATUS status = Interop.BCrypt.BCryptOpenAlgorithmProvider(
                 out SafeBCryptAlgorithmHandle hAlgorithm,
                 BCryptNative.AlgorithmName.CompositeMLKem,

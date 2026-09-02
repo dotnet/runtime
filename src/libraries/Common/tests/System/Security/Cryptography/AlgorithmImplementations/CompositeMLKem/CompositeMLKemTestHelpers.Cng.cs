@@ -1,14 +1,21 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.InteropServices;
 using System.Text;
+using Microsoft.Win32.SafeHandles;
 using Xunit.Sdk;
+
+using ErrorCode = Interop.NCrypt.ErrorCode;
 
 namespace System.Security.Cryptography.Tests
 {
     internal static partial class CompositeMLKemTestHelpers
     {
-        internal static readonly CngAlgorithm CompositeMLKemCngAlgorithm = new("Composite-ML-KEM");
+        private static readonly Lazy<bool> s_lazyIsCngSupported = new(CheckCngSupport);
+
+        // Remove this separate CNG flag once supported Windows versions consistently provide Composite ML-KEM through NCrypt.
+        internal static bool IsCngSupported => s_lazyIsCngSupported.Value;
 
         internal static CngKey GenerateCngKey(
             CompositeMLKemAlgorithm algorithm,
@@ -24,7 +31,7 @@ namespace System.Security.Cryptography.Tests
             };
 
             creationParameters.Parameters.Add(GetCngProperty(algorithm));
-            return CngKey.Create(CompositeMLKemCngAlgorithm, keyName, creationParameters);
+            return CngKey.Create(CngAlgorithm.CompositeMLKem, keyName, creationParameters);
         }
 
         internal static CngKey ImportCngEncapsulationKey(
@@ -62,7 +69,7 @@ namespace System.Security.Cryptography.Tests
                             blob.ToArray(),
                             CngPropertyOptions.None));
 
-                    return CngKey.Create(CompositeMLKemCngAlgorithm, keyName: null, creationParameters);
+                    return CngKey.Create(CngAlgorithm.CompositeMLKem, keyName: null, creationParameters);
                 });
         }
 
@@ -89,5 +96,42 @@ namespace System.Security.Cryptography.Tests
 
             throw new XunitException($"Unsupported algorithm: {algorithm.Name}.");
         }
+
+        private static bool CheckCngSupport()
+        {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                return false;
+            }
+
+            ErrorCode error = Interop.NCrypt.NCryptOpenStorageProvider(
+                out SafeNCryptProviderHandle provider,
+                CngProvider.MicrosoftSoftwareKeyStorageProvider.Provider,
+                0);
+
+            using (provider)
+            {
+                if (error != ErrorCode.ERROR_SUCCESS)
+                {
+                    throw error.ToCryptographicException();
+                }
+
+                error = NCryptIsAlgSupported(provider, CngAlgorithm.CompositeMLKem.Algorithm, 0);
+
+                return error switch
+                {
+                    ErrorCode.ERROR_SUCCESS => true,
+                    ErrorCode.NTE_NOT_SUPPORTED => false,
+                    _ => throw error.ToCryptographicException(),
+                };
+            }
+        }
+
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+        [LibraryImport(Interop.Libraries.NCrypt, StringMarshalling = StringMarshalling.Utf16)]
+        private static partial ErrorCode NCryptIsAlgSupported(
+            SafeNCryptProviderHandle hProvider,
+            string pszAlgId,
+            int dwFlags);
     }
 }

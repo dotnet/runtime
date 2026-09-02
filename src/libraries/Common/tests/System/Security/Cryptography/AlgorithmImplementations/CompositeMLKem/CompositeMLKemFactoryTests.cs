@@ -46,7 +46,7 @@ namespace System.Security.Cryptography.Tests
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 supported =
-                    PlatformDetection.IsWindowsCompositeMLKemSupported &&
+                    CompositeMLKemTestHelpers.IsBCryptSupported &&
                         (algorithm == CompositeMLKemAlgorithm.MLKem768WithECDiffieHellmanP256 ||
                         algorithm == CompositeMLKemAlgorithm.MLKem768WithX25519 ||
                         algorithm == CompositeMLKemAlgorithm.MLKem1024WithECDiffieHellmanP384);

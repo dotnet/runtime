@@ -9,7 +9,7 @@ namespace System.Security.Cryptography
 {
     /// <summary>
     ///   Provides a Cryptography Next Generation (CNG) implementation of the Composite Module-Lattice-Based Key-Encapsulation
-    ///   Mechanism (Composite ML-KEM).
+    ///   Mechanism (Composite ML-KEM) algorithm.
     /// </summary>
     /// <remarks>
     ///   Developers are encouraged to program against the <see cref="CompositeMLKem" /> base class,

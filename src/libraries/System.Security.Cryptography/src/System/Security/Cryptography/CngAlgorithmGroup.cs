@@ -175,7 +175,8 @@ namespace System.Security.Cryptography
         /// <value>
         ///   An object that specifies the Composite ML-KEM family of algorithms.
         /// </value>
-        internal static CngAlgorithmGroup CompositeMLKem =>
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
+        public static CngAlgorithmGroup CompositeMLKem =>
             field ??= new CngAlgorithmGroup("CompositeMLKEM"); // NCRYPT_COMPOSITE_MLKEM_ALGORITHM_GROUP
 
         private static CngAlgorithmGroup? s_dh;
