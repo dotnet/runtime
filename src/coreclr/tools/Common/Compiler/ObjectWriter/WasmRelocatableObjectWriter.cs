@@ -65,6 +65,11 @@ namespace ILCompiler.ObjectWriter
 
             foreach (int index in SectionEmitOrder)
             {
+                IWasmSection section = _sections[index] as IWasmSection;
+                if (section == null)
+                {
+                    continue;
+                }
                 _sections[index].EmitToStream(outputFileStream);
             }
 
