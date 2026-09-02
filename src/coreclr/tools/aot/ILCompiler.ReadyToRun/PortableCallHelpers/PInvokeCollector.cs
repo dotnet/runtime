@@ -9,7 +9,6 @@ using System.Reflection.Metadata.Ecma335;
 using Internal.JitInterface;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
-using Internal.TypeSystem.Interop;
 
 namespace ILCompiler.PortableCallHelpers
 {
@@ -126,10 +125,8 @@ namespace ILCompiler.PortableCallHelpers
     /// </summary>
     internal sealed class PInvokeCollector(InteropLogger log, string targetOS)
     {
-        private readonly Dictionary<EcmaAssembly, bool> _assemblyDisableRuntimeMarshalling = [];
         private readonly Dictionary<TypeDesc, bool> _typeUnsupportedOnPlatform = [];
         private readonly Dictionary<EcmaAssembly, bool> _assemblyUnsupportedOnPlatform = [];
-        private readonly Dictionary<TypeDesc, bool> _blittable = [];
 
         public void CollectPInvokes(List<PInvokeInfo> pinvokes, List<PInvokeCallback> callbacks, Dictionary<string, MethodDesc> signatures, EcmaType type)
         {
@@ -139,7 +136,7 @@ namespace ILCompiler.PortableCallHelpers
                 try
                 {
                     CollectPInvokesForMethod(method);
-                    if (DoesMethodHaveCallbacks(method))
+                    if (IsMethodCallback(method))
                         callbacks.Add(new PInvokeCallback(method));
                 }
                 catch (Exception ex) when (ex is not LogAsErrorException)
@@ -208,7 +205,7 @@ namespace ILCompiler.PortableCallHelpers
             if (IsUnsupportedOnPlatform(method))
                 return false;
 
-            return false;
+            return true;
         }
 
         /// <summary>
@@ -228,17 +225,6 @@ namespace ILCompiler.PortableCallHelpers
             }
 
             return false;
-        }
-
-        private bool HasAssemblyDisableRuntimeMarshallingAttribute(EcmaAssembly assembly)
-        {
-            if (!_assemblyDisableRuntimeMarshalling.TryGetValue(assembly, out bool value))
-            {
-                _assemblyDisableRuntimeMarshalling[assembly] = value =
-                    assembly.HasAssemblyCustomAttribute("System.Runtime.CompilerServices", "DisableRuntimeMarshallingAttribute");
-            }
-
-            return value;
         }
 
         private bool IsUnsupportedOnPlatform(EcmaMethod method)
@@ -329,41 +315,6 @@ namespace ILCompiler.PortableCallHelpers
 
                 return Version.TryParse(platformName.AsSpan(targetOS.Length), out _);
             }
-        }
-
-        /// <summary>
-        /// Whether a type has the same representation in managed and unmanaged memory. See
-        /// https://learn.microsoft.com/dotnet/standard/native-interop/blittable-and-non-blittable-types.
-        /// Results are cached so that a type used by many callbacks only produces one diagnostic.
-        /// </summary>
-        public bool IsBlittable(TypeDesc type)
-        {
-            if (_blittable.TryGetValue(type, out bool blittable))
-                return blittable;
-
-            bool result = IsBlittableUncached(type);
-            _blittable[type] = result;
-            return result;
-        }
-
-        private bool IsBlittableUncached(TypeDesc type)
-        {
-            // MarshalUtils only considers DefTypes, so neither of these reaches its rules.
-            if (type.IsPointer || type.IsFunctionPointer)
-                return true;
-
-            // MarshalUtils accepts an enum as a field but not on its own: System.Enum is a class,
-            // so the parent check rejects it before the layout is looked at.
-            if (type.IsEnum)
-                return IsBlittable(type.UnderlyingType);
-
-            if (!MarshalUtils.IsBlittableType(type))
-            {
-                log.InfoHigh("WASM0060", $"Type {type} is not blittable");
-                return false;
-            }
-
-            return true;
         }
     }
 }

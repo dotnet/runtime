@@ -21,7 +21,9 @@ namespace Wasm.Build.Tests
         {
         }
 
-        [Theory]
+        // Only Mono's generator rejects a non-blittable callback signature; crossgen2 leaves the
+        // check to Roslyn and the runtime.
+        [Theory, TestCategory("mono")]
         [BuildAndRun()]
         public void UnmanagedStructAndMethodIn_SameAssembly_WithoutDisableRuntimeMarshallingAttribute_NotConsideredBlittable
                         (Configuration config, bool aot)
@@ -104,7 +106,7 @@ namespace Wasm.Build.Tests
         // Same scenario, with the struct made non-blittable by its layout rather than by a name only a
         // test can produce. What is under test either way is that the DisableRuntimeMarshalling the
         // generator honours is the one on the assembly declaring the callback, not the struct.
-        [Theory]
+        [Theory, TestCategory("mono")]
         [MemberData(nameof(SeparateAssemblyWithDisableMarshallingAttributeTestData), parameters: Configuration.Debug)]
         [MemberData(nameof(SeparateAssemblyWithDisableMarshallingAttributeTestData), parameters: Configuration.Release)]
         public Task UnmanagedStructsAreConsideredBlittableFromDifferentAssembly_WithAutoLayout
