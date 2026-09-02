@@ -573,6 +573,13 @@ namespace System.Reflection
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
             Justification = "The pca object had to be created by the single ctor on the Type. So the ctor couldn't have been trimmed.")]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(ComImportAttribute))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(InAttribute))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(NonSerializedAttribute))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(OptionalAttribute))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(OutAttribute))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(PreserveSigAttribute))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(SerializableAttribute))]
         private void Init(object pca)
         {
             Type type = pca.GetType();
