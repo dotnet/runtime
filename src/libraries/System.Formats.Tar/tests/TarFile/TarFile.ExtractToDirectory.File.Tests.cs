@@ -1007,6 +1007,37 @@ namespace System.Formats.Tar.Tests
 
             Assert.Equal(NormalizePathSeparators(linkName), new FileInfo(Path.Combine(destDir, "a", "link")).LinkTarget);
         }
+
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
+        public void ExtractToDirectory_HardlinkToSymlink_DoesNotEscape()
+        {
+            // entries:
+            // a/ (dir)
+            // a/b -> ../ (symlink)
+            // c -> a/b (hardlink to symlink)
+            // c/d (file) — would escape to dest/../d if symlink is followed
+
+            using TempDirectory root = new TempDirectory();
+            string destDir = Path.Combine(root.Path, "dest");
+            Directory.CreateDirectory(destDir);
+
+            using MemoryStream stream = new MemoryStream();
+            using (TarWriter writer = new TarWriter(stream, leaveOpen: true))
+            {
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.Directory, "a/"));
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "a/b") { LinkName = NormalizePathSeparators("../") });
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.HardLink, "c") { LinkName = "a/b" });
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.RegularFile, "c/d")
+                {
+                    DataStream = new MemoryStream(Encoding.UTF8.GetBytes("hello"))
+                });
+            }
+
+            stream.Seek(0, SeekOrigin.Begin);
+
+            Assert.Throws<IOException>(() => TarFile.ExtractToDirectory(stream, destDir, overwriteFiles: true));
+            Assert.False(File.Exists(Path.Combine(destDir, "d")), "File should not have been created outside destination.");
+        }
     }
 }
 
