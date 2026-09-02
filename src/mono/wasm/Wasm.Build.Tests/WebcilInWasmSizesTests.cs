@@ -1,8 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Reflection.Metadata;
+using System.Reflection.PortableExecutable;
+using Microsoft.Build.Framework;
+using Microsoft.Build.Utilities;
+using Microsoft.NET.Sdk.WebAssembly;
 using Microsoft.NET.WebAssembly.Webcil;
 using Xunit;
 
@@ -84,6 +91,115 @@ public class WebcilInWasmSizesTests
         Assert.NotNull(failureReason);
     }
 
+    [Theory]
+    [InlineData("netstandard.dll", false, true, false, true)]
+    [InlineData("System.Private.CoreLib.dll", true, false, false, true)]
+    [InlineData("netstandard.dll", false, false, false, false)]
+    [InlineData("System.Private.CoreLib.dll", true, true, false, false)]
+    [InlineData("netstandard.dll", false, false, true, true)]
+    [InlineData("System.Private.CoreLib.dll", true, true, true, true)]
+    public void ConvertDllsToWebcil_RespectsAssemblyAndOutputFlavor(
+        string assemblyName,
+        bool usePrebuiltR2R,
+        bool outputUsesR2R,
+        bool forceWithStamp,
+        bool expectReplacement)
+    {
+        using var directory = new TempDirectory();
+        string assemblyPath = Path.Combine(Path.GetDirectoryName(typeof(object).Assembly.Location)!, assemblyName);
+        string assemblyBaseName = Path.GetFileNameWithoutExtension(assemblyName);
+        string prebuiltDirectory = Path.Combine(directory.Path, "prebuilt");
+        string outputDirectory = Path.Combine(directory.Path, "output");
+        string intermediateDirectory = Path.Combine(directory.Path, "intermediate");
+        Directory.CreateDirectory(prebuiltDirectory);
+
+        bool hasILCode;
+        using (FileStream stream = File.OpenRead(assemblyPath))
+        using (var peReader = new PEReader(stream))
+        {
+            MetadataReader metadataReader = peReader.GetMetadataReader();
+            hasILCode = metadataReader.MethodDefinitions.Any(handle => metadataReader.GetMethodDefinition(handle).RelativeVirtualAddress > 0);
+        }
+        Assert.Equal(usePrebuiltR2R, hasILCode);
+
+        byte[] invalidPrebuiltImage = { 0xde, 0xad, 0xbe, 0xef };
+        File.WriteAllBytes(Path.Combine(prebuiltDirectory, assemblyBaseName + ".wasm"), invalidPrebuiltImage);
+        string outputPath = Path.Combine(outputDirectory, assemblyBaseName + ".wasm");
+        Directory.CreateDirectory(outputDirectory);
+        byte[] existingOutput = BuildWebcilInWasm(payloadSize: 4, tableSize: outputUsesR2R ? 1 : null);
+        File.WriteAllBytes(outputPath, existingOutput);
+        File.SetLastWriteTimeUtc(outputPath, DateTime.UtcNow.AddMinutes(1));
+        string conversionStamp = Path.Combine(directory.Path, "conversion.stamp");
+        if (forceWithStamp)
+        {
+            File.WriteAllText(conversionStamp, "changed");
+            File.SetLastWriteTimeUtc(conversionStamp, DateTime.UtcNow.AddMinutes(2));
+        }
+
+        var candidate = new TaskItem(assemblyPath);
+        candidate.SetMetadata("RelativePath", assemblyName);
+
+        var task = new ConvertDllsToWebcil
+        {
+            BuildEngine = new TestBuildEngine(),
+            Candidates = [candidate],
+            ConversionStamp = forceWithStamp ? conversionStamp : null,
+            IntermediateOutputPath = intermediateDirectory,
+            IsEnabled = true,
+            OutputPath = outputDirectory,
+            PrebuiltR2RDirectory = prebuiltDirectory,
+        };
+        Assert.True(task.Execute());
+        Assert.Equal(expectReplacement ? new[] { outputPath } : Array.Empty<string>(), task.FilesToTouch);
+
+        byte[] actualOutput = File.ReadAllBytes(outputPath);
+        if (!expectReplacement)
+        {
+            Assert.True(existingOutput.SequenceEqual(actualOutput));
+            return;
+        }
+
+        if (usePrebuiltR2R)
+        {
+            Assert.True(invalidPrebuiltImage.SequenceEqual(actualOutput));
+            return;
+        }
+
+        Assert.False(existingOutput.SequenceEqual(actualOutput));
+        using FileStream output = File.OpenRead(outputPath);
+        Assert.True(WebcilReader.TryReadWebcilInWasmSizes(output, out _, out int tableSize, out string? failureReason), failureReason);
+        Assert.Equal(0, tableSize);
+    }
+
+    [Fact]
+    public void ConvertDllsToWebcil_StagesR2RWebcilWithDllExtension()
+    {
+        using var directory = new TempDirectory();
+        string prebuiltDirectory = Path.Combine(directory.Path, "prebuilt");
+        string outputDirectory = Path.Combine(directory.Path, "output");
+        Directory.CreateDirectory(prebuiltDirectory);
+
+        byte[] r2rWebcil = BuildWebcilInWasm(payloadSize: 4, tableSize: 1);
+        string candidatePath = Path.Combine(prebuiltDirectory, "R2RAssembly.dll");
+        File.WriteAllBytes(candidatePath, r2rWebcil);
+
+        var candidate = new TaskItem(candidatePath);
+        candidate.SetMetadata("RelativePath", "R2RAssembly.dll");
+
+        var task = new ConvertDllsToWebcil
+        {
+            BuildEngine = new TestBuildEngine(),
+            Candidates = [candidate],
+            IntermediateOutputPath = Path.Combine(directory.Path, "intermediate"),
+            IsEnabled = true,
+            OutputPath = outputDirectory,
+            PrebuiltR2RDirectory = prebuiltDirectory,
+        };
+
+        Assert.True(task.Execute());
+        Assert.True(r2rWebcil.SequenceEqual(File.ReadAllBytes(Path.Combine(outputDirectory, "R2RAssembly.wasm"))));
+    }
+
     private const byte SectionCustom = 0x00;
     private const byte SectionData = 0x0b;
 
@@ -139,5 +255,37 @@ public class WebcilInWasmSizesTests
             buffer.Add(b);
         }
         while (value != 0);
+    }
+
+    private sealed class TempDirectory : IDisposable
+    {
+        public string Path { get; } = System.IO.Path.Combine(System.IO.Path.GetTempPath(), System.IO.Path.GetRandomFileName());
+
+        public TempDirectory() => Directory.CreateDirectory(Path);
+
+        public void Dispose() => Directory.Delete(Path, recursive: true);
+    }
+
+    private sealed class TestBuildEngine : IBuildEngine
+    {
+        public bool ContinueOnError => false;
+        public int LineNumberOfTaskNode => 0;
+        public int ColumnNumberOfTaskNode => 0;
+        public string ProjectFileOfTaskNode => string.Empty;
+
+        public bool BuildProjectFile(string projectFileName, string[] targetNames, System.Collections.IDictionary globalProperties, System.Collections.IDictionary targetOutputs)
+            => throw new NotSupportedException();
+
+        public void LogCustomEvent(CustomBuildEventArgs e)
+        {
+        }
+
+        public void LogErrorEvent(BuildErrorEventArgs e) => Assert.Fail(e.Message ?? "Build error");
+
+        public void LogMessageEvent(BuildMessageEventArgs e)
+        {
+        }
+
+        public void LogWarningEvent(BuildWarningEventArgs e) => Assert.Fail(e.Message ?? "Build warning");
     }
 }

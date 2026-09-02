@@ -426,7 +426,12 @@ Copyright (c) .NET Foundation. All rights reserved.
           DependsOnTargets="_ComputeWasmBuildCandidates"
           Condition="'$(_WasmEnableWebcil)' == 'true'">
     <ItemGroup>
+      <_WasmBuildPrebuiltR2RInput Include="$(_WasmBuildPrebuiltR2RDirectory)*.dll;$(_WasmBuildPrebuiltR2RDirectory)*.wasm"
+                                  Condition="'$(_WasmBuildPrebuiltR2RDirectory)' != ''" />
+      <_WasmWebcilBuildStampInput Include="$(MSBuildProjectFullPath);$(MSBuildThisFileFullPath);$(_WebAssemblySdkTasksAssembly)" />
       <_WasmWebcilBuildStampLine Include="%(_WasmWebcilStampProperty.Identity)=$(%(_WasmWebcilStampProperty.Identity))" />
+      <_WasmWebcilBuildStampLine Include="PrebuiltR2R=%(_WasmBuildPrebuiltR2RInput.Identity)|%(_WasmBuildPrebuiltR2RInput.ModifiedTime)" />
+      <_WasmWebcilBuildStampLine Include="Input=%(_WasmWebcilBuildStampInput.Identity)|%(_WasmWebcilBuildStampInput.ModifiedTime)" />
     </ItemGroup>
     <WriteLinesToFile File="$(IntermediateOutputPath)wasm-webcil-build.stamp"
                       Lines="@(_WasmWebcilBuildStampLine)"
@@ -451,9 +456,9 @@ Copyright (c) .NET Foundation. All rights reserved.
     Inputs="@(_WasmDllBuildCandidates);$(IntermediateOutputPath)wasm-webcil-build.stamp;$(MSBuildProjectFullPath);$(MSBuildThisFileFullPath);$(_WebAssemblySdkTasksAssembly)"
     Outputs="@(_WasmDllBuildCandidates->'%(WebcilOutputPath)')">
 
-    <ConvertDllsToWebcil Candidates="@(_WasmDllBuildCandidates)" IntermediateOutputPath="$(_WasmBuildTmpWebcilPath)" OutputPath="$(_WasmBuildWebcilPath)" IsEnabled="$(_WasmEnableWebcil)" WebcilVersion="$(_WasmWebcilVersion)" PrebuiltR2RDirectory="$(_WasmBuildPrebuiltR2RDirectory)">
+    <ConvertDllsToWebcil Candidates="@(_WasmDllBuildCandidates)" IntermediateOutputPath="$(_WasmBuildTmpWebcilPath)" OutputPath="$(_WasmBuildWebcilPath)" IsEnabled="$(_WasmEnableWebcil)" WebcilVersion="$(_WasmWebcilVersion)" PrebuiltR2RDirectory="$(_WasmBuildPrebuiltR2RDirectory)" ConversionStamp="$(IntermediateOutputPath)wasm-webcil-build.stamp">
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
-      <Output TaskParameter="FileWrites" ItemName="_WasmConvertedWebcilOutputs" />
+      <Output TaskParameter="FilesToTouch" ItemName="_WasmConvertedWebcilOutputs" />
     </ConvertDllsToWebcil>
 
     <!-- Touch is needed for property-triggered full rebuilds: the task's content comparison
@@ -1040,10 +1045,34 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmPublishTmpWebcilPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'tmp-webcil', 'publish'))</_WasmPublishTmpWebcilPath>
     </PropertyGroup>
 
-    <ConvertDllsToWebcil Candidates="@(_NewWasmPublishStaticWebAssets)" IntermediateOutputPath="$(_WasmPublishTmpWebcilPath)" OutputPath="$(_WasmPublishWebcilPath)" IsEnabled="$(_WasmEnableWebcil)" WebcilVersion="$(_WasmWebcilVersion)" PrebuiltR2RDirectory="$(_WasmPublishPrebuiltR2RDirectory)">
+    <!-- Publish always reaches the conversion task. Keep a composition stamp so changes to properties
+         or prebuilt R2R membership/timestamps override per-file timestamp checks. -->
+    <ItemGroup>
+      <_WasmPublishPrebuiltR2RInput Include="$(_WasmPublishPrebuiltR2RDirectory)*.dll;$(_WasmPublishPrebuiltR2RDirectory)*.wasm"
+                                    Condition="'$(_WasmPublishPrebuiltR2RDirectory)' != ''" />
+      <_WasmPublishWebcilStampInput Include="$(MSBuildProjectFullPath);$(MSBuildThisFileFullPath);$(_WebAssemblySdkTasksAssembly)" />
+      <_WasmPublishWebcilStampLine Include="_WasmEnableWebcil=$(_WasmEnableWebcil)" />
+      <_WasmPublishWebcilStampLine Include="_WasmWebcilVersion=$(_WasmWebcilVersion)" />
+      <_WasmPublishWebcilStampLine Include="PublishReadyToRun=$(PublishReadyToRun)" />
+      <_WasmPublishWebcilStampLine Include="_WasmPublishPrebuiltR2RDirectory=$(_WasmPublishPrebuiltR2RDirectory)" />
+      <_WasmPublishWebcilStampLine Include="PrebuiltR2R=%(_WasmPublishPrebuiltR2RInput.Identity)|%(_WasmPublishPrebuiltR2RInput.ModifiedTime)" />
+      <_WasmPublishWebcilStampLine Include="Input=%(_WasmPublishWebcilStampInput.Identity)|%(_WasmPublishWebcilStampInput.ModifiedTime)" />
+    </ItemGroup>
+    <WriteLinesToFile File="$(IntermediateOutputPath)wasm-webcil-publish.stamp"
+                      Lines="@(_WasmPublishWebcilStampLine)"
+                      Overwrite="true"
+                      WriteOnlyWhenDifferent="true" />
+    <ItemGroup>
+      <FileWrites Include="$(IntermediateOutputPath)wasm-webcil-publish.stamp" />
+    </ItemGroup>
+
+    <ConvertDllsToWebcil Candidates="@(_NewWasmPublishStaticWebAssets)" IntermediateOutputPath="$(_WasmPublishTmpWebcilPath)" OutputPath="$(_WasmPublishWebcilPath)" IsEnabled="$(_WasmEnableWebcil)" WebcilVersion="$(_WasmWebcilVersion)" PrebuiltR2RDirectory="$(_WasmPublishPrebuiltR2RDirectory)" ConversionStamp="$(IntermediateOutputPath)wasm-webcil-publish.stamp">
       <Output TaskParameter="WebcilCandidates" ItemName="_NewWebcilPublishStaticWebAssetsCandidates" />
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
+      <Output TaskParameter="FilesToTouch" ItemName="_WasmConvertedPublishWebcilOutputs" />
     </ConvertDllsToWebcil>
+    <!-- Content-equal copies preserve timestamps; mark outputs newer than the processed stamp. -->
+    <Touch Files="@(_WasmConvertedPublishWebcilOutputs)" Condition="'@(_WasmConvertedPublishWebcilOutputs)' != ''" />
 
     <!-- _NewWebcilPublishStaticWebAssetsCandidates contain the `Fingerprint` and the `Integrity` from the old assets.
          Remove them and call DefineStaticWebAssets so that they can get re-computed appropriately.

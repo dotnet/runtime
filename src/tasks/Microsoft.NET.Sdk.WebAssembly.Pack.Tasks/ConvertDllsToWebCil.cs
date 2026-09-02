@@ -26,6 +26,8 @@ public class ConvertDllsToWebcil : Task
     [Required]
     public bool IsEnabled { get; set; }
 
+    public string? ConversionStamp { get; set; }
+
     /// <summary>
     /// Directory holding prebuilt R2R webcil-in-wasm images (CoreCLR browser). For a managed non-culture
     /// .dll candidate with empty <c>R2RWebcilPath</c>, the matching image is staged instead of
@@ -52,9 +54,13 @@ public class ConvertDllsToWebcil : Task
     public ITaskItem[] PassThroughCandidates { get; set; }
 
     protected readonly List<string> _fileWrites = new();
+    protected readonly List<string> _filesToTouch = new();
 
     [Output]
     public string[]? FileWrites => _fileWrites.ToArray();
+
+    [Output]
+    public string[]? FilesToTouch => _filesToTouch.ToArray();
 
     public override bool Execute()
     {
@@ -147,6 +153,9 @@ public class ConvertDllsToWebcil : Task
         // stage (copy) it into the webcil output so it flows through the same downstream metadata as a
         // converted assembly, but carries native code. The .dll is kept only as the metadata source.
         string r2rWebcilPath = candidate.GetMetadata("R2RWebcilPath");
+        bool forceWebcilConversion = !string.IsNullOrEmpty(ConversionStamp)
+            && File.Exists(ConversionStamp)
+            && Utils.IsNewerThan(ConversionStamp, finalWebcil);
         if (string.IsNullOrEmpty(r2rWebcilPath) && !isCulture && !string.IsNullOrEmpty(PrebuiltR2RDirectory))
         {
             string assemblyName = Path.GetFileNameWithoutExtension(dllFilePath);
@@ -160,18 +169,25 @@ public class ConvertDllsToWebcil : Task
                             : File.Exists(candidateWasm) ? candidateWasm
                             : null;
 
-            // The prebuilt image is matched only by file name, so an app-local assembly that shadows a
-            // framework one (e.g. a Private=true higher-version copy) would otherwise be replaced by the
-            // pack's version-pinned image. Reuse it only when its assembly version matches the candidate;
-            // otherwise fall through and convert the app-local IL (ships as an IL webcil, like a non-R2R build).
-            if (prebuilt != null && PrebuiltR2RVersionMatches(dllFilePath, prebuilt))
+            // Reuse the prebuilt image only for assemblies with IL and when its assembly version matches
+            // the candidate. No-IL assemblies and app-local assemblies that shadow a framework assembly
+            // fall through to regular WebCIL conversion.
+            if (prebuilt != null)
             {
-                r2rWebcilPath = prebuilt;
+                if (PrebuiltR2RMatchesCandidate(dllFilePath, prebuilt, out bool candidateHasILCode))
+                {
+                    r2rWebcilPath = prebuilt;
+                }
+                else if (candidateHasILCode)
+                {
+                    forceWebcilConversion = true;
+                }
             }
         }
+        bool outputHasExpectedFlavor = OutputHasExpectedWebcilFlavor(finalWebcil, useR2R: !string.IsNullOrEmpty(r2rWebcilPath));
         if (!string.IsNullOrEmpty(r2rWebcilPath))
         {
-            if (Utils.IsNewerThan(r2rWebcilPath, finalWebcil))
+            if (forceWebcilConversion || !outputHasExpectedFlavor || Utils.IsNewerThan(r2rWebcilPath, finalWebcil))
             {
                 if (!Directory.Exists(candidatePath))
                     Directory.CreateDirectory(candidatePath);
@@ -181,13 +197,14 @@ public class ConvertDllsToWebcil : Task
                     Log.LogMessage(MessageImportance.Low, $"Staged prebuilt R2R webcil {finalWebcil} from {r2rWebcilPath} .");
                 else
                     Log.LogMessage(MessageImportance.Low, $"Skipped staging {finalWebcil} as the contents are unchanged.");
+                _filesToTouch.Add(finalWebcil);
             }
             else
             {
                 Log.LogMessage(MessageImportance.Low, $"Skipping {r2rWebcilPath} as it is older than the output file {finalWebcil}");
             }
         }
-        else if (Utils.IsNewerThan(dllFilePath, finalWebcil))
+        else if (forceWebcilConversion || !outputHasExpectedFlavor || Utils.IsNewerThan(dllFilePath, finalWebcil))
         {
             var tmpWebcil = Path.Combine(tmpDir, webcilFileName);
             var logAdapter = new Microsoft.WebAssembly.Build.Tasks.LogAdapter(Log);
@@ -201,6 +218,7 @@ public class ConvertDllsToWebcil : Task
                 Log.LogMessage(MessageImportance.Low, $"Generated {finalWebcil} .");
             else
                 Log.LogMessage(MessageImportance.Low, $"Skipped generating {finalWebcil} as the contents are unchanged.");
+            _filesToTouch.Add(finalWebcil);
         }
         else
         {
@@ -224,18 +242,66 @@ public class ConvertDllsToWebcil : Task
         return webcilItem;
     }
 
-    private bool PrebuiltR2RVersionMatches(string candidateDllPath, string prebuiltImagePath)
+    private static bool OutputHasExpectedWebcilFlavor(string path, bool useR2R)
     {
-        Version candidateVersion = TryReadAssemblyVersion(candidateDllPath);
+        if (!File.Exists(path))
+            return false;
+
+        using FileStream stream = File.OpenRead(path);
+        return WebcilReader.TryReadWebcilInWasmSizes(stream, out _, out int tableSize, out _)
+            && useR2R == (tableSize > 0);
+    }
+
+    private bool PrebuiltR2RMatchesCandidate(string candidateDllPath, string prebuiltImagePath, out bool candidateHasILCode)
+    {
+        if (IsR2RWebcil(candidateDllPath))
+        {
+            candidateHasILCode = true;
+            return true;
+        }
+
+        candidateHasILCode = AssemblyHasILCode(candidateDllPath, out Version candidateVersion);
+        if (!candidateHasILCode)
+        {
+            Log.LogMessage(MessageImportance.Low,
+                $"Not staging prebuilt R2R image '{prebuiltImagePath}' for no-IL assembly '{candidateDllPath}'; converting it to WebCIL instead.");
+            return false;
+        }
+
         Version prebuiltVersion = TryReadAssemblyVersion(prebuiltImagePath);
 
-        // If either identity is unreadable, keep the prebuilt image (prior behavior) so the common case
-        // where every candidate is the pack's own assembly is never regressed.
-        if (candidateVersion is null || prebuiltVersion is null || candidateVersion.Equals(prebuiltVersion))
+        // If the prebuilt identity is unreadable, keep it (prior behavior) so the common case where
+        // every candidate is the pack's own assembly is never regressed.
+        if (prebuiltVersion is null || candidateVersion.Equals(prebuiltVersion))
             return true;
 
         Log.LogMessage(MessageImportance.Normal,
             $"Not staging prebuilt R2R image '{prebuiltImagePath}' (v{prebuiltVersion}) for '{candidateDllPath}' (v{candidateVersion}): assembly version mismatch; converting IL instead.");
+        return false;
+    }
+
+    private static bool IsR2RWebcil(string path)
+    {
+        using FileStream stream = File.OpenRead(path);
+        return WebcilReader.TryReadWebcilInWasmSizes(stream, out _, out int tableSize, out _)
+            && tableSize > 0;
+    }
+
+    private static bool AssemblyHasILCode(string path, out Version version)
+    {
+        using FileStream stream = File.OpenRead(path);
+        using var peReader = new PEReader(stream);
+        MetadataReader metadataReader = peReader.GetMetadataReader();
+        version = metadataReader.GetAssemblyDefinition().Version;
+
+        foreach (MethodDefinitionHandle methodDefinitionHandle in metadataReader.MethodDefinitions)
+        {
+            if (metadataReader.GetMethodDefinition(methodDefinitionHandle).RelativeVirtualAddress > 0)
+            {
+                return true;
+            }
+        }
+
         return false;
     }
 
