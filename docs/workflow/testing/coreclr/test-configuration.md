@@ -55,8 +55,10 @@ Therefore the managed portion of each test **must not contain**:
     * `<NativeAotIncompatible>true</NativeAotIncompatible>`
 * Exclude the test from all ilasm round-trip testing by adding the following to the csproj. This also implies `ManagedIlasmRoundTripIncompatible`.
     * `<IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>`
+    * Shared-library projects emit a marker so merged runners can skip that assembly during all ilasm round trips.
 * Exclude the test only when round-trip testing with managed ilasm by adding the following to the csproj:
     * `<ManagedIlasmRoundTripIncompatible>true</ManagedIlasmRoundTripIncompatible>`
+    * Shared-library projects emit a marker so merged runners can skip only that assembly during managed ilasm round trips while preserving native ilasm coverage.
 * Exclude the test for unloadability (collectible assemblies) testing
     * `<UnloadabilityIncompatible>true</UnloadabilityIncompatible>`
 * If the test is specific for testing crossgen2, and should be compiled as such in all test modes
