@@ -2599,6 +2599,67 @@ namespace System.Net.Security.Tests
             Assert.Throws<InvalidOperationException>(() => session.Read(buf, out _));
         }
 
+        // Socket analog of ServerSession_Shutdown_DeliversCloseNotifyToSslStreamClient: after a
+        // successful socket-bound handshake, Shutdown() must send a close_notify over the socket
+        // that the SslStream peer observes as a clean EOF on its next read.
+        [Fact]
+        public async Task SocketBoundServerSession_Shutdown_DeliversCloseNotifyToSslStreamClient()
+        {
+            using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
+            string serverName = serverCert.GetNameInfo(X509NameType.SimpleName, forIssuer: false);
+
+            using Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+            listener.Listen(1);
+            int port = ((IPEndPoint)listener.LocalEndPoint!).Port;
+
+            using Socket clientUnderlying = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            Task connect = clientUnderlying.ConnectAsync(IPAddress.Loopback, port);
+            using Socket serverSocket = await listener.AcceptAsync();
+            await connect;
+
+            serverSocket.Blocking = false;
+            SafeSocketHandle serverHandle = serverSocket.SafeHandle;
+
+            using TlsContext ctx = TlsContext.CreateServer(new SslServerAuthenticationOptions
+            {
+                ServerCertificate = serverCert,
+                EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                ClientCertificateRequired = false,
+            });
+            using TlsSocketSession session = NewSocketSession(ctx, serverHandle);
+
+            using SslStream clientSsl = new SslStream(new NetworkStream(clientUnderlying, ownsSocket: false), leaveInnerStreamOpen: false, TestHelper.AllowAnyServerCertificate);
+            Task clientHandshake = clientSsl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
+            {
+                TargetHost = serverName,
+                EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                RemoteCertificateValidationCallback = TestHelper.AllowAnyServerCertificate,
+            });
+
+            Task serverHandshake = Task.Run(() => DriveSocketHandshakeToCompletionAsync(session));
+            await Task.WhenAll(clientHandshake, serverHandshake).WaitAsync(TimeSpan.FromSeconds(30));
+            Assert.True(session.IsHandshakeComplete);
+
+            TlsOperationStatus status;
+            while (true)
+            {
+                status = session.Shutdown();
+                if (status == TlsOperationStatus.DestinationTooSmall)
+                {
+                    await Task.Delay(5);
+                    continue;
+                }
+                break;
+            }
+            Assert.Equal(TlsOperationStatus.Closed, status);
+
+            // Client should observe EOF (close_notify) on the next read.
+            byte[] buf = new byte[16];
+            int n = await clientSsl.ReadAsync(buf).AsTask().WaitAsync(TimeSpan.FromSeconds(30));
+            Assert.Equal(0, n);
+        }
+
         // Socket analog of ServerSession_MutualAuth_InitialHandshake_InvokesValidator: a
         // socket-bound server session that requires a client certificate must surface
         // NeedsCertificateValidation from Handshake() (proving suspension is reachable on the
