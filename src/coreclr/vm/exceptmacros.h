@@ -212,7 +212,7 @@ void SetQCallExceptionStatusThrowable(QCallExceptionStatus* pStatus, OBJECTREF t
 static_assert(sizeof(QCallExceptionStatus) == sizeof(void*));
 
 void UnwindAndContinueRethrowHelperInsideCatch(Frame* pEntryFrame, Exception* pException);
-void UnwindAndContinueRethrowHelperInsideQcallCatch(
+void UnwindAndContinueRethrowHelperInsideQCallCatch(
     Exception* pException,
     QCallExceptionStatus* pQCallException DEBUG_ARG(Frame* pEntryFrame));
 
@@ -353,12 +353,12 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
         }                                           \
         PAL_CPP_CATCH_NON_DERIVED_NOARG (const std::bad_alloc&)                             \
         {                                                                                   \
-            UnwindAndContinueRethrowHelperInsideQcallCatch(Exception::GetOOMException(), qcallError DEBUG_ARG(__pUnCEntryFrame)); \
+            UnwindAndContinueRethrowHelperInsideQCallCatch(Exception::GetOOMException(), qcallError DEBUG_ARG(__pUnCEntryFrame)); \
         }                                                                                   \
         PAL_CPP_CATCH_DERIVED (Exception, __pException)                                     \
         {                                                                                   \
             CONSISTENCY_CHECK(NULL != __pException);                                        \
-            UnwindAndContinueRethrowHelperInsideQcallCatch(__pException, qcallError DEBUG_ARG(__pUnCEntryFrame)); \
+            UnwindAndContinueRethrowHelperInsideQCallCatch(__pException, qcallError DEBUG_ARG(__pUnCEntryFrame)); \
         }                                                                                   \
         PAL_CPP_ENDTRY                                                                      \
     }
@@ -468,12 +468,12 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
         }                                           \
         PAL_CPP_CATCH_NON_DERIVED_NOARG (const std::bad_alloc&)                             \
         {                                                                                   \
-            UnwindAndContinueRethrowHelperInsideQcallCatch(Exception::GetOOMException(), qcallError DEBUG_ARG(__pUnCEntryFrame)); \
+            UnwindAndContinueRethrowHelperInsideQCallCatch(Exception::GetOOMException(), qcallError DEBUG_ARG(__pUnCEntryFrame)); \
         }                                                                                   \
         PAL_CPP_CATCH_DERIVED (Exception, __pException)                                     \
         {                                                                                   \
             CONSISTENCY_CHECK(NULL != __pException);                                        \
-            UnwindAndContinueRethrowHelperInsideQcallCatch(__pException, qcallError DEBUG_ARG(__pUnCEntryFrame)); \
+            UnwindAndContinueRethrowHelperInsideQCallCatch(__pException, qcallError DEBUG_ARG(__pUnCEntryFrame)); \
         }                                                                                   \
         PAL_CPP_ENDTRY                                                                      \
     }

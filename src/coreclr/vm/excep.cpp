@@ -6616,7 +6616,7 @@ void UnwindAndContinueRethrowHelperInsideCatch(Frame* pEntryFrame, Exception* pE
 // This does the work of the Unwind and Continue Handler inside the catch clause of that handler. The stack has not
 // been unwound when this is called. Keep that in mind when deciding where to put new code :)
 //
-void UnwindAndContinueRethrowHelperInsideQcallCatch(
+void UnwindAndContinueRethrowHelperInsideQCallCatch(
     Exception* pException,
     QCallExceptionStatus* pQCallException DEBUG_ARG(Frame* pEntryFrame))
 {

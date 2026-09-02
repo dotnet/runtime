@@ -337,7 +337,7 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_InvokeMethod(
 
     BEGIN_QCALL;
 
-    MAKE_CURRENT_THREAD_AVAILABLE();
+    Thread * pThread = GetThread();
     GCX_COOP();
 
     struct
@@ -400,8 +400,6 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_InvokeMethod(
 
     // Note that SizeOfFrameArgumentArray does overflow checks with sufficient margin to prevent overflows here
     SIZE_T nAllocaSize = TransitionBlock::GetNegSpaceSize() + sizeof(TransitionBlock) + nStackBytes;
-
-    Thread * pThread = GET_THREAD();
 
     LPBYTE pAlloc = (LPBYTE)_alloca(nAllocaSize);
 
