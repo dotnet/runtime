@@ -1364,5 +1364,44 @@ namespace System.Net.Quic.Tests
         [InlineData("fe80::9c3a:b64d:6249:1de8%2")]
         [InlineData("fe80::9c3a:b64d:6249:1de8")]
         public Task DoesNotSendIPAsSni(string target) => SniTestCore(target, false);
+
+        [ConditionalFact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public async Task Server_CertificateWithEphemeralKey_Throws()
+        {
+            using X509Certificate2 cert = System.Net.Test.Common.Configuration.Certificates.GetServerCertificate();
+            using ECDsa key = ECDsa.Create();
+            using X509Certificate2 ephemeralCert = cert.CopyWithPrivateKey(key);
+
+            QuicListenerOptions listenerOptions = CreateQuicListenerOptions();
+            listenerOptions.ConnectionOptionsCallback = (_, _, _) =>
+            {
+                QuicServerConnectionOptions serverOptions = CreateQuicServerOptions();
+                serverOptions.ServerAuthenticationOptions.ServerCertificate = ephemeralCert;
+                return ValueTask.FromResult(serverOptions);
+            };
+
+            await Assert.ThrowsAsync<AuthenticationException>(async () => await CreateQuicListener(listenerOptions));
+        }
+
+        [ConditionalFact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public async Task Client_CertificateWithEphemeralKey_Throws()
+        {
+            if (PlatformDetection.IsWindows10Version20348OrLower)
+            {
+                throw new SkipTestException("Client certificates are not supported on Windows Server 2022.");
+            }
+
+            using X509Certificate2 cert = System.Net.Test.Common.Configuration.Certificates.GetClientCertificate();
+            using ECDsa key = ECDsa.Create();
+            using X509Certificate2 ephemeralCert = cert.CopyWithPrivateKey(key);
+
+            await using QuicListener listener = await CreateQuicListener();
+            QuicClientConnectionOptions clientOptions = CreateQuicClientOptions(listener.LocalEndPoint);
+            clientOptions.ClientAuthenticationOptions.ClientCertificates = new X509CertificateCollection() { ephemeralCert };
+
+            await Assert.ThrowsAsync<AuthenticationException>(async () => await CreateQuicConnection(clientOptions));
+        }
     }
 }
