@@ -157,35 +157,177 @@ namespace ILAssembler.Tests
         }
 
         [Fact]
-        public void GenericType_MoreThanMetadataIndexRange_IsAcceptedForCompatibility()
+        public void GenericParameterCount_AtMetadataIndexLimit_IsAccepted()
         {
-            const int GenericParameterCount = 65_537;
+            const int MaximumGenericParameterCount = ushort.MaxValue + 1;
             StringBuilder source = new("""
                 .assembly extern mscorlib { }
                 .assembly test { }
                 .class public auto ansi Test<
                 """);
-
-            for (int i = 0; i < GenericParameterCount; i++)
-            {
-                if (i != 0)
-                {
-                    source.Append(',');
-                }
-                if (i == GenericParameterCount - 1)
-                {
-                    source.Append("(class [mscorlib]System.Object) ");
-                }
-                source.Append('T').Append(i);
-            }
-
+            AppendGenericParameters(source, MaximumGenericParameterCount, constrainLast: false);
             source.Append("> { }");
 
             using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source.ToString(), new Options());
             var reader = pe.GetMetadataReader();
+            Assert.Equal(MaximumGenericParameterCount, reader.GetTableRowCount(TableIndex.GenericParam));
+        }
 
-            Assert.Equal(ushort.MaxValue + 1, reader.GetTableRowCount(TableIndex.GenericParam));
-            Assert.Equal(0, reader.GetTableRowCount(TableIndex.GenericParamConstraint));
+        [Fact]
+        public void GenericParameterCount_OutsideMetadataIndexRange_RequiresErrorTolerant()
+        {
+            const int GenericParameterCount = ushort.MaxValue + 2;
+            StringBuilder source = new("""
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test<
+                """);
+            AppendGenericParameters(source, GenericParameterCount, constrainLast: false);
+            source.Append("> { }");
+
+            DocumentCompiler compiler = new();
+            var (diagnostics, result) = compiler.Compile(
+                new SourceText(source.ToString(), "test.il"),
+                _ => throw new InvalidOperationException("Unexpected include"),
+                _ => throw new InvalidOperationException("Unexpected resource"),
+                new Options());
+
+            Diagnostic diagnostic = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.TooManyGenericParameters, diagnostic.Id);
+            Assert.Null(result);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void GenericParameterCountAndConstraintOwner_OutsideMetadataIndexRange_ReportErrors(bool isMethod)
+        {
+            const int MaximumGenericParameterCount = ushort.MaxValue + 1;
+            const int GenericParameterCount = MaximumGenericParameterCount + 2;
+            StringBuilder source = new();
+            if (isMethod)
+            {
+                source.Append("""
+                    .assembly extern mscorlib { }
+                    .assembly test { }
+                    .class public auto ansi Test
+                    {
+                        .method public static void GenericMethod<
+                    """);
+            }
+            else
+            {
+                source.Append("""
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test<
+                """);
+            }
+
+            AppendGenericParameters(source, GenericParameterCount, constrainLast: true);
+            int secondOverflowIndex = GenericParameterCount - 1;
+            if (isMethod)
+            {
+                source.Append($$"""
+                    >() cil managed
+                    {
+                        .param type T{{secondOverflowIndex}}
+                            .custom instance void [mscorlib]System.ObsoleteAttribute::.ctor() = (01 00 00 00)
+                        .param constraint T{{secondOverflowIndex}}, [mscorlib]System.IDisposable
+                            .custom instance void [mscorlib]System.CLSCompliantAttribute::.ctor(bool) = (01 00 01 00 00)
+                        ret
+                    }
+                    }
+                    """);
+            }
+            else
+            {
+                source.Append($$"""
+                    >
+                    {
+                        .param type T{{secondOverflowIndex}}
+                            .custom instance void [mscorlib]System.ObsoleteAttribute::.ctor() = (01 00 00 00)
+                        .param constraint T{{secondOverflowIndex}}, [mscorlib]System.IDisposable
+                            .custom instance void [mscorlib]System.CLSCompliantAttribute::.ctor(bool) = (01 00 01 00 00)
+                    }
+                    """);
+            }
+
+            DocumentCompiler compiler = new();
+            var (diagnostics, result) = compiler.Compile(
+                new SourceText(source.ToString(), "test.il"),
+                _ => throw new InvalidOperationException("Unexpected include"),
+                _ => throw new InvalidOperationException("Unexpected resource"),
+                new Options { ErrorTolerant = true });
+            Assert.Collection(
+                diagnostics,
+                diagnostic =>
+                {
+                    Assert.Equal(DiagnosticIds.TooManyGenericParameters, diagnostic.Id);
+                    Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+                    Assert.Equal(
+                        $"Generic parameter count {GenericParameterCount} exceeds the maximum of {MaximumGenericParameterCount}",
+                        diagnostic.Message);
+                },
+                diagnostic =>
+                {
+                    Assert.Equal(DiagnosticIds.GenericParameterConstraintOwnerOutOfRange, diagnostic.Id);
+                    Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+                    Assert.Equal(
+                        $"Generic parameter constraint owner index {GenericParameterCount - 1} exceeds the maximum encodable generic parameter index of {ushort.MaxValue}",
+                        diagnostic.Message);
+                });
+
+            Assert.NotNull(result);
+            BlobBuilder image = new();
+            result!.Serialize(image);
+            using PEReader pe = new(image.ToImmutableArray());
+            MetadataReader reader = pe.GetMetadataReader();
+            Assert.Equal(GenericParameterCount, reader.GetTableRowCount(TableIndex.GenericParam));
+
+            EntityHandle expectedOwner = isMethod
+                ? reader.MethodDefinitions.Single()
+                : reader.TypeDefinitions.Single(
+                    handle => reader.GetString(reader.GetTypeDefinition(handle).Name) == "Test");
+            GenericParameter firstOverflowParameter = reader.GetGenericParameter(
+                MetadataTokens.GenericParameterHandle(MaximumGenericParameterCount + 1));
+            GenericParameterHandle secondOverflowHandle =
+                MetadataTokens.GenericParameterHandle(MaximumGenericParameterCount + 2);
+            GenericParameter secondOverflowParameter = reader.GetGenericParameter(
+                secondOverflowHandle);
+
+            Assert.Equal(expectedOwner, firstOverflowParameter.Parent);
+            Assert.Equal(0, firstOverflowParameter.Index);
+            Assert.Equal($"T{MaximumGenericParameterCount}", reader.GetString(firstOverflowParameter.Name));
+            Assert.Equal(expectedOwner, secondOverflowParameter.Parent);
+            Assert.Equal(1, secondOverflowParameter.Index);
+            Assert.Equal($"T{MaximumGenericParameterCount + 1}", reader.GetString(secondOverflowParameter.Name));
+            GenericParameterConstraintHandle[] constraintHandles =
+                secondOverflowParameter.GetConstraints().ToArray();
+            Assert.Equal(2, constraintHandles.Length);
+            Assert.All(
+                constraintHandles,
+                handle => Assert.Equal(
+                    secondOverflowHandle,
+                    reader.GetGenericParameterConstraint(handle).Parameter));
+            string[] constraintTypes = constraintHandles
+                .Select(reader.GetGenericParameterConstraint)
+                .Select(constraint => constraint.Type.Kind switch
+                {
+                    HandleKind.TypeReference => reader.GetString(
+                        reader.GetTypeReference((TypeReferenceHandle)constraint.Type).Name),
+                    HandleKind.TypeSpecification => reader.GetTypeSpecification(
+                        (TypeSpecificationHandle)constraint.Type)
+                        .DecodeSignature(DocumentCompilerTestHelpers.Decoder, genericContext: null),
+                    _ => throw new InvalidOperationException($"Unexpected constraint handle kind: {constraint.Type.Kind}")
+                })
+                .ToArray();
+            Assert.Contains("IDisposable", constraintTypes);
+            Assert.Contains("object", constraintTypes);
+            Assert.Single(reader.GetCustomAttributes(secondOverflowHandle));
+            Assert.Single(
+                constraintHandles,
+                handle => reader.GetCustomAttributes(handle).Count == 1);
         }
 
         [Fact]
@@ -422,6 +564,22 @@ namespace ILAssembler.Tests
             // Expected: GENERICINST (0x15), CLASS (0x12), <token for IMinusT`1>,
             //           1 (generic arg count), VAR 0 (type parameter !PlusT at index 0)
             Assert.Equal(0x15, sigBytes[0]); // ELEMENT_TYPE_GENERICINST
+        }
+
+        private static void AppendGenericParameters(StringBuilder source, int count, bool constrainLast)
+        {
+            for (int i = 0; i < count; i++)
+            {
+                if (i != 0)
+                {
+                    source.Append(',');
+                }
+                if (constrainLast && i == count - 1)
+                {
+                    source.Append("(class [mscorlib]System.Object) ");
+                }
+                source.Append('T').Append(i);
+            }
         }
 
     }
