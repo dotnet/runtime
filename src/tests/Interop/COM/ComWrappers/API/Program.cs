@@ -539,6 +539,108 @@ namespace ComWrappersTests
             Assert.NotEqual(trackerObj1, trackerObj3);
         }
 
+        private sealed unsafe class PlainProxyComWrappers : ComWrappers
+        {
+            protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count)
+            {
+                count = 0;
+                return null;
+            }
+
+            protected override object CreateObject(IntPtr externalComObject, CreateObjectFlags flags) => new();
+
+            protected override void ReleaseObjects(IEnumerable objects) => throw new NotImplementedException();
+        }
+
+        // An RCW is only resolvable back to its COM instance once its wrapper is in the wrapper table, and
+        // that registration cannot be done while holding a cache lock. So an entry is reserved rather than
+        // published outright, and a reserved entry is not handed out, or a thread could be given an RCW
+        // that does not resolve yet. Every round here is a fresh COM instance that all the threads race to
+        // create the RCW for, which is the shape that hits it: without the reservation this fails in the
+        // low tens out of these several thousand attempts, and on a build with it, never.
+        [ActiveIssue("Not supported on Mono", TestRuntimes.Mono)]
+        [Fact]
+        public void ValidateCreateObjectRaceResolvesImmediately()
+        {
+            Console.WriteLine($"Running {nameof(ValidateCreateObjectRaceResolvesImmediately)}...");
+
+            const int ThreadCount = 16;
+            const int RoundCount = 500;
+
+            IntPtr[] instances = new IntPtr[RoundCount];
+
+            for (int i = 0; i < instances.Length; i++)
+            {
+                instances[i] = MockReferenceTrackerRuntime.CreateTrackerObject();
+            }
+
+            var cw = new PlainProxyComWrappers();
+            var failures = new ConcurrentQueue<Exception>();
+
+            // The RCWs are kept alive for the whole run, so that no wrapper is finalized underneath a
+            // round that is still being checked.
+            object[] proxies = new object[RoundCount];
+
+            using var barrier = new Barrier(ThreadCount);
+
+            int unresolved = 0;
+            var threads = new Thread[ThreadCount];
+
+            for (int t = 0; t < threads.Length; t++)
+            {
+                threads[t] = new Thread(() =>
+                {
+                    for (int round = 0; round < RoundCount; round++)
+                    {
+                        try
+                        {
+                            // Line every thread up on the same instance, so they all miss the cache and
+                            // race to publish it rather than finding each other's entries.
+                            barrier.SignalAndWait(TimeSpan.FromMinutes(1));
+
+                            object proxy = cw.GetOrCreateObjectForComInstance(instances[round], CreateObjectFlags.None);
+
+                            proxies[round] = proxy;
+
+                            // The RCW is in hand, so it has to name the COM instance it was created for.
+                            if (ComWrappers.TryGetComInstance(proxy, out IntPtr unknown))
+                            {
+                                Marshal.Release(unknown);
+                            }
+                            else
+                            {
+                                Interlocked.Increment(ref unresolved);
+                            }
+                        }
+                        catch (Exception e)
+                        {
+                            // Carry on to the next round regardless, so that the other threads are not
+                            // left waiting on a barrier this one has stopped arriving at.
+                            failures.Enqueue(e);
+                        }
+                    }
+                })
+                { IsBackground = true, Name = $"ComWrappers resolve {t}" };
+
+                threads[t].Start();
+            }
+
+            foreach (Thread thread in threads)
+            {
+                Assert.True(thread.Join(TimeSpan.FromMinutes(2)), "A worker thread did not finish, which suggests a deadlock while racing to publish.");
+            }
+
+            Assert.Empty(failures);
+            Assert.Equal(0, unresolved);
+
+            GC.KeepAlive(proxies);
+
+            foreach (IntPtr instance in instances)
+            {
+                Marshal.Release(instance);
+            }
+        }
+
         // The RCW cache shares the GC handle that the NativeObjectWrapper keeps to its RCW, rather than
         // allocating one of its own. That handle is freed by the wrapper, so this hammers the paths that
         // publish, read and remove those entries from several threads at once, while collections and
@@ -642,6 +744,132 @@ namespace ComWrappersTests
             {
                 Marshal.Release(instance);
             }
+        }
+
+        // Hands every caller the one wrapper, so that only one native reference is taken however many
+        // threads race. Creating a wrapper per caller and abandoning the losers is not an option here:
+        // ITrackerObjectWrapper's finalizer fails the run if its tracker object is still connected, and
+        // the winner keeps it connected for as long as the test needs it.
+        private sealed class SharedTrackerComWrappers : TestComWrappers
+        {
+            private readonly Barrier _barrier;
+            private readonly object _lock = new();
+            private object? _proxy;
+
+            public SharedTrackerComWrappers(Barrier barrier) => _barrier = barrier;
+
+            /// <summary>How many callers reached <see cref="CreateObject"/>, so a test can prove they all raced.</summary>
+            public int CreateObjectCount;
+
+            protected override object CreateObject(IntPtr externalComObject, CreateObjectFlags flags)
+            {
+                Interlocked.Increment(ref CreateObjectCount);
+
+                _barrier.SignalAndWait(TimeSpan.FromMinutes(1));
+
+                lock (_lock)
+                {
+                    return _proxy ??= base.CreateObject(externalComObject, flags);
+                }
+            }
+        }
+
+        // The concurrent test above uses CreateObjectFlags.None, so the wrapper it builds is not a
+        // reference tracker one and putting it in the tracker handle cache does nothing. This runs the
+        // same race with tracker objects, where one thread publishes the entry and the rest pick its
+        // wrapper up, and then checks what that registration is for: the wrapper has to be walked, or
+        // the managed objects the native object is holding are not kept alive through a collection.
+        [ActiveIssue("Not supported on Mono", TestRuntimes.Mono)]
+        [Fact]
+        public void ValidateCreateObjectConcurrentTrackerRegistration()
+        {
+            Console.WriteLine($"Running {nameof(ValidateCreateObjectConcurrentTrackerRegistration)}...");
+
+            const int ThreadCount = 8;
+
+            IntPtr trackerObjRaw = MockReferenceTrackerRuntime.CreateTrackerObject();
+
+            using var barrier = new Barrier(ThreadCount);
+
+            var cw = new SharedTrackerComWrappers(barrier);
+            var failures = new ConcurrentQueue<Exception>();
+
+            object[] results = new object[ThreadCount];
+            var threads = new Thread[ThreadCount];
+
+            for (int t = 0; t < threads.Length; t++)
+            {
+                int index = t;
+
+                threads[t] = new Thread(() =>
+                {
+                    try
+                    {
+                        results[index] = cw.GetOrCreateObjectForComInstance(trackerObjRaw, CreateObjectFlags.TrackerObject);
+                    }
+                    catch (Exception e)
+                    {
+                        failures.Enqueue(e);
+                    }
+                })
+                { IsBackground = true, Name = $"ComWrappers tracker {index}" };
+
+                threads[t].Start();
+            }
+
+            foreach (Thread thread in threads)
+            {
+                Assert.True(thread.Join(TimeSpan.FromMinutes(2)), "A worker thread did not finish, which suggests a deadlock while racing to publish.");
+            }
+
+            Assert.Empty(failures);
+
+            // Every thread really did miss the cache, so they all raced to publish rather than most of
+            // them quietly finding an entry someone else had already added.
+            Assert.Equal(ThreadCount, cw.CreateObjectCount);
+
+            // Ownership has been transferred to the wrapper.
+            Marshal.Release(trackerObjRaw);
+
+            var trackerObj = (ITrackerObjectWrapper)results[0];
+
+            foreach (object result in results)
+            {
+                Assert.Same(trackerObj, result);
+            }
+
+            Assert.True(ComWrappers.TryGetComInstance(trackerObj, out IntPtr unknown));
+
+            Marshal.Release(unknown);
+
+            // Whichever thread ended up publishing it, the wrapper has to have made it into the tracker
+            // handle cache, because that is what the runtime walks. If it had not, the managed objects
+            // reachable only through the native object would not be reported and would not survive here.
+            var testWrapperIds = new List<int>();
+
+            for (int i = 0; i < 1000; ++i)
+            {
+                IntPtr testWrapper = cw.GetOrCreateComInterfaceForObject(new Test(), CreateComInterfaceFlags.TrackerSupport);
+
+                testWrapperIds.Add(trackerObj.AddObjectRef(testWrapper));
+
+                Marshal.Release(testWrapper);
+            }
+
+            ForceGC();
+
+            Assert.True(testWrapperIds.Count <= Test.InstanceCount);
+
+            foreach (int id in testWrapperIds)
+            {
+                trackerObj.DropObjectRef(id);
+            }
+
+            testWrapperIds.Clear();
+
+            ForceGC();
+
+            GC.KeepAlive(trackerObj);
         }
 
         // Hands every caller the same object, and holds them all inside 'CreateObject' until they have
