@@ -141,7 +141,7 @@ if (WIN32)
   include_directories(windows)
 
   list(APPEND COMMON_RUNTIME_SOURCES
-    ${RUNTIME_DIR}/windows/RuntimeEvent.cpp
+    ${RUNTIME_DIR}/windows/CLREventBase.cpp
     windows/PalCommon.cpp
     windows/PalMinWin.cpp
     ${GC_DIR}/windows/gcenv.windows.cpp
@@ -197,7 +197,7 @@ else()
   endif()
 
   list(APPEND COMMON_RUNTIME_SOURCES
-    ${RUNTIME_DIR}/unix/RuntimeEvent.cpp
+    ${RUNTIME_DIR}/unix/CLREventBase.cpp
     unix/PalUnix.cpp
     unix/PalCreateDump.cpp
     ${GC_DIR}/unix/gcenv.unix.cpp

@@ -68,11 +68,11 @@ protected:
     // sufficient to deal with memory barrier issues.
     Volatile<DWORD> m_RequestCounter;
     Volatile<DWORD> m_AnswerCounter;
-    HANDLE m_hPingEvent;
-    HANDLE m_hCanaryThreadExitedEvent;
+    CLREvent m_hPingEvent;
+    CLREvent m_hCanaryThreadExitedEvent;
 
     // We use a Manual wait event to replace Sleep.
-    HANDLE m_hWaitEvent;
+    CLREvent m_hWaitEvent;
 };
 
 

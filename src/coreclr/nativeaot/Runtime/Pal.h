@@ -29,7 +29,7 @@
 #include "CommonTypes.h"
 #include "CommonMacros.h"
 #include "PalLimitedContext.h"
-#include "RuntimeEvent.h"
+#include "CLREventBase.h"
 #include "gcenv.structs.h" // EEThreadId
 
 #ifndef PAL_INCLUDED

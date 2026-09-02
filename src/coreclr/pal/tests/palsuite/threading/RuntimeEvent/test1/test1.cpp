@@ -3,7 +3,7 @@
 
 #include <palsuite.h>
 
-#include "RuntimeEvent.h"
+#include "CLREventBase.h"
 
 static DWORD PALAPI SignalRuntimeEvent(LPVOID context)
 {

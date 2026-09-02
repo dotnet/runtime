@@ -16,7 +16,7 @@
 #include "typestring.h"
 #include "clrversion.h"
 #include "hostinformation.h"
-#include "RuntimeEvent.h"
+#include "CLREventBase.h"
 
 #ifdef HOST_WINDOWS
 #include <windows.h>
@@ -753,7 +753,7 @@ ep_rt_wait_event_wait (
 	int32_t result;
 	EX_TRY
 	{
-		result = wait_event->event->Wait (timeout, alertable);
+		result = wait_event->event->Wait (timeout, alertable, false);
 	}
 	EX_CATCH
 	{

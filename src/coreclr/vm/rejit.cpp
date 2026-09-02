@@ -132,7 +132,7 @@
 // ======================================================================================
 
 #include "common.h"
-#include "RuntimeEvent.h"
+#include "CLREventBase.h"
 #include "rejit.h"
 #include "method.hpp"
 #include "eeconfig.h"

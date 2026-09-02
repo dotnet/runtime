@@ -10,7 +10,7 @@
 //
 
 #include "common.h"
-#include "RuntimeEvent.h"
+#include "CLREventBase.h"
 #include "vars.hpp"
 #include "eeconfig.h"
 #include "dllimport.h"

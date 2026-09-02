@@ -6,7 +6,7 @@
 // ---------------------------------------------------------------------------
 
 #include "common.h"
-#include "RuntimeEvent.h"
+#include "CLREventBase.h"
 #include "eepolicy.h"
 #include "corhost.h"
 #include "dbginterface.h"

@@ -47,30 +47,25 @@ void CLREventBase::CreateManualEvent(bool initialState
     }
 }
 
-static DWORD CLREventWaitHelper2(HANDLE handle, DWORD dwMilliseconds, BOOL alertable)
+static DWORD CLREventWaitHelper2(CLREventBase *event, DWORD dwMilliseconds, BOOL alertable)
 {
     STATIC_CONTRACT_THROWS;
 
-#ifdef HOST_WINDOWS
-    return CLREventBase::Wait(handle, dwMilliseconds, alertable);
-#else
-    (void)alertable;
-    return CLREventBase::Wait(handle, dwMilliseconds);
-#endif
+    return event->Wait(dwMilliseconds, alertable);
 }
 
-static DWORD CLREventWaitHelper(HANDLE handle, DWORD dwMilliseconds, BOOL alertable)
+static DWORD CLREventWaitHelper(CLREventBase *event, DWORD dwMilliseconds, BOOL alertable)
 {
     STATIC_CONTRACT_NOTHROW;
 
     struct Param
     {
-        HANDLE handle;
+        CLREventBase *event;
         DWORD dwMilliseconds;
         BOOL alertable;
         DWORD result;
     } param;
-    param.handle = handle;
+    param.event = event;
     param.dwMilliseconds = dwMilliseconds;
     param.alertable = alertable;
     param.result = WAIT_FAILED;
@@ -81,7 +76,7 @@ static DWORD CLREventWaitHelper(HANDLE handle, DWORD dwMilliseconds, BOOL alerta
     {
         // Need to move to another helper (cannot have SEH and C++ destructors
         // on automatic variables in one function)
-        pParam->result = CLREventWaitHelper2(pParam->handle, pParam->dwMilliseconds, pParam->alertable);
+        pParam->result = CLREventWaitHelper2(pParam->event, pParam->dwMilliseconds, pParam->alertable);
     }
     PAL_EXCEPT (EXCEPTION_EXECUTE_HANDLER)
     {
@@ -140,13 +135,13 @@ uint32_t CLREventBase::WaitEx(uint32_t dwMilliseconds, uint32_t mode)
         if (pThread && alertable) {
             GCX_PREEMP();
 #ifdef TARGET_UNIX
-            return CLREventBase::Wait(m_handle, dwMilliseconds);
+            return Wait(dwMilliseconds, alertable);
 #else
             return pThread->DoReentrantWaitWithRetry(m_handle, dwMilliseconds, static_cast<WaitMode>(mode));
 #endif // TARGET_UNIX
         }
         else {
-            return CLREventWaitHelper(m_handle,dwMilliseconds,alertable);
+            return CLREventWaitHelper(this, dwMilliseconds, alertable);
         }
     }
 }

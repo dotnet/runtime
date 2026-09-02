@@ -1,5 +1,5 @@
 set(SOURCES
-    ${RUNTIME_DIR}/unix/RuntimeEvent.cpp
+    ${RUNTIME_DIR}/unix/CLREventBase.cpp
     doublemapping.cpp
     dn-u16.cpp
     dn-stdio.cpp

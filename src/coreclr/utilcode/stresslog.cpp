@@ -16,7 +16,7 @@
 #define DONOT_DEFINE_ETW_CALLBACK
 #include "eventtracebase.h"
 #include "minipal/time.h"
-#include "../runtime/RuntimeEvent.h"
+#include "../runtime/CLREventBase.h"
 
  #if !defined(STRESS_LOG_READONLY)
 #ifdef HOST_WINDOWS

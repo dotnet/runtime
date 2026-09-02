@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#ifndef __RUNTIME_EVENT_H__
-#define __RUNTIME_EVENT_H__
+#ifndef __CLR_EVENT_BASE_H__
+#define __CLR_EVENT_BASE_H__
 
 #include <stdint.h>
 
@@ -15,8 +15,9 @@ public:
     void CreateManualEvent(bool initialState);
     bool CreateAutoEventNoThrow(bool initialState);
     bool CreateManualEventNoThrow(bool initialState);
-    bool CreateOSAutoEventNoThrow(bool initialState);
-    bool CreateOSManualEventNoThrow(bool initialState);
+#ifdef HOST_WINDOWS
+    bool CreateFromOSHandle(void* osHandle);
+#endif
 
     void CloseEvent();
     bool IsValid() const;
@@ -24,20 +25,14 @@ public:
     bool Reset();
 
     uint32_t Wait(uint32_t milliseconds);
-    uint32_t Wait(uint32_t milliseconds, bool alertable, bool allowReentrantWait = false);
+    uint32_t Wait(uint32_t milliseconds, bool alertable);
+    uint32_t Wait(uint32_t milliseconds, bool alertable, bool allowReentrantWait);
     uint32_t WaitEx(uint32_t milliseconds, uint32_t mode);
 
     void* GetOSEvent();
 
-    static void* CreateEvent(void* eventAttributes, bool manualReset, bool initialState);
-    static bool CloseEvent(void* event);
-    static bool Set(void* event);
-    static bool Reset(void* event);
-#ifdef HOST_WINDOWS
-    static uint32_t Wait(void* event, uint32_t milliseconds, bool alertable = false);
-#else
-    static uint32_t Wait(void* event, uint32_t milliseconds);
-#endif
+private:
+    bool CreateEventNoThrow(bool manualReset, bool initialState);
 
 protected:
     void* m_handle;
@@ -45,4 +40,4 @@ protected:
 
 void PAL_Sleep(uint32_t milliseconds);
 
-#endif // __RUNTIME_EVENT_H__
+#endif // __CLR_EVENT_BASE_H__

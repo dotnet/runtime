@@ -3,7 +3,7 @@
 //
 
 #include "common.h"
-#include "RuntimeEvent.h"
+#include "CLREventBase.h"
 
 #include "mscoree.h"
 #include "corhost.h"

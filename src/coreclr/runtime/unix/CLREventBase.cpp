@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include "../RuntimeEvent.h"
+#include "../CLREventBase.h"
 
 #include <assert.h>
 #include <errno.h>
@@ -33,87 +33,43 @@ CLREventBase::CLREventBase()
 {
 }
 
-void* CLREventBase::CreateEvent(void* eventAttributes, bool manualReset, bool initialState)
+bool CLREventBase::CreateEventNoThrow(bool manualReset, bool initialState)
 {
-    (void)eventAttributes;
-
     EventData* event = new (std::nothrow) EventData;
     if (event == nullptr)
     {
-        return nullptr;
+        return false;
     }
 
     if (!minipal_nonrecursive_mutex_init(&event->mutex))
     {
         delete event;
-        return nullptr;
+        return false;
     }
 
     if (!minipal_condition_variable_init(&event->condition))
     {
         minipal_nonrecursive_mutex_destroy(&event->mutex);
         delete event;
-        return nullptr;
+        return false;
     }
 
     event->manualReset = manualReset;
     event->state = initialState;
-    return event;
-}
-
-bool CLREventBase::CloseEvent(void* event)
-{
-    if (event == nullptr)
-    {
-        return false;
-    }
-
-    EventData* eventData = static_cast<EventData*>(event);
-    minipal_condition_variable_destroy(&eventData->condition);
-    minipal_nonrecursive_mutex_destroy(&eventData->mutex);
-    delete eventData;
+    m_handle = event;
     return true;
 }
 
-bool CLREventBase::Set(void* event)
+uint32_t CLREventBase::Wait(uint32_t milliseconds, bool alertable)
 {
-    if (event == nullptr)
-    {
-        return false;
-    }
+    (void)alertable;
 
-    EventData* eventData = static_cast<EventData*>(event);
-    minipal_nonrecursive_mutex_enter(&eventData->mutex);
-    eventData->state = true;
-    bool success = eventData->manualReset
-        ? minipal_condition_variable_broadcast(&eventData->condition)
-        : minipal_condition_variable_signal(&eventData->condition);
-    minipal_nonrecursive_mutex_leave(&eventData->mutex);
-    return success;
-}
-
-bool CLREventBase::Reset(void* event)
-{
-    if (event == nullptr)
-    {
-        return false;
-    }
-
-    EventData* eventData = static_cast<EventData*>(event);
-    minipal_nonrecursive_mutex_enter(&eventData->mutex);
-    eventData->state = false;
-    minipal_nonrecursive_mutex_leave(&eventData->mutex);
-    return true;
-}
-
-uint32_t CLREventBase::Wait(void* event, uint32_t milliseconds)
-{
-    if (event == nullptr)
+    if (!IsValid())
     {
         return WaitFailed;
     }
 
-    EventData* eventData = static_cast<EventData*>(event);
+    EventData* eventData = static_cast<EventData*>(m_handle);
     minipal_nonrecursive_mutex_enter(&eventData->mutex);
 
     uint32_t waitStatus = WaitObject0;
@@ -172,31 +128,22 @@ uint32_t CLREventBase::Wait(void* event, uint32_t milliseconds)
 
 bool CLREventBase::CreateAutoEventNoThrow(bool initialState)
 {
-    m_handle = CreateEvent(nullptr, false, initialState);
-    return IsValid();
+    return CreateEventNoThrow(false, initialState);
 }
 
 bool CLREventBase::CreateManualEventNoThrow(bool initialState)
 {
-    m_handle = CreateEvent(nullptr, true, initialState);
-    return IsValid();
-}
-
-bool CLREventBase::CreateOSAutoEventNoThrow(bool initialState)
-{
-    return CreateAutoEventNoThrow(initialState);
-}
-
-bool CLREventBase::CreateOSManualEventNoThrow(bool initialState)
-{
-    return CreateManualEventNoThrow(initialState);
+    return CreateEventNoThrow(true, initialState);
 }
 
 void CLREventBase::CloseEvent()
 {
     if (IsValid())
     {
-        CloseEvent(m_handle);
+        EventData* eventData = static_cast<EventData*>(m_handle);
+        minipal_condition_variable_destroy(&eventData->condition);
+        minipal_nonrecursive_mutex_destroy(&eventData->mutex);
+        delete eventData;
         m_handle = nullptr;
     }
 }
@@ -208,17 +155,38 @@ bool CLREventBase::IsValid() const
 
 bool CLREventBase::Set()
 {
-    return IsValid() && Set(m_handle);
+    if (!IsValid())
+    {
+        return false;
+    }
+
+    EventData* eventData = static_cast<EventData*>(m_handle);
+    minipal_nonrecursive_mutex_enter(&eventData->mutex);
+    eventData->state = true;
+    bool success = eventData->manualReset
+        ? minipal_condition_variable_broadcast(&eventData->condition)
+        : minipal_condition_variable_signal(&eventData->condition);
+    minipal_nonrecursive_mutex_leave(&eventData->mutex);
+    return success;
 }
 
 bool CLREventBase::Reset()
 {
-    return IsValid() && Reset(m_handle);
+    if (!IsValid())
+    {
+        return false;
+    }
+
+    EventData* eventData = static_cast<EventData*>(m_handle);
+    minipal_nonrecursive_mutex_enter(&eventData->mutex);
+    eventData->state = false;
+    minipal_nonrecursive_mutex_leave(&eventData->mutex);
+    return true;
 }
 
 uint32_t CLREventBase::Wait(uint32_t milliseconds)
 {
-    return IsValid() ? Wait(m_handle, milliseconds) : WaitFailed;
+    return Wait(milliseconds, false);
 }
 
 void* CLREventBase::GetOSEvent()
