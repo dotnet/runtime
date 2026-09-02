@@ -3,9 +3,7 @@
 
 #if NATIVEAOT
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
@@ -21,6 +19,10 @@ using Internal.LowLevelLinq;
 using Internal.Metadata.NativeFormat;
 using Internal.Reflection.Augments;
 using Internal.Reflection.Core;
+
+using RuntimeModule = Internal.Metadata.NativeFormat.MetadataReader;
+using CustomAttributePayload = Internal.Metadata.NativeFormat.CustomAttribute;
+
 #else
 using System.Buffers.Binary;
 using System.Collections.Generic;
@@ -30,6 +32,8 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
+
+using CustomAttributePayload = System.Reflection.ConstArray;
 #endif
 
 namespace System.Reflection
@@ -37,84 +41,6 @@ namespace System.Reflection
     internal sealed class RuntimeCustomAttributeData : CustomAttributeData
     {
 #if NATIVEAOT
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
-            Justification = "Property setters and fields referenced by custom attribute metadata are preserved.")]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",
-            Justification = "Metadata generation ensures custom attribute constructors are resolvable.")]
-        internal RuntimeCustomAttributeData(MetadataReader reader, CustomAttributeHandle customAttributeHandle)
-        {
-            CustomAttribute customAttribute = customAttributeHandle.GetCustomAttribute(reader);
-            RuntimeTypeInfo attributeType;
-            if (customAttribute.Constructor.HandleType == HandleType.QualifiedMethod)
-            {
-                QualifiedMethod qualifiedMethod = customAttribute.Constructor.ToQualifiedMethodHandle(reader).GetQualifiedMethod(reader);
-                TypeDefinitionHandle declaringType = qualifiedMethod.EnclosingType;
-                MethodHandle methodHandle = qualifiedMethod.Method;
-                NativeFormatRuntimeNamedTypeInfo namedAttributeType = NativeFormatRuntimeNamedTypeInfo.GetRuntimeNamedTypeInfo(reader, declaringType, default(RuntimeTypeHandle));
-                attributeType = namedAttributeType;
-                m_ctor = RuntimePlainConstructorInfo<NativeFormatMethodCommon>.GetRuntimePlainConstructorInfo(new NativeFormatMethodCommon(methodHandle, namedAttributeType, namedAttributeType));
-            }
-            else if (customAttribute.Constructor.HandleType == HandleType.MemberReference)
-            {
-                MemberReference memberReference = customAttribute.Constructor.ToMemberReferenceHandle(reader).GetMemberReference(reader);
-
-                // There is no chance a custom attribute type will be an open type specification so we can safely pass in the empty context here.
-                TypeContext typeContext = new TypeContext(Array.Empty<RuntimeTypeInfo>(), Array.Empty<RuntimeTypeInfo>());
-                attributeType = memberReference.Parent.Resolve(reader, typeContext);
-                MethodSignature signature = memberReference.Signature.ParseMethodSignature(reader);
-                HandleCollection signatureParameters = signature.Parameters;
-                Type[] expectedParameterTypes = new Type[signatureParameters.Count];
-                int index = 0;
-                foreach (Handle parameterHandle in signatureParameters)
-                {
-                    expectedParameterTypes[index++] = parameterHandle.Resolve(reader, attributeType.TypeContext).ToType();
-                }
-
-                m_ctor = ResolveAttributeConstructor(attributeType.ToType(), expectedParameterTypes);
-            }
-            else
-            {
-                throw new BadImageFormatException();
-            }
-
-            ReadOnlySpan<ParameterInfo> parameters = m_ctor.GetParametersAsSpan();
-            if (parameters.Length != 0)
-            {
-                m_ctorParams = new CustomAttributeCtorParameter[parameters.Length];
-                for (int i = 0; i < parameters.Length; i++)
-                    m_ctorParams[i] = new CustomAttributeCtorParameter(new CustomAttributeType((RuntimeType)parameters[i].ParameterType));
-            }
-            else
-            {
-                m_ctorParams = [];
-            }
-
-            FieldInfo[] fields = m_ctor.DeclaringType!.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-            PropertyInfo[] properties = m_ctor.DeclaringType.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-
-            m_namedParams = new CustomAttributeNamedParameter[properties.Length + fields.Length];
-
-            int idx = 0;
-            foreach (FieldInfo fi in fields)
-            {
-                m_namedParams[idx++] = new CustomAttributeNamedParameter(
-                    fi,
-                    CustomAttributeEncoding.Field,
-                    new CustomAttributeType((RuntimeType)fi.FieldType));
-            }
-
-            foreach (PropertyInfo pi in properties)
-            {
-                m_namedParams[idx++] = new CustomAttributeNamedParameter(
-                    pi,
-                    CustomAttributeEncoding.Property,
-                    new CustomAttributeType((RuntimeType)pi.PropertyType));
-            }
-
-            CustomAttributeEncodedArgument.ParseAttributeArguments(
-                customAttribute, m_ctorParams, m_namedParams, reader, attributeType.TypeContext);
-        }
-
         internal static IEnumerable<CustomAttributeData> GetCustomAttributes(
             MetadataReader reader, CustomAttributeHandleCollection customAttributeHandles)
         {
@@ -122,20 +48,43 @@ namespace System.Reflection
                 yield return new RuntimeCustomAttributeData(reader, customAttributeHandle);
         }
 
-        private static ConstructorInfo ResolveAttributeConstructor(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
-            Type attributeType, Type[] parameterTypes)
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
+            Justification = "Metadata generation ensures custom attribute constructors are resolvable.")]
+        private static ConstructorInfo ResolveAttributeConstructor(MetadataReader reader, CustomAttribute customAttribute)
         {
-            foreach (ConstructorInfo candidate in attributeType.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly))
+            if (customAttribute.Constructor.HandleType == HandleType.QualifiedMethod)
+            {
+                QualifiedMethod qualifiedMethod = customAttribute.Constructor.ToQualifiedMethodHandle(reader).GetQualifiedMethod(reader);
+                TypeDefinitionHandle declaringType = qualifiedMethod.EnclosingType;
+                MethodHandle methodHandle = qualifiedMethod.Method;
+                NativeFormatRuntimeNamedTypeInfo namedAttributeType = NativeFormatRuntimeNamedTypeInfo.GetRuntimeNamedTypeInfo(reader, declaringType, default(RuntimeTypeHandle));
+                return RuntimePlainConstructorInfo<NativeFormatMethodCommon>.GetRuntimePlainConstructorInfo(new NativeFormatMethodCommon(methodHandle, namedAttributeType, namedAttributeType));
+            }
+
+            MemberReference memberReference = customAttribute.Constructor.ToMemberReferenceHandle(reader).GetMemberReference(reader);
+
+            // There is no chance a custom attribute type will be an open type specification so we can safely pass in the empty context here.
+            TypeContext typeContext = new TypeContext(Array.Empty<RuntimeTypeInfo>(), Array.Empty<RuntimeTypeInfo>());
+            RuntimeTypeInfo attributeType = memberReference.Parent.Resolve(reader, typeContext);
+            MethodSignature signature = memberReference.Signature.ParseMethodSignature(reader);
+            HandleCollection signatureParameters = signature.Parameters;
+            Type[] expectedParameterTypes = new Type[signatureParameters.Count];
+            int index = 0;
+            foreach (Handle parameterHandle in signatureParameters)
+            {
+                expectedParameterTypes[index++] = parameterHandle.Resolve(reader, attributeType.TypeContext).ToType();
+            }
+
+            foreach (ConstructorInfo candidate in attributeType.ToType().GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly))
             {
                 ReadOnlySpan<ParameterInfo> candidateParameters = candidate.GetParametersAsSpan();
-                if (parameterTypes.Length != candidateParameters.Length)
+                if (expectedParameterTypes.Length != candidateParameters.Length)
                     continue;
 
                 bool matches = true;
-                for (int i = 0; i < parameterTypes.Length; i++)
+                for (int i = 0; i < expectedParameterTypes.Length; i++)
                 {
-                    if (!parameterTypes[i].Equals(candidateParameters[i].ParameterType))
+                    if (!expectedParameterTypes[i].Equals(candidateParameters[i].ParameterType))
                     {
                         matches = false;
                         break;
@@ -148,47 +97,6 @@ namespace System.Reflection
 
             throw new MissingMethodException();
         }
-
-        internal static CustomAttributeTypedArgument WrapInCustomAttributeTypedArgument(object? value, Type argumentType)
-        {
-            if (argumentType == typeof(object))
-            {
-                // If the declared attribute type is System.Object, we must report the type based on the runtime value.
-                if (value is null)
-                    argumentType = typeof(string);  // Why is null reported as System.String? Because that's what the desktop CLR does.
-                else if (value is Type)
-                    argumentType = typeof(Type);    // value.GetType() will not actually be System.Type - rather it will be some internal implementation type. We only want to report it as System.Type.
-                else
-                    argumentType = value.GetType();
-            }
-
-            if (value is Array arr)
-            {
-                if (!argumentType.IsArray)
-                    throw new BadImageFormatException();
-
-                Type reportedElementType = argumentType.GetElementType()!;
-                ArrayBuilder<CustomAttributeTypedArgument> elementTypedArguments = default;
-                foreach (object elementValue in arr)
-                {
-                    elementTypedArguments.Add(WrapInCustomAttributeTypedArgument(elementValue, reportedElementType));
-                }
-
-                return new CustomAttributeTypedArgument(
-                    argumentType,
-                    new ReadOnlyCollection<CustomAttributeTypedArgument>(elementTypedArguments.ToArray()));
-            }
-
-            Debug.Assert(value is string or (not IEnumerable));
-            return new CustomAttributeTypedArgument(argumentType, value);
-        }
-
-        private ConstructorInfo m_ctor = null!;
-        private readonly object? m_scope;
-        private readonly CustomAttributeCtorParameter[] m_ctorParams = null!;
-        private readonly CustomAttributeNamedParameter[] m_namedParams = null!;
-        private IList<CustomAttributeTypedArgument> m_typedCtorArgs = null!;
-        private IList<CustomAttributeNamedArgument> m_namedArgs = null!;
 #else
         #region Internal Static Members
         internal static IList<CustomAttributeData> GetCustomAttributesInternal(RuntimeType target)
@@ -411,6 +319,7 @@ namespace System.Reflection
             return default;
         }
         #endregion
+#endif
 
         private ConstructorInfo m_ctor = null!;
         private readonly RuntimeModule m_scope = null!;
@@ -424,11 +333,24 @@ namespace System.Reflection
             Justification = "Property setters and fields which are accessed by any attribute instantiation which is present in the code linker has analyzed." +
                             "As such enumerating all fields and properties may return different results after trimming" +
                             "but all those which are needed to actually have data will be there.")]
+#if !NATIVEAOT
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
             Justification = "We're getting a MethodBase of a constructor that we found in the metadata. The attribute constructor won't be trimmed.")]
+#endif
+#if NATIVEAOT
+        internal RuntimeCustomAttributeData(MetadataReader reader, CustomAttributeHandle customAttributeHandle)
+#else
         private RuntimeCustomAttributeData(RuntimeModule scope, MetadataToken caCtorToken, in ConstArray blob)
+#endif
         {
+#if NATIVEAOT
+            m_scope = reader;
+            CustomAttribute customAttribute = customAttributeHandle.GetCustomAttribute(reader);
+            CustomAttributePayload payload = customAttribute;
+            m_ctor = ResolveAttributeConstructor(reader, customAttribute);
+#else
             m_scope = scope;
+            CustomAttributePayload payload = blob;
             m_ctor = (RuntimeConstructorInfo)RuntimeType.GetMethodBase(m_scope, caCtorToken)!;
 
             if (m_ctor.DeclaringType!.IsGenericType)
@@ -437,6 +359,7 @@ namespace System.Reflection
                 Type attributeType = m_scope.ResolveType(metadataScope.GetParentToken(caCtorToken), null, null);
                 m_ctor = (RuntimeConstructorInfo)m_scope.ResolveMethod(caCtorToken, attributeType.GenericTypeArguments, null)!.MethodHandle.GetMethodInfo();
             }
+#endif
 
             ReadOnlySpan<ParameterInfo> parameters = m_ctor.GetParametersAsSpan();
             if (parameters.Length != 0)
@@ -473,11 +396,10 @@ namespace System.Reflection
                     new CustomAttributeType((RuntimeType)pi.PropertyType));
             }
 
-            CustomAttributeEncodedArgument.ParseAttributeArguments(blob, m_ctorParams, m_namedParams, m_scope);
+            CustomAttributeEncodedArgument.ParseAttributeArguments(payload, m_ctorParams, m_namedParams, m_scope);
         }
         #endregion
 
-#endif
         #region Pseudo Custom Attribute Constructor
         internal RuntimeCustomAttributeData(Attribute attribute)
         {
@@ -706,16 +628,6 @@ namespace System.Reflection
             };
         }
 
-#if NATIVEAOT
-        internal CustomAttributeTypedArgument(object? _, CustomAttributeEncodedArgument encodedArg)
-        {
-            Exception? exception = encodedArg.Value.TryParseConstantValue(encodedArg.Reader, out object? value);
-            if (exception is not null)
-                throw exception;
-
-            this = RuntimeCustomAttributeData.WrapInCustomAttributeTypedArgument(value, encodedArg.ArgumentType);
-        }
-#else
         #region Private Static Methods
         private static object EncodedValueToRawValue(PrimitiveValue val, CustomAttributeEncoding encodedType)
         {
@@ -736,14 +648,20 @@ namespace System.Reflection
                 _ => throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, val.Byte8), nameof(val))
             };
         }
+#if !NATIVEAOT
         private static RuntimeType ResolveType(RuntimeModule scope, string typeName)
         {
             RuntimeType type = TypeNameResolver.GetTypeReferencedByCustomAttribute(typeName, scope);
             Debug.Assert(type is not null);
             return type;
         }
+#endif
         #endregion
 
+#if NATIVEAOT
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
+            Justification = "The compiler ensures we have array types referenced from custom attribute blobs")]
+#endif
         internal CustomAttributeTypedArgument(RuntimeModule scope, CustomAttributeEncodedArgument encodedArg)
         {
             CustomAttributeEncoding encodedType = encodedArg.CustomAttributeType.EncodedType;
@@ -765,10 +683,11 @@ namespace System.Reflection
             {
                 _argumentType = typeof(Type);
 
-                _value = null;
-
-                if (encodedArg.StringValue is not null)
-                    _value = ResolveType(scope, encodedArg.StringValue);
+#if NATIVEAOT
+                _value = encodedArg.TypeValue;
+#else
+                _value = encodedArg.StringValue is null ? null : ResolveType(scope, encodedArg.StringValue);
+#endif
             }
             else if (encodedType == CustomAttributeEncoding.Array)
             {
@@ -805,7 +724,6 @@ namespace System.Reflection
                 _value = EncodedValueToRawValue(encodedArg.PrimitiveValue, encodedType);
             }
         }
-#endif
     }
 
 #if !NATIVEAOT
@@ -861,71 +779,8 @@ namespace System.Reflection
 
     internal sealed class CustomAttributeEncodedArgument
     {
-#if NATIVEAOT
         internal static void ParseAttributeArguments(
-            CustomAttribute customAttribute,
-            CustomAttributeCtorParameter[] customAttributeCtorParameters,
-            CustomAttributeNamedParameter[] customAttributeNamedParameters,
-            MetadataReader reader,
-            TypeContext typeContext)
-        {
-            Debug.Assert(customAttributeCtorParameters is not null);
-            Debug.Assert(customAttributeNamedParameters is not null);
-
-            ParseCtorArgs(customAttribute, customAttributeCtorParameters, reader);
-            ParseNamedArgs(customAttribute, customAttributeNamedParameters, reader, typeContext);
-        }
-
-        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
-            Justification = "The compiler ensures we have array types referenced from custom attribute blobs")]
-        internal CustomAttributeEncodedArgument(MetadataReader reader, Handle value, CustomAttributeType type)
-        {
-            CustomAttributeEncoding encodedType = type.EncodedType;
-            Type argumentType;
-            if (encodedType == CustomAttributeEncoding.Enum)
-            {
-                argumentType = type.EnumType!;
-            }
-            else if (encodedType == CustomAttributeEncoding.Array)
-            {
-                encodedType = type.EncodedArrayType;
-                Type elementType = encodedType == CustomAttributeEncoding.Enum
-                    ? type.EnumType!
-                    : CustomAttributeTypedArgument.CustomAttributeEncodingToType(encodedType);
-                argumentType = elementType.MakeArrayType();
-            }
-            else
-            {
-                argumentType = CustomAttributeTypedArgument.CustomAttributeEncodingToType(encodedType);
-            }
-
-            Reader = reader;
-            Value = value;
-            ArgumentType = argumentType;
-            CustomAttributeType = type;
-        }
-
-        public MetadataReader Reader { get; }
-        public Handle Value { get; }
-        public Type ArgumentType { get; }
-        public CustomAttributeType CustomAttributeType { get; }
-
-        private static void ParseCtorArgs(
-            CustomAttribute customAttribute,
-            CustomAttributeCtorParameter[] customAttributeCtorParameters,
-            MetadataReader reader)
-        {
-            int index = 0;
-            foreach (Handle fixedArgument in customAttribute.FixedArguments)
-            {
-                CustomAttributeCtorParameter parameter = customAttributeCtorParameters[index++];
-                parameter.EncodedArgument = new CustomAttributeEncodedArgument(reader, fixedArgument, parameter.CustomAttributeType);
-            }
-        }
-
-#else
-        internal static void ParseAttributeArguments(
-            ConstArray attributeBlob,
+            CustomAttributePayload attributeBlob,
             CustomAttributeCtorParameter[] customAttributeCtorParameters,
             CustomAttributeNamedParameter[] customAttributeNamedParameters,
             RuntimeModule customAttributeModule)
@@ -937,7 +792,7 @@ namespace System.Reflection
 
             if (customAttributeCtorParameters.Length != 0 || customAttributeNamedParameters.Length != 0)
             {
-                CustomAttributeDataParser parser = new CustomAttributeDataParser(attributeBlob);
+                CustomAttributeDataParser parser = new CustomAttributeDataParser(attributeBlob, customAttributeModule);
                 try
                 {
                     if (!parser.ValidateProlog())
@@ -964,6 +819,9 @@ namespace System.Reflection
         public PrimitiveValue PrimitiveValue { get; set; }
         public CustomAttributeEncodedArgument[]? ArrayValue { get; set; }
         public string? StringValue { get; set; }
+#if NATIVEAOT
+        public Type? TypeValue { get; set; }
+#endif
 
         private static void ParseCtorArgs(
             ref CustomAttributeDataParser parser,
@@ -972,45 +830,28 @@ namespace System.Reflection
         {
             foreach (CustomAttributeCtorParameter p in customAttributeCtorParameters)
             {
+                parser.MoveToNextFixedArgument();
                 p.EncodedArgument = ParseCustomAttributeValue(
                     ref parser,
                     p.CustomAttributeType,
                     module);
             }
         }
-#endif
 
         private static void ParseNamedArgs(
-#if NATIVEAOT
-            CustomAttribute customAttribute,
-            CustomAttributeNamedParameter[] customAttributeNamedParameters,
-            MetadataReader reader,
-            TypeContext typeContext)
-#else
             ref CustomAttributeDataParser parser,
             CustomAttributeNamedParameter[] customAttributeNamedParameters,
             RuntimeModule module)
-#endif
         {
-#if NATIVEAOT
-            foreach (NamedArgumentHandle namedArgumentHandle in customAttribute.NamedArguments)
-            {
-                NamedArgument namedArgument = namedArgumentHandle.GetNamedArgument(reader);
-                CustomAttributeEncoding namedArgFieldOrProperty = namedArgument.Flags switch
-                {
-                    NamedArgumentMemberKind.Field => CustomAttributeEncoding.Field,
-                    NamedArgumentMemberKind.Property => CustomAttributeEncoding.Property,
-                    _ => CustomAttributeEncoding.Undefined,
-                };
-#else
             // Parse the named arguments in the custom attribute.
-            int argCount = parser.GetI2();
+            int argCount = parser.GetNamedArgumentCount();
 
             for (int i = 0; i < argCount; ++i)
             {
+                parser.MoveToNextNamedArgument();
+
                 // Determine if a field or property.
-                CustomAttributeEncoding namedArgFieldOrProperty = parser.GetTag();
-#endif
+                CustomAttributeEncoding namedArgFieldOrProperty = parser.GetNamedArgumentKind();
                 if (namedArgFieldOrProperty is not CustomAttributeEncoding.Field
                     && namedArgFieldOrProperty is not CustomAttributeEncoding.Property)
                 {
@@ -1018,15 +859,9 @@ namespace System.Reflection
                 }
 
                 // Parse the encoded type for the named argument.
-#if NATIVEAOT
-                RuntimeType argumentType = (RuntimeType)namedArgument.Type.Resolve(reader, typeContext).ToType();
-                CustomAttributeType argType = new CustomAttributeType(argumentType);
-                string? argName = namedArgument.Name.GetString(reader);
-#else
                 CustomAttributeType argType = ParseCustomAttributeType(ref parser, module);
 
-                string? argName = parser.GetString();
-#endif
+                string? argName = parser.GetNamedArgumentName();
 
                 // Argument name must be non-null and non-empty.
                 if (string.IsNullOrEmpty(argName))
@@ -1089,15 +924,10 @@ namespace System.Reflection
                     throw new BadImageFormatException(SR.Arg_CustomAttributeDuplicateNamedArgument);
                 }
 
-#if NATIVEAOT
-                parameterToUpdate.EncodedArgument = new CustomAttributeEncodedArgument(reader, namedArgument.Value, argType);
-#else
                 parameterToUpdate.EncodedArgument = ParseCustomAttributeValue(ref parser, argType, module);
-#endif
             }
         }
 
-#if !NATIVEAOT
         private static CustomAttributeEncodedArgument ParseCustomAttributeValue(
             ref CustomAttributeDataParser parser,
             CustomAttributeType type,
@@ -1118,35 +948,26 @@ namespace System.Reflection
                 case CustomAttributeEncoding.Boolean:
                 case CustomAttributeEncoding.Byte:
                 case CustomAttributeEncoding.SByte:
-                    arg.PrimitiveValue = new PrimitiveValue() { Byte4 = parser.GetU1() };
-                    break;
                 case CustomAttributeEncoding.Char:
                 case CustomAttributeEncoding.Int16:
                 case CustomAttributeEncoding.UInt16:
-                    arg.PrimitiveValue = new PrimitiveValue() { Byte4 = parser.GetU2() };
-                    break;
                 case CustomAttributeEncoding.Int32:
                 case CustomAttributeEncoding.UInt32:
-                    arg.PrimitiveValue = new PrimitiveValue() { Byte4 = parser.GetI4() };
-                    break;
                 case CustomAttributeEncoding.Int64:
                 case CustomAttributeEncoding.UInt64:
-                    arg.PrimitiveValue = new PrimitiveValue() { Byte8 = parser.GetI8() };
-                    break;
                 case CustomAttributeEncoding.Float:
-                    arg.PrimitiveValue = new PrimitiveValue() { Byte4 = BitConverter.SingleToInt32Bits(parser.GetR4()) };
-                    break;
                 case CustomAttributeEncoding.Double:
-                    arg.PrimitiveValue = new PrimitiveValue() { Byte8 = BitConverter.DoubleToInt64Bits(parser.GetR8()) };
+                    arg.PrimitiveValue = parser.GetPrimitiveValue(underlyingType);
                     break;
                 case CustomAttributeEncoding.String:
                 case CustomAttributeEncoding.Type:
-                    arg.StringValue = parser.GetString();
+                    parser.ReadStringOrType(arg, module);
                     break;
                 case CustomAttributeEncoding.Array:
                 {
                     arg.ArrayValue = null;
-                    int len = parser.GetI4();
+                    parser.EnterArray();
+                    int len = parser.GetArrayLength();
                     if (len != -1) // indicates array is null - ECMA-335 II.23.3.
                     {
                         attributeType = new CustomAttributeType(
@@ -1157,9 +978,11 @@ namespace System.Reflection
                         arg.ArrayValue = new CustomAttributeEncodedArgument[len];
                         for (int i = 0; i < len; ++i)
                         {
+                            parser.MoveToNextArrayElement();
                             arg.ArrayValue[i] = ParseCustomAttributeValue(ref parser, attributeType, module);
                         }
                     }
+                    parser.LeaveArray();
                     break;
                 }
                 default:
@@ -1178,7 +1001,7 @@ namespace System.Reflection
             CustomAttributeEncoding tag = parser.GetTag();
             if (tag is CustomAttributeEncoding.Array)
             {
-                arrayTag = parser.GetTag();
+                arrayTag = parser.GetArrayElementTag();
             }
 
             // Load the enum type if needed.
@@ -1187,8 +1010,7 @@ namespace System.Reflection
                     && arrayTag is CustomAttributeEncoding.Enum))
             {
                 // We cannot determine the underlying type without loading the enum.
-                string enumTypeMaybe = parser.GetString() ?? throw new BadImageFormatException();
-                enumType = TypeNameResolver.GetTypeReferencedByCustomAttribute(enumTypeMaybe, module);
+                enumType = parser.GetEnumType(module);
                 if (!enumType.IsEnum)
                 {
                     throw new BadImageFormatException();
@@ -1200,6 +1022,7 @@ namespace System.Reflection
             return new CustomAttributeType(tag, arrayTag, enumTag, enumType);
         }
 
+#if !NATIVEAOT
         /// <summary>
         /// Used to parse CustomAttribute data. See ECMA-335 II.23.3.
         /// </summary>
@@ -1208,8 +1031,9 @@ namespace System.Reflection
             private int _curr;
             private ReadOnlySpan<byte> _blob;
 
-            public CustomAttributeDataParser(ConstArray attributeBlob)
+            public CustomAttributeDataParser(CustomAttributePayload attributeBlob, RuntimeModule module)
             {
+                _ = module;
                 unsafe
                 {
                     _blob = new ReadOnlySpan<byte>((void*)attributeBlob.Signature, attributeBlob.Length);
@@ -1339,6 +1163,433 @@ namespace System.Reflection
 
                 throw new OverflowException();
             }
+
+            // Semantic operations consumed by the shared parse methods. For the CoreCLR blob
+            // format all positional state is implicit in the sequential reader, so the
+            // "MoveToNext" hooks are no-ops. They stay instance methods so the shared parse
+            // code can call them uniformly across both parser implementations.
+#pragma warning disable CA1822 // Mark members as static
+            public void MoveToNextFixedArgument() { }
+
+            public void MoveToNextNamedArgument() { }
+
+            public void MoveToNextArrayElement() { }
+
+            public void EnterArray() { }
+
+            public void LeaveArray() { }
+#pragma warning restore CA1822
+
+            public int GetNamedArgumentCount() => GetI2();
+
+            public CustomAttributeEncoding GetNamedArgumentKind() => GetTag();
+
+            public string? GetNamedArgumentName() => GetString();
+
+            public CustomAttributeEncoding GetArrayElementTag() => GetTag();
+
+            public int GetArrayLength() => GetI4();
+
+            public RuntimeType GetEnumType(RuntimeModule module)
+            {
+                string enumTypeMaybe = GetString() ?? throw new BadImageFormatException();
+                return TypeNameResolver.GetTypeReferencedByCustomAttribute(enumTypeMaybe, module);
+            }
+
+            public void ReadStringOrType(CustomAttributeEncodedArgument arg, RuntimeModule module)
+            {
+                _ = module;
+                arg.StringValue = GetString();
+            }
+
+            public PrimitiveValue GetPrimitiveValue(CustomAttributeEncoding underlyingType)
+            {
+                return underlyingType switch
+                {
+                    CustomAttributeEncoding.Boolean or CustomAttributeEncoding.Byte or CustomAttributeEncoding.SByte
+                        => new PrimitiveValue() { Byte4 = GetU1() },
+                    CustomAttributeEncoding.Char or CustomAttributeEncoding.Int16 or CustomAttributeEncoding.UInt16
+                        => new PrimitiveValue() { Byte4 = GetU2() },
+                    CustomAttributeEncoding.Int32 or CustomAttributeEncoding.UInt32
+                        => new PrimitiveValue() { Byte4 = GetI4() },
+                    CustomAttributeEncoding.Int64 or CustomAttributeEncoding.UInt64
+                        => new PrimitiveValue() { Byte8 = GetI8() },
+                    CustomAttributeEncoding.Float
+                        => new PrimitiveValue() { Byte4 = BitConverter.SingleToInt32Bits(GetR4()) },
+                    CustomAttributeEncoding.Double
+                        => new PrimitiveValue() { Byte8 = BitConverter.DoubleToInt64Bits(GetR8()) },
+                    _ => throw new BadImageFormatException()
+                };
+            }
+        }
+#else
+        /// <summary>
+        /// Projects the NativeFormat custom attribute records onto the same semantic surface
+        /// that the shared parse methods expect. The declared parameter types drive the reads,
+        /// while the actual value shape is discovered from each constant handle, which preserves
+        /// per-element tagged-object inference.
+        /// </summary>
+        private struct CustomAttributeDataParser
+        {
+            private enum ArrayKind
+            {
+                None,
+                Primitive,
+                Handle
+            }
+
+            private readonly MetadataReader _reader;
+            private readonly int _namedArgumentCount;
+            private HandleCollection.Enumerator _fixedArguments;
+            private NamedArgumentHandleCollection.Enumerator _namedArguments;
+
+            private Handle _currentValue;
+            private NamedArgument _currentNamedArgument;
+            private CustomAttributeType? _declaredType;
+            private bool _declaredTypePending;
+
+            private ArrayKind _arrayKind;
+            private Array? _primitiveArrayElements;
+            private int _arrayIndex;
+            private HandleCollection.Enumerator _handleArrayElements;
+            private ArrayState[]? _arrayStates;
+            private int _arrayDepth;
+
+            private struct ArrayState
+            {
+                public ArrayKind Kind;
+                public Array? PrimitiveElements;
+                public int Index;
+                public HandleCollection.Enumerator HandleElements;
+                public Handle CurrentValue;
+            }
+
+            public CustomAttributeDataParser(CustomAttributePayload attributeBlob, RuntimeModule reader)
+            {
+                _reader = reader;
+                _fixedArguments = attributeBlob.FixedArguments.GetEnumerator();
+                _namedArguments = attributeBlob.NamedArguments.GetEnumerator();
+                _namedArgumentCount = attributeBlob.NamedArguments.Count;
+                _currentValue = default;
+                _currentNamedArgument = default;
+                _declaredType = null;
+                _declaredTypePending = false;
+                _arrayKind = ArrayKind.None;
+                _primitiveArrayElements = null;
+                _arrayIndex = 0;
+                _handleArrayElements = default;
+                _arrayStates = null;
+                _arrayDepth = 0;
+            }
+
+            // NativeFormat records don't carry a prolog; the metadata generator guarantees a well-formed shape.
+#pragma warning disable CA1822 // Mark members as static
+            public bool ValidateProlog() => true;
+#pragma warning restore CA1822
+
+            public void MoveToNextFixedArgument()
+            {
+                _arrayKind = ArrayKind.None;
+                _declaredTypePending = false;
+                if (!_fixedArguments.MoveNext())
+                    throw new BadImageFormatException();
+                _currentValue = _fixedArguments.Current;
+            }
+
+            public int GetNamedArgumentCount() => _namedArgumentCount;
+
+            public void MoveToNextNamedArgument()
+            {
+                _arrayKind = ArrayKind.None;
+                if (!_namedArguments.MoveNext())
+                    throw new BadImageFormatException();
+                _currentNamedArgument = _namedArguments.Current.GetNamedArgument(_reader);
+                _currentValue = _currentNamedArgument.Value;
+                RuntimeType declaredType = (RuntimeType)_currentNamedArgument.Type.Resolve(_reader, default).ToType();
+                _declaredType = new CustomAttributeType(declaredType);
+                _declaredTypePending = true;
+            }
+
+            public CustomAttributeEncoding GetNamedArgumentKind()
+                => _currentNamedArgument.Flags switch
+                {
+                    NamedArgumentMemberKind.Field => CustomAttributeEncoding.Field,
+                    NamedArgumentMemberKind.Property => CustomAttributeEncoding.Property,
+                    _ => CustomAttributeEncoding.Undefined
+                };
+
+            public string? GetNamedArgumentName()
+            {
+                // The declared type has been consumed; any further type parse infers from the value.
+                _declaredTypePending = false;
+                return _currentNamedArgument.Name.GetString(_reader);
+            }
+
+            public CustomAttributeEncoding GetTag()
+                => _declaredTypePending ? _declaredType!.EncodedType : InferTag(_currentValue);
+
+            public CustomAttributeEncoding GetArrayElementTag()
+                => _declaredTypePending ? _declaredType!.EncodedArrayType : InferArrayElementTag(_currentValue);
+
+            public RuntimeType GetEnumType(RuntimeModule module)
+            {
+                _ = module;
+                if (_declaredTypePending)
+                    return (RuntimeType)_declaredType!.EnumType!;
+
+                Handle h = _currentValue;
+                if (h.HandleType == HandleType.ConstantEnumValue)
+                    return h.ToConstantEnumValueHandle(_reader).GetConstantEnumValue(_reader).Type.Resolve(_reader, default).ToType();
+                if (h.HandleType == HandleType.ConstantEnumArray)
+                    return h.ToConstantEnumArrayHandle(_reader).GetConstantEnumArray(_reader).ElementType.Resolve(_reader, default).ToType();
+                throw new BadImageFormatException();
+            }
+
+            public PrimitiveValue GetPrimitiveValue(CustomAttributeEncoding underlyingType)
+                => _arrayKind == ArrayKind.Primitive
+                    ? ReadPrimitiveArrayElement(underlyingType)
+                    : ReadScalar(_currentValue, underlyingType);
+
+            public void ReadStringOrType(CustomAttributeEncodedArgument arg, RuntimeModule module)
+            {
+                _ = module;
+                Handle h = _currentValue;
+                switch (h.HandleType)
+                {
+                    case HandleType.ConstantReferenceValue:
+                        // null string or null Type.
+                        break;
+                    case HandleType.ConstantStringValue:
+                        arg.StringValue = h.ToConstantStringValueHandle(_reader).GetConstantStringValue(_reader).Value;
+                        break;
+                    case HandleType.TypeDefinition:
+                    case HandleType.TypeReference:
+                    case HandleType.TypeSpecification:
+                        arg.TypeValue = h.Resolve(_reader, default).ToType();
+                        break;
+                    default:
+                        throw new BadImageFormatException();
+                }
+            }
+
+            public int GetArrayLength()
+            {
+                _arrayIndex = -1;
+                Handle h = _currentValue;
+                switch (h.HandleType)
+                {
+                    case HandleType.ConstantReferenceValue:
+                        _arrayKind = ArrayKind.None;
+                        return -1; // null array - ECMA-335 II.23.3.
+                    case HandleType.ConstantStringArray:
+                    {
+                        HandleCollection elements = h.ToConstantStringArrayHandle(_reader).GetConstantStringArray(_reader).Value;
+                        _handleArrayElements = elements.GetEnumerator();
+                        _arrayKind = ArrayKind.Handle;
+                        return elements.Count;
+                    }
+                    case HandleType.ConstantHandleArray:
+                    {
+                        HandleCollection elements = h.ToConstantHandleArrayHandle(_reader).GetConstantHandleArray(_reader).Value;
+                        _handleArrayElements = elements.GetEnumerator();
+                        _arrayKind = ArrayKind.Handle;
+                        return elements.Count;
+                    }
+                    case HandleType.ConstantEnumArray:
+                    {
+                        Handle value = h.ToConstantEnumArrayHandle(_reader).GetConstantEnumArray(_reader).Value;
+                        if (value.HandleType == HandleType.ConstantReferenceValue)
+                        {
+                            _arrayKind = ArrayKind.None;
+                            return -1;
+                        }
+
+                        _primitiveArrayElements = MaterializePrimitiveArray(value);
+                        _arrayKind = ArrayKind.Primitive;
+                        return _primitiveArrayElements.Length;
+                    }
+                    default:
+                        _primitiveArrayElements = MaterializePrimitiveArray(h);
+                        _arrayKind = ArrayKind.Primitive;
+                        return _primitiveArrayElements.Length;
+                }
+            }
+
+            public void MoveToNextArrayElement()
+            {
+                _arrayIndex++;
+                if (_arrayKind == ArrayKind.Handle)
+                {
+                    if (!_handleArrayElements.MoveNext())
+                        throw new BadImageFormatException();
+                    _currentValue = _handleArrayElements.Current;
+                }
+            }
+
+            public void EnterArray()
+            {
+                if (_arrayStates is null)
+                {
+                    _arrayStates = new ArrayState[4];
+                }
+                else if (_arrayDepth == _arrayStates.Length)
+                {
+                    Array.Resize(ref _arrayStates, _arrayStates.Length * 2);
+                }
+
+                _arrayStates[_arrayDepth++] = new ArrayState
+                {
+                    Kind = _arrayKind,
+                    PrimitiveElements = _primitiveArrayElements,
+                    Index = _arrayIndex,
+                    HandleElements = _handleArrayElements,
+                    CurrentValue = _currentValue
+                };
+            }
+
+            public void LeaveArray()
+            {
+                Debug.Assert(_arrayStates is not null && _arrayDepth > 0);
+                ArrayState state = _arrayStates![--_arrayDepth];
+                _arrayKind = state.Kind;
+                _primitiveArrayElements = state.PrimitiveElements;
+                _arrayIndex = state.Index;
+                _handleArrayElements = state.HandleElements;
+                _currentValue = state.CurrentValue;
+            }
+
+            private PrimitiveValue ReadScalar(Handle h, CustomAttributeEncoding underlyingType)
+            {
+                if (h.HandleType == HandleType.ConstantEnumValue)
+                    h = h.ToConstantEnumValueHandle(_reader).GetConstantEnumValue(_reader).Value;
+
+                if (h.HandleType != GetScalarHandleType(underlyingType))
+                    throw new BadImageFormatException();
+
+                return underlyingType switch
+                {
+                    CustomAttributeEncoding.Boolean => new PrimitiveValue() { Byte4 = h.ToConstantBooleanValueHandle(_reader).GetConstantBooleanValue(_reader).Value ? 1 : 0 },
+                    CustomAttributeEncoding.Char => new PrimitiveValue() { Byte4 = h.ToConstantCharValueHandle(_reader).GetConstantCharValue(_reader).Value },
+                    CustomAttributeEncoding.Byte => new PrimitiveValue() { Byte4 = h.ToConstantByteValueHandle(_reader).GetConstantByteValue(_reader).Value },
+                    CustomAttributeEncoding.SByte => new PrimitiveValue() { Byte4 = (byte)h.ToConstantSByteValueHandle(_reader).GetConstantSByteValue(_reader).Value },
+                    CustomAttributeEncoding.Int16 => new PrimitiveValue() { Byte4 = (ushort)h.ToConstantInt16ValueHandle(_reader).GetConstantInt16Value(_reader).Value },
+                    CustomAttributeEncoding.UInt16 => new PrimitiveValue() { Byte4 = h.ToConstantUInt16ValueHandle(_reader).GetConstantUInt16Value(_reader).Value },
+                    CustomAttributeEncoding.Int32 => new PrimitiveValue() { Byte4 = h.ToConstantInt32ValueHandle(_reader).GetConstantInt32Value(_reader).Value },
+                    CustomAttributeEncoding.UInt32 => new PrimitiveValue() { Byte4 = (int)h.ToConstantUInt32ValueHandle(_reader).GetConstantUInt32Value(_reader).Value },
+                    CustomAttributeEncoding.Int64 => new PrimitiveValue() { Byte8 = h.ToConstantInt64ValueHandle(_reader).GetConstantInt64Value(_reader).Value },
+                    CustomAttributeEncoding.UInt64 => new PrimitiveValue() { Byte8 = (long)h.ToConstantUInt64ValueHandle(_reader).GetConstantUInt64Value(_reader).Value },
+                    CustomAttributeEncoding.Float => new PrimitiveValue() { Byte4 = BitConverter.SingleToInt32Bits(h.ToConstantSingleValueHandle(_reader).GetConstantSingleValue(_reader).Value) },
+                    CustomAttributeEncoding.Double => new PrimitiveValue() { Byte8 = BitConverter.DoubleToInt64Bits(h.ToConstantDoubleValueHandle(_reader).GetConstantDoubleValue(_reader).Value) },
+                    _ => throw new BadImageFormatException()
+                };
+            }
+
+            private static HandleType GetScalarHandleType(CustomAttributeEncoding underlyingType)
+                => underlyingType switch
+                {
+                    CustomAttributeEncoding.Boolean => HandleType.ConstantBooleanValue,
+                    CustomAttributeEncoding.Char => HandleType.ConstantCharValue,
+                    CustomAttributeEncoding.Byte => HandleType.ConstantByteValue,
+                    CustomAttributeEncoding.SByte => HandleType.ConstantSByteValue,
+                    CustomAttributeEncoding.Int16 => HandleType.ConstantInt16Value,
+                    CustomAttributeEncoding.UInt16 => HandleType.ConstantUInt16Value,
+                    CustomAttributeEncoding.Int32 => HandleType.ConstantInt32Value,
+                    CustomAttributeEncoding.UInt32 => HandleType.ConstantUInt32Value,
+                    CustomAttributeEncoding.Int64 => HandleType.ConstantInt64Value,
+                    CustomAttributeEncoding.UInt64 => HandleType.ConstantUInt64Value,
+                    CustomAttributeEncoding.Float => HandleType.ConstantSingleValue,
+                    CustomAttributeEncoding.Double => HandleType.ConstantDoubleValue,
+                    _ => throw new BadImageFormatException()
+                };
+
+            private readonly PrimitiveValue ReadPrimitiveArrayElement(CustomAttributeEncoding underlyingType)
+            {
+                int i = _arrayIndex;
+                return underlyingType switch
+                {
+                    CustomAttributeEncoding.Boolean => new PrimitiveValue() { Byte4 = ((bool[])_primitiveArrayElements!)[i] ? 1 : 0 },
+                    CustomAttributeEncoding.Char => new PrimitiveValue() { Byte4 = ((char[])_primitiveArrayElements!)[i] },
+                    CustomAttributeEncoding.Byte => new PrimitiveValue() { Byte4 = ((byte[])_primitiveArrayElements!)[i] },
+                    CustomAttributeEncoding.SByte => new PrimitiveValue() { Byte4 = (byte)((sbyte[])_primitiveArrayElements!)[i] },
+                    CustomAttributeEncoding.Int16 => new PrimitiveValue() { Byte4 = (ushort)((short[])_primitiveArrayElements!)[i] },
+                    CustomAttributeEncoding.UInt16 => new PrimitiveValue() { Byte4 = ((ushort[])_primitiveArrayElements!)[i] },
+                    CustomAttributeEncoding.Int32 => new PrimitiveValue() { Byte4 = ((int[])_primitiveArrayElements!)[i] },
+                    CustomAttributeEncoding.UInt32 => new PrimitiveValue() { Byte4 = (int)((uint[])_primitiveArrayElements!)[i] },
+                    CustomAttributeEncoding.Int64 => new PrimitiveValue() { Byte8 = ((long[])_primitiveArrayElements!)[i] },
+                    CustomAttributeEncoding.UInt64 => new PrimitiveValue() { Byte8 = (long)((ulong[])_primitiveArrayElements!)[i] },
+                    CustomAttributeEncoding.Float => new PrimitiveValue() { Byte4 = BitConverter.SingleToInt32Bits(((float[])_primitiveArrayElements!)[i]) },
+                    CustomAttributeEncoding.Double => new PrimitiveValue() { Byte8 = BitConverter.DoubleToInt64Bits(((double[])_primitiveArrayElements!)[i]) },
+                    _ => throw new BadImageFormatException()
+                };
+            }
+
+            private Array MaterializePrimitiveArray(Handle h)
+                => h.HandleType switch
+                {
+                    HandleType.ConstantBooleanArray => h.ToConstantBooleanArrayHandle(_reader).GetConstantBooleanArray(_reader).Value.ToArray(),
+                    HandleType.ConstantCharArray => h.ToConstantCharArrayHandle(_reader).GetConstantCharArray(_reader).Value.ToArray(),
+                    HandleType.ConstantByteArray => h.ToConstantByteArrayHandle(_reader).GetConstantByteArray(_reader).Value.ToArray(),
+                    HandleType.ConstantSByteArray => h.ToConstantSByteArrayHandle(_reader).GetConstantSByteArray(_reader).Value.ToArray(),
+                    HandleType.ConstantInt16Array => h.ToConstantInt16ArrayHandle(_reader).GetConstantInt16Array(_reader).Value.ToArray(),
+                    HandleType.ConstantUInt16Array => h.ToConstantUInt16ArrayHandle(_reader).GetConstantUInt16Array(_reader).Value.ToArray(),
+                    HandleType.ConstantInt32Array => h.ToConstantInt32ArrayHandle(_reader).GetConstantInt32Array(_reader).Value.ToArray(),
+                    HandleType.ConstantUInt32Array => h.ToConstantUInt32ArrayHandle(_reader).GetConstantUInt32Array(_reader).Value.ToArray(),
+                    HandleType.ConstantInt64Array => h.ToConstantInt64ArrayHandle(_reader).GetConstantInt64Array(_reader).Value.ToArray(),
+                    HandleType.ConstantUInt64Array => h.ToConstantUInt64ArrayHandle(_reader).GetConstantUInt64Array(_reader).Value.ToArray(),
+                    HandleType.ConstantSingleArray => h.ToConstantSingleArrayHandle(_reader).GetConstantSingleArray(_reader).Value.ToArray(),
+                    HandleType.ConstantDoubleArray => h.ToConstantDoubleArrayHandle(_reader).GetConstantDoubleArray(_reader).Value.ToArray(),
+                    _ => throw new BadImageFormatException()
+                };
+
+            private static CustomAttributeEncoding InferTag(Handle h)
+                => h.HandleType switch
+                {
+                    HandleType.ConstantBooleanValue => CustomAttributeEncoding.Boolean,
+                    HandleType.ConstantCharValue => CustomAttributeEncoding.Char,
+                    HandleType.ConstantByteValue => CustomAttributeEncoding.Byte,
+                    HandleType.ConstantSByteValue => CustomAttributeEncoding.SByte,
+                    HandleType.ConstantInt16Value => CustomAttributeEncoding.Int16,
+                    HandleType.ConstantUInt16Value => CustomAttributeEncoding.UInt16,
+                    HandleType.ConstantInt32Value => CustomAttributeEncoding.Int32,
+                    HandleType.ConstantUInt32Value => CustomAttributeEncoding.UInt32,
+                    HandleType.ConstantInt64Value => CustomAttributeEncoding.Int64,
+                    HandleType.ConstantUInt64Value => CustomAttributeEncoding.UInt64,
+                    HandleType.ConstantSingleValue => CustomAttributeEncoding.Float,
+                    HandleType.ConstantDoubleValue => CustomAttributeEncoding.Double,
+                    // A null object argument is round-tripped through NativeFormat as a bare reference
+                    // value; report it as a null string to match the historical NativeAOT behaviour.
+                    HandleType.ConstantStringValue or HandleType.ConstantReferenceValue => CustomAttributeEncoding.String,
+                    HandleType.TypeDefinition or HandleType.TypeReference or HandleType.TypeSpecification => CustomAttributeEncoding.Type,
+                    HandleType.ConstantEnumValue => CustomAttributeEncoding.Enum,
+                    HandleType.ConstantBooleanArray or HandleType.ConstantCharArray or HandleType.ConstantByteArray
+                        or HandleType.ConstantSByteArray or HandleType.ConstantInt16Array or HandleType.ConstantUInt16Array
+                        or HandleType.ConstantInt32Array or HandleType.ConstantUInt32Array or HandleType.ConstantInt64Array
+                        or HandleType.ConstantUInt64Array or HandleType.ConstantSingleArray or HandleType.ConstantDoubleArray
+                        or HandleType.ConstantStringArray or HandleType.ConstantHandleArray or HandleType.ConstantEnumArray
+                        => CustomAttributeEncoding.Array,
+                    _ => throw new BadImageFormatException()
+                };
+
+            private static CustomAttributeEncoding InferArrayElementTag(Handle h)
+                => h.HandleType switch
+                {
+                    HandleType.ConstantBooleanArray => CustomAttributeEncoding.Boolean,
+                    HandleType.ConstantCharArray => CustomAttributeEncoding.Char,
+                    HandleType.ConstantByteArray => CustomAttributeEncoding.Byte,
+                    HandleType.ConstantSByteArray => CustomAttributeEncoding.SByte,
+                    HandleType.ConstantInt16Array => CustomAttributeEncoding.Int16,
+                    HandleType.ConstantUInt16Array => CustomAttributeEncoding.UInt16,
+                    HandleType.ConstantInt32Array => CustomAttributeEncoding.Int32,
+                    HandleType.ConstantUInt32Array => CustomAttributeEncoding.UInt32,
+                    HandleType.ConstantInt64Array => CustomAttributeEncoding.Int64,
+                    HandleType.ConstantUInt64Array => CustomAttributeEncoding.UInt64,
+                    HandleType.ConstantSingleArray => CustomAttributeEncoding.Float,
+                    HandleType.ConstantDoubleArray => CustomAttributeEncoding.Double,
+                    HandleType.ConstantStringArray => CustomAttributeEncoding.String,
+                    HandleType.ConstantHandleArray => CustomAttributeEncoding.Object,
+                    HandleType.ConstantEnumArray => CustomAttributeEncoding.Enum,
+                    _ => throw new BadImageFormatException()
+                };
         }
 #endif
     }
