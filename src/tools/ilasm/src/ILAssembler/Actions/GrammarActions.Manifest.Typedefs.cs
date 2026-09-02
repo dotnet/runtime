@@ -55,11 +55,11 @@ internal sealed partial class GrammarActions
                 break;
             case CustomAttributeTypedefDeclarationValue customAttribute:
                 EntityRegistry.CustomAttributeEntity attribute =
-                    MaterializeCustomAttribute(
-                        customAttribute.Attribute,
-                        customAttribute.Location);
+                    MaterializeCustomAttribute(customAttribute.Attribute);
+                EntityRegistry.EntityBase? owner = attribute.Owner;
+                attribute.Owner = null;
                 _typedefs[customAttribute.Alias] =
-                    new TypedefEntry.CustomAttribute(attribute.Constructor, attribute.Value);
+                    new TypedefEntry.CustomAttribute(attribute.Constructor, attribute.Value, owner);
                 break;
         }
     }
@@ -117,13 +117,16 @@ internal sealed partial class GrammarActions
         return null;
     }
 
-    private (EntityRegistry.EntityBase Constructor, BlobBuilder Value)?
+    private (
+        EntityRegistry.EntityBase Constructor,
+        BlobBuilder Value,
+        EntityRegistry.EntityBase? Owner)?
         TryResolveTypedefAsCustomAttribute(string alias)
     {
         if (_typedefs.TryGetValue(alias, out TypedefEntry? entry) &&
             entry is TypedefEntry.CustomAttribute customAttribute)
         {
-            return (customAttribute.Constructor, customAttribute.Value);
+            return (customAttribute.Constructor, customAttribute.Value, customAttribute.Owner);
         }
 
         return null;
