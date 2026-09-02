@@ -2718,7 +2718,12 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
         allocationSize += pCodeHeap->m_LoaderHeap.AllocMem_TotalSize(JUMP_ALLOCATE_SIZE);
     }
 #endif
-    pBaseAddr = (BYTE *)pInfo->GetAllocator()->GetCodeHeapInitialBlock(loAddr, hiAddr, (DWORD)allocationSize, &dwSizeAcquiredFromInitialBlock);
+    // Keep Tier1 code in a dedicated large reservation rather than consuming
+    // the LoaderAllocator's small initial code block.
+    if (!pInfo->IsOptimizedCode())
+    {
+        pBaseAddr = (BYTE *)pInfo->GetAllocator()->GetCodeHeapInitialBlock(loAddr, hiAddr, (DWORD)allocationSize, &dwSizeAcquiredFromInitialBlock);
+    }
     if (pBaseAddr != NULL)
     {
         pCodeHeap->m_LoaderHeap.SetReservedRegion(pBaseAddr, dwSizeAcquiredFromInitialBlock, FALSE);
@@ -2981,6 +2986,15 @@ HeapList* EECodeGenManager::NewCodeHeap(CodeHeapRequestInfo *pInfo, DomainCodeHe
 
     if (reserveSize < minReserveSize)
         reserveSize = minReserveSize;
+
+    if (pInfo->IsOptimizedCode())
+    {
+        static ConfigDWORD configTier1CodeHeapReserveSize;
+        size_t tier1ReserveSize =
+            configTier1CodeHeapReserveSize.val(CLRConfig::INTERNAL_Tier1CodeHeapReserveSize);
+        reserveSize = max(reserveSize, tier1ReserveSize);
+    }
+
     reserveSize = ALIGN_UP(reserveSize, VIRTUAL_ALLOC_RESERVE_GRANULARITY);
 
     pInfo->SetReserveSize(reserveSize);
@@ -3235,7 +3249,7 @@ void* EECodeGenManager::AllocCodeWorker(CodeHeapRequestInfo *pInfo,
 }
 
 template<typename TCodeHeader>
-void EECodeGenManager::AllocCode(MethodDesc* pMD, size_t blockSize, size_t reserveForJumpStubs, unsigned alignment, void** ppCodeHeader, void** ppCodeHeaderRW,
+void EECodeGenManager::AllocCode(MethodDesc* pMD, size_t blockSize, size_t reserveForJumpStubs, unsigned alignment, bool isTier1Code, void** ppCodeHeader, void** ppCodeHeaderRW,
                                  size_t* pAllocatedSize, HeapList** ppCodeHeap
                                , BYTE** ppRealHeader
                                , UINT nUnwindInfos
@@ -3295,18 +3309,11 @@ void EECodeGenManager::AllocCode(MethodDesc* pMD, size_t blockSize, size_t reser
         static_assert(CODE_SIZE_ALIGN >= sizeof(void*));
     }
 
-    // Optionally route JIT-optimized code to its own per-LoaderAllocator
-    // heap, separate from code where the JIT can't optimize (Tier0,
-    // global MinOpts, /clr DisableOpts, MethodImplOptions.NoOptimization).
-    // The split is keyed off MethodDesc::IsJitOptimizationDisabled(), not the
-    // current compilation tier, so e.g. fully-optimized non-tiered methods
-    // land in the optimized pool too. LCG (dynamic-domain) is excluded
-    // because every LCG method within a single process uses the same
-    // optimization level, and interpreter requests are excluded because
-    // their heaps use a separate code path entirely.
+    // Optionally route Tier1 code to its own per-LoaderAllocator heap. LCG and
+    // interpreter requests are excluded because they use separate heap paths.
     if (!requestInfo.IsDynamicDomain()
         && !requestInfo.IsInterpreted()
-        && !pMD->IsJitOptimizationDisabled()
+        && isTier1Code
         && CLRConfig::GetConfigValue(CLRConfig::INTERNAL_SeparateOptimizedCodeHeaps) != 0)
     {
         requestInfo.SetOptimizedCode();
@@ -3399,14 +3406,14 @@ void EECodeGenManager::AllocCode(MethodDesc* pMD, size_t blockSize, size_t reser
     *ppCodeHeaderRW = pCodeHdrRW;
 }
 
-template void EECodeGenManager::AllocCode<CodeHeader>(MethodDesc* pMD, size_t blockSize, size_t reserveForJumpStubs, unsigned alignment, void** ppCodeHeader, void** ppCodeHeaderRW,
+template void EECodeGenManager::AllocCode<CodeHeader>(MethodDesc* pMD, size_t blockSize, size_t reserveForJumpStubs, unsigned alignment, bool isTier1Code, void** ppCodeHeader, void** ppCodeHeaderRW,
                                                       size_t* pAllocatedSize, HeapList** ppCodeHeap
                                                     , BYTE** ppRealHeader
                                                     , UINT nUnwindInfos
                                                      );
 
 #ifdef FEATURE_INTERPRETER
-template void EECodeGenManager::AllocCode<InterpreterCodeHeader>(MethodDesc* pMD, size_t blockSize, size_t reserveForJumpStubs, unsigned alignment, void** ppCodeHeader, void** ppCodeHeaderRW,
+template void EECodeGenManager::AllocCode<InterpreterCodeHeader>(MethodDesc* pMD, size_t blockSize, size_t reserveForJumpStubs, unsigned alignment, bool isTier1Code, void** ppCodeHeader, void** ppCodeHeaderRW,
                                                                  size_t* pAllocatedSize, HeapList** ppCodeHeap
                                                                , BYTE** ppRealHeader
                                                                , UINT nUnwindInfos
