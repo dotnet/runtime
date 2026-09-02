@@ -53,6 +53,11 @@ namespace ILCompiler.PortableCallHelpers
                 if (string.IsNullOrEmpty(options.OutputDirectory))
                     throw new LogAsErrorException("--generate-portable-callhelpers needs a directory to write to.");
 
+                // The scan reads platform attributes against this name, and an empty one matches
+                // nothing, which would silently drop every method guarded by SupportedOSPlatform.
+                if (string.IsNullOrEmpty(options.TargetOS))
+                    throw new LogAsErrorException("--generate-portable-callhelpers needs a target OS to match platform attributes against.");
+
                 Generate(context, options, log);
                 return 0;
             }

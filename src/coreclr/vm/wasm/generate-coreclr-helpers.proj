@@ -18,15 +18,14 @@
   </PropertyGroup>
 
   <!-- The framework P/Invoke modules, shared with the runtime tests' corerun relink so the
-       checked-in tables and the ones the tests generate cannot be edited apart. -->
+       checked-in tables and the ones the tests generate cannot drift apart. -->
   <Import Project="$(RepositoryEngineeringDir)wasm\WasmPInvokeModules.props" />
 
   <PropertyGroup>
     <_TesthostDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'testhost'))</_TesthostDir>
     <_FrameworkVersion>$(MajorVersion).$(MinorVersion).0</_FrameworkVersion>
 
-    <!-- The scripts that drive this project are per-OS, so name the one the reader can actually
-         run rather than the one the author happened to be using. -->
+    <!-- The scripts that drive this project are per-OS, so name the one for the current OS. -->
     <_BuildScript Condition="$([MSBuild]::IsOSPlatform('Windows'))">.\build.cmd</_BuildScript>
     <_BuildScript Condition="'$(_BuildScript)' == ''">./build.sh</_BuildScript>
   </PropertyGroup>
@@ -87,8 +86,8 @@
     <PropertyGroup>
       <_TargetOS>%(_WasmCallHelperTarget.Identity)</_TargetOS>
       <_ScanPath>%(_WasmCallHelperTarget.ScanPath)</_ScanPath>
-      <!-- The self-contained crossgen2 from the same build that produced the scan path, so one
-           command per flavor supplies both. -->
+      <!-- The self-contained crossgen2 from the same per-flavor build output that produced the
+           scan path. -->
       <_Crossgen2Path>$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'coreclr', '$(_TargetOS).wasm.$(Configuration)', '$(BuildArchitecture)', 'crossgen2', 'crossgen2$(ExeSuffix)'))</_Crossgen2Path>
       <_OutputDir>$(MSBuildThisFileDirectory)$(_TargetOS)/</_OutputDir>
       <_ResponseFileDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsObjDir)', 'wasm-callhelpers', '$(_TargetOS)'))</_ResponseFileDir>
