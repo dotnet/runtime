@@ -67,7 +67,7 @@ internal sealed partial class GrammarActions
 
         if (MaterializeCustomAttributeDeclaration(context) is { } customAttribute)
         {
-            customAttribute.Owner =
+            customAttribute.Owner ??=
                 _pendingClassCustomAttributeOwner ??
                 _currentTypeDefinition.PeekOrDefault();
         }
@@ -380,7 +380,7 @@ internal sealed partial class GrammarActions
 
         if (MaterializeCustomAttributeDeclaration(attribute) is { } customAttribute)
         {
-            customAttribute.Owner = owner;
+            customAttribute.Owner ??= owner;
         }
     }
 

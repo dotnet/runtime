@@ -1601,7 +1601,7 @@ typar returns [CILParser.GenericParameterDeclarationValue Value]
 @init {_localctx.Value = CILParser.GenericParameterDeclarationValue.Error;}
 :
 	attributes = typarAttribs constraints = tyBound? name = dottedName
-		{_localctx.Value = Actions.CreateGenericParameterDeclaration($attributes.Value, $constraints.ctx, $name.Value);};
+		{_localctx.Value = Actions.CreateGenericParameterDeclaration(_localctx.Start, $attributes.Value, $constraints.ctx, $name.Value);};
 
 typars returns [System.Collections.Immutable.ImmutableArray<CILParser.GenericParameterDeclarationValue> Value]
 locals [System.Collections.Immutable.ImmutableArray<CILParser.GenericParameterDeclarationValue>.Builder Builder]

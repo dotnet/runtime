@@ -61,7 +61,9 @@ namespace ILAssembler
         private void ReportError(string id, string message, Antlr4.Runtime.ParserRuleContext context)
             => ReportDiagnostic(DiagnosticSeverity.Error, id, message, context);
 
-        private void ReportGenericParameterEncodingErrors(CILParser.TyparContext[] genericParameters)
+        private void ReportGenericParameterEncodingErrors(
+            ImmutableArray<GenericParameterDeclarationValue> genericParameters,
+            ParserRuleContext context)
         {
             if (genericParameters.Length <= MaximumGenericParameterCount)
             {
@@ -74,11 +76,12 @@ namespace ILAssembler
                     DiagnosticMessageTemplates.TooManyGenericParameters,
                     genericParameters.Length,
                     MaximumGenericParameterCount),
-                genericParameters[MaximumGenericParameterCount]);
+                genericParameters[MaximumGenericParameterCount].Location ?? context.Start);
 
             for (int i = MaximumGenericParameterCount; i < genericParameters.Length; i++)
             {
-                if (genericParameters[i].tyBound() is not CILParser.TyBoundContext constraint)
+                GenericParameterDeclarationValue parameter = genericParameters[i];
+                if (parameter.Constraints.IsEmpty)
                 {
                     continue;
                 }
@@ -89,7 +92,7 @@ namespace ILAssembler
                         DiagnosticMessageTemplates.GenericParameterConstraintOwnerOutOfRange,
                         i,
                         ushort.MaxValue),
-                    constraint);
+                    parameter.ConstraintLocation ?? parameter.Location ?? context.Start);
             }
         }
 

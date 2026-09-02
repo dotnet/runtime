@@ -150,9 +150,10 @@ internal sealed partial class GrammarActions
                 target.Culture = locale.Value;
                 break;
             case AssemblyCustomAttributeDirectiveValue customAttribute:
-                MaterializeCustomAttributeDeclaration(
-                    customAttribute.Value,
-                    customAttribute.Location)?.Owner = target;
+                if (MaterializeCustomAttributeDeclaration(customAttribute.Value) is { } attribute)
+                {
+                    attribute.Owner ??= target;
+                }
                 break;
         }
     }

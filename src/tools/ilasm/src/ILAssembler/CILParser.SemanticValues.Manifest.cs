@@ -209,15 +209,19 @@ public partial class CILParser
         {
             internal CustomAttribute(
                 EntityRegistry.EntityBase constructor,
-                BlobBuilder value)
+                BlobBuilder value,
+                EntityRegistry.EntityBase? owner)
             {
                 Constructor = constructor;
                 Value = value;
+                Owner = owner;
             }
 
             internal EntityRegistry.EntityBase Constructor { get; }
 
             internal BlobBuilder Value { get; }
+
+            internal EntityRegistry.EntityBase? Owner { get; }
         }
     }
 }

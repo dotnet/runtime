@@ -126,10 +126,8 @@ internal sealed partial class GrammarActions
 
             attributes = ApplyAttribute(attributes, attribute);
         }
-
         typeDefinition.Attributes = attributes;
-        ReportGenericParameterEncodingErrors(
-            context.typarsClause()?.typars()?.typar() ?? []);
+        ReportGenericParameterEncodingErrors(header.GenericParameters, context);
         RegisterGenericParameterNames(
             typeDefinition,
             typeDefinition.GenericParameters,
@@ -201,8 +199,7 @@ internal sealed partial class GrammarActions
         bool materializeConstraints = typeDefinition.GenericParameters.Count == 0;
         if (materializeConstraints)
         {
-            ReportGenericParameterEncodingErrors(
-                context.typarsClause()?.typars()?.typar() ?? []);
+            ReportGenericParameterEncodingErrors(header.GenericParameters, context);
             RegisterGenericParameterNames(
                 typeDefinition,
                 typeDefinition.GenericParameters,

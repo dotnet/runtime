@@ -94,7 +94,7 @@ internal sealed partial class GrammarActions
         resource.Implementation = implementation;
         foreach (EntityRegistry.CustomAttributeEntity customAttribute in customAttributes)
         {
-            customAttribute.Owner = resource;
+            customAttribute.Owner ??= resource;
         }
     }
 
@@ -115,9 +115,7 @@ internal sealed partial class GrammarActions
             switch (declaration)
             {
                 case ManifestResourceCustomAttributeDirectiveValue customAttribute:
-                    if (MaterializeCustomAttributeDeclaration(
-                        customAttribute.Value,
-                        customAttribute.Location) is { } attribute)
+                    if (MaterializeCustomAttributeDeclaration(customAttribute.Value) is { } attribute)
                     {
                         customAttributes.Add(attribute);
                     }
