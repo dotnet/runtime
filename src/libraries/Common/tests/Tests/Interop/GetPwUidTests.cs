@@ -3,7 +3,7 @@
 
 using Xunit;
 
-namespace Tests.Interop
+namespace Common.Tests
 {
     [PlatformSpecific(TestPlatforms.AnyUnix)]
     public class GetPwUidTests
