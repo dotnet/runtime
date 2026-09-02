@@ -99,6 +99,17 @@ PhaseStatus Compiler::optRedundantBranches()
     OptRedundantBranchesDomTreeVisitor visitor(this);
     visitor.WalkTree(m_domTree);
 
+    // BBF_STALE_PREDICATE is only meaningful while this phase runs, since it is tied to
+    // the dominator info we started with. Clear it so a later run sees a clean slate.
+    //
+    if (visitor.madeChanges)
+    {
+        for (BasicBlock* const block : Blocks())
+        {
+            block->RemoveFlags(BBF_STALE_PREDICATE);
+        }
+    }
+
 #if DEBUG
     if (verbose && visitor.madeChanges)
     {
@@ -802,7 +813,10 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
 
         // Check the current dominator
         //
-        if (domBlock->KindIs(BBJ_COND))
+        // Blocks flagged BBF_STALE_PREDICATE are skipped: flow was rerouted around them, so
+        // their condition no longer holds on every path reaching the blocks they appear to dominate.
+        //
+        if (domBlock->KindIs(BBJ_COND) && !domBlock->HasFlag(BBF_STALE_PREDICATE))
         {
             Statement* const domJumpStmt = domBlock->lastStmt();
             GenTree* const   domJumpTree = domJumpStmt->GetRootNode();
@@ -1770,6 +1784,15 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
         vnStore->VNUnpackExc(treeOldVN, &treeNormVN, &treeExcVN);
         ValueNum treeNewVN = vnStore->VNWithExc(jti.m_ambiguousVN, treeExcVN);
         tree->SetVN(VNK_Liberal, treeNewVN);
+
+        // The preds we just redirected were classified using the old VN, so each of them
+        // still reaches the successor that the old predicate implies. The sharpened VN,
+        // however, only describes flow coming from ambBlock, and that is no longer the only
+        // flow reaching block's successors. Since dominator info is not updated as we thread,
+        // block can still look like a dominator of those successors, so flag it to keep the
+        // rest of this phase from inferring anything from its now path-specific predicate.
+        //
+        jti.m_block->SetFlags(BBF_STALE_PREDICATE);
 
         JITDUMP("Updating [%06u] liberal VN from " FMT_VN " to " FMT_VN "\n", dspTreeID(tree), treeOldVN, treeNewVN);
     }

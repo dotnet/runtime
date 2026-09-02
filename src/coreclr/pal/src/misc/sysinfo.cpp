@@ -24,6 +24,8 @@ Revision History:
 #include <sched.h>
 #include <errno.h>
 #include <unistd.h>
+#include <minipal/utils.h>
+#include <minipal/cpucount.h>
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
 #include <sys/types.h>
@@ -136,6 +138,12 @@ PAL_GetTotalCpuCount()
 #error "Don't know how to get total CPU count on this platform"
 #endif // HAVE_SYSCONF
 
+    if (nrcpus < 1)
+    {
+        // Default to 1 if we failed to get the number of CPUs or if the value is invalid.
+        nrcpus = 1;
+    }
+
     return nrcpus;
 }
 
@@ -149,14 +157,41 @@ PAL_GetLogicalCpuCountFromOS()
     {
 #if HAVE_SCHED_GETAFFINITY
 
-        cpu_set_t cpuSet;
-        int st = sched_getaffinity(gPID, sizeof(cpu_set_t), &cpuSet);
-        if (st != 0)
+        int configuredCpuCount = minipal_get_cpu_max_possible_count();
+        if (configuredCpuCount == -1)
         {
-            ASSERT("sched_getaffinity failed (%d)\n", errno);
+            // In the unlikely event that minipal_get_cpu_max_possible_count() fails, just assume a reasonable default maximum number of CPUs to avoid failing.
+            configuredCpuCount = CPU_SETSIZE;
         }
 
-        nrcpus = CPU_COUNT(&cpuSet);
+        cpu_set_t* pCpuSet = CPU_ALLOC(configuredCpuCount);
+        if (pCpuSet != nullptr)
+        {
+            size_t cpuSetSize = CPU_ALLOC_SIZE(configuredCpuCount);
+            CPU_ZERO_S(cpuSetSize, pCpuSet);
+
+            int st = sched_getaffinity(gPID, cpuSetSize, pCpuSet);
+            if (st == 0)
+            {
+                nrcpus = CPU_COUNT_S(CPU_ALLOC_SIZE(configuredCpuCount), pCpuSet);
+            }
+            else
+            {
+                ASSERT("sched_getaffinity failed (%d)\n", errno);
+            }
+
+            CPU_FREE(pCpuSet);
+        }
+        else
+        {
+            ASSERT("CPU_ALLOC failed!\n");
+        }
+
+        if (nrcpus < 1)
+        {
+            // If we failed to get the number of CPUs from sched_getaffinity, fall back to getting the total number of CPUs in the system.
+            nrcpus = PAL_GetTotalCpuCount();
+        }
 #else // HAVE_SCHED_GETAFFINITY
         nrcpus = PAL_GetTotalCpuCount();
 #endif // HAVE_SCHED_GETAFFINITY
