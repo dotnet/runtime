@@ -6,6 +6,7 @@
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-browser</TargetFrameworks>
     <WasmEnableRelaxedSimd Condition="'$(TargetOS)' == 'browser'">true</WasmEnableRelaxedSimd>
+    <WasmWarnOnUnresolvedPInvokeModules Condition="'$(TargetOS)' == 'browser'">false</WasmWarnOnUnresolvedPInvokeModules>
     <!-- Disable nullability public only feature for NullabilityInfoContextTests -->
     <Features>$(Features.Replace('nullablePublicOnly', '')</Features>
   </PropertyGroup>
