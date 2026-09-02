@@ -205,7 +205,8 @@ namespace ILCompiler
 
         public void EnsureLoadableMethod(MethodDesc method)
         {
-            EnsureLoadableType(method.OwningType);
+            TypeDesc owningType = method.OwningType;
+            EnsureLoadableType(owningType);
 
             // If this is an instantiated generic method, check the instantiation.
             MethodDesc methodDef = method.GetMethodDefinition();
@@ -215,11 +216,20 @@ namespace ILCompiler
                     EnsureLoadableType(instType);
             }
 
-            MethodSignature sig = method.Signature;
-            EnsureLoadableType(sig.ReturnType);
+            // In rare situations (ldtoken of an uninstantiated method)
+            // we might end up seeing uninstantiated methods here. Don't try
+            // to drill into it, it would introduce instantiations over signature variables
+            // that are difficult to deal with without spending cycles on it.
+            // Many type system APIs don't deal with them and they're expensive to test for
+            // ("Is there a signature variable somewhere in type construction?" is expensive.)
+            if (!method.IsGenericMethodDefinition && !owningType.IsGenericDefinition)
+            {
+                MethodSignature sig = method.Signature;
+                EnsureLoadableType(sig.ReturnType);
 
-            foreach (TypeDesc p in sig)
-                EnsureLoadableType(p);
+                foreach (TypeDesc p in sig)
+                    EnsureLoadableType(p);
+            }
         }
 
         private sealed class ValidTypeHashTable : LockFreeReaderHashtable<TypeDesc, TypeDesc>
