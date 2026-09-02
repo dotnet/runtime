@@ -866,6 +866,99 @@ bool FoldNonNegativeSumRangeTest(
 #endif // TARGET_64BIT
 
 //------------------------------------------------------------------------------
+// FoldNonNegativeDiffOrTest: Recognize "((BOUND - Y) | Y) < 0" -- the shape this phase
+//    produces when it merges "Y < 0" with "BOUND - Y < 0" -- and rewrite it as the single
+//    unsigned compare "(uint)Y u> (uint)BOUND".
+//
+//    This is valid when BOUND is known to be never negative: a negative Y zero-extends past
+//    any such BOUND, and for a non-negative Y the subtraction cannot overflow, so
+//    "BOUND - Y < 0" is exactly "Y > BOUND".
+//
+//    It is the argument validation of Span<T>.Slice(0, length), the Span<T>(T[], 0, length)
+//    constructor and their ReadOnlySpan<T> counterparts, where the "start < 0" check has
+//    already folded away.
+//
+// Arguments:
+//    comp  - compiler instance
+//    block - the BBJ_COND block whose condition should be simplified
+//
+// Returns:
+//    true if the condition was rewritten.
+//
+bool FoldNonNegativeDiffOrTest(Compiler* comp, BasicBlock* block)
+{
+    Statement* const stmt = block->lastStmt();
+
+    if (stmt == nullptr)
+    {
+        return false;
+    }
+
+    GenTree* const root = stmt->GetRootNode();
+
+    if (!root->OperIs(GT_JTRUE))
+    {
+        return false;
+    }
+
+    GenTree* const cond = root->gtGetOp1();
+
+    if (!cond->OperIs(GT_LT, GT_GE) || cond->IsUnsigned() || !cond->gtGetOp2()->IsIntegralConst(0))
+    {
+        return false;
+    }
+
+    GenTree* const orNode = cond->gtGetOp1();
+
+    if (!orNode->OperIs(GT_OR) || !orNode->TypeIs(TYP_INT) || ((orNode->gtFlags & GTF_SIDE_EFFECT) != 0))
+    {
+        return false;
+    }
+
+    GenTree* diff      = orNode->gtGetOp1();
+    GenTree* countNode = orNode->gtGetOp2();
+
+    if (!diff->OperIs(GT_SUB))
+    {
+        diff      = orNode->gtGetOp2();
+        countNode = orNode->gtGetOp1();
+    }
+
+    if (!diff->OperIs(GT_SUB) || diff->gtOverflow() || !GenTree::Compare(diff->gtGetOp2(), countNode))
+    {
+        return false;
+    }
+
+    GenTree* const boundNode = diff->gtGetOp1();
+
+    if (!boundNode->TypeIs(TYP_INT) || !countNode->TypeIs(TYP_INT) || !boundNode->IsNeverNegative(comp))
+    {
+        return false;
+    }
+
+    // We drop one of the two evaluations of Y, so anything that must not be reordered has to
+    // come from a non-faulting array length, which is idempotent.
+    if (((orNode->gtFlags & GTF_ORDER_SIDEEFF) != 0) &&
+        (!boundNode->OperIs(GT_ARR_LENGTH, GT_MDARR_LENGTH) ||
+         (((boundNode->gtGetOp1()->gtFlags | countNode->gtFlags) & GTF_ORDER_SIDEEFF) != 0)))
+    {
+        return false;
+    }
+
+    const genTreeOps newOper = cond->OperIs(GT_LT) ? GT_GT : GT_LE;
+
+    cond->AsOp()->gtOp1 = countNode;
+    cond->AsOp()->gtOp2 = boundNode;
+    cond->SetOper(newOper);
+    cond->SetUnsigned();
+
+    comp->gtSetStmtInfo(stmt);
+    comp->fgSetStmtSeq(stmt);
+    comp->gtUpdateStmtSideEffects(stmt);
+    return true;
+}
+
+//------------------------------------------------------------------------------
 // FoldRangeTests: Given two compare nodes (cmp1 && cmp2) that represent a range check,
 //    fold them into a single compare node if possible, e.g.:
 //      1) "X >= 10 && X <= 100" -> "(X - 10) u<= 90"
@@ -1870,6 +1963,14 @@ PhaseStatus Compiler::optOptimizeBools()
             if (!b1->KindIs(BBJ_COND))
             {
                 continue;
+            }
+
+            // Simplify "((BOUND - Y) | Y) < 0" that a previous merge may have produced.
+            //
+            if (FoldNonNegativeDiffOrTest(this, b1))
+            {
+                change = true;
+                numCond++;
             }
 
             // If there is no next block, we're done
