@@ -2890,7 +2890,15 @@ ClrDataAccess::GetGCHeapStaticData(struct DacpGcHeapDetails *detailsData)
 
     detailsData->alloc_allocated = (CLRDATA_ADDRESS)*g_gcDacGlobals->alloc_allocated;
     detailsData->ephemeral_heap_segment = (CLRDATA_ADDRESS)*g_gcDacGlobals->ephemeral_heap_segment;
-    detailsData->card_table = PTR_CDADDR(g_card_table);
+    if (g_gcDacGlobals->minor_version_number >= 9 &&
+        g_gcDacGlobals->card_table.IsValid())
+    {
+        detailsData->card_table = (CLRDATA_ADDRESS)*g_gcDacGlobals->card_table;
+    }
+    else
+    {
+        detailsData->card_table = PTR_CDADDR(g_card_table);
+    }
 
     if (IsRegionGCEnabled())
     {
@@ -4002,6 +4010,15 @@ ClrDataAccess::EnumWksGlobalMemoryRegions(CLRDataEnumMemoryFlags flags)
 
     Dereference(g_gcDacGlobals->ephemeral_heap_segment).EnumMem();
     g_gcDacGlobals->alloc_allocated.EnumMem();
+    if (g_gcDacGlobals->minor_version_number >= 9 &&
+        g_gcDacGlobals->card_table.IsValid())
+    {
+        g_gcDacGlobals->card_table.EnumMem();
+    }
+    DacEnumMemoryRegion(g_gcDacGlobals->interesting_data_per_heap.GetAddr(), sizeof(size_t) * NUM_GC_DATA_POINTS);
+    DacEnumMemoryRegion(g_gcDacGlobals->compact_reasons_per_heap.GetAddr(), sizeof(size_t) * MAX_COMPACT_REASONS_COUNT);
+    DacEnumMemoryRegion(g_gcDacGlobals->expand_mechanisms_per_heap.GetAddr(), sizeof(size_t) * MAX_EXPAND_MECHANISMS_COUNT);
+    DacEnumMemoryRegion(g_gcDacGlobals->interesting_mechanism_bits_per_heap.GetAddr(), sizeof(size_t) * MAX_GC_MECHANISM_BITS_COUNT);
     g_gcDacGlobals->gc_structures_invalid_cnt.EnumMem();
     Dereference(g_gcDacGlobals->finalize_queue).EnumMem();
 
