@@ -3265,7 +3265,7 @@ bool Compiler::fgFuncletsAreCold()
 {
     for (BasicBlock* block = fgFirstFuncletBB; block != nullptr; block = block->Next())
     {
-        if (!block->isRunRarely())
+        if (!block->isBBWeightCold(this))
         {
             return false;
         }
@@ -3350,7 +3350,7 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
                 // We have a candidate for first cold block
 
                 // Is this a hot block?
-                if (!block->isRunRarely())
+                if (!block->isBBWeightCold(this))
                 {
                     // We have to restart the search for the first cold block
                     firstColdBlock       = nullptr;
@@ -3389,7 +3389,7 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
                 }
 
                 // Is this a cold block?
-                if (block->isRunRarely())
+                if (block->isBBWeightCold(this))
                 {
                     //
                     // If the last block that was hot was a BBJ_COND

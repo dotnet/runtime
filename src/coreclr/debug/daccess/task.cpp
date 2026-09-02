@@ -4076,6 +4076,35 @@ ClrDataMethodInstance::GetILOffsetsByAddress(
     return status;
 }
 
+static CLRDATA_ADDRESS GetAddressForRelOffset(
+    const IJitManager::MethodRegionInfo& methodRegionInfo,
+    ULONG32 relativeOffset)
+{
+    if (relativeOffset < methodRegionInfo.hotSize)
+    {
+        return TO_CDADDR(methodRegionInfo.hotStartAddress + relativeOffset);
+    }
+
+    SIZE_T coldOffset = relativeOffset - methodRegionInfo.hotSize;
+    _ASSERTE(coldOffset < methodRegionInfo.coldSize);
+    return TO_CDADDR(methodRegionInfo.coldStartAddress + coldOffset);
+}
+
+static CLRDATA_ADDRESS GetEndAddressForRelOffset(
+    const IJitManager::MethodRegionInfo& methodRegionInfo,
+    ULONG32 startRelativeOffset,
+    ULONG32 endRelativeOffset)
+{
+    // Logical offsets are contiguous, but the physical hot and cold regions are not.
+    if ((startRelativeOffset < methodRegionInfo.hotSize) &&
+        (endRelativeOffset >= methodRegionInfo.hotSize))
+    {
+        return TO_CDADDR(methodRegionInfo.hotStartAddress + methodRegionInfo.hotSize);
+    }
+
+    return GetAddressForRelOffset(methodRegionInfo, endRelativeOffset);
+}
+
 HRESULT STDMETHODCALLTYPE
 ClrDataMethodInstance::GetAddressRangesByILOffset(
     /* [in] */ ULONG32 ilOffset,
@@ -4094,6 +4123,8 @@ ClrDataMethodInstance::GetAddressRangesByILOffset(
         ULONG32 numMap;
         CLRDATA_ADDRESS codeStart;
         ULONG32 hits = 0;
+        EECodeInfo codeInfo;
+        IJitManager::MethodRegionInfo methodRegionInfo;
 
         if ((status = m_dac->GetMethodNativeMap(m_methodDesc,
                                                 0,
@@ -4106,6 +4137,14 @@ ClrDataMethodInstance::GetAddressRangesByILOffset(
             goto Exit;
         }
 
+        codeInfo.Init(PINSTRToPCODE(CLRDATA_ADDRESS_TO_TADDR(codeStart)));
+        if (!codeInfo.IsValid())
+        {
+            status = E_INVALIDARG;
+            goto Exit;
+        }
+        codeInfo.GetMethodRegionInfo(&methodRegionInfo);
+
         for (ULONG32 i = 0; i < numMap; i++)
         {
             if (map[i].ilOffset == ilOffset)
@@ -4115,7 +4154,7 @@ ClrDataMethodInstance::GetAddressRangesByILOffset(
                 if (rangesLen && addressRanges)
                 {
                     addressRanges->startAddress =
-                        TO_CDADDR(codeStart + map[i].nativeStartOffset);
+                        GetAddressForRelOffset(methodRegionInfo, map[i].nativeStartOffset);
                     if ((LONG)map[i].ilOffset == ICorDebugInfo::EPILOG &&
                         !map[i].nativeEndOffset)
                     {
@@ -4124,7 +4163,8 @@ ClrDataMethodInstance::GetAddressRangesByILOffset(
                     else
                     {
                         addressRanges->endAddress =
-                            TO_CDADDR(codeStart + map[i].nativeEndOffset);
+                            GetEndAddressForRelOffset(
+                                methodRegionInfo, map[i].nativeStartOffset, map[i].nativeEndOffset);
                     }
                     addressRanges++;
                     rangesLen--;
@@ -4174,6 +4214,8 @@ ClrDataMethodInstance::GetILAddressMap(
     {
         ULONG32 numMap;
         CLRDATA_ADDRESS codeStart;
+        EECodeInfo codeInfo;
+        IJitManager::MethodRegionInfo methodRegionInfo;
 
         if ((status = m_dac->GetMethodNativeMap(m_methodDesc,
                                                 0,
@@ -4186,15 +4228,24 @@ ClrDataMethodInstance::GetILAddressMap(
             goto Exit;
         }
 
+        codeInfo.Init(PINSTRToPCODE(CLRDATA_ADDRESS_TO_TADDR(codeStart)));
+        if (!codeInfo.IsValid())
+        {
+            status = E_INVALIDARG;
+            goto Exit;
+        }
+        codeInfo.GetMethodRegionInfo(&methodRegionInfo);
+
         for (ULONG32 i = 0; i < numMap; i++)
         {
             if (mapLen && maps)
             {
                 maps->ilOffset = map[i].ilOffset;
                 maps->startAddress =
-                    TO_CDADDR(codeStart + map[i].nativeStartOffset);
+                    GetAddressForRelOffset(methodRegionInfo, map[i].nativeStartOffset);
                 maps->endAddress =
-                    TO_CDADDR(codeStart + map[i].nativeEndOffset);
+                    GetEndAddressForRelOffset(
+                        methodRegionInfo, map[i].nativeStartOffset, map[i].nativeEndOffset);
                 // XXX Microsoft - Define types as mapping of
                 // ICorDebugInfo::SourceTypes.
                 maps->type = CLRDATA_SOURCE_TYPE_INVALID;

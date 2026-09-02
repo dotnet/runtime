@@ -541,6 +541,7 @@ public:
     void reportMetadata(const char* key, const void* value, size_t length) override final;
 
     virtual void WriteCode(EECodeGenManager * jitMgr) = 0;
+    virtual void FlushInstructionCaches(PBYTE nativeEntry, size_t sizeOfCode);
 
     void getHelperFtn(CorInfoHelpFunc         tnNum,                     /* IN  */
                       CORINFO_CONST_LOOKUP *  pNativeEntrypoint,         /* OUT */
@@ -643,6 +644,7 @@ public:
 
     void WriteCodeBytes();
     void WriteCode(EECodeGenManager * jitMgr) override;
+    void FlushInstructionCaches(PBYTE nativeEntry, size_t sizeOfCode) override;
 
     void reserveUnwindInfo(bool isFunclet, bool isColdCode, uint32_t unwindSize) override;
 
@@ -718,6 +720,9 @@ public:
         m_theUnwindBlock = NULL;
         m_totalUnwindInfos = 0;
         m_usedUnwindInfos = 0;
+#ifdef _DEBUG
+        m_allocatedUnwindFunclet = false;
+#endif
     }
 
 #if defined(TARGET_AMD64) || defined(TARGET_RISCV64)
@@ -807,6 +812,9 @@ public:
           m_theUnwindBlock(NULL),
           m_totalUnwindInfos(0),
           m_usedUnwindInfos(0)
+#ifdef _DEBUG
+        , m_allocatedUnwindFunclet(false)
+#endif
 #if defined(TARGET_AMD64) || defined(TARGET_RISCV64)
         , m_fAllowRel32(FALSE)
 #endif
@@ -906,6 +914,9 @@ protected :
     BYTE *                  m_theUnwindBlock;   // start of the unwind memory block
     ULONG                   m_totalUnwindInfos; // Number of RUNTIME_FUNCTION needed
     ULONG                   m_usedUnwindInfos;
+#ifdef _DEBUG
+    bool                    m_allocatedUnwindFunclet;
+#endif
 
 #if defined(TARGET_AMD64) || defined(TARGET_RISCV64)
     BOOL                    m_fAllowRel32;      // Use 32-bit PC relative address modes

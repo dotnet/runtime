@@ -2911,8 +2911,12 @@ inline void EEJitManager::JitTokenToMethodRegionInfo(const METHODTOKEN& MethodTo
         TADDR moduleBase = pRangeSection->_range.RangeStart();
         UINT unwindInfos = pCodeHeader->GetNumberOfUnwindInfos();
         _ASSERTE(unwindInfos > 1);
-        methodRegionInfo->coldSize = RUNTIME_FUNCTION__EndAddress(pCodeHeader->GetUnwindInfo(unwindInfos - 1), moduleBase)
-            - RUNTIME_FUNCTION__BeginAddress(pCodeHeader->GetUnwindInfo(1));
+        _ASSERTE(methodRegionInfo->coldStartAddress >= moduleBase);
+        _ASSERTE(FitsInU4(methodRegionInfo->coldStartAddress - moduleBase));
+        DWORD coldStartRva = static_cast<DWORD>(methodRegionInfo->coldStartAddress - moduleBase);
+        TADDR coldEndRva = RUNTIME_FUNCTION__EndAddress(pCodeHeader->GetUnwindInfo(unwindInfos - 1), moduleBase);
+        _ASSERTE(coldStartRva < coldEndRva);
+        methodRegionInfo->coldSize = coldEndRva - coldStartRva;
         _ASSERTE(methodRegionInfo->coldSize < methodRegionInfo->hotSize);
         methodRegionInfo->hotSize -= methodRegionInfo->coldSize;
     }

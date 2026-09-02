@@ -1072,6 +1072,7 @@ CDAC_TYPE_FIELD(RealCodeHeader, T_POINTER, MethodDesc, offsetof(RealCodeHeader, 
 CDAC_TYPE_FIELD(RealCodeHeader, T_POINTER, DebugInfo, offsetof(RealCodeHeader, phdrDebugInfo))
 CDAC_TYPE_FIELD(RealCodeHeader, T_POINTER, EHInfo, offsetof(RealCodeHeader, phdrJitEHInfo))
 CDAC_TYPE_FIELD(RealCodeHeader, T_POINTER, GCInfo, offsetof(RealCodeHeader, phdrJitGCInfo))
+CDAC_TYPE_FIELD(RealCodeHeader, T_POINTER, ColdCodeHeader, offsetof(RealCodeHeader, pColdCodeHeader))
 CDAC_TYPE_FIELD(RealCodeHeader, T_UINT32, NumUnwindInfos, offsetof(RealCodeHeader, nUnwindInfos))
 CDAC_TYPE_FIELD(RealCodeHeader, TYPE(RuntimeFunction), UnwindInfos, offsetof(RealCodeHeader, unwindInfos))
 CDAC_TYPE_END(RealCodeHeader)

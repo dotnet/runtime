@@ -318,6 +318,7 @@ internal sealed class MockRealCodeHeader : TypedView
     private const string DebugInfoFieldName = "DebugInfo";
     private const string EHInfoFieldName = "EHInfo";
     private const string GCInfoFieldName = "GCInfo";
+    private const string ColdCodeHeaderFieldName = "ColdCodeHeader";
     private const string NumUnwindInfosFieldName = "NumUnwindInfos";
     private const string UnwindInfosFieldName = "UnwindInfos";
 
@@ -327,6 +328,7 @@ internal sealed class MockRealCodeHeader : TypedView
             .AddPointerField(DebugInfoFieldName)
             .AddPointerField(EHInfoFieldName)
             .AddPointerField(GCInfoFieldName)
+            .AddPointerField(ColdCodeHeaderFieldName)
             .AddUInt32Field(NumUnwindInfosFieldName)
             .AddPointerField(UnwindInfosFieldName)
             .Build<MockRealCodeHeader>();
@@ -353,6 +355,12 @@ internal sealed class MockRealCodeHeader : TypedView
     {
         get => ReadPointerField(GCInfoFieldName);
         set => WritePointerField(GCInfoFieldName, value);
+    }
+
+    public ulong ColdCodeHeader
+    {
+        get => ReadPointerField(ColdCodeHeaderFieldName);
+        set => WritePointerField(ColdCodeHeaderFieldName, value);
     }
 
     public uint NumUnwindInfos
@@ -901,6 +909,7 @@ internal sealed class MockExecutionManagerBuilder
         codeHeader.DebugInfo = 0;
         codeHeader.EHInfo = 0;
         codeHeader.GCInfo = 0;
+        codeHeader.ColdCodeHeader = 0;
         codeHeader.NumUnwindInfos = 0;
         codeHeader.UnwindInfos = 0;
 
@@ -938,6 +947,7 @@ internal sealed class MockExecutionManagerBuilder
         codeHeader.DebugInfo = 0;
         codeHeader.EHInfo = 0;
         codeHeader.GCInfo = 0;
+        codeHeader.ColdCodeHeader = 0;
         codeHeader.NumUnwindInfos = numUnwindInfos;
 
         ulong unwindInfosAddress = headerFragment.Address + (ulong)unwindInfosOffset;
@@ -955,6 +965,88 @@ internal sealed class MockExecutionManagerBuilder
             CodeAddress = jittedMethod.CodeAddress,
             UnwindInfosAddress = unwindInfosAddress,
             NumUnwindInfos = numUnwindInfos,
+        };
+    }
+
+    internal readonly struct HotColdJittedMethod
+    {
+        public ulong HotCodeAddress { get; init; }
+        public ulong ColdCodeAddress { get; init; }
+        public ulong ColdFuncletAddress { get; init; }
+        public uint HotSize { get; init; }
+        public uint ColdSize { get; init; }
+    }
+
+    public HotColdJittedMethod AddHotColdJittedMethod(
+        JittedCodeRange jittedCodeRange,
+        uint hotSize,
+        uint coldSize,
+        ulong methodDescAddress,
+        ulong moduleBase,
+        ulong gcInfoAddress)
+    {
+        const uint FragmentSize = 0x10;
+        const int NumUnwindInfos = 4;
+
+        if (coldSize < FragmentSize * 3)
+            throw new ArgumentOutOfRangeException(nameof(coldSize));
+
+        MockJittedMethod hotMethod = AllocateJittedMethod(jittedCodeRange, hotSize, "Hot Method Header & Code");
+        MockJittedMethod coldMethod = AllocateJittedMethod(jittedCodeRange, coldSize, "Cold Method Header & Code");
+
+        int unwindInfosOffset = RealCodeHeaderLayout.GetField("UnwindInfos").Offset;
+        int runtimeFunctionSize = RuntimeFunctionLayout.Size;
+        ulong headerSize = checked((ulong)(unwindInfosOffset + NumUnwindInfos * runtimeFunctionSize));
+        headerSize = Math.Max(headerSize, (ulong)RealCodeHeaderLayout.Size);
+        MockMemorySpace.HeapFragment headerFragment = _allocator.Allocate(headerSize, "Hot/Cold RealCodeHeader");
+        MockRealCodeHeader codeHeader = RealCodeHeaderLayout.Create(
+            headerFragment.Data.AsMemory(0, RealCodeHeaderLayout.Size),
+            headerFragment.Address);
+
+        ulong hotCodeHeaderAddress = hotMethod.CodeAddress - (ulong)Builder.TargetTestHelpers.PointerSize;
+        ulong coldCodeHeaderAddress = coldMethod.CodeAddress - (ulong)Builder.TargetTestHelpers.PointerSize;
+        hotMethod.CodeHeader = codeHeader.Address;
+        coldMethod.CodeHeader = hotCodeHeaderAddress;
+
+        codeHeader.MethodDesc = methodDescAddress;
+        codeHeader.DebugInfo = 0;
+        codeHeader.EHInfo = 0;
+        codeHeader.GCInfo = gcInfoAddress;
+        codeHeader.ColdCodeHeader = coldCodeHeaderAddress;
+        codeHeader.NumUnwindInfos = NumUnwindInfos;
+
+        (ulong Begin, ulong End, bool IsFragment)[] functions =
+        [
+            (hotMethod.CodeAddress, hotMethod.CodeAddress + hotSize, false),
+            (coldMethod.CodeAddress, coldMethod.CodeAddress + FragmentSize, true),
+            (coldMethod.CodeAddress + FragmentSize, coldMethod.CodeAddress + 2 * FragmentSize, false),
+            (coldMethod.CodeAddress + 2 * FragmentSize, coldMethod.CodeAddress + coldSize, true),
+        ];
+
+        for (int i = 0; i < functions.Length; i++)
+        {
+            int entryOffset = unwindInfosOffset + i * runtimeFunctionSize;
+            MockRuntimeFunction runtimeFunction = RuntimeFunctionLayout.Create(
+                headerFragment.Data.AsMemory(entryOffset, runtimeFunctionSize),
+                headerFragment.Address + (ulong)entryOffset);
+
+            MockMemorySpace.HeapFragment unwindInfo =
+                jittedCodeRange.Allocator.Allocate(2 * sizeof(uint), $"UnwindInfo {i}");
+            Builder.TargetTestHelpers.Write(unwindInfo.Data.AsSpan(0, sizeof(uint)), 1u << 27);
+            unwindInfo.Data[sizeof(uint)] = functions[i].IsFragment ? (byte)0xe5 : (byte)0xe4;
+
+            runtimeFunction.BeginAddress = checked((uint)(functions[i].Begin - moduleBase));
+            runtimeFunction.EndAddress = checked((uint)(functions[i].End - moduleBase));
+            runtimeFunction.UnwindData = checked((uint)(unwindInfo.Address - moduleBase));
+        }
+
+        return new HotColdJittedMethod
+        {
+            HotCodeAddress = hotMethod.CodeAddress,
+            ColdCodeAddress = coldMethod.CodeAddress,
+            ColdFuncletAddress = coldMethod.CodeAddress + FragmentSize,
+            HotSize = hotSize,
+            ColdSize = coldSize,
         };
     }
 

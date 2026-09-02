@@ -4932,10 +4932,16 @@ BOOL EECodeGenManager::JitCodeToMethodInfoWorker(
     {
         pCodeInfo->m_methodToken = MethodToken;
 
-        // This can be counted on for Jitted code. For NGEN code in the case
-        // where we have hot/cold splitting this isn't valid and we need to
-        // take into account cold code.
-        pCodeInfo->m_relOffset = (DWORD)(PCODEToPINSTR(currentPC) - start);
+        TADDR relOffset = PCODEToPINSTR(currentPC) - start;
+        if (std::is_same<TCodeHeader, CodeHeader>::value && MethodToken.IsCold())
+        {
+            MethodRegionInfo methodRegionInfo;
+            dac_cast<PTR_EEJitManager>(pRangeSection->_pjit)
+                ->JitTokenToMethodRegionInfo(MethodToken, &methodRegionInfo);
+            relOffset += methodRegionInfo.hotSize;
+        }
+        _ASSERTE(FitsInU4(relOffset));
+        pCodeInfo->m_relOffset = static_cast<DWORD>(relOffset);
 
         // Computed lazily by code:EEJitManager::LazyGetFunctionEntry
         if (pCHdr->MayHaveFunclets())
@@ -5390,11 +5396,25 @@ DWORD EEJitManager::GetFuncletStartOffsets(const METHODTOKEN& MethodToken, DWORD
     _ASSERTE(pCH->GetNumberOfUnwindInfos() >= 1);
 
     DWORD parentBeginRva = RUNTIME_FUNCTION__BeginAddress(pCH->GetUnwindInfo(0));
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
+    MethodRegionInfo methodRegionInfo;
+    JitTokenToMethodRegionInfo(MethodToken, &methodRegionInfo);
+#endif // TARGET_ARM64 || TARGET_AMD64
 
     DWORD nFunclets = 0;
     for (COUNT_T iUnwindInfo = 1; iUnwindInfo < pCH->GetNumberOfUnwindInfos(); iUnwindInfo++)
     {
         PTR_RUNTIME_FUNCTION pFunctionEntry = pCH->GetUnwindInfo(iUnwindInfo);
+
+#ifdef TARGET_AMD64
+        PTR_UNWIND_INFO pUnwindInfo = dac_cast<PTR_UNWIND_INFO>(
+            moduleBase + RUNTIME_FUNCTION__GetUnwindInfoAddress(pFunctionEntry));
+        if ((pUnwindInfo->Flags & UNW_FLAG_CHAININFO) != 0)
+        {
+            // The AMD64 cold root is not a funclet.
+            continue;
+        }
+#endif // TARGET_AMD64
 
 #if defined(EXCEPTION_DATA_SUPPORTS_FUNCTION_FRAGMENTS)
         if (IsFunctionFragment(moduleBase, pFunctionEntry))
@@ -5405,7 +5425,24 @@ DWORD EEJitManager::GetFuncletStartOffsets(const METHODTOKEN& MethodToken, DWORD
 #endif // EXCEPTION_DATA_SUPPORTS_FUNCTION_FRAGMENTS
 
         DWORD funcletBeginRva = RUNTIME_FUNCTION__BeginAddress(pFunctionEntry);
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
+        TADDR funcletStartAddress = moduleBase + funcletBeginRva;
+        DWORD relParentOffsetToFunclet;
+        if ((methodRegionInfo.coldSize != 0) && (funcletStartAddress >= methodRegionInfo.coldStartAddress))
+        {
+            _ASSERTE(funcletStartAddress < methodRegionInfo.coldStartAddress + methodRegionInfo.coldSize);
+            SIZE_T relOffset =
+                methodRegionInfo.hotSize + (funcletStartAddress - methodRegionInfo.coldStartAddress);
+            _ASSERTE(FitsInU4(relOffset));
+            relParentOffsetToFunclet = static_cast<DWORD>(relOffset);
+        }
+        else
+        {
+            relParentOffsetToFunclet = funcletBeginRva - parentBeginRva;
+        }
+#else
         DWORD relParentOffsetToFunclet = funcletBeginRva - parentBeginRva;
+#endif // TARGET_ARM64 || TARGET_AMD64
 
         if (nFunclets < dwLength)
             pStartFuncletOffsets[nFunclets] = relParentOffsetToFunclet;
