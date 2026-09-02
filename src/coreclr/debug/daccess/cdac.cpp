@@ -165,6 +165,13 @@ CDAC::~CDAC()
 
 HRESULT CDAC::CreateSosInterface(IUnknown** sos)
 {
+    if (sos == nullptr)
+    {
+        return E_INVALIDARG;
+    }
+
+    *sos = nullptr;
+
     decltype(&cdac_reader_create_sos_interface) createSosInterface = reinterpret_cast<decltype(&cdac_reader_create_sos_interface)>(::GetProcAddress(m_module, "cdac_reader_create_sos_interface"));
     if (createSosInterface == nullptr)
     {
