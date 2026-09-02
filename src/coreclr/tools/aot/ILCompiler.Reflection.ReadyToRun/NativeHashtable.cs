@@ -256,8 +256,9 @@ namespace ILCompiler.Reflection.ReadyToRun
             _filterStartOffset = filterStartOffset;
             _filterEndOffset = filterEndOffset;
 
-            if (((_filterEndOffset - _filterStartOffset) & 0xF) != 0)
+            if (((_filterStartOffset & 0xF) != 0) || ((_filterEndOffset & 0xF) != 0))
             {
+                // Native cuckoo filters must be aligned at 16byte boundaries within the PE file
                 throw new System.BadImageFormatException();
             }
         }

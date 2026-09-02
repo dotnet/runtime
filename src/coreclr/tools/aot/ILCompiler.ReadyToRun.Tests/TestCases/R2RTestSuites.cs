@@ -250,21 +250,10 @@ public class R2RTestSuites
             Assert.True(webcilReader.IsWasmWrapped);
             Assert.True(reader.Composite);
             Assert.True(R2RAssert.HasManifestRef(reader, "CompositeLib", out string diag), diag);
+            ReadyToRunSection section = reader.ReadyToRunHeader.Sections.Values.First();
+            int payloadOffset = reader.GetOffset(section.RelativeVirtualAddress) - section.RelativeVirtualAddress;
+            Assert.Equal(0, payloadOffset & 0xF);
         }
-    }
-
-    [Fact]
-    public void CuckooFilterSizeValidationDoesNotDependOnFileOffset()
-    {
-        var imageReader = new NativeReader(new MemoryStream(new byte[64]));
-
-        // The Webcil payload of a wasm-wrapped image does not start at a 16 byte aligned file
-        // offset, so file-offset alignment cannot be used to validate the filter.
-        var filter = new NativeCuckooFilter(imageReader, filterStartOffset: 8, filterEndOffset: 40);
-        Assert.StartsWith($"NativeCuckooFilter Size: 2{Environment.NewLine}", filter.ToString());
-
-        Assert.Throws<BadImageFormatException>(
-            () => new NativeCuckooFilter(imageReader, filterStartOffset: 0, filterEndOffset: 24));
     }
 
     [Theory]
