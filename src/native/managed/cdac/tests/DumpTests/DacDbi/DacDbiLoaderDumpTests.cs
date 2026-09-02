@@ -16,7 +16,7 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 public class DacDbiLoaderDumpTests : DumpTestBase
 {
     protected override string DebuggeeName => "StackRefs";
-    private DacDbiImpl CreateDacDbi() => new DacDbiImpl(Target, legacyObj: null);
+    private DacDbiImpl CreateDacDbi() => new DacDbiImpl(Target, legacyObj: null, new());
 
     private IEnumerable<ModuleHandle> GetAllModules()
     {
@@ -141,7 +141,7 @@ public class DacDbiLoaderDumpTests : DumpTestBase
         // Get the well-known System.Object MethodTable
         TargetPointer objectMTGlobal = Target.ReadGlobalPointer("ObjectMethodTable");
         TargetPointer objectMT = Target.ReadPointer(objectMTGlobal);
-        TypeHandle objectHandle = rts.GetTypeHandle(objectMT);
+        ITypeHandle objectHandle = rts.GetTypeHandle(objectMT);
 
         // Get its TypeDef token and module pointer
         uint token = rts.GetTypeDefToken(objectHandle);

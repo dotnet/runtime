@@ -3,6 +3,10 @@
     <!-- Needed for CLRTestEnvironmentVariable -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <CLRTestPriority>1</CLRTestPriority>
+    <!-- TODO: Re-enable when browser CoreCLR JIT supports GCStress-on-direct-calls and the
+         ProcessStartInfo.Environment struct-return trigger has a browser-safe replacement.
+         Tracked by https://github.com/dotnet/runtime/issues/131321. -->
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">true</CLRTestTargetUnsupported>
     <DebugType>None</DebugType>
     <Optimize>True</Optimize>
   </PropertyGroup>

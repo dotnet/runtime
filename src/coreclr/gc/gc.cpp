@@ -163,11 +163,6 @@ uint64_t qpf;
 double qpf_ms;
 double qpf_us;
 
-uint64_t RawGetHighPrecisionTimeStamp()
-{
-    return (uint64_t)GCToOSInterface::QueryPerformanceCounter();
-}
-
 #ifdef BGC_SERVO_TUNING
 bool gc_heap::bgc_tuning::enable_fl_tuning = false;
 uint32_t gc_heap::bgc_tuning::memory_load_goal = 0;
@@ -298,7 +293,7 @@ static unsigned int         gc_count_during_log;
  // In ms. This is how often we print out stats.
 static const unsigned int   log_interval = 5000;
 // Time (in ms) when we start a new log interval.
-static uint64_t             log_start_tick;
+static int64_t              log_start_tick;
 static unsigned int         gc_lock_contended;
 static int64_t              log_start_hires;
 // Cycles accumulated in SuspendEE during log_interval.
@@ -314,11 +309,11 @@ process_sync_log_stats()
 {
 #ifdef SYNCHRONIZATION_STATS
 
-    uint64_t log_elapsed = GCToOSInterface::GetLowPrecisionTimeStamp() - log_start_tick;
+    int64_t log_elapsed = minipal_lowres_ticks() - log_start_tick;
 
     if (log_elapsed > log_interval)
     {
-        uint64_t total = GCToOSInterface::QueryPerformanceCounter() - log_start_hires;
+        uint64_t total = minipal_hires_ticks() - log_start_hires;
         // Print out the cycles we spent on average in each suspend and restart.
         printf("\n_________________________________________________________________________________\n"
             "Past %d(s): #%3d GCs; Total gc_lock contended: %8u; GC: %12u\n"
@@ -490,7 +485,7 @@ enter_msl_status gc_heap::enter_spin_lock_msl_helper (GCSpinLock* msl)
 #ifdef DYNAMIC_HEAP_COUNT
         uint64_t end = GetHighPrecisionTimeStamp();
         Interlocked::ExchangeAdd64 (&msl->msl_wait_time, end - start);
-        dprintf (3, ("h%d wait for msl lock wait time %zd, total wait time: %zd", heap_number, (end - start), msl->msl_wait_time));
+        dprintf (3, ("h%d wait for msl lock wait time %" PRIu64 ", total wait time: %" PRIu64, heap_number, (end - start), msl->msl_wait_time));
 #endif //DYNAMIC_HEAP_COUNT
     }
     while (Interlocked::CompareExchange (&msl->lock, lock_taken, lock_free) != lock_free);
@@ -1004,7 +999,7 @@ uint64_t    gc_heap::total_alloc_bytes_uoh = 0;
 
 int         gc_heap::gc_policy = 0;
 
-uint64_t    gc_heap::allocation_running_time;
+int64_t     gc_heap::allocation_running_time;
 
 size_t      gc_heap::allocation_running_amount;
 
@@ -1162,6 +1157,10 @@ snoop_stats_data gc_heap::snoop_stat;
 uint8_t*    gc_heap::min_overflow_address = MAX_PTR;
 
 uint8_t*    gc_heap::max_overflow_address = 0;
+
+#ifndef USE_REGIONS
+heap_segment* gc_heap::new_heap_segment = nullptr;
+#endif //!USE_REGIONS
 
 uint8_t*    gc_heap::shigh = 0;
 
@@ -2929,7 +2928,7 @@ void
 gc_heap::restart_EE ()
 {
     dprintf (2, ("restart_EE"));
-    GCToEEInterface::RestartEE (FALSE);
+    GCToEEInterface::RestartEE (/* bUnused */ true);
 }
 
 //Initializes PER_HEAP_ISOLATED data members.
@@ -4246,7 +4245,7 @@ gc_heap::verify_free_lists ()
                 {
                     // The logic in change_heap_count depends on the coming BGC (or blocking gen 2) to rebuild the gen 2 free list.
                     // In that case, before the rebuild happens, the gen2 free list is expected to contain free list items that do not belong to the right heap.
-                    dprintf (1, ("curr free item %p should be on heap %d, but actually is on heap %d: %d", free_list, this->heap_number, region->heap->heap_number));
+                    dprintf (1, ("curr free item %p should be on heap %d, but actually is on heap %d", free_list, this->heap_number, region->heap->heap_number));
                     FATAL_GC_ERROR();
                 }
 #endif //USE_REGIONS && MULTIPLE_HEAPS
@@ -4496,6 +4495,7 @@ void PopulateDacVars(GcDacVars *gcDacVars)
     bool v4 = gcDacVars->minor_version_number >= 4;
     bool v6 = gcDacVars->minor_version_number >= 6;
     bool v8 = gcDacVars->minor_version_number >= 8;
+    bool v9 = gcDacVars->minor_version_number >= 9;
 
 #define DEFINE_FIELD(field_name, field_type) offsetof(CLASS_NAME, field_name),
 #define DEFINE_DPTR_FIELD(field_name, field_type) offsetof(CLASS_NAME, field_name),
@@ -4527,7 +4527,7 @@ void PopulateDacVars(GcDacVars *gcDacVars)
     // work differently than .Net SOS.  When making breaking changes here you may need to
     // find NativeAOT's equivalent of SOS_BREAKING_CHANGE_VERSION and increment it.
     gcDacVars->major_version_number = 2;
-    gcDacVars->minor_version_number = 8;
+    gcDacVars->minor_version_number = 9;
     if (v2)
     {
         gcDacVars->total_bookkeeping_elements = total_bookkeeping_elements;
@@ -4647,6 +4647,12 @@ void PopulateDacVars(GcDacVars *gcDacVars)
     {
 #ifdef MULTIPLE_HEAPS
         gcDacVars->g_totalCpuCount = &::g_totalCpuCount;
+#endif // MULTIPLE_HEAPS
+    }
+    if (v9)
+    {
+#ifndef MULTIPLE_HEAPS
+        gcDacVars->card_table = &gc_heap::card_table;
 #endif // MULTIPLE_HEAPS
     }
 }

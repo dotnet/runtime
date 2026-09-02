@@ -738,7 +738,8 @@ namespace System.Text.Json.SourceGeneration
                     writer.WriteLine("},");
 
                     // The deconstructor switch has no `_` arm — it relies on the union's
-                    // declared case set being exhaustively covered by its arms.
+                    // declared case set being exhaustively covered by its arms. Adding a
+                    // `_` arm would make it unreachable (CS8510).
                     writer.WriteLine($"UnionDeconstructor = static ({genericArg} value) =>");
                     writer.WriteLine('{');
                     writer.Indentation++;
@@ -783,7 +784,9 @@ namespace System.Text.Json.SourceGeneration
                         }
 
                         string patternTypeFQN = caseSpec.PatternType.FullyQualifiedName;
-                        writer.WriteLine($"{patternTypeFQN} caseValue{deconArmIndex} => (typeof({caseSpec.CaseType.FullyQualifiedName}), (object?)caseValue{deconArmIndex}),");
+                        string caseTypeFQN = caseSpec.CaseType.FullyQualifiedName;
+
+                        writer.WriteLine($"{patternTypeFQN} caseValue{deconArmIndex} => (typeof({caseTypeFQN}), (object?)caseValue{deconArmIndex}),");
                         deconArmIndex++;
                     }
 

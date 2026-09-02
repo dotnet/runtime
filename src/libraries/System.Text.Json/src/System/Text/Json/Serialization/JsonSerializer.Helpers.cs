@@ -54,7 +54,7 @@ namespace System.Text.Json
 
         private static JsonTypeInfo GetTypeInfo(JsonSerializerContext context, Type inputType)
         {
-            Debug.Assert(context != null);
+            Debug.Assert(context is not null);
             Debug.Assert(inputType != null);
 
             JsonTypeInfo? info = context.GetTypeInfo(inputType);
@@ -144,7 +144,7 @@ namespace System.Text.Json
 
         private static JsonTypeInfo<List<T?>> GetOrAddListTypeInfoForRootLevelValueMode<T>(JsonTypeInfo<T> elementTypeInfo)
         {
-            if (elementTypeInfo._asyncEnumerableRootLevelValueTypeInfo != null)
+            if (elementTypeInfo._asyncEnumerableRootLevelValueTypeInfo is not null)
             {
                 return (JsonTypeInfo<List<T?>>)elementTypeInfo._asyncEnumerableRootLevelValueTypeInfo;
             }
@@ -162,7 +162,7 @@ namespace System.Text.Json
 
         private static JsonTypeInfo<List<T?>> GetOrAddListTypeInfoForArrayMode<T>(JsonTypeInfo<T> elementTypeInfo)
         {
-            if (elementTypeInfo._asyncEnumerableArrayTypeInfo != null)
+            if (elementTypeInfo._asyncEnumerableArrayTypeInfo is not null)
             {
                 return (JsonTypeInfo<List<T?>>)elementTypeInfo._asyncEnumerableArrayTypeInfo;
             }
@@ -181,7 +181,7 @@ namespace System.Text.Json
 
         private static JsonTypeInfo<IAsyncEnumerable<T>> GetOrAddIAsyncEnumerableTypeInfoForSerialize<T>(JsonTypeInfo<T> elementTypeInfo)
         {
-            if (elementTypeInfo._asyncEnumerableRootLevelSerializer != null)
+            if (elementTypeInfo._asyncEnumerableRootLevelSerializer is not null)
             {
                 return (JsonTypeInfo<IAsyncEnumerable<T>>)elementTypeInfo._asyncEnumerableRootLevelSerializer;
             }

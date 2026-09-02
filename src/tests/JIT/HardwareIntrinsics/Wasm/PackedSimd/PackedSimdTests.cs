@@ -675,7 +675,7 @@ public sealed class PackedSimdTests
 
         Vector128<short> sh1 = Opaque(Vector128.Create((short)0x0100, 0x0302, 0x0504, 0x0706, 0x0908, 0x0B0A, 0x0D0C, 0x0F0E));
         Vector128<short> sh2 = Opaque(Vector128.Create(unchecked((short)0x1110), 0x1312, 0x1514, 0x1716, 0x1918, 0x1B1A, 0x1D1C, 0x1F1E));
-        Assert.Equal(Vector128.Create((byte)0x00, 0x02, 0x04, 0x06, 0x08, 0x0A, 0x0C, 0x0E, 0x10, 0x12, 0x14, 0x16, 0x18, 0x1A, 0x1C, 0x1E), Vector128.Narrow(sh1, sh2));
+        Assert.Equal(Vector128.Create((sbyte)0x00, 0x02, 0x04, 0x06, 0x08, 0x0A, 0x0C, 0x0E, 0x10, 0x12, 0x14, 0x16, 0x18, 0x1A, 0x1C, 0x1E), Vector128.Narrow(sh1, sh2));
 
         Vector128<int> i1 = Opaque(Vector128.Create(0x00030002, 0x00050004, 0x00070006, 0x00090008));
         Vector128<int> i2 = Opaque(Vector128.Create(0x000B000A, 0x000D000C, 0x000F000E, 0x00110010));
@@ -1072,6 +1072,48 @@ public sealed class PackedSimdTests
 
         Assert.Equal(Vector128.Create(42, 42, 42, 42), intSplat);
         Assert.Equal(Vector128.Create(3.14f, 3.14f, 3.14f, 3.14f), floatSplat);
+    }
+
+    [Fact]
+    public static unsafe void LoadStoreNullCheckTest()
+    {
+        Assert.Throws<NullReferenceException>(() => LoadScalarAndSplatVector128(null));
+        Assert.Throws<NullReferenceException>(() => LoadScalarVector128(null));
+        Assert.Throws<NullReferenceException>(() => LoadWideningVector128(null));
+        Assert.Throws<NullReferenceException>(() => LoadScalarAndInsert(null, 2));
+        Assert.Throws<NullReferenceException>(() => StoreSelectedScalar(null, 2));
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static unsafe Vector128<int> LoadScalarAndSplatVector128(int* address)
+    {
+        return PackedSimd.LoadScalarAndSplatVector128(address);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static unsafe Vector128<int> LoadScalarVector128(int* address)
+    {
+        return PackedSimd.LoadScalarVector128(address);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static unsafe Vector128<short> LoadWideningVector128(sbyte* address)
+    {
+        return PackedSimd.LoadWideningVector128(address);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static unsafe Vector128<int> LoadScalarAndInsert(int* address, byte index)
+    {
+        Vector128<int> vector = Vector128.Create(1, 2, 3, 4);
+        return PackedSimd.LoadScalarAndInsert(address, vector, index);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static unsafe void StoreSelectedScalar(int* address, byte index)
+    {
+        Vector128<int> vector = Vector128.Create(1, 2, 3, 4);
+        PackedSimd.StoreSelectedScalar(address, vector, index);
     }
 
     [Fact]

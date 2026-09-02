@@ -22,6 +22,8 @@ using Internal.ReadyToRunConstants;
 using ILCompiler.ReadyToRun.TypeSystem;
 using ILCompiler.ReadyToRun;
 
+using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
+
 namespace ILCompiler.DependencyAnalysis
 {
     public struct NodeCache<TKey, TValue>
@@ -64,6 +66,7 @@ namespace ILCompiler.DependencyAnalysis
         public int DeterminismStress;
         public bool PrintReproArgs;
         public bool EnableCachedInterfaceDispatchSupport;
+        public bool GenerateUnboxingStubs;
         public bool IsComponentModule;
         public bool StripInliningInfo;
         public bool StripDebugInfo;
@@ -134,6 +137,47 @@ namespace ILCompiler.DependencyAnalysis
             return _localMethodCache.GetOrAdd(method);
         }
 
+        private bool CanPrecompileUnboxingStub(MethodDesc targetMethod)
+        {
+            if (!CompilationModuleGroup.ContainsMethodBody(targetMethod, false))
+                return false;
+
+            // Runtime generated generic unbox stubs are not shared. Using the shared version
+            // produced by R2R seems to require more work.
+            if (targetMethod.RequiresInstMethodDescArg())
+                return false;
+
+            // TODO See comment in UnboxingThunk.EmitIL
+            if (targetMethod.IsAsyncCall())
+                return false;
+
+            return true;
+        }
+
+        /// <summary>
+        /// Does an instance method on a value type need an unboxing thunk, i.e. can it be entered
+        /// with a boxed 'this'? Interface implementations and virtual overrides are both emitted as
+        /// virtual by compilers, so IsVirtual covers both.
+        /// </summary>
+        public bool NeedsUnboxingStub(MethodDesc method)
+        {
+            return OptimizationFlags.GenerateUnboxingStubs
+                && method.OwningType.IsValueType
+                && !method.Signature.IsStatic
+                && method.IsVirtual
+                && CanPrecompileUnboxingStub(method);
+        }
+
+        public MethodWithGCInfo UnboxingStub(MethodDesc targetMethod)
+        {
+            Debug.Assert(NeedsUnboxingStub(targetMethod));
+            ModuleDesc ownerModule = ((MetadataType)targetMethod.GetTypicalMethodDefinition().OwningType).Module;
+            MethodDesc thunk = targetMethod.IsSharedByGenericInstantiations && !targetMethod.HasInstantiation
+                ? TypeSystemContext.GetSpecialUnboxingThunk(targetMethod, ownerModule)
+                : TypeSystemContext.GetUnboxingThunk(targetMethod, ownerModule);
+            return _localMethodCache.GetOrAdd(thunk);
+        }
+
         private NodeCache<TypeDesc, AllMethodsOnTypeNode> _allMethodsOnType;
 
         public AllMethodsOnTypeNode AllMethodsOnType(TypeDesc type)
@@ -143,9 +187,43 @@ namespace ILCompiler.DependencyAnalysis
 
         private NodeCache<TypeDesc, InheritedVirtualMethodsNode> _inheritedVirtualMethods;
 
-        public InheritedVirtualMethodsNode InheritedVirtualMethods(TypeDesc type)
+        private InheritedVirtualMethodsNode InheritedVirtualMethods(TypeDesc type)
         {
-            return _inheritedVirtualMethods.GetOrAdd(type.ConvertToCanonForm(CanonicalFormKind.Specific));
+            return _inheritedVirtualMethods.GetOrAdd(type);
+        }
+
+        private NodeCache<ArrayType, ArrayInterfaceMethodsNode> _arrayInterfaceMethods;
+
+        public ArrayInterfaceMethodsNode ArrayInterfaceMethods(ArrayType arrayType)
+        {
+            return _arrayInterfaceMethods.GetOrAdd((ArrayType)arrayType.ConvertToCanonForm(CanonicalFormKind.Specific));
+        }
+
+        public void AddVirtualMethodDiscoveryDependencies(ref DependencyList dependencies, TypeDesc type)
+        {
+            if (CompilationCurrentPhase != 0)
+                return;
+
+            type = type.ConvertToCanonForm(CanonicalFormKind.Specific);
+
+            // We record the usage of this type, so that virtual method dependency analysis can resolve implementations.
+            // GVMDependenciesNode uses this for generic virtual methods (dynamic dependencies).
+            // InheritedVirtualMethodsNode uses conditional static dependencies for non-GVM virtual methods.
+            if (!type.IsGenericDefinition &&
+                !type.IsInterface &&
+                type.IsDefType &&
+                CompilationModuleGroup.VersionsWithType(type))
+            {
+                dependencies ??= new DependencyList();
+                dependencies.Add(InheritedVirtualMethods(type), "Inherited virtual/interface methods on type");
+            }
+            // Arrays implement the generic collection interfaces through SZArrayHelper. Discover those
+            // implementations so that e.g. ((ICollection<int>)intArray).Count gets discovered.
+            else if (type.IsSzArray)
+            {
+                dependencies ??= new DependencyList();
+                dependencies.Add(ArrayInterfaceMethods((ArrayType)type), "Array generic interface methods");
+            }
         }
 
         private NodeCache<MethodDesc, GVMDependenciesNode> _gvmDependenciesNode;
@@ -299,6 +377,11 @@ namespace ILCompiler.DependencyAnalysis
             _gvmDependenciesNode = new NodeCache<MethodDesc, GVMDependenciesNode>(method =>
             {
                 return new GVMDependenciesNode(method);
+            });
+
+            _arrayInterfaceMethods = new NodeCache<ArrayType, ArrayInterfaceMethodsNode>(arrayType =>
+            {
+                return new ArrayInterfaceMethodsNode(arrayType);
             });
 
             _virtualMethodUseNodes = new NodeCache<MethodDesc, VirtualMethodUseNode>(method =>

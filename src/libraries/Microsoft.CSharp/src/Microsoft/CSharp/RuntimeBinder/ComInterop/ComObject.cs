@@ -74,6 +74,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 
         // Expression that finds or creates a ComObject that corresponds to given Rcw
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         internal static MethodCallExpression RcwToComObject(Expression rcw)
         {
             return Expression.Call(

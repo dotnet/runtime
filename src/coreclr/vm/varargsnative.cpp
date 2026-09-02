@@ -174,19 +174,11 @@ extern "C" void QCALLTYPE ArgIterator_Init(VARARGS* data, PVOID cookie)
     BEGIN_QCALL;
 
     VASigCookie* pCookie = *(VASigCookie**)(cookie);
+    _ASSERTE(!pCookie->signature.IsEmpty());
 
-    if (pCookie->signature.IsEmpty())
-    {
-        data->SigPtr = SigPointer(NULL, 0);
-        data->ArgCookie = NULL;
-        data->ArgPtr = (BYTE*)((VASigCookieEx*)pCookie)->m_pArgs;
-    }
-    else
-    {
-        // Use common code to pick the cookie apart and advance to the ...
-        InitCommon(data, (VASigCookie**)cookie);
-        AdvanceArgPtr(data);
-    }
+    // Use common code to pick the cookie apart and advance to the ...
+    InitCommon(data, (VASigCookie**)cookie);
+    AdvanceArgPtr(data);
 
     END_QCALL;
 }

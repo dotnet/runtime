@@ -2069,18 +2069,20 @@ protected:
 
 #define PERFSCORE_THROUGHPUT_ZERO 0.0f // Only used for pseudo-instructions that don't generate code
 
-#define PERFSCORE_THROUGHPUT_9X (1.0f / 9.0f)
-#define PERFSCORE_THROUGHPUT_6X (1.0f / 6.0f) // Hextuple issue
-#define PERFSCORE_THROUGHPUT_5X 0.20f         // Pentuple issue
-#define PERFSCORE_THROUGHPUT_4X 0.25f         // Quad issue
-#define PERFSCORE_THROUGHPUT_3X (1.0f / 3.0f) // Three issue
-#define PERFSCORE_THROUGHPUT_2X 0.5f          // Dual issue
+#define PERFSCORE_THROUGHPUT_9X   (1.0f / 9.0f)
+#define PERFSCORE_THROUGHPUT_6X   (1.0f / 6.0f) // Hextuple issue
+#define PERFSCORE_THROUGHPUT_5X   0.20f         // Pentuple issue
+#define PERFSCORE_THROUGHPUT_4X   0.25f         // Quad issue
+#define PERFSCORE_THROUGHPUT_3X   (1.0f / 3.0f) // Three issue
+#define PERFSCORE_THROUGHPUT_2X   0.5f          // Dual issue
+#define PERFSCORE_THROUGHPUT_1P5X (2.0f / 3.0f) // 1.5x issue
 
 #define PERFSCORE_THROUGHPUT_1C 1.0f // Single Issue
 
 #define PERFSCORE_THROUGHPUT_2C   2.0f   // slower - 2 cycles
 #define PERFSCORE_THROUGHPUT_3C   3.0f   // slower - 3 cycles
 #define PERFSCORE_THROUGHPUT_4C   4.0f   // slower - 4 cycles
+#define PERFSCORE_THROUGHPUT_4P5C 4.5f   // slower - 4.5 cycles
 #define PERFSCORE_THROUGHPUT_5C   5.0f   // slower - 5 cycles
 #define PERFSCORE_THROUGHPUT_6C   6.0f   // slower - 6 cycles
 #define PERFSCORE_THROUGHPUT_7C   7.0f   // slower - 7 cycles
@@ -2983,9 +2985,10 @@ private:
 
     void emitCheckFuncletBranch(instrDesc* jmp, insGroup* jmpIG); // Check for illegal branches between funclets
 
-    bool     emitFwdJumps;         // forward jumps present?
-    unsigned emitNoGCRequestCount; // Count of number of nested "NO GC" region requests we have.
-    bool     emitNoGCIG;           // Are we generating IGF_NOGCINTERRUPT insGroups (for prologs, epilogs, etc.)
+    bool     emitFwdJumps;           // forward jumps present?
+    unsigned emitNoGCRequestCount;   // Count of number of nested "NO GC" region requests we have.
+    bool     emitNoGCIG;             // Are we generating IGF_NOGCINTERRUPT insGroups (for prologs, epilogs, etc.)
+    bool     emitLastSavedIGWasNoGC; // Was the last non-empty saved IG non-interruptible?
     bool emitForceNewIG; // If we generate an instruction, and not another instruction group, force create a new emitAdd
                          // instruction group.
 
@@ -3072,7 +3075,7 @@ private:
 
     void emitDisableGC();
     void emitEnableGC();
-    bool emitGCDisabled();
+    bool emitLastCodeIsNoGC() const;
 
 #if defined(TARGET_XARCH)
     static bool emitAlignInstHasNoCode(instrDesc* id);
@@ -3627,6 +3630,7 @@ public:
 
         dataSection*   dsNext;
         UNATIVE_OFFSET dsAlignment;
+        UNATIVE_OFFSET dsOffset;
         UNATIVE_OFFSET dsSize;
         sectionType    dsType;
         var_types      dsDataType;

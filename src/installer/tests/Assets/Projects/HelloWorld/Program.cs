@@ -52,6 +52,13 @@ namespace HelloWorld
                         Console.WriteLine($"AppContext.GetData({propertyName}) = {propertyValue}");
                     }
                     break;
+                case "print_command_line_args":
+                    string[] commandLineArgs = Environment.GetCommandLineArgs();
+                    for (int i = 0; i < commandLineArgs.Length; i++)
+                    {
+                        Console.WriteLine($"Environment.GetCommandLineArgs()[{i}] = {commandLineArgs[i]}");
+                    }
+                    break;
                 case "throw_exception":
                     // Disable core dumps - test is intentionally crashing
                     Utilities.CoreDump.Disable();
