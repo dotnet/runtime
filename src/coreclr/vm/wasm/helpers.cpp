@@ -1414,7 +1414,7 @@ void* GetPortableEntryPointToInterpreterThunk(MethodDesc *pMD)
                     thunkKey = "Iiiiiip";
                     break;
                 default:
-                    // A shape with no thunk returns null so the caller defers (EnsurePortableEntryPointIsCallableFromR2R); it is never fatal here.
+                    _ASSERT(!"GetPortableEntryPointToInterpreterThunk: unknown signature of a string constructor");
                     return nullptr;
             }
         }
