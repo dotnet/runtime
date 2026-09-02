@@ -14,8 +14,8 @@ class MethodStatsEmitter
 {
 
 private:
-    char*  statsTypes;
-    HANDLE hStatsFile;
+    char* statsTypes;
+    FILE* fpStatsFile;
 
 public:
     MethodStatsEmitter(char* nameOfInput);

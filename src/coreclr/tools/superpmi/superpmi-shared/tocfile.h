@@ -28,36 +28,23 @@ public:
 class TOCFile
 {
 private:
-    TOCElement* m_tocArray;
-    size_t      m_tocCount;
+    std::vector<TOCElement> m_tocArray;
 
 public:
-    TOCFile() : m_tocArray(nullptr), m_tocCount(0)
+    TOCFile()
     {
-    }
-
-    ~TOCFile()
-    {
-        Clear();
-    }
-
-    void Clear()
-    {
-        delete[] m_tocArray;
-        m_tocArray = nullptr;
-        m_tocCount = 0;
     }
 
     void LoadToc(const char* inputFileName, bool validate = true);
 
     size_t GetTocCount()
     {
-        return m_tocCount;
+        return m_tocArray.size();
     }
 
     const TOCElement* GetElementPtr(size_t i)
     {
-        if (i >= m_tocCount)
+        if (i >= m_tocArray.size())
         {
             // error!
             return nullptr;

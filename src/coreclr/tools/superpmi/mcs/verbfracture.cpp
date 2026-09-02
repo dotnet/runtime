@@ -24,28 +24,27 @@ int verbFracture::DoWork(
     int  fileCount = 0;
     char fileName[512];
 
-    HANDLE hFileOut = INVALID_HANDLE_VALUE;
+    FILE* fpOut = NULL;
     while (mci.MoveNext())
     {
         MethodContext* mc = mci.Current();
 
-        if ((hFileOut == INVALID_HANDLE_VALUE) || (((mci.MethodContextNumber() - 1) % rangeSize) == 0))
+        if ((fpOut == NULL) || (((mci.MethodContextNumber() - 1) % rangeSize) == 0))
         {
-            if (hFileOut != INVALID_HANDLE_VALUE)
+            if (fpOut != NULL)
             {
-                if (!CloseHandle(hFileOut))
+                if (fclose(fpOut) != 0)
                 {
-                    LogError("1st CloseHandle failed. GetLastError()=%u", GetLastError());
+                    LogError("1st CloseHandle failed. errno=%d", errno);
                     return -1;
                 }
-                hFileOut = INVALID_HANDLE_VALUE;
+                fpOut = NULL;
             }
             sprintf_s(fileName, 512, "%s-%0*d.mch", nameOfOutput, 5, fileCount++);
-            hFileOut = CreateFileA(fileName, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS,
-                                   FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
-            if (hFileOut == INVALID_HANDLE_VALUE)
+            fpOut = fopen(fileName, "wb");
+            if (fpOut == NULL)
             {
-                LogError("Failed to open output file '%s'. GetLastError()=%u", fileName, GetLastError());
+                LogError("Failed to open output file '%s'. errno=%d", fileName, errno);
                 return -1;
             }
         }
@@ -54,14 +53,14 @@ int verbFracture::DoWork(
             delete mc->cr;
             mc->cr = new CompileResult();
         }
-        mc->saveToFile(hFileOut);
+        mc->saveToFile(fpOut);
     }
 
-    if (hFileOut != INVALID_HANDLE_VALUE)
+    if (fpOut != NULL)
     {
-        if (!CloseHandle(hFileOut))
+        if (fclose(fpOut) != 0)
         {
-            LogError("2nd CloseHandle failed. GetLastError()=%u", GetLastError());
+            LogError("2nd CloseHandle failed. errno=%d", errno);
             return -1;
         }
     }
