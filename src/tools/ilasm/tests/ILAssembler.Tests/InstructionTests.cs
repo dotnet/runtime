@@ -46,6 +46,141 @@ namespace ILAssembler.Tests
             Assert.Equal(DiagnosticSeverity.Error, error.Severity);
         }
 
+        [Fact]
+        public void Diagnostic_SwitchLabelNotFound_PointsToInstruction()
+        {
+            string source = """
+                .assembly test { }
+                .class public auto ansi Test
+                {
+                    .method public static void M() cil managed
+                    {
+                        ldc.i4.0
+                        switch (UndefinedLabel)
+                        ret
+                    }
+                }
+                """;
+
+            var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(source, new Options());
+            var error = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.LabelNotFound, error.Id);
+            Assert.Equal(source.IndexOf("switch", StringComparison.Ordinal), error.Location.Span.Start);
+        }
+
+        [Theory]
+        [InlineData("ldc.i4")]
+        [InlineData("ldc.i8")]
+        [InlineData("ldarg")]
+        [InlineData("br")]
+        [InlineData("call instance void")]
+        [InlineData("ldsfld int32")]
+        [InlineData("ldsfld mdtoken(")]
+        [InlineData("box")]
+        [InlineData("ldtoken")]
+        [InlineData("calli default void(")]
+        [InlineData("calli vararg void(class [mscorlib]System.Tuple`1<method void *(int32 modreq(")]
+        [InlineData("ldc.r8 float64(")]
+        [InlineData("ldc.r8 bytearray(00 00")]
+        [InlineData("ldstr \"A\" +")]
+        [InlineData("ldstr ansi(\"A\"")]
+        [InlineData("ldstr bytearray(48 00")]
+        [InlineData("switch (L0,")]
+        public void MalformedSimpleInstruction_DoesNotLeakMethodState(string malformedInstruction)
+        {
+            string source = $$"""
+                .assembly test { }
+                .class public auto ansi Test
+                {
+                    .method public static void Bad() cil managed
+                    {
+                        {{malformedInstruction}}
+                    }
+
+                    .method public static void Good() cil managed
+                    {
+                        ret
+                    }
+                }
+                """;
+
+            DocumentCompiler compiler = new();
+            var (diagnostics, result) = compiler.Compile(
+                new SourceText(source, "test.il"),
+                _ =>
+                {
+                    Assert.Fail("Expected no includes");
+                    return default;
+                },
+                _ =>
+                {
+                    Assert.Fail("Expected no resources");
+                    return default;
+                },
+                new Options { ErrorTolerant = true });
+
+            Assert.Contains(diagnostics, diagnostic => diagnostic.Id == "Parser");
+            Assert.NotNull(result);
+
+            BlobBuilder image = new();
+            result!.Serialize(image);
+            using PEReader pe = new(image.ToImmutableArray());
+            byte[] il = GetMethodIL(pe, "Good");
+
+            Assert.Equal([0x2A], il);
+        }
+
+        [Fact]
+        public void MalformedCalliSignature_DoesNotMaterializeDiscardedReferences()
+        {
+            string source = """
+                .assembly test { }
+                .class public auto ansi Test
+                {
+                    .method public static void Bad() cil managed
+                    {
+                        calli default void(class [Unused]Payload
+                    }
+
+                    .method public static void Good() cil managed
+                    {
+                        call void [Used]Target::M()
+                        ret
+                    }
+                }
+                """;
+
+            DocumentCompiler compiler = new();
+            var (diagnostics, result) = compiler.Compile(
+                new SourceText(source, "test.il"),
+                _ =>
+                {
+                    Assert.Fail("Expected no includes");
+                    return default;
+                },
+                _ =>
+                {
+                    Assert.Fail("Expected no resources");
+                    return default;
+                },
+                new Options { ErrorTolerant = true });
+
+            Assert.Contains(diagnostics, diagnostic => diagnostic.Id == "Parser");
+            Assert.NotNull(result);
+
+            BlobBuilder image = new();
+            result!.Serialize(image);
+            using PEReader pe = new(image.ToImmutableArray());
+            MetadataReader reader = pe.GetMetadataReader();
+            string[] assemblyReferences = reader.AssemblyReferences
+                .Select(handle => reader.GetString(reader.GetAssemblyReference(handle).Name))
+                .ToArray();
+
+            Assert.Contains("Used", assemblyReferences);
+            Assert.DoesNotContain("Unused", assemblyReferences);
+            Assert.Equal([0x28, 0x01, 0x00, 0x00, 0x0A, 0x2A], GetMethodIL(pe, "Good"));
+        }
+
 
         [Fact]
         public void DataLabelReference_FixedUpCorrectly()
@@ -363,6 +498,61 @@ namespace ILAssembler.Tests
         }
 
         [Fact]
+        public void ReferenceAndCalliOperands_NestedSignaturesDecodeCorrectly()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly Test { }
+                .class public auto ansi Test
+                {
+                    .method public static void F() cil managed
+                    {
+                        ldsfld method vararg void *(int32 modreq([mscorlib]System.Runtime.CompilerServices.IsVolatile), ..., string) class [mscorlib]System.Tuple`1<class [mscorlib]System.Tuple`1<int32>>::Callback
+                        pop
+                        call void class [mscorlib]System.Tuple`1<class [mscorlib]System.Tuple`1<int32>>::Invoke(method vararg void *(int32 modreq([mscorlib]System.Runtime.CompilerServices.IsVolatile), ..., string))
+                        ldc.i4.0
+                        conv.i
+                        calli vararg void(class [mscorlib]System.Tuple`1<class [mscorlib]System.Tuple`1<int32>>, ..., method vararg void *(int32 modreq([mscorlib]System.Runtime.CompilerServices.IsVolatile), ..., string))
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            MemberReference fieldReference = reader.MemberReferences
+                .Select(reader.GetMemberReference)
+                .Single(reference => reader.GetString(reference.Name) == "Callback");
+            Assert.Equal(
+                "method void *(int32 modreq([mscorlib]System.Runtime.CompilerServices.IsVolatile), ..., string)",
+                fieldReference.DecodeFieldSignature(DocumentCompilerTestHelpers.Decoder, genericContext: null));
+
+            MemberReference methodReference = reader.MemberReferences
+                .Select(reader.GetMemberReference)
+                .Single(reference => reader.GetString(reference.Name) == "Invoke");
+            MethodSignature<string> methodSignature =
+                methodReference.DecodeMethodSignature(DocumentCompilerTestHelpers.Decoder, genericContext: null);
+            Assert.Equal("void", methodSignature.ReturnType);
+            Assert.Equal(
+                new[] { "method void *(int32 modreq([mscorlib]System.Runtime.CompilerServices.IsVolatile), ..., string)" },
+                methodSignature.ParameterTypes);
+
+            MethodSignature<string> calliSignature = reader
+                .GetStandaloneSignature(MetadataTokens.StandaloneSignatureHandle(1))
+                .DecodeMethodSignature(DocumentCompilerTestHelpers.Decoder, genericContext: null);
+            Assert.Equal(SignatureCallingConvention.VarArgs, calliSignature.Header.CallingConvention);
+            Assert.Equal(1, calliSignature.RequiredParameterCount);
+            Assert.Equal(
+                new[]
+                {
+                    "[mscorlib]System.Tuple`1<[mscorlib]System.Tuple`1<int32>>",
+                    "method void *(int32 modreq([mscorlib]System.Runtime.CompilerServices.IsVolatile), ..., string)",
+                },
+                calliSignature.ParameterTypes);
+        }
+
+        [Fact]
         public void MaxStackDirective_IsPreserved()
         {
             string source = """
@@ -609,7 +799,7 @@ namespace ILAssembler.Tests
 
 
         [Fact]
-        public void SwitchInstruction_CommaLabels()
+        public void SwitchInstruction_NamedLabels_EmitsExpectedBranchTable()
         {
             string source = """
                 .assembly extern System.Runtime { }
@@ -627,8 +817,54 @@ namespace ILAssembler.Tests
                 }
                 """;
 
-            var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(source, new Options());
-            Assert.Empty(diagnostics);
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            byte[] il = GetMethodIL(pe, "M");
+            int switchOffset = Array.IndexOf(il, (byte)0x45);
+
+            Assert.True(switchOffset >= 0);
+            Assert.Equal(3, BitConverter.ToInt32(il, switchOffset + 1));
+            Assert.Equal(0, BitConverter.ToInt32(il, switchOffset + 5));
+            Assert.Equal(1, BitConverter.ToInt32(il, switchOffset + 9));
+            Assert.Equal(2, BitConverter.ToInt32(il, switchOffset + 13));
+        }
+
+        [Theory]
+        [InlineData("ldc.r4", "1.5", 1.5)]
+        [InlineData("ldc.r8", "1.5", 1.5)]
+        [InlineData("ldc.r8", ".5", 0.5)]
+        [InlineData("ldc.r8", "5e+1", 50.0)]
+        [InlineData("ldc.r8", "-1.25e-2", -0.0125)]
+        [InlineData("ldc.r8", "float32(0x3F800000)", 1.0)]
+        public void FloatingPointInstruction_TextAndFloat32BitForms_EmitExpectedValue(
+            string opcode,
+            string literal,
+            double expected)
+        {
+            string source = $$"""
+                .assembly test { }
+                .class public auto ansi Test
+                {
+                    .method public static void M() cil managed
+                    {
+                        {{opcode}} {{literal}}
+                        pop
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            byte[] il = GetMethodIL(pe, "M");
+            if (opcode == "ldc.r4")
+            {
+                Assert.Equal(0x22, il[0]);
+                Assert.Equal((float)expected, BitConverter.ToSingle(il, 1));
+            }
+            else
+            {
+                Assert.Equal(0x23, il[0]);
+                Assert.Equal(expected, BitConverter.ToDouble(il, 1));
+            }
         }
 
         [Fact]
@@ -652,6 +888,27 @@ namespace ILAssembler.Tests
 
             Assert.Equal(0x23, il[0]);
             Assert.Equal(Math.PI, BitConverter.ToDouble(il, 1), 14);
+        }
+
+        [Fact]
+        public void FloatingPointInstruction_IntegerOverflow_ReportsDiagnostic()
+        {
+            string source = """
+                .assembly test { }
+                .class public auto ansi Test
+                {
+                    .method public static void M() cil managed
+                    {
+                        ldc.r8 99999999999999999999999999999999
+                        pop
+                        ret
+                    }
+                }
+                """;
+
+            var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(source, new Options());
+            var error = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.LiteralOutOfRange, error.Id);
         }
 
         [Fact]
@@ -766,7 +1023,7 @@ namespace ILAssembler.Tests
         }
 
         [Fact]
-        public void LdstrInstruction_ByteArrayAndAnsiForms_EmitExpectedUserStrings()
+        public void LdstrInstruction_ComposedAnsiAndRawForms_EmitExpectedUserStrings()
         {
             string source = """
                 .assembly extern mscorlib { }
@@ -781,7 +1038,19 @@ namespace ILAssembler.Tests
 
                     .method public static string GetAnsi() cil managed
                     {
-                        ldstr ansi("AB")
+                        ldstr ansi("A" + "B")
+                        ret
+                    }
+
+                    .method public static string GetOddAnsi() cil managed
+                    {
+                        ldstr ansi("A" + "BC")
+                        ret
+                    }
+
+                    .method public static string GetComposed() cil managed
+                    {
+                        ldstr "A" + "B"
                         ret
                     }
                 }
@@ -792,6 +1061,8 @@ namespace ILAssembler.Tests
 
             Assert.Equal("Hi", ReadLdstrValue(pe, reader, "GetUtf16"));
             Assert.Equal("\u4241", ReadLdstrValue(pe, reader, "GetAnsi"));
+            Assert.Equal("\u4241\u0043", ReadLdstrValue(pe, reader, "GetOddAnsi"));
+            Assert.Equal("AB", ReadLdstrValue(pe, reader, "GetComposed"));
         }
 
         [Fact]
@@ -875,6 +1146,30 @@ namespace ILAssembler.Tests
             Assert.Equal(2, BitConverter.ToInt32(il, switchOffset + 1));
             Assert.Equal(3, BitConverter.ToInt32(il, switchOffset + 5));
             Assert.Equal(6, BitConverter.ToInt32(il, switchOffset + 9));
+        }
+
+        [Theory]
+        [InlineData("switch ()")]
+        [InlineData("switch ( )")]
+        public void SwitchInstruction_Empty_EmitsEmptyBranchTable(string instruction)
+        {
+            string source = $$"""
+                .assembly test { }
+                .class public auto ansi Test
+                {
+                    .method public static void M() cil managed
+                    {
+                        {{instruction}}
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            byte[] il = GetMethodIL(pe, "M");
+
+            Assert.Equal(0x45, il[0]);
+            Assert.Equal(0, BitConverter.ToInt32(il, 1));
         }
 
         [Fact]

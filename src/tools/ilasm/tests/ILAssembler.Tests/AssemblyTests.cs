@@ -308,6 +308,28 @@ namespace ILAssembler.Tests
 
 
         [Fact]
+        public void AssemblyLegacyLibraryAttribute_IsAccepted()
+        {
+            string source = """
+                .assembly extern legacy library dependency { }
+                .assembly legacy library test { }
+                .class public auto ansi Test { }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            MetadataReader reader = pe.GetMetadataReader();
+
+            Assert.Equal("test", reader.GetString(reader.GetAssemblyDefinition().Name));
+            Assert.Equal(
+                "dependency",
+                reader.AssemblyReferences
+                    .Select(reader.GetAssemblyReference)
+                    .Select(reference => reader.GetString(reference.Name))
+                    .Single(name => name == "dependency"));
+        }
+
+
+        [Fact]
         public void AssemblyArchitecture_SetsArchitectureFlags()
         {
             // Test the x86 architecture assembly attribute
