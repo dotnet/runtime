@@ -1173,9 +1173,6 @@ namespace
 
         void* thunk = LookupPortableEntryPointThunk(keyBuffer);
 
-        if (thunk == NULL)
-            printf("WASM: no R2R-to-interpreter thunk for signature key '%s'. \n", keyBuffer);
-
         return thunk;
     }
 
