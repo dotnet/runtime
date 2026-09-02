@@ -132,6 +132,22 @@ namespace System.Net.Mime
                     return (value, null);
                 }
 
+                // For Q-encoding, every '=' must be followed by exactly two hex digits.
+                // QEncodedStream.DecodeBytes validates the digits themselves, but a '='
+                // within the last two characters can never have two digits following it,
+                // so reject that shape here rather than passing a truncated escape to the
+                // decoder (which is only ever invoked once per encoded-word and would
+                // otherwise decode everything up to the truncated escape, silently
+                // dropping it, instead of recognizing the whole value as malformed).
+                if (!base64Encoding)
+                {
+                    ReadOnlySpan<char> tail = data.Length > 2 ? data.Slice(data.Length - 2) : data;
+                    if (tail.Contains('='))
+                    {
+                        return (value, null);
+                    }
+                }
+
                 Encoding wordEncoding;
                 try
                 {
