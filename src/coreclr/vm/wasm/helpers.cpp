@@ -1170,9 +1170,8 @@ namespace
                 return NULL;
         }
 
-        void* thunk = LookupPortableEntryPointThunk(keyBuffer);
-
-        return thunk;
+        // Returns null if no thunk is registered for this key yet (its image's InjectStringThunks fixup hasn't run); the caller then defers.
+        return LookupPortableEntryPointThunk(keyBuffer);
     }
 
     ULONG GetHashCode(MethodDesc* pMD, SString &strSource)
