@@ -73,7 +73,8 @@ namespace System
                 return; // returns default
             }
             // See comment in Span<T>.Slice for how this works.
-            if ((uint)start > (uint)array.Length || (uint)length > (uint)(array.Length - start))
+            int arrayLength = array.Length;
+            if ((uint)start > (uint)arrayLength || (uint)length > (uint)(arrayLength - start))
                 ThrowHelper.ThrowArgumentOutOfRangeException();
 
             _reference = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), (nint)(uint)start /* force zero-extension */);
@@ -384,7 +385,8 @@ namespace System
         public ReadOnlySpan<T> Slice(int start, int length)
         {
             // See comment in Span<T>.Slice for how this works.
-            if ((uint)start > (uint)_length || (uint)length > (uint)(_length - start))
+            int spanLength = _length;
+            if ((uint)start > (uint)spanLength || (uint)length > (uint)(spanLength - start))
                 ThrowHelper.ThrowArgumentOutOfRangeException();
 
             return new ReadOnlySpan<T>(ref Unsafe.Add(ref _reference, (nint)(uint)start /* force zero-extension */), length);

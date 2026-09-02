@@ -78,7 +78,8 @@ namespace System
             if (!typeof(T).IsValueType && array.GetType() != typeof(T[]))
                 ThrowHelper.ThrowArrayTypeMismatchException();
             // See comment in Span<T>.Slice for how this works.
-            if ((uint)start > (uint)array.Length || (uint)length > (uint)(array.Length - start))
+            int arrayLength = array.Length;
+            if ((uint)start > (uint)arrayLength || (uint)length > (uint)(arrayLength - start))
                 ThrowHelper.ThrowArgumentOutOfRangeException();
 
             _reference = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), (nint)(uint)start /* force zero-extension */);
@@ -410,7 +411,8 @@ namespace System
             // The first comparison rejects a negative start and a start past the end, which leaves
             // "_length - start" non-negative; the second then rejects a negative length as well as
             // one that runs past the end, so both checks are unsigned.
-            if ((uint)start > (uint)_length || (uint)length > (uint)(_length - start))
+            int spanLength = _length;
+            if ((uint)start > (uint)spanLength || (uint)length > (uint)(spanLength - start))
                 ThrowHelper.ThrowArgumentOutOfRangeException();
 
             return new Span<T>(ref Unsafe.Add(ref _reference, (nint)(uint)start /* force zero-extension */), length);
