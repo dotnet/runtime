@@ -704,11 +704,7 @@ namespace System.Security.Cryptography.Tests
 
             Action test = () => ImportEncapsulationKey(algorithm, encapsulationKey);
 
-            CompositeMLKemTestData.ExecuteComponentAction(
-                algorithm,
-                rsa => Assert.Throws<CryptographicException>(test),
-                ecdh => AssertECDHCompositeImportFailure(test),
-                xdh => Assert.Throws<CryptographicException>(test));
+            AssertInvalidKeyImportFailure(test);
         }
 
         private void AssertCorrectlySizedDecapsulationKeyImportFails(CompositeMLKemAlgorithm algorithm, byte[] decapsulationKey)
@@ -721,14 +717,10 @@ namespace System.Security.Cryptography.Tests
 
             Action test = () => ImportDecapsulationKey(algorithm, decapsulationKey);
 
-            CompositeMLKemTestData.ExecuteComponentAction(
-                algorithm,
-                rsa => Assert.Throws<CryptographicException>(test),
-                ecdh => AssertECDHCompositeImportFailure(test),
-                xdh => Assert.Throws<CryptographicException>(test));
+            AssertInvalidKeyImportFailure(test);
         }
 
-        protected virtual void AssertECDHCompositeImportFailure(Action test)
+        protected virtual void AssertInvalidKeyImportFailure(Action test)
         {
             Assert.Throws<CryptographicException>(test);
         }

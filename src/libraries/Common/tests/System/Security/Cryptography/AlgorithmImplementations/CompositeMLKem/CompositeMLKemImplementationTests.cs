@@ -115,24 +115,20 @@ namespace System.Security.Cryptography.Tests
                 });
         }
 
-        protected override void AssertECDHCompositeImportFailure(Action test)
+        protected override void AssertInvalidKeyImportFailure(Action test)
         {
             if (PlatformDetection.IsWindows)
             {
                 // Wrapped NTSTATUS
                 const int STATUS_UNSUCCESSFUL = unchecked((int)0xC0000001) | 0x1000000;
 
-#if NETFRAMEWORK
                 CryptographicException ex = Assert.ThrowsAny<CryptographicException>(test);
-#else
-                CryptographicException ex = Assert.Throws<CryptographicException>(test);
-#endif
 
                 Assert.Equal(STATUS_UNSUCCESSFUL, ex.HResult);
             }
             else
             {
-                base.AssertECDHCompositeImportFailure(test);
+                base.AssertInvalidKeyImportFailure(test);
             }
         }
 

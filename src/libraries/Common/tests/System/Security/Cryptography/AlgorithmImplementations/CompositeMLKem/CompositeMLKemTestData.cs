@@ -108,19 +108,6 @@ namespace System.Security.Cryptography.Tests
             };
         }
 
-        internal static void ExecuteComponentAction(
-            CompositeMLKemAlgorithm algorithm,
-            Action<RsaAlgorithm> rsaAction,
-            Action<ECDiffieHellmanAlgorithm> ecdhAction,
-            Action<XDiffieHellmanAlgorithm> xdhAction)
-        {
-            ExecuteComponentFunc(
-                algorithm,
-                rsa => { rsaAction(rsa); return 0; },
-                ecdh => { ecdhAction(ecdh); return 0; },
-                xdh => { xdhAction(xdh); return 0; });
-        }
-
         internal static int ExpectedEncapsulationKeySizeLowerBound(CompositeMLKemAlgorithm algorithm)
         {
             return GetMLKemAlgorithm(algorithm).EncapsulationKeySizeInBytes +
