@@ -428,7 +428,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
 
             unsafe
             {
-                byte* targetHostPtr = sni != null ? Utf8StringMarshaller.ConvertToUnmanaged(sni) : null;
+                byte* targetHostPtr = !string.IsNullOrEmpty(sni) ? Utf8StringMarshaller.ConvertToUnmanaged(sni) : null;
                 try
                 {
                     ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.ConnectionStart(
