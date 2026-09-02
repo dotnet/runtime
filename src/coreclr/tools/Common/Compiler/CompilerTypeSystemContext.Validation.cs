@@ -214,6 +214,12 @@ namespace ILCompiler
                 foreach (var instType in method.Instantiation)
                     EnsureLoadableType(instType);
             }
+
+            MethodSignature sig = method.Signature;
+            EnsureLoadableType(sig.ReturnType);
+
+            foreach (TypeDesc p in sig)
+                EnsureLoadableType(p);
         }
 
         private sealed class ValidTypeHashTable : LockFreeReaderHashtable<TypeDesc, TypeDesc>
