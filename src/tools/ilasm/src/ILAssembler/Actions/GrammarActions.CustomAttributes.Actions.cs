@@ -190,6 +190,7 @@ internal sealed partial class GrammarActions
 
             EntityRegistry.CustomAttributeEntity typedefAttribute =
                 _entityRegistry.CreateCustomAttribute(resolved.Constructor, resolved.Value);
+            typedefAttribute.Owner = resolved.Owner;
             return typedefAttribute;
         }
 

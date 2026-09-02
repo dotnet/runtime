@@ -27,8 +27,7 @@ internal sealed partial class GrammarActions
         _currentMethod = new(methodDefinition);
         try
         {
-            ReportGenericParameterEncodingErrors(
-                context.typarsClause()?.typars()?.typar() ?? []);
+            ReportGenericParameterEncodingErrors(header.GenericParameters, context);
             RegisterGenericParameterNames(
                 methodDefinition,
                 methodDefinition.GenericParameters,

@@ -9477,7 +9477,7 @@ public partial class CILParser : Parser {
 
 			State = 2103;
 			_localctx.name = dottedName();
-			_localctx.Value = Actions.CreateGenericParameterDeclaration(_localctx.attributes.Value, _localctx.constraints, _localctx.name.Value);
+			_localctx.Value = Actions.CreateGenericParameterDeclaration(_localctx.Start, _localctx.attributes.Value, _localctx.constraints, _localctx.name.Value);
 			}
 		}
 		catch (RecognitionException re) {

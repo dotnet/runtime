@@ -294,10 +294,10 @@ internal sealed partial class GrammarActions
             }
 
             EntityRegistry.CustomAttributeEntity? attribute =
-                MaterializeCustomAttributeDeclaration(application.Value, application.Location);
+                MaterializeCustomAttributeDeclaration(application.Value);
             if (attribute is not null)
             {
-                attribute.Owner = parameterEntity;
+                attribute.Owner ??= parameterEntity;
                 parameterEntity.HasCustomAttributes = true;
             }
         }
@@ -349,10 +349,10 @@ internal sealed partial class GrammarActions
             }
 
             EntityRegistry.CustomAttributeEntity? attribute =
-                MaterializeCustomAttributeDeclaration(application.Value, application.Location);
+                MaterializeCustomAttributeDeclaration(application.Value);
             if (attribute is not null)
             {
-                attribute.Owner = owner;
+                attribute.Owner ??= owner;
             }
         }
     }
@@ -391,7 +391,7 @@ internal sealed partial class GrammarActions
         EntityRegistry.CustomAttributeEntity? attribute = MaterializeMethodBodyCustomAttributeDeclaration(context);
         if (attribute is not null)
         {
-            attribute.Owner = _currentMethod.Definition;
+            attribute.Owner ??= _currentMethod.Definition;
         }
     }
 }

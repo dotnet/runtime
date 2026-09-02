@@ -25,6 +25,9 @@ public partial class CILParser
         string Name,
         ImmutableArray<TypeSpecificationValue> Constraints)
     {
+        internal IToken? Location { get; init; }
+        internal IToken? ConstraintLocation { get; init; }
+
         public static GenericParameterDeclarationValue Error { get; } =
             new(0, string.Empty, []);
     }
