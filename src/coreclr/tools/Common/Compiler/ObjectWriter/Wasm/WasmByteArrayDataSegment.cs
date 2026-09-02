@@ -54,6 +54,12 @@ namespace ILCompiler.ObjectWriter
             return headerSize + _contents.Length + _paddingBytesCount;
         }
 
+        public int GetMemoryAddressOfOffset(int offsetInSegment)
+        {
+            Debug.Assert(offsetInSegment >= 0 && offsetInSegment <= _contents.Length);
+            return offsetInSegment;
+        }
+
         public void SetTrailingPadding(int trailingBytesCount)
         {
             Debug.Assert(trailingBytesCount >= 0);

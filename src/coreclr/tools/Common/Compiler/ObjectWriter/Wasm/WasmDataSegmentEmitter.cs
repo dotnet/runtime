@@ -74,5 +74,11 @@ namespace ILCompiler.ObjectWriter
         {
             return new WasmInstructionGroup([I32.PaddedConst(_memoryOffset)]);
         }
+
+        public int GetMemoryAddressOfOffset(int offsetInSegment)
+        {
+            Debug.Assert(offsetInSegment >= 0 && offsetInSegment <= ContentReadStream.Length);
+            return _memoryOffset + offsetInSegment;
+        }
     }
 }
