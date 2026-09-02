@@ -987,8 +987,8 @@ namespace Microsoft.Extensions.Caching.Memory
                         ? [new Measurement<long>(size, cacheNameTag)]
                         : [];
                 },
-                unit: "By",
-                description: "Estimated size of the cache.");
+                unit: "1",
+                description: "Estimated size of the cache in application-defined units.");
         }
 
         private sealed class SharedMeter : Meter
