@@ -4,6 +4,9 @@ Adding version bubbles and complex compilation rules to compilation in crossgen2
 
 This document describes the concept of a version bubble, how to specify them to the ahead of time compiler (crossgen2), and the effect of various options on compilation.
 
+This design was never implmeented. This document is supersceded by the [ReadyToRun Large Version Bubble Features Overview](./ready-to-run-large-version-bubble.md).
+
+
 ## Behavior of code that shares a version bubble
 
 1. Inlining is only permitted within a version bubble unless the method is marked with `System.Runtime.Versioning.NonVersionableAttribute`. If the inlinee is marked as NonVersionable, it may ALWAYS be inlined into the method being compiled.
