@@ -2540,6 +2540,43 @@ namespace System.Net.Security.Tests
             // Cleanup: session owns serverHandle and will close it on dispose.
         }
 
+        // Socket analog of TlsSession_OperationsBeforeHandshake_Throw: Read/Write on a
+        // socket-bound session before the handshake completes must throw
+        // InvalidOperationException. The peer socket is left as a plain (non-TLS) connected
+        // socket because the handshake is never driven.
+        [Fact]
+        public async Task SocketBoundSession_OperationsBeforeHandshake_Throw()
+        {
+            using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
+
+            using Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+            listener.Listen(1);
+            int port = ((IPEndPoint)listener.LocalEndPoint!).Port;
+
+            using Socket clientUnderlying = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            Task connect = clientUnderlying.ConnectAsync(IPAddress.Loopback, port);
+            using Socket serverSocket = await listener.AcceptAsync();
+            await connect;
+
+            serverSocket.Blocking = false;
+            SafeSocketHandle serverHandle = serverSocket.SafeHandle;
+
+            using TlsContext ctx = TlsContext.CreateServer(new SslServerAuthenticationOptions
+            {
+                ServerCertificate = serverCert,
+                EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                ClientCertificateRequired = false,
+            });
+            using TlsSocketSession session = NewSocketSession(ctx, serverHandle);
+
+            Assert.False(session.IsHandshakeComplete);
+
+            byte[] buf = new byte[16];
+            Assert.Throws<InvalidOperationException>(() => session.Write(buf, out _));
+            Assert.Throws<InvalidOperationException>(() => session.Read(buf, out _));
+        }
+
         // Socket analog of ServerSession_MutualAuth_InitialHandshake_InvokesValidator: a
         // socket-bound server session that requires a client certificate must surface
         // NeedsCertificateValidation from Handshake() (proving suspension is reachable on the
