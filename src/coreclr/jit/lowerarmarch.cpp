@@ -1447,15 +1447,6 @@ void Lowering::LowerHWIntrinsicFusedMultiplyAddScalar(GenTreeHWIntrinsic* node)
 
 #if defined(TARGET_ARM64) && defined(FEATURE_HW_INTRINSICS) && defined(FEATURE_MASKED_HW_INTRINSICS)
 //------------------------------------------------------------------------
-// IsSveMaskOperand:
-//   Return true if "op" can be represented directly as an SVE predicate.
-//
-static bool IsSveMaskOperand(GenTree* op)
-{
-    return op->OperIsConvertMaskToVector() || varTypeIsMask(op) || op->IsVectorZero();
-}
-
-//------------------------------------------------------------------------
 // ConvertSveMaskOperandToMask:
 //   Convert a mask-shaped vector operand to its SVE predicate representation.
 //
@@ -1589,7 +1580,7 @@ bool Lowering::TryLowerSvePredicateBitwiseClear(GenTreeHWIntrinsic* node, NamedI
         }
     }
 
-    if ((notNode != nullptr) && IsSveMaskOperand(op1) && IsSveMaskOperand(op2))
+    if ((notNode != nullptr) && op1->IsSveMaskOperand() && op2->IsSveMaskOperand())
     {
         op1 = ConvertSveMaskOperandToMask(BlockRange(), m_compiler, node, op1);
         op2 = ConvertSveMaskOperandToMask(BlockRange(), m_compiler, node, op2);

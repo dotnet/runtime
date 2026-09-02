@@ -35155,12 +35155,12 @@ bool GenTree::CanDivOrModPossiblyOverflow(Compiler* comp) const
 #if defined(FEATURE_HW_INTRINSICS)
 #if defined(FEATURE_MASKED_HW_INTRINSICS) && defined(TARGET_ARM64)
 //------------------------------------------------------------------------
-// IsAllMaskVariantOperand:
-//   Return true if "op" can participate directly in an all-mask SVE intrinsic.
+// GenTree::IsSveMaskOperand:
+//   Return true if this node can be represented directly as an SVE predicate.
 //
-static bool IsAllMaskVariantOperand(GenTree* op)
+bool GenTree::IsSveMaskOperand() const
 {
-    return op->OperIsConvertMaskToVector() || varTypeIsMask(op) || op->IsVectorZero();
+    return OperIsConvertMaskToVector() || varTypeIsMask(this) || IsVectorZero();
 }
 #endif // FEATURE_MASKED_HW_INTRINSICS && TARGET_ARM64
 
@@ -35454,7 +35454,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
             // ConditionalSelect has a mask condition and two vector values.
             // If both values are mask-shaped, fold to the predicate "sel"
             // variant rather than materializing vectors and converting back.
-            canFold = (IsAllMaskVariantOperand(op2) && IsAllMaskVariantOperand(op3));
+            canFold = op2->IsSveMaskOperand() && op3->IsSveMaskOperand();
         }
         else
         {
@@ -35462,7 +35462,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
             {
                 // Fold SVE intrinsics such as And/Or/Xor/ZipLow to their
                 // all-mask variants when every operand is mask-shaped.
-                canFold &= IsAllMaskVariantOperand(tree->Op(i));
+                canFold &= tree->Op(i)->IsSveMaskOperand();
             }
         }
 
