@@ -959,6 +959,11 @@ namespace System.Net.Security.Tests
             Assert.Equal(client.NegotiatedProtocol, server.NegotiatedProtocol);
             Assert.Equal(protocols, client.NegotiatedProtocol);
 
+            // Both endpoints must agree on the negotiated cipher suite, and a real suite
+            // must have been selected (default == TLS_NULL_WITH_NULL_NULL means "none").
+            Assert.Equal(client.NegotiatedCipherSuite, server.NegotiatedCipherSuite);
+            Assert.NotEqual(default(TlsCipherSuite), client.NegotiatedCipherSuite);
+
             // Drain any leftover server->client post-handshake bytes (TLS 1.3 NST)
             // through the client before exchanging app data. See comment above.
             DrainAppDataInto(client, sToC, ref sToCLen);
