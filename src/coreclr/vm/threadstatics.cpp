@@ -1224,9 +1224,9 @@ static bool TryGetThreadStaticsTlvKeyAndOffset(void* threadVarsSection, uint32_t
 // The pthread TSD key of coreclr's thread local block and the offset of `t_ThreadStatics` within it
 // are fixed once coreclr is loaded, so they only have to be computed once. A key of 0 means that the
 // access cannot be inlined.
-static uint32_t s_tlvKey     = 0;
-static size_t   s_tlvOffset  = 0;
-static bool     s_tlvChecked = false;
+static Volatile<uint32_t> s_tlvKey     = 0;
+static Volatile<size_t>   s_tlvOffset  = 0;
+static Volatile<bool>     s_tlvChecked = false;
 
 static bool GetThreadStaticsTlvKeyAndOffset(void* threadVarsSection, uint32_t* pKey, size_t* pOffset)
 {
@@ -1238,22 +1238,23 @@ static bool GetThreadStaticsTlvKeyAndOffset(void* threadVarsSection, uint32_t* p
     }
     CONTRACTL_END;
 
-    if (!VolatileLoad(&s_tlvChecked))
+    if (!s_tlvChecked)
     {
-        // Racing threads compute the same process-wide values, so no lock is needed. `s_tlvChecked`
-        // is published last so that a reader that sees it also sees the values.
         uint32_t key    = 0;
         size_t   offset = 0;
         TryGetThreadStaticsTlvKeyAndOffset(threadVarsSection, &key, &offset);
 
-        s_tlvKey    = key;
-        s_tlvOffset = offset;
-        VolatileStore(&s_tlvChecked, true);
+        // Racing threads derive the same process-wide values, so no lock is needed. The accesses are
+        // atomic and `s_tlvChecked` is stored last, so a reader that observes it also observes the
+        // values it guards.
+        s_tlvOffset  = offset;
+        s_tlvKey     = key;
+        s_tlvChecked = true;
     }
 
     *pKey    = s_tlvKey;
     *pOffset = s_tlvOffset;
-    return s_tlvKey != 0;
+    return *pKey != 0;
 }
 
 #else
