@@ -21,6 +21,7 @@ namespace System.Threading.Tasks.Tests
         private static readonly FieldInfo s_continuationTimestampsField = GetCorLibClassStaticField("System.Threading.Tasks.Task", "s_runtimeAsyncContinuationTimestamps");
         private static readonly FieldInfo s_activeTasksField = GetCorLibClassStaticField("System.Threading.Tasks.Task", "s_currentActiveTasks");
         private static readonly FieldInfo s_activeFlagsField = GetCorLibClassStaticField("System.Runtime.CompilerServices.AsyncInstrumentation", "s_activeFlags");
+        private static readonly FieldInfo s_taskIdField = typeof(Task).GetField("m_taskId", BindingFlags.NonPublic | BindingFlags.Instance)!;
 
         private static readonly object s_debuggerLock = new object();
 
@@ -576,6 +577,87 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(RuntimeAsyncTests), nameof(IsRemoteExecutorAndRuntimeAsyncSupported))]
+        public void RuntimeAsync_TaskWaitEvents()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                const int TaskWaitBeginId = 10;
+                const int TaskWaitEndId = 11;
+
+                AttachDebugger();
+
+                var events = new ConcurrentQueue<EventWrittenEventArgs>();
+                using (var listener = new TestEventListener("System.Threading.Tasks.TplEventSource", EventLevel.Verbose))
+                {
+                    listener.RunWithCallback(events.Enqueue, () =>
+                    {
+                        var tcs1 = new TaskCompletionSource();
+                        var tcs2 = new TaskCompletionSource();
+                        Task runtimeAsyncTask = FuncThatWaitsTwice(tcs1, tcs2);
+                        int runtimeAsyncTaskId = runtimeAsyncTask.Id;
+                        int firstAwaitedTaskId = tcs1.Task.Id;
+                        int secondAwaitedTaskId = tcs2.Task.Id;
+
+                        Assert.Contains(events, e =>
+                            e.EventId == TaskWaitBeginId &&
+                            (int)e.Payload![1]! == runtimeAsyncTaskId &&
+                            (int)e.Payload[2]! == firstAwaitedTaskId &&
+                            (int)e.Payload[4]! == runtimeAsyncTaskId);
+                        Assert.DoesNotContain(events, e =>
+                            e.EventId == TaskWaitEndId &&
+                            (int)e.Payload![2]! == firstAwaitedTaskId);
+
+                        tcs1.SetResult();
+
+                        Assert.Contains(events, e =>
+                            e.EventId == TaskWaitEndId &&
+                            (int)e.Payload![1]! == runtimeAsyncTaskId &&
+                            (int)e.Payload[2]! == firstAwaitedTaskId);
+                        Assert.Contains(events, e =>
+                            e.EventId == TaskWaitBeginId &&
+                            (int)e.Payload![1]! == runtimeAsyncTaskId &&
+                            (int)e.Payload[2]! == secondAwaitedTaskId &&
+                            (int)e.Payload[4]! == runtimeAsyncTaskId);
+                        Assert.DoesNotContain(events, e =>
+                            e.EventId == TaskWaitEndId &&
+                            (int)e.Payload![2]! == secondAwaitedTaskId);
+
+                        tcs2.SetResult();
+                        runtimeAsyncTask.GetAwaiter().GetResult();
+
+                        Assert.Contains(events, e =>
+                            e.EventId == TaskWaitEndId &&
+                            (int)e.Payload![1]! == runtimeAsyncTaskId &&
+                            (int)e.Payload[2]! == secondAwaitedTaskId);
+                    });
+                }
+
+                DetachDebugger();
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RuntimeAsyncTests), nameof(IsRemoteExecutorAndRuntimeAsyncSupported))]
+        public void RuntimeAsync_TaskWaitEventsArePayForPlay()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                AttachDebugger();
+
+                var tcs1 = new TaskCompletionSource();
+                var tcs2 = new TaskCompletionSource();
+                Task runtimeAsyncTask = FuncThatWaitsTwice(tcs1, tcs2);
+
+                Assert.Equal(0, (int)s_taskIdField.GetValue(tcs1.Task)!);
+
+                tcs1.SetResult();
+                tcs2.SetResult();
+                runtimeAsyncTask.GetAwaiter().GetResult();
+
+                DetachDebugger();
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RuntimeAsyncTests), nameof(IsRemoteExecutorAndRuntimeAsyncSupported))]
         public void RuntimeAsync_SuspensionTimestampsAreDistinct()
         {
             RemoteExecutor.Invoke(async () =>
@@ -601,6 +683,8 @@ namespace System.Threading.Tasks.Tests
         {
             RemoteExecutor.Invoke(() =>
             {
+                const int TaskWaitBeginId = 10;
+                const int TaskWaitEndId = 11;
                 const int TraceOperationBeginId = 14;
                 const string RuntimeAsyncTaskOperationName = "System.Runtime.CompilerServices.AsyncHelpers+RuntimeAsyncTask";
 
@@ -608,6 +692,9 @@ namespace System.Threading.Tasks.Tests
                 // The AsyncDebugger guard should prevent the V2 async instrumentation
                 // from emitting any TPL causality events.
                 var events = new ConcurrentQueue<EventWrittenEventArgs>();
+                int runtimeAsyncTaskId = 0;
+                int firstAwaitedTaskId = 0;
+                int secondAwaitedTaskId = 0;
                 using (var listener = new TestEventListener("System.Threading.Tasks.TplEventSource", EventLevel.Verbose))
                 {
                     listener.RunWithCallback(events.Enqueue, () =>
@@ -616,8 +703,27 @@ namespace System.Threading.Tasks.Tests
                         {
                             Func().GetAwaiter().GetResult();
                         }
+
+                        var tcs1 = new TaskCompletionSource();
+                        var tcs2 = new TaskCompletionSource();
+                        Task runtimeAsyncTask = FuncThatWaitsTwice(tcs1, tcs2);
+                        runtimeAsyncTaskId = runtimeAsyncTask.Id;
+                        firstAwaitedTaskId = tcs1.Task.Id;
+                        secondAwaitedTaskId = tcs2.Task.Id;
+                        tcs1.SetResult();
+                        tcs2.SetResult();
+                        runtimeAsyncTask.GetAwaiter().GetResult();
                     });
                 }
+
+                Assert.DoesNotContain(events, e =>
+                    e.EventId == TaskWaitBeginId &&
+                    (int)e.Payload![1]! == runtimeAsyncTaskId &&
+                    ((int)e.Payload[2]! == firstAwaitedTaskId || (int)e.Payload[2]! == secondAwaitedTaskId));
+                Assert.DoesNotContain(events, e =>
+                    e.EventId == TaskWaitEndId &&
+                    (int)e.Payload![1]! == runtimeAsyncTaskId &&
+                    ((int)e.Payload[2]! == firstAwaitedTaskId || (int)e.Payload[2]! == secondAwaitedTaskId));
 
                 // TraceOperationBegin with the RuntimeAsyncTask operation name is uniquely
                 // emitted by V2 async instrumentation. It must not appear without a debugger.

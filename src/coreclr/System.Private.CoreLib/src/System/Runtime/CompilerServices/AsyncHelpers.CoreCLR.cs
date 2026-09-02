@@ -911,9 +911,10 @@ namespace System.Runtime.CompilerServices
 
                     AsyncDebugger.HandleSuspended(nextContinuation);
 
-                    if (awaitedTask is not null)
+                    TplEventSource log = TplEventSource.Log;
+                    if (awaitedTask is not null && log.IsEnabled())
                     {
-                        TplEventSource.Log.TaskWaitBegin(
+                        log.TaskWaitBegin(
                             m_taskScheduler?.Id ?? TaskScheduler.Default.Id,
                             Id,
                             awaitedTask.Id,

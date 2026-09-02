@@ -153,6 +153,18 @@ namespace System.Runtime.CompilerServices
             private static Continuation? ResumeTaskContinuation(Continuation cont, ref byte result)
             {
                 var taskCont = (RuntimeAsyncTaskContinuation)cont;
+
+                TplEventSource log = TplEventSource.Log;
+                if (Task.s_asyncDebuggingEnabled && log.IsEnabled())
+                {
+                    Task awaitedTask = taskCont.Task!;
+                    Task runtimeAsyncTask = taskCont.RuntimeAsyncTask!;
+                    log.TaskWaitEnd(
+                        runtimeAsyncTask.m_taskScheduler?.Id ?? TaskScheduler.Default.Id,
+                        runtimeAsyncTask.Id,
+                        awaitedTask.Id);
+                }
+
                 taskCont.Next = null;
                 taskCont.RuntimeAsyncTask = null;
                 taskCont.ContinuationContext = null;
