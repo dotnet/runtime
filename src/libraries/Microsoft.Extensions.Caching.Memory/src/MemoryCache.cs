@@ -935,8 +935,8 @@ namespace Microsoft.Extensions.Caching.Memory
                         ? []
                         : new Measurement<long>[]
                         {
-                            new(stats.TotalHits, cacheNameTag, new("dotnet.cache.request.type", "hit")),
-                            new(stats.TotalMisses, cacheNameTag, new("dotnet.cache.request.type", "miss")),
+                            new(stats.TotalHits, cacheNameTag, new("dotnet.cache.request.result", "hit")),
+                            new(stats.TotalMisses, cacheNameTag, new("dotnet.cache.request.result", "miss")),
                         };
                 },
                 unit: "{request}",
