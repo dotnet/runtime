@@ -1768,7 +1768,7 @@ class SuperPMIReplay:
             common_flags += repro_flags
 
             if self.coreclr_args.no_ir_checks:
-                common_flags += [ "-jitoption", "JitEnablePhaseChecks=0" ]
+                common_flags += [ "-jitoption", "force", "JitEnablePhaseChecks=0" ]
 
             # For each MCH file that we are going to replay, do the replay and replay post-processing.
             #
@@ -2216,10 +2216,16 @@ class SuperPMIReplayAsmDiffs:
         # The base JIT is already validated, so the phase IR checks are turned off for it by
         # default and left on for the diff JIT, which is the one under test. -full_ir_checks
         # turns them back on for the base JIT, and -no_ir_checks turns them off everywhere.
+        #
+        # The diff artifact runs compare the base and diff JitDumps textually, so the checks
+        # have to be configured identically there. That rules out the asymmetric default, but
+        # -no_ir_checks applies to both JITs and can be passed along.
         if not self.coreclr_args.full_ir_checks:
-            base_option_flags += [ "-jitoption", "JitEnablePhaseChecks=0" ]
+            base_option_flags += [ "-jitoption", "force", "JitEnablePhaseChecks=0" ]
         if self.coreclr_args.no_ir_checks:
-            diff_option_flags += [ "-jit2option", "JitEnablePhaseChecks=0" ]
+            diff_option_flags += [ "-jit2option", "force", "JitEnablePhaseChecks=0" ]
+            base_option_flags_for_diff_artifact += [ "-jitoption", "force", "JitEnablePhaseChecks=0" ]
+            diff_option_flags_for_diff_artifact += [ "-jitoption", "force", "JitEnablePhaseChecks=0" ]
 
         if self.coreclr_args.altjit:
             altjit_asm_diffs_flags += [
@@ -3117,8 +3123,8 @@ class SuperPMIReplayThroughputDiff:
         # Both JITs have to be configured the same way here, since this measures the base
         # against the diff.
         if self.coreclr_args.no_ir_checks:
-            base_option_flags += [ "-jitoption", "JitEnablePhaseChecks=0" ]
-            diff_option_flags += [ "-jit2option", "JitEnablePhaseChecks=0" ]
+            base_option_flags += [ "-jitoption", "force", "JitEnablePhaseChecks=0" ]
+            diff_option_flags += [ "-jit2option", "force", "JitEnablePhaseChecks=0" ]
 
         base_jit_build_string_decoded = decode_clrjit_build_string(self.base_jit_path)
         diff_jit_build_string_decoded = decode_clrjit_build_string(self.diff_jit_path)
@@ -3479,8 +3485,8 @@ class SuperPMIReplayMetricDiff:
         # Both JITs have to be configured the same way here, since this compares metrics
         # from the base against the diff.
         if self.coreclr_args.no_ir_checks:
-            base_option_flags += [ "-jitoption", "JitEnablePhaseChecks=0" ]
-            diff_option_flags += [ "-jit2option", "JitEnablePhaseChecks=0" ]
+            base_option_flags += [ "-jitoption", "force", "JitEnablePhaseChecks=0" ]
+            diff_option_flags += [ "-jit2option", "force", "JitEnablePhaseChecks=0" ]
 
         metric_diffs = []
 
@@ -5394,6 +5400,11 @@ def setup_args(args):
                             "details",  # The replay code checks this, so make sure it's set
                             lambda unused: True,
                             "Unable to set details")
+
+        coreclr_args.verify(args,
+                            "no_ir_checks",  # The replay code checks this, so make sure it's set
+                            lambda unused: True,
+                            "Unable to set no_ir_checks.")
 
         coreclr_args.verify(args,
                             "collection_command",
