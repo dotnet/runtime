@@ -730,27 +730,11 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
     switch (intrinsic)
     {
+        case NI_AdvSimd_BitwiseClear:
         case NI_Sve_BitwiseClear:
         {
             assert(sig->numArgs == 2);
 
-            op2 = impSIMDPopStack();
-            op1 = impSIMDPopStack();
-
-            // We don't want to support creating AND_NOT nodes prior to LIR
-            // as it can break important optimizations. We'll produce this
-            // in lowering instead so decompose into the individual operations
-            // on import
-
-            op2     = gtNewSimdUnOpNode(GT_NOT, retType, op2, simdBaseType, simdSize);
-            retNode = gtNewSimdBinOpNode(GT_AND, retType, op1, op2, simdBaseType, simdSize);
-            break;
-        }
-
-        case NI_AdvSimd_BitwiseClear:
-        {
-            assert(sig->numArgs == 2);
-
             // We don't want to support creating AND_NOT nodes prior to LIR
             // as it can break important optimizations. We'll produce this
             // in lowering instead so decompose into the individual operations
@@ -759,7 +743,15 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
 
-            op2     = gtFoldExpr(gtNewSimdUnOpNode(GT_NOT, retType, op2, simdBaseType, simdSize));
+            op2 = gtNewSimdUnOpNode(GT_NOT, retType, op2, simdBaseType, simdSize);
+
+            // Keep the SVE NOT explicit so lowering can recognize mask-shaped operands
+            // and recover the predicate BIC form.
+            if (intrinsic == NI_AdvSimd_BitwiseClear)
+            {
+                op2 = gtFoldExpr(op2);
+            }
+
             retNode = gtNewSimdBinOpNode(GT_AND, retType, op1, op2, simdBaseType, simdSize);
             break;
         }
