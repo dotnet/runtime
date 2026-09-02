@@ -4,6 +4,7 @@
 using System;
 using System.Runtime;
 using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics;
 using Xunit;
 
 namespace System.Runtime
@@ -61,6 +62,24 @@ public class WasmInterpreterTransitions
     public struct S2
     {
         public short A;
+    }
+
+    public struct S48
+    {
+        public long A, B, C, D, E, F;
+    }
+
+    public struct S52
+    {
+        public int A, B, C, D, E, F, G, H, I, J, K, L, M;
+    }
+
+    public struct S304
+    {
+        public long L00, L01, L02, L03, L04, L05, L06, L07, L08, L09,
+                    L10, L11, L12, L13, L14, L15, L16, L17, L18, L19,
+                    L20, L21, L22, L23, L24, L25, L26, L27, L28, L29,
+                    L30, L31, L32, L33, L34, L35, L36, L37;
     }
 
     private delegate S2 ReturnsS2Delegate(int a);
@@ -131,16 +150,31 @@ public class WasmInterpreterTransitions
         // 1- and 2-byte struct shapes (S1 / S2). These small structs travel by value in a single
         // slot and are the 'S1'/'S2' encodings the runtime spells for the return buffer and by-ref
         // argument; the hand-written table only ever had 8-byte forms.
-        Assert.Equal((byte)A, InterpretedStaticReturnsS1(A).A);          // I S1 i p
+        Assert.Equal(unchecked((byte)A), InterpretedStaticReturnsS1(A).A);          // I S1 i p
         s_sideEffect = 0;
-        self.InterpretedInstanceTakesIntAndS2(A, new S2 { A = (short)B }); // I v T i S2 p
-        Assert.Equal(A + (short)B, s_sideEffect);
+        self.InterpretedInstanceTakesIntAndS2(A, new S2 { A = unchecked((short)B) }); // I v T i S2 p
+        Assert.Equal(A + unchecked((short)B), s_sideEffect);
 
         // R2R reaches an interpreted method through a delegate: its entrypoint is materialized as a
         // native function pointer via GetMultiCallableAddrOfCode, which is the path that needs the
         // R2R-to-interpreter thunk independent of any direct call. The target returns S2 from an
         // instance method (I S2 T i p).
-        Assert.Equal((short)(A + C), self.R2RInvokesInterpretedViaDelegate().A);
+        Assert.Equal(unchecked((short)(A + C)), self.R2RInvokesInterpretedViaDelegate().A);
+
+        // Signature shapes reported missing by CI (PR #132419): crossgen2 must emit the R2R->interp
+        // thunk for each, and pure interpreter must reach the callee without one. Keys in comments.
+        s_sideEffect = 0; self.InterpretedVoid3IntDouble(A, B, C, F64); Assert.Equal(A + B + C + 1, s_sideEffect);   // IvTiiidp
+        s_sideEffect = 0; self.InterpretedVoid3IntFloat(A, B, C, F32); Assert.Equal(A + B + C + 1, s_sideEffect);    // IvTiiifp
+        s_sideEffect = 0; self.InterpretedVoid3IntLong(A, B, C, Wide); Assert.Equal(A + B + C + 1, s_sideEffect);    // IvTiiilp
+        s_sideEffect = 0; self.InterpretedVoid3IntS48(A, B, C, new S48 { A = 10, F = 20 }); Assert.Equal(A + B + C + 30, s_sideEffect);   // IvTiiiS48p
+        s_sideEffect = 0; self.InterpretedVoid3IntS304(A, B, C, new S304 { L00 = 10, L37 = 20 }); Assert.Equal(A + B + C + 30, s_sideEffect); // IvTiiiS304p
+        s_sideEffect = 0; self.InterpretedVoidVector128(Vector128.Create(A, B, C, 7)); Assert.Equal(A + 7, s_sideEffect);   // IvTVp
+        Assert.Equal(Wide, self.InterpretedLongFromFloat(F32));                                                    // IlTfp
+        Assert.Equal((long)A + B + C + A + B, self.InterpretedLongFrom5Int(A, B, C, A, B));                        // IlTiiiiip
+        Assert.Equal(190L, self.InterpretedLongFrom19Int(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19)); // IlTiiiiiiiiiiiiiiiiiiip
+        Assert.Equal(153, self.InterpretedIntFrom17Int(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17));           // IiTiiiiiiiiiiiiiiiip
+        S52 s52 = self.InterpretedInstanceReturnsS52(); Assert.Equal(A, s52.A); Assert.Equal(B, s52.M);           // IS52Tp
+        Assert.Equal(unchecked((short)C), InterpretedStaticReturnsS2NoArgs().A);                                             // IS2p
     }
 
     private static int s_sideEffect;
@@ -241,6 +275,58 @@ public class WasmInterpreterTransitions
         ReturnsS2Delegate d = InterpretedInstanceReturnsS2;
         return d(A);
     }
+
+    [BypassReadyToRun]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private void InterpretedVoid3IntDouble(int a, int b, int c, double d) => s_sideEffect = a + b + c + (d == F64 ? 1 : 0);
+
+    [BypassReadyToRun]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private void InterpretedVoid3IntFloat(int a, int b, int c, float f) => s_sideEffect = a + b + c + (f == F32 ? 1 : 0);
+
+    [BypassReadyToRun]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private void InterpretedVoid3IntLong(int a, int b, int c, long l) => s_sideEffect = a + b + c + (l == Wide ? 1 : 0);
+
+    [BypassReadyToRun]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private void InterpretedVoid3IntS48(int a, int b, int c, S48 s) => s_sideEffect = a + b + c + (int)(s.A + s.F);
+
+    [BypassReadyToRun]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private void InterpretedVoid3IntS304(int a, int b, int c, S304 s) => s_sideEffect = a + b + c + (int)(s.L00 + s.L37);
+
+    [BypassReadyToRun]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private void InterpretedVoidVector128(Vector128<int> v) => s_sideEffect = v.GetElement(0) + v.GetElement(3);
+
+    [BypassReadyToRun]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private long InterpretedLongFromFloat(float f) => f == F32 ? Wide : 0;
+
+    [BypassReadyToRun]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private long InterpretedLongFrom5Int(int a, int b, int c, int d, int e) => (long)a + b + c + d + e;
+
+    [BypassReadyToRun]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private long InterpretedLongFrom19Int(int a1, int a2, int a3, int a4, int a5, int a6, int a7, int a8, int a9, int a10,
+                                          int a11, int a12, int a13, int a14, int a15, int a16, int a17, int a18, int a19)
+        => (long)a1 + a2 + a3 + a4 + a5 + a6 + a7 + a8 + a9 + a10 + a11 + a12 + a13 + a14 + a15 + a16 + a17 + a18 + a19;
+
+    [BypassReadyToRun]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private int InterpretedIntFrom17Int(int a1, int a2, int a3, int a4, int a5, int a6, int a7, int a8, int a9,
+                                        int a10, int a11, int a12, int a13, int a14, int a15, int a16, int a17)
+        => a1 + a2 + a3 + a4 + a5 + a6 + a7 + a8 + a9 + a10 + a11 + a12 + a13 + a14 + a15 + a16 + a17;
+
+    [BypassReadyToRun]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private S52 InterpretedInstanceReturnsS52() => new S52 { A = A, M = B };
+
+    [BypassReadyToRun]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static S2 InterpretedStaticReturnsS2NoArgs() => new S2 { A = unchecked((short)C) };
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private int R2RInstanceReturnsI32(int a) => a + _state;
