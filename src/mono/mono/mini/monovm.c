@@ -239,6 +239,7 @@ ves_icall_System_AppContext_TryGetHostPropertyValue (MonoStringHandle name, Mono
 	// only be for assembly paths provided through host callbacks.
 	if (trusted_platform_assemblies->assembly_filepaths != NULL)
 		return FALSE;
+	GString *property_value = g_string_new (NULL);
 	for (guint32 i = 0; i < trusted_platform_assemblies->assembly_count; ++i) {
 		const char *directory;
 		const char *file_name;
