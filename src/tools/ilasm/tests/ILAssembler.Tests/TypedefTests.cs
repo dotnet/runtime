@@ -183,11 +183,44 @@ namespace ILAssembler.Tests
             CustomAttributeValue<string> fieldAttribute = Assert.Single(fieldAttributes);
             Assert.Empty(fieldAttribute.FixedArguments);
 
+            var typeAttributes = reader.GetCustomAttributes(testTypeHandle)
+                .Select(reader.GetCustomAttribute)
+                .Select(attribute => attribute.DecodeValue(DocumentCompilerTestHelpers.Decoder))
+                .ToArray();
+            CustomAttributeValue<string> typeAttribute = Assert.Single(typeAttributes);
+            CustomAttributeTypedArgument<string> argument =
+                Assert.Single(typeAttribute.FixedArguments);
+            Assert.Equal("bool", argument.Type);
+            Assert.Equal(true, argument.Value);
+            Assert.Equal(2, reader.CustomAttributes.Count);
+        }
+
+        [Fact]
+        public void Typedef_CustomAttributeWithOwner_AssemblyUsePreservesOwner()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .typedef .custom (Test) instance void [mscorlib]System.CLSCompliantAttribute::.ctor(bool) = (01 00 01 00 00) as OwnedAttributeAlias
+                .assembly test
+                {
+                    OwnedAttributeAlias
+                }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            TypeDefinitionHandle testType = reader.TypeDefinitions
+                .Single(handle => reader.GetString(reader.GetTypeDefinition(handle).Name) == "Test");
+
             CustomAttributeValue<string> typeAttribute = reader
-                .GetCustomAttribute(Assert.Single(reader.GetCustomAttributes(testTypeHandle)))
+                .GetCustomAttribute(Assert.Single(reader.GetCustomAttributes(testType)))
                 .DecodeValue(DocumentCompilerTestHelpers.Decoder);
             Assert.Equal(true, Assert.Single(typeAttribute.FixedArguments).Value);
-            Assert.Equal(2, reader.CustomAttributes.Count);
+            Assert.Empty(reader.GetAssemblyDefinition().GetCustomAttributes());
+            Assert.Single(reader.CustomAttributes);
         }
 
     }
