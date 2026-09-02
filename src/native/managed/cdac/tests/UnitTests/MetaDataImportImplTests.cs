@@ -1077,7 +1077,7 @@ public unsafe class MetaDataImportImplTests
     }
 
     [Fact]
-    public void EnumOperations_UnknownHandle_ReturnInvalidArg()
+    public void EnumOperations_UnknownHandle_ReturnsInvalidArg()
     {
         IMetaDataImport2 wrapper = CreateWrapper();
 
