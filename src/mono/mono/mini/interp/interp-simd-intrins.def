@@ -42,7 +42,7 @@
 // for the relaxed-simd entries below. There are two flavors of the runtime SIMD library:
 //   * libmono-wasm-simd.a is built without -mrelaxed-simd / without HOST_WASM_RELAXED_SIMD,
 //     so the relaxed entries are routed to a per-arity stub function (asserts at runtime)
-//     and their wasm-opcode table slots are 0 (the jiterpreter uses the fallback path, which
+//     and their wasm-opcode table slots are -1 (the jiterpreter uses the fallback path, which
 //     in turn calls the stub — guarded by RelaxedSimd.IsSupported reporting false).
 //   * libmono-wasm-relaxed-simd.a is built with -mrelaxed-simd and HOST_WASM_RELAXED_SIMD=1,
 //     so the relaxed entries expand to the regular INTERP_WASM_SIMD_INTRINSIC_V_* path
@@ -64,13 +64,13 @@
 #endif
 #else
 #ifndef INTERP_WASM_RELAXED_SIMD_INTRINSIC_V_V
-#define INTERP_WASM_RELAXED_SIMD_INTRINSIC_V_V(name, arg1, c_intrinsic, wasm_opcode) INTERP_SIMD_INTRINSIC_P_P(INTERP_SIMD_INTRINSIC_ ## name ## arg1, _mono_interp_simd_relaxed_unsupported_1, 0)
+#define INTERP_WASM_RELAXED_SIMD_INTRINSIC_V_V(name, arg1, c_intrinsic, wasm_opcode) INTERP_SIMD_INTRINSIC_P_P(INTERP_SIMD_INTRINSIC_ ## name ## arg1, _mono_interp_simd_relaxed_unsupported_1, -1)
 #endif
 #ifndef INTERP_WASM_RELAXED_SIMD_INTRINSIC_V_VV
-#define INTERP_WASM_RELAXED_SIMD_INTRINSIC_V_VV(name, arg1, c_intrinsic, wasm_opcode) INTERP_SIMD_INTRINSIC_P_PP(INTERP_SIMD_INTRINSIC_ ## name ## arg1, _mono_interp_simd_relaxed_unsupported_2, 0)
+#define INTERP_WASM_RELAXED_SIMD_INTRINSIC_V_VV(name, arg1, c_intrinsic, wasm_opcode) INTERP_SIMD_INTRINSIC_P_PP(INTERP_SIMD_INTRINSIC_ ## name ## arg1, _mono_interp_simd_relaxed_unsupported_2, -1)
 #endif
 #ifndef INTERP_WASM_RELAXED_SIMD_INTRINSIC_V_VVV
-#define INTERP_WASM_RELAXED_SIMD_INTRINSIC_V_VVV(name, arg1, c_intrinsic, wasm_opcode) INTERP_SIMD_INTRINSIC_P_PPP(INTERP_SIMD_INTRINSIC_ ## name ## arg1, _mono_interp_simd_relaxed_unsupported_3, 0)
+#define INTERP_WASM_RELAXED_SIMD_INTRINSIC_V_VVV(name, arg1, c_intrinsic, wasm_opcode) INTERP_SIMD_INTRINSIC_P_PPP(INTERP_SIMD_INTRINSIC_ ## name ## arg1, _mono_interp_simd_relaxed_unsupported_3, -1)
 #endif
 #endif // HOST_WASM_RELAXED_SIMD
 #else
