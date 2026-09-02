@@ -123,7 +123,7 @@ internal sealed partial class GrammarActions
                 });
         foreach (EntityRegistry.CustomAttributeEntity attribute in customAttributes)
         {
-            attribute.Owner = exportedType;
+            attribute.Owner ??= exportedType;
         }
     }
 
@@ -144,9 +144,7 @@ internal sealed partial class GrammarActions
             switch (declaration)
             {
                 case ExportedTypeCustomAttributeDirectiveValue customAttribute:
-                    if (MaterializeCustomAttributeDeclaration(
-                        customAttribute.Value,
-                        customAttribute.Location) is { } attribute)
+                    if (MaterializeCustomAttributeDeclaration(customAttribute.Value) is { } attribute)
                     {
                         customAttributes.Add(attribute);
                     }

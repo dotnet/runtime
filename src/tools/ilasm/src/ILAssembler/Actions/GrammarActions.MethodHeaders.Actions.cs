@@ -297,11 +297,16 @@ internal sealed partial class GrammarActions
         => ApplyAttribute(attributes, value);
 
     internal GenericParameterDeclarationValue CreateGenericParameterDeclaration(
+        IToken location,
         GenericParameterAttributes attributes,
         CILParser.TyBoundContext? constraints,
         string name)
         => new GenericParameterDeclarationValue(
             attributes,
             name,
-            constraints?.Value ?? []);
+            constraints?.Value ?? [])
+        {
+            Location = location,
+            ConstraintLocation = constraints?.Start
+        };
 }

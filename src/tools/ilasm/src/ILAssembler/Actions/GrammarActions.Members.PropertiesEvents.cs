@@ -122,7 +122,7 @@ internal sealed partial class GrammarActions
 
         if (MaterializeCustomAttributeDeclaration(attribute) is { } customAttribute)
         {
-            customAttribute.Owner = property;
+            customAttribute.Owner ??= property;
         }
     }
 
@@ -232,7 +232,7 @@ internal sealed partial class GrammarActions
 
         if (MaterializeCustomAttributeDeclaration(attribute) is { } customAttribute)
         {
-            customAttribute.Owner = @event;
+            customAttribute.Owner ??= @event;
         }
     }
 

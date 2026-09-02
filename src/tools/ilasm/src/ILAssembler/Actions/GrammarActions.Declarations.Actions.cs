@@ -121,7 +121,7 @@ internal sealed partial class GrammarActions
         if (!context.HasSyntaxError &&
             MaterializeCustomAttributeDeclaration(context) is { } customAttribute)
         {
-            customAttribute.Owner =
+            customAttribute.Owner ??=
                 (EntityRegistry.EntityBase?)_lastFieldDefinition ?? _entityRegistry.Module;
         }
     }
