@@ -1361,6 +1361,13 @@ void* GetPortableEntryPointToInterpreterThunk(MethodDesc *pMD)
     }
     CONTRACTL_END;
 
+#ifdef FEATURE_READYTORUN
+    // R2R->interpreter thunks exist only to let R2R-compiled code call an interpreted method. With
+    // ReadyToRun disabled no such caller exists, so callers must not request one (see
+    // EnsurePortableEntryPointIsCallableFromR2R). Reaching here in that state is a bug.
+    _ASSERTE_ALL_BUILDS(g_pConfig->ReadyToRun());
+#endif
+
     if (pMD->ContainsGenericVariables())
     {
         return NULL;
@@ -1408,24 +1415,15 @@ void* GetPortableEntryPointToInterpreterThunk(MethodDesc *pMD)
                     thunkKey = "Iiiiiip";
                     break;
                 default:
-                    PORTABILITY_ASSERT("GetPortableEntryPointToInterpreterThunk: unknown thunk for string constructor");
                     return nullptr;
             }
         }
 
         thunk = LookupPortableEntryPointThunk(thunkKey);
-        if (thunk == NULL)
-        {
-            PORTABILITY_ASSERT("GetPortableEntryPointToInterpreterThunk: unknown thunk for string constructor");
-        }
     }
     else
     {
         thunk = ComputePortableEntryPointToInterpreterThunk(sig);
-        if (thunk == NULL)
-        {
-            PORTABILITY_ASSERT("ComputePortableEntryPointToInterpreterThunk: unknown thunk signature");
-        }
     }
 
     return thunk;
