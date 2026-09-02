@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Runtime.General;
 
 namespace System.Reflection.Runtime.BindingFlagSupport
@@ -146,15 +147,15 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         // - MethodImpls ignored. (I didn't say it made sense, this is just how the desktop api we're porting behaves.)
         // - Implemented interfaces ignores. (I didn't say it made sense, this is just how the desktop api we're porting behaves.)
         //
-        public static M GetImplicitlyOverriddenBaseClassMember<M>(this M member, MemberPolicies<M> policies) where M : MemberInfo
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
+            Justification = "Reflection implementation")]
+        public static MethodInfo? GetImplicitlyOverriddenBaseClassMember(this MethodInfo member)
         {
-            bool isVirtual;
-            bool isNewSlot;
-            policies.GetMemberAttributes(member, out _, out _, out isVirtual, out isNewSlot);
-            if (isNewSlot || !isVirtual)
+            if (!member.IsVirtual || (member.Attributes & MethodAttributes.NewSlot) != 0)
             {
                 return null;
             }
+
             string name = member.Name;
             Type type = member.DeclaringType!;
             for (; ; )
@@ -165,19 +166,17 @@ namespace System.Reflection.Runtime.BindingFlagSupport
                     return null;
                 }
                 type = baseType;
-                foreach (M candidate in policies.GetDeclaredMembers(type))
+                foreach (MethodInfo candidate in type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly))
                 {
                     if (candidate.Name != name)
                     {
                         continue;
                     }
-                    bool isCandidateVirtual;
-                    policies.GetMemberAttributes(member, out _, out _, out isCandidateVirtual, out _);
-                    if (!isCandidateVirtual)
+                    if (!candidate.IsVirtual)
                     {
                         continue;
                     }
-                    if (!policies.ImplicitlyOverrides(candidate, member))
+                    if (!MethodPolicies.ImplicitlyOverrides(candidate, member))
                     {
                         continue;
                     }

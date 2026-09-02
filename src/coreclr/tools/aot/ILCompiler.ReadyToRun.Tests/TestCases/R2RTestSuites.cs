@@ -62,6 +62,38 @@ public class R2RTestSuites
         }
     }
 
+    [Fact]
+    public void GenericTypeConstraintsAllowVariantParameters()
+    {
+        var genericTypeConstraints = new CompiledAssembly
+        {
+            AssemblyName = nameof(GenericTypeConstraintsAllowVariantParameters),
+            SourceResourceNames = ["TypeValidation/GenericTypeConstraints.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(GenericTypeConstraintsAllowVariantParameters),
+            [
+                new(nameof(GenericTypeConstraintsAllowVariantParameters), [new CrossgenAssembly(genericTypeConstraints)])
+                {
+                    AdditionalArgs =
+                    {
+                        "--compile-no-methods",
+                        "--type-validation",
+                        "AutomaticWithLogging",
+                    },
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            Assert.True(
+                (reader.ReadyToRunHeader.Flags & (uint)ReadyToRunFlags.READYTORUN_FLAG_SkipTypeValidation) != 0,
+                "Expected the ReadyToRun image to skip runtime type validation.");
+        }
+    }
+
     [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
     public void WasmWebcilModule()
     {
@@ -1757,6 +1789,7 @@ public class R2RTestSuites
             [
                 new(nameof(VirtualMethodGenericsNonGVM), [new CrossgenAssembly(nonGvmLib)])
                 {
+                    Options = [Crossgen2Option.GenerateUnboxingStubs],
                     Validate = Validate,
                 },
             ]));
@@ -1785,6 +1818,20 @@ public class R2RTestSuites
 
             // Test7: Non-final DIM
             Assert.True(R2RAssert.HasCompiledMethod(reader, "ITest7`1<int>", "Test7Method", out diag), diag);
+
+            // Test8: non-generic value type - both interface and Object.ToString dispatch arrive
+            // with a boxed 'this' and so need an unboxing thunk
+            Assert.True(R2RAssert.HasUnboxingThunk(reader, "Test8", "Test8Method", out diag), diag);
+            Assert.True(R2RAssert.HasUnboxingThunk(reader, "Test8", "ToString", out diag), diag);
+
+            // Test9: generic value type, exact instantiation
+            Assert.True(R2RAssert.HasUnboxingThunk(reader, "Test9`1<int>", "Test9Method", out diag), diag);
+            Assert.True(R2RAssert.HasUnboxingThunk(reader, "Test9`1<int>", "ToString", out diag), diag);
+
+            // Test9: shared instantiation - the thunk additionally recovers the generic context
+            // from the boxed instance's MethodTable
+            Assert.True(R2RAssert.HasUnboxingThunk(reader, "Test9`1<__Canon>", "Test9Method", out diag), diag);
+            Assert.True(R2RAssert.HasUnboxingThunk(reader, "Test9`1<__Canon>", "ToString", out diag), diag);
         }
     }
 
@@ -1802,6 +1849,7 @@ public class R2RTestSuites
             [
                 new(nameof(VirtualMethodGenericsGVM), [new CrossgenAssembly(gvmLib)])
                 {
+                    Options = [Crossgen2Option.GenerateUnboxingStubs],
                     Validate = Validate,
                 },
             ]));
@@ -1830,6 +1878,15 @@ public class R2RTestSuites
 
             // Test7: Static virtual generic method
             Assert.True(R2RAssert.HasCompiledMethod(reader, "ITest7`1<int>", "ITest7Base.Test7Method", out diag, ["int"]), diag);
+
+            // Test8: Value-type interface GVM unboxing thunk
+            ReadyToRunMethod unboxingThunk = Assert.Single(
+                R2RAssert.GetAllMethods(reader),
+                method => method.DeclaringType == "Test8" &&
+                    method.Name == "Test8Method" &&
+                    method.InstanceArgs is ["int"] &&
+                    method.SignatureString.Contains("[UNBOX]", StringComparison.Ordinal));
+            Assert.NotEmpty(unboxingThunk.RuntimeFunctions);
         }
     }
 
