@@ -62,7 +62,7 @@ void Interop::WaitForGCBridgeFinish()
     while (g_GCBridgeActive)
     {
         GCX_PREEMP();
-        g_bridgeFinished->Wait(INFINITE, false);
+        g_bridgeFinished->Wait(INFINITE, false, false);
         // In theory, even though we waited for bridge to finish, because we are in preemptive mode
         // the thread could have been suspended and another GC could have happened, triggering bridge
         // processing again. In this case we would wait again for bridge processing.

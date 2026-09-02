@@ -26,7 +26,7 @@ typedef unsigned short char16_t;
 #include <minipal/utils.h>
 #include <minipal/types.h>
 #include <minipal/time.h>
-#include "RuntimeEvent.h"
+#include "CLREventBase.h"
 #include <errno.h>
 
 #define PALTEST(testfunc, testname) \

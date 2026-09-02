@@ -14,7 +14,7 @@ enum WaitMode
     WaitMode_Alertable = 0x1,         // Can be waken by APC.  May pumping message.
 };
 
-#include "../runtime/RuntimeEvent.h"
+#include "../runtime/CLREventBase.h"
 
 
 class CLREvent : public CLREventBase

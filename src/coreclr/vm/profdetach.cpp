@@ -10,7 +10,7 @@
 // ======================================================================================
 
 #include "common.h"
-#include "RuntimeEvent.h"
+#include "CLREventBase.h"
 
 #ifdef FEATURE_PROFAPI_ATTACH_DETACH
 
@@ -291,7 +291,7 @@ void ProfilingAPIDetach::ExecuteEvacuationLoop()
         // Wait until there's a profiler to detach (or until this thread should "wake up"
         // for some other reason, such as exiting due to an unsuccessful startup-load of a
         // profiler).
-        DWORD dwRet = s_eventDetachWorkAvailable.Wait(INFINITE, FALSE /* alertable */);
+        DWORD dwRet = s_eventDetachWorkAvailable.Wait(INFINITE, FALSE /* alertable */, false);
         if (dwRet != WAIT_OBJECT_0)
         {
             // The wait ended due to a failure or a reason other than the event getting

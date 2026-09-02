@@ -116,7 +116,7 @@
 //     boxing this describes this feature.
 
 #include "common.h"
-#include "RuntimeEvent.h"
+#include "CLREventBase.h"
 
 #include "vars.hpp"
 #include "log.h"
@@ -1180,7 +1180,7 @@ void WaitForEndOfShutdown()
         pThread->SetThreadStateNC(Thread::TSNC_BlockedForShutdown);
     }
 
-    for (;;) g_pEEShutDownEvent->Wait(INFINITE, TRUE);
+    for (;;) g_pEEShutDownEvent->Wait(INFINITE, TRUE, false);
 }
 
 // ---------------------------------------------------------------------------

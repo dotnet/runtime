@@ -10,7 +10,7 @@
 //*****************************************************************************
 
 #include "stdafx.h"
-#include "RuntimeEvent.h"
+#include "CLREventBase.h"
 
 
 //-----------------------------------------------------------------------------
@@ -20,9 +20,6 @@ HelperCanary::HelperCanary()
 {
     m_hCanaryThread = NULL;
     m_CanaryThreadId = 0;
-    m_hPingEvent = NULL;
-    m_hCanaryThreadExitedEvent = NULL;
-    m_hWaitEvent = NULL;
     m_RequestCounter = 0;
     m_AnswerCounter = 0;
     m_fStop = false;
@@ -39,28 +36,19 @@ HelperCanary::~HelperCanary()
 {
     // Since we're deleting this memory, we need to kill the canary thread.
     m_fStop = true;
-    if (m_hPingEvent != NULL)
+    if (m_hPingEvent.IsValid())
     {
-        CLREventBase::Set(m_hPingEvent);
+        m_hPingEvent.Set();
     }
 
     if (m_hCanaryThread != NULL)
     {
-        CLREventBase::Wait(m_hCanaryThreadExitedEvent, INFINITE);
+        m_hCanaryThreadExitedEvent.Wait(INFINITE);
         CloseHandle(m_hCanaryThread);
     }
-    if (m_hPingEvent != NULL)
-    {
-        CLREventBase::CloseEvent(m_hPingEvent);
-    }
-    if (m_hCanaryThreadExitedEvent != NULL)
-    {
-        CLREventBase::CloseEvent(m_hCanaryThreadExitedEvent);
-    }
-    if (m_hWaitEvent != NULL)
-    {
-        CLREventBase::CloseEvent(m_hWaitEvent);
-    }
+    m_hPingEvent.CloseEvent();
+    m_hCanaryThreadExitedEvent.CloseEvent();
+    m_hWaitEvent.CloseEvent();
 }
 
 //-----------------------------------------------------------------------------
@@ -141,8 +129,7 @@ void HelperCanary::Init()
         m_initialized = true;
     }
 
-    m_hPingEvent = CLREventBase::CreateEvent(NULL, false, false);
-    if (m_hPingEvent == NULL)
+    if (!m_hPingEvent.CreateAutoEventNoThrow(false))
     {
         STRESS_LOG1(LF_CORDB, LL_ALWAYS, "Canary failed to create ping event. gle=%d\n", GetLastError());
         // in the past if we failed to start the thread we just assumed it was unsafe
@@ -152,8 +139,7 @@ void HelperCanary::Init()
         return;
     }
 
-    m_hWaitEvent = CLREventBase::CreateEvent(NULL, true, false);
-    if (m_hWaitEvent == NULL)
+    if (!m_hWaitEvent.CreateManualEventNoThrow(false))
     {
         STRESS_LOG1(LF_CORDB, LL_ALWAYS, "Canary failed to create wait event. gle=%d\n", GetLastError());
         // in the past if we failed to start the thread we just assumed it was unsafe
@@ -163,8 +149,7 @@ void HelperCanary::Init()
         return;
     }
 
-    m_hCanaryThreadExitedEvent = CLREventBase::CreateEvent(NULL, true, false);
-    if (m_hCanaryThreadExitedEvent == NULL)
+    if (!m_hCanaryThreadExitedEvent.CreateManualEventNoThrow(false))
     {
         STRESS_LOG1(LF_CORDB, LL_ALWAYS, "Canary failed to create thread-exited event. gle=%d\n", GetLastError());
         _ASSERTE(!"Canary failed to create thread-exited event");
@@ -233,8 +218,8 @@ bool HelperCanary::AreLocksAvailableWorker()
 
     // Canary will take the locks of interest and then set the Answer counter equal to our request counter.
     m_RequestCounter = m_RequestCounter + 1;
-    CLREventBase::Reset(m_hWaitEvent);
-    CLREventBase::Set(m_hPingEvent);
+    m_hWaitEvent.Reset();
+    m_hPingEvent.Set();
 
     // Spin waiting for answer. If canary gets back to us, then the locks must be free and so it's safe for helper-thread.
     // If we timeout, then we err on the side of safety and assume canary blocked on a lock and so it's not safe
@@ -269,11 +254,11 @@ bool HelperCanary::AreLocksAvailableWorker()
 
         // We'll either timeout (in which case it's like a Sleep(), or
         // get the event, which shortcuts the sleep.
-        CLREventBase::Wait(m_hWaitEvent, msSleep);
+        m_hWaitEvent.Wait(msSleep);
 
         // In case a stale answer sets the wait event high, reset it now to avoid us doing
         // a live spin-lock.
-        CLREventBase::Reset(m_hWaitEvent);
+        m_hWaitEvent.Reset();
 
 
         msSleep = msSleepSteadyState;
@@ -296,7 +281,7 @@ DWORD HelperCanary::ThreadProc(LPVOID param)
     HelperCanary * pThis = reinterpret_cast<HelperCanary*> (param);
     pThis->ThreadProc();
     _ASSERTE(pThis->m_fStop);
-    CLREventBase::Set(pThis->m_hCanaryThreadExitedEvent);
+    pThis->m_hCanaryThreadExitedEvent.Set();
     STRESS_LOG0(LF_CORDB, LL_ALWAYS, "Canary thread exiting\n");
 
     return 0;
@@ -312,7 +297,7 @@ void HelperCanary::ThreadProc()
 
     while(true)
     {
-        CLREventBase::Wait(m_hPingEvent, INFINITE);
+        m_hPingEvent.Wait(INFINITE);
 
         m_AnswerCounter = 0;
         DWORD dwRequest = m_RequestCounter;
@@ -331,7 +316,7 @@ void HelperCanary::ThreadProc()
         // Set wait event to let Requesting thread shortcut its spin lock. This is purely an
         // optimization because requesting thread will still check Answer/Request counters.
         // That protects us from recyling bugs.
-        CLREventBase::Set(m_hWaitEvent);
+        m_hWaitEvent.Set();
     }
 }
 

@@ -14,7 +14,7 @@
 #include "gcenv.windows.inl"
 #include "volatile.h"
 #include "gcconfig.h"
-#include "../../runtime/RuntimeEvent.h"
+#include "../../runtime/CLREventBase.h"
 
 GCSystemInfo g_SystemInfo;
 
@@ -1383,24 +1383,6 @@ uint32_t GCEvent::Wait(uint32_t timeout, bool alertable)
 
 bool GCEvent::CreateAutoEventNoThrow(bool initialState)
 {
-    // [DESKTOP TODO] The difference between events and OS events is
-    // whether or not the hosting API is made aware of them. When (if)
-    // we implement hosting support for Local GC, we will need to be
-    // aware of the host here.
-    return CreateOSAutoEventNoThrow(initialState);
-}
-
-bool GCEvent::CreateManualEventNoThrow(bool initialState)
-{
-    // [DESKTOP TODO] The difference between events and OS events is
-    // whether or not the hosting API is made aware of them. When (if)
-    // we implement hosting support for Local GC, we will need to be
-    // aware of the host here.
-    return CreateOSManualEventNoThrow(initialState);
-}
-
-bool GCEvent::CreateOSAutoEventNoThrow(bool initialState)
-{
     assert(m_impl == nullptr);
     std::unique_ptr<GCEvent::Impl> event(new (std::nothrow) GCEvent::Impl());
     if (!event)
@@ -1417,7 +1399,7 @@ bool GCEvent::CreateOSAutoEventNoThrow(bool initialState)
     return true;
 }
 
-bool GCEvent::CreateOSManualEventNoThrow(bool initialState)
+bool GCEvent::CreateManualEventNoThrow(bool initialState)
 {
     assert(m_impl == nullptr);
     std::unique_ptr<GCEvent::Impl> event(new (std::nothrow) GCEvent::Impl());

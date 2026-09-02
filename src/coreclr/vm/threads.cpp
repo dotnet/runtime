@@ -6,7 +6,7 @@
 //
 
 #include "common.h"
-#include "RuntimeEvent.h"
+#include "CLREventBase.h"
 
 #include "frames.h"
 #include "threads.h"
@@ -3021,7 +3021,12 @@ DWORD Thread::DoReentrantWaitAny(int numWaiters, HANDLE* pHandles, DWORD timeout
     }
     CONTRACTL_END;
 
+#ifdef TARGET_WINDOWS
     return DoAppropriateAptStateWait(numWaiters, pHandles, FALSE, timeout, mode);
+#else
+    _ASSERTE(!"Reentrant waits are only supported on Windows");
+    return WAIT_FAILED;
+#endif
 }
 
 DWORD Thread::DoReentrantWaitWithRetry(HANDLE handle, DWORD timeout, WaitMode mode)
@@ -3035,8 +3040,8 @@ DWORD Thread::DoReentrantWaitWithRetry(HANDLE handle, DWORD timeout, WaitMode mo
 
 #ifdef TARGET_UNIX
     _ASSERTE(handle == GetThreadHandle());
-    handle = GetThreadExitedEvent();
-#endif // TARGET_UNIX
+    return m_ThreadExitedEvent.Wait(timeout, (mode & WaitMode_Alertable) != 0);
+#else
 
     ULONGLONG dwStart = 0, dwEnd;
     if (timeout != INFINITE)
@@ -3067,9 +3072,11 @@ DWORD Thread::DoReentrantWaitWithRetry(HANDLE handle, DWORD timeout, WaitMode mo
             dwStart = dwEnd;
         }
     }
+#endif
 }
 
 
+#ifdef TARGET_WINDOWS
 //--------------------------------------------------------------------
 // Do appropriate wait based on apartment state (STA or MTA)
 DWORD Thread::DoAppropriateAptStateWait(int numWaiters, HANDLE* pHandles, BOOL bWaitAll,
@@ -3090,14 +3097,9 @@ DWORD Thread::DoAppropriateAptStateWait(int numWaiters, HANDLE* pHandles, BOOL b
     }
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
-#ifdef TARGET_WINDOWS
     return WaitForMultipleObjectsEx(numWaiters, pHandles, bWaitAll, timeout, alertable);
-#else
-    _ASSERTE(numWaiters == 1);
-    _ASSERTE(!bWaitAll);
-    return CLREventBase::Wait(pHandles[0], timeout);
-#endif
 }
+#endif // TARGET_WINDOWS
 
 #ifdef TARGET_WINDOWS
 // This is the callback from the OS, when we queue an APC to interrupt a waiting thread.
@@ -4438,7 +4440,7 @@ BOOL CLREventWaitWithTry(CLREventBase *pEvent, DWORD timeout, BOOL fAlertable, D
     BOOL fLoop = TRUE;
     EX_TRY
     {
-        *pStatus = pEvent->Wait(timeout, fAlertable);
+        *pStatus = pEvent->Wait(timeout, fAlertable, false);
         fLoop = FALSE;
     }
     EX_CATCH

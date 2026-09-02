@@ -8,7 +8,7 @@
 
 
 #include "common.h"
-#include "RuntimeEvent.h"
+#include "CLREventBase.h"
 #include "excep.h"
 #include "log.h"
 #include "threadsuspend.h"
@@ -535,7 +535,7 @@ void TieredCompilationManager::BackgroundWorkerStart()
         }
 
         // Wait for the worker to be scheduled again
-        DWORD waitResult = s_backgroundWorkAvailableEvent.Wait(timeoutMs, false);
+        DWORD waitResult = s_backgroundWorkAvailableEvent.Wait(timeoutMs, false, false);
         if (waitResult == WAIT_OBJECT_0)
         {
             continue;

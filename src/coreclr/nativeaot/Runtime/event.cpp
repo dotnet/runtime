@@ -8,6 +8,8 @@
 #include "Pal.h"
 #include "thread.h"
 #include "threadstore.h"
+#include "threadstore.inl"
+#include "thread.inl"
 
 // CLR wrapper around native events.
 
@@ -30,9 +32,9 @@ uint32_t CLREventBase::Wait(uint32_t milliseconds, bool alertable, bool allowRee
         HANDLE event = GetOSEvent();
         result = allowReentrantWait
             ? PalCompatibleWaitAny(alertable, milliseconds, 1, &event, TRUE)
-            : CLREventBase::Wait(event, milliseconds, alertable);
+            : Wait(milliseconds, alertable);
 #else
-        result = CLREventBase::Wait(GetOSEvent(), milliseconds);
+        result = Wait(milliseconds, false);
 #endif // TARGET_WINDOWS
 
         if (disablePreemptive)

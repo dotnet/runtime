@@ -408,7 +408,7 @@ ep_rt_aot_wait_event_wait (
     STATIC_CONTRACT_NOTHROW;
     EP_ASSERT (wait_event != NULL && wait_event->event != NULL);
 
-    return wait_event->event->Wait (timeout, alertable);
+    return wait_event->event->Wait (timeout, alertable, false);
 }
 
 bool

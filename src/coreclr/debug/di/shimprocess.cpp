@@ -10,7 +10,7 @@
 //*****************************************************************************
 
 #include "stdafx.h"
-#include "RuntimeEvent.h"
+#include "CLREventBase.h"
 
 #include "safewrap.h"
 #include "check.h"
@@ -53,17 +53,14 @@ ShimProcess::ShimProcess() :
 
     m_machineInfo.Clear();
 
-    m_markAttachPendingEvent = CLREventBase::CreateEvent(NULL, true, false);
-    if (m_markAttachPendingEvent == NULL)
+    if (!m_markAttachPendingEvent.CreateManualEventNoThrow(false))
     {
         ThrowOutOfMemory();
     }
 
-    m_terminatingEvent = CLREventBase::CreateEvent(NULL, true, false);
-    if (m_terminatingEvent == NULL)
+    if (!m_terminatingEvent.CreateManualEventNoThrow(false))
     {
-        CLREventBase::CloseEvent(m_markAttachPendingEvent);
-        m_markAttachPendingEvent = NULL;
+        m_markAttachPendingEvent.CloseEvent();
         ThrowOutOfMemory();
     }
 }
@@ -85,17 +82,8 @@ ShimProcess::~ShimProcess()
     _ASSERTE(m_ShimProcessDisposeLock.IsInit());
     m_ShimProcessDisposeLock.Destroy();
 
-    if (m_markAttachPendingEvent != NULL)
-    {
-        CLREventBase::CloseEvent(m_markAttachPendingEvent);
-        m_markAttachPendingEvent = NULL;
-    }
-
-    if (m_terminatingEvent != NULL)
-    {
-        CLREventBase::CloseEvent(m_terminatingEvent);
-        m_terminatingEvent = NULL;
-    }
+    m_markAttachPendingEvent.CloseEvent();
+    m_terminatingEvent.CloseEvent();
 
     // Dtor will release m_pLiveDataTarget
 }
@@ -1615,12 +1603,12 @@ MachineInfo ShimProcess::GetMachineInfo()
 
 void ShimProcess::SetMarkAttachPendingEvent()
 {
-    CLREventBase::Set(m_markAttachPendingEvent);
+    m_markAttachPendingEvent.Set();
 }
 
 void ShimProcess::SetTerminatingEvent()
 {
-    CLREventBase::Set(m_terminatingEvent);
+    m_terminatingEvent.Set();
 }
 
 RSLock * ShimProcess::GetShimLock()

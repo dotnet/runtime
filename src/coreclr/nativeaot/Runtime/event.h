@@ -4,7 +4,7 @@
 #ifndef __EVENT_H__
 #define __EVENT_H__
 
-#include "RuntimeEvent.h"
+#include "CLREventBase.h"
 
 class CLREventStatic : public CLREventBase
 {

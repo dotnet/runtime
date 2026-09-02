@@ -3,7 +3,7 @@
 
 
 #include "dbgtransportsession.h"
-#include "RuntimeEvent.h"
+#include "CLREventBase.h"
 
 #ifdef RIGHT_SIDE_COMPILE
 #include <minipal/time.h>

@@ -12,7 +12,7 @@
 ===========================================================*/
 
 #include "common.h"
-#include "RuntimeEvent.h"
+#include "CLREventBase.h"
 
 #include <stdlib.h>
 
