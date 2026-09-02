@@ -44,6 +44,7 @@ public class PredicateInstructions
             TransposeEvenAndMask(vecs, vecs, vecs);
             Assert.Equal(Vector.Create<short>(1), AndMaskWithOnes(Vector.Create<short>(3), vecs));
             VectorAndNot(vecs, vecs);
+            PredicateBitwiseClearFloat(Vector.Create<float>(1), Vector.Create<float>(2));
 
             PredicateCastFloatLoad(s_floatValues, 0, s_floatValues.Length);
             PredicateCastFloatLocalLoad(s_floatValues, 0, s_floatValues.Length);
@@ -211,6 +212,19 @@ public class PredicateInstructions
         // Verify that ordinary vector AND-NOT expressions still reach AdvSimd BitwiseClear lowering.
         //ARM64-FULL-LINE: bic {{v[0-9]+}}.8h, {{v[0-9]+}}.8h, {{v[0-9]+}}.8h
         return ~a & b;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector<float> PredicateBitwiseClearFloat(Vector<float> left, Vector<float> right)
+    {
+        //ARM64-FULL-LINE: {{bic .*}}
+        // {{p[0-9]+}}.b, {{p[0-9]+}}/z, {{p[0-9]+}}.b, {{p[0-9]+}}.b
+        Vector<float> firstMask = Sve.CompareLessThan(left, right);
+        Vector<float> secondMask = Sve.ZipLow(
+            Sve.CompareGreaterThan(left, right),
+            Sve.CompareEqual(left, right));
+
+        return firstMask & ~secondMask;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
