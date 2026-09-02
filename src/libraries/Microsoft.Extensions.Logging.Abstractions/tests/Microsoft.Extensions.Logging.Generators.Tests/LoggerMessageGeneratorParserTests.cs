@@ -137,13 +137,52 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             Assert.Empty(diagnostics);
         }
 
-        [Fact]
-        public async Task WithNullMessage_GeneratorWontFail()
+        [Theory]
+        [InlineData(@"[LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = null)]")]
+        [InlineData(@"[LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = """")]")]
+        [InlineData(@"[LoggerMessage(EventId = 0, Level = LogLevel.Debug)]")]
+        [InlineData(@"[LoggerMessage(LogLevel.Debug)]")]
+        [InlineData(@"[LoggerMessage(0, LogLevel.Debug, null)]")]
+        [InlineData(@"[LoggerMessage(0, LogLevel.Debug, """")]")]
+        public async Task WithoutMessage_NoDiagnosticIsReported(string attribute)
         {
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator($@"
+                partial class C
+                {{
+                    {attribute}
+                    static partial void M1(ILogger logger, string foo, string bar, string baz);
+                }}
+            ");
+
+            Assert.Empty(diagnostics);
+        }
+
+        [Theory]
+        [InlineData(@"[LoggerMessage("""")]")]
+        [InlineData(@"[LoggerMessage(LogLevel.Debug, null)]")]
+        [InlineData(@"[LoggerMessage(LogLevel.Debug, """")]")]
+        public async Task WithoutMessage_LevelSuppliedAsParameter_NoDiagnosticIsReported(string attribute)
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator($@"
+                partial class C
+                {{
+                    {attribute}
+                    static partial void M1(ILogger logger, LogLevel level, string foo, string bar);
+                }}
+            ");
+
+            Assert.Empty(diagnostics);
+        }
+
+        [Fact]
+        public async Task WithWhitespaceMessage_ArgumentDiagnosticIsStillReported()
+        {
+            // A hand-written whitespace message is still a message: it is formatted and surfaces as
+            // {OriginalFormat}, so an unreferenced argument remains worth reporting.
             IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
                 partial class C
                 {
-                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = null)]
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = "" "")]
                     static partial void M1(ILogger logger, string foo);
                 }
             ");
@@ -151,6 +190,20 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             Assert.Single(diagnostics);
             Assert.Equal(DiagnosticDescriptors.ArgumentHasNoCorrespondingTemplate.Id, diagnostics[0].Id);
             Assert.Contains("foo", diagnostics[0].GetMessage(), StringComparison.InvariantCulture);
+        }
+
+        [Fact]
+        public async Task DoubleLogLevel_InAttributeAndAsParameterWithoutMessage_ProducesNoDiagnostic()
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
+                partial class C
+                {
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug)]
+                    static partial void M1(ILogger logger, LogLevel levelParam);
+                }
+            ");
+
+            Assert.Empty(diagnostics);
         }
 
         [Fact]
