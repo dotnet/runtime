@@ -1597,7 +1597,7 @@ SWITCH_OPCODE:
                 INTOP_CASE(INTOP_RET)
                     // Return stack slot sized value
                     *(int64_t*)pFrame->pRetVal = LOCAL_VAR(ip[1], int64_t);
-                    goto EXIT_FRAME;
+                    goto EXIT_FRAME_NO_LOCALLOC;
                 INTOP_CASE(INTOP_RET_I1)
                     // Return int8 value
                     *(int64_t*)pFrame->pRetVal = (int8_t)LOCAL_VAR(ip[1], int32_t);
@@ -1616,8 +1616,16 @@ SWITCH_OPCODE:
                     goto EXIT_FRAME;
                 INTOP_CASE(INTOP_RET_VT)
                     memmove(pFrame->pRetVal, LOCAL_VAR_ADDR(ip[1], void), ip[2]);
-                    goto EXIT_FRAME;
+                    goto EXIT_FRAME_NO_LOCALLOC;
                 INTOP_CASE(INTOP_RET_VOID)
+                    goto EXIT_FRAME_NO_LOCALLOC;
+                INTOP_CASE(INTOP_RET_LOCALLOC)
+                    *(int64_t*)pFrame->pRetVal = LOCAL_VAR(ip[1], int64_t);
+                    goto EXIT_FRAME;
+                INTOP_CASE(INTOP_RET_VOID_LOCALLOC)
+                    goto EXIT_FRAME;
+                INTOP_CASE(INTOP_RET_VT_LOCALLOC)
+                    memmove(pFrame->pRetVal, LOCAL_VAR_ADDR(ip[1], void), ip[2]);
                     goto EXIT_FRAME;
 
                 INTOP_CASE(INTOP_LDLOCA)
@@ -4882,12 +4890,12 @@ do                                                                      \
     }
 
 EXIT_FRAME:
+    pThreadContext->frameDataAllocator.PopInfo(pFrame);
 
+EXIT_FRAME_NO_LOCALLOC:
     // Exit the current frame, MAKE CERTAIN not to trigger any GC between here and the return, since the interpreter
     // async resumption logic depends on not triggering a GC here for correctness.
 
-    // Interpreter-TODO: Don't run PopInfo on the main return path, Add RET_LOCALLOC instead
-    pThreadContext->frameDataAllocator.PopInfo(pFrame);
     if (pFrame->pParent && pFrame->pParent->ip)
     {
         // Return to the main loop after a non-recursive interpreter call
