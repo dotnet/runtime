@@ -77,9 +77,8 @@
     <DefaultSubsets Condition="'$(TargetsLinuxBionic)' == 'true' and '$(CoreCLRSupported)' == 'true' and '$(MonoSupported)' != 'true'">clr+libs+host+packs</DefaultSubsets>
     <DefaultSubsets Condition="'$(TargetsLinuxBionic)' == 'true' and '$(CoreCLRSupported)' != 'true' and '$(MonoSupported)' == 'true'">clr.nativeaotruntime+clr.nativeaotlibs+mono+libs+host+packs</DefaultSubsets>
     <DefaultSubsets Condition="'$(TargetsLinuxBionic)' == 'true' and '$(CoreCLRSupported)' != 'true' and '$(MonoSupported)' != 'true'">clr.nativeaotruntime+clr.nativeaotlibs+libs+packs</DefaultSubsets>
-    <DefaultSubsets Condition="'$(TargetsOpenHarmony)' == 'true' and '$(CoreCLRSupported)' == 'true' and '$(MonoSupported)' == 'true'">clr.nativeaotruntime+clr.nativeaotlibs+clr+mono+libs+host+packs</DefaultSubsets>
-    <DefaultSubsets Condition="'$(TargetsOpenHarmony)' == 'true' and '$(CoreCLRSupported)' == 'true' and '$(MonoSupported)' != 'true'">clr.nativeaotruntime+clr.nativeaotlibs+clr+libs+host+packs</DefaultSubsets>
-    <DefaultSubsets Condition="'$(TargetsOpenHarmony)' == 'true' and '$(CoreCLRSupported)' != 'true'">clr.nativeaotruntime+clr.nativeaotlibs+mono+libs+host+packs</DefaultSubsets>
+    <!-- OHOS is CoreCLR + NativeAOT only (no Mono dependency). -->
+    <DefaultSubsets Condition="'$(TargetsOpenHarmony)' == 'true'">clr.nativeaotruntime+clr.nativeaotlibs+clr+libs+host+packs</DefaultSubsets>
     <DefaultSubsets Condition="'$(TargetsBrowser)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">clr+libs+tools+host+packs</DefaultSubsets>
     <!-- In source build, mono is only supported as primary runtime flavor. -->
     <DefaultSubsets Condition="'$(DotNetBuildSourceOnly)' == 'true' and '$(PrimaryRuntimeFlavor)' != 'Mono'">clr+libs+tools+host+packs</DefaultSubsets>
