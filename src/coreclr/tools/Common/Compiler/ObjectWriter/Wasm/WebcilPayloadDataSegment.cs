@@ -103,5 +103,11 @@ namespace ILCompiler.ObjectWriter
             Debug.Assert(trailingBytesCount >= 0);
             _paddingBytesCount = trailingBytesCount;
         }
+
+        public int GetMemoryAddressOfOffset(int offsetInSegment)
+        {
+            Debug.Assert(offsetInSegment >= 0 && offsetInSegment <= RawContentSize);
+            return offsetInSegment;
+        }
     }
 }

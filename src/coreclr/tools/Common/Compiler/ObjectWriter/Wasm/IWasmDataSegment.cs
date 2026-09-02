@@ -52,6 +52,12 @@ namespace ILCompiler.ObjectWriter
         /// segment is aligned properly.
         /// </summary>
         void SetTrailingPadding(int trailingBytesCount);
+
+        /// <summary>
+        /// Gets the offset of the segment in linear memory when loaded.
+        /// For passive segments, returns <paramref name="offsetInSegment"/>
+        /// </summary>
+        int GetMemoryAddressOfOffset(int offsetInSegment);
     }
 
     internal interface IWasmActiveDataSegment : IWasmDataSegment
