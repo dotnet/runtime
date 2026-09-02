@@ -320,6 +320,41 @@ namespace System.Net.Security.Tests
             Assert.Throws<InvalidOperationException>(() => session.RequestClientCertificate(scratch, out _));
         }
 
+        // The TargetHostName setter overrides the current value on both roles and clears it when
+        // set to null. On a client this backs SNI / hostname validation; on a server it backs the
+        // SNI value surfaced to the caller. Only the getter was previously exercised.
+        [Fact]
+        public void TargetHostName_Setter_OverridesAndClearsValue()
+        {
+            using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
+            using TlsContext serverCtx = TlsContext.CreateServer(new SslServerAuthenticationOptions
+            {
+                ServerCertificate = serverCert,
+            });
+            using TlsBufferSession serverSession = NewBufferSession(serverCtx);
+
+            // Server: no ClientHello processed yet, so the getter starts null.
+            Assert.Null(serverSession.TargetHostName);
+            serverSession.TargetHostName = "server.example.com";
+            Assert.Equal("server.example.com", serverSession.TargetHostName);
+            serverSession.TargetHostName = null;
+            Assert.Null(serverSession.TargetHostName);
+
+            using TlsContext clientCtx = TlsContext.CreateClient(new SslClientAuthenticationOptions
+            {
+                TargetHost = "initial.example.com",
+                RemoteCertificateValidationCallback = TestHelper.AllowAnyServerCertificate,
+            });
+            using TlsBufferSession clientSession = NewBufferSession(clientCtx);
+
+            // Client: the getter reflects the supplied TargetHost, then the override, then clears.
+            Assert.Equal("initial.example.com", clientSession.TargetHostName);
+            clientSession.TargetHostName = "override.example.com";
+            Assert.Equal("override.example.com", clientSession.TargetHostName);
+            clientSession.TargetHostName = null;
+            Assert.Null(clientSession.TargetHostName);
+        }
+
         [Fact]
         public async Task ServerSession_Shutdown_DeliversCloseNotifyToSslStreamClient()
         {
