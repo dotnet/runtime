@@ -205,7 +205,11 @@
            NativeLibrary items are converted to NativeFileReference items later in the
            flow (in _CoreCLRPrepareForNativeBuild) so we have to inspect both here. -->
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and (@(NativeFileReference->Count()) &gt; 0 or @(NativeLibrary->Count()) &gt; 0)">true</WasmBuildNative>
+      <!-- TODO-WASM: At the moment we are skipping dotnet.native.wasm that always contain diagnostic-server.
+      Related https://github.com/dotnet/runtime/issues/132772
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(EnableDiagnostics)' == 'true'">true</WasmBuildNative>
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(WasmPerformanceInstrumentation)' != ''">true</WasmBuildNative>
+      -->
     </PropertyGroup>
 
     <!-- When publishing a trimmed app, default to relinking in Release, matching the Mono
