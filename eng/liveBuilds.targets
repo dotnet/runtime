@@ -166,15 +166,24 @@
     Ensure artifacts exist for the more advanced paths. If the configuration is '*', don't emit
     these errors: it isn't a local dev scenario.
   -->
-  <Target Name="EnsureLocalOSGroupConfigurationArchitectureSpecificArtifactsExist"
+  <Target Name="EnsureLocalLibrariesRuntimeArtifactsExist"
           Condition="'$(LibrariesTargetOSConfigurationArchitecture)' != '*'">
     <Error Condition="!Exists('$(LibrariesSharedFrameworkBinArtifactsPath)')"
            Text="The 'libs' subset must be built before building this project. Missing artifacts: $(LibrariesSharedFrameworkBinArtifactsPath). Configuration: '$(LibrariesConfiguration)'. To use a different configuration, specify the 'LibrariesConfiguration' property." />
     <Error Condition="'$(IncludeOOBLibraries)' == 'true' and !Exists('$(LibrariesAllBinArtifactsPath)')"
            Text="The 'libs' subset must be built before building this project. Missing artifacts: $(LibrariesAllBinArtifactsPath). Configuration: '$(LibrariesConfiguration)'. To use a different configuration, specify the 'LibrariesConfiguration' property." />
+  </Target>
+
+  <Target Name="EnsureLocalLibrariesNativeArtifactsExist"
+          Condition="'$(LibrariesTargetOSConfigurationArchitecture)' != '*'">
     <Error Condition="!Exists('$(LibrariesNativeArtifactsPath)')"
            Text="The 'libs' subset must be built before building this project. Missing artifacts: $(LibrariesNativeArtifactsPath). Configuration: '$(LibrariesConfiguration)'. To use a different configuration, specify the 'LibrariesConfiguration' property." />
   </Target>
+
+  <Target Name="EnsureLocalOSGroupConfigurationArchitectureSpecificArtifactsExist"
+          DependsOnTargets="
+            EnsureLocalLibrariesRuntimeArtifactsExist;
+            EnsureLocalLibrariesNativeArtifactsExist" />
 
   <Target Name="ResolveLibrariesRefAssembliesFromLocalBuild"
           DependsOnTargets="EnsureLocalArtifactsExist">
@@ -185,10 +194,8 @@
     <Error Condition="'@(LibrariesRefAssemblies)' == ''" Text="The 'libs' subset must be built before building this project." />
   </Target>
 
-  <Target Name="ResolveLibrariesRuntimeFilesFromLocalBuild"
-          DependsOnTargets="
-            EnsureLocalArtifactsExist;
-            EnsureLocalOSGroupConfigurationArchitectureSpecificArtifactsExist">
+  <Target Name="ResolveLibrariesManagedRuntimeFilesFromLocalBuild"
+          DependsOnTargets="EnsureLocalLibrariesRuntimeArtifactsExist">
     <ItemGroup>
       <LibrariesRuntimeFiles Condition="'$(IncludeOOBLibraries)' != 'true'" Include="
         $(LibrariesSharedFrameworkBinArtifactsPath)*.dll;
@@ -198,6 +205,13 @@
         $(LibrariesAllBinArtifactsPath)*.dll;
         $(LibrariesAllBinArtifactsPath)*.pdb"
         IsNative="" />
+    </ItemGroup>
+    <Error Condition="'@(LibrariesRuntimeFiles)' == ''" Text="The 'libs' subset must be built before building this project." />
+  </Target>
+
+  <Target Name="ResolveLibrariesNativeRuntimeFilesFromLocalBuild"
+          DependsOnTargets="EnsureLocalLibrariesNativeArtifactsExist">
+    <ItemGroup>
       <ExcludeNativeLibrariesRuntimeFiles Condition="'$(IncludeOOBLibraries)' != 'true'"
                                           Include="$(LibrariesNativeArtifactsPath)libSystem.IO.Ports.Native.*" />
 
@@ -372,6 +386,11 @@
 
     <Error Condition="'@(LibrariesRuntimeFiles)' == ''" Text="The 'libs' subset must be built before building this project." />
   </Target>
+
+  <Target Name="ResolveLibrariesRuntimeFilesFromLocalBuild"
+          DependsOnTargets="
+            ResolveLibrariesManagedRuntimeFilesFromLocalBuild;
+            ResolveLibrariesNativeRuntimeFilesFromLocalBuild" />
 
   <Target Name="ResolveLibrariesFromLocalBuild"
           DependsOnTargets="

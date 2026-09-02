@@ -1,4 +1,22 @@
 <Project>
+  <Import Project="$(LibrariesProjectRoot)NetCoreAppLibraryProjectReferences.props" />
+
+  <ItemGroup>
+    <ProjectReference Include="$(SharedNativeRoot)libs\build-native.proj"
+                      AdditionalProperties="RuntimeFlavor=$(_NetCoreAppLibrariesRuntimeFlavor)"
+                      GlobalPropertiesToRemove="RuntimeIdentifier;TargetFramework"
+                      ReferenceOutputAssembly="false"
+                      SetConfiguration="Configuration=$(LibrariesConfiguration)"
+                      SkipGetTargetFrameworkProperties="true" />
+    <ProjectReference Include="$(LibrariesProjectRoot)sfx-src.proj"
+                      AdditionalProperties="RuntimeFlavor=$(_NetCoreAppLibrariesRuntimeFlavor)"
+                      GlobalPropertiesToRemove="RuntimeIdentifier;TargetFramework"
+                      ReferenceOutputAssembly="false"
+                      SetConfiguration="Configuration=$(LibrariesConfiguration)"
+                      SkipGetTargetFrameworkProperties="true"
+                      OutputItemType="_NetCoreAppLibrarySourceAssembly" />
+  </ItemGroup>
+
   <PropertyGroup>
     <IncludeFallbacksInDepsFile>true</IncludeFallbacksInDepsFile>
     <GetSharedFrameworkFilesForReadyToRunDependsOn>
@@ -44,10 +62,18 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="AddFrameworkFilesToPackage" DependsOnTargets="ResolveLibrariesFromLocalBuild">
+  <Target Name="AddFrameworkFilesToPackage"
+          DependsOnTargets="ResolveProjectReferences;ResolveLibrariesNativeRuntimeFilesFromLocalBuild">
     <ItemGroup>
+      <_NetCoreAppLibraryRuntimeAssembly Include="@(_NetCoreAppLibrarySourceAssembly)"
+                                         Condition="'%(_NetCoreAppLibrarySourceAssembly.Extension)' == '.dll' and '%(_NetCoreAppLibrarySourceAssembly.Filename)' != 'System.Private.CoreLib'" />
+      <_NetCoreAppLibraryRuntimeAssemblySymbols Include="@(_NetCoreAppLibraryRuntimeAssembly->'%(RootDir)%(Directory)%(Filename).pdb')" />
+      <_NetCoreAppLibraryRuntimeAssemblySymbols Remove="@(_NetCoreAppLibraryRuntimeAssemblySymbols)"
+                                                Condition="!Exists('%(_NetCoreAppLibraryRuntimeAssemblySymbols.Identity)')" />
+      <ReferenceCopyLocalPaths Include="@(_NetCoreAppLibraryRuntimeAssembly);
+                                        @(_NetCoreAppLibraryRuntimeAssemblySymbols)" />
       <ReferenceCopyLocalPaths Include="@(LibrariesRuntimeFiles)"
-        Condition="'%(LibrariesRuntimeFiles.Extension)' != '$(StaticLibSuffix)' or '$(IncludeStaticLibrariesInPack)' == 'true'">
+                               Condition="'%(LibrariesRuntimeFiles.Extension)' != '$(StaticLibSuffix)' or '$(IncludeStaticLibrariesInPack)' == 'true'">
         <TargetPath Condition="'%(LibrariesRuntimeFiles.NativeSubDirectory)' != ''">runtimes/$(RuntimeIdentifier)/native/%(LibrariesRuntimeFiles.NativeSubDirectory)%(RecursiveDir)</TargetPath>
       </ReferenceCopyLocalPaths>
     </ItemGroup>

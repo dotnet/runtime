@@ -9,13 +9,62 @@
     <PackageDescription>A set of .NET APIs that are included in the default .NET application model. Contains reference assemblies, documentation, and other design-time assets.</PackageDescription>
   </PropertyGroup>
 
-  <Target Name="AddFrameworkFilesToPackage" DependsOnTargets="ResolveLibrariesFromLocalBuild" BeforeTargets="GetFilesToPackage">
+  <Import Project="$(LibrariesProjectRoot)NetCoreAppLibraryProjectReferences.props" />
+
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)sfx-src.proj"
+                      AdditionalProperties="RuntimeFlavor=$(_NetCoreAppLibrariesRuntimeFlavor)"
+                      GlobalPropertiesToRemove="RuntimeIdentifier;TargetFramework"
+                      ReferenceOutputAssembly="false"
+                      SetConfiguration="Configuration=$(LibrariesConfiguration)"
+                      SkipGetTargetFrameworkProperties="true"
+                      OutputItemType="_NetCoreAppLibrarySourceAssembly" />
+    <ProjectReference Include="@(NetCoreAppLibraryGeneratorProject)"
+                      GlobalPropertiesToRemove="RuntimeIdentifier"
+                      ReferenceOutputAssembly="false"
+                      SetConfiguration="Configuration=$(LibrariesConfiguration)" />
+  </ItemGroup>
+
+  <Target Name="GetNetCoreAppRefPackGeneratorFiles"
+          DependsOnTargets="ResolveProjectReferences">
+    <MSBuild Projects="@(NetCoreAppLibraryGeneratorProject)"
+             Targets="GetAnalyzerPackFiles"
+             Properties="Configuration=$(LibrariesConfiguration)"
+             RemoveProperties="RuntimeIdentifier;SetTargetFramework">
+      <Output TaskParameter="TargetOutputs" ItemName="_NetCoreAppRefPackGeneratorFileWithOriginalPath" />
+    </MSBuild>
+
     <ItemGroup>
-      <ReferencePath Include="@(LibrariesRefAssemblies)" />
+      <_NetCoreAppRefPackGeneratorFile Include="@(_NetCoreAppRefPackGeneratorFileWithOriginalPath)"
+                                       RemoveMetadata="IsSymbol">
+        <TargetPath>$([System.Text.RegularExpressions.Regex]::Replace($([System.Text.RegularExpressions.Regex]::Replace($([System.String]::Copy('%(_NetCoreAppRefPackGeneratorFileWithOriginalPath.PackagePath)').Replace('\', '/')), '^analyzers/dotnet/roslyn[^/]+/', 'analyzers/dotnet/')), '/[^/]+$', '/'))</TargetPath>
+      </_NetCoreAppRefPackGeneratorFile>
+    </ItemGroup>
+  </Target>
+
+  <Target Name="AddFrameworkFilesToPackage"
+          DependsOnTargets="ResolveProjectReferences;GetNetCoreAppRefPackGeneratorFiles"
+          BeforeTargets="GetFilesToPackage">
+    <ItemGroup>
+      <_NetCoreAppLibraryPublicSourceAssembly Include="@(_NetCoreAppLibrarySourceAssembly)"
+                                              Condition="'%(_NetCoreAppLibrarySourceAssembly.Extension)' == '.dll' and '%(_NetCoreAppLibrarySourceAssembly.IsPrivateAssembly)' != 'true'" />
+      <_NetCoreAppLibrarySourceAssemblyWithReferenceAssembly Include="@(_NetCoreAppLibraryPublicSourceAssembly)"
+                                                             Condition="'%(_NetCoreAppLibraryPublicSourceAssembly.ReferenceAssembly)' != ''" />
+      <_NetCoreAppLibraryReferenceAssembly Include="@(_NetCoreAppLibrarySourceAssemblyWithReferenceAssembly->Metadata('ReferenceAssembly'))" />
+      <_NetCoreAppLibraryReferenceAssembly Include="@(_NetCoreAppLibraryPublicSourceAssembly)"
+                                           Exclude="@(_NetCoreAppLibrarySourceAssemblyWithReferenceAssembly)" />
+      <_NetCoreAppLibraryReferenceAssemblySymbols Include="@(_NetCoreAppLibraryReferenceAssembly->'%(RootDir)%(Directory)%(Filename).pdb')" />
+      <_NetCoreAppLibraryReferenceAssemblySymbols Remove="@(_NetCoreAppLibraryReferenceAssemblySymbols)"
+                                                  Condition="!Exists('%(_NetCoreAppLibraryReferenceAssemblySymbols.Identity)')" />
+      <ReferencePath Include="@(_NetCoreAppLibraryReferenceAssembly);
+                              @(_NetCoreAppLibraryReferenceAssemblySymbols)" />
       <ReferencePath ReferenceAssembly="%(Identity)" />
-      <DocFilesToPackage Include="$(MicrosoftNetCoreAppRefPackRefDir)%(LibrariesRefAssemblies.FileName).xml" Condition="Exists('$(MicrosoftNetCoreAppRefPackRefDir)%(LibrariesRefAssemblies.FileName).xml')"/>
-      <Analyzer Include="$(MicrosoftNetCoreAppRefPackDir)/analyzers/**/*.*" />
-      <FilesToPackage Include="@(Analyzer)" ExcludeFromValidation="true" TargetPath="analyzers/%(RecursiveDir)" />
+      <_NetCoreAppLibrarySourceAssemblyWithDocumentation Include="@(_NetCoreAppLibraryPublicSourceAssembly)"
+                                                         Condition="'%(_NetCoreAppLibraryPublicSourceAssembly.DocFileItem)' != '' and Exists('%(_NetCoreAppLibraryPublicSourceAssembly.DocFileItem)')" />
+      <DocFilesToPackage Include="@(_NetCoreAppLibrarySourceAssemblyWithDocumentation->Metadata('DocFileItem'))" />
+      <FilesToPackage Include="@(_NetCoreAppRefPackGeneratorFile)"
+                      ExcludeFromValidation="true"
+                      TargetPath="%(_NetCoreAppRefPackGeneratorFile.TargetPath)" />
     </ItemGroup>
   </Target>
 </Project>
