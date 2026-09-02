@@ -282,6 +282,9 @@
   <data name="TargetArchOption" xml:space="preserve">
     <value>Target architecture for cross compilation</value>
   </data>
+  <data name="TargetAllowsRuntimeCodeGenerationOption" xml:space="preserve">
+    <value>Override whether the target supports runtime code generation</value>
+  </data>
   <data name="TargetOSOption" xml:space="preserve">
     <value>Target OS for cross compilation</value>
   </data>
