@@ -84,6 +84,7 @@ namespace ILAssembler
         private readonly Options _options;
         private readonly MetadataBuilder _metadataBuilder = new();
         private readonly Func<string, byte[]> _resourceLocator;
+        private IReadOnlySet<ParserRuleContext> _parserErrorContexts = new HashSet<ParserRuleContext>();
 
         // Record the mapped field data directly into the blob to ensure we preserve ordering
         private readonly BlobBuilder _mappedFieldData = new();
@@ -111,6 +112,13 @@ namespace ILAssembler
             _options = options;
             _resourceLocator = resourceLocator;
         }
+
+        internal void BeginDocument(IReadOnlySet<ParserRuleContext> parserErrorContexts)
+        {
+            _currentDocumentPath = null;
+            _parserErrorContexts = parserErrorContexts;
+        }
+
         /// <summary>
         /// Represents a typedef alias entry.
         /// </summary>
@@ -119,7 +127,10 @@ namespace ILAssembler
             public sealed record Type(EntityRegistry.TypeEntity Entity) : TypedefEntry;
             public sealed record TypeBlob(BlobBuilder Blob) : TypedefEntry;
             public sealed record Member(EntityRegistry.EntityBase Entity) : TypedefEntry;
-            public sealed record CustomAttribute(EntityRegistry.EntityBase Constructor, BlobBuilder Value) : TypedefEntry;
+            public sealed record CustomAttribute(
+                EntityRegistry.EntityBase Constructor,
+                BlobBuilder Value,
+                EntityRegistry.EntityBase? Owner) : TypedefEntry;
         }
 
         private void ReportDiagnostic(DiagnosticSeverity severity, string id, string message, Antlr4.Runtime.ParserRuleContext context)
@@ -651,7 +662,10 @@ namespace ILAssembler
             if (context.customAttrDecl() is { } attr)
             {
                 var customAttr = VisitCustomAttrDecl(attr).Value;
-                customAttr?.Owner = _currentAssemblyOrRef;
+                if (customAttr is not null)
+                {
+                    customAttr.Owner ??= _currentAssemblyOrRef;
+                }
                 return GrammarResult.SentinelValue.Result;
             }
 
@@ -1160,25 +1174,42 @@ namespace ILAssembler
             bool isStandaloneCustomAttribute =
                 context.customAttrDecl().Length == 1 &&
                 context.PARAM() is null;
-            bool isTrailingCustomAttribute =
-                isStandaloneCustomAttribute &&
-                context.customAttrDecl()[0].dottedName() is null;
-            if (!isTrailingCustomAttribute)
+            if (!isStandaloneCustomAttribute)
             {
                 _pendingClassCustomAttributeOwner = null;
             }
 
+            bool hasNestedDeclarations =
+                context.classHead() is not null
+                || context.methodHead() is not null;
+            if (!hasNestedDeclarations && ContainsParserError(context))
+            {
+                return GrammarResult.SentinelValue.Result;
+            }
+
             if (context.classHead() is CILParser.ClassHeadContext classHead)
             {
+                if (ContainsParserError(classHead)
+                    || context.classDecls() is not CILParser.ClassDeclsContext classDecls)
+                {
+                    return GrammarResult.SentinelValue.Result;
+                }
+
                 _currentTypeDefinition.Push(VisitClassHead(classHead).Value);
-                VisitClassDecls(context.classDecls());
+                VisitClassDecls(classDecls);
                 _currentTypeDefinition.Pop();
                 _pendingClassCustomAttributeOwner = null;
             }
             else if (context.methodHead() is CILParser.MethodHeadContext methodHead)
             {
+                if (ContainsParserError(methodHead)
+                    || context.methodDecls() is not CILParser.MethodDeclsContext methodDecls)
+                {
+                    return GrammarResult.SentinelValue.Result;
+                }
+
                 _currentMethod = new(VisitMethodHead(methodHead).Value);
-                VisitMethodDecls(context.methodDecls());
+                VisitMethodDecls(methodDecls);
                 // Build the locals signature from parsed local variable declarations
                 if (_currentMethod.AllLocals.Count > 0)
                 {
@@ -1338,7 +1369,7 @@ namespace ILAssembler
                             var customAttr = VisitCustomAttrDecl(customAttrDecl).Value;
                             if (customAttr is not null)
                             {
-                                customAttr.Owner = property;
+                                customAttr.Owner ??= property;
                             }
                         }
                         else if (VisitPropDecl(propDecl).Value is { } accessor)
@@ -1362,7 +1393,7 @@ namespace ILAssembler
                             var customAttr = VisitCustomAttrDecl(customAttrDecl).Value;
                             if (customAttr is not null)
                             {
-                                customAttr.Owner = evt;
+                                customAttr.Owner ??= evt;
                             }
                         }
                         else if (VisitEventDecl(eventDecl).Value is { } accessor)
@@ -1418,7 +1449,7 @@ namespace ILAssembler
             {
                 if (VisitCustomAttrDecl(context.customAttrDecl()[0]).Value is { } customAttr)
                 {
-                    customAttr.Owner =
+                    customAttr.Owner ??=
                         _pendingClassCustomAttributeOwner ??
                         _currentTypeDefinition.PeekOrDefault();
                 }
@@ -1462,7 +1493,10 @@ namespace ILAssembler
                         foreach (var attr in customAttrDeclarations ?? Array.Empty<CILParser.CustomAttrDeclContext>())
                         {
                             var customAttrDecl = VisitCustomAttrDecl(attr).Value;
-                            customAttrDecl?.Owner = param;
+                            if (customAttrDecl is not null)
+                            {
+                                customAttrDecl.Owner ??= param;
+                            }
                         }
                         _pendingClassCustomAttributeOwner = param;
                     }
@@ -1512,7 +1546,10 @@ namespace ILAssembler
                         foreach (var attr in customAttrDeclarations ?? Array.Empty<CILParser.CustomAttrDeclContext>())
                         {
                             var customAttrDecl = VisitCustomAttrDecl(attr).Value;
-                            customAttrDecl?.Owner = constraint;
+                            if (customAttrDecl is not null)
+                            {
+                                customAttrDecl.Owner ??= constraint;
+                            }
                         }
                         _pendingClassCustomAttributeOwner = constraint;
                     }
@@ -2001,6 +2038,11 @@ namespace ILAssembler
         GrammarResult ICILVisitor<GrammarResult>.VisitCustomAttrDecl(CILParser.CustomAttrDeclContext context) => VisitCustomAttrDecl(context);
         public GrammarResult.Literal<EntityRegistry.CustomAttributeEntity?> VisitCustomAttrDecl(CILParser.CustomAttrDeclContext context)
         {
+            if (ContainsParserError(context))
+            {
+                return new(null);
+            }
+
             if (context.dottedName() is { } dottedName)
             {
                 // This is a typedef reference for a custom attribute
@@ -2008,7 +2050,10 @@ namespace ILAssembler
                 var resolved = TryResolveTypedefAsCustomAttribute(alias);
                 if (resolved is not null)
                 {
-                    return new(_entityRegistry.CreateCustomAttribute(resolved.Value.Constructor, resolved.Value.Value));
+                    EntityRegistry.CustomAttributeEntity attribute =
+                        _entityRegistry.CreateCustomAttribute(resolved.Value.Constructor, resolved.Value.Value);
+                    attribute.Owner = resolved.Value.Owner;
+                    return new(attribute);
                 }
                 // Typedef not found - could report diagnostic here
                 return new(null);
@@ -2168,6 +2213,11 @@ namespace ILAssembler
 
         public GrammarResult VisitDataDecl(CILParser.DataDeclContext context)
         {
+            if (ContainsParserError(context))
+            {
+                return GrammarResult.SentinelValue.Result;
+            }
+
             _ = VisitDdHead(context.ddHead());
             _ = VisitDdBody(context.ddBody());
             return GrammarResult.SentinelValue.Result;
@@ -2288,16 +2338,27 @@ namespace ILAssembler
 
         public GrammarResult VisitDecl(CILParser.DeclContext context)
         {
-            bool isTrailingCustomAttribute =
-                context.customAttrDecl() is { } customAttribute &&
-                customAttribute.dottedName() is null;
-            if (context.fieldDecl() is null && !isTrailingCustomAttribute)
+            if (context.fieldDecl() is null && context.customAttrDecl() is null)
             {
                 _pendingClassCustomAttributeOwner = null;
             }
 
+            bool hasNestedDeclarations =
+                context.nameSpaceHead() is not null
+                || context.classHead() is not null
+                || context.methodHead() is not null;
+            if (!hasNestedDeclarations && ContainsParserError(context))
+            {
+                return GrammarResult.SentinelValue.Result;
+            }
+
             if (context.nameSpaceHead() is CILParser.NameSpaceHeadContext ns)
             {
+                if (ContainsParserError(ns))
+                {
+                    return GrammarResult.SentinelValue.Result;
+                }
+
                 string namespaceName = VisitNameSpaceHead(ns).Value;
                 string? outer = _currentNamespace.PeekOrDefault();
                 _currentNamespace.Push(string.IsNullOrEmpty(outer) ? namespaceName : $"{outer}.{namespaceName}");
@@ -2308,16 +2369,36 @@ namespace ILAssembler
             }
             if (context.classHead() is CILParser.ClassHeadContext classHead)
             {
+                if (ContainsParserError(classHead))
+                {
+                    return GrammarResult.SentinelValue.Result;
+                }
+
+                if (context.classDecls() is not CILParser.ClassDeclsContext classDecls)
+                {
+                    return GrammarResult.SentinelValue.Result;
+                }
+
                 _currentTypeDefinition.Push(VisitClassHead(classHead).Value);
-                VisitClassDecls(context.classDecls());
+                VisitClassDecls(classDecls);
                 _currentTypeDefinition.Pop();
                 _pendingClassCustomAttributeOwner = null;
                 return GrammarResult.SentinelValue.Result;
             }
             if (context.methodHead() is CILParser.MethodHeadContext methodHead)
             {
+                if (ContainsParserError(methodHead))
+                {
+                    return GrammarResult.SentinelValue.Result;
+                }
+
+                if (context.methodDecls() is not CILParser.MethodDeclsContext methodDecls)
+                {
+                    return GrammarResult.SentinelValue.Result;
+                }
+
                 _currentMethod = new(VisitMethodHead(methodHead).Value);
-                VisitMethodDecls(context.methodDecls());
+                VisitMethodDecls(methodDecls);
                 if (_currentMethod.AllLocals.Count > 0)
                 {
                     var localsSig = new BlobBuilder();
@@ -2397,7 +2478,7 @@ namespace ILAssembler
                 });
                 foreach (var attr in customAttrs)
                 {
-                    attr.Owner = exp;
+                    attr.Owner ??= exp;
                 }
                 return GrammarResult.SentinelValue.Result;
             }
@@ -2427,7 +2508,7 @@ namespace ILAssembler
                 res.Implementation = implementation;
                 foreach (var attr in attrs)
                 {
-                    attr.Owner = res;
+                    attr.Owner ??= res;
                 }
                 return GrammarResult.SentinelValue.Result;
             }
@@ -2477,7 +2558,7 @@ namespace ILAssembler
                 // Top-level custom attribute owned by the module (matching native ilasm behavior)
                 if (VisitCustomAttrDecl(topLevelCustomAttr).Value is { } customAttr)
                 {
-                    customAttr.Owner = (EntityRegistry.EntityBase?)_pendingClassCustomAttributeOwner ?? _entityRegistry.Module;
+                    customAttr.Owner ??= (EntityRegistry.EntityBase?)_pendingClassCustomAttributeOwner ?? _entityRegistry.Module;
                 }
             }
             if (context.secDecl() is { } topSecDecl)
@@ -2774,7 +2855,10 @@ namespace ILAssembler
         {
             string name = VisitDottedName(context.dottedName()).Value;
             EventAttributes eventAttributes = context.eventAttr().Select(attr => VisitEventAttr(attr).Value).Aggregate((EventAttributes)0, (a, b) => a | b);
-            return new(new EntityRegistry.EventEntity(eventAttributes, VisitTypeSpec(context.typeSpec()).Value, name));
+            EntityRegistry.TypeEntity? eventType = context.typeSpec() is { } typeSpec
+                ? VisitTypeSpec(typeSpec).Value
+                : null;
+            return new(new EntityRegistry.EventEntity(eventAttributes, eventType, name));
         }
 
         public GrammarResult VisitExportHead(CILParser.ExportHeadContext context) => throw new NotImplementedException("Obsolete syntax");
@@ -3116,6 +3200,11 @@ namespace ILAssembler
         GrammarResult ICILVisitor<GrammarResult>.VisitFieldDecl(CILParser.FieldDeclContext context) => VisitFieldDecl(context);
         public GrammarResult VisitFieldDecl(CILParser.FieldDeclContext context)
         {
+            if (ContainsParserError(context))
+            {
+                return GrammarResult.SentinelValue.Result;
+            }
+
             var fieldAttrs = context.fieldAttr().Select(VisitFieldAttr).Aggregate((FieldAttributes)0, (a, b) => a | b);
             // COMPAT: Native ilasm implicitly adds SpecialName when RTSpecialName is set
             if (fieldAttrs.HasFlag(FieldAttributes.RTSpecialName))
@@ -3310,7 +3399,13 @@ namespace ILAssembler
             }
             builder = new BlobBuilder(CommonMaxBlobLength);
 
-            int tokenType = ((ITerminalNode)context.GetChild(0)).Symbol.Type;
+            if (ContainsParserError(context)
+                || context.GetChild(0) is not ITerminalNode typeNode)
+            {
+                return new(builder);
+            }
+
+            int tokenType = typeNode.Symbol.Type;
 
             builder.WriteByte((byte)GetTypeCodeForToken(tokenType));
 
@@ -3672,6 +3767,11 @@ namespace ILAssembler
 
         public GrammarResult VisitInstr(CILParser.InstrContext context)
         {
+            if (ContainsParserError(context))
+            {
+                return GrammarResult.SentinelValue.Result;
+            }
+
             var instrContext = context.GetRuleContext<ParserRuleContext>(0);
             ILOpCode opcode = ((GrammarResult.Literal<ILOpCode>)instrContext.Accept(this)).Value;
             if (opcode == ILOpCode.Localloc)
@@ -3871,7 +3971,7 @@ namespace ILAssembler
                             // so we can emit this as UTF-8 bytes.
                             int byteCount = Encoding.UTF8.GetByteCount(str);
                             // Ensure we have an even number of bytes.
-                            if ((byteCount % 1) != 0)
+                            if ((byteCount % 2) != 0)
                             {
                                 byteCount++;
                             }
@@ -4357,6 +4457,11 @@ namespace ILAssembler
         GrammarResult ICILVisitor<GrammarResult>.VisitMarshalBlob(CILParser.MarshalBlobContext context) => VisitMarshalBlob(context);
         public GrammarResult.FormattedBlob VisitMarshalBlob(CILParser.MarshalBlobContext context)
         {
+            if (ContainsParserError(context))
+            {
+                return new(new BlobBuilder());
+            }
+
             var hexBytes = context.hexbyte();
             if (hexBytes.Length > 0)
             {
@@ -4368,7 +4473,9 @@ namespace ILAssembler
                 return new(blob);
             }
 
-            return VisitNativeType(context.nativeType());
+            return context.nativeType() is CILParser.NativeTypeContext nativeType
+                ? VisitNativeType(nativeType)
+                : new(new BlobBuilder());
         }
 
         GrammarResult ICILVisitor<GrammarResult>.VisitMarshalClause(CILParser.MarshalClauseContext context) => VisitMarshalClause(context);
@@ -4443,6 +4550,11 @@ namespace ILAssembler
         {
             Debug.Assert(_currentMethod is not null);
             var currentMethod = _currentMethod!;
+
+            if (ContainsParserError(context))
+            {
+                return GrammarResult.SentinelValue.Result;
+            }
 
             if (context.EMITBYTE() is not null)
             {
@@ -4602,7 +4714,10 @@ namespace ILAssembler
                     foreach (var attr in customAttrDeclarations ?? Array.Empty<CILParser.CustomAttrDeclContext>())
                     {
                         var customAttrDecl = VisitCustomAttrDecl(attr).Value;
-                        customAttrDecl?.Owner = param;
+                        if (customAttrDecl is not null)
+                        {
+                            customAttrDecl.Owner ??= param;
+                        }
                     }
                 }
                 else if (context.CONSTRAINT() is not null)
@@ -4660,7 +4775,10 @@ namespace ILAssembler
                     foreach (var attr in customAttrDeclarations ?? Array.Empty<CILParser.CustomAttrDeclContext>())
                     {
                         var customAttrDecl = VisitCustomAttrDecl(attr).Value;
-                        customAttrDecl?.Owner = constraint;
+                        if (customAttrDecl is not null)
+                        {
+                            customAttrDecl.Owner ??= constraint;
+                        }
                     }
                 }
                 else
@@ -4688,7 +4806,7 @@ namespace ILAssembler
                         var customAttrDecl = VisitCustomAttrDecl(attr).Value;
                         if (customAttrDecl is not null)
                         {
-                            customAttrDecl.Owner = param;
+                            customAttrDecl.Owner ??= param;
                             param.HasCustomAttributes = true;
                         }
                     }
@@ -4704,7 +4822,7 @@ namespace ILAssembler
                 var customAttr = VisitCustomDescrInMethodBody(customDescrInMethod).Value;
                 if (customAttr is not null)
                 {
-                    customAttr.Owner = currentMethod.Definition;
+                    customAttr.Owner ??= currentMethod.Definition;
                 }
             }
             else if (context.GetChild(0) is CILParser.InstrContext instr)
@@ -5624,6 +5742,11 @@ namespace ILAssembler
         GrammarResult ICILVisitor<GrammarResult>.VisitSecDecl(CILParser.SecDeclContext context) => VisitSecDecl(context);
         public GrammarResult.Literal<EntityRegistry.DeclarativeSecurityAttributeEntity?> VisitSecDecl(CILParser.SecDeclContext context)
         {
+            if (ContainsParserError(context))
+            {
+                return new(null);
+            }
+
             if (context.PERMISSION() is not null)
             {
                 ReportError(DiagnosticIds.UnsupportedSecurityDeclaration,
@@ -5654,6 +5777,9 @@ namespace ILAssembler
             }
             return new(_entityRegistry.CreateDeclarativeSecurityAttribute(action, value));
         }
+
+        private bool ContainsParserError(ParserRuleContext context)
+            => _parserErrorContexts.Contains(context);
 
         internal abstract record ExceptionClause(LabelHandle Start, LabelHandle End)
         {
@@ -5694,6 +5820,12 @@ namespace ILAssembler
         GrammarResult ICILVisitor<GrammarResult>.VisitSehClause(CILParser.SehClauseContext context) => VisitSehClause(context);
         public GrammarResult.Literal<ExceptionClause> VisitSehClause(CILParser.SehClauseContext context)
         {
+            EntityRegistry.TypeEntity? catchType = context.catchClause() is { } catchClause
+                ? VisitCatchClause(catchClause).Value
+                : null;
+            LabelHandle? filterStart = context.filterClause() is { } filterClause
+                ? VisitFilterClause(filterClause).Value
+                : null;
             var (start, end) = VisitHandlerBlock(context.handlerBlock()).Value;
 
             if (context.finallyClause() is not null)
@@ -5704,13 +5836,13 @@ namespace ILAssembler
             {
                 return new(new ExceptionClause.Fault(start, end));
             }
-            if (context.catchClause() is CILParser.CatchClauseContext catchClause)
+            if (catchType is not null)
             {
-                return new(new ExceptionClause.Catch(VisitCatchClause(catchClause).Value, start, end));
+                return new(new ExceptionClause.Catch(catchType, start, end));
             }
-            if (context.filterClause() is CILParser.FilterClauseContext filterClause)
+            if (filterStart is not null)
             {
-                return new(new ExceptionClause.Filter(VisitFilterClause(filterClause).Value, start, end));
+                return new(new ExceptionClause.Filter(filterStart.Value, start, end));
             }
 
             throw new UnreachableException();
@@ -6288,7 +6420,7 @@ namespace ILAssembler
                 var attr = VisitCustomDescr(customDescr).Value;
                 if (attr is not null)
                 {
-                    _typedefs[alias] = new TypedefEntry.CustomAttribute(attr.Constructor, attr.Value);
+                    _typedefs[alias] = new TypedefEntry.CustomAttribute(attr.Constructor, attr.Value, Owner: null);
                 }
             }
             else if (context.customDescrWithOwner() is CILParser.CustomDescrWithOwnerContext customDescrWithOwner)
@@ -6297,7 +6429,9 @@ namespace ILAssembler
                 var attr = VisitCustomDescrWithOwner(customDescrWithOwner).Value;
                 if (attr is not null)
                 {
-                    _typedefs[alias] = new TypedefEntry.CustomAttribute(attr.Constructor, attr.Value);
+                    EntityRegistry.EntityBase? owner = attr.Owner;
+                    attr.Owner = null;
+                    _typedefs[alias] = new TypedefEntry.CustomAttribute(attr.Constructor, attr.Value, owner);
                 }
             }
 
@@ -6354,11 +6488,11 @@ namespace ILAssembler
         /// <summary>
         /// Tries to resolve a typedef alias to a custom attribute.
         /// </summary>
-        private (EntityRegistry.EntityBase Constructor, BlobBuilder Value)? TryResolveTypedefAsCustomAttribute(string alias)
+        private (EntityRegistry.EntityBase Constructor, BlobBuilder Value, EntityRegistry.EntityBase? Owner)? TryResolveTypedefAsCustomAttribute(string alias)
         {
             if (_typedefs.TryGetValue(alias, out var entry) && entry is TypedefEntry.CustomAttribute attrEntry)
             {
-                return (attrEntry.Constructor, attrEntry.Value);
+                return (attrEntry.Constructor, attrEntry.Value, attrEntry.Owner);
             }
             return null;
         }

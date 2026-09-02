@@ -527,5 +527,117 @@ namespace ILAssembler.Tests
             Assert.Equal(pe.GetMetadataReader().MethodDefinitions.Count, pdbReader.MethodDebugInformation.Count);
         }
 
+        [Fact]
+        public void MultiDocumentCompile_DoesNotReusePreviousDocumentPath()
+        {
+            var documents = ImmutableArray.Create(
+                new SourceText("""
+                    .assembly test { }
+                    .class public auto ansi First
+                    {
+                        .method public static void M1() cil managed
+                        {
+                            .line 10 "first.cs"
+                            nop
+                            ret
+                        }
+                    }
+                    """, "first.il"),
+                new SourceText("""
+                    .class public auto ansi Second
+                    {
+                        .method public static void M2() cil managed
+                        {
+                            .line 20
+                            nop
+                            ret
+                        }
+                    }
+                    """, "second.il"));
+
+            var compiler = new DocumentCompiler();
+            (ImmutableArray<Diagnostic> diagnostics, CompilationResult? result) = compiler.Compile(
+                documents,
+                _ => throw new InvalidOperationException("Unexpected include"),
+                _ => throw new InvalidOperationException("Unexpected resource"),
+                new Options { Pdb = true });
+
+            Assert.Empty(diagnostics);
+            Assert.NotNull(result);
+
+            var image = new BlobBuilder();
+            result!.Serialize(image);
+            using var pe = new PEReader(image.ToImmutableArray());
+            MetadataReader reader = pe.GetMetadataReader();
+            MethodDefinitionHandle firstMethod = reader.MethodDefinitions
+                .Single(handle => reader.GetString(reader.GetMethodDefinition(handle).Name) == "M1");
+            MethodDefinitionHandle secondMethod = reader.MethodDefinitions
+                .Single(handle => reader.GetString(reader.GetMethodDefinition(handle).Name) == "M2");
+            DebugDirectoryEntry embeddedPdb = Assert.Single(
+                pe.ReadDebugDirectory(),
+                entry => entry.Type == DebugDirectoryEntryType.EmbeddedPortablePdb);
+            using MetadataReaderProvider pdbProvider =
+                pe.ReadEmbeddedPortablePdbDebugDirectoryData(embeddedPdb);
+            MetadataReader pdbReader = pdbProvider.GetMetadataReader();
+
+            MethodDebugInformation firstDebugInformation = pdbReader.GetMethodDebugInformation(
+                MetadataTokens.MethodDebugInformationHandle(MetadataTokens.GetRowNumber(firstMethod)));
+            MethodDebugInformation secondDebugInformation = pdbReader.GetMethodDebugInformation(
+                MetadataTokens.MethodDebugInformationHandle(MetadataTokens.GetRowNumber(secondMethod)));
+
+            Assert.False(firstDebugInformation.SequencePointsBlob.IsNil);
+            Assert.True(secondDebugInformation.SequencePointsBlob.IsNil);
+            Assert.Contains(
+                "first.cs",
+                pdbReader.GetString(pdbReader.GetDocument(firstDebugInformation.Document).Name));
+        }
+
+        [Fact]
+        public void MalformedLanguageDirective_DoesNotPartiallyUpdateGuidState()
+        {
+            ImmutableArray<SourceText> documents =
+            [
+                new SourceText($$"""
+                    .assembly test { }
+                    .language '{{CSharpLanguageGuid}}'
+                    .language '{{DocumentTypeGuid}}',
+                    """, "broken.il"),
+                new SourceText("""
+                    .class public auto ansi Test
+                    {
+                        .method public static void M() cil managed
+                        {
+                            .line 10 "document.cs"
+                            nop
+                            ret
+                        }
+                    }
+                    """, "valid.il"),
+            ];
+
+            var compiler = new DocumentCompiler();
+            (ImmutableArray<Diagnostic> diagnostics, CompilationResult? result) = compiler.Compile(
+                documents,
+                _ => throw new InvalidOperationException("Unexpected include"),
+                _ => throw new InvalidOperationException("Unexpected resource"),
+                new Options { ErrorTolerant = true, Pdb = true });
+
+            Assert.Contains(diagnostics, diagnostic => diagnostic.Severity == DiagnosticSeverity.Error);
+            Assert.NotNull(result);
+
+            var image = new BlobBuilder();
+            result!.Serialize(image);
+            using var pe = new PEReader(image.ToImmutableArray());
+            DebugDirectoryEntry embeddedPdb = Assert.Single(
+                pe.ReadDebugDirectory(),
+                entry => entry.Type == DebugDirectoryEntryType.EmbeddedPortablePdb);
+            using MetadataReaderProvider pdbProvider =
+                pe.ReadEmbeddedPortablePdbDebugDirectoryData(embeddedPdb);
+            MetadataReader pdbReader = pdbProvider.GetMetadataReader();
+            Document document = pdbReader.GetDocument(Assert.Single(pdbReader.Documents));
+
+            Assert.Equal(Guid.Parse(CSharpLanguageGuid), pdbReader.GetGuid(document.Language));
+        }
+
     }
 }

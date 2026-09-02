@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Collections.Immutable;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
@@ -243,6 +245,96 @@ namespace ILAssembler.Tests
                     security.Parent.Kind == HandleKind.MethodDefinition &&
                     security.Action == DeclarativeSecurityAction.Assert &&
                     reader.GetBlobBytes(security.PermissionSet).SequenceEqual((byte[])[0x2F]));
+        }
+
+        [Fact]
+        public void PermissionSet_VerbalAttributesPreserveNamesAndTypeReferenceOrder()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test
+                {
+                    .permissionset demand = {
+                        [mscorlib]Contoso.FirstPermission = { },
+                        class 'Contoso.QuotedPermission' = {
+                            property bool Enabled = bool(true)
+                        },
+                        [mscorlib]Contoso.SecondPermission = { }
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            MetadataReader reader = pe.GetMetadataReader();
+            DeclarativeSecurityAttribute security = reader.GetDeclarativeSecurityAttribute(
+                Assert.Single(reader.GetAssemblyDefinition().GetDeclarativeSecurityAttributes()));
+            BlobReader permissionSet = reader.GetBlobReader(security.PermissionSet);
+
+            Assert.Equal((byte)'.', permissionSet.ReadByte());
+            Assert.Equal(3, permissionSet.ReadCompressedInteger());
+            Assert.StartsWith(
+                "Contoso.FirstPermission, mscorlib",
+                permissionSet.ReadSerializedString(),
+                StringComparison.Ordinal);
+            Assert.Equal(0, permissionSet.ReadUInt16());
+            Assert.Equal("Contoso.QuotedPermission", permissionSet.ReadSerializedString());
+            Assert.Equal(1, permissionSet.ReadUInt16());
+            Assert.Equal((byte)CustomAttributeNamedArgumentKind.Property, permissionSet.ReadByte());
+            Assert.Equal((byte)SerializationTypeCode.Boolean, permissionSet.ReadByte());
+            Assert.Equal("Enabled", permissionSet.ReadSerializedString());
+            Assert.True(permissionSet.ReadBoolean());
+            Assert.StartsWith(
+                "Contoso.SecondPermission, mscorlib",
+                permissionSet.ReadSerializedString(),
+                StringComparison.Ordinal);
+            Assert.Equal(0, permissionSet.ReadUInt16());
+            Assert.Equal(0, permissionSet.RemainingBytes);
+
+            Assert.Equal(
+                ["FirstPermission", "SecondPermission"],
+                reader.TypeReferences
+                    .Select(handle => reader.GetString(reader.GetTypeReference(handle).Name))
+                    .ToArray());
+        }
+
+        [Fact]
+        public void MalformedPermissionSet_DoesNotLeakAttributesIntoNextDocument()
+        {
+            ImmutableArray<SourceText> documents =
+            [
+                new SourceText("""
+                    .assembly test { }
+                    .permissionset demand = {
+                        class 'Broken.Permission' = {
+                            property bool Enabled = bool(true)
+                        },
+                    }
+                    """, "broken.il"),
+                new SourceText("""
+                    .permissionset assert = (2F)
+                    .class public auto ansi Test { }
+                    """, "valid.il"),
+            ];
+
+            var compiler = new DocumentCompiler();
+            (ImmutableArray<Diagnostic> diagnostics, CompilationResult? result) = compiler.Compile(
+                documents,
+                _ => throw new InvalidOperationException("Unexpected include"),
+                _ => throw new InvalidOperationException("Unexpected resource"),
+                new Options { ErrorTolerant = true });
+
+            Assert.Contains(diagnostics, diagnostic => diagnostic.Severity == DiagnosticSeverity.Error);
+            Assert.NotNull(result);
+
+            var image = new BlobBuilder();
+            result!.Serialize(image);
+            using var pe = new PEReader(image.ToImmutableArray());
+            MetadataReader reader = pe.GetMetadataReader();
+            DeclarativeSecurityAttribute security = reader.GetDeclarativeSecurityAttribute(
+                Assert.Single(reader.GetAssemblyDefinition().GetDeclarativeSecurityAttributes()));
+
+            Assert.Equal(DeclarativeSecurityAction.Assert, security.Action);
+            Assert.Equal([0x2F], reader.GetBlobBytes(security.PermissionSet));
         }
     }
 }
