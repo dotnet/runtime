@@ -1077,6 +1077,22 @@ public unsafe class MetaDataImportImplTests
     }
 
     [Fact]
+    public void EnumOperations_UnknownHandle_ReturnInvalidArg()
+    {
+        IMetaDataImport2 wrapper = CreateWrapper();
+
+        nint unknownHandle = 1;
+        uint count = 42;
+
+        int hr = wrapper.CountEnum(unknownHandle, &count);
+        Assert.Equal(HResults.E_INVALIDARG, hr);
+        Assert.Equal(0u, count);
+
+        hr = wrapper.ResetEnum(unknownHandle, 0);
+        Assert.Equal(HResults.E_INVALIDARG, hr);
+    }
+
+    [Fact]
     public void ResetEnum_ResetsPositionForCdacEnum()
     {
         IMetaDataImport2 wrapper = CreateWrapper();

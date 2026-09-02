@@ -159,7 +159,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
             return HResults.S_OK;
         }
 
-        return HResults.E_NOTIMPL;
+        return HResults.E_INVALIDARG;
     }
 
     int IMetaDataImport.EnumTypeDefs(nint* phEnum, uint* rTypeDefs, uint cMax, uint* pcTypeDefs)
