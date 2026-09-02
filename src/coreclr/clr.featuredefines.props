@@ -41,7 +41,7 @@
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(TargetsUnix)' == 'true'">
-        <FeatureXplatEventSource Condition="'$(FeatureXplatEventSource)' == '' AND '$(TargetOS)' == 'linux' AND '$(TargetsOpenHarmony)' != 'true'">true</FeatureXplatEventSource>
+        <FeatureXplatEventSource Condition="'$(FeatureXplatEventSource)' == '' AND '$(TargetOS)' == 'linux'">true</FeatureXplatEventSource>
         <FeatureComWrappers>true</FeatureComWrappers>
     </PropertyGroup>
 

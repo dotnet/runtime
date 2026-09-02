@@ -312,7 +312,7 @@ while [[ $# -gt 0 ]]; do
           __PortableTargetOS=linux-musl
           ;;
         ohos)
-          os="linux"
+          os="ohos"
           __PortableTargetOS=ohos
           ;;
         haiku)
