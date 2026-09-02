@@ -1076,11 +1076,8 @@ namespace
         if (table->Lookup(key, &thunk))
             return (InterpreterCalliCookie)thunk;
 
-        PCODE r2rThunk = LookupPregeneratedThunkByString(key);
-        if (r2rThunk != NULL)
-            return (InterpreterCalliCookie)(size_t)r2rThunk;
-
-        return nullptr;
+        // Returns null if no thunk is registered for this key yet (its image's InjectStringThunks fixup hasn't run); the caller then defers.
+        return (InterpreterCalliCookie)(size_t)LookupPregeneratedThunkByString(key);
     }
 
     void* LookupPortableEntryPointThunk(const char* key)
@@ -1126,7 +1123,7 @@ namespace
         }
 
         InterpreterCalliCookie thunk = LookupThunk(keyBuffer);
-
+        // TODO-WASM https://github.com/dotnet/runtime/issues/133124
 #ifdef _DEBUG
         if (thunk == NULL)
             printf("WASM calli missing for key: %s\n", keyBuffer);
