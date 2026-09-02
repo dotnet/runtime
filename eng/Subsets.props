@@ -513,6 +513,8 @@
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+clr.toolstests+'))">
+    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler.DependencyAnalysisFramework.Tests\ILCompiler.DependencyAnalysisFramework.Tests.csproj"
+      Test="true" Category="clr" Condition="'$(DotNetBuildSourceOnly)' != 'true'"/>
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler.TypeSystem.Tests\ILCompiler.TypeSystem.Tests.csproj"
       Test="true" Category="clr" Condition="'$(DotNetBuildSourceOnly)' != 'true'"/>
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler.Compiler.Tests\ILCompiler.Compiler.Tests.csproj"
@@ -750,17 +752,16 @@
           </ItemGroup>
           <ItemGroup>
             <!--
-              When we're building in the VMR, we need to provide a crossgen2 that runs on the host machine for downstream repos to use to R2R their code.
-              In non-VMR builds, downstream repos can use the crossgen2 built for the target host SDK from another build leg, but in the VMR we need to provide one to use.
+              When BuildHostTools is enabled, we need to provide a crossgen2 that runs on the host machine for downstream repos to use to R2R their code.
+              Non-VMR builds normally use the crossgen2 built for the target host SDK from another build leg, but builds without one can opt in.
             -->
-            <ProjectToBuild Condition="'$(RuntimeFlavor)' != 'Mono' and '$(TargetsMobile)' != 'true' and '$(TargetsLinuxBionic)' != 'true' and '$(BuildHostTools)' == 'true'" Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Crossgen2.Host.sfxproj" Category="packs" />
+            <ProjectToBuild Condition="'$(RuntimeFlavor)' != 'Mono' and ('$(TargetsMobile)' != 'true' or '$(TargetOS)' == 'browser') and '$(TargetsLinuxBionic)' != 'true' and '$(BuildHostTools)' == 'true'" Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Crossgen2.Host.sfxproj" Category="packs" />
 
             <!--
               The wasm-tools workload manifest declares the host crossgen2 pack, so the workload
-              testing legs need it in their local package feed. No wasm leg produces one otherwise:
-              a crossgen2 pack is named for the machine that *runs* the tool, so the regular pack
-              project above is built only for non-mobile targets. The Host variant pins the RID to
-              the build host, which is exactly the pack the workload resolves.
+              testing legs need it in their local package feed. Those legs do not set
+              $(BuildHostTools), so the project above does not produce one for them. The Host variant
+              pins the RID to the build host, which is exactly the pack the workload resolves.
 
               Opt-in only. The official build already publishes this pack from the host platform
               legs, and building it here as well would produce a second package with the same id.
