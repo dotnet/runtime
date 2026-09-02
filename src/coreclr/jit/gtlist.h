@@ -348,6 +348,7 @@ GTNODE(PATCHPOINT       , GenTreeOp          ,0,1,GTK_BINOP|GTK_NOVALUE)
 GTNODE(PATCHPOINT_FORCED, GenTreeOp          ,0,1,GTK_UNOP|GTK_NOVALUE)
 
 GTNODE(START_NONGC      , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR) // Starts a new instruction group that will be non-gc interruptible.
+GTNODE(END_NONGC        , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR) // Ends a call-spanning non-gc interruptible region.
 GTNODE(START_PREEMPTGC  , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR) // Starts a new instruction group where preemptive GC is enabled.
 GTNODE(PROF_HOOK        , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR) // Profiler Enter/Leave/TailCall hook.
 

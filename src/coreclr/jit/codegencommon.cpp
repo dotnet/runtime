@@ -1794,8 +1794,31 @@ void CodeGen::genEmitCallWithCurrentGC(EmitCallParams& params)
     params.byrefRegs = gcInfo.gcRegByrefSetCur;
     GetEmitter()->emitIns_Call(params);
 
-    // Emit an entry for managed return value reporting, if needed.
     GenTreeCall* call = params.returnValueCall;
+
+    if ((call != nullptr) && !params.isJump && (GetEmitter()->emitNoGCRequestCount > 0))
+    {
+        // Argument placement may move ahead of the marker. Stop at another call so a CFG
+        // validator does not consume the final call's marker.
+        GenTree* next = call->gtNext;
+        while ((next != nullptr) && !next->OperIs(GT_CALL, GT_END_NONGC))
+        {
+            next = next->gtNext;
+        }
+
+        if ((next != nullptr) && next->OperIs(GT_END_NONGC))
+        {
+            GetEmitter()->emitEnableGC();
+        }
+#ifdef DEBUG
+        else
+        {
+            assert(call->IsHelperCall(CORINFO_HELP_VALIDATE_INDIRECT_CALL));
+        }
+#endif
+    }
+
+    // Emit an entry for managed return value reporting, if needed.
     if ((call == nullptr) || !m_compiler->opts.compDbgInfo || !m_compiler->opts.compScopeInfo ||
         (m_compiler->genCallSite2DebugInfoMap == nullptr) || params.isJump)
     {
