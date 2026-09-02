@@ -54,6 +54,7 @@
     <!-- Keep in sync with $(PropertiesThatTriggerRelinking) -->
     <_WasmNativeWorkloadNeeded Condition="
         '$(WasmEnableSIMD)' == 'false' or
+        '$(WasmEnableRelaxedSimd)' == 'true' or
         '$(WasmEnableExceptionHandling)' == 'false' or
         '$(InvariantTimezone)' == 'true' or
         '$(WasmNativeStrip)' == 'false' or

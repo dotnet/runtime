@@ -147,6 +147,7 @@
       <_WasmPropertyNames Include="WasmBuildNative" />
       <_WasmPropertyNames Include="WasmDebugLevel" />
       <_WasmPropertyNames Include="WasmDedup" />
+      <_WasmPropertyNames Include="WasmEnableRelaxedSimd" />
       <_WasmPropertyNames Include="WasmLinkIcalls" />
       <_WasmPropertyNames Include="WasmNativeStrip" />
       <_WasmPropertyNames Include="WasmNativeDebugSymbols" />
