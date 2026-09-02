@@ -372,6 +372,16 @@ void Debugger::DoNotCallDirectlyPrivateLock(void)
         // We need to be in preemptive to block for shutdown, so we don't do this block in Coop mode.
         // Fortunately, it's safe to take this lock in coop mode because we know the thread can't block
         // on anything interesting because we're in a GC-forbid region (see crst flags).
+        if (!IsFinalizerThread() &&
+            !IsDbgHelperSpecialThread() &&
+            !IsShutdownSpecialThread() &&
+            !IsGCSpecialThread() &&
+            ThreadStore::HoldingThreadStore(pThread))
+        {
+            // This thread is about to block forever, so the outer holder cannot release the lock.
+            ThreadSuspend::UnlockThreadStore();
+        }
+
         m_mutex.ReleaseAndBlockForShutdownIfNotSpecialThread();
     }
 

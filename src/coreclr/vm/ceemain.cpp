@@ -1176,13 +1176,6 @@ void WaitForEndOfShutdown()
 
     Thread *pThread = GetThreadNULLOk();
 
-    // This method never returns, so an outer ThreadStore lock holder cannot release
-    // the lock. Release it here so shutdown work cannot be permanently blocked.
-    if (ThreadStore::HoldingThreadStore(pThread))
-    {
-        ThreadSuspend::UnlockThreadStore();
-    }
-
     // After a thread is blocked in WaitForEndOfShutdown, the thread should not enter runtime again,
     // and block at WaitForEndOfShutdown again.
     if (pThread)
