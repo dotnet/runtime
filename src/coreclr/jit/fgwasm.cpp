@@ -1560,6 +1560,14 @@ PhaseStatus Compiler::fgWasmTransformSccs()
         transformed = fgWasm.WasmTransformSccs(sccs);
         assert(transformed);
 
+        // Weight moved from the SCC entry blocks through the dispatcher, so any
+        // profile data we had is no longer self-consistent.
+        if (fgPgoConsistent)
+        {
+            JITDUMP("Profile is now inconsistent: SCC entry flow was rerouted\n");
+            fgPgoConsistent = false;
+        }
+
 #ifdef DEBUG
         // Rebuild DFS and loops; verify no improper headers remain.
         // We should not have altered the EH reachability of any block.
