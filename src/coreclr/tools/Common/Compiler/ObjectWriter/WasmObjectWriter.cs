@@ -17,7 +17,7 @@ using Internal.TypeSystem;
 namespace ILCompiler.ObjectWriter
 {
     /// <summary>
-    /// Base class for WebAssembly object file format writers.
+    /// Base class for WebAssembly object writers.
     /// </summary>
     internal abstract partial class WasmObjectWriter : ObjectWriter
     {
@@ -50,7 +50,7 @@ namespace ILCompiler.ObjectWriter
             WasmObjectNodeSection.ElementSection.Name,
             WasmObjectNodeSection.DataCountSection.Name,
             ObjectNodeSection.WasmCodeSection.Name,
-            WasmObjectNodeSection.DataSection.Name,
+            // Data section is not emitted as a single ObjectNodeSection, and must be handled separately by the derived class.
         ];
 
         private protected readonly Dictionary<string, WasmGlobal> _definedGlobals = new();
@@ -157,7 +157,15 @@ namespace ILCompiler.ObjectWriter
                 flags |= WasmLowering.LoweringFlags.IsUnmanagedCallersOnly;
             }
             WriteSignatureIndexForFunction(node.Signature, flags, node);
-            RegisterFunctionSymbol(new Utf8String(node.GetMangledName(_nodeFactory.NameMangler)));
+            Utf8String functionName = GetMangledName(node);
+            RegisterFunctionSymbol(functionName);
+
+            Utf8String alternateName = _nodeFactory.GetSymbolAlternateName(node, out _);
+            if (!alternateName.IsNull)
+            {
+                _wasmSymbolManager.AddAlias(ExternCName(alternateName), functionName);
+            }
+
             if (node is INodeWithFunclets nodeWithFunclets)
             {
                 RecordFunclets(nodeWithFunclets);
@@ -398,9 +406,12 @@ namespace ILCompiler.ObjectWriter
             _sections.GetSection<WasmExternallyCountedSection>(ObjectNodeSection.WasmCodeSection.Name)
                 .SetEntryCount(MethodCount);
 
-            Debug.Assert(_sections.GetSection<WasmFunctionSection>(WasmObjectNodeSection.FunctionSection.Name).EntryCount == MethodCount);
-            Debug.Assert(_sections.GetSection<WasmImportSection>(WasmObjectNodeSection.ImportSection.Name).EntryCount == _wasmSymbolManager.GetImportCount());
-            Debug.Assert(_sections.GetSection<WasmGlobalSection>(WasmObjectNodeSection.GlobalSection.Name).EntryCount == _wasmSymbolManager.GetDefinitionCount(WasmIndexSpace.Global));
+            Debug.Assert(!_sections.Contains(WasmObjectNodeSection.FunctionSection.Name)
+                || _sections.GetSection<WasmFunctionSection>(WasmObjectNodeSection.FunctionSection.Name).EntryCount == MethodCount);
+            Debug.Assert(!_sections.Contains(WasmObjectNodeSection.ImportSection.Name)
+                || _sections.GetSection<WasmImportSection>(WasmObjectNodeSection.ImportSection.Name).EntryCount == _wasmSymbolManager.GetImportCount());
+            Debug.Assert(!_sections.Contains(WasmObjectNodeSection.GlobalSection.Name)
+                || _sections.GetSection<WasmGlobalSection>(WasmObjectNodeSection.GlobalSection.Name).EntryCount == _wasmSymbolManager.GetDefinitionCount(WasmIndexSpace.Global));
         }
     }
 
