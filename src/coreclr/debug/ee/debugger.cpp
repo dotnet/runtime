@@ -9,6 +9,7 @@
 
 #include "stdafx.h"
 #include "CLREventBase.h"
+#include <minipal/time.h>
 #include "debugdebugger.h"
 #include "../inc/common.h"
 #include "eeconfig.h" // This is here even for retail & free builds...
@@ -1327,8 +1328,8 @@ DWORD WINAPI DbgInteropStressProc(void * lpParameter)
 
         // This helps parallelize if we have a lot of threads, and keeps us from
         // chewing too much CPU time.
-        PAL_Sleep(2000);
-        PAL_Sleep(GetRandomInt(1000));
+        minipal_sleep(2000);
+        minipal_sleep(GetRandomInt(1000));
     }
 
     return 0;
@@ -1350,7 +1351,7 @@ DWORD WINAPI DbgInteropDummyStressProc(void * lpParameter)
 {
     LIMITED_METHOD_CONTRACT;
 
-    PAL_Sleep(1);
+    minipal_sleep(1);
     return 0;
 }
 
@@ -1375,7 +1376,7 @@ DWORD WINAPI DbgInteropOOBStressProc(void * lpParameter)
             OutputDebugString(W("OOB ping from "));
         }
 
-        PAL_Sleep(3000);
+        minipal_sleep(3000);
     }
 
     return 0;
@@ -11408,7 +11409,7 @@ void Debugger::PollWaitingForHelper()
         _ASSERTE(!ThreadHoldsLock());
 
         const DWORD dwTime = 50;
-        PAL_Sleep(dwTime);
+        minipal_sleep(dwTime);
         nTotalMSToWait -= dwTime;
 
         if (nTotalMSToWait <= 0)

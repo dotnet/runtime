@@ -4,12 +4,8 @@
 #include "../CLREventBase.h"
 
 #include <assert.h>
-#include <errno.h>
 #include <new>
-#include <sched.h>
 #include <stdint.h>
-#include <time.h>
-#include <unistd.h>
 
 #include <minipal/conditionvariable.h>
 #include <minipal/mutex.h>
@@ -192,41 +188,4 @@ uint32_t CLREventBase::Wait(uint32_t milliseconds)
 void* CLREventBase::GetOSEvent()
 {
     return m_handle;
-}
-
-static void SleepMicroseconds(uint64_t microseconds)
-{
-    timespec requested;
-    requested.tv_sec = microseconds / 1000000;
-    requested.tv_nsec = (microseconds % 1000000) * 1000;
-
-    timespec remaining;
-    while (nanosleep(&requested, &remaining) != 0 && errno == EINTR)
-    {
-        requested = remaining;
-    }
-}
-
-void PAL_Sleep(uint32_t milliseconds)
-{
-#if defined(TARGET_WASM) && !defined(FEATURE_MULTITHREADING)
-    (void)milliseconds;
-    return;
-#endif
-
-    if (milliseconds == 0)
-    {
-        sched_yield();
-        return;
-    }
-
-    if (milliseconds == Infinite)
-    {
-        while (true)
-        {
-            usleep(999000);
-        }
-    }
-
-    SleepMicroseconds(static_cast<uint64_t>(milliseconds) * 1000);
 }

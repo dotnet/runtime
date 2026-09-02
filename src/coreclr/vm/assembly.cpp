@@ -12,7 +12,7 @@
 ===========================================================*/
 
 #include "common.h"
-#include "CLREventBase.h"
+#include <minipal/time.h>
 
 #include <stdlib.h>
 
@@ -1283,7 +1283,7 @@ static void RunMainPost()
     //
     if (dwSecondsToSleep != 0)
     {
-        PAL_Sleep(dwSecondsToSleep * 1000);
+        minipal_sleep(dwSecondsToSleep * 1000);
     }
 }
 

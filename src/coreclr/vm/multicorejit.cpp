@@ -1059,7 +1059,7 @@ HRESULT MulticoreJitRecorder::StartProfile(const WCHAR * pRoot, const WCHAR * pF
                 {
                     MulticoreJitTrace(("Delay main thread %d ms", g_MulticoreJitDelay));
 
-                    PAL_Sleep(g_MulticoreJitDelay);
+                    minipal_sleep(g_MulticoreJitDelay);
                 }
 
                 player.SuppressRelease();

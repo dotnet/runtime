@@ -11,6 +11,7 @@
 
 #include "stdafx.h"
 #include "CLREventBase.h"
+#include <minipal/time.h>
 
 #include "safewrap.h"
 #include "check.h"
@@ -865,7 +866,7 @@ HRESULT ShimProcess::HandleWin32DebugEvent(const DEBUG_EVENT * pEvent)
             DWORD fSkipResume = config.val(CLRConfig::UNSUPPORTED_DbgDontResumeThreadsOnUnhandledException);
             if (!fSkipResume)
             {
-                PAL_Sleep(500);
+                minipal_sleep(500);
             }
         }
     }

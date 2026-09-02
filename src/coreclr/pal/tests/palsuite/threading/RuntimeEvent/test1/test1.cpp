@@ -7,7 +7,7 @@
 
 static DWORD PALAPI SignalRuntimeEvent(LPVOID context)
 {
-    PAL_Sleep(10);
+    minipal_sleep(10);
     return static_cast<CLREventBase*>(context)->Set() ? 0 : 1;
 }
 

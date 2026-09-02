@@ -3,7 +3,7 @@
 //
 
 #include "common.h"
-#include "CLREventBase.h"
+#include <minipal/time.h>
 
 #include "mscoree.h"
 #include "corhost.h"
@@ -227,7 +227,7 @@ BOOL __SwitchToThread (DWORD dwSleepMSec, DWORD dwSwitchCount)
 
     if (dwSleepMSec > 0)
     {
-        PAL_Sleep(dwSleepMSec);
+        minipal_sleep(dwSleepMSec);
         return TRUE;
     }
 
@@ -254,7 +254,7 @@ BOOL __SwitchToThread (DWORD dwSleepMSec, DWORD dwSwitchCount)
     _ASSERTE(CALLER_LIMITS_SPINNING < SLEEP_START_THRESHOLD);
     if (dwSwitchCount >= SLEEP_START_THRESHOLD)
     {
-        PAL_Sleep(1);
+        minipal_sleep(1);
     }
 
     return SwitchToThread();

@@ -1337,7 +1337,7 @@ void DbgTransportSession::TransportWorker()
         {
             DbgTransportLog(LC_Proxy, "AllocateConnection() failed with %u\n", eStatus);
             DBG_TRANSPORT_INC_STAT(MiscErrors);
-            PAL_Sleep(1000);
+            minipal_sleep(1000);
             continue;
         }
 #else // RIGHT_SIDE_COMPILE
@@ -1371,7 +1371,7 @@ void DbgTransportSession::TransportWorker()
         {
             DbgTransportLog(LC_Proxy, "Accept() failed with %u\n", eStatus);
             DBG_TRANSPORT_INC_STAT(MiscErrors);
-            PAL_Sleep(1000);
+            minipal_sleep(1000);
             continue;
         }
 

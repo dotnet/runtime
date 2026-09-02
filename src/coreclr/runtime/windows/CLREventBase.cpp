@@ -87,8 +87,3 @@ void* CLREventBase::GetOSEvent()
 {
     return m_handle;
 }
-
-void PAL_Sleep(uint32_t milliseconds)
-{
-    Sleep(milliseconds);
-}

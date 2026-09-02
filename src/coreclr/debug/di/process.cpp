@@ -8,6 +8,7 @@
 
 #include "stdafx.h"
 #include "CLREventBase.h"
+#include <minipal/time.h>
 #include "primitives.h"
 #include "safewrap.h"
 
@@ -4086,7 +4087,7 @@ HRESULT CordbProcess::ContinueInternal(BOOL fIsOutOfBand)
 
             if ((dwRace & 1) == 1)
             {
-                PAL_Sleep(30);
+                minipal_sleep(30);
             }
         }
 #endif

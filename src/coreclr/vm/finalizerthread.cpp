@@ -322,7 +322,7 @@ Again:
         //       regular not re-arming finalizables.
         GetFinalizerThread()->m_GCOnTransitionsOK = FALSE;
         GetFinalizerThread()->EnablePreemptiveGC();
-        PAL_Sleep(1);
+        minipal_sleep(1);
         GetFinalizerThread()->DisablePreemptiveGC();
         GetFinalizerThread()->m_GCOnTransitionsOK = TRUE;
     }

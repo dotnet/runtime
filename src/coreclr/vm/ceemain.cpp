@@ -791,7 +791,7 @@ void EEStartupHelper()
         _ASSERTE(NULL != g_pConfig);
         if (g_pConfig->StartupDelayMS())
         {
-            PAL_Sleep(g_pConfig->StartupDelayMS());
+            minipal_sleep(g_pConfig->StartupDelayMS());
         }
 #endif
 

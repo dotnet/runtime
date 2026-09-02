@@ -132,7 +132,7 @@
 // ======================================================================================
 
 #include "common.h"
-#include "CLREventBase.h"
+#include <minipal/time.h>
 #include "rejit.h"
 #include "method.hpp"
 #include "eeconfig.h"
@@ -1093,7 +1093,7 @@ HRESULT ReJitManager::ConfigureILCodeVersion(ILCodeVersion ilCodeVersion)
                     break; // the other thread got the parameters successfully, go race to rejit
                 }
             }
-            PAL_Sleep(1);
+            minipal_sleep(1);
         }
     }
 

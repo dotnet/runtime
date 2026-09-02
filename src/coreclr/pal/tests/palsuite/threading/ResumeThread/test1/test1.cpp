@@ -55,7 +55,7 @@ BOOL ResumeThreadTest()
     
     if (hThread != NULL)
     {
-        PAL_Sleep(100);
+        minipal_sleep(100);
 
         /* Check to ensure the parameter hasn't changed. The function
            shouldn't have occurred yet.
