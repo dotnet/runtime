@@ -102,10 +102,12 @@ DEFINE_METHOD(APPCONTEXT,   ON_PROCESS_EXIT,    OnProcessExit,  SM_PtrException_
 DEFINE_METHOD(APPCONTEXT,   ON_UNHANDLED_EXCEPTION,     OnUnhandledException,  SM_PtrObj_PtrException_RetVoid)
 DEFINE_METHOD(APPCONTEXT,   ON_FIRST_CHANCE_EXCEPTION,  OnFirstChanceException, SM_PtrException_PtrException_RetVoid)
 
+#ifdef FEATURE_VARARGS
 DEFINE_CLASS(ARG_ITERATOR,          System,                 ArgIterator)
 DEFINE_CLASS_U(System,              ArgIterator,            VARARGS)  // Includes a SigPointer.
 
 DEFINE_CLASS(ARGUMENT_HANDLE,       System,                 RuntimeArgumentHandle)
+#endif // FEATURE_VARARGS
 
 DEFINE_CLASS(ARRAY,                 System,                 Array)
 DEFINE_METHOD(ARRAY,                CTOR,                   Ctor,                       NoSig)
@@ -364,7 +366,6 @@ DEFINE_METHOD(TASK, GET_ISCOMPLETED, get_IsCompleted, NoSig)
 DEFINE_CLASS(TYPE_HANDLE,           System,                 RuntimeTypeHandle)
 DEFINE_CLASS(RT_TYPE_HANDLE,        System,                 RuntimeTypeHandle)
 DEFINE_METHOD(RT_TYPE_HANDLE,       GETRUNTIMETYPEFROMHANDLE,GetRuntimeTypeFromHandle,  SM_IntPtr_RetRuntimeType)
-DEFINE_METHOD(RT_TYPE_HANDLE,       GETRUNTIMETYPEFROMHANDLEMAYBENULL,GetRuntimeTypeFromHandleMaybeNull,  SM_IntPtr_RetRuntimeType)
 DEFINE_METHOD(RT_TYPE_HANDLE,       TO_INTPTR,              ToIntPtr,                   SM_RuntimeTypeHandle_RetIntPtr)
 #ifdef FEATURE_COMINTEROP
 DEFINE_METHOD(RT_TYPE_HANDLE,       ALLOCATECOMOBJECT,      AllocateComObject,          SM_VoidPtr_RetObj)
@@ -732,6 +733,10 @@ DEFINE_METHOD(ASYNC_HELPERS,      CAPTURE_CONTINUATION_CONTEXT, CaptureContinuat
 DEFINE_METHOD(ASYNC_HELPERS,      CAPTURE_CONTEXTS,          CaptureContexts, NoSig)
 DEFINE_METHOD(ASYNC_HELPERS,      RESTORE_CONTEXTS,          RestoreContexts, NoSig)
 DEFINE_METHOD(ASYNC_HELPERS,      RESTORE_CONTEXTS_ON_SUSPENSION, RestoreContextsOnSuspension, NoSig)
+DEFINE_METHOD(ASYNC_HELPERS,      RESTORE_INLINED_FRAME_CONTEXTS, RestoreInlinedFrameContexts, NoSig)
+DEFINE_METHOD(ASYNC_HELPERS,      CAPTURE_INLINED_FRAME_TRANSITION_WITH_CONTINUATION_CONTEXT, CaptureInlinedFrameTransitionWithContinuationContext, NoSig)
+DEFINE_METHOD(ASYNC_HELPERS,      CAPTURE_INLINED_FRAME_TRANSITION_NO_CONTINUATION_CONTEXT, CaptureInlinedFrameTransitionNoContinuationContext, NoSig)
+DEFINE_METHOD(ASYNC_HELPERS,      CAPTURE_INLINED_FRAME_TRANSITION_CONTINUE_ON_THREAD_POOL, CaptureInlinedFrameTransitionContinueOnThreadPool, NoSig)
 DEFINE_METHOD(ASYNC_HELPERS,      FINISH_SUSPENSION_NO_CONTINUATION_CONTEXT, FinishSuspensionNoContinuationContext, NoSig)
 DEFINE_METHOD(ASYNC_HELPERS,      FINISH_SUSPENSION_WITH_CONTINUATION_CONTEXT, FinishSuspensionWithContinuationContext, NoSig)
 DEFINE_METHOD(ASYNC_HELPERS,      ASYNC_CALL_CONTINUATION,   AsyncCallContinuation, NoSig)
@@ -886,6 +891,7 @@ DEFINE_CLASS(CALLCONV_FASTCALL,              CompilerServices,       CallConvFas
 DEFINE_CLASS(CALLCONV_SUPPRESSGCTRANSITION,  CompilerServices,       CallConvSuppressGCTransition)
 DEFINE_CLASS(CALLCONV_MEMBERFUNCTION,        CompilerServices,       CallConvMemberFunction)
 DEFINE_CLASS(CALLCONV_SWIFT,                 CompilerServices,       CallConvSwift)
+DEFINE_CLASS(SECRET_STUB_ARGUMENT,           CompilerServices,       SecretStubArgument)
 
 #ifdef TARGET_APPLE
 DEFINE_CLASS(SWIFT_SELF,                     Swift,                  SwiftSelf)
@@ -1060,13 +1066,14 @@ DEFINE_METHOD(BUFFER,               MEMCOPYGC,              BulkMoveWithWriteBar
 
 DEFINE_CLASS(STUBHELPERS,           StubHelpers,            StubHelpers)
 #ifdef FEATURE_COMINTEROP
-DEFINE_METHOD(STUBHELPERS,          GET_COM_HR_EXCEPTION_OBJECT,              GetCOMHRExceptionObject,            SM_Int_IntPtr_IntPtr_RetException)
-DEFINE_METHOD(STUBHELPERS,          GET_COM_IP_FROM_RCW,                      GetCOMIPFromRCW,                    SM_Obj_IntPtr_RefIntPtr_RefBool_RetIntPtr)
+DEFINE_METHOD(STUBHELPERS,          GET_COM_HR_EXCEPTION_OBJECT,              GetCOMHRExceptionObject,            SM_Int_RuntimeTypeHandle_IntPtr_RetException)
+DEFINE_METHOD(STUBHELPERS,          GET_COM_IP_FROM_RCW,                      GetCOMIPFromRCW,                    SM_Obj_IntPtr_Int_RefIntPtr_RefBool_RetIntPtr)
 #endif // FEATURE_COMINTEROP
 DEFINE_METHOD(STUBHELPERS,          SET_LAST_ERROR,         SetLastError,               SM_RetVoid)
 DEFINE_METHOD(STUBHELPERS,          CLEAR_LAST_ERROR,       ClearLastError,             SM_RetVoid)
 
 DEFINE_METHOD(STUBHELPERS,          THROW_INTEROP_PARAM_EXCEPTION, ThrowInteropParamException,   SM_Int_Int_RetVoid)
+DEFINE_METHOD(STUBHELPERS,          THROW_INTEROP_EXCEPTION,    ThrowInteropException,        SM_Int_Int_RetVoid)
 DEFINE_METHOD(STUBHELPERS,          ADD_TO_CLEANUP_LIST_SAFEHANDLE,    AddToCleanupList,           SM_RefCleanupWorkListElement_SafeHandle_RetIntPtr)
 DEFINE_METHOD(STUBHELPERS,          DESTROY_CLEANUP_LIST,   DestroyCleanupList,         SM_RefCleanupWorkListElement_RetVoid)
 DEFINE_METHOD(STUBHELPERS,          GET_HR_EXCEPTION_OBJECT, GetHRExceptionObject,      SM_Int_RetException)
@@ -1114,11 +1121,13 @@ DEFINE_METHOD(IDISPATCHHELPERS,     GET_DISPATCH_METHODS, GetDispatchMethods, SM
 DEFINE_METHOD(IDISPATCHHELPERS,     GET_DISPATCH_INNER_EXCEPTION, GetDispatchInnerException, SM_PtrException_PtrException_PtrException_RetVoid)
 #endif // FEATURE_COMINTEROP
 
+#ifdef FEATURE_VARARGS
 DEFINE_METHOD(STUBHELPERS,          MARSHAL_TO_MANAGED_VA_LIST,         MarshalToManagedVaList,         SM_IntPtr_IntPtr_RetVoid)
 DEFINE_METHOD(STUBHELPERS,          MARSHAL_TO_UNMANAGED_VA_LIST,       MarshalToUnmanagedVaList,       SM_IntPtr_UInt_IntPtr_RetVoid)
 DEFINE_METHOD(STUBHELPERS,          CALC_VA_LIST_SIZE,                  CalcVaListSize,                 SM_IntPtr_RetUInt)
-DEFINE_METHOD(STUBHELPERS,          VALIDATE_OBJECT,                    ValidateObject,                 SM_Obj_IntPtr_Obj_RetVoid)
-DEFINE_METHOD(STUBHELPERS,          VALIDATE_BYREF,                     ValidateByref,                  SM_IntPtr_IntPtr_Obj_RetVoid)
+#endif // FEATURE_VARARGS
+DEFINE_METHOD(STUBHELPERS,          VALIDATE_OBJECT,                    ValidateObject,                 SM_Obj_IntPtr_RetVoid)
+DEFINE_METHOD(STUBHELPERS,          VALIDATE_BYREF,                     ValidateByref,                  SM_IntPtr_IntPtr_RetVoid)
 DEFINE_METHOD(STUBHELPERS,          GET_STUB_CONTEXT,                   GetStubContext,                 SM_RetIntPtr)
 DEFINE_METHOD(STUBHELPERS,          LOG_PINNED_ARGUMENT,                LogPinnedArgument,              SM_IntPtr_IntPtr_RetVoid)
 DEFINE_METHOD(STUBHELPERS,          NEXT_CALL_RETURN_ADDRESS,           NextCallReturnAddress,          SM_RetIntPtr)

@@ -118,6 +118,7 @@ namespace ILCompiler.ObjectWriter
         }
 
         public void EmitSubprogramInfo(
+            Utf8String methodDisplayName,
             Utf8String methodName,
             int methodPCLength,
             uint methodTypeIndex,
@@ -127,7 +128,6 @@ namespace ILCompiler.ObjectWriter
             using var symbolSubsection = GetSubsection(DebugSymbolsSubsectionType.Symbols);
 
             // TODO: Do we need those?
-            _ = methodTypeIndex;
             _ = debugEHClauseInfos;
 
             using (var recordWriter = symbolSubsection.StartRecord(S_GPROC32_ID))
@@ -138,11 +138,11 @@ namespace ILCompiler.ObjectWriter
                 recordWriter.Write((uint)methodPCLength);
                 recordWriter.Write((uint)0); // Debug start offset
                 recordWriter.Write((uint)methodPCLength); // Debug end offset
-                recordWriter.Write((uint)0); // Type index or ID
+                recordWriter.Write(methodTypeIndex); // Type index or ID
                 recordWriter.EmitSymbolReference(RelocType.IMAGE_REL_SECREL, methodName);
                 recordWriter.EmitSymbolReference(RelocType.IMAGE_REL_SECTION, methodName);
                 recordWriter.Write((byte)0); // Proc flags
-                recordWriter.Write(methodName);
+                recordWriter.Write(methodDisplayName);
             }
 
             foreach (var (debugVar, typeIndex) in debugVars)

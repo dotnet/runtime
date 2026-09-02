@@ -41,33 +41,57 @@ namespace System.Security.Cryptography
 
         protected override void EncryptKeyWrapPaddedCore(ReadOnlySpan<byte> source, Span<byte> destination)
         {
-            int written = KeyWrap(source, destination, enc: 1);
+            int written = KeyWrap(source, destination, enc: 1, padded: true);
             Debug.Assert(written == destination.Length);
         }
 
         protected override int DecryptKeyWrapPaddedCore(ReadOnlySpan<byte> source, Span<byte> destination)
         {
-            return KeyWrap(source, destination, enc: 0);
+            return KeyWrap(source, destination, enc: 0, padded: true);
         }
 
-        private int KeyWrap(ReadOnlySpan<byte> source, Span<byte> destination, int enc)
+        protected override void EncryptKeyWrapCore(ReadOnlySpan<byte> source, Span<byte> destination)
+        {
+            int written = KeyWrap(source, destination, enc: 1, padded: false);
+
+            if (written != destination.Length)
+            {
+                Debug.Fail($"OpenSSL wrote {written} bytes; expected {destination.Length}.");
+                throw new CryptographicException();
+            }
+        }
+
+        protected override int DecryptKeyWrapCore(ReadOnlySpan<byte> source, Span<byte> destination)
+        {
+            int written = KeyWrap(source, destination, enc: 0, padded: false);
+
+            if (written != destination.Length)
+            {
+                Debug.Fail($"OpenSSL wrote {written} bytes; expected {destination.Length}.");
+                throw new CryptographicException();
+            }
+
+            return written;
+        }
+
+        private int KeyWrap(ReadOnlySpan<byte> source, Span<byte> destination, int enc, bool padded)
         {
             Debug.Assert(enc is 0 or 1);
 
             SafeEvpCipherCtxHandle ctx = GetKey().UseKey(
-                state: enc,
-                static (enc, key) =>
+                state: (Enc: enc, Padded: padded),
+                static (state, key) =>
                 {
                     int keySizeInBits = key.Length * 8;
 
-                    IntPtr algorithm = GetKeyWrapAlgorithm(keySizeInBits);
+                    IntPtr algorithm = GetKeyWrapAlgorithm(keySizeInBits, state.Padded);
 
                     SafeEvpCipherCtxHandle ctx = Interop.Crypto.EvpCipherCreate(
                         algorithm,
                         ref MemoryMarshal.GetReference(key),
                         key.Length * 8,
                         ref MemoryMarshal.GetReference(ReadOnlySpan<byte>.Empty),
-                        enc);
+                        state.Enc);
 
                     if (ctx.IsInvalid)
                     {
@@ -82,7 +106,7 @@ namespace System.Security.Cryptography
 
             using (ctx)
             {
-                // OpenSSL AES-KWP requires that the destination be at least as large as the source length plus the block size.
+                // OpenSSL AES key wrap requires that the destination be at least as large as the source length plus the block size.
                 const int AesBlockSizeBytes = 16;
                 using (CryptoPoolLease lease = CryptoPoolLease.RentConditionally(
                     checked(source.Length + AesBlockSizeBytes),
@@ -152,12 +176,15 @@ namespace System.Security.Cryptography
                         new CryptographicException(SR.Cryptography_InvalidKeySize)),
             };
 
-        private static IntPtr GetKeyWrapAlgorithm(int keySize) =>
-            keySize switch
+        private static IntPtr GetKeyWrapAlgorithm(int keySize, bool padded) =>
+            (keySize, padded) switch
             {
-                128 => Interop.Crypto.EvpAes128WrapPad(),
-                192 => Interop.Crypto.EvpAes192WrapPad(),
-                256 => Interop.Crypto.EvpAes256WrapPad(),
+                (128, false) => Interop.Crypto.EvpAes128Wrap(),
+                (128, true) => Interop.Crypto.EvpAes128WrapPad(),
+                (192, false) => Interop.Crypto.EvpAes192Wrap(),
+                (192, true) => Interop.Crypto.EvpAes192WrapPad(),
+                (256, false) => Interop.Crypto.EvpAes256Wrap(),
+                (256, true) => Interop.Crypto.EvpAes256WrapPad(),
                 _ => throw new CryptographicException(SR.Cryptography_InvalidKeySize),
             };
     }
