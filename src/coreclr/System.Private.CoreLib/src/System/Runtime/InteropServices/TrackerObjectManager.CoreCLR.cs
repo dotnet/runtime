@@ -39,7 +39,7 @@ namespace System.Runtime.InteropServices
             RegisterNativeObjectWrapperCache(ObjectHandleOnStack.Create(ref handleSet));
         }
 
-        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TrackerObjectManager_RegisterNativeObjectWrapperCache")]
         private static partial void RegisterNativeObjectWrapperCache(ObjectHandleOnStack nativeObjectWrapperCache);
     }

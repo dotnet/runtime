@@ -16,7 +16,7 @@
 #include "stringarraylist.h"
 
 // static
-extern "C" QCallExceptionStatus QCALLTYPE AppDomain_CreateDynamicAssembly(QCall::ObjectHandleOnStack assemblyLoadContext, NativeAssemblyNameParts* pAssemblyNameParts, INT32 hashAlgorithm, INT32 access, QCall::ObjectHandleOnStack retAssembly)
+extern "C" void QCALLTYPE AppDomain_CreateDynamicAssembly(QCall::ObjectHandleOnStack assemblyLoadContext, NativeAssemblyNameParts* pAssemblyNameParts, INT32 hashAlgorithm, INT32 access, QCall::ObjectHandleOnStack retAssembly, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -41,7 +41,7 @@ extern "C" QCallExceptionStatus QCALLTYPE AppDomain_CreateDynamicAssembly(QCall:
     END_QCALL;
 }
 
-extern "C" QCallExceptionStatus QCALLTYPE AssemblyNative_GetLoadedAssemblies(QCall::ObjectHandleOnStack retAssemblies)
+extern "C" void QCALLTYPE AssemblyNative_GetLoadedAssemblies(QCall::ObjectHandleOnStack retAssemblies, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -141,13 +141,13 @@ namespace
 }
 
 // Get the value of a known host property from the binder/AppDomain state.
-extern "C" QCallExceptionStatus QCALLTYPE AppContext_TryGetHostPropertyValue(LPCWSTR name, QCall::StringHandleOnStack retValue, BOOL* pReturnValue)
+extern "C" BOOL QCALLTYPE AppContext_TryGetHostPropertyValue(LPCWSTR name, QCall::StringHandleOnStack retValue, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
-    BEGIN_QCALL;
-
     BOOL found = FALSE;
+
+    BEGIN_QCALL;
 
     AppDomain* pDomain = AppDomain::GetCurrentDomain();
     DefaultAssemblyBinder* pBinder = pDomain->GetDefaultBinder();
@@ -229,12 +229,12 @@ extern "C" QCallExceptionStatus QCALLTYPE AppContext_TryGetHostPropertyValue(LPC
         _ASSERTE(!"AppContext_TryGetHostPropertyValue called with unknown name");
     }
 
-    *pReturnValue = found;
-
     END_QCALL;
+
+    return found;
 }
 
-extern "C" QCallExceptionStatus QCALLTYPE String_IsInterned(QCall::StringHandleOnStack str)
+extern "C" void QCALLTYPE String_IsInterned(QCall::StringHandleOnStack str, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -251,7 +251,7 @@ extern "C" QCallExceptionStatus QCALLTYPE String_IsInterned(QCall::StringHandleO
     END_QCALL;
 }
 
-extern "C" QCallExceptionStatus QCALLTYPE String_Intern(QCall::StringHandleOnStack str)
+extern "C" void QCALLTYPE String_Intern(QCall::StringHandleOnStack str, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 

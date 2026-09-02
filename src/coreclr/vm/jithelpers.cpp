@@ -245,7 +245,7 @@ HCIMPLEND
 #include <optdefault.h>
 
 // Helper for the managed InitClass implementations
-extern "C" QCallExceptionStatus QCALLTYPE InitClassHelper(MethodTable* pMT)
+extern "C" void QCALLTYPE InitClassHelper(MethodTable* pMT, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
@@ -318,7 +318,7 @@ __declspec(selectany)
 #endif // _MSC_VER
 PLATFORM_THREAD_LOCAL ThreadLocalData t_ThreadStatics;
 
-extern "C" QCallExceptionStatus QCALLTYPE GetThreadStaticsByMethodTable(QCall::ByteRefOnStack refHandle, MethodTable* pMT, BOOL gcStatic)
+extern "C" void QCALLTYPE GetThreadStaticsByMethodTable(QCall::ByteRefOnStack refHandle, MethodTable* pMT, BOOL gcStatic, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -339,7 +339,7 @@ extern "C" QCallExceptionStatus QCALLTYPE GetThreadStaticsByMethodTable(QCall::B
     END_QCALL;
 }
 
-extern "C" QCallExceptionStatus QCALLTYPE GetThreadStaticsByIndex(QCall::ByteRefOnStack refHandle, uint32_t staticBlockIndex, BOOL gcStatic)
+extern "C" void QCALLTYPE GetThreadStaticsByIndex(QCall::ByteRefOnStack refHandle, uint32_t staticBlockIndex, BOOL gcStatic, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -473,21 +473,21 @@ BOOL ObjIsInstanceOf(Object* pObject, TypeHandle toTypeHnd, BOOL throwCastExcept
     return ObjIsInstanceOfCore(pObject, toTypeHnd, throwCastException);
 }
 
-extern "C" QCallExceptionStatus QCALLTYPE IsInstanceOf_NoCacheLookup(EnregisteredTypeHandle type, BOOL throwCastException, QCall::ObjectHandleOnStack objOnStack, BOOL* pReturnValue)
+extern "C" BOOL QCALLTYPE IsInstanceOf_NoCacheLookup(EnregisteredTypeHandle type, BOOL throwCastException, QCall::ObjectHandleOnStack objOnStack, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
-    BEGIN_QCALL;
-
     BOOL result = FALSE;
+
+    BEGIN_QCALL;
 
     GCX_COOP();
 
     result = ObjIsInstanceOfCore(OBJECTREFToObject(objOnStack.Get()), TypeHandle::FromPtr(type), throwCastException);
 
-    *pReturnValue = result;
-
     END_QCALL;
+
+    return result;
 }
 
 //========================================================================
@@ -503,7 +503,7 @@ HCIMPL2(BOOL, JIT_IsInstanceOfException, EnregisteredTypeHandle type, Object* ob
 }
 HCIMPLEND
 
-extern "C" QCallExceptionStatus QCALLTYPE ThrowInvalidCastException(EnregisteredTypeHandle pSourceType, EnregisteredTypeHandle pTargetType)
+extern "C" void QCALLTYPE ThrowInvalidCastException(EnregisteredTypeHandle pSourceType, EnregisteredTypeHandle pTargetType, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -601,19 +601,19 @@ DictionaryEntry GenericHandleWorkerCore(MethodDesc * pMD, MethodTable * pMT, LPV
     return result;
 }
 
-extern "C" QCallExceptionStatus QCALLTYPE GenericHandleWorker(MethodDesc * pMD, MethodTable * pMT, LPVOID signature, DWORD dictionaryIndexAndSlot, Module* pModule, void** pReturnValue)
+extern "C" void* QCALLTYPE GenericHandleWorker(MethodDesc * pMD, MethodTable * pMT, LPVOID signature, DWORD dictionaryIndexAndSlot, Module* pModule, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
-    BEGIN_QCALL;
-
     void* result = NULL;
+
+    BEGIN_QCALL;
 
     result = GenericHandleWorkerCore(pMD, pMT, signature, dictionaryIndexAndSlot, pModule);
 
-    *pReturnValue = result;
-
     END_QCALL;
+
+    return result;
 } // GenericHandleWorker
 
 FieldDesc* g_pVirtualFunctionPointerCache;
@@ -674,17 +674,17 @@ void FlushVirtualFunctionPointerCaches()
 // static method signature (i.e. might be for a superclass of classHnd)
 
 // slow helper to call from the fast one
-extern "C" QCallExceptionStatus QCALLTYPE ResolveVirtualFunctionPointer(QCall::ObjectHandleOnStack obj,
+extern "C" PCODE QCALLTYPE ResolveVirtualFunctionPointer(QCall::ObjectHandleOnStack obj,
                                                        EnregisteredTypeHandle classHnd,
                                                        MethodDesc* pStaticMD,
-                                                       PCODE* pReturnValue)
+                                                       QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
-    BEGIN_QCALL;
-
     // The address of the method that's returned.
     PCODE addr = (PCODE)NULL;
+
+    BEGIN_QCALL;
 
     if (VolatileLoadWithoutBarrier(&g_pVirtualFunctionPointerCache) == NULL)
     {
@@ -742,9 +742,9 @@ extern "C" QCallExceptionStatus QCALLTYPE ResolveVirtualFunctionPointer(QCall::O
     }
 
     GCPROTECT_END();
-    *pReturnValue = addr;
-
     END_QCALL;
+
+    return addr;
 }
 
 HCIMPL3(void, Jit_NativeMemSet, void* pDest, int value, size_t length)

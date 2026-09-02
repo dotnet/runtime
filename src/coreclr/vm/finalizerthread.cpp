@@ -87,7 +87,7 @@ extern "C" void SystemJS_ExecuteFinalizationCallback()
     RunFinalizerIterationOnCurrentThread();
 }
 #else // TARGET_WASI
-extern "C" QCallExceptionStatus QCALLTYPE WasiFinalizer_RunWorker()
+extern "C" void QCALLTYPE WasiFinalizer_RunWorker(QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
@@ -128,12 +128,12 @@ extern "C" void WasiFinalizer_Schedule()
     s_finalizationPending = true;
 }
 
-extern "C" QCallExceptionStatus QCALLTYPE WasiFinalizer_TryClearPending(CLR_BOOL* pReturnValue)
+extern "C" CLR_BOOL QCALLTYPE WasiFinalizer_TryClearPending(QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
-    BEGIN_QCALL;
-
     CLR_BOOL pending = FALSE;
+
+    BEGIN_QCALL;
 
     // Volatile load + clear. Single-threaded WASI: no atomic swap needed.
     pending = s_finalizationPending ? TRUE : FALSE;
@@ -141,9 +141,8 @@ extern "C" QCallExceptionStatus QCALLTYPE WasiFinalizer_TryClearPending(CLR_BOOL
     {
         s_finalizationPending = false;
     }
-    *pReturnValue = pending;
-
     END_QCALL;
+    return pending;
 }
 
 #endif // TARGET_WASI

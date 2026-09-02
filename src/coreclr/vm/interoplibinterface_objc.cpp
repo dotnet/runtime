@@ -24,21 +24,21 @@ namespace
     ObjCMarshalNative::EnteredFinalizationCallback g_TrackedObjectEnteredFinalizationCallback;
 }
 
-extern "C" QCallExceptionStatus QCALLTYPE ObjCMarshal_TryInitializeReferenceTracker(
+extern "C" BOOL QCALLTYPE ObjCMarshal_TryInitializeReferenceTracker(
     _In_ ObjCMarshalNative::BeginEndCallback beginEndCallback,
     _In_ ObjCMarshalNative::IsReferencedCallback isReferencedCallback,
     _In_ ObjCMarshalNative::EnteredFinalizationCallback trackedObjectEnteredFinalization,
     _In_ QCall::ObjectHandleOnStack objectTrackingInfoTable,
-    BOOL* pReturnValue)
+    QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
     _ASSERTE(beginEndCallback != NULL
             && isReferencedCallback != NULL
             && trackedObjectEnteredFinalization != NULL);
 
-    BEGIN_QCALL;
-
     BOOL success = FALSE;
+
+    BEGIN_QCALL;
 
     // Switch to Cooperative mode since we are setting callbacks that
     // will be used during a GC and we want to ensure a GC isn't occurring
@@ -56,27 +56,27 @@ extern "C" QCallExceptionStatus QCALLTYPE ObjCMarshal_TryInitializeReferenceTrac
         }
     }
 
-    *pReturnValue = success;
-
     END_QCALL;
+
+    return success;
 }
 
-extern "C" QCallExceptionStatus QCALLTYPE ObjCMarshal_AllocateReferenceTrackingHandle(_In_ QCall::ObjectHandleOnStack obj, void** pReturnValue)
+extern "C" void* QCALLTYPE ObjCMarshal_AllocateReferenceTrackingHandle(_In_ QCall::ObjectHandleOnStack obj, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
-    BEGIN_QCALL;
-
     OBJECTHANDLE instHandle;
+
+    BEGIN_QCALL;
 
     // Switch to Cooperative mode since object references
     // are being manipulated.
     GCX_COOP();
     instHandle = GetAppDomain()->CreateTypedHandle(obj.Get(), HNDTYPE_REFCOUNTED);
 
-    *pReturnValue = (void*)instHandle;
-
     END_QCALL;
+
+    return (void*)instHandle;
 }
 
 namespace
@@ -120,16 +120,16 @@ namespace
     }
 }
 
-extern "C" QCallExceptionStatus QCALLTYPE ObjCMarshal_TrySetGlobalMessageSendCallback(
+extern "C" BOOL QCALLTYPE ObjCMarshal_TrySetGlobalMessageSendCallback(
     _In_ ObjCMarshalNative::MessageSendFunction msgSendFunction,
     _In_ void* fptr,
-    BOOL* pReturnValue)
+    QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
-    BEGIN_QCALL;
-
     bool success;
+
+    BEGIN_QCALL;
 
     _ASSERTE(msgSendFunction >= 0 && msgSendFunction < ARRAY_SIZE(s_msgSendOverrides));
     success = InterlockedCompareExchangeT(&s_msgSendOverrides[msgSendFunction], fptr, NULL) == NULL;
@@ -138,9 +138,9 @@ extern "C" QCallExceptionStatus QCALLTYPE ObjCMarshal_TrySetGlobalMessageSendCal
     if (success && FALSE == InterlockedCompareExchange((LONG*)&s_msgSendOverridden, TRUE, FALSE))
         PInvokeOverride::SetPInvokeOverride(&MessageSendPInvokeOverride, PInvokeOverride::Source::ObjectiveCInterop);
 
-    *pReturnValue = success ? TRUE : FALSE;
-
     END_QCALL;
+
+    return success ? TRUE : FALSE;
 }
 
 namespace

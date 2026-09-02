@@ -1172,14 +1172,14 @@ bool MethodDesc::TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMET
     return true;
 }
 
-extern "C" QCallExceptionStatus QCALLTYPE UnsafeAccessors_ResolveGenericParamToTypeHandle(MethodDesc* unsafeAccessorMethod, BOOL isMethodParam, DWORD paramIndex, void** pReturnValue)
+extern "C" void* QCALLTYPE UnsafeAccessors_ResolveGenericParamToTypeHandle(MethodDesc* unsafeAccessorMethod, BOOL isMethodParam, DWORD paramIndex, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
     _ASSERTE(unsafeAccessorMethod != NULL);
 
-    BEGIN_QCALL;
-
     TypeHandle ret;
+
+    BEGIN_QCALL;
 
     MethodDesc* typicalMD = unsafeAccessorMethod->LoadTypicalMethodDefinition();
     Instantiation genericParams = isMethodParam
@@ -1189,7 +1189,7 @@ extern "C" QCallExceptionStatus QCALLTYPE UnsafeAccessors_ResolveGenericParamToT
     if (0 <= paramIndex && paramIndex < genericParams.GetNumArgs())
         ret = genericParams[paramIndex];
 
-    *pReturnValue = ret.AsPtr();
-
     END_QCALL;
+
+    return ret.AsPtr();
 }

@@ -39,8 +39,8 @@
 // class Foo
 // {
 //
-//  // All QCalls that use BEGIN_QCALL must use the hidden return value error handler.
-//  [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
+//  // All QCalls that use BEGIN_QCALL must use the hidden last parameter error handler.
+//  [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
 //  [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "FooNative_Bar", StringMarshalling = StringMarshalling.Utf16)]
 //  private static partial bool Bar(int flags, string inString, StringHandleOnStack retString);
 //
@@ -66,8 +66,8 @@
 // The entrypoints of all QCalls has to be registered in tables in vm\qcallentrypoints.cpp using the DllImportEntry macro,
 // For example: DllImportEntry(FooNative_Bar)
 //
-// extern "C" QCallExceptionStatus QCALLTYPE FooNative_Bar(
-//     int flags, LPCWSTR wszString, QCall::StringHandleOnStack retString, BOOL* pReturnValue)
+// extern "C" BOOL QCALLTYPE FooNative_Bar(
+//     int flags, LPCWSTR wszString, QCall::StringHandleOnStack retString, QCallExceptionStatus* qcallError)
 // {
 //      // All QCalls should have QCALL_CONTRACT. It is alias for THROWS; GC_TRIGGERS; MODE_PREEMPTIVE.
 //      QCALL_CONTRACT;
@@ -77,6 +77,8 @@
 //      //     QCALL_CHECK;
 //      //     PRECONDITION(wszString != NULL);
 //      // } CONTRACTL_END;
+//
+//      BOOL retVal = FALSE;
 //
 //      // The body has to be enclosed in BEGIN_QCALL/END_QCALL macro. It is necessary to make the exception handling work.
 //      BEGIN_QCALL;
@@ -93,9 +95,11 @@
 //      retString.Set(L"Hello");
 //
 //      // You can not return from inside of BEGIN_QCALL/END_QCALL. The return value has to be passed out in helper variable.
-//      *pReturnValue = TRUE;
+//      retVal = TRUE;
 //
 //      END_QCALL;
+//
+//      return retVal;
 // }
 
 
@@ -106,15 +110,13 @@
 #endif // !TARGET_UNIX
 
 #define BEGIN_QCALL                      \
-    QCallExceptionStatus qcallExceptionStatus = 0; \
-    QCallExceptionStatus* qcallError = &qcallExceptionStatus; \
+    *qcallError = 0;                     \
     INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(GetThread()->GetFrame()) \
     INSTALL_MANAGED_EXCEPTION_CAPTURE_DISPATCHER
 
 #define END_QCALL                         \
     UNINSTALL_MANAGED_EXCEPTION_CAPTURE_DISPATCHER \
-    UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME \
-    return qcallExceptionStatus
+    UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME
 
 #define QCALL_CHECK             \
     THROWS;                     \

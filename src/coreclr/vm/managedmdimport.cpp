@@ -533,13 +533,14 @@ static void* EnsureResultSize(
     return p;
 }
 
-extern "C" QCallExceptionStatus QCALLTYPE MetadataImport_Enum(
+extern "C" void QCALLTYPE MetadataImport_Enum(
     IMDInternalImport* pScope,
     mdToken type,
     mdToken tkParent,
     /* in/out */ INT32* length,
     INT32* shortResult,
-    QCall::ObjectHandleOnStack longResult)
+    QCall::ObjectHandleOnStack longResult,
+    QCallExceptionStatus* qcallError)
 {
     CONTRACTL
     {

@@ -21,19 +21,19 @@ FCIMPL0(void*, TailCallHelp::GetTailCallArgBuffer)
 }
 FCIMPLEND
 
-extern "C" QCallExceptionStatus QCALLTYPE TailCallHelp_AllocTailCallArgBufferInternal(int size, void** pReturnValue)
+extern "C" void* QCALLTYPE TailCallHelp_AllocTailCallArgBufferInternal(int size, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
-    BEGIN_QCALL;
-
     void* retVal = NULL;
+
+    BEGIN_QCALL;
 
     retVal = GetThread()->GetTailCallTls()->AllocArgBuffer(size);
 
-    *pReturnValue = retVal;
-
     END_QCALL;
+
+    return retVal;
 }
 
 FCIMPL2(void*, TailCallHelp::GetTailCallInfo, void** retAddrSlot, void** retAddr)

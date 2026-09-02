@@ -36,7 +36,7 @@ namespace System.Reflection
             return RuntimeType.GetMethodBase(declaringType.GetRuntimeType(), handle.GetMethodInfo());
         }
 
-        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MethodBase_GetCurrentMethod")]
         private static partial RuntimeMethodHandleInternal GetCurrentMethod(StackCrawlMarkHandle stackMark);
 

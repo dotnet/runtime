@@ -72,12 +72,13 @@ extern "C" BOOL QCALLTYPE MetadataImport_GetMarshalAs(
     INT32*  marshalCookieLength,
     INT32*  iidParamIndex);
 
-extern "C" QCallExceptionStatus QCALLTYPE MetadataImport_Enum(
+extern "C" void QCALLTYPE MetadataImport_Enum(
     IMDInternalImport* pScope,
     mdToken type,
     mdToken tkParent,
     INT32* length,
     INT32* shortResult,
-    QCall::ObjectHandleOnStack longResult);
+    QCall::ObjectHandleOnStack longResult,
+    QCallExceptionStatus* qcallError);
 
 #endif

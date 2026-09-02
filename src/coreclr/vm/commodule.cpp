@@ -21,17 +21,17 @@
 // wszFullName is escaped (TYPE_NAME_RESERVED_CHAR). It should not be byref or contain enclosing type name,
 // assembly name, and generic argument list.
 //**************************************************
-extern "C" QCallExceptionStatus QCALLTYPE ModuleBuilder_GetTypeRef(QCall::ModuleHandle pModule,
+extern "C" mdTypeRef QCALLTYPE ModuleBuilder_GetTypeRef(QCall::ModuleHandle pModule,
                                           LPCWSTR wszFullName,
                                           QCall::ModuleHandle pRefedModule,
                                           INT32 tkResolutionArg,
-                                          mdTypeRef* pReturnValue)
+                                          QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
-    BEGIN_QCALL;
-
     mdTypeRef tr = 0;
+
+    BEGIN_QCALL;
 
     RefClassWriter * pRCW = pModule->GetReflectionModule()->GetClassWriter();
     _ASSERTE(pRCW);
@@ -110,9 +110,9 @@ extern "C" QCallExceptionStatus QCALLTYPE ModuleBuilder_GetTypeRef(QCall::Module
         IfFailThrow( pEmit->DefineTypeRefByName(tkResolution, wszFullNameUnescaped, &tr) );
     }
 
-    *pReturnValue = tr;
-
     END_QCALL;
+
+    return tr;
 }
 
 
@@ -125,18 +125,18 @@ extern "C" QCallExceptionStatus QCALLTYPE ModuleBuilder_GetTypeRef(QCall::Module
 **           int            tkTypeSpec
 **Exceptions:
 ==============================================================================*/
-extern "C" QCallExceptionStatus QCALLTYPE ModuleBuilder_GetArrayMethodToken(QCall::ModuleHandle pModule,
+extern "C" INT32 QCALLTYPE ModuleBuilder_GetArrayMethodToken(QCall::ModuleHandle pModule,
                                                INT32 tkTypeSpec,
                                                LPCWSTR wszMethodName,
                                                LPCBYTE pSignature,
                                                INT32 sigLength,
-                                               INT32* pReturnValue)
+                                               QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
-    BEGIN_QCALL;
-
     mdMemberRef memberRefE = mdTokenNil;
+
+    BEGIN_QCALL;
 
     if (!wszMethodName)
         COMPlusThrow(kArgumentNullException, W("ArgumentNull_String"));
@@ -153,9 +153,9 @@ extern "C" QCallExceptionStatus QCALLTYPE ModuleBuilder_GetArrayMethodToken(QCal
         COMPlusThrowHR(hr);
     }
 
-    *pReturnValue = (INT32)memberRefE;
-
     END_QCALL;
+
+    return (INT32)memberRefE;
 }
 
 namespace
@@ -205,13 +205,13 @@ namespace
 // This function will return a MemberRef token given a MethodDef token and the module where the MethodDef/FieldDef is defined.
 //
 //******************************************************************************
-extern "C" QCallExceptionStatus QCALLTYPE ModuleBuilder_GetMemberRef(QCall::ModuleHandle pModule, QCall::ModuleHandle pRefedModule, INT32 tr, INT32 token, INT32* pReturnValue)
+extern "C" INT32 QCALLTYPE ModuleBuilder_GetMemberRef(QCall::ModuleHandle pModule, QCall::ModuleHandle pRefedModule, INT32 tr, INT32 token, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
-    BEGIN_QCALL;
-
     mdMemberRef             memberRefE      = 0;
+
+    BEGIN_QCALL;
 
     RefClassWriter * pRCW = pModule->GetReflectionModule()->GetClassWriter();
     _ASSERTE( pRCW );
@@ -275,11 +275,10 @@ extern "C" QCallExceptionStatus QCALLTYPE ModuleBuilder_GetMemberRef(QCall::Modu
     // Define the memberRef
     IfFailThrow( pRCW->GetEmitter()->DefineMemberRef(tref, wzName, (PCCOR_SIGNATURE) qbNewSig.Ptr(), cbNewSig, &memberRefE) );
 
-    // assign output parameter
-
-    *pReturnValue = (INT32)memberRefE;
-
     END_QCALL;
+
+    // assign output parameter
+    return (INT32)memberRefE;
 }
 
 //******************************************************************************
@@ -287,13 +286,13 @@ extern "C" QCallExceptionStatus QCALLTYPE ModuleBuilder_GetMemberRef(QCall::Modu
 // Return a MemberRef token given a RuntimeMethodInfo
 //
 //******************************************************************************
-extern "C" QCallExceptionStatus QCALLTYPE ModuleBuilder_GetMemberRefOfMethodInfo(QCall::ModuleHandle pModule, INT32 tr, MethodDesc * pMeth, INT32* pReturnValue)
+extern "C" INT32 QCALLTYPE ModuleBuilder_GetMemberRefOfMethodInfo(QCall::ModuleHandle pModule, INT32 tr, MethodDesc * pMeth, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
-    BEGIN_QCALL;
-
     mdMemberRef memberRefE = 0;
+
+    BEGIN_QCALL;
 
     if (!pMeth)
         COMPlusThrow(kArgumentNullException);
@@ -355,9 +354,9 @@ extern "C" QCallExceptionStatus QCALLTYPE ModuleBuilder_GetMemberRefOfMethodInfo
         IfFailThrow( pRCW->GetEmitter()->DefineMemberRef(tr, wszName, (PCCOR_SIGNATURE) qbNewSig.Ptr(), cbNewSig, &memberRefE) );
     }
 
-    *pReturnValue = memberRefE;
-
     END_QCALL;
+
+    return memberRefE;
 }
 
 
@@ -366,13 +365,13 @@ extern "C" QCallExceptionStatus QCALLTYPE ModuleBuilder_GetMemberRefOfMethodInfo
 // Return a MemberRef token given a RuntimeFieldInfo
 //
 //******************************************************************************
-extern "C" QCallExceptionStatus QCALLTYPE ModuleBuilder_GetMemberRefOfFieldInfo(QCall::ModuleHandle pModule, mdTypeDef tr, QCall::TypeHandle th, mdFieldDef tkField, mdMemberRef* pReturnValue)
+extern "C" mdMemberRef QCALLTYPE ModuleBuilder_GetMemberRefOfFieldInfo(QCall::ModuleHandle pModule, mdTypeDef tr, QCall::TypeHandle th, mdFieldDef tkField, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
-    BEGIN_QCALL;
-
     mdMemberRef memberRefE = 0;
+
+    BEGIN_QCALL;
 
     if (TypeFromToken(tr) == mdtTypeDef)
     {
@@ -430,9 +429,9 @@ extern "C" QCallExceptionStatus QCALLTYPE ModuleBuilder_GetMemberRefOfFieldInfo(
         IfFailThrow( pRCW->GetEmitter()->DefineMemberRef(tr, wszName, (PCCOR_SIGNATURE) qbNewSig.Ptr(), cbNewSig, &memberRefE) );
     }
 
-    *pReturnValue = memberRefE;
-
     END_QCALL;
+
+    return memberRefE;
 }
 
 //******************************************************************************
@@ -440,18 +439,18 @@ extern "C" QCallExceptionStatus QCALLTYPE ModuleBuilder_GetMemberRefOfFieldInfo(
 // Return a MemberRef token given a Signature
 //
 //******************************************************************************
-extern "C" QCallExceptionStatus QCALLTYPE ModuleBuilder_GetMemberRefFromSignature(QCall::ModuleHandle pModule,
+extern "C" INT32 QCALLTYPE ModuleBuilder_GetMemberRefFromSignature(QCall::ModuleHandle pModule,
                                                      INT32 tr,
                                                      LPCWSTR wszMemberName,
                                                      LPCBYTE pSignature,
                                                      INT32 sigLength,
-                                                     INT32* pReturnValue)
+                                                     QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
-    BEGIN_QCALL;
-
     mdMemberRef     memberRefE = mdTokenNil;
+
+    BEGIN_QCALL;
 
     RefClassWriter * pRCW = pModule->GetReflectionModule()->GetClassWriter();
     _ASSERTE(pRCW);
@@ -462,9 +461,9 @@ extern "C" QCallExceptionStatus QCALLTYPE ModuleBuilder_GetMemberRefFromSignatur
                                                      sigLength,
                                                      &memberRefE) );
 
-    *pReturnValue = memberRefE;
-
     END_QCALL;
+
+    return memberRefE;
 }
 
 //******************************************************************************
@@ -473,7 +472,7 @@ extern "C" QCallExceptionStatus QCALLTYPE ModuleBuilder_GetMemberRefFromSignatur
 // This function is used to set the FieldRVA with the content data
 //
 //******************************************************************************
-extern "C" QCallExceptionStatus QCALLTYPE ModuleBuilder_SetFieldRVAContent(QCall::ModuleHandle pModule, INT32 tkField, LPCBYTE pContent, INT32 length)
+extern "C" void QCALLTYPE ModuleBuilder_SetFieldRVAContent(QCall::ModuleHandle pModule, INT32 tkField, LPCBYTE pContent, INT32 length, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -529,13 +528,13 @@ extern "C" QCallExceptionStatus QCALLTYPE ModuleBuilder_SetFieldRVAContent(QCall
 //  string constant or return the token of an existing constant.
 //
 //******************************************************************************
-extern "C" QCallExceptionStatus QCALLTYPE ModuleBuilder_GetStringConstant(QCall::ModuleHandle pModule, LPCWSTR pwzValue, INT32 iLength, mdString* pReturnValue)
+extern "C" mdString QCALLTYPE ModuleBuilder_GetStringConstant(QCall::ModuleHandle pModule, LPCWSTR pwzValue, INT32 iLength, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
-    BEGIN_QCALL;
-
     mdString strRef = mdTokenNil;
+
+    BEGIN_QCALL;
 
     RefClassWriter * pRCW = pModule->GetReflectionModule()->GetClassWriter();
     _ASSERTE(pRCW);
@@ -547,16 +546,16 @@ extern "C" QCallExceptionStatus QCALLTYPE ModuleBuilder_GetStringConstant(QCall:
         COMPlusThrowHR(hr);
     }
 
-    *pReturnValue = strRef;
-
     END_QCALL;
+
+    return strRef;
 }
 
 
 /*=============================SetModuleName====================================
 // SetModuleName
 ==============================================================================*/
-extern "C" QCallExceptionStatus QCALLTYPE ModuleBuilder_SetModuleName(QCall::ModuleHandle pModule, LPCWSTR wszModuleName)
+extern "C" void QCALLTYPE ModuleBuilder_SetModuleName(QCall::ModuleHandle pModule, LPCWSTR wszModuleName, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -575,28 +574,28 @@ extern "C" QCallExceptionStatus QCALLTYPE ModuleBuilder_SetModuleName(QCall::Mod
 // Return a type spec token given a byte array
 //
 //******************************************************************************
-extern "C" QCallExceptionStatus QCALLTYPE ModuleBuilder_GetTokenFromTypeSpec(QCall::ModuleHandle pModule, LPCBYTE pSignature, INT32 sigLength, mdTypeSpec* pReturnValue)
+extern "C" mdTypeSpec QCALLTYPE ModuleBuilder_GetTokenFromTypeSpec(QCall::ModuleHandle pModule, LPCBYTE pSignature, INT32 sigLength, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
-    BEGIN_QCALL;
-
     mdTypeSpec      ts = mdTokenNil;
+
+    BEGIN_QCALL;
 
     RefClassWriter * pRCW = pModule->GetReflectionModule()->GetClassWriter();
     _ASSERTE(pRCW);
 
     IfFailThrow(pRCW->GetEmitter()->GetTokenFromTypeSpec((PCCOR_SIGNATURE)pSignature, sigLength, &ts));
 
-    *pReturnValue = ts;
-
     END_QCALL;
+
+    return ts;
 }
 
 
 // GetName
 // This routine will return the name of the module as a String
-extern "C" QCallExceptionStatus QCALLTYPE RuntimeModule_GetScopeName(QCall::ModuleHandle pModule, QCall::StringHandleOnStack retString)
+extern "C" void QCALLTYPE RuntimeModule_GetScopeName(QCall::ModuleHandle pModule, QCall::StringHandleOnStack retString, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -620,7 +619,7 @@ extern "C" QCallExceptionStatus QCALLTYPE RuntimeModule_GetScopeName(QCall::Modu
 **Arguments:
 **Exceptions:
 ==============================================================================*/
-extern "C" QCallExceptionStatus QCALLTYPE RuntimeModule_GetFullyQualifiedName(QCall::ModuleHandle pModule, QCall::StringHandleOnStack retString)
+extern "C" void QCALLTYPE RuntimeModule_GetFullyQualifiedName(QCall::ModuleHandle pModule, QCall::StringHandleOnStack retString, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -654,13 +653,13 @@ extern "C" QCallExceptionStatus QCALLTYPE RuntimeModule_GetFullyQualifiedName(QC
 **Arguments: refThis
 **Exceptions: None.
 ==============================================================================*/
-extern "C" QCallExceptionStatus QCALLTYPE MarshalNative_GetHINSTANCE(QCall::ModuleHandle pModule, HINSTANCE* pReturnValue)
+extern "C" HINSTANCE QCALLTYPE MarshalNative_GetHINSTANCE(QCall::ModuleHandle pModule, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
-    BEGIN_QCALL;
-
     HMODULE hMod = (HMODULE)0;
+
+    BEGIN_QCALL;
 
     // This returns the base address
     // Other modules should have zero base
@@ -675,14 +674,14 @@ extern "C" QCallExceptionStatus QCALLTYPE MarshalNative_GetHINSTANCE(QCall::Modu
         hMod = (HMODULE)-1;
     }
 
-    *pReturnValue = (HINSTANCE)hMod;
-
     END_QCALL;
+
+    return (HINSTANCE)hMod;
 }
 
 // Get class will return an array contain all of the classes
 //  that are defined within this Module.
-extern "C" QCallExceptionStatus QCALLTYPE RuntimeModule_GetTypes(QCall::ModuleHandle pModule, QCall::ObjectHandleOnStack retTypes, QCall::ObjectHandleOnStack retExceptions)
+extern "C" void QCALLTYPE RuntimeModule_GetTypes(QCall::ModuleHandle pModule, QCall::ObjectHandleOnStack retTypes, QCall::ObjectHandleOnStack retExceptions, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 

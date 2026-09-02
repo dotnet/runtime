@@ -15,8 +15,8 @@
 
 #ifdef FEATURE_COMINTEROP
 
-extern "C" QCallExceptionStatus QCALLTYPE ComWeakRefToObject(IWeakReference * pComWeakReference, QCall::ObjectHandleOnStack retRcw);
-extern "C" QCallExceptionStatus QCALLTYPE ObjectToComWeakRef(QCall::ObjectHandleOnStack obj, IWeakReference ** pReturnValue);
+extern "C" void QCALLTYPE ComWeakRefToObject(IWeakReference * pComWeakReference, QCall::ObjectHandleOnStack retRcw, QCallExceptionStatus* qcallError);
+extern "C" IWeakReference * QCALLTYPE ObjectToComWeakRef(QCall::ObjectHandleOnStack obj, QCallExceptionStatus* qcallError);
 
 #endif // FEATURE_COMINTEROP
 

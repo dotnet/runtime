@@ -167,7 +167,7 @@ static void AdvanceArgPtr(VARARGS *data)
 // ArgIterator constructor that initializes the state to support iteration
 // of the args starting at the first optional argument.
 ////////////////////////////////////////////////////////////////////////////////
-extern "C" QCallExceptionStatus QCALLTYPE ArgIterator_Init(VARARGS* data, PVOID cookie)
+extern "C" void QCALLTYPE ArgIterator_Init(VARARGS* data, PVOID cookie, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -189,7 +189,7 @@ extern "C" QCallExceptionStatus QCALLTYPE ArgIterator_Init(VARARGS* data, PVOID 
 // Specifying NULL as the firstArg parameter causes it to start at the first
 // argument to the call.
 ////////////////////////////////////////////////////////////////////////////////
-extern "C" QCallExceptionStatus QCALLTYPE ArgIterator_Init2(VARARGS* data, PVOID cookie, PVOID firstArg)
+extern "C" void QCALLTYPE ArgIterator_Init2(VARARGS* data, PVOID cookie, PVOID firstArg, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -461,13 +461,13 @@ TryAgain:
 ////////////////////////////////////////////////////////////////////////////////
 // Retrieve the type of the next argument without consuming it.
 ////////////////////////////////////////////////////////////////////////////////
-extern "C" QCallExceptionStatus QCALLTYPE ArgIterator_GetNextArgType(VARARGS* data, void** pReturnValue)
+extern "C" void* QCALLTYPE ArgIterator_GetNextArgType(VARARGS* data, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
-    BEGIN_QCALL;
-
     TypedByRef value = { };
+
+    BEGIN_QCALL;
 
     GCX_COOP();
 
@@ -481,16 +481,16 @@ extern "C" QCallExceptionStatus QCALLTYPE ArgIterator_GetNextArgType(VARARGS* da
 
     GCPROTECT_END();
 
-    *pReturnValue = value.type.AsPtr();
-
     END_QCALL;
+
+    return value.type.AsPtr();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Retrieve the next argument and return it in a TypedByRef and advance the
 // next argument pointer.
 ////////////////////////////////////////////////////////////////////////////////
-extern "C" QCallExceptionStatus QCALLTYPE ArgIterator_GetNextArg(VARARGS* data, TypedByRef* pResult)
+extern "C" void QCALLTYPE ArgIterator_GetNextArg(VARARGS* data, TypedByRef* pResult, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -506,7 +506,7 @@ extern "C" QCallExceptionStatus QCALLTYPE ArgIterator_GetNextArg(VARARGS* data, 
 // Retrieve the next argument and return it in a TypedByRef and advance the
 // next argument pointer.
 ////////////////////////////////////////////////////////////////////////////////
-extern "C" QCallExceptionStatus QCALLTYPE ArgIterator_GetNextArg2(VARARGS* data, QCall::TypeHandle pType, TypedByRef* pResult)
+extern "C" void QCALLTYPE ArgIterator_GetNextArg2(VARARGS* data, QCall::TypeHandle pType, TypedByRef* pResult, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 

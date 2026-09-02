@@ -47,6 +47,6 @@ private:
     static void* AllocateBlob(LoaderAllocator* alloc, const void* blob, size_t blobLen);
 };
 
-extern "C" QCallExceptionStatus QCALLTYPE TailCallHelp_AllocTailCallArgBufferInternal(int size, void** pReturnValue);
+extern "C" void* QCALLTYPE TailCallHelp_AllocTailCallArgBufferInternal(int size, QCallExceptionStatus* qcallError);
 
 #endif

@@ -112,13 +112,13 @@ bool GlobalComWrappersForMarshalling::TryGetOrCreateObjectForComInstance(
     return obj != NULL;
 }
 
-extern "C" QCallExceptionStatus QCALLTYPE ComWrappers_AllocateRefCountedHandle(_In_ QCall::ObjectHandleOnStack obj, void** pReturnValue)
+extern "C" void* QCALLTYPE ComWrappers_AllocateRefCountedHandle(_In_ QCall::ObjectHandleOnStack obj, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
-    BEGIN_QCALL;
-
     void* handle = NULL;
+
+    BEGIN_QCALL;
 
     {
         GCX_COOP();
@@ -126,9 +126,9 @@ extern "C" QCallExceptionStatus QCALLTYPE ComWrappers_AllocateRefCountedHandle(_
         handle = GetAppDomain()->CreateTypedHandle(obj.Get(), HNDTYPE_REFCOUNTED);
     }
 
-    *pReturnValue = handle;
-
     END_QCALL;
+
+    return handle;
 }
 
 extern "C" void const* QCALLTYPE ComWrappers_GetIReferenceTrackerTargetVftbl()
@@ -567,7 +567,7 @@ void ComWrappersNative::OnAfterGCScanRoots()
     (void)InteropLib::Com::DetachNonPromotedObjects(&cxt);
 }
 
-extern "C" QCallExceptionStatus QCALLTYPE ComWrappers_RegisterIsRootedCallback()
+extern "C" void QCALLTYPE ComWrappers_RegisterIsRootedCallback(QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -579,7 +579,7 @@ extern "C" QCallExceptionStatus QCALLTYPE ComWrappers_RegisterIsRootedCallback()
     END_QCALL;
 }
 
-extern "C" QCallExceptionStatus QCALLTYPE TrackerObjectManager_RegisterNativeObjectWrapperCache(_In_ QCall::ObjectHandleOnStack cache)
+extern "C" void QCALLTYPE TrackerObjectManager_RegisterNativeObjectWrapperCache(_In_ QCall::ObjectHandleOnStack cache, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 

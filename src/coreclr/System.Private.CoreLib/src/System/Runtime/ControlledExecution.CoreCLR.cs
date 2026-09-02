@@ -118,7 +118,7 @@ namespace System.Runtime
             }
         }
 
-        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_Abort")]
         private static partial void AbortThread(ThreadHandle thread);
 

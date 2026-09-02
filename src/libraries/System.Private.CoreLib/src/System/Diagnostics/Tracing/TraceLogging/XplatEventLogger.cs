@@ -22,7 +22,7 @@ namespace System.Diagnostics.Tracing
         private static unsafe string GetClrConfig(string configName) => new string(EventSource_GetClrConfig(configName));
 
 #if CORECLR
-        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
 #endif
         [LibraryImport(RuntimeHelpers.QCall, StringMarshalling = StringMarshalling.Utf16)]
         private static unsafe partial char* EventSource_GetClrConfig(string configName);
@@ -45,14 +45,14 @@ namespace System.Diagnostics.Tracing
         }
 
 #if CORECLR
-        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
 #endif
         [LibraryImport(RuntimeHelpers.QCall)]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool IsEventSourceLoggingEnabled();
 
 #if CORECLR
-        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
 #endif
         [LibraryImport(RuntimeHelpers.QCall, StringMarshalling = StringMarshalling.Utf16)]
         private static partial void LogEventSource(int eventID, string? eventName, string eventSourceName, string payload);

@@ -333,7 +333,7 @@ namespace System.Reflection
         }
         #endregion
 
-        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MetadataImport_Enum")]
         private static unsafe partial void Enum(IntPtr scope, int type, int parent, ref int length, int* shortResult, ObjectHandleOnStack longResult);
 

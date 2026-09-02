@@ -1546,7 +1546,7 @@ DWORD MulticoreJitManager::EncodeModuleHelper(void * pModuleContext, Module * pR
 //    wszProfile  - profile name
 //    ptrNativeAssemblyBinder - the binding context
 //
-extern "C" QCallExceptionStatus QCALLTYPE MultiCoreJIT_InternalStartProfile(_In_z_ LPCWSTR wszProfile, INT_PTR ptrNativeAssemblyBinder)
+extern "C" void QCALLTYPE MultiCoreJIT_InternalStartProfile(_In_z_ LPCWSTR wszProfile, INT_PTR ptrNativeAssemblyBinder, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -1565,7 +1565,7 @@ extern "C" QCallExceptionStatus QCALLTYPE MultiCoreJIT_InternalStartProfile(_In_
 }
 
 
-extern "C" QCallExceptionStatus QCALLTYPE MultiCoreJIT_InternalSetProfileRoot(_In_z_ LPCWSTR wszProfilePath)
+extern "C" void QCALLTYPE MultiCoreJIT_InternalSetProfileRoot(_In_z_ LPCWSTR wszProfilePath, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 

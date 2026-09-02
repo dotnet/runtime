@@ -75,7 +75,7 @@ namespace System
                 vAllocatorFirstArg = vAllocatorFirstArgTemp;
             }
 
-            [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
+            [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
             [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ReflectionSerialization_GetCreateUninitializedObjectInfo")]
             private static partial void GetCreateUninitializedInfo(
                 QCallTypeHandle type,

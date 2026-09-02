@@ -10,8 +10,9 @@
 #ifndef __NATIVELIBRARYNATIVE_H__
 #define __NATIVELIBRARYNATIVE_H__
 
-extern "C" QCallExceptionStatus QCALLTYPE NativeLibrary_LoadByName(LPCWSTR name, QCall::AssemblyHandle callingAssembly,
+extern "C" INT_PTR QCALLTYPE NativeLibrary_LoadByName(LPCWSTR name, QCall::AssemblyHandle callingAssembly,
                                             BOOL hasDllImportSearchPathFlag, DWORD dllImportSearchPathFlag,
-                                            BOOL throwOnError, INT_PTR* pReturnValue);
+                                            BOOL throwOnError,
+                                            QCallExceptionStatus* qcallError);
 
 #endif // __NATIVELIBRARYNATIVE_H__

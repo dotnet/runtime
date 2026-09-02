@@ -81,7 +81,7 @@ namespace System.Runtime.InteropServices
         }
 
 #if CORECLR
-        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
 #endif
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeMapLazyDictionary_ProcessAttributes")]
         private static unsafe partial void ProcessAttributes(
@@ -94,13 +94,13 @@ namespace System.Runtime.InteropServices
             CallbackContext* context);
 
 #if CORECLR
-        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
 #endif
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeMapLazyDictionary_FindPrecachedExternalTypeMapEntry", StringMarshalling = StringMarshalling.Utf8)]
         private static unsafe partial IntPtr FindPrecachedExternalTypeMapEntry(QCallModule module, QCallTypeHandle groupType, string key);
 
 #if CORECLR
-        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenReturnValue)]
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
 #endif
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeMapLazyDictionary_FindPrecachedProxyTypeMapEntry")]
         private static unsafe partial IntPtr FindPrecachedProxyTypeMapEntry(QCallModule module, QCallTypeHandle groupType, QCallTypeHandle type);

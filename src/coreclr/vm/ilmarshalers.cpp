@@ -4761,7 +4761,7 @@ extern "C" void QCALLTYPE MngdSafeArrayMarshaler_CreateMarshaler(MngdSafeArrayMa
     pThis->m_pConvertContentsToManagedCode = pConvertToManaged;
 }
 
-extern "C" QCallExceptionStatus QCALLTYPE MngdSafeArrayMarshaler_ConvertSpaceToNative(MngdSafeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome)
+extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertSpaceToNative(MngdSafeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome, QCallExceptionStatus* qcallError)
 {
     CONTRACTL
     {
@@ -4773,7 +4773,8 @@ extern "C" QCallExceptionStatus QCALLTYPE MngdSafeArrayMarshaler_ConvertSpaceToN
 
     if (pThis->m_fStatic & MngdSafeArrayMarshaler::SCSF_IsStatic)
     {
-        return QCallExceptionStatus();
+        *qcallError = 0;
+        return;
     }
 
     BEGIN_QCALL;
@@ -4798,7 +4799,7 @@ extern "C" QCallExceptionStatus QCALLTYPE MngdSafeArrayMarshaler_ConvertSpaceToN
     END_QCALL;
 }
 
-extern "C" QCallExceptionStatus QCALLTYPE MngdSafeArrayMarshaler_ConvertContentsToNative(MngdSafeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome, QCall::ObjectHandleOnStack pOriginalManaged)
+extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertContentsToNative(MngdSafeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome, QCall::ObjectHandleOnStack pOriginalManaged, QCallExceptionStatus* qcallError)
 {
     CONTRACTL
     {
@@ -4841,7 +4842,7 @@ extern "C" QCallExceptionStatus QCALLTYPE MngdSafeArrayMarshaler_ConvertContents
     END_QCALL;
 }
 
-extern "C" QCallExceptionStatus QCALLTYPE MngdSafeArrayMarshaler_ConvertSpaceToManaged(MngdSafeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome)
+extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertSpaceToManaged(MngdSafeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome, QCallExceptionStatus* qcallError)
 {
     CONTRACTL
     {
@@ -4898,7 +4899,7 @@ extern "C" QCallExceptionStatus QCALLTYPE MngdSafeArrayMarshaler_ConvertSpaceToM
     END_QCALL;
 }
 
-extern "C" QCallExceptionStatus QCALLTYPE MngdSafeArrayMarshaler_ConvertContentsToManaged(MngdSafeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome)
+extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertContentsToManaged(MngdSafeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome, QCallExceptionStatus* qcallError)
 {
     CONTRACTL
     {
@@ -4935,13 +4936,14 @@ extern "C" QCallExceptionStatus QCALLTYPE MngdSafeArrayMarshaler_ConvertContents
     END_QCALL;
 }
 
-extern "C" QCallExceptionStatus QCALLTYPE MngdSafeArrayMarshaler_ClearNative(MngdSafeArrayMarshaler* pThis, void** pNativeHome)
+extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ClearNative(MngdSafeArrayMarshaler* pThis, void** pNativeHome, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
     if (pThis->m_fStatic & MngdSafeArrayMarshaler::SCSF_IsStatic)
     {
-        return QCallExceptionStatus();
+        *qcallError = 0;
+        return;
     }
 
     BEGIN_QCALL;

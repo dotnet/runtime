@@ -13,7 +13,7 @@
 
 #if defined(FEATURE_EVENTSOURCE_XPLAT)
 
-extern "C" QCallExceptionStatus QCALLTYPE LogEventSource(_In_z_ int eventID, _In_z_ LPCWSTR eventName, _In_z_ LPCWSTR eventSourceName, _In_z_ LPCWSTR payload)
+extern "C" void QCALLTYPE LogEventSource(_In_z_ int eventID, _In_z_ LPCWSTR eventName, _In_z_ LPCWSTR eventSourceName, _In_z_ LPCWSTR payload, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
@@ -21,35 +21,35 @@ extern "C" QCallExceptionStatus QCALLTYPE LogEventSource(_In_z_ int eventID, _In
     END_QCALL;
 }
 
-extern "C" QCallExceptionStatus QCALLTYPE IsEventSourceLoggingEnabled(BOOL* pReturnValue)
+extern "C" BOOL QCALLTYPE IsEventSourceLoggingEnabled(QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
-
-    BEGIN_QCALL;
 
     BOOL retVal = FALSE;
 
-    retVal = XplatEventLogger::IsEventLoggingEnabled();
-    *pReturnValue = retVal;
+    BEGIN_QCALL;
 
+    retVal = XplatEventLogger::IsEventLoggingEnabled();
     END_QCALL;
+
+    return retVal;
 }
 
-extern "C" QCallExceptionStatus QCALLTYPE EventSource_GetClrConfig(LPCWSTR configName, LPWSTR* pReturnValue)
+extern "C" LPWSTR QCALLTYPE EventSource_GetClrConfig(LPCWSTR configName, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
-    BEGIN_QCALL;
-
     LPWSTR ret = NULL;
+
+    BEGIN_QCALL;
 
     CLRConfig::ConfigStringInfo info;
     info.name = configName;
     info.options = CLRConfig::LookupOptions::Default;
     ret = CLRConfig::GetConfigValue(info);
-    *pReturnValue = ret;
-
     END_QCALL;
+
+    return ret;
 }
 
 #endif //defined(FEATURE_EVENTSOURCE_XPLAT)
@@ -62,7 +62,7 @@ extern "C" QCallExceptionStatus QCALLTYPE EventSource_GetClrConfig(LPCWSTR confi
 // change genRuntimeEventSources.py script to not emit the body that throws NotImplementedException for the event that
 // want to be fired from managed code.
 // See https://github.com/dotnet/runtime/pull/47829 for an example of how to do this.
-extern "C" QCallExceptionStatus QCALLTYPE NativeRuntimeEventSource_LogThreadPoolWorkerThreadStart(_In_z_ uint activeWorkerThreadCount, _In_z_ uint retiredWorkerThreadCount, _In_z_ short clrInstanceID)
+extern "C" void QCALLTYPE NativeRuntimeEventSource_LogThreadPoolWorkerThreadStart(_In_z_ uint activeWorkerThreadCount, _In_z_ uint retiredWorkerThreadCount, _In_z_ short clrInstanceID, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
@@ -72,7 +72,7 @@ extern "C" QCallExceptionStatus QCALLTYPE NativeRuntimeEventSource_LogThreadPool
     END_QCALL;
 }
 
-extern "C" QCallExceptionStatus QCALLTYPE NativeRuntimeEventSource_LogThreadPoolWorkerThreadStop(_In_z_ uint activeWorkerThreadCount, _In_z_ uint retiredWorkerThreadCount, _In_z_ short clrInstanceID)
+extern "C" void QCALLTYPE NativeRuntimeEventSource_LogThreadPoolWorkerThreadStop(_In_z_ uint activeWorkerThreadCount, _In_z_ uint retiredWorkerThreadCount, _In_z_ short clrInstanceID, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
@@ -82,7 +82,7 @@ extern "C" QCallExceptionStatus QCALLTYPE NativeRuntimeEventSource_LogThreadPool
     END_QCALL;
 }
 
-extern "C" QCallExceptionStatus QCALLTYPE NativeRuntimeEventSource_LogThreadPoolWorkerThreadWait(_In_z_ uint activeWorkerThreadCount, _In_z_ uint retiredWorkerThreadCount, _In_z_ short clrInstanceID)
+extern "C" void QCALLTYPE NativeRuntimeEventSource_LogThreadPoolWorkerThreadWait(_In_z_ uint activeWorkerThreadCount, _In_z_ uint retiredWorkerThreadCount, _In_z_ short clrInstanceID, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
@@ -92,7 +92,7 @@ extern "C" QCallExceptionStatus QCALLTYPE NativeRuntimeEventSource_LogThreadPool
     END_QCALL;
 }
 
-extern "C" QCallExceptionStatus QCALLTYPE NativeRuntimeEventSource_LogThreadPoolMinMaxThreads(_In_z_ short minWorkerThreads, _In_z_ short maxWorkerThreads, _In_z_ short minIOCompletionThreads, _In_z_ short maxIOCompletionThreads, _In_z_ short clrInstanceID)
+extern "C" void QCALLTYPE NativeRuntimeEventSource_LogThreadPoolMinMaxThreads(_In_z_ short minWorkerThreads, _In_z_ short maxWorkerThreads, _In_z_ short minIOCompletionThreads, _In_z_ short maxIOCompletionThreads, _In_z_ short clrInstanceID, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
@@ -102,7 +102,7 @@ extern "C" QCallExceptionStatus QCALLTYPE NativeRuntimeEventSource_LogThreadPool
     END_QCALL;
 }
 
-extern "C" QCallExceptionStatus QCALLTYPE NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentSample(_In_z_ double throughput, _In_z_ short clrInstanceID)
+extern "C" void QCALLTYPE NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentSample(_In_z_ double throughput, _In_z_ short clrInstanceID, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
@@ -112,7 +112,7 @@ extern "C" QCallExceptionStatus QCALLTYPE NativeRuntimeEventSource_LogThreadPool
     END_QCALL;
 }
 
-extern "C" QCallExceptionStatus QCALLTYPE NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentAdjustment(_In_z_ double averageThroughput, _In_z_ uint newWorkerThreadCount, _In_z_ uint reason, _In_z_ short clrInstanceID)
+extern "C" void QCALLTYPE NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentAdjustment(_In_z_ double averageThroughput, _In_z_ uint newWorkerThreadCount, _In_z_ uint reason, _In_z_ short clrInstanceID, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
@@ -122,7 +122,7 @@ extern "C" QCallExceptionStatus QCALLTYPE NativeRuntimeEventSource_LogThreadPool
     END_QCALL;
 }
 
-extern "C" QCallExceptionStatus QCALLTYPE NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentStats(_In_z_ double duration, _In_z_ double throughput, _In_z_ double threadWave, _In_z_ double throughputWave, _In_z_ double throughputErrorEstimate, _In_z_ double AverageThroughputErrorEstimate, _In_z_ double ThroughputRatio, _In_z_ double confidence, _In_z_ double newControlSetting, _In_z_ short newThreadWaveMagnitude, _In_z_ short ClrInstanceID)
+extern "C" void QCALLTYPE NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentStats(_In_z_ double duration, _In_z_ double throughput, _In_z_ double threadWave, _In_z_ double throughputWave, _In_z_ double throughputErrorEstimate, _In_z_ double AverageThroughputErrorEstimate, _In_z_ double ThroughputRatio, _In_z_ double confidence, _In_z_ double newControlSetting, _In_z_ short newThreadWaveMagnitude, _In_z_ short ClrInstanceID, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
@@ -132,7 +132,7 @@ extern "C" QCallExceptionStatus QCALLTYPE NativeRuntimeEventSource_LogThreadPool
     END_QCALL;
 }
 
-extern "C" QCallExceptionStatus QCALLTYPE NativeRuntimeEventSource_LogThreadPoolIOEnqueue(_In_z_ void* nativeOverlapped, _In_z_ void* overlapped, _In_z_ BOOL multiDequeues, _In_z_ short ClrInstanceID)
+extern "C" void QCALLTYPE NativeRuntimeEventSource_LogThreadPoolIOEnqueue(_In_z_ void* nativeOverlapped, _In_z_ void* overlapped, _In_z_ BOOL multiDequeues, _In_z_ short ClrInstanceID, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
@@ -142,7 +142,7 @@ extern "C" QCallExceptionStatus QCALLTYPE NativeRuntimeEventSource_LogThreadPool
     END_QCALL;
 }
 
-extern "C" QCallExceptionStatus QCALLTYPE NativeRuntimeEventSource_LogThreadPoolIODequeue(_In_z_ void* nativeOverlapped, _In_z_ void* overlapped, _In_z_ short ClrInstanceID)
+extern "C" void QCALLTYPE NativeRuntimeEventSource_LogThreadPoolIODequeue(_In_z_ void* nativeOverlapped, _In_z_ void* overlapped, _In_z_ short ClrInstanceID, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
@@ -152,7 +152,7 @@ extern "C" QCallExceptionStatus QCALLTYPE NativeRuntimeEventSource_LogThreadPool
     END_QCALL;
 }
 
-extern "C" QCallExceptionStatus QCALLTYPE NativeRuntimeEventSource_LogThreadPoolWorkingThreadCount(_In_z_ uint count, _In_z_ short ClrInstanceID)
+extern "C" void QCALLTYPE NativeRuntimeEventSource_LogThreadPoolWorkingThreadCount(_In_z_ uint count, _In_z_ short ClrInstanceID, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
@@ -162,7 +162,7 @@ extern "C" QCallExceptionStatus QCALLTYPE NativeRuntimeEventSource_LogThreadPool
     END_QCALL;
 }
 
-extern "C" QCallExceptionStatus QCALLTYPE NativeRuntimeEventSource_LogThreadPoolIOPack(_In_z_ void* nativeOverlapped, _In_z_ void* overlapped, _In_z_ short ClrInstanceID)
+extern "C" void QCALLTYPE NativeRuntimeEventSource_LogThreadPoolIOPack(_In_z_ void* nativeOverlapped, _In_z_ void* overlapped, _In_z_ short ClrInstanceID, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
@@ -172,7 +172,7 @@ extern "C" QCallExceptionStatus QCALLTYPE NativeRuntimeEventSource_LogThreadPool
     END_QCALL;
 }
 
-extern "C" QCallExceptionStatus QCALLTYPE NativeRuntimeEventSource_LogContentionLockCreated(void* LockID, void* AssociatedObjectID, uint16_t ClrInstanceID)
+extern "C" void QCALLTYPE NativeRuntimeEventSource_LogContentionLockCreated(void* LockID, void* AssociatedObjectID, uint16_t ClrInstanceID, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
@@ -182,12 +182,13 @@ extern "C" QCallExceptionStatus QCALLTYPE NativeRuntimeEventSource_LogContention
     END_QCALL;
 }
 
-extern "C" QCallExceptionStatus QCALLTYPE NativeRuntimeEventSource_LogContentionStart(
+extern "C" void QCALLTYPE NativeRuntimeEventSource_LogContentionStart(
     uint8_t ContentionFlags,
     uint16_t ClrInstanceID,
     void* LockID,
     void* AssociatedObjectID,
-    uint64_t LockOwnerThreadID)
+    uint64_t LockOwnerThreadID,
+    QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
@@ -197,7 +198,7 @@ extern "C" QCallExceptionStatus QCALLTYPE NativeRuntimeEventSource_LogContention
     END_QCALL;
 }
 
-extern "C" QCallExceptionStatus QCALLTYPE NativeRuntimeEventSource_LogContentionStop(uint8_t ContentionFlags, uint16_t ClrInstanceID, double DurationNs)
+extern "C" void QCALLTYPE NativeRuntimeEventSource_LogContentionStop(uint8_t ContentionFlags, uint16_t ClrInstanceID, double DurationNs, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
@@ -207,7 +208,7 @@ extern "C" QCallExceptionStatus QCALLTYPE NativeRuntimeEventSource_LogContention
     END_QCALL;
 }
 
-extern "C" QCallExceptionStatus QCALLTYPE NativeRuntimeEventSource_LogWaitHandleWaitStart(uint8_t WaitSource, intptr_t AssociatedObjectID, uint16_t ClrInstanceID)
+extern "C" void QCALLTYPE NativeRuntimeEventSource_LogWaitHandleWaitStart(uint8_t WaitSource, intptr_t AssociatedObjectID, uint16_t ClrInstanceID, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
@@ -217,7 +218,7 @@ extern "C" QCallExceptionStatus QCALLTYPE NativeRuntimeEventSource_LogWaitHandle
     END_QCALL;
 }
 
-extern "C" QCallExceptionStatus QCALLTYPE NativeRuntimeEventSource_LogWaitHandleWaitStop(uint16_t ClrInstanceID)
+extern "C" void QCALLTYPE NativeRuntimeEventSource_LogWaitHandleWaitStop(uint16_t ClrInstanceID, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;

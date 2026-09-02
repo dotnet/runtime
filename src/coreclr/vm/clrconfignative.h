@@ -4,5 +4,5 @@
 #ifndef _CLRCONFIGNATIVE_H_
 #define _CLRCONFIGNATIVE_H_
 
-extern "C" QCallExceptionStatus QCALLTYPE ClrConfig_GetConfigBoolValue(LPCWSTR name, BOOL *exist, BOOL* pReturnValue);
+extern "C" BOOL QCALLTYPE ClrConfig_GetConfigBoolValue(LPCWSTR name, BOOL *exist, QCallExceptionStatus* qcallError);
 #endif // _CLRCONFIGNATIVE_H_

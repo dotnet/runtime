@@ -30,22 +30,24 @@ extern "C" BOOL QCALLTYPE CustomAttribute_ParseAttributeUsageAttribute(
     BOOL* pAllowMultiple,
     BOOL* pInherited);
 
-extern "C" QCallExceptionStatus QCALLTYPE CustomAttribute_CreateCustomAttributeInstance(
+extern "C" void QCALLTYPE CustomAttribute_CreateCustomAttributeInstance(
     QCall::ModuleHandle pModule,
     QCall::ObjectHandleOnStack pCaType,
     QCall::ObjectHandleOnStack pMethod,
     BYTE** ppBlob,
     BYTE* pEndBlob,
     INT32* pcNamedArgs,
-    QCall::ObjectHandleOnStack result);
+    QCall::ObjectHandleOnStack result,
+    QCallExceptionStatus* qcallError);
 
-extern "C" QCallExceptionStatus QCALLTYPE CustomAttribute_CreatePropertyOrFieldData(
+extern "C" void QCALLTYPE CustomAttribute_CreatePropertyOrFieldData(
     QCall::ModuleHandle pModule,
     BYTE** ppBlobStart,
     BYTE* pBlobEnd,
     QCall::StringHandleOnStack pName,
     BOOL* pbIsProperty,
     QCall::ObjectHandleOnStack pType,
-    QCall::ObjectHandleOnStack value);
+    QCall::ObjectHandleOnStack value,
+    QCallExceptionStatus* qcallError);
 
 #endif // _CUSTOMATTRIBUTE_H_

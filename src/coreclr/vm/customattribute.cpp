@@ -897,14 +897,15 @@ extern "C" BOOL QCALLTYPE CustomAttribute_ParseAttributeUsageAttribute(
     return TRUE;
 }
 
-extern "C" QCallExceptionStatus QCALLTYPE CustomAttribute_CreateCustomAttributeInstance(
+extern "C" void QCALLTYPE CustomAttribute_CreateCustomAttributeInstance(
     QCall::ModuleHandle pModule,
     QCall::ObjectHandleOnStack pCaType,
     QCall::ObjectHandleOnStack pMethod,
     BYTE** ppBlob,
     BYTE* pEndBlob,
     INT32* pcNamedArgs,
-    QCall::ObjectHandleOnStack result)
+    QCall::ObjectHandleOnStack result,
+    QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -1026,14 +1027,15 @@ extern "C" QCallExceptionStatus QCALLTYPE CustomAttribute_CreateCustomAttributeI
     END_QCALL;
 }
 
-extern "C" QCallExceptionStatus QCALLTYPE CustomAttribute_CreatePropertyOrFieldData(
+extern "C" void QCALLTYPE CustomAttribute_CreatePropertyOrFieldData(
     QCall::ModuleHandle pModule,
     BYTE** ppBlobStart,
     BYTE* pBlobEnd,
     QCall::StringHandleOnStack pName,
     BOOL* pbIsProperty,
     QCall::ObjectHandleOnStack pType,
-    QCall::ObjectHandleOnStack pValue)
+    QCall::ObjectHandleOnStack pValue,
+    QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 

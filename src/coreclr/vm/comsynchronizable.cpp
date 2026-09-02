@@ -197,13 +197,13 @@ static ULONG WINAPI KickOffThread(void* pass)
     return 0;
 }
 
-extern "C" QCallExceptionStatus QCALLTYPE ThreadNative_Start(QCall::ThreadHandle thread, int threadStackSize, int priority, BOOL isThreadPool, PCWSTR pThreadName, QCall::ObjectHandleOnStack exception, BOOL* pReturnValue)
+extern "C" BOOL QCALLTYPE ThreadNative_Start(QCall::ThreadHandle thread, int threadStackSize, int priority, BOOL isThreadPool, PCWSTR pThreadName, QCall::ObjectHandleOnStack exception, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
-    BEGIN_QCALL;
-
     BOOL result = TRUE;
+
+    BEGIN_QCALL;
 
     Thread* pNewThread = thread;
     _ASSERTE(pNewThread != NULL);
@@ -282,12 +282,12 @@ extern "C" QCallExceptionStatus QCALLTYPE ThreadNative_Start(QCall::ThreadHandle
         exception.Set(pNewThread->GetExceptionDuringStartup());
     }
 
-    *pReturnValue = result;
-
     END_QCALL;
+
+    return result;
 }
 
-extern "C" QCallExceptionStatus QCALLTYPE ThreadNative_SetPriority(QCall::ObjectHandleOnStack thread, INT32 iPriority)
+extern "C" void QCALLTYPE ThreadNative_SetPriority(QCall::ObjectHandleOnStack thread, INT32 iPriority, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -328,7 +328,7 @@ extern "C" QCallExceptionStatus QCALLTYPE ThreadNative_SetPriority(QCall::Object
     END_QCALL;
 }
 
-extern "C" QCallExceptionStatus QCALLTYPE ThreadNative_GetCurrentThread(QCall::ObjectHandleOnStack thread)
+extern "C" void QCALLTYPE ThreadNative_GetCurrentThread(QCall::ObjectHandleOnStack thread, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -340,9 +340,11 @@ extern "C" QCallExceptionStatus QCALLTYPE ThreadNative_GetCurrentThread(QCall::O
     END_QCALL;
 }
 
-extern "C" QCallExceptionStatus QCALLTYPE ThreadNative_GetCurrentOSThreadId(UINT64* pReturnValue)
+extern "C" UINT64 QCALLTYPE ThreadNative_GetCurrentOSThreadId(QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
+
+    UINT64 threadId = 0;
 
     BEGIN_QCALL;
 
@@ -350,19 +352,18 @@ extern "C" QCallExceptionStatus QCALLTYPE ThreadNative_GetCurrentOSThreadId(UINT
     // On some non-Windows platforms (e.g. OSX), the thread ID is a 64-bit value.
     // We special case the API for non-Windows to get the 64-bit value and zero-extend
     // the Windows value to return a single data type on all platforms.
-    UINT64 threadId = 0;
 
 #ifndef TARGET_UNIX
     threadId = (UINT64) GetCurrentThreadId();
 #else
     threadId = (UINT64) PAL_GetCurrentOSThreadId();
 #endif
-    *pReturnValue = threadId;
-
     END_QCALL;
+
+    return threadId;
 }
 
-extern "C" QCallExceptionStatus QCALLTYPE ThreadNative_Initialize(QCall::ObjectHandleOnStack t)
+extern "C" void QCALLTYPE ThreadNative_Initialize(QCall::ObjectHandleOnStack t, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -431,13 +432,13 @@ extern "C" INT32 QCALLTYPE ThreadNative_GetThreadState(QCall::ThreadHandle threa
 
 // Return whether the thread hosts an STA, is a member of the MTA or is not
 // currently initialized for COM.
-extern "C" QCallExceptionStatus QCALLTYPE ThreadNative_GetApartmentState(QCall::ObjectHandleOnStack t, INT32* pReturnValue)
+extern "C" INT32 QCALLTYPE ThreadNative_GetApartmentState(QCall::ObjectHandleOnStack t, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
-    BEGIN_QCALL;
-
     INT32 retVal = 0;
+
+    BEGIN_QCALL;
 
     Thread* thread = NULL;
     {
@@ -454,21 +455,20 @@ extern "C" QCallExceptionStatus QCALLTYPE ThreadNative_GetApartmentState(QCall::
 
     retVal = thread->GetApartment();
 
-    *pReturnValue = retVal;
-
     END_QCALL;
+    return retVal;
 }
 
 // Indicate whether the thread will host an STA (this may fail if the thread has
 // already been made part of the MTA, use GetApartmentState or the return state
 // from this routine to check for this).
-extern "C" QCallExceptionStatus QCALLTYPE ThreadNative_SetApartmentState(QCall::ObjectHandleOnStack t, INT32 iState, INT32* pReturnValue)
+extern "C" INT32 QCALLTYPE ThreadNative_SetApartmentState(QCall::ObjectHandleOnStack t, INT32 iState, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
-    BEGIN_QCALL;
-
     INT32 retVal = 0;
+
+    BEGIN_QCALL;
 
     Thread* thread = NULL;
     {
@@ -501,20 +501,19 @@ extern "C" QCallExceptionStatus QCALLTYPE ThreadNative_SetApartmentState(QCall::
         retVal = thread->SetApartment((Thread::ApartmentState)iState);
     }
 
-    *pReturnValue = retVal;
-
     END_QCALL;
+    return retVal;
 }
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
 #if TARGET_WINDOWS
-extern "C" QCallExceptionStatus QCALLTYPE ThreadNative_GetOSHandle(QCall::ThreadHandle t, HANDLE* pReturnValue)
+extern "C" HANDLE QCALLTYPE ThreadNative_GetOSHandle(QCall::ThreadHandle t, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
-    BEGIN_QCALL;
-
     HANDLE retVal = INVALID_HANDLE_VALUE;
+
+    BEGIN_QCALL;
 
     HANDLE currentHandle = t->GetThreadHandle();
     if (currentHandle != INVALID_HANDLE_VALUE)
@@ -532,9 +531,9 @@ extern "C" QCallExceptionStatus QCALLTYPE ThreadNative_GetOSHandle(QCall::Thread
         }
     }
 
-    *pReturnValue = retVal;
-
     END_QCALL;
+
+    return retVal;
 }
 #endif
 
@@ -637,7 +636,7 @@ extern "C" BOOL QCALLTYPE ThreadNative_GetIsBackground(QCall::ThreadHandle threa
 }
 
 // Set whether or not this is a background thread.
-extern "C" QCallExceptionStatus QCALLTYPE ThreadNative_SetIsBackground(QCall::ThreadHandle thread, BOOL value)
+extern "C" void QCALLTYPE ThreadNative_SetIsBackground(QCall::ThreadHandle thread, BOOL value, QCallExceptionStatus* qcallError)
 {
     CONTRACTL
     {
@@ -653,7 +652,7 @@ extern "C" QCallExceptionStatus QCALLTYPE ThreadNative_SetIsBackground(QCall::Th
     END_QCALL;
 }
 
-extern "C" QCallExceptionStatus QCALLTYPE ThreadNative_InformThreadNameChange(QCall::ThreadHandle thread, LPCWSTR name, INT32 len)
+extern "C" void QCALLTYPE ThreadNative_InformThreadNameChange(QCall::ThreadHandle thread, LPCWSTR name, INT32 len, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -702,9 +701,10 @@ FCIMPL0(INT32, ThreadNative::GetOptimalMaxSpinWaitsPerSpinIteration)
 }
 FCIMPLEND
 
-extern "C" QCallExceptionStatus QCALLTYPE ThreadNative_GetQCallSpecialException(
+extern "C" void QCALLTYPE ThreadNative_GetQCallSpecialException(
     INT_PTR status,
-    QCall::ObjectHandleOnStack exception)
+    QCall::ObjectHandleOnStack exception,
+    QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -758,7 +758,7 @@ extern "C" void QCALLTYPE ThreadNative_SpinWait(INT32 iterations)
 #ifdef TARGET_WINDOWS
 // This service can be called on unstarted and dead threads.  For unstarted ones, the
 // next wait will be interrupted.  For dead ones, this service quietly does nothing.
-extern "C" QCallExceptionStatus QCALLTYPE ThreadNative_Interrupt(QCall::ThreadHandle thread)
+extern "C" void QCALLTYPE ThreadNative_Interrupt(QCall::ThreadHandle thread, QCallExceptionStatus* qcallError)
 {
     CONTRACTL
     {
@@ -774,7 +774,7 @@ extern "C" QCallExceptionStatus QCALLTYPE ThreadNative_Interrupt(QCall::ThreadHa
     END_QCALL;
 }
 
-extern "C" QCallExceptionStatus QCALLTYPE ThreadNative_CheckForPendingInterrupt()
+extern "C" void QCALLTYPE ThreadNative_CheckForPendingInterrupt(QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -806,22 +806,22 @@ extern "C" void QCALLTYPE ThreadNative_PollGC()
     // and is thus marked as a GC safe point, and that the p/invoke rare path will kick in
 }
 
-extern "C" QCallExceptionStatus QCALLTYPE ThreadNative_YieldThread(BOOL* pReturnValue)
+extern "C" BOOL QCALLTYPE ThreadNative_YieldThread(QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
-    BEGIN_QCALL;
-
     BOOL ret = FALSE;
+
+    BEGIN_QCALL;
 
     ret = __SwitchToThread(0, CALLER_LIMITS_SPINNING);
 
-    *pReturnValue = ret;
-
     END_QCALL;
+
+    return ret;
 }
 
-extern "C" QCallExceptionStatus QCALLTYPE ThreadNative_Abort(QCall::ThreadHandle thread)
+extern "C" void QCALLTYPE ThreadNative_Abort(QCall::ThreadHandle thread, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -866,7 +866,7 @@ FCIMPL1(OBJECTHANDLE, ObjectHeader_GetLockHandleIfExists, Object* pObj)
 }
 FCIMPLEND
 
-extern "C" QCallExceptionStatus QCALLTYPE ObjectHeader_GetOrCreateLockObject(QCall::ObjectHandleOnStack obj, QCall::ObjectHandleOnStack lockObj)
+extern "C" void QCALLTYPE ObjectHeader_GetOrCreateLockObject(QCall::ObjectHandleOnStack obj, QCall::ObjectHandleOnStack lockObj, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -881,19 +881,19 @@ extern "C" QCallExceptionStatus QCALLTYPE ObjectHeader_GetOrCreateLockObject(QCa
     END_QCALL;
 }
 
-extern "C" QCallExceptionStatus QCALLTYPE ThreadNative_ReentrantWaitAny(BOOL alertable, INT32 timeout, INT32 count, HANDLE *handles, INT32* pReturnValue)
+extern "C" INT32 QCALLTYPE ThreadNative_ReentrantWaitAny(BOOL alertable, INT32 timeout, INT32 count, HANDLE *handles, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
-    BEGIN_QCALL;
-
     INT32 retVal = 0;
+
+    BEGIN_QCALL;
 
     Thread *pThread = GetThread();
     WaitMode mode = alertable ? WaitMode_Alertable : WaitMode_None;
     retVal = (INT32)pThread->DoReentrantWaitAny(count, handles, timeout, mode);
 
-    *pReturnValue = retVal;
-
     END_QCALL;
+
+    return retVal;
 }

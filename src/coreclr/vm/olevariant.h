@@ -107,6 +107,6 @@ private:
 // SAFEARRAY VARTYPE and element MethodTable.
 MethodDesc* GetInstantiatedSafeArrayMethod(BinderMethodID methodId, VARTYPE vt, MethodTable* pElementMT, BOOL bHeterogeneous, BOOL bNativeDataValid = FALSE);
 
-extern "C" QCallExceptionStatus QCALLTYPE Variant_ConvertValueTypeToRecord(QCall::ObjectHandleOnStack obj, VARIANT* pOle);
+extern "C" void QCALLTYPE Variant_ConvertValueTypeToRecord(QCall::ObjectHandleOnStack obj, VARIANT* pOle, QCallExceptionStatus* qcallError);
 
 #endif
