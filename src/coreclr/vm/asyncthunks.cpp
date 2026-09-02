@@ -515,8 +515,9 @@ static SigPointer GetReturnTypeSig(Signature signature)
 
 // Provided an ordinary variant that covariantly returns a type derived from Task/Task<T>,
 // emits an async variant that calls the ordinary variant and awaits the returned Task.
-// Such a method cannot use the usual "async version" codegen, since its own IL returns a
-// type that is not the well-known Task/Task<T>.
+// A thunk is used (rather than an "async version" of this method's own IL) so that only
+// methods that covariantly override a task-returning method need an extra variant; other
+// overrides of the same slot keep being treated as ordinary, non-task-returning methods.
 void MethodDesc::EmitCovariantForwardingThunk(MethodDesc* pOrdinaryVariant, MetaSig& msig, ILStubLinker* pSL)
 {
     _ASSERTE(IsAsyncMethod() && IsAsyncVariantMethod() && IsCovariantForwardingThunk());
