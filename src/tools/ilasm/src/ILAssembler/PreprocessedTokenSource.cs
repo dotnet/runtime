@@ -96,12 +96,12 @@ namespace ILAssembler
                 {
                     ReportPreprocessorSyntaxError(nextToken);
                 }
-                _includeSourceStack.Pop();
-                if (_includeSourceStack.Count == 0)
+                if (_includeSourceStack.Count == 1)
                 {
                     // If we hit EOF of our entry file, return the EOF token.
                     return nextToken;
                 }
+                _includeSourceStack.Pop();
                 nextToken = CurrentTokenSource.NextToken();
             }
             return nextToken;

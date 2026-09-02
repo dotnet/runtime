@@ -6,6 +6,7 @@ using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using Antlr4.Runtime;
+using Antlr4.Runtime.Tree;
 
 namespace ILAssembler;
 public sealed class DocumentCompiler
@@ -58,13 +59,16 @@ public sealed class DocumentCompiler
             CILParser parser = new(new CommonTokenStream(preprocessor));
             parser.RemoveErrorListeners();
             var parserDiagnostics = ImmutableArray.CreateBuilder<Diagnostic>();
-            parser.AddErrorListener(new ParserErrorListener(parserDiagnostics, loadedDocuments));
+            ParserErrorListener parserErrorListener = new(parserDiagnostics, loadedDocuments);
+            parser.AddErrorListener(parserErrorListener);
             var result = parser.decls();
+            parserErrorListener.AddErrorNodeContexts(result);
 
             // Add parser diagnostics to the main list
             diagnostics.AddRange(parserDiagnostics);
 
             visitor ??= new GrammarVisitor(loadedDocuments, options, resourceLocator);
+            visitor.BeginDocument(parserErrorListener.ErrorContexts);
 
             _ = result.Accept(visitor);
 
@@ -94,6 +98,7 @@ internal sealed class ParserErrorListener : Antlr4.Runtime.IAntlrErrorListener<I
 {
     private readonly ImmutableArray<Diagnostic>.Builder _diagnostics;
     private readonly Dictionary<string, SourceText> _loadedDocuments;
+    public HashSet<ParserRuleContext> ErrorContexts { get; } = [];
 
     public ParserErrorListener(ImmutableArray<Diagnostic>.Builder diagnostics, Dictionary<string, SourceText> loadedDocuments)
     {
@@ -103,6 +108,11 @@ internal sealed class ParserErrorListener : Antlr4.Runtime.IAntlrErrorListener<I
 
     public void SyntaxError(TextWriter output, IRecognizer recognizer, IToken offendingSymbol, int line, int charPositionInLine, string msg, RecognitionException e)
     {
+        if (recognizer is Parser { Context: { } context })
+        {
+            AddContextAndAncestors(context);
+        }
+
         var sourceName = offendingSymbol?.TokenSource?.SourceName ?? "";
         var span = new SourceSpan(offendingSymbol?.StartIndex ?? 0, offendingSymbol is null ? 0 : offendingSymbol.StopIndex - offendingSymbol.StartIndex + 1);
         if (_loadedDocuments.TryGetValue(sourceName, out var sourceText))
@@ -112,6 +122,29 @@ internal sealed class ParserErrorListener : Antlr4.Runtime.IAntlrErrorListener<I
         else
         {
             _diagnostics.Add(new Diagnostic("Parser", DiagnosticSeverity.Error, $"line {line}:{charPositionInLine} {msg}", new Location(span, new SourceText("", sourceName))));
+        }
+    }
+
+    public void AddErrorNodeContexts(IParseTree tree)
+    {
+        if (tree is IErrorNode)
+        {
+            AddContextAndAncestors(tree.Parent as ParserRuleContext);
+            return;
+        }
+
+        for (int i = 0; i < tree.ChildCount; i++)
+        {
+            AddErrorNodeContexts(tree.GetChild(i));
+        }
+    }
+
+    private void AddContextAndAncestors(ParserRuleContext? context)
+    {
+        while (context is not null)
+        {
+            ErrorContexts.Add(context);
+            context = context.Parent as ParserRuleContext;
         }
     }
 }
