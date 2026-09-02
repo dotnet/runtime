@@ -245,6 +245,9 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
+        if (handle is not null)
+            *handle = 0;
+
         return HResults.E_NOTIMPL;
     }
     int IXCLRDataModule.EnumAssembly(ulong* handle, DacComNullableByRef<IXCLRDataAssembly> assembly)
@@ -263,6 +266,9 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
     int IXCLRDataModule.StartEnumTypeDefinitions(ulong* handle)
     {
         using Lock.Scope scope = _apiLock.EnterScope();
+
+        if (handle is not null)
+            *handle = 0;
 
         return HResults.E_NOTIMPL;
     }
@@ -283,6 +289,9 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
+        if (handle is not null)
+            *handle = 0;
+
         return HResults.E_NOTIMPL;
     }
     int IXCLRDataModule.EnumTypeInstance(ulong* handle, DacComNullableByRef<IXCLRDataTypeInstance> typeInstance)
@@ -302,6 +311,9 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
+        if (handle is not null)
+            *handle = 0;
+
         return HResults.E_NOTIMPL;
     }
     int IXCLRDataModule.EnumTypeDefinitionByName(ulong* handle, DacComNullableByRef<IXCLRDataTypeDefinition> type)
@@ -320,6 +332,9 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
     int IXCLRDataModule.StartEnumTypeInstancesByName(char* name, uint flags, IXCLRDataAppDomain? appDomain, ulong* handle)
     {
         using Lock.Scope scope = _apiLock.EnterScope();
+
+        if (handle is not null)
+            *handle = 0;
 
         return HResults.E_NOTIMPL;
     }
@@ -478,6 +493,9 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
+        if (handle is not null)
+            *handle = 0;
+
         return HResults.E_NOTIMPL;
     }
     int IXCLRDataModule.EnumMethodInstanceByName(ulong* handle, DacComNullableByRef<IXCLRDataMethodInstance> method)
@@ -531,6 +549,9 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
     int IXCLRDataModule.StartEnumDataByName(char* name, uint flags, IXCLRDataAppDomain? appDomain, IXCLRDataTask? tlsTask, ulong* handle)
     {
         using Lock.Scope scope = _apiLock.EnterScope();
+
+        if (handle is not null)
+            *handle = 0;
 
         return HResults.E_NOTIMPL;
     }
@@ -902,6 +923,9 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
     int IXCLRDataModule.StartEnumAppDomains(ulong* handle)
     {
         using Lock.Scope scope = _apiLock.EnterScope();
+
+        if (handle is not null)
+            *handle = 0;
 
         return HResults.E_NOTIMPL;
     }

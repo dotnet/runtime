@@ -1081,7 +1081,7 @@ public unsafe class MetaDataImportImplTests
     {
         IMetaDataImport2 wrapper = CreateWrapper();
 
-        nint unknownHandle = 1;
+        nint unknownHandle = nint.MaxValue;
         uint count = 42;
 
         int hr = wrapper.CountEnum(unknownHandle, &count);
