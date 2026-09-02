@@ -360,11 +360,11 @@ namespace System.Net.Mail
             }
             set
             {
-                Encoding? nameEncoding = MimeBasePart.DecodeEncoding(value);
+                (string decodedValue, Encoding? nameEncoding) = MimeBasePart.DecodeHeaderValue(value);
                 if (nameEncoding != null)
                 {
                     _nameEncoding = nameEncoding;
-                    _name = MimeBasePart.DecodeHeaderValue(value);
+                    _name = decodedValue;
                     MimePart.ContentType.Name = value;
                 }
                 else

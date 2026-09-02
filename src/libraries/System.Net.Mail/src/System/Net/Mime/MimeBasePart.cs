@@ -55,66 +55,27 @@ namespace System.Net.Mime
             return stream.GetEncodedString();
         }
 
-        private static readonly char[] s_headerValueSplitChars = new char[] { '\r', '\n', ' ' };
-
-        internal static string DecodeHeaderValue(string? value)
-        {
-            if (string.IsNullOrEmpty(value))
-            {
-                return string.Empty;
-            }
-
-            string newValue = string.Empty;
-
-            //split strings, they may be folded.  If they are, decode one at a time and append the results
-            string[] substringsToDecode = value.Split(s_headerValueSplitChars, StringSplitOptions.RemoveEmptyEntries);
-
-            foreach (string foldedSubString in substringsToDecode)
-            {
-                //an encoded string has as specific format in that it must start and end with an
-                //'=' char and contains five parts, separated by '?' chars.
-                //the first and last part are therefore '=', the second part is the byte encoding (B or Q)
-                //the third is the unicode encoding type, and the fourth is encoded message itself.  '?' is not valid inside of
-                //an encoded string other than as a separator for these five parts.
-                //If this check fails, the string is either not encoded or cannot be decoded by this method
-                string[] subStrings = foldedSubString.Split('?');
-                if ((subStrings.Length != 5 || subStrings[0] != "=" || subStrings[4] != "="))
-                {
-                    return value;
-                }
-
-                string charSet = subStrings[1];
-                bool base64Encoding = (subStrings[2] == "B" || subStrings[2] == "b");
-                byte[] buffer = Encoding.ASCII.GetBytes(subStrings[3]);
-                int newLength;
-
-                IEncodableStream s = EncodedStreamFactory.GetEncoderForHeader(Encoding.GetEncoding(charSet), base64Encoding, 0);
-
-                newLength = s.DecodeBytes(buffer);
-
-                Encoding encoding = Encoding.GetEncoding(charSet);
-                newValue += encoding.GetString(buffer, 0, newLength);
-            }
-            return newValue;
-        }
-
-        // Detect the encoding: "=?charset?BorQ?content?="
+        // Decodes a header value of the form "=?charset?BorQ?content?=", optionally folded across
+        // multiple lines:
         // "=?utf-8?B?RmlsZU5hbWVf55CG0Y3Qq9C60I5jw4TRicKq0YIM0Y1hSsSeTNCy0Klh?="; // 3.5
-        // With the addition of folding in 4.0, there may be multiple lines with encoding, only detect the first:
+        // With the addition of folding in 4.0, there may be multiple lines with encoding:
         // "=?utf-8?B?RmlsZU5hbWVf55CG0Y3Qq9C60I5jw4TRicKq0YIM0Y1hSsSeTNCy0Klh?=\r\n =?utf-8?B??=";
         //
         // The entire value must consist of one or more well-formed RFC 2047 encoded-words
-        // separated by linear whitespace (folding); otherwise null is returned so callers
-        // do not treat attacker-controlled input as pre-encoded and pass it through unquoted.
-        internal static Encoding? DecodeEncoding(string? value)
+        // separated by linear whitespace (folding); otherwise the value is returned unchanged
+        // with a null Encoding, so callers do not treat attacker-controlled input as pre-encoded
+        // and pass it through unquoted. Otherwise, the decoded value and the Encoding of the
+        // first encoded-word are returned.
+        internal static (string Value, Encoding? Encoding) DecodeHeaderValue(string? value)
         {
             if (string.IsNullOrEmpty(value))
             {
-                return null;
+                return (string.Empty, null);
             }
 
             ReadOnlySpan<char> remainder = value;
-            ReadOnlySpan<char> firstCharSet = default;
+            Encoding? firstEncoding = null;
+            StringBuilder? decodedValue = null;
 
             while (true)
             {
@@ -122,32 +83,40 @@ namespace System.Net.Mime
                 // Minimum possible length is "=?x?Q??=" (8 chars).
                 if (remainder.Length < 8 || remainder[0] != '=' || remainder[1] != '?')
                 {
-                    return null;
+                    return (value, null);
                 }
 
                 // charset = characters up to the next '?'.
                 int charSetLength = remainder.Slice(2).IndexOf('?');
                 if (charSetLength <= 0)
                 {
-                    return null;
+                    return (value, null);
                 }
                 ReadOnlySpan<char> charSet = remainder.Slice(2, charSetLength);
 
                 // Validate charset is an RFC 2047 token (no whitespace, controls, or especials).
                 if (charSet.ContainsAnyExcept(s_encodedWordTokenChars))
                 {
-                    return null;
+                    return (value, null);
                 }
 
                 int encodingPos = 2 + charSetLength + 1;
                 if (encodingPos + 2 >= remainder.Length || remainder[encodingPos + 1] != '?')
                 {
-                    return null;
+                    return (value, null);
                 }
-                char encoding = remainder[encodingPos];
-                if (encoding is not ('B' or 'b' or 'Q' or 'q'))
+                char encodingChar = remainder[encodingPos];
+                bool base64Encoding;
+                switch (encodingChar)
                 {
-                    return null;
+                    case 'B' or 'b':
+                        base64Encoding = true;
+                        break;
+                    case 'Q' or 'q':
+                        base64Encoding = false;
+                        break;
+                    default:
+                        return (value, null);
                 }
 
                 // Encoded text: terminated by "?=", and must not contain whitespace or any
@@ -156,18 +125,21 @@ namespace System.Net.Mime
                 int terminator = remainder.Slice(dataStart).IndexOf("?=");
                 if (terminator < 0)
                 {
-                    return null;
+                    return (value, null);
                 }
                 ReadOnlySpan<char> data = remainder.Slice(dataStart, terminator);
                 if (data.ContainsAnyExcept(s_encodedWordDataChars))
                 {
-                    return null;
+                    return (value, null);
                 }
 
-                if (firstCharSet.IsEmpty)
-                {
-                    firstCharSet = charSet;
-                }
+                Encoding wordEncoding = Encoding.GetEncoding(charSet.ToString());
+                firstEncoding ??= wordEncoding;
+
+                byte[] buffer = Encoding.ASCII.GetBytes(data.ToString());
+                IEncodableStream s = EncodedStreamFactory.GetEncoderForHeader(wordEncoding, base64Encoding, 0);
+                int newLength = s.DecodeBytes(buffer);
+                (decodedValue ??= new StringBuilder()).Append(wordEncoding.GetString(buffer, 0, newLength));
 
                 remainder = remainder.Slice(dataStart + terminator + 2);
                 if (remainder.IsEmpty)
@@ -189,7 +161,7 @@ namespace System.Net.Mime
                 }
                 if (wsEnd == wsLength)
                 {
-                    return null;
+                    return (value, null);
                 }
                 remainder = remainder.Slice(wsEnd);
                 if (remainder.IsEmpty)
@@ -198,7 +170,7 @@ namespace System.Net.Mime
                 }
             }
 
-            return Encoding.GetEncoding(firstCharSet.ToString());
+            return (decodedValue!.ToString(), firstEncoding);
         }
 
         internal static bool IsAscii(string value, bool permitCROrLF)
