@@ -413,6 +413,11 @@ namespace System.Security.Cryptography.Xml
         [UnconditionalSuppressMessage("ILLink", "IL2026:RequiresUnreferencedCode", Justification = "ctors are marked as RDC")]
         public void ComputeSignature()
         {
+            SignedXmlDebugLog.LogBeginSignatureComputation(this, _context!);
+
+            BuildDigestedReferences();
+
+            // Load the key
             AsymmetricAlgorithm? key = SigningKey;
 
             if (key == null)
@@ -420,10 +425,6 @@ namespace System.Security.Cryptography.Xml
 
             ThrowIfAlreadyUsed();
             _alreadyUsed = true;
-
-            SignedXmlDebugLog.LogBeginSignatureComputation(this, _context!);
-
-            BuildDigestedReferences();
 
             // Check the signature algorithm associated with the key so that we can accordingly set the signature method
             if (SignedInfo!.SignatureMethod == null)
@@ -480,6 +481,7 @@ namespace System.Security.Cryptography.Xml
             if (signatureLength % 8 != 0)
                 throw new CryptographicException(SR.Cryptography_Xml_InvalidSignatureLength2);
 
+            BuildDigestedReferences();
             string signatureMethod = hash.HashName switch
             {
                 "SHA1" => SignedXml.XmlDsigHMACSHA1Url,
@@ -494,7 +496,6 @@ namespace System.Security.Cryptography.Xml
             ThrowIfAlreadyUsed();
             _alreadyUsed = true;
 
-            BuildDigestedReferences();
             SignedInfo!.SignatureMethod = signatureMethod;
             byte[] hashValue = GetC14NDigest(hash);
 
