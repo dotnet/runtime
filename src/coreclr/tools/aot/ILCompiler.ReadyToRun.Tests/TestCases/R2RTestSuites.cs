@@ -94,7 +94,7 @@ public class R2RTestSuites
         }
     }
 
-    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
+    [Fact]
     public void WasmWebcilModule()
     {
         var wasmWebcilModule = new CompiledAssembly
