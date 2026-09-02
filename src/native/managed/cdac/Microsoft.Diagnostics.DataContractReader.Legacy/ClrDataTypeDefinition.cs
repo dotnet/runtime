@@ -49,6 +49,9 @@ public sealed unsafe partial class ClrDataTypeDefinition : IXCLRDataTypeDefiniti
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
+        if (handle is not null)
+            *handle = 0;
+
         return HResults.E_NOTIMPL;
     }
 
@@ -69,6 +72,9 @@ public sealed unsafe partial class ClrDataTypeDefinition : IXCLRDataTypeDefiniti
     int IXCLRDataTypeDefinition.StartEnumMethodDefinitionsByName(char* name, uint flags, ulong* handle)
     {
         using Lock.Scope scope = _apiLock.EnterScope();
+
+        if (handle is not null)
+            *handle = 0;
 
         return HResults.E_NOTIMPL;
     }
@@ -97,6 +103,9 @@ public sealed unsafe partial class ClrDataTypeDefinition : IXCLRDataTypeDefiniti
     int IXCLRDataTypeDefinition.StartEnumInstances(IXCLRDataAppDomain? appDomain, ulong* handle)
     {
         using Lock.Scope scope = _apiLock.EnterScope();
+
+        if (handle is not null)
+            *handle = 0;
 
         return HResults.E_NOTIMPL;
     }
@@ -304,6 +313,9 @@ public sealed unsafe partial class ClrDataTypeDefinition : IXCLRDataTypeDefiniti
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
+        if (handle is not null)
+            *handle = 0;
+
         return HResults.E_NOTIMPL;
     }
 
@@ -324,6 +336,9 @@ public sealed unsafe partial class ClrDataTypeDefinition : IXCLRDataTypeDefiniti
     int IXCLRDataTypeDefinition.StartEnumFieldsByName(char* name, uint nameFlags, uint fieldFlags, ulong* handle)
     {
         using Lock.Scope scope = _apiLock.EnterScope();
+
+        if (handle is not null)
+            *handle = 0;
 
         return HResults.E_NOTIMPL;
     }

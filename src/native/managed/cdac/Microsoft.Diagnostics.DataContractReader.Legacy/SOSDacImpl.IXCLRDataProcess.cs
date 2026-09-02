@@ -100,6 +100,9 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
+        if (handle is not null)
+            *handle = 0;
+
         return HResults.E_NOTIMPL;
     }
 
@@ -596,6 +599,9 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
     int IXCLRDataProcess.StartEnumAssemblies(ulong* handle)
     {
         using Lock.Scope scope = _apiLock.EnterScope();
+
+        if (handle is not null)
+            *handle = 0;
 
         return HResults.E_NOTIMPL;
     }
