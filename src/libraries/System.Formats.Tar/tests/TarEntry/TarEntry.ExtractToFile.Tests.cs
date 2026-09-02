@@ -33,7 +33,7 @@ namespace System.Formats.Tar.Tests
             long preallocationSize = GetPreallocationSize(entry);
             if (seekableArchive)
             {
-                Assert.True(preallocationSize < HeaderSize);
+                Assert.Equal(archive.LongLength - entry.DataOffset, preallocationSize);
             }
             else
             {
