@@ -1583,7 +1583,7 @@ LPrepareRetry:
         }
         else
         {
-            PAL_Sleep(ABORT_POLL_TIMEOUT);
+            minipal_sleep(ABORT_POLL_TIMEOUT);
         }
 
 
@@ -1619,7 +1619,7 @@ LPrepareRetry:
             }
             else
             {
-                PAL_Sleep(100);
+                minipal_sleep(100);
             }
         }
 

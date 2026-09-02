@@ -898,7 +898,7 @@ HRESULT Thread::DetachThread(BOOL inTerminationCallback)
     {
         // Another thread is using the handle now.
         // We can not call __SwitchToThread since we can not go back to host.
-        PAL_Sleep(10);
+        minipal_sleep(10);
     }
     if (m_ThreadHandleForClose == INVALID_HANDLE_VALUE)
     {

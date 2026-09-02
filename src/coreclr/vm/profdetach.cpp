@@ -450,7 +450,7 @@ void ProfilingAPIDetach::SleepWhileProfilerEvacuates(ProfilerDetachInfo *pDetach
     // At this point it's safe to cast ui64SleepMilliseconds down to a DWORD since we
     // know it's between s_dwMinSleepMs & s_dwMaxSleepMs
     _ASSERTE(ui64SleepMilliseconds <= 0xFFFFffff);
-    PAL_Sleep((DWORD)ui64SleepMilliseconds);
+    minipal_sleep((DWORD)ui64SleepMilliseconds);
 }
 
 

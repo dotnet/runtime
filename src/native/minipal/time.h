@@ -20,6 +20,11 @@ extern "C"
     // Returns a low-precision monotonically increasing timer in milliseconds
     int64_t minipal_lowres_ticks(void);
 
+    // Suspends execution of the current thread for the specified number of milliseconds.
+    // A value of UINT32_MAX suspends indefinitely. A value of zero yields the remainder
+    // of the thread's time slice.
+    void minipal_sleep(uint32_t milliseconds);
+
     // Delays execution of current thread by `usecs` microseconds.
     // The delay is best-effort and may take longer than desired.
     // Some delays, depending on OS and duration, could be implemented via busy waiting.

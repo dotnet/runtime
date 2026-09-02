@@ -38,6 +38,4 @@ protected:
     void* m_handle;
 };
 
-void PAL_Sleep(uint32_t milliseconds);
-
 #endif // __CLR_EVENT_BASE_H__

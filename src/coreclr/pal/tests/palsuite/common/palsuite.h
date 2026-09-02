@@ -75,7 +75,7 @@ inline void WaitForThreadCompletion(LONG volatile* completedThreadCount, LONG ex
             return;
         }
 
-        PAL_Sleep(1);
+        minipal_sleep(1);
     }
 
     Fail("Timed out waiting for %d threads to complete\n", expectedThreadCount);

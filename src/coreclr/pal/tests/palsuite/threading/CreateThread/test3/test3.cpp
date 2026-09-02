@@ -17,7 +17,7 @@ HANDLE hThread_CreateThread_test3;
 
 DWORD PALAPI Thread_CreateThread_test3( LPVOID lpParameter)
 {
-    PAL_Sleep(INFINITE);
+    minipal_sleep(INFINITE);
     /* if this thread continues beyond here, fail */
     Fail("");
     
@@ -47,7 +47,7 @@ PALTEST(threading_CreateThread_test3_paltest_createthread_test3, "threading/Crea
         Fail("");
     } 
 
-    PAL_Sleep(10);
+    minipal_sleep(10);
 
     if (0 == CloseHandle(hThread_CreateThread_test3))
     {

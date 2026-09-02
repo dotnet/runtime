@@ -501,14 +501,14 @@ void TieredCompilationManager::BackgroundWorkerStart()
         {
             do
             {
-                PAL_Sleep(delayMs);
+                minipal_sleep(delayMs);
             } while (!TryDeactivateTieringDelay());
         }
 
         // Don't want to perform background work as soon as it is scheduled if there is possibly more important work that could
         // be done. Some operating systems may also give a thread woken by a signal higher priority temporarily, which on a
         // CPU-limited environment may lead to rejitting a method as soon as it's promoted, effectively in the foreground.
-        PAL_Sleep(0);
+        minipal_sleep(0);
 
         if (IsTieringDelayActive())
         {
@@ -828,7 +828,7 @@ bool TieredCompilationManager::DoBackgroundWork(
         }
 
         int64_t beforeSleepTicks = currentTicks;
-        PAL_Sleep(0);
+        minipal_sleep(0);
 
         currentTicks = minipal_hires_ticks();
 

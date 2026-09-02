@@ -6,7 +6,7 @@
 // ---------------------------------------------------------------------------
 
 #include "common.h"
-#include "CLREventBase.h"
+#include <minipal/time.h>
 #include "eepolicy.h"
 #include "corhost.h"
 #include "dbginterface.h"
@@ -449,7 +449,7 @@ void LogInfoForFatalError(UINT exitCode, LPCWSTR pszMessage, PEXCEPTION_POINTERS
             // for GC during the stacktrace reporting.
             GCX_PREEMP();
 
-            PAL_Sleep(INFINITE);
+            minipal_sleep(INFINITE);
         }
         return;
     }
@@ -767,7 +767,7 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
             // Wait for the stack trace logging completion
             while (g_stackOverflowCallStackLogged != 2)
             {
-                PAL_Sleep(1);
+                minipal_sleep(1);
             }
  #ifdef _DEBUG
             if (g_LogStackOverflowExit)
@@ -788,7 +788,7 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
         // Wait for the thread that is logging the stack trace to complete
         while (g_stackOverflowCallStackLogged != 2)
         {
-            PAL_Sleep(50);
+            minipal_sleep(50);
         }
     }
 

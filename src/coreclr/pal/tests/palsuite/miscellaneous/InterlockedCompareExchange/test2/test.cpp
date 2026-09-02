@@ -120,7 +120,7 @@ void ModifyGlobalResource(void)
 
 			*/
 			g_Total++;
-			PAL_Sleep(100);
+			minipal_sleep(100);
 			g_Total--;
 			if (0!=g_Total)
 				{

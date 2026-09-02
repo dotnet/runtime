@@ -11,6 +11,7 @@
 
 #include "stdafx.h"
 #include "CLREventBase.h"
+#include <minipal/time.h>
 #include "threadsuspend.h"
 
 #ifndef SM_REMOTESESSION
@@ -622,7 +623,7 @@ void DebuggerRCThread::ThreadProc(void)
             case 3: dwSleep = INFINITE; break;
         }
 
-        PAL_Sleep(dwSleep);
+        minipal_sleep(dwSleep);
     }
 #endif
 
