@@ -188,43 +188,12 @@ namespace ILCompiler.PortableCallHelpers
         private bool IsMethodCallback(EcmaMethod method)
         {
             if (!method.IsUnmanagedCallersOnly)
-            {
-                // Mono matches [MonoPInvokeCallback] by simple name - no assembly declares it - and
-                // wraps such a method on wasm whether interpreted or AOT. Nothing here can dispatch
-                // one: a thunk is only ever looked up for a method carrying UnmanagedCallersOnly, so
-                // an entry emitted for it is unreachable.
-                if (HasAttributeByName(method, "MonoPInvokeCallbackAttribute"))
-                {
-                    log.Warning("WASM0065",
-                        $"Ignoring [MonoPInvokeCallback] on '{method}', which does not make it callable from native code. Use [UnmanagedCallersOnly] instead.");
-                }
-
                 return false;
-            }
 
             if (IsUnsupportedOnPlatform(method))
                 return false;
 
             return true;
-        }
-
-        /// <summary>
-        /// Matches an attribute by its simple name in any namespace, for attributes that are
-        /// declared by user code rather than by the framework.
-        /// </summary>
-        private static bool HasAttributeByName(EcmaMethod method, string attributeName)
-        {
-            MetadataReader reader = method.MetadataReader;
-            foreach (CustomAttributeHandle handle in reader.GetMethodDefinition(method.Handle).GetCustomAttributes())
-            {
-                if (reader.GetAttributeNamespaceAndName(handle, out _, out StringHandle name)
-                    && reader.StringComparer.Equals(name, attributeName))
-                {
-                    return true;
-                }
-            }
-
-            return false;
         }
 
         private bool IsUnsupportedOnPlatform(EcmaMethod method)
