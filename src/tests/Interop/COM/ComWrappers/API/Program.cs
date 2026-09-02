@@ -746,6 +746,160 @@ namespace ComWrappersTests
             }
         }
 
+        // Registering a caller supplied object and creating one race through the same cache, and only one
+        // of them can win. Whichever does, every caller has to come back with it, and the objects that
+        // lost have to be left exactly as they were rather than half registered.
+        [ActiveIssue("Not supported on Mono", TestRuntimes.Mono)]
+        [Fact]
+        public void ValidateRegisterAndCreateRaceForSameComInstance()
+        {
+            Console.WriteLine($"Running {nameof(ValidateRegisterAndCreateRaceForSameComInstance)}...");
+
+            const int ThreadCount = 8;
+
+            IntPtr instanceRaw = MockReferenceTrackerRuntime.CreateTrackerObject();
+
+            Assert.Equal(0, Marshal.QueryInterface(instanceRaw, IUnknownVtbl.IID_IUnknown, out IntPtr identity));
+
+            var cw = new PlainProxyComWrappers();
+            var failures = new ConcurrentQueue<Exception>();
+
+            object[] supplied = new object[ThreadCount];
+            object[] results = new object[ThreadCount];
+            var threads = new Thread[ThreadCount];
+
+            using var barrier = new Barrier(ThreadCount);
+
+            for (int t = 0; t < threads.Length; t++)
+            {
+                int index = t;
+
+                // Every other thread brings its own object to register, the rest ask for one to be created.
+                supplied[index] = (index % 2) == 0 ? new object() : null;
+
+                threads[t] = new Thread(() =>
+                {
+                    try
+                    {
+                        barrier.SignalAndWait(TimeSpan.FromMinutes(1));
+
+                        results[index] = supplied[index] is object toRegister
+                            ? cw.GetOrRegisterObjectForComInstance(instanceRaw, CreateObjectFlags.None, toRegister)
+                            : cw.GetOrCreateObjectForComInstance(instanceRaw, CreateObjectFlags.None);
+                    }
+                    catch (Exception e)
+                    {
+                        failures.Enqueue(e);
+                    }
+                })
+                { IsBackground = true, Name = $"ComWrappers register race {index}" };
+
+                threads[t].Start();
+            }
+
+            foreach (Thread thread in threads)
+            {
+                Assert.True(thread.Join(TimeSpan.FromMinutes(2)), "A worker thread did not finish, which suggests a deadlock while racing to publish.");
+            }
+
+            Assert.Empty(failures);
+
+            object winner = results[0];
+
+            foreach (object result in results)
+            {
+                Assert.Same(winner, result);
+            }
+
+            Assert.True(ComWrappers.TryGetComInstance(winner, out IntPtr winnerUnknown));
+            Assert.Equal(identity, winnerUnknown);
+            Marshal.Release(winnerUnknown);
+
+            // A supplied object that lost has to look like an object that was never handed over at all,
+            // and has to still be usable as the wrapper for some other COM instance.
+            IntPtr otherRaw = MockReferenceTrackerRuntime.CreateTrackerObject();
+            bool reusedOne = false;
+
+            foreach (object candidate in supplied)
+            {
+                if (candidate is null || ReferenceEquals(candidate, winner))
+                {
+                    continue;
+                }
+
+                Assert.False(ComWrappers.TryGetComInstance(candidate, out IntPtr loserUnknown));
+                Assert.Equal(IntPtr.Zero, loserUnknown);
+
+                if (!reusedOne)
+                {
+                    Assert.Same(candidate, cw.GetOrRegisterObjectForComInstance(otherRaw, CreateObjectFlags.None, candidate));
+                    reusedOne = true;
+                }
+            }
+
+            Marshal.Release(otherRaw);
+            Marshal.Release(identity);
+            Marshal.Release(instanceRaw);
+        }
+
+        // A registration is rejected when the object handed over is already the RCW for another COM
+        // instance. The existing coverage rejects one for a COM instance the cache has never seen; this
+        // one rejects it for a COM instance that still has an entry whose RCW has been collected, which
+        // is a different path through the cache because the entry is there and has to be taken over.
+        [ActiveIssue("Not supported on Mono", TestRuntimes.Mono)]
+        [Fact]
+        public void ValidateRejectedRegistrationOverDeadEntry()
+        {
+            Console.WriteLine($"Running {nameof(ValidateRejectedRegistrationOverDeadEntry)}...");
+
+            var cw = new PlainProxyComWrappers();
+
+            IntPtr firstRaw = MockReferenceTrackerRuntime.CreateTrackerObject();
+            IntPtr secondRaw = MockReferenceTrackerRuntime.CreateTrackerObject();
+
+            // An RCW that belongs to the first COM instance, so registering it for another is rejected.
+            object owned = cw.GetOrCreateObjectForComInstance(firstRaw, CreateObjectFlags.None);
+
+            // Leave a dead entry behind for the second instance: collect its RCW without draining
+            // finalizers, so the entry is still there but no longer names anything.
+            CreateAndAbandon(cw, secondRaw);
+
+            GC.Collect();
+
+            Assert.Throws<NotSupportedException>(() => cw.GetOrRegisterObjectForComInstance(secondRaw, CreateObjectFlags.None, owned));
+
+            // The rejection must not have disturbed the instance the object does belong to.
+            Assert.True(ComWrappers.TryGetComInstance(owned, out IntPtr ownedUnknown));
+
+            Assert.Equal(0, Marshal.QueryInterface(firstRaw, IUnknownVtbl.IID_IUnknown, out IntPtr firstIdentity));
+            Assert.Equal(firstIdentity, ownedUnknown);
+
+            Marshal.Release(firstIdentity);
+            Marshal.Release(ownedUnknown);
+
+            // And the second instance has to be usable afterwards, rather than left holding whatever the
+            // rejected attempt put there.
+            object recovered = cw.GetOrCreateObjectForComInstance(secondRaw, CreateObjectFlags.None);
+
+            Assert.NotSame(owned, recovered);
+            Assert.Same(recovered, cw.GetOrCreateObjectForComInstance(secondRaw, CreateObjectFlags.None));
+
+            Assert.True(ComWrappers.TryGetComInstance(recovered, out IntPtr recoveredUnknown));
+            Marshal.Release(recoveredUnknown);
+
+            GC.KeepAlive(owned);
+            GC.KeepAlive(recovered);
+
+            Marshal.Release(secondRaw);
+            Marshal.Release(firstRaw);
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static void CreateAndAbandon(ComWrappers cw, IntPtr comInstance)
+            {
+                _ = cw.GetOrCreateObjectForComInstance(comInstance, CreateObjectFlags.None);
+            }
+        }
+
         // Hands every caller the one wrapper, so that only one native reference is taken however many
         // threads race. Creating a wrapper per caller and abandoning the losers is not an option here:
         // ITrackerObjectWrapper's finalizer fails the run if its tracker object is still connected, and
