@@ -80,7 +80,23 @@ internal sealed class PInvokeTableGenerator
         return signatures;
     }
 
-    private void EmitPInvokeTable(StreamWriter w, SortedDictionary<string, string> modules, HashSet<string> ignoredModules, List<PInvoke> pinvokes)
+    // Resolves each scanned P/Invoke module against the allow-list, the lib-prefix fallback,
+    // [WasmImportLinkage], "*" and QCall, warning (WASM0066) on the rest. Validation only -- no
+    // table is emitted. Shared with EmitPInvokeTable so the two never drift.
+    public void ValidateModules(string[] pinvokeModules, string[] ignoredPInvokeModules)
+    {
+        var ignoredModules = new HashSet<string>(ignoredPInvokeModules, StringComparer.Ordinal);
+        var modules = new SortedDictionary<string, string>(StringComparer.Ordinal);
+        foreach (var module in pinvokeModules)
+        {
+            if (!ignoredModules.Contains(module))
+                modules[module] = module;
+        }
+
+        ResolveModules(modules, ignoredModules, pinvokes);
+    }
+
+    private void ResolveModules(SortedDictionary<string, string> modules, HashSet<string> ignoredModules, List<PInvoke> pinvokes)
     {
         // What actually gets linked in, captured before the scan below starts adding to modules.
         // The lib-prefix fallback has to resolve against this rather than against modules, or an
@@ -127,11 +143,16 @@ internal sealed class PInvokeTableGenerator
                 // cross-platform interop (library-test bundles) disable the warning to avoid failing
                 // the build under warn-as-error for P/Invokes that are never called on wasm.
                 if (_warnOnUnresolvedModules)
-                    Log.Warning("WASM0066", $"PInvoke module '{pinvoke.Module}' for method '{pinvoke.Method.DeclaringType}::{pinvoke.Method.Name}' is not in the list of allowed modules. It is also not a specially treated module.");
+                    Log.Warning("WASM0066", $"PInvoke module '{pinvoke.Module}' for method '{pinvoke.Method.DeclaringType}::{pinvoke.Method.Name}' in assembly '{pinvoke.Method.Module.Assembly.GetName().Name}' is not in the list of allowed modules. It is also not a specially treated module.");
                 else if (ignoredModules.Add(pinvoke.Module))
-                    Log.LogMessage(MessageImportance.Low, $"Skipping unresolved PInvoke module '{pinvoke.Module}' for method '{pinvoke.Method.DeclaringType}::{pinvoke.Method.Name}' (not statically linked on wasm; will throw if called)." );
+                    Log.LogMessage(MessageImportance.Low, $"Skipping unresolved PInvoke module '{pinvoke.Module}' for method '{pinvoke.Method.DeclaringType}::{pinvoke.Method.Name}' in assembly '{pinvoke.Method.Module.Assembly.GetName().Name}' (not statically linked on wasm; will throw if called)." );
             }
         }
+    }
+
+    private void EmitPInvokeTable(StreamWriter w, SortedDictionary<string, string> modules, HashSet<string> ignoredModules, List<PInvoke> pinvokes)
+    {
+        ResolveModules(modules, ignoredModules, pinvokes);
 
         w.WriteLine(
             $$"""
