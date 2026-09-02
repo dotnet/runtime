@@ -530,6 +530,12 @@ namespace ILAssembler
 
             foreach (CustomAttributeEntity customAttr in GetSeenEntities(TableIndex.CustomAttribute))
             {
+                if (customAttr.Owner is null
+                    || customAttr.Constructor.Handle.IsNil)
+                {
+                    continue;
+                }
+
                 EntityHandle parent = customAttr.Owner switch
                 {
                     AssemblyEntity => EntityHandle.AssemblyDefinition,
@@ -554,7 +560,7 @@ namespace ILAssembler
                 builder.AddEvent(
                     evt.Attributes,
                     builder.GetOrAddString(evt.Name),
-                    evt.Type.Handle);
+                    evt.Type?.Handle ?? (EntityHandle)default(TypeDefinitionHandle));
 
                 foreach (var accessor in evt.Accessors)
                 {
@@ -1496,6 +1502,11 @@ namespace ILAssembler
             //   - This produces compat with the existing ILASM, which always resolves local field references to FieldDef tokens
 
             var signature = memberRef.Signature.ToArray();
+            if (signature.Length == 0)
+            {
+                return;
+            }
+
             SignatureHeader header = new(signature[0]);
             if (header.Kind == SignatureKind.Method)
             {
@@ -2096,10 +2107,10 @@ namespace ILAssembler
             public TypeEntity InterfaceType { get; } = interfaceType;
         }
 
-        public sealed class EventEntity(EventAttributes attributes, TypeEntity type, string name) : EntityBase
+        public sealed class EventEntity(EventAttributes attributes, TypeEntity? type, string name) : EntityBase
         {
             public EventAttributes Attributes { get; } = attributes;
-            public TypeEntity Type { get; } = type;
+            public TypeEntity? Type { get; } = type;
             public string Name { get; } = name;
 
             public List<(MethodSemanticsAttributes Semantic, EntityBase Method)> Accessors { get; } = new();

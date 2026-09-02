@@ -156,6 +156,7 @@ namespace ILAssembler.Tests
                 {
                     .field public static int32 Value
                     AttributeAlias
+                    OwnedAttributeAlias
                     .method public static int32 Read() cil managed
                     {
                         ldsfld ValueAlias
@@ -175,18 +176,18 @@ namespace ILAssembler.Tests
 
             Assert.Equal(MetadataTokens.GetToken(fieldHandle), fieldToken);
 
-            var attributes = reader.GetCustomAttributes(testTypeHandle)
+            var fieldAttributes = reader.GetCustomAttributes(fieldHandle)
                 .Select(reader.GetCustomAttribute)
                 .Select(attribute => attribute.DecodeValue(DocumentCompilerTestHelpers.Decoder))
                 .ToArray();
-            Assert.Equal(2, attributes.Length);
-            Assert.Contains(attributes, attribute => attribute.FixedArguments.Length == 0);
-            Assert.Contains(
-                attributes,
-                attribute =>
-                    attribute.FixedArguments.Length == 1 &&
-                    attribute.FixedArguments[0].Type == "bool" &&
-                    Equals(attribute.FixedArguments[0].Value, true));
+            CustomAttributeValue<string> fieldAttribute = Assert.Single(fieldAttributes);
+            Assert.Empty(fieldAttribute.FixedArguments);
+
+            CustomAttributeValue<string> typeAttribute = reader
+                .GetCustomAttribute(Assert.Single(reader.GetCustomAttributes(testTypeHandle)))
+                .DecodeValue(DocumentCompilerTestHelpers.Decoder);
+            Assert.Equal(true, Assert.Single(typeAttribute.FixedArguments).Value);
+            Assert.Equal(2, reader.CustomAttributes.Count);
         }
 
     }
