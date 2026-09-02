@@ -44,6 +44,8 @@ namespace ILCompiler
             new("--optimize-time", "--Ot") { Description = SR.OptimizeSpeedOption };
         public Option<bool?> EnableCachedInterfaceDispatchSupport { get; } =
             new("--enable-cached-interface-dispatch-support", "--CID") { Description = SR.EnableCachedInterfaceDispatchSupport };
+        public Option<bool?> GenerateUnboxingStubs { get; } =
+            new("--generate-unboxing-stubs") { Description = SR.GenerateUnboxingStubsOption };
         public Option<TypeValidationRule> TypeValidation { get; } =
             new("--type-validation") { DefaultValueFactory = _ => TypeValidationRule.Automatic, Description = SR.TypeValidation, HelpName = "arg" };
         public Option<bool> InputBubble { get; } =
@@ -176,6 +178,7 @@ namespace ILCompiler
             Options.Add(OptimizeSpace);
             Options.Add(OptimizeTime);
             Options.Add(EnableCachedInterfaceDispatchSupport);
+            Options.Add(GenerateUnboxingStubs);
             Options.Add(TypeValidation);
             Options.Add(InputBubble);
             Options.Add(InputBubbleReferenceFilePaths);
