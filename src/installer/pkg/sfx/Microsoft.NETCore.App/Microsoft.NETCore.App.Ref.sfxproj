@@ -22,14 +22,15 @@
     <ProjectReference Include="@(NetCoreAppLibraryGeneratorProject)"
                       GlobalPropertiesToRemove="RuntimeIdentifier"
                       ReferenceOutputAssembly="false"
-                      SetConfiguration="Configuration=$(LibrariesConfiguration)" />
+                      SetConfiguration="Configuration=$(LibrariesConfiguration)"
+                      SetTargetFramework="TargetFramework=netstandard2.0" />
   </ItemGroup>
 
   <Target Name="GetNetCoreAppRefPackGeneratorFiles"
           DependsOnTargets="ResolveProjectReferences">
     <MSBuild Projects="@(NetCoreAppLibraryGeneratorProject)"
              Targets="GetAnalyzerPackFiles"
-             Properties="Configuration=$(LibrariesConfiguration)"
+             Properties="Configuration=$(LibrariesConfiguration);TargetFramework=netstandard2.0"
              RemoveProperties="RuntimeIdentifier;SetTargetFramework">
       <Output TaskParameter="TargetOutputs" ItemName="_NetCoreAppRefPackGeneratorFileWithOriginalPath" />
     </MSBuild>
