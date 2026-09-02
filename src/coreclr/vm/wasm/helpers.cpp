@@ -1362,7 +1362,7 @@ void* GetPortableEntryPointToInterpreterThunk(MethodDesc *pMD)
     // R2R->interpreter thunks exist only to let R2R-compiled code call an interpreted method. With
     // ReadyToRun disabled no such caller exists, so callers must not request one (see
     // EnsurePortableEntryPointIsCallableFromR2R). Reaching here in that state is a bug.
-    _ASSERTE_ALL_BUILDS(g_pConfig->ReadyToRun());
+    _ASSERTE(g_pConfig->ReadyToRun());
 #endif
 
     if (pMD->ContainsGenericVariables())
