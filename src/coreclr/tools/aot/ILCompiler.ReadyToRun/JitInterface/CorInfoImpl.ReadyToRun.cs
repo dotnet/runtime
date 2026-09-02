@@ -145,7 +145,6 @@ namespace Internal.JitInterface
         public readonly TypeDesc ConstrainedType;
         public readonly bool Unboxing;
         public readonly bool OwningTypeNotDerivedFromToken;
-        private readonly bool _forceOwningTypeNotDerivedFromToken;
         public readonly TypeDesc OwningType;
 
         public MethodWithToken(MethodDesc method, ModuleToken token, TypeDesc constrainedType, bool unboxing, TypeSystemEntity genericContextObject, TypeDesc devirtualizedMethodOwner = null, bool forceOwningTypeFromMethodDesc = false)
@@ -156,8 +155,7 @@ namespace Internal.JitInterface
             Token = token;
             ConstrainedType = constrainedType;
             Unboxing = unboxing;
-            _forceOwningTypeNotDerivedFromToken = forceOwningTypeFromMethodDesc;
-            if (!_forceOwningTypeNotDerivedFromToken)
+            if (!forceOwningTypeFromMethodDesc)
             {
                 OwningType = GetMethodTokenOwningType(this, constrainedType, genericContextObject, devirtualizedMethodOwner, out OwningTypeNotDerivedFromToken);
             }
@@ -349,7 +347,7 @@ namespace Internal.JitInterface
                 && OwningType == methodWithToken.OwningType
                 && ConstrainedType == methodWithToken.ConstrainedType
                 && Unboxing == methodWithToken.Unboxing
-                && _forceOwningTypeNotDerivedFromToken == methodWithToken._forceOwningTypeNotDerivedFromToken;
+                && OwningTypeNotDerivedFromToken == methodWithToken.OwningTypeNotDerivedFromToken;
 
             return equals;
         }
@@ -425,7 +423,7 @@ namespace Internal.JitInterface
             if (result != 0)
                 return result;
 
-            result = _forceOwningTypeNotDerivedFromToken.CompareTo(other._forceOwningTypeNotDerivedFromToken);
+            result = OwningTypeNotDerivedFromToken.CompareTo(other.OwningTypeNotDerivedFromToken);
             if (result != 0)
                 return result;
 
@@ -1951,6 +1949,9 @@ namespace Internal.JitInterface
             useInstantiatingStub = originalMethod.OwningType.IsArray || originalMethod.GetCanonMethodTarget(CanonicalFormKind.Specific).RequiresInstMethodDescArg();
 
             callerMethod = HandleToObject(callerHandle);
+            MethodDesc versioningCallerMethod = _compilation.TypeSystemContext.IsUnboxingThunk(callerMethod)
+                ? _compilation.TypeSystemContext.GetTargetOfUnboxingThunk(callerMethod)
+                : callerMethod;
 
             if (originalMethod.HasInstantiation && IsGenericTooDeeplyNested(originalMethod.Instantiation))
             {
@@ -1962,8 +1963,8 @@ namespace Internal.JitInterface
                 throw new RequiresRuntimeJitException(callerMethod.ToString() + " -> " + originalMethod.ToString());
             }
 
-            if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(callerMethod) &&
-                !_compilation.NodeFactory.CompilationModuleGroup.CrossModuleInlineable(callerMethod))
+            if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(versioningCallerMethod) &&
+                !_compilation.NodeFactory.CompilationModuleGroup.CrossModuleInlineable(versioningCallerMethod))
             {
                 // We must abort inline attempts calling from outside of the version bubble being compiled
                 // because we have no way to remap the token relative to the external module to the current version bubble.
@@ -1972,7 +1973,7 @@ namespace Internal.JitInterface
                 throw new RequiresRuntimeJitException(callerMethod.ToString() + " -> " + originalMethod.ToString());
             }
 
-            callerModule = ((EcmaMethod)callerMethod.GetPrimaryMethodDesc().GetTypicalMethodDefinition()).Module;
+            callerModule = ((EcmaMethod)versioningCallerMethod.GetPrimaryMethodDesc().GetTypicalMethodDefinition()).Module;
             bool isCallVirt = (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT) != 0;
             bool isLdftn = (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0;
             bool isStaticVirtual = (originalMethod.Signature.IsStatic && originalMethod.IsVirtual);
