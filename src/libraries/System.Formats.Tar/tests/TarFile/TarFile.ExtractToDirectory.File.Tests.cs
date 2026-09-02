@@ -468,9 +468,9 @@ namespace System.Formats.Tar.Tests
             Directory.CreateDirectory(destination);
             // Extract archive with CopyContents mode.
             TarExtractOptions extractOptions = new TarExtractOptions() { HardLinkMode = TarHardLinkMode.CopyContents };
-            // Verify extracted files are independent copies.
             await ExtractToDirectory(archivePath, destination, extractOptions, async);
 
+            // Verify extracted files are independent copies.
             string targetFile1 = Path.Join(destination, "dir1", "file.txt");
             string targetFile2 = Path.Join(destination, "dir2", "linked.txt");
             Assert.True(File.Exists(targetFile1));

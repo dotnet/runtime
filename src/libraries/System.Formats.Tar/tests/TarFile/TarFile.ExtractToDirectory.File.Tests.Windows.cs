@@ -20,6 +20,7 @@ namespace System.Formats.Tar.Tests
             string archive = Path.Join(root.Path, "input.tar");
             string destination = Path.Join(root.Path, "dir");
 
+            // Copying the tar to reduce the chance of other tests failing due to being used by another process
             File.Copy(originalFileName, archive);
             Directory.CreateDirectory(destination);
 

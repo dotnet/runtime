@@ -127,10 +127,10 @@ namespace System.Formats.Tar.Tests
 
                 TarEntry directory = await GetNextEntry(reader, async: async);
 
-                VerifyDirectoryEntry(directory, format, "földër/");
+                VerifyDirectoryEntry(directory, format, "f\u00f6ld\u00ebr/");
 
                 TarEntry file = await GetNextEntry(reader, async: async);
-                VerifyRegularFileEntry(file, format, "földër/áöñ.txt", $"Hello {testCaseName}");
+                VerifyRegularFileEntry(file, format, "f\u00f6ld\u00ebr/\u00e1\u00f6\u00f1.txt", $"Hello {testCaseName}");
 
                 Assert.Null(await GetNextEntry(reader, async: async));
             }

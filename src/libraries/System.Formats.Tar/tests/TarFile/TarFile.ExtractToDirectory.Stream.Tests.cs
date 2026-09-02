@@ -87,6 +87,7 @@ namespace System.Formats.Tar.Tests
                 await using TarWriterHolder writerHolder = CreateTarWriter(archive, async, TarEntryFormat.Ustar, leaveOpen: true);
                 TarWriter writer = writerHolder;
 
+                // No preceding directory entries for the segments
                 UstarTarEntry entry = new UstarTarEntry(TarEntryType.RegularFile, fileWithTwoSegments)
                 {
                     DataStream = new MemoryStream(new byte[] { 0x1 }, writable: false)
@@ -102,23 +103,25 @@ namespace System.Formats.Tar.Tests
             Assert.True(File.Exists(Path.Join(root.Path, fileWithTwoSegments)));
         }
 
-        [Fact]
-        public async Task ExtractEntry_DockerImageTarWithFileTypeInDirectoriesInMode_SuccessfullyExtracts_Async()
+        [Theory]
+        [MemberData(nameof(GetBooleanData))]
+        public async Task ExtractEntry_DockerImageTarWithFileTypeInDirectoriesInMode_SuccessfullyExtracts(bool async)
         {
             using TempDirectory root = new TempDirectory();
             using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, "misc", "docker-hello-world");
-            await TarFile.ExtractToDirectoryAsync(archiveStream, root.Path, overwriteFiles: true);
+            await ExtractToDirectory(archiveStream, root.Path, overwriteFiles: true, async);
 
             Assert.True(File.Exists(Path.Join(root.Path, "manifest.json")));
             Assert.True(File.Exists(Path.Join(root.Path, "repositories")));
         }
 
-        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
-        public async Task ExtractEntry_PodmanImageTarWithRelativeSymlinksPointingInExtractDirectory_SuccessfullyExtracts_Async()
+        [ConditionalTheory(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
+        [MemberData(nameof(GetBooleanData))]
+        public async Task ExtractEntry_PodmanImageTarWithRelativeSymlinksPointingInExtractDirectory_SuccessfullyExtracts(bool async)
         {
             using TempDirectory root = new TempDirectory();
             using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, "misc", "podman-hello-world");
-            await TarFile.ExtractToDirectoryAsync(archiveStream, root.Path, overwriteFiles: true);
+            await ExtractToDirectory(archiveStream, root.Path, overwriteFiles: true, async);
 
             Assert.True(File.Exists(Path.Join(root.Path, "manifest.json")));
             Assert.True(File.Exists(Path.Join(root.Path, "repositories")));
@@ -140,7 +143,6 @@ namespace System.Formats.Tar.Tests
         {
             using MemoryStream archive = new MemoryStream();
             using (TarWriter writer = new TarWriter(archive, TarEntryFormat.Ustar, leaveOpen: true))
-                // No preceding directory entries for the segments
             {
                 UstarTarEntry entry = new UstarTarEntry(entryType, "link");
                 entry.LinkName = PlatformDetection.IsWindows ? @"C:\Windows\System32\notepad.exe" : "/usr/bin/nano";
@@ -418,6 +420,14 @@ namespace System.Formats.Tar.Tests
 
         private Task ExtractToDirectory_ExactRootDirMatch_RegularFile_And_Directory_Throws_Internal(bool async, TarEntryFormat format, TarEntryType entryType, string fileName, bool inverted)
         {
+            // inverted == false:
+            //   destination: folderSibling/
+            //   entry folder: folder/ (does not match destination)
+
+            // inverted == true:
+            //   destination: folder/
+            //   entry folder: folderSibling/ (does not match destination)
+
             string entryFolderName = inverted ? "folderSibling" : "folder";
             string destinationFolderName = inverted ? "folder" : "folderSibling";
 
