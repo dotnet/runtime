@@ -855,11 +855,11 @@ namespace System.Globalization
             return (c_wordSeparatorMask & (1 << (int)category)) != 0;
         }
 
-        // Characters that behave like an apostrophe within a word (e.g. contractions such
-        // as "can't" or possessives such as "Grandma's") and therefore must not be treated
-        // as a word separator during titlecasing. These share Unicode's Word_Break=MidNumLet
-        // property with the ASCII apostrophe (U+0027):
-        //   U+2019 RIGHT SINGLE QUOTATION MARK - the typographic curly apostrophe
+        // Characters treated as an apostrophe within a word (e.g. contractions such as
+        // "can't" or possessives such as "Grandma's"), so a following letter is not treated
+        // as the start of a new word during titlecasing:
+        //   U+0027 APOSTROPHE
+        //   U+2019 RIGHT SINGLE QUOTATION MARK (the typographic curly apostrophe)
         //   U+2018 LEFT SINGLE QUOTATION MARK
         //   U+FF07 FULLWIDTH APOSTROPHE
         private static bool IsApostrophe(char c)
