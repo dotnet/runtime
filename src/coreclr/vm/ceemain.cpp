@@ -1175,7 +1175,6 @@ void WaitForEndOfShutdown()
     CONTRACT_VIOLATION(GCViolation);
 
     Thread *pThread = GetThreadNULLOk();
-
     // After a thread is blocked in WaitForEndOfShutdown, the thread should not enter runtime again,
     // and block at WaitForEndOfShutdown again.
     if (pThread)
