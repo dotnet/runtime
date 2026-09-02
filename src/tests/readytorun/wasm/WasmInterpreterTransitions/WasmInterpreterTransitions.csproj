@@ -6,6 +6,8 @@
          process. AlwaysUseCrossGen2 forces the crossgen pass on the ordinary browser leg; without it
          the test runs fully interpreted and passes without exercising a single thunk. -->
     <AlwaysUseCrossGen2 Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'coreclr'">true</AlwaysUseCrossGen2>
+    <!-- The host R2RDump cannot yet inspect wasm R2R components; skip its validation so the test runs under R2R. -->
+    <CrossGenTestSkipR2RDump Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'coreclr'">true</CrossGenTestSkipR2RDump>
     <CLRTestTargetUnsupported Condition="'$(TargetOS)' != 'browser' or '$(RuntimeFlavor)' != 'coreclr'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
