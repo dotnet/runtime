@@ -4786,6 +4786,8 @@ HRESULT Debugger::MapAndBindFunctionPatches(DebuggerJitInfo *djiNew,
     // and then send the whole list when under the big lock.
     PATCH_UNORDERED_ARRAY listUnbindablePatches;
 
+    djiNew->GetSequenceMapCount();
+
     // First lock the patch table so it doesn't move while we're
     //  examining it.
     LOG((LF_CORDB,LL_INFO10000, "D::MABFP: About to lock patch table\n"));
