@@ -16,7 +16,7 @@ using System.Runtime.CompilerServices;
 using Internal.Reflection.Core.Execution;
 using Internal.Runtime.Augments;
 
-namespace System.Reflection.Runtime.MethodInfos
+namespace System.Reflection
 {
     //
     // Abstract base class for RuntimeNamedMethodInfo, RuntimeConstructedGenericMethodInfo.
@@ -89,6 +89,22 @@ namespace System.Reflection.Runtime.MethodInfos
             get;
         }
 
+        public sealed override object[] GetCustomAttributes(bool inherit) => RuntimeCustomAttribute.GetCustomAttributes(this, typeof(object), inherit);
+
+        public sealed override object[] GetCustomAttributes(Type attributeType, bool inherit)
+        {
+            ArgumentNullException.ThrowIfNull(attributeType);
+            return RuntimeCustomAttribute.GetCustomAttributes(this, attributeType, inherit);
+        }
+
+        public sealed override IList<CustomAttributeData> GetCustomAttributesData() => CustomAttributes.ToReadOnlyCollection();
+
+        public sealed override bool IsDefined(Type attributeType, bool inherit)
+        {
+            ArgumentNullException.ThrowIfNull(attributeType);
+            return RuntimeCustomAttribute.IsDefined(this, attributeType, inherit);
+        }
+
         public sealed override Type DeclaringType
         {
             get
@@ -100,6 +116,9 @@ namespace System.Reflection.Runtime.MethodInfos
         public abstract override bool Equals(object obj);
 
         public abstract override int GetHashCode();
+
+        internal RuntimeMethodInfo? GetParentDefinition()
+            => (RuntimeMethodInfo?)this.GetImplicitlyOverriddenBaseClassMember();
 
         public sealed override MethodInfo GetBaseDefinition()
         {
@@ -116,8 +135,8 @@ namespace System.Reflection.Runtime.MethodInfos
 
             while (true)
             {
-                MethodInfo next = method.GetImplicitlyOverriddenBaseClassMember(MethodPolicies.Instance);
-                if (next == null)
+                MethodInfo? next = method.GetImplicitlyOverriddenBaseClassMember();
+                if (next is null)
                     return ((RuntimeMethodInfo)method).WithReflectedTypeSetToDeclaringType;
 
                 method = next;

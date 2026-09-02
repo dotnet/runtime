@@ -33,7 +33,9 @@ public:
     FCDECL0(static void,            ClearLastError          );
 
     FCDECL2(static void,            LogPinnedArgument, MethodDesc *localDesc, Object *nativeArg);
+#ifdef FEATURE_VARARGS
     FCDECL1(static DWORD,           CalcVaListSize, VARARGS *varargs);
+#endif // FEATURE_VARARGS
 };
 
 extern "C" void QCALLTYPE StubHelpers_CreateCustomMarshaler(MethodDesc* pMD, mdToken paramToken, TypeHandle hndManagedType, QCall::ObjectHandleOnStack retObject);
@@ -58,8 +60,10 @@ extern "C" void QCALLTYPE InterfaceMarshaler_ValidateComVisibilityForIUnknown(IU
 extern "C" void QCALLTYPE StubHelpers_ThrowInteropParamException(INT resID, INT paramIdx);
 extern "C" void QCALLTYPE StubHelpers_ThrowInteropException(INT exceptionKind, INT resID);
 
+#ifdef FEATURE_VARARGS
 extern "C" void QCALLTYPE StubHelpers_MarshalToManagedVaList(va_list va, VARARGS* pArgIterator);
 extern "C" void QCALLTYPE StubHelpers_MarshalToUnmanagedVaList(va_list va, DWORD cbVaListSize, const VARARGS* pArgIterator);
+#endif // FEATURE_VARARGS
 
 extern "C" void QCALLTYPE StubHelpers_ValidateObject(QCall::ObjectHandleOnStack pObj, MethodDesc *pMD);
 extern "C" void QCALLTYPE StubHelpers_ValidateByref(void *pByref, MethodDesc *pMD);

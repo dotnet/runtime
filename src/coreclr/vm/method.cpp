@@ -1105,6 +1105,31 @@ PCODE MethodDesc::GetNativeCode()
     return GetStableEntryPoint();
 }
 
+#ifndef DACCESS_COMPILE
+PCODE MethodDesc::GetNativeCodeVolatile()
+{
+    WRAPPER_NO_CONTRACT;
+    SUPPORTS_DAC;
+    _ASSERTE(!IsDefaultInterfaceMethod() || HasNativeCodeSlot());
+    if (HasNativeCodeSlot())
+    {
+        PTR_PCODE ppCode = GetAddrOfNativeCodeSlot();
+        PCODE pCode = VolatileLoad(ppCode);
+
+#ifdef TARGET_ARM
+        if (pCode != (PCODE)NULL)
+            pCode |= THUMB_CODE;
+#endif
+        return pCode;
+    }
+
+    if (!HasStableEntryPoint() || HasPrecode())
+        return (PCODE)NULL;
+
+    return VolatileLoad(GetAddrOfSlot());
+}
+#endif
+
 PCODE MethodDesc::GetNativeCodeAnyVersion()
 {
     WRAPPER_NO_CONTRACT;
@@ -2638,17 +2663,6 @@ MethodImpl *MethodDesc::GetMethodImpl()
 #ifndef DACCESS_COMPILE
 
 //*******************************************************************************
-BOOL MethodDesc::RequiresMDContextArg()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    // Interop marshalling of varargs needs MethodDesc calling convention
-    // to support ldftn <PInvoke method with varargs>. It is not possible
-    // to smuggle the MethodDesc* via vararg cookie in this case.
-    return IsPInvoke() && IsVarArg();
-}
-
-//*******************************************************************************
 BOOL MethodDesc::RequiresStableEntryPoint()
 {
     BYTE bFlags4 = VolatileLoadWithoutBarrier(&m_bFlags4);
@@ -4179,16 +4193,23 @@ PrecodeType MethodDesc::GetPrecodeType()
     PrecodeType precodeType = PRECODE_INVALID;
 
 #ifdef HAS_FIXUP_PRECODE
-    if (!RequiresMDContextArg())
+    // Interop marshalling of varargs needs the MethodDesc calling convention to
+    // support ldftn <PInvoke method with varargs>. It is not possible to smuggle
+    // the MethodDesc* via the vararg cookie in this case.
+#ifdef FEATURE_VARARGS
+    if (IsPInvoke() && IsVarArg())
+    {
+        precodeType = PRECODE_STUB;
+    }
+    else
+#endif // FEATURE_VARARGS
     {
         // Use the more efficient fixup precode if possible
         precodeType = PRECODE_FIXUP;
     }
-    else
+#else // !HAS_FIXUP_PRECODE
+    precodeType = PRECODE_STUB;
 #endif // HAS_FIXUP_PRECODE
-    {
-        precodeType = PRECODE_STUB;
-    }
 
     return precodeType;
 }
