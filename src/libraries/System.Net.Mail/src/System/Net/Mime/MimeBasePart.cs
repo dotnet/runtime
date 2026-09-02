@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.Collections.Specialized;
 using System.Net.Mail;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -63,9 +64,7 @@ namespace System.Net.Mime
         //
         // The entire value must consist of one or more well-formed RFC 2047 encoded-words
         // separated by linear whitespace (folding); otherwise the value is returned unchanged
-        // with a null Encoding, so callers do not treat attacker-controlled input as pre-encoded
-        // and pass it through unquoted. Otherwise, the decoded value and the Encoding of the
-        // first encoded-word are returned.
+        // with a null Encoding.
         internal static (string Value, Encoding? Encoding) DecodeHeaderValue(string? value)
         {
             if (string.IsNullOrEmpty(value))
@@ -133,8 +132,28 @@ namespace System.Net.Mime
                     return (value, null);
                 }
 
-                Encoding wordEncoding = Encoding.GetEncoding(charSet.ToString());
-                firstEncoding ??= wordEncoding;
+                Encoding wordEncoding;
+                try
+                {
+                    wordEncoding = Encoding.GetEncoding(charSet.ToString());
+                }
+                catch (ArgumentException)
+                {
+                    return (value, null);
+                }
+
+                if (firstEncoding is null)
+                {
+                    firstEncoding = wordEncoding;
+                }
+                else
+                {
+                    // ambiguous encodings
+                    if (firstEncoding != wordEncoding)
+                    {
+                        return (value, null);
+                    }
+                }
 
                 byte[] buffer = Encoding.ASCII.GetBytes(data.ToString());
                 IEncodableStream s = EncodedStreamFactory.GetEncoderForHeader(wordEncoding, base64Encoding, 0);
@@ -149,21 +168,18 @@ namespace System.Net.Mime
 
                 // Multiple encoded-words must be separated by linear whitespace (folding):
                 // an optional CRLF followed by one or more SP/HT, or just SP/HT.
-                int wsLength = 0;
-                if (remainder.Length >= 2 && remainder[0] == '\r' && remainder[1] == '\n')
+                bool hasNewLine = remainder.Length >= 2 && remainder[0] == '\r' && remainder[1] == '\n';
+                int whiteSpacesLength = hasNewLine ? 2 : 0;
+                while (whiteSpacesLength < remainder.Length && (remainder[whiteSpacesLength] == ' ' || remainder[whiteSpacesLength] == '\t'))
                 {
-                    wsLength = 2;
+                    whiteSpacesLength++;
                 }
-                int wsEnd = wsLength;
-                while (wsEnd < remainder.Length && (remainder[wsEnd] == ' ' || remainder[wsEnd] == '\t'))
-                {
-                    wsEnd++;
-                }
-                if (wsEnd == wsLength)
+                // CRLF NOT followed by at least one SP/HT
+                if (hasNewLine && whiteSpacesLength == 2)
                 {
                     return (value, null);
                 }
-                remainder = remainder.Slice(wsEnd);
+                remainder = remainder.Slice(whiteSpacesLength);
                 if (remainder.IsEmpty)
                 {
                     break;
