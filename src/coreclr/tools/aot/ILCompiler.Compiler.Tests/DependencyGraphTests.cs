@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using ILCompiler.Dataflow;
-using ILCompiler.DependencyAnalysis;
 using Internal.IL;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
