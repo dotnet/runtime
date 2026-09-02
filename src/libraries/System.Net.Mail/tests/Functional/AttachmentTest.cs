@@ -155,42 +155,52 @@ namespace System.Net.Mail.Tests
             Assert.Equal("attachment name", a.Name);
             Assert.Equal(a.NameEncoding, Encoding.Latin1);
 
+            // question mark alternate
+            a = new Attachment(new MemoryStream(), "=?ISO-8859-1?q?attachment=3Fname?=");
+            Assert.Equal("attachment?name", a.Name);
+            Assert.Equal(a.NameEncoding, Encoding.Latin1);
+
+            // underscore alternate
+            a = new Attachment(new MemoryStream(), "=?ISO-8859-1?q?attachment=5Fname?=");
+            Assert.Equal("attachment_name", a.Name);
+            Assert.Equal(a.NameEncoding, Encoding.Latin1);
+
             // multiple encoded-words
             a = new Attachment(new MemoryStream(), "=?ISO-8859-1?Q?attachment=20?= =?ISO-8859-1?Q?name?=");
             Assert.Equal("attachment name", a.Name);
             Assert.Equal(Encoding.Latin1, a.NameEncoding);
 
-            // multi whitespace between encoded-words
+            // whitespace between encoded-words
             a = new Attachment(new MemoryStream(), "=?ISO-8859-1?Q?attachment=20?=    =?ISO-8859-1?Q?name?=");
             Assert.Equal("attachment name", a.Name);
             Assert.Equal(Encoding.Latin1, a.NameEncoding);
 
-            // multi tab whitespace between encoded-words
+            // tab between encoded-words
             a = new Attachment(new MemoryStream(), "=?ISO-8859-1?Q?attachment=20?= \t   =?ISO-8859-1?Q?name?=");
             Assert.Equal("attachment name", a.Name);
             Assert.Equal(Encoding.Latin1, a.NameEncoding);
 
-            // multi new-line whitespace between encoded-words
-            a = new Attachment(new MemoryStream(), "=?ISO-8859-1?Q?attachment=20?= \r\n   =?ISO-8859-1?Q?name?=");
+            // new-line whitespace between encoded-words
+            a = new Attachment(new MemoryStream(), "=?ISO-8859-1?Q?attachment=20?=\r\n   =?ISO-8859-1?Q?name?=");
             Assert.Equal("attachment name", a.Name);
             Assert.Equal(Encoding.Latin1, a.NameEncoding);
-
-            // multiple different encodings
-            a = new Attachment(new MemoryStream(), "=?ISO-8859-1?Q?attachment=20?= =?ISO-8859-2?Q?name?=");
-            Assert.Equal("attachment name", a.Name);
-            Assert.Null(a.NameEncoding);
-
-            // TODO unrescore as `=XX`
-            // TODO comment
         }
 
         [Theory]
         [InlineData("=?Q?foo?=")] // missing charset
         [InlineData("=?XXXX?Q?foo?=")] // non existing encoding
         [InlineData("=?ISO-8859-1?foo?=")] // missing encoding
+        [InlineData("=?ISO-8859-1?qb?foo?=")] // two letter encoding
         [InlineData("=?ISO-8859-1?Q?foo?")] // missing end =
         [InlineData("=?ISO-8859-1?Q?foo")] // missing whole end
-        [InlineData("=?ISO-8859-1?B?YXR0YWNobWV@@@@@@@@udCBuYW1l?=")] // broken base64
+        [InlineData("=?ISO-8859-1?Q?foo_=?=")] // broken Q encoding, = at end
+        [InlineData("=?ISO-8859-1?Q?foo_=A?=")] // broken Q encoding, single hex digit
+        [InlineData("=?ISO-8859-1?Q?foo_?A?=")] // broken Q encoding, ? in text
+        [InlineData("=?ISO-8859-1?Q?foo bar?=")] // broken Q encoding, space in text
+        [InlineData("=?ISO-8859-1?Q?foo\tbar?=")] // broken Q encoding, tab in text
+        [InlineData("=?ISO-8859-1?Q?foo\rbar?=")] // broken Q encoding, new line (CR) in text
+        [InlineData("=?ISO-8859-1?Q?foo\nbar?=")] // broken Q encoding, new line (LF) in text
+        [InlineData("=?ISO-8859-1?Q?foo\r\nbar?=")] // broken Q encoding, new line (CRLF) in text
         [InlineData("=?ISO?8859-1?Q?foo_bar?=")] // prohibited char in charset
         [InlineData("=?ISO(8859-1?Q?foo_bar?=")] // prohibited char in charset
         [InlineData("=?ISO<8859-1?Q?foo_bar?=")] // prohibited char in charset
@@ -215,13 +225,26 @@ namespace System.Net.Mail.Tests
         [InlineData("=?ISO-8859-1?Q.?foo_bar?=")] // prohibited char in encoding
         [InlineData("=?ISO-8859-1?Q=?foo_bar?=")] // prohibited char in encoding
         [InlineData("=?ISO-8859-1?Q\"?foo_bar?=")] // prohibited char in encoding
-        // TODO: Longer > 75chars
+        [InlineData("=?ISO-8859-1?Q\"?foo_bar_foo_bar_foo_bar_foo_bar_foo_bar_foo_bar_foo_barxy?=")] // longer then 75 chars
+        [InlineData("=?ISO-8859-1?Q?attachment=20?= =?ISO-8859-2?Q?name?=")] // multiple different encodings
         public void NameParsingAndEncodingDetectionBadInputs(string attachmentName)
         {
             Attachment a = new Attachment(new MemoryStream(), attachmentName);
             Assert.Equal(attachmentName, a.Name);
             Assert.Null(a.NameEncoding);
         }
+
+        [Fact]
+        public void NameParsingAndEncodingDetectionBadInputsThrowing()
+        {
+            // Bad Base64 encoding
+            Assert.Throws<FormatException>(() => new Attachment(new MemoryStream(), "=?ISO-8859-1?B?YXR0YWNobWV@@@@@@@@udCBuYW1l?="));
+
+            // broken Q encoding, invalid hex value
+            Assert.Throws<FormatException>(() => new Attachment(new MemoryStream(), "=?ISO-8859-1?Q?foo_=XY?="));
+
+        }
+
 
         [Fact]
         public void ContentStream()
