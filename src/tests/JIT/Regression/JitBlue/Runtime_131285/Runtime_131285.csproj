@@ -9,6 +9,9 @@
          exercising the fix. CrossGen2OutputFormat=wasm is set automatically for
          TargetOS=browser (src/tests/Directory.Build.props). -->
     <AlwaysUseCrossGen2 Condition="'$(TargetOS)' == 'browser'">true</AlwaysUseCrossGen2>
+    <!-- Without this, the test defaults to CLRTestKind=SharedLibrary and is never actually
+         executed (build-only), silently passing without exercising the fix. -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
