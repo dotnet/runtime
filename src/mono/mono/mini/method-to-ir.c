@@ -6465,8 +6465,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	 * For each finally clause, the bblocks containing its ENDFINALLY instructions and the
 	 * targets of the LEAVE instructions which invoke it. Only used by the LLVM backend.
 	 */
-	GSList **clause_endfinally_bbs = NULL;
-	GSList **clause_leave_target_bbs = NULL;
+	GSList **llvm_clause_endfinally_bbs = NULL;
+	GSList **llvm_clause_leave_target_bbs = NULL;
 	MonoMethod *method_definition;
 	MonoInst **arg_array;
 	MonoMethodHeader *header;
@@ -6671,8 +6671,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			cfg->exvars = g_hash_table_new (NULL, NULL);
 
 			if (COMPILE_LLVM (cfg)) {
-				clause_endfinally_bbs = mono_mempool_alloc0 (cfg->mempool, sizeof (GSList*) * header->num_clauses);
-				clause_leave_target_bbs = mono_mempool_alloc0 (cfg->mempool, sizeof (GSList*) * header->num_clauses);
+				llvm_clause_endfinally_bbs = mono_mempool_alloc0 (cfg->mempool, sizeof (GSList*) * header->num_clauses);
+				llvm_clause_leave_target_bbs = mono_mempool_alloc0 (cfg->mempool, sizeof (GSList*) * header->num_clauses);
 			}
 		}
 		cfg->clause_is_dead = mono_mempool_alloc0 (cfg->mempool, sizeof (gboolean) * header->num_clauses);
@@ -11251,8 +11251,8 @@ field_access_end:
 			MONO_INST_NEW (cfg, ins, OP_ENDFINALLY);
 			MONO_ADD_INS (cfg->cbb, ins);
 
-			if (clause_endfinally_bbs)
-				clause_endfinally_bbs [clause_index] = g_slist_prepend_mempool (cfg->mempool, clause_endfinally_bbs [clause_index], cfg->cbb);
+			if (llvm_clause_endfinally_bbs)
+				llvm_clause_endfinally_bbs [clause_index] = g_slist_prepend_mempool (cfg->mempool, llvm_clause_endfinally_bbs [clause_index], cfg->cbb);
 
 			start_new_bblock = 1;
 			ins_has_side_effect = FALSE;
@@ -11367,10 +11367,10 @@ field_access_end:
 					MONO_START_BB (cfg, dont_throw);
 					cfg->cbb->clause_holes = tmp;
 
-					if (clause_leave_target_bbs) {
+					if (llvm_clause_leave_target_bbs) {
 						MonoBasicBlock *target_bb;
 						GET_BBLOCK (cfg, target_bb, target);
-						clause_leave_target_bbs [leave->index] = g_slist_prepend_mempool (cfg->mempool, clause_leave_target_bbs [leave->index], target_bb);
+						llvm_clause_leave_target_bbs [leave->index] = g_slist_prepend_mempool (cfg->mempool, llvm_clause_leave_target_bbs [leave->index], target_bb);
 					}
 				}
 			}
@@ -12572,10 +12572,10 @@ all_bbs_done:
 	 * Link the finally bblock with the target, since it will
 	 * conceptually branch there.
 	 */
-	if (clause_endfinally_bbs) {
+	if (llvm_clause_endfinally_bbs) {
 		for (guint i = 0; i < header->num_clauses; ++i) {
-			for (GSList *l = clause_endfinally_bbs [i]; l; l = l->next) {
-				for (GSList *l2 = clause_leave_target_bbs [i]; l2; l2 = l2->next)
+			for (GSList *l = llvm_clause_endfinally_bbs [i]; l; l = l->next) {
+				for (GSList *l2 = llvm_clause_leave_target_bbs [i]; l2; l2 = l2->next)
 					link_bblock (cfg, (MonoBasicBlock*)l->data, (MonoBasicBlock*)l2->data);
 			}
 		}
