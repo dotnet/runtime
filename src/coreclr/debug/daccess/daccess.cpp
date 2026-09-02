@@ -6560,7 +6560,7 @@ CLRDataCreateInstance(REFIID iid,
         DWORD val;
         // cDAC does not yet support the memory enumeration used to create debugger dumps.
         if (enable.TryAsInteger(10, val) && val == 1 &&
-            !IsEqualIID(iid, __uuidof(ICLRDataEnumMemoryRegions)))
+            !(IsEqualIID(iid, __uuidof(ICLRDataEnumMemoryRegions))))
         {
             // TODO: [cdac] TryGetSymbol is only implemented for Linux, OSX, and Windows.
             uint64_t contractDescriptorAddr = 0;

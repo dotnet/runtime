@@ -79,28 +79,25 @@ public sealed unsafe partial class SOSDacImpl
 
 #if DEBUG
         // Get all the interfaces used to compare cDAC behavior with the legacy DAC.
-        if (legacyObj is not null)
-        {
-            _legacyImpl = legacyObj as ISOSDacInterface;
-            _legacyImpl2 = legacyObj as ISOSDacInterface2;
-            _legacyImpl3 = legacyObj as ISOSDacInterface3;
-            _legacyImpl4 = legacyObj as ISOSDacInterface4;
-            _legacyImpl5 = legacyObj as ISOSDacInterface5;
-            _legacyImpl6 = legacyObj as ISOSDacInterface6;
-            _legacyImpl7 = legacyObj as ISOSDacInterface7;
-            _legacyImpl8 = legacyObj as ISOSDacInterface8;
-            _legacyImpl9 = legacyObj as ISOSDacInterface9;
-            _legacyImpl10 = legacyObj as ISOSDacInterface10;
-            _legacyImpl11 = legacyObj as ISOSDacInterface11;
-            _legacyImpl12 = legacyObj as ISOSDacInterface12;
-            _legacyImpl13 = legacyObj as ISOSDacInterface13;
-            _legacyImpl14 = legacyObj as ISOSDacInterface14;
-            _legacyImpl15 = legacyObj as ISOSDacInterface15;
-            _legacyImpl16 = legacyObj as ISOSDacInterface16;
+        _legacyImpl = legacyObj as ISOSDacInterface;
+        _legacyImpl2 = legacyObj as ISOSDacInterface2;
+        _legacyImpl3 = legacyObj as ISOSDacInterface3;
+        _legacyImpl4 = legacyObj as ISOSDacInterface4;
+        _legacyImpl5 = legacyObj as ISOSDacInterface5;
+        _legacyImpl6 = legacyObj as ISOSDacInterface6;
+        _legacyImpl7 = legacyObj as ISOSDacInterface7;
+        _legacyImpl8 = legacyObj as ISOSDacInterface8;
+        _legacyImpl9 = legacyObj as ISOSDacInterface9;
+        _legacyImpl10 = legacyObj as ISOSDacInterface10;
+        _legacyImpl11 = legacyObj as ISOSDacInterface11;
+        _legacyImpl12 = legacyObj as ISOSDacInterface12;
+        _legacyImpl13 = legacyObj as ISOSDacInterface13;
+        _legacyImpl14 = legacyObj as ISOSDacInterface14;
+        _legacyImpl15 = legacyObj as ISOSDacInterface15;
+        _legacyImpl16 = legacyObj as ISOSDacInterface16;
 
-            _legacyProcess = legacyObj as IXCLRDataProcess;
-            _legacyProcess2 = legacyObj as IXCLRDataProcess2;
-        }
+        _legacyProcess = legacyObj as IXCLRDataProcess;
+        _legacyProcess2 = legacyObj as IXCLRDataProcess2;
 #else
         _legacyImpl = null;
         _legacyImpl13 = null;

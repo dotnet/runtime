@@ -1970,7 +1970,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-        // Mirror to legacy DBI in all builds so the legacy walker tracks the cDAC walker
+        // Mirror to the legacy DBI for validation so its walker tracks the cDAC walker.
         if (_legacy is not null && legacyHandle != 0)
         {
             int hrLocal = _legacy.SetStackWalkCurrentContext(vmThread, legacyHandle, flag, pContext);
@@ -2016,7 +2016,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             hr = ex.HResult;
         }
 
-        // Mirror to legacy DBI in all builds so the legacy walker tracks the cDAC walker
+        // Mirror to the legacy DBI for validation so its walker tracks the cDAC walker.
         if (_legacy is not null && legacyHandle != 0)
         {
             Interop.BOOL localResult;

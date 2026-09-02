@@ -1120,9 +1120,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         if (_legacyProcess != null && emi.LegacyHandle != 0)
         {
             int hrLocal = _legacyProcess.EndEnumMethodInstancesByAddress(emi.LegacyHandle);
-#if DEBUG
             Debug.ValidateHResult(hr, hrLocal);
-#endif
         }
 
         return hr;
