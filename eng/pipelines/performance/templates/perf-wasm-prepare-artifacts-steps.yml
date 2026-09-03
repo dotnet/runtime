@@ -4,7 +4,8 @@ parameters:
   runtimeFlavor: 'mono'
   sdkDirName: 'dotnet-latest'
   includeRefPack: true
-  includeCrossgen2Pack: false
+  # CoreCLR R2R publishes require the matching host Crossgen2 and ILLink packages.
+  includeCoreClrToolchainPacks: false
   # The Mono (default) build installs the wasm-tools workload, whose manifest now includes the
   # CoreCLR browser-wasm runtime pack (Microsoft.NETCore.App.Runtime.browser-wasm). A Mono-only
   # build doesn't produce that pack, so download it from the CoreCLR build job and stage it into
@@ -52,14 +53,56 @@ steps:
     - script: cp -r $(Build.SourcesDirectory)/artifacts/bin/microsoft.netcore.app.ref $(Build.SourcesDirectory)/artifacts/staging
       displayName: "Stage ref pack directory"
 
-  - ${{ if eq(parameters.includeCrossgen2Pack, true) }}:
+  # The WebAssembly SDK and ref packages above, the runtime pack directory, and these host tool
+  # packages form the complete local product cohort consumed by a trimmed CoreCLR R2R publish.
+  - ${{ if eq(parameters.includeCoreClrToolchainPacks, true) }}:
     - script: >-
-        find $(Build.SourcesDirectory)/artifacts/packages/${{ parameters.configForBuild }}/Shipping -maxdepth 1
-        -name 'Microsoft.NETCore.App.Crossgen2.*.nupkg' -not -name '*.symbols.nupkg'
-        -exec cp {} $(Build.SourcesDirectory)/artifacts/staging/built-nugets \; &&
-        test -n "$(find $(Build.SourcesDirectory)/artifacts/staging/built-nugets -maxdepth 1
-        -name 'Microsoft.NETCore.App.Crossgen2.*.nupkg' -not -name '*.symbols.nupkg' -print -quit)"
-      displayName: "Stage Crossgen2 pack"
+        ./dotnet.sh pack --no-build --no-restore
+        /p:Configuration=${{ parameters.configForBuild }}
+        /p:ContinuousIntegrationBuild=true
+        $(Build.SourcesDirectory)/src/tools/illink/src/ILLink.Tasks/ILLink.Tasks.csproj
+      displayName: "Pack ILLink tasks"
+    - script: |
+        set -euo pipefail
+
+        shipping_dir="$(Build.SourcesDirectory)/artifacts/packages/${{ parameters.configForBuild }}/Shipping"
+        staging_dir="$(Build.SourcesDirectory)/artifacts/staging/built-nugets"
+
+        for package_pattern in \
+          'Microsoft.NET.Sdk.WebAssembly.Pack.*.nupkg' \
+          'Microsoft.NETCore.App.Ref.*.nupkg' \
+          'Microsoft.NETCore.App.Crossgen2.*.nupkg' \
+          'Microsoft.NET.ILLink.Tasks.*.nupkg'
+        do
+          package_count="$(
+            find "$shipping_dir" -maxdepth 1 -type f \
+              -name "$package_pattern" -not -name '*.symbols.nupkg' -print |
+              wc -l | tr -d '[:space:]'
+          )"
+
+          if [ "$package_count" -ne 1 ]; then
+            echo "Expected exactly one non-symbol $package_pattern in $shipping_dir; found $package_count." >&2
+            find "$shipping_dir" -maxdepth 1 -type f -name "$package_pattern" -print >&2
+            exit 1
+          fi
+
+          package="$(
+            find "$shipping_dir" -maxdepth 1 -type f \
+              -name "$package_pattern" -not -name '*.symbols.nupkg' -print -quit
+          )"
+
+          if [ "$package_pattern" = 'Microsoft.NET.Sdk.WebAssembly.Pack.*.nupkg' ]; then
+            cohort_version="$(basename "$package")"
+            cohort_version="${cohort_version#Microsoft.NET.Sdk.WebAssembly.Pack.}"
+            cohort_version="${cohort_version%.nupkg}"
+          elif [[ "$(basename "$package")" != *".$cohort_version.nupkg" ]]; then
+            echo "Expected $(basename "$package") to match local package cohort $cohort_version." >&2
+            exit 1
+          fi
+
+          cp "$package" "$staging_dir/"
+        done
+      displayName: "Stage CoreCLR toolchain packs"
 
   # Publish the CoreCLR browser-wasm runtime pack nuget on its own so the Mono build job can stage
   # it into its local feed for the wasm-tools workload install.

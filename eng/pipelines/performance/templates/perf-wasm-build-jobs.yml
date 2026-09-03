@@ -41,5 +41,5 @@ jobs:
             artifactName: BrowserWasmCoreCLR
             sdkDirName: dotnet-none
             includeRefPack: false
-            includeCrossgen2Pack: true
+            includeCoreClrToolchainPacks: true
             publishCoreClrRuntimePack: true
