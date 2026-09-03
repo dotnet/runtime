@@ -679,9 +679,9 @@ namespace ComWrappersTests
 
                 threads[t] = new Thread(() =>
                 {
-                    start.SignalAndWait();
-
                     try
+                    {
+                        Assert.True(start.SignalAndWait(TimeSpan.FromMinutes(1)), "Timed out waiting for the start barrier.");
                     {
                         for (int i = 0; i < IterationCount; i++)
                         {
