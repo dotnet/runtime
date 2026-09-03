@@ -624,16 +624,37 @@ public:
             //
             const unsigned controlVarNum =
                 m_compiler->lvaGrabTemp(/* shortLifetime */ false DEBUGARG("Scc control var"));
-            LclVarDsc* const controlVarDsc = m_compiler->lvaGetDesc(controlVarNum);
-            controlVarDsc->lvType          = TYP_INT;
-            BasicBlock*      dispatcher    = nullptr;
-            BasicBlock*      tryHeader     = TryHeader();
-            FlowEdge** const succs         = new (m_compiler, CMK_FlowEdge) FlowEdge*[numHeaders];
-            FlowEdge** const cases         = new (m_compiler, CMK_FlowEdge) FlowEdge*[numHeaders];
-            unsigned         headerNumber  = 0;
-            BitVecOps::Iter  iterator(m_traits, m_entries);
-            unsigned int     poHeaderNumber = 0;
-            weight_t         netLikelihood  = 0.0;
+            LclVarDsc* const controlVarDsc         = m_compiler->lvaGetDesc(controlVarNum);
+            controlVarDsc->lvType                  = TYP_INT;
+            BasicBlock*                 dispatcher = nullptr;
+            BasicBlock*                 tryHeader  = TryHeader();
+            FlowEdge** const            succs      = new (m_compiler, CMK_FlowEdge) FlowEdge*[numHeaders];
+            FlowEdge** const            cases      = new (m_compiler, CMK_FlowEdge) FlowEdge*[numHeaders];
+            CompAllocator               allocator  = m_compiler->getAllocator(CMK_WasmSccTransform);
+            jitstd::vector<BasicBlock*> predBlocks(allocator);
+            jitstd::vector<unsigned>    predOffsets(allocator);
+            unsigned                    headerNumber = 0;
+            BitVecOps::Iter             iterator(m_traits, m_entries);
+            unsigned int                poHeaderNumber = 0;
+            weight_t                    netLikelihood  = 0.0;
+
+            // Snapshot the predecessor blocks before modifying any edges. Redirecting an edge for one
+            // header can create a new predecessor of another header, and that new edge must not be
+            // transformed as if it had originally targeted the other header.
+            //
+            while (iterator.NextElem(&poHeaderNumber))
+            {
+                BasicBlock* const header = m_dfsTree->GetPostOrder(poHeaderNumber);
+                predOffsets.push_back(static_cast<unsigned>(predBlocks.size()));
+
+                for (BasicBlock* const pred : header->PredBlocks())
+                {
+                    predBlocks.push_back(pred);
+                }
+            }
+            predOffsets.push_back(static_cast<unsigned>(predBlocks.size()));
+
+            iterator = BitVecOps::Iter(m_traits, m_entries);
 
             while (iterator.NextElem(&poHeaderNumber))
             {
@@ -711,11 +732,18 @@ public:
 
                 weight_t headerWeight = header->bbWeight;
 
-                for (FlowEdge* const f : header->PredEdgesEditing())
+                for (unsigned predIndex = predOffsets[headerNumber]; predIndex < predOffsets[headerNumber + 1];
+                     predIndex++)
                 {
-                    assert(f->getDestinationBlock() == header);
-                    BasicBlock* const pred          = f->getSourceBlock();
+                    BasicBlock* const pred          = predBlocks[predIndex];
                     BasicBlock*       transferBlock = nullptr;
+
+                    // Processing an earlier header may have removed this original edge.
+                    //
+                    if (m_compiler->fgGetPredForBlock(header, pred) == nullptr)
+                    {
+                        continue;
+                    }
 
                     // When the pred source is a BBJ_EHCATCHRET, the edge does not represent real
                     // control flow in Wasm, as any resume from catch flow is captured by the post-try
