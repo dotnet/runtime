@@ -45,12 +45,12 @@ namespace Microsoft.Extensions.Caching.Memory
 
             Assert.Contains(measurements, m =>
                 m.name == "dotnet.cache.requests" &&
-                m.tags.Any(t => t.Key == "dotnet.cache.request.type" && (string?)t.Value == "hit") &&
+                m.tags.Any(t => t.Key == "dotnet.cache.request.result" && (string?)t.Value == "hit") &&
                 m.tags.Any(t => t.Key == "dotnet.cache.name" && (string?)t.Value == "test-cache"));
 
             Assert.Contains(measurements, m =>
                 m.name == "dotnet.cache.requests" &&
-                m.tags.Any(t => t.Key == "dotnet.cache.request.type" && (string?)t.Value == "miss") &&
+                m.tags.Any(t => t.Key == "dotnet.cache.request.result" && (string?)t.Value == "miss") &&
                 m.tags.Any(t => t.Key == "dotnet.cache.name" && (string?)t.Value == "test-cache"));
 
             Assert.Contains(measurements, m => m.name == "dotnet.cache.entries");
