@@ -5489,11 +5489,6 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
         //
         for (BasicBlock* const predBlock : block->PredBlocks())
         {
-            // if (predBlock == block)
-            // {
-            //     continue;
-            // }
-
             if (predBlock->GetUniqueSucc() != block)
             {
                 continue;
