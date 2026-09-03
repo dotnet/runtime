@@ -1076,7 +1076,6 @@ namespace
         if (table->Lookup(key, &thunk))
             return (InterpreterCalliCookie)thunk;
 
-        // Returns null if no thunk is registered for this key yet (its image's InjectStringThunks fixup hasn't run); the caller then defers.
         return (InterpreterCalliCookie)(size_t)LookupPregeneratedThunkByString(key);
     }
 
