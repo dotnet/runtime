@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Optimize>true</Optimize>
+    <AlwaysUseCrossGen2 Condition="'$(TargetOS)' == 'browser'">true</AlwaysUseCrossGen2>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildProjectName).cs" />
+  </ItemGroup>
+  <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
+    <CrossGen2TestExtraArguments>$(CrossGen2TestExtraArguments) --codegenopt:JitSynthesizeCounts=1</CrossGen2TestExtraArguments>
+  </PropertyGroup>
+</Project>
