@@ -348,12 +348,19 @@ namespace System.ComponentModel.DataAnnotations
         protected ValidationAttribute() { }
         protected ValidationAttribute(System.Func<string> errorMessageAccessor) { }
         protected ValidationAttribute(string errorMessage) { }
+        [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")]
+        public string? DescriptionMessage { get { throw null; } set { } }
+        public string? DescriptionMessageResourceName { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)]
+        public System.Type? DescriptionMessageResourceType { get { throw null; } set { } }
+        protected string? DescriptionMessageString { get { throw null; } }
         public string? ErrorMessage { get { throw null; } set { } }
         public string? ErrorMessageResourceName { get { throw null; } set { } }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)]
         public System.Type? ErrorMessageResourceType { get { throw null; } set { } }
         protected string ErrorMessageString { get { throw null; } }
         public virtual bool RequiresValidationContext { get { throw null; } }
+        public virtual string? FormatDescriptionMessage(string name) { throw null; }
         public virtual string FormatErrorMessage(string name) { throw null; }
         public virtual string FormatMessage([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, string name) { throw null; }
         public System.ComponentModel.DataAnnotations.ValidationResult? GetValidationResult(object? value, System.ComponentModel.DataAnnotations.ValidationContext validationContext) { throw null; }

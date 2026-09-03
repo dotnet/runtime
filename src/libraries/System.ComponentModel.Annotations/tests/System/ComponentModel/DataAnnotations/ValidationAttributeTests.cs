@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -44,6 +46,155 @@ namespace System.ComponentModel.DataAnnotations.Tests
             Assert.Null(attribute.ErrorMessageResourceType);
             attribute.ErrorMessageResourceType = typeof(string);
             Assert.Equal(typeof(string), attribute.ErrorMessageResourceType);
+        }
+
+        [Fact]
+        public static void DescriptionMessageProperties_GetAndSet()
+        {
+            var attribute = new ValidationAttributeNoOverrides();
+
+            Assert.Null(attribute.DescriptionMessage);
+            Assert.Null(attribute.DescriptionMessageResourceName);
+            Assert.Null(attribute.DescriptionMessageResourceType);
+
+            attribute.DescriptionMessage = "Description";
+            attribute.DescriptionMessageResourceName = "ResourceName";
+            attribute.DescriptionMessageResourceType = typeof(DescriptionMessageResources);
+
+            Assert.Equal("Description", attribute.DescriptionMessage);
+            Assert.Equal("ResourceName", attribute.DescriptionMessageResourceName);
+            Assert.Equal(typeof(DescriptionMessageResources), attribute.DescriptionMessageResourceType);
+        }
+
+        [Fact]
+        public static void FormatDescriptionMessage_NoDescriptionConfigured_ReturnsNull()
+        {
+            var attribute = new ValidationAttributeNoOverrides();
+
+            Assert.Null(attribute.GetDescriptionMessageString());
+            Assert.Null(attribute.FormatDescriptionMessage("name"));
+        }
+
+        [Theory]
+        [InlineData("Rule for {0}", "name", "Rule for name")]
+        [InlineData("Rule for {0}", null, "Rule for ")]
+        public static void FormatDescriptionMessage_Literal_ReturnsExpected(string descriptionMessage, string name, string expected)
+        {
+            var attribute = new ValidationAttributeNoOverrides { DescriptionMessage = descriptionMessage };
+
+            Assert.Equal(descriptionMessage, attribute.GetDescriptionMessageString());
+            Assert.Equal(expected, attribute.FormatDescriptionMessage(name));
+        }
+
+        [Fact]
+        public static void FormatDescriptionMessage_ResourceProperty_ReevaluatesValue()
+        {
+            DescriptionMessageResources.LookupCount = 0;
+            var attribute = new ValidationAttributeNoOverrides
+            {
+                DescriptionMessageResourceName = nameof(DescriptionMessageResources.DynamicDescription),
+                DescriptionMessageResourceType = typeof(DescriptionMessageResources)
+            };
+
+            Assert.Equal("Description 1 for name", attribute.FormatDescriptionMessage("name"));
+            Assert.Equal("Description 2 for name", attribute.FormatDescriptionMessage("name"));
+            Assert.Equal("Description 3 for {0}", attribute.GetDescriptionMessageString());
+        }
+
+        [Theory]
+        [InlineData(DescriptionResourceConfiguration.NameOnly)]
+        [InlineData(DescriptionResourceConfiguration.TypeOnly)]
+        [InlineData(DescriptionResourceConfiguration.LiteralAndResource)]
+        [InlineData(DescriptionResourceConfiguration.MissingMember)]
+        [InlineData(DescriptionResourceConfiguration.InstanceMember)]
+        [InlineData(DescriptionResourceConfiguration.NonStringMember)]
+        [InlineData(DescriptionResourceConfiguration.InaccessibleMember)]
+        public static void FormatDescriptionMessage_InvalidConfiguration_MatchesErrorMessageBehavior(
+            DescriptionResourceConfiguration configuration)
+        {
+            var descriptionAttribute = new ValidationAttributeNoOverrides();
+            var errorAttribute = new ValidationAttributeNoOverrides();
+            ConfigureMessage(descriptionAttribute, configuration, description: true);
+            ConfigureMessage(errorAttribute, configuration, description: false);
+
+            InvalidOperationException descriptionException =
+                Assert.Throws<InvalidOperationException>(() => descriptionAttribute.FormatDescriptionMessage("name"));
+            InvalidOperationException errorException =
+                Assert.Throws<InvalidOperationException>(() => errorAttribute.FormatErrorMessage("name"));
+
+            Assert.NotEmpty(errorException.Message);
+            Assert.NotEmpty(descriptionException.Message);
+            Assert.DoesNotContain("ErrorMessage", descriptionException.Message);
+        }
+
+        [Fact]
+        public static void FormatDescriptionMessage_DelegatesToFormatMessage()
+        {
+            var attribute = new ValidationAttributeOverrideFormatMessage
+            {
+                DescriptionMessage = "Description for {0}"
+            };
+
+            Assert.Equal("Description for {0}|name", attribute.FormatDescriptionMessage("name"));
+        }
+
+        [Fact]
+        public static async Task FormatDescriptionMessage_AsyncAttributeMetadataAvailableBeforeValidation()
+        {
+            PropertyInfo emailProperty = typeof(RegistrationModel).GetProperty(nameof(RegistrationModel.Email));
+            ValidationAttribute[] attributes = emailProperty.GetCustomAttributes<ValidationAttribute>().ToArray();
+            UniqueEmailAttribute uniqueEmailAttribute = Assert.Single(attributes.OfType<UniqueEmailAttribute>());
+
+            Assert.Contains(attributes, attribute => attribute is RequiredAttribute);
+            Assert.Contains(attributes, attribute => attribute is EmailAddressAttribute);
+            Assert.Equal(
+                "We will verify that Email is not already registered.",
+                uniqueEmailAttribute.FormatDescriptionMessage("Email"));
+
+            var model = new RegistrationModel { Email = "taken@example.com" };
+            var validationContext = new ValidationContext(model)
+            {
+                DisplayName = "Email",
+                MemberName = nameof(RegistrationModel.Email)
+            };
+
+            ValidationResult result = await uniqueEmailAttribute.GetValidationResultAsync(model.Email, validationContext);
+
+            Assert.Equal("Email is already registered.", result.ErrorMessage);
+        }
+
+        private static void ConfigureMessage(
+            ValidationAttribute attribute,
+            DescriptionResourceConfiguration configuration,
+            bool description)
+        {
+            string message = configuration == DescriptionResourceConfiguration.LiteralAndResource ? "Literal" : null;
+            string resourceName = configuration switch
+            {
+                DescriptionResourceConfiguration.NameOnly => nameof(DescriptionMessageResources.DynamicDescription),
+                DescriptionResourceConfiguration.LiteralAndResource => nameof(DescriptionMessageResources.DynamicDescription),
+                DescriptionResourceConfiguration.MissingMember => "MissingMember",
+                DescriptionResourceConfiguration.InstanceMember => nameof(DescriptionMessageResources.InstanceDescription),
+                DescriptionResourceConfiguration.NonStringMember => nameof(DescriptionMessageResources.NonStringDescription),
+                DescriptionResourceConfiguration.InaccessibleMember => "PrivateDescription",
+                _ => null
+            };
+            Type resourceType = configuration == DescriptionResourceConfiguration.NameOnly
+                ? null
+                : typeof(DescriptionMessageResources);
+
+            if (description)
+            {
+                attribute.DescriptionMessage = message;
+                attribute.DescriptionMessageResourceName = resourceName;
+                attribute.DescriptionMessageResourceType = resourceType;
+            }
+            else
+            {
+                attribute.ErrorMessage = message;
+                attribute.ErrorMessageResourceName = resourceName;
+                attribute.ErrorMessageResourceType = resourceType;
+            }
         }
 
         // Public_IsValid_throws_NotImplementedException_if_derived_ValidationAttribute_does_not_override_either_IsValid_method
@@ -377,6 +528,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
 
         public class ValidationAttributeNoOverrides : ValidationAttribute
         {
+            public string GetDescriptionMessageString() => DescriptionMessageString;
         }
 
         public class ValidationAttributeOverrideFormatMessage : ValidationAttribute
@@ -622,6 +774,46 @@ namespace System.ComponentModel.DataAnnotations.Tests
             }
         }
 
+        private sealed class RegistrationModel
+        {
+            [Required]
+            [EmailAddress]
+            [UniqueEmail(
+                DescriptionMessage = "We will verify that {0} is not already registered.",
+                ErrorMessage = "{0} is already registered.")]
+            public string Email { get; set; }
+        }
+
+        [AttributeUsage(AttributeTargets.Property)]
+        private sealed class UniqueEmailAttribute : AsyncValidationAttribute
+        {
+            protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
+                => throw new InvalidOperationException("Use async validation");
+
+            protected override Task<ValidationResult?> IsValidAsync(
+                object? value,
+                ValidationContext validationContext,
+                CancellationToken cancellationToken)
+            {
+                ValidationResult? result = value as string == "taken@example.com"
+                    ? new ValidationResult(null)
+                    : ValidationResult.Success;
+
+                return Task.FromResult(result);
+            }
+        }
+
+        public enum DescriptionResourceConfiguration
+        {
+            NameOnly,
+            TypeOnly,
+            LiteralAndResource,
+            MissingMember,
+            InstanceMember,
+            NonStringMember,
+            InaccessibleMember
+        }
+
         private class TestAsyncCancellable : AsyncValidationAttribute
         {
             protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
@@ -708,5 +900,14 @@ namespace System.ComponentModel.DataAnnotations.Tests
         private static string PrivateProperty => "";
         internal string SetOnlyProperty { set { } }
         internal static bool BoolProperty => false;
+    }
+
+    internal class DescriptionMessageResources
+    {
+        internal static int LookupCount { get; set; }
+        internal static string DynamicDescription => $"Description {++LookupCount} for {{0}}";
+        internal string InstanceDescription => "";
+        internal static bool NonStringDescription => false;
+        private static string PrivateDescription => "";
     }
 }

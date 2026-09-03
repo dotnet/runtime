@@ -46,14 +46,17 @@ namespace System.ComponentModel.DataAnnotations.Tests
         public static void FormatMessage_UsesSuppliedFormatAndLengths()
         {
             const string ExternalFormat = "external {0}:{1}:{2}";
+            const string DescriptionMessageFormat = "description {0}:{1}:{2}";
             const string ErrorMessageFormat = "internal {0}:{1}:{2}";
             var attribute = new StringLengthAttribute(20)
             {
+                DescriptionMessage = DescriptionMessageFormat,
                 ErrorMessage = ErrorMessageFormat,
                 MinimumLength = 10
             };
 
             Assert.Equal("external name:20:10", attribute.FormatMessage(ExternalFormat, "name"));
+            Assert.Equal("description name:20:10", attribute.FormatDescriptionMessage("name"));
             Assert.Equal("internal name:20:10", attribute.FormatErrorMessage("name"));
         }
 

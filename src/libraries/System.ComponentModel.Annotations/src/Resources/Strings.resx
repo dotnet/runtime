@@ -219,11 +219,17 @@
   <data name="UrlAttribute_Invalid" xml:space="preserve">
     <value>The {0} field is not a valid fully-qualified http, https, or ftp URL.</value>
   </data>
+  <data name="ValidationAttribute_Cannot_Set_DescriptionMessage_And_Resource" xml:space="preserve">
+    <value>Either DescriptionMessage or DescriptionMessageResourceName must be set, but not both.</value>
+  </data>
   <data name="ValidationAttribute_Cannot_Set_ErrorMessage_And_Resource" xml:space="preserve">
     <value>Either ErrorMessageString or ErrorMessageResourceName must be set, but not both.</value>
   </data>
   <data name="ValidationAttribute_IsValid_NotImplemented" xml:space="preserve">
     <value>IsValid(object value) has not been implemented by this class.  The preferred entry point is GetValidationResult() and classes should override IsValid(object value, ValidationContext context).</value>
+  </data>
+  <data name="ValidationAttribute_NeedBothDescriptionResourceTypeAndResourceName" xml:space="preserve">
+    <value>Both DescriptionMessageResourceType and DescriptionMessageResourceName need to be set on this attribute.</value>
   </data>
   <data name="ValidationAttribute_NeedBothResourceTypeAndResourceName" xml:space="preserve">
     <value>Both ErrorMessageResourceType and ErrorMessageResourceName need to be set on this attribute.</value>

@@ -23,6 +23,11 @@ namespace System.ComponentModel.DataAnnotations
     {
         #region Member Fields
 
+        private string? _descriptionMessage;
+        private Func<string?>? _descriptionMessageResourceAccessor;
+        private string? _descriptionMessageResourceName;
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
+        private Type? _descriptionMessageResourceType;
         private string? _errorMessage;
         private Func<string>? _errorMessageResourceAccessor;
         private string? _errorMessageResourceName;
@@ -113,6 +118,23 @@ namespace System.ComponentModel.DataAnnotations
         #region Protected Properties
 
         /// <summary>
+        ///     Gets the localized description message string, coming either from <see cref="DescriptionMessage" />, or from
+        ///     evaluating the <see cref="DescriptionMessageResourceType" /> and <see cref="DescriptionMessageResourceName" /> pair.
+        /// </summary>
+        /// <value>
+        ///     The localized description message, or <see langword="null" /> when no description message is configured.
+        /// </value>
+        /// <exception cref="InvalidOperationException">The description message resource configuration is invalid.</exception>
+        protected string? DescriptionMessageString
+        {
+            get
+            {
+                SetupDescriptionMessageResourceAccessor();
+                return _descriptionMessageResourceAccessor?.Invoke();
+            }
+        }
+
+        /// <summary>
         ///     Gets the localized error message string, coming either from <see cref="ErrorMessage" />, or from evaluating the
         ///     <see cref="ErrorMessageResourceType" /> and <see cref="ErrorMessageResourceName" /> pair.
         /// </summary>
@@ -148,6 +170,59 @@ namespace System.ComponentModel.DataAnnotations
         #endregion
 
         #region Public Properties
+
+        /// <summary>
+        ///     Gets or sets the explicit message that describes the validation rule.
+        /// </summary>
+        /// <value>
+        ///     A non-localized description message template, or <see langword="null" /> if no description is configured.
+        ///     Use <see cref="DescriptionMessageResourceType" /> and <see cref="DescriptionMessageResourceName" /> for
+        ///     localizable description messages.
+        /// </value>
+        [StringSyntax(StringSyntaxAttribute.CompositeFormat)]
+        public string? DescriptionMessage
+        {
+            get => _descriptionMessage;
+            set
+            {
+                _descriptionMessage = value;
+                _descriptionMessageResourceAccessor = null;
+            }
+        }
+
+        /// <summary>
+        ///     Gets or sets the resource name to use as the key for description message lookups on the resource type.
+        /// </summary>
+        /// <value>
+        ///     The name of the property within <see cref="DescriptionMessageResourceType" /> that provides a localized
+        ///     description message.
+        /// </value>
+        public string? DescriptionMessageResourceName
+        {
+            get => _descriptionMessageResourceName;
+            set
+            {
+                _descriptionMessageResourceName = value;
+                _descriptionMessageResourceAccessor = null;
+            }
+        }
+
+        /// <summary>
+        ///     Gets or sets the resource type to use for description message lookups.
+        /// </summary>
+        /// <value>
+        ///     The type containing the static string property named by <see cref="DescriptionMessageResourceName" />.
+        /// </value>
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
+        public Type? DescriptionMessageResourceType
+        {
+            get => _descriptionMessageResourceType;
+            set
+            {
+                _descriptionMessageResourceType = value;
+                _descriptionMessageResourceAccessor = null;
+            }
+        }
 
         /// <summary>
         ///     Gets or sets the explicit error message string.
@@ -220,6 +295,52 @@ namespace System.ComponentModel.DataAnnotations
 
         #region Private Methods
 
+        private void SetupDescriptionMessageResourceAccessor()
+        {
+            if (_descriptionMessageResourceAccessor is not null)
+            {
+                return;
+            }
+
+            bool resourceNameSet = !string.IsNullOrEmpty(_descriptionMessageResourceName);
+            bool descriptionMessageSet = !string.IsNullOrEmpty(_descriptionMessage);
+            bool resourceTypeSet = _descriptionMessageResourceType is not null;
+
+            if (resourceNameSet && descriptionMessageSet)
+            {
+                throw new InvalidOperationException(
+                    SR.ValidationAttribute_Cannot_Set_DescriptionMessage_And_Resource);
+            }
+
+            if (!(resourceNameSet || descriptionMessageSet))
+            {
+                if (resourceTypeSet)
+                {
+                    throw new InvalidOperationException(
+                        SR.ValidationAttribute_Cannot_Set_DescriptionMessage_And_Resource);
+                }
+
+                return;
+            }
+
+            if (resourceTypeSet != resourceNameSet)
+            {
+                throw new InvalidOperationException(
+                    SR.ValidationAttribute_NeedBothDescriptionResourceTypeAndResourceName);
+            }
+
+            if (resourceNameSet)
+            {
+                PropertyInfo property = GetResourceProperty(_descriptionMessageResourceType!, _descriptionMessageResourceName!);
+                _descriptionMessageResourceAccessor = () => (string?)property.GetValue(null, null);
+            }
+            else if (descriptionMessageSet)
+            {
+                string descriptionMessage = _descriptionMessage!;
+                _descriptionMessageResourceAccessor = () => descriptionMessage;
+            }
+        }
+
         /// <summary>
         ///     Validates the configuration of this attribute and sets up the appropriate error string accessor.
         ///     This method bypasses all verification once the ResourceAccessor has been set.
@@ -254,7 +375,8 @@ namespace System.ComponentModel.DataAnnotations
                 // If set resource type (and we know resource name too), then go setup the accessor
                 if (resourceNameSet)
                 {
-                    SetResourceAccessorByPropertyLookup();
+                    PropertyInfo property = GetResourceProperty(_errorMessageResourceType!, _errorMessageResourceName!);
+                    _errorMessageResourceAccessor = () => (string)property.GetValue(null, null)!;
                 }
                 else
                 {
@@ -266,40 +388,41 @@ namespace System.ComponentModel.DataAnnotations
             }
         }
 
-        private void SetResourceAccessorByPropertyLookup()
+        private static PropertyInfo GetResourceProperty(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
+            Type resourceType,
+            string resourceName)
         {
-            Debug.Assert(_errorMessageResourceType != null);
-            Debug.Assert(!string.IsNullOrEmpty(_errorMessageResourceName));
-            var property = _errorMessageResourceType
-                .GetProperty(_errorMessageResourceName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.DeclaredOnly);
+            PropertyInfo? property = resourceType
+                .GetProperty(resourceName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.DeclaredOnly);
 
-            if (property != null)
+            if (property is not null)
             {
-                var propertyGetter = property.GetMethod;
+                MethodInfo? propertyGetter = property.GetMethod;
 
                 // We only support internal and public properties
-                if (propertyGetter == null || (!propertyGetter.IsAssembly && !propertyGetter.IsPublic))
+                if (propertyGetter is null || (!propertyGetter.IsAssembly && !propertyGetter.IsPublic))
                 {
                     // Set the property to null so the exception is thrown as if the property wasn't found
                     property = null;
                 }
             }
 
-            if (property == null)
+            if (property is null)
             {
                 throw new InvalidOperationException(SR.Format(SR.ValidationAttribute_ResourceTypeDoesNotHaveProperty,
-                                                    _errorMessageResourceType.FullName,
-                                                    _errorMessageResourceName));
+                                                    resourceType.FullName,
+                                                    resourceName));
             }
 
             if (property.PropertyType != typeof(string))
             {
                 throw new InvalidOperationException(SR.Format(SR.ValidationAttribute_ResourcePropertyNotStringType,
                                                     property.Name,
-                                                    _errorMessageResourceType.FullName));
+                                                    resourceType.FullName));
             }
 
-            _errorMessageResourceAccessor = () => (string)property.GetValue(null, null)!;
+            return property;
         }
 
         private protected ValidationResult CreateFailedValidationResult(ValidationContext validationContext)
@@ -328,6 +451,25 @@ namespace System.ComponentModel.DataAnnotations
         #endregion
 
         #region Protected & Public Methods
+
+        /// <summary>
+        ///     Formats the message that describes the validation rule.
+        /// </summary>
+        /// <remarks>
+        ///     The description message is re-evaluated every time this method is called. The resolved template is passed to
+        ///     <see cref="FormatMessage" />, allowing derived attributes to supply their attribute-specific placeholder values.
+        /// </remarks>
+        /// <param name="name">The user-visible name to include in the formatted message.</param>
+        /// <returns>
+        ///     The formatted description message, or <see langword="null" /> when no description message is configured.
+        /// </returns>
+        /// <exception cref="InvalidOperationException">The description message resource configuration is invalid.</exception>
+        /// <exception cref="FormatException">The description message is not a valid composite format string.</exception>
+        public virtual string? FormatDescriptionMessage(string name)
+        {
+            string? descriptionMessage = DescriptionMessageString;
+            return descriptionMessage is null ? null : FormatMessage(descriptionMessage, name);
+        }
 
         /// <summary>
         ///     Formats the error message to present to the user.

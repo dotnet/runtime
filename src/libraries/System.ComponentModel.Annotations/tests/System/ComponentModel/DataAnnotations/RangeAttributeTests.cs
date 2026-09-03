@@ -876,10 +876,16 @@ namespace System.ComponentModel.DataAnnotations.Tests
         public static void FormatMessage_UsesSuppliedFormatAndConvertedBounds()
         {
             const string ExternalFormat = "external {0}:{1:D2}:{2:D2}";
+            const string DescriptionMessageFormat = "description {0}:{1:D2}:{2:D2}";
             const string ErrorMessageFormat = "internal {0}:{1:D2}:{2:D2}";
-            var attribute = new RangeAttribute(typeof(int), "1", "3") { ErrorMessage = ErrorMessageFormat };
+            var attribute = new RangeAttribute(typeof(int), "1", "3")
+            {
+                DescriptionMessage = DescriptionMessageFormat,
+                ErrorMessage = ErrorMessageFormat
+            };
 
             Assert.Equal("external name:01:03", attribute.FormatMessage(ExternalFormat, "name"));
+            Assert.Equal("description name:01:03", attribute.FormatDescriptionMessage("name"));
             Assert.Equal("internal name:01:03", attribute.FormatErrorMessage("name"));
             Assert.IsType<int>(attribute.Minimum);
             Assert.IsType<int>(attribute.Maximum);
