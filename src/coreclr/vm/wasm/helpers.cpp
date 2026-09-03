@@ -1170,7 +1170,7 @@ namespace
                 return NULL;
         }
 
-        // Returns null if no thunk is registered for this key yet (its image's InjectStringThunks fixup hasn't run); the caller then defers.
+        // Returns null if no thunk is registered for this key yet; the caller then defers.
         return LookupPortableEntryPointThunk(keyBuffer);
     }
 
