@@ -36,10 +36,13 @@ internal static class Entrypoints
 
     private static unsafe int CreateInstance(Guid* pIID, IntPtr pDataTarget, ulong contractAddress, void** iface)
     {
-        if (pIID == null || pDataTarget == IntPtr.Zero || iface == null)
+        if (iface == null)
             return HResults.E_INVALIDARG;
 
         *iface = null;
+        if (pIID == null || pDataTarget == IntPtr.Zero)
+            return HResults.E_INVALIDARG;
+
         if (*pIID != IClrDataEnumMemoryRegions)
             return HResults.COR_E_INVALIDCAST;
 

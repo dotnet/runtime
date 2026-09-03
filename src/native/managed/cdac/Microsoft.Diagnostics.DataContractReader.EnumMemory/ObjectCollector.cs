@@ -15,17 +15,35 @@ internal sealed class ObjectCollector(
     MethodCollector methods)
 {
     private const ulong MaxObjectSize = 64 * 1024 * 1024;
+    private const int MaxInnerExceptionCount = 256;
     private const int MaxTypeTraversalDepth = 1_024;
 
     private readonly Target _target = target;
     private readonly MemoryRegionEmitter _emitter = emitter;
     private readonly MethodCollector _methods = methods;
     private readonly Dictionary<TargetPointer, string> _names = [];
+    private readonly Stack<TargetPointer> _pendingObjects = [];
     private readonly HashSet<TargetPointer> _visitedObjects = [];
+    private int _remainingInnerExceptions;
 
     public IReadOnlyDictionary<TargetPointer, string> Names => _names;
 
     public void EnumerateObject(TargetPointer objectAddress)
+    {
+        _remainingInnerExceptions = MaxInnerExceptionCount;
+        _pendingObjects.Push(objectAddress);
+        try
+        {
+            while (_pendingObjects.TryPop(out TargetPointer pendingObject))
+                EnumerateObjectCore(pendingObject);
+        }
+        finally
+        {
+            _pendingObjects.Clear();
+        }
+    }
+
+    private void EnumerateObjectCore(TargetPointer objectAddress)
     {
         if (objectAddress == TargetPointer.Null || !_visitedObjects.Add(objectAddress))
         {
@@ -124,12 +142,16 @@ internal sealed class ObjectCollector(
     {
         IException exceptions = _target.Contracts.Exception;
         ExceptionData data = exceptions.GetExceptionData(exceptionObject);
-        EnumerateObject(data.Message);
-        EnumerateObject(data.StackTrace);
-        EnumerateObject(data.WatsonBuckets);
-        EnumerateObject(data.StackTraceString);
-        EnumerateObject(data.RemoteStackTraceString);
-        EnumerateObject(data.InnerException);
+        if (data.InnerException != TargetPointer.Null && _remainingInnerExceptions > 0)
+        {
+            _remainingInnerExceptions--;
+            _pendingObjects.Push(data.InnerException);
+        }
+        _pendingObjects.Push(data.RemoteStackTraceString);
+        _pendingObjects.Push(data.StackTraceString);
+        _pendingObjects.Push(data.WatsonBuckets);
+        _pendingObjects.Push(data.StackTrace);
+        _pendingObjects.Push(data.Message);
 
         foreach (ExceptionStackFrameInfo frame in exceptions.GetExceptionStackFrames(exceptionObject))
             _methods.CaptureMethod(frame.MethodDesc);
