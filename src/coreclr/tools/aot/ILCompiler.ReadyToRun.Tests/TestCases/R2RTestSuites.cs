@@ -214,7 +214,30 @@ public class R2RTestSuites
 
             ReadOnlySpan<byte> instructions = body.Value.Image.AsSpan(
                 body.Value.InstructionOffset, body.Value.InstructionLength);
-            Assert.Contains((byte)0x11, instructions.ToArray());
+
+            AssertContains(
+                instructions,
+                [0x20, 0x01, 0x28, 0x02, 0x00, 0x20, 0x03, 0x2F, 0x01, 0x04,
+                 0x6A, 0x28, 0x02, 0x00, 0x20, 0x03, 0x2F, 0x01, 0x06, 0x6A,
+                 0x28, 0x02, 0x00, 0x21, 0x04],
+                "vtable target portable entrypoint lookup");
+            AssertContains(
+                instructions,
+                [0x20, 0x05, 0x45, 0x04, 0x40, 0x20, 0x03, 0x28, 0x02, 0x08,
+                 0x21, 0x04, 0x20, 0x04, 0x28, 0x02, 0x00, 0x21, 0x05, 0x0B],
+                "fallback through the original import portable entrypoint");
+            AssertContains(
+                instructions,
+                [0x20, 0x00, 0x20, 0x01, 0x20, 0x02, 0x20, 0x04, 0x20, 0x05, 0x11],
+                "forwarded virtual call");
+
+            static void AssertContains(
+                ReadOnlySpan<byte> instructions,
+                ReadOnlySpan<byte> expected,
+                string description)
+            {
+                Assert.True(instructions.IndexOf(expected) >= 0, $"Missing {description} instruction sequence.");
+            }
         }
     }
 

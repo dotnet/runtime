@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Runtime.CompilerServices;
 using Xunit;
 internal interface ITest1
 {
@@ -96,6 +97,9 @@ public class CTest : C, ITest1, ITest2, ITest3, ITest4, IBase1, IDerived1, IDeri
     new public int f8() { GC.Collect(); GC.WaitForPendingFinalizers(); GC.Collect(); if (this.GetHashCode() != _code) return 999; else return 17; }
     override public int f9() { GC.Collect(); GC.WaitForPendingFinalizers(); GC.Collect(); if (this.GetHashCode() != _code) return 999; else return 19; }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int CallF9(C instance) => instance.f9();
+
     [Fact]
     public static int TestEntryPoint()
     {
@@ -174,6 +178,19 @@ public class CTest : C, ITest1, ITest2, ITest3, ITest4, IBase1, IDerived1, IDeri
         C c = new C();
         ITest5 ic = c;
         ITest5 it = t;
+
+        if (CallF9(c) != 18)
+        {
+            Console.WriteLine("CallF9(c)!=18");
+            return 1;
+        }
+
+        if (CallF9(t) != 19)
+        {
+            Console.WriteLine("CallF9(t)!=19");
+            return 1;
+        }
+
         if (c.f8() != 16)
         {
             Console.WriteLine("c.f8()!=16");
@@ -223,7 +240,6 @@ public class CTest : C, ITest1, ITest2, ITest3, ITest4, IBase1, IDerived1, IDeri
         return 100;
     }
 }
-
 
 
 

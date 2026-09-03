@@ -120,7 +120,6 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
         Unreachable = 0x00,
         If = 0x04,
         End = 0x0B,
-        Return = 0x0F,
         Call = 0x10,
         CallIndirect = 0x11,
         LocalGet = 0x20,
@@ -134,8 +133,6 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
         I32Ge_s = 0x4E,
         I32Add = 0x6A,
         I32Sub = 0x6B,
-        I32And = 0x71,
-        I32Shr_u = 0x76,
         I32Load = 0x28,
         I64Load = 0x29,
         F32Load = 0x2A,
@@ -169,8 +166,6 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
             {
                 case WasmExprKind.I32Add:
                 case WasmExprKind.I32Sub:
-                case WasmExprKind.I32And:
-                case WasmExprKind.I32Shr_u:
                 case WasmExprKind.I32Ge_s:
                     return true;
 
@@ -830,8 +825,6 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
 
         public static WasmExpr Add => new WasmBinaryExpr(WasmExprKind.I32Add);
         public static WasmExpr Sub => new WasmBinaryExpr(WasmExprKind.I32Sub);
-        public static WasmExpr And => new WasmBinaryExpr(WasmExprKind.I32And);
-        public static WasmExpr Shr_u => new WasmBinaryExpr(WasmExprKind.I32Shr_u);
         public static WasmExpr Eqz => new WasmUnaryExpr(WasmExprKind.I32Eqz);
         public static WasmExpr Ge_s => new WasmBinaryExpr(WasmExprKind.I32Ge_s);
         public static WasmExpr Load(ulong offset) => new WasmMemoryArgInstruction<WasmEncodableULong>(WasmExprKind.I32Load, 4, new WasmEncodableULong(offset));
@@ -890,7 +883,6 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
         public static WasmExpr Unreachable => new WasmUnaryExpr(WasmExprKind.Unreachable);
         public static WasmExpr Call(ISymbolNode target) => new WasmLEBConstantReloc(WasmExprKind.Call, target, RelocType.WASM_FUNCTION_INDEX_LEB);
         public static WasmExpr CallIndirect(ISymbolNode funcType, uint tableIndex) => new WasmIndirectCallInstruction(WasmExprKind.CallIndirect, funcType, tableIndex);
-        public static WasmExpr Return => new WasmUnaryExpr(WasmExprKind.Return);
     }
     internal static class Table
     {

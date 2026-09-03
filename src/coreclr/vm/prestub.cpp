@@ -3067,13 +3067,8 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(
                 }
                 else
                 {
-#ifdef TARGET_WASM
-                    GCX_COOP_THREAD_EXISTS(CURRENT_THREAD);
-                    pCode = (*protectedObj)->GetMethodTable()->GetRestoredSlot(slot);
-#else
                     pCode = pMgr->GetVTableCallStub(slot);
                     *(TADDR *)pIndirection = pCode;
-#endif // TARGET_WASM
                 }
             }
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH

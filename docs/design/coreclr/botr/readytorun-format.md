@@ -1172,6 +1172,15 @@ portable entrypoint does not yet have an actual code target, the `V` thunk redis
 the original portable entrypoint so the runtime can resolve the receiver and prepare its target
 portable entrypoint for calls from R2R code.
 
+The 12-byte virtual-dispatch portable entrypoint has this layout:
+
+| Offset | Size | Field |
+|---:|---:|---|
+| 0 | 4 | `V` thunk table index |
+| 4 | 2 | Offset from the method table to the vtable indirection |
+| 6 | 2 | Offset from that indirection to the target slot |
+| 8 | 4 | Pointer to the original import portable entrypoint |
+
 **Examples**:
 
 | Method | Signature string (no prefix) |
