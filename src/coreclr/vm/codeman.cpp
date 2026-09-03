@@ -3340,7 +3340,7 @@ void EECodeGenManager::AllocCode(MethodDesc* pMD, size_t hotBlockSize, size_t co
             : &dummyRecordedCodePtr;
 
         *ppCodeHeap = NULL;
-        TADDR pColdCode = NULL;
+        TADDR pColdCode = 0;
         TADDR pCode = (TADDR) AllocCodeWorker(&requestInfo, sizeof(TCodeHeader), hotAllocSize, coldBlockSize, alignment, ppCodeHeap, (void**)&pColdCode);
         _ASSERTE(*ppCodeHeap);
         _ASSERTE(IS_ALIGNED(pCode, alignment));
@@ -3353,7 +3353,7 @@ void EECodeGenManager::AllocCode(MethodDesc* pMD, size_t hotBlockSize, size_t co
 
         if (coldBlockSize > 0)
         {
-            _ASSERTE(pColdCode != NULL);
+            _ASSERTE(pColdCode != 0);
             // AllocCodeWorker returned a pointer to the start of cold *code* (just past the cold header).
             pColdCodeHdr        = ((ColdCodeHeader *)pColdCode) - 1;
             *pAllocatedColdSize = sizeof(ColdCodeHeader) + coldBlockSize;
