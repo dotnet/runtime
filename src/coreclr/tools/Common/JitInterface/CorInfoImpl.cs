@@ -3190,32 +3190,20 @@ namespace Internal.JitInterface
             return merged == type1;
         }
 
+        private static bool IsOrdinaryClass(TypeDesc type)
+        {
+            return !type.IsCanonicalSubtype(CanonicalFormKind.Any) &&
+                type.IsDefType &&
+                !type.IsInterface &&
+                !type.IsDelegate &&
+                !type.IsValueType &&
+                !IsArrayInterfaceDispatchType(type);
+        }
+
         // The caller has already established that the forward cast cannot succeed.
         private static bool IsReverseClassCastImpossible(TypeDesc fromType, TypeDesc toType)
         {
-            if (fromType.IsCanonicalSubtype(CanonicalFormKind.Any) ||
-                toType.IsCanonicalSubtype(CanonicalFormKind.Any) ||
-                !fromType.IsDefType ||
-                !toType.IsDefType ||
-                fromType.IsInterface ||
-                toType.IsInterface ||
-                fromType.IsArray ||
-                toType.IsArray ||
-                fromType.IsDelegate ||
-                toType.IsDelegate ||
-                fromType.IsValueType ||
-                toType.IsValueType ||
-                fromType.HasTypeEquivalence ||
-                toType.HasTypeEquivalence ||
-                fromType.HasVariance ||
-                toType.HasVariance ||
-                IsArrayInterfaceDispatchType(fromType) ||
-                IsArrayInterfaceDispatchType(toType))
-            {
-                return false;
-            }
-
-            return !toType.CanCastTo(fromType);
+            return IsOrdinaryClass(fromType) && IsOrdinaryClass(toType) && !toType.CanCastTo(fromType);
         }
 
         private static bool IsArrayInterfaceDispatchType(TypeDesc type)

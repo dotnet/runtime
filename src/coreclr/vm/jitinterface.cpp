@@ -4258,38 +4258,33 @@ bool CEEInfo::canCast(
 
 static bool isExactTypeHelper(TypeHandle th);
 
-// Returns true if fromType and toType are ordinary classes and the reverse
-// cast from toType to fromType cannot succeed. The caller has already
-// established that the forward cast cannot succeed.
-static bool IsReverseClassCastImpossible(TypeHandle fromType, TypeHandle toType)
+static bool IsOrdinaryClass(TypeHandle type)
 {
     STANDARD_VM_CONTRACT;
 
-    if (fromType.IsCanonicalSubtype() || toType.IsCanonicalSubtype() || fromType.IsTypeDesc() || toType.IsTypeDesc())
+    if (type.IsCanonicalSubtype() || type.IsTypeDesc())
     {
         return false;
     }
 
-    MethodTable* fromTypeMT = fromType.AsMethodTable();
-    MethodTable* toTypeMT   = toType.AsMethodTable();
-
 #ifdef FEATURE_COMINTEROP
-    if (fromType.IsComObjectType() || toType.IsComObjectType())
+    if (type.IsComObjectType())
     {
         return false;
     }
 #endif // FEATURE_COMINTEROP
 
-    if (fromTypeMT->IsInterface() || toTypeMT->IsInterface() || fromTypeMT->IsArray() || toTypeMT->IsArray() ||
-        fromTypeMT->IsDelegate() || toTypeMT->IsDelegate() || fromTypeMT->IsValueType() ||
-        toTypeMT->IsValueType() || fromTypeMT->HasTypeEquivalence() || toTypeMT->HasTypeEquivalence() ||
-        fromTypeMT->HasVariance() || toTypeMT->HasVariance() || (fromTypeMT == g_pSZArrayHelperClass) ||
-        (toTypeMT == g_pSZArrayHelperClass))
-    {
-        return false;
-    }
+    MethodTable* methodTable = type.AsMethodTable();
+    return !methodTable->IsInterface() && !methodTable->IsArray() && !methodTable->IsDelegate() &&
+           !methodTable->IsValueType() && (methodTable != g_pSZArrayHelperClass);
+}
 
-    return !toType.CanCastTo(fromType);
+// The caller has already established that the forward cast cannot succeed.
+static bool IsReverseClassCastImpossible(TypeHandle fromType, TypeHandle toType)
+{
+    STANDARD_VM_CONTRACT;
+
+    return IsOrdinaryClass(fromType) && IsOrdinaryClass(toType) && !toType.CanCastTo(fromType);
 }
 
 /*********************************************************************/
