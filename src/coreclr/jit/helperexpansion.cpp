@@ -2113,7 +2113,7 @@ static int PickCandidatesForTypeCheck(Compiler*              comp,
             castHelper->gtCallMoreFlags |= GTF_CALL_M_CAST_OBJ_NONNULL;
         }
 
-        const TypeCompareState castResult = comp->info.compCompHnd->compareTypesForCast(fromClass, castToCls, true);
+        const TypeCompareState castResult = comp->info.compCompHnd->compareTypesForCast(fromClass, castToCls);
         if (isCastClass && (castResult == TypeCompareState::MustNot))
         {
             // The cast is guaranteed to fail, the expansion logic can skip the type check entirely
@@ -2290,7 +2290,7 @@ static int PickCandidatesForTypeCheck(Compiler*              comp,
         }
 
         // We don't fully trust PGO data, so let's check it via compareTypesForCast
-        const TypeCompareState castResult = comp->info.compCompHnd->compareTypesForCast(candidates[0], castToCls, true);
+        const TypeCompareState castResult = comp->info.compCompHnd->compareTypesForCast(candidates[0], castToCls);
         if (castResult == TypeCompareState::May)
         {
             // TODO-InlineCast: do we need to check for May here? Conservatively assume that we do.

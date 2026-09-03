@@ -2470,7 +2470,7 @@ GenTree* Compiler::impTypeIsAssignable(GenTree* typeTo, GenTree* typeFrom)
     CORINFO_CLASS_HANDLE hClassFrom = NO_CLASS_HANDLE;
     if (gtIsTypeof(typeTo, &hClassTo) && gtIsTypeof(typeFrom, &hClassFrom))
     {
-        TypeCompareState castResult = info.compCompHnd->compareTypesForCast(hClassFrom, hClassTo, true);
+        TypeCompareState castResult = info.compCompHnd->compareTypesForCast(hClassFrom, hClassTo);
         if (castResult == TypeCompareState::May)
         {
             // requires runtime check
@@ -3185,7 +3185,7 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                 {
                     CORINFO_RESOLVED_TOKEN isInstTok;
                     impResolveToken(codeAddr + 1, &isInstTok, CORINFO_TOKENKIND_Casting);
-                    if (info.compCompHnd->compareTypesForCast(pResolvedToken->hClass, isInstTok.hClass, true) ==
+                    if (info.compCompHnd->compareTypesForCast(pResolvedToken->hClass, isInstTok.hClass) ==
                         TypeCompareState::MustNot)
                     {
                         JITDUMP("\n Importing BOX; ISINST; as null\n");
@@ -3256,7 +3256,7 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
 
                             TypeCompareState castResult =
                                 info.compCompHnd->compareTypesForCast(pResolvedToken->hClass,
-                                                                      isInstResolvedToken.hClass, true);
+                                                                      isInstResolvedToken.hClass);
 
                             if (castResult != TypeCompareState::May)
                             {
@@ -3282,7 +3282,7 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                             CORINFO_CLASS_HANDLE underlyingCls = info.compCompHnd->getTypeForBox(nullableCls);
 
                             TypeCompareState castResult =
-                                info.compCompHnd->compareTypesForCast(underlyingCls, isInstResolvedToken.hClass, true);
+                                info.compCompHnd->compareTypesForCast(underlyingCls, isInstResolvedToken.hClass);
 
                             if (castResult == TypeCompareState::Must)
                             {

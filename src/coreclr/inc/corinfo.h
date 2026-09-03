@@ -2823,7 +2823,7 @@ public:
     virtual TypeCompareState compareTypesForCast(
             CORINFO_CLASS_HANDLE        fromClass,
             CORINFO_CLASS_HANDLE        toClass,
-            bool                        fromClassIsExact
+            bool                        fromClassIsExact = true
             ) = 0;
 
     // See if types represented by cls1 and cls2 compare equal, not
