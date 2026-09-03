@@ -208,32 +208,32 @@ namespace System.Net
 #pragma warning restore SYSLIB0058 // Use NegotiatedCipherSuite.
 
         [NonEvent]
-        public void RemoteCertificateError(SslStream SslStream, string message) =>
-            RemoteCertificateError(GetHashCode(SslStream), message);
+        public void RemoteCertificateError(object sender, string message) =>
+            RemoteCertificateError(GetHashCode(sender), message);
 
         [Event(RemoteCertificateErrorId, Level = EventLevel.Verbose)]
         private void RemoteCertificateError(int sslStreamHash, string message) =>
             WriteEvent(RemoteCertificateErrorId, sslStreamHash, message);
 
         [NonEvent]
-        public void RemoteCertDeclaredValid(SslStream SslStream) =>
-            RemoteCertDeclaredValid(GetHashCode(SslStream));
+        public void RemoteCertDeclaredValid(object sender) =>
+            RemoteCertDeclaredValid(GetHashCode(sender));
 
         [Event(RemoteVertificateValidId, Level = EventLevel.Verbose)]
         private void RemoteCertDeclaredValid(int sslStreamHash) =>
             WriteEvent(RemoteVertificateValidId, sslStreamHash);
 
         [NonEvent]
-        public void RemoteCertHasNoErrors(SslStream SslStream) =>
-            RemoteCertHasNoErrors(GetHashCode(SslStream));
+        public void RemoteCertHasNoErrors(object sender) =>
+            RemoteCertHasNoErrors(GetHashCode(sender));
 
         [Event(RemoteCertificateSuccessId, Level = EventLevel.Verbose)]
         private void RemoteCertHasNoErrors(int sslStreamHash) =>
             WriteEvent(RemoteCertificateSuccessId, sslStreamHash);
 
         [NonEvent]
-        public void RemoteCertUserDeclaredInvalid(SslStream SslStream) =>
-            RemoteCertUserDeclaredInvalid(GetHashCode(SslStream));
+        public void RemoteCertUserDeclaredInvalid(object sender) =>
+            RemoteCertUserDeclaredInvalid(GetHashCode(sender));
 
         [Event(RemoteCertificateInvalidId, Level = EventLevel.Verbose)]
         private void RemoteCertUserDeclaredInvalid(int sslStreamHash) =>

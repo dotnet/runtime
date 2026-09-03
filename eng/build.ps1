@@ -361,7 +361,15 @@ foreach ($argument in $PSBoundParameters.Keys)
     "framework"              { $arguments += " /p:BuildTargetFramework=$($PSBoundParameters[$argument].ToLowerInvariant())" }
     "os"                     { $arguments += " /p:TargetOS=$($PSBoundParameters[$argument])" }
     "pack"                   { $arguments += " -pack /p:BuildAllConfigurations=true" }
-    "properties"             { $arguments += " " + $properties }
+    "properties"             {
+      # These arguments are later passed to Invoke-Expression, which re-parses the
+      # string as PowerShell. Wrap any value containing a ';' in quotes so it isn't
+      # interpreted as a statement separator (e.g. '-warnnotaserror NU1901;NU1902;NU1903').
+      $quotedProperties = $properties | ForEach-Object {
+        if ($_ -match ';' -and $_ -notmatch '^["'']') { '"' + $_ + '"' } else { $_ }
+      }
+      $arguments += " " + ($quotedProperties -join ' ')
+    }
     "verbosity"              { $arguments += " -$argument " + $($PSBoundParameters[$argument]) }
     "cmakeargs"              { $arguments += " /p:CMakeArgs=`"$($PSBoundParameters[$argument])`"" }
     # The -ninja switch is a no-op since Ninja is the default generator on Windows.

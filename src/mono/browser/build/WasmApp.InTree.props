@@ -8,7 +8,8 @@
 
     <_WebAssemblyPropsFile Condition="'$(_WebAssemblyPropsFile)' == ''">$(MonoProjectRoot)\nuget\Microsoft.NET.Sdk.WebAssembly.Pack\build\Microsoft.NET.Sdk.WebAssembly.Browser.props</_WebAssemblyPropsFile>
     <_WebAssemblyTargetsFile Condition="'$(_WebAssemblyTargetsFile)' == ''">$(MonoProjectRoot)\nuget\Microsoft.NET.Sdk.WebAssembly.Pack\build\Microsoft.NET.Sdk.WebAssembly.Browser.targets</_WebAssemblyTargetsFile>
-    <_WebAssemblySdkToolsDirectory Condition="'$(_WebAssemblySdkToolsDirectory)' == ''">$(ArtifactsBinDir)\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\$(RuntimeConfiguration)\</_WebAssemblySdkToolsDirectory>
+    <_WebAssemblySdkTasksDirectory Condition="'$(_WebAssemblySdkTasksDirectory)' == '' and '$(MSBuildRuntimeType)' == 'Core'">$(ArtifactsBinDir)\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\$(RuntimeConfiguration)\net\</_WebAssemblySdkTasksDirectory>
+    <_WebAssemblySdkTasksDirectory Condition="'$(_WebAssemblySdkTasksDirectory)' == '' and '$(MSBuildRuntimeType)' != 'Core'">$(ArtifactsBinDir)\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\$(RuntimeConfiguration)\netframework\</_WebAssemblySdkTasksDirectory>
   </PropertyGroup>
 
   <Import Sdk="Microsoft.NET.Sdk.WebAssembly" Project="Sdk.props" Condition="'$(UsingNativeAOT)' != 'true' and '$(UsingMicrosoftNETSdkWebAssembly)' == 'true'" />
@@ -23,6 +24,15 @@
     <UseMonoRuntime>true</UseMonoRuntime>
   </PropertyGroup>
 
+  <!-- In-tree R2R uses the in-build crossgen2. These two hooks must be props-time (property defaults live
+       in the CoreCLR .targets); both are inert unless PublishReadyToRun. See dotnet/runtime#121257. -->
+  <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(TargetOS)' == 'browser'">
+    <AfterMicrosoftNETSdkTargets Condition="'$(Crossgen2SdkOverrideTargetsPath)' != '' and Exists('$(Crossgen2SdkOverrideTargetsPath)')">$(AfterMicrosoftNETSdkTargets);$(Crossgen2SdkOverrideTargetsPath)</AfterMicrosoftNETSdkTargets>
+    <AfterMicrosoftNETSdkTargets>$(AfterMicrosoftNETSdkTargets);$(MSBuildThisFileDirectory)WasmApp.ReadyToRun.targets</AfterMicrosoftNETSdkTargets>
+  </PropertyGroup>
+  <Import Project="$(Crossgen2SdkOverridePropsPath)"
+          Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(TargetOS)' == 'browser' and '$(Crossgen2SdkOverridePropsPath)' != '' and Exists('$(Crossgen2SdkOverridePropsPath)')" />
+
   <PropertyGroup Condition="'$(IsTestProject)' == 'true' or '$(IsOutputTypeLibrary)' == 'true'">
     <OutputType>library</OutputType>
   </PropertyGroup>
@@ -36,7 +46,7 @@
     <Platform>AnyCPU</Platform>
     <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <EMSDK_PATH Condition="'$(EMSDK_PATH)' == '' and '$(MonoProjectRoot)' != ''">$([MSBuild]::NormalizeDirectory($(MonoProjectRoot), 'browser', 'emsdk'))</EMSDK_PATH>
+    <EMSDK_PATH Condition="'$(EMSDK_PATH)' == '' and Exists('$(EmscriptenSdkStampFile)')">$(EmscriptenSdkCacheDir)</EMSDK_PATH>
     <RunAOTCompilation Condition="'$(RunAOTCompilation)' == ''">false</RunAOTCompilation>
     <PublishTrimmed>true</PublishTrimmed>
     <RunAnalyzers>false</RunAnalyzers>

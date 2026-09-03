@@ -47,6 +47,7 @@ namespace System.Buffers
         /// <summary>Gets an ID for the pool to use with events.</summary>
         private int Id => GetHashCode();
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public override T[] Rent(int minimumLength)
         {
             ArrayPoolEventSource log = ArrayPoolEventSource.Log;
@@ -125,6 +126,7 @@ namespace System.Buffers
             return buffer;
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public override void Return(T[] array, bool clearArray = false)
         {
             if (array is null)

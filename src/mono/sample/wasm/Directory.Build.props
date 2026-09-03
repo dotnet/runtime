@@ -52,6 +52,7 @@
        causing WasmApp.Common.props (Mono) to be imported even for CoreCLR builds. -->
   <PropertyGroup>
     <RuntimeFlavor Condition="'$(Nested_RuntimeFlavor)' != ''">$(Nested_RuntimeFlavor)</RuntimeFlavor>
+    <PublishReadyToRun Condition="'$(PublishReadyToRun)' == '' and '$(Nested_PublishReadyToRun)' != ''">$(Nested_PublishReadyToRun)</PublishReadyToRun>
   </PropertyGroup>
 
   <!-- Import late, so properties like $(ArtifactsBinDir) are set -->

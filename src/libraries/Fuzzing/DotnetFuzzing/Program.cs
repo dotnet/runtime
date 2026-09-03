@@ -80,6 +80,9 @@ public static class Program
     {
         if (!string.IsNullOrEmpty(inputFiles))
         {
+            Console.WriteLine($"PID: {Environment.ProcessId}");
+            Console.WriteLine();
+
             string[] files = Directory.Exists(inputFiles)
                 ? Directory.GetFiles(inputFiles)
                 : [inputFiles];
@@ -397,6 +400,8 @@ public static class Program
         {
             script += " -dict=%~dp0dictionary";
         }
+
+        script += " -timeout=60";
 
         // Pass any additional arguments to the fuzzer.
         script += " %*";

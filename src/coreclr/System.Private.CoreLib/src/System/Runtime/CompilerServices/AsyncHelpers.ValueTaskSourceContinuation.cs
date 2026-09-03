@@ -86,6 +86,7 @@ namespace System.Runtime.CompilerServices
                     Resume = &ResumeValueTaskSourceContinuation,
                 };
 
+                [StackTraceHidden]
                 private static Continuation? ResumeValueTaskSourceContinuation(Continuation cont, ref byte result)
                 {
                     var vtsCont = (ValueTaskSourceContinuation)cont;

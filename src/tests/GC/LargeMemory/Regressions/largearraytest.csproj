@@ -1,8 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Needed for GCStressIncompatible -->
-    <RequiresProcessIsolation>true</RequiresProcessIsolation>
-    <GCStressIncompatible>true</GCStressIncompatible>
+    <HasMergedInTests>true</HasMergedInTests>
     <!--
         Test unsupported outside of windows
         On platform other than Windows, this test could get killed by the OOM killer
@@ -13,4 +11,6 @@
   <ItemGroup>
     <Compile Include="largearraytest.cs" />
   </ItemGroup>
+
+  <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
 </Project>

@@ -25,9 +25,7 @@
 #include "ecall.h"
 #include "threadsuspend.h"
 
-#ifdef FEATURE_PERFMAP
 #include "perfmap.h"
-#endif
 
 // target write barriers
 EXTERN_C void JIT_WriteBarrier(Object **dst, Object *ref);
@@ -214,14 +212,14 @@ class ThumbNearJump : public InstructionFormat
                 {
                 case InstructionFormat::k16:
                     if(variationCode == 0xe)
-                        return  (offset >= -2048 && offset <= 2046 && (offset & 0x1) == 0);
+                        return  offset >= -2048 && offset <= 2046 && (offset & 0x1) == 0;
                     else
-                        return (offset >= -256 && offset <= 254 && (offset & 0x1) == 0);
+                        return offset >= -256 && offset <= 254 && (offset & 0x1) == 0;
                 case InstructionFormat::k32:
                     if(variationCode == 0xe)
-                        return  ((offset >= -16777216) && (offset <= 16777214) && ((offset & 0x1) == 0));
+                        return  (offset >= -16777216) && (offset <= 16777214) && ((offset & 0x1) == 0);
                     else
-                        return  ((offset >= -1048576) && (offset <= 1048574) && ((offset & 0x1) == 0));
+                        return  (offset >= -1048576) && (offset <= 1048574) && ((offset & 0x1) == 0);
                 default:
                     _ASSERTE(!"Unknown refsize");
                     return FALSE;
@@ -842,8 +840,10 @@ void ResolveHolder::Initialize(ResolveHolder* pResolveHolderRX,
 
     // ResolveStub._failEntryPoint(r0:MethodToken, r1, r2, r3, r12:IndirectionCellAndFlags)
     // {
-    //     if(--*(this._pCounter) < 0) r12 = r12 | SDF_ResolveBackPatch;
-    //     this._resolveEntryPoint(r0, r1, r2, r3, r12:IndirectionCellAndFlags);
+    //     if (--*(this._pCounter) >= 0)
+    //         return this._resolveEntryPoint(r0, r1, r2, r3, r12:IndirectionCellAndFlags);
+    //     r12 = r12 | SDF_ResolveBackPatch;
+    //     return this._slowEntryPoint(r0, r1, r2, r3, r12:IndirectionCellAndFlags);
     // }
 
     // The following macro relies on this entry point being DWORD-aligned. We've already asserted that the
@@ -879,23 +879,26 @@ void ResolveHolder::Initialize(ResolveHolder* pResolveHolderRX,
     // pop {r4, r5}
     _stub._failEntryPoint[n++] = 0xbc30;
 
-    // bge resolveEntryPoint
-    _stub._failEntryPoint[n++] = 0xda01;
+    // bge resolveEntryPointBranch
+    _stub._failEntryPoint[n++] = 0xda02;
 
     // or r12, r12, SDF_ResolveBackPatch
     _ASSERTE(SDF_ResolveBackPatch < 256);
     _stub._failEntryPoint[n++] = 0xf04c;
     _stub._failEntryPoint[n++] = 0x0c00 | SDF_ResolveBackPatch;
 
-    // resolveEntryPoint:
+    // b _slowEntryPoint
+    offset = (WORD)(offsetof(ResolveStub, _slowEntryPoint) - (offsetof(ResolveStub, _failEntryPoint) + sizeof(*ResolveStub::_failEntryPoint) * (n + 2)));
+    _ASSERTE((offset & 1) == 0);
+    offset = (offset >> 1) & 0x07ff;
+    _stub._failEntryPoint[n++] = 0xe000 | offset;
+
+    // resolveEntryPointBranch:
     // b _resolveEntryPoint
     offset = (WORD)(offsetof(ResolveStub, _resolveEntryPoint) - (offsetof(ResolveStub, _failEntryPoint) + sizeof(*ResolveStub::_failEntryPoint) * (n + 2)));
     _ASSERTE((offset & 1) == 0);
     offset = (offset >> 1) & 0x07ff;
     _stub._failEntryPoint[n++] = 0xe000 | offset;
-
-    // nop for alignment
-    _stub._failEntryPoint[n++] = 0xbf00;
 
     _ASSERTE(n == ResolveStub::failEntryPointLen);
 
@@ -1239,7 +1242,7 @@ void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFl
     // Finally, syncup the regdisplay with the context
     SyncRegDisplayToCurrentContext(pRD);
 
-    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TransitionFrame::UpdateRegDisplay_Impl(rip:%p, rsp:%p)\n", pRD->ControlPC, pRD->SP));
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TransitionFrame::UpdateRegDisplay_Impl(rip:%p, rsp:%p)\n", (void*)(size_t)pRD->ControlPC, (void*)(size_t)pRD->SP));
 }
 
 #ifdef FEATURE_INTERPRETER
@@ -1301,7 +1304,7 @@ void FaultingExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
 
 void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
@@ -1314,7 +1317,7 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
         MODE_ANY;
         SUPPORTS_DAC;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     // @TODO: Remove this after the debugger is fixed to avoid stack-walks from bad places
     // @TODO: This may be still needed for sampling profilers
@@ -1351,8 +1354,6 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
     // in sync with definition of REG_SAVED_LOCALLOC_SP in the JIT.
     pRD->pCurrentContext->R9 = (DWORD) dac_cast<TADDR>(m_pSPAfterProlog);
     pRD->pCurrentContextPointers->R9 = (DWORD *)&m_pSPAfterProlog;
-
-    RETURN;
 }
 
 #ifdef FEATURE_HIJACK
@@ -1364,14 +1365,14 @@ TADDR ResumableFrame::GetReturnAddressPtr_Impl(void)
 
 void ResumableFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
         SUPPORTS_DAC;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     CopyMemory(pRD->pCurrentContext, m_Regs, sizeof(T_CONTEXT));
 
@@ -1494,13 +1495,9 @@ void MovRegImm(BYTE* p, int reg, TADDR imm)
     size_t rxOffset = pStartRX - pStart; \
     BYTE * p = pStart;
 
-#ifdef FEATURE_PERFMAP
 #define BEGIN_DYNAMIC_HELPER_EMIT(size) \
     BEGIN_DYNAMIC_HELPER_EMIT_WORKER(size) \
     PerfMap::LogStubs(__FUNCTION__, "DynamicHelper", (PCODE)p, size, PerfMapStubType::Individual);
-#else
-#define BEGIN_DYNAMIC_HELPER_EMIT(size) BEGIN_DYNAMIC_HELPER_EMIT_WORKER(size)
-#endif
 
 
 #define END_DYNAMIC_HELPER_EMIT() \

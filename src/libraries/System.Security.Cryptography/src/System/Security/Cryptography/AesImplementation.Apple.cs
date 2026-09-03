@@ -7,6 +7,12 @@ namespace System.Security.Cryptography
 {
     internal sealed partial class AesImplementation
     {
+        private static readonly bool s_hasCryptoKitKeyWrap =
+            OperatingSystem.IsMacOS() ||
+            OperatingSystem.IsIOSVersionAtLeast(15) ||
+            OperatingSystem.IsTvOSVersionAtLeast(15) ||
+            OperatingSystem.IsMacCatalystVersionAtLeast(15);
+
         private static UniversalCryptoTransform CreateTransformCore(
             CipherMode cipherMode,
             PaddingMode paddingMode,
@@ -48,6 +54,69 @@ namespace System.Security.Cryptography
                 encrypting,
                 feedbackSizeInBytes,
                 paddingSize);
+        }
+
+        protected override void EncryptKeyWrapCore(ReadOnlySpan<byte> source, Span<byte> destination)
+        {
+            if (!s_hasCryptoKitKeyWrap)
+            {
+                base.EncryptKeyWrapCore(source, destination);
+                return;
+            }
+
+            FixedMemoryKeyBox keyBox = GetKey();
+            bool addedRef = false;
+
+            try
+            {
+                keyBox.DangerousAddRef(ref addedRef);
+                int written = Interop.AppleCrypto.AesKeyWrapEncrypt(keyBox.DangerousKeySpan, source, destination);
+
+                if (written != destination.Length)
+                {
+                    Debug.Fail($"CryptoKit wrote {written} bytes; expected {destination.Length}.");
+                    throw new CryptographicException();
+                }
+            }
+            finally
+            {
+                if (addedRef)
+                {
+                    keyBox.DangerousRelease();
+                }
+            }
+        }
+
+        protected override int DecryptKeyWrapCore(ReadOnlySpan<byte> source, Span<byte> destination)
+        {
+            if (!s_hasCryptoKitKeyWrap)
+            {
+                return base.DecryptKeyWrapCore(source, destination);
+            }
+
+            FixedMemoryKeyBox keyBox = GetKey();
+            bool addedRef = false;
+
+            try
+            {
+                keyBox.DangerousAddRef(ref addedRef);
+                int written = Interop.AppleCrypto.AesKeyWrapDecrypt(keyBox.DangerousKeySpan, source, destination);
+
+                if (written != destination.Length)
+                {
+                    Debug.Fail($"CryptoKit wrote {written} bytes; expected {destination.Length}.");
+                    throw new CryptographicException();
+                }
+
+                return written;
+            }
+            finally
+            {
+                if (addedRef)
+                {
+                    keyBox.DangerousRelease();
+                }
+            }
         }
 
         protected override void EncryptKeyWrapPaddedCore(ReadOnlySpan<byte> source, Span<byte> destination)

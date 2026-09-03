@@ -67,6 +67,7 @@ namespace JSImportGenerator.Unit.Tests
                             unsafe partial class Basic
                             {
                                 [global::System.Diagnostics.DebuggerNonUserCode]
+                                [global::System.Runtime.Versioning.SupportedOSPlatform("browser")]
                                 internal static partial void Annotated(object a1, long a2, long a3, global::System.Action a4, global::System.Func<int> a5, global::System.Span<byte> a6, global::System.ArraySegment<byte> a7, global::System.Threading.Tasks.Task<object> a8, object[] a9, global::System.DateTime a10, global::System.DateTimeOffset a11, global::System.Threading.Tasks.Task<global::System.DateTime> a12, global::System.Threading.Tasks.Task<global::System.DateTimeOffset> a13, global::System.Threading.Tasks.Task<long> a14, global::System.Threading.Tasks.Task<long> a15, global::System.ArraySegment<float> a16)
                                 {
                                     if (__signature_Annotated_2034238666 == null)
@@ -291,6 +292,7 @@ namespace JSImportGenerator.Unit.Tests
                             unsafe partial class Basic
                             {
                                 [global::System.Diagnostics.DebuggerNonUserCode]
+                                [global::System.Runtime.Versioning.SupportedOSPlatform("browser")]
                                 public static partial global::System.Threading.Tasks.Task<int> Import1()
                                 {
                                     if (__signature_Import1_622134597 == null)

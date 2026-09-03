@@ -20,12 +20,18 @@
     <!-- Ensure TargetsBrowser is set so native.wasm.targets populates exported functions/methods -->
     <TargetsBrowser Condition="'$(TargetsBrowser)' == '' and '$(IsBrowserWasmProject)' == 'true'">true</TargetsBrowser>
 
+    <!-- This file is only imported when UseMonoRuntime is 'false' (see Sdk.targets), so RuntimeFlavor
+         is CoreCLR here even though app builds (unlike the runtime repo build) never set it themselves.
+         native.wasm.targets uses RuntimeFlavor to gate the CoreCLR-only relink registry. -->
+    <RuntimeFlavor Condition="'$(RuntimeFlavor)' == ''">CoreCLR</RuntimeFlavor>
+
     <!-- EH and SIMD are always enabled for CoreCLR — detect user overrides before forcing true -->
     <_CoreCLRInvalidEH Condition="'$(WasmEnableExceptionHandling)' != '' and '$(WasmEnableExceptionHandling)' != 'true'">true</_CoreCLRInvalidEH>
     <_CoreCLRInvalidSIMD Condition="'$(WasmEnableSIMD)' != '' and '$(WasmEnableSIMD)' != 'true'">true</_CoreCLRInvalidSIMD>
     <WasmEnableExceptionHandling>true</WasmEnableExceptionHandling>
     <WasmEnableSIMD>true</WasmEnableSIMD>
     <WasmClang>emcc</WasmClang>
+    <WasmWarnOnUnresolvedPInvokeModules Condition="'$(WasmWarnOnUnresolvedPInvokeModules)' == ''">true</WasmWarnOnUnresolvedPInvokeModules>
 
     <_WasmDefaultFlags>-fwasm-exceptions -sWASM_LEGACY_EXCEPTIONS=0 -msimd128</_WasmDefaultFlags>
 
@@ -58,6 +64,15 @@
     <_ExeExt Condition="$([MSBuild]::IsOSPlatform('windows'))">.exe</_ExeExt>
   </PropertyGroup>
 
+  <!-- EmccInitialHeapSize is the documented browser property (src/mono/browser/README.md) and
+       EmccTotalMemory is its legacy alias; the Mono path collapses both into WasmInitialHeapSize
+       (BrowserWasmApp.targets). Do the same here at evaluation time so the relink registry in
+       native.wasm.targets compares the effective value and the emcc link below uses it. -->
+  <PropertyGroup Condition="'$(IsBrowserWasmProject)' == 'true'">
+    <EmccInitialHeapSize Condition="'$(EmccInitialHeapSize)' == ''">$(EmccTotalMemory)</EmccInitialHeapSize>
+    <WasmInitialHeapSize Condition="'$(WasmInitialHeapSize)' == ''">$(EmccInitialHeapSize)</WasmInitialHeapSize>
+  </PropertyGroup>
+
   <!-- Diagnostics: transform Mono-style WasmPerformanceInstrumentation property into CoreCLR env vars.
        Input format: "all,interval=0" or "N:Namespace" or "all" (Mono convention)
        Output: DOTNET_WasmPerformanceInstrumentation=<MethodSet filter> ('all' mapped to '*')
@@ -75,13 +90,6 @@
     <WasmEnvironmentVariable Condition="'$(_WasmPerfInstInterval)' != ''" Include="DOTNET_EventPipeThreadSamplingRate" Value="$(_WasmPerfInstInterval)" />
   </ItemGroup>
 
-  <!-- Import shared native.wasm.targets for Emscripten SDK, ICU, exported functions/methods -->
-  <Import Project="$(RepositoryEngineeringDir)native.wasm.targets" />
-
-  <!-- Derive Emscripten paths from EMSDK_PATH when workload paths are not set -->
-  <Import Project="$(MSBuildThisFileDirectory)EmSdkRepo.Defaults.props"
-          Condition="'$(EMSDK_PATH)' != '' and '$(EmscriptenSdkToolsPath)' == ''" />
-
   <!-- Task declarations: Both tasks live in WasmAppBuilder.dll -->
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.EmccCompile"
              AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)"
@@ -92,6 +100,73 @@
              TaskFactory="TaskHostFactory"
              Condition="'$(WasmAppBuilderTasksAssemblyPath)' != ''" />
 
+  <!-- Fallback exported runtime methods and functions for the emcc link step.
+       Used when the workload path is active and native.wasm.targets is not available.
+       TODO-WASM https://github.com/dotnet/runtime/issues/126100#issuecomment-4925516500: Keep this list in sync with eng/native.wasm.targets.
+       When building in-tree, native.wasm.targets is imported AFTER this target (below)
+       and its GenerateEmccExports definition wins (MSBuild last-definition-wins). -->
+  <Target Name="GenerateEmccExports"
+          Condition="'$(TargetsBrowser)' == 'true'">
+    <ItemGroup>
+      <EmccExportedRuntimeMethod Include="FS" />
+      <EmccExportedRuntimeMethod Include="HEAP8" />
+      <EmccExportedRuntimeMethod Include="HEAP16" />
+      <EmccExportedRuntimeMethod Include="HEAPU8" />
+      <EmccExportedRuntimeMethod Include="HEAPU16" />
+      <EmccExportedRuntimeMethod Include="HEAP32" />
+      <EmccExportedRuntimeMethod Include="HEAPU32" />
+      <EmccExportedRuntimeMethod Include="HEAPF32" />
+      <EmccExportedRuntimeMethod Include="HEAPF64" />
+      <EmccExportedRuntimeMethod Include="HEAP64" />
+      <EmccExportedRuntimeMethod Include="HEAPU64" />
+      <EmccExportedRuntimeMethod Include="out" />
+      <EmccExportedRuntimeMethod Include="err" />
+      <EmccExportedRuntimeMethod Include="ccall" />
+      <EmccExportedRuntimeMethod Include="cwrap" />
+      <EmccExportedRuntimeMethod Include="setValue" />
+      <EmccExportedRuntimeMethod Include="getValue" />
+      <EmccExportedRuntimeMethod Include="UTF8ToString" />
+      <EmccExportedRuntimeMethod Include="UTF8ArrayToString" />
+      <EmccExportedRuntimeMethod Include="lengthBytesUTF8" />
+      <EmccExportedRuntimeMethod Include="stringToUTF8Array" />
+      <EmccExportedRuntimeMethod Include="safeSetTimeout" />
+      <EmccExportedRuntimeMethod Include="runtimeKeepalivePush" />
+      <EmccExportedRuntimeMethod Include="runtimeKeepalivePop" />
+      <EmccExportedRuntimeMethod Include="abort" />
+
+      <EmccExportedFunction Include="_free" />
+      <EmccExportedFunction Include="_htons" />
+      <EmccExportedFunction Include="_malloc" />
+      <EmccExportedFunction Include="_sbrk" />
+      <EmccExportedFunction Include="_memalign" />
+      <EmccExportedFunction Include="_posix_memalign" />
+      <EmccExportedFunction Include="_memset" />
+      <EmccExportedFunction Include="_ntohs" />
+      <EmccExportedFunction Include="stackAlloc" />
+      <EmccExportedFunction Include="stackRestore" />
+      <EmccExportedFunction Include="stackSave" />
+      <EmccExportedFunction Include="___stack_pointer" />
+      <EmccExportedFunction Include="___coreclr_wasm_rtlrestorecontext_tag" />
+      <EmccExportedFunction Include="___async_continuation" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Import shared native.wasm.targets for Emscripten SDK, ICU, exported functions/methods.
+       Only available in-tree (RepositoryEngineeringDir is set by the build system).
+       When present its GenerateEmccExports target overrides the fallback above
+       (MSBuild last-definition-wins), so the in-tree list is always authoritative. -->
+  <Import Project="$(RepositoryEngineeringDir)native.wasm.targets"
+          Condition="'$(RepositoryEngineeringDir)' != '' and Exists('$(RepositoryEngineeringDir)native.wasm.targets')" />
+
+  <!-- Import the static runtime-pack settings and relink registry. -->
+  <Import Project="$(MSBuildThisFileDirectory)native.wasm.targets"
+          Condition="Exists('$(MSBuildThisFileDirectory)native.wasm.targets')" />
+
+  <!-- Derive Emscripten paths from EMSDK_PATH when workload paths are not set. Must come after
+       native.wasm.targets, which imports AcquireEmscriptenSdk.targets that sets EMSDK_PATH in-tree. -->
+  <Import Project="$(MSBuildThisFileDirectory)EmSdkRepo.Defaults.props"
+          Condition="'$(EMSDK_PATH)' != '' and '$(EmscriptenSdkToolsPath)' == ''" />
+
   <!-- Allow running/debugging from VS -->
   <ItemGroup>
     <ProjectCapability Include="DotNetCoreWeb"/>
@@ -99,16 +174,37 @@
 
   <!-- ======================== Entry Points ======================== -->
 
-  <!-- Auto-enable native relink based on project configuration. Mirrors a subset of
-       the Mono path's _SetWasmBuildNativeDefaults (WasmApp.Common.targets). -->
+  <!-- Auto-enable native relink based on project configuration. Mirrors the semantics of
+       the Mono path's _SetWasmBuildNativeDefaults (WasmApp.Common.targets): a property whose
+       value differs from what was baked into the runtime pack forces a relink, and an
+       explicit WasmBuildNative=false in that situation is an error rather than a silent
+       mismatch between the app's configuration and the prebuilt dotnet.native.wasm. -->
   <Target Name="_CoreCLRSetWasmBuildNativeDefaults"
           Condition="'$(IsBrowserWasmProject)' == 'true' and '$(IsCrossTargetingBuild)' != 'true'">
+    <!-- A property counts as changed only when the project set it to something other than the
+         value baked into the runtime pack. Comparison is MSBuild's, which is case-insensitive,
+         so 'True' and 'true' do not produce a spurious mismatch. -->
+    <ItemGroup>
+      <_CoreCLRChangedPropertyThatTriggersRelinking
+          Include="%(_CoreCLRPropertyThatTriggersRelinking.Identity)"
+          Condition="'$(%(_CoreCLRPropertyThatTriggersRelinking.Identity))' != '' and
+                     '$(%(_CoreCLRPropertyThatTriggersRelinking.Identity))' != '%(_CoreCLRPropertyThatTriggersRelinking.RuntimePackValue)'" />
+    </ItemGroup>
+
     <PropertyGroup>
+      <_CoreCLRWasmBuildNativeRequired Condition="@(_CoreCLRChangedPropertyThatTriggersRelinking->Count()) &gt; 0">true</_CoreCLRWasmBuildNativeRequired>
+    </PropertyGroup>
+
+    <Error Condition="'$(WasmBuildNative)' == 'false' and '$(_CoreCLRWasmBuildNativeRequired)' == 'true'"
+           Text="WasmBuildNative is required because %(_CoreCLRChangedPropertyThatTriggersRelinking.Identity)=$(%(_CoreCLRChangedPropertyThatTriggersRelinking.Identity)) differs from the runtime pack value, but WasmBuildNative is already set to 'false'." />
+
+    <PropertyGroup>
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(_CoreCLRWasmBuildNativeRequired)' == 'true'">true</WasmBuildNative>
+
       <!-- A project that references native files needs a relink to embed them.
            NativeLibrary items are converted to NativeFileReference items later in the
            flow (in _CoreCLRPrepareForNativeBuild) so we have to inspect both here. -->
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and (@(NativeFileReference->Count()) &gt; 0 or @(NativeLibrary->Count()) &gt; 0)">true</WasmBuildNative>
-      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(EnableDiagnostics)' == 'true'">true</WasmBuildNative>
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(WasmPerformanceInstrumentation)' != ''">true</WasmBuildNative>
     </PropertyGroup>
 
@@ -177,7 +273,7 @@
        served binary would be the original (runtime pack) dotnet.native.wasm. -->
   <Target Name="_CoreCLRWasmNativeForBuild"
           DependsOnTargets="WasmBuildApp"
-          BeforeTargets="_ResolveWasmOutputs"
+          BeforeTargets="_ComputeWasmBuildCandidates;_ResolveWasmOutputs"
           Condition="'$(IsBrowserWasmProject)' == 'true' and
                      '$(WasmBuildingForNestedPublish)' != 'true' and
                      '$(WasmBuildOnlyAfterPublish)' != 'true' and
@@ -232,7 +328,7 @@
     _GatherWasmFilesToBuild (unlike _ComputeWasmBuildCandidates) does not pull it in on its own.
   -->
   <Target Name="_CoreCLRResolveRuntimePackVsAppLocalConflicts"
-          BeforeTargets="_ComputeWasmBuildCandidates;_GatherWasmFilesToBuild"
+          BeforeTargets="_ComputeWasmBuildCandidates;_GatherWasmFilesToBuild;_CoreCLRGatherWasmFiles"
           DependsOnTargets="ResolveReferences"
           Condition="'$(IsBrowserWasmProject)' == 'true'">
     <PropertyGroup>
@@ -318,7 +414,7 @@
     <_CoreCLRWasmBuildAppCoreDependsOn>
       _CoreCLRWasmInitialize;
       _CoreCLRSetupEmscripten;
-      _GatherWasmFilesToBuild;
+      _CoreCLRGatherWasmFiles;
       _CoreCLRPrepareForNativeBuild;
       _CoreCLRGenerateManagedToNative;
       _CoreCLRWriteCompileRsp;
@@ -333,6 +429,16 @@
   <Target Name="_CoreCLRWasmBuildAppCore"
           Condition="'$(WasmBuildNative)' == 'true'"
           DependsOnTargets="$(_CoreCLRWasmBuildAppCoreDependsOn)" />
+
+  <!-- During a nested publish, _GatherWasmFilesToPublish already populated
+       WasmAssembliesToBundle from ResolvedFileToPublish (which includes app
+       satellite assemblies). Calling _GatherWasmFilesToBuild would overwrite
+       that list with build-time items (IntermediateAssembly + ReferenceCopyLocalPaths)
+       which omit app satellites, causing ComputeWasmPublishAssets to fail.
+       Only call the SDK's _GatherWasmFilesToBuild for non-publish builds. -->
+  <Target Name="_CoreCLRGatherWasmFiles"
+          DependsOnTargets="_GatherWasmFilesToBuild"
+          Condition="'$(WasmBuildingForNestedPublish)' != 'true'" />
 
   <!-- ======================== Initialize ======================== -->
 
@@ -427,6 +533,9 @@
       <EmscriptenEnvVars Include="EMSDK_PYTHON=$(EmscriptenPythonToolsPath)python.exe" Condition="'$(OS)' == 'Windows_NT'" />
       <EmscriptenEnvVars Include="PYTHONPATH=$(EmscriptenPythonToolsPath)" Condition="'$(OS)' == 'Windows_NT'" />
       <EmscriptenEnvVars Include="PYTHONHOME=" Condition="'$(OS)' == 'Windows_NT'" />
+      <EmscriptenEnvVars Include="EM_CACHE=$(WasmCachePath)" Condition="'$(WasmCachePath)' != ''" />
+      <EmscriptenEnvVars Include="EM_FROZEN_CACHE=1" Condition="'$(WasmCachePath)' == '$(EmscriptenCacheSdkCacheDir)'" />
+      <EmscriptenEnvVars Include="EM_FROZEN_CACHE=0" Condition="'$(WasmCachePath)' != '' and '$(WasmCachePath)' != '$(EmscriptenCacheSdkCacheDir)'" />
     </ItemGroup>
   </Target>
 
@@ -443,7 +552,12 @@
       <EmccLinkOptimizationFlag Condition="'$(EmccLinkOptimizationFlag)' == '' and '$(Configuration)' == 'Release'">-O3</EmccLinkOptimizationFlag>
       <EmccLinkOptimizationFlag Condition="'$(EmccLinkOptimizationFlag)' == ''">$(EmccCompileOptimizationFlag)</EmccLinkOptimizationFlag>
 
-      <!-- Memory settings matching browserhost/CMakeLists.txt -->
+      <!-- Memory settings. Default to the values the runtime pack was linked with so a relink
+           that does not override them reproduces the prebuilt dotnet.native.wasm exactly. The
+           literals are only a fallback for when native.wasm.targets is not available. -->
+      <WasmInitialHeapSize Condition="'$(WasmInitialHeapSize)' == ''">$(BrowserHostInitialHeapSize)</WasmInitialHeapSize>
+      <EmccMaximumHeapSize Condition="'$(EmccMaximumHeapSize)' == ''">$(BrowserHostMaximumHeapSize)</EmccMaximumHeapSize>
+      <EmccStackSize Condition="'$(EmccStackSize)' == ''">$(BrowserHostStackSize)</EmccStackSize>
       <WasmInitialHeapSize Condition="'$(WasmInitialHeapSize)' == ''">33554432</WasmInitialHeapSize>
       <EmccMaximumHeapSize Condition="'$(EmccMaximumHeapSize)' == ''">2147483648</EmccMaximumHeapSize>
       <EmccStackSize Condition="'$(EmccStackSize)' == ''">2MB</EmccStackSize>
@@ -488,16 +602,15 @@
          C++-style decls that wouldn't compile in C).
          _MinipalIncludeDir points at the dir containing utils.h/entrypoints.h
          directly; _VmWasmIncludeDir points at the dir containing callhelpers.hpp.
-         Both can be overridden via env vars (HelixPreCommand on Helix,
-         RunScriptCommands locally) so the dirs resolve outside the in-repo
-         source tree; otherwise they fall back to the in-repo paths for full
-         repo builds. -->
+         Both resolve from the restored runtime pack (native/include) for workload
+         builds, and fall back to the in-repo source tree for full repo builds. -->
     <PropertyGroup>
-      <!-- WASM-TODO https://github.com/dotnet/runtime/issues/128362 -->
-      <_MinipalIncludeDir Condition="'$(MINIPAL_INCLUDE_DIR)' != ''">$([MSBuild]::EnsureTrailingSlash($([System.IO.Path]::GetFullPath('$(MINIPAL_INCLUDE_DIR)'))))</_MinipalIncludeDir>
+      <!-- Restored SDK: headers ship in the runtime pack under native/include/minipal. -->
+      <_MinipalIncludeDir Condition="'$(_MinipalIncludeDir)' == '' and Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)include\minipal\utils.h')">$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)', 'include', 'minipal'))</_MinipalIncludeDir>
       <_MinipalIncludeDir Condition="'$(_MinipalIncludeDir)' == ''">$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)..', '..', '..', 'native', 'minipal'))</_MinipalIncludeDir>
       <_MinipalIncludeRoot>$([MSBuild]::NormalizeDirectory('$(_MinipalIncludeDir)', '..'))</_MinipalIncludeRoot>
-      <_VmWasmIncludeDir Condition="'$(CORECLR_VM_WASM_INCLUDE_DIR)' != ''">$([MSBuild]::EnsureTrailingSlash($([System.IO.Path]::GetFullPath('$(CORECLR_VM_WASM_INCLUDE_DIR)'))))</_VmWasmIncludeDir>
+      <!-- Restored SDK: callhelpers.hpp ships in the runtime pack under native/include. -->
+      <_VmWasmIncludeDir Condition="'$(_VmWasmIncludeDir)' == '' and Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)include\callhelpers.hpp')">$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)', 'include'))</_VmWasmIncludeDir>
       <_VmWasmIncludeDir Condition="'$(_VmWasmIncludeDir)' == ''">$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)..', '..', '..', 'coreclr', 'vm', 'wasm'))</_VmWasmIncludeDir>
     </PropertyGroup>
     <ItemGroup>
@@ -551,6 +664,15 @@
       <_WasmManagedAssemblies Include="@(WasmAssembliesToBundle->Distinct())" />
     </ItemGroup>
 
+    <!-- With R2R the published .dll are webcil-in-wasm images MetadataLoadContext can't parse; scan the
+         trimmed IL (same closure crossgen used) instead. Gated on the linker dir only, because the nested
+         WasmNestedPublishApp build where this runs doesn't carry PublishReadyToRun. -->
+    <ItemGroup Condition="'$(IntermediateLinkDir)' != ''">
+      <_WasmManagedAssembliesR2RRemap Include="@(_WasmManagedAssemblies)" Condition="Exists('$(IntermediateLinkDir)%(FileName)%(Extension)')" />
+      <_WasmManagedAssemblies Remove="@(_WasmManagedAssembliesR2RRemap)" />
+      <_WasmManagedAssemblies Include="@(_WasmManagedAssembliesR2RRemap->'$(IntermediateLinkDir)%(FileName)%(Extension)')" />
+    </ItemGroup>
+
     <!-- Locate System.Private.CoreLib in runtime pack if not already bundled -->
     <PropertyGroup>
       <_HasCoreLib Condition="'%(_WasmManagedAssemblies.FileName)%(_WasmManagedAssemblies.Extension)' == 'System.Private.CoreLib.dll'">true</_HasCoreLib>
@@ -575,6 +697,7 @@
       InterpToNativeOutputPath="$(_WasmInterpToNativeTablePath)"
       CacheFilePath="$(_WasmM2NCachePath)"
       TargetOS="browser"
+      WarnOnUnresolvedPInvokeModules="$(WasmWarnOnUnresolvedPInvokeModules)"
       IsLibraryMode="$(_IsLibraryMode)">
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </ManagedToNativeGenerator>
@@ -708,6 +831,7 @@
       <_EmccLinkStepArgs Include="-s INITIAL_MEMORY=$(WasmInitialHeapSize)" />
       <_EmccLinkStepArgs Include="-s MAXIMUM_MEMORY=$(EmccMaximumHeapSize)" />
       <_EmccLinkStepArgs Include="-s ALLOW_MEMORY_GROWTH=1" />
+      <_EmccLinkStepArgs Include="-s GROWABLE_ARRAYBUFFERS=0" />
       <_EmccLinkStepArgs Include="-s STACK_SIZE=$(EmccStackSize)" />
       <_EmccLinkStepArgs Include="-s WASM_BIGINT=1" />
 

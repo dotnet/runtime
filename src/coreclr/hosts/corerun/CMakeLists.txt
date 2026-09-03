@@ -13,9 +13,21 @@ endif()
 # Required to expose symbols for global symbol discovery.
 set(CLR_CMAKE_KEEP_NATIVE_SYMBOLS TRUE)
 
-add_executable_clr(corerun
+if (CLR_CMAKE_HOST_APPLE)
+    # Prevent exporting symbols except for GetCurrentClrDetails from corerun. This is necessary
+    # to avoid a problem with local typeinfo for standard C++ EH types like std::bad_alloc,
+    # std::out_of_range etc. being exposed for binding for external shared libraries and causing
+    # mismatch in catch type matching.
+    add_link_options(LINKER:-exported_symbol,_GetCurrentClrDetails)
+endif()
+
+set(CORERUN_SOURCES
   corerun.cpp
   dotenv.cpp
+)
+
+add_executable_clr(corerun
+  ${CORERUN_SOURCES}
   native.rc
 )
 
@@ -50,6 +62,11 @@ else()
     endif()
     # Static linking
     if (CLR_CMAKE_TARGET_ARCH_WASM)
+        # target_sources() is what compiles the file into corerun. The list(APPEND)
+        # cannot do that -- the target was already created from CORERUN_SOURCES above --
+        # it only updates the variable that corerun_kit_export() passes to SOURCES below,
+        # so a per-test relink rebuilds the host from the same set of sources.
+        list(APPEND CORERUN_SOURCES ./wasm/pinvoke_override.cpp)
         target_sources(corerun PRIVATE ./wasm/pinvoke_override.cpp)
         target_include_directories(corerun PRIVATE ./wasm/)
         target_link_libraries(corerun PRIVATE
@@ -67,6 +84,7 @@ else()
 
         # linker options for NodeJs, link in JavaScript helper, access to local filesystem
         if (CLR_CMAKE_TARGET_BROWSER)
+            include(./wasm/testkit.cmake)
             target_link_libraries(corerun PRIVATE
                 System.Native.Browser-Static)
             set(JS_SYSTEM_NATIVE_BROWSER
@@ -82,27 +100,28 @@ else()
                 LINK_FLAGS "--js-library ${JS_SYSTEM_NATIVE_BROWSER} --js-library ${JS_SYSTEM_BROWSER_UTILS} --js-library ${JS_CORE_RUN} --extern-post-js ${JS_CORE_RUN_EXTPOST}"
                 RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
             if (CORERUN_IN_BROWSER)
-                target_link_options(corerun PRIVATE -sWASM_BIGINT=1)
+                list(APPEND CORERUN_BROWSER_LINK_OPTIONS -sWASM_BIGINT=1)
                 # Include the virtual file system data for the browser scenario.
                 set(WASM_PRELOAD_DIR "${CMAKE_INSTALL_PREFIX}/IL")
                 if (EXISTS "${WASM_PRELOAD_DIR}")
-                    target_link_options(corerun PRIVATE --preload-file ${WASM_PRELOAD_DIR}@/)
+                    list(APPEND CORERUN_BROWSER_LINK_OPTIONS --preload-file ${WASM_PRELOAD_DIR}@/)
                 endif()
             else()
                 # Node.js doesn't have good support for WASM_BIGINT, so disable it for the Node/shell.
-                target_link_options(corerun PRIVATE -sWASM_BIGINT=0)
+                list(APPEND CORERUN_BROWSER_LINK_OPTIONS -sWASM_BIGINT=0)
 
                 # remove HEAP64 and HEAPU64 from CMAKE_EMCC_EXPORTED_RUNTIME_METHODS
                 string(REPLACE "HEAP64," "" CMAKE_EMCC_EXPORTED_RUNTIME_METHODS "${CMAKE_EMCC_EXPORTED_RUNTIME_METHODS}")
                 string(REPLACE "HEAPU64," "" CMAKE_EMCC_EXPORTED_RUNTIME_METHODS "${CMAKE_EMCC_EXPORTED_RUNTIME_METHODS}")
 
                 # Add Node.js host file system support.
-                target_link_options(corerun PRIVATE -sNODERAWFS=1 -lnodefs.js)
+                list(APPEND CORERUN_BROWSER_LINK_OPTIONS -sNODERAWFS=1 -lnodefs.js)
             endif()
-            target_link_options(corerun PRIVATE
+            list(APPEND CORERUN_BROWSER_LINK_OPTIONS
                 -sINITIAL_MEMORY=134217728
                 -sMAXIMUM_MEMORY=4294967296
                 -sALLOW_MEMORY_GROWTH=1
+                -sGROWABLE_ARRAYBUFFERS=0
                 -sALLOW_TABLE_GROWTH=1
                 -sSTACK_SIZE=5MB
                 -sMODULARIZE=1
@@ -114,6 +133,16 @@ else()
                 -sENVIRONMENT=node,shell,web
                 -lexports.js
                 -Wl,--error-limit=0)
+            target_link_options(corerun PRIVATE ${CORERUN_BROWSER_LINK_OPTIONS})
+
+            # Export everything a runtime test needs to re-link corerun with its
+            # own native library and generated call tables.
+            corerun_kit_export(
+                COMPONENT hosts
+                SOURCES ${CORERUN_SOURCES}
+                LINK_OPTIONS ${CORERUN_BROWSER_LINK_OPTIONS}
+                JS_LIBRARIES "${JS_SYSTEM_NATIVE_BROWSER}" "${JS_SYSTEM_BROWSER_UTILS}" "${JS_CORE_RUN}"
+                EXTERN_POST_JS "${JS_CORE_RUN_EXTPOST}")
         elseif (CLR_CMAKE_TARGET_WASI)
             # wasm-component-ld wraps wasi:io@0.2.x imports into the WASI
             # component-model; the default lld produces a plain core module
@@ -121,11 +150,14 @@ else()
             # required because clang only recognizes well-known linker
             # names (lld/bfd/gold/etc.) by short name.
             get_filename_component(_wasi_sdk_bin "${CMAKE_C_COMPILER}" DIRECTORY)
+            set(_wasi_http_world_wit
+                "${CLR_DIR}/../libraries/System.Net.Http/src/System/Net/Http/WasiHttpHandler/WasiHttpWorld_component_type.wit")
             target_link_options(corerun PRIVATE
                 "-fuse-ld=${_wasi_sdk_bin}/wasm-component-ld"
                 -Wl,-z,stack-size=8388608
                 -Wl,--initial-memory=134217728
-                -Wl,--max-memory=4294967296)
+                -Wl,--max-memory=4294967296
+                "-Wl,--component-type,${_wasi_http_world_wit}")
         endif()
 
         if (CORERUN_IN_BROWSER)

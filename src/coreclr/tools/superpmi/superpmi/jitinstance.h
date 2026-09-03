@@ -52,6 +52,10 @@ public:
     ULONGLONG        times[2];
     ICorJitCompiler* pJitInstance;
 
+    // The loaded JIT module handle. Used to detect when the baseline and diff
+    // JITs resolve to the same loaded module (which shares global state).
+    HMODULE getModule() const { return hLib; }
+
     // Allocate and initialize the jit provided
     static JitInstance* InitJit(char*          nameOfJit,
                                 bool           breakOnAssert,

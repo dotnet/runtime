@@ -4,6 +4,8 @@ using System;
 using System.Numerics;
 using Xunit;
 
+namespace SIMDTests.PlaneTests;
+
 public class PlaneTest
 {
     private const int Pass = 100;

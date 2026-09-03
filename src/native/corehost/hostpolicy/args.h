@@ -126,6 +126,7 @@ struct arguments_t
     host_mode_t host_mode;
     pal::string_t app_root;
     pal::string_t deps_path;
+    pal::string_t invocation_name;
     pal::string_t managed_application;
 
     int app_argc;

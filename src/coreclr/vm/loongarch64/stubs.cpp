@@ -14,9 +14,7 @@
 #include "jitinterface.h"
 #include "ecall.h"
 
-#ifdef FEATURE_PERFMAP
 #include "perfmap.h"
-#endif
 
 #ifndef DACCESS_COMPILE
 //-----------------------------------------------------------------------
@@ -82,11 +80,11 @@ class BranchInstructionFormat : public InstructionFormat
             if (fExternal)
             {
                 // Note that the parameter 'offset' is not an offset but the target address itself (when fExternal is true)
-                return (refSize == InstructionFormat::k64);
+                return refSize == InstructionFormat::k64;
             }
             else
             {
-                return ((offset >= -0x80000000L && offset <= 0x7fffffff) || (refSize == InstructionFormat::k64));
+                return (offset >= -0x80000000L && offset <= 0x7fffffff) || (refSize == InstructionFormat::k64);
             }
         }
 
@@ -289,7 +287,8 @@ void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFl
     // Finally, syncup the regdisplay with the context
     SyncRegDisplayToCurrentContext(pRD);
 
-    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TransitionFrame::UpdateRegDisplay_Impl(pc:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TransitionFrame::UpdateRegDisplay_Impl(pc:%p, sp:%p)\n",
+         reinterpret_cast<void*>(pRD->ControlPC), reinterpret_cast<void*>(pRD->SP)));
 }
 
 #ifdef FEATURE_INTERPRETER
@@ -352,12 +351,13 @@ void FaultingExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
 
     pRD->IsCallerContextValid = FALSE;
 
-    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    FaultingExceptionFrame::UpdateRegDisplay_Impl(pc:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    FaultingExceptionFrame::UpdateRegDisplay_Impl(pc:%p, sp:%p)\n",
+         reinterpret_cast<void*>(pRD->ControlPC), reinterpret_cast<void*>(pRD->SP)));
 }
 
 void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
@@ -367,7 +367,7 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
         MODE_ANY;
         SUPPORTS_DAC;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     if (!InlinedCallFrame::FrameHasActiveCall(this))
     {
@@ -410,9 +410,8 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
     // Update the frame pointer in the current context.
     pRD->pCurrentContextPointers->Fp = &m_pCalleeSavedFP;
 
-    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    InlinedCallFrame::UpdateRegDisplay_Impl(pc:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
-
-    RETURN;
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    InlinedCallFrame::UpdateRegDisplay_Impl(pc:%p, sp:%p)\n",
+         reinterpret_cast<void*>(pRD->ControlPC), reinterpret_cast<void*>(pRD->SP)));
 }
 
 #ifdef FEATURE_HIJACK
@@ -424,14 +423,14 @@ TADDR ResumableFrame::GetReturnAddressPtr_Impl(void)
 
 void ResumableFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
         SUPPORTS_DAC;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     CopyMemory(pRD->pCurrentContext, m_Regs, sizeof(T_CONTEXT));
 
@@ -472,9 +471,8 @@ void ResumableFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFlo
 
     pRD->IsCallerContextValid = FALSE;
 
-    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    ResumableFrame::UpdateRegDisplay_Impl(pc:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
-
-    RETURN;
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    ResumableFrame::UpdateRegDisplay_Impl(pc:%p, sp:%p)\n",
+         reinterpret_cast<void*>(pRD->ControlPC), reinterpret_cast<void*>(pRD->SP)));
 }
 
 void HijackFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
@@ -523,7 +521,8 @@ void HijackFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats
     pRD->pCurrentContextPointers->Ra = NULL;
     SyncRegDisplayToCurrentContext(pRD);
 
-    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    HijackFrame::UpdateRegDisplay_Impl(pc:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    HijackFrame::UpdateRegDisplay_Impl(pc:%p, sp:%p)\n",
+         reinterpret_cast<void*>(pRD->ControlPC), reinterpret_cast<void*>(pRD->SP)));
 }
 #endif // FEATURE_HIJACK
 
@@ -783,13 +782,13 @@ void StubLinkerCPU::Init()
 static bool InRegister(UINT16 ofs)
 {
     _ASSERTE(ofs != ShuffleEntry::SENTINEL);
-    return (ofs & ShuffleEntry::REGMASK);
+    return ofs & ShuffleEntry::REGMASK;
 }
 
 static bool IsRegisterFloating(UINT16 ofs)
 {
     _ASSERTE(InRegister(ofs));
-    return (ofs & ShuffleEntry::FPREGMASK);
+    return ofs & ShuffleEntry::FPREGMASK;
 }
 
 static int GetRegister(UINT16 ofs)
@@ -961,13 +960,9 @@ void StubLinkerCPU::EmitCallManagedMethod(MethodDesc *pMD, BOOL fTailCall)
     size_t rxOffset = pStartRX - pStart; \
     BYTE * p = pStart;
 
-#ifdef FEATURE_PERFMAP
 #define BEGIN_DYNAMIC_HELPER_EMIT(size) \
     BEGIN_DYNAMIC_HELPER_EMIT_WORKER(size) \
     PerfMap::LogStubs(__FUNCTION__, "DynamicHelper", (PCODE)p, size, PerfMapStubType::Individual);
-#else
-#define BEGIN_DYNAMIC_HELPER_EMIT(size) BEGIN_DYNAMIC_HELPER_EMIT_WORKER(size)
-#endif
 
 #define END_DYNAMIC_HELPER_EMIT() \
     _ASSERTE(pStart + cb == p); \

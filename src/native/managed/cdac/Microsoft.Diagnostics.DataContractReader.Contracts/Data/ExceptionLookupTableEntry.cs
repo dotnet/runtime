@@ -6,6 +6,6 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.ExceptionLookupTableEntry))]
 internal sealed partial class ExceptionLookupTableEntry : IData<ExceptionLookupTableEntry>
 {
-    [Field] public uint MethodStartRVA { get; }
-    [Field] public uint ExceptionInfoRVA { get; }
+    [Field] public partial uint MethodStartRVA { get; }
+    [Field] public partial uint ExceptionInfoRVA { get; }
 }

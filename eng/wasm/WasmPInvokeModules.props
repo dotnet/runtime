@@ -1,0 +1,36 @@
+<!--
+  The framework P/Invoke modules that CoreCLR resolves without dynamic loading on WebAssembly.
+
+  ManagedToNativeGenerator emits a direct-call entry for every [DllImport] whose module name is on
+  this list and nothing for the rest, so two builds have to agree on it:
+
+    * src/tasks/WasmAppBuilder/WasmAppBuilder.csproj generates the checked-in call tables under
+      src/coreclr/vm/wasm from it (see generate-coreclr-helpers.md). They are compiled into
+      coreclr_gen_static, which the product's corerun links.
+    * src/tests/Common/CLRTest.WasmCorerun.targets leaves coreclr_gen_static out when it links a
+      test-specific corerun, and regenerates equivalent tables in its place. Those have to cover
+      the same modules: one missing here surfaces as a DllNotFoundException at run time, inside
+      the test rather than in the build.
+
+  The checked-in tables are generated from this list, so editing it means regenerating and
+  committing them in the same change.
+
+  src/mono/browser/build/BrowserWasmApp.CoreCLR.targets keeps a copy of its own on purpose: it
+  ships in the WebAssembly workload and is evaluated inside the user's SDK, where this file does
+  not exist.
+-->
+<Project>
+  <PropertyGroup>
+    <!-- For consumers that regenerate their own tables from the list and need editing it to
+         invalidate them. -->
+    <WasmCoreClrFrameworkPInvokeModuleListFile>$(MSBuildThisFileFullPath)</WasmCoreClrFrameworkPInvokeModuleListFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <WasmCoreClrFrameworkPInvokeModule Include="libSystem.Globalization.Native" />
+    <WasmCoreClrFrameworkPInvokeModule Include="libSystem.IO.Compression.Native" />
+    <WasmCoreClrFrameworkPInvokeModule Include="libSystem.Native" />
+    <WasmCoreClrFrameworkPInvokeModule Include="libSystem.Native.Browser" />
+    <WasmCoreClrFrameworkPInvokeModule Include="libSystem.Runtime.InteropServices.JavaScript.Native" />
+  </ItemGroup>
+</Project>

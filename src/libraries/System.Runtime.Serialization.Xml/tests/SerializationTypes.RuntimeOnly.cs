@@ -46,6 +46,52 @@ namespace SerializationTypes
         public int PropI { get; set; }
     }
 
+    [XmlRoot("PrimitiveCollections")]
+    public sealed class PrimitiveCollections
+    {
+        public char[] Chars { get; set; }
+
+        [XmlArrayItem(DataType = "date")]
+        public DateTime[] Dates { get; set; }
+
+        [XmlArrayItem(DataType = "time")]
+        public DateTime[] Times { get; set; }
+
+        public DateOnly[] DateOnlyValues { get; set; }
+
+        public TimeOnly[] TimeOnlyValues { get; set; }
+
+        public List<int> Integers { get; set; }
+
+        public IntEnumerableCollection EnumerableIntegers { get; set; }
+
+        public int[] EmptyIntegers { get; set; }
+
+        public PrimitiveCollectionEnum[] Enums { get; set; }
+
+        public int?[] NullableIntegers { get; set; }
+
+        [XmlArrayItem(typeof(int))]
+        public ArrayList BoxedIntegers { get; set; }
+    }
+
+    public sealed class IntEnumerableCollection : IEnumerable<int>
+    {
+        private readonly List<int> _items = new();
+
+        public void Add(int value) => _items.Add(value);
+
+        public IEnumerator<int> GetEnumerator() => _items.GetEnumerator();
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+    }
+
+    public enum PrimitiveCollectionEnum
+    {
+        One,
+        Two,
+    }
+
     public class TypeWithDictionaryGenericMembers
     {
         public Dictionary<string, int> F1;
@@ -2266,6 +2312,25 @@ namespace SerializationTypes
         public MoreChoices[] ChoiceArray;
     }
 
+    public enum AliasedChoiceType
+    {
+        [XmlEnum("Word")]
+        WordChoice,
+        [XmlEnum("Number")]
+        NumberChoice,
+    }
+
+    public class TypeWithAliasedChoiceIdentifier
+    {
+        [XmlChoiceIdentifier("ChoiceType")]
+        [XmlElement("Word", typeof(string))]
+        [XmlElement("Number", typeof(int))]
+        public object Item;
+
+        [XmlIgnore]
+        public AliasedChoiceType ChoiceType;
+    }
+
     internal class MyFileStreamSurrogateProvider : ISerializationSurrogateProvider
     {
         static MyFileStreamSurrogateProvider()
@@ -2386,6 +2451,25 @@ namespace SerializationTypes
         }
     }
 
+    public class TypeWithXmlAttributeOnArray
+    {
+        [XmlAttribute("values")]
+        public string[] Values;
+    }
+
+    public class TypeWithMixedTextAndElementArray
+    {
+        [XmlText(typeof(string))]
+        [XmlElement("num", typeof(int))]
+        public object[] Items;
+    }
+
+    public class TypeWithXmlTextOnListOfString
+    {
+        [XmlText]
+        public List<string> Text = new List<string>();
+    }
+
     // XmlSerializer test types: derived class overriding virtual [XmlText] property from base.
     public class CustomerWithGroupIdRef
     {
@@ -2468,6 +2552,23 @@ namespace SerializationTypes
     public class GroupWithDroppedAttributeOverride : GroupWithAttributeBase
     {
         public override string? Code { get; set; }
+    }
+
+    public class TypeWithArrayLikeFieldsOrdered
+    {
+        // Like TypeWithFieldsOrdered, the 'Order' values intentionally differ from the order of
+        // definition, and two string members share the ambiguous element name "strfld" so that
+        // honoring the declared order is required to read the fields correctly. The int array adds
+        // an array-like member in the middle of the sequence: it can match several repeated
+        // elements, and the sequence position only advances once a non-matching element is seen.
+        [XmlElement(Order = 3, ElementName = "strfld")]
+        public string StringField2;
+        [XmlElement(Order = 1, ElementName = "num")]
+        public int[] Numbers;
+        [XmlElement(Order = 0)]
+        public int Leading;
+        [XmlElement(Order = 2, ElementName = "strfld")]
+        public string StringField1;
     }
 }
 
@@ -3105,6 +3206,27 @@ class PersonV2 : IExtensibleDataObject
             extensionDataObject_value = value;
         }
     }
+}
+
+[DataContract(Name = "CdataVersioned", Namespace = "http://example.com/cdata")]
+class CdataVersionedV1 : IExtensibleDataObject
+{
+    [DataMember(Order = 0)]
+    public string Prop1 { get; set; }
+
+    public ExtensionDataObject ExtensionData { get; set; }
+}
+
+[DataContract(Name = "CdataVersioned", Namespace = "http://example.com/cdata")]
+class CdataVersionedV2 : IExtensibleDataObject
+{
+    [DataMember(Order = 0)]
+    public string Prop1 { get; set; }
+
+    [DataMember(Order = 1)]
+    public string Prop2 { get; set; }
+
+    public ExtensionDataObject ExtensionData { get; set; }
 }
 
 [DataContract]

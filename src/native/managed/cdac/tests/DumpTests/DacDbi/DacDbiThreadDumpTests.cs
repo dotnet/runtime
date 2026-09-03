@@ -21,7 +21,7 @@ public class DacDbiThreadDumpTests : DumpTestBase
     protected override string DebuggeeName => "BasicThreads";
     protected override string DumpType => "full";
 
-    private DacDbiImpl CreateDacDbi() => new DacDbiImpl(Target, legacyObj: null);
+    private DacDbiImpl CreateDacDbi() => new DacDbiImpl(Target, legacyObj: null, new());
 
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
@@ -76,6 +76,31 @@ public class DacDbiThreadDumpTests : DumpTestBase
             ThreadData data = threadContract.GetThreadData(current);
             bool contractSaysDead = (data.State & Contracts.ThreadState.Stopped) != 0;
             Assert.Equal(contractSaysDead, isDead == Interop.BOOL.TRUE);
+
+            current = data.NextThread;
+        }
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public unsafe void IsThreadSuspendedOrHijacked_CrossValidateWithContract(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        DacDbiImpl dbi = CreateDacDbi();
+
+        IThread threadContract = Target.Contracts.Thread;
+        ThreadStoreData storeData = threadContract.GetThreadStoreData();
+
+        TargetPointer current = storeData.FirstThread;
+        while (current != TargetPointer.Null)
+        {
+            Interop.BOOL isSuspendedOrHijacked;
+            int hr = dbi.IsThreadSuspendedOrHijacked(current, &isSuspendedOrHijacked);
+            Assert.Equal(System.HResults.S_OK, hr);
+
+            ThreadData data = threadContract.GetThreadData(current);
+            bool contractSaysSuspendedOrHijacked = (data.State & (Contracts.ThreadState.DebugSyncSuspended | Contracts.ThreadState.Hijacked)) != 0;
+            Assert.Equal(contractSaysSuspendedOrHijacked, isSuspendedOrHijacked == Interop.BOOL.TRUE);
 
             current = data.NextThread;
         }

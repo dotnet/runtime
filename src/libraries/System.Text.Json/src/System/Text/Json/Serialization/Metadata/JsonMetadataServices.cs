@@ -33,7 +33,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
 
             string? propertyName = propertyInfo.PropertyName;
-            if (propertyName == null)
+            if (propertyName is null)
             {
                 throw new ArgumentException(nameof(propertyInfo.PropertyName));
             }

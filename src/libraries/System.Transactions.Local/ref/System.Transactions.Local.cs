@@ -53,9 +53,9 @@ namespace System.Transactions
     [System.Runtime.InteropServices.InterfaceTypeAttribute(System.Runtime.InteropServices.ComInterfaceType.InterfaceIsIUnknown)]
     public partial interface IDtcTransaction
     {
-        void Abort(System.IntPtr reason, int retaining, int async);
+        unsafe void Abort(System.IntPtr reason, int retaining, int async);
         void Commit(int retaining, int commitType, int reserved);
-        void GetTransactionInfo(System.IntPtr transactionInformation);
+        unsafe void GetTransactionInfo(System.IntPtr transactionInformation);
     }
     public partial interface IEnlistmentNotification
     {

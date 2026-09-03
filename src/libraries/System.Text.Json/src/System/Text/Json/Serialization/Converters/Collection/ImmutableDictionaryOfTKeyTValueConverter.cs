@@ -42,7 +42,7 @@ namespace System.Text.Json.Serialization.Converters
         {
             Func<IEnumerable<KeyValuePair<TKey, TValue>>, TDictionary>? creator =
                 (Func<IEnumerable<KeyValuePair<TKey, TValue>>, TDictionary>?)state.Current.JsonTypeInfo.CreateObjectWithArgs;
-            Debug.Assert(creator != null);
+            Debug.Assert(creator is not null);
             state.Current.ReturnValue = creator((Dictionary<TKey, TValue>)state.Current.ReturnValue!);
         }
     }

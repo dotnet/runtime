@@ -386,6 +386,12 @@
              Link="Common\System\Security\Cryptography\CompositeMLDsaCng.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLDsaImplementation.cs"
              Link="Common\System\Security\Cryptography\CompositeMLDsaImplementation.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLKem.cs"
+             Link="Common\System\Security\Cryptography\CompositeMLKem.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLKemAlgorithm.cs"
+             Link="Common\System\Security\Cryptography\CompositeMLKemAlgorithm.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLKemImplementation.cs"
+             Link="Common\System\Security\Cryptography\CompositeMLKemImplementation.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CryptographicAttributeObject.cs"
              Link="Common\System\Security\Cryptography\CryptographicAttributeObject.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CryptographicAttributeObjectCollection.cs"
@@ -840,6 +846,8 @@
              Link="Common\System\Sha1ForNonSecretPurposes.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLDsaImplementation.NotSupported.cs"
              Link="Common\System\Security\Cryptography\CompositeMLDsaImplementation.NotSupported.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLKemImplementation.NotSupported.cs"
+             Link="Common\System\Security\Cryptography\CompositeMLKemImplementation.NotSupported.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\SP800108HmacCounterKdfImplementationManaged.cs"
              Link="Common\System\Security\Cryptography\SP800108HmacCounterKdfImplementationManaged.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\MLDsaImplementation.NotSupported.cs"
@@ -1050,6 +1058,14 @@
              Link="Common\System\Security\Cryptography\CompositeMLDsaManaged.ECDsa.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLDsaManaged.RSA.cs"
              Link="Common\System\Security\Cryptography\CompositeMLDsaManaged.RSA.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLKemManaged.cs"
+             Link="Common\System\Security\Cryptography\CompositeMLKemManaged.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLKemManaged.ECDiffieHellman.cs"
+             Link="Common\System\Security\Cryptography\CompositeMLKemManaged.ECDiffieHellman.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLKemManaged.RSA.cs"
+             Link="Common\System\Security\Cryptography\CompositeMLKemManaged.RSA.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLKemManaged.XDiffieHellman.cs"
+             Link="Common\System\Security\Cryptography\CompositeMLKemManaged.XDiffieHellman.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\DSAOpenSsl.cs"
              Link="Common\System\Security\Cryptography\DSAOpenSsl.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\ECDiffieHellmanDerivation.cs"
@@ -1085,6 +1101,7 @@
     <Compile Include="System\Security\Cryptography\CapiHelper.Unix.cs" />
     <Compile Include="System\Security\Cryptography\ChaCha20Poly1305.OpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\CompositeMLDsaImplementation.OpenSsl.cs" />
+    <Compile Include="System\Security\Cryptography\CompositeMLKemImplementation.Managed.cs" />
     <Compile Include="System\Security\Cryptography\Cng.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\CspKeyContainerInfo.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\DESCryptoServiceProvider.Unix.cs" />
@@ -1172,6 +1189,7 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\X500NameEncoder.ManagedDecode.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509CertificateLoader.Unix.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509CertificateLoader.OpenSsl.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509MruCache.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Pal.OpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Persistence.cs" />
   </ItemGroup>
@@ -1227,6 +1245,8 @@
              Link="Common\Microsoft\Win32\SafeHandles\SafeHmacCtxHandle.Unix.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLDsaImplementation.NotSupported.cs"
              Link="Common\System\Security\Cryptography\CompositeMLDsaImplementation.NotSupported.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLKemImplementation.NotSupported.cs"
+             Link="Common\System\Security\Cryptography\CompositeMLKemImplementation.NotSupported.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\DSAAndroid.cs"
              Link="Common\System\Security\Cryptography\DSAAndroid.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\ECAndroid.cs"
@@ -1341,6 +1361,8 @@
              Link="Common\Interop\OSX\Swift.Runtime\UnsafeBufferPointer.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Aead.cs"
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Aead.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.AesKeyWrap.cs"
+             Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.AesKeyWrap.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Digest.cs"
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Digest.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Ecc.cs"
@@ -1383,6 +1405,8 @@
              Link="Common\Microsoft\Win32\SafeHandles\SafeCreateHandle.OSX.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLDsaImplementation.NotSupported.cs"
              Link="Common\System\Security\Cryptography\CompositeMLDsaImplementation.NotSupported.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLKemImplementation.NotSupported.cs"
+             Link="Common\System\Security\Cryptography\CompositeMLKemImplementation.NotSupported.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\EccAppleCrypto.cs"
              Link="Common\System\Security\Cryptography\EccAppleCrypto.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\ECDiffieHellmanDerivation.cs"
@@ -1576,6 +1600,8 @@
              Link="Common\Interop\Windows\BCrypt\DESBCryptModes.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.AsymmetricEncryption.Types.cs"
              Link="Common\Interop\Windows\BCrypt\Interop.AsymmetricEncryption.Types.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCrypt.Types.cs"
+             Link="Common\Interop\Windows\BCrypt\Interop.BCrypt.Types.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptAlgPseudoHandle.cs"
              Link="Common\Interop\Windows\BCrypt\Interop.BCryptAlgPseudoHandle.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptCloseAlgorithmProvider.cs"
@@ -1894,6 +1920,8 @@
              Link="Common\System\Security\Cryptography\CompositeMLDsaCng.Windows.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLDsaImplementation.Windows.cs"
              Link="Common\System\Security\Cryptography\CompositeMLDsaImplementation.Windows.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLKemImplementation.NotSupported.cs"
+             Link="Common\System\Security\Cryptography\CompositeMLKemImplementation.NotSupported.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CryptoThrowHelper.Windows.cs"
              Link="Common\System\Security\Cryptography\CryptoThrowHelper.Windows.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\DSACng.cs"

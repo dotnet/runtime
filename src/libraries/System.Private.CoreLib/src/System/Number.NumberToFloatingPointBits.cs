@@ -9,7 +9,7 @@ using System.Runtime.CompilerServices;
 
 namespace System
 {
-    internal unsafe partial class Number
+    internal partial class Number
     {
         internal static ReadOnlySpan<double> Pow10DoubleTable =>
         [
@@ -701,19 +701,29 @@ namespace System
         {
             BigInteger.SetZero(out result);
 
-            byte* src = number.DigitsPtr + firstIndex;
-            uint remaining = lastIndex - firstIndex;
+            ReadOnlySpan<byte> digits = number.Digits.Slice((int)firstIndex, (int)(lastIndex - firstIndex));
 
-            while (remaining != 0)
+            while (!digits.IsEmpty)
             {
-                uint count = Math.Min(remaining, 9);
-                uint value = DigitsToUInt32(src, (int)(count));
+                // Batch as many digits as fill a single block -- 9 on 32-bit (10^9 fits a uint),
+                // 19 on 64-bit (10^19 fits a nuint) -- so wide builds halve the multiply/add
+                // iterations instead of staying 32-bit-granular. nint.Size constant-folds here.
+                uint count = (uint)Math.Min(digits.Length, nint.Size == 8 ? 19 : 9);
+                nuint value;
+
+                if (nint.Size == 8)
+                {
+                    value = (nuint)DigitsToUInt64(digits.Slice(0, (int)count));
+                }
+                else
+                {
+                    value = DigitsToUInt32(digits.Slice(0, (int)count));
+                }
 
                 result.MultiplyPow10(count);
                 result.Add(value);
 
-                src += count;
-                remaining -= count;
+                digits = digits.Slice((int)count);
             }
         }
 
@@ -847,92 +857,55 @@ namespace System
                 return AssembleFloatingPointBits<TFloat>(value.ToUInt64(), baseExponent, !hasNonZeroFractionalPart);
             }
 
-            (int topBlockIndex, int topBlockBits) = Math.DivRem(integerBitsOfPrecision, 32);
-            int middleBlockIndex = topBlockIndex - 1;
-            int bottomBlockIndex = middleBlockIndex - 1;
+            // The mantissa is the top 64 bits of the value; everything below that window is the tail.
+            int windowBitIndex = integerBitsOfPrecision - 64;
 
-            ulong mantissa;
-            int exponent = baseExponent + ((int)(bottomBlockIndex) * 32);
-            bool hasZeroTail = !hasNonZeroFractionalPart;
-
-            // When the top 64-bits perfectly span two blocks, we can get those blocks directly
-            if (topBlockBits == 0)
-            {
-                mantissa = ((ulong)(value.GetBlock(middleBlockIndex)) << 32) + value.GetBlock(bottomBlockIndex);
-            }
-            else
-            {
-                // Otherwise, we need to read three blocks and combine them into a 64-bit mantissa
-
-                int bottomBlockShift = (int)(topBlockBits);
-                int topBlockShift = 64 - bottomBlockShift;
-                int middleBlockShift = topBlockShift - 32;
-
-                exponent += (int)(topBlockBits);
-
-                uint bottomBlock = value.GetBlock(bottomBlockIndex);
-                uint bottomBits = bottomBlock >> bottomBlockShift;
-
-                ulong middleBits = (ulong)(value.GetBlock(middleBlockIndex)) << middleBlockShift;
-                ulong topBits = (ulong)(value.GetBlock(topBlockIndex)) << topBlockShift;
-
-                mantissa = topBits + middleBits + bottomBits;
-
-                uint unusedBottomBlockBitsMask = (1u << (int)(topBlockBits)) - 1;
-                hasZeroTail &= (bottomBlock & unusedBottomBlockBitsMask) == 0;
-            }
-
-            for (int i = 0; i < bottomBlockIndex; i++)
-            {
-                hasZeroTail &= (value.GetBlock(i) == 0);
-            }
+            ulong mantissa = value.GetBits64(windowBitIndex);
+            int exponent = baseExponent + windowBitIndex;
+            bool hasZeroTail = !hasNonZeroFractionalPart && value.HasZeroTail(windowBitIndex);
 
             return AssembleFloatingPointBits<TFloat>(mantissa, exponent, hasZeroTail);
         }
 
         // get 32-bit integer from at most 9 digits
-        internal static uint DigitsToUInt32(byte* p, int count)
+        internal static uint DigitsToUInt32(ReadOnlySpan<byte> p)
         {
-            Debug.Assert((1 <= count) && (count <= 9));
+            Debug.Assert((1 <= p.Length) && (p.Length <= 9));
 
-            byte* end = (p + count);
             uint res = 0;
 
             // parse batches of 8 digits with SWAR
-            while (p <= end - 8)
+            while (p.Length >= 8)
             {
                 res = (res * 100000000) + ParseEightDigitsUnrolled(p);
-                p += 8;
+                p = p.Slice(8);
             }
 
-            while (p != end)
+            foreach (byte b in p)
             {
-                res = (10 * res) + p[0] - '0';
-                ++p;
+                res = (10 * res) + b - '0';
             }
 
             return res;
         }
 
         // get 64-bit integer from at most 19 digits
-        internal static ulong DigitsToUInt64(byte* p, int count)
+        internal static ulong DigitsToUInt64(ReadOnlySpan<byte> p)
         {
-            Debug.Assert((1 <= count) && (count <= 19));
+            Debug.Assert((1 <= p.Length) && (p.Length <= 19));
 
-            byte* end = (p + count);
             ulong res = 0;
 
             // parse batches of 8 digits with SWAR
-            while (end - p >= 8)
+            while (p.Length >= 8)
             {
                 res = (res * 100000000) + ParseEightDigitsUnrolled(p);
-                p += 8;
+                p = p.Slice(8);
             }
 
-            while (p != end)
+            foreach (byte b in p)
             {
-                res = (10 * res) + p[0] - '0';
-                ++p;
+                res = (10 * res) + b - '0';
             }
 
             return res;
@@ -943,23 +916,16 @@ namespace System
         /// https://lemire.me/blog/2022/01/21/swar-explained-parsing-eight-digits/
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static uint ParseEightDigitsUnrolled(byte* chars)
+        internal static uint ParseEightDigitsUnrolled(ReadOnlySpan<byte> chars)
         {
-            // let's take the following value (byte*) 12345678 and read it unaligned :
-            // we get a ulong value of 0x3837363534333231
+            // take the first eight digits, e.g. "12345678", and read them as a
+            // little-endian ulong to get 0x3837363534333231:
             // 1. Subtract character '0' 0x30 for each byte to get 0x0807060504030201
             // 2. Consider this sequence as bytes sequence : b8b7b6b5b4b3b2b1
             // we need to transform it to b1b2b3b4b5b6b7b8 by computing :
             // 10000 * (100 * (10*b1+b2) + 10*b3+b4) + 100*(10*b5+b6) + 10*b7+b8
             // this is achieved by masking and shifting values
-            ulong val = Unsafe.ReadUnaligned<ulong>(chars);
-
-            // With BigEndian system an endianness swap has to be performed
-            // before the following operations as if it has been read with LittleEndian system
-            if (!BitConverter.IsLittleEndian)
-            {
-                val = BinaryPrimitives.ReverseEndianness(val);
-            }
+            ulong val = BinaryPrimitives.ReadUInt64LittleEndian(chars);
 
             const ulong mask = 0x000000FF000000FF;
             const ulong mul1 = 0x000F424000000064; // 100 + (1000000ULL << 32)
@@ -975,7 +941,7 @@ namespace System
         {
             Debug.Assert(TFloat.DenormalMantissaBits <= FloatingPointMaxDenormalMantissaBits);
 
-            Debug.Assert(number.DigitsPtr[0] != '0');
+            Debug.Assert(number.Digits[0] != '0');
 
             Debug.Assert(number.Scale <= FloatingPointMaxExponent);
             Debug.Assert(number.Scale >= FloatingPointMinExponent);
@@ -999,57 +965,63 @@ namespace System
             // Above 19 digits, we rely on slow path
             if (totalDigits <= 19)
             {
-                byte* src = number.DigitsPtr;
-
-                ulong mantissa = DigitsToUInt64(src, (int)(totalDigits));
-
+                ulong mantissa = DigitsToUInt64(number.Digits.Slice(0, (int)(totalDigits)));
                 int exponent = (int)(number.Scale - integerDigitsPresent - fractionalDigitsPresent);
-                int fastExponent = Math.Abs(exponent);
 
-                // When the number of significant digits is less than or equal to MaxMantissaFastPath and the
-                // scale is less than or equal to MaxExponentFastPath, we can take some shortcuts and just rely
-                // on floating-point arithmetic to compute the correct result. This is
-                // because each floating-point precision values allows us to exactly represent
-                // different whole integers and certain powers of 10, depending on the underlying
-                // formats exact range. Additionally, IEEE operations dictate that the result is
-                // computed to the infinitely precise result and then rounded, which means that
-                // we can rely on it to produce the correct result when both inputs are exact.
-                // This is known as Clinger's fast path
-
-                if ((mantissa <= TFloat.MaxMantissaFastPath) && (fastExponent <= TFloat.MaxExponentFastPath))
+                if (TryFloatingPointBitsFromMantissa<TFloat>(mantissa, exponent, out ulong bits))
                 {
-                    double mantissa_d = mantissa;
-                    double scale = Pow10DoubleTable[fastExponent];
-
-                    if (fractionalDigitsPresent != 0)
-                    {
-                        mantissa_d /= scale;
-                    }
-                    else
-                    {
-                        mantissa_d *= scale;
-                    }
-
-                    TFloat result = TFloat.CreateSaturating(mantissa_d);
-                    return TFloat.FloatToBits(result);
-                }
-
-                // Number Parsing at a Gigabyte per Second, Software: Practice and Experience 51(8), 2021
-                // https://arxiv.org/abs/2101.11408
-                (int Exponent, ulong Mantissa) am = ComputeFloat<TFloat>(exponent, mantissa);
-
-                // If we called ComputeFloat and we have an invalid power of 2 (Exponent < 0),
-                // then we need to go the slow way around again. This is very uncommon.
-                if (am.Exponent > 0)
-                {
-                    ulong word = am.Mantissa;
-                    word |= (ulong)(uint)(am.Exponent) << TFloat.DenormalMantissaBits;
-                    return word;
-
+                    return bits;
                 }
             }
 
             return NumberToFloatingPointBitsSlow<TFloat>(ref number, positiveExponent, integerDigitsPresent, fractionalDigitsPresent);
+        }
+
+        /// <summary>
+        /// Converts <paramref name="mantissa"/> x 10^<paramref name="exponent"/> to the correctly-rounded
+        /// bits of <typeparamref name="TFloat"/> using the string-free Clinger and Eisel-Lemire fast paths.
+        /// Returns <see langword="false"/> only on the uncommon Eisel-Lemire miss, where the caller must fall
+        /// back to the digit-based slow path. The caller must already have applied the scale range shortcuts
+        /// (see <see cref="NumberToFloat{TFloat}"/>) so that <paramref name="exponent"/> is in representable range.
+        /// </summary>
+        internal static bool TryFloatingPointBitsFromMantissa<TFloat>(ulong mantissa, int exponent, out ulong bits)
+            where TFloat : unmanaged, IBinaryFloatParseAndFormatInfo<TFloat>
+        {
+            int fastExponent = Math.Abs(exponent);
+
+            // When the mantissa is less than or equal to MaxMantissaFastPath and the exponent is less than or
+            // equal to MaxExponentFastPath, we can take some shortcuts and just rely on floating-point
+            // arithmetic to compute the correct result. This is because each floating-point precision allows us
+            // to exactly represent different whole integers and certain powers of 10, depending on the
+            // underlying format's exact range. Additionally, IEEE operations dictate that the result is computed
+            // to the infinitely precise result and then rounded, which means that we can rely on it to produce
+            // the correct result when both inputs are exact. This is known as Clinger's fast path.
+
+            if ((mantissa <= TFloat.MaxMantissaFastPath) && (fastExponent <= TFloat.MaxExponentFastPath))
+            {
+                double mantissa_d = mantissa;
+                double scale = Pow10DoubleTable[fastExponent];
+
+                mantissa_d = (exponent < 0) ? (mantissa_d / scale) : (mantissa_d * scale);
+
+                bits = TFloat.FloatToBits(TFloat.CreateSaturating(mantissa_d));
+                return true;
+            }
+
+            // Number Parsing at a Gigabyte per Second, Software: Practice and Experience 51(8), 2021
+            // https://arxiv.org/abs/2101.11408
+            (int Exponent, ulong Mantissa) am = ComputeFloat<TFloat>(exponent, mantissa);
+
+            // If we called ComputeFloat and we have an invalid power of 2 (Exponent < 0),
+            // then we need to go the slow way around again. This is very uncommon.
+            if (am.Exponent > 0)
+            {
+                bits = am.Mantissa | ((ulong)(uint)(am.Exponent) << TFloat.DenormalMantissaBits);
+                return true;
+            }
+
+            bits = 0;
+            return false;
         }
 
         private static ulong NumberToFloatingPointBitsSlow<TFloat>(ref NumberBuffer number, uint positiveExponent, uint integerDigitsPresent, uint fractionalDigitsPresent)

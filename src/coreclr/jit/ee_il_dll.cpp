@@ -505,34 +505,6 @@ unsigned Compiler::eeGetArgSizeAlignment(var_types type, bool isFloatHfa)
 }
 
 //------------------------------------------------------------------------
-// eeConvertToLookup: Convert a tuple of "{ value, pValue }" to "CORINFO_CONST_LOOKUP".
-//
-// Arguments:
-//    value  - The direct value (IAT_VALUE)
-//    pValue - The indirect value (IAT_PVALUE)
-//
-// Return Value:
-//    The lookup.
-//
-CORINFO_CONST_LOOKUP Compiler::eeConvertToLookup(void* value, void* pValue)
-{
-    CORINFO_CONST_LOOKUP lookup;
-    if (value != nullptr)
-    {
-        assert(pValue == nullptr);
-        lookup.accessType = IAT_VALUE;
-        lookup.addr       = value;
-    }
-    else
-    {
-        assert(pValue != nullptr);
-        lookup.accessType = IAT_PVALUE;
-        lookup.addr       = pValue;
-    }
-    return lookup;
-}
-
-//------------------------------------------------------------------------
 // eeGetArrayDataOffset: Gets the offset of a SDArray's first element
 //
 // Return Value:
@@ -902,7 +874,14 @@ void Compiler::eeDispVar(ICorDebugInfo::NativeVarInfo* var)
             break;
 
         case CodeGenInterface::VLT_REG_FP:
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+            // AMD64/ARM64 store the FP register as a debug RegNum (REGNUM_FP_FIRST-based);
+            // map it back to a JIT regNumber for display.
+            printf("%s", getRegName(static_cast<regNumber>(REG_FP_FIRST + var->loc.vlReg.vlrReg -
+                                                           ICorDebugInfo::REGNUM_FP_FIRST)));
+#else
             printf("%s", getRegName((regNumber)(var->loc.vlReg.vlrReg + REG_FP_FIRST)));
+#endif
             break;
 
         case CodeGenInterface::VLT_STK:
@@ -915,15 +894,32 @@ void Compiler::eeDispVar(ICorDebugInfo::NativeVarInfo* var)
             {
                 printf(STR_SPBASE "'[%d] (1 slot)", var->loc.vlStk.vlsOffset);
             }
-            if (var->loc.vlType == (ICorDebugInfo::VarLocType)CodeGenInterface::VLT_REG_BYREF)
+            if (var->loc.vlType == (ICorDebugInfo::VarLocType)CodeGenInterface::VLT_STK_BYREF)
             {
                 printf(" byref");
             }
             break;
 
         case CodeGenInterface::VLT_REG_REG:
+        {
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+            auto toJitRegNum = [](ICorDebugInfo::RegNum reg) -> regNumber {
+                unsigned val     = static_cast<unsigned>(reg);
+                unsigned fpFirst = static_cast<unsigned>(ICorDebugInfo::REGNUM_FP_FIRST);
+                if (val >= fpFirst)
+                {
+                    return static_cast<regNumber>(REG_FP_FIRST + val - fpFirst);
+                }
+                return static_cast<regNumber>(reg);
+            };
+
+            printf("%s-%s", getRegName(toJitRegNum(var->loc.vlRegReg.vlrrReg1)),
+                   getRegName(toJitRegNum(var->loc.vlRegReg.vlrrReg2)));
+#else
             printf("%s-%s", getRegName(var->loc.vlRegReg.vlrrReg1), getRegName(var->loc.vlRegReg.vlrrReg2));
+#endif
             break;
+        }
 
 #ifndef TARGET_AMD64
         case CodeGenInterface::VLT_REG_STK:
@@ -1514,7 +1510,7 @@ void Compiler::eeGetSystemVAmd64PassStructInRegisterDescriptor(
 #ifdef DEBUG
     if (verbose)
     {
-        printf("**** getSystemVAmd64PassStructInRegisterDescriptor(0x%x (%s), ...) =>\n", dspPtr(structHnd),
+        printf("**** getSystemVAmd64PassStructInRegisterDescriptor(%p (%s), ...) =>\n", dspPtr(structHnd),
                eeGetClassName(structHnd));
         printf("        passedInRegisters = %s\n", dspBool(structPassInRegDescPtr->passedInRegisters));
         if (structPassInRegDescPtr->passedInRegisters)

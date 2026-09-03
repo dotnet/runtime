@@ -6,6 +6,6 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.VirtualCallStubManager))]
 internal sealed partial class VirtualCallStubManager : IData<VirtualCallStubManager>
 {
-    [Field] public TargetPointer IndcellHeap { get; }
-    [Field] public TargetPointer? CacheEntryHeap { get; }
+    [Field] public partial TargetPointer IndcellHeap { get; }
+    [Field] public partial TargetPointer? CacheEntryHeap { get; }
 }

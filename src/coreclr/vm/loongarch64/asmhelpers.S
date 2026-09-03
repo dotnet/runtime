@@ -730,44 +730,6 @@ NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
     EPILOG_RETURN
 NESTED_END CallEHFilterFunclet, _TEXT
 
-// ------------------------------------------------------------------
-// void* JIT_GetDynamicNonGCStaticBase(DynamicStaticsInfo* pStaticsInfo)
-
-LEAF_ENTRY JIT_GetDynamicNonGCStaticBase_SingleAppDomain, _TEXT
-    // If class is not initialized, bail to C++ helper
-    ld.d $a1, $a0, OFFSETOF__DynamicStaticsInfo__m_pNonGCStatics
-    dbar 0
-    bnez $a1, LOCAL_LABEL(JIT_GetDynamicNonGCStaticBase_SingleAppDomain_CallHelper)
-    ori  $a0, $a1, 0
-    jirl $r0, $ra, 0
-
-LOCAL_LABEL(JIT_GetDynamicNonGCStaticBase_SingleAppDomain_CallHelper):
-    // Tail call GetNonGCStaticBase
-    ld.d $a0, $a0, OFFSETOF__DynamicStaticsInfo__m_pMethodTable
-    PREPARE_EXTERNAL_VAR g_pGetNonGCStaticBase, $t4
-    ld.d $t4, $t4, 0
-    EPILOG_BRANCH_REG        $t4
-LEAF_END JIT_GetDynamicNonGCStaticBase_SingleAppDomain, _TEXT
-
-// ------------------------------------------------------------------
-// void* JIT_GetDynamicGCStaticBase(DynamicStaticsInfo* pStaticsInfo)
-
-LEAF_ENTRY JIT_GetDynamicGCStaticBase_SingleAppDomain, _TEXT
-    // If class is not initialized, bail to C++ helper
-    ld.d $a1, $a0, OFFSETOF__DynamicStaticsInfo__m_pGCStatics
-    dbar 0
-    bnez $a1, LOCAL_LABEL(JIT_GetDynamicGCStaticBase_SingleAppDomain_CallHelper)
-    ori  $a0, $a1, 0
-    jirl $r0, $ra, 0
-
-LOCAL_LABEL(JIT_GetDynamicGCStaticBase_SingleAppDomain_CallHelper):
-    // Tail call GetGCStaticBase
-    ld.d $a0, $a0, OFFSETOF__DynamicStaticsInfo__m_pMethodTable
-    PREPARE_EXTERNAL_VAR g_pGetGCStaticBase, $t4
-    ld.d $t4, $t4, 0
-    EPILOG_BRANCH_REG        $t4
-LEAF_END JIT_GetDynamicGCStaticBase_SingleAppDomain, _TEXT
-
 #ifdef FEATURE_READYTORUN
 
 NESTED_ENTRY DelayLoad_MethodCall_FakeProlog, _TEXT, NoHandler

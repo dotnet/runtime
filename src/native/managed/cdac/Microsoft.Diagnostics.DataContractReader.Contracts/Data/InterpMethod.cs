@@ -6,5 +6,5 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.InterpMethod))]
 internal sealed partial class InterpMethod : IData<InterpMethod>
 {
-    [Field] public TargetPointer MethodDesc { get; }
+    [Field] public partial TargetPointer MethodDesc { get; }
 }

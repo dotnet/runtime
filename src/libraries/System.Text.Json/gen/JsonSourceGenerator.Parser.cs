@@ -433,6 +433,7 @@ namespace System.Text.Json.SourceGeneration
                 char? indentCharacter = null;
                 int? indentSize = null;
                 bool? allowDuplicateProperties = null;
+                bool? inferClosedTypePolymorphism = null;
 
                 if (attributeData.ConstructorArguments.Length > 0)
                 {
@@ -562,6 +563,10 @@ namespace System.Text.Json.SourceGeneration
                             allowDuplicateProperties = (bool)namedArg.Value.Value!;
                             break;
 
+                        case nameof(JsonSourceGenerationOptionsAttribute.InferClosedTypePolymorphism):
+                            inferClosedTypePolymorphism = (bool)namedArg.Value.Value!;
+                            break;
+
                         case nameof(JsonSourceGenerationOptionsAttribute.TypeClassifiers):
                             typeClassifiers = new List<TypeRef>();
                             foreach (TypedConstant element in namedArg.Value.Values)
@@ -615,6 +620,7 @@ namespace System.Text.Json.SourceGeneration
                     IndentCharacter = indentCharacter,
                     IndentSize = indentSize,
                     AllowDuplicateProperties = allowDuplicateProperties,
+                    InferClosedTypePolymorphism = inferClosedTypePolymorphism,
                 };
             }
 
@@ -697,7 +703,7 @@ namespace System.Text.Json.SourceGeneration
                 bool implementsIJsonOnSerialized = false;
                 bool implementsIJsonOnSerializing = false;
 
-                ProcessTypeCustomAttributes(typeToGenerate, contextType,
+                ProcessTypeCustomAttributes(typeToGenerate, contextType, options,
                     ref experimentalIds,
                     out JsonNumberHandling? numberHandling,
                     out JsonUnmappedMemberHandling? unmappedMemberHandling,
@@ -707,6 +713,7 @@ namespace System.Text.Json.SourceGeneration
                     out bool foundJsonConverterAttribute,
                     out TypeRef? customConverterType,
                     out PolymorphismOptionsSpec? polymorphismOptions,
+                    out bool hasClosedDerivedTypes,
                     out TypeRef? unionClassifierFactoryType);
 
                 bool isPolymorphic = polymorphismOptions is not null;
@@ -854,9 +861,13 @@ namespace System.Text.Json.SourceGeneration
                                 // generated pattern arm uses the underlying T symbol — never the source
                                 // Nullable<T> string spelling. Compute this from the symbol here so the
                                 // emitter never has to manipulate FQN strings.
-                                TypeRef patternTypeRef = caseType is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } nullableCaseType
-                                    ? new TypeRef(nullableCaseType.TypeArguments[0])
-                                    : caseTypeRef;
+                                ITypeSymbol patternType = caseType is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } nullableCaseType
+                                    ? nullableCaseType.TypeArguments[0]
+                                    : caseType;
+
+                                TypeRef patternTypeRef = SymbolEqualityComparer.Default.Equals(patternType, caseType)
+                                    ? caseTypeRef
+                                    : new TypeRef(patternType);
 
                                 resolvedUnionCaseSpecs.Add(new UnionCaseSpec
                                 {
@@ -907,6 +918,10 @@ namespace System.Text.Json.SourceGeneration
                     PrimitiveTypeKind = primitiveTypeKind,
                     IsPolymorphic = isPolymorphic,
                     PolymorphismOptions = polymorphismOptions,
+                    IsClosedTypeWithoutInferredPolymorphism =
+                        polymorphismOptions is null &&
+                        options?.InferClosedTypePolymorphism is not true &&
+                        hasClosedDerivedTypes,
                     NumberHandling = numberHandling,
                     UnmappedMemberHandling = unmappedMemberHandling,
                     PreferredPropertyObjectCreationHandling = preferredPropertyObjectCreationHandling,
@@ -943,6 +958,7 @@ namespace System.Text.Json.SourceGeneration
             private void ProcessTypeCustomAttributes(
                 in TypeToGenerate typeToGenerate,
                 INamedTypeSymbol contextType,
+                SourceGenerationOptionsSpec? options,
                 ref HashSet<string>? experimentalIds,
                 out JsonNumberHandling? numberHandling,
                 out JsonUnmappedMemberHandling? unmappedMemberHandling,
@@ -952,6 +968,7 @@ namespace System.Text.Json.SourceGeneration
                 out bool foundJsonConverterAttribute,
                 out TypeRef? customConverterType,
                 out PolymorphismOptionsSpec? polymorphismOptions,
+                out bool hasClosedDerivedTypes,
                 out TypeRef? unionClassifierFactoryType)
             {
                 numberHandling = null;
@@ -962,15 +979,21 @@ namespace System.Text.Json.SourceGeneration
                 customConverterType = null;
                 foundJsonConverterAttribute = false;
                 polymorphismOptions = null;
+                hasClosedDerivedTypes = false;
                 unionClassifierFactoryType = null;
 
                 bool hasPolymorphicAttribute = false;
                 bool ignoreUnrecognizedTypeDiscriminators = false;
+                bool? inferClosedTypePolymorphismOverride = null;
+                Location? polymorphicAttributeLocation = null;
                 JsonUnknownDerivedTypeHandling unknownDerivedTypeHandling = default;
                 string? typeDiscriminatorPropertyName = null;
                 TypeRef? polymorphicClassifierFactoryType = null;
                 List<DerivedTypeSpec>? derivedTypes = null;
-                bool hasUnionTypeClassifierSpecified = false;
+                HashSet<object>? typeDiscriminators = null;
+                bool hasExplicitDerivedTypeAttribute = false;
+                bool hasInferredClosedTypePolymorphism = false;
+                bool hasUnionTypeClassifierSpecified = options?.TypeClassifiers is { Count: > 0 };
                 bool isUnionType = IsUnionType(typeToGenerate.Type);
                 INamedTypeSymbol? namedUnionType = typeToGenerate.Type as INamedTypeSymbol;
 
@@ -1039,25 +1062,8 @@ namespace System.Text.Json.SourceGeneration
                     if (SymbolEqualityComparer.Default.Equals(attributeType, _knownSymbols.JsonDerivedTypeAttributeType))
                     {
                         Debug.Assert(attributeData.ConstructorArguments.Length > 0);
-                        var derivedType = (ITypeSymbol)attributeData.ConstructorArguments[0].Value!;
-
-                        if (derivedType is INamedTypeSymbol { IsUnboundGenericType: true } unboundDerived)
-                        {
-                            if (!TryResolveOpenGenericDerivedType(
-                                    unboundDerived, typeToGenerate.Type,
-                                    out INamedTypeSymbol? resolvedType, out string? failureReason))
-                            {
-                                ReportDiagnostic(DiagnosticDescriptors.OpenGenericDerivedTypeCouldNotBeResolved, attributeData.GetLocation(), derivedType.ToDisplayString(), typeToGenerate.Type.ToDisplayString(), failureReason);
-                                continue;
-                            }
-
-                            derivedType = resolvedType!;
-                        }
-
-                        TypeRef derivedTypeRef = EnqueueType(derivedType, typeToGenerate.Mode);
-
-                        // The generated polymorphic metadata references the derived type by name.
-                        AddExperimentalDiagnosticIds(derivedType, ref experimentalIds);
+                        hasExplicitDerivedTypeAttribute = true;
+                        ITypeSymbol derivedType = (ITypeSymbol)attributeData.ConstructorArguments[0].Value!;
 
                         object? typeDiscriminator = null;
                         if (attributeData.ConstructorArguments.Length == 2)
@@ -1066,20 +1072,21 @@ namespace System.Text.Json.SourceGeneration
                             Debug.Assert(typeDiscriminator is int or string);
                         }
 
-                        if (derivedTypes is null && typeToGenerate.Mode == JsonSourceGenerationMode.Serialization)
-                        {
-                            ReportDiagnostic(DiagnosticDescriptors.PolymorphismNotSupported, typeToGenerate.Location, typeToGenerate.Type.ToDisplayString());
-                        }
-
-                        (derivedTypes ??= new()).Add(new DerivedTypeSpec
-                        {
-                            DerivedType = derivedTypeRef,
-                            TypeDiscriminator = typeDiscriminator,
-                        });
+                        AddPolymorphicDerivedType(
+                            typeToGenerate,
+                            derivedType,
+                            typeDiscriminator,
+                            attributeData.GetLocation(),
+                            typeToGenerate.Location,
+                            ref typeDiscriminators,
+                            ref experimentalIds,
+                            ref derivedTypes,
+                            isInferredDerivedType: false);
                     }
                     else if (SymbolEqualityComparer.Default.Equals(attributeType, _knownSymbols.JsonPolymorphicAttributeType))
                     {
                         hasPolymorphicAttribute = true;
+                        polymorphicAttributeLocation = attributeData.GetLocation();
 
                         foreach (KeyValuePair<string, TypedConstant> namedArg in attributeData.NamedArguments)
                         {
@@ -1087,6 +1094,9 @@ namespace System.Text.Json.SourceGeneration
                             {
                                 case "IgnoreUnrecognizedTypeDiscriminators":
                                     ignoreUnrecognizedTypeDiscriminators = (bool)namedArg.Value.Value!;
+                                    break;
+                                case "InferClosedTypePolymorphism":
+                                    inferClosedTypePolymorphismOverride = (bool)namedArg.Value.Value!;
                                     break;
                                 case "TypeDiscriminatorPropertyName":
                                     typeDiscriminatorPropertyName = (string?)namedArg.Value.Value;
@@ -1120,7 +1130,82 @@ namespace System.Text.Json.SourceGeneration
                     }
                 }
 
-                if (hasPolymorphicAttribute || derivedTypes is { Count: > 0 })
+                // Enumerate a closed hierarchy once when it is needed either for inference or to determine
+                // whether generated metadata must reject runtime-only inference. Explicit derived-type
+                // registrations suppress inference, while any explicit polymorphism metadata makes the
+                // runtime-only inference guard unnecessary.
+                //
+                // A value specified on the declaration overrides the context-wide
+                // JsonSourceGenerationOptionsAttribute setting; the context-wide value applies when unset.
+                bool shouldInferClosedTypePolymorphism =
+                    (inferClosedTypePolymorphismOverride ?? (options?.InferClosedTypePolymorphism is true)) &&
+                    !hasExplicitDerivedTypeAttribute;
+                bool needsRuntimeInferenceGuard =
+                    options?.InferClosedTypePolymorphism is not true &&
+                    !hasPolymorphicAttribute &&
+                    derivedTypes is null;
+
+                INamedTypeSymbol? closedBaseType = null;
+                if ((shouldInferClosedTypePolymorphism || needsRuntimeInferenceGuard || inferClosedTypePolymorphismOverride is true) &&
+                    typeToGenerate.Type is INamedTypeSymbol namedBaseType &&
+                    namedBaseType.IsClosedType())
+                {
+                    closedBaseType = namedBaseType;
+                }
+
+                // Enabling inference on a type that is not closed can never infer derived types, so it is
+                // always a mistake -- including when the declaration carries explicit JsonDerivedTypeAttribute
+                // registrations, which would otherwise mask the error behind a working hierarchy.
+                if (inferClosedTypePolymorphismOverride is true && closedBaseType is null)
+                {
+                    ReportDiagnostic(
+                        DiagnosticDescriptors.InferClosedTypePolymorphismOnNonClosedType,
+                        polymorphicAttributeLocation ?? typeToGenerate.Location,
+                        typeToGenerate.Type.ToDisplayString());
+                }
+                else if (inferClosedTypePolymorphismOverride is true && hasExplicitDerivedTypeAttribute)
+                {
+                    // Explicit registrations replace inference rather than adding to it, so a declaration
+                    // requesting both silently drops every derived type it did not register. Only the
+                    // declaration-level opt-in is reported: a context-wide opt-in is meant to be overridden
+                    // by explicit registrations.
+                    ReportDiagnostic(
+                        DiagnosticDescriptors.InferClosedTypePolymorphismWithExplicitDerivedTypes,
+                        polymorphicAttributeLocation ?? typeToGenerate.Location,
+                        typeToGenerate.Type.ToDisplayString());
+                }
+
+                if ((shouldInferClosedTypePolymorphism || needsRuntimeInferenceGuard) && closedBaseType is not null)
+                {
+                    List<ITypeSymbol>? closedDerivedTypes = closedBaseType.GetClosedDerivedTypes();
+                    // A non-null empty list represents a hierarchy with closed descendants but no terminal types.
+                    hasClosedDerivedTypes = closedDerivedTypes is not null;
+
+                    if (shouldInferClosedTypePolymorphism && closedDerivedTypes is not null)
+                    {
+                        hasInferredClosedTypePolymorphism = true;
+                        InferClosedTypeDerivedTypes(typeToGenerate, closedDerivedTypes, ref typeDiscriminators, ref experimentalIds, ref derivedTypes);
+                    }
+                }
+
+                // A declaration that explicitly opts out of inference, registers no derived types of its own,
+                // and specifies no other polymorphism metadata is left non-polymorphic: JsonPolymorphicAttribute
+                // is being used to exclude the type from a context-wide opt-in rather than to declare a hierarchy.
+                // The generator emits an empty JsonPolymorphismOptions instance for a null spec, which the runtime
+                // recognizes as 'no polymorphism metadata'; emitting a configured instance with an empty
+                // registration list would instead fail configuration at run time.
+                bool hasNonDefaultPolymorphismSettings =
+                    ignoreUnrecognizedTypeDiscriminators ||
+                    polymorphicClassifierFactoryType is not null ||
+                    typeDiscriminatorPropertyName is not null ||
+                    unknownDerivedTypeHandling != default;
+                bool optedOutOfPolymorphism =
+                    inferClosedTypePolymorphismOverride is false &&
+                    derivedTypes is not { Count: > 0 } &&
+                    !hasNonDefaultPolymorphismSettings;
+
+                if (!optedOutOfPolymorphism &&
+                    (hasPolymorphicAttribute || hasInferredClosedTypePolymorphism || derivedTypes is { Count: > 0 }))
                 {
                     polymorphismOptions = new PolymorphismOptionsSpec
                     {
@@ -1137,6 +1222,116 @@ namespace System.Text.Json.SourceGeneration
                 if (isUnionType)
                 {
                     EnqueueUnionCaseTypes(typeToGenerate, hasUnionTypeClassifierSpecified, ref experimentalIds);
+                }
+            }
+
+            private void AddPolymorphicDerivedType(
+                in TypeToGenerate typeToGenerate,
+                ITypeSymbol derivedType,
+                object? typeDiscriminator,
+                Location? derivedTypeDiagnosticLocation,
+                Location? polymorphismDiagnosticLocation,
+                ref HashSet<object>? typeDiscriminators,
+                ref HashSet<string>? experimentalIds,
+                ref List<DerivedTypeSpec>? derivedTypes,
+                bool isInferredDerivedType)
+            {
+                ITypeSymbol? resolvedDerivedType = derivedType;
+
+                if (derivedType is INamedTypeSymbol { IsUnboundGenericType: true } unboundDerived)
+                {
+                    if (!TryResolveOpenGenericDerivedType(
+                            unboundDerived, typeToGenerate.Type,
+                            out resolvedDerivedType, out string? failureReason))
+                    {
+                        // An open generic derived type that cannot be unified against this base
+                        // has no concrete type to emit. Surface it at build time and emit a
+                        // guaranteed-invalid placeholder so the shared runtime resolver rejects
+                        // the hierarchy, matching reflection without referencing the unresolvable type.
+                        ReportDiagnostic(DiagnosticDescriptors.OpenGenericDerivedTypeCouldNotBeResolved, derivedTypeDiagnosticLocation, derivedType.ToDisplayString(), typeToGenerate.Type.ToDisplayString(), failureReason);
+                    }
+                }
+
+                if (resolvedDerivedType is not null &&
+                    !typeToGenerate.Type.IsAssignableFrom(resolvedDerivedType))
+                {
+                    // The shared runtime resolver throws DerivedTypeNotSupported for the emitted entry;
+                    // surface the problem at build time and keep the entry so runtime behavior matches.
+                    ReportDiagnostic(DiagnosticDescriptors.DerivedTypeIsNotSupported, derivedTypeDiagnosticLocation, resolvedDerivedType.ToDisplayString(), typeToGenerate.Type.ToDisplayString());
+                }
+
+                derivedType = resolvedDerivedType ?? _knownSymbols.ObjectType;
+
+                // An inferred derived type must be at least as visible as the base type it is
+                // being registered under; otherwise there are call sites that can see the base but
+                // not the derived type, and the generated context could not reference it.
+                if (isInferredDerivedType &&
+                    !derivedType.IsAtLeastAsVisibleAs(typeToGenerate.Type))
+                {
+                    // Emit a guaranteed-invalid placeholder so the shared runtime resolver rejects
+                    // the hierarchy without referencing the inaccessible type.
+                    ReportDiagnostic(DiagnosticDescriptors.InferredDerivedTypeIsNotAccessible, derivedTypeDiagnosticLocation, derivedType.ToDisplayString(), typeToGenerate.Type.ToDisplayString());
+                    derivedType = _knownSymbols.ObjectType;
+                }
+
+                if (typeDiscriminator is not null &&
+                    !(typeDiscriminators ??= new()).Add(typeDiscriminator))
+                {
+                    // Emit the colliding entry anyway so the shared runtime resolver throws,
+                    // matching the reflection path; surface the collision at build time.
+                    ReportDiagnostic(DiagnosticDescriptors.DerivedTypeDiscriminatorCollision, derivedTypeDiagnosticLocation, typeDiscriminator, typeToGenerate.Type.ToDisplayString());
+                }
+
+                if (derivedTypes is null && typeToGenerate.Mode == JsonSourceGenerationMode.Serialization)
+                {
+                    ReportDiagnostic(DiagnosticDescriptors.PolymorphismNotSupported, polymorphismDiagnosticLocation, typeToGenerate.Type.ToDisplayString());
+                }
+
+                TypeRef derivedTypeRef = EnqueueType(derivedType, typeToGenerate.Mode);
+
+                // The generated polymorphic metadata references the derived type by name.
+                AddExperimentalDiagnosticIds(derivedType, ref experimentalIds);
+
+                (derivedTypes ??= new()).Add(new DerivedTypeSpec
+                {
+                    DerivedType = derivedTypeRef,
+                    TypeDiscriminator = typeDiscriminator,
+                });
+            }
+
+            /// <summary>
+            /// Synthesizes <see cref="DerivedTypeSpec"/> entries from a closed hierarchy's inferred
+            /// derived type set, mirroring the reflection-side inference in
+            /// <c>DefaultJsonTypeInfoResolver.Helpers.PopulatePolymorphismMetadata</c>. Each inferred
+            /// entry uses the derived type's simple name as its string discriminator.
+            /// </summary>
+            private void InferClosedTypeDerivedTypes(
+                in TypeToGenerate typeToGenerate,
+                List<ITypeSymbol> closedTypeDerivedTypes,
+                ref HashSet<object>? typeDiscriminators,
+                ref HashSet<string>? experimentalIds,
+                ref List<DerivedTypeSpec>? derivedTypes)
+            {
+                // Surface inference diagnostics at the [JsonSerializable] registration site when available
+                // (mirroring the TypeNotSupported handling), so they appear on the context the author
+                // controls rather than on the closed base type's declaration, which may live in another
+                // file or referenced assembly.
+                Location? diagnosticLocation = typeToGenerate.AttributeLocation ?? typeToGenerate.Location;
+
+                // Order by the simple name used as the discriminator, which must be unique.
+                foreach (ITypeSymbol closedDerivedType in closedTypeDerivedTypes.OrderBy(static type => type.Name, StringComparer.Ordinal))
+                {
+                    string discriminator = closedDerivedType.Name;
+                    AddPolymorphicDerivedType(
+                        typeToGenerate,
+                        closedDerivedType,
+                        discriminator,
+                        diagnosticLocation,
+                        diagnosticLocation,
+                        ref typeDiscriminators,
+                        ref experimentalIds,
+                        ref derivedTypes,
+                        isInferredDerivedType: true);
                 }
             }
 
@@ -1159,7 +1354,7 @@ namespace System.Text.Json.SourceGeneration
             private bool TryResolveOpenGenericDerivedType(
                 INamedTypeSymbol unboundDerived,
                 ITypeSymbol baseType,
-                out INamedTypeSymbol? resolvedType,
+                [NotNullWhen(true)] out ITypeSymbol? resolvedType,
                 out string? failureReason)
             {
                 resolvedType = null;
@@ -1600,19 +1795,7 @@ namespace System.Text.Json.SourceGeneration
                     string caseTypeName = caseType.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
                     JsonValueType valueTypes = GetSupportedJsonValueTypes(caseType);
 
-                    if (valueTypes is JsonValueType.None)
-                    {
-                        // [JsonConverter] on the case type makes it inherently non-classifiable
-                        // at compile time -- a custom converter can serialize as any JSON value type.
-                        ReportDiagnostic(
-                            DiagnosticDescriptors.UnionCaseTypesNotClassifiable,
-                            location,
-                            unionTypeName,
-                            $"case type '{caseTypeName}' is annotated with [JsonConverter] and may serialize as any JSON value type");
-                        continue;
-                    }
-
-                    for (int flag = 1; flag <= (int)JsonValueType.Null; flag <<= 1)
+                    for (int flag = 1; flag <= (int)JsonValueType.Boolean; flag <<= 1)
                     {
                         JsonValueType valueType = (JsonValueType)flag;
                         if ((valueTypes & valueType) == 0)
@@ -1647,20 +1830,19 @@ namespace System.Text.Json.SourceGeneration
             // table here MUST stay in sync with:
             //   * src/System/Text/Json/Serialization/Metadata/DefaultJsonTypeInfoResolver.Converters.cs (GetDefaultSimpleConverters)
             //   * src/System/Text/Json/Serialization/Metadata/JsonMetadataServices.Converters.cs (the *Converter properties)
-            //   * src/System/Text/Json/Serialization/Converters/Value/*Converter.cs (each leaf converter's
+            //   * src/System/Text/Json/Serialization/Converters/ (each built-in converter's
             //     GetSupportedJsonValueTypes override)
             // When a built-in converter is added/removed/retargeted in any of those locations,
             // update this method as well so the union ambiguity diagnostic agrees with the
             // runtime value-shape map (JsonTypeInfo.BuildUnionValueTypeMap).
             //
-            // Returns None when the case type carries a user-defined [JsonConverter]. User
-            // converters can serialize as any JSON value type, so the caller surfaces a
-            // not-classifiable diagnostic.
+            // User-defined converters are conservatively classified as potentially representing
+            // every JSON value shape, matching the JsonConverter base implementation.
             private JsonValueType GetSupportedJsonValueTypes(ITypeSymbol type)
             {
                 if (HasCustomConverterAttribute(type))
                 {
-                    return JsonValueType.None;
+                    return JsonValueType.Any;
                 }
 
                 if (type is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } nullable)
@@ -1669,8 +1851,15 @@ namespace System.Text.Json.SourceGeneration
 
                     if (HasCustomConverterAttribute(type))
                     {
-                        return JsonValueType.None;
+                        return JsonValueType.Any;
                     }
+                }
+
+                if (type is INamedTypeSymbol unionType && IsUnionType(unionType))
+                {
+                    // The runtime skips nested union cases when building its value-shape map.
+                    // Contributing no shapes keeps this compile-time ambiguity check aligned.
+                    return JsonValueType.None;
                 }
 
                 // Boolean
@@ -1679,11 +1868,15 @@ namespace System.Text.Json.SourceGeneration
                     return JsonValueType.Boolean;
                 }
 
-                // Numeric primitives + Half / Int128 / UInt128
+                // Numeric primitives + Half / Int128 / UInt128 / BFloat16 / Decimal32 / Decimal64 / Decimal128
                 if (IsBuiltInNumericType(type) ||
                     SymbolEqualityComparer.Default.Equals(type, _knownSymbols.HalfType) ||
                     SymbolEqualityComparer.Default.Equals(type, _knownSymbols.Int128Type) ||
-                    SymbolEqualityComparer.Default.Equals(type, _knownSymbols.UInt128Type))
+                    SymbolEqualityComparer.Default.Equals(type, _knownSymbols.UInt128Type) ||
+                    SymbolEqualityComparer.Default.Equals(type, _knownSymbols.BFloat16Type) ||
+                    SymbolEqualityComparer.Default.Equals(type, _knownSymbols.Decimal32Type) ||
+                    SymbolEqualityComparer.Default.Equals(type, _knownSymbols.Decimal64Type) ||
+                    SymbolEqualityComparer.Default.Equals(type, _knownSymbols.Decimal128Type))
                 {
                     return HasAllowReadingFromString(type)
                         ? JsonValueType.Number | JsonValueType.String
@@ -1710,18 +1903,23 @@ namespace System.Text.Json.SourceGeneration
 
                 // Enums: default EnumConverter writes a number. A user-applied
                 // [JsonConverter] override (e.g. JsonStringEnumConverter) is detected at the
-                // top of this method and returns None.
+                // top of this method and returns Any.
                 if (type.TypeKind is TypeKind.Enum)
                 {
                     return JsonValueType.Number;
                 }
 
-                // Object-shaped built-ins (JsonElement / JsonDocument / JsonNode hierarchy).
+                // Built-ins that can represent every JSON value shape.
                 if (SymbolEqualityComparer.Default.Equals(type, _knownSymbols.JsonElementType) ||
                     SymbolEqualityComparer.Default.Equals(type, _knownSymbols.JsonDocumentType) ||
                     SymbolEqualityComparer.Default.Equals(type, _knownSymbols.JsonNodeType) ||
-                    SymbolEqualityComparer.Default.Equals(type, _knownSymbols.JsonObjectType) ||
-                    SymbolEqualityComparer.Default.Equals(type, _knownSymbols.JsonValueType))
+                    SymbolEqualityComparer.Default.Equals(type, _knownSymbols.JsonValueType) ||
+                    type.SpecialType is SpecialType.System_Object)
+                {
+                    return JsonValueType.Any;
+                }
+
+                if (SymbolEqualityComparer.Default.Equals(type, _knownSymbols.JsonObjectType))
                 {
                     return JsonValueType.Object;
                 }
@@ -1748,7 +1946,7 @@ namespace System.Text.Json.SourceGeneration
                     return JsonValueType.Array;
                 }
 
-                // Anything else (POCOs, dictionaries, object, etc.) defaults to Object.
+                // Anything else (POCOs, dictionaries, etc.) defaults to Object.
                 // This matches the runtime ConverterStrategy fallback in JsonTypeInfo.
                 return JsonValueType.Object;
             }
@@ -3182,6 +3380,10 @@ namespace System.Text.Json.SourceGeneration
                 AddTypeIfNotNull(knownSymbols.Int128Type);
                 AddTypeIfNotNull(knownSymbols.UInt128Type);
                 AddTypeIfNotNull(knownSymbols.HalfType);
+                AddTypeIfNotNull(knownSymbols.BFloat16Type);
+                AddTypeIfNotNull(knownSymbols.Decimal32Type);
+                AddTypeIfNotNull(knownSymbols.Decimal64Type);
+                AddTypeIfNotNull(knownSymbols.Decimal128Type);
                 AddTypeIfNotNull(knownSymbols.GuidType);
                 AddTypeIfNotNull(knownSymbols.UriType);
                 AddTypeIfNotNull(knownSymbols.VersionType);

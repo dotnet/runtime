@@ -243,6 +243,9 @@
   <data name="Cryptography_AndroidX509ChainContextInitializationFailed" xml:space="preserve">
     <value>The Android X.509 certificate chain could not be initialized.</value>
   </data>
+  <data name="Cryptography_ArgCompositeMLDsaRequiresCompositeMLDsaKey" xml:space="preserve">
+    <value>Keys used with the CompositeMLDsaCng algorithm must have an algorithm group of CompositeMLDsa.</value>
+  </data>
   <data name="Cryptography_ArgDSARequiresDSAKey" xml:space="preserve">
     <value>Keys used with the DSACng algorithm must have an algorithm group of DSA.</value>
   </data>
@@ -339,6 +342,9 @@
   <data name="Cryptography_CipherModeNotSupported" xml:space="preserve">
     <value>The specified CipherMode '{0}' is not supported.</value>
   </data>
+  <data name="Cryptography_CompositeKemRsaDecapsulationFailed" xml:space="preserve">
+    <value>RSA-OAEP decapsulation failed to produce a shared secret of the expected length.</value>
+  </data>
   <data name="Cryptography_CompositeSignDataError" xml:space="preserve">
     <value>Composite signature generation failed due to an error in one or both of the components.</value>
   </data>
@@ -431,6 +437,12 @@
   </data>
   <data name="Cryptography_HashNotYetFinalized" xml:space="preserve">
     <value>Hash must be finalized before the hash value is retrieved.</value>
+  </data>
+  <data name="Cryptography_HkdfIkmTooLong" xml:space="preserve">
+    <value>The HKDF input keying material exceeds the maximum supported length of {0} bytes for this platform.</value>
+  </data>
+  <data name="Cryptography_HkdfPrkTooLong" xml:space="preserve">
+    <value>The HKDF pseudorandom key exceeds the maximum supported length of {0} bytes for this platform.</value>
   </data>
   <data name="Cryptography_IncorrectTagLength" xml:space="preserve">
     <value>The size of the specified tag does not match the expected size of {0}.</value>
@@ -570,11 +582,17 @@
   <data name="Cryptography_KeyTooSmall" xml:space="preserve">
     <value>The key is too small for the requested operation.</value>
   </data>
+  <data name="Cryptography_KeyWrap_Ciphertext_InvalidLength" xml:space="preserve">
+    <value>The ciphertext is not a valid length for the Key Wrap algorithm.</value>
+  </data>
   <data name="Cryptography_KeyWrap_DecryptFailed" xml:space="preserve">
     <value>The ciphertext did not successfully decrypt with the instance key.</value>
   </data>
   <data name="Cryptography_KeyWrap_InvalidLength" xml:space="preserve">
     <value>The ciphertext is not a valid length for the Key Wrap with Padding Unwrap algorithm.</value>
+  </data>
+  <data name="Cryptography_KeyWrap_Plaintext_InvalidLength" xml:space="preserve">
+    <value>The plaintext is not a valid length for the Key Wrap algorithm.</value>
   </data>
   <data name="Cryptography_KeyWrongSizeForAlgorithm" xml:space="preserve">
     <value>The specified key is not the correct size for the indicated algorithm.</value>

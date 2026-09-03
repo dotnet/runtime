@@ -30,7 +30,7 @@ namespace System.Text.Json.Serialization.Converters
             JsonTypeInfo typeInfo = state.Current.JsonTypeInfo;
 
             Func<IEnumerable<TElement>, TCollection>? creator = (Func<IEnumerable<TElement>, TCollection>?)typeInfo.CreateObjectWithArgs;
-            Debug.Assert(creator != null);
+            Debug.Assert(creator is not null);
             state.Current.ReturnValue = creator((List<TElement>)state.Current.ReturnValue!);
         }
     }

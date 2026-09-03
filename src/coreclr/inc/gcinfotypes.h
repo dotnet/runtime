@@ -381,7 +381,7 @@ enum infoHdrAdjust2 {
 #define HAS_GS_COOKIE_OFFSET        ((unsigned int) -1)
 
 // 0 is not a valid sync offset
-#define INVALID_SYNC_OFFSET         0
+#define INVALID_SYNC_OFFSET         0 // [cDAC] [GCInfo]: Contract depends on this value.
 // Temporary value to indicate that the offset needs to be read after the header
 #define HAS_SYNC_OFFSET             ((unsigned int) -1)
 

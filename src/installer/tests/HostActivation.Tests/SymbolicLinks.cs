@@ -43,7 +43,8 @@ namespace HostActivation.Tests
                     symlinks.Add(new SymLink(symlinkPath, file));
                 }
 
-                var result = Command.Create(Path.Combine(testDir.Location, symlinkRelativePath, Path.GetFileName(sharedTestState.FrameworkDependentApp.AppExe)))
+                string appHostPath = Path.Combine(testDir.Location, symlinkRelativePath, Path.GetFileName(sharedTestState.FrameworkDependentApp.AppExe));
+                var result = Command.Create(appHostPath, "print_command_line_args")
                     .CaptureStdErr()
                     .CaptureStdOut()
                     .DotNetRoot(HostTestContext.BuiltDotNet.BinPath)
@@ -54,7 +55,9 @@ namespace HostActivation.Tests
                 // * Unix: The apphost will look next to the resolved apphost for the app dll and find the real thing
                 result
                     .Should().Pass()
-                    .And.HaveStdOutContaining("Hello World");
+                    .And.HaveStdOutContaining("Hello World")
+                    .And.HaveStdOutContaining($"Environment.GetCommandLineArgs()[0] = {appHostPath}")
+                    .And.HaveStdOutContaining("Environment.GetCommandLineArgs()[1] = print_command_line_args");
             }
             finally
             {

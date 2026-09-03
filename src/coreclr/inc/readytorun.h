@@ -19,10 +19,10 @@
 //  src/coreclr/nativeaot/Runtime/inc/ModuleHeaders.h
 // If you update this, ensure you run `git grep MINIMUM_READYTORUN_MAJOR_VERSION`
 // and handle pending work.
-#define READYTORUN_MAJOR_VERSION 25
-#define READYTORUN_MINOR_VERSION 0x0000
+#define READYTORUN_MAJOR_VERSION 27
+#define READYTORUN_MINOR_VERSION 0x0001
 
-#define MINIMUM_READYTORUN_MAJOR_VERSION 25
+#define MINIMUM_READYTORUN_MAJOR_VERSION 26
 
 // R2R Version 2.1 adds the InliningInfo section
 // R2R Version 2.2 adds the ProfileDataInfo section
@@ -65,6 +65,10 @@
 // R2R Version 23 changes delegate layout to have target before methodPtr
 // R2R Version 24 changes ARM32 virtual stub dispatch hidden parameter register to R12
 // R2R Version 25 renames runtime async infrastructure members, makes thunk-used members NonVersionable, and frees up a flag in CorInfoContinuationFlags
+// R2R Version 26 changes ARM64 NativeVarInfo register encoding to include V0-V31
+// R2R Version 26.1 adds READYTORUN_FIXUP_StoreMultiCallableAddrOfCode for storing a method's MultiCallableAddrOfCode into a location in the R2R image (used on WebAssembly)
+// R2R Version 27 redefines READYTORUN_FIXUP_DeclaringTypeHandle to be encoded as a method signature instead of a pair of type signatures
+// R2R Version 27.1 adds precompiled unboxing stubs to the InstanceMethodEntryPoints table. They share the metadata token, owner type and instantiation of the method they wrap and are distinguished only by READYTORUN_METHOD_SIG_UnboxingStub.
 
 struct READYTORUN_CORE_HEADER
 {
@@ -301,7 +305,7 @@ enum ReadyToRunFixupKind
     READYTORUN_FIXUP_Check_FieldOffset          = 0x2B,
 
     READYTORUN_FIXUP_DelegateCtor               = 0x2C, /* optimized delegate ctor */
-    READYTORUN_FIXUP_DeclaringTypeHandle        = 0x2D,
+    READYTORUN_FIXUP_DeclaringTypeHandle        = 0x2D, /* Type which declares the method described by the (method) signature */
 
     READYTORUN_FIXUP_IndirectPInvokeTarget      = 0x2E, /* Target (indirect) of an inlined pinvoke */
     READYTORUN_FIXUP_PInvokeTarget              = 0x2F, /* Target of an inlined pinvoke */
@@ -320,6 +324,8 @@ enum ReadyToRunFixupKind
     READYTORUN_FIXUP_ResumptionStubEntryPoint   = 0x38, /* Entry point of an async method resumption stub */
 
     READYTORUN_FIXUP_InjectStringThunks         = 0x39, /* Inject pregenerated string-to-code thunk mappings into the global lookup table */
+
+    READYTORUN_FIXUP_StoreMultiCallableAddrOfCode = 0x3A, /* Store a method's MultiCallableAddrOfCode into a location in the R2R image (processed at method load time; used on WebAssembly) */
 
     READYTORUN_FIXUP_ModuleOverride             = 0x80, /* followed by sig-encoded UInt with assemblyref index into either the assemblyref table of the MSIL metadata of the master context module for the signature or */
                                                         /* into the extra assemblyref table in the manifest metadata R2R header table (used in cases inlining brings in references to assemblies not seen in the MSIL). */

@@ -3,6 +3,16 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
+
+namespace System.Runtime.CompilerServices
+{
+    [AttributeUsage(AttributeTargets.Method)]
+    internal class RuntimeAsyncMethodGenerationAttribute(bool runtimeAsync) : Attribute
+    {
+        public bool RuntimeAsync { get; } = runtimeAsync;
+    }
+}
 
 namespace Profiler.Tests
 {
@@ -64,7 +74,74 @@ namespace Profiler.Tests
             //  the methods that it modified - reverts are not symmetric with rejits.
             // See https://github.com/dotnet/runtime/issues/117823
 
+            return RuntimeAsyncReJIT();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static int RuntimeAsyncReJIT()
+        {
+            const string OriginalResult = "Original runtime async result";
+            const string ReJITResult = "Hello from profiler rejit method 'RuntimeAsyncTarget'! ";
+
+            Console.WriteLine("Calling the Task-returning native version before ReJIT");
+            string taskReturningBefore = TaskReturningCaller().GetAwaiter().GetResult();
+            Console.WriteLine($"Task-returning before ReJIT: {taskReturningBefore}");
+
+            Console.WriteLine("Calling the runtime-async native version before ReJIT");
+            string runtimeAsyncBefore = RuntimeAsyncCaller().GetAwaiter().GetResult();
+            Console.WriteLine($"Runtime-async before ReJIT: {runtimeAsyncBefore}");
+
+            if (taskReturningBefore != OriginalResult || runtimeAsyncBefore != OriginalResult)
+            {
+                Console.WriteLine("Runtime async target returned an unexpected value before ReJIT");
+                return 1236;
+            }
+
+            TriggerRuntimeAsyncReJIT();
+
+            Console.WriteLine("Calling the Task-returning native version after ReJIT");
+            string taskReturningAfter = TaskReturningCaller().GetAwaiter().GetResult();
+            Console.WriteLine($"Task-returning after ReJIT: {taskReturningAfter}");
+
+            Console.WriteLine("Calling the runtime-async native version after ReJIT");
+            string runtimeAsyncAfter = RuntimeAsyncCaller().GetAwaiter().GetResult();
+            Console.WriteLine($"Runtime-async after ReJIT: {runtimeAsyncAfter}");
+
+            if (taskReturningAfter != ReJITResult || runtimeAsyncAfter != ReJITResult)
+            {
+                Console.WriteLine("ReJIT did not update both native versions of RuntimeAsyncTarget");
+                return 1237;
+            }
+
             return 100;
+        }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async Task<string> TaskReturningCaller()
+        {
+            return await RuntimeAsyncTarget<string>();
+        }
+
+        [RuntimeAsyncMethodGeneration(true)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async Task<string> RuntimeAsyncCaller()
+        {
+            return await RuntimeAsyncTarget<string>();
+        }
+
+        [RuntimeAsyncMethodGeneration(true)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async Task<string> RuntimeAsyncTarget<T>()
+        {
+            await Task.Yield();
+            return "Original runtime async result";
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void TriggerRuntimeAsyncReJIT()
+        {
+            Console.WriteLine("Runtime async ReJIT should be triggered after this method...");
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]

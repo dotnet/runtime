@@ -543,10 +543,10 @@ namespace System.Xml.XmlConvertTests
         public int ToType36()
         {
             // decimal
-            CError.Compare(XmlConvert.ToString((decimal)(-4582.24)), "-4582.24", "decimal");
-            CError.Compare(XmlConvert.ToString((decimal)0.00005), "0.00005", "decimal");
-            CError.Compare(XmlConvert.ToString((decimal)0.0000000000000000000000001), "0.0000000000000000000000001", "decimal");
-            CError.Compare(XmlConvert.ToString((decimal)145896.233422154), "145896.233422154", "decimal");
+            CError.Compare(XmlConvert.ToString(-4582.24m), "-4582.24", "decimal");
+            CError.Compare(XmlConvert.ToString(0.00005m), "0.00005", "decimal");
+            CError.Compare(XmlConvert.ToString(0.0000000000000000000000001m), "0.0000000000000000000000001", "decimal");
+            CError.Compare(XmlConvert.ToString(145896.233422154m), "145896.233422154", "decimal");
             CError.Compare(XmlConvert.ToString(Convert.ToDecimal("0.123456789012345678", CultureInfo.InvariantCulture)), "0.123456789012345678", "decimal");
             CError.Compare(XmlConvert.ToString((decimal)1234567890123456789), (1234567890123456789M).ToString(), "decimal");
             CError.Compare(XmlConvert.ToString((decimal)-0), "0", "decimal");
@@ -1117,7 +1117,7 @@ namespace System.Xml.XmlConvertTests
         public int ToType9()
         {
             object[] array0 = { "145896.2334", "-1.23", "  -458.238", "145896.233422154", "0.123456789012345678", "1234567890123456789", "100.0", "100." };
-            object[] array1 = { (decimal)145896.2334, (decimal)-1.23, (decimal)-458.238, (decimal)145896.233422154, Convert.ToDecimal("0.123456789012345678", CultureInfo.InvariantCulture), (decimal)1234567890123456789, (decimal)100, (decimal)100 };
+            object[] array1 = { 145896.2334m, -1.23m, -458.238m, 145896.233422154m, Convert.ToDecimal("0.123456789012345678", CultureInfo.InvariantCulture), (decimal)1234567890123456789, (decimal)100, (decimal)100 };
             return TestValid(array0, array1, "decimal");
         }
 

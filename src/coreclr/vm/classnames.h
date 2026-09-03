@@ -32,6 +32,10 @@
 #define g_UInt128ClassName "System.UInt128"
 #define g_UInt128Name "UInt128"
 
+#define g_Decimal32Name "Decimal32"
+#define g_Decimal64Name "Decimal64"
+#define g_Decimal128Name "Decimal128"
+
 #define g_Vector64ClassName "System.Runtime.Intrinsics.Vector64`1"
 #define g_Vector64Name "Vector64`1"
 

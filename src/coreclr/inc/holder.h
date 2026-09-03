@@ -6,7 +6,7 @@
 #define __HOLDER_H_
 
 #include "cor.h"
-#include "staticcontract.h"
+#include "contract.h"
 #include "volatile.h"
 #include "palclr.h"
 #include <minipal/com/memory.h>
@@ -814,37 +814,6 @@ public:
 };
 
 //-----------------------------------------------------------------------------
-// NOTE: THIS IS UNSAFE TO USE IN THE VM for interop COM objects!!
-//  WE DO NOT CORRECTLY CHANGE TO PREEMPTIVE MODE BEFORE CALLING RELEASE!!
-//  USE ComHolderAnyMode
-//
-// ReleaseHolder : COM Interface holder for use outside the VM (or on well known instances
-//                  which do not need preemptive Release)
-//
-// Usage example:
-//
-//  {
-//      ReleaseHolder<IFoo> foo;
-//      hr = FunctionToGetRefOfFoo(&foo);
-//      // Note ComHolder doesn't call AddRef - it assumes you already have a ref (if non-0).
-//  } // foo->Release() on out of scope (WITHOUT RESPECT FOR GC MODE!!)
-//
-//-----------------------------------------------------------------------------
-
-template <typename TYPE>
-FORCEINLINE void DoTheRelease(TYPE *value)
-{
-    STATIC_CONTRACT_WRAPPER;
-    if (value)
-    {
-        value->Release();
-    }
-}
-
-template<typename _TYPE>
-using ReleaseHolder = SpecializedWrapper<_TYPE, DoTheRelease<_TYPE>>;
-
-//-----------------------------------------------------------------------------
 // NewHolder : New'ed memory holder
 //
 //  {
@@ -1022,6 +991,29 @@ public:
     }
 };
 
+template <typename TYPE>
+struct ReleaseHolderTraits final
+{
+    using Type = TYPE*;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type value)
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_TRIGGERS;
+            MODE_PREEMPTIVE;
+        }
+        CONTRACTL_END;
+
+        if (value != NULL)
+            value->Release();
+    }
+};
+
+template<typename _TYPE>
+using ReleaseHolder = LifetimeHolder<ReleaseHolderTraits<_TYPE>>;
+
 //-----------------------------------------------------------------------------
 // Wrap win32 functions using HANDLE
 //-----------------------------------------------------------------------------
@@ -1139,53 +1131,6 @@ struct CoTaskMemTraits final
 
 template<typename T>
 using CoTaskMemHolder = LifetimeHolder<CoTaskMemTraits<T>>;
-
-//-----------------------------------------------------------------------------
-// StubHolder : holder for runtime-emitted Stub-like objects.
-// On scope exit, calls DecRef through the executable-memory
-// writer-holder so the refcount field can be written.
-//
-// Note: StubHolder does NOT call IncRef on assignment - the caller owns
-// matching IncRef/DecRef pairing on the value it hands to the holder.
-//
-// Usage example:
-//
-//  {
-//      StubHolder<Stub> foo;
-//      foo = new Stub();
-//      foo->AddRef();
-//  } // foo->DecRef() on out of scope
-//-----------------------------------------------------------------------------
-template<typename T>
-class ExecutableWriterHolderNoLog;
-
-class ExecutableAllocator;
-
-template<typename T>
-struct StubTraits final
-{
-    using Type = T*;
-    static constexpr Type Default() { return nullptr; }
-    static void Free(Type value)
-    {
-        STATIC_CONTRACT_WRAPPER;
-        if (value != nullptr)
-        {
-#ifdef LOG_EXECUTABLE_ALLOCATOR_STATISTICS
-#ifdef HOST_UNIX
-            ExecutableAllocator::LogUsage(__FILE__, __LINE__, __PRETTY_FUNCTION__);
-#else
-            ExecutableAllocator::LogUsage(__FILE__, __LINE__, __FUNCTION__);
-#endif
-#endif // LOG_EXECUTABLE_ALLOCATOR_STATISTICS
-            ExecutableWriterHolderNoLog<T> stubWriterHolder(value, sizeof(T));
-            stubWriterHolder.GetRW()->DecRef();
-        }
-    }
-};
-
-template<typename T>
-using StubHolder = LifetimeHolder<StubTraits<T>>;
 
 //
 // We need the following methods to have volatile arguments, so that they can accept
@@ -1382,7 +1327,7 @@ namespace clr
     {
         STATIC_CONTRACT_LIMITED_METHOD;
         //@TODO: Would be good to add runtime validation that the return value is used.
-        return SafeAddRef(pItf.GetValue());
+        return SafeAddRef(static_cast<ItfT*>(pItf));
     }
 
     namespace detail

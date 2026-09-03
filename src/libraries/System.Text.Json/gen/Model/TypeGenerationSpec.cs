@@ -53,6 +53,13 @@ namespace System.Text.Json.SourceGeneration
 
         public required PolymorphismOptionsSpec? PolymorphismOptions { get; init; }
 
+        /// <summary>
+        /// Indicates a closed type whose polymorphism metadata was not inferred at compile time
+        /// (because <see cref="SourceGenerationOptionsSpec.InferClosedTypePolymorphism"/> was not enabled).
+        /// Used to emit a marker so the runtime can fail fast if closed-type inference is requested there.
+        /// </summary>
+        public required bool IsClosedTypeWithoutInferredPolymorphism { get; init; }
+
         public required bool IsValueTuple { get; init; }
 
         public required JsonNumberHandling? NumberHandling { get; init; }

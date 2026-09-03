@@ -208,6 +208,8 @@ int32_t AndroidCryptoNative_CipherSetKeyAndIV(CipherCtx* ctx, uint8_t* key, uint
             // ivLength = cipher.getBlockSize();
             JNIEnv *env = GetJNIEnv();
             ctx->ivLength = (*env)->CallIntMethod(env, ctx->cipher, g_getBlockSizeMethod);
+            if (CheckJNIExceptions(env))
+                return FAIL;
         }
 
         SaveTo(iv, &ctx->iv, (size_t)ctx->ivLength, /* overwrite */ true);
@@ -241,11 +243,18 @@ int32_t AndroidCryptoNative_CipherUpdateAAD(CipherCtx* ctx, uint8_t* in, int32_t
     abort_if_invalid_pointer_argument(in);
 
     JNIEnv* env = GetJNIEnv();
-    jbyteArray inDataBytes = make_java_byte_array(env, inl);
-    (*env)->SetByteArrayRegion(env, inDataBytes, 0, inl, (jbyte*)in);
-    (*env)->CallVoidMethod(env, ctx->cipher, g_cipherUpdateAADMethod, inDataBytes);
-    (*env)->DeleteLocalRef(env, inDataBytes);
-    return CheckJNIExceptions(env) ? FAIL : SUCCESS;
+    int32_t ret = FAIL;
+    INIT_LOCALS(loc, inDataBytes);
+    loc[inDataBytes] = make_java_byte_array(env, inl);
+    (*env)->SetByteArrayRegion(env, loc[inDataBytes], 0, inl, (jbyte*)in);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    (*env)->CallVoidMethod(env, ctx->cipher, g_cipherUpdateAADMethod, loc[inDataBytes]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    ret = SUCCESS;
+
+cleanup:
+    RELEASE_LOCALS(loc, env);
+    return ret;
 }
 
 int32_t AndroidCryptoNative_CipherUpdate(CipherCtx* ctx, uint8_t* outm, int32_t* outl, uint8_t* in, int32_t inl)
@@ -261,22 +270,30 @@ int32_t AndroidCryptoNative_CipherUpdate(CipherCtx* ctx, uint8_t* outm, int32_t*
     abort_if_invalid_pointer_argument(in);
 
     JNIEnv* env = GetJNIEnv();
-    jbyteArray inDataBytes = make_java_byte_array(env, inl);
-    (*env)->SetByteArrayRegion(env, inDataBytes, 0, inl, (jbyte*)in);
+    int32_t ret = FAIL;
+    INIT_LOCALS(loc, inDataBytes, outDataBytes);
 
     *outl = 0;
-    jbyteArray outDataBytes = (jbyteArray)(*env)->CallObjectMethod(env, ctx->cipher, g_cipherUpdateMethod, inDataBytes);
 
-    if (outDataBytes && outm)
+    loc[inDataBytes] = make_java_byte_array(env, inl);
+    (*env)->SetByteArrayRegion(env, loc[inDataBytes], 0, inl, (jbyte*)in);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
+    loc[outDataBytes] = (jbyteArray)(*env)->CallObjectMethod(env, ctx->cipher, g_cipherUpdateMethod, loc[inDataBytes]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
+    if (loc[outDataBytes] && outm)
     {
-        jsize outDataBytesLen = (*env)->GetArrayLength(env, outDataBytes);
+        jsize outDataBytesLen = (*env)->GetArrayLength(env, loc[outDataBytes]);
+        (*env)->GetByteArrayRegion(env, loc[outDataBytes], 0, outDataBytesLen, (jbyte*) outm);
+        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
         *outl = outDataBytesLen;
-        (*env)->GetByteArrayRegion(env, outDataBytes, 0, outDataBytesLen, (jbyte*) outm);
-        (*env)->DeleteLocalRef(env, outDataBytes);
     }
+    ret = SUCCESS;
 
-    (*env)->DeleteLocalRef(env, inDataBytes);
-    return CheckJNIExceptions(env) ? FAIL : SUCCESS;
+cleanup:
+    RELEASE_LOCALS(loc, env);
+    return ret;
 }
 
 int32_t AndroidCryptoNative_CipherFinalEx(CipherCtx* ctx, uint8_t* outm, int32_t* outl)

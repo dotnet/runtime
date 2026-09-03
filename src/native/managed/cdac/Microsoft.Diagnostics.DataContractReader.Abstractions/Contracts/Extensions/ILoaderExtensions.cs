@@ -23,8 +23,11 @@ public static class ILoaderExtensions
 
         uint token = (uint)MetadataTokens.GetToken(assemblyRef);
 
-        ModuleLookupTables tables = loader.GetLookupTables(referencingModule);
-        TargetPointer modulePtr = loader.GetModuleLookupMapElement(tables.ManifestModuleReferences, token, out _);
+        TargetPointer modulePtr = loader.GetModuleLookupMapElement(
+            referencingModule,
+            ModuleLookupMapKind.ManifestModuleReferences,
+            token,
+            out _);
         if (modulePtr == TargetPointer.Null)
             return false;
 

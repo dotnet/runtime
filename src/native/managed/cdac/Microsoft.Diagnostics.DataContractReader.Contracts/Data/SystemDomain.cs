@@ -7,7 +7,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 internal sealed partial class SystemDomain : IData<SystemDomain>
 {
     [FieldAddress]
-    public TargetPointer GlobalLoaderAllocator { get; }
+    public partial TargetPointer GlobalLoaderAllocator { get; }
 
-    [Field] public TargetPointer SystemAssembly { get; }
+    [Field] public partial TargetPointer SystemAssembly { get; }
 }

@@ -99,19 +99,17 @@ namespace Microsoft.Interop
             return code;
         }
 
-        public MemberDeclarationSyntax WrapMemberInContainingSyntaxWithUnsafeModifier(MemberDeclarationSyntax member)
+        /// <summary>
+        /// Wraps <paramref name="member"/> in its containing types and namespace.
+        /// </summary>
+        public MemberDeclarationSyntax WrapMemberInContainingSyntax(MemberDeclarationSyntax member)
         {
-            bool addedUnsafe = false;
             MemberDeclarationSyntax wrappedMember = member;
             foreach (var containingType in ContainingSyntax)
             {
                 TypeDeclarationSyntax type = TypeDeclaration(containingType.TypeKind, containingType.Identifier)
                     .WithModifiers(containingType.Modifiers)
                     .AddMembers(wrappedMember);
-                if (!addedUnsafe)
-                {
-                    type = type.WithModifiers(type.Modifiers.AddToModifiers(SyntaxKind.UnsafeKeyword));
-                }
                 if (containingType.TypeParameters is not null)
                 {
                     type = type.AddTypeParameterListParameters(containingType.TypeParameters.Parameters.ToArray());

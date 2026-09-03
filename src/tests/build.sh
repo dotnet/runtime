@@ -391,8 +391,10 @@ fi
 
 if [[ $__Mono -eq 1 ]]; then
     __RuntimeFlavor="mono"
+    __CMakeArgs="-DCMAKE_BUILD_RUNTIME_FLAVOR=Mono $__CMakeArgs"
 else
     __RuntimeFlavor="coreclr"
+    __CMakeArgs="-DCMAKE_BUILD_RUNTIME_FLAVOR=CoreCLR $__CMakeArgs"
 fi
 
 # Get the number of processors available to the scheduler

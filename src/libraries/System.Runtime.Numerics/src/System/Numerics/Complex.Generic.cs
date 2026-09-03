@@ -164,120 +164,201 @@ namespace System.Numerics
 
         public static Complex<T> operator *(Complex<T> left, Complex<T> right)
         {
-            // Multiplication:  (a + bi)(c + di) = (ac - bd) + (bc + ad)i
-            T result_realpart = (left.m_real * right.m_real) - (left.m_imaginary * right.m_imaginary);
-            T result_imaginarypart = (left.m_imaginary * right.m_real) + (left.m_real * right.m_imaginary);
-            return new Complex<T>(result_realpart, result_imaginarypart);
-        }
-
-        public static Complex<T> operator *(Complex<T> left, T right)
-        {
-            if (!T.IsFinite(left.m_real))
-            {
-                if (!T.IsFinite(left.m_imaginary))
-                {
-                    return new Complex<T>(T.NaN, T.NaN);
-                }
-
-                return new Complex<T>(left.m_real * right, T.NaN);
-            }
-
-            if (!T.IsFinite(left.m_imaginary))
-            {
-                return new Complex<T>(T.NaN, left.m_imaginary * right);
-            }
-
-            return new Complex<T>(left.m_real * right, left.m_imaginary * right);
-        }
-
-        public static Complex<T> operator *(T left, Complex<T> right)
-        {
-            if (!T.IsFinite(right.m_real))
-            {
-                if (!T.IsFinite(right.m_imaginary))
-                {
-                    return new Complex<T>(T.NaN, T.NaN);
-                }
-
-                return new Complex<T>(left * right.m_real, T.NaN);
-            }
-
-            if (!T.IsFinite(right.m_imaginary))
-            {
-                return new Complex<T>(T.NaN, left * right.m_imaginary);
-            }
-
-            return new Complex<T>(left * right.m_real, left * right.m_imaginary);
-        }
-
-        public static Complex<T> operator /(Complex<T> left, Complex<T> right)
-        {
-            // Division : Smith's formula.
             T a = left.m_real;
             T b = left.m_imaginary;
             T c = right.m_real;
             T d = right.m_imaginary;
 
-            // Computing c * c + d * d will overflow even in cases where the actual result of the division does not overflow.
+            // Multiplication:  (a + bi)(c + di) = (ac - bd) + (bc + ad)i
+            T x = (a * c) - (b * d);
+            T y = (b * c) + (a * d);
+
+            if (T.IsNaN(x) && T.IsNaN(y))
+            {
+                // Outlined so the naive common path stays small enough to inline.
+                return MultiplyNaNRecovery(a, b, c, d, x, y);
+            }
+
+            return new Complex<T>(x, y);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static Complex<T> MultiplyNaNRecovery(T a, T b, T c, T d, T x, T y)
+        {
+            // C23 Annex G.5.1: recover a directed infinity that overflowed into a
+            // spurious NaN from the naive multiply above.
+            bool recalc = false;
+
+            if (T.IsInfinity(a) || T.IsInfinity(b))
+            {
+                // left is infinite; normalize its parts to a signed 1/0
+                a = T.CopySign(T.IsInfinity(a) ? T.One : T.Zero, a);
+                b = T.CopySign(T.IsInfinity(b) ? T.One : T.Zero, b);
+
+                if (T.IsNaN(c))
+                {
+                    c = T.CopySign(T.Zero, c);
+                }
+
+                if (T.IsNaN(d))
+                {
+                    d = T.CopySign(T.Zero, d);
+                }
+
+                recalc = true;
+            }
+
+            if (T.IsInfinity(c) || T.IsInfinity(d))
+            {
+                // right is infinite; normalize its parts to a signed 1/0
+                c = T.CopySign(T.IsInfinity(c) ? T.One : T.Zero, c);
+                d = T.CopySign(T.IsInfinity(d) ? T.One : T.Zero, d);
+
+                if (T.IsNaN(a))
+                {
+                    a = T.CopySign(T.Zero, a);
+                }
+
+                if (T.IsNaN(b))
+                {
+                    b = T.CopySign(T.Zero, b);
+                }
+
+                recalc = true;
+            }
+
+            if (!recalc && (T.IsInfinity(a * c) || T.IsInfinity(b * d) || T.IsInfinity(a * d) || T.IsInfinity(b * c)))
+            {
+                // neither operand is infinite, but a product overflowed with a NaN
+                // operand; treat the NaN as a signed zero and recover.
+                if (T.IsNaN(a))
+                {
+                    a = T.CopySign(T.Zero, a);
+                }
+
+                if (T.IsNaN(b))
+                {
+                    b = T.CopySign(T.Zero, b);
+                }
+
+                if (T.IsNaN(c))
+                {
+                    c = T.CopySign(T.Zero, c);
+                }
+
+                if (T.IsNaN(d))
+                {
+                    d = T.CopySign(T.Zero, d);
+                }
+
+                recalc = true;
+            }
+
+            if (recalc)
+            {
+                T inf = T.PositiveInfinity;
+                x = inf * ((a * c) - (b * d));
+                y = inf * ((b * c) + (a * d));
+            }
+
+            return new Complex<T>(x, y);
+        }
+
+        public static Complex<T> operator *(Complex<T> left, T right)
+        {
+            // Promote to (right + 0i) so Annex G special-value behavior stays consistent
+            // with the Complex/Complex operator.
+            return left * new Complex<T>(right, T.Zero);
+        }
+
+        public static Complex<T> operator *(T left, Complex<T> right)
+        {
+            return new Complex<T>(left, T.Zero) * right;
+        }
+
+        public static Complex<T> operator /(Complex<T> left, Complex<T> right)
+        {
+            // Division: Smith's formula (Smith 1962), with the C23 Annex G.5.1 recovery
+            // layered on top to restore directed infinities/zeros that Smith's formula
+            // loses to a spurious NaN. Smith avoids the c*c + d*d overflow and stays
+            // accurate for large-magnitude dividends where the pure Annex G reference
+            // algorithm would overflow.
+            T a = left.m_real;
+            T b = left.m_imaginary;
+            T c = right.m_real;
+            T d = right.m_imaginary;
+
+            T x, y;
+
             if (T.Abs(d) < T.Abs(c))
             {
                 T doc = d / c;
-                return new Complex<T>((a + b * doc) / (c + d * doc), (b - a * doc) / (c + d * doc));
+                T denominator = c + (d * doc);
+                x = (a + (b * doc)) / denominator;
+                y = (b - (a * doc)) / denominator;
             }
             else
             {
                 T cod = c / d;
-                return new Complex<T>((b + a * cod) / (d + c * cod), (-a + b * cod) / (d + c * cod));
+                T denominator = d + (c * cod);
+                x = (b + (a * cod)) / denominator;
+                y = (-a + (b * cod)) / denominator;
             }
+
+            if (T.IsNaN(x) && T.IsNaN(y))
+            {
+                // Outlined so the Smith common path stays small enough to inline.
+                return DivideNaNRecovery(a, b, c, d, x, y);
+            }
+
+            return new Complex<T>(x, y);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static Complex<T> DivideNaNRecovery(T a, T b, T c, T d, T x, T y)
+        {
+            // C23 Annex G.5.1 recovery for the directed infinities/zeros that Smith's
+            // formula loses to a spurious NaN.
+            if ((c == T.Zero) && (d == T.Zero) && (!T.IsNaN(a) || !T.IsNaN(b)))
+            {
+                // Divisor is zero and the dividend is not fully NaN: directed infinity.
+                T inf = T.CopySign(T.PositiveInfinity, c);
+                x = inf * a;
+                y = inf * b;
+            }
+            else if ((T.IsInfinity(a) || T.IsInfinity(b)) && T.IsFinite(c) && T.IsFinite(d))
+            {
+                // Infinite dividend, finite divisor: infinity.
+                a = T.CopySign(T.IsInfinity(a) ? T.One : T.Zero, a);
+                b = T.CopySign(T.IsInfinity(b) ? T.One : T.Zero, b);
+                T inf = T.PositiveInfinity;
+                x = inf * ((a * c) + (b * d));
+                y = inf * ((b * c) - (a * d));
+            }
+            else if ((T.IsInfinity(c) || T.IsInfinity(d)) && T.IsFinite(a) && T.IsFinite(b))
+            {
+                // Finite dividend, infinite divisor: zero.
+                c = T.CopySign(T.IsInfinity(c) ? T.One : T.Zero, c);
+                d = T.CopySign(T.IsInfinity(d) ? T.One : T.Zero, d);
+                x = T.Zero * ((a * c) + (b * d));
+                y = T.Zero * ((b * c) - (a * d));
+            }
+
+            return new Complex<T>(x, y);
         }
 
         public static Complex<T> operator /(Complex<T> left, T right)
         {
-            // IEEE prohibit optimizations which are value changing
-            // so we make sure that behaviour for the simplified version exactly match
-            // full version.
-            if (right == T.Zero)
-            {
-                return new Complex<T>(T.NaN, T.NaN);
-            }
-
-            if (!T.IsFinite(left.m_real))
-            {
-                if (!T.IsFinite(left.m_imaginary))
-                {
-                    return new Complex<T>(T.NaN, T.NaN);
-                }
-
-                return new Complex<T>(left.m_real / right, T.NaN);
-            }
-
-            if (!T.IsFinite(left.m_imaginary))
-            {
-                return new Complex<T>(T.NaN, left.m_imaginary / right);
-            }
-
-            // Here the actual optimized version of code.
-            return new Complex<T>(left.m_real / right, left.m_imaginary / right);
+            // Promote to (right + 0i) so Annex G special-value behavior stays consistent
+            // with the Complex/Complex operator.
+            return left / new Complex<T>(right, T.Zero);
         }
 
         public static Complex<T> operator /(T left, Complex<T> right)
         {
-            // Division : Smith's formula.
-            T a = left;
-            T c = right.m_real;
-            T d = right.m_imaginary;
-
-            // Computing c * c + d * d will overflow even in cases where the actual result of the division does not overflow.
-            if (T.Abs(d) < T.Abs(c))
-            {
-                T doc = d / c;
-                return new Complex<T>(a / (c + d * doc), (-a * doc) / (c + d * doc));
-            }
-            else
-            {
-                T cod = c / d;
-                return new Complex<T>(a * cod / (d + c * cod), -a / (d + c * cod));
-            }
+            // Promote to a full complex dividend so the C23 Annex G.5.1 recovery in the
+            // Complex/Complex operator applies for a zero or infinite divisor.
+            return new Complex<T>(left, T.Zero) / right;
         }
 
         public static T Abs(Complex<T> value)
@@ -368,19 +449,73 @@ namespace System.Numerics
 
         public static Complex<T> Sin(Complex<T> value)
         {
+            if (!IsFinite(value))
+            {
+                // sin(z) = -i sinh(iz); Sinh carries the Annex G special values.
+                Complex<T> sinh = Sinh(new Complex<T>(-value.m_imaginary, value.m_real));
+                return new Complex<T>(sinh.m_imaginary, -sinh.m_real);
+            }
+
             (T sin, T cos) = T.SinCos(value.m_real);
+
+            // Known limitation (finite-input accuracy, outside Annex G's special-value scope): a large
+            // imaginary part overflows Cosh/Sinh even when sin/cos is small enough that the product would
+            // be representable, so e.g. Sin((0.01, 711.0)) yields (+inf, +inf) instead of (~3.0e306, +inf).
             return new Complex<T>(sin * T.Cosh(value.m_imaginary), cos * T.Sinh(value.m_imaginary));
         }
 
         public static Complex<T> Sinh(Complex<T> value)
         {
+            T real = value.m_real;
+            T imaginary = value.m_imaginary;
+
+            // IEEE 754 / C23 Annex G.6.2.5 special values. sinh is odd and csinh(conj(z)) == conj(csinh(z)).
+            if (!T.IsFinite(real))
+            {
+                if (T.IsNaN(real))
+                {
+                    // NaN + i0 -> NaN + i0; NaN + iy (y != 0) -> NaN + iNaN.
+                    return (imaginary == T.Zero) ? new Complex<T>(real, imaginary) : new Complex<T>(T.NaN, T.NaN);
+                }
+
+                // real is +-INF.
+                if (imaginary == T.Zero)
+                {
+                    // +-INF + i0 -> +-INF + i0.
+                    return new Complex<T>(real, imaginary);
+                }
+
+                if (!T.IsFinite(imaginary))
+                {
+                    // +-INF + i(INF|NaN) -> +-INF + iNaN.
+                    return new Complex<T>(real, T.NaN);
+                }
+
+                // +-INF + iy (finite nonzero) -> +-INF * cis(y).
+                (T sinInf, T cosInf) = T.SinCos(imaginary);
+                return new Complex<T>(T.Sinh(real) * cosInf, T.Cosh(real) * sinInf);
+            }
+
+            if (!T.IsFinite(imaginary))
+            {
+                // real is finite. +-0 + i(INF|NaN) -> +-0 + iNaN; x + i(INF|NaN) (x != 0) -> NaN + iNaN.
+                return (real == T.Zero) ? new Complex<T>(real, T.NaN) : new Complex<T>(T.NaN, T.NaN);
+            }
+
             // Use sinh(z) = -i sin(iz) to compute via sin(z).
-            Complex<T> sin = Sin(new Complex<T>(-value.m_imaginary, value.m_real));
+            Complex<T> sin = Sin(new Complex<T>(-imaginary, real));
             return new Complex<T>(sin.m_imaginary, -sin.m_real);
         }
 
         public static Complex<T> Asin(Complex<T> value)
         {
+            if (!IsFinite(value))
+            {
+                // asin(z) = -i casinh(iz); AsinhSpecialValue carries the Annex G G.6.2.2 special values.
+                Complex<T> s = AsinhSpecialValue(-value.m_imaginary, value.m_real);
+                return new Complex<T>(s.m_imaginary, -s.m_real);
+            }
+
             Asin_Internal(T.Abs(value.Real), T.Abs(value.Imaginary), out T b, out T bPrime, out T v);
 
             T u;
@@ -393,26 +528,121 @@ namespace System.Numerics
                 u = T.Atan(bPrime);
             }
 
-            if (value.Real < T.Zero) u = -u;
-            if (value.Imaginary < T.Zero) v = -v;
+            if (value.Real < T.Zero)
+            {
+                u = -u;
+            }
+
+            if (value.Imaginary < T.Zero)
+            {
+                v = -v;
+            }
 
             return new Complex<T>(u, v);
         }
 
+        // IEEE 754 / C23 Annex G.6.2.2 casinh special values. At least one component must be non-finite.
+        // casinh is odd and casinh(conj(z)) == conj(casinh(z)), so the real part is odd in the real
+        // component and the imaginary part is odd in the imaginary component.
+        private static Complex<T> AsinhSpecialValue(T a, T b)
+        {
+            T absB = T.Abs(b);
+            T re, im;
+
+            if (T.IsInfinity(a))
+            {
+                // +-INF + i(INF|finite|NaN).
+                re = T.PositiveInfinity;
+                im = T.IsInfinity(absB) ? T.Pi / T.CreateChecked(4) :
+                     T.IsNaN(absB) ? T.NaN : T.Zero;
+            }
+            else if (T.IsNaN(a))
+            {
+                if (absB == T.Zero)
+                {
+                    return new Complex<T>(T.NaN, b);
+                }
+                // NaN + iINF -> +-INF + iNaN (real sign unspecified); NaN + i(finite nonzero|NaN) -> NaN + iNaN.
+                re = T.IsInfinity(absB) ? T.PositiveInfinity : T.NaN;
+                im = T.NaN;
+            }
+            else
+            {
+                // a is finite; b is non-finite. x + iINF -> +INF + iPi/2; x + iNaN -> NaN + iNaN.
+                re = T.IsInfinity(absB) ? T.PositiveInfinity : T.NaN;
+                im = T.IsInfinity(absB) ? T.Pi / T.CreateChecked(2) : T.NaN;
+            }
+
+            re = T.IsNaN(re) || T.IsNaN(a) ? re : T.CopySign(re, a);
+            im = T.IsNaN(im) || T.IsNaN(b) ? im : T.CopySign(im, b);
+            return new Complex<T>(re, im);
+        }
+
         public static Complex<T> Cos(Complex<T> value)
         {
+            if (!IsFinite(value))
+            {
+                // cos(z) = cosh(iz); Cosh carries the Annex G special values.
+                return Cosh(new Complex<T>(-value.m_imaginary, value.m_real));
+            }
+
             (T sin, T cos) = T.SinCos(value.m_real);
+
+            // Same finite-input overflow limitation as Sin: a large imaginary part overflows Cosh/Sinh
+            // even when cos/sin is small enough that the product would otherwise be representable.
             return new Complex<T>(cos * T.Cosh(value.m_imaginary), -sin * T.Sinh(value.m_imaginary));
         }
 
         public static Complex<T> Cosh(Complex<T> value)
         {
+            T real = value.m_real;
+            T imaginary = value.m_imaginary;
+
+            // IEEE 754 / C23 Annex G.6.2.4 special values. cosh is even and ccosh(conj(z)) == conj(ccosh(z)).
+            if (!T.IsFinite(real))
+            {
+                if (T.IsNaN(real))
+                {
+                    // NaN + i0 -> NaN + i0; NaN + iy (y != 0) -> NaN + iNaN.
+                    return (imaginary == T.Zero) ? new Complex<T>(T.NaN, imaginary) : new Complex<T>(T.NaN, T.NaN);
+                }
+
+                // real is +-INF; cosh is even so the real part of the result is +INF.
+                if (imaginary == T.Zero)
+                {
+                    // +-INF + i0 -> +INF + i0, imaginary sign = sign(real) XOR sign(imaginary).
+                    T imag = (T.IsNegative(real) ^ T.IsNegative(imaginary)) ? -T.Zero : T.Zero;
+                    return new Complex<T>(T.PositiveInfinity, imag);
+                }
+
+                if (!T.IsFinite(imaginary))
+                {
+                    // +-INF + i(INF|NaN) -> +INF + iNaN.
+                    return new Complex<T>(T.PositiveInfinity, T.NaN);
+                }
+
+                // +-INF + iy (finite nonzero) -> +INF * cis(y), sinh carrying the sign of the real part.
+                (T sinInf, T cosInf) = T.SinCos(imaginary);
+                return new Complex<T>(T.Cosh(real) * cosInf, T.Sinh(real) * sinInf);
+            }
+
+            if (!T.IsFinite(imaginary))
+            {
+                // real is finite. +-0 + i(INF|NaN) -> NaN + i(+-0); x + i(INF|NaN) (x != 0) -> NaN + iNaN.
+                return (real == T.Zero) ? new Complex<T>(T.NaN, T.CopySign(T.Zero, real)) : new Complex<T>(T.NaN, T.NaN);
+            }
+
             // Use cosh(z) = cos(iz) to compute via cos(z).
-            return Cos(new Complex<T>(-value.m_imaginary, value.m_real));
+            return Cos(new Complex<T>(-imaginary, real));
         }
 
         public static Complex<T> Acos(Complex<T> value)
         {
+            if (!IsFinite(value))
+            {
+                return AcosSpecialValue(value.m_real, value.m_imaginary);
+            }
+
             Asin_Internal(T.Abs(value.Real), T.Abs(value.Imaginary), out T b, out T bPrime, out T v);
 
             T u;
@@ -425,14 +655,79 @@ namespace System.Numerics
                 u = T.Atan(T.One / bPrime);
             }
 
-            if (value.Real < T.Zero) u = T.Pi - u;
-            if (value.Imaginary > T.Zero) v = -v;
+            if (value.Real < T.Zero)
+            {
+                u = T.Pi - u;
+            }
+
+            if (value.Imaginary > T.Zero)
+            {
+                v = -v;
+            }
 
             return new Complex<T>(u, v);
         }
 
+        // IEEE 754 / C23 Annex G.6.1.1 cacos special values. At least one component must be non-finite.
+        // cacos(conj(z)) == conj(cacos(z)), so the imaginary part is odd in the imaginary component.
+        private static Complex<T> AcosSpecialValue(T x, T y)
+        {
+            T absY = T.Abs(y);
+            T re, im;
+
+            if (T.IsInfinity(x))
+            {
+                if (T.IsNegative(x))
+                {
+                    // -INF + i(INF|finite|NaN).
+                    re = T.IsInfinity(absY) ? T.Pi * T.CreateChecked(0.75) : T.IsNaN(absY) ? T.NaN : T.Pi;
+                }
+                else
+                {
+                    // +INF + i(INF|finite|NaN).
+                    re = T.IsInfinity(absY) ? T.Pi / T.CreateChecked(4) : T.IsNaN(absY) ? T.NaN : T.Zero;
+                }
+                im = T.IsNaN(absY) ? T.PositiveInfinity : T.NegativeInfinity;
+            }
+            else if (T.IsNaN(x))
+            {
+                // NaN + iINF -> NaN - iINF; NaN + i(finite|NaN) -> NaN + iNaN.
+                re = T.NaN;
+                im = T.IsInfinity(absY) ? T.NegativeInfinity : T.NaN;
+            }
+            else
+            {
+                // x is finite; y is non-finite. x + iINF -> Pi/2 - iINF; +-0 + iNaN -> Pi/2 + iNaN;
+                // x + iNaN (x nonzero) -> NaN + iNaN.
+                if (T.IsInfinity(absY))
+                {
+                    re = T.Pi / T.CreateChecked(2);
+                    im = T.NegativeInfinity;
+                }
+                else
+                {
+                    re = (x == T.Zero) ? T.Pi / T.CreateChecked(2) : T.NaN;
+                    im = T.NaN;
+                }
+            }
+
+            // The imaginary part is odd in y. Only flip when y carries a determinate sign.
+            if (!T.IsNaN(im) && !T.IsNaN(y) && T.IsNegative(y))
+            {
+                im = -im;
+            }
+            return new Complex<T>(re, im);
+        }
+
         public static Complex<T> Tan(Complex<T> value)
         {
+            if (!IsFinite(value))
+            {
+                // tan(z) = -i tanh(iz); Tanh carries the Annex G special values.
+                Complex<T> tanh = Tanh(new Complex<T>(-value.m_imaginary, value.m_real));
+                return new Complex<T>(tanh.m_imaginary, -tanh.m_real);
+            }
+
             // tan z = sin z / cos z, but to avoid unnecessary repeated trig computations, use
             //   tan z = (sin(2x) + i sinh(2y)) / (cos(2x) + cosh(2y))
             // (see Abramowitz & Stegun 4.3.57 or derive by hand), and compute trig functions here.
@@ -461,15 +756,93 @@ namespace System.Numerics
 
         public static Complex<T> Tanh(Complex<T> value)
         {
+            T real = value.m_real;
+            T imaginary = value.m_imaginary;
+
+            // IEEE 754 / C23 Annex G.6.2.6 special values. tanh is odd and ctanh(conj(z)) == conj(ctanh(z)).
+            if (!T.IsFinite(real))
+            {
+                if (T.IsNaN(real))
+                {
+                    // NaN + i0 -> NaN + i0; NaN + iy (y != 0) -> NaN + iNaN.
+                    return (imaginary == T.Zero) ? new Complex<T>(real, imaginary) : new Complex<T>(T.NaN, T.NaN);
+                }
+
+                // real is +-INF -> +-1 + i0, with the imaginary sign taken from sin(2y).
+                T re = T.CopySign(T.One, real);
+                if (T.IsFinite(imaginary))
+                {
+                    // Compute sin(2y) as 2*sin(y)*cos(y) so the sign stays stable even when
+                    // 2*y would overflow to an infinity (which sin() maps to a NaN).
+                    (T sin, T cos) = T.SinCos(imaginary);
+                    return new Complex<T>(re, T.CopySign(T.Zero, sin * cos));
+                }
+                return new Complex<T>(re, T.CopySign(T.Zero, imaginary));
+            }
+
+            if (!T.IsFinite(imaginary))
+            {
+                // real is finite. +-0 + i(INF|NaN) -> +-0 + iNaN; x + i(INF|NaN) (x != 0) -> NaN + iNaN.
+                return (real == T.Zero) ? new Complex<T>(real, T.NaN) : new Complex<T>(T.NaN, T.NaN);
+            }
+
             // Use tanh(z) = -i tan(iz) to compute via tan(z).
-            Complex<T> tan = Tan(new Complex<T>(-value.m_imaginary, value.m_real));
+            Complex<T> tan = Tan(new Complex<T>(-imaginary, real));
             return new Complex<T>(tan.m_imaginary, -tan.m_real);
         }
 
         public static Complex<T> Atan(Complex<T> value)
         {
+            if (!IsFinite(value))
+            {
+                // atan(z) = -i catanh(iz); AtanhSpecialValue carries the Annex G G.6.2.3 special values.
+                Complex<T> t = AtanhSpecialValue(-value.m_imaginary, value.m_real);
+                return new Complex<T>(t.m_imaginary, -t.m_real);
+            }
+
             Complex<T> two = new(T.CreateChecked(2), T.Zero);
             return (ImaginaryOne / two) * (Log(One - ImaginaryOne * value) - Log(One + ImaginaryOne * value));
+        }
+
+        // IEEE 754 / C23 Annex G.6.2.3 catanh special values. At least one component must be non-finite.
+        // catanh is odd and catanh(conj(z)) == conj(catanh(z)), so the real part is odd in the real
+        // component and the imaginary part is odd in the imaginary component.
+        private static Complex<T> AtanhSpecialValue(T a, T b)
+        {
+            T absB = T.Abs(b);
+            T re, im;
+
+            if (T.IsInfinity(a))
+            {
+                // +-INF + i(INF|finite|NaN) -> +-0 + i(Pi/2 or NaN).
+                re = T.Zero;
+                im = T.IsNaN(absB) ? T.NaN : T.Pi / T.CreateChecked(2);
+            }
+            else if (T.IsNaN(a))
+            {
+                // NaN + iINF -> +-0 + iPi/2 (real sign unspecified); NaN + i(finite|NaN) -> NaN + iNaN.
+                re = T.IsInfinity(absB) ? T.Zero : T.NaN;
+                im = T.IsInfinity(absB) ? T.Pi / T.CreateChecked(2) : T.NaN;
+            }
+            else
+            {
+                // a is finite; b is non-finite. x + iINF -> +0 + iPi/2; +-0 + iNaN -> +-0 + iNaN;
+                // x + iNaN (x nonzero) -> NaN + iNaN.
+                if (T.IsInfinity(absB))
+                {
+                    re = T.Zero;
+                    im = T.Pi / T.CreateChecked(2);
+                }
+                else
+                {
+                    re = (a == T.Zero) ? a : T.NaN;
+                    im = T.NaN;
+                }
+            }
+
+            re = T.IsNaN(re) || T.IsNaN(a) ? re : T.CopySign(re, a);
+            im = T.IsNaN(im) || T.IsNaN(b) ? im : T.CopySign(im, b);
+            return new Complex<T>(re, im);
         }
 
         private static void Asin_Internal(T x, T y, out T b, out T bPrime, out T v)
@@ -579,60 +952,108 @@ namespace System.Numerics
 
         public static Complex<T> Exp(Complex<T> value)
         {
-            T expReal = T.Exp(value.m_real);
-            return FromPolarCoordinates(expReal, value.m_imaginary);
+            T real = value.m_real;
+            T imaginary = value.m_imaginary;
+
+            // IEEE 754 / C23 Annex G.6.3.1 special values. cexp(conj(z)) == conj(cexp(z)).
+            // The general formula below (e^x * cis(y)) already yields the correct results for finite
+            // real parts and for -INF real parts with finite imaginary parts, so only the remaining
+            // infinite / NaN real cases need explicit handling.
+
+            if (T.IsInfinity(real))
+            {
+                if (T.IsNegative(real))
+                {
+                    if (!T.IsFinite(imaginary))
+                    {
+                        // -INF + iINF or -INF + iNaN -> +-0 +- 0i (signs unspecified).
+                        return new Complex<T>(T.Zero, T.Zero);
+                    }
+                    // -INF + iy (finite y) -> +0 * cis(y); handled by the general formula.
+                }
+                else
+                {
+                    if (imaginary == T.Zero)
+                    {
+                        // +INF + i0 -> +INF + i0.
+                        return new Complex<T>(real, imaginary);
+                    }
+
+                    if (!T.IsFinite(imaginary))
+                    {
+                        // +INF + iINF or +INF + iNaN -> +-INF + iNaN (sign of the real part is unspecified).
+                        return new Complex<T>(T.PositiveInfinity, T.NaN);
+                    }
+                    // +INF + iy (finite nonzero y) -> +INF * cis(y); handled by the general formula.
+                }
+            }
+            else if (T.IsNaN(real))
+            {
+                // NaN + i0 -> NaN + i0; NaN + iy (y != 0) and NaN + iNaN -> NaN + iNaN.
+                return (imaginary == T.Zero) ? new Complex<T>(T.NaN, imaginary) : new Complex<T>(T.NaN, T.NaN);
+            }
+
+            T expReal = T.Exp(real);
+            return FromPolarCoordinates(expReal, imaginary);
         }
 
         public static Complex<T> Sqrt(Complex<T> value)
         {
-            // Handle NaN input cases according to IEEE 754
-            if (T.IsNaN(value.m_real))
+            T real = value.m_real;
+            T imaginary = value.m_imaginary;
+
+            // IEEE 754 / C23 Annex G.6.4.2 special values. csqrt is continuous onto the branch
+            // cut along the negative real axis taking the sign of the imaginary part into account,
+            // and csqrt(conj(z)) == conj(csqrt(z)), so the sign of the imaginary part is preserved.
+
+            if (T.IsInfinity(imaginary))
             {
-                if (T.IsInfinity(value.m_imaginary))
-                {
-                    return new Complex<T>(T.PositiveInfinity, value.m_imaginary);
-                }
-                return new Complex<T>(T.NaN, T.NaN);
+                // x + iINF -> +INF + iINF for any x (including NaN).
+                return new Complex<T>(T.PositiveInfinity, imaginary);
             }
-            if (T.IsNaN(value.m_imaginary))
+
+            if (T.IsInfinity(real))
             {
-                if (T.IsPositiveInfinity(value.m_real))
+                if (T.IsNegative(real))
                 {
-                    return new Complex<T>(T.NaN, T.PositiveInfinity);
+                    // -INF + iy -> +0 + iINF (finite y); -INF + iNaN -> NaN +- iINF (sign unspecified).
+                    if (T.IsNaN(imaginary))
+                    {
+                        return new Complex<T>(T.NaN, T.PositiveInfinity);
+                    }
+
+                    return new Complex<T>(T.Zero, T.CopySign(T.PositiveInfinity, imaginary));
                 }
-                if (T.IsNegativeInfinity(value.m_real))
-                {
-                    return new Complex<T>(T.PositiveInfinity, T.NaN);
-                }
+
+                // +INF + iy -> +INF + i0 (finite y); +INF + iNaN -> +INF + iNaN.
+                return new Complex<T>(T.PositiveInfinity, T.IsNaN(imaginary) ? T.NaN : T.CopySign(T.Zero, imaginary));
+            }
+
+            if (T.IsNaN(real) || T.IsNaN(imaginary))
+            {
+                // NaN + iy or x + iNaN with the other part finite -> NaN + iNaN.
                 return new Complex<T>(T.NaN, T.NaN);
             }
 
-            if (value.m_imaginary == T.Zero)
+            if (imaginary == T.Zero)
             {
-                // Handle the trivial case quickly.
-                if (value.m_real < T.Zero)
+                // On the real axis, propagate the sign of the zero imaginary part.
+                if (T.IsNegative(real))
                 {
-                    return new Complex<T>(T.Zero, T.Sqrt(-value.m_real));
+                    return new Complex<T>(T.Zero, T.CopySign(T.Sqrt(-real), imaginary));
                 }
 
-                return new Complex<T>(T.Sqrt(value.m_real), T.Zero);
+                return new Complex<T>(T.Sqrt(real), T.CopySign(T.Zero, imaginary));
             }
 
             // If the components are too large, Hypot will overflow, even though the subsequent sqrt would
             // make the result representable. To avoid this, we re-scale (by exact powers of 2 for accuracy)
             // when we encounter very large components to avoid intermediate infinities.
             bool rescale = false;
-            T realCopy = value.m_real;
-            T imaginaryCopy = value.m_imaginary;
+            T realCopy = real;
+            T imaginaryCopy = imaginary;
             if ((T.Abs(realCopy) >= s_sqrtRescaleThreshold) || (T.Abs(imaginaryCopy) >= s_sqrtRescaleThreshold))
             {
-                if (T.IsInfinity(value.m_imaginary))
-                {
-                    // We need to handle infinite imaginary parts specially because otherwise
-                    // our formulas below produce inf/inf = NaN.
-                    return new Complex<T>(T.PositiveInfinity, imaginaryCopy);
-                }
-
                 T quarter = T.CreateChecked(0.25);
                 realCopy *= quarter;
                 imaginaryCopy *= quarter;
@@ -650,7 +1071,10 @@ namespace System.Numerics
             else
             {
                 y = T.Sqrt((T.Hypot(realCopy, imaginaryCopy) - realCopy) * half);
-                if (imaginaryCopy < T.Zero) y = -y;
+                if (imaginaryCopy < T.Zero)
+                {
+                    y = -y;
+                }
                 x = imaginaryCopy / (T.CreateChecked(2) * y);
             }
 
@@ -675,18 +1099,30 @@ namespace System.Numerics
                 return Zero;
             }
 
-            T valueReal = value.m_real;
-            T valueImaginary = value.m_imaginary;
-            T powerReal = power.m_real;
-            T powerImaginary = power.m_imaginary;
+            if (IsFinite(value) && IsFinite(power))
+            {
+                T rho = Abs(value);
 
-            T rho = Abs(value);
-            T theta = T.Atan2(valueImaginary, valueReal);
-            T newRho = powerReal * theta + powerImaginary * T.Log(rho);
+                if (T.IsFinite(rho))
+                {
+                    T valueImaginary = value.m_imaginary;
+                    T valueReal = value.m_real;
+                    T powerReal = power.m_real;
+                    T powerImaginary = power.m_imaginary;
 
-            T t = T.Pow(rho, powerReal) * T.Exp(-powerImaginary * theta);
+                    T theta = T.Atan2(valueImaginary, valueReal);
+                    T newRho = powerReal * theta + powerImaginary * T.Log(rho);
 
-            return FromPolarCoordinates(t, newRho);
+                    T t = T.Pow(rho, powerReal) * T.Exp(-powerImaginary * theta);
+
+                    return FromPolarCoordinates(t, newRho);
+                }
+            }
+
+            // C23: cpow(z, w) special values are those of cexp(w * clog(z)). The polar
+            // core above loses them, so defer to the conformant Exp/Log for any input
+            // that is non-finite or whose magnitude overflows.
+            return Exp(power * Log(value));
         }
 
         public static Complex<T> Pow(Complex<T> value, T power)
@@ -1459,23 +1895,38 @@ namespace System.Numerics
         public static bool TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out Complex<T> result)
             => TryParse(MemoryMarshal.Cast<byte, Utf8Char>(utf8Text), style, provider, out result, out _);
 
-        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(string, NumberStyles, IFormatProvider?, out TSelf, out int)" />
-        static bool INumberBase<Complex<T>>.TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out Complex<T> result, out int charsConsumed)
-            => TryParse(MemoryMarshal.Cast<char, Utf16Char>(s.AsSpan()), style, provider, out result, out charsConsumed);
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParsePartial(string, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParsePartial([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out Complex<T> result, out int charsConsumed)
+            => TryParsePartial(MemoryMarshal.Cast<char, Utf16Char>(s.AsSpan()), style, provider, out result, out charsConsumed);
 
-        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
-        static bool INumberBase<Complex<T>>.TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out Complex<T> result, out int bytesConsumed)
-            => TryParse(MemoryMarshal.Cast<byte, Utf8Char>(utf8Text), style, provider, out result, out bytesConsumed);
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParsePartial(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParsePartial(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out Complex<T> result, out int bytesConsumed)
+            => TryParsePartial(MemoryMarshal.Cast<byte, Utf8Char>(utf8Text), style, provider, out result, out bytesConsumed);
 
-        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{char}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
-        static bool INumberBase<Complex<T>>.TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out Complex<T> result, out int charsConsumed)
-            => TryParse(MemoryMarshal.Cast<char, Utf16Char>(s), style, provider, out result, out charsConsumed);
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParsePartial(ReadOnlySpan{char}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParsePartial(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out Complex<T> result, out int charsConsumed)
+            => TryParsePartial(MemoryMarshal.Cast<char, Utf16Char>(s), style, provider, out result, out charsConsumed);
 
         internal static bool TryParse<TChar>(ReadOnlySpan<TChar> text, NumberStyles style, IFormatProvider? provider, out Complex<T> result, out int elementsConsumed)
             where TChar : unmanaged, IUtfChar<TChar>
         {
             ValidateParseStyleFloatingPoint(style);
+            return TryParseCore(text, style, provider, out result, out elementsConsumed);
+        }
 
+        // Used by the INumberBase.TryParsePartial implementations. The user-provided style is validated first so the
+        // internal-only AllowTrailingInvalidCharacters sentinel can't be smuggled in through a public entry point; it
+        // is only layered on afterwards, once the style is known to be valid.
+        internal static bool TryParsePartial<TChar>(ReadOnlySpan<TChar> text, NumberStyles style, IFormatProvider? provider, out Complex<T> result, out int elementsConsumed)
+            where TChar : unmanaged, IUtfChar<TChar>
+        {
+            ValidateParseStyleFloatingPoint(style);
+            return TryParseCore(text, style | Number.AllowTrailingInvalidCharacters, provider, out result, out elementsConsumed);
+        }
+
+        private static bool TryParseCore<TChar>(ReadOnlySpan<TChar> text, NumberStyles style, IFormatProvider? provider, out Complex<T> result, out int elementsConsumed)
+            where TChar : unmanaged, IUtfChar<TChar>
+        {
             int openBracket = text.IndexOf(TChar.CastFrom('<'));
             int semicolon = text.IndexOf(TChar.CastFrom(';'));
             int closeBracket = text.IndexOf(TChar.CastFrom('>'));
@@ -1503,7 +1954,7 @@ namespace System.Numerics
             // The real and imaginary components are exactly delimited by the ';' and '>' separators,
             // so AllowTrailingInvalidCharacters only applies after the closing bracket, not within a
             // component. Otherwise something like "<1.5x;2>" would incorrectly parse as (1.5, 2).
-            NumberStyles componentStyle = style & ~NumberStyles.AllowTrailingInvalidCharacters;
+            NumberStyles componentStyle = style & ~Number.AllowTrailingInvalidCharacters;
 
             ReadOnlySpan<TChar> slice = text.Slice(openBracket + 1, semicolon - openBracket - 1);
 
@@ -1550,7 +2001,7 @@ namespace System.Numerics
                     }
                 }
 
-                if (isInvalid && ((style & NumberStyles.AllowTrailingInvalidCharacters) == 0))
+                if (isInvalid && ((style & Number.AllowTrailingInvalidCharacters) == 0))
                 {
                     // The closing bracket wasn't the last and we either didn't allow trailing whitespace
                     // or one of the trailing characters wasn't whitespace at all.

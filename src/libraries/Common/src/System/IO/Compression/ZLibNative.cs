@@ -333,6 +333,28 @@ namespace System.IO.Compression
                 }
             }
 
+            public unsafe ErrorCode DeflateReset()
+            {
+                bool refAdded = false;
+                try
+                {
+                    DangerousAddRef(ref refAdded);
+                    EnsureState(State.InitializedForDeflate);
+
+                    fixed (ZStream* stream = &_zStream)
+                    {
+                        return Interop.ZLib.DeflateReset(stream);
+                    }
+                }
+                finally
+                {
+                    if (refAdded)
+                    {
+                        DangerousRelease();
+                    }
+                }
+            }
+
             private unsafe ErrorCode DeflateEnd()
             {
                 EnsureState(State.InitializedForDeflate);

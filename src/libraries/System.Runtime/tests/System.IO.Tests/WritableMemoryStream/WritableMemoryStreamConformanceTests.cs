@@ -9,7 +9,6 @@ namespace System.IO.Tests
     public class WritableMemoryStreamConformanceTests : StandaloneStreamConformanceTests
     {
         protected override bool CanSeek => true;
-        protected override bool CanSetLength => false;
         protected override bool NopFlushCompletesSynchronously => true;
         protected override bool CanSetLengthGreaterThanCapacity => false;
 
@@ -19,16 +18,19 @@ namespace System.IO.Tests
 
         protected override Task<Stream?> CreateReadWriteStreamCore(byte[]? initialData)
         {
-            int length = initialData?.Length ?? 0;
-            if (length == 0)
+            // WritableMemoryStream wraps a fixed-capacity buffer and cannot be created empty and then
+            // grown, so - like the other fixed-capacity streams (UnmanagedMemoryStream,
+            // MemoryMappedViewStream) - the null case returns null and the grow-from-empty conformance
+            // tests are skipped. Growing the length within the fixed capacity is covered by the unit
+            // tests in WritableMemoryStreamTests.
+            if (initialData is null)
             {
-                return Task.FromResult<Stream?>(
-                    new WritableMemoryStream(new Memory<byte>(new byte[64 * 1024])));
+                return Task.FromResult<Stream?>(null);
             }
 
-            var memory = new Memory<byte>(new byte[length]);
+            var memory = new Memory<byte>(new byte[initialData.Length]);
             var stream = new WritableMemoryStream(memory);
-            stream.Write(initialData!, 0, length);
+            stream.Write(initialData, 0, initialData.Length);
             stream.Position = 0;
             return Task.FromResult<Stream?>(stream);
         }

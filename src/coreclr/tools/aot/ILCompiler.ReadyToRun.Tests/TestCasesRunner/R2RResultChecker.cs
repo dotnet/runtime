@@ -117,6 +117,26 @@ internal static class R2RAssert
     }
 
     /// <summary>
+    /// Returns true if the manifest metadata and component assembly tables in a composite image
+    /// start on 4-byte aligned RVAs. Both sections contain DWORD fields that the runtime reads
+    /// directly, so unaligned sections can fault on architectures such as 32-bit ARM.
+    /// </summary>
+    public static bool CompositeManifestSectionsAreAligned(ReadyToRunReader reader, out string diagnostic)
+    {
+        const int RequiredAlignment = 4;
+        var failures = new List<string>();
+
+        bool result = true;
+        result &= SectionRVAIsAligned(reader, ReadyToRunSectionType.ManifestMetadata, RequiredAlignment, failures);
+        result &= SectionRVAIsAligned(reader, ReadyToRunSectionType.ComponentAssemblies, RequiredAlignment, failures);
+
+        diagnostic = result
+            ? $"Composite manifest sections are {RequiredAlignment}-byte aligned."
+            : string.Join(Environment.NewLine, failures);
+        return result;
+    }
+
+    /// <summary>
     /// Returns true if the manifest assembly MVID table in a composite image is present, holds a
     /// whole number of 16-byte GUID entries, and starts on a 4-byte aligned RVA. The runtime reads
     /// each entry as a GUID by value, so the table must be 4-byte aligned to avoid alignment faults
@@ -148,6 +168,30 @@ internal static class R2RAssert
             ? $"ManifestAssemblyMvids table is {RequiredAlignment}-byte aligned ({section.Size / GuidByteSize} entries)."
             : string.Join(Environment.NewLine, failures);
         return failures.Count == 0;
+    }
+
+    private static bool SectionRVAIsAligned(ReadyToRunReader reader, ReadyToRunSectionType sectionType, int requiredAlignment, List<string> failures)
+    {
+        if (!reader.ReadyToRunHeader.Sections.TryGetValue(sectionType, out ReadyToRunSection section))
+        {
+            failures.Add($"Expected {sectionType} section not found.");
+            return false;
+        }
+
+        bool result = true;
+        if (section.Size <= 0)
+        {
+            failures.Add($"Expected {sectionType} section to be non-empty.");
+            result = false;
+        }
+
+        if ((section.RelativeVirtualAddress % requiredAlignment) != 0)
+        {
+            failures.Add($"{sectionType} section RVA 0x{section.RelativeVirtualAddress:X8} should be aligned to {requiredAlignment} bytes.");
+            result = false;
+        }
+
+        return result;
     }
 
     private static bool SectionRVAIsEven(ReadyToRunReader reader, ReadyToRunSectionType sectionType, List<string> failures)
@@ -862,6 +906,47 @@ internal static class R2RAssert
     }
 
     /// <summary>
+    /// Returns true if the global eager baseline <see cref="ReadyToRunFixupKind.Check_InstructionSetSupport"/>
+    /// fixup does not assert that any instruction set must be absent at runtime ("must be absent" entries render
+    /// with a <c>-</c> suffix; supported entries use <c>+</c>). Targets that cannot generate code at runtime must
+    /// not encode these assertions, as a failing eager fixup fatally disables all ReadyToRun code with no JIT fallback.
+    /// </summary>
+    public static bool EagerInstructionSetSupportHasNoUnsupportedEntries(ReadyToRunReader reader, out string diagnostic)
+    {
+        var options = new SignatureFormattingOptions();
+        var signatures = new List<string>();
+        foreach (ReadyToRunImportSection section in reader.ImportSections)
+        {
+            if (section.Entries is null)
+                continue;
+
+            foreach (ReadyToRunImportSection.ImportSectionEntry entry in section.Entries)
+            {
+                if (entry.Signature is not null && entry.Signature.FixupKind == ReadyToRunFixupKind.Check_InstructionSetSupport)
+                    signatures.Add(entry.Signature.ToString(options));
+            }
+        }
+
+        if (signatures.Count == 0)
+        {
+            diagnostic = "Expected a global Check_InstructionSetSupport eager fixup, but none was found.";
+            return false;
+        }
+
+        var withUnsupported = signatures.Where(s => s.Contains('-')).ToList();
+        if (withUnsupported.Count > 0)
+        {
+            diagnostic =
+                "Global Check_InstructionSetSupport fixup must not assert any instruction set is absent " +
+                $"on no-JIT targets, but found: [{string.Join(", ", withUnsupported)}]";
+            return false;
+        }
+
+        diagnostic = $"Global Check_InstructionSetSupport fixup asserts only supported instruction sets: [{string.Join(", ", signatures)}]";
+        return true;
+    }
+
+    /// <summary>
     /// Returns true if the R2R image contains at least one fixup of the given kind.
     /// </summary>
     public static bool HasFixupKind(ReadyToRunReader reader, ReadyToRunFixupKind kind, out string diagnostic)
@@ -985,10 +1070,21 @@ internal static class R2RAssert
     /// Optionally checks method-level generic instantiation args.
     /// </summary>
     public static bool HasCompiledMethod(ReadyToRunReader reader, string declaringType, string methodName, out string diagnostic, string[]? instanceArgs = null)
+        => HasCompiledMethodCore(reader, declaringType, methodName, instanceArgs, unboxingThunk: false, out diagnostic);
+
+    /// <summary>
+    /// Returns true if the image contains a precompiled unboxing thunk with a body for a value type
+    /// method.
+    /// </summary>
+    public static bool HasUnboxingThunk(ReadyToRunReader reader, string declaringType, string methodName, out string diagnostic, string[]? instanceArgs = null)
+        => HasCompiledMethodCore(reader, declaringType, methodName, instanceArgs, unboxingThunk: true, out diagnostic);
+
+    private static bool HasCompiledMethodCore(ReadyToRunReader reader, string declaringType, string methodName, string[]? instanceArgs, bool unboxingThunk, out string diagnostic)
     {
         List<ReadyToRunMethod> allMethods = GetAllMethods(reader);
         List<ReadyToRunMethod> matchingMethods = allMethods
             .Where(m => m.DeclaringType == declaringType && m.Name == methodName)
+            .Where(m => m.SignatureString.Contains("[UNBOX]", StringComparison.Ordinal) == unboxingThunk)
             .Where(m =>
             {
                 if (instanceArgs is null)
@@ -1007,6 +1103,8 @@ internal static class R2RAssert
         string expected = instanceArgs is null
             ? $"'{declaringType}.{methodName}'"
             : $"'{declaringType}.{methodName}<{string.Join(",", instanceArgs)}>'";
+        if (unboxingThunk)
+            expected = $"unboxing thunk for {expected}";
 
         if (matchingMethods.Count > 0)
         {
@@ -1016,7 +1114,7 @@ internal static class R2RAssert
 
         diagnostic =
             $"Expected compiled method {expected} not found.\n" +
-            $"All compiled methods ({allMethods.Count}):\n  {string.Join("\n  ", allMethods.Select(m => $"{m.DeclaringType}:{m.Name}"))}";
+            $"All compiled methods ({allMethods.Count}):\n  {string.Join("\n  ", allMethods.Select(m => $"{m.DeclaringType}:{m.Name} {m.SignatureString}"))}";
         return false;
     }
 
@@ -1101,11 +1199,15 @@ internal static class R2RAssert
 /// </summary>
 internal sealed class SimpleAssemblyResolver : IAssemblyResolver
 {
-    private readonly TestPaths _paths;
+    private readonly Dictionary<string, string> _assemblyPaths;
 
-    public SimpleAssemblyResolver(TestPaths paths)
+    public SimpleAssemblyResolver(IEnumerable<string> referencePaths)
     {
-        _paths = paths;
+        _assemblyPaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (string referencePath in referencePaths)
+        {
+            _assemblyPaths[Path.GetFileNameWithoutExtension(referencePath)] = referencePath;
+        }
     }
 
     public IAssemblyMetadata? FindAssembly(MetadataReader metadataReader, AssemblyReferenceHandle assemblyReferenceHandle, string parentFile)
@@ -1124,10 +1226,12 @@ internal sealed class SimpleAssemblyResolver : IAssemblyResolver
 
         string candidate = Path.Combine(dir, simpleName + ".dll");
         if (!File.Exists(candidate))
-            candidate = Path.Combine(_paths.RuntimePackDir, simpleName + ".dll");
+        {
+            if (!_assemblyPaths.TryGetValue(simpleName, out string? referencePath) || referencePath is null)
+                return null;
 
-        if (!File.Exists(candidate))
-            return null;
+            candidate = referencePath;
+        }
 
         return new SimpleAssemblyMetadata(candidate);
     }

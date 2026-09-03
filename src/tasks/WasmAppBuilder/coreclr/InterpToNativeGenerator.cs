@@ -69,7 +69,7 @@ internal sealed class InterpToNativeGenerator
         {
             var toks = SignatureMapper.ParseSignatureTokens(sig);
             if (toks[0][0] == 'S' && toks[0].Length > 1)
-                structReturnSizes.Add(int.Parse(toks[0].Substring(1)));
+                structReturnSizes.Add(SignatureMapper.GetStructSize(toks[0]));
         }
 
         w.Write(
@@ -123,6 +123,9 @@ internal sealed class InterpToNativeGenerator
                     // Portable entrypoints have an extra hidden parameter for the portable entrypoint context, so we need to adjust the signature and result accordingly for the call function generation
                     tokens.RemoveAt(tokens.Count - 1);
                 }
+
+                RemoveAsyncCallMarker(tokens);
+
                 var args = Args(tokens);
 
                 var portableEntryPointComma = args.Count > 0 ? ", " : "";
@@ -160,6 +163,7 @@ internal sealed class InterpToNativeGenerator
                 bool isPortableEntryPointCall = IsPortableEntryPointCall(tokens);
                 if (isPortableEntryPointCall)
                     tokens.RemoveAt(tokens.Count - 1);
+                RemoveAsyncCallMarker(tokens);
                 return $"    {{ \"M{initialSignature}\", (void*)&{CallFuncName(Args(tokens), SignatureMapper.TokenToNameType(tokens[0]), isPortableEntryPointCall)} }}";
             }
             )}}
@@ -180,6 +184,11 @@ internal sealed class InterpToNativeGenerator
             int slot = 0;
             foreach (var token in args)
             {
+                if (token[0] == 'A')
+                {
+                    slot = (slot + 1) & ~1;
+                }
+
                 result.Add($"{SignatureMapper.TokenToArgType(token)}({slot})");
                 slot += SignatureMapper.TokenToSlotCount(token);
             }
@@ -191,13 +200,23 @@ internal sealed class InterpToNativeGenerator
         {
             // For struct returns, use the typedef so emcc generates the correct sret ABI
             if (returnToken[0] == 'S' && returnToken.Length > 1)
-                return (false, $"wasm_ret_{returnToken}");
+                return (false, $"wasm_ret_S{SignatureMapper.GetStructSize(returnToken)}");
             return new(returnToken == "v", SignatureMapper.TokenToNativeType(returnToken));
         }
 
         static bool IsPortableEntryPointCall(List<string> tokens)
         {
             return tokens.Count > 0 && tokens[tokens.Count - 1] == "p";
+        }
+
+        static bool RemoveAsyncCallMarker(List<string> tokens)
+        {
+            int asyncMarkerIndex = tokens.IndexOf("a");
+            if (asyncMarkerIndex < 0)
+                return false;
+
+            tokens.RemoveAt(asyncMarkerIndex);
+            return true;
         }
     }
 }

@@ -147,7 +147,7 @@ enum
 {
     SHADOW_SP_IN_FILTER = 0x1,
     SHADOW_SP_FILTER_DONE = 0x2,
-    SHADOW_SP_BITS = 0x3
+    SHADOW_SP_BITS = 0x3 // [cDAC] [GCInfo]: Contract depends on this value.
 };
 
 #ifdef TARGET_X86

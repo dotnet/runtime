@@ -584,7 +584,17 @@ namespace System.IO.Compression
                 fixed (byte* bufferPtr = &MemoryMarshal.GetReference(buffer))
                 {
                     _deflater.SetInput(bufferPtr, buffer.Length);
-                    WriteDeflaterOutput();
+                    try
+                    {
+                        WriteDeflaterOutput();
+                    }
+                    finally
+                    {
+                        // Discard any stale input reference so a later call (e.g. Dispose) doesn't read from a
+                        // buffer the caller may have since mutated, reused, or freed. On the success path the
+                        // input has already been fully consumed, so this is a no-op.
+                        _deflater.UnsetInput();
+                    }
                 }
             }
         }
@@ -860,8 +870,17 @@ namespace System.IO.Compression
                     // Pass new bytes through deflater
                     Debug.Assert(_deflater != null);
                     _deflater.SetInput(buffer);
-
-                    await WriteDeflaterOutputAsync(cancellationToken).ConfigureAwait(false);
+                    try
+                    {
+                        await WriteDeflaterOutputAsync(cancellationToken).ConfigureAwait(false);
+                    }
+                    finally
+                    {
+                        // Discard any stale input reference so a later call (e.g. Dispose) doesn't read from a
+                        // buffer the caller may have since mutated, reused, or freed. On the success path the
+                        // input has already been fully consumed, so this is a no-op.
+                        _deflater.UnsetInput();
+                    }
                 }
                 finally
                 {
@@ -1055,19 +1074,29 @@ namespace System.IO.Compression
                 // Feed the data from base stream into decompression engine.
                 _deflateStream._inflater.SetInput(buffer);
 
-                // While there's more decompressed data available, forward it to the buffer stream.
-                while (!_deflateStream._inflater.Finished())
+                try
                 {
-                    int bytesRead = _deflateStream._inflater.Inflate(new Span<byte>(_arrayPoolBuffer));
-                    if (bytesRead > 0)
+                    // While there's more decompressed data available, forward it to the buffer stream.
+                    while (!_deflateStream._inflater.Finished())
                     {
-                        await _destination.WriteAsync(new ReadOnlyMemory<byte>(_arrayPoolBuffer, 0, bytesRead), cancellationToken).ConfigureAwait(false);
+                        int bytesRead = _deflateStream._inflater.Inflate(new Span<byte>(_arrayPoolBuffer));
+                        if (bytesRead > 0)
+                        {
+                            await _destination.WriteAsync(new ReadOnlyMemory<byte>(_arrayPoolBuffer, 0, bytesRead), cancellationToken).ConfigureAwait(false);
+                        }
+                        else if (_deflateStream._inflater.NeedsInput())
+                        {
+                            // only break if we read 0 and ran out of input, if input is still available it may be another GZip payload
+                            break;
+                        }
                     }
-                    else if (_deflateStream._inflater.NeedsInput())
-                    {
-                        // only break if we read 0 and ran out of input, if input is still available it may be another GZip payload
-                        break;
-                    }
+                }
+                catch
+                {
+                    // Discard any stale input reference to "buffer" so the inflater doesn't retain a
+                    // dangling reference once this exception propagates.
+                    _deflateStream._inflater.UnsetInput();
+                    throw;
                 }
             }
 
@@ -1091,19 +1120,29 @@ namespace System.IO.Compression
                 // Feed the data from base stream into the decompression engine.
                 _deflateStream._inflater.SetInput(buffer, offset, count);
 
-                // While there's more decompressed data available, forward it to the buffer stream.
-                while (!_deflateStream._inflater.Finished())
+                try
                 {
-                    int bytesRead = _deflateStream._inflater.Inflate(new Span<byte>(_arrayPoolBuffer));
-                    if (bytesRead > 0)
+                    // While there's more decompressed data available, forward it to the buffer stream.
+                    while (!_deflateStream._inflater.Finished())
                     {
-                        _destination.Write(_arrayPoolBuffer, 0, bytesRead);
+                        int bytesRead = _deflateStream._inflater.Inflate(new Span<byte>(_arrayPoolBuffer));
+                        if (bytesRead > 0)
+                        {
+                            _destination.Write(_arrayPoolBuffer, 0, bytesRead);
+                        }
+                        else if (_deflateStream._inflater.NeedsInput())
+                        {
+                            // only break if we read 0 and ran out of input, if input is still available it may be another GZip payload
+                            break;
+                        }
                     }
-                    else if (_deflateStream._inflater.NeedsInput())
-                    {
-                        // only break if we read 0 and ran out of input, if input is still available it may be another GZip payload
-                        break;
-                    }
+                }
+                catch
+                {
+                    // Discard any stale input reference to "buffer" so the inflater doesn't retain a
+                    // dangling reference once this exception propagates.
+                    _deflateStream._inflater.UnsetInput();
+                    throw;
                 }
             }
 

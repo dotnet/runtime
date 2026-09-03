@@ -244,20 +244,33 @@ namespace ILCompiler
                 _rootAdder(_deferredPhaseNode, "Deferred nodes");
             }
 
+            private void AddCompilationRootHelper(IMethodNode methodEntryPoint, bool rootMinimalDependencies, string reason)
+            {
+                if (rootMinimalDependencies)
+                {
+                    _deferredPhaseNode.AddDependency((DependencyNodeCore<NodeFactory>)methodEntryPoint);
+                }
+                else
+                {
+                    _rootAdder(methodEntryPoint, reason);
+                }
+            }
+
             public void AddCompilationRoot(MethodDesc method, bool rootMinimalDependencies, string reason)
             {
                 MethodDesc canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
                 if (_factory.CompilationModuleGroup.ContainsMethodBody(canonMethod, false))
                 {
                     IMethodNode methodEntryPoint = _factory.CompiledMethodNode(canonMethod);
+                    AddCompilationRootHelper(methodEntryPoint, rootMinimalDependencies, reason);
 
-                    if (rootMinimalDependencies)
+                    // Process unbox stubs inclusion for methods that have all type args Canon. InheritedVirtualMethodsNode
+                    // and GVMDependenciesNode are meant to deal with methods that have some of the type args instantiated
+                    // with valuetypes.
+                    if (_factory.NeedsUnboxingStub(canonMethod))
                     {
-                        _deferredPhaseNode.AddDependency((DependencyNodeCore<NodeFactory>)methodEntryPoint);
-                    }
-                    else
-                    {
-                        _rootAdder(methodEntryPoint, reason);
+                        IMethodNode unboxingStub = _factory.UnboxingStub(canonMethod);
+                        AddCompilationRootHelper(unboxingStub, rootMinimalDependencies, reason);
                     }
                 }
             }
@@ -370,27 +383,30 @@ namespace ILCompiler
             _customPESectionAlignment = customPESectionAlignment;
             _format = format;
             SymbolNodeFactory = new ReadyToRunSymbolNodeFactory(nodeFactory, verifyTypeAndFieldLayout);
+            _tokenManager = new ExternalReferenceTokenManager(_nodeFactory.ManifestMetadataTable._mutableModule, _nodeFactory.Resolver);
             if (nodeFactory.InstrumentationDataTable != null)
                 nodeFactory.InstrumentationDataTable.Initialize(SymbolNodeFactory);
             if (nodeFactory.CrossModuleInlningInfo != null)
                 nodeFactory.CrossModuleInlningInfo.Initialize(SymbolNodeFactory);
             if (nodeFactory.ImportReferenceProvider != null)
-                nodeFactory.ImportReferenceProvider.Initialize(SymbolNodeFactory);
+                nodeFactory.ImportReferenceProvider.Initialize(SymbolNodeFactory, _tokenManager);
             _inputFiles = inputFiles;
             _compositeRootPath = compositeRootPath;
             _printReproInstructions = printReproInstructions;
             CompilationModuleGroup = (ReadyToRunCompilationModuleGroupBase)nodeFactory.CompilationModuleGroup;
 
             // Generate baseline support specification for InstructionSetSupport. This will prevent usage of the generated
-            // code if the runtime environment doesn't support the specified instruction set
-            string instructionSetSupportString = ReadyToRunInstructionSetSupportSignature.ToInstructionSetSupportString(instructionSetSupport);
+            // code if the runtime environment doesn't support the specified instruction set. Targets that cannot generate
+            // code at runtime must not encode "must be absent" assertions, since a failing eager fixup is a fatal startup
+            // error with no JIT fallback (see ToInstructionSetSupportString).
+            bool targetAllowsRuntimeCodeGeneration = ((ReadyToRunCompilerContext)nodeFactory.TypeSystemContext).TargetAllowsRuntimeCodeGeneration;
+            string instructionSetSupportString = ReadyToRunInstructionSetSupportSignature.ToInstructionSetSupportString(instructionSetSupport, emitExplicitlyUnsupported: targetAllowsRuntimeCodeGeneration);
             ReadyToRunInstructionSetSupportSignature instructionSetSupportSig = new ReadyToRunInstructionSetSupportSignature(instructionSetSupportString);
             _dependencyGraph.AddRoot(new Import(NodeFactory.EagerImports, instructionSetSupportSig), "Baseline instruction set support");
 
             _profileData = profileData;
 
             _fileLayoutOptimizer = new FileLayoutOptimizer(logger, methodLayoutAlgorithm, fileLayoutAlgorithm, profileData, _nodeFactory);
-            _tokenManager = new ExternalReferenceTokenManager(_nodeFactory.ManifestMetadataTable._mutableModule, _nodeFactory.Resolver);
         }
 
         private readonly static string s_folderUpPrefix = ".." + Path.DirectorySeparatorChar;
@@ -749,8 +765,8 @@ namespace ILCompiler
                         if (method.IsAsyncCall() && shouldBeCompiled)
                             AddNecessaryAsyncReferences(method);
 
-                        if (method.IsCompilerGeneratedILBodyForAsync() && shouldBeCompiled)
-                            EnsureAsyncThunkTokensAreAvailable(method);
+                        if ((method.IsCompilerGeneratedILBodyForAsync() || ((CompilerTypeSystemContext)method.Context).IsUnboxingThunk(method)) && shouldBeCompiled)
+                            EnsureGeneratedILTokensAreAvailable(method);
 
                         if (!_nodeFactory.CompilationModuleGroup.VersionsWithMethodBody(method))
                             EnsureInstantiationReferencesArePresentForExternalMethod(method);
@@ -789,9 +805,9 @@ namespace ILCompiler
                 _nodeFactory.GenerateHotColdMap(_dependencyGraph);
             }
 
-            void EnsureAsyncThunkTokensAreAvailable(MethodDesc method)
+            void EnsureGeneratedILTokensAreAvailable(MethodDesc method)
             {
-                if (!method.IsCompilerGeneratedILBodyForAsync())
+                if (!method.IsCompilerGeneratedILBodyForAsync() && !((CompilerTypeSystemContext)method.Context).IsUnboxingThunk(method))
                     return;
                 MethodIL il = _methodILCache.ILProvider.GetMethodIL(method);
                 if (il is null)
@@ -1052,6 +1068,10 @@ namespace ILCompiler
                 asyncHelpers.GetKnownMethod("RestoreContextsOnSuspension"u8, null),
                 asyncHelpers.GetKnownMethod("FinishSuspensionNoContinuationContext"u8, null),
                 asyncHelpers.GetKnownMethod("FinishSuspensionWithContinuationContext"u8, null),
+                asyncHelpers.GetKnownMethod("RestoreInlinedFrameContexts"u8, null),
+                asyncHelpers.GetKnownMethod("CaptureInlinedFrameTransitionWithContinuationContext"u8, null),
+                asyncHelpers.GetKnownMethod("CaptureInlinedFrameTransitionNoContinuationContext"u8, null),
+                asyncHelpers.GetKnownMethod("CaptureInlinedFrameTransitionContinueOnThreadPool"u8, null),
 
                 // R2R Helpers
                 asyncHelpers.GetKnownMethod("AllocContinuation"u8, null),
@@ -1064,6 +1084,18 @@ namespace ILCompiler
                 asyncHelpers.GetKnownMethod("TransparentAwait"u8, new MethodSignature(MethodSignatureFlags.Static, 0, voidType, [valueTaskType])),
                 asyncHelpers.GetKnownMethod("TransparentAwait"u8, new MethodSignature(MethodSignatureFlags.Static, 1, methodVar, [taskOfTType.MakeInstantiatedType(methodVar)])),
                 asyncHelpers.GetKnownMethod("TransparentAwait"u8, new MethodSignature(MethodSignatureFlags.Static, 1, methodVar, [valueTaskOfTType.MakeInstantiatedType(methodVar)])),
+
+                // For CorInfoImpl.getAwaitAwaiterInContinuationCall. Same as above: the JIT rewrites calls
+                // to AsyncHelpers.AwaitAwaiter/UnsafeAwaitAwaiter into calls to these, so nothing in the
+                // caller's IL refers to them and their manifest tokens must be pre-seeded here.
+                //
+                // Only the typical definitions need tokens. The method fixup signature emits the method's
+                // def/ref token and encodes the instantiation separately as type signatures (see
+                // SignatureBuilder.EmitMethodSpecificationSignature), so no MethodSpec token is required.
+                // The instantiation argument is the awaiter type, which the caller already refers to in its
+                // own IL, so that is guaranteed to be encodable as well.
+                asyncHelpers.GetKnownMethod("AwaitAwaiterInContinuation"u8, null),
+                asyncHelpers.GetKnownMethod("UnsafeAwaitAwaiterInContinuation"u8, null),
             ];
             var moduleForNewReferences = ((EcmaMethod)method.GetPrimaryMethodDesc().GetTypicalMethodDefinition()).Module;
             _tokenManager.EnsureDefTokensAreAvailable([..requiredMethods, ..requiredTypes, ..requiredFields], moduleForNewReferences, true);

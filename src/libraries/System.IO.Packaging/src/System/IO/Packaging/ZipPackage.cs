@@ -945,9 +945,11 @@ namespace System.IO.Packaging
             [MemberNotNull(nameof(_overrideDictionary))]
             private void EnsureOverrideDictionary()
             {
-                // The part Uris are stored in the Override Dictionary in their original form , but they are compared
-                // in a normalized manner using the PartUriComparer
-                _overrideDictionary ??= new Dictionary<PackUriHelper.ValidatedPartUri, ContentType>(OverrideDictionaryInitialSize);
+                // The part Uris are stored in the Override Dictionary in their original form, but they are compared
+                // in a normalized, case-insensitive manner using ValidatedPartUriEqualityComparer.
+                _overrideDictionary ??= new Dictionary<PackUriHelper.ValidatedPartUri, ContentType>(
+                    OverrideDictionaryInitialSize,
+                    PackUriHelper.ValidatedPartUriEqualityComparer.Instance);
             }
 
             private void ParseContentTypesFile(System.Collections.ObjectModel.ReadOnlyCollection<ZipArchiveEntry> zipFiles)

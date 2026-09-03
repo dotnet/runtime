@@ -390,25 +390,6 @@ void GCToOSInterface::GetMemoryStatus(uint64_t restricted_limit, uint32_t* memor
 }
 
 // ============================================================================
-// Time
-// ============================================================================
-
-int64_t GCToOSInterface::QueryPerformanceCounter()
-{
-    return minipal_hires_ticks();
-}
-
-int64_t GCToOSInterface::QueryPerformanceFrequency()
-{
-    return minipal_hires_tick_frequency();
-}
-
-uint64_t GCToOSInterface::GetLowPrecisionTimeStamp()
-{
-    return (uint64_t)minipal_lowres_ticks();
-}
-
-// ============================================================================
 // Processor count / NUMA / CPU Groups
 // ============================================================================
 

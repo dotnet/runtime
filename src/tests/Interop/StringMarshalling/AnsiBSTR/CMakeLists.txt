@@ -3,7 +3,7 @@ include ("${CLR_INTEROP_TEST_ROOT}/Interop.cmake")
 set(SOURCES AnsiBStrTestNative.cpp)
 
 # add the executable
-add_library (AnsiBStrTestNative SHARED ${SOURCES})
+add_library (AnsiBStrTestNative ${TEST_LIB_TYPE} ${SOURCES})
 
 if(CLR_CMAKE_HOST_WIN32)
     list(APPEND LINK_LIBRARIES_ADDITIONAL

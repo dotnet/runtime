@@ -100,9 +100,12 @@ namespace Wasm.Build.Tests
                                             .WithWorkingDirectory(workingDir);
 
                 await using var runner = new BrowserRunner(_testOutput);
-                var page = await runner.RunAsync(runCommand, $"run --no-silent -c {config} --project \"{projectFilePath}\" --forward-console");
+                var page = await runner.RunAsync(runCommand, $"run --no-silent -c {config} --project \"{projectFilePath}\"");
                 await runner.WaitForExitMessageAsync(TimeSpan.FromMinutes(2));
-                Assert.Contains("Hello, Browser!", string.Join(Environment.NewLine, runner.OutputLines));
+                string output;
+                lock (runner.OutputLines)
+                    output = string.Join(Environment.NewLine, runner.OutputLines);
+                Assert.Contains("Hello, Browser!", output);
             }
 
             {
@@ -110,50 +113,45 @@ namespace Wasm.Build.Tests
                                             .WithWorkingDirectory(workingDir);
 
                 await using var runner = new BrowserRunner(_testOutput);
-                var page = await runner.RunAsync(runCommand, $"run --no-silent -c {config} --no-build --project \"{projectFilePath}\" --forward-console");
+                var page = await runner.RunAsync(runCommand, $"run --no-silent -c {config} --no-build --project \"{projectFilePath}\"");
                 await runner.WaitForExitMessageAsync(TimeSpan.FromMinutes(2));
-                Assert.Contains("Hello, Browser!", string.Join(Environment.NewLine, runner.OutputLines));
+                string output;
+                lock (runner.OutputLines)
+                    output = string.Join(Environment.NewLine, runner.OutputLines);
+                Assert.Contains("Hello, Browser!", output);
             }
         }
 
         public static IEnumerable<object?[]> BrowserBuildAndRunTestData()
         {
-            yield return new object?[] { "", BuildTestBase.DefaultTargetFramework, DefaultRuntimeAssetsRelativePath };
-            yield return new object?[] { $"-f {DefaultTargetFramework}", DefaultTargetFramework, DefaultRuntimeAssetsRelativePath };
+            yield return new object?[] { "", BuildTestBase.DefaultTargetFramework };
+            yield return new object?[] { $"-f {DefaultTargetFramework}", DefaultTargetFramework };
 
             if (EnvironmentVariables.WorkloadsTestPreviousVersions)
             {
-                yield return new object?[] { $"-f {PreviousTargetFramework}", PreviousTargetFramework, DefaultRuntimeAssetsRelativePath };
-                yield return new object?[] { $"-f {Previous2TargetFramework}", Previous2TargetFramework, DefaultRuntimeAssetsRelativePath };
+                yield return new object?[] { $"-f {PreviousTargetFramework}", PreviousTargetFramework };
+                yield return new object?[] { $"-f {Previous2TargetFramework}", Previous2TargetFramework };
             }
-
-            // ActiveIssue("https://github.com/dotnet/runtime/issues/90979")
-            // yield return new object?[] { "", BuildTestBase.DefaultTargetFramework, "./" };
-            // yield return new object?[] { "-f net8.0", "net8.0", "./" };
         }
 
         [Theory]
         [MemberData(nameof(BrowserBuildAndRunTestData))]
         [TestCategory("workload")]
-        public async Task BrowserBuildAndRun(string extraNewArgs, string targetFramework, string runtimeAssetsRelativePath)
+        public async Task BrowserBuildAndRun(string extraNewArgs, string targetFramework)
         {
             Configuration config = Configuration.Debug;
-            string extraProperties = runtimeAssetsRelativePath == DefaultRuntimeAssetsRelativePath ?
-                "" :
-                $"<WasmRuntimeAssetsLocation>{runtimeAssetsRelativePath}</WasmRuntimeAssetsLocation>";
             ProjectInfo info = CreateWasmTemplateProject(
                 Template.WasmBrowser,
                 config,
                 aot: false,
                 "browser",
-                extraProperties: extraProperties,
                 extraArgs: extraNewArgs,
                 addFrameworkArg: extraNewArgs.Length == 0
             );
 
             if (new Version(targetFramework.Replace("net", "")).Major > 8)
                 UpdateBrowserProgramFile();
-            UpdateBrowserMainJs(targetFramework, runtimeAssetsRelativePath);
+            UpdateBrowserMainJs(targetFramework);
 
             PublishProject(info, config, new PublishOptions(UseCache: false));
 
@@ -200,7 +198,7 @@ namespace Wasm.Build.Tests
         [Theory]
         [InlineData("", true)] // Default case
         [InlineData("false", false)] // the other case
-        [TestCategory("native"), TestCategory("workload")]
+        [TestCategory("native"), TestCategory("mono"), TestCategory("workload")]
         public async Task Test_WasmStripILAfterAOT(string stripILAfterAOT, bool expectILStripping)
         {
             Configuration config = Configuration.Release;
@@ -346,27 +344,31 @@ namespace Wasm.Build.Tests
             ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot: false, "tsdefs", extraProperties: emitTypeScriptDtsProp);
 
             string projectDirectory = Path.GetDirectoryName(info.ProjectFilePath)!;
-            string dotnetDtsWwwrootPath = Path.Combine(projectDirectory, "wwwroot", "dotnet.d.ts");
+            string dotnetDtsWwwrootPath = Path.Combine(projectDirectory, "wwwroot", "_framework", "dotnet.d.ts");
+            string rootDotnetDtsWwwrootPath = Path.Combine(projectDirectory, "wwwroot", "dotnet.d.ts");
 
-            // Verify dotnet.d.ts is not in wwwroot after creation
+            // Verify dotnet.d.ts is absent from the project after creation
             Assert.False(File.Exists(dotnetDtsWwwrootPath), $"dotnet.d.ts should not exist at {dotnetDtsWwwrootPath} after creation of the project");
+            Assert.False(File.Exists(rootDotnetDtsWwwrootPath), $"dotnet.d.ts should not exist at {rootDotnetDtsWwwrootPath} after creation of the project");
 
             // Build to trigger the _EnsureDotnetTypeScriptDefinitions target during the build phase
             BuildProject(info, config, new BuildOptions());
 
-            // Verify dotnet.d.ts presence in the project's wwwroot directory after build
+            // Verify dotnet.d.ts presence in the project's wwwroot/_framework directory after build
             bool fileExists = File.Exists(dotnetDtsWwwrootPath);
             if (emitTypeScriptDts)
             {
                 Assert.True(fileExists, $"dotnet.d.ts should be created at {dotnetDtsWwwrootPath} after the build with WasmEmitTypeScriptDefinitions={shouldEmit}");
+                Assert.False(File.Exists(rootDotnetDtsWwwrootPath), $"dotnet.d.ts should not be created at {rootDotnetDtsWwwrootPath}");
 
                 // Rebuild with -question to verify the build stays incremental after
-                // dotnet.d.ts is copied to wwwroot (see https://github.com/dotnet/runtime/issues/124729).
+                // dotnet.d.ts is copied to wwwroot/_framework (see https://github.com/dotnet/runtime/issues/124729).
                 BuildProject(info, config, new BuildOptions(UseCache: false, AssertAppBundle: false, ExtraMSBuildArgs: "-question"));
             }
             else
             {
                 Assert.False(fileExists, $"dotnet.d.ts should not exist at {dotnetDtsWwwrootPath} after the build with WasmEmitTypeScriptDefinitions={shouldEmit}");
+                Assert.False(File.Exists(rootDotnetDtsWwwrootPath), $"dotnet.d.ts should not exist at {rootDotnetDtsWwwrootPath} after the build with WasmEmitTypeScriptDefinitions={shouldEmit}");
             }
         }
 
@@ -374,7 +376,7 @@ namespace Wasm.Build.Tests
         [InlineData("true", false)]
         [InlineData("false", true)]
         [InlineData("", false)] // Default case
-        [TestCategory("workload")]
+        [TestCategory("mono"), TestCategory("workload")]
         public void UseMonoRuntimeParameter(string useMonoRuntimeArg, bool expectUseMonoRuntimeProperty)
         {
             Configuration config = Configuration.Debug;

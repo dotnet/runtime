@@ -8,7 +8,6 @@ using System.Linq.Expressions;
 using System.Numerics;
 using System.Reflection;
 using System.Reflection.Metadata;
-using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -569,22 +568,22 @@ public class Program
         return true;
     }
 
-    private static bool DisposeEnumeratorTestWithConstrainedCall()
+    private static unsafe bool DisposeEnumeratorTestWithConstrainedCall()
     {
-        string thisAssembly = Assembly.GetExecutingAssembly().Location;
-
-        using (var fs = new FileStream(thisAssembly, FileMode.Open, FileAccess.Read))
+        Assembly assembly = Assembly.GetExecutingAssembly();
+        if (!assembly.TryGetRawMetadata(out byte* metadata, out int length))
         {
-            using (var pereader = new PEReader(fs))
-            {
-                var reader = pereader.GetMetadataReader();
-                var methodDefinitionHandleCollection = reader.MethodDefinitions;
-                foreach (var methodDefinitionHandle in methodDefinitionHandleCollection)
-                {
-                    break;
-                }
-            }
+            return false;
         }
+
+        MetadataReader reader = new MetadataReader(metadata, length);
+        MethodDefinitionHandleCollection methodDefinitionHandleCollection = reader.MethodDefinitions;
+        foreach (MethodDefinitionHandle methodDefinitionHandle in methodDefinitionHandleCollection)
+        {
+            break;
+        }
+
+        GC.KeepAlive(assembly);
         return true;
     }
 
@@ -770,10 +769,9 @@ public class Program
         Console.WriteLine("Int result: {0}, expected: {1}", intResult, ExpectedIntResult);
 
         int stringResult = InstanceMethodCaller<string>.Compare("hello", "world");
-        const int ExpectedStringResult = -1;
-        Console.WriteLine("String result: {0}, expected: {1}", stringResult, ExpectedStringResult);
+        Console.WriteLine("String result: {0}, expected: less than zero", stringResult);
 
-        return intResult == ExpectedIntResult && stringResult == ExpectedStringResult;
+        return intResult == ExpectedIntResult && stringResult < 0;
     }
 
     private static string GetTypeName<T>()
@@ -1237,6 +1235,48 @@ public class Program
         if (versionBubbleLocalStruct.StoredValue == null) return false; // ToString method should update struct in place.
 
         return true;
+    }
+
+    private interface IUnboxingStubTest
+    {
+        int GetValue();
+    }
+
+    private readonly struct UnboxingStubTest : IUnboxingStubTest
+    {
+        private readonly int _value;
+
+        public UnboxingStubTest(int value)
+        {
+            _value = value;
+        }
+
+        public int GetValue() => _value;
+    }
+
+    private readonly struct GenericUnboxingStubTest<T> : IUnboxingStubTest
+    {
+        private readonly int _value;
+
+        public GenericUnboxingStubTest(int value)
+        {
+            _value = value;
+        }
+
+        public int GetValue() => _value + typeof(T).Name.Length;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int CallUnboxingStubTest(IUnboxingStubTest value) => value.GetValue();
+
+    private static bool BoxedInterfaceUnboxingStubTest()
+    {
+        return CallUnboxingStubTest(new UnboxingStubTest(42)) == 42;
+    }
+
+    private static bool BoxedInterfaceGenericUnboxingStubTest()
+    {
+        return CallUnboxingStubTest(new GenericUnboxingStubTest<string>(42)) == 42 + nameof(String).Length;
     }
 
     enum TestEnum
@@ -2221,6 +2261,8 @@ public class Program
         RunTest("ObjectGetTypeOnGenericParamTest", ObjectGetTypeOnGenericParamTest());
         RunTest("ObjectToStringOnGenericParamTestSByte", ObjectToStringOnGenericParamTestSByte());
         RunTest("ObjectToStringOnGenericParamTestVersionBubbleLocalStruct", ObjectToStringOnGenericParamTestVersionBubbleLocalStruct());
+        RunTest("BoxedInterfaceUnboxingStubTest", BoxedInterfaceUnboxingStubTest());
+        RunTest("BoxedInterfaceGenericUnboxingStubTest", BoxedInterfaceGenericUnboxingStubTest());
         RunTest("EnumValuesToStringTest", EnumValuesToStringTest());
         RunTest("DelegateFromAnotherModuleTest", DelegateFromAnotherModuleTest());
         RunTest("SealedDefaultInterfaceMethodTest", SealedDefaultInterfaceMethodTest());

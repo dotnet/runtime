@@ -40,16 +40,14 @@ DictionaryLayout* DictionaryLayout::Allocate(WORD              numSlots,
                                              LoaderAllocator * pAllocator,
                                              AllocMemTracker * pamTracker)
 {
-    CONTRACT(DictionaryLayout*)
+    CONTRACTL
     {
         THROWS;
         GC_NOTRIGGER;
-        INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(CheckPointer(pAllocator));
         PRECONDITION(numSlots > 0);
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END
+    CONTRACTL_END
 
     S_SIZE_T bytes = S_SIZE_T(sizeof(DictionaryLayout)) + S_SIZE_T(sizeof(DictionaryEntryLayout)) * S_SIZE_T(numSlots-1);
 
@@ -64,7 +62,7 @@ DictionaryLayout* DictionaryLayout::Allocate(WORD              numSlots,
     pD->m_numSlots = numSlots;
     pD->m_numInitialSlots = numSlots;
 
-    RETURN pD;
+    return pD;
 }
 
 #endif //!DACCESS_COMPILE
@@ -269,7 +267,6 @@ DictionaryLayout* DictionaryLayout::ExpandDictionaryLayout(LoaderAllocator*     
     CONTRACTL
     {
         STANDARD_VM_CHECK;
-        INJECT_FAULT(ThrowOutOfMemory(););
         PRECONDITION(GetAppDomain()->GetGenericDictionaryExpansionLock()->OwnedByCurrentThread());
         PRECONDITION(CheckPointer(pResult) && CheckPointer(pSlotOut));
     }
@@ -482,13 +479,12 @@ DictionaryEntryLayout::GetKind()
 #ifndef DACCESS_COMPILE
 Dictionary* Dictionary::GetMethodDictionaryWithSizeCheck(MethodDesc* pMD, ULONG slotIndex)
 {
-    CONTRACT(Dictionary*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     DWORD numGenericArgs = pMD->GetNumGenericMethodArgs();
 
@@ -535,18 +531,17 @@ Dictionary* Dictionary::GetMethodDictionaryWithSizeCheck(MethodDesc* pMD, ULONG 
         }
     }
 
-    RETURN pDictionary;
+    return pDictionary;
 }
 
 Dictionary* Dictionary::GetTypeDictionaryWithSizeCheck(MethodTable* pMT, ULONG slotIndex)
 {
-    CONTRACT(Dictionary*)
+    CONTRACTL
     {
        THROWS;
        GC_TRIGGERS;
-       POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     DWORD numGenericArgs = pMT->GetNumGenericArgs();
 
@@ -595,7 +590,7 @@ Dictionary* Dictionary::GetTypeDictionaryWithSizeCheck(MethodTable* pMT, ULONG s
         }
     }
 
-    RETURN pDictionary;
+    return pDictionary;
 }
 
 struct StaticVirtualDispatchHashBlob : public ILStubHashBlobBase
@@ -674,6 +669,7 @@ Dictionary::PopulateEntry(
     Module *           pModule /* = NULL */)
 {
      CONTRACTL {
+        MODE_PREEMPTIVE;
         THROWS;
         GC_TRIGGERS;
     } CONTRACTL_END;
@@ -730,7 +726,7 @@ Dictionary::PopulateEntry(
 
         switch (signatureKind)
         {
-            case READYTORUN_FIXUP_DeclaringTypeHandle:   kind = DeclaringTypeHandleSlot; break;
+            case READYTORUN_FIXUP_DeclaringTypeHandle:   kind = DeclaringTypeHandleFromMethodSlot; break;
             case READYTORUN_FIXUP_TypeHandle:            kind = TypeHandleSlot; break;
             case READYTORUN_FIXUP_FieldHandle:           kind = FieldDescSlot; break;
             case READYTORUN_FIXUP_MethodHandle:          kind = MethodDescSlot; break;
@@ -866,6 +862,7 @@ Dictionary::PopulateEntry(
         case MethodDescSlot:
         case DispatchStubAddrSlot:
         case MethodEntrySlot:
+        case DeclaringTypeHandleFromMethodSlot:
         {
             TypeHandle ownerType;
             MethodTable * pOwnerMT = NULL;
@@ -879,6 +876,9 @@ Dictionary::PopulateEntry(
             uint32_t methodSlot = -1;
             BOOL fRequiresDispatchStub = 0;
             BOOL isAsyncVariant = 0;
+
+            // 'kind' can be reassigned below when the signature carries a constrained token, so capture this up front.
+            BOOL fDeclaringTypeHandleFromMethod = (kind == DeclaringTypeHandleFromMethodSlot);
 
             if (isReadyToRunModule)
             {
@@ -1025,6 +1025,34 @@ Dictionary::PopulateEntry(
                     _ASSERTE(pMethod != NULL);
                     pMethod->CheckRestore();
                 }
+            }
+
+            if (fDeclaringTypeHandleFromMethod)
+            {
+                _ASSERTE(isReadyToRunModule);
+
+                // The signature describes a method; the value of the slot is the type which declares that method.
+                // The method may be declared on a base type of the type referenced by the token, and the MethodDesc
+                // found for it may belong to a canonical instantiation of that base type, so walk the parent chain of
+                // the (exact) type from the token to recover the exact declaring type.
+                MethodTable * pDeclaringMT;
+                if (pMethod->IsArray())
+                {
+                    pDeclaringMT = pOwnerMT;
+                }
+                else
+                {
+                    pDeclaringMT = pMethod->GetExactDeclaringType(pOwnerMT);
+                    if (pDeclaringMT == NULL)
+                        COMPlusThrowHR(COR_E_TYPELOAD);
+                }
+
+                pDeclaringMT->EnsureInstanceActive();
+
+                _ASSERT(!pDeclaringMT->IsSharedByGenericInstantiations());
+
+                result = (CORINFO_GENERIC_HANDLE)TypeHandle(pDeclaringMT).AsPtr();
+                break;
             }
 
             if (fRequiresDispatchStub)

@@ -4870,7 +4870,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_ICONV_TO_R_UN: {
 			if (mono_hwcap_s390x_has_fpe) {
-				s390_cdlfbr (code, ins->dreg, 5, ins->sreg1, 0);
+				s390_cdlfbr (code, ins->dreg, 4, ins->sreg1, 0);
 			} else {
 				s390_llgfr (code, s390_r0, ins->sreg1);
 				s390_cdgbr (code, ins->dreg, s390_r0);
@@ -4879,7 +4879,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_LCONV_TO_R_UN: {
 			if (mono_hwcap_s390x_has_fpe) {
-				s390_cdlgbr (code, ins->dreg, 6, ins->sreg1, 0);
+				s390_cdlgbr (code, ins->dreg, 4, ins->sreg1, 0);
 			} else {
 				short int *jump;
 				s390_lgdr  (code, s390_r0, s390_r15);

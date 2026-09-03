@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project>
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, $(MSBuildThisFileDirectory)..))" />
+
+  <PropertyGroup>
+    <HWITestsWasmOnly>true</HWITestsWasmOnly>
+    <!-- Wasm SIMD support is incomplete, so these tests are disabled by default for now.
+         Set EnableWasmHWIntrinsicsTests=true to opt back in once support is ready. -->
+    <CLRTestTargetUnsupported Condition="'$(EnableWasmHWIntrinsicsTests)' != 'true'">true</CLRTestTargetUnsupported>
+  </PropertyGroup>
+
+</Project>

@@ -63,7 +63,7 @@ namespace System.Text.Json
 
         public static void ReturnWriterAndBuffer(Utf8JsonWriter writer, PooledByteBufferWriter bufferWriter)
         {
-            Debug.Assert(t_threadLocalState != null);
+            Debug.Assert(t_threadLocalState is not null);
             ThreadLocalState state = t_threadLocalState;
 
             writer.ResetAllStateForCacheReuse();
@@ -75,7 +75,7 @@ namespace System.Text.Json
 
         public static void ReturnWriter(Utf8JsonWriter writer)
         {
-            Debug.Assert(t_threadLocalState != null);
+            Debug.Assert(t_threadLocalState is not null);
             ThreadLocalState state = t_threadLocalState;
 
             writer.ResetAllStateForCacheReuse();

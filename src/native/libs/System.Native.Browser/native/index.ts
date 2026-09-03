@@ -61,7 +61,10 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
                 _ems_.FS.createPath("/", virtualWorkingDirectory!, true, true);
                 _ems_.FS.chdir(virtualWorkingDirectory!);
             }
+        }, ...(_ems_.Module.preInit || [])];
 
+        // preInit runs before Emscripten assigns the native WASM exports.
+        _ems_.Module.preRun = [() => {
             const orig_funcs_on_exit = _ems_.___funcs_on_exit;
             // it would be better to use addOnExit(), but it's called too late.
             // this can't be async
@@ -77,7 +80,6 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
                     // silently ignore any error during shutdown
                 }
             };
-
-        }, ...(_ems_.Module.preInit || [])];
+        }, ...(_ems_.Module.preRun || [])];
     }
 }

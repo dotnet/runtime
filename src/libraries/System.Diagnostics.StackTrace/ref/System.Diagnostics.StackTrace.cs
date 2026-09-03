@@ -14,7 +14,7 @@ namespace System.Diagnostics.SymbolStore
     }
     public partial interface ISymbolBinder1
     {
-        System.Diagnostics.SymbolStore.ISymbolReader? GetReader(System.IntPtr importer, string filename, string searchPath);
+        unsafe System.Diagnostics.SymbolStore.ISymbolReader? GetReader(System.IntPtr importer, string filename, string searchPath);
     }
     public partial interface ISymbolDocument
     {
@@ -95,14 +95,14 @@ namespace System.Diagnostics.SymbolStore
         void DefineLocalVariable(string name, System.Reflection.FieldAttributes attributes, byte[] signature, System.Diagnostics.SymbolStore.SymAddressKind addrKind, int addr1, int addr2, int addr3, int startOffset, int endOffset);
         void DefineParameter(string name, System.Reflection.ParameterAttributes attributes, int sequence, System.Diagnostics.SymbolStore.SymAddressKind addrKind, int addr1, int addr2, int addr3);
         void DefineSequencePoints(System.Diagnostics.SymbolStore.ISymbolDocumentWriter document, int[] offsets, int[] lines, int[] columns, int[] endLines, int[] endColumns);
-        void Initialize(System.IntPtr emitter, string filename, bool fFullBuild);
+        unsafe void Initialize(System.IntPtr emitter, string filename, bool fFullBuild);
         void OpenMethod(System.Diagnostics.SymbolStore.SymbolToken method);
         void OpenNamespace(string name);
         int OpenScope(int startOffset);
         void SetMethodSourceRange(System.Diagnostics.SymbolStore.ISymbolDocumentWriter startDoc, int startLine, int startColumn, System.Diagnostics.SymbolStore.ISymbolDocumentWriter endDoc, int endLine, int endColumn);
         void SetScopeRange(int scopeID, int startOffset, int endOffset);
         void SetSymAttribute(System.Diagnostics.SymbolStore.SymbolToken parent, string name, byte[] data);
-        void SetUnderlyingWriter(System.IntPtr underlyingWriter);
+        unsafe void SetUnderlyingWriter(System.IntPtr underlyingWriter);
         void SetUserEntryPoint(System.Diagnostics.SymbolStore.SymbolToken entryMethod);
         void UsingNamespace(string fullName);
     }

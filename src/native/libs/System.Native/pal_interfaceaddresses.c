@@ -109,6 +109,31 @@ static inline uint8_t mask2prefix(uint8_t* mask, int length)
 }
 #endif /* TARGET_WASI */
 
+#if defined(AF_LINK)
+static uint8_t GetLinkLayerAddressLength(const struct sockaddr_dl* address, size_t destinationLength)
+{
+#if defined(TARGET_SUNOS)
+    size_t availableLength = sizeof(address->sdl_data) > address->sdl_nlen ? sizeof(address->sdl_data) - address->sdl_nlen : 0;
+#else
+    size_t addressOffset = offsetof(struct sockaddr_dl, sdl_data) + address->sdl_nlen;
+    size_t availableLength = address->sdl_len > addressOffset ? address->sdl_len - addressOffset : 0;
+#endif
+    size_t addressLength = address->sdl_alen;
+
+    if (addressLength > availableLength)
+    {
+        addressLength = availableLength;
+    }
+
+    if (addressLength > destinationLength)
+    {
+        addressLength = destinationLength;
+    }
+
+    return (uint8_t)addressLength;
+}
+#endif
+
 int32_t SystemNative_EnumerateInterfaceAddresses(void* context,
                                                IPv4AddressFound onIpv4Found,
                                                IPv6AddressFound onIpv6Found,
@@ -242,7 +267,7 @@ int32_t SystemNative_EnumerateInterfaceAddresses(void* context,
                 LinkLayerAddressInfo lla;
                 memset(&lla, 0, sizeof(LinkLayerAddressInfo));
                 lla.InterfaceIndex = interfaceIndex;
-                lla.NumAddressBytes = sadl->sdl_alen;
+                lla.NumAddressBytes = GetLinkLayerAddressLength(sadl, sizeof(lla.AddressBytes));
                 lla.HardwareType = MapHardwareType(sadl->sdl_type);
 
 #if HAVE_NET_IFMEDIA_H || HAVE_IOS_NET_IFMEDIA_H
@@ -265,7 +290,10 @@ int32_t SystemNative_EnumerateInterfaceAddresses(void* context,
                     }
                 }
 #endif
-                memcpy_s(&lla.AddressBytes, sizeof_member(LinkLayerAddressInfo, AddressBytes), (uint8_t*)LLADDR(sadl), sadl->sdl_alen);
+                if (lla.NumAddressBytes != 0)
+                {
+                    memcpy_s(&lla.AddressBytes, sizeof_member(LinkLayerAddressInfo, AddressBytes), (uint8_t*)LLADDR(sadl), lla.NumAddressBytes);
+                }
                 onLinkLayerFound(context, current->ifa_name, &lla);
             }
         }
@@ -286,6 +314,9 @@ int32_t SystemNative_EnumerateInterfaceAddresses(void* context,
 }
 
 // See entriesCount, calloc() below.
+c_static_assert(sizeof(LinkLayerAddressInfo) == 20);
+c_static_assert(sizeof_member(LinkLayerAddressInfo, AddressBytes) == 12);
+c_static_assert(sizeof_member(NetworkInterfaceInfo, AddressBytes) == 12);
 c_static_assert(sizeof(NetworkInterfaceInfo) >= sizeof(IpAddressInfo));
 
 int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInterfaceInfo **interfaceList, int32_t * addressCount, IpAddressInfo **addressList )
@@ -439,8 +470,11 @@ int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInter
             struct sockaddr_dl* sadl = (struct sockaddr_dl*)ifaddrsEntry->ifa_addr;
 
             nii->HardwareType = MapHardwareType(sadl->sdl_type);
-            nii->NumAddressBytes =  sadl->sdl_alen;
-            memcpy_s(&nii->AddressBytes, sizeof_member(NetworkInterfaceInfo, AddressBytes), (uint8_t*)LLADDR(sadl), sadl->sdl_alen);
+            nii->NumAddressBytes = GetLinkLayerAddressLength(sadl, sizeof(nii->AddressBytes));
+            if (nii->NumAddressBytes != 0)
+            {
+                memcpy_s(&nii->AddressBytes, sizeof_member(NetworkInterfaceInfo, AddressBytes), (uint8_t*)LLADDR(sadl), nii->NumAddressBytes);
+            }
 
 #if defined(SIOCGIFMTU)
             struct ifreq ifr;

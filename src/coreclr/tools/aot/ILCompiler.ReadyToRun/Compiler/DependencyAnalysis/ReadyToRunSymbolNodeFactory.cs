@@ -276,6 +276,9 @@ namespace ILCompiler.DependencyAnalysis
                 case ReadyToRunHelperId.TypeHandle:
                     return CreateTypeHandleHelper((TypeDesc)key.Target);
 
+                case ReadyToRunHelperId.DeclaringTypeHandle:
+                    return CreateDeclaringTypeHandleHelper((MethodWithToken)key.Target);
+
                 case ReadyToRunHelperId.MethodHandle:
                     return CreateMethodHandleHelper((MethodWithToken)key.Target);
 
@@ -387,6 +390,16 @@ namespace ILCompiler.DependencyAnalysis
             return new PrecodeHelperImport(
                 _codegenNodeFactory,
                 _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.TypeHandle, type));
+        }
+
+        private Import CreateDeclaringTypeHandleHelper(MethodWithToken method)
+        {
+            return new PrecodeHelperImport(
+                _codegenNodeFactory,
+                _codegenNodeFactory.MethodSignature(
+                    ReadyToRunFixupKind.DeclaringTypeHandle,
+                    method,
+                    isInstantiatingStub: false));
         }
 
         private Import CreateMethodHandleHelper(MethodWithToken method)
@@ -617,6 +630,13 @@ namespace ILCompiler.DependencyAnalysis
                         runtimeLookupKind,
                         ReadyToRunFixupKind.TypeHandle,
                         helperArgument,
+                        methodContext);
+
+                case ReadyToRunHelperId.DeclaringTypeHandle:
+                    return GenericLookupMethodHelper(
+                        runtimeLookupKind,
+                        ReadyToRunFixupKind.DeclaringTypeHandle,
+                        (MethodWithToken)helperArgument,
                         methodContext);
 
                 case ReadyToRunHelperId.MethodHandle:

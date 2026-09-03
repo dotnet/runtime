@@ -116,7 +116,6 @@ namespace Mono.Linker
             // so only record type resolutions for types which are actually resolved.
             if (resolvedType != null)
             {
-                typeResolutionRecords.Add(new(assembly, resolvedType));
                 return resolvedType;
             }
 
@@ -133,7 +132,6 @@ namespace Mono.Linker
                 resolvedType = GetSimpleTypeFromModule(typeName, coreLibrary.MainModule);
                 if (resolvedType != null)
                 {
-                    typeResolutionRecords.Add(new(coreLibrary, resolvedType));
                     return resolvedType;
                 }
             }
@@ -142,15 +140,31 @@ namespace Mono.Linker
 
             TypeDefinition? GetSimpleTypeFromModule(TypeName typeName, ModuleDefinition module)
             {
+                int initialResolutionRecordCount = typeResolutionRecords.Count;
+                TypeDefinition? resolvedType;
                 if (typeName.IsNested)
                 {
-                    TypeDefinition? type = GetSimpleTypeFromModule(typeName.DeclaringType, module);
-                    if (type == null)
+                    TypeDefinition? declaringType = GetSimpleTypeFromModule(typeName.DeclaringType, module);
+                    if (declaringType == null)
                         return null;
-                    return GetNestedType(type, TypeName.Unescape(typeName.Name));
+
+                    resolvedType = GetNestedType(declaringType, TypeName.Unescape(typeName.Name));
+                }
+                else
+                {
+                    resolvedType = module.ResolveType(TypeName.Unescape(typeName.FullName), _metadataResolver);
                 }
 
-                return module.ResolveType(TypeName.Unescape(typeName.FullName), _metadataResolver);
+                if (resolvedType != null)
+                {
+                    typeResolutionRecords.Add(new(module.Assembly, resolvedType));
+                }
+                else if (typeResolutionRecords.Count != initialResolutionRecordCount)
+                {
+                    typeResolutionRecords.RemoveRange(initialResolutionRecordCount, typeResolutionRecords.Count - initialResolutionRecordCount);
+                }
+
+                return resolvedType;
             }
 
             TypeDefinition? GetNestedType(TypeDefinition type, string nestedTypeName)

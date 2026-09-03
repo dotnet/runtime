@@ -36,8 +36,26 @@ namespace Internal.JitInterface
         // as a primitive, and if so, which type. If not, return
         // null.
 
-        public static TypeDesc LowerToAbiType(TypeDesc type)
+        public static TypeDesc LowerToAbiType(TypeDesc type) => LowerToAbiType(type, out _);
+
+        private static TypeDesc LowerToAbiType(TypeDesc type, out TypeDesc multiSegmentType)
         {
+            multiSegmentType = null;
+
+            // Types split across several wasm parameters are not a single ABI primitive, but the
+            // caller still needs to know which one the type unwrapped to.
+            if (IsMultiSegmentType(type))
+            {
+                multiSegmentType = type;
+                return null;
+            }
+
+            // Vector128<T> and a 128-bit Vector<T> are wasm v128 ABI primitives passed by value.
+            if (IsWasmV128Type(type))
+            {
+                return type;
+            }
+
             if (!(type.IsValueType && !type.IsPrimitive))
             {
                 return type;
@@ -65,6 +83,10 @@ namespace Internal.JitInterface
 
                 if (numIntroducedFields != 1)
                 {
+                    // Multi-field aggregates (including a homogeneous 2x v128) use the generic by-ref
+                    // struct ABI; the wasm C ABI has no HFA/HVA concept. Only emscripten's opt-in
+                    // experimental multivalue ABI expands these into per-field registers, which we
+                    // don't target.
                     return null;
                 }
 
@@ -78,6 +100,21 @@ namespace Internal.JitInterface
 
                 type = firstFieldElementType;
 
+                // A single-field wrapper struct is passed as the type it wraps, matching clang: a
+                // struct wrapping an __int128 lowers to the same two i64 parameters the bare type does.
+                if (IsMultiSegmentType(type))
+                {
+                    multiSegmentType = type;
+                    return null;
+                }
+
+                // A single-field wrapper struct around a v128 lowers to the v128 primitive, matching
+                // emscripten, which passes a struct wrapping a v128 as a v128.
+                if (IsWasmV128Type(type))
+                {
+                    return type;
+                }
+
                 if (type.IsValueType && !type.IsPrimitive)
                 {
                     continue;
@@ -87,9 +124,212 @@ namespace Internal.JitInterface
             }
         }
 
+        /// <summary>
+        /// Reports how a type is split when the wasm ABI passes it by value across several
+        /// parameters, because no single wasm value type is wide enough to hold it. Returns false
+        /// for every other type. These types are still returned via a hidden buffer.
+        /// </summary>
+        /// <remarks>
+        /// The special behavior is limited to the known CoreLib types <see cref="System.Int128"/>,
+        /// <see cref="System.UInt128"/>, <see cref="System.Numerics.Decimal128"/>,
+        /// <c>Vector256&lt;T&gt;</c>, and <c>Vector512&lt;T&gt;</c>. Ordinary aggregates remain
+        /// indirect even if their fields have the same shape. The size and alignment checks also
+        /// verify that the selected type has the layout required by its multi-slot ABI.
+        /// </remarks>
+        public static bool TryGetMultiSegmentLayout(TypeDesc type, out WasmValueType slotType, out int slotCount)
+        {
+            slotType = default;
+            slotCount = 0;
+
+            // A single-field wrapper is passed as the type it wraps, so classify what it unwraps to.
+            LowerToAbiType(type, out TypeDesc multiSegmentType);
+            if (multiSegmentType is null)
+            {
+                return false;
+            }
+
+            slotType = GetSlotType(multiSegmentType).Value;
+
+            // A wrapper only unwraps when its field fills it exactly, so the declared type's size
+            // is also the wrapped type's size.
+            int size = type.GetElementSize().AsInt;
+            int slotSize = GetMultiSegmentSlotSize(slotType);
+            Debug.Assert((size % slotSize) == 0);
+
+            slotCount = size / slotSize;
+            return true;
+        }
+
+        /// <summary>
+        /// Determines whether a type is itself passed by value across several wasm parameters,
+        /// ignoring any single-field struct wrapping it. See <see cref="TryGetMultiSegmentLayout"/>
+        /// for why each condition is needed.
+        /// </summary>
+        private static bool IsMultiSegmentType(TypeDesc type)
+        {
+            if (type is not DefType defType || !IsKnownMultiSegmentType(defType))
+            {
+                return false;
+            }
+
+            int size = defType.InstanceFieldSize.AsInt;
+            if (defType.InstanceFieldAlignment.AsInt != size)
+            {
+                return false;
+            }
+
+            WasmValueType? slotType = GetSlotType(type);
+            return (slotType is not null) && (size > GetMultiSegmentSlotSize(slotType.Value));
+        }
+
+        /// <summary>
+        /// Determines whether a type is one of the CoreLib types with special multi-slot Wasm ABI
+        /// behavior. This check must remain in sync with <c>IsWasmMultiSlotTypeHandle</c> in
+        /// <c>vm/wasm/helpers.cpp</c>.
+        /// </summary>
+        private static bool IsKnownMultiSegmentType(DefType type)
+        {
+            if (type.GetTypeDefinition() is not MetadataType typeDefinition ||
+                typeDefinition.Module != type.Context.SystemModule)
+            {
+                return false;
+            }
+
+            if (Int128FieldLayoutAlgorithm.IsIntegerType(type))
+            {
+                return true;
+            }
+
+            if (DecimalFieldLayoutAlgorithm.IsDecimalFloatingPointType(type))
+            {
+                return type.Name == "Decimal128"u8;
+            }
+
+            return VectorFieldLayoutAlgorithm.IsVectorType(type) &&
+                (type.Name == "Vector256`1"u8 || type.Name == "Vector512`1"u8) &&
+                VectorFieldLayoutAlgorithm.IsSupportedVectorBaseType(type.Instantiation[0]);
+        }
+
+        /// <summary>
+        /// Walks a known multi-slot CoreLib type's first fields down to the wasm value type its slots
+        /// use. This is safe only after <see cref="IsKnownMultiSegmentType"/> succeeds: the known
+        /// integer and decimal types have homogeneous <c>ulong</c> fields, and the known vectors
+        /// have homogeneous vector fields. It is not valid for an arbitrary aggregate.
+        /// </summary>
+        private static WasmValueType? GetSlotType(TypeDesc type)
+        {
+            Debug.Assert(type is DefType defType && IsKnownMultiSegmentType(defType));
+
+            // Three iterations cover the deepest supported chain:
+            // Vector512<T> -> Vector256<T> -> Vector128<T>.
+            for (int depth = 0; depth < 3; depth++)
+            {
+                if (IsWasmV128Type(type))
+                {
+                    return WasmValueType.V128;
+                }
+
+                if (type.IsPrimitive)
+                {
+                    // Only a wasm scalar is a valid slot; a narrower one would mean the type is not
+                    // an even multiple of its slots.
+                    WasmValueType lowered = LowerType(type);
+                    return lowered == WasmValueType.I64 ? lowered : null;
+                }
+
+                if (type is not DefType || !type.IsValueType)
+                {
+                    return null;
+                }
+
+                // A generic intrinsic whose base type is not a supported vector element -- the
+                // shared __Canon form, say -- is not ABI-classifiable, and its fields are an
+                // implementation detail rather than its slots. Same guard IsWasmV128Type applies,
+                // and the same one GetWasmSlotSize applies in the runtime; without it a
+                // Vector512<__Canon> walks past the v128 check into Vector128's raw ulong fields
+                // and reports eight i64 slots.
+                if (type.IsIntrinsic && (type.Instantiation.Length == 1) &&
+                    !VectorFieldLayoutAlgorithm.IsSupportedVectorBaseType(type.Instantiation[0]))
+                {
+                    return null;
+                }
+
+                FieldDesc firstField = null;
+                foreach (FieldDesc field in type.GetFields())
+                {
+                    if (!field.IsStatic)
+                    {
+                        firstField = field;
+                        break;
+                    }
+                }
+
+                if (firstField is null)
+                {
+                    return null;
+                }
+
+                type = firstField.FieldType;
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Size in bytes of a wasm slot used by <see cref="TryGetMultiSegmentLayout"/>. Taken from
+        /// the wasm value type, never from a JIT or managed type: TYP_SIMD8 and TYP_SIMD12 also
+        /// occupy a v128 slot but report their own narrower sizes.
+        /// </summary>
+        public static int GetMultiSegmentSlotSize(WasmValueType slotType)
+        {
+            Debug.Assert(slotType is WasmValueType.I64 or WasmValueType.V128);
+            return slotType == WasmValueType.I64 ? 8 : 16;
+        }
+
+        /// <summary>
+        /// Determines whether a type is passed and returned by value as a wasm <c>v128</c>, matching
+        /// the SIMD types the JIT recognizes as <c>TYP_SIMD16</c> on wasm. This is
+        /// <see cref="System.Runtime.Intrinsics.Vector128{T}"/> and a 128-bit
+        /// <see cref="System.Numerics.Vector{T}"/>, in both cases only when <c>T</c> is a supported
+        /// primitive numeric base type. Other SIMD types (Vector2/3/4, Vector64/256/512&lt;T&gt;, ...)
+        /// and non-primitive instantiations (e.g. the shared <c>__Canon</c> form) are not ABI
+        /// primitives and continue to use the generic struct ABI.
+        /// </summary>
+        private static bool IsWasmV128Type(TypeDesc type)
+        {
+            if (!type.IsIntrinsic ||
+                type.Instantiation.Length != 1 ||
+                !VectorFieldLayoutAlgorithm.IsSupportedVectorBaseType(type.Instantiation[0]))
+            {
+                return false;
+            }
+
+            // Vector128<T> is always a 16-byte v128.
+            //
+            // Vector<T> is target-sized, so it is only a v128 when the target's maximum SIMD width is
+            // 128-bit (i.e. it is exactly 16 bytes). This matches the JIT recognizing it as TYP_SIMD16
+            // via getVectorTByteLength() and keeps the ABI correct should wasm later gain wider vectors.
+            bool isV128 = Internal.TypeSystem.Interop.InteropTypes.IsSystemRuntimeIntrinsicsVector128T(type.Context, type) ||
+                          (type is DefType vectorOfT &&
+                           VectorOfTFieldLayoutAlgorithm.IsVectorOfTType(vectorOfT) &&
+                           type.GetElementSize().AsInt == 16);
+
+            // The wasm ABI gives every v128 a 16-byte aligned argument slot, so a smaller metadata
+            // alignment would silently misplace it relative to the runtime's own ArgIterator layout.
+            Debug.Assert(!isV128 || ((DefType)type).InstanceFieldAlignment.AsInt == 16,
+                $"v128 type {type} must be 16-byte aligned");
+
+            return isV128;
+        }
+
         public static WasmValueType LowerType(TypeDesc type)
         {
             WasmValueType pointerType = (type.Context.Target.PointerSize == 4) ? WasmValueType.I32 : WasmValueType.I64;
+
+            if (IsWasmV128Type(type))
+            {
+                return WasmValueType.V128;
+            }
 
             TypeDesc abiType = LowerToAbiType(type);
 
@@ -165,19 +405,20 @@ namespace Internal.JitInterface
             'l' => context.GetWellKnownType(WellKnownType.Int64),
             'f' => context.GetWellKnownType(WellKnownType.Single),
             'd' => context.GetWellKnownType(WellKnownType.Double),
-            'V' => throw new NotSupportedException("SIMD types are not supported in this version of the compiler"),
+            'V' => ((CompilerTypeSystemContext)context).WasmV128Type,
             _ => throw new InvalidOperationException($"Unknown signature char: {c}")
         };
 
         private static int ParseStructSize(string sig, ref int pos)
         {
-            Debug.Assert(sig[pos] == 'S');
-            pos++; // skip 'S'
+            Debug.Assert(sig[pos] is 'S' or 'A');
+            pos++; // skip 'S'/'A'
             int start = pos;
             while (pos < sig.Length && char.IsDigit(sig[pos]))
             {
                 pos++;
             }
+
             return int.Parse(sig.AsSpan(start, pos - start));
         }
 
@@ -196,7 +437,7 @@ namespace Internal.JitInterface
             else if (sig[pos] == 'S')
             {
                 int structSize = ParseStructSize(sig, ref pos);
-                returnType = ((CompilerTypeSystemContext)context).GetCachedStructOfSize(structSize);
+                returnType = ((CompilerTypeSystemContext)context).GetCachedReturnStructOfSize(structSize);
                 Debug.Assert(returnType is not null, $"No cached struct of size {structSize} for return type in signature '{sig}'");
             }
             else
@@ -205,10 +446,34 @@ namespace Internal.JitInterface
                 pos++;
             }
 
-            // Parse parameters (everything until 'p' suffix or end of string)
             List<TypeDesc> parameters = new List<TypeDesc>();
             bool hasThis = false;
+            bool isAsyncCall = false;
+            bool hasGenericContextBeforeAsync = false;
 
+            if (pos < sig.Length && sig[pos] == 'T')
+            {
+                hasThis = true;
+                pos++;
+            }
+
+            // A generic context precedes the async marker in the Wasm ABI; it is encoded with the
+            // hidden-pointer char (matching the encode side), i32 on wasm32 and i64 on wasm64.
+            char hiddenParamChar = (context.Target.PointerSize == 4) ? 'i' : 'l';
+            if ((pos + 1 < sig.Length) && (sig[pos] == hiddenParamChar) && (sig[pos + 1] == 'a'))
+            {
+                hasGenericContextBeforeAsync = true;
+                parameters.Add(RaiseSigChar(sig[pos], context));
+                pos++;
+            }
+
+            if (pos < sig.Length && sig[pos] == 'a')
+            {
+                isAsyncCall = true;
+                pos++;
+            }
+
+            // Parse explicit parameters (everything until the portable-entrypoint suffix or end of string).
             while (pos < sig.Length && sig[pos] != 'p')
             {
                 char c = sig[pos];
@@ -226,11 +491,22 @@ namespace Internal.JitInterface
                     parameters.Add(emptyStruct);
                     pos++;
                 }
-                else if (c == 'S')
+                else if (((c == 'l') || (c == 'V')) && (pos + 1 < sig.Length) && char.IsDigit(sig[pos + 1]))
                 {
+                    int elevation = sig[pos + 1] - '0';
+                    parameters.Add(((CompilerTypeSystemContext)context).GetWasmElevatedType(c, elevation));
+                    pos += 2;
+                }
+                else if (c is 'S' or 'A')
+                {
+                    bool isAlignedStruct = c == 'A';
                     int structSize = ParseStructSize(sig, ref pos);
-                    TypeDesc cachedStruct = ((CompilerTypeSystemContext)context).GetCachedStructOfSize(structSize);
-                    Debug.Assert(cachedStruct is not null, $"No cached struct of size {structSize} for parameter in signature '{sig}'");
+                    CompilerTypeSystemContext compilerContext = (CompilerTypeSystemContext)context;
+                    TypeDesc cachedStruct = isAlignedStruct
+                        ? compilerContext.GetCachedAlignedStructOfSize(structSize)
+                        : compilerContext.GetCachedStructOfSize(structSize);
+                    Debug.Assert(cachedStruct is not null,
+                        $"No cached {(isAlignedStruct ? "aligned " : "")}struct of size {structSize} for parameter in signature '{sig}'");
                     parameters.Add(cachedStruct);
                 }
                 else
@@ -249,9 +525,16 @@ namespace Internal.JitInterface
 
             MethodSignature result = new MethodSignature(flags, 0, returnType, parameters.ToArray());
 
-            WasmSignature roundtripped = GetSignature(result, LoweringFlags.None);
-            Debug.Assert(roundtripped.Equals(wasmSignature),
-                $"RaiseSignature roundtrip failed: input='{wasmSignature.SignatureString}', roundtripped='{roundtripped.SignatureString}'");
+            WasmSignature roundtripped = GetSignature(result, isAsyncCall ? LoweringFlags.IsAsyncCall : LoweringFlags.None);
+            string roundtrippedStr = roundtripped.SignatureString;
+            if (hasGenericContextBeforeAsync && isAsyncCall)
+            {
+                // The roundtrip re-encodes the generic context as a leading parameter, so it emits the
+                // async marker before the hidden-pointer char; swap them back to match the input ordering.
+                roundtrippedStr = roundtrippedStr.Replace($"a{hiddenParamChar}", $"{hiddenParamChar}a");
+            }
+            Debug.Assert(roundtrippedStr.Equals(wasmSignature.SignatureString, StringComparison.Ordinal),
+                $"RaiseSignature roundtrip failed: input='{wasmSignature.SignatureString}', roundtripped='{roundtrippedStr}'");
 
             return result;
         }
@@ -305,7 +588,7 @@ namespace Internal.JitInterface
         {
             if (!flags.HasFlag(LoweringFlags.IsUnmanagedCallersOnly) && signature.Flags.HasFlag(MethodSignatureFlags.UnmanagedCallingConvention))
             {
-                flags = flags | LoweringFlags.IsUnmanagedCallersOnly;
+                flags |= LoweringFlags.IsUnmanagedCallersOnly;
             }
 
             TypeDesc returnType = signature.ReturnType;
@@ -337,7 +620,17 @@ namespace Internal.JitInterface
                     int returnSize = returnType.GetElementSize().AsInt;
                     sigBuilder.Append('S');
                     sigBuilder.Append(returnSize);
-                    ((CompilerTypeSystemContext)returnType.Context).CacheStructBySize(returnType);
+
+                    // A multi-slot type spells 'S<N>' only as a return; as a parameter it re-lowers
+                    // to its slot form. Keep it in the return cache alone, so an ordinary same-sized
+                    // struct parameter does not raise with this type's larger alignment.
+                    CompilerTypeSystemContext returnContext = (CompilerTypeSystemContext)returnType.Context;
+                    returnContext.CacheReturnStructBySize(returnType);
+                    if (!TryGetMultiSegmentLayout(returnType, out _, out _))
+                    {
+                        int returnAlignment = CompilerTypeSystemContext.GetClassAlignmentRequirementStatic((DefType)returnType);
+                        returnContext.CacheStruct(returnType, returnAlignment > 8);
+                    }
                 }
             }
             else if (loweredReturnType.IsVoid)
@@ -396,7 +689,7 @@ namespace Internal.JitInterface
             if (flags.HasFlag(LoweringFlags.IsAsyncCall))
             {
                 result.Add(pointerType); // async continuation
-                sigBuilder.Append(hiddenParamChar);
+                sigBuilder.Append('a');
             }
 
             for (int i = explicitThis ? 1 : 0; i < signature.Length; i++)
@@ -416,14 +709,35 @@ namespace Internal.JitInterface
 
                     // Struct that cannot be lowered to a single primitive — passed by reference
                     int paramSize = paramType.GetElementSize().AsInt;
-                    sigBuilder.Append('S');
-                    sigBuilder.Append(paramSize);
-                    result.Add(pointerType);
-                    ((CompilerTypeSystemContext)paramType.Context).CacheStructBySize(paramType);
+                    if (TryGetMultiSegmentLayout(paramType, out WasmValueType slotType, out int slotCount))
+                    {
+                        // Passed by value across several wasm parameters, matching the wasm C ABI.
+                        // Spelled '<slot><elevation>'; the elevation factor equals the slot count
+                        // for every type in the wasm ABI today, and the encoding cannot express
+                        // them differing. See readytorun-format.md.
+                        Debug.Assert(slotCount is >= 2 and <= 9,
+                            $"Slot count {slotCount} is not a single digit, so raising cannot read it back");
+                        sigBuilder.Append(WasmValueTypeToSigChar(slotType));
+                        sigBuilder.Append(slotCount);
+                        for (int slot = 0; slot < slotCount; slot++)
+                        {
+                            result.Add(slotType);
+                        }
+                    }
+                    else
+                    {
+                        Debug.Assert(paramType is DefType);
+                        int paramAlignment = CompilerTypeSystemContext.GetClassAlignmentRequirementStatic((DefType)paramType);
+                        bool requiresAlignedSlot = paramAlignment > 8;
+                        sigBuilder.Append(requiresAlignedSlot ? 'A' : 'S');
+                        sigBuilder.Append(paramSize);
+                        ((CompilerTypeSystemContext)paramType.Context).CacheStruct(paramType, requiresAlignedSlot);
+                        result.Add(pointerType);
+                    }
                 }
                 else
                 {
-                    WasmValueType paramWasmType = LowerType(paramType);
+                    WasmValueType paramWasmType = LowerType(loweredParamType);
                     sigBuilder.Append(WasmValueTypeToSigChar(paramWasmType));
                     result.Add(paramWasmType);
                 }
