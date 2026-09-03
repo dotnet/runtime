@@ -87,10 +87,25 @@ namespace System.Numerics
 
         public static void Gcd(ReadOnlySpan<nuint> left, ReadOnlySpan<nuint> right, Span<nuint> result)
         {
-            Debug.Assert(left.Length >= 2);
-            Debug.Assert(right.Length >= 2);
+            Debug.Assert(left.Length >= 1);
+            Debug.Assert(right.Length >= 1);
             Debug.Assert(CompareActual(left, right) >= 0);
             Debug.Assert(result.Length == left.Length);
+
+            int commonOffset = GetCommonLimbOffset(left, right);
+            if (commonOffset != 0)
+            {
+                result[..commonOffset].Clear();
+                Gcd(left[commonOffset..], right[commonOffset..], result[commonOffset..]);
+                return;
+            }
+
+            if (right.Length == 1)
+            {
+                result.Clear();
+                result[0] = Gcd(left, right[0]);
+                return;
+            }
 
             left.CopyTo(result);
 

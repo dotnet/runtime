@@ -36,7 +36,7 @@ schedules:
 variables:
   - template: /eng/pipelines/common/variables.yml
   - name: enableHelixJobMonitor
-    value: false
+    value: true
   - template: /eng/pipelines/helix-platforms.yml
 
 extends:
@@ -64,52 +64,52 @@ extends:
           parameters:
             isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
             isWasmOnlyBuild: ${{ variables.isWasmOnlyBuild }}
-            isRollingBuild: ${{ variables.isRollingBuild }}
+            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
 
       # Add iOS/tvOS jobs
       - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-ioslike.yml
         parameters:
           isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
           isiOSLikeOnlyBuild: ${{ variables.isiOSLikeOnlyBuild }}
-          isRollingBuild: ${{ variables.isRollingBuild }}
+          useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
 
       # Add iOS/tvOS simulator jobs
       - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-ioslikesimulator.yml
         parameters:
           isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
           isiOSLikeSimulatorOnlyBuild: ${{ variables.isiOSLikeSimulatorOnlyBuild }}
-          isRollingBuild: ${{ variables.isRollingBuild }}
+          useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
 
       # Add Android jobs
       - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-android.yml
         parameters:
           isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
           isAndroidOnlyBuild: ${{ variables.isAndroidOnlyBuild }}
-          isRollingBuild: ${{ variables.isRollingBuild }}
+          useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
 
       # Add Android emulator jobs
       - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-androidemulator.yml
         parameters:
           isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
           isAndroidEmulatorOnlyBuild: ${{ variables.isAndroidEmulatorOnlyBuild }}
-          isRollingBuild: ${{ variables.isRollingBuild }}
+          useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
 
       # Add Mac Catalyst jobs
       - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-maccatalyst.yml
         parameters:
           isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
           isMacCatalystOnlyBuild: ${{ variables.isMacCatalystOnlyBuild }}
-          isRollingBuild: ${{ variables.isRollingBuild }}
+          useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
 
       # Add Linux Bionic jobs
       - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-linuxbionic.yml
         parameters:
           isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
           isLinuxBionicOnlyBuild: ${{ variables.isLinuxBionicOnlyBuild }}
-          isRollingBuild: ${{ variables.isRollingBuild }}
 
       # Any jobs that are not specific to any platform
       - ${{ if eq(variables.isNotSpecificPlatformOnlyBuild, true) }}:
         - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-other.yml
           parameters:
             isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
+            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
