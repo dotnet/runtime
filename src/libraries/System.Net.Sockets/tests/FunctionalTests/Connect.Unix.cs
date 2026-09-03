@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Net.Sockets;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -255,24 +256,26 @@ namespace System.Net.Sockets.Tests
                 tcs.SetResult();
             }
 
-            using Socket accepted = listener.Accept();
+            // Sanity check: the small buffers configured above should have forced this send async.
+            Assert.True(completedAsync);
+
+            using var cts = new CancellationTokenSource(TestSettings.PassingTestTimeout);
+            using Socket accepted = await listener.AcceptAsync(cts.Token);
             accepted.ReceiveBufferSize = 8 * 1024;
 
             byte[] readBuffer = new byte[8 * 1024];
             int totalRead = 0;
             while (totalRead < data.Length)
             {
-                int n = accepted.Receive(readBuffer);
+                int n = await accepted.ReceiveAsync(readBuffer, SocketFlags.None, cts.Token);
                 Assert.NotEqual(0, n);
                 totalRead += n;
             }
 
-            // Sanity check: the small buffers configured above should have forced this send async.
-            Assert.True(completedAsync);
-
-            await tcs.Task.WaitAsync(TimeSpan.FromSeconds(30));
+            await tcs.Task.WaitAsync(cts.Token);
 
             Assert.Equal(SocketError.Success, saea.SocketError);
+            Assert.Equal(data.Length, saea.BytesTransferred);
             Assert.True(client.Blocking);
 
             // Native blocking mode must not be restored until the pending buffered send has actually
