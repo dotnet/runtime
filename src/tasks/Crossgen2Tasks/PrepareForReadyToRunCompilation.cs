@@ -164,6 +164,8 @@ namespace Microsoft.NET.Build.Tasks
                 }
 
                 var outputR2RImageRelativePath = file.GetMetadata(MetadataKeys.RelativePath);
+                if (Crossgen2ContainerFormat == "wasm")
+                    outputR2RImageRelativePath = Path.ChangeExtension(outputR2RImageRelativePath, ".wasm");
                 var outputR2RImage = Path.Combine(OutputPath, outputR2RImageRelativePath);
 
                 string outputPDBImage = null;
