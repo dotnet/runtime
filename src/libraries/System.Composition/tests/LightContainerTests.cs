@@ -109,7 +109,6 @@ namespace System.Composition.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("System.Composition (MEF) is not trim-compatible; fails on browser once trimming is enabled", TestPlatforms.Browser)]
         public void VerifyAssemblyNameCanBeUsedWithContainer()
         {
             var test = new ContainerConfiguration()
@@ -121,7 +120,6 @@ namespace System.Composition.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("System.Composition (MEF) is not trim-compatible; fails on browser once trimming is enabled", TestPlatforms.Browser)]
         public void VerifyAssemblyWithTwoBaseTypeWithOnlyOneExportedWorks()
         {
             var test = new ContainerConfiguration()

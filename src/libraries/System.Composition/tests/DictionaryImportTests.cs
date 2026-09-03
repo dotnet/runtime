@@ -68,7 +68,6 @@ namespace System.Composition.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("System.Composition (MEF) is not trim-compatible; fails on browser once trimming is enabled", TestPlatforms.Browser)]
         public void DictionaryImportsKeyedByMetadata()
         {
             var container = CreateContainer(new[] { typeof(ValueA), typeof(ValueB), typeof(Consumer) });
@@ -81,7 +80,6 @@ namespace System.Composition.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("System.Composition (MEF) is not trim-compatible; fails on browser once trimming is enabled", TestPlatforms.Browser)]
         public void DictionaryImportsReceiveMetadataFromNestedAdapters()
         {
             var container = CreateContainer(new[] { typeof(ValueA), typeof(ValueB), typeof(LazyConsumer) });
@@ -93,7 +91,6 @@ namespace System.Composition.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("System.Composition (MEF) is not trim-compatible; fails on browser once trimming is enabled", TestPlatforms.Browser)]
         public void WhenAMetadataKeyIsDuplicatedAnInformativeExceptionIsThrown()
         {
             var container = CreateContainer(typeof(ValueA), typeof(ValueA), typeof(Consumer));
@@ -102,7 +99,6 @@ namespace System.Composition.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("System.Composition (MEF) is not trim-compatible; fails on browser once trimming is enabled", TestPlatforms.Browser)]
         public void WhenAMetadataKeyIsMissingAnInformativeExceptionIsThrown()
         {
             var container = CreateContainer(typeof(ValueA), typeof(ValueMissing), typeof(Consumer));
@@ -111,7 +107,6 @@ namespace System.Composition.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("System.Composition (MEF) is not trim-compatible; fails on browser once trimming is enabled", TestPlatforms.Browser)]
         public void WhenAMetadataValueIsOfTheWrongTypeAnInformativeExceptionIsThrown()
         {
             var container = CreateContainer(typeof(ValueA), typeof(NonStringValue), typeof(Consumer));
@@ -120,7 +115,6 @@ namespace System.Composition.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("System.Composition (MEF) is not trim-compatible; fails on browser once trimming is enabled", TestPlatforms.Browser)]
         public void DictionaryImportsCompatibleWithConventionBuilder()
         {
             var rb = new ConventionBuilder();

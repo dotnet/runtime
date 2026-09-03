@@ -48,7 +48,6 @@ namespace System.Composition.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("System.Composition (MEF) is not trim-compatible; fails on browser once trimming is enabled", TestPlatforms.Browser)]
         public void CollectionsImportedWithAnOrderingAttributeComeInOrder()
         {
             var container = CreateExtendedContainer(typeof(HasImportedItems), typeof(Item1), typeof(Item4), typeof(Item2), typeof(Item3));
@@ -62,7 +61,6 @@ namespace System.Composition.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("System.Composition (MEF) is not trim-compatible; fails on browser once trimming is enabled", TestPlatforms.Browser)]
         public void IfAnItemIsMissingMetadataAnInformativeExceptionIsThrown()
         {
             var container = CreateExtendedContainer(typeof(HasImportedItems), typeof(Item1), typeof(ItemWithoutOrder));
