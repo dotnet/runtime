@@ -383,6 +383,8 @@
     The cross tools are used as part of the build process with the downloaded build tools, so we need to build them for the host architecture and build them as unsanitized binaries.
     -->
   <PropertyGroup>
+    <!-- Cross-build only the host cross-components; the target runtime build keeps its own CrossBuild setting. -->
+    <CrossBuildHostTools Condition="'$(CrossBuildHostTools)' == ''">false</CrossBuildHostTools>
     <!-- linux-bionic reports TargetOS as 'linux', so the HostOS/TargetOS check below never fires for it.
          It always targets the bionic libc via the NDK though, so host tools must be built separately. -->
     <_BuildAnyCrossArch Condition="('$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)' or '$(HostOS)' != '$(TargetOS)' or '$(TargetsLinuxBionic)' == 'true' or '$(EnableNativeSanitizers)' != '')">true</_BuildAnyCrossArch>
@@ -414,7 +416,7 @@
                             HostCrossOS=$(HostOS);
                             PgoInstrument=false;
                             NoPgoOptimize=true;
-                            CrossBuild=false;
+                            CrossBuild=$(CrossBuildHostTools);
                             BuildSubdirectory=$(BuildArchitecture);
                             CMakeArgs=$(CMakeArgs) -DCLR_CROSS_COMPONENTS_BUILD=1"
       UndefineProperties="EnableNativeSanitizers"
@@ -544,6 +546,7 @@
                              $(SharedNativeRoot)managed\cdac\Microsoft.Diagnostics.DataContractReader.Abstractions\Microsoft.Diagnostics.DataContractReader.Abstractions.csproj;
                              $(SharedNativeRoot)managed\cdac\Microsoft.Diagnostics.DataContractReader.Legacy\Microsoft.Diagnostics.DataContractReader.Legacy.csproj;
                              $(SharedNativeRoot)managed\cdac\Microsoft.Diagnostics.DataContractReader.Contracts\Microsoft.Diagnostics.DataContractReader.Contracts.csproj;
+                             $(SharedNativeRoot)managed\cdac\tools\CdacUsageGraph\src\CdacUsageGraph\CdacUsageGraph.csproj;
                              $(SharedNativeRoot)managed\cdac\tests\TestInfrastructure\Microsoft.Diagnostics.DataContractReader.TestInfrastructure.csproj" Category="tools" Condition="'$(DotNetBuildSourceOnly)' != 'true'" />
   </ItemGroup>
 

@@ -10274,17 +10274,49 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     //
                     if (JitConfig.EnableExtraSuperPmiQueries() && !eeIsSharedInst(resolvedToken.hClass))
                     {
-                        void* pEmbedClsHnd;
-                        info.compCompHnd->embedClassHandle(resolvedToken.hClass, &pEmbedClsHnd);
-                        CORINFO_CLASS_HANDLE elemClsHnd = NO_CLASS_HANDLE;
-                        CorInfoType elemCorType = info.compCompHnd->getChildType(resolvedToken.hClass, &elemClsHnd);
-                        var_types   elemType    = JITtype2varType(elemCorType);
-                        if (elemType == TYP_STRUCT)
+                        // Each query gets its own trap so that a failure of the first, which is
+                        // the one an AOT compiler rejects for an out-of-bubble type, does not
+                        // suppress the rest.
+                        //
+                        eeRunExtraSuperPmiQueries([&]() {
+                            void* pEmbedClsHnd;
+                            info.compCompHnd->embedClassHandle(resolvedToken.hClass, &pEmbedClsHnd);
+                        });
+
+                        CORINFO_CLASS_HANDLE elemClsHnd  = NO_CLASS_HANDLE;
+                        CorInfoType          elemCorType = CORINFO_TYPE_UNDEF;
+                        eeRunExtraSuperPmiQueries([&]() {
+                            elemCorType = info.compCompHnd->getChildType(resolvedToken.hClass, &elemClsHnd);
+                        });
+
+                        // CORINFO_TYPE_VALUECLASS is the only type JITtype2varType maps to
+                        // TYP_STRUCT. Test it directly, since JITtype2varType asserts if the
+                        // query above was trapped and left elemCorType as CORINFO_TYPE_UNDEF.
+                        //
+                        if ((elemCorType == CORINFO_TYPE_VALUECLASS) && (elemClsHnd != NO_CLASS_HANDLE))
                         {
+                            // JIT work, so deliberately not trapped. It can set compFloatingPointUsed
+                            // via ClassLayout::Create -> impNormStructType, which would let the queries
+                            // change codegen, so restore that. Note this cannot fully undo the layout
+                            // being memoized, only the flag.
+                            //
+                            const bool savedFloatingPointUsed = compFloatingPointUsed;
                             typGetObjLayout(elemClsHnd);
-                            info.compCompHnd->isValueClass(elemClsHnd);
+                            compFloatingPointUsed = savedFloatingPointUsed;
+
+                            eeRunExtraSuperPmiQueries([&]() {
+                                info.compCompHnd->isValueClass(elemClsHnd);
+                            });
                         }
-                        compGetHelperFtn(CORINFO_HELP_MEMZERO);
+
+                        eeRunExtraSuperPmiQueries([&]() {
+                            // Deliberately not compGetHelperFtn, whose assert would be absorbed here.
+                            if (info.compMatchedVM)
+                            {
+                                CORINFO_CONST_LOOKUP lookup;
+                                info.compCompHnd->getHelperFtn(CORINFO_HELP_MEMZERO, &lookup);
+                            }
+                        });
                     }
 #endif
                 }
