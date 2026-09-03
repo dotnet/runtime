@@ -1283,17 +1283,20 @@ void InitializeWasmThunkCaches()
     }
 }
 
-InterpreterCalliCookie GetCookieForCalliSig(MetaSig metaSig, MethodDesc *pContextMD)
+// Computes the interpreter->R2R thunk for calling a managed method. String constructors need special
+// handling: they are compiled (both the R2R body and the caller-side thunks in crossgen2, see
+// WasmLowering.GetStringCtorActualSignature) as static factory methods that allocate and return the
+// string, i.e. "String Ctor(args)" rather than the declared "void .ctor(this, args)", so the thunk must
+// match that factory shape. This mirrors the R2R->interpreter direction in
+// GetPortableEntryPointToInterpreterThunk (which uses the 'I'-prefixed keys).
+InterpreterCalliCookie GetCookieForManagedMethod(MethodDesc *pMD)
 {
     STANDARD_VM_CONTRACT;
+    _ASSERTE(pMD != NULL);
 
-    // String constructors use a special calling convention: they are compiled (both the R2R body and
-    // the caller-side thunks in crossgen2, see WasmLowering.GetStringCtorActualSignature) as static
-    // factory methods that allocate and return the string, i.e. "String Ctor(args)" rather than the
-    // declared "void .ctor(this, args)". The interpreter->R2R thunk selected here must therefore match
-    // that factory shape. This mirrors the R2R->interpreter direction in
-    // GetPortableEntryPointToInterpreterThunk (which uses the 'I'-prefixed keys).
-    if (pContextMD != NULL && pContextMD->IsCtor() && pContextMD->GetMethodTable()->IsString())
+    MetaSig metaSig(pMD);
+
+    if (pMD->IsCtor() && pMD->GetMethodTable()->IsString())
     {
         const char *thunkKey = nullptr;
 
@@ -1323,7 +1326,7 @@ InterpreterCalliCookie GetCookieForCalliSig(MetaSig metaSig, MethodDesc *pContex
                     thunkKey = "Miiiiip";
                     break;
                 default:
-                    _ASSERT(!"GetCookieForCalliSig: unknown thunk for string constructor");
+                    _ASSERT(!"GetCookieForManagedMethod: unknown thunk for string constructor");
                     return nullptr;
             }
         }
@@ -1331,10 +1334,29 @@ InterpreterCalliCookie GetCookieForCalliSig(MetaSig metaSig, MethodDesc *pContex
         InterpreterCalliCookie stringCtorThunk = LookupThunk(thunkKey);
         if (stringCtorThunk == NULL)
         {
-            _ASSERT(!"GetCookieForCalliSig: unknown thunk signature");
+            _ASSERT(!"GetCookieForManagedMethod: unknown thunk signature");
         }
         return stringCtorThunk;
     }
+
+    InterpreterCalliCookie thunk = ComputeCalliSigThunk(metaSig);
+    if (thunk == NULL)
+    {
+        _ASSERT(!"GetCookieForManagedMethod: unknown thunk signature");
+    }
+
+    return thunk;
+}
+
+InterpreterCalliCookie GetCookieForCalliSig(MetaSig metaSig, MethodDesc *pContextMD)
+{
+    STANDARD_VM_CONTRACT;
+
+    UNREFERENCED_PARAMETER(pContextMD);
+
+    // Only unmanaged calli signatures reach here; managed methods (including string constructors) are
+    // dispatched through GetCookieForManagedMethod.
+    _ASSERTE(metaSig.GetCallingConvention() != IMAGE_CEE_CS_CALLCONV_DEFAULT);
 
     InterpreterCalliCookie thunk = ComputeCalliSigThunk(metaSig);
     if (thunk == NULL)
@@ -1476,8 +1498,7 @@ void InvokeManagedMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE tar
     InterpreterCalliCookie cookie = pMD->GetCalliCookie();
     if (cookie == NULL)
     {
-        MetaSig sig(pMD);
-        cookie = GetCookieForCalliSig(sig, pMD);
+        cookie = GetCookieForManagedMethod(pMD);
         _ASSERTE(cookie != NULL);
         pMD->SetCalliCookie(cookie);
         cookie = pMD->GetCalliCookie();
