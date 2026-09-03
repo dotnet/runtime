@@ -7,7 +7,7 @@
 // ELF core layout:
 //   ELF Header
 //   Program Headers: [PT_NOTE] [PT_LOAD x N]
-//   Note Section: NT_PRPSINFO, NT_AUXV, NT_FILE, per-thread (NT_PRSTATUS, NT_FPREGSET, NT_SIGINFO)
+//   Note Section: NT_PRPSINFO, NT_AUXV, NT_FILE, per-thread (NT_PRSTATUS, optional NT_FPREGSET/NT_SIGINFO)
 //   Memory Region Contents (system-page aligned)
 //
 // Region filtering (heap mode): reconstructable file-backed content is
@@ -28,14 +28,17 @@
 
 // Verify that our GP register type matches the size expected by elf_prstatus.
 // A mismatch would cause a buffer overflow in the memcpy into pr_reg.
-_Static_assert(sizeof(gp_regs_t) <= sizeof(((struct elf_prstatus*)0)->pr_reg),
-               "GP register struct must not be larger than elf_prstatus pr_reg");
+_Static_assert(sizeof(gp_regs_t) == sizeof(((struct elf_prstatus*)0)->pr_reg),
+               "GP register struct must match elf_prstatus pr_reg");
+
+// The elf64 header should be 4-byte aligned.
+_Static_assert(sizeof(Elf64_Nhdr) % 4 == 0, "ELF note header must be 4-byte aligned");
 
 #define ALIGN_UP(val, align) (((val) + (align) - 1) & ~((align) - 1))
 
 static bool IsFileMappingReconstructable(const MemRegion* region)
 {
-    if (region->fileName[0] != '/' || region->inode == 0)
+    if (region->fileName == NULL || region->fileName[0] != '/' || region->inode == 0)
     {
         return false;
     }
@@ -57,6 +60,11 @@ static bool IsFileMappingReconstructable(const MemRegion* region)
     return result;
 }
 
+static bool ShouldIncludeInNtFile(const MemRegion* region)
+{
+    return region->fileName != NULL && region->fileName[0] != '[';
+}
+
 // Determines how many bytes of a memory region to include in the dump.
 //
 // Full mode (DbgMiniDumpType=4): includes all readable memory.
@@ -69,12 +77,12 @@ static uint64_t GetDumpSize(
     const ProcessInfo* info,
     bool fullDump)
 {
-    uint64_t regionSize = region->endAddress - region->startAddress;
-
     if ((region->permissions & PF_R) == 0)
     {
         return 0;
     }
+
+    uint64_t regionSize = region->endAddress - region->startAddress;
 
     // In full mode, include all readable memory.
     if (fullDump)
@@ -83,8 +91,7 @@ static uint64_t GetDumpSize(
     }
 
     // Include anonymous regions and special mappings.
-    if (region->fileName[0] == '\0' ||
-        region->fileName[0] == '[')
+    if (!ShouldIncludeInNtFile(region))
     {
         return regionSize;
     }
@@ -124,17 +131,41 @@ static uint64_t GetDumpSize(
 // Note name is "CORE\0" padded to 8 bytes (5 bytes + 3 padding)
 #define CORE_NOTE_NAME "CORE"
 #define CORE_NOTE_NAME_SIZE 5
-#define CORE_NOTE_NAME_ALIGNED 8
 
-// "LINUX\0" padded to 8 bytes (6 bytes + 2 padding)
-#define LINUX_NOTE_NAME "LINUX"
-#define LINUX_NOTE_NAME_SIZE 6
-#define LINUX_NOTE_NAME_ALIGNED 8
+// Elf64_Nhdr stores name and descriptor sizes in 32-bit Elf64_Word fields.
+#define ELF64_NOTE_HEADER_FIELD_MAX UINT32_MAX
+
+// Elf64_Phdr stores segment sizes, including p_filesz, in 64-bit Elf64_Xword fields.
+#define ELF64_PROGRAM_HEADER_SIZE_FIELD_MAX UINT64_MAX
+
+_Static_assert(SIZE_MAX == ELF64_PROGRAM_HEADER_SIZE_FIELD_MAX,
+               "size_t must represent ELF64 program header sizes");
 
 // Calculate the size of a note including header, name, and data
 static size_t NoteSize(size_t nameSize, size_t dataSize)
 {
     return sizeof(Elf64_Nhdr) + ALIGN_UP(nameSize, 4) + ALIGN_UP(dataSize, 4);
+}
+
+static bool TryAddSize(size_t* total, size_t value, size_t limit)
+{
+    if (*total > limit || value > limit - *total)
+    {
+        return false;
+    }
+
+    *total += value;
+    return true;
+}
+
+static bool TryAddNoteSize(size_t* total, size_t dataSize)
+{
+    if (dataSize > ELF64_NOTE_HEADER_FIELD_MAX)
+    {
+        return false;
+    }
+
+    return TryAddSize(total, NoteSize(CORE_NOTE_NAME_SIZE, dataSize), ELF64_PROGRAM_HEADER_SIZE_FIELD_MAX);
 }
 
 // Count memory regions that have file names (for NT_FILE note)
@@ -143,8 +174,7 @@ static size_t CountFileRegions(const ProcessInfo* info)
     size_t count = 0;
     for (size_t i = 0; i < info->regions.count; i++)
     {
-        if (info->regions.items[i].fileName[0] != '\0' &&
-            info->regions.items[i].fileName[0] != '[')
+        if (ShouldIncludeInNtFile(&info->regions.items[i]))
         {
             count++;
         }
@@ -152,60 +182,95 @@ static size_t CountFileRegions(const ProcessInfo* info)
     return count;
 }
 
+static bool CalculateAuxvDataSize(const ProcessInfo* info, size_t* dataSize)
+{
+    if (info->auxv.count > ELF64_NOTE_HEADER_FIELD_MAX / sizeof(Elf64_auxv_t))
+    {
+        return false;
+    }
+
+    *dataSize = info->auxv.count * sizeof(Elf64_auxv_t);
+    return true;
+}
+
 // Calculate the size of the NT_FILE note data
-static size_t NtFileDataSize(const ProcessInfo* info)
+static bool CalculateNtFileDataSize(const ProcessInfo* info, size_t* dataSize)
 {
     // Header: count (8 bytes) + page_size (8 bytes)
     size_t size = 2 * sizeof(uint64_t);
 
     // Per-file entry: start (8) + end (8) + offset (8)
     size_t fileCount = CountFileRegions(info);
-    size += fileCount * 3 * sizeof(uint64_t);
+    const size_t fileEntrySize = 3 * sizeof(uint64_t);
+    if (fileCount > ELF64_NOTE_HEADER_FIELD_MAX / fileEntrySize ||
+        !TryAddSize(&size, fileCount * fileEntrySize, ELF64_NOTE_HEADER_FIELD_MAX))
+    {
+        return false;
+    }
 
     // File name strings (null-terminated)
     for (size_t i = 0; i < info->regions.count; i++)
     {
-        if (info->regions.items[i].fileName[0] != '\0' &&
-            info->regions.items[i].fileName[0] != '[')
+        const MemRegion* region = &info->regions.items[i];
+        if (ShouldIncludeInNtFile(region))
         {
-            size += strlen(info->regions.items[i].fileName) + 1;
+            size_t nameLength = strlen(region->fileName);
+            if (!TryAddSize(&size, nameLength + 1, ELF64_NOTE_HEADER_FIELD_MAX))
+            {
+                return false;
+            }
         }
     }
 
-    return size;
+    *dataSize = size;
+    return true;
 }
 
 // Calculate the total size of all notes
-static size_t CalculateNotesSize(const ProcessInfo* info)
+static bool CalculateNotesSize(const ProcessInfo* info, size_t* notesSize)
 {
     size_t total = 0;
 
     // NT_PRPSINFO
-    total += NoteSize(CORE_NOTE_NAME_SIZE, sizeof(struct elf_prpsinfo));
+    if (!TryAddNoteSize(&total, sizeof(struct elf_prpsinfo)))
+        return false;
 
     // NT_AUXV
-    total += NoteSize(CORE_NOTE_NAME_SIZE, info->auxv.count * sizeof(Elf64_auxv_t));
+    size_t auxvDataSize;
+    if (!CalculateAuxvDataSize(info, &auxvDataSize) || !TryAddNoteSize(&total, auxvDataSize))
+        return false;
 
     // NT_FILE
-    total += NoteSize(CORE_NOTE_NAME_SIZE, NtFileDataSize(info));
+    size_t ntFileDataSize;
+    if (!CalculateNtFileDataSize(info, &ntFileDataSize) || !TryAddNoteSize(&total, ntFileDataSize))
+        return false;
 
     // Per-thread notes
     for (size_t i = 0; i < info->threads.count; i++)
     {
-        // NT_PRSTATUS
-        total += NoteSize(CORE_NOTE_NAME_SIZE, sizeof(struct elf_prstatus));
+        const ThreadData* thread = &info->threads.items[i];
+        // Inconsistent FP register size
+        if (thread->fpRegsSize != 0 && thread->fpRegsSize != sizeof(thread->fpRegs))
+            return false;
 
-        // NT_FPREGSET
-        total += NoteSize(CORE_NOTE_NAME_SIZE, sizeof(fp_regs_t));
+        // NT_PRSTATUS
+        if (!TryAddNoteSize(&total, sizeof(struct elf_prstatus)))
+            return false;
+
+        // NT_FPREGSET, when available
+        if (thread->fpRegsSize != 0 && !TryAddNoteSize(&total, thread->fpRegsSize))
+            return false;
 
         // NT_SIGINFO for crash thread
-        if (info->threads.items[i].isCrashThread && info->crashSignal != 0)
+        if (thread->isCrashThread && info->crashSignal != 0)
         {
-            total += NoteSize(CORE_NOTE_NAME_SIZE, sizeof(siginfo_t));
+            if (!TryAddNoteSize(&total, sizeof(siginfo_t)))
+                return false;
         }
     }
 
-    return total;
+    *notesSize = total;
+    return true;
 }
 
 // Write helpers
@@ -232,6 +297,9 @@ static bool WritePadding(FILE* fp, size_t count)
 static bool WriteNote(FILE* fp, uint32_t type, const char* name, size_t nameSize,
                       const void* data, size_t dataSize)
 {
+    if (nameSize > ELF64_NOTE_HEADER_FIELD_MAX || dataSize > ELF64_NOTE_HEADER_FIELD_MAX)
+        return false;
+
     Elf64_Nhdr nhdr;
     nhdr.n_namesz = (Elf64_Word)nameSize;
     nhdr.n_descsz = (Elf64_Word)dataSize;
@@ -263,7 +331,7 @@ static bool WriteNtPrpsinfo(FILE* fp, const ProcessInfo* info)
     memset(&prpsinfo, 0, sizeof(prpsinfo));
     prpsinfo.pr_pid = info->pid;
     prpsinfo.pr_ppid = info->ppid;
-    prpsinfo.pr_pgrp = info->tgid;
+    prpsinfo.pr_pgrp = info->pgrp;
     strncpy(prpsinfo.pr_fname, info->name, sizeof(prpsinfo.pr_fname) - 1);
     prpsinfo.pr_sname = 'R';
 
@@ -273,13 +341,22 @@ static bool WriteNtPrpsinfo(FILE* fp, const ProcessInfo* info)
 
 static bool WriteNtAuxv(FILE* fp, const ProcessInfo* info)
 {
+    size_t dataSize;
+    if (!CalculateAuxvDataSize(info, &dataSize))
+        return false;
+
     return WriteNote(fp, NT_AUXV, CORE_NOTE_NAME, CORE_NOTE_NAME_SIZE,
-                     info->auxv.items, info->auxv.count * sizeof(Elf64_auxv_t));
+                     info->auxv.items, dataSize);
 }
 
 static bool WriteNtFile(FILE* fp, const ProcessInfo* info)
 {
-    size_t dataSize = NtFileDataSize(info);
+    size_t dataSize;
+    if (!CalculateNtFileDataSize(info, &dataSize))
+    {
+        return false;
+    }
+
     uint8_t* data = (uint8_t*)malloc(dataSize);
     if (data == NULL)
     {
@@ -298,7 +375,7 @@ static bool WriteNtFile(FILE* fp, const ProcessInfo* info)
     for (size_t i = 0; i < info->regions.count; i++)
     {
         const MemRegion* region = &info->regions.items[i];
-        if (region->fileName[0] == '\0' || region->fileName[0] == '[')
+        if (!ShouldIncludeInNtFile(region))
         {
             continue;
         }
@@ -314,7 +391,7 @@ static bool WriteNtFile(FILE* fp, const ProcessInfo* info)
     for (size_t i = 0; i < info->regions.count; i++)
     {
         const MemRegion* region = &info->regions.items[i];
-        if (region->fileName[0] == '\0' || region->fileName[0] == '[')
+        if (!ShouldIncludeInNtFile(region))
         {
             continue;
         }
@@ -333,13 +410,18 @@ static bool WriteThreadNotes(FILE* fp, const ProcessInfo* info)
     for (size_t i = 0; i < info->threads.count; i++)
     {
         const ThreadData* thread = &info->threads.items[i];
+        if (thread->fpRegsSize != 0 && thread->fpRegsSize != sizeof(thread->fpRegs))
+        {
+            return false;
+        }
 
         // NT_PRSTATUS
         struct elf_prstatus prstatus;
         memset(&prstatus, 0, sizeof(prstatus));
         prstatus.pr_pid = thread->tid;
         prstatus.pr_ppid = info->ppid;
-        prstatus.pr_pgrp = info->tgid;
+        prstatus.pr_pgrp = info->pgrp;
+        prstatus.pr_fpvalid = thread->fpRegsSize != 0;
 
         if (thread->isCrashThread)
         {
@@ -358,8 +440,9 @@ static bool WriteThreadNotes(FILE* fp, const ProcessInfo* info)
         }
 
         // NT_FPREGSET
-        if (!WriteNote(fp, NT_FPREGSET, CORE_NOTE_NAME, CORE_NOTE_NAME_SIZE,
-                       &thread->fpRegs, sizeof(thread->fpRegs)))
+        if (thread->fpRegsSize != 0 &&
+            !WriteNote(fp, NT_FPREGSET, CORE_NOTE_NAME, CORE_NOTE_NAME_SIZE,
+                       &thread->fpRegs, thread->fpRegsSize))
         {
             return false;
         }
@@ -390,7 +473,7 @@ static bool WriteMemoryRegions(
     const ProcessInfo* info,
     const uint64_t* dumpSizes)
 {
-    uint8_t* buffer = (uint8_t*)malloc((size_t)info->pageSize);
+    uint8_t* buffer = malloc((size_t)info->pageSize);
     if (buffer == NULL)
     {
         return false;
@@ -473,12 +556,6 @@ bool WriteElfCoreDump(const char* dumpPath, ProcessInfo* info, bool fullDump)
     bool result = false;
     uint64_t* dumpSizes = NULL;
 
-    if (info->pageSize > SIZE_MAX)
-    {
-        fprintf(stderr, "[createdump] System page size is too large\n");
-        goto cleanup;
-    }
-
     // Count included regions for PT_LOAD headers
     size_t loadCount = 0;
     if (info->regions.count > SIZE_MAX / sizeof(uint64_t))
@@ -486,7 +563,7 @@ bool WriteElfCoreDump(const char* dumpPath, ProcessInfo* info, bool fullDump)
         fprintf(stderr, "[createdump] Too many memory regions\n");
         goto cleanup;
     }
-    dumpSizes = (uint64_t*)calloc(info->regions.count, sizeof(uint64_t));
+    dumpSizes = calloc(info->regions.count, sizeof(uint64_t));
     if (dumpSizes == NULL && info->regions.count != 0)
     {
         goto cleanup;
@@ -504,7 +581,7 @@ bool WriteElfCoreDump(const char* dumpPath, ProcessInfo* info, bool fullDump)
     size_t phdrCount = 1 + loadCount;
     if (phdrCount >= PN_XNUM)
     {
-        // PN_XNUM requires a section header at index 0 with sh_info = real phnum.
+        // In this case, we would need to change the ELF header to use extended numbering.
         // This is extremely unlikely (>65533 memory regions), so fail rather than
         // produce an invalid core dump.
         fprintf(stderr, "[createdump] Too many program headers (%zu), cannot write core dump\n", phdrCount);
@@ -512,7 +589,12 @@ bool WriteElfCoreDump(const char* dumpPath, ProcessInfo* info, bool fullDump)
     }
 
     // Calculate sizes
-    size_t notesSize = CalculateNotesSize(info);
+    size_t notesSize;
+    if (!CalculateNotesSize(info, &notesSize))
+    {
+        fprintf(stderr, "[createdump] Note data is too large\n");
+        goto cleanup;
+    }
     size_t phdrOffset = sizeof(Elf64_Ehdr);
     if (phdrCount > (SIZE_MAX - phdrOffset) / sizeof(Elf64_Phdr))
     {
@@ -551,7 +633,6 @@ bool WriteElfCoreDump(const char* dumpPath, ProcessInfo* info, bool fullDump)
     ehdr.e_ehsize = sizeof(Elf64_Ehdr);
     ehdr.e_phentsize = sizeof(Elf64_Phdr);
     ehdr.e_phnum = (Elf64_Half)phdrCount;
-    ehdr.e_shentsize = sizeof(Elf64_Shdr);
 
     if (!WriteData(fp, &ehdr, sizeof(ehdr)))
     {
@@ -630,7 +711,17 @@ bool WriteElfCoreDump(const char* dumpPath, ProcessInfo* info, bool fullDump)
         {
             goto cleanup;
         }
-        size_t padding = dataOffset - (size_t)currentPos;
+
+        size_t currentPosition = (size_t)currentPos;
+        size_t expectedPosition = notesOffset + notesSize;
+        if (currentPosition != expectedPosition)
+        {
+            fprintf(stderr, "[createdump] Note section ended at %zu, expected %zu\n",
+                    currentPosition, expectedPosition);
+            goto cleanup;
+        }
+
+        size_t padding = dataOffset - currentPosition;
         if (padding > 0 && !WritePadding(fp, padding))
         {
             goto cleanup;

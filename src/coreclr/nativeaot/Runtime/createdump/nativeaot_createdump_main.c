@@ -140,7 +140,6 @@ static bool FormatDumpPath(char* output, size_t outputSize, const char* pathTemp
 }
 
 // Entry point called from bootstrap when GUID sentinel is detected.
-// This function name is referenced as a weak symbol in main.cpp.
 int nativeaot_createdump_main(int argc, const char* argv[])
 {
     const char* dumpPathTemplate = NULL;
@@ -156,11 +155,6 @@ int nativeaot_createdump_main(int argc, const char* argv[])
     // Parse arguments. argv[0] is the program name.
     for (int i = 1; i < argc; i++)
     {
-        if (argv[i] == NULL)
-        {
-            break;
-        }
-
         if (strcmp(argv[i], "--name") == 0 && i + 1 < argc)
         {
             dumpPathTemplate = argv[++i];
@@ -216,7 +210,7 @@ int nativeaot_createdump_main(int argc, const char* argv[])
         }
         else if (strcmp(argv[i], "--exception-record") == 0 && i + 1 < argc)
         {
-            // Accept and ignore (NativeAOT doesn't use exception records for dump generation)
+            // TODO: add support for exception record
             i++;
         }
         else

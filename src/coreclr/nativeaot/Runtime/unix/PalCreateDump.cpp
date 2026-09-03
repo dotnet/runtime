@@ -52,7 +52,7 @@
 // True when the enabled variant is linked into a supported Linux executable.
 extern "C" bool g_createdumpLinked;
 // True when the linked bootstrap handles the createdump sentinel.
-extern "C" bool g_createdumpDispatchSupported;
+extern bool g_createdumpDispatchSupported;
 
 #include "createdump/createdump_sentinel.h"
 

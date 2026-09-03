@@ -28,13 +28,28 @@ class CreatedumpLinkedIn
     const uint PtLoad = 1;
     const uint PtNote = 4;
     const uint NtPrStatus = 1;
+    const uint NtFpRegSet = 2;
+    const uint NtPrPsInfo = 3;
+    const uint NtAuxV = 6;
     const uint NtFile = 0x46494c45;
     const uint NtSigInfo = 0x53494749;
+    const int DeletedMappingProbeOffset = 128;
 
     // ELF magic bytes: 0x7f 'E' 'L' 'F'
     static readonly byte[] ElfMagic = { 0x7f, 0x45, 0x4c, 0x46 };
+    static readonly byte[] DeletedMappingPattern = { 0x46, 0x4c, 0x45, 0x7f };
     static MemoryMappedFile? s_deletedMappingFile;
     static MemoryMappedViewAccessor? s_deletedMappingView;
+
+    struct NoteCounts
+    {
+        public int PrStatus;
+        public int FpRegSet;
+        public int PrPsInfo;
+        public int AuxV;
+        public int File;
+        public int SigInfo;
+    }
 
     static unsafe int Main(string[] args)
     {
@@ -51,7 +66,7 @@ class CreatedumpLinkedIn
         string processPath = Environment.ProcessPath!;
         string dumpDir = Path.Combine(Path.GetTempPath(), "createdump_test_" + Path.GetRandomFileName());
         Directory.CreateDirectory(dumpDir);
-        string dumpPath = Path.Combine(dumpDir, "coredump.%d.%%");
+        string dumpPathTemplate = Path.Combine(dumpDir, "coredump.%d.%%");
 
         try
         {
@@ -68,11 +83,11 @@ class CreatedumpLinkedIn
             // DbgMiniDumpType=2 (WithHeap) uses optimized filtering:
             // writable memory + main exe + shared library ELF headers.
             startInfo.Environment["DOTNET_DbgEnableMiniDump"] = "1";
-            startInfo.Environment["DOTNET_DbgMiniDumpName"] = dumpPath;
+            startInfo.Environment["DOTNET_DbgMiniDumpName"] = dumpPathTemplate;
             startInfo.Environment["DOTNET_DbgMiniDumpType"] = "2";
 
             Console.WriteLine($"Launching child process: {processPath} --crash");
-            Console.WriteLine($"Dump path template: {dumpPath}");
+            Console.WriteLine($"Dump path template: {dumpPathTemplate}");
 
             using Process child = Process.Start(startInfo)!;
 
@@ -171,6 +186,7 @@ class CreatedumpLinkedIn
     static bool ValidateElfCore(string dumpFile, ulong deletedMappingProbe)
     {
         const int ElfHeaderSize = 64;
+        // Elf64_Phdr is 56 bytes
         const int ProgramHeaderSize = 56;
 
         using FileStream stream = File.OpenRead(dumpFile);
@@ -209,10 +225,10 @@ class CreatedumpLinkedIn
         }
 
         bool hasLoad = false;
-        bool hasDeletedMappingProbe = false;
+        bool hasExpectedDeletedMappingContents = false;
         bool hasExpectedNtFilePageSize = false;
-        bool hasPrStatus = false;
-        bool hasSigInfo = false;
+        int noteSegmentCount = 0;
+        NoteCounts noteCounts = default;
         ulong expectedPageSize = (ulong)Environment.SystemPageSize;
         byte[] programHeader = new byte[ProgramHeaderSize];
 
@@ -240,8 +256,14 @@ class CreatedumpLinkedIn
                 return false;
             }
 
-            if (type == PtLoad && fileSize > 0 && memorySize >= fileSize)
+            if (type == PtLoad)
             {
+                if (fileSize == 0 || memorySize < fileSize)
+                {
+                    Console.WriteLine($"FAIL: Invalid PT_LOAD sizes: file size {fileSize}, memory size {memorySize}.");
+                    return false;
+                }
+
                 if (alignment != expectedPageSize)
                 {
                     Console.WriteLine($"FAIL: PT_LOAD alignment {alignment} does not match system page size {expectedPageSize}.");
@@ -249,12 +271,28 @@ class CreatedumpLinkedIn
                 }
 
                 hasLoad = true;
-                hasDeletedMappingProbe |=
+                bool containsDeletedMappingProbe =
                     deletedMappingProbe >= virtualAddress &&
-                    deletedMappingProbe - virtualAddress < fileSize;
+                    deletedMappingProbe - virtualAddress <= fileSize &&
+                    (ulong)DeletedMappingPattern.Length <= fileSize - (deletedMappingProbe - virtualAddress);
+                if (containsDeletedMappingProbe)
+                {
+                    ulong patternOffset = segmentOffset + (deletedMappingProbe - virtualAddress);
+                    byte[] actualPattern = new byte[DeletedMappingPattern.Length];
+                    stream.Position = checked((long)patternOffset);
+                    stream.ReadExactly(actualPattern);
+                    if (!actualPattern.AsSpan().SequenceEqual(DeletedMappingPattern))
+                    {
+                        Console.WriteLine("FAIL: Deleted mapping contents do not match the expected pattern.");
+                        return false;
+                    }
+
+                    hasExpectedDeletedMappingContents = true;
+                }
             }
             else if (type == PtNote)
             {
+                noteSegmentCount++;
                 if (fileSize > int.MaxValue)
                 {
                     Console.WriteLine("FAIL: ELF note segment is too large.");
@@ -268,20 +306,35 @@ class CreatedumpLinkedIn
                     notes,
                     expectedPageSize,
                     ref hasExpectedNtFilePageSize,
-                    ref hasPrStatus,
-                    ref hasSigInfo))
+                    ref noteCounts))
                 {
                     return false;
                 }
             }
+            else
+            {
+                Console.WriteLine($"FAIL: Unexpected program header type {type}.");
+                return false;
+            }
         }
 
-        if (!hasLoad || !hasDeletedMappingProbe || !hasExpectedNtFilePageSize || !hasPrStatus || !hasSigInfo)
+        if (!hasLoad ||
+            !hasExpectedDeletedMappingContents ||
+            !hasExpectedNtFilePageSize ||
+            noteSegmentCount != 1 ||
+            noteCounts.PrPsInfo != 1 ||
+            noteCounts.AuxV != 1 ||
+            noteCounts.File != 1 ||
+            noteCounts.PrStatus == 0 ||
+            noteCounts.FpRegSet > noteCounts.PrStatus ||
+            noteCounts.SigInfo != 1)
         {
             Console.WriteLine(
                 $"FAIL: Missing required ELF content: PT_LOAD={hasLoad}, " +
-                $"deleted mapping={hasDeletedMappingProbe}, NT_FILE page size={hasExpectedNtFilePageSize}, " +
-                $"NT_PRSTATUS={hasPrStatus}, NT_SIGINFO={hasSigInfo}.");
+                $"deleted mapping contents={hasExpectedDeletedMappingContents}, NT_FILE page size={hasExpectedNtFilePageSize}, " +
+                $"PT_NOTE={noteSegmentCount}, NT_PRPSINFO={noteCounts.PrPsInfo}, NT_AUXV={noteCounts.AuxV}, " +
+                $"NT_FILE={noteCounts.File}, NT_PRSTATUS={noteCounts.PrStatus}, " +
+                $"NT_FPREGSET={noteCounts.FpRegSet}, NT_SIGINFO={noteCounts.SigInfo}.");
             return false;
         }
 
@@ -292,8 +345,7 @@ class CreatedumpLinkedIn
         byte[] notes,
         ulong expectedPageSize,
         ref bool hasExpectedNtFilePageSize,
-        ref bool hasPrStatus,
-        ref bool hasSigInfo)
+        ref NoteCounts counts)
     {
         int offset = 0;
         while (offset <= notes.Length - 12)
@@ -309,24 +361,71 @@ class CreatedumpLinkedIn
             }
 
             bool isCoreNote =
-                nameSize >= 4 &&
+                nameSize == 5 &&
                 notes[offset + 12] == (byte)'C' &&
                 notes[offset + 13] == (byte)'O' &&
                 notes[offset + 14] == (byte)'R' &&
-                notes[offset + 15] == (byte)'E';
-            if (isCoreNote)
+                notes[offset + 15] == (byte)'E' &&
+                notes[offset + 16] == 0;
+            if (!isCoreNote)
             {
-                int descriptionOffset = checked(offset + 12 + (int)Align4(nameSize));
-                if (type == NtFile && dataSize >= 16)
-                {
+                Console.WriteLine("FAIL: Unexpected ELF note owner.");
+                return false;
+            }
+
+            if (dataSize == 0)
+            {
+                Console.WriteLine($"FAIL: ELF note type 0x{type:X} has an empty payload.");
+                return false;
+            }
+
+            switch (type)
+            {
+                case NtPrStatus:
+                    counts.PrStatus++;
+                    break;
+
+                case NtFpRegSet:
+                    counts.FpRegSet++;
+                    break;
+
+                case NtPrPsInfo:
+                    counts.PrPsInfo++;
+                    break;
+
+                case NtAuxV:
+                    counts.AuxV++;
+                    break;
+
+                case NtFile:
+                    counts.File++;
+                    if (dataSize < 16)
+                    {
+                        Console.WriteLine("FAIL: NT_FILE payload is too small.");
+                        return false;
+                    }
+
+                    int descriptionOffset = checked(offset + 12 + (int)Align4(nameSize));
                     ulong pageSize = BinaryPrimitives.ReadUInt64LittleEndian(notes.AsSpan(descriptionOffset + 8));
                     hasExpectedNtFilePageSize |= pageSize == expectedPageSize;
-                }
-                hasPrStatus |= type == NtPrStatus;
-                hasSigInfo |= type == NtSigInfo;
+                    break;
+
+                case NtSigInfo:
+                    counts.SigInfo++;
+                    break;
+
+                default:
+                    Console.WriteLine($"FAIL: Unexpected ELF note type 0x{type:X}.");
+                    return false;
             }
 
             offset = (int)nextOffset;
+        }
+
+        if (offset != notes.Length)
+        {
+            Console.WriteLine("FAIL: ELF note segment has trailing data.");
+            return false;
         }
 
         return true;
@@ -438,7 +537,7 @@ class CreatedumpLinkedIn
                 Console.WriteLine("FAIL: External createdump did not receive the expected options.");
                 return false;
             }
-            if (stderr.Contains("[createdump] Dump successfully written"))
+            if (stderr.Contains("[createdump]", StringComparison.Ordinal))
             {
                 Console.WriteLine("FAIL: Linked createdump was used instead of the required external helper.");
                 return false;
@@ -457,7 +556,10 @@ class CreatedumpLinkedIn
     {
         string mappingPath = Path.Combine(Path.GetTempPath(), "createdump_mapping_" + Path.GetRandomFileName());
         int pageSize = Environment.SystemPageSize;
-        File.WriteAllBytes(mappingPath, new byte[checked(pageSize * 2)]);
+        int probeOffset = checked(pageSize + DeletedMappingProbeOffset);
+        byte[] mappingContents = new byte[checked(pageSize * 2)];
+        DeletedMappingPattern.CopyTo(mappingContents.AsSpan(probeOffset));
+        File.WriteAllBytes(mappingPath, mappingContents);
         s_deletedMappingFile = MemoryMappedFile.CreateFromFile(
             mappingPath,
             FileMode.Open,
@@ -472,7 +574,7 @@ class CreatedumpLinkedIn
 
         byte* mappingPointer = null;
         s_deletedMappingView.SafeMemoryMappedViewHandle.AcquirePointer(ref mappingPointer);
-        ulong probeAddress = (ulong)(mappingPointer + pageSize + 128);
+        ulong probeAddress = (ulong)(mappingPointer + probeOffset);
         Console.WriteLine($"Deleted mapping probe: 0x{probeAddress:X}");
         Console.WriteLine("Child: About to crash via null pointer dereference.");
 

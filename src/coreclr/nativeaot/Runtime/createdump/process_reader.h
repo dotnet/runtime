@@ -37,11 +37,11 @@ typedef struct
     uint64_t startAddress;
     uint64_t endAddress;
     uint64_t offset;
-    uint64_t deviceMajor;
-    uint64_t deviceMinor;
+    uint32_t deviceMajor;
+    uint32_t deviceMinor;
     uint64_t inode;
     uint32_t permissions; // PF_R | PF_W | PF_X | MR_PRIVATE
-    char fileName[4096];
+    char* fileName;
 } MemRegion;
 
 // Thread info
@@ -50,6 +50,7 @@ typedef struct
     pid_t tid;
     gp_regs_t gpRegs;
     fp_regs_t fpRegs;
+    size_t fpRegsSize;
     bool isCrashThread;
 } ThreadData;
 
@@ -80,7 +81,7 @@ typedef struct
 {
     pid_t pid;
     pid_t ppid;
-    pid_t tgid;
+    pid_t pgrp;
     uint64_t pageSize;
     char name[256];
     char exePath[4096]; // /proc/pid/exe target

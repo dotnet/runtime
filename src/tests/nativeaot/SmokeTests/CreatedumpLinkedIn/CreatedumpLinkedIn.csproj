@@ -2,8 +2,8 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <CLRTestPriority>0</CLRTestPriority>
-    <!-- Linked-in createdump is only available in Linux NativeAOT tests. -->
-    <CLRTestTargetUnsupported Condition="'$(TargetOS)' != 'linux' or '$(TestBuildMode)' != 'nativeaot'">true</CLRTestTargetUnsupported>
+    <!-- Linked-in createdump is only available in Linux x64 and arm64 NativeAOT tests. -->
+    <CLRTestTargetUnsupported Condition="'$(TargetOS)' != 'linux' or ('$(TargetArchitecture)' != 'x64' and '$(TargetArchitecture)' != 'arm64') or '$(TestBuildMode)' != 'nativeaot'">true</CLRTestTargetUnsupported>
     <CreatedumpSupport Condition="'$(TestBuildMode)' == 'nativeaot'">true</CreatedumpSupport>
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>

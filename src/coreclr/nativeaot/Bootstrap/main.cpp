@@ -16,21 +16,21 @@
 #endif
 
 // Linked-in createdump support for NativeAOT executables (Unix only).
+// We create two variants of the createdump library: the "enabled" one actually contains
+// the implementation while the "disabled" one contains stubs (for the linker) only.
 // Supported Linux executables link the enabled variant. Other configurations
 // link the disabled variant and retain the external createdump path.
-#if !defined(_WIN32)
+#if defined(TARGET_LINUX)
 #include "../Runtime/createdump/createdump_sentinel.h"
 extern "C" bool g_createdumpLinked;
 extern "C" int nativeaot_createdump_main(int argc, const char* argv[]);
-extern "C"
-{
+
 #ifdef NATIVEAOT_DLL
 bool g_createdumpDispatchSupported = false;
 #else
 bool g_createdumpDispatchSupported = true;
 #endif
-}
-#endif
+#endif // defined(TARGET_LINUX)
 
 //
 // This is the mechanism whereby multiple linked modules contribute their global data for initialization at
@@ -250,14 +250,12 @@ int __cdecl wmain(int argc, wchar_t* argv[])
 int main(int argc, char* argv[])
 #endif
 {
-#if !defined(_WIN32) && !defined(NATIVEAOT_DLL)
+#if defined(TARGET_LINUX)
     // Check if we're being re-invoked as a dump generator.
     // When a NativeAOT process crashes and createdump is linked in, it forks
     // and re-executes itself with the GUID sentinel as argv[1].
     if (g_createdumpLinked &&
-#if defined(TARGET_LINUX)
         getauxval(AT_SECURE) == 0 &&
-#endif
         argc >= 2 && strcmp(argv[1], CREATEDUMP_SENTINEL) == 0)
     {
         // Shift args: [self, sentinel, ...createdump args] -> [self, ...createdump args]

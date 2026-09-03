@@ -26,11 +26,11 @@ static bool MemRegionArrayAdd(MemRegionArray* array, const MemRegion* item)
 {
     if (array->count >= array->capacity)
     {
-        size_t newCapacity = array->capacity == 0 ? INITIAL_CAPACITY : array->capacity * 2;
-        if (newCapacity > SIZE_MAX / sizeof(MemRegion))
+        if (array->capacity > SIZE_MAX / sizeof(MemRegion) / 2)
         {
             return false;
         }
+        size_t newCapacity = array->capacity == 0 ? INITIAL_CAPACITY : array->capacity * 2;
         MemRegion* newItems = (MemRegion*)realloc(array->items, newCapacity * sizeof(MemRegion));
         if (newItems == NULL)
         {
@@ -47,11 +47,11 @@ static bool ThreadArrayAdd(ThreadArray* array, const ThreadData* item)
 {
     if (array->count >= array->capacity)
     {
-        size_t newCapacity = array->capacity == 0 ? INITIAL_CAPACITY : array->capacity * 2;
-        if (newCapacity > SIZE_MAX / sizeof(ThreadData))
+        if (array->capacity > SIZE_MAX / sizeof(ThreadData) / 2)
         {
             return false;
         }
+        size_t newCapacity = array->capacity == 0 ? INITIAL_CAPACITY : array->capacity * 2;
         ThreadData* newItems = (ThreadData*)realloc(array->items, newCapacity * sizeof(ThreadData));
         if (newItems == NULL)
         {
@@ -68,11 +68,11 @@ static bool AuxvArrayAdd(AuxvArray* array, const Elf64_auxv_t* item)
 {
     if (array->count >= array->capacity)
     {
-        size_t newCapacity = array->capacity == 0 ? INITIAL_CAPACITY : array->capacity * 2;
-        if (newCapacity > SIZE_MAX / sizeof(Elf64_auxv_t))
+        if (array->capacity > SIZE_MAX / sizeof(Elf64_auxv_t) / 2)
         {
             return false;
         }
+        size_t newCapacity = array->capacity == 0 ? INITIAL_CAPACITY : array->capacity * 2;
         Elf64_auxv_t* newItems = (Elf64_auxv_t*)realloc(array->items, newCapacity * sizeof(Elf64_auxv_t));
         if (newItems == NULL)
         {
@@ -119,6 +119,10 @@ bool ProcessInfoInit(ProcessInfo* info, pid_t pid, int crashSignal, pid_t crashT
 
 void ProcessInfoCleanup(ProcessInfo* info)
 {
+    for (size_t i = 0; i < info->regions.count; i++)
+    {
+        free(info->regions.items[i].fileName);
+    }
     free(info->regions.items);
     free(info->threads.items);
     free(info->auxv.items);
@@ -147,8 +151,9 @@ bool ReadMemoryRegions(ProcessInfo* info)
         return false;
     }
 
-    char line[4096 + 256];
-    while (fgets(line, sizeof(line), fp) != NULL)
+    char* line = NULL;
+    size_t lineCapacity = 0;
+    while (getline(&line, &lineCapacity, fp) != -1)
     {
         MemRegion region;
         memset(&region, 0, sizeof(region));
@@ -160,7 +165,7 @@ bool ReadMemoryRegions(ProcessInfo* info)
         uint64_t inode;
         int pathStart = 0;
 
-        // Format: START-END PERMS OFFSET DEV INODE PATHNAME
+        // Format: START-END PERMS OFFSET DEVMAJOR:DEVMINOR INODE PATHSTART
         int matched = sscanf(line, "%" SCNx64 "-%" SCNx64 " %4s %" SCNx64 " %x:%x %" SCNu64 " %n",
                              &start, &end, perms, &offset, &deviceMajor, &deviceMinor, &inode, &pathStart);
 
@@ -185,23 +190,34 @@ bool ReadMemoryRegions(ProcessInfo* info)
             {
                 len--;
             }
-            if (len >= sizeof(region.fileName))
+
+            if (len > 0)
             {
-                len = sizeof(region.fileName) - 1;
+                region.fileName = (char*)malloc(len + 1);
+                if (region.fileName == NULL)
+                {
+                    free(line);
+                    fclose(fp);
+                    return false;
+                }
+                memcpy(region.fileName, line + pathStart, len);
+                region.fileName[len] = '\0';
             }
-            memcpy(region.fileName, line + pathStart, len);
-            region.fileName[len] = '\0';
         }
 
         if (!MemRegionArrayAdd(&info->regions, &region))
         {
+            free(region.fileName);
+            free(line);
             fclose(fp);
             return false;
         }
     }
 
+    bool success = !ferror(fp);
+    free(line);
     fclose(fp);
-    return true;
+    return success;
 }
 
 bool EnumerateAndAttachThreads(ProcessInfo* info)
@@ -216,10 +232,24 @@ bool EnumerateAndAttachThreads(ProcessInfo* info)
         return false;
     }
 
-    bool crashThreadAttached = info->crashThread == 0;
-    struct dirent* entry;
-    while ((entry = readdir(dir)) != NULL)
+    bool crashThreadAttached = false;
+    while (true)
     {
+        errno = 0;
+        struct dirent* entry = readdir(dir);
+        if (entry == NULL)
+        {
+            int readdirError = errno;
+            closedir(dir);
+            if (readdirError != 0)
+            {
+                fprintf(stderr, "[createdump] Failed to read %s: %s (%d)\n",
+                        path, strerror(readdirError), readdirError);
+                return false;
+            }
+            break;
+        }
+
         pid_t tid = (pid_t)strtol(entry->d_name, NULL, 10);
         if (tid == 0)
         {
@@ -270,8 +300,7 @@ bool EnumerateAndAttachThreads(ProcessInfo* info)
         crashThreadAttached |= thread.isCrashThread;
     }
 
-    closedir(dir);
-    if (!crashThreadAttached)
+    if (info->crashThread != 0 && !crashThreadAttached)
     {
         fprintf(stderr, "[createdump] Failed to attach to crash thread %d\n", info->crashThread);
         return false;
@@ -293,14 +322,29 @@ bool ReadThreadRegisters(ProcessInfo* info)
                     thread->tid, strerror(errno), errno);
             return false;
         }
+        if (gpVec.iov_len != sizeof(thread->gpRegs))
+        {
+            fprintf(stderr, "[createdump] ptrace(GETREGSET, NT_PRSTATUS, %d) returned %zu bytes, expected %zu\n",
+                thread->tid, gpVec.iov_len, sizeof(thread->gpRegs));
+            return false;
+        }
 
+        // FP register failure is non-fatal
         struct iovec fpVec = { &thread->fpRegs, sizeof(thread->fpRegs) };
         if (ptrace(PTRACE_GETREGSET, thread->tid, (void*)NT_FPREGSET, &fpVec) != 0)
         {
             fprintf(stderr, "[createdump] ptrace(GETREGSET, NT_FPREGSET, %d) failed: %s (%d)\n",
                     thread->tid, strerror(errno), errno);
-            // FP register failure is non-fatal
+
+            continue;
         }
+        if (fpVec.iov_len != sizeof(thread->fpRegs))
+        {
+            fprintf(stderr, "[createdump] ptrace(GETREGSET, NT_FPREGSET, %d) returned %zu bytes, expected %zu\n",
+                thread->tid, fpVec.iov_len, sizeof(thread->fpRegs));
+            continue;
+        }
+        thread->fpRegsSize = fpVec.iov_len;
     }
 
     return true;
@@ -348,6 +392,8 @@ bool ReadProcessStatus(ProcessInfo* info)
         return false;
     }
 
+    info->ppid = -1;
+
     char line[256];
     while (fgets(line, sizeof(line), fp) != NULL)
     {
@@ -366,13 +412,17 @@ bool ReadProcessStatus(ProcessInfo* info)
         {
             info->ppid = (pid_t)strtol(line + 5, NULL, 10);
         }
-        else if (strncmp(line, "Tgid:", 5) == 0)
-        {
-            info->tgid = (pid_t)strtol(line + 5, NULL, 10);
-        }
     }
 
     fclose(fp);
+
+    info->pgrp = getpgid(info->pid);
+    if (info->pgrp == -1)
+    {
+        fprintf(stderr, "[createdump] getpgid(%d) failed: %s (%d)\n", info->pid, strerror(errno), errno);
+        return false;
+    }
+
     return true;
 }
 

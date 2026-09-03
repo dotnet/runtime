@@ -387,7 +387,7 @@ if(FEATURE_PERFTRACING)
   add_subdirectory(eventpipe)
 endif()
 
-if(NOT CLR_CMAKE_TARGET_WIN32)
+if(CLR_CMAKE_TARGET_UNIX)
   add_subdirectory(createdump)
 endif()
 

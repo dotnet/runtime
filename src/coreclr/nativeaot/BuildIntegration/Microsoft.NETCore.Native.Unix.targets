@@ -88,7 +88,7 @@ The .NET Foundation licenses this file to you under the MIT license.
 
       <CreatedumpSupportName>libnativeaot-createdump-disabled</CreatedumpSupportName>
       <!-- Linked createdump requires the standard executable bootstrap to handle self-restart. -->
-      <CreatedumpSupportName Condition="'$(CreatedumpSupport)' == 'true' and '$(_targetOS)' == 'linux' and '$(IsNativeExecutable)' == 'true' and '$(CustomNativeMain)' != 'true'">libnativeaot-createdump-enabled</CreatedumpSupportName>
+      <CreatedumpSupportName Condition="'$(CreatedumpSupport)' == 'true' and '$(_targetOS)' == 'linux' and '$(IsNativeExecutable)' == 'true' and '$(CustomNativeMain)' != 'true' and ('$(_targetArchitecture)' == 'x64' or '$(_targetArchitecture)' == 'arm64')">libnativeaot-createdump-enabled</CreatedumpSupportName>
 
       <LinkStandardCPlusPlusLibrary Condition="'$(LinkStandardCPlusPlusLibrary)' == '' and '$(_IsiOSLikePlatform)' == 'true' and '$(InvariantGlobalization)' != 'true'">true</LinkStandardCPlusPlusLibrary>
       <VxSortSupportName>libRuntime.VxsortDisabled</VxSortSupportName>

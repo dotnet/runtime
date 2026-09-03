@@ -2,7 +2,7 @@ project(nativeaot-createdump)
 
 # Enabled variant: full ELF core dump writer (Linux only).
 # macOS support requires Mach-O dump format and Mach APIs — deferred to future work.
-if(CLR_CMAKE_TARGET_LINUX)
+if(CLR_CMAKE_TARGET_LINUX AND (CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_ARM64))
 
     set(NATIVEAOT_CREATEDUMP_SOURCES
         nativeaot_createdump_main.c
