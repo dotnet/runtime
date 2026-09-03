@@ -147,6 +147,13 @@ public class WasmInterpreterTransitions
         Assert.Equal(F32, self.InterpretedCallsR2RReturningF32());
         Assert.Equal(F64, self.InterpretedCallsR2RReturningF64());
 
+        // interpreted -> R2R, this+scalar and this/static+struct-arg shapes.
+        Assert.Equal(C, self.InterpretedCallsR2RIntNoArg());                                                       // MiTp
+        s_sideEffect = 0; self.InterpretedCallsR2RTakesInt(A); Assert.Equal(A + C, s_sideEffect);                  // MvTip
+        s_sideEffect = 0; self.InterpretedCallsR2RTakesS16AndInt(new S16 { A = 10, B = 20 }, A); Assert.Equal(30 + A, s_sideEffect); // MvTS16ip
+        s_sideEffect = 0; InterpretedCallsR2RStaticTakesS16AndTwoInt(new S16 { A = 10, B = 20 }, A, B); Assert.Equal(30 + A + B, s_sideEffect); // MvS16iip
+        Assert.Equal(30 + A + B + C, self.InterpretedCallsR2RTakesS16AndTwoInt(new S16 { A = 10, B = 20 }, A, B)); // MiTS16iip
+
         // 1- and 2-byte struct shapes (S1 / S2). These small structs travel by value in a single
         // slot and are the 'S1'/'S2' encodings the runtime spells for the return buffer and by-ref
         // argument; the hand-written table only ever had 8-byte forms.
@@ -339,4 +346,40 @@ public class WasmInterpreterTransitions
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private double R2RInstanceReturnsF64() => _state == C ? F64 : 0.0;
+
+    // interpreted -> R2R callers (bypassed, so interpreted) that call the compiled R2R methods below.
+    [BypassReadyToRun]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private int InterpretedCallsR2RIntNoArg() => R2RInstanceReturnsI32NoArg();
+
+    [BypassReadyToRun]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private void InterpretedCallsR2RTakesInt(int a) => R2RInstanceTakesInt(a);
+
+    [BypassReadyToRun]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private void InterpretedCallsR2RTakesS16AndInt(S16 s, int a) => R2RInstanceTakesS16AndInt(s, a);
+
+    [BypassReadyToRun]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void InterpretedCallsR2RStaticTakesS16AndTwoInt(S16 s, int a, int b) => R2RStaticTakesS16AndTwoInt(s, a, b);
+
+    [BypassReadyToRun]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private int InterpretedCallsR2RTakesS16AndTwoInt(S16 s, int a, int b) => R2RInstanceTakesS16AndTwoInt(s, a, b);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private int R2RInstanceReturnsI32NoArg() => _state;                                        // MiTp
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private void R2RInstanceTakesInt(int a) => s_sideEffect = a + _state;                      // MvTip
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private void R2RInstanceTakesS16AndInt(S16 s, int a) => s_sideEffect = (int)(s.A + s.B) + a; // MvTS16ip
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void R2RStaticTakesS16AndTwoInt(S16 s, int a, int b) => s_sideEffect = (int)(s.A + s.B) + a + b; // MvS16iip
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private int R2RInstanceTakesS16AndTwoInt(S16 s, int a, int b) => (int)(s.A + s.B) + a + b + _state; // MiTS16iip
 }
