@@ -795,18 +795,25 @@ namespace ILLink.Shared.TrimAnalysis
 
             public MakeGenericMethodSite(MethodDesc method) => _method = method;
 
-            public void AddDependencies(DependencySink<NodeFactory> sink, NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, bool isConcreteInstantiation, DependencyNodeCore<NodeFactory> otherReasonNode)
+            public void AddDependencies(
+                DependencySink<NodeFactory> sink,
+                NodeFactory factory,
+                Instantiation typeInstantiation,
+                Instantiation methodInstantiation,
+                bool isConcreteInstantiation,
+                DependencyNodeCore<NodeFactory>? otherReasonNode)
             {
-                DependencyNodeCore<NodeFactory>? previousOtherReasonNode = sink.SetOtherReasonNode(otherReasonNode);
-                try
+                MethodDesc instantiatedMethod = _method.InstantiateSignature(typeInstantiation, methodInstantiation);
+                if (instantiatedMethod.CheckConstraints(new InstantiationContext(typeInstantiation, methodInstantiation)))
                 {
-                    MethodDesc instantiatedMethod = _method.InstantiateSignature(typeInstantiation, methodInstantiation);
-                    if (instantiatedMethod.CheckConstraints(new InstantiationContext(typeInstantiation, methodInstantiation)))
-                        RootingHelpers.TryGetDependenciesForReflectedMethod(sink, factory, instantiatedMethod, "MakeGenericMethod");
-                }
-                finally
-                {
-                    sink.SetOtherReasonNode(previousOtherReasonNode);
+                    if (otherReasonNode is null)
+                    {
+                        RootingHelpers.TryAddDependenciesForReflectedMethod(sink, factory, instantiatedMethod, "MakeGenericMethod");
+                    }
+                    else
+                    {
+                        RootingHelpers.TryAddDependenciesForReflectedMethod(sink, factory, instantiatedMethod, "MakeGenericMethod", otherReasonNode);
+                    }
                 }
             }
         }
@@ -817,22 +824,29 @@ namespace ILLink.Shared.TrimAnalysis
 
             public MakeGenericTypeSite(TypeDesc type) => _type = type;
 
-            public void AddDependencies(DependencySink<NodeFactory> sink, NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, bool isConcreteInstantiation, DependencyNodeCore<NodeFactory> otherReasonNode)
+            public void AddDependencies(
+                DependencySink<NodeFactory> sink,
+                NodeFactory factory,
+                Instantiation typeInstantiation,
+                Instantiation methodInstantiation,
+                bool isConcreteInstantiation,
+                DependencyNodeCore<NodeFactory>? otherReasonNode)
             {
-                DependencyNodeCore<NodeFactory>? previousOtherReasonNode = sink.SetOtherReasonNode(otherReasonNode);
-                try
-                {
-                    TypeDesc instantiatedType = _type.InstantiateSignature(typeInstantiation, methodInstantiation);
+                TypeDesc instantiatedType = _type.InstantiateSignature(typeInstantiation, methodInstantiation);
 
-                    // InstantiateSignature could end up with a denormalized shape (Foo<object, __Canon>) so normalize.
-                    instantiatedType = instantiatedType.NormalizeInstantiation();
+                // InstantiateSignature could end up with a denormalized shape (Foo<object, __Canon>) so normalize.
+                instantiatedType = instantiatedType.NormalizeInstantiation();
 
-                    if (instantiatedType.CheckConstraints(new InstantiationContext(typeInstantiation, methodInstantiation)))
-                        RootingHelpers.TryGetDependenciesForReflectedType(sink, factory, instantiatedType, "MakeGenericType");
-                }
-                finally
+                if (instantiatedType.CheckConstraints(new InstantiationContext(typeInstantiation, methodInstantiation)))
                 {
-                    sink.SetOtherReasonNode(previousOtherReasonNode);
+                    if (otherReasonNode is null)
+                    {
+                        RootingHelpers.TryAddDependenciesForReflectedType(sink, factory, instantiatedType, "MakeGenericType");
+                    }
+                    else
+                    {
+                        RootingHelpers.TryAddDependenciesForReflectedType(sink, factory, instantiatedType, "MakeGenericType", otherReasonNode);
+                    }
                 }
             }
         }

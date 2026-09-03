@@ -537,12 +537,18 @@ namespace ILCompiler
             }
         }
 
+#nullable enable
         /// <summary>
         /// This method is an extension point that can provide additional metadata-based dependencies on a virtual method.
         /// </summary>
-        public virtual void GetDependenciesDueToVirtualMethodReflectability(DependencySink<NodeFactory> dependencies, NodeFactory factory, MethodDesc method)
+        public virtual void AddDependenciesDueToVirtualMethodReflectability(
+            DependencySink<NodeFactory> dependencies,
+            NodeFactory factory,
+            MethodDesc method,
+            DependencyNodeCore<NodeFactory>? otherReasonNode = null)
         {
         }
+#nullable restore
 
         protected virtual void GetMetadataDependenciesDueToReflectability(IDependencySink<NodeFactory> dependencies, NodeFactory factory, MethodDesc method)
         {

@@ -38,7 +38,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             DependencySink<NodeFactory> dependencies = sink;
 
-            factory.MetadataManager.GetDependenciesDueToVirtualMethodReflectability(dependencies, factory, _method);
+            factory.MetadataManager.AddDependenciesDueToVirtualMethodReflectability(dependencies, factory, _method);
 
             bool validInstantiation =
                 _method.IsSharedByGenericInstantiations || (      // Non-exact methods are always valid instantiations (always pass constraints check)

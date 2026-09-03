@@ -42,20 +42,20 @@ namespace ILCompiler.DependencyAnalysis
         {
             foreach (var (key, value) in _mapEntries)
             {
-                sink.Add(
+                sink.Add(new CombinedDependencyListEntry(
                     context.MetadataTypeSymbol(value),
                     context.MaximallyConstructableType(key),
-                    "Proxy type map entry");
+                    "Proxy type map entry"));
 
                 // If the key type has a canonical form, it could be created at runtime by the type loader.
                 // If there is a type loader template for it, create the generic type instantiation eagerly.
                 TypeDesc canonKey = key.ConvertToCanonForm(CanonicalFormKind.Specific);
                 if (canonKey != key && GenericTypesTemplateMap.IsEligibleToHaveATemplate(canonKey))
                 {
-                    sink.Add(
+                    sink.Add(new CombinedDependencyListEntry(
                         context.MaximallyConstructableType(key),
                         context.NativeLayout.TemplateTypeLayout(canonKey),
-                        "Proxy map entry that could be loaded at runtime");
+                        "Proxy map entry that could be loaded at runtime"));
                 }
             }
         }

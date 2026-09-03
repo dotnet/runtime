@@ -13,83 +13,91 @@ namespace ILCompiler.DependencyAnalysisFramework
         IDependencySink<DependencyContextType>,
         IConditionalDependencySink<DependencyContextType>
     {
-        internal enum DependencyKind
-        {
-            Static,
-            Conditional,
-            Dynamic,
-        }
+        private readonly List<DependencyNodeCore<DependencyContextType>.DependencyListEntry> _dependencies =
+            new List<DependencyNodeCore<DependencyContextType>.DependencyListEntry>();
+        private readonly List<DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry> _combinedDependencies =
+            new List<DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry>();
 
-        internal readonly struct Dependency
+        /// <summary>
+        /// A single-use enumerator that clears its sink when disposed.
+        /// </summary>
+        public struct DrainEnumerator : IDisposable
         {
-            public Dependency(
-                DependencyNodeCore<DependencyContextType>? source,
-                DependencyNodeCore<DependencyContextType> node,
-                DependencyNodeCore<DependencyContextType>? otherReasonNode,
-                string reason,
-                DependencyKind kind)
+            private readonly DependencySink<DependencyContextType> _sink;
+            private List<DependencyNodeCore<DependencyContextType>.DependencyListEntry>.Enumerator _enumerator;
+            private List<DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry>.Enumerator _combinedEnumerator;
+            private bool _enumeratingCombinedDependencies;
+
+            internal DrainEnumerator(DependencySink<DependencyContextType> sink)
             {
-                Source = source;
-                Node = node;
-                OtherReasonNode = otherReasonNode;
-                Reason = reason;
-                Kind = kind;
+                _sink = sink;
+                _enumerator = sink._dependencies.GetEnumerator();
+                _combinedEnumerator = sink._combinedDependencies.GetEnumerator();
+                _enumeratingCombinedDependencies = false;
             }
 
-            public DependencyNodeCore<DependencyContextType>? Source { get; }
-            public DependencyNodeCore<DependencyContextType> Node { get; }
-            public DependencyNodeCore<DependencyContextType>? OtherReasonNode { get; }
-            public string Reason { get; }
-            public DependencyKind Kind { get; }
+            public DependencyNodeCore<DependencyContextType> Dependency =>
+                _enumeratingCombinedDependencies ? _combinedEnumerator.Current.Node : _enumerator.Current.Node;
+
+            public string Reason =>
+                _enumeratingCombinedDependencies ? _combinedEnumerator.Current.Reason : _enumerator.Current.Reason;
+
+            public DependencyNodeCore<DependencyContextType>? OtherReasonNode =>
+                _enumeratingCombinedDependencies ? _combinedEnumerator.Current.OtherReasonNode : null;
+
+            /// <summary>
+            /// Advances to the next dependency.
+            /// </summary>
+            public bool MoveNext()
+            {
+                if (!_enumeratingCombinedDependencies)
+                {
+                    if (_enumerator.MoveNext())
+                    {
+                        return true;
+                    }
+
+                    _enumeratingCombinedDependencies = true;
+                }
+
+                return _combinedEnumerator.MoveNext();
+            }
+
+            /// <inheritdoc/>
+            public void Dispose()
+            {
+                _enumerator.Dispose();
+                _combinedEnumerator.Dispose();
+                _sink?.Clear();
+            }
         }
 
-        private readonly List<Dependency> _dependencies = new List<Dependency>();
-        private readonly DependencyNodeCore<DependencyContextType>.DependencyList? _staticDependencies;
-        private DependencyNodeCore<DependencyContextType>? _source;
-        private DependencyNodeCore<DependencyContextType>? _otherReasonNode;
-        private DependencyKind _kind;
-
-        public DependencySink()
+        /// <summary>
+        /// Returns a single-use enumerator over the current dependencies that clears the sink when disposed.
+        /// </summary>
+        public DrainEnumerator Drain()
         {
+            return new DrainEnumerator(this);
         }
 
-        public DependencySink(DependencyNodeCore<DependencyContextType>.DependencyList dependencies)
+        private void Clear()
         {
-            _staticDependencies = dependencies;
-        }
-
-        internal List<Dependency> Dependencies => _dependencies;
-
-        public DependencyNodeCore<DependencyContextType>? SetOtherReasonNode(DependencyNodeCore<DependencyContextType>? otherReasonNode)
-        {
-            DependencyNodeCore<DependencyContextType>? previousOtherReasonNode = _otherReasonNode;
-            _otherReasonNode = otherReasonNode;
-            return previousOtherReasonNode;
-        }
-
-        internal void BeginNode(DependencyNodeCore<DependencyContextType> source, DependencyKind kind)
-        {
-            _source = source;
-            _kind = kind;
-        }
-
-        internal void ClearDependencies()
-        {
-            Debug.Assert(_staticDependencies is null);
             _dependencies.Clear();
-            _source = null;
-            _otherReasonNode = null;
+            _combinedDependencies.Clear();
         }
 
         public void Add(DependencyNodeCore<DependencyContextType> node, string reason)
         {
-            if (_staticDependencies is not null)
-            {
-                _staticDependencies.Add(node, reason);
-                return;
-            }
+            Add(new DependencyNodeCore<DependencyContextType>.DependencyListEntry(node, reason));
+        }
 
-            _dependencies.Add(new Dependency(_source, node, _otherReasonNode, reason, _kind));
+        public void AddConditional(
+            DependencyNodeCore<DependencyContextType> node,
+            DependencyNodeCore<DependencyContextType> otherReasonNode,
+            string reason)
+        {
+            Debug.Assert(otherReasonNode is not null);
+            Add(new DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry(node, otherReasonNode, reason));
         }
 
         public void Add(object node, string reason)
@@ -97,43 +105,28 @@ namespace ILCompiler.DependencyAnalysisFramework
             Add((DependencyNodeCore<DependencyContextType>)node, reason);
         }
 
-        public void Add(
-            DependencyNodeCore<DependencyContextType> node,
-            DependencyNodeCore<DependencyContextType>? otherReasonNode,
+        public void AddConditional(
+            object node,
+            object otherReasonNode,
             string reason)
         {
-            _dependencies.Add(new Dependency(_source, node, otherReasonNode, reason, _kind));
-        }
-
-        public void Add(object node, object? otherReasonNode, string reason)
-        {
-            Add(
-                (DependencyNodeCore<DependencyContextType>)node,
-                (DependencyNodeCore<DependencyContextType>?)otherReasonNode,
-                reason);
+            Debug.Assert(otherReasonNode is not null);
+            Add(new DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry(node, otherReasonNode, reason));
         }
 
         public void Add(DependencyNodeCore<DependencyContextType>.DependencyListEntry dependency)
         {
-            Add(dependency.Node, dependency.Reason);
+            _dependencies.Add(dependency);
         }
 
         public void Add(DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry dependency)
         {
-            Add(dependency.Node, dependency.OtherReasonNode, dependency.Reason);
+            _combinedDependencies.Add(dependency);
         }
 
         public void AddRange(params ReadOnlySpan<DependencyNodeCore<DependencyContextType>.DependencyListEntry> dependencies)
         {
             foreach (DependencyNodeCore<DependencyContextType>.DependencyListEntry dependency in dependencies)
-            {
-                Add(dependency);
-            }
-        }
-
-        public void AddRange(params ReadOnlySpan<DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry> dependencies)
-        {
-            foreach (DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry dependency in dependencies)
             {
                 Add(dependency);
             }

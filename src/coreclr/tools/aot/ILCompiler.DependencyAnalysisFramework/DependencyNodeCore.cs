@@ -10,24 +10,17 @@ namespace ILCompiler.DependencyAnalysisFramework
 {
     public abstract class DependencyNodeCore<DependencyContextType> : DependencyNode, IDependencyNode<DependencyContextType>
     {
-        public struct DependencyListEntry
+        public readonly struct DependencyListEntry(
+            DependencyNodeCore<DependencyContextType> node,
+            string reason)
         {
-            public DependencyListEntry(DependencyNodeCore<DependencyContextType> node,
-                                       string reason)
+            public DependencyListEntry(object node, string reason)
+                : this((DependencyNodeCore<DependencyContextType>)node, reason)
             {
-                Node = node;
-                Reason = reason;
             }
 
-            public DependencyListEntry(object node,
-                                       string reason)
-            {
-                Node = (DependencyNodeCore<DependencyContextType>)node;
-                Reason = reason;
-            }
-
-            public DependencyNodeCore<DependencyContextType> Node;
-            public string Reason;
+            public readonly DependencyNodeCore<DependencyContextType> Node = node;
+            public readonly string Reason = reason;
         }
 
         public class DependencyList : List<DependencyListEntry>, IDependencySink<DependencyContextType>
@@ -47,7 +40,7 @@ namespace ILCompiler.DependencyAnalysisFramework
 
             public virtual void Add(object node, string reason)
             {
-                Add(new DependencyListEntry((DependencyNodeCore<DependencyContextType>)node, reason));
+                Add(new DependencyListEntry(node, reason));
             }
 
             public new virtual void Add(DependencyListEntry dependency)
@@ -70,41 +63,30 @@ namespace ILCompiler.DependencyAnalysisFramework
             {
                 base.Add(dependency);
             }
-
-            public virtual void AddRange(params ReadOnlySpan<CombinedDependencyListEntry> dependencies)
-            {
-                foreach (CombinedDependencyListEntry dependency in dependencies)
-                {
-                    Add(dependency);
-                }
-            }
         }
 
-        public struct CombinedDependencyListEntry : IEquatable<CombinedDependencyListEntry>
+        public readonly struct CombinedDependencyListEntry(
+            DependencyNodeCore<DependencyContextType> node,
+            DependencyNodeCore<DependencyContextType> otherReasonNode,
+            string reason) : IEquatable<CombinedDependencyListEntry>
         {
-            public CombinedDependencyListEntry(DependencyNodeCore<DependencyContextType> node,
-                                               DependencyNodeCore<DependencyContextType>? otherReasonNode,
+            public CombinedDependencyListEntry(object node,
+                                               object otherReasonNode,
                                                string reason)
+                : this(
+                    (DependencyNodeCore<DependencyContextType>)node,
+                    (DependencyNodeCore<DependencyContextType>)otherReasonNode,
+                    reason)
             {
-                Node = node;
-                OtherReasonNode = otherReasonNode;
-                Reason = reason;
             }
 
-            public CombinedDependencyListEntry(object node,
-                                               object? otherReasonNode,
-                                               string reason)
-            {
-                Node = (DependencyNodeCore<DependencyContextType>)node;
-                OtherReasonNode = (DependencyNodeCore<DependencyContextType>?)otherReasonNode;
-                Reason = reason;
-            }
+            internal readonly DependencyListEntry Dependency = new(node, reason);
+            public readonly DependencyNodeCore<DependencyContextType> OtherReasonNode = otherReasonNode;
+
+            public readonly DependencyNodeCore<DependencyContextType> Node => Dependency.Node;
+            public readonly string Reason => Dependency.Reason;
 
             // Used by HashSet, so must have good Equals/GetHashCode
-            public readonly DependencyNodeCore<DependencyContextType> Node;
-            public readonly DependencyNodeCore<DependencyContextType>? OtherReasonNode;
-            public readonly string Reason;
-
             public override bool Equals(object? obj)
             {
                 return obj is CombinedDependencyListEntry && Equals((CombinedDependencyListEntry)obj);
@@ -114,9 +96,7 @@ namespace ILCompiler.DependencyAnalysisFramework
             {
                 int hash = 23;
                 hash = hash * 31 + Node.GetHashCode();
-
-                if (OtherReasonNode != null)
-                    hash = hash * 31 + OtherReasonNode.GetHashCode();
+                hash = hash * 31 + OtherReasonNode.GetHashCode();
 
                 if (Reason != null)
                     hash = hash * 31 + Reason.GetHashCode();

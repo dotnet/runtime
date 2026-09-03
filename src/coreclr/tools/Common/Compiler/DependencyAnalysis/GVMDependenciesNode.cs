@@ -167,7 +167,7 @@ namespace ILCompiler.DependencyAnalysis
                                 {
                                     DependencyNodeCore<NodeFactory> node = GetVirtualMethodImplNode(factory, canonImpl);
                                     if (node != null)
-                                        dynamicDependencies.Add(new CombinedDependencyListEntry(node, null, "ImplementingMethodInstantiation"));
+                                        dynamicDependencies.Add(node, "ImplementingMethodInstantiation");
                                 }
                                 else
                                 {
@@ -175,7 +175,7 @@ namespace ILCompiler.DependencyAnalysis
                                     if (!factory.CanBeInGenericCycle(canonImpl))
 #endif
                                     {
-                                        dynamicDependencies.Add(new CombinedDependencyListEntry(factory.GVMDependencies(canonImpl), null, "ImplementingMethodInstantiation"));
+                                        dynamicDependencies.Add(factory.GVMDependencies(canonImpl), "ImplementingMethodInstantiation");
                                     }
                                 }
 
@@ -238,7 +238,7 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         DependencyNodeCore<NodeFactory> node = GetVirtualMethodImplNode(factory, instantiatedTargetMethod);
                         if (node != null)
-                            dynamicDependencies.Add(new CombinedDependencyListEntry(node, null, "DerivedMethodInstantiation"));
+                            dynamicDependencies.Add(node, "DerivedMethodInstantiation");
 #if !READYTORUN
                         factory.MetadataManager.NoteOverridingMethod(_method, instantiatedTargetMethod);
                         factory.MetadataManager.GetDependenciesForOverridingMethod(dynamicDependencies, factory, _method, instantiatedTargetMethod);
@@ -254,7 +254,7 @@ namespace ILCompiler.DependencyAnalysis
                     TypeDesc currentType = potentialOverrideType;
                     do
                     {
-                        dynamicDependencies.Add(new CombinedDependencyListEntry(factory.TypeGVMEntries(currentType.GetTypeDefinition()), null, "Resolution metadata"));
+                        dynamicDependencies.Add(factory.TypeGVMEntries(currentType.GetTypeDefinition()), "Resolution metadata");
                         currentType = currentType.BaseType;
                     }
                     while (currentType != null);

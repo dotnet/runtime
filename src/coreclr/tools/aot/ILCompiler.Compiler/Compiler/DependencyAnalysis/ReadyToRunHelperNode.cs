@@ -129,7 +129,7 @@ namespace ILCompiler.DependencyAnalysis
                 DependencySink<NodeFactory> dependencyList = sink;
 
 #if !SUPPORT_JIT
-                factory.MetadataManager.GetDependenciesDueToVirtualMethodReflectability(dependencyList, factory, targetMethod);
+                factory.MetadataManager.AddDependenciesDueToVirtualMethodReflectability(dependencyList, factory, targetMethod);
 
                 if (!factory.VTable(targetMethod.OwningType).HasKnownVirtualMethodUse)
 
@@ -150,7 +150,7 @@ namespace ILCompiler.DependencyAnalysis
                     MethodDesc targetMethod = info.TargetMethod;
 
 #if !SUPPORT_JIT
-                    factory.MetadataManager.GetDependenciesDueToVirtualMethodReflectability(dependencyList, factory, targetMethod);
+                    factory.MetadataManager.AddDependenciesDueToVirtualMethodReflectability(dependencyList, factory, targetMethod);
 
                     if (!factory.VTable(info.TargetMethod.OwningType).HasKnownVirtualMethodUse)
                     {

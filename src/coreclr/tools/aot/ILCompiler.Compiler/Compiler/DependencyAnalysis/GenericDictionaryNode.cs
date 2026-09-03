@@ -144,6 +144,7 @@ namespace ILCompiler.DependencyAnalysis
 
         }
 
+#nullable enable
         public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
             // The generic dictionary layout is shared between all the canonically equivalent
@@ -156,12 +157,13 @@ namespace ILCompiler.DependencyAnalysis
 
                 // If a canonical method body was compiled, we need to track the dictionary
                 // dependencies in the context of the concrete type that owns this dictionary.
-                sink.Add(
+                sink.AddConditional(
                     factory.ShadowConcreteMethod(method),
                     factory.MethodEntrypoint(method.GetCanonMethodTarget(CanonicalFormKind.Specific)),
                     "Generic dictionary dependency");
             }
         }
+#nullable restore
 
         public TypeGenericDictionaryNode(TypeDesc owningType, NodeFactory factory)
             : base(factory)

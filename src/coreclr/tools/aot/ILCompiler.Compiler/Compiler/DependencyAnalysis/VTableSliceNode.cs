@@ -236,7 +236,7 @@ namespace ILCompiler.DependencyAnalysis
                     continue;
 
                 if (defType.Context.SupportsCanon)
-                    sink.Add(
+                    sink.AddConditional(
                         factory.VirtualMethodUse(method),
                         factory.VirtualMethodUse(method.GetCanonMethodTarget(CanonicalFormKind.Specific)),
                         "Canonically equivalent virtual method use");

@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
+
 using Internal.TypeSystem;
 using ILCompiler.DependencyAnalysisFramework;
 
@@ -13,8 +15,16 @@ namespace ILCompiler.DependencyAnalysis
     public interface INodeWithRuntimeDeterminedDependencies
     {
         /// <summary>
-        /// Instantiates runtime determined dependencies of this node using the supplied generic context.
+        /// Instantiates runtime determined dependencies of this node using the
+        /// supplied generic context. If <paramref name="otherReasonNode"/> is
+        /// not null, the dependencies are considered conditional.
         /// </summary>
-        void AddDependencies(DependencySink<NodeFactory> sink, NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, bool isConcreteInstantiation, DependencyNodeCore<NodeFactory> otherReasonNode);
+        void AddDependencies(
+            DependencySink<NodeFactory> sink,
+            NodeFactory factory,
+            Instantiation typeInstantiation,
+            Instantiation methodInstantiation,
+            bool isConcreteInstantiation,
+            DependencyNodeCore<NodeFactory>? otherReasonNode);
     }
 }

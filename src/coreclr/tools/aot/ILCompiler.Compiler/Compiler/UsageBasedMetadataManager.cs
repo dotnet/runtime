@@ -613,12 +613,11 @@ namespace ILCompiler
             // to support Delegate.GetMethodInfo().
             if (!IsReflectionBlocked(decl) && !IsReflectionBlocked(impl))
             {
-                dependencies.Add(new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(
+                dependencies.Add(
                     factory.ReflectableVirtualMethodImpl(
                         decl.GetCanonMethodTarget(CanonicalFormKind.Specific),
                         impl.GetCanonMethodTarget(CanonicalFormKind.Specific)),
-                    null,
-                    "Virtual method implementation discovered"));
+                    "Virtual method implementation discovered");
             }
         }
 
@@ -686,7 +685,12 @@ namespace ILCompiler
             }
         }
 
-        public override void GetDependenciesDueToVirtualMethodReflectability(DependencySink<NodeFactory> dependencies, NodeFactory factory, MethodDesc method)
+#nullable enable
+        public override void AddDependenciesDueToVirtualMethodReflectability(
+            DependencySink<NodeFactory> dependencies,
+            NodeFactory factory,
+            MethodDesc method,
+            DependencyNodeCore<NodeFactory>? otherReasonNode)
         {
             if ((_generationOptions & UsageBasedMetadataGenerationOptions.CreateReflectableArtifacts) != 0)
             {
@@ -695,10 +699,19 @@ namespace ILCompiler
                 // for the metadata manager. Metadata manager treats that node the same as a body.
                 if (method.IsAbstract && GetMetadataCategory(method) != 0)
                 {
-                    dependencies.Add(factory.ReflectedMethod(method.GetCanonMethodTarget(CanonicalFormKind.Specific)), "Abstract reflectable method");
+                    var dependency = factory.ReflectedMethod(method.GetCanonMethodTarget(CanonicalFormKind.Specific));
+                    if (otherReasonNode is null)
+                    {
+                        dependencies.Add(dependency, "Abstract reflectable method");
+                    }
+                    else
+                    {
+                        dependencies.AddConditional(dependency, otherReasonNode, "Abstract reflectable method");
+                    }
                 }
             }
         }
+#nullable restore
 
         protected override IEnumerable<FieldDesc> GetFieldsWithRuntimeMapping()
         {

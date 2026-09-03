@@ -93,6 +93,8 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+#nullable enable
+
         public void AddRuntimeDeterminedStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory, MethodDesc concreteMethod)
         {
             foreach (DependencyListEntry dependency in _dependencies)
@@ -115,7 +117,7 @@ namespace ILCompiler.DependencyAnalysis
             NodeFactory factory,
             MethodDesc concreteMethod,
             DependencyNodeCore<NodeFactory> dependency,
-            DependencyNodeCore<NodeFactory> otherReasonNode)
+            DependencyNodeCore<NodeFactory>? otherReasonNode)
         {
             if (dependency is INodeWithRuntimeDeterminedDependencies runtimeDeterminedDependency)
             {
@@ -128,6 +130,8 @@ namespace ILCompiler.DependencyAnalysis
                     otherReasonNode);
             }
         }
+
+#nullable restore
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 

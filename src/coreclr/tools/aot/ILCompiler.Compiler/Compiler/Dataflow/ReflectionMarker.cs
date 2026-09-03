@@ -194,7 +194,7 @@ namespace ILCompiler.Dataflow
             if (!_enabled)
                 return;
 
-            RootingHelpers.TryGetDependenciesForReflectedType(_dependencies, Factory, type, reason);
+            RootingHelpers.TryAddDependenciesForReflectedType(_dependencies, Factory, type, reason);
         }
 
         internal void MarkMethod(in MessageOrigin origin, MethodDesc method, TypeSystemEntity reason, AccessKind accessKind = AccessKind.Unspecified)
@@ -212,7 +212,7 @@ namespace ILCompiler.Dataflow
 
             CheckAndWarnOnReflectionAccess(origin, method, accessKind);
 
-            RootingHelpers.TryGetDependenciesForReflectedMethod(_dependencies, Factory, method, reason);
+            RootingHelpers.TryAddDependenciesForReflectedMethod(_dependencies, Factory, method, reason);
         }
 
         internal void MarkField(in MessageOrigin origin, FieldDesc field, string reason, AccessKind accessKind = AccessKind.Unspecified)
@@ -222,7 +222,7 @@ namespace ILCompiler.Dataflow
 
             CheckAndWarnOnReflectionAccess(origin, field, accessKind);
 
-            RootingHelpers.TryGetDependenciesForReflectedField(_dependencies, Factory, field, reason);
+            RootingHelpers.TryAddDependenciesForReflectedField(_dependencies, Factory, field, reason);
         }
 
         internal void MarkProperty(in MessageOrigin origin, PropertyPseudoDesc property, TypeSystemEntity reason, AccessKind accessKind = AccessKind.Unspecified)

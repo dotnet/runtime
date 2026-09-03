@@ -104,7 +104,6 @@ namespace ILCompiler
             }
 
             const int MaxDependencyDepth = 5;
-            var dependencyLists = new DependencyNodeCore<NodeFactory>.DependencyList[MaxDependencyDepth + 1];
             var dependencySinks = new DependencySink<NodeFactory>[MaxDependencyDepth + 1];
 
             if (_fileLayoutAlgorithm == FileLayoutAlgorithm.MethodOrder)
@@ -131,23 +130,18 @@ namespace ILCompiler
                         return; // Node already sorted
                     sortableNode.CustomSort += sortOrder++;
                 }
-                DependencyNodeCore<NodeFactory>.DependencyList dependencies = dependencyLists[depth];
-                if (dependencies is null)
+                var dependencySink = dependencySinks[depth];
+                if (dependencySink is null)
                 {
-                    dependencies = new DependencyNodeCore<NodeFactory>.DependencyList();
-                    dependencyLists[depth] = dependencies;
-                    dependencySinks[depth] = new DependencySink<NodeFactory>(dependencies);
-                }
-                else
-                {
-                    dependencies.Clear();
+                    dependencySink = new DependencySink<NodeFactory>();
+                    dependencySinks[depth] = dependencySink;
                 }
 
-                DependencySink<NodeFactory> dependencySink = dependencySinks[depth];
                 node.AddStaticDependencies(dependencySink, _nodeFactory);
-                foreach (DependencyNodeCore<NodeFactory>.DependencyListEntry dependency in dependencies)
+                using var dependencies = dependencySink.Drain();
+                while (dependencies.MoveNext())
                 {
-                    ApplySortToDependencies(dependency.Node, depth + 1);
+                    ApplySortToDependencies(dependencies.Dependency, depth + 1);
                 }
             }
         }

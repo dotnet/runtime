@@ -107,7 +107,7 @@ namespace ILCompiler.DependencyAnalysis
             if (targetMethod.IsAbstract)
                 factory.MetadataManager.GetDependenciesDueToMethodCodePresence(dependencies, factory, canonMethod, methodIL: null);
 
-            factory.MetadataManager.GetDependenciesDueToVirtualMethodReflectability(dependencies, factory, targetMethod);
+            factory.MetadataManager.AddDependenciesDueToVirtualMethodReflectability(dependencies, factory, targetMethod);
 
             factory.MetadataManager.GetNativeLayoutMetadataDependencies(dependencies, factory, GetMethodForMetadata(targetMethod, out _));
 

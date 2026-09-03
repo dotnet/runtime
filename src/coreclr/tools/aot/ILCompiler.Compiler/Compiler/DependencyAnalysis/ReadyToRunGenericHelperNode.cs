@@ -126,75 +126,91 @@ namespace ILCompiler.DependencyAnalysis
             return factory.PreinitializationManager.HasLazyStaticConstructor(type.ConvertToCanonForm(CanonicalFormKind.Specific));
         }
 
-        public void AddDependencies(DependencySink<NodeFactory> sink, NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, bool isConcreteInstantiation, DependencyNodeCore<NodeFactory> otherReasonNode)
+#nullable enable
+        public void AddDependencies(
+            DependencySink<NodeFactory> sink,
+            NodeFactory factory,
+            Instantiation typeInstantiation,
+            Instantiation methodInstantiation,
+            bool isConcreteInstantiation,
+            DependencyNodeCore<NodeFactory>? otherReasonNode)
         {
-            DependencyNodeCore<NodeFactory> previousOtherReasonNode = sink.SetOtherReasonNode(otherReasonNode);
+            var lookupContext = new GenericLookupResultContext(_dictionaryOwner, typeInstantiation, methodInstantiation);
+
+            switch (_id)
+            {
+                case ReadyToRunHelperId.GetGCStaticBase:
+                case ReadyToRunHelperId.GetThreadStaticBase:
+                    {
+                        // If the type has a lazy static constructor, we also need the non-GC static base
+                        // because that's where the class constructor context is.
+                        if (TriggersLazyStaticConstructor(factory))
+                        {
+                            var lookupTarget = factory.GenericLookup.TypeNonGCStaticBase((TypeDesc)_target).GetTarget(factory, lookupContext, isConcreteInstantiation);
+                            if (lookupTarget != null)
+                            {
+                                AddDependency(sink, lookupTarget, "Dictionary dependency", otherReasonNode);
+                            }
+                        }
+                    }
+                    break;
+
+                case ReadyToRunHelperId.DelegateCtor:
+                    {
+                        DelegateCreationInfo createInfo = (DelegateCreationInfo)_target;
+                        if (createInfo.NeedsVirtualMethodUseTracking)
+                        {
+                            MethodDesc instantiatedTargetMethod = createInfo.TargetMethod.GetNonRuntimeDeterminedMethodFromRuntimeDeterminedMethodViaSubstitution(typeInstantiation, methodInstantiation);
+                            if (!factory.VTable(instantiatedTargetMethod.OwningType).HasKnownVirtualMethodUse)
+                            {
+                                AddDependency(
+                                    sink,
+                                    factory.VirtualMethodUse(instantiatedTargetMethod),
+                                    "Dictionary dependency",
+                                    otherReasonNode);
+                            }
+
+                            factory.MetadataManager.AddDependenciesDueToVirtualMethodReflectability(sink, factory, instantiatedTargetMethod, otherReasonNode);
+                        }
+                    }
+                    break;
+            }
+
             try
             {
-                DependencySink<NodeFactory> result = sink;
-                var lookupContext = new GenericLookupResultContext(_dictionaryOwner, typeInstantiation, methodInstantiation);
-
-                switch (_id)
+                var lookupTarget = _lookupSignature.GetTarget(factory, lookupContext, isConcreteInstantiation);
+                if (lookupTarget != null)
                 {
-                    case ReadyToRunHelperId.GetGCStaticBase:
-                    case ReadyToRunHelperId.GetThreadStaticBase:
-                        {
-                            // If the type has a lazy static constructor, we also need the non-GC static base
-                            // because that's where the class constructor context is.
-                            if (TriggersLazyStaticConstructor(factory))
-                            {
-                                var lookupTarget = factory.GenericLookup.TypeNonGCStaticBase((TypeDesc)_target).GetTarget(factory, lookupContext, isConcreteInstantiation);
-                                if (lookupTarget != null)
-                                {
-                                    result.Add(new DependencyListEntry(lookupTarget, "Dictionary dependency"));
-                                }
-                            }
-                        }
-                        break;
-
-                    case ReadyToRunHelperId.DelegateCtor:
-                        {
-                            DelegateCreationInfo createInfo = (DelegateCreationInfo)_target;
-                            if (createInfo.NeedsVirtualMethodUseTracking)
-                            {
-                                MethodDesc instantiatedTargetMethod = createInfo.TargetMethod.GetNonRuntimeDeterminedMethodFromRuntimeDeterminedMethodViaSubstitution(typeInstantiation, methodInstantiation);
-                                if (!factory.VTable(instantiatedTargetMethod.OwningType).HasKnownVirtualMethodUse)
-                                {
-                                    result.Add(
-                                        new DependencyListEntry(
-                                            factory.VirtualMethodUse(instantiatedTargetMethod),
-                                            "Dictionary dependency"));
-                                }
-
-                                factory.MetadataManager.GetDependenciesDueToVirtualMethodReflectability(result, factory, instantiatedTargetMethod);
-                            }
-                        }
-                        break;
-                }
-
-                try
-                {
-                    var lookupTarget = _lookupSignature.GetTarget(factory, lookupContext, isConcreteInstantiation);
-                    if (lookupTarget != null)
-                    {
-                        // All generic lookups depend on the thing they point to
-                        result.Add(new DependencyListEntry(lookupTarget, "Dictionary dependency"));
-                    }
-                }
-                catch (TypeSystemException)
-                {
-                    // If there was an exception, we're going to generate a null slot in the associated
-                    // dictionary. The helper needs to be able to handle a null slot and tailcall
-                    // and exception throwing helper instead of returning a result.
-                    _hasInvalidEntries = true;
-                    result.Add(GetBadSlotHelper(factory), "Failure to build dictionary slot");
+                    // All generic lookups depend on the thing they point to
+                    AddDependency(sink, lookupTarget, "Dictionary dependency", otherReasonNode);
                 }
             }
-            finally
+            catch (TypeSystemException)
             {
-                sink.SetOtherReasonNode(previousOtherReasonNode);
+                // If there was an exception, we're going to generate a null slot in the associated
+                // dictionary. The helper needs to be able to handle a null slot and tailcall
+                // and exception throwing helper instead of returning a result.
+                _hasInvalidEntries = true;
+                AddDependency(sink, GetBadSlotHelper(factory), "Failure to build dictionary slot", otherReasonNode);
             }
         }
+
+        private static void AddDependency(
+            DependencySink<NodeFactory> sink,
+            object dependency,
+            string reason,
+            DependencyNodeCore<NodeFactory>? otherReasonNode)
+        {
+            if (otherReasonNode is null)
+            {
+                sink.Add(dependency, reason);
+            }
+            else
+            {
+                sink.AddConditional(dependency, otherReasonNode, reason);
+            }
+        }
+#nullable restore
 
         private static IMethodNode GetBadSlotHelper(NodeFactory factory)
         {

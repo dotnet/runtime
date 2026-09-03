@@ -66,10 +66,10 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            sink.Add(
+            sink.Add(new CombinedDependencyListEntry(
                 factory.ReflectedMethod(_implementation),
                 factory.ReflectedDelegateTargetVirtualMethod(_declaration),
-                "Virtual method declaration is reflectable");
+                "Virtual method declaration is reflectable"));
         }
 
         public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink<NodeFactory> sink, NodeFactory factory) { }

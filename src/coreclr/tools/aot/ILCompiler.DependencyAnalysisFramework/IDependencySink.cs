@@ -18,5 +18,4 @@ public interface IDependencySink<DependencyContextType>
 public interface IConditionalDependencySink<DependencyContextType>
 {
     void Add(DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry dependency);
-    void AddRange(params ReadOnlySpan<DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry> dependencies);
 }

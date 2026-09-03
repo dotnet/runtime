@@ -97,7 +97,7 @@ namespace ILCompiler.DependencyAnalysis
                 dependencies.Add(factory.VirtualMethodUse(targetMethod), "Interface method use");
             }
 
-            factory.MetadataManager.GetDependenciesDueToVirtualMethodReflectability(dependencies, factory, targetMethod);
+            factory.MetadataManager.AddDependenciesDueToVirtualMethodReflectability(dependencies, factory, targetMethod);
 
             dependencies.Add(GetInterfaceTypeNode(factory, targetMethod), "Interface type");
         }

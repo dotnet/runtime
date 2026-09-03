@@ -90,10 +90,8 @@ namespace ILCompiler.DependencyAnalysisFramework
             public void MarkNewDynamicDependencies(DependencyAnalyzer<MarkStrategy, DependencyContextType> analyzer)
             {
                 DependencySink<DependencyContextType> sink = analyzer._dependencySink;
-                sink.ClearDependencies();
-                sink.BeginNode(_node, DependencySink<DependencyContextType>.DependencyKind.Dynamic);
                 _node.SearchDynamicDependencies(analyzer._dynamicDependencyInterestingList, _next, sink, analyzer._dependencyContext);
-                analyzer.CommitDependencies(sink);
+                analyzer.CommitDependencies(sink, _node);
                 _next = analyzer._dynamicDependencyInterestingList.Count;
             }
         }
@@ -181,44 +179,39 @@ namespace ILCompiler.DependencyAnalysisFramework
         private void AddStaticDependencies(DependencyNodeCore<DependencyContextType> node)
         {
             DependencySink<DependencyContextType> sink = _dependencySink;
-            sink.ClearDependencies();
-            sink.BeginNode(node, DependencySink<DependencyContextType>.DependencyKind.Static);
             node.AddStaticDependencies(sink, _dependencyContext);
 
             if (node.HasConditionalStaticDependencies)
             {
-                sink.BeginNode(node, DependencySink<DependencyContextType>.DependencyKind.Conditional);
                 node.AddConditionalDependencies(sink, _dependencyContext);
             }
 
-            CommitDependencies(sink);
+            CommitDependencies(sink, node);
         }
 
-        private void CommitDependencies(DependencySink<DependencyContextType> sink)
+        private void CommitDependencies(
+            DependencySink<DependencyContextType> sink,
+            DependencyNodeCore<DependencyContextType> source)
         {
-            foreach (DependencySink<DependencyContextType>.Dependency dependency in sink.Dependencies)
+            using DependencySink<DependencyContextType>.DrainEnumerator dependencies = sink.Drain();
+            while (dependencies.MoveNext())
             {
-                if (dependency.Kind != DependencySink<DependencyContextType>.DependencyKind.Conditional ||
-                    dependency.OtherReasonNode is null ||
-                    dependency.OtherReasonNode.Marked)
+                var otherReasonNode = dependencies.OtherReasonNode;
+                if (otherReasonNode is null || otherReasonNode.Marked)
                 {
-                    Debug.Assert(
-                        dependency.Kind != DependencySink<DependencyContextType>.DependencyKind.Dynamic ||
-                        dependency.OtherReasonNode is null ||
-                        dependency.OtherReasonNode.Marked);
-                    AddToMarkStack(dependency.Node, dependency.Reason, dependency.Source, dependency.OtherReasonNode);
+                    AddToMarkStack(dependencies.Dependency, dependencies.Reason, source, otherReasonNode);
                     continue;
                 }
 
-                if (!_conditional_dependency_store.TryGetValue(dependency.OtherReasonNode, out HashSet<DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry> storedDependencySet))
+                if (!_conditional_dependency_store.TryGetValue(otherReasonNode, out HashSet<DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry> storedDependencySet))
                 {
                     storedDependencySet = new HashSet<DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry>();
-                    _conditional_dependency_store.Add(dependency.OtherReasonNode, storedDependencySet);
+                    _conditional_dependency_store.Add(otherReasonNode, storedDependencySet);
                 }
 
                 // Swap out other reason node as we're storing that as the dictionary key
                 var conditionalDependencyStoreEntry =
-                    new DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry(dependency.Node, dependency.Source, dependency.Reason);
+                    new DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry(dependencies.Dependency, source, dependencies.Reason);
                 storedDependencySet.Add(conditionalDependencyStoreEntry);
             }
         }
