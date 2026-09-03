@@ -5356,7 +5356,8 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
             if (varDsc->lvIsParam)
             {
 #ifdef TARGET_ARM64
-                if (info.compIsVarArgs && varDsc->lvIsRegArg && (lclNum != info.compRetBuffArg))
+                if (info.compIsVarArgs && varDsc->lvIsRegArg && (lclNum != info.compRetBuffArg) &&
+                    (lclNum != lvaSecretStubArg))
                 {
                     const ABIPassingInformation& abiInfo =
                         lvaGetParameterABIInfo(varDsc->lvIsStructField ? varDsc->lvParentLcl : lclNum);
