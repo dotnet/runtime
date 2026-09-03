@@ -553,9 +553,8 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             // constructor parameter (no other bindable property) used to make the generator emit a
             // call to an Initialize method that was never generated, producing CS0103 at compile time.
             //
-            // This only covers the top-level GetCore path. Binding this same shape as a *nested*
-            // member (reached via BindCore/EmitObjectInit) silently produces null instead of the
-            // real value, a separate pre-existing bug tracked in dotnet/runtime#131399.
+            // This only covers the top-level GetCore path; NestedSoleReadOnlyCollectionConstructorParameterIsBindable
+            // covers the same shape reached as a nested member.
             string source = $$"""
                 using Microsoft.Extensions.Configuration;
                 using System.Collections.Generic;
@@ -589,6 +588,222 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             // running the assembly proves it also binds the right values, not just compilable code.
             var boundValues = (IEnumerable<string>)LoadAndInvokeMain(result.OutputCompilation, "Result")!;
             Assert.Equal(new[] { "a", "b" }, boundValues);
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        [InlineData("IReadOnlyList")]
+        [InlineData("IReadOnlyCollection")]
+        [InlineData("IReadOnlySet")]
+        [InlineData("IEnumerable")]
+        public async Task NestedSoleReadOnlyCollectionConstructorParameterIsBindable(string collectionType)
+        {
+            // Regression test: the same shape as SoleReadOnlyCollectionConstructorParameterIsBindable, but
+            // reached as a nested member rather than as the top-level bound type. The member was silently
+            // left at null, since the emitter skipped every complex member without bindable members - even
+            // one whose constructor parameters its Initialize method binds. Covers every way such a member is
+            // reached: a constructor parameter (bound in Initialize), a settable property (bound in BindCore),
+            // and a settable property with a matching constructor parameter (bound in Initialize when the
+            // instance is created, and in BindCore when binding an existing one).
+            string source = $$"""
+                using Microsoft.Extensions.Configuration;
+                using System.Collections.Generic;
+
+                public class Program
+                {
+                    public static object? Result;
+
+                    public static void Main()
+                    {
+                        ConfigurationBuilder configurationBuilder = new();
+                        configurationBuilder.AddInMemoryCollection(new Dictionary<string, string?>
+                        {
+                            ["Nested:Values:0"] = "a",
+                            ["Nested:Values:1"] = "b",
+                        });
+                        IConfiguration config = configurationBuilder.Build();
+
+                        Outer outer = config.Get<Outer>();
+                        Holder holder = config.Get<Holder>();
+                        Rebindable rebindable = config.Get<Rebindable>();
+
+                        Rebindable existing = new(null!);
+                        config.Bind(existing);
+
+                        Result = new object?[]
+                        {
+                            outer.Nested?.Values,
+                            holder.Nested?.Values,
+                            rebindable.Nested?.Values,
+                            existing.Nested?.Values,
+                        };
+                    }
+                }
+
+                public record Inner({{collectionType}}<string> Values);
+
+                public record Outer(Inner Nested);
+
+                public class Holder
+                {
+                    public Inner Nested { get; set; }
+                }
+
+                public class Rebindable
+                {
+                    public Rebindable(Inner nested) => Nested = nested;
+
+                    public Inner Nested { get; set; }
+                }
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source, assemblyReferences: GetAssemblyRefsWithAdditional(typeof(ConfigurationBuilder), typeof(List<>)));
+            Assert.NotNull(result.GeneratedSource);
+            Assert.Empty(result.Diagnostics);
+
+            var boundValues = (object?[])LoadAndInvokeMain(result.OutputCompilation, "Result")!;
+            Assert.All(boundValues, boundValue => Assert.Equal(new[] { "a", "b" }, (IEnumerable<string>?)boundValue));
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        [InlineData("IReadOnlyList")]
+        [InlineData("IReadOnlyCollection")]
+        [InlineData("IReadOnlySet")]
+        [InlineData("IEnumerable")]
+        public async Task NestedSoleReadOnlyCollectionConstructorParameterOfStructIsBindable(string collectionType)
+        {
+            // The value-type counterpart of NestedSoleReadOnlyCollectionConstructorParameterIsBindable. A struct
+            // member is bound through a temporary (binding one in place would only mutate the copy its getter
+            // returns), and that path never instantiated a type without bindable members - so a struct whose only
+            // member is a read-only collection constructor parameter was left at its default. Covers a settable
+            // property, a nullable one, a constructor parameter, a nullable constructor parameter, and a settable
+            // property with a matching constructor parameter.
+            string source = $$"""
+                using Microsoft.Extensions.Configuration;
+                using System.Collections.Generic;
+
+                public class Program
+                {
+                    public static object? Result;
+
+                    public static void Main()
+                    {
+                        ConfigurationBuilder configurationBuilder = new();
+                        configurationBuilder.AddInMemoryCollection(new Dictionary<string, string?>
+                        {
+                            ["Nested:Values:0"] = "a",
+                            ["Nested:Values:1"] = "b",
+                        });
+                        IConfiguration config = configurationBuilder.Build();
+
+                        Holder holder = config.Get<Holder>();
+                        NullableHolder nullableHolder = config.Get<NullableHolder>();
+                        Outer outer = config.Get<Outer>();
+                        NullableOuter nullableOuter = config.Get<NullableOuter>();
+                        Rebindable rebindable = config.Get<Rebindable>();
+
+                        Rebindable existing = new(default);
+                        config.Bind(existing);
+
+                        Result = new object?[]
+                        {
+                            holder.Nested.Values,
+                            nullableHolder.Nested?.Values,
+                            outer.Nested.Values,
+                            nullableOuter.Nested?.Values,
+                            rebindable.Nested.Values,
+                            existing.Nested.Values,
+                        };
+                    }
+                }
+
+                public readonly record struct Inner({{collectionType}}<string> Values);
+
+                public class Holder
+                {
+                    public Inner Nested { get; set; }
+                }
+
+                public class NullableHolder
+                {
+                    public Inner? Nested { get; set; }
+                }
+
+                public record Outer(Inner Nested);
+
+                public record NullableOuter(Inner? Nested);
+
+                public class Rebindable
+                {
+                    public Rebindable(Inner nested) => Nested = nested;
+
+                    public Inner Nested { get; set; }
+                }
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source, assemblyReferences: GetAssemblyRefsWithAdditional(typeof(ConfigurationBuilder), typeof(List<>)));
+            Assert.NotNull(result.GeneratedSource);
+            Assert.Empty(result.Diagnostics);
+
+            var boundValues = (object?[])LoadAndInvokeMain(result.OutputCompilation, "Result")!;
+            Assert.All(boundValues, boundValue => Assert.Equal(new[] { "a", "b" }, (IEnumerable<string>?)boundValue));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        public async Task ConstructorBoundSetOnlyMemberIsNotBoundTwice()
+        {
+            // The member predicate also determines whether a property already populated through a matching
+            // constructor parameter is deferred behind boundThroughConstructor. A set-only property would otherwise
+            // assign a second newly-initialized instance after construction instead of taking the usual ??= path.
+            string source = """
+                using Microsoft.Extensions.Configuration;
+                using System.Collections.Generic;
+
+                public class Program
+                {
+                    public static object? Result;
+
+                    public static void Main()
+                    {
+                        ConfigurationBuilder configurationBuilder = new();
+                        configurationBuilder.AddInMemoryCollection(new Dictionary<string, string?>
+                        {
+                            ["Nested:Values:0"] = "a",
+                        });
+                        IConfiguration config = configurationBuilder.Build();
+
+                        Parent parent = config.Get<Parent>();
+                        Result = new object?[] { parent.SetterCalls, parent.NestedValue.Values };
+                    }
+                }
+
+                public record Inner(IReadOnlyList<string> Values);
+
+                public class Parent
+                {
+                    public Parent(Inner nested) => NestedValue = nested;
+
+                    public Inner Nested
+                    {
+                        set
+                        {
+                            NestedValue = value;
+                            SetterCalls++;
+                        }
+                    }
+
+                    public Inner NestedValue { get; private set; }
+
+                    public int SetterCalls { get; private set; }
+                }
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source, assemblyReferences: GetAssemblyRefsWithAdditional(typeof(ConfigurationBuilder), typeof(List<>)));
+            Assert.NotNull(result.GeneratedSource);
+            Assert.Empty(result.Diagnostics);
+
+            var values = (object?[])LoadAndInvokeMain(result.OutputCompilation, "Result")!;
+            Assert.Equal(0, values[0]);
+            Assert.Equal(new[] { "a" }, (IEnumerable<string>?)values[1]);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
@@ -709,6 +924,136 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             // The type is reachable only through a non-bindable property, so the generator must
             // not register or emit any binding code that references it.
             Assert.DoesNotContain("UnreachableChild", result.GeneratedSource.Value.SourceText.ToString());
+
+            AssertCanCreateAssemblyImage(result.OutputCompilation);
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        [InlineData("List<AbstractElement>")]
+        [InlineData("AbstractElement[]")]
+        [InlineData("HashSet<AbstractElement>")]
+        [InlineData("IReadOnlyList<AbstractElement>")]
+        [InlineData("List<List<AbstractElement>>")]
+        [InlineData("Dictionary<string, List<AbstractElement>>")]
+        public async Task CollectionOfNonInstantiableElementsDoesNotEmitEmptyBindCore(string collectionType)
+        {
+            string source = $$"""
+                using Microsoft.Extensions.Configuration;
+                using Microsoft.Extensions.DependencyInjection;
+                using System.Collections.Generic;
+
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        ConfigurationBuilder configurationBuilder = new();
+                        IConfiguration config = configurationBuilder.Build();
+                        ExampleOptions options = new();
+                        config.Bind(options);
+                        _ = config.Get<{{collectionType}}>();
+
+                        ServiceCollection services = new();
+                        services.Configure<{{collectionType}}>(config);
+                        services.Configure<ExampleOptions>(config);
+                    }
+                }
+
+                public class ExampleOptions
+                {
+                    public {{collectionType}} Elements { get; set; }
+
+                    public int Value { get; set; }
+                }
+
+                public abstract class AbstractElement
+                {
+                    public int Value { get; set; }
+                }
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(
+                source,
+                assemblyReferences: GetAssemblyRefsWithAdditional(
+                    typeof(ConfigurationBuilder),
+                    typeof(OptionsConfigurationServiceCollectionExtensions),
+                    typeof(ServiceCollection),
+                    typeof(IOptions<>),
+                    typeof(List<>)));
+            result.ValidateDiagnostics(ExpectedDiagnostics.FromGeneratorOnly);
+            Assert.NotNull(result.GeneratedSource);
+
+            string generated = result.GeneratedSource.Value.SourceText.ToString();
+            SyntaxNode root = await CSharpSyntaxTree.ParseText(result.GeneratedSource.Value.SourceText).GetRootAsync();
+
+            // Elements of the collection can never be created, so there is nothing to bind: the generator
+            // must not emit a BindCore method whose only content is an enumeration of the config children.
+            Assert.DoesNotContain(
+                root.DescendantNodes().OfType<ForEachStatementSyntax>(),
+                loop => loop.Statement is BlockSyntax { Statements.Count: 0 });
+
+            // The element type itself can never be created, so it needs no binding logic. Nested cases keep a
+            // BindCore for the outer collection because its elements are empty inner collections, which can be
+            // created; matching on the end of the name excludes those without pinning the exact emitted name.
+            MethodDeclarationSyntax[] bindCoreMethods = root.DescendantNodes()
+                .OfType<MethodDeclarationSyntax>()
+                .Where(method => method.Identifier.ValueText == "BindCore")
+                .ToArray();
+
+            Assert.NotEmpty(bindCoreMethods);
+            Assert.DoesNotContain(
+                bindCoreMethods,
+                method => method.ParameterList.Parameters.Any(
+                    parameter => parameter.Type!.ToString().EndsWith("AbstractElement", StringComparison.Ordinal)));
+
+            // The member is still recognized as bindable; it is assigned an empty collection.
+            Assert.Contains("instance.Elements", generated);
+
+            // Interception is preserved, and intercepted calls keep validating their arguments.
+            Assert.Equal(4, Regex.Matches(generated, @"\[InterceptsLocation\(").Count);
+            Assert.Contains("ArgumentNullException.ThrowIfNull(configuration);", generated);
+
+            AssertCanCreateAssemblyImage(result.OutputCompilation);
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        [InlineData("TypeWithNoMembers")]
+        [InlineData("System.Collections.Generic.List<AbstractElement>")]
+        public async Task ConfigureOfTypeWithNothingToBindGeneratesNoOpBinding(string type)
+        {
+            string source = $$"""
+                using Microsoft.Extensions.Configuration;
+                using Microsoft.Extensions.DependencyInjection;
+
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        ConfigurationBuilder configurationBuilder = new();
+                        IConfiguration config = configurationBuilder.Build();
+
+                        ServiceCollection services = new();
+                        services.Configure<{{type}}>(config);
+                    }
+                }
+
+                public class TypeWithNoMembers
+                {
+                }
+
+                public abstract class AbstractElement
+                {
+                    public int Value { get; set; }
+                }
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(
+                source,
+                assemblyReferences: GetAssemblyRefsWithAdditional(
+                    typeof(ConfigurationBuilder),
+                    typeof(OptionsConfigurationServiceCollectionExtensions),
+                    typeof(ServiceCollection),
+                    typeof(IOptions<>)));
+            Assert.NotNull(result.GeneratedSource);
 
             AssertCanCreateAssemblyImage(result.OutputCompilation);
         }

@@ -74,10 +74,10 @@ namespace ILCompiler.ObjectWriter
 
         private protected abstract void EmitDebugFunctionInfo(
             uint methodTypeIndex,
+            Utf8String methodDisplayName,
             Utf8String methodName,
             SymbolDefinition methodSymbol,
-            INodeWithDebugInfo debugNode,
-            bool hasSequencePoints);
+            INodeWithDebugInfo debugNode);
 
         private protected virtual void EmitDebugThunkInfo(
             Utf8String methodName,
@@ -123,9 +123,9 @@ namespace ILCompiler.ObjectWriter
                     {
                         if (node is IMethodNode methodNode)
                         {
-                            bool hasSequencePoints = debugNode.GetNativeSequencePoints().Any();
-                            uint methodTypeIndex = hasSequencePoints ? _userDefinedTypeDescriptor.GetMethodFunctionIdTypeIndex(methodNode.Method) : 0;
-                            EmitDebugFunctionInfo(methodTypeIndex, methodName, methodSymbol, debugNode, hasSequencePoints);
+                            uint methodTypeIndex = _userDefinedTypeDescriptor.GetMethodFunctionIdTypeIndex(methodNode.Method);
+                            Utf8String methodDisplayName = new Utf8String(CSharpTypeNameFormatter.Instance.FormatName(methodNode.Method));
+                            EmitDebugFunctionInfo(methodTypeIndex, methodDisplayName, methodName, methodSymbol, debugNode);
                         }
                         else
                         {

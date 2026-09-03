@@ -670,16 +670,6 @@ extern "C" void TheUMEntryPrestub(void)
     PORTABILITY_ASSERT("TheUMEntryPrestub is not implemented on wasm");
 }
 
-extern "C" void STDCALL VarargPInvokeStub(void)
-{
-    PORTABILITY_ASSERT("VarargPInvokeStub is not implemented on wasm");
-}
-
-extern "C" void STDCALL VarargPInvokeStub_RetBuffArg(void)
-{
-    PORTABILITY_ASSERT("VarargPInvokeStub_RetBuffArg is not implemented on wasm");
-}
-
 extern "C" PCODE CID_VirtualOpenDelegateDispatch(TransitionBlock * pTransitionBlock)
 {
     PORTABILITY_ASSERT("CID_VirtualOpenDelegateDispatch is not implemented on wasm");

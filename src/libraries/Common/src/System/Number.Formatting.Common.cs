@@ -842,7 +842,14 @@ namespace System
                                 break;
                             }
                             src++;
-                            AppendUnknownChar(ref vlb, quoted);
+                            if (char.IsHighSurrogate(quoted) && src < format.Length && char.IsLowSurrogate(format[src]))
+                            {
+                                AppendSurrogatePair(ref vlb, quoted, format[src++]);
+                            }
+                            else
+                            {
+                                AppendUnknownChar(ref vlb, quoted);
+                            }
                         }
 
                         if (src < format.Length && format[src] != 0)
@@ -854,7 +861,15 @@ namespace System
                     case '\\':
                         if (src < format.Length && format[src] != 0)
                         {
-                            AppendUnknownChar(ref vlb, format[src++]);
+                            char literal = format[src++];
+                            if (char.IsHighSurrogate(literal) && src < format.Length && char.IsLowSurrogate(format[src]))
+                            {
+                                AppendSurrogatePair(ref vlb, literal, format[src++]);
+                            }
+                            else
+                            {
+                                AppendUnknownChar(ref vlb, literal);
+                            }
                         }
                         break;
 
@@ -905,12 +920,12 @@ namespace System
                                 {
                                     if (format[src] is '+' or '-')
                                     {
-                                        AppendUnknownChar(ref vlb, format[src++]);
+                                        vlb.Append(TChar.CastFrom(format[src++]));
                                     }
 
                                     while (src < format.Length && format[src] == '0')
                                     {
-                                        AppendUnknownChar(ref vlb, format[src++]);
+                                        vlb.Append(TChar.CastFrom(format[src++]));
                                     }
                                 }
                             }
@@ -918,7 +933,14 @@ namespace System
                         }
 
                     default:
-                        AppendUnknownChar(ref vlb, ch);
+                        if (char.IsHighSurrogate(ch) && src < format.Length && char.IsLowSurrogate(format[src]))
+                        {
+                            AppendSurrogatePair(ref vlb, ch, format[src++]);
+                        }
+                        else
+                        {
+                            AppendUnknownChar(ref vlb, ch);
+                        }
                         break;
                 }
             }
@@ -1123,8 +1145,26 @@ namespace System
             [MethodImpl(MethodImplOptions.NoInlining)]
             static void AppendNonAsciiBytes(ref ValueListBuilder<TChar> vlb, char ch)
             {
-                var r = new Rune(ch);
-                r.EncodeToUtf8(Unsafe.BitCast<Span<TChar>, Span<byte>>(vlb.AppendSpan(r.Utf8SequenceLength)));
+                Rune rune = Rune.TryCreate(ch, out Rune result) ? result : Rune.ReplacementChar;
+                rune.EncodeToUtf8(MemoryMarshal.AsBytes(vlb.AppendSpan(rune.Utf8SequenceLength)));
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void AppendSurrogatePair<TChar>(ref ValueListBuilder<TChar> vlb, char highSurrogate, char lowSurrogate) where TChar : unmanaged, IUtfChar<TChar>
+        {
+            Debug.Assert(sizeof(TChar) is sizeof(char) or sizeof(byte));
+            Debug.Assert(char.IsSurrogatePair(highSurrogate, lowSurrogate));
+
+            if (sizeof(TChar) == sizeof(char))
+            {
+                vlb.Append(TChar.CastFrom(highSurrogate));
+                vlb.Append(TChar.CastFrom(lowSurrogate));
+            }
+            else
+            {
+                Rune rune = new(highSurrogate, lowSurrogate);
+                rune.EncodeToUtf8(MemoryMarshal.AsBytes(vlb.AppendSpan(rune.Utf8SequenceLength)));
             }
         }
 

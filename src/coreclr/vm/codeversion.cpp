@@ -85,7 +85,7 @@ NativeCodeVersionNode::NativeCodeVersionNode(
 PCODE NativeCodeVersionNode::GetNativeCode() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    return m_pNativeCode;
+    return VolatileLoad(&m_pNativeCode);
 }
 
 ReJITID NativeCodeVersionNode::GetILVersionId() const
@@ -1288,7 +1288,7 @@ NativeCodeVersionId MethodDescVersioningState::AllocateVersionId()
 PTR_NativeCodeVersionNode MethodDescVersioningState::GetFirstVersionNode() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    return m_pFirstVersionNode;
+    return VolatileLoadWithoutBarrier(&m_pFirstVersionNode);
 }
 
 BOOL MethodDescVersioningState::IsDefaultVersionActiveChild() const
@@ -1363,7 +1363,7 @@ ILCodeVersion ILCodeVersioningState::GetActiveVersion() const
 PTR_ILCodeVersionNode ILCodeVersioningState::GetFirstVersionNode() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    return m_pFirstVersionNode;
+    return VolatileLoadWithoutBarrier(&m_pFirstVersionNode);
 }
 
 #ifndef DACCESS_COMPILE
@@ -1524,7 +1524,6 @@ ILCodeVersion CodeVersionManager::GetILCodeVersion(PTR_MethodDesc pMethod, ReJIT
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-#ifdef FEATURE_REJIT
     ILCodeVersionCollection collection = GetILCodeVersions(pMethod);
     for (ILCodeVersionIterator cur = collection.Begin(), end = collection.End(); cur != end; cur++)
     {
@@ -1534,10 +1533,6 @@ ILCodeVersion CodeVersionManager::GetILCodeVersion(PTR_MethodDesc pMethod, ReJIT
         }
     }
     return ILCodeVersion();
-#else // FEATURE_REJIT
-    _ASSERTE(rejitId == 0);
-    return ILCodeVersion(dac_cast<PTR_Module>(pMethod->GetModule()), pMethod->GetMemberDef());
-#endif // FEATURE_REJIT
 }
 
 NativeCodeVersionCollection CodeVersionManager::GetNativeCodeVersions(PTR_MethodDesc pMethod) const
@@ -1553,7 +1548,14 @@ NativeCodeVersion CodeVersionManager::GetNativeCodeVersion(PTR_MethodDesc pMetho
     NativeCodeVersionCollection nativeCodeVersions = GetNativeCodeVersions(pMethod);
     for (NativeCodeVersionIterator cur = nativeCodeVersions.Begin(), end = nativeCodeVersions.End(); cur != end; cur++)
     {
+#ifndef DACCESS_COMPILE
+        PCODE nativeCode = cur->IsDefaultVersion()
+            ? pMethod->GetNativeCodeVolatile()
+            : cur->GetNativeCode();
+        if (nativeCode == codeStartAddress)
+#else
         if (cur->GetNativeCode() == codeStartAddress)
+#endif
         {
             return *cur;
         }
