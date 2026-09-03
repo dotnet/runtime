@@ -4,6 +4,7 @@
 namespace Runtime_133209;
 
 using System;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using Xunit;
 
@@ -152,9 +153,21 @@ public class Runtime_133209
         }
     }
 
+    // TYP_SIMD12 (Vector3) load/store re-materialize the address for the trailing lane access.
+    [Fact]
+    public static unsafe void Vector3_WithNarrowedAddress()
+    {
+        Vector3 value = default;
+        long address = (long)(nint)(&value);
+        Vector3 expected = new Vector3(1.5f, 2.5f, 3.5f);
+
+        StoreVector3ThroughNarrowedAddress(address, expected);
+        Assert.Equal(expected, value);
+        Assert.Equal(expected, LoadVector3ThroughNarrowedAddress(address));
+    }
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static int Divide(int a, long b) => a / (int)b;
-
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static int Remainder(int a, long b) => a % (int)b;
 
@@ -205,4 +218,11 @@ public class Runtime_133209
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static unsafe void InitBlockThroughNarrowedAddress(long destination, byte value, uint byteCount) =>
         Unsafe.InitBlock((void*)(nint)destination, value, byteCount);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static unsafe Vector3 LoadVector3ThroughNarrowedAddress(long address) => *(Vector3*)(nint)address;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static unsafe void StoreVector3ThroughNarrowedAddress(long address, Vector3 value) =>
+        *(Vector3*)(nint)address = value;
 }

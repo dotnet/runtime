@@ -2945,7 +2945,7 @@ void CodeGen::genLoadIndTypeSimd12(GenTreeIndir* tree)
 {
     emitter* emit = GetEmitter();
 
-    emit->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetMultiUseOperandReg(tree->Addr())));
+    genEmitMultiUseOperandGet(tree->Addr());
     emit->emitIns_I(INS_v128_load64_zero, EA_8BYTE, 0);
     emit->emitIns_MemargLane(INS_v128_load32_lane, EA_4BYTE, 8, 2);
 }
@@ -2987,9 +2987,9 @@ void CodeGen::genStoreIndTypeSimd12(GenTreeStoreInd* tree)
     }
     else
     {
-        emit->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetMultiUseOperandReg(addr))); // [addr]
-        emit->emitIns_I(INS_local_get, EA_16BYTE, WasmRegToIndex(valReg));                       // [addr, value]
-        emit->emitIns_MemargLane(INS_v128_store32_lane, EA_4BYTE, 8, 2);                         // []
+        genEmitMultiUseOperandGet(addr);                                                          // [addr]
+        emit->emitIns_I(INS_local_get, EA_16BYTE, WasmRegToIndex(valReg));                        // [addr, value]
+        emit->emitIns_MemargLane(INS_v128_store32_lane, EA_4BYTE, 8, 2);                          // []
     }
 }
 
