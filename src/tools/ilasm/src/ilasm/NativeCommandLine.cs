@@ -55,21 +55,13 @@ internal static class NativeCommandLine
     private static string[] Normalize(string[] args, IlasmRootCommand command, bool allowSlashOptions)
     {
         HashSet<string> optionsWithValues = new(StringComparer.Ordinal);
-        HashSet<string> modernOptionsWithSeparateValues = new(StringComparer.Ordinal);
         Dictionary<string, Option> modernShortOptions = new(StringComparer.Ordinal);
         foreach (Option option in command.Options)
         {
-            if (option.Arity.MinimumNumberOfValues > 0)
-            {
-                optionsWithValues.Add(option.Name);
-                modernOptionsWithSeparateValues.Add(option.Name);
-                modernOptionsWithSeparateValues.UnionWith(option.Aliases);
-            }
-
-            AddModernShortOption(option.Name, option);
+            AddModernOption(option.Name, option);
             foreach (string alias in option.Aliases)
             {
-                AddModernShortOption(alias, option);
+                AddModernOption(alias, option);
             }
         }
 
@@ -93,7 +85,7 @@ internal static class NativeCommandLine
                 continue;
             }
 
-            if (modernOptionsWithSeparateValues.Contains(arg))
+            if (optionsWithValues.Contains(arg))
             {
                 result.Add(arg);
                 preserveNextArgument = true;
@@ -205,6 +197,21 @@ internal static class NativeCommandLine
         }
 
         return result.ToArray();
+
+        void AddModernOption(string name, Option option)
+        {
+            if (!name.StartsWith("-", StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            if (option.Arity.MinimumNumberOfValues > 0)
+            {
+                optionsWithValues.Add(name);
+            }
+
+            AddModernShortOption(name, option);
+        }
 
         void AddModernShortOption(string name, Option option)
         {
