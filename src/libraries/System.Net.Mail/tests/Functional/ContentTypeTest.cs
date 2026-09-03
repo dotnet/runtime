@@ -173,7 +173,7 @@ namespace System.Net.Mime.Tests
         [Theory]
         // A valid RFC 2047 encoded-word followed by attacker-controlled junk: the prefix
         // alone must not put the value on the pass-through-unquoted path.
-        [InlineData("=?utf-8?Q?foo?=?evil\"; filename=\"foo.txt")]
+        [InlineData("=?utf-8?Q?foo?=?bar\"; filename=\"foo.txt")]
         [InlineData("=?utf-8?B?Zm9v?=\"; filename=\"foo.txt")]
         // A would-be encoded-word containing an unescaped quote in the data section.
         [InlineData("=?utf-8?Q?foo\"; filename=\"foo.txt?=")]
