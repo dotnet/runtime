@@ -737,8 +737,8 @@ static int32_t EvpPKeyGetEcKeyParameters(
 
     ERR_clear_error();
 
-    // Some providers, like the PKCS#11 provider, only support exporting the public key through the `export` KEYMGMT
-    // API, not the `get_params` KEYMGMT APIs. like the PKCS#11 provider here:
+    // Some providers (e.g., the PKCS#11 provider) only support exporting the public key through the `export` KEYMGMT
+    // API, not the `get_params` KEYMGMT APIs. See:
     // https://github.com/openssl-projects/pkcs11-provider/blame/c7a5c8b62a0ff012b16574f01651254ef7e664ee/src/kmgmt/ec.c#L548
     // If the `get_params` KEYMGMT surface does not work, use the `export` KEYMGMT API, which some providers use for hydrating their internal
     // representation. https://github.com/openssl-projects/pkcs11-provider/blob/c7a5c8b62a0ff012b16574f01651254ef7e664ee/src/kmgmt/common.c#L496-L498
