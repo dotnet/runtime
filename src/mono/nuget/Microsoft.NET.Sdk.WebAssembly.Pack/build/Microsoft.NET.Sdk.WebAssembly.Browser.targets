@@ -961,7 +961,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     </PropertyGroup>
   </Target>
 
-  <!-- Publish starts here -->
+  <!-- Publish targets and output directory messages start here -->
 
   <!-- Make sure that ResolveAssemblyReferences runs early enough to ensure satellite assemblies are populated in the ResolvedFilesToPublish -->
   <Target Name="_WasmPrepareForPublish"
