@@ -2020,49 +2020,72 @@ namespace System.Text
             {
                 return true;
             }
+
+            int thisChunkLength = m_ChunkLength;
+            int sbChunkLength = sb.m_ChunkLength;
+
+            if (thisChunkLength > 0 && sbChunkLength > 0)
+            {
+                if (m_ChunkChars[thisChunkLength - 1] != sb.m_ChunkChars[sbChunkLength - 1])
+                {
+                    return false;
+                }
+
+                if (m_ChunkPrevious == null && sb.m_ChunkPrevious == null)
+                {
+                    return m_ChunkChars.AsSpan(0, thisChunkLength).SequenceEqual(sb.m_ChunkChars.AsSpan(0, sbChunkLength));
+                }
+            }
+
+            return EqualsCore(sb);
+        }
+
+        private bool EqualsCore(StringBuilder sb)
+        {
             StringBuilder? thisChunk = this;
-            int thisChunkIndex = thisChunk.m_ChunkLength;
             StringBuilder? sbChunk = sb;
-            int sbChunkIndex = sbChunk.m_ChunkLength;
+            int thisChunkLength = thisChunk.m_ChunkLength;
+            int sbChunkLength = sbChunk!.m_ChunkLength;
+
             while (true)
             {
-                --thisChunkIndex;
-                --sbChunkIndex;
-
-                while (thisChunkIndex < 0)
+                while (thisChunkLength == 0)
                 {
                     thisChunk = thisChunk.m_ChunkPrevious;
-                    if (thisChunk == null)
+                    if (thisChunk is null)
                     {
                         break;
                     }
-                    thisChunkIndex = thisChunk.m_ChunkLength + thisChunkIndex;
+                    thisChunkLength = thisChunk.m_ChunkLength;
                 }
 
-                while (sbChunkIndex < 0)
+                while (sbChunkLength == 0)
                 {
                     sbChunk = sbChunk.m_ChunkPrevious;
-                    if (sbChunk == null)
+                    if (sbChunk is null)
                     {
                         break;
                     }
-                    sbChunkIndex = sbChunk.m_ChunkLength + sbChunkIndex;
+                    sbChunkLength = sbChunk.m_ChunkLength;
                 }
 
-                if (thisChunkIndex < 0)
+                if (thisChunk is null)
                 {
-                    return sbChunkIndex < 0;
+                    return sbChunk is null;
                 }
-                if (sbChunkIndex < 0)
+                if (sbChunk is null)
                 {
                     return false;
                 }
 
-                Debug.Assert(thisChunk != null && sbChunk != null);
-                if (thisChunk.m_ChunkChars[thisChunkIndex] != sbChunk.m_ChunkChars[sbChunkIndex])
+                int length = Math.Min(thisChunkLength, sbChunkLength);
+                if (!thisChunk.m_ChunkChars.AsSpan(thisChunkLength - length, length)
+                    .SequenceEqual(sbChunk.m_ChunkChars.AsSpan(sbChunkLength - length, length)))
                 {
                     return false;
                 }
+                thisChunkLength -= length;
+                sbChunkLength -= length;
             }
         }
 
