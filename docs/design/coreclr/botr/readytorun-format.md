@@ -1162,15 +1162,15 @@ prefix to distinguish thunk categories:
 | `I` | Portable entrypoint-to-interpreter thunk |
 | `V` | Virtual dispatch thunk |
 
-A `V` thunk receives a virtual-dispatch portable entrypoint as its final argument. On
-Wasm32, that entrypoint consists of four 32-bit fields: a function-table index, the RVA of
-the dispatch import cell, the delay-load thunk's function-table index, and the `V` thunk's
-function-table index. The first call uses the signature-specific delay-load thunk. The
-runtime resolves the virtual slot, packs the two vtable offsets into the second word of the
-dispatch import cell, and then changes the first PEP field to the `V` thunk. Subsequent calls
-load the target method's portable entrypoint from the receiver's method table and forward
-the call using the same lowered Wasm signature. If that target entrypoint has not yet been
-prepared for R2R, the `V` thunk falls back to the retained delay-load thunk.
+A `V` thunk receives a dynamically allocated virtual-dispatch portable entrypoint as its final
+argument. The first call uses the signature-specific external-method thunk. When the runtime
+resolves a class virtual call, it dynamically looks up the corresponding `V` thunk and publishes
+a new portable entrypoint containing that thunk, the two packed vtable offsets, and the original
+portable entrypoint. Subsequent calls load the target method's portable entrypoint from the
+receiver's method table and forward the call using the same lowered Wasm signature. If that
+portable entrypoint does not yet have an actual code target, the `V` thunk redispatches through
+the original portable entrypoint so the runtime can resolve the receiver and prepare its target
+portable entrypoint for calls from R2R code.
 
 **Examples**:
 

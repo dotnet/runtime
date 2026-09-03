@@ -78,35 +78,22 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             int portableEntrypointLocalIndex = _typeNode.Type.Params.Types.Length - 1;
             int targetPortableEntrypointLocalIndex = _typeNode.Type.Params.Types.Length;
-            int dispatchCellLocalIndex = targetPortableEntrypointLocalIndex + 1;
-            int targetCodeLocalIndex = dispatchCellLocalIndex + 1;
+            int targetCodeLocalIndex = targetPortableEntrypointLocalIndex + 1;
             const int ThisLocalIndex = 1;
-            const ulong RelocOffsetField = 4;
-            const ulong DelayLoadTargetField = 8;
             const ulong PackedDispatchOffsetsField = 4;
+            const ulong InitialEntryField = 8;
 
             List<WasmExpr> expressions = new List<WasmExpr>();
 
-            // dispatchCell = imageBase + pep->relocOffset
-            expressions.Add(Global.Get(WebCilObjectWriter.ImageBaseGlobalIndex));
-            expressions.Add(Local.Get(portableEntrypointLocalIndex));
-            expressions.Add(I32.Load(RelocOffsetField));
-            expressions.Add(I32.Add);
-            expressions.Add(Local.Set(dispatchCellLocalIndex));
-
-            // targetPEP = *(*(*(this) + dispatchCell->offsetOfIndirection) + dispatchCell->offsetAfterIndirection)
+            // targetPEP = *(*(*(this) + pep->offsetOfIndirection) + pep->offsetAfterIndirection)
             expressions.Add(Local.Get(ThisLocalIndex));
             expressions.Add(I32.Load(0));
-            expressions.Add(Local.Get(dispatchCellLocalIndex));
-            expressions.Add(I32.Load(PackedDispatchOffsetsField));
-            expressions.Add(I32.Const(ushort.MaxValue));
-            expressions.Add(I32.And);
+            expressions.Add(Local.Get(portableEntrypointLocalIndex));
+            expressions.Add(I32.Load16_u(PackedDispatchOffsetsField));
             expressions.Add(I32.Add);
             expressions.Add(I32.Load(0));
-            expressions.Add(Local.Get(dispatchCellLocalIndex));
-            expressions.Add(I32.Load(PackedDispatchOffsetsField));
-            expressions.Add(I32.Const(16));
-            expressions.Add(I32.Shr_u);
+            expressions.Add(Local.Get(portableEntrypointLocalIndex));
+            expressions.Add(I32.Load16_u(PackedDispatchOffsetsField + sizeof(ushort)));
             expressions.Add(I32.Add);
             expressions.Add(I32.Load(0));
             expressions.Add(Local.Set(targetPortableEntrypointLocalIndex));
@@ -115,19 +102,16 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             expressions.Add(I32.Load(0));
             expressions.Add(Local.Set(targetCodeLocalIndex));
 
-            // A vtable slot for another receiver type might not have been prepared for R2R yet.
+            // Redispatch through the original entrypoint if this receiver's target is not yet callable from R2R.
             expressions.Add(Local.Get(targetCodeLocalIndex));
             expressions.Add(I32.Eqz);
             expressions.Add(Block.If(WasmBlockType.Empty));
-            for (int i = 0; i < portableEntrypointLocalIndex; i++)
-            {
-                expressions.Add(Local.Get(i));
-            }
             expressions.Add(Local.Get(portableEntrypointLocalIndex));
-            expressions.Add(Local.Get(portableEntrypointLocalIndex));
-            expressions.Add(I32.Load(DelayLoadTargetField));
-            expressions.Add(ControlFlow.CallIndirect(_typeNode, 0));
-            expressions.Add(ControlFlow.Return);
+            expressions.Add(I32.Load(InitialEntryField));
+            expressions.Add(Local.Set(targetPortableEntrypointLocalIndex));
+            expressions.Add(Local.Get(targetPortableEntrypointLocalIndex));
+            expressions.Add(I32.Load(0));
+            expressions.Add(Local.Set(targetCodeLocalIndex));
             expressions.Add(Block.End);
 
             for (int i = 0; i < portableEntrypointLocalIndex; i++)
@@ -140,7 +124,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             instructionEncoder.FunctionBody = new WasmFunctionBody(
                 _typeNode.Type,
-                new[] { WasmValueType.I32, WasmValueType.I32, WasmValueType.I32 },
+                new[] { WasmValueType.I32, WasmValueType.I32 },
                 expressions.ToArray());
         }
 

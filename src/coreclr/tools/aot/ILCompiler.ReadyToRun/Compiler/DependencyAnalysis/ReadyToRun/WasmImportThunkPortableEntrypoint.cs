@@ -6,7 +6,6 @@ using Internal.ReadyToRunConstants;
 using Internal.Text;
 using Internal.JitInterface;
 using Internal.TypeSystem;
-using System;
 using System.Diagnostics;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
@@ -96,22 +95,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 WasmLowering.LoweringFlags flags = WasmLowering.GetLoweringFlags(method) & ~WasmLowering.LoweringFlags.IsUnmanagedCallersOnly;
                 wasmSignature = WasmLowering.GetSignature(signature, flags);
             }
-            if (UseVirtualCall)
+            builder.EmitReloc(factory.WasmImportThunk(wasmSignature, HelperId, _import.Table, UseVirtualCall, UseJumpableStub), tableIndexPointerRelocType);
+            builder.EmitReloc(_import, RelocType.IMAGE_REL_BASED_ADDR32NB);
+            if (factory.Target.PointerSize == 8)
             {
-                Debug.Assert(factory.Target.PointerSize == 4);
-                builder.EmitReloc(factory.WasmImportThunk(wasmSignature, HelperId, _import.Table, UseVirtualCall, UseJumpableStub), tableIndexPointerRelocType);
-                builder.EmitReloc(_import, RelocType.IMAGE_REL_BASED_ADDR32NB);
-                builder.EmitReloc(factory.WasmImportThunk(wasmSignature, HelperId, _import.Table, UseVirtualCall, UseJumpableStub), tableIndexPointerRelocType);
-                builder.EmitReloc(factory.WasmVirtualDispatchThunk(wasmSignature), tableIndexPointerRelocType);
-            }
-            else
-            {
-                builder.EmitReloc(factory.WasmImportThunk(wasmSignature, HelperId, _import.Table, UseVirtualCall, UseJumpableStub), tableIndexPointerRelocType);
-                builder.EmitReloc(_import, RelocType.IMAGE_REL_BASED_ADDR32NB);
-                if (factory.Target.PointerSize == 8)
-                {
-                    builder.EmitUInt(0); // Padding to make the structure the same size on 32 and 64 bit
-                }
+                builder.EmitUInt(0); // Padding to make the structure the same size on 32 and 64 bit
             }
 
             return builder.ToObjectData();

@@ -404,21 +404,7 @@ extern "C" void STDMETHODCALLTYPE JIT_ProfilerEnterLeaveTailcallStub(UINT_PTR Pr
 
 extern "C" PCODE STDCALL DelayLoad_MethodCallImpl(TransitionBlock* pTransitionBlock, READYTORUN_IMPORT_THUNK_PORTABLE_ENTRYPOINT* pImportThunkEntry, uint8_t *moduleBase, int32_t rvaOfModuleFixup)
 {
-    const int32_t VirtualDispatchFlag = INT32_MIN;
-    bool virtualDispatch = (rvaOfModuleFixup & VirtualDispatchFlag) != 0;
-    rvaOfModuleFixup &= ~VirtualDispatchFlag;
-
     Module** ppModule = (Module**)(moduleBase + rvaOfModuleFixup);
-    if (virtualDispatch)
-    {
-        return ExternalMethodFixupWorkerForVirtualDispatch(
-            pTransitionBlock,
-            (TADDR)(moduleBase + pImportThunkEntry->RelocOffset),
-            -1,
-            *ppModule,
-            reinterpret_cast<READYTORUN_VIRTUAL_DISPATCH_PORTABLE_ENTRYPOINT*>(pImportThunkEntry));
-    }
-
     return ExternalMethodFixupWorker(pTransitionBlock, (TADDR)(moduleBase + pImportThunkEntry->RelocOffset), -1, *ppModule);
 }
 
@@ -1517,7 +1503,7 @@ namespace
         return thunk;
     }
 
-    void* ComputePortableEntryPointToInterpreterThunk(MetaSig& sig)
+    void* ComputePortableEntryPointThunk(MetaSig& sig, char prefix)
     {
         CONTRACTL
         {
@@ -1542,7 +1528,7 @@ namespace
         char fixedBuffer[64];
         char* keyBuffer = fixedBuffer;
         uint32_t keyBufferLen = sizeof(fixedBuffer);
-        uint32_t needed = GetSignatureKey(sig, 'I', keyBuffer, keyBufferLen);
+        uint32_t needed = GetSignatureKey(sig, prefix, keyBuffer, keyBufferLen);
         if (needed == UINT32_MAX)
             return NULL;
         if (needed >= keyBufferLen)
@@ -1550,7 +1536,7 @@ namespace
             keyBufferLen = needed + 1;
             keyBuffer = (char*)alloca(keyBufferLen);
             sig.Reset();
-            needed = GetSignatureKey(sig, 'I', keyBuffer, keyBufferLen);
+            needed = GetSignatureKey(sig, prefix, keyBuffer, keyBufferLen);
             if (needed == UINT32_MAX || needed >= keyBufferLen)
                 return NULL;
         }
@@ -1813,10 +1799,29 @@ void* GetPortableEntryPointToInterpreterThunk(MethodDesc *pMD)
     }
     else
     {
-        thunk = ComputePortableEntryPointToInterpreterThunk(sig);
+        thunk = ComputePortableEntryPointThunk(sig, 'I');
     }
 
     return thunk;
+}
+
+void* GetVirtualDispatchThunk(MethodDesc *pMD)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    if (pMD->ContainsGenericVariables())
+    {
+        return NULL;
+    }
+
+    MetaSig sig(pMD);
+    return ComputePortableEntryPointThunk(sig, 'V');
 }
 
 void* GetUnmanagedCallersOnlyThunk(MethodDesc* pMD)

@@ -31,6 +31,7 @@
 
 #ifdef TARGET_WASM
 #include "wasmasynccontinuation.h"
+#include "wasm/helpers.hpp"
 #endif
 
 #ifdef FEATURE_COMINTEROP
@@ -2728,12 +2729,11 @@ static PCODE PatchNonVirtualExternalMethod(MethodDesc * pMD, PCODE pCode, PTR_RE
 // Some methods also have one-time prestubs we defer the patching until
 // we have the final stable method entry point.
 //
-static PCODE ExternalMethodFixupWorkerWorker(
+EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(
     TransitionBlock * pTransitionBlock,
     TADDR pIndirection,
     DWORD sectionIndex,
-    Module * pModule,
-    READYTORUN_VIRTUAL_DISPATCH_PORTABLE_ENTRYPOINT * pVirtualDispatchEntry)
+    Module * pModule)
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -2762,6 +2762,7 @@ static PCODE ExternalMethodFixupWorkerWorker(
     PCODE         pCode   = (PCODE)NULL;
 #ifdef TARGET_WASM
     void* virtualDispatchTarget = nullptr;
+    DWORD packedVirtualDispatchOffsets = 0;
 #endif // TARGET_WASM
 
     PreserveLastErrorHolder preserveLastError;
@@ -2972,13 +2973,12 @@ static PCODE ExternalMethodFixupWorkerWorker(
             }
 
 #if defined(FEATURE_VIRTUAL_STUB_DISPATCH) && defined(FEATURE_CACHED_INTERFACE_DISPATCH)
-            if (UseCachedInterfaceDispatch() || pVirtualDispatchEntry != nullptr)
+            if (UseCachedInterfaceDispatch())
 #endif
 #if defined(FEATURE_CACHED_INTERFACE_DISPATCH)
             {
-                if (pVirtualDispatchEntry == nullptr &&
-                    ALIGN_UP(rva, sizeof(TADDR) * 2) == rva &&
-                    pImportSection->EntrySize == sizeof(TADDR) * 2)
+#ifndef TARGET_WASM
+                if (ALIGN_UP(rva, sizeof(TADDR) * 2) == rva && pImportSection->EntrySize == sizeof(TADDR) * 2)
                 {
                     // The entry is aligned and the size is correct, so we can use the cached interface dispatch mechanism
                     // to speed up further uses of this interface dispatch slot
@@ -3007,6 +3007,7 @@ static PCODE ExternalMethodFixupWorkerWorker(
                     }
 #endif
                 }
+#endif // !TARGET_WASM
 
                 GCX_COOP_THREAD_EXISTS(CURRENT_THREAD);
 
@@ -3029,36 +3030,36 @@ static PCODE ExternalMethodFixupWorkerWorker(
 #endif
 #ifdef FEATURE_VIRTUAL_STUB_DISPATCH
             {
-#ifdef TARGET_WASM
-                if (pVirtualDispatchEntry != nullptr)
+                DispatchToken token;
+                if (pMT->IsInterface())
                 {
+                    token = pMT->GetLoaderAllocator()->GetDispatchToken(pMT->GetTypeID(), slot);
+
+                    StubCallSite callSite(pIndirection, pEMFrame->GetReturnAddress());
                     GCX_COOP_THREAD_EXISTS(CURRENT_THREAD);
-                    pCode = (*protectedObj)->GetMethodTable()->GetRestoredSlot(slot);
+                    pCode = pMgr->ResolveWorker(&callSite, protectedObj, token, STUB_CODE_BLOCK_VSD_LOOKUP_STUB);
                 }
                 else
-#endif // TARGET_WASM
                 {
-                    DispatchToken token;
-                    if (pMT->IsInterface())
-                    {
-                        token = pMT->GetLoaderAllocator()->GetDispatchToken(pMT->GetTypeID(), slot);
-
-                        StubCallSite callSite(pIndirection, pEMFrame->GetReturnAddress());
-                        GCX_COOP_THREAD_EXISTS(CURRENT_THREAD);
-                        pCode = pMgr->ResolveWorker(&callSite, protectedObj, token, STUB_CODE_BLOCK_VSD_LOOKUP_STUB);
-                    }
-                    else
-                    {
-                        pCode = pMgr->GetVTableCallStub(slot);
-                        *(TADDR *)pIndirection = pCode;
-                    }
+#ifdef TARGET_WASM
+                    GCX_COOP_THREAD_EXISTS(CURRENT_THREAD);
+                    pCode = (*protectedObj)->GetMethodTable()->GetRestoredSlot(slot);
+#else
+                    pCode = pMgr->GetVTableCallStub(slot);
+                    *(TADDR *)pIndirection = pCode;
+#endif // TARGET_WASM
                 }
             }
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
 #ifdef TARGET_WASM
-            if (pVirtualDispatchEntry != nullptr && !pMT->IsInterface())
+            if (!pMT->IsInterface())
             {
-                virtualDispatchTarget = pVirtualDispatchEntry->VirtualDispatchTarget;
+                virtualDispatchTarget = GetVirtualDispatchThunk(pMD);
+                if (virtualDispatchTarget == nullptr)
+                {
+                    PORTABILITY_ASSERT("ExternalMethodFixupWorker: missing Wasm virtual dispatch thunk");
+                }
+
                 DWORD offsetOfIndirection =
                     MethodTable::GetVtableOffset() +
                     MethodTable::GetIndexOfVtableIndirection(slot) * TARGET_POINTER_SIZE;
@@ -3066,7 +3067,7 @@ static PCODE ExternalMethodFixupWorkerWorker(
                     MethodTable::GetIndexAfterVtableIndirection(slot) * TARGET_POINTER_SIZE;
                 _ASSERTE(offsetOfIndirection <= UINT16_MAX);
                 _ASSERTE(offsetAfterIndirection <= UINT16_MAX);
-                reinterpret_cast<DWORD*>(pIndirection)[1] =
+                packedVirtualDispatchOffsets =
                     offsetOfIndirection | (offsetAfterIndirection << 16);
             }
 #endif // TARGET_WASM
@@ -3116,7 +3117,34 @@ static PCODE ExternalMethodFixupWorkerWorker(
 #ifdef TARGET_WASM
     if (virtualDispatchTarget != nullptr)
     {
-        VolatileStore(&pVirtualDispatchEntry->Target, virtualDispatchTarget);
+        static_assert(offsetof(READYTORUN_VIRTUAL_DISPATCH_PORTABLE_ENTRYPOINT, Target) == 0);
+        static_assert(offsetof(READYTORUN_VIRTUAL_DISPATCH_PORTABLE_ENTRYPOINT, PackedDispatchOffsets) == 4);
+        static_assert(offsetof(READYTORUN_VIRTUAL_DISPATCH_PORTABLE_ENTRYPOINT, InitialEntry) == 8);
+
+        READYTORUN_IMPORT_THUNK_PORTABLE_ENTRYPOINT** ppImportEntry =
+            reinterpret_cast<READYTORUN_IMPORT_THUNK_PORTABLE_ENTRYPOINT**>(pIndirection);
+        READYTORUN_IMPORT_THUNK_PORTABLE_ENTRYPOINT* pCurrentEntry = VolatileLoad(ppImportEntry);
+
+        if (pCurrentEntry->Target != virtualDispatchTarget)
+        {
+            AllocMemHolder<READYTORUN_VIRTUAL_DISPATCH_PORTABLE_ENTRYPOINT> pNewEntry(
+                pModule->GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(
+                    S_SIZE_T(sizeof(READYTORUN_VIRTUAL_DISPATCH_PORTABLE_ENTRYPOINT))));
+            pNewEntry->Target = virtualDispatchTarget;
+            pNewEntry->PackedDispatchOffsets = packedVirtualDispatchOffsets;
+            pNewEntry->InitialEntry = pCurrentEntry;
+
+            READYTORUN_IMPORT_THUNK_PORTABLE_ENTRYPOINT* pPublishedEntry =
+                InterlockedCompareExchangeT(
+                    ppImportEntry,
+                    reinterpret_cast<READYTORUN_IMPORT_THUNK_PORTABLE_ENTRYPOINT*>(
+                        static_cast<READYTORUN_VIRTUAL_DISPATCH_PORTABLE_ENTRYPOINT*>(pNewEntry)),
+                    pCurrentEntry);
+            if (pPublishedEntry == pCurrentEntry)
+            {
+                pNewEntry.SuppressRelease();
+            }
+        }
     }
 #endif // TARGET_WASM
 #endif
@@ -3137,24 +3165,6 @@ static PCODE ExternalMethodFixupWorkerWorker(
 
     return pCode;
 }
-
-EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBlock, TADDR pIndirection, DWORD sectionIndex, Module * pModule)
-{
-    return ExternalMethodFixupWorkerWorker(pTransitionBlock, pIndirection, sectionIndex, pModule, nullptr);
-}
-
-#ifdef TARGET_WASM
-EXTERN_C PCODE STDCALL ExternalMethodFixupWorkerForVirtualDispatch(
-    TransitionBlock * pTransitionBlock,
-    TADDR pIndirection,
-    DWORD sectionIndex,
-    Module * pModule,
-    READYTORUN_VIRTUAL_DISPATCH_PORTABLE_ENTRYPOINT * pPortableEntryPoint)
-{
-    return ExternalMethodFixupWorkerWorker(pTransitionBlock, pIndirection, sectionIndex, pModule, pPortableEntryPoint);
-}
-#endif // TARGET_WASM
-
 
 #ifdef FEATURE_READYTORUN
 

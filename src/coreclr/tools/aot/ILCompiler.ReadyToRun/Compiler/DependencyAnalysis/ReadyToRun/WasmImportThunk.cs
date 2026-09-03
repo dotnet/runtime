@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using ILCompiler.DependencyAnalysis.Wasm;
+using ILCompiler.DependencyAnalysisFramework;
 using ILCompiler.ObjectWriter;
 using ILCompiler.ObjectWriter.WasmInstructions;
 using Internal.JitInterface;
@@ -141,6 +142,22 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 return result;
 
             return comparer.Compare(_helperCell, otherNode._helperCell);
+        }
+
+        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        {
+            Debug.Assert(base.ComputeNonRelocationBasedDependencies(factory) == null);
+
+            if (!_useVirtualCall)
+            {
+                return null;
+            }
+
+            return new DependencyList(
+                new DependencyListEntry[]
+                {
+                    new DependencyListEntry(factory.WasmVirtualDispatchThunk(_wasmSignature), "Wasm virtual dispatch thunk for call site")
+                });
         }
 
         static CorInfoWasmType[] _helperTypeParams = new CorInfoWasmType[] { CorInfoWasmType.CORINFO_WASM_TYPE_I32, CorInfoWasmType.CORINFO_WASM_TYPE_I32, CorInfoWasmType.CORINFO_WASM_TYPE_I32, CorInfoWasmType.CORINFO_WASM_TYPE_I32, CorInfoWasmType.CORINFO_WASM_TYPE_I32 };
@@ -337,12 +354,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // Pass the RVA of the Module fixup as the fourth argument
             // i32.const (RVA of Module fixup)
             expressions.Add(I32.ConstRVA(factory.ModuleImport));
-            if (_useVirtualCall)
-            {
-                // The high bit tells the runtime that the PEP has a virtual-dispatch target.
-                expressions.Add(I32.Const(int.MinValue));
-                expressions.Add(I32.Add);
-            }
 
             // Load the helper function address and dispatch
             // global.get {module base}
