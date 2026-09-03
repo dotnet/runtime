@@ -623,6 +623,7 @@ namespace System.Threading.Tasks.Tests
                             (int)e.Payload[4]! == runtimeAsyncTaskId);
                         Assert.DoesNotContain(events, e =>
                             e.EventId == TaskWaitEndId &&
+                            (int)e.Payload![1]! == runtimeAsyncTaskId &&
                             (int)e.Payload![2]! == firstAwaitedTaskId);
 
                         tcs1.SetResult();
@@ -646,6 +647,7 @@ namespace System.Threading.Tasks.Tests
                             (int)e.Payload[4]! == runtimeAsyncTaskId);
                         Assert.DoesNotContain(events, e =>
                             e.EventId == TaskWaitEndId &&
+                            (int)e.Payload![1]! == runtimeAsyncTaskId &&
                             (int)e.Payload![2]! == secondAwaitedTaskId);
 
                         tcs2.SetResult();
