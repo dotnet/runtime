@@ -182,7 +182,7 @@ namespace System.Security.Cryptography
                 // PostEB, so we're not a PreEB, so resume searching there.
                 //
                 // There's no chance that the PreEB suffix is the start of a different PreEB,
-                // because IsValidLabel would have returned false if the label ended with whitesapce,
+                // because IsValidLabel would have returned false if the label ended with whitespace,
                 // and it's a requirement that the PreEB prefix be preceded by whitespace (or be
                 // at index 0).
                 int nextHyphen = pemData.IndexOfByOffset(hyphen, contentStartIndex);
@@ -235,7 +235,7 @@ namespace System.Security.Cryptography
                 if (pemEndIndex < pemData.Length - 1 &&
                     !IsWhiteSpaceCharacter(pemData[pemEndIndex], T.Whitespace))
                 {
-                    // No matches can occur before the alledged post-EB suffix,
+                    // No matches can occur before the alleged post-EB suffix,
                     // so jump ahead.
                     preebEndIndex = postebEndIndex;
                     goto NextAfterLabel;
@@ -245,7 +245,7 @@ namespace System.Security.Cryptography
 
                 if (!TryCountBase64<TChar, T>(pemData[contentRange], out int base64start, out int base64end, out int decodedSize))
                 {
-                    // No matches can occur before the alledged post-EB suffix,
+                    // No matches can occur before the alleged post-EB suffix,
                     // so jump ahead.
                     preebEndIndex = postebEndIndex;
                     goto NextAfterLabel;
