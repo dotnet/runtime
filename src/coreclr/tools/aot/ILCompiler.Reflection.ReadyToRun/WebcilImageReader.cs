@@ -556,11 +556,15 @@ namespace ILCompiler.Reflection.ReadyToRun
 
         public bool TryGetReadyToRunHeader(out int rva, out bool isComposite)
         {
-            // Check the ManagedNativeHeaderDirectory (same as PE's CorHeader.ManagedNativeHeaderDirectory)
-            if ((_corFlags & CorFlags.ILLibrary) != 0 && _managedNativeHeaderDirectory.Size != 0)
+            // Unlike PE, Webcil has no export table, so composite images cannot publish an
+            // RTR_HEADER export. Both single-assembly and composite Webcil images instead locate
+            // the ReadyToRun header through the CLI header's ManagedNativeHeader directory, which
+            // is what WebcilDecoder::FindReadyToRunHeader does in the runtime.
+            if (_managedNativeHeaderDirectory.Size != 0)
             {
                 rva = _managedNativeHeaderDirectory.RelativeVirtualAddress;
-                isComposite = false;
+                // As with PE, an image that is not marked as an IL library is a composite image.
+                isComposite = (_corFlags & CorFlags.ILLibrary) == 0;
                 return true;
             }
 

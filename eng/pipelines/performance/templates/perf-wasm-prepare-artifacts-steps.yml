@@ -4,6 +4,7 @@ parameters:
   runtimeFlavor: 'mono'
   sdkDirName: 'dotnet-latest'
   includeRefPack: true
+  includeCrossgen2Pack: false
   # The Mono (default) build installs the wasm-tools workload, whose manifest now includes the
   # CoreCLR browser-wasm runtime pack (Microsoft.NETCore.App.Runtime.browser-wasm). A Mono-only
   # build doesn't produce that pack, so download it from the CoreCLR build job and stage it into
@@ -50,6 +51,15 @@ steps:
   - ${{ if eq(parameters.includeRefPack, true) }}:
     - script: cp -r $(Build.SourcesDirectory)/artifacts/bin/microsoft.netcore.app.ref $(Build.SourcesDirectory)/artifacts/staging
       displayName: "Stage ref pack directory"
+
+  - ${{ if eq(parameters.includeCrossgen2Pack, true) }}:
+    - script: >-
+        find $(Build.SourcesDirectory)/artifacts/packages/${{ parameters.configForBuild }}/Shipping -maxdepth 1
+        -name 'Microsoft.NETCore.App.Crossgen2.*.nupkg' -not -name '*.symbols.nupkg'
+        -exec cp {} $(Build.SourcesDirectory)/artifacts/staging/built-nugets \; &&
+        test -n "$(find $(Build.SourcesDirectory)/artifacts/staging/built-nugets -maxdepth 1
+        -name 'Microsoft.NETCore.App.Crossgen2.*.nupkg' -not -name '*.symbols.nupkg' -print -quit)"
+      displayName: "Stage Crossgen2 pack"
 
   # Publish the CoreCLR browser-wasm runtime pack nuget on its own so the Mono build job can stage
   # it into its local feed for the wasm-tools workload install.
