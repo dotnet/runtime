@@ -57,7 +57,6 @@
 #define MAX_ARGV_ENTRIES 32 
 const char* g_argvCreateDump[MAX_ARGV_ENTRIES] = { nullptr };
 char* g_szCreateDumpPath = nullptr;
-char* g_ppidarg  = nullptr;
 
 const size_t MaxUnsigned32BitDecString = STRING_LENGTH("4294967295");
 const size_t MaxUnsigned64BitDecString = STRING_LENGTH("18446744073709551615");
@@ -128,7 +127,7 @@ BuildCreateDumpCommandLine(
     int dumpType,
     uint32_t flags)
 {
-    if (g_szCreateDumpPath == nullptr || g_ppidarg == nullptr)
+    if (g_szCreateDumpPath == nullptr)
     {
         return false;
     }
@@ -187,7 +186,6 @@ BuildCreateDumpCommandLine(
     }
 
     argv[argc++] = "--nativeaot";
-    argv[argc++] = g_ppidarg;
     argv[argc++] = nullptr;
 
     assert(argc < MAX_ARGV_ENTRIES);
@@ -653,13 +651,6 @@ PalCreateDumpInitialize()
         }
 
         g_szCreateDumpPath = program;
-
-        // Format the app pid for the createdump command line
-        g_ppidarg = FormatInt(getpid());
-        if (g_ppidarg == nullptr)
-        {
-            return false;
-        }
 
         if (!BuildCreateDumpCommandLine(g_argvCreateDump, dumpName, logFilePath, dumpType, flags))
         {

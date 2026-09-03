@@ -82,10 +82,10 @@ DOTNET_DbgMiniDumpType values:
 
 **Command Line Usage**
 
-The createdump utility can also be run from the command line on arbitrary .NET Core processes. The type of dump can be controlled with the below command switches. The default is a "minidump" which contains the majority the memory and managed state needed. Unless you have ptrace (CAP_SYS_PTRACE) administrative privilege, you need to run with sudo or su. The same as if you were attaching with lldb or other native debugger.
+The createdump utility only dumps the parent process that launched it. A target PID cannot be specified. The type of dump can be controlled with the command switches below. The default is a "minidump" which contains the majority of the memory and managed state needed.
 
 ```
-createdump [options] pid
+createdump [options]
 -f, --name - dump path and file name. The default is '/tmp/coredump.%p'. These specifiers are substituted with following values:
    %p  PID of dumped process.
    %e  The process executable filename.
