@@ -19,6 +19,42 @@
     <TargetHostPlatformOnly>true</TargetHostPlatformOnly>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(TargetHostPlatformOnly)' == 'true'">
+    <_TargetHostArchitecture Condition="'$(RuntimeIdentifier)' != ''">$(RuntimeIdentifier.Substring($([MSBuild]::Add($(RuntimeIdentifier.LastIndexOf('-')), 1))))</_TargetHostArchitecture>
+    <_TargetHostArchitecture Condition="'$(_TargetHostArchitecture)' == ''">$(TargetArchitecture)</_TargetHostArchitecture>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(TargetHostPlatformOnly)' == 'true' and '$(_TargetHostArchitecture)' != ''">
+    <RuntimeHostConfigurationOption Include="Microsoft.Diagnostics.DataContractReader.Architecture.Arm"
+                                    Value="false"
+                                    Trim="true"
+                                    Condition="'$(_TargetHostArchitecture)' != 'arm'" />
+    <RuntimeHostConfigurationOption Include="Microsoft.Diagnostics.DataContractReader.Architecture.Arm64"
+                                    Value="false"
+                                    Trim="true"
+                                    Condition="'$(_TargetHostArchitecture)' != 'arm64'" />
+    <RuntimeHostConfigurationOption Include="Microsoft.Diagnostics.DataContractReader.Architecture.LoongArch64"
+                                    Value="false"
+                                    Trim="true"
+                                    Condition="'$(_TargetHostArchitecture)' != 'loongarch64'" />
+    <RuntimeHostConfigurationOption Include="Microsoft.Diagnostics.DataContractReader.Architecture.RiscV64"
+                                    Value="false"
+                                    Trim="true"
+                                    Condition="'$(_TargetHostArchitecture)' != 'riscv64'" />
+    <RuntimeHostConfigurationOption Include="Microsoft.Diagnostics.DataContractReader.Architecture.Wasm"
+                                    Value="false"
+                                    Trim="true"
+                                    Condition="'$(_TargetHostArchitecture)' != 'wasm'" />
+    <RuntimeHostConfigurationOption Include="Microsoft.Diagnostics.DataContractReader.Architecture.X64"
+                                    Value="false"
+                                    Trim="true"
+                                    Condition="'$(_TargetHostArchitecture)' != 'x64'" />
+    <RuntimeHostConfigurationOption Include="Microsoft.Diagnostics.DataContractReader.Architecture.X86"
+                                    Value="false"
+                                    Trim="true"
+                                    Condition="'$(_TargetHostArchitecture)' != 'x86'" />
+  </ItemGroup>
+
   <!-- Custom Windows Version Resource is required. -->
   <PropertyGroup Condition="'$(TargetsWindows)' == 'true'">
     <Win32Resource>$(IntermediateOutputPath)mscordaccore.version.res</Win32Resource>
