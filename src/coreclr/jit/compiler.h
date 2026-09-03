@@ -9174,8 +9174,12 @@ public:
         }
 
         // Create "i <relop> (bnd + cns)" assertion
-        static AssertionDsc CreateCompareCheckedBound(
-            const Compiler* comp, VNFunc relop, ValueNum op1VN, ValueNum checkedBndVN, int cns, bool isVNNeverNegative = false)
+        static AssertionDsc CreateCompareCheckedBound(const Compiler* comp,
+                                                      VNFunc          relop,
+                                                      ValueNum        op1VN,
+                                                      ValueNum        checkedBndVN,
+                                                      int             cns,
+                                                      bool            isVNNeverNegative = false)
         {
             assert(op1VN != ValueNumStore::NoVN);
             assert(checkedBndVN != ValueNumStore::NoVN);

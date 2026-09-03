@@ -1853,10 +1853,10 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     ValueNumStore::UnsignedCompareCheckedBoundInfo unsignedCompareBnd;
     bool isUnsignedCompareCheckedBound = vnStore->IsVNUnsignedCompareCheckedBound(relopVN, &unsignedCompareBnd);
 
-    bool arrLenIsOp1 = !isUnsignedCompareCheckedBound && vnStore->IsVNArrLen(op1VN) &&
-                       relopFuncApp.FuncIs(VNF_LT_UN, VNF_GE_UN);
-    bool arrLenIsOp2 = !isUnsignedCompareCheckedBound && vnStore->IsVNArrLen(op2VN) &&
-                       relopFuncApp.FuncIs(VNF_GT_UN, VNF_LE_UN);
+    bool arrLenIsOp1 =
+        !isUnsignedCompareCheckedBound && vnStore->IsVNArrLen(op1VN) && relopFuncApp.FuncIs(VNF_LT_UN, VNF_GE_UN);
+    bool arrLenIsOp2 =
+        !isUnsignedCompareCheckedBound && vnStore->IsVNArrLen(op2VN) && relopFuncApp.FuncIs(VNF_GT_UN, VNF_LE_UN);
     if (arrLenIsOp1 || arrLenIsOp2)
     {
         if (arrLenIsOp1)
@@ -1904,8 +1904,7 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     }
 
     if (!isUnsignedCompareCheckedBound && isUnsignedRelop && (op1VN != op2VN) && !vnStore->IsVNConstant(op1VN) &&
-        !vnStore->IsVNConstant(op2VN) && vnStore->IsVNCheckedBoundIndex(op1VN) &&
-        optAssertionHasAssertionsForVN(op2VN))
+        !vnStore->IsVNConstant(op2VN) && vnStore->IsVNCheckedBoundIndex(op1VN) && optAssertionHasAssertionsForVN(op2VN))
     {
         AssertionDsc   dsc = AssertionDsc::CreateRelopVN(this, relopFunc, op1VN, op2VN);
         AssertionIndex idx = optAddAssertion(dsc);

@@ -1263,8 +1263,7 @@ void RangeCheck::MergeEdgeAssertionsWorker(Compiler*                        comp
         // Current assertion is "normalLclVN u<= preferredBoundVN".
         else if (canUseCheckedBounds && curAssertion.KindIs(Compiler::OAK_LE_UN) &&
                  (curAssertion.GetOp1().GetVN() == normalLclVN) &&
-                 curAssertion.GetOp2().KindIs(Compiler::O2K_VN_ADD_CNS) &&
-                 curAssertion.GetOp2().IsVNNeverNegative() &&
+                 curAssertion.GetOp2().KindIs(Compiler::O2K_VN_ADD_CNS) && curAssertion.GetOp2().IsVNNeverNegative() &&
                  (curAssertion.GetOp2().GetVN() == preferredBoundVN) && (curAssertion.GetOp2().GetCns() == 0))
         {
             cmpOper    = GT_LE;
@@ -1518,8 +1517,7 @@ void RangeCheck::MergeEdgeAssertionsWorker(Compiler*                        comp
         }
         // Current assertion is "normalLclVN u< boundVN". Get boundVN's range using our preferred bound.
         else if (canUseCheckedBounds && pRange->LowerLimit().IsUnknown() && pRange->UpperLimit().IsUnknown() &&
-                 curAssertion.KindIs(Compiler::OAK_LT_UN) &&
-                 (curAssertion.GetOp1().GetVN() == normalLclVN) &&
+                 curAssertion.KindIs(Compiler::OAK_LT_UN) && (curAssertion.GetOp1().GetVN() == normalLclVN) &&
                  curAssertion.GetOp2().KindIs(Compiler::O2K_VN_ADD_CNS) &&
                  (curAssertion.GetOp2().GetVN() != preferredBoundVN) && (curAssertion.GetOp2().GetCns() == 0) &&
                  (budget > 0))
