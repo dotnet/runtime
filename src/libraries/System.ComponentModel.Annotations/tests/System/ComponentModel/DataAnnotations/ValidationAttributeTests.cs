@@ -75,6 +75,15 @@ namespace System.ComponentModel.DataAnnotations.Tests
             Assert.Null(attribute.FormatDescriptionMessage("name"));
         }
 
+        [Fact]
+        public static void FormatDescriptionMessage_EmptyDescription_ReturnsNull()
+        {
+            var attribute = new ValidationAttributeNoOverrides { DescriptionMessage = string.Empty };
+
+            Assert.Null(attribute.GetDescriptionMessageString());
+            Assert.Null(attribute.FormatDescriptionMessage("name"));
+        }
+
         [Theory]
         [InlineData("Rule for {0}", "name", "Rule for name")]
         [InlineData("Rule for {0}", null, "Rule for ")]
@@ -101,29 +110,78 @@ namespace System.ComponentModel.DataAnnotations.Tests
             Assert.Equal("Description 3 for {0}", attribute.GetDescriptionMessageString());
         }
 
+        [Fact]
+        public static void FormatDescriptionMessage_ResourcePropertyReturningNull_ReturnsNull()
+        {
+            var attribute = new ValidationAttributeNoOverrides
+            {
+                DescriptionMessageResourceName = nameof(DescriptionMessageResources.NullDescription),
+                DescriptionMessageResourceType = typeof(DescriptionMessageResources)
+            };
+
+            Assert.Null(attribute.GetDescriptionMessageString());
+            Assert.Null(attribute.FormatDescriptionMessage("name"));
+        }
+
+        [Fact]
+        public static void DescriptionMessageSetters_InvalidateCachedAccessor()
+        {
+            var attribute = new ValidationAttributeNoOverrides { DescriptionMessage = "First {0}" };
+            Assert.Equal("First name", attribute.FormatDescriptionMessage("name"));
+
+            attribute.DescriptionMessage = "Second {0}";
+            Assert.Equal("Second name", attribute.FormatDescriptionMessage("name"));
+
+            attribute.DescriptionMessage = null;
+            attribute.DescriptionMessageResourceName = nameof(DescriptionMessageResources.FirstDescription);
+            attribute.DescriptionMessageResourceType = typeof(DescriptionMessageResources);
+            Assert.Equal("First resource name", attribute.FormatDescriptionMessage("name"));
+
+            attribute.DescriptionMessageResourceName = nameof(DescriptionMessageResources.SecondDescription);
+            Assert.Equal("Second resource name", attribute.FormatDescriptionMessage("name"));
+
+            attribute.DescriptionMessageResourceType = typeof(AlternateDescriptionMessageResources);
+            Assert.Equal("Alternate resource name", attribute.FormatDescriptionMessage("name"));
+        }
+
+        [Fact]
+        public static void DescriptionMessageMetadata_DoesNotChangeErrorMessageState()
+        {
+            var attribute = new StringLengthAttribute(20) { MinimumLength = 10 };
+            string defaultErrorMessage = attribute.FormatErrorMessage("name");
+
+            attribute.DescriptionMessage = "Description for {0}";
+
+            Assert.Null(attribute.ErrorMessage);
+            Assert.Equal(defaultErrorMessage, attribute.FormatErrorMessage("name"));
+            Assert.Contains("minimum length of 10", attribute.FormatErrorMessage("name"));
+            Assert.Equal("Description for name", attribute.FormatDescriptionMessage("name"));
+
+            attribute.ErrorMessage = "Error for {0}";
+
+            Assert.Equal("Error for name", attribute.FormatErrorMessage("name"));
+            Assert.Equal("Description for name", attribute.FormatDescriptionMessage("name"));
+        }
+
         [Theory]
-        [InlineData(DescriptionResourceConfiguration.NameOnly)]
-        [InlineData(DescriptionResourceConfiguration.TypeOnly)]
-        [InlineData(DescriptionResourceConfiguration.LiteralAndResource)]
-        [InlineData(DescriptionResourceConfiguration.MissingMember)]
-        [InlineData(DescriptionResourceConfiguration.InstanceMember)]
-        [InlineData(DescriptionResourceConfiguration.NonStringMember)]
-        [InlineData(DescriptionResourceConfiguration.InaccessibleMember)]
-        public static void FormatDescriptionMessage_InvalidConfiguration_MatchesErrorMessageBehavior(
-            DescriptionResourceConfiguration configuration)
+        [InlineData(DescriptionResourceConfiguration.NameOnly, "Both DescriptionMessageResourceType and DescriptionMessageResourceName need to be set on this attribute.")]
+        [InlineData(DescriptionResourceConfiguration.TypeOnly, "Both DescriptionMessageResourceType and DescriptionMessageResourceName need to be set on this attribute.")]
+        [InlineData(DescriptionResourceConfiguration.LiteralAndResource, "Either DescriptionMessage or DescriptionMessageResourceName must be set, but not both.")]
+        [InlineData(DescriptionResourceConfiguration.MissingMember, "named 'MissingMember'")]
+        [InlineData(DescriptionResourceConfiguration.InstanceMember, "named 'InstanceDescription'")]
+        [InlineData(DescriptionResourceConfiguration.NonStringMember, "property 'NonStringDescription'")]
+        [InlineData(DescriptionResourceConfiguration.InaccessibleMember, "named 'PrivateDescription'")]
+        public static void FormatDescriptionMessage_InvalidConfiguration_ThrowsExpected(
+            DescriptionResourceConfiguration configuration,
+            string expectedMessage)
         {
             var descriptionAttribute = new ValidationAttributeNoOverrides();
-            var errorAttribute = new ValidationAttributeNoOverrides();
-            ConfigureMessage(descriptionAttribute, configuration, description: true);
-            ConfigureMessage(errorAttribute, configuration, description: false);
+            ConfigureDescriptionMessage(descriptionAttribute, configuration);
 
             InvalidOperationException descriptionException =
                 Assert.Throws<InvalidOperationException>(() => descriptionAttribute.FormatDescriptionMessage("name"));
-            InvalidOperationException errorException =
-                Assert.Throws<InvalidOperationException>(() => errorAttribute.FormatErrorMessage("name"));
 
-            Assert.NotEmpty(errorException.Message);
-            Assert.NotEmpty(descriptionException.Message);
+            Assert.Contains(expectedMessage, descriptionException.Message);
             Assert.DoesNotContain("ErrorMessage", descriptionException.Message);
         }
 
@@ -163,10 +221,9 @@ namespace System.ComponentModel.DataAnnotations.Tests
             Assert.Equal("Email is already registered.", result.ErrorMessage);
         }
 
-        private static void ConfigureMessage(
+        private static void ConfigureDescriptionMessage(
             ValidationAttribute attribute,
-            DescriptionResourceConfiguration configuration,
-            bool description)
+            DescriptionResourceConfiguration configuration)
         {
             string message = configuration == DescriptionResourceConfiguration.LiteralAndResource ? "Literal" : null;
             string resourceName = configuration switch
@@ -183,18 +240,9 @@ namespace System.ComponentModel.DataAnnotations.Tests
                 ? null
                 : typeof(DescriptionMessageResources);
 
-            if (description)
-            {
-                attribute.DescriptionMessage = message;
-                attribute.DescriptionMessageResourceName = resourceName;
-                attribute.DescriptionMessageResourceType = resourceType;
-            }
-            else
-            {
-                attribute.ErrorMessage = message;
-                attribute.ErrorMessageResourceName = resourceName;
-                attribute.ErrorMessageResourceType = resourceType;
-            }
+            attribute.DescriptionMessage = message;
+            attribute.DescriptionMessageResourceName = resourceName;
+            attribute.DescriptionMessageResourceType = resourceType;
         }
 
         // Public_IsValid_throws_NotImplementedException_if_derived_ValidationAttribute_does_not_override_either_IsValid_method
@@ -906,8 +954,17 @@ namespace System.ComponentModel.DataAnnotations.Tests
     {
         internal static int LookupCount { get; set; }
         internal static string DynamicDescription => $"Description {++LookupCount} for {{0}}";
+        internal static string FirstDescription => "First resource {0}";
         internal string InstanceDescription => "";
+        internal static string NullDescription => null;
         internal static bool NonStringDescription => false;
         private static string PrivateDescription => "";
+        internal static string RangeDescription => "resource {0}:{1:D2}:{2:D2}";
+        internal static string SecondDescription => "Second resource {0}";
+    }
+
+    internal class AlternateDescriptionMessageResources
+    {
+        internal static string SecondDescription => "Alternate resource {0}";
     }
 }

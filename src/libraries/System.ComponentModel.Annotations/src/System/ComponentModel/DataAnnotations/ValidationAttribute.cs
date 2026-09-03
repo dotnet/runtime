@@ -306,21 +306,15 @@ namespace System.ComponentModel.DataAnnotations
             bool descriptionMessageSet = !string.IsNullOrEmpty(_descriptionMessage);
             bool resourceTypeSet = _descriptionMessageResourceType is not null;
 
+            if (!(resourceNameSet || descriptionMessageSet || resourceTypeSet))
+            {
+                return;
+            }
+
             if (resourceNameSet && descriptionMessageSet)
             {
                 throw new InvalidOperationException(
                     SR.ValidationAttribute_Cannot_Set_DescriptionMessage_And_Resource);
-            }
-
-            if (!(resourceNameSet || descriptionMessageSet))
-            {
-                if (resourceTypeSet)
-                {
-                    throw new InvalidOperationException(
-                        SR.ValidationAttribute_Cannot_Set_DescriptionMessage_And_Resource);
-                }
-
-                return;
             }
 
             if (resourceTypeSet != resourceNameSet)
@@ -334,7 +328,7 @@ namespace System.ComponentModel.DataAnnotations
                 PropertyInfo property = GetResourceProperty(_descriptionMessageResourceType!, _descriptionMessageResourceName!);
                 _descriptionMessageResourceAccessor = () => (string?)property.GetValue(null, null);
             }
-            else if (descriptionMessageSet)
+            else
             {
                 string descriptionMessage = _descriptionMessage!;
                 _descriptionMessageResourceAccessor = () => descriptionMessage;
