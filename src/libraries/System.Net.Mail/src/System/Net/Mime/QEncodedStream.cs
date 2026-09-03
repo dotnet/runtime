@@ -48,6 +48,8 @@ namespace System.Net.Mime
             _encoder = new QEncoder(_writeState);
         }
 
+        private ReadStateInfo ReadState => field ??= new ReadStateInfo();
+
         internal WriteStateInfoBase WriteState => _writeState;
 
         public override bool CanRead => BaseStream.CanRead;
@@ -68,6 +70,58 @@ namespace System.Net.Mime
 
             int source = 0;
             int destination = 0;
+
+            // if the last read ended in a partially decoded
+            // sequence, pick up where we left off.
+            if (ReadState.IsEscaped)
+            {
+                // this will be -1 if the previous read ended
+                // with an escape character.
+                if (ReadState.Byte == -1)
+                {
+                    // if we only read one byte from the underlying
+                    // stream, we'll need to save the byte and
+                    // ask for more.
+                    if (buffer.Length == 1)
+                    {
+                        ReadState.Byte = buffer[source];
+                        return 0;
+                    }
+
+                    // '=\r\n' means a soft (aka. invisible) CRLF sequence...
+                    if (buffer[source] != '\r' || buffer[source + 1] != '\n')
+                    {
+                        byte b1 = HexDecodeMap[buffer[source]];
+                        byte b2 = HexDecodeMap[buffer[source + 1]];
+                        if (b1 == 255)
+                            throw new FormatException(SR.Format(SR.InvalidHexDigit, (char)buffer[source]));
+                        if (b2 == 255)
+                            throw new FormatException(SR.Format(SR.InvalidHexDigit, (char)buffer[source + 1]));
+
+                        buffer[destination++] = (byte)((b1 << 4) + b2);
+                    }
+
+                    source += 2;
+                }
+                else
+                {
+                    // '=\r\n' means a soft (aka. invisible) CRLF sequence...
+                    if (ReadState.Byte != '\r' || buffer[source] != '\n')
+                    {
+                        byte b1 = HexDecodeMap[ReadState.Byte];
+                        byte b2 = HexDecodeMap[buffer[source]];
+                        if (b1 == 255)
+                            throw new FormatException(SR.Format(SR.InvalidHexDigit, (char)ReadState.Byte));
+                        if (b2 == 255)
+                            throw new FormatException(SR.Format(SR.InvalidHexDigit, (char)buffer[source]));
+                        buffer[destination++] = (byte)((b1 << 4) + b2);
+                    }
+                    source++;
+                }
+                // reset state for next read.
+                ReadState.IsEscaped = false;
+                ReadState.Byte = -1;
+            }
 
             // Here's where most of the decoding takes place.
             // We'll loop around until we've inspected all the
@@ -91,19 +145,19 @@ namespace System.Net.Mime
                 else
                 {
                     // determine where we are relative to the end
-                    // of the data.  Otherwise, decode the data and
-                    // copy into dest.
+                    // of the data.  If we don't have enough data to
+                    // decode the escape sequence, save off what we
+                    // have and continue the decoding in the next
+                    // read.  Otherwise, decode the data and copy
+                    // into dest.
                     switch (buffer.Length - source)
                     {
                         case 2:
+                            ReadState.Byte = buffer[source + 1];
+                            goto case 1;
                         case 1:
-                            // DecodeBytes is always called with the entire encoded-word's data in one
-                            // shot (see MimeBasePart.DecodeHeaderValue), so there is no subsequent call
-                            // that could complete a deferred escape sequence. An '=' without two
-                            // trailing hex digits at the end of the data is therefore malformed, not
-                            // merely split across reads, and must be rejected rather than silently
-                            // dropped.
-                            throw new FormatException(SR.MailHeaderFieldMalformedHeader);
+                            ReadState.IsEscaped = true;
+                            goto EndWhile;
                         default:
                             if (buffer[source + 1] != '\r' || buffer[source + 2] != '\n')
                             {
@@ -121,7 +175,7 @@ namespace System.Net.Mime
                     }
                 }
             }
-
+        EndWhile:
             return destination;
         }
 
@@ -203,6 +257,12 @@ namespace System.Net.Mime
                     break;
                 }
             }
+        }
+
+        private sealed class ReadStateInfo
+        {
+            internal bool IsEscaped { get; set; }
+            internal short Byte { get; set; } = -1;
         }
     }
 }
