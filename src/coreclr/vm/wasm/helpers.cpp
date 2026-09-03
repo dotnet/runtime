@@ -964,7 +964,7 @@ namespace
                 return (uint32_t)len;
             }
             default:
-                PORTABILITY_ASSERT("Unknown type");
+                _ASSERT(!"Unknown type");
                 c = '?';
                 break;
         }
@@ -1323,7 +1323,7 @@ InterpreterCalliCookie GetCookieForCalliSig(MetaSig metaSig, MethodDesc *pContex
                     thunkKey = "Miiiiip";
                     break;
                 default:
-                    PORTABILITY_ASSERT("GetCookieForCalliSig: unknown thunk for string constructor");
+                    _ASSERT(!"GetCookieForCalliSig: unknown thunk for string constructor");
                     return nullptr;
             }
         }
@@ -1331,7 +1331,7 @@ InterpreterCalliCookie GetCookieForCalliSig(MetaSig metaSig, MethodDesc *pContex
         InterpreterCalliCookie stringCtorThunk = LookupThunk(thunkKey);
         if (stringCtorThunk == NULL)
         {
-            PORTABILITY_ASSERT("GetCookieForCalliSig: unknown thunk signature");
+            _ASSERT(!"GetCookieForCalliSig: unknown thunk signature");
         }
         return stringCtorThunk;
     }
@@ -1339,7 +1339,7 @@ InterpreterCalliCookie GetCookieForCalliSig(MetaSig metaSig, MethodDesc *pContex
     InterpreterCalliCookie thunk = ComputeCalliSigThunk(metaSig);
     if (thunk == NULL)
     {
-        PORTABILITY_ASSERT("GetCookieForCalliSig: unknown thunk signature");
+        _ASSERT(!"GetCookieForCalliSig: unknown thunk signature");
     }
 
     return thunk;
@@ -1457,7 +1457,7 @@ void* GetUnmanagedCallersOnlyThunk(MethodDesc* pMD)
     const ReverseThunkMapValue* value = LookupThunk(pMD);
     if (value == NULL)
     {
-        PORTABILITY_ASSERT("GetUnmanagedCallersOnlyThunk: unknown thunk for unmanaged callers only method");
+        _ASSERT(!"GetUnmanagedCallersOnlyThunk: unknown thunk for unmanaged callers only method");
         return NULL;
     }
 
