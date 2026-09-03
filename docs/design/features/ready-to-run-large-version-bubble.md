@@ -12,6 +12,11 @@ Each assembly that is passed in as part of the version bubble has R2R code inser
 
 `--compilebubblegenerics` permits eligible generic instantiations whose definitions are in the declared version bubble to be emitted into the current image, even when their definitions are not in the current input assembly. Such an image is marked as containing R2R code unrelated to its own module so that CoreCLR can consider it during generic entry-point lookup.
 
+Open Questions:
+
+- Why did we decide to not support `--inputbubble`?
+- `--inputbubble` is known to have "issues". What are some of these issues? Can we describe them here?
+
 ## `--opt-cross-module` and `--non-local-generics-module`
 
 `--opt-cross-module:<assembly>` permits Crossgen2 to inline methods and compile eligible generic instantiations from the specified reference assembly. `--opt-cross-module:*` applies the policy to all eligible reference assemblies. These assemblies deliberately remain outside the version bubble.
