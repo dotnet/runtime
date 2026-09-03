@@ -19,7 +19,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         // Uses a dedicated (non-echo) loopback run instead of RunEchoAsync: the server signals once it has
         // accepted the connection and received the opening handshake request, and only then does the client
-        // cancel and withholds the handshake response indefinitely. This avoids racing a fixed cancellation
+        // cancels while the server withholds the handshake response indefinitely. This avoids racing a fixed cancellation
         // delay (e.g. 100ms) against JIT-stress-induced scheduling jitter, which could previously let the
         // token fire before the client ever reached/was accepted by the server, leaving the server blocked
         // in Accept until the enclosing LoopbackWebSocketServer timeout fired a TimeoutException instead of
@@ -27,7 +27,7 @@ namespace System.Net.WebSockets.Client.Tests
         private async Task RunConnectAsync_Cancel_ThrowsCancellationException(bool useSsl)
         {
             var handshakeReceived = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-            var timeoutCts = new CancellationTokenSource(TimeOutMilliseconds);
+            using var timeoutCts = new CancellationTokenSource(TimeOutMilliseconds);
 
             var options = new LoopbackWebSocketServer.Options(HttpVersion, useSsl)
             {
@@ -37,7 +37,7 @@ namespace System.Net.WebSockets.Client.Tests
             };
 
             await LoopbackWebSocketServer.RunAsync(
-                server => RunClientAsync(server, handshakeReceived.Task),
+                server => RunClientAsync(server, handshakeReceived.Task, timeoutCts.Token),
                 async (WebSocketRequestData requestData, CancellationToken token) =>
                 {
                     handshakeReceived.TrySetResult();
@@ -48,14 +48,23 @@ namespace System.Net.WebSockets.Client.Tests
                 options,
                 timeoutCts.Token);
 
-            async Task RunClientAsync(Uri server, Task handshakeReceivedTask)
+            async Task RunClientAsync(Uri server, Task handshakeReceivedTask, CancellationToken timeoutToken)
             {
                 using var cws = new ClientWebSocket();
-                var cts = new CancellationTokenSource();
+                using var cts = new CancellationTokenSource();
 
                 Task connectTask = ConnectAsync(cws, server, cts.Token);
 
-                await handshakeReceivedTask.ConfigureAwait(false);
+                Task completedTask = await Task.WhenAny(connectTask, handshakeReceivedTask)
+                    .WaitAsync(timeoutToken)
+                    .ConfigureAwait(false);
+
+                if (completedTask == connectTask)
+                {
+                    await connectTask.ConfigureAwait(false);
+                    Assert.Fail("ConnectAsync completed before the server received the handshake.");
+                }
+
                 cts.Cancel();
 
                 var ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => connectTask);
