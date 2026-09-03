@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Microsoft.DotNet.RemoteExecutor;
 using Test.Cryptography;
 using Xunit;
 
@@ -259,21 +260,30 @@ namespace System.Formats.Cbor.Tests
             Assert.Throws<InvalidOperationException>(() => reader.SkipToParent());
         }
 
-        [Theory]
-        [InlineData(50_000)]
-        public static void SkipValue_ExtremelyNestedValues_ShouldNotStackOverflow(int depth)
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void SkipValue_ExtremelyNestedValues_ShouldNotStackOverflow()
         {
-            // Construct a valid CBOR encoding with extreme nesting:
-            // defines a tower of `depth` nested singleton arrays,
-            // with the innermost array containing zero.
-            byte[] encoding = new byte[depth + 1];
-            encoding.AsSpan(0, depth).Fill(0x81); // array of length 1
-            encoding[depth] = 0;
+            RemoteExecutor.Invoke(static () =>
+            {
+                const int Depth = 50_000;
+#if NETFRAMEWORK
+                AppDomain.CurrentDomain.SetData(MaxDepthAppContextSwitchName, Depth);
+#else
+                AppContext.SetData(MaxDepthAppContextSwitchName, Depth);
+#endif
 
-            var reader = new CborReader(encoding);
+                // Construct a valid CBOR encoding with extreme nesting:
+                // defines a tower of `depth` nested singleton arrays,
+                // with the innermost array containing zero.
+                byte[] encoding = new byte[Depth + 1];
+                encoding.AsSpan(0, Depth).Fill(0x81); // array of length 1
+                encoding[Depth] = 0;
 
-            reader.SkipValue();
-            Assert.Equal(CborReaderState.Finished, reader.PeekState());
+                var reader = new CborReader(encoding);
+
+                reader.SkipValue();
+                Assert.Equal(CborReaderState.Finished, reader.PeekState());
+            }).Dispose();
         }
 
         public static IEnumerable<object[]> SkipTestInputs => SampleCborValues.Select(x => new [] { x });
