@@ -258,7 +258,10 @@ namespace System.Runtime.InteropServices
 
         private void Unadvise()
         {
-            Debug.Assert(_connectionPoint != null, "Can not unadvise from empty connection point");
+            // Once the last handler for a source interface is removed, the sink is unadvised and may be
+            // marked as reusable by clearing its source interface ID and keeping it in its container
+            // so a later handler can advise it again. Finalizing that container unadvises every
+            // sink it holds, so encountering an already unadvised sink here is expected.
             if (_connectionPoint == null)
                 return;
 
