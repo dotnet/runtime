@@ -64,7 +64,9 @@ bool HostInformation::GetAssemblyNames(const char* const** names, size_t* count)
     if (s_hostContract.size < requiredSize
         || s_hostContract.get_assembly_names == nullptr
         || s_hostContract.resolve_assembly_to_path == nullptr)
+    {
         return false;
+    }
 
     if (!s_hostContract.get_assembly_names(names, count, s_hostContract.context))
         return false;
@@ -94,7 +96,7 @@ void HostInformation::ResolveAssemblyToPath(_In_z_ LPCWSTR simpleName, SString& 
     path.SetUTF8(directory);
     size_t directoryLength = strlen(directory);
     if (directory[directoryLength - 1] != DIRECTORY_SEPARATOR_CHAR_A)
-        path.Append(DIRECTORY_SEPARATOR_CHAR_W);
+        path.Append(DIRECTORY_SEPARATOR_CHAR_A);
 
     path.AppendUTF8(fileName);
 }

@@ -654,7 +654,7 @@ static int run(const configuration& config)
                 contract_context.assembly_names.push_back(result.first->first.c_str());
         }
 
-        std::unordered_map<string_t, string_t>().swap(tpa);
+        tpa = {};
     }
 
     host_runtime_contract host_contract = {

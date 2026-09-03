@@ -105,11 +105,6 @@ namespace BINDER_SPACE
                     continue;
 
                 LPWSTR wszSimpleName = new WCHAR[simpleName.GetCount() + 1];
-                if (wszSimpleName == nullptr)
-                {
-                    GO_WITH_HRESULT(E_OUTOFMEMORY);
-                }
-
                 wcscpy_s(wszSimpleName, simpleName.GetCount() + 1, simpleName.GetUnicode());
 
                 SimpleNameToFileNameMapEntry mapEntry{ wszSimpleName, nullptr };
@@ -137,17 +132,9 @@ namespace BINDER_SPACE
                 }
 
                 LPWSTR wszSimpleName = new WCHAR[simpleName.GetCount() + 1];
-                if (wszSimpleName == nullptr)
-                {
-                    GO_WITH_HRESULT(E_OUTOFMEMORY);
-                }
                 wcscpy_s(wszSimpleName, simpleName.GetCount() + 1, simpleName.GetUnicode());
 
                 LPWSTR wszFileName = new WCHAR[fileName.GetCount() + 1];
-                if (wszFileName == nullptr)
-                {
-                    GO_WITH_HRESULT(E_OUTOFMEMORY);
-                }
                 wcscpy_s(wszFileName, fileName.GetCount() + 1, fileName.GetUnicode());
 
                 SimpleNameToFileNameMapEntry mapEntry{ wszSimpleName, wszFileName };
