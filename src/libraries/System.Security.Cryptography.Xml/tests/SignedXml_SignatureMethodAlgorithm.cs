@@ -13,6 +13,7 @@ namespace System.Security.Cryptography.Xml.Tests
     public class SignedXml_SignatureMethodAlgorithm
     {
         private const string MaxDecryptedDataElementsAppContextSwitch = "System.Security.Cryptography.Xml.MaxDecryptedDataElements";
+        private const string DangerousMaxDecryptionCountAppContextSwitch = "System.Security.Cryptography.Xml.DangerousMaxDecryptionCount";
 
         [Fact]
         public static void TestDummySignatureAlgorithm()
@@ -123,6 +124,9 @@ namespace System.Security.Cryptography.Xml.Tests
 
                 AppContext.SetData(MaxDecryptedDataElementsAppContextSwitch, limit);
 
+                // There's a separate decryption count limit, so make sure we're not hitting that.
+                AppContext.SetData(DangerousMaxDecryptionCountAppContextSwitch, 0);
+
                 using RSA rsa = RSA.Create();
                 using Aes aes = Aes.Create();
 
@@ -148,6 +152,7 @@ namespace System.Security.Cryptography.Xml.Tests
             RemoteExecutor.Invoke(static () =>
             {
                 AppContext.SetData(MaxDecryptedDataElementsAppContextSwitch, 0);
+                AppContext.SetData(DangerousMaxDecryptionCountAppContextSwitch, 0);
 
                 using RSA rsa = RSA.Create();
                 using Aes aes = Aes.Create();
