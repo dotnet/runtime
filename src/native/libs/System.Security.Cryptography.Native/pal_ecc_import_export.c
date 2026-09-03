@@ -711,6 +711,9 @@ static int32_t EvpPKeyGetEcKeyParameters(
     // Get the public key as an encoded point (may be compressed or uncompressed).
     if (EVP_PKEY_get_octet_string_param(pkey, OSSL_PKEY_PARAM_PUB_KEY, NULL, 0, &pubKeyLen))
     {
+        if (pubKeyLen == 0)
+            goto error;
+
         pubKeyBuf = (uint8_t*)OPENSSL_zalloc(pubKeyLen);
         if (pubKeyBuf == NULL)
             goto error;
