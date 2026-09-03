@@ -4256,12 +4256,47 @@ bool CEEInfo::canCast(
     return result;
 }
 
+static bool isExactTypeHelper(TypeHandle th);
+
+// Returns true if no type can be derived from both type1 and type2.
+static bool AreClassHierarchiesDisjoint(TypeHandle type1, TypeHandle type2)
+{
+    STANDARD_VM_CONTRACT;
+
+    if (type1.IsCanonicalSubtype() || type2.IsCanonicalSubtype() || type1.IsTypeDesc() || type2.IsTypeDesc())
+    {
+        return false;
+    }
+
+    MethodTable* type1MT = type1.AsMethodTable();
+    MethodTable* type2MT = type2.AsMethodTable();
+
+#ifdef FEATURE_COMINTEROP
+    if (type1.IsComObjectType() || type2.IsComObjectType())
+    {
+        return false;
+    }
+#endif // FEATURE_COMINTEROP
+
+    if (type1MT->IsInterface() || type2MT->IsInterface() || type1MT->IsArray() || type2MT->IsArray() ||
+        type1MT->IsDelegate() || type2MT->IsDelegate() || type1MT->IsValueType() || type2MT->IsValueType() ||
+        type1MT->HasTypeEquivalence() || type2MT->HasTypeEquivalence() || type1MT->HasVariance() ||
+        type2MT->HasVariance() || (type1MT == g_pSZArrayHelperClass) || (type2MT == g_pSZArrayHelperClass))
+    {
+        return false;
+    }
+
+    return !type2.CanCastTo(type1);
+}
+
 /*********************************************************************/
 // See if a cast from fromClass to toClass will succeed, fail, or needs
-// to be resolved at runtime.
+// to be resolved at runtime. fromClassIsExact specifies whether fromClass
+// represents the exact runtime type or an upper bound.
 TypeCompareState CEEInfo::compareTypesForCast(
         CORINFO_CLASS_HANDLE        fromClass,
-        CORINFO_CLASS_HANDLE        toClass)
+        CORINFO_CLASS_HANDLE        toClass,
+        bool                        fromClassIsExact)
 {
     CONTRACTL {
         THROWS;
@@ -4342,6 +4377,12 @@ TypeCompareState CEEInfo::compareTypesForCast(
                 result = TypeCompareState::MustNot;
             }
         }
+    }
+
+    if ((result == TypeCompareState::MustNot) && !fromClassIsExact && !isExactTypeHelper(fromHnd) &&
+        !AreClassHierarchiesDisjoint(fromHnd, toHnd))
+    {
+        result = TypeCompareState::May;
     }
 
     EE_TO_JIT_TRANSITION();

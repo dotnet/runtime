@@ -2777,7 +2777,7 @@ ValueNum ValueNumStore::VNForCast(VNFunc func, ValueNum castToVN, ValueNum objVN
         if ((castFrom != NO_CLASS_HANDLE) &&
             EmbeddedHandleMapLookup(ConstantValue<ssize_t>(castToVN), (ssize_t*)&castTo) && (castTo != NO_CLASS_HANDLE))
         {
-            TypeCompareState castResult = m_compiler->info.compCompHnd->compareTypesForCast(castFrom, castTo);
+            TypeCompareState castResult = m_compiler->info.compCompHnd->compareTypesForCast(castFrom, castTo, isExact);
             if (castResult == TypeCompareState::Must)
             {
                 // IsInstanceOf/CastClass is guaranteed to succeed (we don't need to check for isExact here)

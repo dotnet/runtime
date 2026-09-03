@@ -2470,7 +2470,7 @@ GenTree* Compiler::impTypeIsAssignable(GenTree* typeTo, GenTree* typeFrom)
     CORINFO_CLASS_HANDLE hClassFrom = NO_CLASS_HANDLE;
     if (gtIsTypeof(typeTo, &hClassTo) && gtIsTypeof(typeFrom, &hClassFrom))
     {
-        TypeCompareState castResult = info.compCompHnd->compareTypesForCast(hClassFrom, hClassTo);
+        TypeCompareState castResult = info.compCompHnd->compareTypesForCast(hClassFrom, hClassTo, true);
         if (castResult == TypeCompareState::May)
         {
             // requires runtime check
@@ -3185,7 +3185,7 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                 {
                     CORINFO_RESOLVED_TOKEN isInstTok;
                     impResolveToken(codeAddr + 1, &isInstTok, CORINFO_TOKENKIND_Casting);
-                    if (info.compCompHnd->compareTypesForCast(pResolvedToken->hClass, isInstTok.hClass) ==
+                    if (info.compCompHnd->compareTypesForCast(pResolvedToken->hClass, isInstTok.hClass, true) ==
                         TypeCompareState::MustNot)
                     {
                         JITDUMP("\n Importing BOX; ISINST; as null\n");
@@ -3256,7 +3256,7 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
 
                             TypeCompareState castResult =
                                 info.compCompHnd->compareTypesForCast(pResolvedToken->hClass,
-                                                                      isInstResolvedToken.hClass);
+                                                                      isInstResolvedToken.hClass, true);
 
                             if (castResult != TypeCompareState::May)
                             {
@@ -3282,7 +3282,7 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                             CORINFO_CLASS_HANDLE underlyingCls = info.compCompHnd->getTypeForBox(nullableCls);
 
                             TypeCompareState castResult =
-                                info.compCompHnd->compareTypesForCast(underlyingCls, isInstResolvedToken.hClass);
+                                info.compCompHnd->compareTypesForCast(underlyingCls, isInstResolvedToken.hClass, true);
 
                             if (castResult == TypeCompareState::Must)
                             {
@@ -5513,7 +5513,7 @@ GenTree* Compiler::impOptimizeCastClassOrIsInst(GenTree* op1, CORINFO_RESOLVED_T
                 eeGetClassName(toClass));
 
         // Perhaps we know if the cast will succeed or fail.
-        TypeCompareState castResult = info.compCompHnd->compareTypesForCast(fromClass, toClass);
+        TypeCompareState castResult = info.compCompHnd->compareTypesForCast(fromClass, toClass, isExact);
 
         if (castResult == TypeCompareState::Must)
         {
@@ -5523,34 +5523,7 @@ GenTree* Compiler::impOptimizeCastClassOrIsInst(GenTree* op1, CORINFO_RESOLVED_T
         }
         else if (castResult == TypeCompareState::MustNot)
         {
-            // See if we can prove that no subtype of fromClass can be cast to toClass.
-            bool castMustFail = isExact || info.compCompHnd->isExactType(fromClass);
-
-            if (!castMustFail && !isCastClass)
-            {
-                constexpr unsigned nonClassTypeAttribs = CORINFO_FLG_ARRAY | CORINFO_FLG_DELEGATE |
-                                                         CORINFO_FLG_GENERIC_TYPE_VARIABLE | CORINFO_FLG_INTERFACE |
-                                                         CORINFO_FLG_VALUECLASS;
-
-                // If both types are ordinary classes and neither derives from the other,
-                // then their class hierarchies cannot overlap.
-                const unsigned toClassAttribs = info.compCompHnd->getClassAttribs(toClass);
-                if ((toClassAttribs & nonClassTypeAttribs) == 0)
-                {
-                    const unsigned fromClassAttribs = info.compCompHnd->getClassAttribs(fromClass);
-                    if ((fromClassAttribs & nonClassTypeAttribs) == 0)
-                    {
-                        const TypeCompareState reverseCastResult =
-                            info.compCompHnd->compareTypesForCast(toClass, fromClass);
-                        if (reverseCastResult == TypeCompareState::MustNot)
-                        {
-                            castMustFail = true;
-                        }
-                    }
-                }
-            }
-
-            if (castMustFail && !isCastClass)
+            if (!isCastClass)
             {
                 JITDUMP("Cast will fail, optimizing to return null\n");
 
@@ -5567,13 +5540,9 @@ GenTree* Compiler::impOptimizeCastClassOrIsInst(GenTree* op1, CORINFO_RESOLVED_T
                 }
                 return gtNewNull();
             }
-            else if (castMustFail)
-            {
-                JITDUMP("Not optimizing failing castclass (yet)\n");
-            }
             else
             {
-                JITDUMP("Can't optimize since fromClass is inexact\n");
+                JITDUMP("Not optimizing failing castclass (yet)\n");
             }
         }
         else

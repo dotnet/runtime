@@ -3069,7 +3069,8 @@ namespace Internal.JitInterface
         private bool canCast(CORINFO_CLASS_STRUCT_* child, CORINFO_CLASS_STRUCT_* parent)
         { throw new NotImplementedException("canCast"); }
 
-        private TypeCompareState compareTypesForCast(CORINFO_CLASS_STRUCT_* fromClass, CORINFO_CLASS_STRUCT_* toClass)
+        private TypeCompareState compareTypesForCast(
+            CORINFO_CLASS_STRUCT_* fromClass, CORINFO_CLASS_STRUCT_* toClass, bool fromClassIsExact)
         {
             TypeDesc fromType = HandleToObject(fromClass);
             TypeDesc toType = HandleToObject(toClass);
@@ -3137,6 +3138,12 @@ namespace Internal.JitInterface
                 }
             }
 
+            if (result == TypeCompareState.MustNot && !fromClassIsExact && !isExactType(fromClass) &&
+                !AreClassHierarchiesDisjoint(fromType, toType))
+            {
+                result = TypeCompareState.May;
+            }
+
 #if READYTORUN
             // In R2R it is a breaking change for a previously positive
             // cast to become negative, but not for a previously negative
@@ -3183,6 +3190,45 @@ namespace Internal.JitInterface
             return merged == type1;
         }
 
+        private static bool AreClassHierarchiesDisjoint(TypeDesc type1, TypeDesc type2)
+        {
+            if (type1.IsCanonicalSubtype(CanonicalFormKind.Any) ||
+                type2.IsCanonicalSubtype(CanonicalFormKind.Any) ||
+                !type1.IsDefType ||
+                !type2.IsDefType ||
+                type1.IsInterface ||
+                type2.IsInterface ||
+                type1.IsArray ||
+                type2.IsArray ||
+                type1.IsDelegate ||
+                type2.IsDelegate ||
+                type1.IsValueType ||
+                type2.IsValueType ||
+                type1.HasTypeEquivalence ||
+                type2.HasTypeEquivalence ||
+                type1.HasVariance ||
+                type2.HasVariance ||
+                IsArrayInterfaceDispatchType(type1) ||
+                IsArrayInterfaceDispatchType(type2))
+            {
+                return false;
+            }
+
+            return !type2.CanCastTo(type1);
+        }
+
+        private static bool IsArrayInterfaceDispatchType(TypeDesc type)
+        {
+            if (type.IsIntrinsic && type is MetadataType mdType)
+            {
+                Utf8Span name = mdType.Name;
+                return (name == "SZArrayHelper"u8 || name == "Array`1"u8) &&
+                    mdType.Namespace == "System"u8;
+            }
+
+            return false;
+        }
+
         private bool isExactType(CORINFO_CLASS_STRUCT_* cls)
         {
             TypeDesc type = HandleToObject(cls);
@@ -3219,14 +3265,9 @@ namespace Internal.JitInterface
             // to embed their MT as a constant and mis-read fields off it. Both types
             // are marked [Intrinsic] so that the cheap flag check filters out
             // non-candidates before we compare names.
-            if (type.IsIntrinsic && type is MetadataType mdType)
+            if (IsArrayInterfaceDispatchType(type))
             {
-                Utf8Span name = mdType.Name;
-                if ((name == "SZArrayHelper"u8 || name == "Array`1"u8) &&
-                    mdType.Namespace == "System"u8)
-                {
-                    return false;
-                }
+                return false;
             }
 
             // Valuetypes are invariant. This assumes that introducing type equivalence to an existing type

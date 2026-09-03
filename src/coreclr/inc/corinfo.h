@@ -2818,10 +2818,12 @@ public:
             ) = 0;
 
     // See if a cast from fromClass to toClass will succeed, fail, or needs
-    // to be resolved at runtime.
+    // to be resolved at runtime. fromClassIsExact specifies whether fromClass
+    // represents the exact runtime type or an upper bound.
     virtual TypeCompareState compareTypesForCast(
             CORINFO_CLASS_HANDLE        fromClass,
-            CORINFO_CLASS_HANDLE        toClass
+            CORINFO_CLASS_HANDLE        toClass,
+            bool                        fromClassIsExact
             ) = 0;
 
     // See if types represented by cls1 and cls2 compare equal, not

@@ -783,10 +783,11 @@ bool WrapICorJitInfo::canCast(
 
 TypeCompareState WrapICorJitInfo::compareTypesForCast(
           CORINFO_CLASS_HANDLE fromClass,
-          CORINFO_CLASS_HANDLE toClass)
+          CORINFO_CLASS_HANDLE toClass,
+          bool fromClassIsExact)
 {
     API_ENTER(compareTypesForCast);
-    TypeCompareState temp = wrapHnd->compareTypesForCast(fromClass, toClass);
+    TypeCompareState temp = wrapHnd->compareTypesForCast(fromClass, toClass, fromClassIsExact);
     API_LEAVE(compareTypesForCast);
     return temp;
 }
