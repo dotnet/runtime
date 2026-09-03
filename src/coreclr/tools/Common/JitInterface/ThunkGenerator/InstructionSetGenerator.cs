@@ -670,6 +670,12 @@ namespace Internal.JitInterface
                 foreach (var implication in _implications)
                 {
                     if (implication.Architecture != architecture) continue;
+                    if (implication.Architecture == "Wasm32" && implication.JitName == "RelaxedSimd" && implication.ImpliedJitName == "PackedSimd")
+                    {
+                        // PackedSimd is enabled by default on wasm; RelaxedSimd remains opt-in.
+                        continue;
+                    }
+
                     AddReverseImplication(architecture, implication.JitName, implication.ImpliedJitName);
                 }
                 tr.WriteLine("                        break;");

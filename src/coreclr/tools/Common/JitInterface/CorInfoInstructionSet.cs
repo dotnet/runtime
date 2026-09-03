@@ -935,8 +935,6 @@ namespace Internal.JitInterface
                     case TargetArchitecture.Wasm32:
                         if (resultflags.HasInstructionSet(InstructionSet.Wasm32_PackedSimd))
                             resultflags.AddInstructionSet(InstructionSet.Wasm32_Vector128);
-                        if (resultflags.HasInstructionSet(InstructionSet.Wasm32_PackedSimd))
-                            resultflags.AddInstructionSet(InstructionSet.Wasm32_RelaxedSimd);
                         if (resultflags.HasInstructionSet(InstructionSet.Wasm32_WasmBase))
                             resultflags.AddInstructionSet(InstructionSet.Wasm32_PackedSimd);
                         break;
