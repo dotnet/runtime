@@ -20,11 +20,7 @@ Abstract:
 #define _PAL_SHMOBJECT_HPP
 
 #include "palobjbase.hpp"
-
-extern "C"
-{
 #include "pal/list.h"
-}
 
 namespace CorUnix
 {
