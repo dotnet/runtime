@@ -778,6 +778,22 @@ namespace System.IO
 
                     if (component == "..")
                     {
+                        string? directoryTarget = Interop.Sys.ReadLink(currentPath);
+                        if (directoryTarget != null)
+                        {
+                            ThrowIfTooManyLinks();
+                            if (pendingComponentCount == pendingComponents.Length)
+                            {
+                                Array.Resize(ref pendingComponents, pendingComponents.Length * 2);
+                            }
+
+                            // Resolve a directory link before moving to its parent. ReadLink follows
+                            // intermediate links in linkPath, so a relative target may cross this boundary.
+                            pendingComponents[pendingComponentCount++] = component;
+                            FollowLinkTarget(directoryTarget);
+                            continue;
+                        }
+
                         currentPath = Path.GetDirectoryName(currentPath) ?? currentPath;
                         continue;
                     }

@@ -294,6 +294,24 @@ namespace System.IO.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void ResolveLinkTarget_ReturnFinalTarget_DanglingTargetThroughIntermediateDirectoryLink()
+        {
+            string rootPath = GetRandomDirPath();
+            string targetDirectoryPath = Path.Join(rootPath, "deep", "deeper");
+            Directory.CreateDirectory(targetDirectoryPath);
+
+            Directory.CreateSymbolicLink(Path.Join(rootPath, "a"), Path.Join("deep", "deeper"));
+
+            string linkPath = Path.Join(targetDirectoryPath, "link");
+            CreateSymbolicLink(linkPath, Path.Join("..", "missing"));
+
+            FileSystemInfo targetInfo = ResolveLinkTarget(Path.Join(rootPath, "a", "link"), returnFinalTarget: true);
+            Assert.Equal(Path.Join(rootPath, "deep", "missing"), targetInfo.FullName);
+            Assert.False(targetInfo.Exists);
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void ResolveLinkTarget_ReturnFinalTarget_IntermediateDirectoryLinkCycle_Throws()
         {
             string rootPath = GetRandomDirPath();
