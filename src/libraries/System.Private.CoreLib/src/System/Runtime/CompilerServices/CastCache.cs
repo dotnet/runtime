@@ -157,29 +157,21 @@ namespace System.Runtime.CompilerServices
                 // we must read in this order: version -> [entry parts] -> version
                 // if version is odd or changes, the entry is inconsistent and thus ignored
                 uint version = Volatile.Read(ref pEntry._version);
-                nuint entrySource = pEntry._source;
+                nuint entrySource = Volatile.Read(ref pEntry._source);
                 // mask the lower version bit to make it even.
                 // This way we can check if version is odd or changing in just one compare.
                 version &= unchecked((uint)~1);
 
                 if (entrySource == source)
                 {
-                    // we do ordinary reads of the entry parts and
-                    // Volatile.ReadBarrier() before reading the version
-                    nuint entryTargetAndResult = pEntry._targetAndResult;
+                    // Acquire reads of both entry parts ensure that the second version
+                    // read happens after the entry has been read.
+                    nuint entryTargetAndResult = Volatile.Read(ref pEntry._targetAndResult);
                     // target never has its lower bit set.
                     // a matching entryTargetAndResult would the have same bits, except for the lowest one, which is the result.
                     entryTargetAndResult ^= target;
                     if (entryTargetAndResult <= 1)
                     {
-                        // make sure the second read of 'version' happens after reading 'source' and 'targetAndResults'
-                        //
-                        // We can either:
-                        // - use acquires for both _source and _targetAndResults or
-                        // - issue a load barrier before reading _version
-                        // benchmarks on available hardware (Jan 2020) show that use of a read barrier is cheaper.
-                        Volatile.ReadBarrier();
-
                         if (version != pEntry._version)
                         {
                             // oh, so close, the entry is in inconsistent state.
