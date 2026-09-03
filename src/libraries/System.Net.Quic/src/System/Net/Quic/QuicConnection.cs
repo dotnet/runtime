@@ -300,11 +300,11 @@ public sealed partial class QuicConnection : IAsyncDisposable
                 options.ClientAuthenticationOptions.CertificateChainPolicy?.Clone());
             _configuration = MsQuicConfiguration.Create(options);
 
-            // RFC 6066 forbids IP literals
-            // DNI mapping is handled by MsQuic
-            string sni = (TargetHostNameHelper.IsValidAddress(options.ClientAuthenticationOptions.TargetHost) ? null : options.ClientAuthenticationOptions.TargetHost) ?? host ?? address?.ToString() ?? string.Empty;
+            // RFC 6066 forbids IP literals.
+            // IDN mapping is handled by MsQuic.
+            string? sni = (TargetHostNameHelper.IsValidAddress(options.ClientAuthenticationOptions.TargetHost) ? null : options.ClientAuthenticationOptions.TargetHost) ?? host;
 
-            IntPtr targetHostPtr = Marshal.StringToCoTaskMemUTF8(sni);
+            IntPtr targetHostPtr = !string.IsNullOrEmpty(sni) ? Marshal.StringToCoTaskMemUTF8(sni) : IntPtr.Zero;
             try
             {
                 unsafe
@@ -320,7 +320,10 @@ public sealed partial class QuicConnection : IAsyncDisposable
             }
             finally
             {
-                Marshal.FreeCoTaskMem(targetHostPtr);
+                if (targetHostPtr != IntPtr.Zero)
+                {
+                    Marshal.FreeCoTaskMem(targetHostPtr);
+                }
             }
         }
 
