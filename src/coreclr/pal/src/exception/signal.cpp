@@ -975,15 +975,14 @@ static void inject_activation_handler(int code, siginfo_t *siginfo, void *contex
     else
     {
         // Call the original handler when it is not ignored or default (terminate).
-        if (g_previous_activation.sa_flags & SA_SIGINFO)
+        if (!IsSigDfl(&g_previous_activation) && !IsSigIgn(&g_previous_activation))
         {
-            _ASSERTE(g_previous_activation.sa_sigaction != NULL);
-            g_previous_activation.sa_sigaction(code, siginfo, context);
-        }
-        else
-        {
-            if (g_previous_activation.sa_handler != SIG_IGN &&
-                g_previous_activation.sa_handler != SIG_DFL)
+            if (IsSaSigInfo(&g_previous_activation))
+            {
+                _ASSERTE(g_previous_activation.sa_sigaction != NULL);
+                g_previous_activation.sa_sigaction(code, siginfo, context);
+            }
+            else
             {
                 _ASSERTE(g_previous_activation.sa_handler != NULL);
                 g_previous_activation.sa_handler(code);
