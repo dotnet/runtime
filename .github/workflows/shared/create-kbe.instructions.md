@@ -519,7 +519,7 @@ Walk all nine checks before creating a new KBE:
 The `ErrorMessage` / `ErrorPattern` must uniquely identify the failure mode,
 not an entire category of crashes.
 
-Reject signatures that:
+Reject signatures consisting only of:
 
 - A bare exit code or signal (`exitcode: 139`, `Segmentation fault`, `SIGSEGV`)
 - A generic tool + verb (`Crossgen2 failed`, `ilasm failed`, `dotnet build failed`)
@@ -564,7 +564,7 @@ the shared flow. Return the failure as unhandled or human-review-needed instead.
 | `"BadImageFormatException"` | bare exception type | `"System.BadImageFormatException: Could not load file or assembly 'System.Private.CoreLib'"` |
 | `"Operation timed out"` | matches transient network failures everywhere | array: `["xharness exec android test", "Operation timed out after 3600s"]` with `BuildRetry: false` |
 | `"ComInterfaceGenerator.Tests.ilc.rsp exited with code 134"` | paraphrased; not in the log | copy the actual MSBuild line verbatim: `"Microsoft.NETCore.Native.targets(313,5): error MSB3073: ... exited with code 134."` |
-| array: `["Running test: profiler/gc/nongcheap/nongcheap.cmd", "Profiler tests are expected to contain the text 'PROFILER TEST PASSES'"]` | announcement plus suite-harness error from a shared console log; matches unrelated profiler tests | use the failing test's exact assertion/error line from per-test output, or set `ExcludeConsoleLog: true` |
+| array: `["Running test: profiler/gc/nongcheap/nongcheap.cmd", "Profiler tests are expected to contain the text 'PROFILER TEST PASSES'"]` | announcement plus suite-harness error from a shared console log; matches unrelated profiler tests | use the failing test's exact assertion/error line from per-test output, or set `ExcludeConsoleLog: true` and use a signature from a per-test or leg-level (non-console) log source |
 
 <a id="sanitization"></a>
 
