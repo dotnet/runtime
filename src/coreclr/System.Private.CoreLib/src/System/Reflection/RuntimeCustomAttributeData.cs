@@ -321,23 +321,20 @@ namespace System.Reflection
             Justification = "Property setters and fields which are accessed by any attribute instantiation which is present in the code linker has analyzed." +
                             "As such enumerating all fields and properties may return different results after trimming" +
                             "but all those which are needed to actually have data will be there.")]
-#if !NATIVEAOT
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
-            Justification = "We're getting a MethodBase of a constructor that we found in the metadata. The attribute constructor won't be trimmed.")]
-#endif
 #if NATIVEAOT
         internal RuntimeCustomAttributeData(MetadataReader reader, CustomAttributeHandle customAttributeHandle)
 #else
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+            Justification = "We're getting a MethodBase of a constructor that we found in the metadata. The attribute constructor won't be trimmed.")]
         private RuntimeCustomAttributeData(RuntimeModule scope, MetadataToken caCtorToken, in ConstArray blob)
 #endif
         {
 #if NATIVEAOT
             m_scope = reader;
-            CustomAttribute attributeData = customAttributeHandle.GetCustomAttribute(reader);
-            m_ctor = ResolveAttributeConstructor(reader, attributeData);
+            CustomAttribute blob = customAttributeHandle.GetCustomAttribute(reader);
+            m_ctor = ResolveAttributeConstructor(reader, blob);
 #else
             m_scope = scope;
-            ConstArray attributeData = blob;
             m_ctor = (RuntimeConstructorInfo)RuntimeType.GetMethodBase(m_scope, caCtorToken)!;
 
             if (m_ctor.DeclaringType!.IsGenericType)
@@ -383,7 +380,7 @@ namespace System.Reflection
                     new CustomAttributeType((RuntimeType)pi.PropertyType));
             }
 
-            CustomAttributeEncodedArgument.ParseAttributeArguments(attributeData, m_ctorParams, m_namedParams, m_scope);
+            CustomAttributeEncodedArgument.ParseAttributeArguments(blob, m_ctorParams, m_namedParams, m_scope);
         }
         #endregion
 
@@ -798,14 +795,8 @@ namespace System.Reflection
                         throw new BadImageFormatException(SR.Arg_CustomAttributeFormatException);
                     }
 
-                    ParseCtorArgs(
-                        ref parser,
-                        customAttributeCtorParameters,
-                        customAttributeModule);
-                    ParseNamedArgs(
-                        ref parser,
-                        customAttributeNamedParameters,
-                        customAttributeModule);
+                    ParseCtorArgs(ref parser, customAttributeCtorParameters, customAttributeModule);
+                    ParseNamedArgs(ref parser, customAttributeNamedParameters, customAttributeModule);
                 }
                 catch (Exception ex) when (ex is not OutOfMemoryException)
                 {
