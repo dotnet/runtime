@@ -464,7 +464,7 @@ namespace System.Security.Cryptography.Pkcs
                 // If no certificate was requested then the CMS Certificates collection
                 // MUST be empty.
 
-                if (tokenCms.Certificates.Count != 0)
+                if (tokenCms.GetCertificatesNoClone().Count != 0)
                 {
                     if (shouldThrow)
                     {

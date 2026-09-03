@@ -85,7 +85,16 @@ namespace System.Security.Cryptography.Xml
                             XmlDocument doc = new XmlDocument();
                             doc.PreserveWhitespace = true;
                             XmlReader valReader = Utils.PreProcessStreamInput(currentInputStream, resolver, baseUri);
-                            doc.Load(valReader);
+                            long maxDepth = LocalAppContextSwitches.CryptoXmlMaxInputDocumentDepth;
+                            if (maxDepth > 0)
+                            {
+                                Utils.LoadXmlDocumentWithMaxDepthCheck(doc, valReader, maxDepth);
+                            }
+                            else
+                            {
+                                doc.Load(valReader);
+                            }
+
                             transform.LoadInput(doc);
                             currentInputStream.Close();
                             currentInput = transform.GetOutput();
