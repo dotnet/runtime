@@ -220,7 +220,11 @@ protected:
     unsigned                   findTargetDepth(BasicBlock* target);
     void                       WasmProduceReg(GenTree* node);
     regNumber                  GetMultiUseOperandReg(GenTree* operand);
+    void                       genEmitMultiUseOperandGet(GenTree* operand);
+    void                       genEmitMultiUseOperandGet(GenTree* operand, regNumber reg);
     void                       genEmitNullCheck(regNumber reg);
+    void                       genEmitNullCheck(GenTree* addr);
+    void                       genEmitNullCheck(GenTree* addr, regNumber reg);
     unsigned                   GetStackPointerRegIndex() const;
     unsigned                   GetFramePointerRegIndex() const;
     void                       ensureCurrentFuncIsUnwindable();
@@ -931,7 +935,13 @@ public:
     };
 
 protected:
+#ifdef TARGET_WASM
+    // On wasm the checked value is re-materialized from its node rather than named by a register,
+    // since doing so may require a narrowing conversion. See "genEmitMultiUseOperandGet".
+    void genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& desc);
+#else
     void genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& desc, regNumber reg);
+#endif
     void genIntToIntCast(GenTreeCast* cast);
     void genFloatToFloatCast(GenTree* treeNode);
     void genFloatToIntCast(GenTree* treeNode);

@@ -825,6 +825,50 @@ regNumber CodeGen::GetMultiUseOperandReg(GenTree* operand)
 }
 
 //------------------------------------------------------------------------
+// genEmitMultiUseOperandGet: Re-push a multi-use operand's value onto the value stack.
+//
+// Wrapper over "GetMultiUseOperandReg" that emits the "local.get" as well, because naming the
+// register is not by itself enough to reproduce the operand's value.
+//
+// Morph narrows "CAST(int <- long, LCL_VAR long)" into "LCL_VAR int", so a TYP_INT operand can
+// name a register candidate homed in a wasm local of type i64. "genCodeForLclVar" appends an
+// "i32.wrap_i64" for that case, and re-materializing the operand must do the same. Emitting a
+// bare "local.get" instead pushes an i64 where an i32 is expected, producing a module that fails
+// wasm validation (e.g. "i32.eqz[0] expected type i32, found local.get of type i64").
+//
+// Arguments:
+//    operand - The multi-use operand node
+//
+void CodeGen::genEmitMultiUseOperandGet(GenTree* operand)
+{
+    genEmitMultiUseOperandGet(operand, GetMultiUseOperandReg(operand));
+}
+
+//------------------------------------------------------------------------
+// genEmitMultiUseOperandGet: Re-push a multi-use operand's value onto the value stack, using a
+// register fetched earlier.
+//
+// Arguments:
+//    operand - The multi-use operand node
+//    reg     - The operand's register, as returned by "GetMultiUseOperandReg"
+//
+void CodeGen::genEmitMultiUseOperandGet(GenTree* operand, regNumber reg)
+{
+    // A register candidate is homed in a wasm local of the *variable's* type, which is wider than
+    // the node's type when morph has narrowed the local. Everything else is homed in a temporary
+    // of the node's own type.
+    bool const narrows = genIsRegCandidateLocal(operand) && operand->TypeIs(TYP_INT) &&
+                         m_compiler->lvaGetDesc(operand->AsLclVarCommon())->TypeIs(TYP_LONG);
+
+    GetEmitter()->emitIns_I(INS_local_get, narrows ? EA_8BYTE : emitActualTypeSize(operand), WasmRegToIndex(reg));
+
+    if (narrows)
+    {
+        GetEmitter()->emitIns(INS_i32_wrap_i64);
+    }
+}
+
+//------------------------------------------------------------------------
 // genCodeForTreeNode: codegen for a particular tree node
 //
 // Arguments:
@@ -1333,9 +1377,7 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
 
     if (desc.CheckKind() != GenIntCastDesc::CHECK_NONE)
     {
-        GenTree*  castValue = cast->gtGetOp1();
-        regNumber castReg   = GetMultiUseOperandReg(castValue);
-        genIntCastOverflowCheck(cast, desc, castReg);
+        genIntCastOverflowCheck(cast, desc);
     }
 
     var_types   toType     = genActualType(cast->CastToType());
@@ -1410,14 +1452,14 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
 // Arguments:
 //    cast - The GT_CAST node
 //    desc - The cast description
-//    reg  - The register containing the value to check
 //
-void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& desc, regNumber reg)
+void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& desc)
 {
     bool const     is64BitSrc = (desc.CheckSrcSize() == 8);
     emitAttr const srcSize    = is64BitSrc ? EA_8BYTE : EA_4BYTE;
+    GenTree* const castValue  = cast->gtGetOp1();
 
-    GetEmitter()->emitIns_I(INS_local_get, srcSize, WasmRegToIndex(reg));
+    genEmitMultiUseOperandGet(castValue);
 
     switch (desc.CheckKind())
     {
@@ -1455,7 +1497,7 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
         {
             // LONG to INT
             GetEmitter()->emitIns(INS_i64_extend32_s);
-            GetEmitter()->emitIns_I(INS_local_get, srcSize, WasmRegToIndex(reg));
+            genEmitMultiUseOperandGet(castValue);
             GetEmitter()->emitIns(INS_i64_ne);
             genJumpToThrowHlpBlk(SCK_OVERFLOW);
             break;
@@ -1482,7 +1524,7 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
                 assert(!cast->IsUnsigned());
                 GetEmitter()->emitIns_I(is64BitSrc ? INS_i64_const : INS_i32_const, srcSize, castMaxValue);
                 GetEmitter()->emitIns(is64BitSrc ? INS_i64_gt_s : INS_i32_gt_s);
-                GetEmitter()->emitIns_I(INS_local_get, srcSize, WasmRegToIndex(reg));
+                genEmitMultiUseOperandGet(castValue);
                 GetEmitter()->emitIns_I(is64BitSrc ? INS_i64_const : INS_i32_const, srcSize, castMinValue);
                 GetEmitter()->emitIns(is64BitSrc ? INS_i64_lt_s : INS_i32_lt_s);
                 GetEmitter()->emitIns(INS_i32_or);
@@ -1728,8 +1770,8 @@ void CodeGen::genCodeForBinaryOverflow(GenTreeOp* treeNode)
 
     const bool    is64BitOp = treeNode->TypeIs(TYP_LONG);
     InternalRegs* regs      = internalRegisters.GetAll(treeNode);
-    regNumber     op1Reg    = GetMultiUseOperandReg(treeNode->gtGetOp1());
-    regNumber     op2Reg    = GetMultiUseOperandReg(treeNode->gtGetOp2());
+    GenTree* const op1      = treeNode->gtGetOp1();
+    GenTree* const op2      = treeNode->gtGetOp2();
 
     switch (treeNode->OperGet())
     {
@@ -1746,7 +1788,7 @@ void CodeGen::genCodeForBinaryOverflow(GenTreeOp* treeNode)
             {
                 // Unsigned add overflows iff the result is less than op1 (unsigned compare).
                 GetEmitter()->emitIns_I(INS_local_tee, emitActualTypeSize(treeNode), WasmRegToIndex(resultReg));
-                GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(op1Reg));
+                genEmitMultiUseOperandGet(op1);
                 GetEmitter()->emitIns(is64BitOp ? INS_i64_lt_u : INS_i32_lt_u);
                 genJumpToThrowHlpBlk(SCK_OVERFLOW);
             }
@@ -1754,8 +1796,8 @@ void CodeGen::genCodeForBinaryOverflow(GenTreeOp* treeNode)
             {
                 GetEmitter()->emitIns_I(INS_local_set, emitActualTypeSize(treeNode), WasmRegToIndex(resultReg));
                 // See if addends had the same sign. XOR leaves a non-negative result if they had the same sign.
-                GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(op1Reg));
-                GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(op2Reg));
+                genEmitMultiUseOperandGet(op1);
+                genEmitMultiUseOperandGet(op2);
                 GetEmitter()->emitIns(is64BitOp ? INS_i64_xor : INS_i32_xor);
 
                 // TODO-WASM-CQ: consider branchless alternative here (and for sub)
@@ -1765,7 +1807,7 @@ void CodeGen::genCodeForBinaryOverflow(GenTreeOp* treeNode)
                 {
                     // Operands have the same sign. If the sum has a different sign, then the add overflowed.
                     GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(resultReg));
-                    GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(op1Reg));
+                    genEmitMultiUseOperandGet(op1);
                     GetEmitter()->emitIns(is64BitOp ? INS_i64_xor : INS_i32_xor);
                     GetEmitter()->emitIns_I(is64BitOp ? INS_i64_const : INS_i32_const, emitActualTypeSize(treeNode), 0);
                     GetEmitter()->emitIns(is64BitOp ? INS_i64_lt_s : INS_i32_lt_s);
@@ -1791,16 +1833,16 @@ void CodeGen::genCodeForBinaryOverflow(GenTreeOp* treeNode)
             if (treeNode->IsUnsigned())
             {
                 // Unsigned sub overflows iff op1 is less than op2 (unsigned compare).
-                GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(op1Reg));
-                GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(op2Reg));
+                genEmitMultiUseOperandGet(op1);
+                genEmitMultiUseOperandGet(op2);
                 GetEmitter()->emitIns(is64BitOp ? INS_i64_lt_u : INS_i32_lt_u);
                 genJumpToThrowHlpBlk(SCK_OVERFLOW);
             }
             else
             {
                 // See if operands had a different sign. XOR leaves a negative result if they had different signs.
-                GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(op1Reg));
-                GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(op2Reg));
+                genEmitMultiUseOperandGet(op1);
+                genEmitMultiUseOperandGet(op2);
                 GetEmitter()->emitIns(is64BitOp ? INS_i64_xor : INS_i32_xor);
                 GetEmitter()->emitIns_I(is64BitOp ? INS_i64_const : INS_i32_const, emitActualTypeSize(treeNode), 0);
                 GetEmitter()->emitIns(is64BitOp ? INS_i64_lt_s : INS_i32_lt_s);
@@ -1809,7 +1851,7 @@ void CodeGen::genCodeForBinaryOverflow(GenTreeOp* treeNode)
                     // Operands have different signs. If the difference has a different sign than op1, then the
                     // subtraction overflowed.
                     GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(resultReg));
-                    GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(op1Reg));
+                    genEmitMultiUseOperandGet(op1);
                     GetEmitter()->emitIns(is64BitOp ? INS_i64_xor : INS_i32_xor);
                     GetEmitter()->emitIns_I(is64BitOp ? INS_i64_const : INS_i32_const, emitActualTypeSize(treeNode), 0);
                     GetEmitter()->emitIns(is64BitOp ? INS_i64_lt_s : INS_i32_lt_s);
@@ -1841,7 +1883,7 @@ void CodeGen::genCodeForBinaryOverflow(GenTreeOp* treeNode)
             // lower.
             GetEmitter()->emitIns(INS_drop);
             GetEmitter()->emitIns(isUnsigned ? INS_i64_extend_u_i32 : INS_i64_extend_s_i32);
-            GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(op2Reg));
+            genEmitMultiUseOperandGet(op2);
             GetEmitter()->emitIns(isUnsigned ? INS_i64_extend_u_i32 : INS_i64_extend_s_i32);
             GetEmitter()->emitIns(INS_i64_mul);
 
@@ -1896,12 +1938,10 @@ void CodeGen::genCodeForDivMod(GenTreeOp* treeNode)
         emitAttr          size       = is64BitOp ? EA_8BYTE : EA_4BYTE;
 
         // (AnyVal / 0) => DivideByZeroException.
-        GenTree*  divisor    = treeNode->gtGetOp2();
-        regNumber divisorReg = REG_NA;
+        GenTree* divisor = treeNode->gtGetOp2();
         if ((exSetFlags & ExceptionSetFlags::DivideByZeroException) != ExceptionSetFlags::None)
         {
-            divisorReg = GetMultiUseOperandReg(divisor);
-            GetEmitter()->emitIns_I(INS_local_get, size, WasmRegToIndex(divisorReg));
+            genEmitMultiUseOperandGet(divisor);
             GetEmitter()->emitIns(is64BitOp ? INS_i64_eqz : INS_i32_eqz);
             genJumpToThrowHlpBlk(SCK_DIV_BY_ZERO);
         }
@@ -1909,16 +1949,11 @@ void CodeGen::genCodeForDivMod(GenTreeOp* treeNode)
         // (MinInt / -1) => ArithmeticException.
         if ((exSetFlags & ExceptionSetFlags::ArithmeticException) != ExceptionSetFlags::None)
         {
-            if (divisorReg == REG_NA)
-            {
-                divisorReg = GetMultiUseOperandReg(divisor);
-            }
-            GetEmitter()->emitIns_I(INS_local_get, size, WasmRegToIndex(divisorReg));
+            genEmitMultiUseOperandGet(divisor);
             GetEmitter()->emitIns_I(is64BitOp ? INS_i64_const : INS_i32_const, size, -1);
             GetEmitter()->emitIns(is64BitOp ? INS_i64_eq : INS_i32_eq);
 
-            regNumber dividendReg = GetMultiUseOperandReg(treeNode->gtGetOp1());
-            GetEmitter()->emitIns_I(INS_local_get, size, WasmRegToIndex(dividendReg));
+            genEmitMultiUseOperandGet(treeNode->gtGetOp1());
             GetEmitter()->emitIns_I(is64BitOp ? INS_i64_const : INS_i32_const, size, is64BitOp ? INT64_MIN : INT32_MIN);
             GetEmitter()->emitIns(is64BitOp ? INS_i64_eq : INS_i32_eq);
 
@@ -2387,6 +2422,40 @@ void CodeGen::genEmitNullCheck(regNumber reg)
     genJumpToThrowHlpBlk(SCK_NULL_CHECK);
 }
 
+//---------------------------------------------------------------------
+// genEmitNullCheck - generate code for a null check of an address operand
+//
+// Arguments:
+//    addr - the address node to check
+//
+void CodeGen::genEmitNullCheck(GenTree* addr)
+{
+    genEmitNullCheck(addr, GetMultiUseOperandReg(addr));
+}
+
+//---------------------------------------------------------------------
+// genEmitNullCheck - generate code for a null check of an address operand whose register was
+// fetched earlier
+//
+// Re-materializing the address goes through "genEmitMultiUseOperandGet" so that an address which
+// morph narrowed out of a long local (e.g. "(nint)longLocal" on wasm32) is converted back to i32
+// instead of being compared as an i64.
+//
+// Arguments:
+//    addr - the address node to check, or nullptr if only 'reg' is available
+//    reg  - the address' register, or REG_NA if the value to check is already on the value stack
+//
+void CodeGen::genEmitNullCheck(GenTree* addr, regNumber reg)
+{
+    if (addr != nullptr)
+    {
+        genEmitMultiUseOperandGet(addr, reg);
+        reg = REG_NA; // The value is now on the value stack.
+    }
+
+    genEmitNullCheck(reg);
+}
+
 //------------------------------------------------------------------------
 // genRangeCheck - generate code for a GT_BOUNDS_CHECK node
 //
@@ -2437,11 +2506,10 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
     //
     if (node->IsBoundsChecked())
     {
-        regNumber baseReg  = GetMultiUseOperandReg(base);
-        regNumber indexReg = GetMultiUseOperandReg(index);
+        regNumber baseReg = GetMultiUseOperandReg(base);
 
         // fetch index
-        GetEmitter()->emitIns_I(INS_local_get, emitTypeSize(index), WasmRegToIndex(indexReg));
+        genEmitMultiUseOperandGet(index);
 
         // fetch array length
         GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(baseReg));
@@ -2973,7 +3041,7 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
     {
         // "Base" is the address itself unless it is a contained address mode, which is never materialized.
         //
-        genEmitNullCheck(GetMultiUseOperandReg(tree->Base()));
+        genEmitNullCheck(tree->Base());
     }
 
     // TODO-WASM: Memory barriers
@@ -3027,7 +3095,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
     {
         // "Base" is the address itself unless it is a contained address mode, which is never materialized.
         //
-        genEmitNullCheck(GetMultiUseOperandReg(tree->Base()));
+        genEmitNullCheck(tree->Base());
     }
 
     GCInfo::WriteBarrierForm writeBarrierForm = gcInfo.gcIsWriteBarrierCandidate(tree);
@@ -3067,13 +3135,17 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
 //
 void CodeGen::genCall(GenTreeCall* call)
 {
-    regNumber thisReg = REG_NA;
+    GenTree*  thisNode = nullptr;
+    regNumber thisReg  = REG_NA;
 
     if (call->NeedsNullCheck())
     {
-        CallArg* thisArg  = call->gtArgs.GetThisArg();
-        GenTree* thisNode = thisArg->GetNode();
-        thisReg           = GetMultiUseOperandReg(thisNode);
+        CallArg* thisArg = call->gtArgs.GetThisArg();
+        thisNode         = thisArg->GetNode();
+
+        // The register must be fetched before the args are consumed, since consuming a last use
+        // releases it.
+        thisReg = GetMultiUseOperandReg(thisNode);
     }
 
     for (CallArg& arg : call->gtArgs.EarlyArgs())
@@ -3088,7 +3160,7 @@ void CodeGen::genCall(GenTreeCall* call)
 
     if (call->NeedsNullCheck())
     {
-        genEmitNullCheck(thisReg);
+        genEmitNullCheck(thisNode, thisReg);
     }
 
     genCallInstruction(call);
@@ -3762,6 +3834,10 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
     GenTree*  src           = blkOp->Data();
     regNumber destReg       = REG_NA;
     regNumber srcReg        = REG_NA;
+    // The address nodes behind 'destReg'/'srcReg', set only when the register came from the
+    // operand itself rather than from the frame pointer.
+    GenTree*  destAddr      = nullptr;
+    GenTree*  srcAddr       = nullptr;
     unsigned  destOffset    = 0;
     unsigned  srcOffset     = 0;
 
@@ -3781,7 +3857,8 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
         // We need to match lowering and only fetch a register for src when we're expected to.
         if (!isNativeOp || nullCheckSrc)
         {
-            srcReg = GetMultiUseOperandReg(src);
+            srcAddr = src;
+            srcReg  = GetMultiUseOperandReg(src);
         }
         assert(!src->isContained());
     }
@@ -3819,7 +3896,8 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
     }
     else if (isCopyBlk || nullCheckDest)
     {
-        destReg = GetMultiUseOperandReg(dest);
+        destAddr = dest;
+        destReg  = GetMultiUseOperandReg(dest);
     }
     else
     {
@@ -3831,11 +3909,11 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
 
     if (nullCheckDest)
     {
-        genEmitNullCheck(destReg);
+        genEmitNullCheck(destAddr, destReg);
     }
     if (nullCheckSrc)
     {
-        genEmitNullCheck(srcReg);
+        genEmitNullCheck(srcAddr, srcReg);
     }
 
     emitter* emit = GetEmitter();
