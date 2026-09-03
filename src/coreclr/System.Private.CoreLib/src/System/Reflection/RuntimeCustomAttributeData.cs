@@ -1,39 +1,27 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#if NATIVEAOT
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
-using System.Reflection.Runtime.General;
-using System.Reflection.Runtime.MethodInfos;
-using System.Reflection.Runtime.MethodInfos.NativeFormat;
-using System.Reflection.Runtime.TypeInfos;
-using System.Reflection.Runtime.TypeInfos.NativeFormat;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-
-using Internal.LowLevelLinq;
-using Internal.Metadata.NativeFormat;
-using Internal.Reflection.Augments;
-using Internal.Reflection.Core;
-
-using RuntimeModule = Internal.Metadata.NativeFormat.MetadataReader;
-using CustomAttributePayload = Internal.Metadata.NativeFormat.CustomAttribute;
-
-#else
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 
-using CustomAttributePayload = System.Reflection.ConstArray;
+#if NATIVEAOT
+using System.Reflection.Runtime.General;
+using System.Reflection.Runtime.MethodInfos;
+using System.Reflection.Runtime.MethodInfos.NativeFormat;
+using System.Reflection.Runtime.TypeInfos;
+using System.Reflection.Runtime.TypeInfos.NativeFormat;
+
+using Internal.Metadata.NativeFormat;
+
+using RuntimeModule = Internal.Metadata.NativeFormat.MetadataReader;
 #endif
 
 namespace System.Reflection
@@ -345,12 +333,11 @@ namespace System.Reflection
         {
 #if NATIVEAOT
             m_scope = reader;
-            CustomAttribute customAttribute = customAttributeHandle.GetCustomAttribute(reader);
-            CustomAttributePayload payload = customAttribute;
-            m_ctor = ResolveAttributeConstructor(reader, customAttribute);
+            CustomAttribute attributeData = customAttributeHandle.GetCustomAttribute(reader);
+            m_ctor = ResolveAttributeConstructor(reader, attributeData);
 #else
             m_scope = scope;
-            CustomAttributePayload payload = blob;
+            ConstArray attributeData = blob;
             m_ctor = (RuntimeConstructorInfo)RuntimeType.GetMethodBase(m_scope, caCtorToken)!;
 
             if (m_ctor.DeclaringType!.IsGenericType)
@@ -396,7 +383,7 @@ namespace System.Reflection
                     new CustomAttributeType((RuntimeType)pi.PropertyType));
             }
 
-            CustomAttributeEncodedArgument.ParseAttributeArguments(payload, m_ctorParams, m_namedParams, m_scope);
+            CustomAttributeEncodedArgument.ParseAttributeArguments(attributeData, m_ctorParams, m_namedParams, m_scope);
         }
         #endregion
 
@@ -603,7 +590,8 @@ namespace System.Reflection
 
     public readonly partial struct CustomAttributeTypedArgument
     {
-        internal static Type CustomAttributeEncodingToType(CustomAttributeEncoding encodedType)
+        #region Private Static Methods
+        private static Type CustomAttributeEncodingToType(CustomAttributeEncoding encodedType)
         {
             return encodedType switch
             {
@@ -628,7 +616,6 @@ namespace System.Reflection
             };
         }
 
-        #region Private Static Methods
         private static object EncodedValueToRawValue(PrimitiveValue val, CustomAttributeEncoding encodedType)
         {
             return encodedType switch
@@ -686,7 +673,10 @@ namespace System.Reflection
 #if NATIVEAOT
                 _value = encodedArg.TypeValue;
 #else
-                _value = encodedArg.StringValue is null ? null : ResolveType(scope, encodedArg.StringValue);
+                _value = null;
+
+                if (encodedArg.StringValue is not null)
+                    _value = ResolveType(scope, encodedArg.StringValue);
 #endif
             }
             else if (encodedType == CustomAttributeEncoding.Array)
@@ -780,7 +770,11 @@ namespace System.Reflection
     internal sealed class CustomAttributeEncodedArgument
     {
         internal static void ParseAttributeArguments(
-            CustomAttributePayload attributeBlob,
+#if NATIVEAOT
+            CustomAttribute attributeData,
+#else
+            ConstArray attributeData,
+#endif
             CustomAttributeCtorParameter[] customAttributeCtorParameters,
             CustomAttributeNamedParameter[] customAttributeNamedParameters,
             RuntimeModule customAttributeModule)
@@ -792,7 +786,11 @@ namespace System.Reflection
 
             if (customAttributeCtorParameters.Length != 0 || customAttributeNamedParameters.Length != 0)
             {
-                CustomAttributeDataParser parser = new CustomAttributeDataParser(attributeBlob, customAttributeModule);
+#if NATIVEAOT
+                CustomAttributeDataParser parser = new CustomAttributeDataParser(attributeData, customAttributeModule);
+#else
+                CustomAttributeDataParser parser = new CustomAttributeDataParser(attributeData);
+#endif
                 try
                 {
                     if (!parser.ValidateProlog())
@@ -800,8 +798,14 @@ namespace System.Reflection
                         throw new BadImageFormatException(SR.Arg_CustomAttributeFormatException);
                     }
 
-                    ParseCtorArgs(ref parser, customAttributeCtorParameters, customAttributeModule);
-                    ParseNamedArgs(ref parser, customAttributeNamedParameters, customAttributeModule);
+                    ParseCtorArgs(
+                        ref parser,
+                        customAttributeCtorParameters,
+                        customAttributeModule);
+                    ParseNamedArgs(
+                        ref parser,
+                        customAttributeNamedParameters,
+                        customAttributeModule);
                 }
                 catch (Exception ex) when (ex is not OutOfMemoryException)
                 {
@@ -828,13 +832,24 @@ namespace System.Reflection
             CustomAttributeCtorParameter[] customAttributeCtorParameters,
             RuntimeModule module)
         {
+#if NATIVEAOT
+            HandleCollection.Enumerator fixedArguments = parser.Attribute.FixedArguments.GetEnumerator();
+#endif
             foreach (CustomAttributeCtorParameter p in customAttributeCtorParameters)
             {
-                parser.MoveToNextFixedArgument();
+#if NATIVEAOT
+                if (!fixedArguments.MoveNext())
+                {
+                    throw new BadImageFormatException();
+                }
+
+                p.EncodedArgument = parser.ParseValue(fixedArguments.Current, p.CustomAttributeType);
+#else
                 p.EncodedArgument = ParseCustomAttributeValue(
                     ref parser,
                     p.CustomAttributeType,
                     module);
+#endif
             }
         }
 
@@ -843,25 +858,35 @@ namespace System.Reflection
             CustomAttributeNamedParameter[] customAttributeNamedParameters,
             RuntimeModule module)
         {
+#if NATIVEAOT
+            foreach (NamedArgumentHandle namedArgumentHandle in parser.Attribute.NamedArguments)
+            {
+                NamedArgument namedArgument = namedArgumentHandle.GetNamedArgument(module);
+#else
             // Parse the named arguments in the custom attribute.
-            int argCount = parser.GetNamedArgumentCount();
+            int argCount = parser.GetI2();
 
             for (int i = 0; i < argCount; ++i)
             {
-                parser.MoveToNextNamedArgument();
-
                 // Determine if a field or property.
-                CustomAttributeEncoding namedArgFieldOrProperty = parser.GetNamedArgumentKind();
+                CustomAttributeEncoding namedArgFieldOrProperty = parser.GetTag();
                 if (namedArgFieldOrProperty is not CustomAttributeEncoding.Field
                     && namedArgFieldOrProperty is not CustomAttributeEncoding.Property)
                 {
                     throw new BadImageFormatException(SR.Arg_CustomAttributeFormatException);
                 }
+#endif
 
                 // Parse the encoded type for the named argument.
+#if NATIVEAOT
+                RuntimeType argumentType = (RuntimeType)namedArgument.Type.Resolve(module, default).ToType();
+                CustomAttributeType argType = new CustomAttributeType(argumentType);
+                string? argName = namedArgument.Name.GetString(module);
+#else
                 CustomAttributeType argType = ParseCustomAttributeType(ref parser, module);
 
-                string? argName = parser.GetNamedArgumentName();
+                string? argName = parser.GetString();
+#endif
 
                 // Argument name must be non-null and non-empty.
                 if (string.IsNullOrEmpty(argName))
@@ -924,10 +949,15 @@ namespace System.Reflection
                     throw new BadImageFormatException(SR.Arg_CustomAttributeDuplicateNamedArgument);
                 }
 
+#if NATIVEAOT
+                parameterToUpdate.EncodedArgument = parser.ParseValue(namedArgument.Value, argType);
+#else
                 parameterToUpdate.EncodedArgument = ParseCustomAttributeValue(ref parser, argType, module);
+#endif
             }
         }
 
+#if !NATIVEAOT
         private static CustomAttributeEncodedArgument ParseCustomAttributeValue(
             ref CustomAttributeDataParser parser,
             CustomAttributeType type,
@@ -948,26 +978,35 @@ namespace System.Reflection
                 case CustomAttributeEncoding.Boolean:
                 case CustomAttributeEncoding.Byte:
                 case CustomAttributeEncoding.SByte:
+                    arg.PrimitiveValue = new PrimitiveValue() { Byte4 = parser.GetU1() };
+                    break;
                 case CustomAttributeEncoding.Char:
                 case CustomAttributeEncoding.Int16:
                 case CustomAttributeEncoding.UInt16:
+                    arg.PrimitiveValue = new PrimitiveValue() { Byte4 = parser.GetU2() };
+                    break;
                 case CustomAttributeEncoding.Int32:
                 case CustomAttributeEncoding.UInt32:
+                    arg.PrimitiveValue = new PrimitiveValue() { Byte4 = parser.GetI4() };
+                    break;
                 case CustomAttributeEncoding.Int64:
                 case CustomAttributeEncoding.UInt64:
+                    arg.PrimitiveValue = new PrimitiveValue() { Byte8 = parser.GetI8() };
+                    break;
                 case CustomAttributeEncoding.Float:
+                    arg.PrimitiveValue = new PrimitiveValue() { Byte4 = BitConverter.SingleToInt32Bits(parser.GetR4()) };
+                    break;
                 case CustomAttributeEncoding.Double:
-                    arg.PrimitiveValue = parser.GetPrimitiveValue(underlyingType);
+                    arg.PrimitiveValue = new PrimitiveValue() { Byte8 = BitConverter.DoubleToInt64Bits(parser.GetR8()) };
                     break;
                 case CustomAttributeEncoding.String:
                 case CustomAttributeEncoding.Type:
-                    parser.ReadStringOrType(arg, module);
+                    arg.StringValue = parser.GetString();
                     break;
                 case CustomAttributeEncoding.Array:
                 {
                     arg.ArrayValue = null;
-                    parser.EnterArray();
-                    int len = parser.GetArrayLength();
+                    int len = parser.GetI4();
                     if (len != -1) // indicates array is null - ECMA-335 II.23.3.
                     {
                         attributeType = new CustomAttributeType(
@@ -978,11 +1017,9 @@ namespace System.Reflection
                         arg.ArrayValue = new CustomAttributeEncodedArgument[len];
                         for (int i = 0; i < len; ++i)
                         {
-                            parser.MoveToNextArrayElement();
                             arg.ArrayValue[i] = ParseCustomAttributeValue(ref parser, attributeType, module);
                         }
                     }
-                    parser.LeaveArray();
                     break;
                 }
                 default:
@@ -1001,7 +1038,7 @@ namespace System.Reflection
             CustomAttributeEncoding tag = parser.GetTag();
             if (tag is CustomAttributeEncoding.Array)
             {
-                arrayTag = parser.GetArrayElementTag();
+                arrayTag = parser.GetTag();
             }
 
             // Load the enum type if needed.
@@ -1010,7 +1047,8 @@ namespace System.Reflection
                     && arrayTag is CustomAttributeEncoding.Enum))
             {
                 // We cannot determine the underlying type without loading the enum.
-                enumType = parser.GetEnumType(module);
+                string enumTypeMaybe = parser.GetString() ?? throw new BadImageFormatException();
+                enumType = TypeNameResolver.GetTypeReferencedByCustomAttribute(enumTypeMaybe, module);
                 if (!enumType.IsEnum)
                 {
                     throw new BadImageFormatException();
@@ -1018,11 +1056,9 @@ namespace System.Reflection
 
                 enumTag = RuntimeCustomAttributeData.TypeToCustomAttributeEncoding((RuntimeType)enumType.GetEnumUnderlyingType());
             }
-
             return new CustomAttributeType(tag, arrayTag, enumTag, enumType);
         }
 
-#if !NATIVEAOT
         /// <summary>
         /// Used to parse CustomAttribute data. See ECMA-335 II.23.3.
         /// </summary>
@@ -1031,9 +1067,8 @@ namespace System.Reflection
             private int _curr;
             private ReadOnlySpan<byte> _blob;
 
-            public CustomAttributeDataParser(CustomAttributePayload attributeBlob, RuntimeModule module)
+            public CustomAttributeDataParser(ConstArray attributeBlob)
             {
-                _ = module;
                 unsafe
                 {
                     _blob = new ReadOnlySpan<byte>((void*)attributeBlob.Signature, attributeBlob.Length);
@@ -1163,433 +1198,349 @@ namespace System.Reflection
 
                 throw new OverflowException();
             }
-
-            // Semantic operations consumed by the shared parse methods. For the CoreCLR blob
-            // format all positional state is implicit in the sequential reader, so the
-            // "MoveToNext" hooks are no-ops. They stay instance methods so the shared parse
-            // code can call them uniformly across both parser implementations.
-#pragma warning disable CA1822 // Mark members as static
-            public void MoveToNextFixedArgument() { }
-
-            public void MoveToNextNamedArgument() { }
-
-            public void MoveToNextArrayElement() { }
-
-            public void EnterArray() { }
-
-            public void LeaveArray() { }
-#pragma warning restore CA1822
-
-            public int GetNamedArgumentCount() => GetI2();
-
-            public CustomAttributeEncoding GetNamedArgumentKind() => GetTag();
-
-            public string? GetNamedArgumentName() => GetString();
-
-            public CustomAttributeEncoding GetArrayElementTag() => GetTag();
-
-            public int GetArrayLength() => GetI4();
-
-            public RuntimeType GetEnumType(RuntimeModule module)
-            {
-                string enumTypeMaybe = GetString() ?? throw new BadImageFormatException();
-                return TypeNameResolver.GetTypeReferencedByCustomAttribute(enumTypeMaybe, module);
-            }
-
-            public void ReadStringOrType(CustomAttributeEncodedArgument arg, RuntimeModule module)
-            {
-                _ = module;
-                arg.StringValue = GetString();
-            }
-
-            public PrimitiveValue GetPrimitiveValue(CustomAttributeEncoding underlyingType)
-            {
-                return underlyingType switch
-                {
-                    CustomAttributeEncoding.Boolean or CustomAttributeEncoding.Byte or CustomAttributeEncoding.SByte
-                        => new PrimitiveValue() { Byte4 = GetU1() },
-                    CustomAttributeEncoding.Char or CustomAttributeEncoding.Int16 or CustomAttributeEncoding.UInt16
-                        => new PrimitiveValue() { Byte4 = GetU2() },
-                    CustomAttributeEncoding.Int32 or CustomAttributeEncoding.UInt32
-                        => new PrimitiveValue() { Byte4 = GetI4() },
-                    CustomAttributeEncoding.Int64 or CustomAttributeEncoding.UInt64
-                        => new PrimitiveValue() { Byte8 = GetI8() },
-                    CustomAttributeEncoding.Float
-                        => new PrimitiveValue() { Byte4 = BitConverter.SingleToInt32Bits(GetR4()) },
-                    CustomAttributeEncoding.Double
-                        => new PrimitiveValue() { Byte8 = BitConverter.DoubleToInt64Bits(GetR8()) },
-                    _ => throw new BadImageFormatException()
-                };
-            }
         }
 #else
         /// <summary>
-        /// Projects the NativeFormat custom attribute records onto the same semantic surface
-        /// that the shared parse methods expect. The declared parameter types drive the reads,
-        /// while the actual value shape is discovered from each constant handle, which preserves
-        /// per-element tagged-object inference.
+        /// Used to parse NativeFormat custom attribute data.
         /// </summary>
-        private struct CustomAttributeDataParser
+        private readonly struct CustomAttributeDataParser
         {
-            private enum ArrayKind
-            {
-                None,
-                Primitive,
-                Handle
-            }
-
+            private readonly CustomAttribute _attribute;
             private readonly MetadataReader _reader;
-            private readonly int _namedArgumentCount;
-            private HandleCollection.Enumerator _fixedArguments;
-            private NamedArgumentHandleCollection.Enumerator _namedArguments;
 
-            private Handle _currentValue;
-            private NamedArgument _currentNamedArgument;
-            private CustomAttributeType? _declaredType;
-            private bool _declaredTypePending;
-
-            private ArrayKind _arrayKind;
-            private Array? _primitiveArrayElements;
-            private int _arrayIndex;
-            private HandleCollection.Enumerator _handleArrayElements;
-            private ArrayState[]? _arrayStates;
-            private int _arrayDepth;
-
-            private struct ArrayState
+            public CustomAttributeDataParser(CustomAttribute attribute, MetadataReader reader)
             {
-                public ArrayKind Kind;
-                public Array? PrimitiveElements;
-                public int Index;
-                public HandleCollection.Enumerator HandleElements;
-                public Handle CurrentValue;
-            }
-
-            public CustomAttributeDataParser(CustomAttributePayload attributeBlob, RuntimeModule reader)
-            {
+                _attribute = attribute;
                 _reader = reader;
-                _fixedArguments = attributeBlob.FixedArguments.GetEnumerator();
-                _namedArguments = attributeBlob.NamedArguments.GetEnumerator();
-                _namedArgumentCount = attributeBlob.NamedArguments.Count;
-                _currentValue = default;
-                _currentNamedArgument = default;
-                _declaredType = null;
-                _declaredTypePending = false;
-                _arrayKind = ArrayKind.None;
-                _primitiveArrayElements = null;
-                _arrayIndex = 0;
-                _handleArrayElements = default;
-                _arrayStates = null;
-                _arrayDepth = 0;
             }
 
-            // NativeFormat records don't carry a prolog; the metadata generator guarantees a well-formed shape.
-#pragma warning disable CA1822 // Mark members as static
-            public bool ValidateProlog() => true;
-#pragma warning restore CA1822
+            public CustomAttribute Attribute => _attribute;
 
-            public void MoveToNextFixedArgument()
+            public bool ValidateProlog() => _reader is not null;
+
+            public CustomAttributeEncodedArgument ParseValue(Handle value, CustomAttributeType type)
             {
-                _arrayKind = ArrayKind.None;
-                _declaredTypePending = false;
-                if (!_fixedArguments.MoveNext())
-                    throw new BadImageFormatException();
-                _currentValue = _fixedArguments.Current;
-            }
-
-            public int GetNamedArgumentCount() => _namedArgumentCount;
-
-            public void MoveToNextNamedArgument()
-            {
-                _arrayKind = ArrayKind.None;
-                if (!_namedArguments.MoveNext())
-                    throw new BadImageFormatException();
-                _currentNamedArgument = _namedArguments.Current.GetNamedArgument(_reader);
-                _currentValue = _currentNamedArgument.Value;
-                RuntimeType declaredType = (RuntimeType)_currentNamedArgument.Type.Resolve(_reader, default).ToType();
-                _declaredType = new CustomAttributeType(declaredType);
-                _declaredTypePending = true;
-            }
-
-            public CustomAttributeEncoding GetNamedArgumentKind()
-                => _currentNamedArgument.Flags switch
+                CustomAttributeType attributeType = type.EncodedType is CustomAttributeEncoding.Object
+                    ? GetCustomAttributeType(value)
+                    : type;
+                if (value.HandleType is HandleType.ConstantEnumValue)
                 {
-                    NamedArgumentMemberKind.Field => CustomAttributeEncoding.Field,
-                    NamedArgumentMemberKind.Property => CustomAttributeEncoding.Property,
-                    _ => CustomAttributeEncoding.Undefined
-                };
+                    value = value.ToConstantEnumValueHandle(_reader).GetConstantEnumValue(_reader).Value;
+                }
 
-            public string? GetNamedArgumentName()
-            {
-                // The declared type has been consumed; any further type parse infers from the value.
-                _declaredTypePending = false;
-                return _currentNamedArgument.Name.GetString(_reader);
-            }
+                CustomAttributeEncodedArgument argument = new CustomAttributeEncodedArgument(attributeType);
 
-            public CustomAttributeEncoding GetTag()
-                => _declaredTypePending ? _declaredType!.EncodedType : InferTag(_currentValue);
-
-            public CustomAttributeEncoding GetArrayElementTag()
-                => _declaredTypePending ? _declaredType!.EncodedArrayType : InferArrayElementTag(_currentValue);
-
-            public RuntimeType GetEnumType(RuntimeModule module)
-            {
-                _ = module;
-                if (_declaredTypePending)
-                    return (RuntimeType)_declaredType!.EnumType!;
-
-                Handle h = _currentValue;
-                if (h.HandleType == HandleType.ConstantEnumValue)
-                    return h.ToConstantEnumValueHandle(_reader).GetConstantEnumValue(_reader).Type.Resolve(_reader, default).ToType();
-                if (h.HandleType == HandleType.ConstantEnumArray)
-                    return h.ToConstantEnumArrayHandle(_reader).GetConstantEnumArray(_reader).ElementType.Resolve(_reader, default).ToType();
-                throw new BadImageFormatException();
-            }
-
-            public PrimitiveValue GetPrimitiveValue(CustomAttributeEncoding underlyingType)
-                => _arrayKind == ArrayKind.Primitive
-                    ? ReadPrimitiveArrayElement(underlyingType)
-                    : ReadScalar(_currentValue, underlyingType);
-
-            public void ReadStringOrType(CustomAttributeEncodedArgument arg, RuntimeModule module)
-            {
-                _ = module;
-                Handle h = _currentValue;
-                switch (h.HandleType)
+                switch (value.HandleType)
                 {
-                    case HandleType.ConstantReferenceValue:
-                        // null string or null Type.
+                    case HandleType.ConstantBooleanValue:
+                        argument.PrimitiveValue = new PrimitiveValue() { Byte4 = value.ToConstantBooleanValueHandle(_reader).GetConstantBooleanValue(_reader).Value ? 1 : 0 };
+                        break;
+                    case HandleType.ConstantCharValue:
+                        argument.PrimitiveValue = new PrimitiveValue() { Byte4 = value.ToConstantCharValueHandle(_reader).GetConstantCharValue(_reader).Value };
+                        break;
+                    case HandleType.ConstantByteValue:
+                        argument.PrimitiveValue = new PrimitiveValue() { Byte4 = value.ToConstantByteValueHandle(_reader).GetConstantByteValue(_reader).Value };
+                        break;
+                    case HandleType.ConstantSByteValue:
+                        argument.PrimitiveValue = new PrimitiveValue() { Byte4 = (byte)value.ToConstantSByteValueHandle(_reader).GetConstantSByteValue(_reader).Value };
+                        break;
+                    case HandleType.ConstantInt16Value:
+                        argument.PrimitiveValue = new PrimitiveValue() { Byte4 = (ushort)value.ToConstantInt16ValueHandle(_reader).GetConstantInt16Value(_reader).Value };
+                        break;
+                    case HandleType.ConstantUInt16Value:
+                        argument.PrimitiveValue = new PrimitiveValue() { Byte4 = value.ToConstantUInt16ValueHandle(_reader).GetConstantUInt16Value(_reader).Value };
+                        break;
+                    case HandleType.ConstantInt32Value:
+                        argument.PrimitiveValue = new PrimitiveValue() { Byte4 = value.ToConstantInt32ValueHandle(_reader).GetConstantInt32Value(_reader).Value };
+                        break;
+                    case HandleType.ConstantUInt32Value:
+                        argument.PrimitiveValue = new PrimitiveValue() { Byte4 = (int)value.ToConstantUInt32ValueHandle(_reader).GetConstantUInt32Value(_reader).Value };
+                        break;
+                    case HandleType.ConstantInt64Value:
+                        argument.PrimitiveValue = new PrimitiveValue() { Byte8 = value.ToConstantInt64ValueHandle(_reader).GetConstantInt64Value(_reader).Value };
+                        break;
+                    case HandleType.ConstantUInt64Value:
+                        argument.PrimitiveValue = new PrimitiveValue() { Byte8 = (long)value.ToConstantUInt64ValueHandle(_reader).GetConstantUInt64Value(_reader).Value };
+                        break;
+                    case HandleType.ConstantSingleValue:
+                        argument.PrimitiveValue = new PrimitiveValue() { Byte4 = BitConverter.SingleToInt32Bits(value.ToConstantSingleValueHandle(_reader).GetConstantSingleValue(_reader).Value) };
+                        break;
+                    case HandleType.ConstantDoubleValue:
+                        argument.PrimitiveValue = new PrimitiveValue() { Byte8 = BitConverter.DoubleToInt64Bits(value.ToConstantDoubleValueHandle(_reader).GetConstantDoubleValue(_reader).Value) };
                         break;
                     case HandleType.ConstantStringValue:
-                        arg.StringValue = h.ToConstantStringValueHandle(_reader).GetConstantStringValue(_reader).Value;
+                        argument.StringValue = value.ToConstantStringValueHandle(_reader).GetConstantStringValue(_reader).Value;
                         break;
                     case HandleType.TypeDefinition:
                     case HandleType.TypeReference:
                     case HandleType.TypeSpecification:
-                        arg.TypeValue = h.Resolve(_reader, default).ToType();
+                        argument.TypeValue = value.Resolve(_reader, default).ToType();
+                        break;
+                    case HandleType.ConstantReferenceValue:
                         break;
                     default:
-                        throw new BadImageFormatException();
+                        ParseArrayValue(value, attributeType, argument);
+                        break;
                 }
+
+                return argument;
             }
 
-            public int GetArrayLength()
+            private void ParseArrayValue(
+                Handle value,
+                CustomAttributeType arrayType,
+                CustomAttributeEncodedArgument argument)
             {
-                _arrayIndex = -1;
-                Handle h = _currentValue;
-                switch (h.HandleType)
+                if (value.HandleType is HandleType.ConstantEnumArray)
                 {
-                    case HandleType.ConstantReferenceValue:
-                        _arrayKind = ArrayKind.None;
-                        return -1; // null array - ECMA-335 II.23.3.
-                    case HandleType.ConstantStringArray:
-                    {
-                        HandleCollection elements = h.ToConstantStringArrayHandle(_reader).GetConstantStringArray(_reader).Value;
-                        _handleArrayElements = elements.GetEnumerator();
-                        _arrayKind = ArrayKind.Handle;
-                        return elements.Count;
-                    }
-                    case HandleType.ConstantHandleArray:
-                    {
-                        HandleCollection elements = h.ToConstantHandleArrayHandle(_reader).GetConstantHandleArray(_reader).Value;
-                        _handleArrayElements = elements.GetEnumerator();
-                        _arrayKind = ArrayKind.Handle;
-                        return elements.Count;
-                    }
-                    case HandleType.ConstantEnumArray:
-                    {
-                        Handle value = h.ToConstantEnumArrayHandle(_reader).GetConstantEnumArray(_reader).Value;
-                        if (value.HandleType == HandleType.ConstantReferenceValue)
-                        {
-                            _arrayKind = ArrayKind.None;
-                            return -1;
-                        }
-
-                        _primitiveArrayElements = MaterializePrimitiveArray(value);
-                        _arrayKind = ArrayKind.Primitive;
-                        return _primitiveArrayElements.Length;
-                    }
-                    default:
-                        _primitiveArrayElements = MaterializePrimitiveArray(h);
-                        _arrayKind = ArrayKind.Primitive;
-                        return _primitiveArrayElements.Length;
-                }
-            }
-
-            public void MoveToNextArrayElement()
-            {
-                _arrayIndex++;
-                if (_arrayKind == ArrayKind.Handle)
-                {
-                    if (!_handleArrayElements.MoveNext())
-                        throw new BadImageFormatException();
-                    _currentValue = _handleArrayElements.Current;
-                }
-            }
-
-            public void EnterArray()
-            {
-                if (_arrayStates is null)
-                {
-                    _arrayStates = new ArrayState[4];
-                }
-                else if (_arrayDepth == _arrayStates.Length)
-                {
-                    Array.Resize(ref _arrayStates, _arrayStates.Length * 2);
+                    value = value.ToConstantEnumArrayHandle(_reader).GetConstantEnumArray(_reader).Value;
                 }
 
-                _arrayStates[_arrayDepth++] = new ArrayState
+                if (value.HandleType is HandleType.ConstantReferenceValue)
+                    return;
+
+                CustomAttributeType elementType = new CustomAttributeType(
+                    arrayType.EncodedArrayType,
+                    CustomAttributeEncoding.Undefined,
+                    arrayType.EncodedEnumType,
+                    arrayType.EnumType);
+                argument.ArrayValue = value.HandleType switch
                 {
-                    Kind = _arrayKind,
-                    PrimitiveElements = _primitiveArrayElements,
-                    Index = _arrayIndex,
-                    HandleElements = _handleArrayElements,
-                    CurrentValue = _currentValue
+                    HandleType.ConstantBooleanArray => ToEncodedArguments(value.ToConstantBooleanArrayHandle(_reader).GetConstantBooleanArray(_reader).Value, elementType),
+                    HandleType.ConstantCharArray => ToEncodedArguments(value.ToConstantCharArrayHandle(_reader).GetConstantCharArray(_reader).Value, elementType),
+                    HandleType.ConstantByteArray => ToEncodedArguments(value.ToConstantByteArrayHandle(_reader).GetConstantByteArray(_reader).Value, elementType),
+                    HandleType.ConstantSByteArray => ToEncodedArguments(value.ToConstantSByteArrayHandle(_reader).GetConstantSByteArray(_reader).Value, elementType),
+                    HandleType.ConstantInt16Array => ToEncodedArguments(value.ToConstantInt16ArrayHandle(_reader).GetConstantInt16Array(_reader).Value, elementType),
+                    HandleType.ConstantUInt16Array => ToEncodedArguments(value.ToConstantUInt16ArrayHandle(_reader).GetConstantUInt16Array(_reader).Value, elementType),
+                    HandleType.ConstantInt32Array => ToEncodedArguments(value.ToConstantInt32ArrayHandle(_reader).GetConstantInt32Array(_reader).Value, elementType),
+                    HandleType.ConstantUInt32Array => ToEncodedArguments(value.ToConstantUInt32ArrayHandle(_reader).GetConstantUInt32Array(_reader).Value, elementType),
+                    HandleType.ConstantInt64Array => ToEncodedArguments(value.ToConstantInt64ArrayHandle(_reader).GetConstantInt64Array(_reader).Value, elementType),
+                    HandleType.ConstantUInt64Array => ToEncodedArguments(value.ToConstantUInt64ArrayHandle(_reader).GetConstantUInt64Array(_reader).Value, elementType),
+                    HandleType.ConstantSingleArray => ToEncodedArguments(value.ToConstantSingleArrayHandle(_reader).GetConstantSingleArray(_reader).Value, elementType),
+                    HandleType.ConstantDoubleArray => ToEncodedArguments(value.ToConstantDoubleArrayHandle(_reader).GetConstantDoubleArray(_reader).Value, elementType),
+                    HandleType.ConstantStringArray => ToEncodedArguments(value.ToConstantStringArrayHandle(_reader).GetConstantStringArray(_reader).Value, elementType),
+                    HandleType.ConstantHandleArray => ToEncodedArguments(value.ToConstantHandleArrayHandle(_reader).GetConstantHandleArray(_reader).Value, elementType),
+                    _ => throw new BadImageFormatException()
                 };
             }
 
-            public void LeaveArray()
+            private CustomAttributeEncodedArgument[] ToEncodedArguments(HandleCollection values, CustomAttributeType elementType)
             {
-                Debug.Assert(_arrayStates is not null && _arrayDepth > 0);
-                ArrayState state = _arrayStates![--_arrayDepth];
-                _arrayKind = state.Kind;
-                _primitiveArrayElements = state.PrimitiveElements;
-                _arrayIndex = state.Index;
-                _handleArrayElements = state.HandleElements;
-                _currentValue = state.CurrentValue;
+                CustomAttributeEncodedArgument[] result = new CustomAttributeEncodedArgument[values.Count];
+                int index = 0;
+                foreach (Handle value in values)
+                {
+                    result[index++] = ParseValue(value, elementType);
+                }
+                return result;
             }
 
-            private PrimitiveValue ReadScalar(Handle h, CustomAttributeEncoding underlyingType)
+            private static CustomAttributeEncodedArgument[] ToEncodedArguments(BooleanCollection values, CustomAttributeType elementType)
             {
-                if (h.HandleType == HandleType.ConstantEnumValue)
-                    h = h.ToConstantEnumValueHandle(_reader).GetConstantEnumValue(_reader).Value;
+                CustomAttributeEncodedArgument[] result = new CustomAttributeEncodedArgument[values.Count];
+                int index = 0;
+                foreach (bool value in values)
+                {
+                    result[index++] = CreatePrimitiveArgument(elementType, new PrimitiveValue() { Byte4 = value ? 1 : 0 });
+                }
+                return result;
+            }
 
-                if (h.HandleType != GetScalarHandleType(underlyingType))
+            private static CustomAttributeEncodedArgument[] ToEncodedArguments(CharCollection values, CustomAttributeType elementType)
+            {
+                CustomAttributeEncodedArgument[] result = new CustomAttributeEncodedArgument[values.Count];
+                int index = 0;
+                foreach (char value in values)
+                {
+                    result[index++] = CreatePrimitiveArgument(elementType, new PrimitiveValue() { Byte4 = value });
+                }
+                return result;
+            }
+
+            private static CustomAttributeEncodedArgument[] ToEncodedArguments(ByteCollection values, CustomAttributeType elementType)
+            {
+                CustomAttributeEncodedArgument[] result = new CustomAttributeEncodedArgument[values.Count];
+                int index = 0;
+                foreach (byte value in values)
+                {
+                    result[index++] = CreatePrimitiveArgument(elementType, new PrimitiveValue() { Byte4 = value });
+                }
+                return result;
+            }
+
+            private static CustomAttributeEncodedArgument[] ToEncodedArguments(SByteCollection values, CustomAttributeType elementType)
+            {
+                CustomAttributeEncodedArgument[] result = new CustomAttributeEncodedArgument[values.Count];
+                int index = 0;
+                foreach (sbyte value in values)
+                {
+                    result[index++] = CreatePrimitiveArgument(elementType, new PrimitiveValue() { Byte4 = (byte)value });
+                }
+                return result;
+            }
+
+            private static CustomAttributeEncodedArgument[] ToEncodedArguments(Int16Collection values, CustomAttributeType elementType)
+            {
+                CustomAttributeEncodedArgument[] result = new CustomAttributeEncodedArgument[values.Count];
+                int index = 0;
+                foreach (short value in values)
+                {
+                    result[index++] = CreatePrimitiveArgument(elementType, new PrimitiveValue() { Byte4 = (ushort)value });
+                }
+                return result;
+            }
+
+            private static CustomAttributeEncodedArgument[] ToEncodedArguments(UInt16Collection values, CustomAttributeType elementType)
+            {
+                CustomAttributeEncodedArgument[] result = new CustomAttributeEncodedArgument[values.Count];
+                int index = 0;
+                foreach (ushort value in values)
+                {
+                    result[index++] = CreatePrimitiveArgument(elementType, new PrimitiveValue() { Byte4 = value });
+                }
+                return result;
+            }
+
+            private static CustomAttributeEncodedArgument[] ToEncodedArguments(Int32Collection values, CustomAttributeType elementType)
+            {
+                CustomAttributeEncodedArgument[] result = new CustomAttributeEncodedArgument[values.Count];
+                int index = 0;
+                foreach (int value in values)
+                {
+                    result[index++] = CreatePrimitiveArgument(elementType, new PrimitiveValue() { Byte4 = value });
+                }
+                return result;
+            }
+
+            private static CustomAttributeEncodedArgument[] ToEncodedArguments(UInt32Collection values, CustomAttributeType elementType)
+            {
+                CustomAttributeEncodedArgument[] result = new CustomAttributeEncodedArgument[values.Count];
+                int index = 0;
+                foreach (uint value in values)
+                {
+                    result[index++] = CreatePrimitiveArgument(elementType, new PrimitiveValue() { Byte4 = (int)value });
+                }
+                return result;
+            }
+
+            private static CustomAttributeEncodedArgument[] ToEncodedArguments(Int64Collection values, CustomAttributeType elementType)
+            {
+                CustomAttributeEncodedArgument[] result = new CustomAttributeEncodedArgument[values.Count];
+                int index = 0;
+                foreach (long value in values)
+                {
+                    result[index++] = CreatePrimitiveArgument(elementType, new PrimitiveValue() { Byte8 = value });
+                }
+                return result;
+            }
+
+            private static CustomAttributeEncodedArgument[] ToEncodedArguments(UInt64Collection values, CustomAttributeType elementType)
+            {
+                CustomAttributeEncodedArgument[] result = new CustomAttributeEncodedArgument[values.Count];
+                int index = 0;
+                foreach (ulong value in values)
+                {
+                    result[index++] = CreatePrimitiveArgument(elementType, new PrimitiveValue() { Byte8 = (long)value });
+                }
+                return result;
+            }
+
+            private static CustomAttributeEncodedArgument[] ToEncodedArguments(SingleCollection values, CustomAttributeType elementType)
+            {
+                CustomAttributeEncodedArgument[] result = new CustomAttributeEncodedArgument[values.Count];
+                int index = 0;
+                foreach (float value in values)
+                {
+                    result[index++] = CreatePrimitiveArgument(elementType, new PrimitiveValue() { Byte4 = BitConverter.SingleToInt32Bits(value) });
+                }
+                return result;
+            }
+
+            private static CustomAttributeEncodedArgument[] ToEncodedArguments(DoubleCollection values, CustomAttributeType elementType)
+            {
+                CustomAttributeEncodedArgument[] result = new CustomAttributeEncodedArgument[values.Count];
+                int index = 0;
+                foreach (double value in values)
+                {
+                    result[index++] = CreatePrimitiveArgument(elementType, new PrimitiveValue() { Byte8 = BitConverter.DoubleToInt64Bits(value) });
+                }
+                return result;
+            }
+
+            private static CustomAttributeEncodedArgument CreatePrimitiveArgument(CustomAttributeType type, PrimitiveValue value)
+                => new CustomAttributeEncodedArgument(type) { PrimitiveValue = value };
+
+            private CustomAttributeType GetCustomAttributeType(Handle value)
+            {
+                return value.HandleType switch
+                {
+                    HandleType.ConstantBooleanValue => CreateType(CustomAttributeEncoding.Boolean),
+                    HandleType.ConstantCharValue => CreateType(CustomAttributeEncoding.Char),
+                    HandleType.ConstantByteValue => CreateType(CustomAttributeEncoding.Byte),
+                    HandleType.ConstantSByteValue => CreateType(CustomAttributeEncoding.SByte),
+                    HandleType.ConstantInt16Value => CreateType(CustomAttributeEncoding.Int16),
+                    HandleType.ConstantUInt16Value => CreateType(CustomAttributeEncoding.UInt16),
+                    HandleType.ConstantInt32Value => CreateType(CustomAttributeEncoding.Int32),
+                    HandleType.ConstantUInt32Value => CreateType(CustomAttributeEncoding.UInt32),
+                    HandleType.ConstantInt64Value => CreateType(CustomAttributeEncoding.Int64),
+                    HandleType.ConstantUInt64Value => CreateType(CustomAttributeEncoding.UInt64),
+                    HandleType.ConstantSingleValue => CreateType(CustomAttributeEncoding.Float),
+                    HandleType.ConstantDoubleValue => CreateType(CustomAttributeEncoding.Double),
+                    // A null object argument is reported as a null string to match CoreCLR.
+                    HandleType.ConstantStringValue or HandleType.ConstantReferenceValue => CreateType(CustomAttributeEncoding.String),
+                    HandleType.TypeDefinition or HandleType.TypeReference or HandleType.TypeSpecification => CreateType(CustomAttributeEncoding.Type),
+                    HandleType.ConstantEnumValue => CreateEnumType(
+                        value.ToConstantEnumValueHandle(_reader).GetConstantEnumValue(_reader).Type,
+                        isArray: false),
+                    HandleType.ConstantBooleanArray => CreateArrayType(CustomAttributeEncoding.Boolean),
+                    HandleType.ConstantCharArray => CreateArrayType(CustomAttributeEncoding.Char),
+                    HandleType.ConstantByteArray => CreateArrayType(CustomAttributeEncoding.Byte),
+                    HandleType.ConstantSByteArray => CreateArrayType(CustomAttributeEncoding.SByte),
+                    HandleType.ConstantInt16Array => CreateArrayType(CustomAttributeEncoding.Int16),
+                    HandleType.ConstantUInt16Array => CreateArrayType(CustomAttributeEncoding.UInt16),
+                    HandleType.ConstantInt32Array => CreateArrayType(CustomAttributeEncoding.Int32),
+                    HandleType.ConstantUInt32Array => CreateArrayType(CustomAttributeEncoding.UInt32),
+                    HandleType.ConstantInt64Array => CreateArrayType(CustomAttributeEncoding.Int64),
+                    HandleType.ConstantUInt64Array => CreateArrayType(CustomAttributeEncoding.UInt64),
+                    HandleType.ConstantSingleArray => CreateArrayType(CustomAttributeEncoding.Float),
+                    HandleType.ConstantDoubleArray => CreateArrayType(CustomAttributeEncoding.Double),
+                    HandleType.ConstantStringArray => CreateArrayType(CustomAttributeEncoding.String),
+                    HandleType.ConstantHandleArray => CreateArrayType(CustomAttributeEncoding.Object),
+                    HandleType.ConstantEnumArray => CreateEnumType(
+                        value.ToConstantEnumArrayHandle(_reader).GetConstantEnumArray(_reader).ElementType,
+                        isArray: true),
+                    _ => throw new BadImageFormatException()
+                };
+            }
+
+            private CustomAttributeType CreateEnumType(Handle enumTypeHandle, bool isArray)
+            {
+                RuntimeType enumType = (RuntimeType)enumTypeHandle.Resolve(_reader, default).ToType();
+                if (!enumType.IsEnum)
+                {
                     throw new BadImageFormatException();
+                }
 
-                return underlyingType switch
-                {
-                    CustomAttributeEncoding.Boolean => new PrimitiveValue() { Byte4 = h.ToConstantBooleanValueHandle(_reader).GetConstantBooleanValue(_reader).Value ? 1 : 0 },
-                    CustomAttributeEncoding.Char => new PrimitiveValue() { Byte4 = h.ToConstantCharValueHandle(_reader).GetConstantCharValue(_reader).Value },
-                    CustomAttributeEncoding.Byte => new PrimitiveValue() { Byte4 = h.ToConstantByteValueHandle(_reader).GetConstantByteValue(_reader).Value },
-                    CustomAttributeEncoding.SByte => new PrimitiveValue() { Byte4 = (byte)h.ToConstantSByteValueHandle(_reader).GetConstantSByteValue(_reader).Value },
-                    CustomAttributeEncoding.Int16 => new PrimitiveValue() { Byte4 = (ushort)h.ToConstantInt16ValueHandle(_reader).GetConstantInt16Value(_reader).Value },
-                    CustomAttributeEncoding.UInt16 => new PrimitiveValue() { Byte4 = h.ToConstantUInt16ValueHandle(_reader).GetConstantUInt16Value(_reader).Value },
-                    CustomAttributeEncoding.Int32 => new PrimitiveValue() { Byte4 = h.ToConstantInt32ValueHandle(_reader).GetConstantInt32Value(_reader).Value },
-                    CustomAttributeEncoding.UInt32 => new PrimitiveValue() { Byte4 = (int)h.ToConstantUInt32ValueHandle(_reader).GetConstantUInt32Value(_reader).Value },
-                    CustomAttributeEncoding.Int64 => new PrimitiveValue() { Byte8 = h.ToConstantInt64ValueHandle(_reader).GetConstantInt64Value(_reader).Value },
-                    CustomAttributeEncoding.UInt64 => new PrimitiveValue() { Byte8 = (long)h.ToConstantUInt64ValueHandle(_reader).GetConstantUInt64Value(_reader).Value },
-                    CustomAttributeEncoding.Float => new PrimitiveValue() { Byte4 = BitConverter.SingleToInt32Bits(h.ToConstantSingleValueHandle(_reader).GetConstantSingleValue(_reader).Value) },
-                    CustomAttributeEncoding.Double => new PrimitiveValue() { Byte8 = BitConverter.DoubleToInt64Bits(h.ToConstantDoubleValueHandle(_reader).GetConstantDoubleValue(_reader).Value) },
-                    _ => throw new BadImageFormatException()
-                };
+                CustomAttributeEncoding underlyingType =
+                    RuntimeCustomAttributeData.TypeToCustomAttributeEncoding((RuntimeType)enumType.GetEnumUnderlyingType());
+                return isArray
+                    ? new CustomAttributeType(CustomAttributeEncoding.Array, CustomAttributeEncoding.Enum, underlyingType, enumType)
+                    : new CustomAttributeType(CustomAttributeEncoding.Enum, CustomAttributeEncoding.Undefined, underlyingType, enumType);
             }
 
-            private static HandleType GetScalarHandleType(CustomAttributeEncoding underlyingType)
-                => underlyingType switch
-                {
-                    CustomAttributeEncoding.Boolean => HandleType.ConstantBooleanValue,
-                    CustomAttributeEncoding.Char => HandleType.ConstantCharValue,
-                    CustomAttributeEncoding.Byte => HandleType.ConstantByteValue,
-                    CustomAttributeEncoding.SByte => HandleType.ConstantSByteValue,
-                    CustomAttributeEncoding.Int16 => HandleType.ConstantInt16Value,
-                    CustomAttributeEncoding.UInt16 => HandleType.ConstantUInt16Value,
-                    CustomAttributeEncoding.Int32 => HandleType.ConstantInt32Value,
-                    CustomAttributeEncoding.UInt32 => HandleType.ConstantUInt32Value,
-                    CustomAttributeEncoding.Int64 => HandleType.ConstantInt64Value,
-                    CustomAttributeEncoding.UInt64 => HandleType.ConstantUInt64Value,
-                    CustomAttributeEncoding.Float => HandleType.ConstantSingleValue,
-                    CustomAttributeEncoding.Double => HandleType.ConstantDoubleValue,
-                    _ => throw new BadImageFormatException()
-                };
+            private static CustomAttributeType CreateType(CustomAttributeEncoding type)
+                => new CustomAttributeType(
+                    type,
+                    CustomAttributeEncoding.Undefined,
+                    CustomAttributeEncoding.Undefined,
+                    enumType: null);
 
-            private readonly PrimitiveValue ReadPrimitiveArrayElement(CustomAttributeEncoding underlyingType)
-            {
-                int i = _arrayIndex;
-                return underlyingType switch
-                {
-                    CustomAttributeEncoding.Boolean => new PrimitiveValue() { Byte4 = ((bool[])_primitiveArrayElements!)[i] ? 1 : 0 },
-                    CustomAttributeEncoding.Char => new PrimitiveValue() { Byte4 = ((char[])_primitiveArrayElements!)[i] },
-                    CustomAttributeEncoding.Byte => new PrimitiveValue() { Byte4 = ((byte[])_primitiveArrayElements!)[i] },
-                    CustomAttributeEncoding.SByte => new PrimitiveValue() { Byte4 = (byte)((sbyte[])_primitiveArrayElements!)[i] },
-                    CustomAttributeEncoding.Int16 => new PrimitiveValue() { Byte4 = (ushort)((short[])_primitiveArrayElements!)[i] },
-                    CustomAttributeEncoding.UInt16 => new PrimitiveValue() { Byte4 = ((ushort[])_primitiveArrayElements!)[i] },
-                    CustomAttributeEncoding.Int32 => new PrimitiveValue() { Byte4 = ((int[])_primitiveArrayElements!)[i] },
-                    CustomAttributeEncoding.UInt32 => new PrimitiveValue() { Byte4 = (int)((uint[])_primitiveArrayElements!)[i] },
-                    CustomAttributeEncoding.Int64 => new PrimitiveValue() { Byte8 = ((long[])_primitiveArrayElements!)[i] },
-                    CustomAttributeEncoding.UInt64 => new PrimitiveValue() { Byte8 = (long)((ulong[])_primitiveArrayElements!)[i] },
-                    CustomAttributeEncoding.Float => new PrimitiveValue() { Byte4 = BitConverter.SingleToInt32Bits(((float[])_primitiveArrayElements!)[i]) },
-                    CustomAttributeEncoding.Double => new PrimitiveValue() { Byte8 = BitConverter.DoubleToInt64Bits(((double[])_primitiveArrayElements!)[i]) },
-                    _ => throw new BadImageFormatException()
-                };
-            }
-
-            private Array MaterializePrimitiveArray(Handle h)
-                => h.HandleType switch
-                {
-                    HandleType.ConstantBooleanArray => h.ToConstantBooleanArrayHandle(_reader).GetConstantBooleanArray(_reader).Value.ToArray(),
-                    HandleType.ConstantCharArray => h.ToConstantCharArrayHandle(_reader).GetConstantCharArray(_reader).Value.ToArray(),
-                    HandleType.ConstantByteArray => h.ToConstantByteArrayHandle(_reader).GetConstantByteArray(_reader).Value.ToArray(),
-                    HandleType.ConstantSByteArray => h.ToConstantSByteArrayHandle(_reader).GetConstantSByteArray(_reader).Value.ToArray(),
-                    HandleType.ConstantInt16Array => h.ToConstantInt16ArrayHandle(_reader).GetConstantInt16Array(_reader).Value.ToArray(),
-                    HandleType.ConstantUInt16Array => h.ToConstantUInt16ArrayHandle(_reader).GetConstantUInt16Array(_reader).Value.ToArray(),
-                    HandleType.ConstantInt32Array => h.ToConstantInt32ArrayHandle(_reader).GetConstantInt32Array(_reader).Value.ToArray(),
-                    HandleType.ConstantUInt32Array => h.ToConstantUInt32ArrayHandle(_reader).GetConstantUInt32Array(_reader).Value.ToArray(),
-                    HandleType.ConstantInt64Array => h.ToConstantInt64ArrayHandle(_reader).GetConstantInt64Array(_reader).Value.ToArray(),
-                    HandleType.ConstantUInt64Array => h.ToConstantUInt64ArrayHandle(_reader).GetConstantUInt64Array(_reader).Value.ToArray(),
-                    HandleType.ConstantSingleArray => h.ToConstantSingleArrayHandle(_reader).GetConstantSingleArray(_reader).Value.ToArray(),
-                    HandleType.ConstantDoubleArray => h.ToConstantDoubleArrayHandle(_reader).GetConstantDoubleArray(_reader).Value.ToArray(),
-                    _ => throw new BadImageFormatException()
-                };
-
-            private static CustomAttributeEncoding InferTag(Handle h)
-                => h.HandleType switch
-                {
-                    HandleType.ConstantBooleanValue => CustomAttributeEncoding.Boolean,
-                    HandleType.ConstantCharValue => CustomAttributeEncoding.Char,
-                    HandleType.ConstantByteValue => CustomAttributeEncoding.Byte,
-                    HandleType.ConstantSByteValue => CustomAttributeEncoding.SByte,
-                    HandleType.ConstantInt16Value => CustomAttributeEncoding.Int16,
-                    HandleType.ConstantUInt16Value => CustomAttributeEncoding.UInt16,
-                    HandleType.ConstantInt32Value => CustomAttributeEncoding.Int32,
-                    HandleType.ConstantUInt32Value => CustomAttributeEncoding.UInt32,
-                    HandleType.ConstantInt64Value => CustomAttributeEncoding.Int64,
-                    HandleType.ConstantUInt64Value => CustomAttributeEncoding.UInt64,
-                    HandleType.ConstantSingleValue => CustomAttributeEncoding.Float,
-                    HandleType.ConstantDoubleValue => CustomAttributeEncoding.Double,
-                    // A null object argument is round-tripped through NativeFormat as a bare reference
-                    // value; report it as a null string to match the historical NativeAOT behaviour.
-                    HandleType.ConstantStringValue or HandleType.ConstantReferenceValue => CustomAttributeEncoding.String,
-                    HandleType.TypeDefinition or HandleType.TypeReference or HandleType.TypeSpecification => CustomAttributeEncoding.Type,
-                    HandleType.ConstantEnumValue => CustomAttributeEncoding.Enum,
-                    HandleType.ConstantBooleanArray or HandleType.ConstantCharArray or HandleType.ConstantByteArray
-                        or HandleType.ConstantSByteArray or HandleType.ConstantInt16Array or HandleType.ConstantUInt16Array
-                        or HandleType.ConstantInt32Array or HandleType.ConstantUInt32Array or HandleType.ConstantInt64Array
-                        or HandleType.ConstantUInt64Array or HandleType.ConstantSingleArray or HandleType.ConstantDoubleArray
-                        or HandleType.ConstantStringArray or HandleType.ConstantHandleArray or HandleType.ConstantEnumArray
-                        => CustomAttributeEncoding.Array,
-                    _ => throw new BadImageFormatException()
-                };
-
-            private static CustomAttributeEncoding InferArrayElementTag(Handle h)
-                => h.HandleType switch
-                {
-                    HandleType.ConstantBooleanArray => CustomAttributeEncoding.Boolean,
-                    HandleType.ConstantCharArray => CustomAttributeEncoding.Char,
-                    HandleType.ConstantByteArray => CustomAttributeEncoding.Byte,
-                    HandleType.ConstantSByteArray => CustomAttributeEncoding.SByte,
-                    HandleType.ConstantInt16Array => CustomAttributeEncoding.Int16,
-                    HandleType.ConstantUInt16Array => CustomAttributeEncoding.UInt16,
-                    HandleType.ConstantInt32Array => CustomAttributeEncoding.Int32,
-                    HandleType.ConstantUInt32Array => CustomAttributeEncoding.UInt32,
-                    HandleType.ConstantInt64Array => CustomAttributeEncoding.Int64,
-                    HandleType.ConstantUInt64Array => CustomAttributeEncoding.UInt64,
-                    HandleType.ConstantSingleArray => CustomAttributeEncoding.Float,
-                    HandleType.ConstantDoubleArray => CustomAttributeEncoding.Double,
-                    HandleType.ConstantStringArray => CustomAttributeEncoding.String,
-                    HandleType.ConstantHandleArray => CustomAttributeEncoding.Object,
-                    HandleType.ConstantEnumArray => CustomAttributeEncoding.Enum,
-                    _ => throw new BadImageFormatException()
-                };
+            private static CustomAttributeType CreateArrayType(CustomAttributeEncoding elementType)
+                => new CustomAttributeType(
+                    CustomAttributeEncoding.Array,
+                    elementType,
+                    CustomAttributeEncoding.Undefined,
+                    enumType: null);
         }
 #endif
     }
