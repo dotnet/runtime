@@ -24,35 +24,18 @@
                       OutputItemType="_NetCoreAppRefPackGeneratorFile"
                       ReferenceOutputAssembly="false"
                       SetConfiguration="Configuration=$(LibrariesConfiguration)"
-                      SetTargetFramework="TargetFramework=netstandard2.0"
-                      Targets="Build;GetAnalyzerPackFiles" />
+                      SetTargetFramework="TargetFramework=netstandard2.0" />
   </ItemGroup>
 
   <Target Name="AddFrameworkFilesToPackage"
           DependsOnTargets="ResolveProjectReferences"
           BeforeTargets="GetFilesToPackage">
-    <ItemGroup Condition="'$(BuildProjectReferences)' != 'true' or '$(BuildingInsideVisualStudio)' == 'true'">
-      <!-- ResolveProjectReferences only calls GetTargetPath during no-build packing and Visual
-           Studio builds. Include related files from the previously populated output directories. -->
-      <_NetCoreAppRefPackGeneratorOutput Include="@(_NetCoreAppRefPackGeneratorFile)" />
-    </ItemGroup>
-
-    <Error Condition="'@(_NetCoreAppRefPackGeneratorOutput)' == '' and
-                      ('$(BuildProjectReferences)' != 'true' or '$(BuildingInsideVisualStudio)' == 'true')"
-           Text="The shared framework generators must be built before creating the reference pack." />
-    <Error Condition="'@(_NetCoreAppRefPackGeneratorOutput)' != '' and
-                      !Exists('%(_NetCoreAppRefPackGeneratorOutput.Identity)')"
-           Text="The shared framework generator output '%(_NetCoreAppRefPackGeneratorOutput.Identity)' does not exist." />
-
-    <ItemGroup Condition="'$(BuildProjectReferences)' != 'true' or '$(BuildingInsideVisualStudio)' == 'true'">
-      <_NetCoreAppRefPackGeneratorRelatedFile Include="@(_NetCoreAppRefPackGeneratorOutput)" />
-      <_NetCoreAppRefPackGeneratorRelatedFile Include="@(_NetCoreAppRefPackGeneratorOutput->'%(RootDir)%(Directory)%(Filename).pdb')" />
-      <_NetCoreAppRefPackGeneratorRelatedFile Include="%(_NetCoreAppRefPackGeneratorOutput.RootDir)%(_NetCoreAppRefPackGeneratorOutput.Directory)*\%(_NetCoreAppRefPackGeneratorOutput.Filename).resources.dll" />
+    <ItemGroup>
+      <_NetCoreAppRefPackGeneratorRelatedFile Include="@(_NetCoreAppRefPackGeneratorFile)" />
+      <_NetCoreAppRefPackGeneratorRelatedFile Include="@(_NetCoreAppRefPackGeneratorFile->'%(RootDir)%(Directory)%(Filename).pdb')" />
+      <_NetCoreAppRefPackGeneratorRelatedFile Include="%(_NetCoreAppRefPackGeneratorFile.RootDir)%(_NetCoreAppRefPackGeneratorFile.Directory)*\%(_NetCoreAppRefPackGeneratorFile.Filename).resources.dll" />
       <_NetCoreAppRefPackGeneratorRelatedFile Remove="@(_NetCoreAppRefPackGeneratorRelatedFile)"
                                               Condition="!Exists('%(_NetCoreAppRefPackGeneratorRelatedFile.Identity)')" />
-    </ItemGroup>
-
-    <ItemGroup>
       <_NetCoreAppLibraryPublicSourceAssembly Include="@(_NetCoreAppLibrarySourceAssembly)"
                                               Condition="'%(_NetCoreAppLibrarySourceAssembly.Extension)' == '.dll' and '%(_NetCoreAppLibrarySourceAssembly.IsPrivateAssembly)' != 'true'" />
       <_NetCoreAppLibrarySourceAssemblyWithReferenceAssembly Include="@(_NetCoreAppLibraryPublicSourceAssembly)"
@@ -69,10 +52,6 @@
       <_NetCoreAppLibrarySourceAssemblyWithDocumentation Include="@(_NetCoreAppLibraryPublicSourceAssembly)"
                                                          Condition="'%(_NetCoreAppLibraryPublicSourceAssembly.DocFileItem)' != '' and Exists('%(_NetCoreAppLibraryPublicSourceAssembly.DocFileItem)')" />
       <DocFilesToPackage Include="@(_NetCoreAppLibrarySourceAssemblyWithDocumentation->Metadata('DocFileItem'))" />
-      <FilesToPackage Include="@(_NetCoreAppRefPackGeneratorFile)"
-                      Condition="'%(_NetCoreAppRefPackGeneratorFile.PackagePath)' != ''"
-                      ExcludeFromValidation="true"
-                      TargetPath="analyzers/dotnet/cs/%(_NetCoreAppRefPackGeneratorFile.Culture)" />
       <FilesToPackage Include="@(_NetCoreAppRefPackGeneratorRelatedFile)"
                       ExcludeFromValidation="true"
                       TargetPath="analyzers/dotnet/cs/%(_NetCoreAppRefPackGeneratorRelatedFile.RecursiveDir)" />
