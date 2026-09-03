@@ -148,16 +148,7 @@ namespace System.Net.Mime
                     }
                 }
 
-                Encoding wordEncoding;
-                try
-                {
-                    wordEncoding = Encoding.GetEncoding(charSet.ToString());
-                }
-                catch (ArgumentException)
-                {
-                    return (value, null);
-                }
-
+                Encoding wordEncoding = Encoding.GetEncoding(charSet.ToString());
                 firstEncoding ??= wordEncoding;
 
                 byte[] buffer = Encoding.ASCII.GetBytes(data.ToString());
