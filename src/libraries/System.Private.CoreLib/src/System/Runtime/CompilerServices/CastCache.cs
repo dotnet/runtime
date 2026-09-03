@@ -22,6 +22,9 @@ namespace System.Runtime.CompilerServices
         private const uint VERSION_NUM_MASK = (1 << VERSION_NUM_SIZE) - 1;
         private const int BUCKET_SIZE = 8;
 
+        // The number of elements in the sentinel table (see s_sentinelTable).
+        private const int SENTINEL_TABLE_SIZE = 2;
+
         // nothing is ever stored into this, so we can use a static instance.
         private static int[]? s_sentinelTable;
 
@@ -36,7 +39,7 @@ namespace System.Runtime.CompilerServices
 
         public CastCache(int initialCacheSize, int maxCacheSize)
         {
-            Debug.Assert(BitOperations.PopCount((uint)initialCacheSize) == 1 && initialCacheSize > 1);
+            Debug.Assert(BitOperations.PopCount((uint)initialCacheSize) == 1 && initialCacheSize > SENTINEL_TABLE_SIZE);
             Debug.Assert(BitOperations.PopCount((uint)maxCacheSize) == 1 && maxCacheSize >= initialCacheSize);
 
             _initialCacheSize = initialCacheSize;
@@ -45,7 +48,7 @@ namespace System.Runtime.CompilerServices
             // A trivial 2-elements table used for "flushing" the cache.
             // Nothing is ever stored in such a small table and identity of the sentinel is not important.
             // It is required that we are able to allocate this, we may need this in OOM cases.
-            s_sentinelTable ??= CreateCastCache(2, throwOnFail: true);
+            s_sentinelTable ??= CreateCastCache(SENTINEL_TABLE_SIZE, throwOnFail: true);
 
             _table =
 #if !DEBUG
@@ -121,6 +124,13 @@ namespace System.Runtime.CompilerServices
         private static ref int TableMask(ref int tableData)
         {
             return ref Unsafe.Add(ref tableData, 1);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool IsSentinel(ref int tableData)
+        {
+            // The sentinel is the only table with SENTINEL_TABLE_SIZE elements.
+            return TableMask(ref tableData) == SENTINEL_TABLE_SIZE - 1;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -256,9 +266,9 @@ namespace System.Runtime.CompilerServices
             do
             {
                 tableData = ref TableData(_table);
-                if (TableMask(ref tableData) == 1)
+                if (IsSentinel(ref tableData))
                 {
-                    // 2-element table is used as a sentinel.
+                    // the sentinel table is used to indicate that
                     // we did not allocate a real table yet or have flushed it.
                     // try replacing the table, but do not insert anything.
                     MaybeReplaceCacheWithLarger(_lastFlushSize);
@@ -331,7 +341,7 @@ namespace System.Runtime.CompilerServices
             // reread tableData after TryGrow.
             tableData = ref TableData(_table);
 
-            if (TableMask(ref tableData) == 1)
+            if (IsSentinel(ref tableData))
             {
                 // do not insert into a sentinel.
                 return;
