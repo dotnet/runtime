@@ -4,27 +4,53 @@
 namespace Dynamic
 {
     using System;
+    using System.Runtime.CompilerServices;
     using Xunit;
 
     internal class EventTest
     {
         private dynamic obj;
         private Random rand;
+        private readonly WeakReference _rcwReference;
 
         public EventTest(int seed = 123)
         {
             Type t = Type.GetTypeFromCLSID(Guid.Parse(ServerGuids.EventTest));
-            obj = Activator.CreateInstance(t);
+            object rcw = Activator.CreateInstance(t);
+            obj = rcw;
+            _rcwReference = new WeakReference(rcw);
             rand = new Random(seed);
         }
 
-        public void Run()
+        public static void Run()
         {
             Console.WriteLine($"Running {nameof(EventTest)}");
-            FireEvent();
-            DynamicEventHandler();
-            MultipleHandlers();
-            MultipleSources();
+
+            WeakReference rcwReference = RunCore();
+
+            // RunCore removed every handler it added, so each event source's sink has already
+            // been unadvised and is kept in the RCW's sink container only so it can be reused.
+            // Collecting the RCW finalizes that container, which must not unadvise those sinks
+            // a second time.
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+
+            Assert.False(rcwReference.IsAlive);
+        }
+
+        // The RCW is created and used entirely within this method so that no local in Run can
+        // extend its lifetime past the collection there, regardless of the JIT's lifetime and
+        // codegen behavior in debug and release builds.
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static WeakReference RunCore()
+        {
+            var test = new EventTest();
+            test.FireEvent();
+            test.DynamicEventHandler();
+            test.MultipleHandlers();
+            test.MultipleSources();
+            return test._rcwReference;
         }
 
         private void FireEvent()

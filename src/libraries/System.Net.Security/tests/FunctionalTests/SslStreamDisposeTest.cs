@@ -149,7 +149,10 @@ namespace System.Net.Security.Tests
                 {
                     await task;
                 }
-                catch (InvalidOperationException ex) when (ex.StackTrace?.Contains("System.IO.ConnectedStreams") ?? true)
+                catch (InvalidOperationException ex) when (ex.StackTrace is null ||
+                    ex.StackTrace.Contains("System.IO.ConnectedStreams") ||
+                    ex.StackTrace.Contains("System.IO.StreamBuffer.TryWriteToBuffer") ||
+                    ex.StackTrace.Contains("System.IO.StreamBuffer.WriteAsync"))
                 {
                     // Writing to a disposed ConnectedStream (test only, does not happen with NetworkStream)
                     return;
