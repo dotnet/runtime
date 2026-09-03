@@ -96,7 +96,8 @@ internal sealed class TypeValidation
             }
         }
 
-        internal readonly bool ValidateReadable() => ValidateDataReadable<MethodTable>(_target, Address);
+        internal readonly bool ValidateReadable() => new MethodTable(_target, Address).TryReadAllFields();
+
         internal TargetPointer ParentMethodTable => _target.ReadPointer(Address + (ulong)_type.Fields[nameof(ParentMethodTable)].Offset);
     }
 
@@ -116,7 +117,7 @@ internal sealed class TypeValidation
 
         internal TargetPointer MethodTable => _target.ReadPointer(Address + (ulong)_type.Fields[nameof(MethodTable)].Offset);
 
-        internal readonly bool ValidateReadable() => ValidateDataReadable<EEClass>(_target, Address);
+        internal readonly bool ValidateReadable() => new EEClass(_target, Address).TryReadAllFields();
     }
 
     internal static NonValidatedMethodTable GetMethodTableData(Target target, TargetPointer methodTablePointer)
@@ -218,22 +219,6 @@ internal sealed class TypeValidation
             }
         }
         return true;
-    }
-
-    private static bool ValidateDataReadable<T>(Target target, TargetPointer dataAddress) where T : IData<T>
-    {
-        try
-        {
-            T dataClass = T.Create(target, dataAddress);
-            // Fields are read lazily, so force a full read to validate that the
-            // entire structure is readable (an unreadable field throws below).
-            (dataClass as IReadableData)?.EnsureAllFieldsRead();
-            return true;
-        }
-        catch (VirtualReadException)
-        {
-            return false;
-        }
     }
 
     private TargetPointer GetClassThrowing(NonValidatedMethodTable methodTable)
