@@ -184,6 +184,11 @@ namespace System.Net.Mail.Tests
             a = new Attachment(new MemoryStream(), "=?ISO-8859-1?Q?attachment=20?=\r\n   =?ISO-8859-1?Q?name?=");
             Assert.Equal("attachment name", a.Name);
             Assert.Equal(Encoding.Latin1, a.NameEncoding);
+
+            // multiple different encodings
+            a = new Attachment(new MemoryStream(), "=?ISO-8859-1?Q?attachment=20?= =?ISO-8859-2?Q?name?=");
+            Assert.Equal("attachment name", a.Name);
+            Assert.Equal(Encoding.Latin1, a.NameEncoding);
         }
 
         [Theory]
@@ -226,7 +231,6 @@ namespace System.Net.Mail.Tests
         [InlineData("=?ISO-8859-1?Q=?foo_bar?=")] // prohibited char in encoding
         [InlineData("=?ISO-8859-1?Q\"?foo_bar?=")] // prohibited char in encoding
         [InlineData("=?ISO-8859-1?Q\"?foo_bar_foo_bar_foo_bar_foo_bar_foo_bar_foo_bar_foo_barxy?=")] // longer then 75 chars
-        [InlineData("=?ISO-8859-1?Q?attachment=20?= =?ISO-8859-2?Q?name?=")] // multiple different encodings
         public void NameParsingAndEncodingDetectionBadInputs(string attachmentName)
         {
             Attachment a = new Attachment(new MemoryStream(), attachmentName);

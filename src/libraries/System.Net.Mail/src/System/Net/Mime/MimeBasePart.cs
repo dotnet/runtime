@@ -158,18 +158,7 @@ namespace System.Net.Mime
                     return (value, null);
                 }
 
-                if (firstEncoding is null)
-                {
-                    firstEncoding = wordEncoding;
-                }
-                else
-                {
-                    // ambiguous encodings
-                    if (firstEncoding != wordEncoding)
-                    {
-                        return (value, null);
-                    }
-                }
+                firstEncoding ??= wordEncoding;
 
                 byte[] buffer = Encoding.ASCII.GetBytes(data.ToString());
                 IEncodableStream s = EncodedStreamFactory.GetEncoderForHeader(wordEncoding, base64Encoding, 0);
