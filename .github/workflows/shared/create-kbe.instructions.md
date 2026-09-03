@@ -527,9 +527,10 @@ Reject signatures that:
 - A bare `[FAIL]` line with only the test class name
 - A bare fully-qualified test name
 - A truncated test-name prefix ending in `_`, `.`, or `*`
-- An array that pairs a per-test or per-invocation announcement with a generic
-  suite-harness error from a shared multi-test Helix console log; those lines can
-  coexist when an unrelated sibling test fails, creating a catch-all KBE
+- An array whose only failure-identifying anchors are a per-test or
+  per-invocation announcement and a generic suite-harness error from a shared
+  multi-test Helix console log; those lines can coexist when an unrelated
+  sibling test fails, creating a catch-all KBE
 - Common infra strings like `Connection reset`, `Operation timed out`, or
   `No space left on device`
 
