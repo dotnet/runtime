@@ -49,7 +49,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     // operand is contained, so no v128.const was materialized). i8x16.shuffle
                     // selects from two vectors, so push the source a second time and encode the
                     // mask as the 16-byte shuffle immediate.
-                    GenTree*  src    = node->Op(1);
+                    GenTree* src = node->Op(1);
                     genEmitMultiUseOperandGet(src);
                     GetEmitter()->emitIns_V128Imm(INS_i8x16_shuffle, node->Op(2)->AsVecCon()->gtSimdVal.u8);
                 }

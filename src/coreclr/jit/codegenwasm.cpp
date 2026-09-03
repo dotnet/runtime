@@ -1768,10 +1768,10 @@ void CodeGen::genCodeForBinaryOverflow(GenTreeOp* treeNode)
 
     genConsumeOperands(treeNode);
 
-    const bool    is64BitOp = treeNode->TypeIs(TYP_LONG);
-    InternalRegs* regs      = internalRegisters.GetAll(treeNode);
-    GenTree* const op1      = treeNode->gtGetOp1();
-    GenTree* const op2      = treeNode->gtGetOp2();
+    const bool     is64BitOp = treeNode->TypeIs(TYP_LONG);
+    InternalRegs*  regs      = internalRegisters.GetAll(treeNode);
+    GenTree* const op1       = treeNode->gtGetOp1();
+    GenTree* const op2       = treeNode->gtGetOp2();
 
     switch (treeNode->OperGet())
     {
@@ -2987,9 +2987,9 @@ void CodeGen::genStoreIndTypeSimd12(GenTreeStoreInd* tree)
     }
     else
     {
-        genEmitMultiUseOperandGet(addr);                                                          // [addr]
-        emit->emitIns_I(INS_local_get, EA_16BYTE, WasmRegToIndex(valReg));                        // [addr, value]
-        emit->emitIns_MemargLane(INS_v128_store32_lane, EA_4BYTE, 8, 2);                          // []
+        genEmitMultiUseOperandGet(addr);                                   // [addr]
+        emit->emitIns_I(INS_local_get, EA_16BYTE, WasmRegToIndex(valReg)); // [addr, value]
+        emit->emitIns_MemargLane(INS_v128_store32_lane, EA_4BYTE, 8, 2);   // []
     }
 }
 
@@ -3836,10 +3836,10 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
     regNumber srcReg        = REG_NA;
     // The address nodes behind 'destReg'/'srcReg', set only when the register came from the
     // operand itself rather than from the frame pointer.
-    GenTree*  destAddr      = nullptr;
-    GenTree*  srcAddr       = nullptr;
-    unsigned  destOffset    = 0;
-    unsigned  srcOffset     = 0;
+    GenTree* destAddr   = nullptr;
+    GenTree* srcAddr    = nullptr;
+    unsigned destOffset = 0;
+    unsigned srcOffset  = 0;
 
     // Unwrap a contained GT_INIT_VAL so the wrapped fill value (not the wrapper) is pushed onto the WASM value stack.
     GenTree* srcForConsume = src->OperIs(GT_INIT_VAL) ? src->gtGetOp1() : src;
