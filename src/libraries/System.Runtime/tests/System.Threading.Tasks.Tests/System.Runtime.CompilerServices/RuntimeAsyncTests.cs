@@ -517,8 +517,8 @@ namespace System.Threading.Tasks.Tests
             RemoteExecutor.Invoke(async () =>
             {
                 // Start a multi-await task WITHOUT instrumentation enabled.
-                var tcs1 = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-                var tcs2 = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                var tcs1 = new TaskCompletionSource();
+                var tcs2 = new TaskCompletionSource();
                 Task inflight = FuncThatWaitsTwice(tcs1, tcs2);
 
                 // Task is now suspended at first await with no instrumentation.
@@ -609,8 +609,8 @@ namespace System.Threading.Tasks.Tests
                 {
                     listener.RunWithCallback(events.Enqueue, () =>
                     {
-                        var tcs1 = new TaskCompletionSource();
-                        var tcs2 = new TaskCompletionSource();
+                        var tcs1 = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                        var tcs2 = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
                         Task runtimeAsyncTask = FuncThatWaitsTwice(tcs1, tcs2);
                         int runtimeAsyncTaskId = runtimeAsyncTask.Id;
                         int firstAwaitedTaskId = tcs1.Task.Id;
