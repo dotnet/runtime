@@ -72,10 +72,17 @@ public class CommandLineTests
                     continue;
                 }
 
-                options.Add(option.Name);
+                if (option.Name.StartsWith("-", StringComparison.Ordinal))
+                {
+                    options.Add(option.Name);
+                }
+
                 foreach (string alias in option.Aliases)
                 {
-                    options.Add(alias);
+                    if (alias.StartsWith("-", StringComparison.Ordinal))
+                    {
+                        options.Add(alias);
+                    }
                 }
             }
 
@@ -311,6 +318,14 @@ public class CommandLineTests
         Assert.Equal(
             [option, "-DLL", "input.il"],
             NativeCommandLine.Normalize([option, "-DLL", "input.il"], allowSlashOptions: false));
+    }
+
+    [Fact]
+    public void BareOptionName_DoesNotPreserveNextArgument()
+    {
+        Assert.Equal(
+            ["output", "--dll", "input.il"],
+            NativeCommandLine.Normalize(["output", "-DLL", "input.il"], allowSlashOptions: false));
     }
 
     [Theory]
