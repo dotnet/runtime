@@ -52,10 +52,10 @@ public class Runtime_133131
     {
         s_v = 0;
         TailMergePickSelfLoopAsVictim(-1);
-        Assert.Equal(s_v, 0);
+        Assert.Equal(0, s_v);
 
         s_v = 0;
         TailMergeDontRemoveSelfLoop(-1);
-        Assert.Equal(s_v, 0);
+        Assert.Equal(0, s_v);
     }
 }
