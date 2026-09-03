@@ -136,6 +136,7 @@ int EVP_PKEY_get_bn_param(const EVP_PKEY *pkey, const char *key_name, BIGNUM **b
 int EVP_PKEY_get_utf8_string_param(const EVP_PKEY *pkey, const char *key_name, char *str, size_t max_buf_sz, size_t *out_len);
 int EVP_PKEY_get_octet_string_param(const EVP_PKEY *pkey, const char *key_name, unsigned char *buf, size_t max_buf_sz, size_t *out_len);
 int EVP_PKEY_is_a(const EVP_PKEY *pkey, const char *name);
+int EVP_PKEY_todata(const EVP_PKEY *pkey, int selection, OSSL_PARAM **params);
 EVP_PKEY_CTX *EVP_PKEY_CTX_new_from_pkey(OSSL_LIB_CTX *libctx,
                                          EVP_PKEY *pkey,
                                          const char *propquery);
@@ -153,6 +154,8 @@ int OSSL_PARAM_BLD_push_octet_string(OSSL_PARAM_BLD *bld, const char *key, const
 int OSSL_PARAM_BLD_push_BN(OSSL_PARAM_BLD *bld, const char *key, const BIGNUM *bn);
 OSSL_PARAM *OSSL_PARAM_BLD_to_param(OSSL_PARAM_BLD *bld);
 void OSSL_PARAM_free(OSSL_PARAM *params);
+int OSSL_PARAM_get_octet_string_ptr(const OSSL_PARAM *p, const void **val, size_t *used_len);
+const OSSL_PARAM *OSSL_PARAM_locate_const(const OSSL_PARAM *p, const char *key);
 
 void OSSL_LIB_CTX_free(OSSL_LIB_CTX*);
 OSSL_LIB_CTX* OSSL_LIB_CTX_new(void);
