@@ -62,6 +62,38 @@ public class R2RTestSuites
         }
     }
 
+    [Fact]
+    public void GenericTypeConstraintsAllowVariantParameters()
+    {
+        var genericTypeConstraints = new CompiledAssembly
+        {
+            AssemblyName = nameof(GenericTypeConstraintsAllowVariantParameters),
+            SourceResourceNames = ["TypeValidation/GenericTypeConstraints.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(GenericTypeConstraintsAllowVariantParameters),
+            [
+                new(nameof(GenericTypeConstraintsAllowVariantParameters), [new CrossgenAssembly(genericTypeConstraints)])
+                {
+                    AdditionalArgs =
+                    {
+                        "--compile-no-methods",
+                        "--type-validation",
+                        "AutomaticWithLogging",
+                    },
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            Assert.True(
+                (reader.ReadyToRunHeader.Flags & (uint)ReadyToRunFlags.READYTORUN_FLAG_SkipTypeValidation) != 0,
+                "Expected the ReadyToRun image to skip runtime type validation.");
+        }
+    }
+
     [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
     public void WasmWebcilModule()
     {
@@ -192,6 +224,51 @@ public class R2RTestSuites
             WebcilImageReader.WasmFunctionInfo? body = webcilReader.GetWasmFunctionBody(functionIndex);
             Assert.True(body is not null, $"Wasm function body {functionIndex} was not found.");
             return body.Value;
+        }
+    }
+
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
+    public void WasmCompositeModule()
+    {
+        var compositeLib = new CompiledAssembly
+        {
+            AssemblyName = "CompositeLib",
+            SourceResourceNames = ["CrossModuleInlining/Dependencies/CompositeLib.cs"],
+        };
+        var wasmCompositeModule = new CompiledAssembly
+        {
+            AssemblyName = nameof(WasmCompositeModule),
+            SourceResourceNames = ["CrossModuleInlining/CompositeBasic.cs"],
+            References = [compositeLib]
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(WasmCompositeModule),
+            [
+                new(nameof(WasmCompositeModule),
+                [
+                    new CrossgenAssembly(compositeLib),
+                    new CrossgenAssembly(wasmCompositeModule),
+                ])
+                {
+                    OutputFileExtension = ".wasm",
+                    Options = [Crossgen2Option.Composite, Crossgen2Option.Optimize],
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            // A composite Webcil image has no ILLibrary flag in its COR header, and Webcil has no
+            // export table to publish an RTR_HEADER export, so the ReadyToRun header has to be
+            // found through the CLI header's ManagedNativeHeader directory.
+            var webcilReader = Assert.IsType<WebcilImageReader>(reader.CompositeReader);
+            Assert.True(webcilReader.IsWasmWrapped);
+            Assert.True(reader.Composite);
+            Assert.True(R2RAssert.HasManifestRef(reader, "CompositeLib", out string diag), diag);
+            ReadyToRunSection section = reader.ReadyToRunHeader.Sections.Values.First();
+            int payloadOffset = reader.GetOffset(section.RelativeVirtualAddress) - section.RelativeVirtualAddress;
+            Assert.Equal(0, payloadOffset & 0xF);
         }
     }
 

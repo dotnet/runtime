@@ -46,8 +46,8 @@ namespace TestApp
                         return value switch
                         {
                             null => (typeof(global::TestApp.Circle), (object?)null),
-                            { Value: int caseValue0 } => (typeof(int), (object?)caseValue0),
-                            { Value: global::TestApp.Circle caseValue1 } => (typeof(global::TestApp.Circle), (object?)caseValue1),
+                            int caseValue0 => (typeof(int), (object?)caseValue0),
+                            global::TestApp.Circle caseValue1 => (typeof(global::TestApp.Circle), (object?)caseValue1),
                         };
                     },
                     TypeClassifier = null,
