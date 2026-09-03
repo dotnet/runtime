@@ -120,12 +120,19 @@ public class Runtime_133209
     [Fact]
     public static unsafe void Dereference_WithNarrowedAddress()
     {
-        long value = 0;
-        long address = (long)(nint)(&value);
+        // Each access reads back the same width it wrote, so the expected values do not depend on
+        // the target's byte order.
+        int intValue = 0;
+        long intAddress = (long)(nint)(&intValue);
 
-        StoreThroughNarrowedAddress(address, 0x12345678);
-        Assert.Equal(0x12345678, LoadThroughNarrowedAddress(address));
-        Assert.Equal(0x12345678L, LoadLongThroughNarrowedAddress(address));
+        StoreThroughNarrowedAddress(intAddress, 0x12345678);
+        Assert.Equal(0x12345678, intValue);
+        Assert.Equal(0x12345678, LoadThroughNarrowedAddress(intAddress));
+
+        long longValue = 0x123456789ABCDEF0L;
+        long longAddress = (long)(nint)(&longValue);
+
+        Assert.Equal(longValue, LoadLongThroughNarrowedAddress(longAddress));
     }
 
     [Fact]
