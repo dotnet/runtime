@@ -4,12 +4,12 @@
     <body>
       <trans-unit id="AlreadyImplementsValidateAsyncMethodMessage">
         <source>Type {0} already implements the ValidateAsync method.</source>
-        <target state="new">Type {0} already implements the ValidateAsync method.</target>
+        <target state="translated">O tipo {0} já implementa o método ValidateAsync.</target>
         <note />
       </trans-unit>
       <trans-unit id="AlreadyImplementsValidateAsyncMethodTitle">
         <source>A type already includes an implementation of the 'ValidateAsync' method.</source>
-        <target state="new">A type already includes an implementation of the 'ValidateAsync' method.</target>
+        <target state="translated">Um tipo já inclui uma implementação do método "ValidateAsync".</target>
         <note />
       </trans-unit>
       <trans-unit id="AlreadyImplementsValidateMethodMessage">
