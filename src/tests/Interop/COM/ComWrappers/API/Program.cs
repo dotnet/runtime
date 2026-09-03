@@ -682,7 +682,7 @@ namespace ComWrappersTests
                     try
                     {
                         Assert.True(start.SignalAndWait(TimeSpan.FromMinutes(1)), "Timed out waiting for the start barrier.");
-                    {
+
                         for (int i = 0; i < IterationCount; i++)
                         {
                             // Every thread walks the instances from a different offset, so the threads are
@@ -724,7 +724,7 @@ namespace ComWrappersTests
                 threads[t].Start();
             }
 
-            start.SignalAndWait();
+            Assert.True(start.SignalAndWait(TimeSpan.FromMinutes(1)), "Timed out waiting for the start barrier.");
 
             foreach (Thread thread in threads)
             {
