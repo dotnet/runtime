@@ -4,9 +4,13 @@
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Net.Security;
+using System.Net.Sockets;
 using System.Security.Authentication.ExtendedProtection;
 using System.Text;
 using System.Threading.Tasks;
+
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Net.Tests
@@ -242,6 +246,33 @@ namespace System.Net.Tests
             }
         }
 
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsWindowsImplementation))]
+        public async Task ExtendedProtectionSelectorDelegate_IncreasesPolicyBetweenNtlmLegs_AuthenticationFails()
+        {
+            _listener.AuthenticationSchemes = AuthenticationSchemes.Ntlm;
+
+            ExtendedProtectionPolicy relaxedPolicy = new ExtendedProtectionPolicy(PolicyEnforcement.Never);
+            ExtendedProtectionPolicy strictPolicy =
+                new ExtendedProtectionPolicy(
+                    PolicyEnforcement.Always,
+                    ProtectionScenario.TransportSelected,
+                    new ServiceNameCollection(new[] { "HTTP/strict-only" }));
+
+            _listener.ExtendedProtectionSelectorDelegate = request =>
+                request.QueryString["strict"] == "1" ? strictPolicy : relaxedPolicy;
+
+            NtlmHandshakeResult baselineResult = await TryCompleteNtlmOverSingleConnection(secondLegStrict: false);
+            if (baselineResult == NtlmHandshakeResult.CredentialsUnavailable)
+            {
+                throw new SkipTestException("Unable to establish baseline NTLM authentication with default credentials.");
+            }
+
+            Assert.Equal(NtlmHandshakeResult.Authenticated, baselineResult);
+
+            NtlmHandshakeResult strictSecondLegResult = await TryCompleteNtlmOverSingleConnection(secondLegStrict: true);
+            Assert.Equal(NtlmHandshakeResult.Unauthorized, strictSecondLegResult);
+        }
+
         [Fact]
         public async Task AuthenticationSchemeSelectorDelegate_ReturnsInvalidAuthenticationScheme_PerformsNoAuthentication()
         {
@@ -458,6 +489,201 @@ namespace System.Net.Tests
 
         private Task ValidateValidUser() =>
             ValidateValidUser(string.Format("{0}:{1}", TestUser, TestPassword), TestUser, TestPassword);
+
+        private async Task<NtlmHandshakeResult> TryCompleteNtlmOverSingleConnection(bool secondLegStrict)
+        {
+            using Socket client = _factory.GetConnectedSocket();
+            client.ReceiveTimeout = 15000;
+            client.SendTimeout = 15000;
+
+            Task<HttpListenerContext> serverContextTask = _listener.GetContextAsync();
+
+            NegotiateAuthenticationClientOptions clientOptions =
+                new NegotiateAuthenticationClientOptions
+                {
+                    Package = "NTLM",
+                    Credential = CredentialCache.DefaultNetworkCredentials,
+                    TargetName = "HTTP/lax-target"
+                };
+
+            using NegotiateAuthentication clientContext = new NegotiateAuthentication(clientOptions);
+
+            byte[]? type1 = clientContext.GetOutgoingBlob(ReadOnlySpan<byte>.Empty, out NegotiateAuthenticationStatusCode type1Status);
+            if (type1 is null || type1Status != NegotiateAuthenticationStatusCode.ContinueNeeded)
+            {
+                return NtlmHandshakeResult.UnexpectedFailure;
+            }
+
+            Task<ResponseHeaders> firstResponseTask = Task.Run(() =>
+                SendRequestAndReadHeaders(client, CreateNtlmRequest(Convert.ToBase64String(type1), strict: false)));
+
+            Task firstCompletedTask = await Task.WhenAny(serverContextTask, firstResponseTask);
+            if (firstCompletedTask == serverContextTask)
+            {
+                HttpListenerContext unexpectedContext = await serverContextTask;
+                unexpectedContext.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+                unexpectedContext.Response.Close();
+                return NtlmHandshakeResult.UnexpectedFailure;
+            }
+
+            ResponseHeaders firstResponse = await firstResponseTask;
+            if (firstResponse.StatusCode != HttpStatusCode.Unauthorized)
+            {
+                return NtlmHandshakeResult.UnexpectedFailure;
+            }
+
+            string? challenge = GetNtlmChallenge(firstResponse.Headers);
+            if (challenge is null)
+            {
+                return NtlmHandshakeResult.UnexpectedFailure;
+            }
+
+            byte[]? type2 = Convert.FromBase64String(challenge);
+            byte[]? type3 = clientContext.GetOutgoingBlob(type2, out NegotiateAuthenticationStatusCode type3Status);
+            if (type3 is null)
+            {
+                return type3Status == NegotiateAuthenticationStatusCode.UnknownCredentials
+                    ? NtlmHandshakeResult.CredentialsUnavailable
+                    : NtlmHandshakeResult.UnexpectedFailure;
+            }
+
+            if (type3Status != NegotiateAuthenticationStatusCode.Completed)
+            {
+                return NtlmHandshakeResult.UnexpectedFailure;
+            }
+
+            Task<ResponseHeaders> secondResponseTask = Task.Run(() =>
+                SendRequestAndReadHeaders(client, CreateNtlmRequest(Convert.ToBase64String(type3), secondLegStrict)));
+
+            Task completedTask = await Task.WhenAny(serverContextTask, secondResponseTask);
+            if (completedTask == serverContextTask)
+            {
+                HttpListenerContext context = await serverContextTask;
+                context.Response.StatusCode = (int)HttpStatusCode.NoContent;
+                context.Response.Close();
+
+                ResponseHeaders successfulResponse = await secondResponseTask;
+                return successfulResponse.StatusCode == HttpStatusCode.NoContent
+                    ? NtlmHandshakeResult.Authenticated
+                    : NtlmHandshakeResult.UnexpectedFailure;
+            }
+
+            ResponseHeaders failedResponse = await secondResponseTask;
+            return failedResponse.StatusCode == HttpStatusCode.Unauthorized
+                ? NtlmHandshakeResult.Unauthorized
+                : NtlmHandshakeResult.UnexpectedFailure;
+        }
+
+        private byte[] CreateNtlmRequest(string authBlob, bool strict)
+        {
+            string query = strict ? "?strict=1" : "?strict=0";
+            string[] headers =
+            [
+                "Connection: keep-alive",
+                $"Authorization: NTLM {authBlob}"
+            ];
+
+            return _factory.GetContent("1.1", "HEAD", query, text: null, headers, headerOnly: true);
+        }
+
+        private static string? GetNtlmChallenge(List<string> headers)
+        {
+            foreach (string header in headers)
+            {
+                if (!header.StartsWith("WWW-Authenticate:", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                string value = header.Substring("WWW-Authenticate:".Length).Trim();
+                if (!value.StartsWith("NTLM ", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                return value.Substring("NTLM ".Length).Trim();
+            }
+
+            return null;
+        }
+
+        private static ResponseHeaders SendRequestAndReadHeaders(Socket client, byte[] requestBytes)
+        {
+            int totalSent = 0;
+            while (totalSent < requestBytes.Length)
+            {
+                int sent = client.Send(requestBytes, totalSent, requestBytes.Length - totalSent, SocketFlags.None);
+                if (sent == 0)
+                {
+                    throw new InvalidOperationException("Socket closed before request bytes were fully sent.");
+                }
+
+                totalSent += sent;
+            }
+
+            string headersText = ReadHeaders(client);
+            int separatorIndex = headersText.IndexOf("\r\n", StringComparison.Ordinal);
+            Assert.True(separatorIndex >= 0, "Response did not include a status line.");
+
+            string statusLine = headersText.Substring(0, separatorIndex);
+            string[] statusLineParts = statusLine.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            Assert.True(statusLineParts.Length >= 2, $"Invalid status line: '{statusLine}'");
+            Assert.True(int.TryParse(statusLineParts[1], out int statusCode), $"Invalid status code in status line: '{statusLine}'");
+
+            List<string> headerLines = new List<string>();
+            int position = separatorIndex + 2;
+            while (position < headersText.Length)
+            {
+                int lineEnd = headersText.IndexOf("\r\n", position, StringComparison.Ordinal);
+                if (lineEnd < 0)
+                {
+                    break;
+                }
+
+                if (lineEnd == position)
+                {
+                    break;
+                }
+
+                headerLines.Add(headersText.Substring(position, lineEnd - position));
+                position = lineEnd + 2;
+            }
+
+            return new ResponseHeaders((HttpStatusCode)statusCode, headerLines);
+        }
+
+        private static string ReadHeaders(Socket client)
+        {
+            StringBuilder builder = new StringBuilder();
+            byte[] buffer = new byte[1024];
+
+            while (true)
+            {
+                int bytesRead = client.Receive(buffer);
+                if (bytesRead == 0)
+                {
+                    throw new InvalidOperationException("Socket closed before response headers were fully received.");
+                }
+
+                builder.Append(Encoding.ASCII.GetString(buffer, 0, bytesRead));
+                string response = builder.ToString();
+                int headerEnd = response.IndexOf("\r\n\r\n", StringComparison.Ordinal);
+                if (headerEnd >= 0)
+                {
+                    return response.Substring(0, headerEnd);
+                }
+            }
+        }
+
+        private enum NtlmHandshakeResult
+        {
+            Authenticated,
+            Unauthorized,
+            CredentialsUnavailable,
+            UnexpectedFailure
+        }
+
+        private sealed record ResponseHeaders(HttpStatusCode StatusCode, List<string> Headers);
 
         private async Task ValidateValidUser(string authHeader, string expectedUsername, string expectedPassword)
         {
