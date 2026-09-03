@@ -85,7 +85,6 @@
                                 Exclude="@(_WasmFrameworkR2RInput)" />
       <PublishReadyToRunExclude Include="@(_WasmFrameworkR2RExclude->'%(FileName)%(Extension)')" />
       <PublishReadyToRunExclude Include="System.Private.CoreLib.dll" />
-      <ResolvedFileToPublish Update="@(_WasmFrameworkR2RInput)" RelativePath="%(FileName).wasm" />
     </ItemGroup>
     <PropertyGroup>
       <_WasmCoreLibIL Condition="Exists('$(CoreCLRArtifactsPath)System.Private.CoreLib.dll')">$(CoreCLRArtifactsPath)System.Private.CoreLib.dll</_WasmCoreLibIL>
