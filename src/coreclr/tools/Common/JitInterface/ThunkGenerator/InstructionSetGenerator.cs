@@ -636,6 +636,7 @@ namespace Internal.JitInterface
             return resultflags;
         }
 
+        // Expands unsupported instruction sets. If A implies B and B is unsupported, A is unsupported too.
         public void ExpandInstructionSetByReverseImplication(TargetArchitecture architecture)
         {
             this = ExpandInstructionSetByReverseImplicationHelper(architecture, this);
@@ -670,12 +671,6 @@ namespace Internal.JitInterface
                 foreach (var implication in _implications)
                 {
                     if (implication.Architecture != architecture) continue;
-                    if (implication.Architecture == "Wasm32" && implication.JitName == "RelaxedSimd" && implication.ImpliedJitName == "PackedSimd")
-                    {
-                        // PackedSimd is enabled by default on wasm; RelaxedSimd remains opt-in.
-                        continue;
-                    }
-
                     AddReverseImplication(architecture, implication.JitName, implication.ImpliedJitName);
                 }
                 tr.WriteLine("                        break;");
