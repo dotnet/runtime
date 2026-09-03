@@ -8,10 +8,13 @@
 using InlineIL;
 using System;
 using System.Runtime.CompilerServices;
+using TestLibrary;
+using Xunit;
 
 class Runtime_70259
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/124221", typeof(PlatformDetection), nameof(PlatformDetection.IsWasm), nameof(PlatformDetection.IsReadyToRunCompiled))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/70279", TestRuntimes.Mono)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/133169", typeof(PlatformDetection), nameof(PlatformDetection.IsWasm), nameof(PlatformDetection.IsReadyToRunCompiled))]
     private static int Main()
     {
         // This creates an open delegate that goes through shuffle thunk and
@@ -45,5 +48,4 @@ class Runtime_70259
             return 100;
         }
     }
-
 }

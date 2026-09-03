@@ -73,7 +73,7 @@
         int32(0x2) // Mono
     }
     .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {
-        string('https://github.com/dotnet/runtime/issues/124221')
+        string('https://github.com/dotnet/runtime/issues/133169')
         type([TestLibrary]TestLibrary.PlatformDetection)
         string[2] ('IsWasm' 'IsReadyToRunCompiled')
     }
