@@ -337,6 +337,7 @@ namespace System.Composition.UnitTests
         /// Needs to be fixed so that specifying boundary would automatically create the shared
         /// </summary>
         [Fact]
+        [ActiveIssue("System.Composition (MEF) is not trim-compatible; fails on browser once trimming is enabled", TestPlatforms.Browser)]
         public void BoundarySharingTest()
         {
             var cc = CreateContainer(typeof(A), typeof(B), typeof(C), typeof(D));
@@ -358,6 +359,7 @@ namespace System.Composition.UnitTests
         /// CirA root of the composition has to be shared explicitly.
         /// </summary>
         [Fact]
+        [ActiveIssue("System.Composition (MEF) is not trim-compatible; fails on browser once trimming is enabled", TestPlatforms.Browser)]
         public void CircularBoundarySharingTest()
         {
             var cc = CreateContainer(typeof(CirA), typeof(CirB), typeof(CirC));
@@ -374,6 +376,7 @@ namespace System.Composition.UnitTests
         /// Something is badly busted here.. I am getting a null ref exception
         /// </summary>
         [Fact]
+        [ActiveIssue("System.Composition (MEF) is not trim-compatible; fails on browser once trimming is enabled", TestPlatforms.Browser)]
         public void MultipleBoundarySpecified()
         {
             var cc = CreateContainer(typeof(ProjA), typeof(ProjB), typeof(SolA), typeof(DocA), typeof(DocB), typeof(ColA), typeof(ColB));

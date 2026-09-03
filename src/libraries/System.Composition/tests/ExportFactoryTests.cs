@@ -115,6 +115,7 @@ namespace System.Composition.UnitTests
         }
 
         [Fact]
+        [ActiveIssue("System.Composition (MEF) is not trim-compatible; fails on browser once trimming is enabled", TestPlatforms.Browser)]
         public void TheSameSharedInstanceIsReusedWithinItsSharingBoundary()
         {
             var cc = CreateContainer(typeof(SharedBoundedByDC), typeof(SharedPartConsumer), typeof(DataConsistencyBoundaryProvider));
