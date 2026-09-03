@@ -75,7 +75,7 @@
     .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {
         string('https://github.com/dotnet/runtime/issues/124221')
         type([TestLibrary]TestLibrary.PlatformDetection)
-        string[2] ('IsBrowser' 'IsReadyToRunCompiled')
+        string[2] ('IsWasm' 'IsReadyToRunCompiled')
     }
     .entrypoint
     // Code size       31 (0x1f)
