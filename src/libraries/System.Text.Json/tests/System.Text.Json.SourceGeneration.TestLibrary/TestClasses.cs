@@ -32,6 +32,22 @@ namespace System.Text.Json.SourceGeneration.Tests.NETStandard
     {
     }
 
+    public closed class ReferencedClosedPet
+    {
+    }
+
+    public sealed class ReferencedClosedCat : ReferencedClosedPet
+    {
+    }
+
+    public closed class ReferencedClosedDog : ReferencedClosedPet
+    {
+    }
+
+    public sealed class ReferencedClosedLabrador : ReferencedClosedDog
+    {
+    }
+
     [JsonSerializable(typeof(MyPoco))]
     public partial class NETStandardSerializerContext : JsonSerializerContext
     {
