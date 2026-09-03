@@ -785,7 +785,9 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
     //
     if (JitConfig.EnableExtraSuperPmiQueries() && IsReadyToRun())
     {
-        info.compCompHnd->getWasmLowering(clsHnd);
+        eeRunExtraSuperPmiQueries([&]() {
+            info.compCompHnd->getWasmLowering(clsHnd);
+        });
     }
 #endif // DEBUG
 #endif // defined(TARGET_WASM)
@@ -6227,31 +6229,33 @@ int Compiler::compCompileAfterInit(CORINFO_MODULE_HANDLE classPtr,
 #ifdef DEBUG
     if (JitConfig.EnableExtraSuperPmiQueries())
     {
-        // Get the assembly name, to aid finding any particular SuperPMI method context function
-        (void)eeGetClassAssemblyName(info.compClassHnd);
+        eeRunExtraSuperPmiQueries([&]() {
+            // Get the assembly name, to aid finding any particular SuperPMI method context function
+            (void)eeGetClassAssemblyName(info.compClassHnd);
 
-        // Fetch class names for the method's generic parameters.
-        //
-        CORINFO_SIG_INFO sig;
-        info.compCompHnd->getMethodSig(info.compMethodHnd, &sig, nullptr);
+            // Fetch class names for the method's generic parameters.
+            //
+            CORINFO_SIG_INFO sig;
+            info.compCompHnd->getMethodSig(info.compMethodHnd, &sig, nullptr);
 
-        const unsigned classInst = sig.sigInst.classInstCount;
-        if (classInst > 0)
-        {
-            for (unsigned i = 0; i < classInst; i++)
+            const unsigned classInst = sig.sigInst.classInstCount;
+            if (classInst > 0)
             {
-                eeGetClassName(sig.sigInst.classInst[i]);
+                for (unsigned i = 0; i < classInst; i++)
+                {
+                    eeGetClassName(sig.sigInst.classInst[i]);
+                }
             }
-        }
 
-        const unsigned methodInst = sig.sigInst.methInstCount;
-        if (methodInst > 0)
-        {
-            for (unsigned i = 0; i < methodInst; i++)
+            const unsigned methodInst = sig.sigInst.methInstCount;
+            if (methodInst > 0)
             {
-                eeGetClassName(sig.sigInst.methInst[i]);
+                for (unsigned i = 0; i < methodInst; i++)
+                {
+                    eeGetClassName(sig.sigInst.methInst[i]);
+                }
             }
-        }
+        });
     }
 #endif // DEBUG
 

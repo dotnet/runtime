@@ -300,6 +300,9 @@
   <data name="TypeNotFound" xml:space="preserve">
     <value>Type '{0}' not found</value>
   </data>
+  <data name="GenerateUnboxingStubsOption" xml:space="preserve">
+    <value>Override whether to generate unboxing stubs</value>
+  </data>
   <data name="VerboseLoggingOption" xml:space="preserve">
     <value>Enable verbose logging</value>
   </data>
