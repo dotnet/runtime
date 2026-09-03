@@ -1122,7 +1122,6 @@ namespace
         }
 
         InterpreterCalliCookie thunk = LookupThunk(keyBuffer);
-        // TODO-WASM https://github.com/dotnet/runtime/issues/133124
 #ifdef _DEBUG
         if (thunk == NULL)
             printf("WASM calli missing for key: %s\n", keyBuffer);
@@ -1296,7 +1295,7 @@ InterpreterCalliCookie GetCookieForManagedMethod(MethodDesc *pMD)
 
     MetaSig metaSig(pMD);
 
-    if (pMD->IsCtor() && pMD->GetMethodTable()->IsString())
+    if (pMD->GetMethodTable()->IsString() && pMD->IsCtor())
     {
         const char *thunkKey = nullptr;
 
@@ -1361,6 +1360,7 @@ InterpreterCalliCookie GetCookieForCalliSig(MetaSig metaSig, MethodDesc *pContex
     InterpreterCalliCookie thunk = ComputeCalliSigThunk(metaSig);
     if (thunk == NULL)
     {
+        // TODO-WASM https://github.com/dotnet/runtime/issues/133124
         _ASSERT(!"GetCookieForCalliSig: unknown thunk signature");
     }
 
