@@ -28,6 +28,13 @@ namespace System.Net.ServerSentEvents
         public const string EventTypeDefault = "message";
         public static System.Net.ServerSentEvents.SseParser<string> Create(System.IO.Stream sseStream) { throw null; }
         public static System.Net.ServerSentEvents.SseParser<T> Create<T>(System.IO.Stream sseStream, System.Net.ServerSentEvents.SseItemParser<T> itemParser) { throw null; }
+        public static System.Net.ServerSentEvents.SseParser<T> Create<T>(System.IO.Stream sseStream, System.Net.ServerSentEvents.SseParserOptions<T> options) { throw null; }
+    }
+    public sealed partial class SseParserOptions<T>
+    {
+        public SseParserOptions(System.Net.ServerSentEvents.SseItemParser<T> itemParser) { }
+        public System.Net.ServerSentEvents.SseItemParser<T> ItemParser { get { throw null; } }
+        public int MaxBufferSize { get { throw null; } set { } }
     }
     public sealed partial class SseParser<T>
     {

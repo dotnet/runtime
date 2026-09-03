@@ -4,6 +4,7 @@
     <TestRuntime>true</TestRuntime>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <InvariantGlobalization>true</InvariantGlobalization>
+    <WasmWarnOnUnresolvedPInvokeModules>false</WasmWarnOnUnresolvedPInvokeModules>
     <PredefinedCulturesOnly>false</PredefinedCulturesOnly>
   </PropertyGroup>
   <ItemGroup>

@@ -17,7 +17,7 @@
 #include "stringarraylist.h"
 
 // static
-extern "C" void QCALLTYPE AppDomain_CreateDynamicAssembly(QCall::ObjectHandleOnStack assemblyLoadContext, NativeAssemblyNameParts* pAssemblyNameParts, INT32 hashAlgorithm, INT32 access, QCall::ObjectHandleOnStack retAssembly)
+extern "C" void QCALLTYPE AppDomain_CreateDynamicAssembly(QCall::ObjectHandleOnStack assemblyLoadContext, NativeAssemblyNameParts* pAssemblyNameParts, INT32 hashAlgorithm, INT32 access, QCall::ObjectHandleOnStack retAssembly, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -42,7 +42,7 @@ extern "C" void QCALLTYPE AppDomain_CreateDynamicAssembly(QCall::ObjectHandleOnS
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE AssemblyNative_GetLoadedAssemblies(QCall::ObjectHandleOnStack retAssemblies)
+extern "C" void QCALLTYPE AssemblyNative_GetLoadedAssemblies(QCall::ObjectHandleOnStack retAssemblies, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -142,7 +142,7 @@ namespace
 }
 
 // Get the value of a known host property from the binder/AppDomain state.
-extern "C" BOOL QCALLTYPE AppContext_TryGetHostPropertyValue(LPCWSTR name, QCall::StringHandleOnStack retValue)
+extern "C" BOOL QCALLTYPE AppContext_TryGetHostPropertyValue(LPCWSTR name, QCall::StringHandleOnStack retValue, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -250,7 +250,7 @@ extern "C" BOOL QCALLTYPE AppContext_TryGetHostPropertyValue(LPCWSTR name, QCall
     return found;
 }
 
-extern "C" void QCALLTYPE String_IsInterned(QCall::StringHandleOnStack str)
+extern "C" void QCALLTYPE String_IsInterned(QCall::StringHandleOnStack str, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -267,7 +267,7 @@ extern "C" void QCALLTYPE String_IsInterned(QCall::StringHandleOnStack str)
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE String_Intern(QCall::StringHandleOnStack str)
+extern "C" void QCALLTYPE String_Intern(QCall::StringHandleOnStack str, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 

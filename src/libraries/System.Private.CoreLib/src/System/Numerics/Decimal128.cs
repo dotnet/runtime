@@ -1769,11 +1769,11 @@ namespace System.Numerics
             return Number.UInt128ToDecStr(significand);
         }
 
-        static unsafe UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.NumberToSignificand(ref Number.NumberBuffer number, int digits)
+        static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.NumberToSignificand(ref Number.NumberBuffer number, int digits)
         {
             if (digits <= 19)
             {
-                return Number.DigitsToUInt64(number.DigitsPtr, digits);
+                return Number.DigitsToUInt64(number.Digits.Slice(0, digits));
             }
             else
             {

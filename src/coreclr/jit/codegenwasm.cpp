@@ -4487,39 +4487,33 @@ int CodeGenInterface::genTotalFrameSize() const
 }
 
 //---------------------------------------------------------------------
-// genSPtoFPdelta - return the offset from SP to the frame pointer.
-// This number is going to be positive, since SP must be at the lowest
-// address.
+// genSPtoFPdelta - return the offset from the initial SP to the frame pointer in linear memory.
+// This number should be zero on wasm, since Initial SP = FP.
 //
 // There must be a frame pointer to call this function!
 int CodeGenInterface::genSPtoFPdelta() const
 {
-    assert(isFramePointerUsed());
-    NYI_WASM("genSPtoFPdelta");
-    return 0;
+    unreached();
 }
 
 //---------------------------------------------------------------------
-// genCallerSPtoFPdelta - return the offset from Caller-SP to the frame pointer.
+// genCallerSPtoFPdelta - return the offset from Caller-SP to the frame pointer in linear memory.
 // This number is going to be negative, since the Caller-SP is at a higher
 // address than the frame pointer.
 //
 // There must be a frame pointer to call this function!
 int CodeGenInterface::genCallerSPtoFPdelta() const
 {
-    assert(isFramePointerUsed());
-    NYI_WASM("genCallerSPtoFPdelta");
-    return 0;
+    unreached();
 }
 
 //---------------------------------------------------------------------
-// genCallerSPtoInitialSPdelta - return the offset from Caller-SP to Initial SP.
+// genCallerSPtoInitialSPdelta - return the offset from Caller-SP to Initial SP in linear memory.
 //
 // This number will be negative.
 int CodeGenInterface::genCallerSPtoInitialSPdelta() const
 {
-    NYI_WASM("genCallerSPtoInitialSPdelta");
-    return 0;
+    unreached();
 }
 
 void RegSet::verifyRegUsed(regNumber reg)

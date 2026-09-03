@@ -2128,13 +2128,6 @@ namespace Internal.JitInterface
                 return false;
             }
 
-            // Don't get async variant of ComImport methods since we do not
-            // generate any runtime async entry points for them.
-            if (method.OwningType.IsComImport)
-            {
-                return false;
-            }
-
             return true;
         }
 

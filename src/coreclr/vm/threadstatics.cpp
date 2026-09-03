@@ -202,6 +202,7 @@ void ScanThreadStaticRoots(Thread* pThread, promote_func* fn, ScanContext* sc)
 
     // Report non-collectible object array
     fn(&pThreadLocalData->pNonCollectibleTlsArrayData, sc, 0);
+
 }
 #endif // DACCESS_COMPILE
 

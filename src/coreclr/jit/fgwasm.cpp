@@ -821,6 +821,12 @@ public:
                 headerNumber++;
             }
 
+            // All entry flow now passes through the try header before reaching the dispatcher.
+            if (tryHeader != nullptr)
+            {
+                tryHeader->setBBProfileWeight(TotalEntryWeight());
+            }
+
             // Create the dispatch switch... really there should be no default but for now we'll have one.
             //
             JITDUMP("\nDispatch header is " FMT_BB "; %u cases\n", dispatcher->bbNum, numHeaders);

@@ -203,7 +203,7 @@ namespace System
         // Computes `floor(scaled / 2^shift)` and how the discarded fraction `(scaled mod 2^shift) / 2^shift`
         // compares to the `1/2` midpoint, where `scaled` is the exact `mantissa * 10^digits`. Returns false
         // when the integer part would not be exactly representable so the caller can fall back.
-        private static unsafe bool TryGetFloorAndMidpoint<TUInt>(TUInt scaled, int shift, int integerBoundaryLog2, out ulong floor, out int midpointComparison, out bool hasRemainder)
+        private static bool TryGetFloorAndMidpoint<TUInt>(TUInt scaled, int shift, int integerBoundaryLog2, out ulong floor, out int midpointComparison, out bool hasRemainder)
             where TUInt : unmanaged, IBinaryInteger<TUInt>, IUnsignedNumber<TUInt>
         {
             int bitWidth = sizeof(TUInt) * 8;
@@ -293,7 +293,7 @@ namespace System
         // The caller is responsible for handling values which cannot have a fractional portion at
         // the requested number of digits (namely non-finite values and values whose magnitude is at
         // or above the point where all representable values are integers).
-        public static unsafe TNumber RoundToDecimalDigits<TNumber>(TNumber value, int digits, MidpointRounding mode)
+        public static TNumber RoundToDecimalDigits<TNumber>(TNumber value, int digits, MidpointRounding mode)
             where TNumber : unmanaged, IBinaryFloatParseAndFormatInfo<TNumber>
         {
             Debug.Assert(TNumber.IsFinite(value));
@@ -389,8 +389,7 @@ namespace System
             // materializing the decimal digits and letting the shared conversion perform the correctly
             // rounded decimal-to-binary step.
 
-            byte* pDigits = stackalloc byte[TNumber.NumberBufferLength];
-            NumberBuffer number = new NumberBuffer(NumberBufferKind.FloatingPoint, pDigits, TNumber.NumberBufferLength);
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.FloatingPoint, stackalloc byte[TNumber.NumberBufferLength]);
             number.IsNegative = isNegative;
 
             Span<byte> buffer = number.Digits;
