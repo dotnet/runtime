@@ -2342,7 +2342,6 @@ namespace Internal.JitInterface
                 (_compilation.NodeFactory.Target.IsWasm &&
                     (!targetMethod.IsVirtual ||
                      targetMethod.OwningType.IsInterface ||
-                     targetMethod.OwningType.HasInstantiation ||
                      targetMethod.OwningType.IsArray ||
                      pResult->exactContextNeedsRuntimeLookup)))
             {

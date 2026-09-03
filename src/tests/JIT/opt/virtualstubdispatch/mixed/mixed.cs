@@ -69,6 +69,18 @@ public class C : ITest5
     public virtual int f9() { GC.Collect(); GC.WaitForPendingFinalizers(); GC.Collect(); if (this.GetHashCode() != _code) return 999; else return 18; }
 }
 
+public class GenericBase<T>
+{
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public virtual int GetValue(T value) => 20;
+}
+
+public sealed class GenericDerived<T> : GenericBase<T>
+{
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public override int GetValue(T value) => 21;
+}
+
 public class CTest : C, ITest1, ITest2, ITest3, ITest4, IBase1, IDerived1, IDerived2, IDerived
 {
     private int _code;
@@ -99,6 +111,9 @@ public class CTest : C, ITest1, ITest2, ITest3, ITest4, IBase1, IDerived1, IDeri
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static int CallF9(C instance) => instance.f9();
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int CallGeneric(GenericBase<string> instance) => instance.GetValue("value");
 
     [Fact]
     public static int TestEntryPoint()
@@ -191,6 +206,18 @@ public class CTest : C, ITest1, ITest2, ITest3, ITest4, IBase1, IDerived1, IDeri
             return 1;
         }
 
+        if (CallGeneric(new GenericBase<string>()) != 20)
+        {
+            Console.WriteLine("CallGeneric(new GenericBase<string>())!=20");
+            return 1;
+        }
+
+        if (CallGeneric(new GenericDerived<string>()) != 21)
+        {
+            Console.WriteLine("CallGeneric(new GenericDerived<string>())!=21");
+            return 1;
+        }
+
         if (c.f8() != 16)
         {
             Console.WriteLine("c.f8()!=16");
@@ -240,9 +267,6 @@ public class CTest : C, ITest1, ITest2, ITest3, ITest4, IBase1, IDerived1, IDeri
         return 100;
     }
 }
-
-
-
 
 
 

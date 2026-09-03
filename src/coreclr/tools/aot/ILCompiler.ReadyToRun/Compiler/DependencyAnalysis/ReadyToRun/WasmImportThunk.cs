@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using ILCompiler.DependencyAnalysis.Wasm;
-using ILCompiler.DependencyAnalysisFramework;
 using ILCompiler.ObjectWriter;
 using ILCompiler.ObjectWriter.WasmInstructions;
 using Internal.JitInterface;
@@ -22,11 +21,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private readonly Import _helperCell;
         private readonly WasmTypeNode _typeNode;
         private readonly WasmSignature _wasmSignature;
-        private readonly bool _useVirtualCall;
 
         private readonly ImportThunkKind _thunkKind;
-
-        private readonly ImportSectionNode _containingImportSection;
 
         public override bool StaticDependenciesAreComputed => true;
 
@@ -34,24 +30,16 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.TextSection;
         /// <summary>
-        /// Import thunks are used to call a runtime-provided helper which fixes up an indirection cell in a particular
-        /// import section. Optionally they may also contain a relocation for a specific indirection cell to fix up.
+        /// Import thunks call a runtime-provided helper that fixes up the indirection cell identified by the portable entrypoint.
         /// </summary>
-        public WasmImportThunk(NodeFactory factory, WasmSignature wasmSignature, ReadyToRunHelper helperId, ImportSectionNode containingImportSection, bool useVirtualCall, bool useJumpableStub)
+        public WasmImportThunk(NodeFactory factory, WasmSignature wasmSignature, ReadyToRunHelper helperId, bool useJumpableStub)
         {
             _context = factory.TypeSystemContext;
             _wasmSignature = wasmSignature;
-            _useVirtualCall = useVirtualCall;
             _typeNode = factory.WasmTypeNode(wasmSignature);
             _helperCell = factory.GetReadyToRunHelperCell(helperId);
-            _containingImportSection = containingImportSection;
 
-            if (useVirtualCall)
-            {
-                Debug.Assert(helperId == ReadyToRunHelper.DelayLoad_MethodCall);
-                _thunkKind = ImportThunkKind.DelayLoadHelper;
-            }
-            else if (useJumpableStub)
+            if (useJumpableStub)
             {
                 _thunkKind = ImportThunkKind.DelayLoadHelperWithExistingIndirectionCell;
             }
@@ -78,7 +66,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             sb.Append("WasmDelayLoadHelper->"u8);
             _helperCell.AppendMangledName(nameMangler, sb);
-            sb.Append($"(ImportSection:{_containingImportSection.Name},Kind:{_thunkKind},Sig:{_wasmSignature.SignatureString})");
+            sb.Append($"(Kind:{_thunkKind},Sig:{_wasmSignature.SignatureString})");
         }
 
         protected override string GetName(NodeFactory factory)
@@ -137,27 +125,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             if (result != 0)
                 return result;
 
-            result = ((ImportSectionNode)_containingImportSection).CompareToImpl((ImportSectionNode)otherNode._containingImportSection, comparer);
-            if (result != 0)
-                return result;
-
             return comparer.Compare(_helperCell, otherNode._helperCell);
-        }
-
-        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
-        {
-            Debug.Assert(base.ComputeNonRelocationBasedDependencies(factory) == null);
-
-            if (!_useVirtualCall)
-            {
-                return null;
-            }
-
-            return new DependencyList(
-                new DependencyListEntry[]
-                {
-                    new DependencyListEntry(factory.WasmVirtualDispatchThunk(_wasmSignature), "Wasm virtual dispatch thunk for call site")
-                });
         }
 
         static CorInfoWasmType[] _helperTypeParams = new CorInfoWasmType[] { CorInfoWasmType.CORINFO_WASM_TYPE_I32, CorInfoWasmType.CORINFO_WASM_TYPE_I32, CorInfoWasmType.CORINFO_WASM_TYPE_I32, CorInfoWasmType.CORINFO_WASM_TYPE_I32, CorInfoWasmType.CORINFO_WASM_TYPE_I32 };
