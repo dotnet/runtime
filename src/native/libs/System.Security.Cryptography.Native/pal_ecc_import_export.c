@@ -737,13 +737,11 @@ static int32_t EvpPKeyGetEcKeyParameters(
 
     ERR_clear_error();
 
-    // Some providers, like the PKCS#11 provider, implement parameter fetching by simply passing it straight through to their
-    // internal key representation. If the provider loads key material "lazily" then those fetches will fail.
-    // Other providers simply don't implement some of the OSSL_PARAM fetches, like OSSL_PKEY_PARAM_PUB_KEY, like the PKCS#11
-    // provider here. https://github.com/openssl-projects/pkcs11-provider/blame/c7a5c8b62a0ff012b16574f01651254ef7e664ee/src/kmgmt/ec.c#L548
-    // The most reliable way it seems is to go through a KEYMGMT API, which some providers use for hydrating their internal
-    // representation.
-    // https://github.com/openssl-projects/pkcs11-provider/blob/c7a5c8b62a0ff012b16574f01651254ef7e664ee/src/kmgmt/common.c#L496-L498
+    // Some providers, like the PKCS#11 provider, only support exporting the public key through the `export` KEYMGMT
+    // API, not the `get_params` KEYMGMT APIs. like the PKCS#11 provider here:
+    // https://github.com/openssl-projects/pkcs11-provider/blame/c7a5c8b62a0ff012b16574f01651254ef7e664ee/src/kmgmt/ec.c#L548
+    // If the `get_params` KEYMGMT surface does not work, use the `export` KEYMGMT API, which some providers use for hydrating their internal
+    // representation. https://github.com/openssl-projects/pkcs11-provider/blob/c7a5c8b62a0ff012b16574f01651254ef7e664ee/src/kmgmt/common.c#L496-L498
     if (!EVP_PKEY_todata(pkey, EVP_PKEY_PUBLIC_KEY, &exportedParameters) || exportedParameters == NULL)
     {
         goto error;
