@@ -10,6 +10,7 @@ using System.Reflection.Runtime.ParameterInfos;
 using System.Reflection.Runtime.TypeInfos;
 using System.Runtime.CompilerServices;
 
+using Internal.Metadata.NativeFormat;
 using Internal.Reflection.Core.Execution;
 
 namespace System.Reflection.Runtime.EventInfos
@@ -130,7 +131,6 @@ namespace System.Reflection.Runtime.EventInfos
 
         // Types that derive from RuntimeEventInfo must implement the following public surface area members
         public abstract override EventAttributes Attributes { get; }
-        public abstract override IEnumerable<CustomAttributeData> CustomAttributes { get; }
         public sealed override object[] GetCustomAttributes(bool inherit) => RuntimeCustomAttribute.GetCustomAttributes(this, typeof(object), inherit: false);
 
         public sealed override object[] GetCustomAttributes(Type attributeType, bool inherit)
@@ -139,7 +139,11 @@ namespace System.Reflection.Runtime.EventInfos
             return RuntimeCustomAttribute.GetCustomAttributes(this, attributeType, inherit: false);
         }
 
-        public sealed override IList<CustomAttributeData> GetCustomAttributesData() => CustomAttributes.ToReadOnlyCollection();
+        public sealed override IList<CustomAttributeData> GetCustomAttributesData() => RuntimeCustomAttributeData.GetCustomAttributesInternal(this);
+
+        internal virtual MetadataReader? GetMetadataReader() => null;
+
+        internal virtual CustomAttributeHandleCollection GetCustomAttributeHandles() => default;
 
         public sealed override bool IsDefined(Type attributeType, bool inherit)
         {

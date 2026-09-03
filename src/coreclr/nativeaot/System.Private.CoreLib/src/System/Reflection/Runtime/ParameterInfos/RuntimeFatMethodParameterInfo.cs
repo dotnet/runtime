@@ -19,25 +19,6 @@ namespace System.Reflection.Runtime.ParameterInfos
         {
         }
 
-        public sealed override IEnumerable<CustomAttributeData> CustomAttributes
-        {
-            get
-            {
-                foreach (CustomAttributeData cad in TrueCustomAttributes)
-                    yield return cad;
-
-                ParameterAttributes attributes = Attributes;
-                if (0 != (attributes & ParameterAttributes.In))
-                    yield return new RuntimeCustomAttributeData(new InAttribute());
-                if (0 != (attributes & ParameterAttributes.Out))
-                    yield return new RuntimeCustomAttributeData(new OutAttribute());
-                if (0 != (attributes & ParameterAttributes.Optional))
-                    yield return new RuntimeCustomAttributeData(new OptionalAttribute());
-            }
-        }
-
-        protected abstract IEnumerable<CustomAttributeData> TrueCustomAttributes { get; }
-
         public sealed override bool HasDefaultValue => DefaultValueInfo.Item1;
         public sealed override object DefaultValue => DefaultValueInfo.Item2;
 
