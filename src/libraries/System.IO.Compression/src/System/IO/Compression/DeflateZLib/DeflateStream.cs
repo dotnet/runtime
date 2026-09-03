@@ -584,7 +584,17 @@ namespace System.IO.Compression
                 fixed (byte* bufferPtr = &MemoryMarshal.GetReference(buffer))
                 {
                     _deflater.SetInput(bufferPtr, buffer.Length);
-                    WriteDeflaterOutput();
+                    try
+                    {
+                        WriteDeflaterOutput();
+                    }
+                    finally
+                    {
+                        // Discard any stale input reference so a later call (e.g. Dispose) doesn't read from a
+                        // buffer the caller may have since mutated, reused, or freed. On the success path the
+                        // input has already been fully consumed, so this is a no-op.
+                        _deflater.UnsetInput();
+                    }
                 }
             }
         }
@@ -592,23 +602,13 @@ namespace System.IO.Compression
         private void WriteDeflaterOutput()
         {
             Debug.Assert(_deflater != null && _buffer != null);
-            try
+            while (!_deflater.NeedsInput())
             {
-                while (!_deflater.NeedsInput())
+                int compressedBytes = _deflater.GetDeflateOutput(_buffer);
+                if (compressedBytes > 0)
                 {
-                    int compressedBytes = _deflater.GetDeflateOutput(_buffer);
-                    if (compressedBytes > 0)
-                    {
-                        _stream.Write(_buffer, 0, compressedBytes);
-                    }
+                    _stream.Write(_buffer, 0, compressedBytes);
                 }
-            }
-            finally
-            {
-                // Discard any stale input reference so a later call (e.g. Dispose) doesn't read from a
-                // buffer the caller may have since mutated, reused, or freed. On the success path the input
-                // has already been fully consumed, so this is a no-op.
-                _deflater.UnsetInput();
             }
         }
 
@@ -870,8 +870,17 @@ namespace System.IO.Compression
                     // Pass new bytes through deflater
                     Debug.Assert(_deflater != null);
                     _deflater.SetInput(buffer);
-
-                    await WriteDeflaterOutputAsync(cancellationToken).ConfigureAwait(false);
+                    try
+                    {
+                        await WriteDeflaterOutputAsync(cancellationToken).ConfigureAwait(false);
+                    }
+                    finally
+                    {
+                        // Discard any stale input reference so a later call (e.g. Dispose) doesn't read from a
+                        // buffer the caller may have since mutated, reused, or freed. On the success path the
+                        // input has already been fully consumed, so this is a no-op.
+                        _deflater.UnsetInput();
+                    }
                 }
                 finally
                 {
@@ -886,23 +895,13 @@ namespace System.IO.Compression
         private async ValueTask WriteDeflaterOutputAsync(CancellationToken cancellationToken)
         {
             Debug.Assert(_deflater != null && _buffer != null);
-            try
+            while (!_deflater.NeedsInput())
             {
-                while (!_deflater.NeedsInput())
+                int compressedBytes = _deflater.GetDeflateOutput(_buffer);
+                if (compressedBytes > 0)
                 {
-                    int compressedBytes = _deflater.GetDeflateOutput(_buffer);
-                    if (compressedBytes > 0)
-                    {
-                        await _stream.WriteAsync(new ReadOnlyMemory<byte>(_buffer, 0, compressedBytes), cancellationToken).ConfigureAwait(false);
-                    }
+                    await _stream.WriteAsync(new ReadOnlyMemory<byte>(_buffer, 0, compressedBytes), cancellationToken).ConfigureAwait(false);
                 }
-            }
-            finally
-            {
-                // Discard any stale input reference so a later call (e.g. Dispose) doesn't read from a
-                // buffer the caller may have since mutated, reused, or freed. On the success path the input
-                // has already been fully consumed, so this is a no-op.
-                _deflater.UnsetInput();
             }
         }
 
