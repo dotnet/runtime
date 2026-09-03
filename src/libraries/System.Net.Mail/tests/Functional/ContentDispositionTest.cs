@@ -346,7 +346,7 @@ namespace System.Net.Mime.Tests
         }
 
         [Theory]
-        [InlineData("=?utf-8?Q?foo?=?evil\"; filename=\"foo.txt")]
+        [InlineData("=?utf-8?Q?foo?=?bar\"; filename=\"foo.txt")]
         [InlineData("=?utf-8?B?Zm9v?=\"; filename=\"foo.txt")]
         [InlineData("=?utf-8?Q?foo\"; filename=\"foo.txt?=")]
         [InlineData("=?utf-8?B?Zm9v?=trailing")]
