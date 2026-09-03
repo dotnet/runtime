@@ -441,9 +441,9 @@ namespace ILCompiler.DependencyAnalysis
                 return new WasmInterpreterToR2RThunkNode(this, key);
             });
 
-            _wasmVirtualDispatchThunks = new NodeCache<WasmSignature, WasmVirtualDispatchThunkNode>(key =>
+            _wasmVirtualDispatchThunks = new NodeCache<WasmVirtualDispatchThunkKey, WasmVirtualDispatchThunkNode>(key =>
             {
-                return new WasmVirtualDispatchThunkNode(this, key);
+                return new WasmVirtualDispatchThunkNode(this, key.Signature);
             });
 
             _importMethods = new NodeCache<TypeAndMethod, IMethodNode>(CreateMethodEntrypoint);
@@ -980,10 +980,35 @@ namespace ILCompiler.DependencyAnalysis
             return _wasmInterpreterToR2RThunks.GetOrAdd(wasmSignature);
         }
 
-        private NodeCache<WasmSignature, WasmVirtualDispatchThunkNode> _wasmVirtualDispatchThunks;
+        private readonly struct WasmVirtualDispatchThunkKey : IEquatable<WasmVirtualDispatchThunkKey>
+        {
+            public WasmSignature Signature { get; }
+
+            public WasmVirtualDispatchThunkKey(WasmSignature signature)
+            {
+                Signature = signature;
+            }
+
+            public bool Equals(WasmVirtualDispatchThunkKey other)
+            {
+                return Signature.FuncType.Equals(other.Signature.FuncType);
+            }
+
+            public override bool Equals(object obj)
+            {
+                return obj is WasmVirtualDispatchThunkKey other && Equals(other);
+            }
+
+            public override int GetHashCode()
+            {
+                return Signature.FuncType.GetHashCode();
+            }
+        }
+
+        private NodeCache<WasmVirtualDispatchThunkKey, WasmVirtualDispatchThunkNode> _wasmVirtualDispatchThunks;
         public WasmVirtualDispatchThunkNode WasmVirtualDispatchThunk(WasmSignature wasmSignature)
         {
-            return _wasmVirtualDispatchThunks.GetOrAdd(wasmSignature);
+            return _wasmVirtualDispatchThunks.GetOrAdd(new WasmVirtualDispatchThunkKey(wasmSignature));
         }
 
         public void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph, ILProvider ilProvider)

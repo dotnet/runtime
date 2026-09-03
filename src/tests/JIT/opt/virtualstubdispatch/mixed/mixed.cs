@@ -81,6 +81,30 @@ public sealed class GenericDerived<T> : GenericBase<T>
     public override int GetValue(T value) => 21;
 }
 
+public struct IndirectArgument
+{
+    public nint First;
+    public nint Second;
+}
+
+public class CallingConventionBase
+{
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public virtual int TransformPointer(nint value) => (int)value + 22;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public virtual int TransformStruct(IndirectArgument value) => (int)(value.First + value.Second);
+}
+
+public sealed class CallingConventionDerived : CallingConventionBase
+{
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public override int TransformPointer(nint value) => (int)value + 23;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public override int TransformStruct(IndirectArgument value) => (int)(value.First * value.Second);
+}
+
 public class CTest : C, ITest1, ITest2, ITest3, ITest4, IBase1, IDerived1, IDerived2, IDerived
 {
     private int _code;
@@ -114,6 +138,13 @@ public class CTest : C, ITest1, ITest2, ITest3, ITest4, IBase1, IDerived1, IDeri
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static int CallGeneric(GenericBase<string> instance) => instance.GetValue("value");
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int CallPointer(CallingConventionBase instance) => instance.TransformPointer(1);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int CallStruct(CallingConventionBase instance) =>
+        instance.TransformStruct(new IndirectArgument { First = 2, Second = 3 });
 
     [Fact]
     public static int TestEntryPoint()
@@ -218,6 +249,30 @@ public class CTest : C, ITest1, ITest2, ITest3, ITest4, IBase1, IDerived1, IDeri
             return 1;
         }
 
+        if (CallPointer(new CallingConventionBase()) != 23)
+        {
+            Console.WriteLine("CallPointer(new CallingConventionBase())!=23");
+            return 1;
+        }
+
+        if (CallPointer(new CallingConventionDerived()) != 24)
+        {
+            Console.WriteLine("CallPointer(new CallingConventionDerived())!=24");
+            return 1;
+        }
+
+        if (CallStruct(new CallingConventionBase()) != 5)
+        {
+            Console.WriteLine("CallStruct(new CallingConventionBase())!=5");
+            return 1;
+        }
+
+        if (CallStruct(new CallingConventionDerived()) != 6)
+        {
+            Console.WriteLine("CallStruct(new CallingConventionDerived())!=6");
+            return 1;
+        }
+
         if (c.f8() != 16)
         {
             Console.WriteLine("c.f8()!=16");
@@ -267,7 +322,6 @@ public class CTest : C, ITest1, ITest2, ITest3, ITest4, IBase1, IDerived1, IDeri
         return 100;
     }
 }
-
 
 
 

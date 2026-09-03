@@ -187,7 +187,7 @@ public class R2RTestSuites
                 reader.ImportSections,
                 section => section.Type == ReadyToRunImportSectionType.StubDispatch &&
                     section.EntrySize == 2 * sizeof(uint));
-            Assert.Equal(2, dispatchImports.Entries.Count);
+            Assert.Equal(4, dispatchImports.Entries.Count);
 
             var signatureFormattingOptions = new SignatureFormattingOptions();
             List<string> dispatchSignatures = dispatchImports.Entries
@@ -197,6 +197,10 @@ public class R2RTestSuites
                 signature.Contains("WasmVirtualDispatchBase.Transform", StringComparison.Ordinal));
             Assert.Contains(dispatchSignatures, signature =>
                 signature.Contains("WasmGenericVirtualDispatchBase", StringComparison.Ordinal));
+            Assert.Contains(dispatchSignatures, signature =>
+                signature.Contains("WasmCallingConventionDispatchBase.TransformPointer", StringComparison.Ordinal));
+            Assert.Contains(dispatchSignatures, signature =>
+                signature.Contains("WasmCallingConventionDispatchBase.TransformStruct", StringComparison.Ordinal));
             Assert.DoesNotContain(dispatchSignatures, signature =>
                 signature.Contains("WasmGenericMethodDispatchBase.Transform", StringComparison.Ordinal));
 
@@ -209,7 +213,11 @@ public class R2RTestSuites
                 entry => entry.Signature?.ToString(signatureFormattingOptions)
                     .Contains("WasmVirtualDispatchBase.DirectTransform", StringComparison.Ordinal) == true);
             uint methodImportThunk = GetImportThunkTableIndex(reader, methodImport);
-            Assert.All(dispatchImports.Entries, entry => Assert.Equal(methodImportThunk, GetImportThunkTableIndex(reader, entry)));
+            Assert.All(
+                dispatchImports.Entries.Where(entry =>
+                    entry.Signature?.ToString(signatureFormattingOptions)
+                        .Contains("TransformStruct", StringComparison.Ordinal) != true),
+                entry => Assert.Equal(methodImportThunk, GetImportThunkTableIndex(reader, entry)));
 
             ReadyToRunImportSection.ImportSectionEntry injectStringThunks = Assert.Single(
                 importEntries,
@@ -218,14 +226,19 @@ public class R2RTestSuites
             int offset = reader.GetOffset((int)injectStringThunks.SignatureRVA);
             Assert.Equal((byte)ReadyToRunFixupKind.InjectStringThunks, image[offset++]);
 
-            ReadOnlySpan<byte> thunkKey = "ViTip"u8;
+            ReadOnlySpan<byte> thunkKey = "Viiiii"u8;
             List<uint> matchingTableIndices = [];
+            int virtualThunkKeyCount = 0;
             while (image[offset] != 0)
             {
                 int terminator = image[offset..].IndexOf((byte)0);
                 Assert.True(terminator >= 0, "Unterminated InjectStringThunks key.");
-                if (image.Slice(offset, terminator).SequenceEqual(thunkKey))
+                ReadOnlySpan<byte> candidateKey = image.Slice(offset, terminator);
+                if (candidateKey[0] == (byte)'V')
                 {
+                    virtualThunkKeyCount++;
+                    Assert.True(candidateKey.SequenceEqual(thunkKey),
+                        $"Unexpected virtual dispatch thunk key '{System.Text.Encoding.UTF8.GetString(candidateKey)}'.");
                     matchingTableIndices.Add(
                         BinaryPrimitives.ReadUInt32LittleEndian(image.Slice(offset + terminator + 1, sizeof(uint))));
                 }
@@ -233,6 +246,7 @@ public class R2RTestSuites
                 offset += terminator + 1 + sizeof(uint);
             }
 
+            Assert.Equal(1, virtualThunkKeyCount);
             uint relativeTableIndex = Assert.Single(matchingTableIndices);
             int functionIndex = webcilReader.GetFunctionIndexFromTableIndex(relativeTableIndex);
             Assert.True(functionIndex >= 0, $"Could not resolve virtual thunk table index {relativeTableIndex}.");

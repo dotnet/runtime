@@ -38,6 +38,21 @@ public class WasmGenericMethodDispatchBase
     public virtual T Transform<T>(T value) => value;
 }
 
+public struct WasmIndirectArgument
+{
+    public nint First;
+    public nint Second;
+}
+
+public class WasmCallingConventionDispatchBase
+{
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public virtual int TransformPointer(nint value) => (int)value + 6;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public virtual int TransformStruct(WasmIndirectArgument value) => (int)(value.First + value.Second);
+}
+
 public static class WasmVirtualDispatch
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -51,4 +66,10 @@ public static class WasmVirtualDispatch
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static int InvokeGenericMethod(WasmGenericMethodDispatchBase instance, int value) => instance.Transform(value);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static int InvokePointer(WasmCallingConventionDispatchBase instance, nint value) => instance.TransformPointer(value);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static int InvokeStruct(WasmCallingConventionDispatchBase instance, WasmIndirectArgument value) => instance.TransformStruct(value);
 }

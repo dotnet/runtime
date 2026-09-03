@@ -1049,9 +1049,9 @@ enum ReadyToRunHelper
 
 # Wasm Signature String Encoding
 
-Every managed method signature is encoded as a compact string that uniquely identifies its
-lowered Wasm calling convention. This encoding is used in R2R thunk lookup tables and is
-shared across three codebases:
+Every managed method signature is encoded as a compact string that records the semantic
+details needed by interpreter transition and delay-load thunks. This encoding is shared
+across three codebases:
 
 - **crossgen2** (`WasmLowering.GetSignature`): reference implementation, produces the string
   during R2R compilation.
@@ -1065,6 +1065,21 @@ The string format is:
 ```
 <return> [<this>] [<hidden-params>...] <explicit-params>... [p]
 ```
+
+Virtual dispatch (`V`) thunk lookup uses a separate canonical form based only on the
+lowered Wasm function type:
+
+```
+V<wasm-return><wasm-params...>
+```
+
+The return is `v` for no Wasm result; otherwise each result and parameter is encoded as
+`i` (`i32`), `l` (`i64`), `f` (`f32`), `d` (`f64`), or `V` (`v128`). The parameter list
+includes the stack pointer, hidden parameters, indirect return or argument pointers, and
+the portable entrypoint parameter exactly as they appear in the Wasm function type. This
+allows one virtual dispatch thunk to serve managed signatures whose semantic encodings
+differ but whose Wasm calling conventions are identical, such as an indirect structure
+argument and an `i32` argument on Wasm32.
 
 **Return type** (first character):
 
