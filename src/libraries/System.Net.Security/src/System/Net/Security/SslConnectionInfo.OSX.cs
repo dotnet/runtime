@@ -57,6 +57,12 @@ namespace System.Net.Security
             Protocol = (int)protocol;
             TlsCipherSuite = cipherSuite;
             MapCipherSuite(cipherSuite);
+
+            // Network Framework does not expose a public API to determine whether the TLS
+            // session was resumed (sec_protocol_metadata only reports the negotiated protocol,
+            // cipher suite and ALPN; sec_protocol_metadata_get_early_data_accepted covers TLS 1.3
+            // 0-RTT only, not general resumption). Leave TlsResumed as false so that the peer
+            // certificate is always revalidated on this backend, matching the safe fallback.
         }
 
         private void UpdateSslConnectionInfoAppleCrypto(SafeDeleteSslContext context)
@@ -77,6 +83,15 @@ namespace System.Net.Security
 
             Protocol = (int)protocol;
             TlsCipherSuite = cipherSuite;
+
+            // SecureTransport reliably reports whether the session was resumed via an
+            // abbreviated handshake. Treat any failure as "not resumed" so that we fall back
+            // to the safe behavior of revalidating the peer certificate.
+            if (Interop.AppleCrypto.SslGetSessionResumed(sslContext, out int sessionResumed) == 0)
+            {
+                TlsResumed = sessionResumed != 0;
+            }
+
             if (context.IsServer)
             {
                 if (context.SelectedApplicationProtocol.Protocol.Length > 0)

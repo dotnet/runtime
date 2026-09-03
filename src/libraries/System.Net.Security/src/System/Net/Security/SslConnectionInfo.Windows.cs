@@ -79,7 +79,6 @@ namespace System.Net.Security
                 ApplicationProtocol = GetNegotiatedApplicationProtocol(securityContext);
             }
 
-#if DEBUG
             SecPkgContext_SessionInfo info = default;
             TlsResumed = SSPIWrapper.QueryBlittableContextAttributes(
                                     GlobalSSPI.SSPISecureChannel,
@@ -87,7 +86,6 @@ namespace System.Net.Security
                                     Interop.SspiCli.ContextAttribute.SECPKG_ATTR_SESSION_INFO,
                                     ref info) &&
                ((SecPkgContext_SessionInfo.Flags)info.dwFlags).HasFlag(SecPkgContext_SessionInfo.Flags.SSL_SESSION_RECONNECT);
-#endif
         }
     }
 }

@@ -1232,6 +1232,27 @@ namespace System.Net.Security
                 return true;
             }
 
+            if (certificate != null &&
+                connectionInfo.TlsResumed &&
+                !LocalAppContextSwitches.RevalidateCertificateOnTlsResume)
+            {
+                // The TLS session was resumed via an abbreviated handshake. The peer did not
+                // send its certificate again; its identity was established and validated during
+                // the original full handshake that produced the session ticket / session id.
+                // Common TLS stacks (e.g. OpenSSL, SChannel) do not re-run certificate
+                // verification on resumption, so by default neither do we: adopt the cached peer
+                // certificate for the RemoteCertificate property but skip rebuilding the chain
+                // and invoking the user validation callback. Set the
+                // System.Net.Security.RevalidateCertificateOnTlsResume switch to opt back into
+                // re-validating the peer certificate on every resumption.
+                remoteCertificateSlot = certificate;
+                if (NetEventSource.Log.IsEnabled())
+                {
+                    NetEventSource.Info(sender, "Skipping remote certificate validation on resumed TLS session.");
+                }
+                return true;
+            }
+
             // don't assign to remoteCertificateSlot yet, this prevents weird exceptions if SslStream is disposed in parallel with X509Chain building
 
             if (certificate == null)
