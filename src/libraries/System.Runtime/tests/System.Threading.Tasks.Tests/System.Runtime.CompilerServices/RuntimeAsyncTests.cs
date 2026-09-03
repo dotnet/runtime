@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
@@ -21,7 +22,7 @@ namespace System.Threading.Tasks.Tests
         private static readonly FieldInfo s_continuationTimestampsField = GetCorLibClassStaticField("System.Threading.Tasks.Task", "s_runtimeAsyncContinuationTimestamps");
         private static readonly FieldInfo s_activeTasksField = GetCorLibClassStaticField("System.Threading.Tasks.Task", "s_currentActiveTasks");
         private static readonly FieldInfo s_activeFlagsField = GetCorLibClassStaticField("System.Runtime.CompilerServices.AsyncInstrumentation", "s_activeFlags");
-        private static readonly FieldInfo s_taskIdField = typeof(Task).GetField("m_taskId", BindingFlags.NonPublic | BindingFlags.Instance)!;
+        private static readonly FieldInfo s_taskIdField = GetCorLibClassInstanceField("System.Threading.Tasks.Task", "m_taskId");
 
         private static readonly object s_debuggerLock = new object();
 
@@ -89,6 +90,23 @@ namespace System.Threading.Tasks.Tests
             if (field == null)
             {
                 throw new InvalidOperationException($"Expected static field '{fieldName}' to exist on type '{className}'.");
+            }
+
+            return field;
+        }
+
+        private static FieldInfo GetCorLibClassInstanceField(string className, string fieldName)
+        {
+            Type? classType = typeof(object).Assembly.GetType(className);
+            if (classType == null)
+            {
+                throw new InvalidOperationException($"Type '{className}' doesn't exist in System.Private.CoreLib.");
+            }
+
+            FieldInfo? field = classType.GetField(fieldName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            if (field == null)
+            {
+                throw new InvalidOperationException($"Expected instance field '{fieldName}' to exist on type '{className}'.");
             }
 
             return field;
@@ -406,8 +424,8 @@ namespace System.Threading.Tasks.Tests
             {
                 AttachDebugger();
 
-                var tcs1 = new TaskCompletionSource();
-                var tcs2 = new TaskCompletionSource();
+                var tcs1 = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                var tcs2 = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
                 Task inflight = FuncThatWaitsTwice(tcs1, tcs2);
 
                 // Task is suspended on tcs1 — should be in active tasks
@@ -609,6 +627,14 @@ namespace System.Threading.Tasks.Tests
 
                         tcs1.SetResult();
 
+                        Assert.True(
+                            SpinWait.SpinUntil(
+                                () => events.Any(e =>
+                                    e.EventId == TaskWaitBeginId &&
+                                    (int)e.Payload![1]! == runtimeAsyncTaskId &&
+                                    (int)e.Payload[2]! == secondAwaitedTaskId),
+                                TimeSpan.FromSeconds(30)),
+                            "Expected the RuntimeAsync task to suspend on the second task.");
                         Assert.Contains(events, e =>
                             e.EventId == TaskWaitEndId &&
                             (int)e.Payload![1]! == runtimeAsyncTaskId &&
@@ -625,6 +651,14 @@ namespace System.Threading.Tasks.Tests
                         tcs2.SetResult();
                         runtimeAsyncTask.GetAwaiter().GetResult();
 
+                        Assert.True(
+                            SpinWait.SpinUntil(
+                                () => events.Any(e =>
+                                    e.EventId == TaskWaitEndId &&
+                                    (int)e.Payload![1]! == runtimeAsyncTaskId &&
+                                    (int)e.Payload[2]! == secondAwaitedTaskId),
+                                TimeSpan.FromSeconds(30)),
+                            "Expected the RuntimeAsync task to finish waiting on the second task.");
                         Assert.Contains(events, e =>
                             e.EventId == TaskWaitEndId &&
                             (int)e.Payload![1]! == runtimeAsyncTaskId &&
@@ -650,6 +684,8 @@ namespace System.Threading.Tasks.Tests
                 Assert.Equal(0, (int)s_taskIdField.GetValue(tcs1.Task)!);
 
                 tcs1.SetResult();
+                Assert.Equal(0, (int)s_taskIdField.GetValue(tcs2.Task)!);
+
                 tcs2.SetResult();
                 runtimeAsyncTask.GetAwaiter().GetResult();
 

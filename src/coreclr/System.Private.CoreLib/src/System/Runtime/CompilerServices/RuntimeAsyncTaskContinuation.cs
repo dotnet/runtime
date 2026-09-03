@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -155,7 +156,8 @@ namespace System.Runtime.CompilerServices
                 var taskCont = (RuntimeAsyncTaskContinuation)cont;
 
                 TplEventSource log = TplEventSource.Log;
-                if (Task.s_asyncDebuggingEnabled && log.IsEnabled())
+                if (Task.s_asyncDebuggingEnabled &&
+                    log.IsEnabled(EventLevel.Verbose, TplEventSource.Keywords.Tasks))
                 {
                     Task awaitedTask = taskCont.Task!;
                     Task runtimeAsyncTask = taskCont.RuntimeAsyncTask!;

@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.Tracing;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
@@ -912,7 +913,8 @@ namespace System.Runtime.CompilerServices
                     AsyncDebugger.HandleSuspended(nextContinuation);
 
                     TplEventSource log = TplEventSource.Log;
-                    if (awaitedTask is not null && log.IsEnabled())
+                    if (awaitedTask is not null &&
+                        log.IsEnabled(EventLevel.Informational, TplEventSource.Keywords.TaskTransfer | TplEventSource.Keywords.Tasks))
                     {
                         log.TaskWaitBegin(
                             m_taskScheduler?.Id ?? TaskScheduler.Default.Id,
