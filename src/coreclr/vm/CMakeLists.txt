@@ -17,6 +17,10 @@ include_directories(${CLR_SRC_NATIVE_DIR}/libs/Common)
 add_definitions(-DUNICODE)
 add_definitions(-D_UNICODE)
 
+if(NOT CLR_CMAKE_TARGET_APPLE AND NOT CLR_CMAKE_TARGET_ARCH_WASM AND NOT CLR_CMAKE_TARGET_OPENBSD)
+    add_definitions(-DFEATURE_READONLY_GS_COOKIE)
+endif()
+
 if(CLR_CMAKE_TARGET_ANDROID OR CLR_CMAKE_TARGET_OPENBSD)
     # OpenBSD's ld.so cannot resolve native TLS relocations in shared objects and has no
     # __tls_get_addr, so the runtime must use emulated TLS (like Android).
@@ -309,7 +313,6 @@ set(VM_SOURCES_WKS
     callstubgenerator.cpp
     clrconfignative.cpp
     clrex.cpp
-    clrvarargs.cpp
     comdatetime.cpp
     comdelegate.cpp
     comdependenthandle.cpp
@@ -386,11 +389,17 @@ set(VM_SOURCES_WKS
     typeparse.cpp
     unsafeaccessors.cpp
     asyncthunks.cpp
-    varargsnative.cpp
     weakreferencenative.cpp
     yieldprocessornormalized.cpp
     ${VM_SOURCES_GDBJIT}
 )
+
+if (FEATURE_VARARGS)
+    list(APPEND VM_SOURCES_WKS
+        clrvarargs.cpp
+        varargsnative.cpp
+    )
+endif()
 
 if (CLR_CMAKE_TARGET_UNIX AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
     list(APPEND VM_SOURCES_WKS
@@ -419,7 +428,6 @@ set(VM_HEADERS_WKS
     ceemain.h
     clrconfignative.h
     clrex.h
-    clrvarargs.h
     comdatetime.h
     comdelegate.h
     comdependenthandle.h
@@ -489,10 +497,16 @@ set(VM_HEADERS_WKS
     tieredcompilation.h
     threadsuspend.h
     typeparse.h
-    varargsnative.h
     weakreferencenative.h
     ${VM_HEADERS_GDBJIT}
 )
+
+if (FEATURE_VARARGS)
+    list(APPEND VM_HEADERS_WKS
+        clrvarargs.h
+        varargsnative.h
+    )
+endif()
 
 if (CLR_CMAKE_TARGET_UNIX AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
     list(APPEND VM_HEADERS_WKS

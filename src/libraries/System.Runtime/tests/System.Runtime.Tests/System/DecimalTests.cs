@@ -1658,10 +1658,10 @@ namespace System.Tests
             {
                 yield return new object[] { decimal.MinValue, "G", defaultFormat, "-79228162514264337593543950335" };
                 yield return new object[] { (decimal)-4567, "G", defaultFormat, "-4567" };
-                yield return new object[] { (decimal)-4567.89101, "G", defaultFormat, "-4567.89101" };
+                yield return new object[] { -4567.89101m, "G", defaultFormat, "-4567.89101" };
                 yield return new object[] { (decimal)0, "G", defaultFormat, "0" };
                 yield return new object[] { (decimal)4567, "G", defaultFormat, "4567" };
-                yield return new object[] { (decimal)4567.89101, "G", defaultFormat, "4567.89101" };
+                yield return new object[] { 4567.89101m, "G", defaultFormat, "4567.89101" };
                 yield return new object[] { decimal.MaxValue, "G", defaultFormat, "79228162514264337593543950335" };
 
                 yield return new object[] { decimal.MinusOne, "G", defaultFormat, "-1" };
