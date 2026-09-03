@@ -45,7 +45,7 @@ namespace ILCompiler.DependencyAnalysis
 
             MetadataType baseType = _type.BaseType;
             if (baseType != null)
-                GetMetadataDependencies(dependencies, factory, baseType, "Base type of a reflectable type");
+                AddMetadataDependencies(dependencies, factory, baseType, "Base type of a reflectable type");
 
             var mdManager = (UsageBasedMetadataManager)factory.MetadataManager;
 
@@ -108,7 +108,7 @@ namespace ILCompiler.DependencyAnalysis
         /// Decomposes a constructed type into individual <see cref="TypeMetadataNode"/> units that will be needed to
         /// express the constructed type in metadata.
         /// </summary>
-        public static void GetMetadataDependencies(IDependencySink<NodeFactory> dependencies, NodeFactory nodeFactory, TypeDesc type, string reason)
+        public static void AddMetadataDependencies(IDependencySink<NodeFactory> dependencies, NodeFactory nodeFactory, TypeDesc type, string reason)
         {
             MetadataManager mdManager = nodeFactory.MetadataManager;
 
@@ -118,13 +118,13 @@ namespace ILCompiler.DependencyAnalysis
                 case TypeFlags.SzArray:
                 case TypeFlags.ByRef:
                 case TypeFlags.Pointer:
-                    GetMetadataDependencies(dependencies, nodeFactory, ((ParameterizedType)type).ParameterType, reason);
+                    AddMetadataDependencies(dependencies, nodeFactory, ((ParameterizedType)type).ParameterType, reason);
                     break;
                 case TypeFlags.FunctionPointer:
                     var pointerType = (FunctionPointerType)type;
-                    GetMetadataDependencies(dependencies, nodeFactory, pointerType.Signature.ReturnType, reason);
+                    AddMetadataDependencies(dependencies, nodeFactory, pointerType.Signature.ReturnType, reason);
                     foreach (TypeDesc paramType in pointerType.Signature)
-                        GetMetadataDependencies(dependencies, nodeFactory, paramType, reason);
+                        AddMetadataDependencies(dependencies, nodeFactory, paramType, reason);
                     break;
 
                 case TypeFlags.SignatureMethodVariable:
@@ -155,7 +155,7 @@ namespace ILCompiler.DependencyAnalysis
 
                         foreach (TypeDesc typeArg in type.Instantiation)
                         {
-                            GetMetadataDependencies(dependencies, nodeFactory, typeArg, reason);
+                            AddMetadataDependencies(dependencies, nodeFactory, typeArg, reason);
                         }
                     }
                     else

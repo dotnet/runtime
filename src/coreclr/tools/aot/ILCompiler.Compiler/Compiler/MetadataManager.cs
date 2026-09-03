@@ -513,8 +513,8 @@ namespace ILCompiler
                     dependencies.Add(factory.TypeNonGCStaticsSymbol((MetadataType)method.OwningType), "Static constructor is reflection-callable");
                 }
 
-                GenericMethodsTemplateMap.GetTemplateMethodDependencies(dependencies, factory, method);
-                GenericTypesTemplateMap.GetTemplateTypeDependencies(dependencies, factory, method.OwningType);
+                GenericMethodsTemplateMap.AddTemplateMethodDependencies(dependencies, factory, method);
+                GenericTypesTemplateMap.AddTemplateTypeDependencies(dependencies, factory, method.OwningType);
             }
         }
 
@@ -533,7 +533,7 @@ namespace ILCompiler
             if ((category & MetadataCategory.RuntimeMapping) != 0)
             {
                 TypeDesc owningCanonicalType = field.OwningType.ConvertToCanonForm(CanonicalFormKind.Specific);
-                GenericTypesTemplateMap.GetTemplateTypeDependencies(dependencies, factory, owningCanonicalType);
+                GenericTypesTemplateMap.AddTemplateTypeDependencies(dependencies, factory, owningCanonicalType);
             }
         }
 
@@ -557,7 +557,7 @@ namespace ILCompiler
             // and property setters)
         }
 
-        public virtual void GetNativeLayoutMetadataDependencies(DependencySink<NodeFactory> dependencies, NodeFactory factory, MethodDesc method)
+        public virtual void AddNativeLayoutMetadataDependencies(DependencySink<NodeFactory> dependencies, NodeFactory factory, MethodDesc method)
         {
             // MetadataManagers can override this to provide additional dependencies caused by the emission of metadata
         }

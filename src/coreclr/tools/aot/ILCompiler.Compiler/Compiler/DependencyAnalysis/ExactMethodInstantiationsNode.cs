@@ -117,7 +117,7 @@ namespace ILCompiler.DependencyAnalysis
             foreach (var arg in method.Instantiation)
                 dependencies.Add(new DependencyListEntry(factory.NecessaryTypeSymbol(arg), "Exact method instantiation entry"));
 
-            factory.MetadataManager.GetNativeLayoutMetadataDependencies(dependencies, factory, GetMethodForMetadata(method, out _, out _));
+            factory.MetadataManager.AddNativeLayoutMetadataDependencies(dependencies, factory, GetMethodForMetadata(method, out _, out _));
         }
 
         private static MethodDesc GetMethodForMetadata(MethodDesc method, out bool isAsyncVariant, out bool isReturnDroppingAsyncThunk)

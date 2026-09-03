@@ -73,7 +73,7 @@ namespace ILCompiler.DependencyAnalysis
             return new ObjectData(streamBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
         }
 
-        public static void GetTemplateMethodDependencies(IDependencySink<NodeFactory> dependencies, NodeFactory factory, MethodDesc method)
+        public static void AddTemplateMethodDependencies(IDependencySink<NodeFactory> dependencies, NodeFactory factory, MethodDesc method)
         {
             if (!IsEligibleToBeATemplate(method))
                 return;

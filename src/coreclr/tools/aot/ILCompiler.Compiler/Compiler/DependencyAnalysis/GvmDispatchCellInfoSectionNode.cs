@@ -109,7 +109,7 @@ namespace ILCompiler.DependencyAnalysis
 
             factory.MetadataManager.AddDependenciesDueToVirtualMethodReflectability(dependencies, factory, targetMethod);
 
-            factory.MetadataManager.GetNativeLayoutMetadataDependencies(dependencies, factory, GetMethodForMetadata(targetMethod, out _));
+            factory.MetadataManager.AddNativeLayoutMetadataDependencies(dependencies, factory, GetMethodForMetadata(targetMethod, out _));
 
             dependencies.Add(factory.MaximallyConstructableType(targetMethod.OwningType), "Owning type of GVM decl");
             dependencies.Add(factory.ConstructedGenericComposition(targetMethod.Instantiation), "GVM instantiation info");

@@ -669,7 +669,7 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             if (_type.IsFunctionPointer)
-                FunctionPointerMapNode.GetHashtableDependencies(dependencies, factory, (FunctionPointerType)_type);
+                FunctionPointerMapNode.AddHashtableDependencies(dependencies, factory, (FunctionPointerType)_type);
 
         }
 

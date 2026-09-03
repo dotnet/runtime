@@ -110,7 +110,7 @@ namespace ILCompiler.DependencyAnalysis
                 dependencies.Add(new DependencyListEntry(argNode, "GenericMethodsHashtable entry instantiation argument"));
             }
 
-            factory.MetadataManager.GetNativeLayoutMetadataDependencies(dependencies, factory, GetMethodForMetadata(method, out _, out _));
+            factory.MetadataManager.AddNativeLayoutMetadataDependencies(dependencies, factory, GetMethodForMetadata(method, out _, out _));
         }
 
         private static MethodDesc GetMethodForMetadata(MethodDesc method, out bool isAsyncVariant, out bool isReturnDroppingAsyncThunk)

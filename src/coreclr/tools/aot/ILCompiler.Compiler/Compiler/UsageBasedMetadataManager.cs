@@ -243,7 +243,7 @@ namespace ILCompiler
             dependencies.Add(factory.MethodMetadata(method.GetTypicalMethodDefinition()), "Reflectable method");
         }
 
-        public override void GetNativeLayoutMetadataDependencies(DependencySink<NodeFactory> dependencies, NodeFactory factory, MethodDesc method)
+        public override void AddNativeLayoutMetadataDependencies(DependencySink<NodeFactory> dependencies, NodeFactory factory, MethodDesc method)
         {
             if (CanGenerateMetadata(method))
             {
@@ -291,7 +291,7 @@ namespace ILCompiler
 
         protected override void GetMetadataDependenciesDueToReflectability(DependencySink<NodeFactory> dependencies, NodeFactory factory, TypeDesc type)
         {
-            TypeMetadataNode.GetMetadataDependencies(dependencies, factory, type, "Reflectable type");
+            TypeMetadataNode.AddMetadataDependencies(dependencies, factory, type, "Reflectable type");
 
             if (type.IsDelegate)
             {
@@ -397,7 +397,7 @@ namespace ILCompiler
         {
             base.GetDependenciesDueToEETypePresence(dependencies, factory, type);
 
-            DataflowAnalyzedTypeDefinitionNode.GetDependencies(dependencies, factory, FlowAnnotations, type);
+            DataflowAnalyzedTypeDefinitionNode.AddDependencies(dependencies, factory, FlowAnnotations, type);
         }
 
         public override bool HasConditionalDependenciesDueToEETypePresence(TypeDesc type)

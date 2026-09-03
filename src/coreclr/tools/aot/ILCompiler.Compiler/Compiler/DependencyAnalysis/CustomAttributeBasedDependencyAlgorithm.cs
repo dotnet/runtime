@@ -294,7 +294,7 @@ namespace ILCompiler.DependencyAnalysis
                 return false;
 
             // Grab the metadata nodes that will be necessary to represent the typeof in the metadata blob
-            TypeMetadataNode.GetMetadataDependencies(dependencies, factory, typeofType, "Custom attribute blob");
+            TypeMetadataNode.AddMetadataDependencies(dependencies, factory, typeofType, "Custom attribute blob");
             return true;
         }
     }

@@ -57,17 +57,17 @@ namespace ILCompiler.DependencyAnalysis
 
             MethodSignature sig = _method.Signature;
             const string reason = "Method signature metadata";
-            TypeMetadataNode.GetMetadataDependencies(dependencies, factory, sig.ReturnType, reason);
+            TypeMetadataNode.AddMetadataDependencies(dependencies, factory, sig.ReturnType, reason);
             foreach (TypeDesc paramType in sig)
             {
-                TypeMetadataNode.GetMetadataDependencies(dependencies, factory, paramType, reason);
+                TypeMetadataNode.AddMetadataDependencies(dependencies, factory, paramType, reason);
             }
 
             if (sig.HasEmbeddedSignatureData)
             {
                 foreach (var sigData in sig.GetEmbeddedSignatureData())
                     if (sigData.type != null)
-                        TypeMetadataNode.GetMetadataDependencies(dependencies, factory, sigData.type, "Modifier in a method signature");
+                        TypeMetadataNode.AddMetadataDependencies(dependencies, factory, sigData.type, "Modifier in a method signature");
             }
 
             if (!_isMinimal)

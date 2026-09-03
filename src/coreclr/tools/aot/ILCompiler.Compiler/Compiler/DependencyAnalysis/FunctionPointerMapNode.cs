@@ -35,7 +35,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
-        public static void GetHashtableDependencies(DependencySink<NodeFactory> dependencies, NodeFactory factory, FunctionPointerType type)
+        public static void AddHashtableDependencies(DependencySink<NodeFactory> dependencies, NodeFactory factory, FunctionPointerType type)
         {
             dependencies.Add(factory.NecessaryTypeSymbol(type.Signature.ReturnType), "Function pointer type composition");
             foreach (TypeDesc paramType in type.Signature)

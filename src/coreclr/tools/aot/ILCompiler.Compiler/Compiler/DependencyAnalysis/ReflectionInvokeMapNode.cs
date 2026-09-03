@@ -77,7 +77,7 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
-            ReflectionVirtualInvokeMapNode.GetVirtualInvokeMapDependencies(dependencies, factory, method);
+            ReflectionVirtualInvokeMapNode.AddVirtualInvokeMapDependencies(dependencies, factory, method);
         }
 
         internal static void AddSignatureDependency(IDependencySink<NodeFactory> dependencies, NodeFactory factory, TypeSystemEntity referent, TypeDesc type, string reason, bool isOut)
@@ -104,7 +104,7 @@ namespace ILCompiler.DependencyAnalysis
                 // Non-valuetypes are only needed for the purposes of casting/type checks.
                 // If this is a non-exact type, we need the type loader template to get the type handle.
                 if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
-                    GenericTypesTemplateMap.GetTemplateTypeDependencies(dependencies, factory, type.NormalizeInstantiation());
+                    GenericTypesTemplateMap.AddTemplateTypeDependencies(dependencies, factory, type.NormalizeInstantiation());
                 else if (isOut && !type.IsGCPointer)
                     dependencies.Add(factory.MaximallyConstructableType(type.NormalizeInstantiation()), reason);
                 else

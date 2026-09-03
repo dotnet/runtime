@@ -69,7 +69,7 @@ namespace ILCompiler.DependencyAnalysis
             return new ObjectData(streamBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
         }
 
-        public static void GetTemplateTypeDependencies(IDependencySink<NodeFactory> dependencies, NodeFactory factory, TypeDesc type)
+        public static void AddTemplateTypeDependencies(IDependencySink<NodeFactory> dependencies, NodeFactory factory, TypeDesc type)
         {
             TypeDesc templateType = ConvertArrayOfTToRegularArray(factory, type);
 

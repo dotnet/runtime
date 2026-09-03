@@ -38,7 +38,7 @@ namespace ILCompiler.DependencyAnalysis
 
             if (_type.IsCanonicalSubtype(CanonicalFormKind.Any))
             {
-                GenericTypesTemplateMap.GetTemplateTypeDependencies(sink, factory, _type);
+                GenericTypesTemplateMap.AddTemplateTypeDependencies(sink, factory, _type);
             }
         }
         protected override string GetName(NodeFactory factory)

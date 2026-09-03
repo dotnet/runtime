@@ -61,10 +61,10 @@ namespace ILCompiler.DependencyAnalysis
         public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory context)
         {
             foreach (var entry in ScanForGenericVirtualMethodEntries())
-                GenericVirtualMethodTableNode.GetGenericVirtualMethodImplementationDependencies(sink, context, entry.CallingMethod, entry.ImplementationMethod);
+                GenericVirtualMethodTableNode.AddGenericVirtualMethodImplementationDependencies(sink, context, entry.CallingMethod, entry.ImplementationMethod);
 
             foreach (var entry in ScanForInterfaceGenericVirtualMethodEntries())
-                InterfaceGenericVirtualMethodTableNode.GetGenericVirtualMethodImplementationDependencies(sink, context, entry.CallingMethod, entry.ImplementationType, entry.ImplementationMethod);
+                InterfaceGenericVirtualMethodTableNode.AddGenericVirtualMethodImplementationDependencies(sink, context, entry.CallingMethod, entry.ImplementationType, entry.ImplementationMethod);
         }
 
         public IEnumerable<TypeGVMEntryInfo> ScanForGenericVirtualMethodEntries()

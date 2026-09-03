@@ -62,7 +62,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            _data.GetConditionalDependencies(sink, factory);
+            _data.AddConditionalDependencies(sink, factory);
         }
 
         public override int ClassCode => 1789429316;

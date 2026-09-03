@@ -150,7 +150,7 @@ namespace ILCompiler.DependencyAnalysis
                 IMethodNode methodEntryPointNode = GetMethodEntrypointNode(context);
                 dependencies.Add(new DependencyListEntry(methodEntryPointNode, "NativeLayoutMethodEntryVertexNode entrypoint"));
             }
-            context.MetadataManager.GetNativeLayoutMetadataDependencies(dependencies, context, GetMethodForMetadata(_method, out _, out _));
+            context.MetadataManager.AddNativeLayoutMetadataDependencies(dependencies, context, GetMethodForMetadata(_method, out _, out _));
 
         }
 
@@ -1289,7 +1289,7 @@ namespace ILCompiler.DependencyAnalysis
 
             MethodDesc canonMethod = _method.GetCanonMethodTarget(CanonicalFormKind.Specific);
             result.Add(factory.GVMDependencies(canonMethod), "GVM dependencies");
-            factory.MetadataManager.GetNativeLayoutMetadataDependencies(result, factory, GvmDispatchCellInfoSectionNode.GetMethodForMetadata(_method, out _));
+            factory.MetadataManager.AddNativeLayoutMetadataDependencies(result, factory, GvmDispatchCellInfoSectionNode.GetMethodForMetadata(_method, out _));
             result.Add(factory.NativeLayout.MethodEntry(_method), "wrappednode");
 
         }
@@ -1327,7 +1327,7 @@ namespace ILCompiler.DependencyAnalysis
                     dependencies.Add(dependency, "template construction dependency for method Instantiation types");
             }
 
-            GenericMethodsTemplateMap.GetTemplateMethodDependencies(dependencies, factory, _method.GetCanonMethodTarget(CanonicalFormKind.Specific));
+            GenericMethodsTemplateMap.AddTemplateMethodDependencies(dependencies, factory, _method.GetCanonMethodTarget(CanonicalFormKind.Specific));
 
             dependencies.Add(factory.NativeLayout.MethodEntry(_method), "wrappednode");
 
@@ -1566,7 +1566,7 @@ namespace ILCompiler.DependencyAnalysis
                     dependencies.Add(dependency, "template construction dependency for method Instantiation types");
             }
 
-            GenericMethodsTemplateMap.GetTemplateMethodDependencies(dependencies, factory, _method.GetCanonMethodTarget(CanonicalFormKind.Specific));
+            GenericMethodsTemplateMap.AddTemplateMethodDependencies(dependencies, factory, _method.GetCanonMethodTarget(CanonicalFormKind.Specific));
             dependencies.Add(_wrappedNode, "wrappednode");
 
         }

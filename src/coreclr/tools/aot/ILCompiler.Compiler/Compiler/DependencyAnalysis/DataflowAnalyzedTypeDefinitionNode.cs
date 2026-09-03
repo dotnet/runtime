@@ -25,7 +25,7 @@ namespace ILCompiler.DependencyAnalysis
             _typeDefinition = typeDefinition;
         }
 
-        public static void GetDependencies(DependencySink<NodeFactory> dependencies, NodeFactory factory, FlowAnnotations flowAnnotations, TypeDesc type)
+        public static void AddDependencies(DependencySink<NodeFactory> dependencies, NodeFactory factory, FlowAnnotations flowAnnotations, TypeDesc type)
         {
             bool needsDataflowAnalysis = false;
 

@@ -53,10 +53,10 @@ namespace ILCompiler.DependencyAnalysis
             {
                 foreach (var sigData in _field.GetEmbeddedSignatureData())
                     if (sigData.type != null)
-                        TypeMetadataNode.GetMetadataDependencies(dependencies, factory, sigData.type, "Modifier in a field signature");
+                        TypeMetadataNode.AddMetadataDependencies(dependencies, factory, sigData.type, "Modifier in a field signature");
             }
 
-            TypeMetadataNode.GetMetadataDependencies(dependencies, factory, _field.FieldType, "Type of the field");
+            TypeMetadataNode.AddMetadataDependencies(dependencies, factory, _field.FieldType, "Type of the field");
         }
 
         public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)

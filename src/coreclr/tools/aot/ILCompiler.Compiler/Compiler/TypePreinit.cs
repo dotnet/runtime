@@ -2252,7 +2252,7 @@ namespace ILCompiler
             TypeDesc Type { get; }
             void WriteContent(ref ObjectDataBuilder builder, ISymbolNode thisNode, NodeFactory factory);
             bool HasConditionalDependencies { get; }
-            void GetConditionalDependencies(DependencySink<NodeFactory> dependencies, NodeFactory factory);
+            void AddConditionalDependencies(DependencySink<NodeFactory> dependencies, NodeFactory factory);
             bool IsKnownImmutable { get; }
             int ArrayLength { get; }
         }
@@ -3258,7 +3258,7 @@ namespace ILCompiler
 
             public virtual bool HasConditionalDependencies => false;
 
-            public virtual void GetConditionalDependencies(DependencySink<NodeFactory> dependencies, NodeFactory factory)
+            public virtual void AddConditionalDependencies(DependencySink<NodeFactory> dependencies, NodeFactory factory)
             {
             }
         }
@@ -3285,7 +3285,7 @@ namespace ILCompiler
 
             public override bool HasConditionalDependencies => true;
 
-            public override void GetConditionalDependencies(DependencySink<NodeFactory> dependencies, NodeFactory factory)
+            public override void AddConditionalDependencies(DependencySink<NodeFactory> dependencies, NodeFactory factory)
             {
 
                 DelegateCreationInfo creationInfo = GetDelegateCreationInfo(factory);
