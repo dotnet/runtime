@@ -38,22 +38,20 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static void HandleException(nint status)
         {
-            Exception exception;
             if ((nuint)status <= 2)
             {
-                exception = Thread.GetQCallSpecialException(status);
+                throw Thread.GetQCallSpecialException(status);
             }
-            else
+
+            Exception exception;
+            GCHandle exceptionHandle = GCHandle.FromIntPtr(status);
+            try
             {
-                GCHandle exceptionHandle = GCHandle.FromIntPtr(status);
-                try
-                {
-                    exception = (Exception)exceptionHandle.Target!;
-                }
-                finally
-                {
-                    exceptionHandle.Free();
-                }
+                exception = (Exception)exceptionHandle.Target!;
+            }
+            finally
+            {
+                exceptionHandle.Free();
             }
 
             // Throw during unmarshalling so QCall exception propagation remains as close as

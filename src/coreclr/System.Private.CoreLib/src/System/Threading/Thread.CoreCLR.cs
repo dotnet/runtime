@@ -61,7 +61,8 @@ namespace System.Threading
         {
             Exception? exception = null;
             GetQCallSpecialException(status, ObjectHandleOnStack.Create(ref exception));
-            return exception!;
+            Debug.Assert(exception is not null);
+            return exception;
         }
 
         [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
