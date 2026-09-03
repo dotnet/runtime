@@ -495,6 +495,12 @@ run_browser_test() {
     export __TestNativeAssetsLinked=false
 $(BashSelectTestCorerun)
 
+    local -a run_crossgen2_args=()
+    if [ -n "${RunCrossGen2:-}" ]
+    then
+      run_crossgen2_args=(-p "Test.ReadyToRunCompiled=true")
+    fi
+
     echo Running with node
     echo CORE_ROOT: ${CORE_ROOT}
     echo corerun: ${corerun_js}
@@ -502,7 +508,7 @@ $(BashSelectTestCorerun)
     echo CLRTestExecutionArguments: ${CLRTestExecutionArguments[@]}
     echo node version: `node -v`
     echo Timeout in ms: $__TestTimeout
-    cmd=( node --experimental-wasm-exnref --stack-size=8192 "${corerun_js}" -c "${CORE_ROOT}" $(CoreRunArgs) "${PWD}/${ExePath}" "${CLRTestExecutionArguments[@]}" )
+    cmd=( node --experimental-wasm-exnref --stack-size=8192 "${corerun_js}" -c "${CORE_ROOT}" $(CoreRunArgs) "${run_crossgen2_args[@]}" "${PWD}/${ExePath}" "${CLRTestExecutionArguments[@]}" )
     echo Running: "${cmd[@]}"
     run_with_timeout $__TestTimeout "${cmd[@]}"
   fi

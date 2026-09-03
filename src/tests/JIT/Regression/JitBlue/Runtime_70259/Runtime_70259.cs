@@ -11,6 +11,7 @@ using System.Runtime.CompilerServices;
 
 class Runtime_70259
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/124221", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsReadyToRunCompiled))]
     private static int Main()
     {
         // This creates an open delegate that goes through shuffle thunk and
@@ -44,5 +45,5 @@ class Runtime_70259
             return 100;
         }
     }
-}
 
+}

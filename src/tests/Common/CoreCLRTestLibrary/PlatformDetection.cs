@@ -111,6 +111,7 @@ namespace TestLibrary
         public static bool IsBrowser => OperatingSystem.IsBrowser();
         public static bool IsWasi => OperatingSystem.IsWasi();
         public static bool IsWasm => IsBrowser || IsWasi;
+        public static bool IsReadyToRunCompiled => AppContext.TryGetSwitch("Test.ReadyToRunCompiled", out bool isEnabled) && isEnabled;
         public static bool IsNotMultithreadingSupported => !IsMultithreadingSupported;
         public static bool IsMultithreadingSupported => RuntimeFeature.IsMultithreadingSupported;
 

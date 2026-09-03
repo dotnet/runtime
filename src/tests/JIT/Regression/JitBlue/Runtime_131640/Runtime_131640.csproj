@@ -1,11 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <Optimize>True</Optimize>
-    <!-- The bug only reproduces when the caller is optimized R2R code, so force crossgen on
-         the browser leg. AlwaysUseCrossGen2 only takes effect through the project's own run
-         script, which requires process isolation. -->
-    <AlwaysUseCrossGen2 Condition="'$(TargetOS)' == 'browser'">true</AlwaysUseCrossGen2>
-    <RequiresProcessIsolation>true</RequiresProcessIsolation>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
