@@ -3918,6 +3918,20 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
 
     emitter* emit = GetEmitter();
 
+    // Re-push an address. Going through "genEmitMultiUseOperandGet" narrows an address that morph
+    // folded out of a long local; a null node means the register is the frame pointer, which needs
+    // no conversion.
+    auto emitAddrGet = [this](GenTree* addrNode, regNumber reg) {
+        if (addrNode != nullptr)
+        {
+            genEmitMultiUseOperandGet(addrNode, reg);
+        }
+        else
+        {
+            GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(reg));
+        }
+    };
+
     if (isNativeOp)
     {
         // The destination should already be on the stack.
@@ -3926,7 +3940,7 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
         {
             assert(isCopyBlk);
             assert(srcReg != REG_NA);
-            emit->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(srcReg));
+            emitAddrGet(srcAddr, srcReg);
             if (srcOffset != 0)
             {
                 emit->emitIns_I(INS_I_const, EA_PTRSIZE, srcOffset);
@@ -3966,18 +3980,18 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
         if (!layout->IsGCPtr(i))
         {
             // Do a pointer-sized load+store pair at the appropriate offset relative to dest and source
-            emit->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(destReg));
-            emit->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(srcReg));
+            emitAddrGet(destAddr, destReg);
+            emitAddrGet(srcAddr, srcReg);
             emit->emitIns_I(INS_I_load, EA_PTRSIZE, srcOffset);
             emit->emitIns_I(INS_I_store, EA_PTRSIZE, destOffset);
         }
         else
         {
             // Compute the actual dest/src of the slot being copied to pass to the helper.
-            emit->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(destReg));
+            emitAddrGet(destAddr, destReg);
             emit->emitIns_I(INS_I_const, EA_PTRSIZE, destOffset);
             emit->emitIns(INS_I_add);
-            emit->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(srcReg));
+            emitAddrGet(srcAddr, srcReg);
             emit->emitIns_I(INS_I_load, EA_PTRSIZE, srcOffset);
             // NOTE: This helper's signature omits SP/PEP so all we need on the stack is dst and ref.
             genEmitHelperCall(CORINFO_HELP_CHECKED_ASSIGN_REF, 0, EA_PTRSIZE);
