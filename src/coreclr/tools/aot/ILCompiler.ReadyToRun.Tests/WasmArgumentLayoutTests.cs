@@ -697,6 +697,82 @@ public class WasmArgumentLayoutTests
     private const string CoreLibSimpleName = "System.Private.CoreLib";
 
     /// <summary>
+    /// A reverse thunk hands each argument to the interpreter in an eight-byte slot. Casting a float
+    /// to the slot type converts it numerically, so the interpreter, which reads the slot as the
+    /// parameter's bits, would see a different value than the caller passed.
+    /// </summary>
+    [Theory]
+    [InlineData("double", "double")]
+    [InlineData("float", "float")]
+    [InlineData("int", null)]
+    [InlineData("nint", null)]
+    public void PortableCallHelpersGeneratorGivesTheInterpreterTheBitsOfAFloatingPointArgument(
+        string parameterType, string? expectedCType)
+    {
+        string source = $$"""
+            using System.Runtime.InteropServices;
+
+            public static class Exports
+            {
+                [UnmanagedCallersOnly]
+                public static void Handle({{parameterType}} value) { }
+            }
+            """;
+
+        string workingDirectory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        Directory.CreateDirectory(workingDirectory);
+
+        try
+        {
+            string inputAssembly = CompileCallbackAssembly(source, Path.Combine(workingDirectory, "Callbacks.dll"));
+            string outputDirectory = Path.Combine(workingDirectory, "generated");
+
+            var options = new PortableCallHelpersGeneratorOptions
+            {
+                OutputDirectory = outputDirectory,
+                TargetOS = "browser",
+                PInvokeModules = new[] { "libSystem.Native" },
+            };
+
+            Assert.Equal(0, PortableCallHelpersGenerator.Run(
+                CreateWasmContext(inputAssembly), options, new Logger(TextWriter.Null, isVerbose: false)));
+
+            string generated = File.ReadAllText(
+                Path.Combine(outputDirectory, PortableCallHelpersGenerator.ReversePInvokeFileName));
+
+            // The scan also collects the framework's own callbacks, so narrow to this one before
+            // asserting on how its arguments are packed.
+            int start = generated.IndexOf("_Exports_Handle", StringComparison.Ordinal);
+            Assert.True(start >= 0, "no thunk was generated for the callback");
+            start = generated.LastIndexOf("static ", start, StringComparison.Ordinal);
+            int end = generated.IndexOf("\n}", start, StringComparison.Ordinal);
+            string thunk = generated[start..end];
+
+            if (expectedCType is not null)
+            {
+                Assert.Contains($"{expectedCType} arg0", thunk);
+                Assert.Contains("memcpy(&args[0], &arg0, sizeof(arg0));", thunk);
+                Assert.DoesNotContain("(int64_t)arg0", thunk);
+            }
+            else
+            {
+                Assert.Contains("(int64_t)arg0", thunk);
+                Assert.DoesNotContain("memcpy", thunk);
+            }
+        }
+        finally
+        {
+            try
+            {
+                Directory.Delete(workingDirectory, recursive: true);
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+            }
+        }
+    }
+
+    /// <summary>
     /// An exported callback resolves its MethodDesc at run time through
     /// LookupUnmanagedCallersOnlyMethodByName, which matches on the declaring type and the method name
     /// alone. Overloads are indistinguishable to it, so generation has to reject a name it could not

@@ -266,10 +266,15 @@ namespace ILCompiler.PortableCallHelpers
 
                 int parameterCount = cb.Parameters.Length;
                 string argsArgs = parameterCount > 0 ? "(int8_t*)args, sizeof(args)" : "nullptr, 0";
+                string[] parameterCTypes = ParameterTypes(cb.Parameters).Select(MapType).ToArray();
+                // A cast converts a float numerically, while the slot has to carry its bits, so copy
+                // those instead. Every other type this emits reaches the slot unchanged through a cast.
+                bool CarriesBits(int i) => parameterCTypes[i] is "float" or "double";
                 string argsDeclaration = parameterCount > 0
-                    ? $"\n    int64_t args[{parameterCount}] = {{ {string.Join(", ", Enumerable.Range(0, parameterCount).Select(i => $"(int64_t)arg{i}"))} }};\n"
+                    ? $"\n    int64_t args[{parameterCount}] = {{ {string.Join(", ", Enumerable.Range(0, parameterCount).Select(i => CarriesBits(i) ? "0" : $"(int64_t)arg{i}"))} }};\n"
+                      + string.Concat(Enumerable.Range(0, parameterCount).Where(CarriesBits).Select(i => $"    memcpy(&args[{i}], &arg{i}, sizeof(arg{i}));\n"))
                     : string.Empty;
-                string parametersDeclaration = string.Join(", ", ParameterTypes(cb.Parameters).Select((p, i) => $"{MapType(p)} arg{i}"));
+                string parametersDeclaration = string.Join(", ", parameterCTypes.Select((p, i) => $"{p} arg{i}"));
                 string arguments = string.Join(", ", Enumerable.Range(0, parameterCount).Select(i => $"arg{i}"));
                 string exportFunction = cb.IsExport ?
                     $$"""
