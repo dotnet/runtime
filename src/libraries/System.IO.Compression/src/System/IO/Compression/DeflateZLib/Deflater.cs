@@ -153,18 +153,44 @@ namespace System.IO.Compression
             return ReadDeflateOutput(outputBuffer, ZFlushCode.SyncFlush, out bytesRead) == ZErrorCode.Ok;
         }
 
+        /// <summary>
+        /// Discards any unconsumed input previously set via SetInput, releasing the pinned reference (if any).
+        /// Must be called if an in-progress operation is abandoned (e.g. due to an exception or cancellation) so
+        /// the deflater doesn't retain a dangling reference to a buffer the caller may have since reused or freed.
+        /// </summary>
+        internal void UnsetInput()
+        {
+            lock (SyncLock)
+            {
+                // On the common success path all input has already been consumed (NeedsInput() is true),
+                // so there is nothing to abandon and no cleanup is necessary. Only when an operation is
+                // abandoned mid-input do we need to reset state and release any pinned reference. This check
+                // must happen under the lock so it can't race with a concurrent SetInput/Dispose call.
+                if (!NeedsInput())
+                {
+                    DeallocateInputBufferHandleCore(resetStreamHandle: true);
+                }
+            }
+        }
+
         private void DeallocateInputBufferHandle(bool resetStreamHandle)
         {
             lock (SyncLock)
             {
-                if (resetStreamHandle)
-                {
-                    _zlibStream.AvailIn = 0;
-                    _zlibStream.NextIn = ZLibNative.ZNullPtr;
-                }
-
-                _inputBufferHandle.Dispose();
+                DeallocateInputBufferHandleCore(resetStreamHandle);
             }
+        }
+
+        // Must be called while holding SyncLock.
+        private void DeallocateInputBufferHandleCore(bool resetStreamHandle)
+        {
+            if (resetStreamHandle)
+            {
+                _zlibStream.AvailIn = 0;
+                _zlibStream.NextIn = ZLibNative.ZNullPtr;
+            }
+
+            _inputBufferHandle.Dispose();
         }
 
         private ZErrorCode Deflate(ZFlushCode flushCode)
