@@ -1068,17 +1068,10 @@ namespace
     typedef StringToThunkHash StringToWasmSigThunkHash;
     static StringToWasmSigThunkHash* thunkCache = nullptr;
 
-    // Managed methods resolve their interpreter->R2R thunk from the R2R image only: crossgen2 emits it
-    // (WasmInterpreterToR2RThunkNode, keyed "M"+signature) and, because the target has R2R native code,
-    // the image is loaded and its eager InjectStringThunks fixup has already registered the thunk.
-    InterpreterCalliCookie LookupManagedThunk(const char* key)
-    {
-        return (InterpreterCalliCookie)(size_t)LookupPregeneratedThunkByString(key);
-    }
-
-    // Unmanaged calli signatures resolve from the fixed set compiled into libcoreclr (g_wasmThunks) only:
-    // crossgen2 does not emit thunks for unmanaged signatures.
-    InterpreterCalliCookie LookupUnmanagedThunk(const char* key)
+    // The fixed set of interpreter->native thunks compiled into libcoreclr (g_wasmThunks). It covers the
+    // runtime's own interp->native calls - FCall/QCall/pinvoke and other runtime-native managed methods,
+    // plus unmanaged calli. crossgen2 does not emit these.
+    InterpreterCalliCookie LookupThunkInLibcoreclr(const char* key)
     {
         StringToWasmSigThunkHash* table = thunkCache;
         _ASSERTE(table != nullptr && "Wasm thunk cache not initialized. Call InitializeWasmThunkCaches() at EEStartup.");
@@ -1087,6 +1080,19 @@ namespace
             return (InterpreterCalliCookie)thunk;
 
         return NULL;
+    }
+
+    // For a managed method the interp->R2R thunk is emitted into the R2R image by crossgen2
+    // (WasmInterpreterToR2RThunkNode, keyed "M"+signature) for every R2R-compiled method body. Prefer that
+    // image (the common case with R2R), then fall back to g_wasmThunks, which is the only source for managed
+    // methods whose native code is not R2R (FCall/QCall/pinvoke/runtime stubs).
+    InterpreterCalliCookie LookupManagedThunk(const char* key)
+    {
+        InterpreterCalliCookie r2r = (InterpreterCalliCookie)(size_t)LookupPregeneratedThunkByString(key);
+        if (r2r != NULL)
+            return r2r;
+
+        return LookupThunkInLibcoreclr(key);
     }
 
     void* LookupPortableEntryPointThunk(const char* key)
@@ -1131,11 +1137,11 @@ namespace
                 return NULL;
         }
 
-        // Route to the authoritative table for the signature's kind: managed methods (default calling
-        // convention) resolve from the R2R image; unmanaged calli resolve from the fixed libcoreclr set.
+        // Managed methods (default calling convention) prefer the R2R image and fall back to g_wasmThunks;
+        // unmanaged calli are only ever in g_wasmThunks.
         InterpreterCalliCookie thunk = (callConv == IMAGE_CEE_CS_CALLCONV_DEFAULT)
             ? LookupManagedThunk(keyBuffer)
-            : LookupUnmanagedThunk(keyBuffer);
+            : LookupThunkInLibcoreclr(keyBuffer);
 #ifdef _DEBUG
         if (thunk == NULL)
             printf("WASM calli missing for key: %s\n", keyBuffer);
