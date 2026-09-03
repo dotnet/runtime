@@ -3139,7 +3139,7 @@ namespace Internal.JitInterface
             }
 
             if (result == TypeCompareState.MustNot && !fromClassIsExact && !isExactType(fromClass) &&
-                !AreClassHierarchiesDisjoint(fromType, toType))
+                !IsReverseClassCastImpossible(fromType, toType))
             {
                 result = TypeCompareState.May;
             }
@@ -3190,31 +3190,32 @@ namespace Internal.JitInterface
             return merged == type1;
         }
 
-        private static bool AreClassHierarchiesDisjoint(TypeDesc type1, TypeDesc type2)
+        // The caller has already established that the forward cast cannot succeed.
+        private static bool IsReverseClassCastImpossible(TypeDesc fromType, TypeDesc toType)
         {
-            if (type1.IsCanonicalSubtype(CanonicalFormKind.Any) ||
-                type2.IsCanonicalSubtype(CanonicalFormKind.Any) ||
-                !type1.IsDefType ||
-                !type2.IsDefType ||
-                type1.IsInterface ||
-                type2.IsInterface ||
-                type1.IsArray ||
-                type2.IsArray ||
-                type1.IsDelegate ||
-                type2.IsDelegate ||
-                type1.IsValueType ||
-                type2.IsValueType ||
-                type1.HasTypeEquivalence ||
-                type2.HasTypeEquivalence ||
-                type1.HasVariance ||
-                type2.HasVariance ||
-                IsArrayInterfaceDispatchType(type1) ||
-                IsArrayInterfaceDispatchType(type2))
+            if (fromType.IsCanonicalSubtype(CanonicalFormKind.Any) ||
+                toType.IsCanonicalSubtype(CanonicalFormKind.Any) ||
+                !fromType.IsDefType ||
+                !toType.IsDefType ||
+                fromType.IsInterface ||
+                toType.IsInterface ||
+                fromType.IsArray ||
+                toType.IsArray ||
+                fromType.IsDelegate ||
+                toType.IsDelegate ||
+                fromType.IsValueType ||
+                toType.IsValueType ||
+                fromType.HasTypeEquivalence ||
+                toType.HasTypeEquivalence ||
+                fromType.HasVariance ||
+                toType.HasVariance ||
+                IsArrayInterfaceDispatchType(fromType) ||
+                IsArrayInterfaceDispatchType(toType))
             {
                 return false;
             }
 
-            return !type2.CanCastTo(type1);
+            return !toType.CanCastTo(fromType);
         }
 
         private static bool IsArrayInterfaceDispatchType(TypeDesc type)

@@ -4258,35 +4258,38 @@ bool CEEInfo::canCast(
 
 static bool isExactTypeHelper(TypeHandle th);
 
-// Returns true if no type can be derived from both type1 and type2.
-static bool AreClassHierarchiesDisjoint(TypeHandle type1, TypeHandle type2)
+// Returns true if fromType and toType are ordinary classes and the reverse
+// cast from toType to fromType cannot succeed. The caller has already
+// established that the forward cast cannot succeed.
+static bool IsReverseClassCastImpossible(TypeHandle fromType, TypeHandle toType)
 {
     STANDARD_VM_CONTRACT;
 
-    if (type1.IsCanonicalSubtype() || type2.IsCanonicalSubtype() || type1.IsTypeDesc() || type2.IsTypeDesc())
+    if (fromType.IsCanonicalSubtype() || toType.IsCanonicalSubtype() || fromType.IsTypeDesc() || toType.IsTypeDesc())
     {
         return false;
     }
 
-    MethodTable* type1MT = type1.AsMethodTable();
-    MethodTable* type2MT = type2.AsMethodTable();
+    MethodTable* fromTypeMT = fromType.AsMethodTable();
+    MethodTable* toTypeMT   = toType.AsMethodTable();
 
 #ifdef FEATURE_COMINTEROP
-    if (type1.IsComObjectType() || type2.IsComObjectType())
+    if (fromType.IsComObjectType() || toType.IsComObjectType())
     {
         return false;
     }
 #endif // FEATURE_COMINTEROP
 
-    if (type1MT->IsInterface() || type2MT->IsInterface() || type1MT->IsArray() || type2MT->IsArray() ||
-        type1MT->IsDelegate() || type2MT->IsDelegate() || type1MT->IsValueType() || type2MT->IsValueType() ||
-        type1MT->HasTypeEquivalence() || type2MT->HasTypeEquivalence() || type1MT->HasVariance() ||
-        type2MT->HasVariance() || (type1MT == g_pSZArrayHelperClass) || (type2MT == g_pSZArrayHelperClass))
+    if (fromTypeMT->IsInterface() || toTypeMT->IsInterface() || fromTypeMT->IsArray() || toTypeMT->IsArray() ||
+        fromTypeMT->IsDelegate() || toTypeMT->IsDelegate() || fromTypeMT->IsValueType() ||
+        toTypeMT->IsValueType() || fromTypeMT->HasTypeEquivalence() || toTypeMT->HasTypeEquivalence() ||
+        fromTypeMT->HasVariance() || toTypeMT->HasVariance() || (fromTypeMT == g_pSZArrayHelperClass) ||
+        (toTypeMT == g_pSZArrayHelperClass))
     {
         return false;
     }
 
-    return !type2.CanCastTo(type1);
+    return !toType.CanCastTo(fromType);
 }
 
 /*********************************************************************/
@@ -4380,7 +4383,7 @@ TypeCompareState CEEInfo::compareTypesForCast(
     }
 
     if ((result == TypeCompareState::MustNot) && !fromClassIsExact && !isExactTypeHelper(fromHnd) &&
-        !AreClassHierarchiesDisjoint(fromHnd, toHnd))
+        !IsReverseClassCastImpossible(fromHnd, toHnd))
     {
         result = TypeCompareState::May;
     }
