@@ -31,9 +31,14 @@ namespace ILCompiler.ObjectWriter
 
         public void PadStream(Stream s, int n)
         {
-            ArgumentOutOfRangeException.ThrowIfGreaterThan(n, _padding.Length);
             ArgumentOutOfRangeException.ThrowIfLessThan(n, 0);
-            s.Write(_padding, 0, n);
+
+            while (n > 0)
+            {
+                int bytesToWrite = Math.Min(n, _padding.Length);
+                s.Write(_padding, 0, bytesToWrite);
+                n -= bytesToWrite;
+            }
         }
     }
 
@@ -459,9 +464,18 @@ namespace ILCompiler.ObjectWriter
                 WasmDataSegmentType.Passive, null);
 
             // Create combined data section and emit
-            WasmDataSection dataSection = new WasmDataSection([webcilSizeSegment, webcilContentsSegment], new Utf8String("data"), contentAlign: 4);
+            WasmDataSection dataSection = new WasmDataSection(
+                [webcilSizeSegment, webcilContentsSegment],
+                new Utf8String("data"),
+                contentAlign: WebcilSectionAlignment);
             dataSection.EmitToStream(outputFileStream);
 #endif
+
+            // The name section goes last, after the data section, as tooling expects. It is the only
+            // record of function names now that they are no longer carried by the export table, and
+            // wasm-merge -g synthesizes the merged module's names from it.
+            WasmNameSection nameSection = new WasmNameSection(_wasmSymbolManager.GetDefinitions(WasmIndexSpace.Function));
+            nameSection.EmitToStream(outputFileStream);
 
             if (_outputInfoBuilder is not null)
             {
@@ -996,13 +1010,15 @@ namespace ILCompiler.ObjectWriter
             Debug.Assert(_definedGlobals.ContainsKey("webcilVersion"));
             WriteGlobalExport("webcilVersion", _definedGlobals["webcilVersion"].Index);
 
-            // TODO-WASM: Handle exports better (e.g., only export public methods, etc.)
-            IEnumerable<WasmSymbol> functionSymbols = _wasmSymbolManager.GetDefinitions(
-                WasmIndexSpace.Function,
-                Comparer<WasmSymbol>.Create(static (x, y) => x.Name.CompareTo(y.Name)));
-            foreach (WasmSymbol symbol in functionSymbols)
+            // Export only the stubs the host actually calls. Exporting every compiled function does
+            // not scale: exports count towards the engine's effective-type-size limit, and a
+            // framework-sized composite exceeds it, producing a module no conforming engine loads.
+            // Nothing needs them - the element segment, not the export table, is what makes a
+            // function reachable - and the names they used to carry now live in the name section.
+            foreach (Utf8String stubName in _wasmStubNames)
             {
-                WriteFunctionExport(symbol.Name.ToString(), symbol.Index);
+                WasmSymbol stubSymbol = _wasmSymbolManager.GetSymbol(stubName);
+                WriteFunctionExport(stubName.ToString(), stubSymbol.Index);
             }
         }
 

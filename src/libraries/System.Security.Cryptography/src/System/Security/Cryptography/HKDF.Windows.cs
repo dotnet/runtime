@@ -20,10 +20,12 @@ namespace System.Security.Cryptography
 {
     public static partial class HKDF
     {
-        private static readonly bool s_hasCngImplementation = IsCngSupported();
+        private static readonly int s_maxCngKeyLengthInBytes = GetMaxCngKeyLengthInBytes();
         private const string BCRYPT_HKDF_SALT_AND_FINALIZE = "HkdfSaltAndFinalize";
         private const string BCRYPT_HKDF_PRK_AND_FINALIZE = "HkdfPrkAndFinalize";
         private const string BCRYPT_HKDF_HASH_ALGORITHM = "HkdfHashAlgorithm";
+
+        private static bool IsCngSupported => s_maxCngKeyLengthInBytes >= 0;
 
         private static void ExtractCore(
             HashAlgorithmName hashAlgorithmName,
@@ -42,7 +44,7 @@ namespace System.Security.Cryptography
             Span<byte> output,
             ReadOnlySpan<byte> info)
         {
-            if (s_hasCngImplementation && !IsAlgorithmRequiringManagedFallback(hashAlgorithmName))
+            if (IsCngSupported && !IsAlgorithmRequiringManagedFallback(hashAlgorithmName))
             {
                 CngDeriveKey(
                     hashAlgorithmName,
@@ -66,7 +68,7 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> salt,
             ReadOnlySpan<byte> info)
         {
-            if (s_hasCngImplementation && !IsAlgorithmRequiringManagedFallback(hashAlgorithmName))
+            if (IsCngSupported && !IsAlgorithmRequiringManagedFallback(hashAlgorithmName))
             {
                 CngDeriveKey(
                     hashAlgorithmName,
@@ -97,19 +99,48 @@ namespace System.Security.Cryptography
             }
         }
 
-        private static bool IsCngSupported()
+        private static int GetMaxCngKeyLengthInBytes()
         {
-            NTSTATUS openStatus = Interop.BCrypt.BCryptOpenAlgorithmProvider(
+            NTSTATUS status = Interop.BCrypt.BCryptOpenAlgorithmProvider(
                 out SafeBCryptAlgorithmHandle handle,
                 Internal.NativeCrypto.BCryptNative.AlgorithmName.HKDF,
                 null,
                 BCryptOpenAlgorithmProviderFlags.None);
 
-            handle.Dispose();
+            using (handle)
+            {
+                if (status != NTSTATUS.STATUS_SUCCESS)
+                {
+                    // HKDF was added in Windows 10 1803.
+                    Debug.Assert(!OperatingSystem.IsWindowsVersionAtLeast(10, 0, 17134));
+                    return -1;
+                }
 
-            // HKDF was added in Windows 10 1803.
-            Debug.Assert(!OperatingSystem.IsWindowsVersionAtLeast(10, 0, 17134) || openStatus == NTSTATUS.STATUS_SUCCESS);
-            return openStatus == NTSTATUS.STATUS_SUCCESS;
+                Interop.BCrypt.BCRYPT_KEY_LENGTHS_STRUCT keyLengths = default;
+                int bytesWritten;
+                int keyLengthsSize;
+
+                unsafe
+                {
+                    keyLengthsSize = sizeof(Interop.BCrypt.BCRYPT_KEY_LENGTHS_STRUCT);
+                    status = Interop.BCrypt.BCryptGetProperty(
+                        handle,
+                        Interop.BCrypt.BCryptPropertyStrings.BCRYPT_KEY_LENGTHS,
+                        &keyLengths,
+                        keyLengthsSize,
+                        out bytesWritten,
+                        dwFlags: 0);
+                }
+
+                if (status != NTSTATUS.STATUS_SUCCESS || bytesWritten != keyLengthsSize)
+                {
+                    // We couldn't figure out the length but the algorithm handle opened successfully. Treat the
+                    // max length as unknown and let the actual HKDF operation handle it.
+                    return int.MaxValue;
+                }
+
+                return (int)(keyLengths.dwMaxLength / 8);
+            }
         }
 
         private static unsafe void CngDeriveKey(
@@ -124,6 +155,17 @@ namespace System.Security.Cryptography
             Debug.Assert(hashAlgorithmName.Name is not null);
 
             ThrowIfAlgorithmNotSupported(hashAlgorithmName);
+
+            Debug.Assert(IsCngSupported);
+
+            if (secret.Length > s_maxCngKeyLengthInBytes)
+            {
+                string message = secretIsIkm ?
+                    SR.Cryptography_HkdfIkmTooLong :
+                    SR.Cryptography_HkdfPrkTooLong;
+
+                throw new CryptographicException(SR.Format(message, s_maxCngKeyLengthInBytes));
+            }
 
             byte[]? rented;
             ReadOnlySpan<byte> infoBlob;
