@@ -817,8 +817,6 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     // Mirrors CEEInfo::getClassAlignmentRequirementStatic for managed value types. TypeDesc and
     // native-value-type paths are omitted because the managed signature decoder cannot produce them.
-    private const string LayoutInfoFieldName = "LayoutInfo";
-
     public int GetClassAlignmentRequirement(ITypeHandle typeHandle)
     {
         int result = _target.PointerSize;
@@ -833,9 +831,8 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             // LayoutInfo aliases unrelated memory unless HasLayout is set.
             if (eeClass.HasLayout)
             {
-                Target.TypeInfo layoutClassType = _target.GetTypeInfo(DataType.LayoutEEClass);
-                TargetPointer layoutInfoPtr = eeClassPtr + (ulong)layoutClassType.Fields[LayoutInfoFieldName].Offset;
-                Data.EEClassLayoutInfo layoutInfo = _target.ProcessedData.GetOrAdd<Data.EEClassLayoutInfo>(layoutInfoPtr);
+                Data.EEClassLayoutInfo layoutInfo =
+                    _target.ProcessedData.GetOrAdd<Data.LayoutEEClass>(eeClassPtr).LayoutInfo;
                 if (layoutInfo.LayoutType == (byte)Data.EEClassLayoutInfo.Type.Sequential || layoutInfo.IsBlittable)
                 {
                     result = layoutInfo.AlignmentRequirement;

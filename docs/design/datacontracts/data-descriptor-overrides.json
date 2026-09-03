@@ -1,8 +1,5 @@
 {
   "_supplement": {
-    "RuntimeTypeSystem": {
-      "LayoutEEClass.LayoutInfo": "EEClassLayoutInfo"
-    },
     "SHash": {
       "type.<type size>": "uint32",
       "type.Table": "pointer",
