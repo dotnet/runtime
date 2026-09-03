@@ -77,43 +77,6 @@ void CrstBase::Destroy()
     ResetFlags();
 }
 
-extern void WaitForEndOfShutdown();
-
-//-----------------------------------------------------------------
-// If we're in shutdown (as determined by caller since each lock needs its
-// own shutdown flag) and this is a non-special thread (not helper/finalizer/shutdown),
-// then release the crst and block forever.
-// See the prototype for more details.
-//-----------------------------------------------------------------
-void CrstBase::ReleaseAndBlockForShutdownIfNotSpecialThread()
-{
-    CONTRACTL {
-        NOTHROW;
-
-        // We're almost always MODE_PREEMPTIVE, but if it's a thread suspending for GC,
-        // then we might be MODE_COOPERATIVE. Fortunately in that case, we don't block on shutdown.
-        // We assert this below.
-        MODE_ANY;
-        GC_NOTRIGGER;
-
-        PRECONDITION(this->OwnedByCurrentThread());
-    }
-    CONTRACTL_END;
-
-    if ((t_ThreadType & (ThreadType_Finalizer|ThreadType_DbgHelper|ThreadType_Shutdown|ThreadType_GC)) == 0)
-    {
-        // The process is shutting down. Release the lock and just block forever.
-        this->Leave();
-
-        // is this safe to use here since we never return?
-        GCX_ASSERT_PREEMP();
-
-        WaitForEndOfShutdown();
-        __SwitchToThread(INFINITE, CALLER_LIMITS_SPINNING);
-        _ASSERTE (!"Can not reach here");
-    }
-}
-
 #endif // DACCESS_COMPILE
 
 

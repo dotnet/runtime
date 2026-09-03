@@ -15,6 +15,7 @@ namespace Wasm.Build.Tests
     // in that situation must fail the build rather than silently produce an app whose configuration
     // does not match the prebuilt dotnet.native.wasm.
     [TestCategory("workload")]
+    [TestCategory("coreclr")]
     public class CoreCLRWasmNativeDefaultsTests : WasmTemplateTestsBase
     {
         private static readonly Regex s_regex = new("\\*\\* WasmBuildNative:.*");

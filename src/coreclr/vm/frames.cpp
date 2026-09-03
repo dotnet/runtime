@@ -758,6 +758,7 @@ TADDR TransitionFrame::GetAddrOfThis()
     return GetTransitionBlock() + ArgIterator::GetThisOffset();
 }
 
+#ifdef FEATURE_VARARGS
 VASigCookie * TransitionFrame::GetVASigCookie()
 {
 #if defined(TARGET_X86)
@@ -773,6 +774,7 @@ VASigCookie * TransitionFrame::GetVASigCookie()
         *dac_cast<PTR_TADDR>(GetTransitionBlock() + argit.GetVASigCookieOffset()));
 #endif
 }
+#endif // FEATURE_VARARGS
 
 #ifndef DACCESS_COMPILE
 PrestubMethodFrame::PrestubMethodFrame(TransitionBlock * pTransitionBlock, MethodDesc * pMD)
@@ -1520,8 +1522,21 @@ void TransitionFrame::PromoteCallerStack(promote_func* fn, ScanContext* sc)
         return;
     }
 
-    //If not "vararg" calling convention, assume "default" calling convention
-    if (!MetaSig::IsVarArg(callSignature))
+#ifndef FEATURE_VARARGS
+    _ASSERTE(!MetaSig::IsVarArg(callSignature));
+#else // FEATURE_VARARGS
+    if (MetaSig::IsVarArg(callSignature))
+    {
+        VASigCookie *varArgSig = GetVASigCookie();
+
+        SigTypeContext typeContext(varArgSig->classInst, varArgSig->methodInst);
+        MetaSig msig(varArgSig->signature,
+                     varArgSig->pModule,
+                     &typeContext);
+        PromoteCallerStackHelper (fn, sc, pFunction, &msig);
+    }
+    else // not "vararg" calling convention, assume "default" calling convention
+#endif // FEATURE_VARARGS
     {
         SigTypeContext typeContext(pFunction);
         PCCOR_SIGNATURE pSig;
@@ -1540,16 +1555,6 @@ void TransitionFrame::PromoteCallerStack(promote_func* fn, ScanContext* sc)
         if (pFunction->IsAsyncMethod())
             msig.SetIsAsyncCall();
 
-        PromoteCallerStackHelper (fn, sc, pFunction, &msig);
-    }
-    else
-    {
-        VASigCookie *varArgSig = GetVASigCookie();
-
-        SigTypeContext typeContext(varArgSig->classInst, varArgSig->methodInst);
-        MetaSig msig(varArgSig->signature,
-                     varArgSig->pModule,
-                     &typeContext);
         PromoteCallerStackHelper (fn, sc, pFunction, &msig);
     }
 }
@@ -1681,6 +1686,7 @@ void TransitionFrame::PromoteCallerStackUsingGCRefMap(promote_func* fn, ScanCont
             break;
         case GCREFMAP_VASIG_COOKIE:
             {
+#ifdef FEATURE_VARARGS
                 VASigCookie *varArgSig = dac_cast<PTR_VASigCookie>(*ppObj);
 
                 SigTypeContext typeContext(varArgSig->classInst, varArgSig->methodInst);
@@ -1688,6 +1694,9 @@ void TransitionFrame::PromoteCallerStackUsingGCRefMap(promote_func* fn, ScanCont
                                 varArgSig->pModule,
                                 &typeContext);
                 PromoteCallerStackHelper (fn, sc, NULL, &msig);
+#else // !FEATURE_VARARGS
+                _ASSERTE(!"Unexpected GCREFMAP_VASIG_COOKIE without FEATURE_VARARGS");
+#endif // FEATURE_VARARGS
             }
             break;
         default:

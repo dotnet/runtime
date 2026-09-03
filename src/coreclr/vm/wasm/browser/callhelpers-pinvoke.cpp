@@ -236,7 +236,7 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_Free) // System.Private.CoreLib
     DllImportEntry(SystemNative_FreeLibrary) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetCpuUtilization) // System.Private.CoreLib
-    DllImportEntry(SystemNative_GetCryptographicallySecureRandomBytes) // System.Private.CoreLib, System.Security.Cryptography
+    DllImportEntry(SystemNative_GetCryptographicallySecureRandomBytes) // System.IO.Compression, System.Private.CoreLib, System.Security.Cryptography
     DllImportEntry(SystemNative_GetCwd) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetDefaultSearchOrderPseudoHandle) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetErrNo) // System.Private.CoreLib

@@ -88,8 +88,10 @@ ASMCONSTANTS_C_ASSERT(CallDescrData__pTarget              == offsetof(CallDescrD
 ASMCONSTANTS_C_ASSERT(CallDescrData__pRetBuffArg          == offsetof(CallDescrData, pRetBuffArg))
 ASMCONSTANTS_C_ASSERT(CallDescrData__returnValue          == offsetof(CallDescrData, returnValue))
 
+#ifdef FEATURE_VARARGS
 #define VASigCookie__pPInvokeILStub 0x8
 ASMCONSTANTS_C_ASSERT(VASigCookie__pPInvokeILStub == offsetof(VASigCookie, pPInvokeILStub))
+#endif // FEATURE_VARARGS
 
 #define SIZEOF__Frame                 0x10
 ASMCONSTANTS_C_ASSERT(SIZEOF__Frame == sizeof(Frame));

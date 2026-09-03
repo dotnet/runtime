@@ -8,11 +8,14 @@
 #include "asmmacros.h"
 
 
+#ifdef FEATURE_VARARGS
     IMPORT VarargPInvokeStubWorker
+#endif // FEATURE_VARARGS
     IMPORT JIT_PInvokeEndRarePath
 
     IMPORT g_TrapReturningThreads
 
+#ifdef FEATURE_VARARGS
 ; ------------------------------------------------------------------
 ; Macro to generate PInvoke Stubs.
 ; $__PInvokeStubFuncName : function which calls the actual stub obtained from VASigCookie
@@ -87,6 +90,7 @@ __PInvokeStubWorkerName SETS "$FuncPrefix":CC:"StubWorker"
         NESTED_END
 
         MEND
+#endif // FEATURE_VARARGS
 
 
     TEXTAREA
@@ -161,6 +165,7 @@ RarePath
 
         LEAF_END
 
+#ifdef FEATURE_VARARGS
 ; ------------------------------------------------------------------
 ; VarargPInvokeStub & VarargPInvokeGenILStub
 ;
@@ -169,6 +174,7 @@ RarePath
 ; x12 = MethodDesc *
 ;
         PINVOKE_STUB VarargPInvoke, x0, x12, {false}
+#endif // FEATURE_VARARGS
 
 
 ; Must be at very end of file

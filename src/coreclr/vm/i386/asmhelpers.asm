@@ -37,7 +37,9 @@ EXTERN _ProcessCLRException:PROC
 EXTERN __alloca_probe:PROC
 EXTERN _PInvokeImportWorker@4:PROC
 
+ifdef FEATURE_VARARGS
 EXTERN _VarargPInvokeStubWorker@12:PROC
+endif ; FEATURE_VARARGS
 
 EXTERN _PreStubWorker@8:PROC
 EXTERN _TheUMEntryPrestubWorker@4:PROC
@@ -652,6 +654,7 @@ _ProfileTailcallNaked@4 proc public
     retn    4
 _ProfileTailcallNaked@4 endp
 
+ifdef FEATURE_VARARGS
 ;==========================================================================
 ; Invoked for vararg forward P/Invoke calls as a stub.
 ; Except for secret return buffer, arguments come on the stack so EDX is available as scratch.
@@ -699,6 +702,7 @@ GoCallVarargWorker:
     jmp _VarargPInvokeStub@0
 
 _VarargPInvokeStub@0 endp
+endif ; FEATURE_VARARGS
 
 ifdef FEATURE_READYTORUN
 ;==========================================================================

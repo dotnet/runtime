@@ -1237,6 +1237,48 @@ public class Program
         return true;
     }
 
+    private interface IUnboxingStubTest
+    {
+        int GetValue();
+    }
+
+    private readonly struct UnboxingStubTest : IUnboxingStubTest
+    {
+        private readonly int _value;
+
+        public UnboxingStubTest(int value)
+        {
+            _value = value;
+        }
+
+        public int GetValue() => _value;
+    }
+
+    private readonly struct GenericUnboxingStubTest<T> : IUnboxingStubTest
+    {
+        private readonly int _value;
+
+        public GenericUnboxingStubTest(int value)
+        {
+            _value = value;
+        }
+
+        public int GetValue() => _value + typeof(T).Name.Length;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int CallUnboxingStubTest(IUnboxingStubTest value) => value.GetValue();
+
+    private static bool BoxedInterfaceUnboxingStubTest()
+    {
+        return CallUnboxingStubTest(new UnboxingStubTest(42)) == 42;
+    }
+
+    private static bool BoxedInterfaceGenericUnboxingStubTest()
+    {
+        return CallUnboxingStubTest(new GenericUnboxingStubTest<string>(42)) == 42 + nameof(String).Length;
+    }
+
     enum TestEnum
     {
         A,
@@ -2219,6 +2261,8 @@ public class Program
         RunTest("ObjectGetTypeOnGenericParamTest", ObjectGetTypeOnGenericParamTest());
         RunTest("ObjectToStringOnGenericParamTestSByte", ObjectToStringOnGenericParamTestSByte());
         RunTest("ObjectToStringOnGenericParamTestVersionBubbleLocalStruct", ObjectToStringOnGenericParamTestVersionBubbleLocalStruct());
+        RunTest("BoxedInterfaceUnboxingStubTest", BoxedInterfaceUnboxingStubTest());
+        RunTest("BoxedInterfaceGenericUnboxingStubTest", BoxedInterfaceGenericUnboxingStubTest());
         RunTest("EnumValuesToStringTest", EnumValuesToStringTest());
         RunTest("DelegateFromAnotherModuleTest", DelegateFromAnotherModuleTest());
         RunTest("SealedDefaultInterfaceMethodTest", SealedDefaultInterfaceMethodTest());

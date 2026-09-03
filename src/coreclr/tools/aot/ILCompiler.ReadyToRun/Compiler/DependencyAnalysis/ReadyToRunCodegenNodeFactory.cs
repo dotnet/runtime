@@ -66,6 +66,7 @@ namespace ILCompiler.DependencyAnalysis
         public int DeterminismStress;
         public bool PrintReproArgs;
         public bool EnableCachedInterfaceDispatchSupport;
+        public bool GenerateUnboxingStubs;
         public bool IsComponentModule;
         public bool StripInliningInfo;
         public bool StripDebugInfo;
@@ -134,6 +135,47 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(CompilationModuleGroup.ContainsMethodBody(method, false));
             Debug.Assert(method == method.GetCanonMethodTarget(CanonicalFormKind.Specific));
             return _localMethodCache.GetOrAdd(method);
+        }
+
+        private bool CanPrecompileUnboxingStub(MethodDesc targetMethod)
+        {
+            if (!CompilationModuleGroup.ContainsMethodBody(targetMethod, false))
+                return false;
+
+            // Runtime generated generic unbox stubs are not shared. Using the shared version
+            // produced by R2R seems to require more work.
+            if (targetMethod.RequiresInstMethodDescArg())
+                return false;
+
+            // TODO See comment in UnboxingThunk.EmitIL
+            if (targetMethod.IsAsyncCall())
+                return false;
+
+            return true;
+        }
+
+        /// <summary>
+        /// Does an instance method on a value type need an unboxing thunk, i.e. can it be entered
+        /// with a boxed 'this'? Interface implementations and virtual overrides are both emitted as
+        /// virtual by compilers, so IsVirtual covers both.
+        /// </summary>
+        public bool NeedsUnboxingStub(MethodDesc method)
+        {
+            return OptimizationFlags.GenerateUnboxingStubs
+                && method.OwningType.IsValueType
+                && !method.Signature.IsStatic
+                && method.IsVirtual
+                && CanPrecompileUnboxingStub(method);
+        }
+
+        public MethodWithGCInfo UnboxingStub(MethodDesc targetMethod)
+        {
+            Debug.Assert(NeedsUnboxingStub(targetMethod));
+            ModuleDesc ownerModule = ((MetadataType)targetMethod.GetTypicalMethodDefinition().OwningType).Module;
+            MethodDesc thunk = targetMethod.IsSharedByGenericInstantiations && !targetMethod.HasInstantiation
+                ? TypeSystemContext.GetSpecialUnboxingThunk(targetMethod, ownerModule)
+                : TypeSystemContext.GetUnboxingThunk(targetMethod, ownerModule);
+            return _localMethodCache.GetOrAdd(thunk);
         }
 
         private NodeCache<TypeDesc, AllMethodsOnTypeNode> _allMethodsOnType;

@@ -104,6 +104,22 @@ namespace System.Reflection.Runtime.TypeInfos
 
         public abstract IEnumerable<CustomAttributeData> CustomAttributes { get; }
 
+        public object[] GetCustomAttributes(bool inherit) => RuntimeCustomAttribute.GetCustomAttributes(ToType(), typeof(object), inherit);
+
+        public object[] GetCustomAttributes(Type attributeType, bool inherit)
+        {
+            ArgumentNullException.ThrowIfNull(attributeType);
+            return RuntimeCustomAttribute.GetCustomAttributes(ToType(), attributeType, inherit);
+        }
+
+        public IList<CustomAttributeData> GetCustomAttributesData() => CustomAttributes.ToReadOnlyCollection();
+
+        public bool IsDefined(Type attributeType, bool inherit)
+        {
+            ArgumentNullException.ThrowIfNull(attributeType);
+            return RuntimeCustomAttribute.IsDefined(ToType(), attributeType, inherit);
+        }
+
         //
         // Left unsealed as generic parameter types must override.
         //
