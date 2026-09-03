@@ -12,10 +12,18 @@ using Internal.Reflection.Extensions.NonPortable;
 
 namespace System.Reflection
 {
-    internal static class RuntimeCustomAttribute
+    internal static partial class RuntimeCustomAttribute
     {
         internal static object[] GetCustomAttributes(Assembly element, Type attributeType) =>
             Instantiate(GetMatchingCustomAttributes(element, attributeType, inherit: false), attributeType);
+
+        internal static object[] GetCustomAttributes(RuntimeType element, Type attributeType, bool inherit)
+        {
+            if (element.GetElementType() is not null)
+                return CreateAttributeArrayHelper(attributeType, 0);
+
+            return Instantiate(GetMatchingCustomAttributes(element, attributeType, inherit), attributeType);
+        }
 
         internal static object[] GetCustomAttributes(MemberInfo element, Type attributeType, bool inherit) =>
             Instantiate(GetMatchingCustomAttributes(element, attributeType, inherit), attributeType);
@@ -25,24 +33,6 @@ namespace System.Reflection
 
         internal static object[] GetCustomAttributes(ParameterInfo element, Type attributeType) =>
             Instantiate(GetMatchingCustomAttributes(element, attributeType, inherit: false), attributeType);
-
-        internal static bool IsDefined(Assembly element, Type attributeType) =>
-            Any(GetMatchingCustomAttributes(element, attributeType, inherit: false));
-
-        internal static bool IsDefined(MemberInfo element, Type attributeType, bool inherit) =>
-            Any(GetMatchingCustomAttributes(element, attributeType, inherit));
-
-        internal static bool IsDefined(Module element, Type attributeType) =>
-            Any(GetMatchingCustomAttributes(element, attributeType, inherit: false));
-
-        internal static bool IsDefined(ParameterInfo element, Type attributeType) =>
-            Any(GetMatchingCustomAttributes(element, attributeType, inherit: false));
-
-        private static bool Any(IEnumerable<CustomAttributeData> attributes)
-        {
-            using IEnumerator<CustomAttributeData> enumerator = attributes.GetEnumerator();
-            return enumerator.MoveNext();
-        }
 
         private static IEnumerable<CustomAttributeData> GetMatchingCustomAttributes(object element, Type attributeType, bool inherit)
         {
