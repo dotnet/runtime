@@ -720,7 +720,7 @@ namespace
 
     // Returns true for the CoreLib types with special multi-slot Wasm ABI behavior. This check must
     // remain in sync with IsKnownMultiSegmentType in WasmLowering.cs.
-    bool IsWasmMultiSlotTypeHandle(TypeHandle th)
+    static bool IsWasmMultiSlotTypeHandle(TypeHandle th)
     {
         if (th.IsTypeDesc() || (th.GetSignatureCorElementType() != ELEMENT_TYPE_VALUETYPE))
         {
@@ -754,7 +754,7 @@ namespace
     // and reports that slot's width. This is safe only after IsWasmMultiSlotTypeHandle succeeds: the
     // known integer and decimal types have homogeneous uint64 fields, and the known vectors have
     // homogeneous vector fields. It is not valid for an arbitrary aggregate.
-    bool GetWasmSlotSize(TypeHandle th, uint32_t* pSlotSize)
+    static bool GetWasmSlotSize(TypeHandle th, uint32_t* pSlotSize)
     {
         _ASSERTE(IsWasmMultiSlotTypeHandle(th));
 
@@ -805,7 +805,7 @@ namespace
         return false;
     }
 
-    ConvertResult LowerTypeHandle(TypeHandle th)
+    static ConvertResult LowerTypeHandle(TypeHandle th)
     {
         uint32_t size = th.GetSize();
         CorElementType elemType = th.GetSignatureCorElementType();
@@ -875,7 +875,7 @@ namespace
         return { ConvertType::ToStruct, size, CEEInfo::getClassAlignmentRequirementStatic(th) > INTERP_STACK_SLOT_SIZE };
     }
 
-    ConvertResult ConvertibleTo(CorElementType argType, MetaSig& sig, bool isReturn)
+    static ConvertResult ConvertibleTo(CorElementType argType, MetaSig& sig, bool isReturn)
     {
         // See https://github.com/WebAssembly/tool-conventions/blob/main/BasicCABI.md
         switch (argType)
@@ -921,7 +921,7 @@ namespace
     // Appends the encoding for a ConvertResult to keyBuffer.
     // Returns the number of characters that would be written (even if pos >= maxSize).
     // Only writes characters while pos < maxSize.
-    uint32_t AppendTypeCode(ConvertResult cr, char* keyBuffer, uint32_t pos, uint32_t maxSize)
+    static uint32_t AppendTypeCode(ConvertResult cr, char* keyBuffer, uint32_t pos, uint32_t maxSize)
     {
         char c;
         switch (cr.type)
@@ -981,7 +981,7 @@ namespace
     // Returns the total number of characters needed (excluding null terminator).
     // Only writes characters while pos < maxSize, so the buffer is never overflowed.
     // Callers should check if the return value >= maxSize and retry with a larger buffer.
-    uint32_t GetSignatureKey(MetaSig& sig, char prefix, char* keyBuffer, uint32_t maxSize)
+    static uint32_t GetSignatureKey(MetaSig& sig, char prefix, char* keyBuffer, uint32_t maxSize)
     {
         CONTRACTL
         {
@@ -1071,7 +1071,7 @@ namespace
     // The fixed set of interpreter->native thunks compiled into libcoreclr (g_wasmThunks). It covers the
     // runtime's own interp->native calls - FCall/QCall/pinvoke and other runtime-native managed methods,
     // plus unmanaged calli. crossgen2 does not emit these.
-    InterpreterCalliCookie LookupThunkInLibcoreclr(const char* key)
+    static InterpreterCalliCookie LookupThunkInLibcoreclr(const char* key)
     {
         StringToWasmSigThunkHash* table = thunkCache;
         _ASSERTE(table != nullptr && "Wasm thunk cache not initialized. Call InitializeWasmThunkCaches() at EEStartup.");
@@ -1086,7 +1086,7 @@ namespace
     // (WasmInterpreterToR2RThunkNode, keyed "M"+signature) for every R2R-compiled method body. Prefer that
     // image (the common case with R2R), then fall back to g_wasmThunks, which is the only source for managed
     // methods whose native code is not R2R (FCall/QCall/pinvoke/runtime stubs).
-    InterpreterCalliCookie LookupManagedThunk(const char* key)
+    static InterpreterCalliCookie LookupManagedThunk(const char* key)
     {
         InterpreterCalliCookie r2r = (InterpreterCalliCookie)(size_t)LookupPregeneratedThunkByString(key);
         if (r2r != NULL)
@@ -1095,7 +1095,7 @@ namespace
         return LookupThunkInLibcoreclr(key);
     }
 
-    void* LookupPortableEntryPointThunk(const char* key)
+    static void* LookupPortableEntryPointThunk(const char* key)
     {
         // R2R->interpreter thunks are emitted into the R2R image by crossgen2
         // (WasmR2RToInterpreterThunkNode) and discovered here by signature string.
@@ -1103,7 +1103,7 @@ namespace
     }
 
     // This is a simple signature computation routine for signatures currently supported in the wasm environment.
-    InterpreterCalliCookie ComputeCalliSigThunk(MetaSig& sig)
+    static InterpreterCalliCookie ComputeCalliSigThunk(MetaSig& sig)
     {
         STANDARD_VM_CONTRACT;
         _ASSERTE(sizeof(int32_t) == sizeof(void*));
@@ -1150,7 +1150,7 @@ namespace
         return thunk;
     }
 
-    void* ComputePortableEntryPointToInterpreterThunk(MetaSig& sig)
+    static void* ComputePortableEntryPointToInterpreterThunk(MetaSig& sig)
     {
         CONTRACTL
         {
@@ -1192,7 +1192,7 @@ namespace
         return LookupPortableEntryPointThunk(keyBuffer);
     }
 
-    ULONG GetHashCode(MethodDesc* pMD, SString &strSource)
+    static ULONG GetHashCode(MethodDesc* pMD, SString &strSource)
     {
         _ASSERTE(pMD != nullptr);
 
@@ -1241,7 +1241,7 @@ namespace
     typedef SHash<ReverseThunkHashTraits> ReverseThunkHash;
     ReverseThunkHash* reverseThunkCache = nullptr;
 
-    ReverseThunkHash* CreateReverseThunkHashTable()
+    static ReverseThunkHash* CreateReverseThunkHashTable()
     {
         ReverseThunkHash* newTable = new ReverseThunkHash();
         newTable->Reallocate(g_ReverseThunksCount * ReverseThunkHash::s_density_factor_denominator / ReverseThunkHash::s_density_factor_numerator + 1);
@@ -1259,7 +1259,7 @@ namespace
         return *ppCache;
     }
 
-    const ReverseThunkMapValue* LookupThunk(MethodDesc* pMD)
+    static const ReverseThunkMapValue* LookupThunk(MethodDesc* pMD)
     {
 #ifdef LOGGING
         {
@@ -1425,7 +1425,7 @@ void* GetPortableEntryPointToInterpreterThunk(MethodDesc *pMD)
     MetaSig sig(pMD);
     void* thunk;
 
-    if (pMD->IsCtor() && pMD->GetMethodTable()->IsString())
+    if (pMD->GetMethodTable()->IsString() && pMD->IsCtor())
     {
         const char *thunkKey = nullptr;
 
