@@ -2592,7 +2592,8 @@ void CodeGen::genEmitMachineCode()
 #else
     if (m_compiler->opts.disAsm)
     {
-        printf("\n; Total bytes of code %d\n\n", codeSize);
+        printf("\n; Total bytes of code %d for method %s (%s)\n\n", codeSize,
+               m_compiler->eeGetMethodFullName(m_compiler->info.compMethodHnd), m_compiler->compGetTieringName(true));
     }
 #endif
 

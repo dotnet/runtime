@@ -11,7 +11,6 @@ namespace Dynamic
     public class Program
     {
         [SkipOnCoreClr("This test is very slow under some GC stress variations, especially with DOTNET_HeapVerify=1, and can time out in CI. See https://github.com/dotnet/runtime/issues/39584.", RuntimeTestModes.AnyGCStress)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/132947", TestRuntimes.CoreCLR)]
         [Fact]
         [Xunit.SkipOnCoreClrAttribute("Depends on COM behavior that is not correct in interpreter", RuntimeTestModes.InterpreterActive)]
         public static int TestEntryPoint()
@@ -26,7 +25,7 @@ namespace Dynamic
             {
                 new BasicTest().Run();
                 new CollectionTest().Run();
-                new EventTest().Run();
+                EventTest.Run();
                 new ParametersTest().Run();
                 new NETServerTest().Run();
             }
