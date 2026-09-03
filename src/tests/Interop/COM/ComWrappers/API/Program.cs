@@ -764,7 +764,9 @@ namespace ComWrappersTests
             var cw = new PlainProxyComWrappers();
             var failures = new ConcurrentQueue<Exception>();
 
-            object[] supplied = new object[ThreadCount];
+            // Half of these are left null, for the threads that ask for an object to be created
+            // rather than bringing one of their own.
+            object?[] supplied = new object?[ThreadCount];
             object[] results = new object[ThreadCount];
             var threads = new Thread[ThreadCount];
 
@@ -820,7 +822,7 @@ namespace ComWrappersTests
             IntPtr otherRaw = MockReferenceTrackerRuntime.CreateTrackerObject();
             bool reusedOne = false;
 
-            foreach (object candidate in supplied)
+            foreach (object? candidate in supplied)
             {
                 if (candidate is null || ReferenceEquals(candidate, winner))
                 {
