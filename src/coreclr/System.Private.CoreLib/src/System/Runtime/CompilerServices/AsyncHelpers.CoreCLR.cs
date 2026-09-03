@@ -153,7 +153,8 @@ namespace System.Runtime.CompilerServices
         [FieldOffset(0)]
         public AsyncDispatcherInfo* Next;
 
-        // Next continuation the dispatcher will process.
+        // Next continuation the dispatcher will process. While a continuation
+        // is executing, this field remains set to that continuation.
 #if TARGET_64BIT
         [FieldOffset(8)]
 #else
@@ -963,12 +964,10 @@ namespace System.Runtime.CompilerServices
                 while (true)
                 {
                     Debug.Assert(asyncDispatcherInfo.NextContinuation != null);
+                    Continuation curContinuation = asyncDispatcherInfo.NextContinuation;
+                    Continuation? nextContinuation = curContinuation.Next;
                     try
                     {
-                        Continuation curContinuation = asyncDispatcherInfo.NextContinuation;
-                        Continuation? nextContinuation = curContinuation.Next;
-                        asyncDispatcherInfo.NextContinuation = nextContinuation;
-
                         Debug.Assert(awaitState.CurrentThread != null);
                         if (curContinuation.TryGetExecutionContext(out ExecutionContext? execContext))
                         {
@@ -989,11 +988,13 @@ namespace System.Runtime.CompilerServices
                             refDispatcherInfo = asyncDispatcherInfo.Next;
                             return;
                         }
+
+                        asyncDispatcherInfo.NextContinuation = nextContinuation;
                     }
                     catch (Exception ex)
                     {
                         uint unwindedFrames = 1; // Count current frame.
-                        Continuation? handlerContinuation = UnwindToPossibleHandler(asyncDispatcherInfo.NextContinuation, ex, ref unwindedFrames);
+                        Continuation? handlerContinuation = UnwindToPossibleHandler(nextContinuation, ex, ref unwindedFrames);
                         if (handlerContinuation == null)
                         {
                             // Tail of AsyncTaskMethodBuilderT.SetException
@@ -1085,11 +1086,9 @@ namespace System.Runtime.CompilerServices
                 {
                     Debug.Assert(asyncDispatcherInfo.NextContinuation != null);
                     Continuation curContinuation = asyncDispatcherInfo.NextContinuation;
+                    Continuation? nextContinuation = curContinuation.Next;
                     try
                     {
-                        Continuation? nextContinuation = curContinuation.Next;
-                        asyncDispatcherInfo.NextContinuation = nextContinuation;
-
                         RuntimeAsyncInstrumentationHelpers.SyncPointCheck(ref asyncDispatcherInfo, flags, curContinuation);
 
                         Debug.Assert(awaitState.CurrentThread != null);
@@ -1117,11 +1116,12 @@ namespace System.Runtime.CompilerServices
                         }
 
                         RuntimeAsyncInstrumentationHelpers.CompleteRuntimeAsyncMethod(ref asyncDispatcherInfo, flags, curContinuation);
+                        asyncDispatcherInfo.NextContinuation = nextContinuation;
                     }
                     catch (Exception ex)
                     {
                         uint unwindedFrames = 1; // Count current frame.
-                        Continuation? handlerContinuation = UnwindToPossibleHandler(asyncDispatcherInfo.NextContinuation, ex, ref unwindedFrames);
+                        Continuation? handlerContinuation = UnwindToPossibleHandler(nextContinuation, ex, ref unwindedFrames);
                         if (handlerContinuation == null)
                         {
                             RuntimeAsyncInstrumentationHelpers.UnwindRuntimeAsyncMethodUnhandledException(ref asyncDispatcherInfo, flags, ex, curContinuation, unwindedFrames);
