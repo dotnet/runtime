@@ -662,8 +662,6 @@ public class WasmArgumentLayoutTests
         string source = $$"""
             using System.Runtime.InteropServices;
 
-            public sealed class MonoPInvokeCallbackAttribute : System.Attribute { }
-
             public static class Exports
             {
                 {{firstAttribute}}
