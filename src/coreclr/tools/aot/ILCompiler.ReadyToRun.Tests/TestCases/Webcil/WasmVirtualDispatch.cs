@@ -65,6 +65,12 @@ public static class WasmVirtualDispatch
     public static int InvokeGeneric(WasmGenericVirtualDispatchBase<string> instance, int value) => instance.Transform(value);
 
     [MethodImpl(MethodImplOptions.NoInlining)]
+    public static int InvokeRuntimeContext<T>(WasmGenericVirtualDispatchBase<T> instance, int value) => instance.Transform(value);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static string InvokeConstrainedRuntimeContext<T>(T instance) where T : class => instance.ToString();
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static int InvokeGenericMethod(WasmGenericMethodDispatchBase instance, int value) => instance.Transform(value);
 
     [MethodImpl(MethodImplOptions.NoInlining)]

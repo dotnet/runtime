@@ -2342,8 +2342,7 @@ namespace Internal.JitInterface
                 (_compilation.NodeFactory.Target.IsWasm &&
                     (!targetMethod.IsVirtual ||
                      targetMethod.OwningType.IsInterface ||
-                     targetMethod.OwningType.IsArray ||
-                     pResult->exactContextNeedsRuntimeLookup)))
+                     targetMethod.OwningType.IsArray)))
             {
                 pResult->kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_LDVIRTFTN;  // stub dispatch can't handle generic method calls yet
                 pResult->nullInstanceCheck = true;

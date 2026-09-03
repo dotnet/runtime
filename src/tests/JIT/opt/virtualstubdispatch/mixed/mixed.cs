@@ -105,6 +105,16 @@ public sealed class CallingConventionDerived : CallingConventionBase
     public override int TransformStruct(IndirectArgument value) => (int)(value.First * value.Second);
 }
 
+public class RuntimeContextToStringBase
+{
+    public override string ToString() => "base";
+}
+
+public sealed class RuntimeContextToStringDerived : RuntimeContextToStringBase
+{
+    public override string ToString() => "derived";
+}
+
 public class CTest : C, ITest1, ITest2, ITest3, ITest4, IBase1, IDerived1, IDerived2, IDerived
 {
     private int _code;
@@ -138,6 +148,12 @@ public class CTest : C, ITest1, ITest2, ITest3, ITest4, IBase1, IDerived1, IDeri
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static int CallGeneric(GenericBase<string> instance) => instance.GetValue("value");
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int CallRuntimeContext<T>(GenericBase<T> instance, T value) => instance.GetValue(value);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static string CallConstrainedRuntimeContext<T>(T instance) where T : class => instance.ToString();
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static int CallPointer(CallingConventionBase instance) => instance.TransformPointer(1);
@@ -249,6 +265,30 @@ public class CTest : C, ITest1, ITest2, ITest3, ITest4, IBase1, IDerived1, IDeri
             return 1;
         }
 
+        if (CallRuntimeContext(new GenericBase<string>(), "value") != 20)
+        {
+            Console.WriteLine("CallRuntimeContext(new GenericBase<string>(), \"value\")!=20");
+            return 1;
+        }
+
+        if (CallRuntimeContext(new GenericDerived<string>(), "value") != 21)
+        {
+            Console.WriteLine("CallRuntimeContext(new GenericDerived<string>(), \"value\")!=21");
+            return 1;
+        }
+
+        if (CallConstrainedRuntimeContext(new RuntimeContextToStringBase()) != "base")
+        {
+            Console.WriteLine("CallConstrainedRuntimeContext(new RuntimeContextToStringBase())!=\"base\"");
+            return 1;
+        }
+
+        if (CallConstrainedRuntimeContext(new RuntimeContextToStringDerived()) != "derived")
+        {
+            Console.WriteLine("CallConstrainedRuntimeContext(new RuntimeContextToStringDerived())!=\"derived\"");
+            return 1;
+        }
+
         if (CallPointer(new CallingConventionBase()) != 23)
         {
             Console.WriteLine("CallPointer(new CallingConventionBase())!=23");
@@ -322,6 +362,4 @@ public class CTest : C, ITest1, ITest2, ITest3, ITest4, IBase1, IDerived1, IDeri
         return 100;
     }
 }
-
-
 
