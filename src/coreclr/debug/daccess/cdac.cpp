@@ -181,10 +181,20 @@ HRESULT CDAC::CreateSosInterface(IUnknown** sos)
     return createSosInterface(m_cdac_handle, m_legacyImpl, sos);
 }
 
-void CDAC::CreateDacDbiInterface(IUnknown** dbi)
+HRESULT CDAC::CreateDacDbiInterface(IUnknown** dbi)
 {
+    if (dbi == nullptr)
+    {
+        return E_INVALIDARG;
+    }
+
+    *dbi = nullptr;
+
     decltype(&cdac_reader_create_dacdbi_interface) createDacDbiInterface = reinterpret_cast<decltype(&cdac_reader_create_dacdbi_interface)>(::GetProcAddress(m_module, "cdac_reader_create_dacdbi_interface"));
-    _ASSERTE(createDacDbiInterface != nullptr);
-    int ret = createDacDbiInterface(m_cdac_handle, m_legacyImpl, dbi);
-    _ASSERTE(ret == 0);
+    if (createDacDbiInterface == nullptr)
+    {
+        return E_FAIL;
+    }
+
+    return createDacDbiInterface(m_cdac_handle, m_legacyImpl, dbi);
 }
