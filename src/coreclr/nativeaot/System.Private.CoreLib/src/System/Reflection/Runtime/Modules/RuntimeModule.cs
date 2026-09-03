@@ -44,7 +44,11 @@ namespace System.Reflection.Runtime.Modules
         public sealed override bool IsDefined(Type attributeType, bool inherit)
         {
             ArgumentNullException.ThrowIfNull(attributeType);
-            return RuntimeCustomAttribute.IsDefined(this, attributeType);
+
+            if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
+                throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
+
+            return RuntimeCustomAttribute.IsDefined(this, attributeRuntimeType);
         }
 
         [RequiresAssemblyFiles(UnknownStringMessageInRAF)]

@@ -797,7 +797,14 @@ namespace System
             => GetRuntimeTypeInfo().GetDefaultMembers();
 
         public override bool IsDefined(Type attributeType, bool inherit)
-            => GetRuntimeTypeInfo().IsDefined(attributeType, inherit);
+        {
+            ArgumentNullException.ThrowIfNull(attributeType);
+
+            if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
+                throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
+
+            return RuntimeCustomAttribute.IsDefined(this, attributeRuntimeType, inherit);
+        }
 
         public override object[] GetCustomAttributes(bool inherit)
         {

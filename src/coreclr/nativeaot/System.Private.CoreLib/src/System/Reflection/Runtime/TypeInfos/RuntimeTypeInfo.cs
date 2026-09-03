@@ -115,12 +115,6 @@ namespace System.Reflection.Runtime.TypeInfos
 
         internal virtual CustomAttributeHandleCollection GetCustomAttributeHandles() => default;
 
-        public bool IsDefined(Type attributeType, bool inherit)
-        {
-            ArgumentNullException.ThrowIfNull(attributeType);
-            return RuntimeCustomAttribute.IsDefined(ToType(), attributeType, inherit);
-        }
-
         //
         // Left unsealed as generic parameter types must override.
         //
