@@ -2426,6 +2426,22 @@
         "rhel.9-x64"
       ]
     },
+    "ohos": {},
+    "ohos-arm": {
+      "#import": [
+        "ohos"
+      ]
+    },
+    "ohos-arm64": {
+      "#import": [
+        "ohos"
+      ]
+    },
+    "ohos-x64": {
+      "#import": [
+        "ohos"
+      ]
+    },
     "ol": {
       "#import": [
         "rhel"

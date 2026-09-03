@@ -9,7 +9,7 @@
     <!-- To determine PortableOS we use TargetOS.
          TargetOS is not a rid-OS. For example: for Windows it is 'windows' instead of 'win'.
          And, for flavors of Linux, like 'linux-musl' and 'linux-bionic', TargetOS is 'linux'.
-         ohos is an exception: its RID is kernel-agnostic, so TargetOS is 'ohos' (not 'linux'),
+         ohos is its own TargetOS ('ohos'), so PortableOS derives directly from it,
          and it opts into the Linux family flags explicitly below. -->
 
     <PortableOS>$(TargetOS.ToLowerInvariant())</PortableOS>
@@ -21,7 +21,6 @@
     <!-- Detect linux flavors using __PortableTargetOS from the native script. -->
     <PortableOS Condition="'$(PortableOS)' == 'linux' and '$(__PortableTargetOS)' == 'linux-musl'">linux-musl</PortableOS>
     <PortableOS Condition="'$(PortableOS)' == 'linux' and '$(__PortableTargetOS)' == 'linux-bionic'">linux-bionic</PortableOS>
-    <PortableOS Condition="'$(PortableOS)' == 'linux' and '$(__PortableTargetOS)' == 'ohos'">ohos</PortableOS>
 
     <PortableTargetRid Condition="'$(PortableTargetRid)' == ''">$(PortableOS)-$(TargetArchitecture)</PortableTargetRid>
   </PropertyGroup>

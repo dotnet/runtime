@@ -147,7 +147,7 @@ initDistroRid()
 
     # Only pass ROOTFS_DIR if __DoCrossArchBuild is specified and the current platform is not an Apple platform (that doesn't use rootfs)
     # OpenHarmony uses its NDK toolchain, so no rootfs is required either.
-    if [[ $isCrossBuild == 1 && "$targetOs" != "osx" && "$targetOs" != "android" && "$targetOs" != "ios" && "$targetOs" != "iossimulator" && "$targetOs" != "tvos" && "$targetOs" != "tvossimulator" && "$targetOs" != "maccatalyst" && "${__PortableTargetOS:-}" != "ohos" ]]; then
+    if [[ $isCrossBuild == 1 && "$targetOs" != "osx" && "$targetOs" != "ohos" && "$targetOs" != "android" && "$targetOs" != "ios" && "$targetOs" != "iossimulator" && "$targetOs" != "tvos" && "$targetOs" != "tvossimulator" && "$targetOs" != "maccatalyst" ]]; then
         passedRootfsDir=${ROOTFS_DIR:-}
     fi
     initDistroRidGlobal "${targetOs}" "${targetArch}" "${passedRootfsDir}"
@@ -312,9 +312,7 @@ while [[ $# -gt 0 ]]; do
           __PortableTargetOS=linux-musl
           ;;
         ohos)
-          os="ohos"
-          __PortableTargetOS=ohos
-          ;;
+          os="ohos" ;;
         haiku)
           os="haiku" ;;
         *)
@@ -631,9 +629,10 @@ export DOTNETSDK_ALLOW_TARGETING_PACK_CACHING=0
 # In *proj files (XML docs), URL-encoded string are rendered in their decoded form.
 cmakeargs="${cmakeargs// /%20}"
 arguments+=("/p:TargetArchitecture=$arch" "/p:BuildArchitecture=$hostArch")
-# Propagate the portable target OS (e.g. 'ohos', 'linux-musl', 'linux-bionic') to MSBuild.
-# TargetOS stays 'linux' for these flavors; PortableOS in RuntimeIdentifier.props
-# derives from __PortableTargetOS, and downstream (packaging, live builds) relies on it.
+# Propagate the portable target OS for the linux flavors (linux-musl / linux-bionic)
+# to MSBuild. TargetOS stays 'linux' for those; PortableOS in RuntimeIdentifier.props
+# derives from __PortableTargetOS. ohos needs none of this: its TargetOS is already
+# 'ohos', so PortableOS derives directly from TargetOS (like freebsd/haiku).
 if [[ -n "${__PortableTargetOS:-}" ]]; then
   arguments+=("/p:__PortableTargetOS=$__PortableTargetOS")
 fi
