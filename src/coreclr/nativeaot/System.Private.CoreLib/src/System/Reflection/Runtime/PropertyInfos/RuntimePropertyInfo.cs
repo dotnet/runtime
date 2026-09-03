@@ -15,6 +15,7 @@ using System.Text;
 
 using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
+using Internal.Metadata.NativeFormat;
 
 namespace System.Reflection.Runtime.PropertyInfos
 {
@@ -282,7 +283,6 @@ namespace System.Reflection.Runtime.PropertyInfos
 
         // Types that derive from RuntimePropertyInfo must implement the following public surface area members
         public abstract override PropertyAttributes Attributes { get; }
-        public abstract override IEnumerable<CustomAttributeData> CustomAttributes { get; }
         public sealed override object[] GetCustomAttributes(bool inherit) => RuntimeCustomAttribute.GetCustomAttributes(this, typeof(object), inherit: false);
 
         public sealed override object[] GetCustomAttributes(Type attributeType, bool inherit)
@@ -291,7 +291,11 @@ namespace System.Reflection.Runtime.PropertyInfos
             return RuntimeCustomAttribute.GetCustomAttributes(this, attributeType, inherit: false);
         }
 
-        public sealed override IList<CustomAttributeData> GetCustomAttributesData() => CustomAttributes.ToReadOnlyCollection();
+        public sealed override IList<CustomAttributeData> GetCustomAttributesData() => RuntimeCustomAttributeData.GetCustomAttributesInternal(this);
+
+        internal virtual MetadataReader? GetMetadataReader() => null;
+
+        internal virtual CustomAttributeHandleCollection GetCustomAttributeHandles() => default;
 
         public sealed override bool IsDefined(Type attributeType, bool inherit)
         {

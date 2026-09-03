@@ -92,13 +92,9 @@ namespace System.Reflection.Runtime.EventInfos.NativeFormat
             }
         }
 
-        public sealed override IEnumerable<CustomAttributeData> CustomAttributes
-        {
-            get
-            {
-                return RuntimeCustomAttributeData.GetCustomAttributes(_reader, _event.CustomAttributes);
-            }
-        }
+        internal sealed override MetadataReader GetMetadataReader() => _reader;
+
+        internal sealed override CustomAttributeHandleCollection GetCustomAttributeHandles() => _event.CustomAttributes;
 
         public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other)
         {

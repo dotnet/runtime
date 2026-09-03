@@ -12,6 +12,7 @@ using System.Reflection.Runtime.TypeInfos;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
+using Internal.Metadata.NativeFormat;
 using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
 
@@ -45,29 +46,6 @@ namespace System.Reflection.Runtime.FieldInfos
             _reflectedType = reflectedType;
         }
 
-        public sealed override IEnumerable<CustomAttributeData> CustomAttributes
-        {
-            get
-            {
-                foreach (CustomAttributeData cad in TrueCustomAttributes)
-                    yield return cad;
-
-                if (DeclaringType.IsExplicitLayout)
-                {
-                    int offset = ExplicitLayoutFieldOffsetData;
-                    yield return new RuntimeCustomAttributeData(new FieldOffsetAttribute(offset));
-                }
-
-                FieldAttributes attributes = Attributes;
-#pragma warning disable SYSLIB0050 // Legacy serialization infrastructure is obsolete
-                if (0 != (attributes & FieldAttributes.NotSerialized))
-                {
-                    yield return new RuntimeCustomAttributeData(new NonSerializedAttribute());
-                }
-#pragma warning restore SYSLIB0050
-            }
-        }
-
         public sealed override object[] GetCustomAttributes(bool inherit) => RuntimeCustomAttribute.GetCustomAttributes(this, typeof(object), inherit);
 
         public sealed override object[] GetCustomAttributes(Type attributeType, bool inherit)
@@ -76,7 +54,11 @@ namespace System.Reflection.Runtime.FieldInfos
             return RuntimeCustomAttribute.GetCustomAttributes(this, attributeType, inherit);
         }
 
-        public sealed override IList<CustomAttributeData> GetCustomAttributesData() => CustomAttributes.ToReadOnlyCollection();
+        public sealed override IList<CustomAttributeData> GetCustomAttributesData() => RuntimeCustomAttributeData.GetCustomAttributesInternal(this);
+
+        internal virtual MetadataReader? GetMetadataReader() => null;
+
+        internal virtual CustomAttributeHandleCollection GetCustomAttributeHandles() => default;
 
         public sealed override bool IsDefined(Type attributeType, bool inherit)
         {
@@ -256,8 +238,7 @@ namespace System.Reflection.Runtime.FieldInfos
         /// </summary>
         protected abstract RuntimeTypeInfo DefiningType { get; }
 
-        protected abstract IEnumerable<CustomAttributeData> TrueCustomAttributes { get; }
-        protected abstract int ExplicitLayoutFieldOffsetData { get; }
+        internal abstract int ExplicitLayoutFieldOffsetData { get; }
 
         /// <summary>
         /// Returns the field offset (asserts and throws if not an instance field). Does not include the size of the object header.

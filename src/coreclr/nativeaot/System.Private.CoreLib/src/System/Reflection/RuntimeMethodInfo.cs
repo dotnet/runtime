@@ -15,6 +15,7 @@ using System.Runtime.CompilerServices;
 
 using Internal.Reflection.Core.Execution;
 using Internal.Runtime.Augments;
+using Internal.Metadata.NativeFormat;
 
 namespace System.Reflection
 {
@@ -84,11 +85,6 @@ namespace System.Reflection
             return result;
         }
 
-        public abstract override IEnumerable<CustomAttributeData> CustomAttributes
-        {
-            get;
-        }
-
         public sealed override object[] GetCustomAttributes(bool inherit) => RuntimeCustomAttribute.GetCustomAttributes(this, typeof(object), inherit);
 
         public sealed override object[] GetCustomAttributes(Type attributeType, bool inherit)
@@ -97,7 +93,11 @@ namespace System.Reflection
             return RuntimeCustomAttribute.GetCustomAttributes(this, attributeType, inherit);
         }
 
-        public sealed override IList<CustomAttributeData> GetCustomAttributesData() => CustomAttributes.ToReadOnlyCollection();
+        public sealed override IList<CustomAttributeData> GetCustomAttributesData() => RuntimeCustomAttributeData.GetCustomAttributesInternal(this);
+
+        internal virtual MetadataReader? GetMetadataReader() => null;
+
+        internal virtual CustomAttributeHandleCollection GetCustomAttributeHandles() => default;
 
         public sealed override bool IsDefined(Type attributeType, bool inherit)
         {

@@ -241,7 +241,9 @@ namespace System.Reflection.Runtime.MethodInfos.NativeFormat
             return true;
         }
 
-        public IEnumerable<CustomAttributeData> TrueCustomAttributes => RuntimeCustomAttributeData.GetCustomAttributes(_reader, _method.CustomAttributes);
+        public MetadataReader GetMetadataReader() => _reader;
+
+        public CustomAttributeHandleCollection GetCustomAttributeHandles() => _method.CustomAttributes;
 
         public override bool Equals(object obj)
         {

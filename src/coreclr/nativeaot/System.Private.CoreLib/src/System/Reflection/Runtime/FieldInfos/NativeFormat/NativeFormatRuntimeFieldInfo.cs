@@ -154,9 +154,11 @@ namespace System.Reflection.Runtime.FieldInfos.NativeFormat
 
         protected sealed override RuntimeTypeInfo DefiningType { get { return _definingTypeInfo; } }
 
-        protected sealed override IEnumerable<CustomAttributeData> TrueCustomAttributes => RuntimeCustomAttributeData.GetCustomAttributes(_reader, _field.CustomAttributes);
+        internal sealed override MetadataReader GetMetadataReader() => _reader;
 
-        protected sealed override int ExplicitLayoutFieldOffsetData => (int)(_field.Offset);
+        internal sealed override CustomAttributeHandleCollection GetCustomAttributeHandles() => _field.CustomAttributes;
+
+        internal sealed override int ExplicitLayoutFieldOffsetData => (int)(_field.Offset);
 
         public sealed override Type GetModifiedFieldType() => ModifiedType.Create(FieldRuntimeType.ToType(), _reader, FieldTypeHandle);
 

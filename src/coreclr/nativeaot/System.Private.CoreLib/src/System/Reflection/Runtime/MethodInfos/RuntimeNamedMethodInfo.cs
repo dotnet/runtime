@@ -11,6 +11,7 @@ using System.Reflection.Runtime.ParameterInfos;
 using System.Reflection.Runtime.TypeInfos;
 using System.Runtime.InteropServices;
 
+using Internal.Metadata.NativeFormat;
 using Internal.Reflection.Core.Execution;
 
 namespace System.Reflection.Runtime.MethodInfos
@@ -70,20 +71,9 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
-        public sealed override IEnumerable<CustomAttributeData> CustomAttributes
-        {
-            get
-            {
-                foreach (CustomAttributeData cad in _common.TrueCustomAttributes)
-                {
-                    yield return cad;
-                }
+        internal sealed override MetadataReader GetMetadataReader() => _common.GetMetadataReader();
 
-                MethodImplAttributes implAttributes = _common.MethodImplementationFlags;
-                if (0 != (implAttributes & MethodImplAttributes.PreserveSig))
-                    yield return new RuntimeCustomAttributeData(new PreserveSigAttribute());
-            }
-        }
+        internal sealed override CustomAttributeHandleCollection GetCustomAttributeHandles() => _common.GetCustomAttributeHandles();
 
         public sealed override MethodInfo GetGenericMethodDefinition()
         {

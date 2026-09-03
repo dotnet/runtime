@@ -10,6 +10,7 @@ using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.ParameterInfos;
 using System.Reflection.Runtime.TypeInfos;
 
+using Internal.Metadata.NativeFormat;
 using Internal.Reflection.Core.Execution;
 
 namespace System.Reflection.Runtime.MethodInfos
@@ -41,13 +42,9 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
-        public sealed override IEnumerable<CustomAttributeData> CustomAttributes
-        {
-            get
-            {
-                return _genericMethodDefinition.CustomAttributes;
-            }
-        }
+        internal sealed override MetadataReader? GetMetadataReader() => _genericMethodDefinition.GetMetadataReader();
+
+        internal sealed override CustomAttributeHandleCollection GetCustomAttributeHandles() => _genericMethodDefinition.GetCustomAttributeHandles();
 
         public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other)
         {

@@ -58,12 +58,14 @@ namespace System.Reflection.Runtime.ParameterInfos.NativeFormat
             }
         }
 
-        protected sealed override IEnumerable<CustomAttributeData> TrueCustomAttributes => RuntimeCustomAttributeData.GetCustomAttributes(this.Reader, _parameter.CustomAttributes);
+        internal sealed override MetadataReader GetMetadataReader() => Reader;
+
+        internal sealed override CustomAttributeHandleCollection GetCustomAttributeHandles() => _parameter.CustomAttributes;
 
         protected sealed override bool GetDefaultValueIfAvailable(bool raw, out object? defaultValue)
         {
             return DefaultValueParser.GetDefaultValueFromConstantIfAny(Reader, _parameter.DefaultValue, ParameterType, raw, out defaultValue)
-                || DefaultValueParser.GetDefaultValueFromAttributeIfAny(CustomAttributes, raw, out defaultValue);
+                || DefaultValueParser.GetDefaultValueFromAttributeIfAny(GetCustomAttributesData(), raw, out defaultValue);
         }
 
         private readonly Parameter _parameter;

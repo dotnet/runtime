@@ -24,13 +24,9 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
             _genericParameter = genericParameter;
         }
 
-        public sealed override IEnumerable<CustomAttributeData> CustomAttributes
-        {
-            get
-            {
-                return RuntimeCustomAttributeData.GetCustomAttributes(Reader, _genericParameter.CustomAttributes);
-            }
-        }
+        internal sealed override MetadataReader GetMetadataReader() => Reader;
+
+        internal sealed override CustomAttributeHandleCollection GetCustomAttributeHandles() => _genericParameter.CustomAttributes;
 
         public sealed override GenericParameterAttributes GenericParameterAttributes
         {

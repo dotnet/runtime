@@ -3,6 +3,7 @@
 
 using System.Globalization;
 
+using Internal.Metadata.NativeFormat;
 using Internal.Reflection.Augments;
 
 namespace System.Reflection
@@ -10,6 +11,10 @@ namespace System.Reflection
     // Base class for runtime implemented Assembly
     public abstract class RuntimeAssembly : Assembly
     {
+        internal virtual MetadataReader? GetMetadataReader() => null;
+
+        internal virtual CustomAttributeHandleCollection GetCustomAttributeHandles() => default;
+
         internal static Assembly? InternalGetSatelliteAssembly(Assembly mainAssembly, CultureInfo culture, Version? version, bool throwOnFileNotFound)
         {
             AssemblyName mainAssemblyAn = mainAssembly.GetName();

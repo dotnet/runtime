@@ -30,24 +30,6 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        public sealed override IEnumerable<CustomAttributeData> CustomAttributes
-        {
-            get
-            {
-                foreach (CustomAttributeData cad in TrueCustomAttributes)
-                    yield return cad;
-
-                TypeAttributes attributes = Attributes;
-                if (0 != (attributes & TypeAttributes.Import))
-                    yield return new RuntimeCustomAttributeData(new ComImportAttribute());
-
-#pragma warning disable SYSLIB0050 // Legacy serialization infrastructure is obsolete
-                if (0 != (attributes & TypeAttributes.Serializable))
-                    yield return new RuntimeCustomAttributeData(new SerializableAttribute());
-#pragma warning restore SYSLIB0050
-            }
-        }
-
         public bool Equals(RuntimeNamedTypeInfo? other)
         {
             // RuntimeTypeInfo.Equals(object) is the one that encapsulates our unification strategy so defer to him.
@@ -150,8 +132,6 @@ namespace System.Reflection.Runtime.TypeInfos
                 };
             }
         }
-
-        protected abstract IEnumerable<CustomAttributeData> TrueCustomAttributes { get; }
 
         //
         // Returns the anchoring typedef that declares the members that this type wants returned by the Declared*** properties.

@@ -9,6 +9,7 @@ using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.MethodInfos;
 using System.Runtime.CompilerServices;
 
+using Internal.Metadata.NativeFormat;
 using Internal.Reflection.Augments;
 using Internal.Reflection.Core.Execution;
 using Internal.Runtime.Augments;
@@ -102,8 +103,6 @@ namespace System.Reflection.Runtime.TypeInfos
 
         public abstract bool ContainsGenericParameters { get; }
 
-        public abstract IEnumerable<CustomAttributeData> CustomAttributes { get; }
-
         public object[] GetCustomAttributes(bool inherit) => RuntimeCustomAttribute.GetCustomAttributes(ToType(), typeof(object), inherit);
 
         public object[] GetCustomAttributes(Type attributeType, bool inherit)
@@ -112,7 +111,9 @@ namespace System.Reflection.Runtime.TypeInfos
             return RuntimeCustomAttribute.GetCustomAttributes(ToType(), attributeType, inherit);
         }
 
-        public IList<CustomAttributeData> GetCustomAttributesData() => CustomAttributes.ToReadOnlyCollection();
+        internal virtual MetadataReader? GetMetadataReader() => null;
+
+        internal virtual CustomAttributeHandleCollection GetCustomAttributeHandles() => default;
 
         public bool IsDefined(Type attributeType, bool inherit)
         {
