@@ -252,6 +252,74 @@ namespace System.Net.WebSockets.Tests
                 ex.Message);
         }
 
+        [Fact]
+        public async Task SendAsync_AlreadyCanceledToken_AbortsConnectionAndThrowsOperationCanceledException()
+        {
+            using var stream = new WebSocketTestStream();
+            using var websocket = WebSocket.CreateFromStream(stream, new WebSocketCreationOptions());
+
+            var cts = new CancellationTokenSource();
+            cts.Cancel();
+
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+                websocket.SendAsync(new byte[] { 1, 2, 3 }, WebSocketMessageType.Binary, endOfMessage: true, cts.Token).AsTask());
+
+            Assert.Equal(WebSocketState.Aborted, websocket.State);
+        }
+
+        [Fact]
+        public async Task SendAsync_CancelWhileWaitingForSendMutex_AbortsConnectionAndThrowsOperationCanceledException()
+        {
+            using var stream = new GatedWriteStream();
+            using var websocket = WebSocket.CreateFromStream(stream, new WebSocketCreationOptions());
+
+            // Start a send with a non-cancelable token; it acquires the send mutex synchronously
+            // and then blocks inside the (gated) write, simulating another in-flight send -- e.g. a
+            // keep-alive ping -- holding the mutex.
+            Task firstSend = websocket.SendAsync(new byte[] { 1 }, WebSocketMessageType.Binary, endOfMessage: true, CancellationToken.None).AsTask();
+            await stream.WriteStarted;
+
+            // Issue a second, cancelable send. Since the mutex is held, it must wait to acquire it.
+            using var cts = new CancellationTokenSource();
+            Task secondSend = websocket.SendAsync(new byte[] { 2 }, WebSocketMessageType.Binary, endOfMessage: true, cts.Token).AsTask();
+
+            // Cancel while the second send is still waiting on the send mutex.
+            cts.Cancel();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => secondSend);
+
+            Assert.Equal(WebSocketState.Aborted, websocket.State);
+
+            // Unblock the first send so it can finish (successfully or not -- that's not what this
+            // test is about) and the test can complete deterministically.
+            stream.ReleaseWrite();
+            try
+            {
+                await firstSend;
+            }
+            catch
+            {
+            }
+        }
+
+        /// <summary>A test stream whose first WriteAsync blocks until released, allowing tests to
+        /// deterministically create contention on the WebSocket's internal send mutex.</summary>
+        private sealed class GatedWriteStream : WebSocketTestStream
+        {
+            private readonly TaskCompletionSource _writeStarted = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            private readonly TaskCompletionSource _releaseWrite = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            public Task WriteStarted => _writeStarted.Task;
+
+            public void ReleaseWrite() => _releaseWrite.TrySetResult();
+
+            public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
+            {
+                _writeStarted.TrySetResult();
+                await _releaseWrite.Task.ConfigureAwait(false);
+                await base.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
+            }
+        }
+
         public abstract class ExposeProtectedWebSocket : WebSocket
         {
             public static new bool IsStateTerminal(WebSocketState state) =>
