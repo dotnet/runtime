@@ -1068,7 +1068,17 @@ namespace
     typedef StringToThunkHash StringToWasmSigThunkHash;
     static StringToWasmSigThunkHash* thunkCache = nullptr;
 
-    InterpreterCalliCookie LookupThunk(const char* key)
+    // Managed methods resolve their interpreter->R2R thunk from the R2R image only: crossgen2 emits it
+    // (WasmInterpreterToR2RThunkNode, keyed "M"+signature) and, because the target has R2R native code,
+    // the image is loaded and its eager InjectStringThunks fixup has already registered the thunk.
+    InterpreterCalliCookie LookupManagedThunk(const char* key)
+    {
+        return (InterpreterCalliCookie)(size_t)LookupPregeneratedThunkByString(key);
+    }
+
+    // Unmanaged calli signatures resolve from the fixed set compiled into libcoreclr (g_wasmThunks) only:
+    // crossgen2 does not emit thunks for unmanaged signatures.
+    InterpreterCalliCookie LookupUnmanagedThunk(const char* key)
     {
         StringToWasmSigThunkHash* table = thunkCache;
         _ASSERTE(table != nullptr && "Wasm thunk cache not initialized. Call InitializeWasmThunkCaches() at EEStartup.");
@@ -1076,7 +1086,7 @@ namespace
         if (table->Lookup(key, &thunk))
             return (InterpreterCalliCookie)thunk;
 
-        return (InterpreterCalliCookie)(size_t)LookupPregeneratedThunkByString(key);
+        return NULL;
     }
 
     void* LookupPortableEntryPointThunk(const char* key)
@@ -1121,7 +1131,11 @@ namespace
                 return NULL;
         }
 
-        InterpreterCalliCookie thunk = LookupThunk(keyBuffer);
+        // Route to the authoritative table for the signature's kind: managed methods (default calling
+        // convention) resolve from the R2R image; unmanaged calli resolve from the fixed libcoreclr set.
+        InterpreterCalliCookie thunk = (callConv == IMAGE_CEE_CS_CALLCONV_DEFAULT)
+            ? LookupManagedThunk(keyBuffer)
+            : LookupUnmanagedThunk(keyBuffer);
 #ifdef _DEBUG
         if (thunk == NULL)
             printf("WASM calli missing for key: %s\n", keyBuffer);
@@ -1330,7 +1344,7 @@ InterpreterCalliCookie GetCookieForManagedMethod(MethodDesc *pMD)
             }
         }
 
-        InterpreterCalliCookie stringCtorThunk = LookupThunk(thunkKey);
+        InterpreterCalliCookie stringCtorThunk = LookupManagedThunk(thunkKey);
         if (stringCtorThunk == NULL)
         {
             _ASSERT(!"GetCookieForManagedMethod: unknown thunk signature");
