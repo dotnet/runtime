@@ -36,7 +36,7 @@
 
     <_WasmDefaultFlags>-fwasm-exceptions -sWASM_LEGACY_EXCEPTIONS=0 -msimd128</_WasmDefaultFlags>
     <_WasmDefaultFlags Condition="'$(WasmEnableRelaxedSimd)' == 'true'">$(_WasmDefaultFlags) -mrelaxed-simd</_WasmDefaultFlags>
-    <PublishReadyToRunCrossgen2ExtraArgs Condition="'$(WasmEnableRelaxedSimd)' == 'true'">$(PublishReadyToRunCrossgen2ExtraArgs);--instruction-set=relaxed-simd</PublishReadyToRunCrossgen2ExtraArgs>
+    <PublishReadyToRunCrossgen2ExtraArgs Condition="'$(WasmEnableRelaxedSimd)' == 'true'">$(PublishReadyToRunCrossgen2ExtraArgs);--instruction-set:relaxed-simd</PublishReadyToRunCrossgen2ExtraArgs>
 
     <WasmBuildAppAfterThisTarget Condition="'$(WasmBuildAppAfterThisTarget)' == ''">Build</WasmBuildAppAfterThisTarget>
     <WasmTriggerPublishAppAfterThisTarget Condition="'$(WasmTriggerPublishAppAfterThisTarget)' == ''">Publish</WasmTriggerPublishAppAfterThisTarget>
