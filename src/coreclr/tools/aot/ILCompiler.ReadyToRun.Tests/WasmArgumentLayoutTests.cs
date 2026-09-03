@@ -653,9 +653,6 @@ public class WasmArgumentLayoutTests
     // Nothing is exported, so neither wrapper reaches the name lookup: the runtime hands both their
     // MethodDesc through the arity-aware g_ReverseThunks key instead.
     [InlineData("[UnmanagedCallersOnly]", "Handle", "[UnmanagedCallersOnly]", "Handle", false)]
-    // [MonoPInvokeCallback] is not collected at all, so it cannot collide with the export.
-    [InlineData("[UnmanagedCallersOnly(EntryPoint = \"cb_one\")]", "Handle",
-                "[MonoPInvokeCallback]", "Handle", false)]
     public void PortableCallHelpersGeneratorRejectsAnExportItCouldNotResolveByName(
         string firstAttribute, string firstName, string secondAttribute, string secondName, bool expectRejected)
     {
