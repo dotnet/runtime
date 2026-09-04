@@ -66,6 +66,9 @@ namespace System.Security.Cryptography.Xml
         [ThreadStatic]
         private static int t_decryptDataCallCount;
 
+        [ThreadStatic]
+        private static int t_encryptedDataCandidateCount;
+
         //
         // private members
         //
@@ -1187,12 +1190,14 @@ namespace System.Security.Cryptography.Xml
             Debug.Assert(t_decryptionScopeDepth >= 0);
             Debug.Assert(t_decryptionScopeDepth > 0 || t_decryptionCount == 0, "Decryption count must be zero when entering the first decryption scope.");
             Debug.Assert(t_decryptionScopeDepth > 0 || t_decryptDataCallCount == 0, "Decrypt data call count must be zero when entering the first decryption scope.");
+            Debug.Assert(t_decryptionScopeDepth > 0 || t_encryptedDataCandidateCount == 0, "Encrypted data candidate count must be zero when entering the first decryption scope.");
 
-            // Defensively reset the decryption count and decrypt data call count
+            // Defensively reset the decryption count, decrypt data call count, and encrypted data candidate count
             if (t_decryptionScopeDepth == 0)
             {
                 t_decryptionCount = 0;
                 t_decryptDataCallCount = 0;
+                t_encryptedDataCandidateCount = 0;
             }
 
             t_decryptionScopeDepth++;
@@ -1206,10 +1211,30 @@ namespace System.Security.Cryptography.Xml
 
             if (t_decryptionScopeDepth == 0)
             {
-                // Reset the decryption count and decrypt data call count when exiting the last decryption scope
+                // Reset the decryption count, decrypt data call count, and encrypted data candidate count when exiting the last decryption scope
                 t_decryptionCount = 0;
                 t_decryptDataCallCount = 0;
+                t_encryptedDataCandidateCount = 0;
             }
+        }
+
+        internal static void IncrementEncryptedDataCandidateCount()
+        {
+            Debug.Assert(t_decryptionScopeDepth > 0);
+
+            int maxDecryptionCount = LocalAppContextSwitches.DangerousMaxDecryptionCount;
+
+            if (maxDecryptionCount <= 0)
+            {
+                return;
+            }
+
+            if (t_encryptedDataCandidateCount >= maxDecryptionCount)
+            {
+                throw new CryptographicException(SR.Cryptography_Xml_MaxEncryptedDataElementsExceeded);
+            }
+
+            t_encryptedDataCandidateCount++;
         }
 
         internal static void IncrementDecryptDataCallCount()

@@ -90,18 +90,26 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Throws<CryptographicException>(() => signedXml.CheckSignature(rsa));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(50)]
         [InlineData(99)]
         public void SignedXml_EncryptedElementListWithinDefaultLimit_DoesNotThrowCryptographicException(int encryptedElementCount)
         {
-            using RSA rsa = RSA.Create();
-            using Aes aes = Aes.Create();
+            RemoteExecutor.Invoke(static (string encryptedElementCountText) =>
+            {
+                AppContext.SetData(DangerousMaxDecryptionCountAppContextSwitch, 0);
 
-            SignedXml signedXml = BuildSignedXmlWithManyEncryptedElements(aes, rsa, encryptedElementCount);
+                using RSA rsa = RSA.Create();
+                using Aes aes = Aes.Create();
 
-            // Document is processed fully without throwing a CryptographiException
-            Assert.Throws<NullReferenceException>(() => signedXml.CheckSignature(rsa));
+                SignedXml signedXml = BuildSignedXmlWithManyEncryptedElements(
+                    aes,
+                    rsa,
+                    int.Parse(encryptedElementCountText, CultureInfo.InvariantCulture));
+
+                // Document is processed fully without throwing a CryptographicException.
+                Assert.Throws<NullReferenceException>(() => signedXml.CheckSignature(rsa));
+            }, encryptedElementCount.ToString(CultureInfo.InvariantCulture)).Dispose();
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -139,6 +147,52 @@ namespace System.Security.Cryptography.Xml.Tests
                 else
                 {
                     Assert.Throws<NullReferenceException>(() => signedXml.CheckSignature(rsa));
+                }
+            },
+            encryptedElementCount.ToString(CultureInfo.InvariantCulture),
+            maxDecryptedDataElements.ToString(CultureInfo.InvariantCulture),
+            expectThrow.ToString(CultureInfo.InvariantCulture)).Dispose();
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(10, 10, false)]
+        [InlineData(11, 10, true)]
+        public void XmlDecryptionTransform_EncryptedElementListLimit_Boundary(
+            int encryptedElementCount,
+            int maxDecryptedDataElements,
+            bool expectThrow)
+        {
+            RemoteExecutor.Invoke(static (string countText, string limitText, string expectThrowText) =>
+            {
+                int count = int.Parse(countText, CultureInfo.InvariantCulture);
+                int limit = int.Parse(limitText, CultureInfo.InvariantCulture);
+                bool shouldThrow = bool.Parse(expectThrowText);
+
+                AppContext.SetData(DangerousMaxDecryptionCountAppContextSwitch, limit);
+
+                XmlDocument document = new();
+                XmlElement root = document.CreateElement("root");
+                document.AppendChild(root);
+
+                XmlDecryptionTransform transform = new();
+                for (int i = 0; i < count; i++)
+                {
+                    string id = i.ToString(CultureInfo.InvariantCulture);
+                    XmlElement encryptedData = document.CreateElement("EncryptedData", EncryptedXml.XmlEncNamespaceUrl);
+                    encryptedData.SetAttribute("Id", id);
+                    root.AppendChild(encryptedData);
+                    transform.AddExceptUri(id);
+                }
+
+                transform.LoadInput(document);
+
+                if (shouldThrow)
+                {
+                    Assert.Throws<CryptographicException>(() => transform.GetOutput());
+                }
+                else
+                {
+                    Assert.Same(document, transform.GetOutput());
                 }
             },
             encryptedElementCount.ToString(CultureInfo.InvariantCulture),

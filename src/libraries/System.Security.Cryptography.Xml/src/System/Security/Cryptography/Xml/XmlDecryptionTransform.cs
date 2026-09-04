@@ -243,6 +243,7 @@ namespace System.Security.Cryptography.Xml
             Queue<ProcessElementWorkItem> encryptedDatasQueue = new();
             foreach (XmlNode value in encryptedDatas)
             {
+                EncryptedXml.IncrementEncryptedDataCandidateCount();
                 encryptedDatasQueue.Enqueue(new(value, depth: 0));
             }
 
@@ -275,6 +276,7 @@ namespace System.Security.Cryptography.Xml
 
                                 foreach (XmlNode value in nodes)
                                 {
+                                    EncryptedXml.IncrementEncryptedDataCandidateCount();
                                     encryptedDatasQueue.Enqueue(new(value, depth + 1));
                                 }
                             }
