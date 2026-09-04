@@ -603,7 +603,7 @@ namespace Microsoft.Extensions.Caching.Memory
             Assert.Equal(EvictionReason.TokenExpired, parent.EvictionReason);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task PropagatingTokensToTheParentIsSafeWhileTheParentIsRead()
         {
             const int Workers = 4;
