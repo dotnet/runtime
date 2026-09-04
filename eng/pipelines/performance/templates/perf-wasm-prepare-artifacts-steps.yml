@@ -60,6 +60,7 @@ steps:
         ./dotnet.sh pack --no-build --no-restore
         /p:Configuration=${{ parameters.configForBuild }}
         /p:ContinuousIntegrationBuild=true
+        /p:DisablePackageBaselineValidation=true
         $(Build.SourcesDirectory)/src/tools/illink/src/ILLink.Tasks/ILLink.Tasks.csproj
       displayName: "Pack ILLink tasks"
     - script: |
