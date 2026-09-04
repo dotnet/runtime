@@ -2429,6 +2429,11 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
     assert(simdSize != 0);
     assert(varTypeIsSIMD(node));
 
+    // Morph 'fgOptimizeHWIntrinsic' transforms 'Create(ToScalar(Dot('->'Dot(',
+    // so a DotProduct not consumed as a scalar value needs an explicit broadcast
+    LIR::Use use;
+    bool     needsBroadcast = BlockRange().TryGetUse(node, &use) && !use.User()->OperIsHWIntrinsic(NI_Vector_ToScalar);
+
     GenTree* op1 = node->Op(1);
     GenTree* op2 = node->Op(2);
 
@@ -2641,12 +2646,25 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
                                                         simdSize);
             BlockRange().InsertAfter(tmp1, tmp2);
             LowerNode(tmp2);
+
+            if (needsBroadcast)
+            {
+                // Broadcast the AddAcross result from element 0 to every element of the vector.
+                idx = m_compiler->gtNewIconNode(0);
+                BlockRange().InsertAfter(tmp2, idx);
+
+                NamedIntrinsic duplicate = (simdSize == 8) ? NI_AdvSimd_DuplicateSelectedScalarToVector64
+                                                           : NI_AdvSimd_DuplicateSelectedScalarToVector128;
+
+                tmp2 = m_compiler->gtNewSimdHWIntrinsicNode(simdType, tmp2, idx, duplicate, simdBaseType,
+                                                            genTypeSize(tmp2->TypeGet()));
+                BlockRange().InsertAfter(idx, tmp2);
+                LowerNode(tmp2);
+            }
         }
     }
 
     // We're producing a vector result, so just return the result directly
-    LIR::Use use;
-
     if (BlockRange().TryGetUse(node, &use))
     {
         use.ReplaceWith(tmp2);
