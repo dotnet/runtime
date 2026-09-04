@@ -94,6 +94,16 @@ namespace System.CommandLine
                 instructionSetSupportBuilder.AddSupportedInstructionSet("base");
                 instructionSetSupportBuilder.AddSupportedInstructionSet("simd128");
             }
+            else if (targetArchitecture == TargetArchitecture.RiscV64)
+            {
+                // The rv64gc baseline: D implies F, so "d", "c" and "a" cover
+                // the G+C extensions. Reduced-ISA targets (e.g. zkVM guests)
+                // opt out with --instruction-set=-a,-c,-d,-f.
+                instructionSetSupportBuilder.AddSupportedInstructionSet("base");
+                instructionSetSupportBuilder.AddSupportedInstructionSet("d");
+                instructionSetSupportBuilder.AddSupportedInstructionSet("c");
+                instructionSetSupportBuilder.AddSupportedInstructionSet("a");
+            }
 
             bool throttleAvx512 = false;
 

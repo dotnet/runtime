@@ -65,6 +65,10 @@ enum CORINFO_InstructionSet
     InstructionSet_Zbb=3,
     InstructionSet_Zbs=4,
     InstructionSet_Zicond=5,
+    InstructionSet_F=6,
+    InstructionSet_D=7,
+    InstructionSet_C=8,
+    InstructionSet_A=9,
 #endif // TARGET_RISCV64
 #ifdef TARGET_WASM
     InstructionSet_WasmBase=1,
@@ -469,6 +473,14 @@ inline CORINFO_InstructionSetFlags EnsureInstructionSetFlagsAreValid(CORINFO_Ins
             resultflags.RemoveInstructionSet(InstructionSet_Zbs);
         if (resultflags.HasInstructionSet(InstructionSet_Zicond) && !resultflags.HasInstructionSet(InstructionSet_RiscV64Base))
             resultflags.RemoveInstructionSet(InstructionSet_Zicond);
+        if (resultflags.HasInstructionSet(InstructionSet_F) && !resultflags.HasInstructionSet(InstructionSet_RiscV64Base))
+            resultflags.RemoveInstructionSet(InstructionSet_F);
+        if (resultflags.HasInstructionSet(InstructionSet_D) && !resultflags.HasInstructionSet(InstructionSet_F))
+            resultflags.RemoveInstructionSet(InstructionSet_D);
+        if (resultflags.HasInstructionSet(InstructionSet_C) && !resultflags.HasInstructionSet(InstructionSet_RiscV64Base))
+            resultflags.RemoveInstructionSet(InstructionSet_C);
+        if (resultflags.HasInstructionSet(InstructionSet_A) && !resultflags.HasInstructionSet(InstructionSet_RiscV64Base))
+            resultflags.RemoveInstructionSet(InstructionSet_A);
 #endif // TARGET_RISCV64
 #ifdef TARGET_WASM
         if (resultflags.HasInstructionSet(InstructionSet_Vector128) && !resultflags.HasInstructionSet(InstructionSet_PackedSimd))
@@ -777,6 +789,14 @@ inline const char *InstructionSetToString(CORINFO_InstructionSet instructionSet)
             return "Zbs";
         case InstructionSet_Zicond :
             return "Zicond";
+        case InstructionSet_F :
+            return "F";
+        case InstructionSet_D :
+            return "D";
+        case InstructionSet_C :
+            return "C";
+        case InstructionSet_A :
+            return "A";
 #endif // TARGET_RISCV64
 #ifdef TARGET_WASM
         case InstructionSet_WasmBase :
@@ -989,6 +1009,10 @@ inline CORINFO_InstructionSet InstructionSetFromR2RInstructionSet(ReadyToRunInst
         case READYTORUN_INSTRUCTION_Zbb: return InstructionSet_Zbb;
         case READYTORUN_INSTRUCTION_Zbs: return InstructionSet_Zbs;
         case READYTORUN_INSTRUCTION_Zicond: return InstructionSet_Zicond;
+        case READYTORUN_INSTRUCTION_RiscV64F: return InstructionSet_F;
+        case READYTORUN_INSTRUCTION_RiscV64D: return InstructionSet_D;
+        case READYTORUN_INSTRUCTION_RiscV64C: return InstructionSet_C;
+        case READYTORUN_INSTRUCTION_RiscV64A: return InstructionSet_A;
 #endif // TARGET_RISCV64
 #ifdef TARGET_WASM
         case READYTORUN_INSTRUCTION_WasmBase: return InstructionSet_WasmBase;

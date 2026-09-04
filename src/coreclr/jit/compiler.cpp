@@ -1941,6 +1941,20 @@ void Compiler::compSetProcessor()
 
     // Add virtual vector ISA. Vector128 is part of the required Wasm SIMD baseline.
     instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
+#elif defined(TARGET_RISCV64)
+    // Ensure the required baseline ISA is supported in JIT code, even if not passed in by the VM.
+    instructionSetFlags.AddInstructionSet(InstructionSet_RiscV64Base);
+
+    // C is the one base extension with a config opt-out: turning it off only stops
+    // the JIT from emitting compressed encodings, so it is safe to honor here however
+    // the flags were seeded. F, D and A have no opt-out; a target without them is
+    // selected through the AOT compiler's instruction set.
+    if (JitConfig.EnableRiscV64Compressed() == 0)
+    {
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_C);
+    }
+
+    instructionSetFlags = EnsureInstructionSetFlagsAreValid(instructionSetFlags);
 #endif // TARGET_ARM64
 
     assert(instructionSetFlags.Equals(EnsureInstructionSetFlagsAreValid(instructionSetFlags)));
@@ -6244,6 +6258,18 @@ int Compiler::compCompileAfterInit(CORINFO_MODULE_HANDLE classPtr,
         if (JitConfig.EnableRiscV64Zicond() != 0)
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_Zicond);
+        }
+
+        // F, D and A are part of the rv64gc baseline and cannot be turned off here: a target
+        // without them is selected through the AOT compiler's instruction set, which also
+        // checks that the ABI and the execution environment allow it.
+        instructionSetFlags.AddInstructionSet(InstructionSet_F);
+        instructionSetFlags.AddInstructionSet(InstructionSet_D);
+        instructionSetFlags.AddInstructionSet(InstructionSet_A);
+
+        if (JitConfig.EnableRiscV64Compressed() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_C);
         }
 #endif
 
