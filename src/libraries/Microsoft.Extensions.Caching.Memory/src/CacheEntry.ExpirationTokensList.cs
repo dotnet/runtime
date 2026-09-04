@@ -14,7 +14,8 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <summary>
         /// The list behind <see cref="ICacheEntry.ExpirationTokens"/>. Its state is mutated directly while
         /// the entry is being built. After concurrent reads are enabled, writers serialize on the owning
-        /// <see cref="CacheEntryTokens"/> while readers walk a lock-free snapshot.
+        /// <see cref="CacheEntryTokens"/> while readers walk a lock-free snapshot. Writers may initialise
+        /// unused slots in place before exposing a larger count; the visible prefix remains immutable.
         /// </summary>
         private sealed class ExpirationTokensList : IList<IChangeToken>
         {
