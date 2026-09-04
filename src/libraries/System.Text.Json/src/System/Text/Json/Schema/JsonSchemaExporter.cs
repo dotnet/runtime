@@ -256,7 +256,7 @@ namespace System.Text.Json.Schema
                         if (property.AssociatedParameter is { HasDefaultValue: true } parameterInfo)
                         {
                             JsonSchema.EnsureMutable(ref propertySchema);
-                            propertySchema.DefaultValue = JsonSerializer.SerializeToNode(parameterInfo.DefaultValue, property.JsonTypeInfo);
+                            propertySchema.DefaultValue = JsonSerializer.SerializeToNode(parameterInfo.EffectiveDefaultValue, property.JsonTypeInfo);
                             propertySchema.HasDefaultValue = true;
                         }
 
