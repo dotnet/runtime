@@ -120,7 +120,8 @@ namespace Wasm.Build.Tests
         {
             Configuration config = Configuration.Debug;
             string printValueTarget = """
-                <Target Name="PrintWasmPublishR2RDir" AfterTargets="_WasmCoreClrSelectR2RDirectories">
+                <Target Name="PrintWasmPublishR2RDir"
+                        DependsOnTargets="_WasmCoreClrSelectR2RDirectories">
                     <Message Text="** WasmPublishR2RDir: '$(_WasmPublishR2RDir)'" Importance="High" />
                     <Error Text="Stopping after validating the R2R directory" />
                 </Target>
@@ -137,7 +138,12 @@ namespace Wasm.Build.Tests
                     """,
                 insertAtEnd: printValueTarget);
 
-            (string _, string output) = BuildProject(info, config, new BuildOptions(ExpectSuccess: false));
+            (string _, string output) = BuildProject(
+                info,
+                config,
+                new BuildOptions(
+                    ExpectSuccess: false,
+                    ExtraMSBuildArgs: "-t:PrintWasmPublishR2RDir"));
 
             Assert.Contains("Stopping after validating the R2R directory", output);
             Match match = s_r2rDirectoryRegex.Match(output);
