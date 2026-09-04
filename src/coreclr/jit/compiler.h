@@ -4807,21 +4807,6 @@ public:
         return lvaGetDesc(lclVar->GetLclNum());
     }
 
-#ifdef TARGET_WASM
-    //------------------------------------------------------------------------
-    // lvaLclNeedsWasmNarrowing: Does reading this local require an "i32.wrap_i64"?
-    //
-    // Morph folds "CAST(int <- long, LCL_VAR long)" into "LCL_VAR int" naming the same long local.
-    // Unlike a shadow stack slot, a wasm local cannot be loaded at a narrower type, so codegen has
-    // to convert explicitly. The consequence for register allocation is that such a node's value is
-    // *not* available in the variable's home register, so it needs a temporary of its own.
-    //
-    bool lvaLclNeedsWasmNarrowing(const GenTreeLclVarCommon* lclVar)
-    {
-        return lclVar->TypeIs(TYP_INT) && lvaGetDesc(lclVar)->TypeIs(TYP_LONG);
-    }
-#endif // TARGET_WASM
-
     const ABIPassingInformation& lvaGetParameterABIInfo(unsigned lclNum)
     {
         assert(lclNum < info.compArgsCount);
