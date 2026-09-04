@@ -143,6 +143,18 @@ namespace Microsoft.Extensions
         public int Integer { get; set; }
     }
 
+    public class OptionsWithEscapedConfigurationKeyNames
+    {
+        [ConfigurationKeyName("quoted\"key")]
+        public string QuotedKey { get; set; }
+
+        [ConfigurationKeyName(@"path\key")]
+        public string BackslashKey { get; set; }
+
+        [ConfigurationKeyName("line\nbreak")]
+        public string NewlineKey { get; set; }
+    }
+
     public class UnsupportedTypeInHashSet { }
 
     public class CustomICollectionWithoutAnAddMethod : ICollection<string>

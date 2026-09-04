@@ -225,6 +225,27 @@
       <ExcludeNativeLibrariesRuntimeFiles Condition="'$(TargetsWasi)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'"
                                           Include="$(LibrariesNativeArtifactsPath)libSystem.IO.Compression.Native.a;
                                                    $(LibrariesNativeArtifactsPath)libz.a" />
+
+      <!-- Same situation on browser with CoreCLR: these libraries are always installed to both
+           LibrariesNativeArtifactsPath (the top-level, flavor-agnostic native artifacts directory
+           shared with Mono, whose contents can be stale leftovers from a Mono build in the same
+           tree) and LibrariesSharedFrameworkDir/CoreCLRSharedFrameworkDir, from where the
+           browser+CoreCLR-specific LibrariesRuntimeFiles/RuntimeFiles items below already pick
+           them up. Exclude the top-level copies to avoid duplicate publish output files. -->
+      <ExcludeNativeLibrariesRuntimeFiles Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'CoreCLR'"
+                                          Include="$(LibrariesNativeArtifactsPath)icudt.dat;
+                                                   $(LibrariesNativeArtifactsPath)icudt_CJK.dat;
+                                                   $(LibrariesNativeArtifactsPath)icudt_EFIGS.dat;
+                                                   $(LibrariesNativeArtifactsPath)icudt_no_CJK.dat;
+                                                   $(LibrariesNativeArtifactsPath)libicudata.a;
+                                                   $(LibrariesNativeArtifactsPath)libicui18n.a;
+                                                   $(LibrariesNativeArtifactsPath)libicuuc.a;
+                                                   $(LibrariesNativeArtifactsPath)libSystem.Globalization.Native.a;
+                                                   $(LibrariesNativeArtifactsPath)libSystem.IO.Compression.Native.a;
+                                                   $(LibrariesNativeArtifactsPath)libSystem.Native.a;
+                                                   $(LibrariesNativeArtifactsPath)libSystem.Native.TimeZoneData.a;
+                                                   $(LibrariesNativeArtifactsPath)libSystem.Native.TimeZoneData.Invariant.a;
+                                                   $(LibrariesNativeArtifactsPath)libz.a" />
       <LibrariesRuntimeFiles Include="
         $(LibrariesNativeArtifactsPath)*.dat;
         $(LibrariesNativeArtifactsPath)*.dll;
@@ -269,6 +290,19 @@
         $(HostSharedFrameworkDir)dotnet.native.wasm;
         "
         IsNative="true" />
+
+      <!-- Headers included by the CoreCLR native relink generated sources (see BrowserWasmApp.CoreCLR.targets).
+           The browserhost CMakeLists installs them into the host sharedFramework; mirrors the Mono include\wasm handling. -->
+      <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(IsTestsCommonProject)' != 'true'"
+                             Include="$(HostSharedFrameworkDir)include\callhelpers.hpp"
+                             NativeSubDirectory="include"
+                             IsNative="true" />
+      <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(IsTestsCommonProject)' != 'true'"
+                             Include="
+        $(HostSharedFrameworkDir)include\minipal\entrypoints.h;
+        $(HostSharedFrameworkDir)include\minipal\utils.h;"
+                             NativeSubDirectory="include\minipal"
+                             IsNative="true" />
 
       <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'Mono'"
                              Include="

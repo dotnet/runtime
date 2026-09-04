@@ -221,7 +221,7 @@ namespace System.Collections.Immutable
             if (length == 0)
             {
                 // Avoid allocating an array.
-                return Create<T>();
+                return ImmutableArray<T>.Empty;
             }
 
             var array = new T[length];
@@ -247,7 +247,7 @@ namespace System.Collections.Immutable
 
             if (length == 0)
             {
-                return Create<T>();
+                return ImmutableArray<T>.Empty;
             }
 
             if (start == 0 && length == items.Length)
@@ -278,7 +278,7 @@ namespace System.Collections.Immutable
 
             if (length == 0)
             {
-                return Create<TResult>();
+                return ImmutableArray<TResult>.Empty;
             }
 
             var array = new TResult[length];
@@ -312,7 +312,7 @@ namespace System.Collections.Immutable
 
             if (length == 0)
             {
-                return Create<TResult>();
+                return ImmutableArray<TResult>.Empty;
             }
 
             var array = new TResult[length];
@@ -346,7 +346,7 @@ namespace System.Collections.Immutable
 
             if (length == 0)
             {
-                return Create<TResult>();
+                return ImmutableArray<TResult>.Empty;
             }
 
             var array = new TResult[length];
@@ -384,7 +384,7 @@ namespace System.Collections.Immutable
 
             if (length == 0)
             {
-                return Create<TResult>();
+                return ImmutableArray<TResult>.Empty;
             }
 
             var array = new TResult[length];
@@ -403,7 +403,7 @@ namespace System.Collections.Immutable
         /// <returns>A new builder.</returns>
         public static ImmutableArray<T>.Builder CreateBuilder<T>()
         {
-            return Create<T>().ToBuilder();
+            return ImmutableArray<T>.Empty.ToBuilder();
         }
 
         /// <summary>

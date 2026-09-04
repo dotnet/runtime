@@ -69,6 +69,12 @@ public class Program
         if (val5Obj != obj5)
             return 15;
 
+        if (!PlatformDetection.IsMultithreadingSupported)
+        {
+            GC.KeepAlive(accessor);
+            return 100;
+        }
+
         int otherThreadResult = 0;
         Thread t = new ((ThreadStart)delegate {
 

@@ -890,7 +890,6 @@ BOOL PEDecoder::PointerInPE(PTR_CVOID data) const
         INSTANCE_CHECK;
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;

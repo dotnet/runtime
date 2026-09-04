@@ -10,7 +10,7 @@
 #define __stacking_allocator_h__
 
 #include "util.hpp"
-#include "eecontract.h"
+#include <contract.h>
 
 
 // We use zero sized arrays, disable the non-standard extension warning.
@@ -111,7 +111,6 @@ public:
             NOTHROW;
             GC_NOTRIGGER;
             MODE_ANY;
-            INJECT_FAULT(return NULL;);
             PRECONDITION(m_CheckpointDepth > 0);
         }
         CONTRACTL_END;

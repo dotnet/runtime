@@ -7,20 +7,31 @@ using System.Threading.Tasks;
 namespace Microsoft.Extensions.Options
 {
     /// <summary>
-    /// Used by hosts to asynchronously validate options during startup.
+    /// Provides asynchronous options validation during host startup.
     /// </summary>
+    /// <remarks>
+    /// New implementations should be registered only as <see cref="IAsyncStartupValidator"/>. Do not additionally
+    /// register a custom implementation as <see cref="IStartupValidator"/>; that interface is retained for
+    /// compatibility with existing synchronous startup validators.
+    /// </remarks>
     public interface IAsyncStartupValidator
     {
         /// <summary>
-        /// Calls all registered <see cref="IAsyncValidateOptions{TOptions}"/> validators.
+        /// Validates options asynchronously during host startup.
         /// </summary>
         /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+        /// <returns>A task that represents the asynchronous validation operation.</returns>
         /// <exception cref="OptionsValidationException">
         /// A single validator returns a failed <see cref="ValidateOptionsResult"/> when validating.
         /// </exception>
         /// <exception cref="System.AggregateException">
-        /// Multiple option instances fail async validation, each producing an
-        /// <see cref="OptionsValidationException"/>.
+        /// Multiple failures occur during startup validation.
+        /// </exception>
+        /// <exception cref="System.InvalidOperationException">
+        /// The registered options services do not support asynchronous startup validation.
+        /// </exception>
+        /// <exception cref="System.OperationCanceledException">
+        /// The operation was canceled through <paramref name="cancellationToken"/>.
         /// </exception>
         Task ValidateAsync(CancellationToken cancellationToken = default);
     }

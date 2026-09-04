@@ -683,8 +683,6 @@ void ExThrowTrap(const char *fcn, const char *file, int line, const char *szType
 
 #define EX_THROW(_type, _args)                                                          \
     {                                                                                   \
-        FAULT_NOT_FATAL();                                                              \
-                                                                                        \
         _type * ___pExForExThrow =  new _type _args ;                                   \
                 /* don't embed file names in retail to save space and avoid IP */       \
                 /* a findstr /n will allow you to locate it in a pinch */               \
@@ -709,8 +707,6 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
 //
 #define EX_THROW_WITH_INNER(_type, _args, _inner)                                       \
     {                                                                                   \
-        FAULT_NOT_FATAL();                                                              \
-                                                                                        \
         Exception *_inner2 = ExThrowWithInnerHelper(_inner);                            \
         _type *___pExForExThrow =  new _type _args ;                                    \
         ___pExForExThrow->SetInnerException(_inner2);                                   \

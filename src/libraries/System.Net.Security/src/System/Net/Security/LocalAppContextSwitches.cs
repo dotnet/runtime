@@ -41,6 +41,13 @@ namespace System
             get => GetCachedSwitchValue("System.Net.Security.EnableServerOcspStaplingFromOnlyCertificateOnLinux", ref s_enableOcspStapling);
         }
 
+        private static int s_useLegacySslStreamHandshake;
+        internal static bool UseLegacySslStreamHandshake
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => GetCachedSwitchValue("System.Net.Security.UseLegacySslStreamHandshake", "DOTNET_SYSTEM_NET_SECURITY_USELEGACYSSLSTREAMHANDSHAKE", ref s_useLegacySslStreamHandshake);
+        }
+
 #if !TARGET_WINDOWS
         private static int s_useManagedNtlm;
         [FeatureSwitchDefinition("System.Net.Security.UseManagedNtlm")]

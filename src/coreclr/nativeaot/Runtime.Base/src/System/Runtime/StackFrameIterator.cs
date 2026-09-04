@@ -68,16 +68,22 @@ namespace System.Runtime
             return InternalCalls.RhpSfiInit(ref this, pStackwalkCtx, instructionFault, fIsExceptionIntercepted);
         }
 
+        [StackTraceHidden]
+        [DebuggerHidden]
         internal bool Next()
         {
             return Next(null, null, null);
         }
 
+        [StackTraceHidden]
+        [DebuggerHidden]
         internal bool Next(uint* uExCollideClauseIdx, bool* fIsExceptionIntercepted)
         {
             return Next(uExCollideClauseIdx, null, fIsExceptionIntercepted);
         }
 
+        [StackTraceHidden]
+        [DebuggerHidden]
         internal bool Next(uint* uExCollideClauseIdx, bool* fUnwoundReversePInvoke, bool* fIsExceptionIntercepted)
         {
             return InternalCalls.RhpSfiNext(ref this, uExCollideClauseIdx, fUnwoundReversePInvoke, fIsExceptionIntercepted);

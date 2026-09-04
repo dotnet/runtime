@@ -102,11 +102,14 @@ inline bool genExactlyOneBit(T value)
 inline regMaskTP genFindLowestBit(regMaskTP value)
 {
 #ifdef HAS_MORE_THAN_64_REGISTERS
-    // If we ever need to use this method for predicate
-    // registers, then handle it.
-    assert(value.getHigh() == RBM_NONE);
-#endif
+    if (value.getLow() != RBM_NONE)
+    {
+        return regMaskTP(genFindLowestBit(value.getLow()));
+    }
+    return regMaskTP(RBM_NONE, genFindLowestBit(value.getHigh()));
+#else
     return regMaskTP(genFindLowestBit(value.getLow()));
+#endif
 }
 
 /*****************************************************************************
@@ -117,11 +120,18 @@ inline regMaskTP genFindLowestBit(regMaskTP value)
 inline bool genMaxOneBit(regMaskTP value)
 {
 #ifdef HAS_MORE_THAN_64_REGISTERS
-    // If we ever need to use this method for predicate
-    // registers, then handle it.
-    assert(value.getHigh() == RBM_NONE);
-#endif
+    if (value.getLow() == RBM_NONE)
+    {
+        return genMaxOneBit(value.getHigh());
+    }
+    if (value.getHigh() == RBM_NONE)
+    {
+        return genMaxOneBit(value.getLow());
+    }
+    return false;
+#else
     return genMaxOneBit(value.getLow());
+#endif
 }
 
 /*****************************************************************************
@@ -860,6 +870,35 @@ inline unsigned Compiler::funGetFuncIdx(BasicBlock* block)
 }
 
 /*****************************************************************************
+ *  Return the index of the function region (funclet) that physically contains
+ *  `block`. The main method is region 0. Unlike funGetFuncIdx, this works for
+ *  an arbitrary block (not just a funclet entry), distinguishing a filter
+ *  funclet (FUNC_FILTER) from its filter-handler. Only valid after funclets
+ *  are created.
+ *
+ */
+inline unsigned Compiler::bbFuncletRegionOf(BasicBlock* block)
+{
+    assert(fgFuncletsCreated);
+
+    if (!block->hasHndIndex())
+    {
+        return 0;
+    }
+
+    EHblkDsc* const eh      = ehGetDsc(block->getHndIndex());
+    unsigned        funcIdx = eh->ebdFuncIndex;
+
+    if (eh->HasFilter() && eh->InFilterRegionBBRange(block))
+    {
+        // The filter is the funclet immediately preceding its filter-handler.
+        funcIdx--;
+    }
+
+    return funcIdx;
+}
+
+/*****************************************************************************
  *  Are two blocks physically contained in the same function region (funclet)?
  *  The main method is region 0. Unlike funGetFuncIdx, this works for an
  *  arbitrary block (not just a funclet entry), distinguishing a filter
@@ -869,27 +908,7 @@ inline unsigned Compiler::funGetFuncIdx(BasicBlock* block)
  */
 inline bool Compiler::bbIsInSameFunclet(BasicBlock* block1, BasicBlock* block2)
 {
-    assert(fgFuncletsCreated);
-
-    auto funcRegionOf = [this](BasicBlock* blk) -> unsigned {
-        if (!blk->hasHndIndex())
-        {
-            return 0;
-        }
-
-        EHblkDsc* const eh      = ehGetDsc(blk->getHndIndex());
-        unsigned        funcIdx = eh->ebdFuncIndex;
-
-        if (eh->HasFilter() && eh->InFilterRegionBBRange(blk))
-        {
-            // The filter is the funclet immediately preceding its filter-handler.
-            funcIdx--;
-        }
-
-        return funcIdx;
-    };
-
-    return funcRegionOf(block1) == funcRegionOf(block2);
+    return bbFuncletRegionOf(block1) == bbFuncletRegionOf(block2);
 }
 #if HAS_FIXED_REGISTER_SET
 //------------------------------------------------------------------------------
@@ -1830,7 +1849,7 @@ inline GenTree* Compiler::gtNewNothingNode()
 
 inline bool GenTree::IsNothingNode() const
 {
-    return OperIs(GT_NOP) && TypeIs(TYP_VOID);
+    return OperIs(GT_NOP);
 }
 
 /*****************************************************************************
@@ -2362,7 +2381,7 @@ inline unsigned Compiler::lvaGrabTemp(bool shortLifetime DEBUGARG(const char* re
 
 #ifdef DEBUG
         // Fill the old table with junks. So to detect the un-intended use.
-        memset(lvaTable, JitConfig.JitDefaultFill(), lvaCount * sizeof(*lvaTable));
+        memset(lvaTable, UninitializedFillByte, lvaCount * sizeof(*lvaTable));
 #endif
 
         lvaTableCnt = newLvaTableCnt;
@@ -2456,7 +2475,7 @@ inline unsigned Compiler::lvaGrabTemps(unsigned cnt DEBUGARG(const char* reason)
 
 #ifdef DEBUG
         // Fill the old table with junks. So to detect the un-intended use.
-        memset(lvaTable, JitConfig.JitDefaultFill(), lvaCount * sizeof(*lvaTable));
+        memset(lvaTable, UninitializedFillByte, lvaCount * sizeof(*lvaTable));
 #endif
 
         lvaTableCnt = newLvaTableCnt;
@@ -3133,163 +3152,6 @@ XX                                                                           XX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
-
-/*****************************************************************************
- *
- *  Call the given function pointer for all nodes in the tree. The 'visitor'
- *  fn should return one of the following values:
- *
- *  WALK_ABORT          stop walking and return immediately
- *  WALK_CONTINUE       continue walking
- *  WALK_SKIP_SUBTREES  don't walk any subtrees of the node just visited
- *
- *  computeStack - true if we want to make stack visible to callback function
- */
-
-inline Compiler::fgWalkResult Compiler::fgWalkTreePre(
-    GenTree** pTree, fgWalkPreFn* visitor, void* callBackData, bool lclVarsOnly, bool computeStack)
-
-{
-    fgWalkData walkData;
-
-    walkData.m_compiler    = this;
-    walkData.wtprVisitorFn = visitor;
-    walkData.pCallbackData = callBackData;
-    walkData.parent        = nullptr;
-    walkData.wtprLclsOnly  = lclVarsOnly;
-#ifdef DEBUG
-    walkData.printModified = false;
-#endif
-
-    fgWalkResult result;
-    if (lclVarsOnly && computeStack)
-    {
-        GenericTreeWalker<true, false, true, true> walker(&walkData);
-        result = walker.WalkTree(pTree, nullptr);
-    }
-    else if (lclVarsOnly)
-    {
-        GenericTreeWalker<true, false, true, true> walker(&walkData);
-        result = walker.WalkTree(pTree, nullptr);
-    }
-    else if (computeStack)
-    {
-        GenericTreeWalker<true, false, false, true> walker(&walkData);
-        result = walker.WalkTree(pTree, nullptr);
-    }
-    else
-    {
-        GenericTreeWalker<true, false, false, true> walker(&walkData);
-        result = walker.WalkTree(pTree, nullptr);
-    }
-
-#ifdef DEBUG
-    if (verbose && walkData.printModified)
-    {
-        gtDispTree(*pTree);
-    }
-#endif
-
-    return result;
-}
-
-/*****************************************************************************
- *
- *  Same as above, except the tree walk is performed in a depth-first fashion,
- *  The 'visitor' fn should return one of the following values:
- *
- *  WALK_ABORT          stop walking and return immediately
- *  WALK_CONTINUE       continue walking
- *
- *  computeStack - true if we want to make stack visible to callback function
- */
-
-inline Compiler::fgWalkResult Compiler::fgWalkTreePost(GenTree**     pTree,
-                                                       fgWalkPostFn* visitor,
-                                                       void*         callBackData,
-                                                       bool          computeStack)
-{
-    fgWalkData walkData;
-
-    walkData.m_compiler    = this;
-    walkData.wtpoVisitorFn = visitor;
-    walkData.pCallbackData = callBackData;
-    walkData.parent        = nullptr;
-
-    fgWalkResult result;
-    if (computeStack)
-    {
-        GenericTreeWalker<false, true, false, true> walker(&walkData);
-        result = walker.WalkTree(pTree, nullptr);
-    }
-    else
-    {
-        GenericTreeWalker<false, true, false, true> walker(&walkData);
-        result = walker.WalkTree(pTree, nullptr);
-    }
-
-    assert(result == WALK_CONTINUE || result == WALK_ABORT);
-
-    return result;
-}
-
-/*****************************************************************************
- *
- *  Call the given function pointer for all nodes in the tree. The 'visitor'
- *  fn should return one of the following values:
- *
- *  WALK_ABORT          stop walking and return immediately
- *  WALK_CONTINUE       continue walking
- *  WALK_SKIP_SUBTREES  don't walk any subtrees of the node just visited
- */
-
-inline Compiler::fgWalkResult Compiler::fgWalkTree(GenTree**    pTree,
-                                                   fgWalkPreFn* preVisitor,
-                                                   fgWalkPreFn* postVisitor,
-                                                   void*        callBackData)
-
-{
-    fgWalkData walkData;
-
-    walkData.m_compiler    = this;
-    walkData.wtprVisitorFn = preVisitor;
-    walkData.wtpoVisitorFn = postVisitor;
-    walkData.pCallbackData = callBackData;
-    walkData.parent        = nullptr;
-    walkData.wtprLclsOnly  = false;
-#ifdef DEBUG
-    walkData.printModified = false;
-#endif
-
-    fgWalkResult result;
-
-    assert(preVisitor || postVisitor);
-
-    if (preVisitor && postVisitor)
-    {
-        GenericTreeWalker<true, true, false, true> walker(&walkData);
-        result = walker.WalkTree(pTree, nullptr);
-    }
-    else if (preVisitor)
-    {
-        GenericTreeWalker<true, false, false, true> walker(&walkData);
-        result = walker.WalkTree(pTree, nullptr);
-    }
-    else
-    {
-        GenericTreeWalker<false, true, false, true> walker(&walkData);
-        result = walker.WalkTree(pTree, nullptr);
-    }
-
-#ifdef DEBUG
-    if (verbose && walkData.printModified)
-    {
-        gtDispTree(*pTree);
-    }
-#endif
-
-    return result;
-}
 
 /*****************************************************************************
  *
@@ -4618,15 +4480,26 @@ GenTree::VisitResult GenTree::VisitLocalDefs(Compiler* comp, TVisitor visitor)
     }
     if (OperIs(GT_CALL))
     {
-        GenTreeCall*         call    = AsCall();
-        GenTreeLclVarCommon* lclAddr = comp->gtCallGetDefinedRetBufLclAddr(call);
-        if (lclAddr != nullptr)
+        GenTreeCall* call = AsCall();
+
+        GenTreeLclVarCommon* asyncResumedLclAddr = comp->gtCallGetDefinedAsyncResumedLclAddr(call);
+        if (asyncResumedLclAddr != nullptr)
+        {
+            bool isEntire = comp->lvaLclExactSize(asyncResumedLclAddr->GetLclNum()) == TARGET_POINTER_SIZE;
+
+            RETURN_IF_ABORT(visitor(LocalDef(asyncResumedLclAddr, isEntire, asyncResumedLclAddr->GetLclOffs(),
+                                             ValueSize(TARGET_POINTER_SIZE))));
+        }
+
+        GenTreeLclVarCommon* retBufLclAddr = comp->gtCallGetDefinedRetBufLclAddr(call);
+        if (retBufLclAddr != nullptr)
         {
             unsigned storeSize = comp->typGetObjLayout(AsCall()->gtRetClsHnd)->GetSize();
 
-            bool isEntire = comp->IsEntireAccess(lclAddr->GetLclNum(), lclAddr->GetLclOffs(), ValueSize(storeSize));
+            bool isEntire =
+                comp->IsEntireAccess(retBufLclAddr->GetLclNum(), retBufLclAddr->GetLclOffs(), ValueSize(storeSize));
 
-            return visitor(LocalDef(lclAddr, isEntire, lclAddr->GetLclOffs(), ValueSize(storeSize)));
+            return visitor(LocalDef(retBufLclAddr, isEntire, retBufLclAddr->GetLclOffs(), ValueSize(storeSize)));
         }
     }
 
@@ -4661,11 +4534,18 @@ GenTree::VisitResult GenTree::VisitLocalDefNodes(Compiler* comp, TVisitor visito
     }
     if (OperIs(GT_CALL))
     {
-        GenTreeCall*         call    = AsCall();
-        GenTreeLclVarCommon* lclAddr = comp->gtCallGetDefinedRetBufLclAddr(call);
-        if (lclAddr != nullptr)
+        GenTreeCall* call = AsCall();
+
+        GenTreeLclVarCommon* asyncResumedLclAddr = comp->gtCallGetDefinedAsyncResumedLclAddr(call);
+        if (asyncResumedLclAddr != nullptr)
         {
-            return visitor(lclAddr);
+            RETURN_IF_ABORT(visitor(asyncResumedLclAddr));
+        }
+
+        GenTreeLclVarCommon* retBufLclAddr = comp->gtCallGetDefinedRetBufLclAddr(call);
+        if (retBufLclAddr != nullptr)
+        {
+            return visitor(retBufLclAddr);
         }
     }
 

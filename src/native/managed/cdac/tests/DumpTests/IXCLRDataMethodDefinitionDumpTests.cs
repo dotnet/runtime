@@ -214,7 +214,7 @@ public unsafe class IXCLRDataMethodDefinitionDumpTests : DumpTestBase
             TargetPointer mt = rts.GetMethodTable(mdHandle);
             TargetPointer modulePtr = rts.GetModule(rts.GetTypeHandle(mt));
 
-            return new ClrDataMethodDefinition(Target, modulePtr, token, legacyImpl: null);
+            return new ClrDataMethodDefinition(Target, modulePtr, token, legacyImpl: null, new());
         }
 
         Assert.Fail($"Could not find method '{methodName}' on the crashing thread's stack");
@@ -247,16 +247,18 @@ public unsafe class IXCLRDataMethodDefinitionDumpTests : DumpTestBase
         TypeDefinitionHandle tdh = MetadataTokens.TypeDefinitionHandle(rowId);
         TypeDefinition td = reader.GetTypeDefinition(tdh);
 
-        ModuleLookupTables tables = loader.GetLookupTables(coreLibModule);
         foreach (MethodDefinitionHandle mdh in td.GetMethods())
         {
             uint token = (uint)MetadataTokens.GetToken(mdh);
             TargetPointer mdAddr = loader.GetModuleLookupMapElement(
-                tables.MethodDefToDesc, token, out _);
+                coreLibModule,
+                ModuleLookupMapKind.MethodDefToDesc,
+                token,
+                out _);
             if (mdAddr == TargetPointer.Null)
                 continue;
 
-            return new ClrDataMethodDefinition(Target, modulePtr, token, legacyImpl: null);
+            return new ClrDataMethodDefinition(Target, modulePtr, token, legacyImpl: null, new());
         }
 
         Assert.Fail("Could not find a loaded method on List<> in CoreLib");

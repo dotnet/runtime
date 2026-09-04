@@ -1,11 +1,11 @@
 # Contract Debugger
 
-This contract is for reading debugger state from the target process, including initialization status, configuration flags, metadata update state, and JIT attach state.
+This contract is for reading debugger state from the target process, including initialization status, metadata update state, and JIT attach state.
 
 ## APIs of contract
 
 ```csharp
-record struct DebuggerData(bool IsLeftSideInitialized, uint DefinesBitField, uint MDStructuresVersion);
+record struct DebuggerData(bool IsLeftSideInitialized);
 ```
 
 ```csharp
@@ -28,6 +28,7 @@ void SetSendExceptionsOutsideOfJMC(bool sendExceptionsOutsideOfJMC);
 TargetPointer GetDebuggerControlBlockAddress();
 void EnableGCNotificationEvents(bool fEnable);
 HijackKind GetHijackKind(TargetCodePointer controlPC);
+byte ReadInstructionByte(TargetPointer address);
 TargetPointer PrepareExceptionHijack(byte[] context, TargetPointer vmThread, byte[]? exceptionRecord, int reason, TargetPointer userData)
 ```
 
@@ -38,14 +39,17 @@ TargetPointer PrepareExceptionHijack(byte[] context, TargetPointer vmThread, byt
 
 | Data Descriptor | Field | Type | Meaning |
 | --- | --- | --- | --- |
-| `Debugger` | `Defines` | `uint32` | Bitfield of compile-time debugger feature defines |
 | `Debugger` | `GCNotificationEventsEnabled` | `int32` | Whether GC notification events are enabled |
 | `Debugger` | `LeftSideInitialized` | `int32` | Whether the left-side debugger infrastructure is initialized |
-| `Debugger` | `MDStructuresVersion` | `uint32` | Version of metadata data structures |
 | `Debugger` | `RCThread` | `pointer` | Pointer to DebuggerRCThread |
 | `Debugger` | `RgHijackFunction` | `pointer` | Pointer to the runtime's array of hijack-stub address ranges. |
 | `Debugger` | `RSRequestedSync` | `int32` | Sync-at-event request flag |
 | `Debugger` | `SendExceptionsOutsideOfJMC` | `int32` | Exception delivery policy flag |
+| `DebuggerControllerPatch` | *(type size)* | `uint32` | Size in bytes of each DebuggerControllerPatch entry. Only available on AMD64. |
+| `DebuggerControllerPatch` | `Address` | `pointer` | Address patched with a debugger breakpoint, or null for an inactive entry. Only available on AMD64. |
+| `DebuggerControllerPatch` | `Opcode` | `nuint` | Original instruction value replaced by the debugger breakpoint. Only available on AMD64. |
+| `DebuggerPatchTable` | `Count` | `uint32` | Capacity of the DebuggerControllerPatch backing array. Only available on AMD64. |
+| `DebuggerPatchTable` | `Entries` | `pointer` | Pointer to the backing array of DebuggerControllerPatch entries. Only available on AMD64. |
 | `DebuggerRCThread` | `DCB` | `pointer` | Pointer to DebuggerIPCControlBlock |
 | `MemoryRange` | *(type size)* | `uint32` | Size of the data descriptor layout |
 | `MemoryRange` | `Size` | `nuint` | Size of the range in bytes; the range covers [StartAddress, StartAddress + Size) |
@@ -58,6 +62,7 @@ TargetPointer PrepareExceptionHijack(byte[] context, TargetPointer vmThread, byt
 | `CLRJitAttachState` | `pointer` | Pointer to the CLR JIT attach state flags |
 | `CORDebuggerControlFlags` | `pointer` | Pointer to g_CORDebuggerControlFlags |
 | `Debugger` | `pointer` | Address of the pointer to the Debugger instance (&g_pDebugger) |
+| `DebuggerPatchTable` | `pointer` | Address of the pointer to the debugger breakpoint patch table. Only available on AMD64. |
 | `MaxHijackFunctions` | `uint32` | Number of entries in the hijack function array. |
 | `MetadataUpdatesApplied` | `pointer` | Pointer to the g_metadataUpdatesApplied flag |
 
@@ -94,10 +99,7 @@ bool TryGetDebuggerData(out DebuggerData data)
     if (debuggerPtr == TargetPointer.Null)
         return false;
     bool leftSideInitialized = target.Read<int>(debuggerPtr + /* Debugger::LeftSideInitialized offset */) != 0;
-    data = new DebuggerData(
-        IsLeftSideInitialized: leftSideInitialized,
-        DefinesBitField: target.Read<uint>(debuggerPtr + /* Debugger::Defines offset */),
-        MDStructuresVersion: target.Read<uint>(debuggerPtr + /* Debugger::MDStructuresVersion offset */));
+    data = new DebuggerData(IsLeftSideInitialized: leftSideInitialized);
     return true;
 }
 
@@ -199,6 +201,20 @@ HijackKind GetHijackKind(TargetCodePointer controlPC)
     }
     return HijackKind.None;
 }
+
+byte ReadInstructionByte(TargetPointer address)
+{
+    Dictionary<TargetPointer, byte> patches =
+        cachedPatches ??= ReadActivePatches();
+    if (patches.TryGetValue(address, out byte opcode))
+        return opcode;
+
+    return target.Read<byte>(address);
+}
+
+// ReadActivePatches reads the patch table global and creates an address-indexed
+// map from backing-array entries with nonzero addresses and opcodes. Clear
+// cachedPatches for every contract flush scope.
 
 private TargetPointer GetHijackAddress()
 {

@@ -4,11 +4,14 @@
 
 //different data types, Int16, Int32, Int64, etc
 
+namespace JitTest_Directed_intrinsic_pow_pow3;
+
 using System;
 using Xunit;
 
 public class pow3
 {
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

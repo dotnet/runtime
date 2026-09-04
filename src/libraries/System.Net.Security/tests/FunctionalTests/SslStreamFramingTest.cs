@@ -134,6 +134,120 @@ namespace System.Net.Security.Tests
             await TestHelper.PingPong(client, server);
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.SupportsTls13))]
+        public async Task Read_ExactlyFiveByteTlsRecord_DetectedAsCompleteFrame()
+        {
+            // Regression test: a TLS record that is exactly the 5-byte header with a
+            // zero-length payload (e.g. 17 03 03 00 00) must be recognized as a complete
+            // frame. Previously EnsureFullTlsFrameAsync only recomputed the frame size once
+            // more than HeaderSize bytes were buffered, so such a record left SslStream
+            // waiting forever for a sixth byte that never arrives.
+            //
+            // The scenario is pinned to TLS 1.3: a zero-length application_data record cannot
+            // be decrypted (there is no room for the AEAD tag), so once framing recognizes the
+            // complete 5-byte frame the read fails fast. Under TLS 1.2 a zero-length record is
+            // a legal empty fragment that decrypts to zero bytes and is skipped, which would
+            // make even the fixed code read again and mask the framing behavior under test.
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
+
+            ZeroLengthRecordInjectingStream clientStream = new(stream1);
+            using SslStream client = new SslStream(clientStream);
+            using SslStream server = new SslStream(stream2);
+
+            SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions
+            {
+                EnabledSslProtocols = SslProtocols.Tls13,
+                CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
+                ServerCertificateContext = _certificates.CreateSslStreamCertificateContext(),
+                RemoteCertificateValidationCallback = (sender, cert, chain, errors) => true,
+            };
+
+            SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions
+            {
+                TargetHost = Guid.NewGuid().ToString("N"),
+                EnabledSslProtocols = SslProtocols.Tls13,
+                CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
+                RemoteCertificateValidationCallback = (sender, cert, chain, errors) => true,
+            };
+
+            await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                client.AuthenticateAsClientAsync(clientOptions),
+                server.AuthenticateAsServerAsync(serverOptions));
+
+            // From now on, the client's next non-empty read returns a raw, exactly-5-byte
+            // TLS record with a zero-length payload, and any subsequent read blocks.
+            clientStream.StartInjecting();
+
+            using CancellationTokenSource cts = new CancellationTokenSource(TestConfiguration.PassingTestTimeout);
+
+            // With the fix, the 5-byte record is recognized as a complete frame and the read
+            // completes promptly (decrypting the bogus empty record fails). Without the fix,
+            // SslStream keeps waiting for more data and this read hangs until cts fires.
+            await Assert.ThrowsAnyAsync<Exception>(() => client.ReadAsync(new byte[16], cts.Token).AsTask());
+
+            Assert.False(cts.IsCancellationRequested, "SslStream hung waiting for more data instead of detecting the complete 5-byte TLS frame.");
+        }
+
+        // Wraps a stream and, once StartInjecting is called, serves a single raw 5-byte TLS
+        // record (application data, zero-length payload) on the next non-empty read. Any read
+        // after that blocks until cancellation, so a caller that fails to treat the 5-byte
+        // record as a complete frame observes a hang.
+        private sealed class ZeroLengthRecordInjectingStream : Stream
+        {
+            // application_data (0x17), TLS 1.2 record version (0x0303), length 0x0000
+            private static readonly byte[] s_zeroLengthRecord = { 0x17, 0x03, 0x03, 0x00, 0x00 };
+
+            private readonly Stream _inner;
+            private bool _injecting;
+            private bool _injected;
+
+            public ZeroLengthRecordInjectingStream(Stream inner) => _inner = inner;
+
+            public void StartInjecting() => _injecting = true;
+
+            public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+            {
+                if (_injecting && buffer.Length >= s_zeroLengthRecord.Length)
+                {
+                    if (!_injected)
+                    {
+                        _injected = true;
+                        s_zeroLengthRecord.CopyTo(buffer.Span);
+                        return s_zeroLengthRecord.Length;
+                    }
+
+                    // The complete frame was already delivered above. A correct implementation
+                    // does not ask for more data; if it does, block so the caller hangs.
+                    await Task.Delay(Timeout.Infinite, cancellationToken).ConfigureAwait(false);
+                }
+
+                return await _inner.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
+            }
+
+            public override int Read(byte[] buffer, int offset, int count)
+                => ReadAsync(new Memory<byte>(buffer, offset, count)).AsTask().GetAwaiter().GetResult();
+
+            public override bool CanRead => _inner.CanRead;
+            public override bool CanSeek => _inner.CanSeek;
+            public override bool CanWrite => _inner.CanWrite;
+            public override long Length => _inner.Length;
+            public override long Position { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+            public override void Flush() => _inner.Flush();
+            public override long Seek(long offset, SeekOrigin origin) => _inner.Seek(offset, origin);
+            public override void SetLength(long value) => throw new NotImplementedException();
+            public override void Write(byte[] buffer, int offset, int count) => _inner.Write(buffer, offset, count);
+
+            protected override void Dispose(bool disposing)
+            {
+                if (disposing)
+                {
+                    _inner.Dispose();
+                }
+
+                base.Dispose(disposing);
+            }
+        }
+
         internal class ConfigurableReadStream : Stream
         {
             private readonly Stream _stream;

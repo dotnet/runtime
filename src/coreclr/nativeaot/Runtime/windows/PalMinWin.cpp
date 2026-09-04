@@ -921,14 +921,15 @@ bool PalStartEventPipeHelperThread(_In_ BackgroundCallback callback, _In_opt_ vo
     return PalStartBackgroundWork(callback, pCallbackContext, FALSE);
 }
 
-HANDLE PalGetModuleHandleFromPointer(_In_ void* pointer)
+HANDLE PalGetModuleHandleFromPointer(_In_ void* pointer, bool pinModule)
 {
-    // The runtime is not designed to be unloadable today. Use GET_MODULE_HANDLE_EX_FLAG_PIN to prevent
-    // the module from ever unloading.
+    // The runtime is not designed to be unloadable today.
+    DWORD flags = GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
+        (pinModule ? GET_MODULE_HANDLE_EX_FLAG_PIN : GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT);
 
     HMODULE module;
     if (!GetModuleHandleExW(
-        GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_PIN,
+        flags,
         (LPCWSTR)pointer,
         &module))
     {

@@ -212,7 +212,7 @@ namespace System.Text.Json
                 val = utf8FormattedNumber[i];
             }
 
-            if (val is (byte)'e' or (byte)'E')
+            if (val == 'e' || val == 'E')
             {
                 i++;
 
@@ -223,7 +223,7 @@ namespace System.Text.Json
 
                 val = utf8FormattedNumber[i];
 
-                if (val is (byte)'+' or (byte)'-')
+                if (val == '+' || val == '-')
                 {
                     i++;
                 }

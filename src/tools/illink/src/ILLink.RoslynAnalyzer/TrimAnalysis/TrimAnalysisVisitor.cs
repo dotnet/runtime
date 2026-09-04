@@ -129,7 +129,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
             var value = base.VisitConversion(operation, state);
 
             if (operation.OperatorMethod is IMethodSymbol method)
-                return method.ReturnType.IsTypeInterestingForDataflow(isByRef: method.ReturnsByRef) ? new MethodReturnValue(method, isNewObj: false) : value;
+                return GetConversionValue(method, value);
 
             // TODO - is it possible to have annotation on the operator method parameters?
             // if so, will these be checked here?
@@ -260,6 +260,17 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
             return new FieldValue(property);
         }
 
+        public override MultiValue GetTupleElementValue(IFieldSymbol tupleElement)
+        {
+            return new FieldValue(tupleElement);
+        }
+
+        public override MultiValue GetConversionValue(IMethodSymbol conversionOperator, MultiValue operandValue)
+        {
+            return conversionOperator.ReturnType.IsTypeInterestingForDataflow(isByRef: conversionOperator.ReturnsByRef)
+                ? new MethodReturnValue(conversionOperator, isNewObj: false)
+                : operandValue;
+        }
 
         public override MultiValue GetParameterTargetValue(IParameterSymbol parameter)
         {

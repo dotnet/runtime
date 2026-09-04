@@ -81,12 +81,12 @@ namespace TestLibrary
                 unsafe
                 {
                     int sizeOfinArray1 = data.Length * sizeof(T);
-                    if ((alignment != 64 && alignment != 16 && alignment != 8) || (alignment * 2) < sizeOfinArray1)
+                    if (alignment != 64 && alignment != 16 && alignment != 8)
                     {
                         throw new ArgumentException($"Invalid value of alignment: {alignment}, sizeOfinArray1: {sizeOfinArray1}");
                     }
 
-                    buf = new byte[alignment * 2];
+                    buf = new byte[alignment + sizeOfinArray1];
                     inHandle = GCHandle.Alloc(buf, GCHandleType.Pinned);
                     this.alignment = (ulong)alignment;
                     Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(Ptr), ref Unsafe.As<T, byte>(ref data[0]), (uint)sizeOfinArray1);

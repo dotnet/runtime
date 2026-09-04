@@ -13,6 +13,7 @@ internal sealed class CdacAttributeMatcher
     private readonly INamedTypeSymbol? _cdacType;
     private readonly INamedTypeSymbol? _dataDescriptorDependency;
     private readonly INamedTypeSymbol? _usesDataDescriptorTypeSize;
+    private readonly INamedTypeSymbol? _customInit;
     private readonly INamedTypeSymbol? _staticReference;
 
     public CdacAttributeMatcher(CSharpCompilation compilation)
@@ -23,6 +24,8 @@ internal sealed class CdacAttributeMatcher
             CdacSymbols.DataDescriptorDependencyAttributeMetadataName);
         _usesDataDescriptorTypeSize = compilation.GetTypeByMetadataName(
             CdacSymbols.UsesDataDescriptorTypeSizeAttributeMetadataName);
+        _customInit = compilation.GetTypeByMetadataName(
+            CdacSymbols.CustomInitAttributeMetadataName);
         _staticReference = compilation.GetTypeByMetadataName(
             CdacSymbols.StaticReferenceAttributeMetadataName);
     }
@@ -95,6 +98,24 @@ internal sealed class CdacAttributeMatcher
         }
 
         fieldName = null!;
+        return false;
+    }
+
+    public bool IsCustomInitializer(IMethodSymbol method)
+    {
+        foreach (IPropertySymbol property in method.ContainingType.GetMembers().OfType<IPropertySymbol>())
+        {
+            foreach (AttributeData attribute in GetAttributes(property))
+            {
+                if (Matches(attribute, _customInit)
+                    && attribute.ConstructorArguments is [{ Value: string methodName }]
+                    && methodName == method.Name)
+                {
+                    return true;
+                }
+            }
+        }
+
         return false;
     }
 

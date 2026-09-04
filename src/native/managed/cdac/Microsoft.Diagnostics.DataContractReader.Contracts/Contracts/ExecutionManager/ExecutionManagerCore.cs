@@ -94,14 +94,16 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
     {
         Unknown = 0,
         JumpStub = 1,
-        DynamicHelper = 3,
-        StubPrecode = 4,
-        FixupPrecode = 5,
-        VSDDispatchStub = 6,
-        VSDResolveStub = 7,
-        VSDLookupStub = 8,
-        VSDVTableStub = 9,
-        CallCountingStub = 10,
+        DynamicHelper = 2,
+        StubPrecode = 3,
+        FixupPrecode = 4,
+        VSDDispatchStub = 5,
+        VSDResolveStub = 6,
+        VSDLookupStub = 7,
+        VSDVTableStub = 8,
+        CallCountingStub = 9,
+        WrapperStub = 10,
+        ShuffleThunk = 11,
     }
 
     private abstract class JitManager
@@ -560,12 +562,11 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
     {
         ILoader loader = _target.Contracts.Loader;
         ModuleHandle module = loader.GetModuleHandleFromModulePtr(moduleAddr);
-        ModuleLookupTables tables = loader.GetLookupTables(module);
 
         TargetPointer resolvedMethodTable = (EcmaMetadataUtils.TokenType)(classToken & EcmaMetadataUtils.TokenTypeMask) switch
         {
-            EcmaMetadataUtils.TokenType.mdtTypeDef => loader.GetModuleLookupMapElement(tables.TypeDefToMethodTable, classToken, out _),
-            EcmaMetadataUtils.TokenType.mdtTypeRef => loader.GetModuleLookupMapElement(tables.TypeRefToMethodTable, classToken, out _),
+            EcmaMetadataUtils.TokenType.mdtTypeDef => loader.GetModuleLookupMapElement(module, ModuleLookupMapKind.TypeDefToMethodTable, classToken, out _),
+            EcmaMetadataUtils.TokenType.mdtTypeRef => loader.GetModuleLookupMapElement(module, ModuleLookupMapKind.TypeRefToMethodTable, classToken, out _),
             _ => TargetPointer.Null,
         };
 
@@ -660,6 +661,8 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
             StubKind.VSDLookupStub => CodeKind.VSD_LookupStub,
             StubKind.VSDVTableStub => CodeKind.VSD_VTableStub,
             StubKind.CallCountingStub => CodeKind.CallCountingStub,
+            StubKind.WrapperStub => CodeKind.WrapperStub,
+            StubKind.ShuffleThunk => CodeKind.ShuffleThunk,
             _ => CodeKind.Unknown,
         };
     }

@@ -188,11 +188,7 @@ namespace ILLink.RoslynAnalyzer
         }
 
         private static bool HasSafetyDocumentation(SyntaxNode declaration) =>
-            declaration.GetLeadingTrivia().Any(static trivia =>
-                trivia.GetStructure() is DocumentationCommentTriviaSyntax documentationComment
-                && documentationComment.DescendantNodes().Any(static node =>
-                    node is XmlElementSyntax { StartTag.Name.LocalName.ValueText: "safety" }
-                        or XmlEmptyElementSyntax { Name.LocalName.ValueText: "safety" }));
+            UnsafeMigrationSyntaxHelpers.HasSafetyDocumentation(declaration);
 
         private static bool HasInstanceBackingField(ISymbol associatedSymbol) =>
             associatedSymbol.ContainingType.GetMembers()

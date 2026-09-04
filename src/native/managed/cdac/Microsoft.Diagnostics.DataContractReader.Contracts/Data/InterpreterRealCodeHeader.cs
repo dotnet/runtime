@@ -9,15 +9,15 @@ internal sealed partial class InterpreterRealCodeHeader : IData<InterpreterRealC
     [Field] public partial TargetPointer MethodDesc { get; }
     [Field] public partial TargetPointer DebugInfo { get; }
     [Field] public partial TargetPointer GCInfo { get; }
+    [CustomInit(nameof(InitJitEHInfo))] public partial EEILException? JitEHInfo { get; }
 
     [DataDescriptorDependency(nameof(JitEHInfo), "pointer")]
-    public EEILException? JitEHInfo { get; private set; }
-
-    partial void OnInit(Target target, TargetPointer address)
+    private partial EEILException? InitJitEHInfo(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.InterpreterRealCodeHeader);
         TargetPointer jitEHInfoAddr = target.ReadPointerField(address, type, nameof(JitEHInfo));
-        if (jitEHInfoAddr != TargetPointer.Null)
-            JitEHInfo = target.ProcessedData.GetOrAdd<EEILException>(jitEHInfoAddr);
+        return jitEHInfoAddr != TargetPointer.Null
+            ? target.ProcessedData.GetOrAdd<EEILException>(jitEHInfoAddr)
+            : null;
     }
 }

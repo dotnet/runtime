@@ -91,11 +91,13 @@ This will set the `DOTNET_ROOT` and `PATH` environment variables to point to the
 All the tools mentioned above can be installed with the [Windows Package Manager](https://learn.microsoft.com/windows/package-manager/winget/):
 ```ps1
 winget install -e --id Kitware.CMake
-winget install -e --id Python.Python.3.11
+winget install -e --id Python.Python.3.14
 winget install -e --id Git.Git
 winget install -e --id Ninja-build.Ninja
-winget install -e --id Microsoft.VisualStudio.2022.Community --override "--add Microsoft.VisualStudio.Workload.NativeDesktop --add Microsoft.VisualStudio.Workload.ManagedDesktop --includeRecommended"
+winget install -e --id Microsoft.VisualStudio.Community --override "--passive --wait --config $PWD\.vsconfig"
 ```
+
+The last command installs the components listed in the repo's [`.vsconfig`](https://github.com/dotnet/runtime/blob/main/.vsconfig), so run it from the root of your clone.
 
 ## Setting Environment Variables on Windows
 

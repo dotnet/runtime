@@ -71,19 +71,6 @@ namespace
     }
 }
 
-pal::string_t pal::get_timestamp()
-{
-    std::time_t t = std::time(nullptr);
-    const std::size_t elems = 100;
-    char_t buf[elems];
-
-    tm tm_l{};
-    ::gmtime_s(&tm_l, &t);
-    std::wcsftime(buf, elems, _X("%c GMT"), &tm_l);
-
-    return pal::string_t(buf);
-}
-
 bool pal::touch_file(const pal::string_t& path)
 {
     HANDLE hnd = ::CreateFileW(path.c_str(), 0, 0, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
@@ -461,31 +448,6 @@ bool pal::get_dotnet_self_registered_dir_for_arch(pal::architecture arch, pal::s
     return true;
 }
 
-bool pal::get_global_dotnet_dirs(std::vector<pal::string_t>* dirs)
-{
-    pal::string_t default_dir;
-    pal::string_t custom_dir;
-    bool dir_found = false;
-    if (pal::get_dotnet_self_registered_dir(&custom_dir))
-    {
-        remove_trailing_dir_separator(&custom_dir);
-        dirs->push_back(custom_dir);
-        dir_found = true;
-    }
-    if (get_default_installation_dir(&default_dir))
-    {
-        remove_trailing_dir_separator(&default_dir);
-
-        // Avoid duplicate global dirs.
-        if (!dir_found || !are_paths_equal_with_normalized_casing(custom_dir, default_dir))
-        {
-            dirs->push_back(default_dir);
-            dir_found = true;
-        }
-    }
-    return dir_found;
-}
-
 // To determine the OS version, we are going to use RtlGetVersion API
 // since GetVersion call can be shimmed on Win8.1+.
 typedef LONG (WINAPI *pFuncRtlGetVersion)(RTL_OSVERSIONINFOW *);
@@ -855,11 +817,6 @@ bool pal::fullpath(string_t* path, bool skip_error_logging)
 bool pal::file_exists(const string_t& path)
 {
     return ::pal_file_exists(path.c_str());
-}
-
-bool pal::is_directory(const pal::string_t& path)
-{
-    return ::pal_directory_exists(path.c_str());
 }
 
 static void readdir(const pal::string_t& path, const pal::string_t& pattern, bool onlydirectories, std::vector<pal::string_t>* list)

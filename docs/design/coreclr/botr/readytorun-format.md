@@ -187,6 +187,9 @@ The following section types are defined and described later in this document:
 | MethodIsGenericMap        |   121 | Assembly (Added in V9.0)
 | EnclosingTypeMap          |   122 | Assembly (Added in V9.0)
 | TypeGenericInfoMap        |   123 | Assembly (Added in V9.0)
+| ExternalTypeMaps          |   124 | Assembly (added in V18.3, extended in V28)
+| ProxyTypeMaps             |   125 | Assembly (added in V18.3, extended in V28)
+| TypeMapAssemblyTargets    |   126 | Assembly (added in V18.3)
 
 ## ReadyToRunSectionType.CompilerIdentifier
 
@@ -276,7 +279,7 @@ fixup kind, the rest of the signature varies based on the fixup kind.
 | READYTORUN_FIXUP_Check_TypeLayout               |  0x2A | Verification of type layout, followed by typespec and expected type layout descriptor
 | READYTORUN_FIXUP_Check_FieldOffset              |  0x2B | Verification of field offset, followed by field signature and expected field layout descriptor
 | READYTORUN_FIXUP_DelegateCtor                   |  0x2C | Delegate constructor, followed by method signature
-| READYTORUN_FIXUP_DeclaringTypeHandle            |  0x2D | Dictionary lookup for method declaring type. Followed by the type signature.
+| READYTORUN_FIXUP_DeclaringTypeHandle            |  0x2D | Type which declares the method described by the signature. Followed by the method signature.
 | READYTORUN_FIXUP_IndirectPInvokeTarget          |  0x2E | Target (indirect) of an inlined PInvoke. Followed by method signature.
 | READYTORUN_FIXUP_PInvokeTarget                  |  0x2F | Target of an inlined PInvoke. Followed by method signature.
 | READYTORUN_FIXUP_Check_InstructionSetSupport    |  0x30 | Specify the instruction sets that must be supported/unsupported to use the R2R code associated with the fixup.
@@ -289,6 +292,7 @@ fixup kind, the rest of the signature varies based on the fixup kind.
 | READYTORUN_FIXUP_ContinuationLayout             |  0x37 | Layout of an async method continuation type, followed by typespec signature
 | READYTORUN_FIXUP_ResumptionStubEntryPoint       |  0x38 | Entry point of an async method resumption stub
 | READYTORUN_FIXUP_InjectStringThunks             |  0x39 | Inject pregenerated string-to-code thunk mappings. See [InjectStringThunks signatures](#injectstringthunks-signatures) for details.
+| READYTORUN_FIXUP_StoreMultiCallableAddrOfCode   |  0x3A | Store the runtime multi-callable code address of a method into a location embedded in the R2R image. See [StoreMultiCallableAddrOfCode signatures](#storemulticallableaddrofcode-signatures) for details.
 | READYTORUN_FIXUP_ModuleOverride                 |  0x80 | When or-ed to the fixup ID, the fixup byte in the signature is followed by an encoded uint with assemblyref index, either within the MSIL metadata of the master context module for the signature or within the manifest metadata R2R header table (used in cases inlining brings in references to assemblies not seen in the input MSIL).
 
 #### Method Signatures
@@ -348,6 +352,21 @@ The signature following the fixup kind byte is a series of elements:
 The series terminates when the null-terminated string is the empty string (a single `0x00` byte). There is no trailing RVA after the terminal empty string.
 
 At runtime, the entries are merged into a global hash table. Strings already present in the table from previously loaded modules take precedence over new entries. The table can be queried via `LookupPregeneratedThunkByString`.
+
+#### StoreMultiCallableAddrOfCode signatures
+
+The `READYTORUN_FIXUP_StoreMultiCallableAddrOfCode` fixup is placed in a precode import section and is processed at method load time (when the fixups for the associated method are resolved). It records the runtime multi-callable code address of a target method into a location embedded in the R2R image (for example, a slot in a compiled method's read-only data blob). This is required on platforms where a callable code pointer is not simply `imageBase + RVA` and is therefore only known at runtime (such as WebAssembly, where a callable pointer is a runtime-allocated portable entry point rather than a compile-time function table index).
+
+The signature following the fixup kind byte is:
+
+| Field | Size | Description
+|:------|-----:|:-----------
+| TargetCodeRVA | 4 bytes | An RVA identifying the target method's code. On WebAssembly platforms, this is an I32 function table index instead. This is encoded identically to the target of a `READYTORUN_FIXUP_ResumptionStubEntryPoint` fixup so the resulting entry point value matches the one that fixup registers.
+| LocationRVA | 4 bytes | An `IMAGE_REL_BASED_ADDR32NB` RVA identifying the location within the R2R image where the resolved code address is to be stored.
+
+At runtime, the fixup resolves the target entry point to its `MethodDesc` (using the entry-point-to-`MethodDesc` mapping populated by the `READYTORUN_FIXUP_ResumptionStubEntryPoint` fixup), computes `GetMultiCallableAddrOfCode`, and stores the resulting pointer at the location identified by `LocationRVA`.
+
+Because this fixup depends on the target entry point already being registered, it must be ordered after the corresponding `READYTORUN_FIXUP_ResumptionStubEntryPoint` fixup within the method's precode fixup list.
 
 ### READYTORUN_IMPORT_SECTIONS::AuxiliaryData
 
@@ -746,6 +765,82 @@ TypeGenericInfoMap entries have 4 bits representing 3 different sets of informat
 2. Are there any constraints on the generic parameters? (This is the 3rd bit of the entry)
 3. Do any of the generic parameters have co or contra variance? (This is the 4th bit of the entry)
 
+## ReadyToRunSectionType.ExternalTypeMaps (v18.3+)
+
+This optional section contains precomputed external type maps. It is a native hashtable keyed by the version-resilient hash code of the type map group. Each value has the following layout:
+
+```text
+GroupTypeFixup
+State
+[ExternalTypeMapHashtable]
+[NamedEntries]
+```
+
+`GroupTypeFixup` is a fixup reference encoded as the import section index followed by the fixup row index. `State` is a compressed unsigned integer with one of these values:
+
+| State | Name | Remaining layout |
+|------:|:-----|:-----------------|
+| 0 | Runtime attribute fallback | No precomputed map data. The runtime processes the type map attributes instead. |
+| 1 | Precomputed fixups | `ExternalTypeMapHashtable` only. |
+| 2 | Precomputed fixups and type names | `ExternalTypeMapHashtable` followed immediately by `NamedEntries`. Added in V28. |
+
+`ExternalTypeMapHashtable` is a native hashtable keyed by the name hash code of the external type map key. Each value contains:
+
+```text
+KeyString
+TargetTypeFixup
+```
+
+`TargetTypeFixup` has the same import-section-index and fixup-row-index encoding as `GroupTypeFixup`.
+
+In state 2, `NamedEntries` is a native sequence: a compressed unsigned count followed by that many inline pairs. Each pair contains:
+
+```text
+KeyString
+SerializedTargetTypeName
+```
+
+These entries represent target types that cannot be encoded as ReadyToRun fixups. The endpoint stored in the final bucket-offset cell of `ExternalTypeMapHashtable` identifies the start of `NamedEntries`; a hashtable lookup therefore does not enumerate the string sequence.
+
+## ReadyToRunSectionType.ProxyTypeMaps (v18.3+)
+
+This optional section contains precomputed proxy type maps. Its outer native hashtable and per-group `GroupTypeFixup` and `State` fields use the same layout as `ExternalTypeMaps`:
+
+```text
+GroupTypeFixup
+State
+[ProxyTypeMapHashtable]
+[NamedEntries]
+```
+
+`ProxyTypeMapHashtable` is keyed by the version-resilient hash code of the source type. Each value contains:
+
+```text
+SourceTypeFixup
+ProxyTypeFixup
+```
+
+In state 2, `NamedEntries` begins immediately after `ProxyTypeMapHashtable` and contains a compressed unsigned count followed by that many inline pairs:
+
+```text
+SerializedSourceTypeName
+SerializedProxyTypeName
+```
+
+If either type in a proxy mapping cannot be encoded as a ReadyToRun fixup, both types are represented by their serialized names in `NamedEntries`.
+
+## ReadyToRunSectionType.TypeMapAssemblyTargets (v18.3+)
+
+This optional section is a native hashtable keyed by the version-resilient hash code of the type map group. Each value contains the group type fixup followed by a native sequence of module fixups:
+
+```text
+GroupTypeFixup
+TargetModuleCount
+TargetModuleFixup[TargetModuleCount]
+```
+
+Each type or module fixup is encoded as an import section index followed by a fixup row index.
+
 # Native Format
 
 Native format is set of encoding patterns that allow persisting type system data in a binary format that is
@@ -1062,6 +1157,9 @@ The string format is:
 | `V` | returns `v128` (a `Vector128<T>`, or a 16-byte `Vector<T>`) |
 | `S<N>` | struct return via hidden buffer, `N` is the struct size in bytes |
 
+Struct returns always use `S<N>` regardless of alignment. The aligned form is valid only
+for parameters because their placement in the transition block depends on it.
+
 **This pointer** (if the method has a `this` parameter):
 
 | Encoding | Meaning |
@@ -1072,7 +1170,7 @@ The string format is:
 
 1. **Generic context** (`i`): present when the method requires an inst method desc or
    method table argument.
-2. **Async continuation** (`i`): present for async calls.
+2. **Async continuation** (`a`): present for async calls.
 
 Note: the hidden return buffer pointer is **not** encoded in the signature string. Its
 presence is implied by the return type being `S<N>` — when the caller sees a struct return,
@@ -1087,8 +1185,43 @@ it knows a hidden retbuf pointer argument is present in the Wasm parameter list.
 | `f` | `f32` parameter |
 | `d` | `f64` parameter |
 | `V` | `v128` parameter (a `Vector128<T>`, or a 16-byte `Vector<T>`, passed by value) |
-| `S<N>` | struct parameter passed by reference, `<N>` is the struct size in bytes |
+| `S<N>` | struct parameter passed by reference, `<N>` is the struct size in bytes and its alignment is at most 8 |
+| `A<N>` | struct parameter passed by reference, `<N>` is the struct size in bytes and its alignment exceeds 8 |
 | `e` | empty struct parameter — elided from Wasm args but present in the string |
+| `<slot><E>` | multi-slot parameter passed by value, see below |
+
+**Multi-slot parameters**: some types are passed by value across several Wasm parameters
+because no single Wasm value type can hold them, matching the Wasm C ABI. The slot
+character is followed by the factor by which the type's alignment is elevated above that
+slot's natural alignment:
+
+| Encoding | Slots | Alignment | Type |
+|---|---|---|---|
+| `l2` | 2 x `i64` | 16 (elevated 2x) | `Int128`, `UInt128`, `Decimal128` |
+| `V2` | 2 x `v128` | 32 (elevated 2x) | `Vector256<T>` |
+| `V4` | 4 x `v128` | 64 (elevated 4x) | `Vector512<T>` |
+
+A single-field struct wrapping one of these is passed the same way as the type it wraps,
+matching the treatment of a struct wrapping a `v128`.
+
+The digit is required. A repeated slot character without one — `ll`, `VV` — is not an
+aggregate: it is two independent scalar parameters, which is how every implementation
+reads it. So `ll2VV4` is `i64`, `Int128`, `Vector128<T>`, `Vector512<T>`. The grammar stays
+unambiguous because no other token places a digit after a slot character; struct tokens
+consume their own size.
+
+These types are still *returned* through a hidden buffer, encoded as `S<N>` like any other
+aggregate. Limitation: a single digit carries both the slot count and the elevation factor,
+so an aggregate whose elevation differs from its slot count has no spelling. That includes
+one whose alignment is merely natural for its slot type, which would need count `N` with
+elevation 1. No such type exists in the Wasm ABI today.
+
+WasmAppBuilder does not emit or consume multi-slot tokens: they do not appear in
+`InternalCall` or `PInvoke` signatures.
+
+A struct argument is placed at its own alignment clamped to `[8, 16]` in the transition
+block. Therefore `A<N>` covers every struct whose declared alignment exceeds 8: alignments
+of 16 or higher all require the same 16-byte transition-block placement.
 
 **Suffix**:
 
@@ -1116,12 +1249,15 @@ prefix to distinguish thunk categories:
 | `void F(int x)` (instance) | `vTip` |
 | `static MyStruct F()` where `MyStruct` is 16 bytes | `S16p` |
 | `static void F(MyStruct s)` where `MyStruct` is 8 bytes | `vS8p` |
+| `static void F(long tag, MyStruct s, int t)` where `MyStruct` is 32 bytes and at least 16-byte aligned | `vlA32ip` |
 | `static int F(float x, double y)` | `ifdp` |
+| `static long F(long tag, Int128 v, int t)` | `lll2ip` |
+| `static int F(long tag, Vector512<int> v, int t)` | `ilV4ip` |
 | `[UnmanagedCallersOnly] static int F(int x)` | `ii` |
 
 **Slot sizing for structs**: When computing interpreter stack layout, struct parameters
-(`S<N>`) consume `max(N / 8, 1)` interpreter stack slots, while all other parameter types
-consume exactly 1 slot.
+(`S<N>` and `A<N>`) consume `max((N + 7) / 8, 1)` interpreter stack slots, while all
+other parameter types consume exactly 1 slot.
 
 # References
 

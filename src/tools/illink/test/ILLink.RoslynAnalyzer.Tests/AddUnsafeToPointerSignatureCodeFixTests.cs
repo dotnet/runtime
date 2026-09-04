@@ -220,6 +220,43 @@ namespace ILLink.RoslynAnalyzer.Tests
                 }
                 """
             },
+            {
+                // A local function keeps its attribute lists where they are, the same as a member does.
+                """
+                using System.Diagnostics.CodeAnalysis;
+
+                class C
+                {
+                    void Outer()
+                    {
+                        [SuppressMessage("Category", "Rule")]
+                        void {|IL5006:Local|}(int* value) { }
+
+                        unsafe
+                        {
+                            Local(null);
+                        }
+                    }
+                }
+                """,
+                """
+                using System.Diagnostics.CodeAnalysis;
+
+                class C
+                {
+                    void Outer()
+                    {
+                        [SuppressMessage("Category", "Rule")]
+                        unsafe void Local(int* value) { }
+
+                        unsafe
+                        {
+                            Local(null);
+                        }
+                    }
+                }
+                """
+            },
         };
 
         [Theory]

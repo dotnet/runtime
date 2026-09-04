@@ -109,8 +109,9 @@ Walk the steps in order. Do not skip. Stop at Step 6.
 
 Read once at start:
 
+- `.github/skills/create-kbe/SKILL.md` — the repo-level skill for creating a `Known Build Error` issue from an actionable failure
 - `.github/workflows/shared/create-kbe.instructions.md`
-- In that shared file, load these exact sections and apply them when referenced below:
+- In those instructions, load these exact sections and apply them when referenced below:
   - `<a id="shared-kbe-rules"></a>` / `## Shared rules`
   - `<a id="search-existing-kbe"></a>` / `## Search for an existing KBE`
   - `<a id="search-area-team-tracker"></a>` / `## Search for an area-team tracker`
@@ -219,7 +220,14 @@ If the same signature appears in *every* sampled build (100% failure rate in the
   - List builds: `?definitions={id}&branchName=refs/heads/main&statusFilter=completed&resultFilter=succeeded,failed,partiallySucceeded&%24top=25&api-version=7.1`
   - Timeline: `/builds/{id}/timeline?api-version=7.1` returns flat `records[]`; reconstruct via `parentId`. A failed record with non-null log id is a leaf to inspect.
 - **Helix REST.** `https://helix.dot.net/api/jobs/{jobId}/workitems?api-version=2019-06-17`. Each item has `Name`, `State`, `ExitCode`, `ConsoleOutputUri`. Failed: `ExitCode != 0` or `State == "Failed"`.
-- **Build Analysis attachment (best-effort).** `https://dev.azure.com/dnceng-public/public/_apis/build/builds/{id}/attachments/Build_Analysis_KnownIssues_v1?api-version=7.1`. Use to dedupe. 404 = none attached; do not fail.
+- **Build Analysis GitHub check (best-effort).** Read the source SHA from the
+  AzDO build, then query
+  `GET /repos/dotnet/runtime/commits/{sha}/check-runs` and inspect the completed
+  `Build Analysis` check's `output.text`. If the report links the source build's
+  failure to an existing issue, record `existing-kbe #<n>`. Reports omit some
+  known errors when they exceed GitHub's output limits, so absence is not proof
+  that Build Analysis did not match; always continue with the exact KBE searches
+  in Step 4.2 after a miss.
 
 ### Step 3.5 — Follow-up-build presence gate
 
@@ -328,7 +336,7 @@ No meta / aggregate / outage issues. Every KBE is keyed to a single `(definition
 
 Stable means >= 2 occurrences across >= 2 distinct builds in the ~10-build window, OR a build break that fails all legs of the current build (block-everyone severity that warrants filing on first sight). Multiple legs, retries, or work items of the SAME build (same build id) count as a single occurrence, not two — a one-off failure that appears in only one build is NOT stable; record `skipped: < 2 occurrences and not blocking` and let the next run revisit. Emit one `create_issue` using exactly the shared new-KBE template from `.github/workflows/shared/create-kbe.instructions.md` section `<a id="new-kbe-template"></a>` / `## New-KBE template`, including whichever of `<a id="literal-kbe-template"></a>` / `### KBE issue body - literal substring match`, `<a id="regex-kbe-template"></a>` / `### KBE issue body - regex match`, or `<a id="kbe-array-form"></a>` / `### KBE multi-line array form` fits the signature. Apply `Known Build Error` and the blocking label chosen per [KBE label selection](#kbe-label-selection) so the org project auto-add rule picks it up; do NOT try to mutate the project from this workflow. Append to the same-run dedup cache (Step 4.0) after emission.
 
-**Match-count gate.** Reject the emit if the body lacks `<!-- ci-scan-match-count: <N> hits in failure.log -->` with `N >= 1`. Treat an absent marker as `N=0` and record the same skip reason check #7 of the shared instructions uses: `skipped: signature did not match failure.log (N=<count>)`. Rationale, log-source caveats, and native-assert handling live in check #7.
+**Match-count gate.** Reject the emit unless the KBE body contains the collapsed, workflow-identified verification block defined by check #7 of the shared instructions, with `N >= 1`. Treat an absent block or field as `N=0` and record the same skip reason check #7 uses: `skipped: signature did not match failure.log (N=<count>)`. Rationale, log-source caveats, and native-assert handling live in check #7.
 
 If the shared KBE lookup flow recorded `linked-tracker #<tracker>`, cross-link it as `Tracking: dotnet/runtime#<tracker>` in the KBE body.
 

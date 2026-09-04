@@ -7,6 +7,7 @@ using System.Collections.Immutable;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
+using Microsoft.Diagnostics.DataContractReader;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
 using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
@@ -15,7 +16,7 @@ using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
-public class TypeHandleTests
+public unsafe class TypeHandleTests
 {
     private const ulong ModuleAddress = 0x1000;
 
@@ -140,6 +141,186 @@ public class TypeHandleTests
         Assert.Equal("System.Int32[*]", rankOneArrayType.GetName(target));
     }
 
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void ClrDataTypeInstance_GetName(MockTarget.Architecture architecture)
+    {
+        TargetTypeHandle typeHandle = new(0x2002);
+        TestRuntimeTypeSystem runtimeTypeSystem = new();
+        runtimeTypeSystem.TypeDescs.Add(typeHandle);
+        runtimeTypeSystem.ElementTypes[typeHandle] = CorElementType.I4;
+        TestPlaceholderTarget target = CreateTarget(architecture, runtimeTypeSystem);
+        IXCLRDataTypeInstance typeInstance = new ClrDataTypeInstance(target, typeHandle, null, new());
+
+        uint nameLen = 0;
+        Assert.Equal(HResults.S_OK, typeInstance.GetName(0, 0, &nameLen, null));
+        Assert.Equal(13u, nameLen);
+
+        char[] nameBuffer = new char[nameLen];
+        fixed (char* name = nameBuffer)
+        {
+            Assert.Equal(HResults.S_OK, typeInstance.GetName(0, nameLen, &nameLen, name));
+            Assert.Equal("System.Int32", new string(name, 0, (int)nameLen - 1));
+
+            Assert.Equal(CorDbgHResults.ERROR_INSUFFICIENT_BUFFER, typeInstance.GetName(0, 4, &nameLen, name));
+            Assert.Equal("Sys", new string(name, 0, 3));
+        }
+
+        Assert.Equal(HResults.E_INVALIDARG, typeInstance.GetName(1, 0, null, null));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void ClrDataTypeDefinition_GetNameFollowsBufferProtocol(MockTarget.Architecture architecture)
+    {
+        TargetTypeHandle typeHandle = new(0x2002);
+        TestRuntimeTypeSystem runtimeTypeSystem = new();
+        runtimeTypeSystem.TypeDescs.Add(typeHandle);
+        runtimeTypeSystem.ElementTypes[typeHandle] = CorElementType.I4;
+        TestPlaceholderTarget target = CreateTarget(architecture, runtimeTypeSystem);
+        IXCLRDataTypeDefinition typeDefinition = new ClrDataTypeDefinition(target, ModuleAddress, 0x02000001, typeHandle, null, new());
+
+        uint nameLen = 0;
+        Assert.Equal(HResults.S_OK, typeDefinition.GetName(0, 0, &nameLen, null));
+        Assert.Equal((uint)"System.Int32".Length + 1, nameLen);
+
+        char[] nameBuffer = new char[nameLen];
+        fixed (char* name = nameBuffer)
+        {
+            Assert.Equal(HResults.S_OK, typeDefinition.GetName(0, nameLen, &nameLen, name));
+            Assert.Equal("System.Int32", new string(name));
+        }
+
+        char[] truncatedBuffer = new char[4];
+        fixed (char* name = truncatedBuffer)
+        {
+            Assert.Equal(CorDbgHResults.ERROR_INSUFFICIENT_BUFFER, typeDefinition.GetName(0, (uint)truncatedBuffer.Length, &nameLen, name));
+            Assert.Equal("Sys", new string(name));
+        }
+        Assert.Equal((uint)"System.Int32".Length + 1, nameLen);
+
+        Assert.Equal(HResults.E_INVALIDARG, typeDefinition.GetName(1, 0, null, null));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void ClrDataTypeDefinition_GetNameUsesMetadataForNullTypeHandle(MockTarget.Architecture architecture)
+    {
+        MetadataBuilder metadataBuilder = CreateMetadataBuilder();
+        TypeDefinitionHandle typeDef = AddTypeDefinition(metadataBuilder, "Tests", "MetadataOnly");
+        using MetadataReaderProvider provider = CreateMetadataReader(metadataBuilder, out MetadataReader reader);
+        TestPlaceholderTarget target = CreateTarget(architecture, new TestRuntimeTypeSystem(), reader);
+        IXCLRDataTypeDefinition typeDefinition = new ClrDataTypeDefinition(
+            target,
+            ModuleAddress,
+            (uint)MetadataTokens.GetToken(typeDef),
+            null,
+            null,
+            new());
+
+        char[] nameBuffer = new char[32];
+        uint nameLen = 0;
+        fixed (char* name = nameBuffer)
+        {
+            Assert.Equal(HResults.S_OK, typeDefinition.GetName(0, (uint)nameBuffer.Length, &nameLen, name));
+            Assert.Equal("Tests.MetadataOnly", new string(name));
+        }
+        Assert.Equal((uint)"Tests.MetadataOnly".Length + 1, nameLen);
+
+        uint elementType = 0;
+        Assert.Equal(HResults.E_NOTIMPL, typeDefinition.GetCorElementType(&elementType));
+        Assert.Equal(HResults.E_POINTER, typeDefinition.GetCorElementType(null));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void ClrDataTypeDefinition_GetCorElementTypeReturnsInternalType(MockTarget.Architecture architecture)
+    {
+        TargetTypeHandle typeHandle = new(0x2002);
+        TestRuntimeTypeSystem runtimeTypeSystem = new();
+        runtimeTypeSystem.ElementTypes[typeHandle] = CorElementType.I4;
+        TestPlaceholderTarget target = CreateTarget(architecture, runtimeTypeSystem);
+        IXCLRDataTypeDefinition typeDefinition = new ClrDataTypeDefinition(target, ModuleAddress, 0x02000001, typeHandle, null, new());
+
+        uint elementType = 0;
+        Assert.Equal(HResults.S_OK, typeDefinition.GetCorElementType(&elementType));
+        Assert.Equal((uint)CorElementType.I4, elementType);
+        Assert.Equal(HResults.E_POINTER, typeDefinition.GetCorElementType(null));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void ClrDataTypeDefinition_GetTokenAndScopeReturnsConstructorValues(MockTarget.Architecture architecture)
+    {
+        const uint Token = 0x02000001;
+
+        TargetTypeHandle typeHandle = new(0x2002);
+        TestRuntimeTypeSystem runtimeTypeSystem = new();
+        TestPlaceholderTarget target = CreateTarget(architecture, runtimeTypeSystem);
+        IXCLRDataTypeDefinition typeDefinition = new ClrDataTypeDefinition(target, ModuleAddress, Token, typeHandle, null, new());
+
+        uint token = 0;
+        DacComNullableByRef<IXCLRDataModule> moduleOut = new(isNullRef: false);
+        Assert.Equal(HResults.S_OK, typeDefinition.GetTokenAndScope(&token, moduleOut));
+        Assert.Equal(Token, token);
+        Assert.Equal(new TargetPointer(ModuleAddress), Assert.IsType<ClrDataModule>(moduleOut.Interface).Address);
+
+        Assert.Equal(
+            HResults.S_OK,
+            typeDefinition.GetTokenAndScope(null, new DacComNullableByRef<IXCLRDataModule>(isNullRef: true)));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void ClrDataTypeInstance_GetDefinition(MockTarget.Architecture architecture)
+    {
+        const uint TypeDefToken = 0x02000001;
+        TargetPointer definitionTypeAddress = new(0x3000);
+        TargetTypeHandle typeHandle = new(0x4000);
+        TargetTypeHandle definitionType = new(definitionTypeAddress);
+        Contracts.ModuleHandle moduleHandle = new(ModuleAddress);
+
+        TestRuntimeTypeSystem runtimeTypeSystem = new();
+        runtimeTypeSystem.TypeModules[typeHandle] = ModuleAddress;
+        runtimeTypeSystem.TypeModules[definitionType] = ModuleAddress;
+        runtimeTypeSystem.TypeDefTokens[typeHandle] = TypeDefToken;
+        runtimeTypeSystem.TypeDefTokens[definitionType] = TypeDefToken;
+        runtimeTypeSystem.TypeHandles[definitionTypeAddress] = definitionType;
+
+        Mock<ILoader> loader = new();
+        loader.Setup(l => l.GetModuleHandleFromModulePtr(new TargetPointer(ModuleAddress))).Returns(moduleHandle);
+        TargetNUInt lookupFlags = default;
+        loader.Setup(l => l.GetModuleLookupMapElement(
+                moduleHandle,
+                ModuleLookupMapKind.TypeDefToMethodTable,
+                TypeDefToken,
+                out lookupFlags))
+            .Returns(definitionTypeAddress);
+
+        TestPlaceholderTarget target = new TestPlaceholderTarget.Builder(architecture)
+            .AddMockContract<IRuntimeTypeSystem>(runtimeTypeSystem)
+            .AddMockContract(loader)
+            .Build();
+        IXCLRDataTypeInstance typeInstance = new ClrDataTypeInstance(target, typeHandle, null, new());
+        DacComNullableByRef<IXCLRDataTypeDefinition> typeDefinition = new(isNullRef: false);
+
+        Assert.Equal(HResults.S_OK, typeInstance.GetDefinition(typeDefinition));
+        Assert.IsType<ClrDataTypeDefinition>(typeDefinition.Interface);
+
+        DacComNullableByRef<IXCLRDataTypeDefinition> nullTypeDefinition = new(isNullRef: true);
+        Assert.Equal(HResults.E_POINTER, typeInstance.GetDefinition(nullTypeDefinition));
+
+        loader.Setup(l => l.GetModuleLookupMapElement(
+                moduleHandle,
+                ModuleLookupMapKind.TypeDefToMethodTable,
+                TypeDefToken,
+                out lookupFlags))
+            .Returns(TargetPointer.Null);
+        DacComNullableByRef<IXCLRDataTypeDefinition> unloadedTypeDefinition = new(isNullRef: false);
+        Assert.Equal(HResults.S_OK, typeInstance.GetDefinition(unloadedTypeDefinition));
+        Assert.IsType<ClrDataTypeDefinition>(unloadedTypeDefinition.Interface);
+    }
+
     private static TestPlaceholderTarget CreateTarget(
         MockTarget.Architecture architecture,
         TestRuntimeTypeSystem runtimeTypeSystem,
@@ -201,6 +382,7 @@ public class TypeHandleTests
         public Dictionary<ITypeHandle, uint> ArrayRanks { get; } = [];
         public Dictionary<ITypeHandle, uint> TypeDefTokens { get; } = [];
         public Dictionary<ITypeHandle, TargetPointer> TypeModules { get; } = [];
+        public Dictionary<TargetPointer, ITypeHandle> TypeHandles { get; } = [];
         public Dictionary<ITypeHandle, ITypeHandle[]> Instantiations { get; } = [];
         public Dictionary<ITypeHandle, (TargetPointer Module, uint Token, uint Index)> GenericVariables { get; } = [];
 
@@ -219,6 +401,8 @@ public class TypeHandleTests
         public uint GetTypeDefToken(ITypeHandle typeHandle) => TypeDefTokens.GetValueOrDefault(typeHandle);
 
         public TargetPointer GetModule(ITypeHandle typeHandle) => TypeModules.GetValueOrDefault(typeHandle);
+
+        public ITypeHandle GetTypeHandle(TargetPointer address) => TypeHandles[address];
 
         public ReadOnlySpan<ITypeHandle> GetInstantiation(ITypeHandle typeHandle)
             => Instantiations.TryGetValue(typeHandle, out ITypeHandle[]? instantiation) ? instantiation : [];

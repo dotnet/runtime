@@ -14,6 +14,7 @@ namespace System.Text.Json.Serialization
     {
         internal override bool SupportsCreateObjectDelegate => true;
         private protected sealed override ConverterStrategy GetDefaultConverterStrategy() => ConverterStrategy.Dictionary;
+        internal sealed override JsonValueType GetSupportedJsonValueTypes(JsonNumberHandling _) => JsonValueType.Object;
 
         protected internal abstract bool OnWriteResume(Utf8JsonWriter writer, TDictionary dictionary, JsonSerializerOptions options, ref WriteStack state);
     }

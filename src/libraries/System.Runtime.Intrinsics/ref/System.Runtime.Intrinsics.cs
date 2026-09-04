@@ -45,8 +45,8 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector128<float> AsVector128(this System.Numerics.Vector2 value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<float> AsVector128(this System.Numerics.Vector3 value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<float> AsVector128(this System.Numerics.Vector4 value) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<float> AsVector128Unsafe(this System.Numerics.Vector2 value) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<float> AsVector128Unsafe(this System.Numerics.Vector3 value) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector128<float> AsVector128Unsafe(this System.Numerics.Vector2 value) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector128<float> AsVector128Unsafe(this System.Numerics.Vector3 value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<T> AsVector128<T>(this System.Numerics.Vector<T> value) { throw null; }
         public static System.Numerics.Vector2 AsVector2(this System.Runtime.Intrinsics.Vector128<float> value) { throw null; }
         public static System.Numerics.Vector3 AsVector3(this System.Runtime.Intrinsics.Vector128<float> value) { throw null; }
@@ -152,24 +152,24 @@ namespace System.Runtime.Intrinsics
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector128<ulong> CreateScalar(ulong value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<T> CreateScalar<T>(T value) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<byte> CreateScalarUnsafe(byte value) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<double> CreateScalarUnsafe(double value) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<short> CreateScalarUnsafe(short value) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<int> CreateScalarUnsafe(int value) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<long> CreateScalarUnsafe(long value) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<nint> CreateScalarUnsafe(nint value) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector128<byte> CreateScalarUnsafe(byte value) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector128<double> CreateScalarUnsafe(double value) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector128<short> CreateScalarUnsafe(short value) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector128<int> CreateScalarUnsafe(int value) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector128<long> CreateScalarUnsafe(long value) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector128<nint> CreateScalarUnsafe(nint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.Runtime.Intrinsics.Vector128<nuint> CreateScalarUnsafe(nuint value) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector128<nuint> CreateScalarUnsafe(nuint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.Runtime.Intrinsics.Vector128<sbyte> CreateScalarUnsafe(sbyte value) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<float> CreateScalarUnsafe(float value) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector128<sbyte> CreateScalarUnsafe(sbyte value) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector128<float> CreateScalarUnsafe(float value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.Runtime.Intrinsics.Vector128<ushort> CreateScalarUnsafe(ushort value) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector128<ushort> CreateScalarUnsafe(ushort value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.Runtime.Intrinsics.Vector128<uint> CreateScalarUnsafe(uint value) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector128<uint> CreateScalarUnsafe(uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.Runtime.Intrinsics.Vector128<ulong> CreateScalarUnsafe(ulong value) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<T> CreateScalarUnsafe<T>(T value) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector128<ulong> CreateScalarUnsafe(ulong value) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector128<T> CreateScalarUnsafe<T>(T value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<T> CreateSequence<T>(T start, T step) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<T> CreateGeometricSequence<T>(T initial, [System.Diagnostics.CodeAnalysis.ConstantExpected] T multiplier) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<T> CreateAlternatingSequence<T>(T even, T odd) { throw null; }
@@ -249,9 +249,9 @@ namespace System.Runtime.Intrinsics
         public static unsafe System.Runtime.Intrinsics.Vector128<T> LoadAligned<T>(T* source) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static unsafe System.Runtime.Intrinsics.Vector128<T> LoadAlignedNonTemporal<T>(T* source) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<T> LoadUnsafe<T>(ref readonly T source) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector128<T> LoadUnsafe<T>(ref readonly T source) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.Runtime.Intrinsics.Vector128<T> LoadUnsafe<T>(ref readonly T source, nuint elementOffset) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector128<T> LoadUnsafe<T>(ref readonly T source, nuint elementOffset) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<double> Log(System.Runtime.Intrinsics.Vector128<double> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<float> Log(System.Runtime.Intrinsics.Vector128<float> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<double> Log2(System.Runtime.Intrinsics.Vector128<double> vector) { throw null; }
@@ -384,14 +384,14 @@ namespace System.Runtime.Intrinsics
         public static unsafe void StoreAligned<T>(this System.Runtime.Intrinsics.Vector128<T> source, T* destination) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static unsafe void StoreAlignedNonTemporal<T>(this System.Runtime.Intrinsics.Vector128<T> source, T* destination) { throw null; }
-        public static void StoreUnsafe<T>(this System.Runtime.Intrinsics.Vector128<T> source, ref T destination) { throw null; }
+        public unsafe static void StoreUnsafe<T>(this System.Runtime.Intrinsics.Vector128<T> source, ref T destination) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static void StoreUnsafe<T>(this System.Runtime.Intrinsics.Vector128<T> source, ref T destination, nuint elementOffset) { throw null; }
+        public unsafe static void StoreUnsafe<T>(this System.Runtime.Intrinsics.Vector128<T> source, ref T destination, nuint elementOffset) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<T> Subtract<T>(System.Runtime.Intrinsics.Vector128<T> left, System.Runtime.Intrinsics.Vector128<T> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<T> SubtractSaturate<T>(System.Runtime.Intrinsics.Vector128<T> left, System.Runtime.Intrinsics.Vector128<T> right) { throw null; }
         public static T Sum<T>(System.Runtime.Intrinsics.Vector128<T> vector) { throw null; }
         public static T ToScalar<T>(this System.Runtime.Intrinsics.Vector128<T> vector) { throw null; }
-        public static System.Runtime.Intrinsics.Vector256<T> ToVector256Unsafe<T>(this System.Runtime.Intrinsics.Vector128<T> vector) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector256<T> ToVector256Unsafe<T>(this System.Runtime.Intrinsics.Vector128<T> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<T> ToVector256<T>(this System.Runtime.Intrinsics.Vector128<T> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<double> Truncate(System.Runtime.Intrinsics.Vector128<double> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<float> Truncate(System.Runtime.Intrinsics.Vector128<float> vector) { throw null; }
@@ -618,24 +618,24 @@ namespace System.Runtime.Intrinsics
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector256<ulong> CreateScalar(ulong value) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<T> CreateScalar<T>(T value) { throw null; }
-        public static System.Runtime.Intrinsics.Vector256<byte> CreateScalarUnsafe(byte value) { throw null; }
-        public static System.Runtime.Intrinsics.Vector256<double> CreateScalarUnsafe(double value) { throw null; }
-        public static System.Runtime.Intrinsics.Vector256<short> CreateScalarUnsafe(short value) { throw null; }
-        public static System.Runtime.Intrinsics.Vector256<int> CreateScalarUnsafe(int value) { throw null; }
-        public static System.Runtime.Intrinsics.Vector256<long> CreateScalarUnsafe(long value) { throw null; }
-        public static System.Runtime.Intrinsics.Vector256<nint> CreateScalarUnsafe(nint value) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector256<byte> CreateScalarUnsafe(byte value) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector256<double> CreateScalarUnsafe(double value) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector256<short> CreateScalarUnsafe(short value) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector256<int> CreateScalarUnsafe(int value) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector256<long> CreateScalarUnsafe(long value) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector256<nint> CreateScalarUnsafe(nint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.Runtime.Intrinsics.Vector256<nuint> CreateScalarUnsafe(nuint value) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector256<nuint> CreateScalarUnsafe(nuint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.Runtime.Intrinsics.Vector256<sbyte> CreateScalarUnsafe(sbyte value) { throw null; }
-        public static System.Runtime.Intrinsics.Vector256<float> CreateScalarUnsafe(float value) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector256<sbyte> CreateScalarUnsafe(sbyte value) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector256<float> CreateScalarUnsafe(float value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.Runtime.Intrinsics.Vector256<ushort> CreateScalarUnsafe(ushort value) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector256<ushort> CreateScalarUnsafe(ushort value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.Runtime.Intrinsics.Vector256<uint> CreateScalarUnsafe(uint value) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector256<uint> CreateScalarUnsafe(uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.Runtime.Intrinsics.Vector256<ulong> CreateScalarUnsafe(ulong value) { throw null; }
-        public static System.Runtime.Intrinsics.Vector256<T> CreateScalarUnsafe<T>(T value) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector256<ulong> CreateScalarUnsafe(ulong value) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector256<T> CreateScalarUnsafe<T>(T value) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<T> CreateSequence<T>(T start, T step) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<T> CreateGeometricSequence<T>(T initial, [System.Diagnostics.CodeAnalysis.ConstantExpected] T multiplier) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<T> CreateAlternatingSequence<T>(T even, T odd) { throw null; }
@@ -716,9 +716,9 @@ namespace System.Runtime.Intrinsics
         public static unsafe System.Runtime.Intrinsics.Vector256<T> LoadAligned<T>(T* source) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static unsafe System.Runtime.Intrinsics.Vector256<T> LoadAlignedNonTemporal<T>(T* source) { throw null; }
-        public static System.Runtime.Intrinsics.Vector256<T> LoadUnsafe<T>(ref readonly T source) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector256<T> LoadUnsafe<T>(ref readonly T source) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.Runtime.Intrinsics.Vector256<T> LoadUnsafe<T>(ref readonly T source, nuint elementOffset) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector256<T> LoadUnsafe<T>(ref readonly T source, nuint elementOffset) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<double> Log(System.Runtime.Intrinsics.Vector256<double> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<float> Log(System.Runtime.Intrinsics.Vector256<float> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<double> Log2(System.Runtime.Intrinsics.Vector256<double> vector) { throw null; }
@@ -851,14 +851,14 @@ namespace System.Runtime.Intrinsics
         public static unsafe void StoreAligned<T>(this System.Runtime.Intrinsics.Vector256<T> source, T* destination) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static unsafe void StoreAlignedNonTemporal<T>(this System.Runtime.Intrinsics.Vector256<T> source, T* destination) { throw null; }
-        public static void StoreUnsafe<T>(this System.Runtime.Intrinsics.Vector256<T> source, ref T destination) { throw null; }
+        public unsafe static void StoreUnsafe<T>(this System.Runtime.Intrinsics.Vector256<T> source, ref T destination) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static void StoreUnsafe<T>(this System.Runtime.Intrinsics.Vector256<T> source, ref T destination, nuint elementOffset) { throw null; }
+        public unsafe static void StoreUnsafe<T>(this System.Runtime.Intrinsics.Vector256<T> source, ref T destination, nuint elementOffset) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<T> Subtract<T>(System.Runtime.Intrinsics.Vector256<T> left, System.Runtime.Intrinsics.Vector256<T> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<T> SubtractSaturate<T>(System.Runtime.Intrinsics.Vector256<T> left, System.Runtime.Intrinsics.Vector256<T> right) { throw null; }
         public static T Sum<T>(System.Runtime.Intrinsics.Vector256<T> vector) { throw null; }
         public static T ToScalar<T>(this System.Runtime.Intrinsics.Vector256<T> vector) { throw null; }
-        public static System.Runtime.Intrinsics.Vector512<T> ToVector512Unsafe<T>(this System.Runtime.Intrinsics.Vector256<T> vector) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector512<T> ToVector512Unsafe<T>(this System.Runtime.Intrinsics.Vector256<T> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<T> ToVector512<T>(this System.Runtime.Intrinsics.Vector256<T> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<double> Truncate(System.Runtime.Intrinsics.Vector256<double> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<float> Truncate(System.Runtime.Intrinsics.Vector256<float> vector) { throw null; }
@@ -1085,24 +1085,24 @@ namespace System.Runtime.Intrinsics
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector512<ulong> CreateScalar(ulong value) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<T> CreateScalar<T>(T value) { throw null; }
-        public static System.Runtime.Intrinsics.Vector512<byte> CreateScalarUnsafe(byte value) { throw null; }
-        public static System.Runtime.Intrinsics.Vector512<double> CreateScalarUnsafe(double value) { throw null; }
-        public static System.Runtime.Intrinsics.Vector512<short> CreateScalarUnsafe(short value) { throw null; }
-        public static System.Runtime.Intrinsics.Vector512<int> CreateScalarUnsafe(int value) { throw null; }
-        public static System.Runtime.Intrinsics.Vector512<long> CreateScalarUnsafe(long value) { throw null; }
-        public static System.Runtime.Intrinsics.Vector512<nint> CreateScalarUnsafe(nint value) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector512<byte> CreateScalarUnsafe(byte value) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector512<double> CreateScalarUnsafe(double value) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector512<short> CreateScalarUnsafe(short value) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector512<int> CreateScalarUnsafe(int value) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector512<long> CreateScalarUnsafe(long value) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector512<nint> CreateScalarUnsafe(nint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.Runtime.Intrinsics.Vector512<nuint> CreateScalarUnsafe(nuint value) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector512<nuint> CreateScalarUnsafe(nuint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.Runtime.Intrinsics.Vector512<sbyte> CreateScalarUnsafe(sbyte value) { throw null; }
-        public static System.Runtime.Intrinsics.Vector512<float> CreateScalarUnsafe(float value) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector512<sbyte> CreateScalarUnsafe(sbyte value) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector512<float> CreateScalarUnsafe(float value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.Runtime.Intrinsics.Vector512<ushort> CreateScalarUnsafe(ushort value) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector512<ushort> CreateScalarUnsafe(ushort value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.Runtime.Intrinsics.Vector512<uint> CreateScalarUnsafe(uint value) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector512<uint> CreateScalarUnsafe(uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.Runtime.Intrinsics.Vector512<ulong> CreateScalarUnsafe(ulong value) { throw null; }
-        public static System.Runtime.Intrinsics.Vector512<T> CreateScalarUnsafe<T>(T value) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector512<ulong> CreateScalarUnsafe(ulong value) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector512<T> CreateScalarUnsafe<T>(T value) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<T> CreateSequence<T>(T start, T step) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<T> CreateGeometricSequence<T>(T initial, [System.Diagnostics.CodeAnalysis.ConstantExpected] T multiplier) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<T> CreateAlternatingSequence<T>(T even, T odd) { throw null; }
@@ -1184,9 +1184,9 @@ namespace System.Runtime.Intrinsics
         public static unsafe System.Runtime.Intrinsics.Vector512<T> LoadAligned<T>(T* source) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static unsafe System.Runtime.Intrinsics.Vector512<T> LoadAlignedNonTemporal<T>(T* source) { throw null; }
-        public static System.Runtime.Intrinsics.Vector512<T> LoadUnsafe<T>(ref readonly T source) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector512<T> LoadUnsafe<T>(ref readonly T source) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.Runtime.Intrinsics.Vector512<T> LoadUnsafe<T>(ref readonly T source, nuint elementOffset) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector512<T> LoadUnsafe<T>(ref readonly T source, nuint elementOffset) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<double> Log(System.Runtime.Intrinsics.Vector512<double> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<float> Log(System.Runtime.Intrinsics.Vector512<float> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<double> Log2(System.Runtime.Intrinsics.Vector512<double> vector) { throw null; }
@@ -1319,9 +1319,9 @@ namespace System.Runtime.Intrinsics
         public static unsafe void StoreAligned<T>(this System.Runtime.Intrinsics.Vector512<T> source, T* destination) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static unsafe void StoreAlignedNonTemporal<T>(this System.Runtime.Intrinsics.Vector512<T> source, T* destination) { throw null; }
-        public static void StoreUnsafe<T>(this System.Runtime.Intrinsics.Vector512<T> source, ref T destination) { throw null; }
+        public unsafe static void StoreUnsafe<T>(this System.Runtime.Intrinsics.Vector512<T> source, ref T destination) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static void StoreUnsafe<T>(this System.Runtime.Intrinsics.Vector512<T> source, ref T destination, nuint elementOffset) { throw null; }
+        public unsafe static void StoreUnsafe<T>(this System.Runtime.Intrinsics.Vector512<T> source, ref T destination, nuint elementOffset) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<T> Subtract<T>(System.Runtime.Intrinsics.Vector512<T> left, System.Runtime.Intrinsics.Vector512<T> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<T> SubtractSaturate<T>(System.Runtime.Intrinsics.Vector512<T> left, System.Runtime.Intrinsics.Vector512<T> right) { throw null; }
         public static T Sum<T>(System.Runtime.Intrinsics.Vector512<T> vector) { throw null; }
@@ -1528,24 +1528,24 @@ namespace System.Runtime.Intrinsics
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector64<ulong> CreateScalar(ulong value) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<T> CreateScalar<T>(T value) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<byte> CreateScalarUnsafe(byte value) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<double> CreateScalarUnsafe(double value) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<short> CreateScalarUnsafe(short value) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<int> CreateScalarUnsafe(int value) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<long> CreateScalarUnsafe(long value) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<nint> CreateScalarUnsafe(nint value) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector64<byte> CreateScalarUnsafe(byte value) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector64<double> CreateScalarUnsafe(double value) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector64<short> CreateScalarUnsafe(short value) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector64<int> CreateScalarUnsafe(int value) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector64<long> CreateScalarUnsafe(long value) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector64<nint> CreateScalarUnsafe(nint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.Runtime.Intrinsics.Vector64<nuint> CreateScalarUnsafe(nuint value) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector64<nuint> CreateScalarUnsafe(nuint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.Runtime.Intrinsics.Vector64<sbyte> CreateScalarUnsafe(sbyte value) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<float> CreateScalarUnsafe(float value) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector64<sbyte> CreateScalarUnsafe(sbyte value) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector64<float> CreateScalarUnsafe(float value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.Runtime.Intrinsics.Vector64<ushort> CreateScalarUnsafe(ushort value) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector64<ushort> CreateScalarUnsafe(ushort value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.Runtime.Intrinsics.Vector64<uint> CreateScalarUnsafe(uint value) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector64<uint> CreateScalarUnsafe(uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.Runtime.Intrinsics.Vector64<ulong> CreateScalarUnsafe(ulong value) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<T> CreateScalarUnsafe<T>(T value) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector64<ulong> CreateScalarUnsafe(ulong value) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector64<T> CreateScalarUnsafe<T>(T value) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<T> CreateSequence<T>(T start, T step) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<T> CreateGeometricSequence<T>(T initial, [System.Diagnostics.CodeAnalysis.ConstantExpected] T multiplier) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<T> CreateAlternatingSequence<T>(T even, T odd) { throw null; }
@@ -1621,9 +1621,9 @@ namespace System.Runtime.Intrinsics
         public static unsafe System.Runtime.Intrinsics.Vector64<T> LoadAligned<T>(T* source) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static unsafe System.Runtime.Intrinsics.Vector64<T> LoadAlignedNonTemporal<T>(T* source) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<T> LoadUnsafe<T>(ref readonly T source) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector64<T> LoadUnsafe<T>(ref readonly T source) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.Runtime.Intrinsics.Vector64<T> LoadUnsafe<T>(ref readonly T source, nuint elementOffset) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector64<T> LoadUnsafe<T>(ref readonly T source, nuint elementOffset) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<double> Log(System.Runtime.Intrinsics.Vector64<double> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<float> Log(System.Runtime.Intrinsics.Vector64<float> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<double> Log2(System.Runtime.Intrinsics.Vector64<double> vector) { throw null; }
@@ -1748,14 +1748,14 @@ namespace System.Runtime.Intrinsics
         public static unsafe void StoreAligned<T>(this System.Runtime.Intrinsics.Vector64<T> source, T* destination) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static unsafe void StoreAlignedNonTemporal<T>(this System.Runtime.Intrinsics.Vector64<T> source, T* destination) { throw null; }
-        public static void StoreUnsafe<T>(this System.Runtime.Intrinsics.Vector64<T> source, ref T destination) { throw null; }
+        public unsafe static void StoreUnsafe<T>(this System.Runtime.Intrinsics.Vector64<T> source, ref T destination) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static void StoreUnsafe<T>(this System.Runtime.Intrinsics.Vector64<T> source, ref T destination, nuint elementOffset) { throw null; }
+        public unsafe static void StoreUnsafe<T>(this System.Runtime.Intrinsics.Vector64<T> source, ref T destination, nuint elementOffset) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<T> Subtract<T>(System.Runtime.Intrinsics.Vector64<T> left, System.Runtime.Intrinsics.Vector64<T> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<T> SubtractSaturate<T>(System.Runtime.Intrinsics.Vector64<T> left, System.Runtime.Intrinsics.Vector64<T> right) { throw null; }
         public static T Sum<T>(System.Runtime.Intrinsics.Vector64<T> vector) { throw null; }
         public static T ToScalar<T>(this System.Runtime.Intrinsics.Vector64<T> vector) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<T> ToVector128Unsafe<T>(this System.Runtime.Intrinsics.Vector64<T> vector) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector128<T> ToVector128Unsafe<T>(this System.Runtime.Intrinsics.Vector64<T> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<T> ToVector128<T>(this System.Runtime.Intrinsics.Vector64<T> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<double> Truncate(System.Runtime.Intrinsics.Vector64<double> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<float> Truncate(System.Runtime.Intrinsics.Vector64<float> vector) { throw null; }

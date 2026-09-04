@@ -98,7 +98,7 @@ HRESULT CustomAssemblyBinder::BindUsingAssemblyName(BINDER_SPACE::AssemblyName* 
     // For TPA assemblies that were bound, DefaultBinder
     // would have already set the binder reference for the assembly, so we just need to
     // extract the reference now.
-    *ppAssembly = pCoreCLRFoundAssembly.Extract();
+    *ppAssembly = pCoreCLRFoundAssembly.Detach();
 
 Exit:;
 
@@ -139,7 +139,7 @@ HRESULT CustomAssemblyBinder::BindUsingPEImage( /* in */ PEImage *pPEImage,
         {
             _ASSERTE(pCoreCLRFoundAssembly != NULL);
             pCoreCLRFoundAssembly->SetBinder(this);
-            *ppAssembly = pCoreCLRFoundAssembly.Extract();
+            *ppAssembly = pCoreCLRFoundAssembly.Detach();
         }
 Exit:;
     }

@@ -6,8 +6,8 @@
     Performs a per-app native link of the shipping wasihost corehost (libWasiHost.a, from
     src/native/corehost/wasihost) so reverse P/Invoke thunks for the app/test
     [UnmanagedCallersOnly] methods are covered (the baked libcoreclr_gen_static.a
-    only covers framework top-level UCO callbacks). Runs ManagedToNativeGenerator
-    (TargetOS=wasi) over the bundle, compiles the generated callhelpers with the wasi-sdk
+    only covers framework top-level UCO callbacks). Runs crossgen2's portable call-helpers
+    generator (TargetOS=wasi) over the bundle, compiles the generated callhelpers with the wasi-sdk
     clang, and links libWasiHost.a from the runtime-pack static archives + the app callhelper .o
     (replacing libcoreclr_gen_static.a) via wasm-component-ld. The wasi:http import that
     System.Net.* pulls in is declared via the component-type link flag
@@ -21,10 +21,7 @@
        WasmAppRuntimeFlavor=Mono default. -->
   <Import Project="$(MSBuildThisFileDirectory)WasiApp.targets" />
 
-  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.CoreClr.ManagedToNativeGenerator"
-             AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)"
-             TaskFactory="TaskHostFactory"
-             Condition="'$(WasmAppBuilderTasksAssemblyPath)' != ''" />
+  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.FilterManagedAssemblies" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
 
   <PropertyGroup>
     <WasmAppRuntimeFlavor>CoreCLR</WasmAppRuntimeFlavor>
@@ -108,7 +105,6 @@
       <_WasiPInvokeTablePath>$(_WasiRelinkObjDir)callhelpers-pinvoke.cpp</_WasiPInvokeTablePath>
       <_WasiReversePInvokeTablePath>$(_WasiRelinkObjDir)callhelpers-reverse.cpp</_WasiReversePInvokeTablePath>
       <_WasiInterpToNativeTablePath>$(_WasiRelinkObjDir)callhelpers-interp-to-managed.cpp</_WasiInterpToNativeTablePath>
-      <_WasiM2NCachePath>$(_WasiRelinkObjDir)m2n_cache.txt</_WasiM2NCachePath>
 
       <!-- Curated header set for the generated callhelpers (mirrors browser's
            _EmccCFlagsGenerated): force-include coreclr_compat.h + -I the dirs with
@@ -142,34 +138,57 @@
            Text="WasiHttpWorld_component_type.wit not found at $(_WasiHttpWorldWit)." />
 
     <!-- 1. Generate the per-app callhelper tables over the bundled managed closure.
-         WarnOnUnresolvedPInvokeModules=false: library-test bundles are untrimmed and pull in
-         cross-platform test-support assemblies whose foreign-platform P/Invokes (kernel32,
-         Security.framework, libsecret, ...) are unresolved on wasm. The generator correctly
-         skips them (throw-if-called), but the WASM0066 warning would fail the build under
-         warn-as-error; downgrade it to a message here. (BrowserWasmApp.CoreCLR.targets should
-         set the same flag when its library-test leg runs untrimmed closures.) -->
+         The bundle can carry native payloads named .dll, and the generator reads managed
+         metadata, so narrow the list the same way the browser targets do. -->
     <ItemGroup>
-      <_WasiManagedAssemblies Include="$(WasmAppDir)managed\*.dll" />
+      <_WasiBundledFile Include="$(WasmAppDir)managed\*.dll" />
 
       <_WasiPInvokeModules Include="libSystem.Native" />
       <_WasiPInvokeModules Include="libSystem.IO.Compression.Native" />
       <_WasiPInvokeModules Include="libSystem.Globalization.Native" Condition="'$(InvariantGlobalization)' != 'true'" />
-      <_WasiIgnoredPInvokeModules Include="libSystem.Globalization.Native" Condition="'$(InvariantGlobalization)' == 'true'" />
     </ItemGroup>
 
-    <ManagedToNativeGenerator
-      Assemblies="@(_WasiManagedAssemblies)"
-      PInvokeModules="@(_WasiPInvokeModules)"
-      IgnoredPInvokeModules="@(_WasiIgnoredPInvokeModules)"
-      PInvokeOutputPath="$(_WasiPInvokeTablePath)"
-      ReversePInvokeOutputPath="$(_WasiReversePInvokeTablePath)"
-      InterpToNativeOutputPath="$(_WasiInterpToNativeTablePath)"
-      CacheFilePath="$(_WasiM2NCachePath)"
-      TargetOS="wasi"
-      WarnOnUnresolvedPInvokeModules="false"
-      IsLibraryMode="false">
-      <Output TaskParameter="FileWrites" ItemName="FileWrites" />
-    </ManagedToNativeGenerator>
+    <FilterManagedAssemblies Assemblies="@(_WasiBundledFile)">
+      <Output TaskParameter="ManagedAssemblies" ItemName="_WasiManagedAssemblies" />
+    </FilterManagedAssemblies>
+
+    <!-- crossgen2 has the type system that knows the wasm ABI, so it generates the helpers itself.
+         In the repo it comes from the build output; outside it, from a crossgen2 pack
+         that sets $(Crossgen2ToolPath). The wasi-experimental workload does not acquire that pack
+         today, so out-of-repo wasi relink needs $(PortableCallHelpersGeneratorPath) or
+         $(Crossgen2ToolPath) to be set explicitly. -->
+    <PropertyGroup>
+      <_PortableCallHelpersGeneratorExeSuffix Condition="'$(OS)' == 'Windows_NT'">.exe</_PortableCallHelpersGeneratorExeSuffix>
+      <PortableCallHelpersGeneratorPath Condition="'$(PortableCallHelpersGeneratorPath)' == '' and '$(Crossgen2InBuildDir)' != ''">$([MSBuild]::NormalizePath('$(Crossgen2InBuildDir)', 'crossgen2$(_PortableCallHelpersGeneratorExeSuffix)'))</PortableCallHelpersGeneratorPath>
+      <PortableCallHelpersGeneratorPath Condition="'$(PortableCallHelpersGeneratorPath)' == ''">$(Crossgen2ToolPath)</PortableCallHelpersGeneratorPath>
+    </PropertyGroup>
+
+    <Error Condition="'$(PortableCallHelpersGeneratorPath)' == ''"
+           Text="crossgen2 was not found, so the portable call helpers cannot be generated. Set %24(PortableCallHelpersGeneratorPath) to a crossgen2 executable." />
+    <Error Condition="'$([System.IO.Path]::GetExtension(`$(PortableCallHelpersGeneratorPath)`))' == '.dll'"
+           Text="%24(PortableCallHelpersGeneratorPath) is '$(PortableCallHelpersGeneratorPath)'. It has to name a crossgen2 executable; an IL assembly cannot be launched directly." />
+    <Error Condition="!Exists('$(PortableCallHelpersGeneratorPath)')"
+           Text="%24(PortableCallHelpersGeneratorPath) is '$(PortableCallHelpersGeneratorPath)', which does not exist. In the repo, build crossgen2 first; outside it, set it to a crossgen2 executable." />
+
+    <PropertyGroup>
+      <_PortableCallHelpersGeneratorRsp>$(_WasiRelinkObjDir)callhelpers-generator.rsp</_PortableCallHelpersGeneratorRsp>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_PortableCallHelpersGeneratorArg Include="--targetos:wasi" />
+      <_PortableCallHelpersGeneratorArg Include="--targetarch:wasm" />
+      <_PortableCallHelpersGeneratorArg Include="--generate-portable-callhelpers:$(_WasiRelinkObjDir)" />
+      <_PortableCallHelpersGeneratorArg Include="@(_WasiPInvokeModules->'--directpinvoke:%(Identity)')" />
+      <_PortableCallHelpersGeneratorArg Include="@(_WasiManagedAssemblies->'%(FullPath)')" />
+    </ItemGroup>
+
+    <WriteLinesToFile File="$(_PortableCallHelpersGeneratorRsp)" Lines="@(_PortableCallHelpersGeneratorArg)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+
+    <Exec Command="&quot;$(PortableCallHelpersGeneratorPath)&quot; &quot;@$(_PortableCallHelpersGeneratorRsp)&quot;" />
+
+    <ItemGroup>
+      <FileWrites Include="$(_PortableCallHelpersGeneratorRsp);$(_WasiPInvokeTablePath);$(_WasiReversePInvokeTablePath);$(_WasiInterpToNativeTablePath)" />
+    </ItemGroup>
 
     <!-- 2. Compile the three generated callhelper sources with the wasi-sdk clang.
          The generated .cpp #include the real <callhelpers.hpp>/<minipal/*.h>; the

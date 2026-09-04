@@ -6,17 +6,22 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.DynamicStaticsInfo))]
 internal sealed partial class DynamicStaticsInfo : IData<DynamicStaticsInfo>
 {
+    [CustomInit(nameof(InitGCStatics))] public partial TargetPointer GCStatics { get; }
+    [CustomInit(nameof(InitNonGCStatics))] public partial TargetPointer NonGCStatics { get; }
+
     [DataDescriptorDependency(nameof(GCStatics), "pointer")]
-    public TargetPointer GCStatics { get; private set; }
-
-    [DataDescriptorDependency(nameof(NonGCStatics), "pointer")]
-    public TargetPointer NonGCStatics { get; private set; }
-
-    partial void OnInit(Target target, TargetPointer address)
+    private partial TargetPointer InitGCStatics(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.DynamicStaticsInfo);
         TargetPointer mask = target.ReadGlobalPointer(Constants.Globals.StaticsPointerMask);
-        GCStatics = target.ReadPointerField(address, type, nameof(GCStatics)) & mask;
-        NonGCStatics = target.ReadPointerField(address, type, nameof(NonGCStatics)) & mask;
+        return target.ReadPointerField(address, type, nameof(GCStatics)) & mask;
+    }
+
+    [DataDescriptorDependency(nameof(NonGCStatics), "pointer")]
+    private partial TargetPointer InitNonGCStatics(Target target, TargetPointer address)
+    {
+        Target.TypeInfo type = target.GetTypeInfo(DataType.DynamicStaticsInfo);
+        TargetPointer mask = target.ReadGlobalPointer(Constants.Globals.StaticsPointerMask);
+        return target.ReadPointerField(address, type, nameof(NonGCStatics)) & mask;
     }
 }

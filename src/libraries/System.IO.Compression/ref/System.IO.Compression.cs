@@ -23,6 +23,7 @@ namespace System.IO.Compression
         public DeflateDecoder() { }
         public System.Buffers.OperationStatus Decompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesConsumed, out int bytesWritten) { throw null; }
         public void Dispose() { }
+        public void Reset() { }
         public static bool TryDecompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
     public sealed partial class DeflateEncoder : System.IDisposable
@@ -35,6 +36,7 @@ namespace System.IO.Compression
         public void Dispose() { }
         public System.Buffers.OperationStatus Flush(System.Span<byte> destination, out int bytesWritten) { throw null; }
         public static long GetMaxCompressedLength(long inputLength) { throw null; }
+        public void Reset() { }
         public static bool TryCompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
         public static bool TryCompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten, int quality) { throw null; }
         public static bool TryCompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten, int quality, int windowLog2) { throw null; }
@@ -80,6 +82,7 @@ namespace System.IO.Compression
         public GZipDecoder() { }
         public System.Buffers.OperationStatus Decompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesConsumed, out int bytesWritten) { throw null; }
         public void Dispose() { }
+        public void Reset() { }
         public static bool TryDecompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
     public sealed partial class GZipEncoder : System.IDisposable
@@ -92,6 +95,7 @@ namespace System.IO.Compression
         public void Dispose() { }
         public System.Buffers.OperationStatus Flush(System.Span<byte> destination, out int bytesWritten) { throw null; }
         public static long GetMaxCompressedLength(long inputLength) { throw null; }
+        public void Reset() { }
         public static bool TryCompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
         public static bool TryCompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten, int quality) { throw null; }
         public static bool TryCompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten, int quality, int windowLog2) { throw null; }
@@ -227,6 +231,7 @@ namespace System.IO.Compression
         public ZLibDecoder() { }
         public System.Buffers.OperationStatus Decompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesConsumed, out int bytesWritten) { throw null; }
         public void Dispose() { }
+        public void Reset() { }
         public static bool TryDecompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
     public sealed partial class ZLibEncoder : System.IDisposable
@@ -239,6 +244,7 @@ namespace System.IO.Compression
         public void Dispose() { }
         public System.Buffers.OperationStatus Flush(System.Span<byte> destination, out int bytesWritten) { throw null; }
         public static long GetMaxCompressedLength(long inputLength) { throw null; }
+        public void Reset() { }
         public static bool TryCompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
         public static bool TryCompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten, int quality) { throw null; }
         public static bool TryCompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten, int quality, int windowLog2) { throw null; }

@@ -6,22 +6,27 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.SyncTableEntry))]
 internal sealed partial class SyncTableEntry : IData<SyncTableEntry>
 {
+    [CustomInit(nameof(InitSyncBlock))] public partial SyncBlock? SyncBlock { get; }
+    [CustomInit(nameof(InitObject))] public partial Object? Object { get; }
+
     [DataDescriptorDependency(nameof(SyncBlock), "pointer")]
-    public SyncBlock? SyncBlock { get; private set; }
-
-    [DataDescriptorDependency(nameof(Object), "pointer")]
-    public Object? Object { get; private set; }
-
-    partial void OnInit(Target target, TargetPointer address)
+    private partial SyncBlock? InitSyncBlock(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.SyncTableEntry);
-
         TargetPointer syncBlockPointer = target.ReadPointerField(address, type, nameof(SyncBlock));
-        if (syncBlockPointer != TargetPointer.Null)
-            SyncBlock = target.ProcessedData.GetOrAdd<SyncBlock>(syncBlockPointer);
+        return syncBlockPointer != TargetPointer.Null
+            ? target.ProcessedData.GetOrAdd<SyncBlock>(syncBlockPointer)
+            : null;
+    }
 
+    [DataDescriptorDependency(nameof(Object), "pointer")]
+    private partial Object? InitObject(Target target, TargetPointer address)
+    {
+        Target.TypeInfo type = target.GetTypeInfo(DataType.SyncTableEntry);
         TargetPointer objectPointer = target.ReadPointerField(address, type, nameof(Object));
-        if (objectPointer != TargetPointer.Null && (objectPointer & 1) == 0) // Defensive check: if the lowest bit is set, this is a free sync block entry and the pointer is not valid.
-            Object = target.ProcessedData.GetOrAdd<Object>(objectPointer);
+        // Defensive check: if the lowest bit is set, this is a free sync block entry and the pointer is not valid.
+        return objectPointer != TargetPointer.Null && (objectPointer & 1) == 0
+            ? target.ProcessedData.GetOrAdd<Object>(objectPointer)
+            : null;
     }
 }

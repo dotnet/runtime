@@ -538,8 +538,8 @@ internal static partial class Interop
         [LibraryImport(Interop.Libraries.SspiCli, SetLastError = true)]
         internal static partial SECURITY_STATUS SetCredentialsAttributesW(
             in CredHandle handlePtr,
-            long ulAttribute,
+            uint ulAttribute,
             in SecPkgCred_ClientCertPolicy pBuffer,
-            long cbBuffer);
+            uint cbBuffer);
     }
 }

@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using ILLink.CodeFixProvider;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeFixes;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace ILLink.CodeFix
@@ -41,7 +42,8 @@ namespace ILLink.CodeFix
                     or IndexerDeclarationSyntax
                     or EventDeclarationSyntax
                     or EventFieldDeclarationSyntax
-                    or LocalFunctionStatementSyntax);
+                    or LocalFunctionStatementSyntax,
+                insertAfterModifier: SyntaxKind.ExternKeyword);
     }
 }
 #endif

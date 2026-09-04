@@ -172,6 +172,9 @@ public class ExceptionTests
 
         Mock<IObject> objectMock = new(MockBehavior.Strict);
         Mock<IRuntimeTypeSystem> rtsMock = new(MockBehavior.Strict);
+        Mock<IRuntimeInfo> runtimeInfoMock = new(MockBehavior.Strict);
+        runtimeInfoMock.Setup(r => r.GetTargetArchitecture()).Returns(
+            arch.Is64Bit ? RuntimeInfoArchitecture.X64 : RuntimeInfoArchitecture.X86);
 
         if (shape != StackTraceShape.Null)
         {
@@ -217,6 +220,7 @@ public class ExceptionTests
             .AddTypes(CreateTypes(arch))
             .AddMockContract(objectMock)
             .AddMockContract(rtsMock)
+            .AddMockContract(runtimeInfoMock)
             .AddContract<IException>(version: "c1")
             .Build();
 
@@ -260,7 +264,7 @@ public class ExceptionTests
 
         Assert.Equal(3, result.Count);
 
-        Assert.Equal(new TargetPointer(0x1000), result[0].Ip);
+        Assert.Equal(new TargetPointer(arch.Is64Bit ? 0x0fffUL : 0x1000UL), result[0].Ip);
         Assert.Equal(new TargetPointer(0xAAA0), result[0].MethodDesc);
         Assert.False(result[0].IsLastForeignExceptionFrame);
 

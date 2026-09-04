@@ -319,23 +319,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         }
 
         [Fact]
-        public void TracingNotBufferedByDefault()
-        {
-            string traceFilePath;
-            CommandResult result = Command.Create(sharedState.NativeHostPath, $"{GetHostFxrPath} false nullptr x")
-                .EnableHostTracingToFile(out traceFilePath)
-                .MultilevelLookup(true)
-                .DotNetRoot(null)
-                .Execute();
-
-            result.Should().Fail()
-                .And.FileExists(traceFilePath)
-                .And.FileContains(traceFilePath, "Tracing enabled");
-
-            FileUtils.DeleteFileIfPossible(traceFilePath);
-        }
-
-        [Fact]
         public void TestOnlyDisabledByDefault()
         {
             using (TestArtifact artifact = TestArtifact.Create(nameof(TestOnlyDisabledByDefault)))

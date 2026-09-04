@@ -291,7 +291,10 @@ namespace ILCompiler.ObjectWriter
                     // Write an overflow relocation with the real count of relocations
                     sectionHeader.NumberOfRelocations = ushort.MaxValue;
                     sectionHeader.SectionCharacteristics |= SectionCharacteristics.LinkerNRelocOvfl;
-                    coffRelocations.Add(new CoffRelocation { VirtualAddress = (uint)(relocationList.Count + 1) });
+                    coffRelocations.Add(new CoffRelocation(
+                        (uint)(relocationList.Count + 1),
+                        symbolTableIndex: 0,
+                        type: 0));
                 }
 
                 switch (_machine)
@@ -299,11 +302,10 @@ namespace ILCompiler.ObjectWriter
                     case Machine.I386:
                         foreach (var relocation in relocationList)
                         {
-                            coffRelocations.Add(new CoffRelocation
-                            {
-                                VirtualAddress = (uint)relocation.Offset,
-                                SymbolTableIndex = _symbolNameToIndex[relocation.SymbolName],
-                                Type = relocation.Type switch
+                            coffRelocations.Add(new CoffRelocation(
+                                (uint)relocation.Offset,
+                                _symbolNameToIndex[relocation.SymbolName],
+                                relocation.Type switch
                                 {
                                     IMAGE_REL_BASED_ABSOLUTE => IMAGE_REL_I386_DIR32NB,
                                     IMAGE_REL_BASED_ADDR32NB => IMAGE_REL_I386_DIR32NB,
@@ -313,19 +315,17 @@ namespace ILCompiler.ObjectWriter
                                     IMAGE_REL_SECREL => IMAGE_REL_I386_SECREL,
                                     IMAGE_REL_SECTION => IMAGE_REL_I386_SECTION,
                                     _ => throw new NotSupportedException($"Unsupported relocation: {relocation.Type}")
-                                },
-                            });
+                                }));
                         }
                         break;
 
                     case Machine.Amd64:
                         foreach (var relocation in relocationList)
                         {
-                            coffRelocations.Add(new CoffRelocation
-                            {
-                                VirtualAddress = (uint)relocation.Offset,
-                                SymbolTableIndex = _symbolNameToIndex[relocation.SymbolName],
-                                Type = relocation.Type switch
+                            coffRelocations.Add(new CoffRelocation(
+                                (uint)relocation.Offset,
+                                _symbolNameToIndex[relocation.SymbolName],
+                                relocation.Type switch
                                 {
                                     IMAGE_REL_BASED_ABSOLUTE => IMAGE_REL_AMD64_ADDR32NB,
                                     IMAGE_REL_BASED_ADDR32NB => IMAGE_REL_AMD64_ADDR32NB,
@@ -336,19 +336,17 @@ namespace ILCompiler.ObjectWriter
                                     IMAGE_REL_SECREL => IMAGE_REL_AMD64_SECREL,
                                     IMAGE_REL_SECTION => IMAGE_REL_AMD64_SECTION,
                                     _ => throw new NotSupportedException($"Unsupported relocation: {relocation.Type}")
-                                },
-                            });
+                                }));
                         }
                         break;
 
                     case Machine.Arm64:
                         foreach (var relocation in relocationList)
                         {
-                            coffRelocations.Add(new CoffRelocation
-                            {
-                                VirtualAddress = (uint)relocation.Offset,
-                                SymbolTableIndex = _symbolNameToIndex[relocation.SymbolName],
-                                Type = relocation.Type switch
+                            coffRelocations.Add(new CoffRelocation(
+                                (uint)relocation.Offset,
+                                _symbolNameToIndex[relocation.SymbolName],
+                                relocation.Type switch
                                 {
                                     IMAGE_REL_BASED_ABSOLUTE => IMAGE_REL_ARM64_ADDR32NB,
                                     IMAGE_REL_BASED_ADDR32NB => IMAGE_REL_ARM64_ADDR32NB,
@@ -365,8 +363,7 @@ namespace ILCompiler.ObjectWriter
                                     IMAGE_REL_SECREL => IMAGE_REL_ARM64_SECREL,
                                     IMAGE_REL_SECTION => IMAGE_REL_ARM64_SECTION,
                                     _ => throw new NotSupportedException($"Unsupported relocation: {relocation.Type}")
-                                },
-                            });
+                                }));
                         }
                         break;
 
@@ -454,7 +451,7 @@ namespace ILCompiler.ObjectWriter
 
                 if (section.Relocations.Count > 0)
                 {
-                    foreach (var relocation in section.Relocations)
+                    foreach (ref readonly CoffRelocation relocation in CollectionsMarshal.AsSpan(section.Relocations))
                     {
                         relocation.Write(outputFileStream);
                     }
@@ -700,11 +697,18 @@ namespace ILCompiler.ObjectWriter
             IMAGE_REL_ARM64_REL32 = 17,
         }
 
-        protected sealed class CoffRelocation
+        internal readonly struct CoffRelocation
         {
-            public uint VirtualAddress { get; set; }
-            public uint SymbolTableIndex { get; set; }
-            public CoffRelocationType Type { get; set; }
+            public CoffRelocation(uint virtualAddress, uint symbolTableIndex, CoffRelocationType type)
+            {
+                VirtualAddress = virtualAddress;
+                SymbolTableIndex = symbolTableIndex;
+                Type = type;
+            }
+
+            public uint VirtualAddress { get; }
+            public uint SymbolTableIndex { get; }
+            public CoffRelocationType Type { get; }
 
             public const int Size =
                 sizeof(uint) +  // VirtualAddress

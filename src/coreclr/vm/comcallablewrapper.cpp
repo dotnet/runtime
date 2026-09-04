@@ -710,7 +710,7 @@ BOOL SimpleComCallWrapper::CustomQIRespondsToIMarshal()
     {
         DWORD newFlags = enum_CustomQIRespondsToIMarshal_Inited;
 
-        ComHolderAnyMode<IUnknown> pUnk;
+        ReleaseHolderAnyMode<IUnknown> pUnk;
         if (GetComIPFromCCW_HandleCustomQI(GetMainWrapper(), IID_IMarshal, NULL, &pUnk))
         {
             newFlags |= enum_CustomQIRespondsToIMarshal;
@@ -740,7 +740,6 @@ void SimpleComCallWrapper::InitDispatchExInfo()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
 
         // Make sure the class supports at least IReflect..
         PRECONDITION(SupportsIReflect(m_pMT));
@@ -860,7 +859,6 @@ ConnectionPoint *SimpleComCallWrapper::CreateConnectionPoint(ComCallWrapper *pWr
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pWrap));
         PRECONDITION(CheckPointer(pEventMT));
     }
@@ -876,7 +874,6 @@ CQuickArray<ConnectionPoint*> *SimpleComCallWrapper::CreateCPArray()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -1266,7 +1263,6 @@ void SimpleComCallWrapper::EnumConnectionPoints(IEnumConnectionPoints **ppEnumCP
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(ppEnumCP));
     }
     CONTRACTL_END;
@@ -1526,7 +1522,6 @@ ComCallWrapper* ComCallWrapper::CopyFromTemplate(ComCallWrapperTemplate* pTempla
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pTemplate));
         PRECONDITION(CheckPointer(pWrapperCache));
         PRECONDITION(oh != NULL);
@@ -2048,48 +2043,8 @@ IUnknown* ComCallWrapper::GetBasicIP(bool inspectionOnly)
     }
     CONTRACTL_END;
 
-    // If the legacy switch is set, we'll always return the IClassX IP
-    //  when QIing for IUnknown or IDispatch.
-    // Whidbey Tactics has decided to make this opt-in rather than
-    // opt-out for now.  Remove the check for the legacy switch.
-    if (GetComCallWrapperTemplate()->SupportsIClassX())
-        return GetIClassXIP(inspectionOnly);
-
-    ComCallWrapper *pWrap = this;
-    IUnknown *pIntf = NULL;
-
-    // The IClassX VTable pointer is in the start wrapper.
-    if (pWrap->IsLinked())
-        pWrap = ComCallWrapper::GetStartWrapper(pWrap);
-
-    ComMethodTable* pIBasicComMT = (ComMethodTable*)pWrap->m_rgpIPtr[Slot_Basic] - 1;
-    _ASSERTE(pIBasicComMT);
-
-    // Lay out the basic COM method table if it has not yet been laid out.
-    if (!pIBasicComMT->IsLayoutComplete())
-    {
-        if (inspectionOnly)
-            return NULL;
-        else
-            pIBasicComMT->LayOutBasicMethodTable();
-    }
-
-    // Return the basic vtable pointer.
-    pIntf = (IUnknown*)&pWrap->m_rgpIPtr[Slot_Basic];
-
-    // If we are not addref'ing the IUnknown (for passive inspection like ETW), return it now.
-    if (inspectionOnly)
-        {
-            return pIntf;
-        }
-
-    // AddRef the wrapper.
-    // Note that we don't do SafeAddRef(pIntf) because it's overkill to
-    // go via IUnknown when we already have the wrapper in-hand.
-    ULONG cbRef = pWrap->AddRefWithAggregationCheck();
-
-    // 0xbadF00d implies the AddRef didn't go through
-    return (cbRef != 0xbadf00d) ? pIntf : NULL;
+    // We always return the IClassX IP when QIing for IUnknown or IDispatch.
+    return GetIClassXIP(inspectionOnly);
 }
 
 //--------------------------------------------------------------------------
@@ -2198,7 +2153,7 @@ static IUnknown * GetComIPFromCCW_HandleExtendsCOMObject(
         SyncBlock* pBlock = pWrap->GetSyncBlock();
         _ASSERTE(pBlock);
 
-        ComHolderAnyMode<IUnknown> pUnk;
+        ReleaseHolderAnyMode<IUnknown> pUnk;
 
         RCWHolder pRCW(GetThread());
         RCWPROTECT_BEGIN(pRCW, pBlock);
@@ -2280,23 +2235,20 @@ static IUnknown *GetComIPFromCCW_ForIntfMT_Worker(ComCallWrapper *pWrap, MethodT
 
         // Retrieve the COM method table for the requested interface.
         ComCallWrapperTemplate *pIntfCCWTemplate = ComCallWrapperTemplate::GetTemplate(TypeHandle(pIntfMT));
-        if (pIntfCCWTemplate->SupportsIClassX())
+        ComMethodTable * pIntfComMT = pIntfCCWTemplate->GetClassComMT();
+
+        // If the class that this IClassX's was generated for is marked
+        // as ClassInterfaceType.AutoDual or AutoDisp,
+        // then give out the IClassX IP.
+        if (pIntfComMT->GetClassInterfaceType() == clsIfAutoDual || pIntfComMT->GetClassInterfaceType() == clsIfAutoDisp)
         {
-            ComMethodTable * pIntfComMT = pIntfCCWTemplate->GetClassComMT();
+            // Make sure the all the base classes of the class this IClassX corresponds to
+            // are visible to COM.
+            pIntfComMT->CheckParentComVisibility();
 
-            // If the class that this IClassX's was generated for is marked
-            // as ClassInterfaceType.AutoDual or AutoDisp,
-            // then give out the IClassX IP.
-            if (pIntfComMT->GetClassInterfaceType() == clsIfAutoDual || pIntfComMT->GetClassInterfaceType() == clsIfAutoDisp)
-            {
-                // Make sure the all the base classes of the class this IClassX corresponds to
-                // are visible to COM.
-                pIntfComMT->CheckParentComVisibility();
-
-                // Giveout IClassX
-                IUnknown * pIntf = pWrap->GetIClassXIP();
-                return GetComIPFromCCW_VisibilityCheck(pIntf, pIntfMT, pIntfComMT, flags);
-            }
+            // Giveout IClassX
+            IUnknown * pIntf = pWrap->GetIClassXIP();
+            return GetComIPFromCCW_VisibilityCheck(pIntf, pIntfMT, pIntfComMT, flags);
         }
     }
     return NULL;
@@ -2583,7 +2535,7 @@ IDispatch* ComCallWrapper::GetIDispatchIP()
     if ((DefItfType == DefaultInterfaceType_AutoDual) || (DefItfType == DefaultInterfaceType_AutoDispatch))
     {
         // Make sure we release the BasicIP we're about to get.
-        ComHolderAnyMode<IUnknown> pBasic{ GetBasicIP() };
+        ReleaseHolderAnyMode<IUnknown> pBasic{ GetBasicIP() };
         ComMethodTable* pCMT = ComMethodTable::ComMethodTableFromIP(pBasic);
         pCMT->CheckParentComVisibility();
     }
@@ -2631,7 +2583,7 @@ IDispatch* ComCallWrapper::GetIDispatchIP()
             SyncBlock* pBlock = GetSyncBlock();
             _ASSERTE(pBlock);
 
-            ComHolderAnyMode<IDispatch> pDisp;
+            ReleaseHolderAnyMode<IDispatch> pDisp;
 
             RCWHolder pRCW(GetThread());
             RCWPROTECT_BEGIN(pRCW, pBlock);
@@ -2707,7 +2659,6 @@ ComCallWrapperCache *ComCallWrapperCache::Create(LoaderAllocator *pLoaderAllocat
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pLoaderAllocator));
     }
     CONTRACTL_END;
@@ -2831,7 +2782,6 @@ namespace
             THROWS;
             GC_NOTRIGGER;
             MODE_PREEMPTIVE;
-            INJECT_FAULT(COMPlusThrowOM());
         }
         CONTRACTL_END;
 
@@ -2859,7 +2809,6 @@ void ComMethodTable::LayOutClassMethodTable()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -3383,7 +3332,6 @@ void ComMethodTable::LayOutBasicMethodTable()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -3446,7 +3394,6 @@ DispatchInfo *ComMethodTable::GetDispatchInfo()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -3648,7 +3595,6 @@ ComMethodTable* ComCallWrapperTemplate::GetClassComMT()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        PRECONDITION(SupportsIClassX());
     }
     CONTRACTL_END;
 
@@ -3847,11 +3793,9 @@ ComMethodTable* ComCallWrapperTemplate::CreateComMethodTableForClass(MethodTable
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pClassMT));
         PRECONDITION(!pClassMT->IsInterface());
         PRECONDITION(!pClassMT->GetComPlusParentMethodTable() || pClassMT->GetComPlusParentMethodTable()->GetComCallWrapperTemplate());
-        PRECONDITION(SupportsIClassX());
     }
     CONTRACTL_END;
 
@@ -4064,7 +4008,6 @@ ComMethodTable* ComCallWrapperTemplate::CreateComMethodTableForInterface(MethodT
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pInterfaceMT));
         PRECONDITION(pInterfaceMT->IsInterface());
     }
@@ -4141,7 +4084,6 @@ ComMethodTable* ComCallWrapperTemplate::CreateComMethodTableForBasic(MethodTable
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -4318,7 +4260,6 @@ ComCallWrapperTemplate* ComCallWrapperTemplate::CreateTemplate(TypeHandle thClas
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(!thClass.IsNull());
     }
     CONTRACTL_END;
@@ -4353,14 +4294,13 @@ ComCallWrapperTemplate* ComCallWrapperTemplate::CreateTemplate(TypeHandle thClas
     // Check to see if another thread has already set up the template.
     {
         // Move this inside the scope so it is destroyed before its memory is.
-        ComCallWrapperTemplateHolder pTemplate = NULL;
+        ComCallWrapperTemplateHolder pTemplate;
 
         pTemplate = thClass.GetComCallWrapperTemplate();
 
         if (pTemplate)
         {
-            pTemplate.SuppressRelease();
-            return pTemplate;
+            return pTemplate.Detach();
         }
 
         // Allocate the template.
@@ -4386,12 +4326,6 @@ ComCallWrapperTemplate* ComCallWrapperTemplate::CreateTemplate(TypeHandle thClas
         pTemplate->m_pBasicComMT = pTemplate->CreateComMethodTableForBasic(pMT);
         pTemplate->m_pBasicComMT->AddRef();
 
-        if (ClassSupportsIClassX(pMT))
-        {
-            // we will allow building IClassX for the class
-            pTemplate->m_flags |= enum_SupportsIClassX;
-        }
-
         // Eagerly create the interface CMTs.
         // when iterate the interfaces implemented by the methodtable, we can check whether
         // the interface supports ICustomQueryInterface.
@@ -4411,45 +4345,42 @@ ComCallWrapperTemplate* ComCallWrapperTemplate::CreateTemplate(TypeHandle thClas
             pTemplate = thClass.GetComCallWrapperTemplate();
             _ASSERTE(pTemplate != NULL);
 
-            pTemplate.SuppressRelease();
-            return pTemplate;
+            return pTemplate.Detach();
         }
-        pTemplate.SuppressRelease();
+        // The class now owns the template refcount; take a non-owning pointer for the return path.
+        ComCallWrapperTemplate* pRetTemplate = pTemplate.Detach();
 
 #ifdef PROFILING_SUPPORTED
         // Notify profiler of the CCW, so it can avoid double-counting.
-        if (pTemplate->SupportsIClassX())
-        {
-            BEGIN_PROFILER_CALLBACK(CORProfilerTrackCCW());
-            // When under the profiler, we'll eagerly generate the IClassX CMT.
-            pTemplate->GetClassComMT();
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackCCW());
+        // When under the profiler, we'll eagerly generate the IClassX CMT.
+        pRetTemplate->GetClassComMT();
 
-            IID IClassXIID = GUID_NULL;
-            SLOT *pComVtable = (SLOT *)(pTemplate->m_pClassComMT + 1);
+        IID IClassXIID = GUID_NULL;
+        SLOT *pComVtable = (SLOT *)(pRetTemplate->m_pClassComMT + 1);
 
-            // If the class is visible from COM, then give out the IClassX IID.
-            if (pTemplate->m_pClassComMT->IsComVisible())
-                GenerateClassItfGuid(thClass, &IClassXIID);
+        // If the class is visible from COM, then give out the IClassX IID.
+        if (pRetTemplate->m_pClassComMT->IsComVisible())
+            GenerateClassItfGuid(thClass, &IClassXIID);
 
 #if defined(_DEBUG)
-            CHAR rIID[MINIPAL_GUID_BUFFER_LEN];
-            minipal_guid_as_string(IClassXIID, rIID, MINIPAL_GUID_BUFFER_LEN);
-            SString ssName;
-            thClass.GetName(ssName);
-            LOG((LF_CORPROF, LL_INFO100, "COMClassicVTableCreated Class:%s, IID:%s, vTbl:%#08x\n",
-                 ssName.GetUTF8(), rIID, pComVtable));
+        CHAR rIID[MINIPAL_GUID_BUFFER_LEN];
+        minipal_guid_as_string(IClassXIID, rIID, MINIPAL_GUID_BUFFER_LEN);
+        SString ssName;
+        thClass.GetName(ssName);
+        LOG((LF_CORPROF, LL_INFO100, "COMClassicVTableCreated Class:%s, IID:%s, vTbl:%#08x\n",
+             ssName.GetUTF8(), rIID, pComVtable));
 #else
-            LOG((LF_CORPROF, LL_INFO100, "COMClassicVTableCreated TypeHandle:%#x, IID:{%08x-...}, vTbl:%#08x\n",
-                 thClass.AsPtr(), IClassXIID.Data1, pComVtable));
+        LOG((LF_CORPROF, LL_INFO100, "COMClassicVTableCreated TypeHandle:%#x, IID:{%08x-...}, vTbl:%#08x\n",
+             thClass.AsPtr(), IClassXIID.Data1, pComVtable));
 #endif
-            (&g_profControlBlock)->COMClassicVTableCreated(
-                (ClassID) thClass.AsPtr(), IClassXIID, pComVtable,
-                pTemplate->m_pClassComMT->m_cbSlots +
-                    ComMethodTable::GetNumExtraSlots(pTemplate->m_pClassComMT->GetInterfaceType()));
-            END_PROFILER_CALLBACK();
-        }
+        (&g_profControlBlock)->COMClassicVTableCreated(
+            (ClassID) thClass.AsPtr(), IClassXIID, pComVtable,
+            pRetTemplate->m_pClassComMT->m_cbSlots +
+                ComMethodTable::GetNumExtraSlots(pRetTemplate->m_pClassComMT->GetInterfaceType()));
+        END_PROFILER_CALLBACK();
 #endif // PROFILING_SUPPORTED
-        return pTemplate;
+        return pRetTemplate;
     }
 }
 
@@ -4463,7 +4394,6 @@ ComCallWrapperTemplate *ComCallWrapperTemplate::CreateTemplateForInterface(Metho
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pItfMT));
         PRECONDITION(pItfMT->IsInterface());
     }
@@ -4475,11 +4405,10 @@ ComCallWrapperTemplate *ComCallWrapperTemplate::CreateTemplateForInterface(Metho
     unsigned numInterfaces = 1;
 
     // Allocate the template.
-    ComCallWrapperTemplateHolder pTemplate = pItfMT->GetComCallWrapperTemplate();
+    ComCallWrapperTemplateHolder pTemplate{ pItfMT->GetComCallWrapperTemplate() };
     if (pTemplate)
     {
-        pTemplate.SuppressRelease();
-        return pTemplate;
+        return pTemplate.Detach();
     }
 
     pTemplate = (ComCallWrapperTemplate *)new BYTE[sizeof(ComCallWrapperTemplate) + numInterfaces * sizeof(SLOT)];
@@ -4510,8 +4439,7 @@ ComCallWrapperTemplate *ComCallWrapperTemplate::CreateTemplateForInterface(Metho
         _ASSERTE(pTemplate != NULL);
     }
 
-    pTemplate.SuppressRelease();
-    return pTemplate;
+    return pTemplate.Detach();
 }
 
 void ComCallWrapperTemplate::DetermineComVisibility()

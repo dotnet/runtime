@@ -12,33 +12,33 @@ internal sealed partial class TypeDesc : IData<TypeDesc>
 [CdacType(nameof(DataType.ParamTypeDesc))]
 internal sealed partial class ParamTypeDesc : IData<ParamTypeDesc>
 {
-    public uint TypeAndFlags { get; private set; }
+    [CustomInit(nameof(InitTypeAndFlags))] public partial uint TypeAndFlags { get; }
     [Field] public partial TargetPointer TypeArg { get; }
 
-    partial void OnInit(Target target, TargetPointer address)
+    private partial uint InitTypeAndFlags(Target target, TargetPointer address)
     {
-        TypeAndFlags = target.ProcessedData.GetOrAdd<TypeDesc>(address).TypeAndFlags;
+        return target.ProcessedData.GetOrAdd<TypeDesc>(address).TypeAndFlags;
     }
 }
 
 [CdacType(nameof(DataType.TypeVarTypeDesc))]
 internal sealed partial class TypeVarTypeDesc : IData<TypeVarTypeDesc>
 {
-    public uint TypeAndFlags { get; private set; }
+    [CustomInit(nameof(InitTypeAndFlags))] public partial uint TypeAndFlags { get; }
     [Field] public partial TargetPointer Module { get; }
     [Field] public partial uint Token { get; }
     [Field] public partial uint Index { get; }
 
-    partial void OnInit(Target target, TargetPointer address)
+    private partial uint InitTypeAndFlags(Target target, TargetPointer address)
     {
-        TypeAndFlags = target.ProcessedData.GetOrAdd<TypeDesc>(address).TypeAndFlags;
+        return target.ProcessedData.GetOrAdd<TypeDesc>(address).TypeAndFlags;
     }
 }
 
 [CdacType(nameof(DataType.FnPtrTypeDesc))]
 internal sealed partial class FnPtrTypeDesc : IData<FnPtrTypeDesc>
 {
-    public uint TypeAndFlags { get; private set; }
+    [CustomInit(nameof(InitTypeAndFlags))] public partial uint TypeAndFlags { get; }
     [Field] public partial uint NumArgs { get; }
     [Field] public partial uint CallConv { get; }
 
@@ -47,8 +47,8 @@ internal sealed partial class FnPtrTypeDesc : IData<FnPtrTypeDesc>
 
     [Field] public partial TargetPointer LoaderModule { get; }
 
-    partial void OnInit(Target target, TargetPointer address)
+    private partial uint InitTypeAndFlags(Target target, TargetPointer address)
     {
-        TypeAndFlags = target.ProcessedData.GetOrAdd<TypeDesc>(address).TypeAndFlags;
+        return target.ProcessedData.GetOrAdd<TypeDesc>(address).TypeAndFlags;
     }
 }

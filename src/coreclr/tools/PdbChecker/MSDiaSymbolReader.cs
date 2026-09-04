@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
 using Dia2Lib;
 
@@ -32,7 +33,7 @@ class MSDiaSymbolReader
 
     private readonly List<string> _pdbSymbols;
 
-    public MSDiaSymbolReader(string pdbFile)
+    public MSDiaSymbolReader(string pdbFile, string? imageFile = null)
     {
         try
         {
@@ -41,7 +42,24 @@ class MSDiaSymbolReader
             diaClassFactory.CreateInstance(null, typeof(IDiaDataSource).GetTypeInfo().GUID, out object comObject);
             
             _diaDataSource = (IDiaDataSource)comObject;
-            _diaDataSource.loadDataFromPdb(pdbFile);
+
+            if (imageFile is not null)
+            {
+                // Validate the PDB against the image's CodeView / RSDS identity. DIA throws if the
+                // PDB-info GUID / age don't match the image
+                (Guid imageGuid, uint imageAge) = ReadImageCodeViewIdentity(imageFile);
+                Console.WriteLine("Image file:     {0}", imageFile);
+                Console.WriteLine("Image GUID:     {0}", imageGuid);
+                Console.WriteLine("Image age:      {0}", imageAge);
+                // sig is 0: R2R images use the RSDS (PDB 7.0) CodeView record, whose identity is the
+                // GUID + age only; the legacy NB10 32-bit signature does not apply.
+                _diaDataSource.loadAndValidateDataFromPdb(pdbFile, ref imageGuid, 0, imageAge);
+            }
+            else
+            {
+                _diaDataSource.loadDataFromPdb(pdbFile);
+            }
+
             _diaDataSource.openSession(out _diaSession);
 
             _pdbSymbols = new List<string>();
@@ -57,7 +75,10 @@ class MSDiaSymbolReader
                 }
             }
 
+            IDiaSymbol globalScope = _diaSession.globalScope;
             Console.WriteLine("PDB file:       {0}", pdbFile);
+            Console.WriteLine("PDB GUID:       {0}", globalScope.guid);
+            Console.WriteLine("PDB age:        {0}", globalScope.age);
             Console.WriteLine("Total symbols:  {0}", symbolsTotal);
             Console.WriteLine("Public symbols: {0}", _pdbSymbols.Count);
         }
@@ -65,6 +86,25 @@ class MSDiaSymbolReader
         {
             throw new Exception($"Error opening PDB file {pdbFile}", ex);
         }
+    }
+
+    /// <summary>
+    /// Read the CodeView / RSDS debug record identity (GUID and age) from a PE image.
+    /// </summary>
+    private static (Guid Guid, uint Age) ReadImageCodeViewIdentity(string imageFile)
+    {
+        using FileStream imageStream = File.OpenRead(imageFile);
+        using PEReader peReader = new PEReader(imageStream);
+        foreach (DebugDirectoryEntry entry in peReader.ReadDebugDirectory())
+        {
+            if (entry.Type == DebugDirectoryEntryType.CodeView)
+            {
+                CodeViewDebugDirectoryData codeViewData = peReader.ReadCodeViewDebugDirectoryData(entry);
+                return (codeViewData.Guid, (uint)codeViewData.Age);
+            }
+        }
+
+        throw new Exception($"Image file {imageFile} does not contain a CodeView (RSDS) debug directory entry");
     }
 
     public void DumpSymbols()

@@ -1,7 +1,8 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using Dia2Lib;
 class Program
 {
@@ -26,12 +27,36 @@ class Program
             DisplayUsage();
             return;
         }
-        MSDiaSymbolReader reader = new MSDiaSymbolReader(args[0]);
+
+        string pdbFile = args[0];
+        string? imageFile = null;
+        List<string> symbolNames = new List<string>();
+
+        for (int argIndex = 1; argIndex < args.Length; argIndex++)
+        {
+            string arg = args[argIndex];
+            if (arg.Equals("--image", StringComparison.OrdinalIgnoreCase))
+            {
+                if (++argIndex >= args.Length)
+                {
+                    throw new Exception("Missing image file path after --image");
+                }
+                imageFile = args[argIndex];
+            }
+            else
+            {
+                symbolNames.Add(arg);
+            }
+        }
+
+        // When an image is provided, MSDiaSymbolReader validates that the PDB-info identity
+        // matches the image's CodeView / RSDS record, guarding against the zero-GUID native PDB bug.
+        MSDiaSymbolReader reader = new MSDiaSymbolReader(pdbFile, imageFile);
+
         int matchedSymbols = 0;
         int missingSymbols = 0;
-        for (int symbolArgIndex = 1; symbolArgIndex < args.Length; symbolArgIndex++)
+        foreach (string symbolName in symbolNames)
         {
-            string symbolName = args[symbolArgIndex];
             if (reader.ContainsSymbol(symbolName))
             {
                 matchedSymbols++;
@@ -55,6 +80,6 @@ class Program
 
     private static void DisplayUsage()
     {
-        Console.WriteLine("Usage: PdbChecker <pdb file to check> { <symbol to check for existence in the PDB file> }");
+        Console.WriteLine("Usage: PdbChecker <pdb file to check> [--image <image file to match PDB identity>] { <symbol to check for existence in the PDB file> }");
     }
 }

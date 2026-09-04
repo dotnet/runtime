@@ -1,7 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Needed for CMakeProjectReference and CopyToOutputDirectory -->
+    <!-- Needed for CLRTestTargetUnsupported, CMakeProjectReference and CopyToOutputDirectory -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <!-- TODO: Re-enable when browser OOP host actions can run crashing child processes and import their results.
+         Tracked by https://github.com/dotnet/runtime/issues/131321. -->
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">true</CLRTestTargetUnsupported>
     <Optimize>false</Optimize>
   </PropertyGroup>
   <ItemGroup>

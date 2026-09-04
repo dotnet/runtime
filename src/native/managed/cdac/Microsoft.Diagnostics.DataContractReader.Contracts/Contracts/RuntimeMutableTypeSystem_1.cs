@@ -95,7 +95,11 @@ internal readonly struct RuntimeMutableTypeSystem_1 : IRuntimeMutableTypeSystem
             return TargetPointer.Null;
 
         Data.EnCAddedStaticField staticField = _target.ProcessedData.GetOrAdd<Data.EnCAddedStaticField>(encFieldDesc.StaticFieldData);
-        return staticField.FieldData;
+        TargetPointer fieldDataAddress = staticField.FieldData;
+        CorElementType fieldType = _target.Contracts.RuntimeTypeSystem.GetFieldDescType(encFieldDescPointer);
+        return fieldType is CorElementType.ValueType or CorElementType.Class
+            ? _target.ReadPointer(fieldDataAddress)
+            : fieldDataAddress;
     }
 
     TargetPointer IRuntimeMutableTypeSystem.GetEnCInstanceFieldAddress(TargetPointer objectAddress, TargetPointer encFieldDescPointer)
@@ -156,7 +160,7 @@ internal readonly struct RuntimeMutableTypeSystem_1 : IRuntimeMutableTypeSystem
                     // Primitive stored in a 1-element array. Get pointer to first element.
                     if (fieldObject == TargetPointer.Null)
                         return TargetPointer.Null;
-                    return objectContract.GetArrayData(fieldObject, out _, out _, out _);
+                    return objectContract.GetArrayData(fieldObject, out _, out _, out _, out _, out _);
                 }
             }
             entryPtr = entry.Next;

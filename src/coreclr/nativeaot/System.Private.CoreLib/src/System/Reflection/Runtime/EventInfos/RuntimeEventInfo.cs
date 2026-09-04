@@ -132,6 +132,22 @@ namespace System.Reflection.Runtime.EventInfos
         // Types that derive from RuntimeEventInfo must implement the following public surface area members
         public abstract override EventAttributes Attributes { get; }
         public abstract override IEnumerable<CustomAttributeData> CustomAttributes { get; }
+        public sealed override object[] GetCustomAttributes(bool inherit) => RuntimeCustomAttribute.GetCustomAttributes(this, typeof(object), inherit: false);
+
+        public sealed override object[] GetCustomAttributes(Type attributeType, bool inherit)
+        {
+            ArgumentNullException.ThrowIfNull(attributeType);
+            return RuntimeCustomAttribute.GetCustomAttributes(this, attributeType, inherit: false);
+        }
+
+        public sealed override IList<CustomAttributeData> GetCustomAttributesData() => CustomAttributes.ToReadOnlyCollection();
+
+        public sealed override bool IsDefined(Type attributeType, bool inherit)
+        {
+            ArgumentNullException.ThrowIfNull(attributeType);
+            return RuntimeCustomAttribute.IsDefined(this, attributeType, inherit: false);
+        }
+
         public abstract override bool Equals(object obj);
         public abstract override int GetHashCode();
         public abstract override Type EventHandlerType { get; }

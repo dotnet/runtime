@@ -11,7 +11,7 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.Templates.Tests
 {
-    [TestCategory("native-mono")]
+    [TestCategory("native"), TestCategory("mono")]
     public class NativeBuildTests : WasmTemplateTestsBase
     {
         public NativeBuildTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)

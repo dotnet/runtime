@@ -5335,6 +5335,18 @@ ClrDataAccess::RawGetMethodName(
     PTR_StubManager pStubManager;
     MethodDesc* methodDesc = NULL;
 
+    EECodeInfo codeInfo(GetInterpreterCodeFromEntryPointIfPresent(taddr));
+    if (codeInfo.IsValid())
+    {
+        if (displacement)
+        {
+            *displacement = codeInfo.GetRelOffset();
+        }
+
+        methodDesc = codeInfo.GetMethodDesc();
+        return GetFullMethodName(methodDesc, bufLen, symbolLen, symbolBuf);
+    }
+
     pStubManager = StubManager::FindStubManager(TO_TADDR(address));
     if (pStubManager != NULL)
     {
@@ -6540,7 +6552,7 @@ CLRDataCreateInstance(REFIID iid,
 #endif
 
     // TODO: [cdac] Remove when cDAC deploys with SOS - https://github.com/dotnet/runtime/issues/108720
-    ReleaseHolder<IUnknown> cdacInterface = nullptr;
+    ReleaseHolder<IUnknown> cdacInterface;
 #ifdef CAN_USE_CDAC
     CLRConfigNoCache enable = CLRConfigNoCache::Get("ENABLE_CDAC");
     if (enable.IsSet())

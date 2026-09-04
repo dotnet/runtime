@@ -19,7 +19,7 @@ public class DacDbiObjectDumpTests : DumpTestBase
     protected override string DebuggeeName => "BasicThreads";
     protected override string DumpType => "full";
 
-    private DacDbiImpl CreateDacDbi() => new DacDbiImpl(Target, legacyObj: null);
+    private DacDbiImpl CreateDacDbi() => new DacDbiImpl(Target, legacyObj: null, new());
 
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]

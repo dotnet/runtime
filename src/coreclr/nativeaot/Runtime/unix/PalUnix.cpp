@@ -447,16 +447,29 @@ void InitializeCurrentProcessCpuCount()
     uint32_t count = 0;
 
     // If the configuration value has been set, it takes precedence. Otherwise, take into account
-    // process affinity and CPU quota limit.
+    // process affinity and CPU quota limit, except for Android (explained below).
 
     const unsigned int MAX_PROCESSOR_COUNT = 0xffff;
     uint64_t configValue;
+    int cpuPresentCount;
 
     if (g_pRhConfig->ReadConfigValue("PROCESSOR_COUNT", &configValue, true /* decimal */) &&
         0 < configValue && configValue <= MAX_PROCESSOR_COUNT)
     {
         count = configValue;
     }
+#ifdef HOST_ANDROID
+    // Android tries really hard to save power by powering off CPUs on SMP phones which
+    // means the normal way to query cpu count can underestimate the number of available CPUs.
+    else if ((cpuPresentCount = minipal_get_cpu_present_count()) > 0)
+    {
+        count = cpuPresentCount;
+
+        uint32_t cpuLimit;
+        if (GetCpuLimit(&cpuLimit) && cpuLimit < count)
+            count = cpuLimit;
+    }
+#endif
     else
     {
 #if HAVE_SCHED_GETAFFINITY
@@ -842,7 +855,7 @@ bool PalStartEventPipeHelperThread(_In_ BackgroundCallback callback, _In_opt_ vo
     return PalStartBackgroundWork(callback, pCallbackContext, UInt32_FALSE);
 }
 
-HANDLE PalGetModuleHandleFromPointer(_In_ void* pointer)
+HANDLE PalGetModuleHandleFromPointer(_In_ void* pointer, bool pinModule)
 {
     HANDLE moduleHandle = NULL;
 
@@ -853,6 +866,16 @@ HANDLE PalGetModuleHandleFromPointer(_In_ void* pointer)
     int st = dladdr(pointer, &info);
     if (st != 0)
     {
+#if defined(HOST_OSX)
+        if (pinModule && info.dli_fname != nullptr)
+        {
+            // NativeAOT runtime state cannot be safely unloaded.
+            // Keep the extra reference for the lifetime of the process.
+            // Unloading is disabled via `-z,nodelete` linker option on ELF platforms.
+            dlopen(info.dli_fname, RTLD_LAZY | RTLD_NOLOAD);
+        }
+#endif
+
         moduleHandle = info.dli_fbase;
     }
 #endif //!defined(HOST_WASM)
@@ -1032,6 +1055,26 @@ uint16_t PalCaptureStackBackTrace(uint32_t arg1, uint32_t arg2, void* arg3, uint
 #ifdef FEATURE_HIJACK
 static struct sigaction g_previousActivationHandler;
 
+static bool IsSaSigInfo(struct sigaction* action)
+{
+    return (action->sa_flags & SA_SIGINFO) != 0;
+}
+
+static bool IsSigDfl(struct sigaction* action)
+{
+    // macOS can return sigaction with SIG_DFL and SA_SIGINFO.
+    // SA_SIGINFO means we should use sa_sigaction, but here we want to check sa_handler.
+    // So we ignore SA_SIGINFO when sa_sigaction and sa_handler are at the same address.
+    return (&action->sa_handler == (void*)&action->sa_sigaction || !IsSaSigInfo(action)) &&
+            action->sa_handler == SIG_DFL;
+}
+
+static bool IsSigIgn(struct sigaction* action)
+{
+    return (&action->sa_handler == (void*)&action->sa_sigaction || !IsSaSigInfo(action)) &&
+            action->sa_handler == SIG_IGN;
+}
+
 static void ActivationHandler(int code, siginfo_t* siginfo, void* context)
 {
     Thread* pThread = ThreadStore::GetCurrentThreadIfAvailableAsyncSafe();
@@ -1056,15 +1099,14 @@ static void ActivationHandler(int code, siginfo_t* siginfo, void* context)
     }
 
     // Call the original handler when it is not ignored or default (terminate).
-    if (g_previousActivationHandler.sa_flags & SA_SIGINFO)
+    if (!IsSigDfl(&g_previousActivationHandler) && !IsSigIgn(&g_previousActivationHandler))
     {
-        _ASSERTE(g_previousActivationHandler.sa_sigaction != NULL);
-        g_previousActivationHandler.sa_sigaction(code, siginfo, context);
-    }
-    else
-    {
-        if (g_previousActivationHandler.sa_handler != SIG_IGN &&
-            g_previousActivationHandler.sa_handler != SIG_DFL)
+        if (IsSaSigInfo(&g_previousActivationHandler))
+        {
+            _ASSERTE(g_previousActivationHandler.sa_sigaction != NULL);
+            g_previousActivationHandler.sa_sigaction(code, siginfo, context);
+        }
+        else
         {
             _ASSERTE(g_previousActivationHandler.sa_handler != NULL);
             g_previousActivationHandler.sa_handler(code);

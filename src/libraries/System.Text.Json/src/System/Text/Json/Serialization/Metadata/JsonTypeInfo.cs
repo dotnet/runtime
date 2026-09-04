@@ -560,14 +560,6 @@ namespace System.Text.Json.Serialization.Metadata
         internal Type? UnionNullableCaseType { get; set; }
 
         /// <summary>
-        /// <see langword="true"/> when at least one declared union case carries a user-defined
-        /// <see cref="JsonConverter"/>. A custom converter can serialize as any JSON value type,
-        /// so deserialization without a custom classifier is unsafe and must fail with a clear
-        /// message.
-        /// </summary>
-        internal bool UnionHasCustomConverterCase { get; set; }
-
-        /// <summary>
         /// Optional per-type factory captured during metadata creation (resolver phase)
         /// from <see cref="JsonUnionAttribute.TypeClassifier"/> or <see cref="JsonPolymorphicAttribute.TypeClassifier"/>.
         /// </summary>
@@ -1158,12 +1150,8 @@ namespace System.Text.Json.Serialization.Metadata
         /// </para>
         /// <para>
         /// Each case is categorized by its supported JSON value shapes via
-        /// <see cref="JsonConverter.GetSupportedJsonValueTypes"/>; built-in object/enumerable
-        /// converters that decline to advertise fall back to a <see cref="ConverterStrategy"/>-derived
-        /// default. Custom (user-defined) converters return <see cref="JsonValueType.None"/> from
-        /// <c>GetSupportedJsonValueTypes</c>; cases that use such converters are excluded from
-        /// the map and tracked via <see cref="UnionHasCustomConverterCase"/> because a custom
-        /// converter can produce any JSON value shape.
+        /// <see cref="JsonConverter.GetSupportedJsonValueTypes"/>. User-defined converters
+        /// are conservatively classified as potentially representing every JSON value shape.
         /// </para>
         /// <para>
         /// This helper operates purely on already-resolved <see cref="JsonTypeInfo"/> /
@@ -1175,42 +1163,26 @@ namespace System.Text.Json.Serialization.Metadata
         {
             var map = new Dictionary<JsonValueType, Type>();
             JsonValueType ambiguousValueTypes = JsonValueType.None;
-            bool hasCustomConverterCase = false;
 
             foreach (JsonUnionCaseInfo info in unionCases)
             {
                 Type caseType = info.CaseType;
                 JsonTypeInfo caseTypeInfo = options.GetTypeInfoInternal(caseType);
+                JsonConverter converter = caseTypeInfo.Converter;
+                if (converter.ConverterStrategy is ConverterStrategy.Union)
+                {
+                    continue;
+                }
 
                 JsonNumberHandling effectiveNumberHandling =
                     caseTypeInfo.NumberHandling ?? options.NumberHandling;
-                JsonConverter converter = caseTypeInfo.Converter;
                 JsonValueType valueTypes = converter.GetSupportedJsonValueTypes(effectiveNumberHandling);
-
-                if (valueTypes is JsonValueType.None)
-                {
-                    if (!converter.IsInternalConverter)
-                    {
-                        // User-defined converter: any JSON value shape could be valid for this case.
-                        // We can't safely include it in the dispatch map. Record the fact so
-                        // that deserialization without a classifier fails with a precise error.
-                        hasCustomConverterCase = true;
-                        continue;
-                    }
-
-                    valueTypes = converter.ConverterStrategy switch
-                    {
-                        ConverterStrategy.Enumerable => JsonValueType.Array,
-                        _ => JsonValueType.Object,
-                    };
-                }
 
                 AddUnionValueTypes(valueTypes, caseType, map, ref ambiguousValueTypes);
             }
 
             target.UnionValueTypeMap = map;
             target.UnionAmbiguousValueTypes = ambiguousValueTypes;
-            target.UnionHasCustomConverterCase = hasCustomConverterCase;
 
             static void AddUnionValueTypes(
                 JsonValueType valueTypes,
@@ -1225,7 +1197,6 @@ namespace System.Text.Json.Serialization.Metadata
                     JsonValueType.String,
                     JsonValueType.Number,
                     JsonValueType.Boolean,
-                    JsonValueType.Null,
                 ];
 
                 foreach (JsonValueType valueType in allValueTypes)

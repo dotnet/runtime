@@ -8,6 +8,7 @@
     <CLRTestExitCode>134</CLRTestExitCode>
     <CLRTestExitCode Condition="'$(TestWrapperTargetsWindows)' == 'true'">-2146233082</CLRTestExitCode>
     <CLRTestPriority>1</CLRTestPriority>
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">true</CLRTestTargetUnsupported>
     <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
     <GCStressIncompatible>true</GCStressIncompatible>
   </PropertyGroup>

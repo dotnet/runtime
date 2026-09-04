@@ -33,15 +33,18 @@ listed in order of preference:
    `Address` property. Use this for all new types unless the declarative
    surface cannot express the required logic.
 
-2. **Source-generated with `OnInit`** -- when the declarative attributes
-   cover most of the type but a few fields need custom logic (e.g.
-   stripping a tag bit from a pointer, reading from a second descriptor,
-   variable-count loops, raw byte buffers, or multiple
-   `Target.TypeInfo` lookups), add a
-   `partial void OnInit(Target target, TargetPointer address)`
-   implementation. The generator calls it at the end of the constructor
-   after all `[Field]` reads are complete. This covers all scenarios
-   that the declarative surface cannot express.
+2. **Source-generated with `[CustomInit]`** -- when the declarative
+   attributes cover most of the type but a few properties need custom
+   logic (e.g. stripping a tag bit from a pointer, reading from a second
+   descriptor, variable-count loops, raw byte buffers, or multiple
+   `Target.TypeInfo` lookups), mark those properties
+   `[CustomInit(nameof(MethodName))]` and implement the named per-property
+   `private partial T MethodName(Target target, TargetPointer address)`
+   initializer. The generator calls each initializer **lazily** on first
+   access to its property -- exactly like a `[Field]` property -- so the
+   custom-logic properties keep the same lazy, versioning-friendly
+   behavior as the declarative ones. This covers all scenarios that the
+   declarative surface cannot express.
 
 This document describes the source-generated path.
 
@@ -56,11 +59,12 @@ analyzer. It scans for classes carrying `[CdacType]` and emits a
 * A `public TargetPointer Address { get; }` property (always emitted --
   the instance remembers the address it was constructed from).
 * A `public {Name}(Target target, TargetPointer address)` constructor
-  that records the address and calls `OnInit`. It performs **no** field
+  that records the address. It performs **no** field
   reads -- fields are read lazily (see
   [Lazy field reads and versioning](#lazy-field-reads-and-versioning)).
 * A lazily-read `partial` property implementation for each `[Field]` /
-  `[FieldAddress]` / `[InstanceDataStart]` / `[RawOffset]` declaration.
+  `[FieldAddress]` / `[InstanceDataStart]` / `[CustomInit]` /
+  `[RawOffset]` declaration.
   Each getter resolves the type name against native descriptors and
   managed metadata through the `LayoutSet` cascade on first access,
   reads the field, and memoizes the value. A required field missing from
@@ -84,11 +88,13 @@ analyzer. It scans for classes carrying `[CdacType]` and emits a
 * For each `[StaticAddress]` / `[StaticReference]` partial method
   declaration: a corresponding implementation that tries native globals
   first (`TypeName.fieldName`), then falls back to `ManagedTypeSource`.
-* A `partial void OnInit(Target target, TargetPointer address);`
-  declaration plus a call to it at the end of the constructor.
+* For each `[CustomInit]` property: a
+  `private partial T MethodName(Target target, TargetPointer address);`
+  declaration for the method named by the attribute. The author writes its
+  implementation and the property's lazy getter calls it on first access.
 
-The user provides the property declarations and (optionally) the
-`OnInit` implementation. Everything else is emitted.
+The user provides the property declarations and (for `[CustomInit]`
+properties) the named initializer implementations. Everything else is emitted.
 
 ### User-side conventions
 
@@ -96,25 +102,27 @@ The user provides the property declarations and (optionally) the
 * Implement `IData<T>` on the class declaration.
 * Declare data properties as `public partial T Prop { get; }`. The
   property **must** be `partial`: the generator owns the getter body
-  (a lazy read). Add a setter -- `{ get; private set; }` (or
-  `{ get; set; }`) -- when the generated `Write{Name}` method or
-  hand-written code needs to assign it; the generated setter stores the
-  value in the property's memoized backing field. For non-nullable
-  reference-typed properties that are populated only inside `OnInit`
-  (i.e. **not** decorated with a cdac attribute), keep a plain
-  `{ get; private set; }` auto-property and prefer annotating `OnInit`
-  with `[MemberNotNull(nameof(X), ...)]` over `required` or
-  `= null!;` -- it lets the compiler verify the property is assigned
-  along every path through `OnInit` without forcing callers to use
-  object-initializer syntax or accepting a deliberately-lying null.
+  (a lazy read). A `[Field(Writable = true)]` property must declare
+  `{ get; private set; }`; the generated `Write{Name}` method uses that setter
+  to update the memoized value. Other generated properties are get-only. A
+  non-private setter produces a partial-property accessor mismatch that fails
+  to compile. For a property that needs custom read logic (i.e. one the
+  declarative attributes can't express), mark it
+  `[CustomInit(nameof(MethodName))]` and supply a
+  `private partial T MethodName(Target target, TargetPointer address)`
+  initializer -- the generator wires up the same lazy getter that calls your
+  initializer on first access, so no `[MemberNotNull]` or `= null!;` workaround
+  is needed. Put any `[DataDescriptorDependency]` or
+  `[UsesDataDescriptorTypeSize]` annotations on the initializer method.
 
 ## Lazy field reads and versioning
 
-Fields are read **lazily**. The constructor records the address and runs
-`OnInit`; it performs no descriptor field reads. Each `[Field]` /
-`[FieldAddress]` / `[InstanceDataStart]` / `[RawOffset]` property is a
-generated `partial` property whose getter, on first access, resolves the
-layout, reads the field from the target, and memoizes the value.
+Fields are read **lazily**. The constructor only records the address; it
+performs no descriptor field reads. Each `[Field]` /
+`[FieldAddress]` / `[InstanceDataStart]` / `[CustomInit]` / `[RawOffset]`
+property is a generated `partial` property whose getter, on first access,
+resolves the layout, reads the field from the target, and memoizes the
+value.
 
 The laziness is **invisible**: a getter throws exactly what the old eager
 constructor would have thrown for that field, just deferred to first
@@ -136,9 +144,12 @@ access instead of construction. This has two consequences:
   performs the real read. Optional (`T?`) fields instead yield `null`
   when absent (see the [`[Field]`](#property-level-field) table).
 
-`OnInit` still runs eagerly at construction, so reads performed directly
-in `OnInit` (rather than through generated properties) happen when the
-instance is created, not lazily.
+A `[CustomInit]` property behaves exactly like a `[Field]` property in
+this respect: its named initializer runs lazily on first access,
+not at construction, and whatever it throws (an
+`InvalidOperationException` from a layout lookup, a `VirtualReadException`
+from a failed read, or nothing for an optional value) surfaces at first
+access.
 
 ### Forcing a full read: `IReadableData`
 
@@ -190,7 +201,7 @@ managed metadata. The first match wins.
 [CdacType("Lock", "System.Threading.Lock")]
 [CdacType(nameof(DataType.Exception), "System.Exception")]
 
-// Parameterless -- no descriptor lookup. Use with [RawOffset] or OnInit only.
+// Parameterless -- no descriptor lookup. Use with [RawOffset] or [CustomInit] only.
 [CdacType]
 
 // HasTypeHandle -- emits a TypeHandle(Target) accessor.
@@ -299,6 +310,32 @@ public partial TargetPointer Data { get; }
 // generates: Data = address + type.Size!.Value;
 ```
 
+### Property-level: `[CustomInit]`
+
+Marks a property whose value is produced by a hand-written initializer
+rather than a declarative read. The generator emits a `partial` method
+declaration you implement, plus the usual lazy getter that calls it on
+first access:
+
+```csharp
+[CustomInit(nameof(InitNext))] public partial TargetPointer Next { get; }
+
+// You implement:
+[DataDescriptorDependency(nameof(Next), "pointer")]
+private partial TargetPointer InitNext(Target target, TargetPointer address)
+{
+    Target.TypeInfo type = target.GetTypeInfo(DataType.RangeSectionFragment);
+    return target.ReadPointerField(address, type, nameof(Next)) & ~1ul;
+}
+```
+
+The initializer name is supplied to `[CustomInit]`, takes `(Target target,
+TargetPointer address)`, and returns the property's type. It runs lazily (on
+first property access) and its result is memoized. Descriptor dependency
+attributes belong on this method. See
+[The `[CustomInit]` escape hatch](#the-custominit-escape-hatch) for the
+patterns it covers.
+
 ### Method-level (`static partial`): static-field accessors
 
 These attributes target `static partial` method declarations. The
@@ -331,16 +368,23 @@ internal sealed partial class ComWrappers : IData<ComWrappers>
 }
 ```
 
-## The `OnInit` escape hatch
+## The `[CustomInit]` escape hatch
 
-Every generator-emitted constructor ends with a call to
-`partial void OnInit(Target target, TargetPointer address)`. If the user
-provides no implementation, the C# compiler elides both the call and
-the signature. When the user *does* provide an implementation, it runs
-after all the declarative `[Field]` / `[FieldAddress]` / etc.
-assignments and can perform any custom reads.
+Mark a property `[CustomInit(nameof(MethodName))]` to supply your own read logic
+for it. The generator emits a `partial` declaration
 
-Use `OnInit` for any pattern the declarative surface can't express:
+```csharp
+private partial T MethodName(Target target, TargetPointer address);
+```
+
+that you implement, plus the same lazy getter it emits for a `[Field]`
+property -- except the getter calls your named method on first access
+instead of reading a descriptor field. `target` is the `Target` the
+instance was constructed from and `address` is its `Address`. The
+initializer can read from other (already-lazy) properties on the same
+instance; doing so triggers their own lazy reads.
+
+Use `[CustomInit]` for any pattern the declarative surface can't express:
 
 * Variable-count loops over arrays whose length is a global or another
   field. (`Bucket`, `RCW`, `ComCallWrapper`, ...)
@@ -355,26 +399,37 @@ Use `OnInit` for any pattern the declarative surface can't express:
   class is anchored on. (TypeDesc subclasses reading the base
   `TypeAndFlags` from `DataType.TypeDesc`.)
 
-For properties populated only inside `OnInit`, declare them as
-`{ get; private set; }` and annotate `OnInit` with
-`[MemberNotNull(nameof(X), ...)]` so the compiler is satisfied without
-the `= null!;` workaround:
+Put `[DataDescriptorDependency]` and `[UsesDataDescriptorTypeSize]` on the
+initializer method rather than the property. The usage analyzer records that
+metadata and still walks the initializer body to capture global reads, helper
+calls, and dependencies on other lazy properties.
+
+Because each initializer feeds the property's own lazy getter, a
+`[CustomInit]` property needs no `[MemberNotNull]` or `= null!;`
+workaround -- the generator owns the backing field and only calls the
+initializer when the property is first read:
 
 ```csharp
 [CdacType(nameof(DataType.Bucket))]
 internal sealed partial class Bucket : IData<Bucket>
 {
-    public TargetPointer[] Keys { get; private set; }
-    public TargetPointer[] Values { get; private set; }
+    [CustomInit(nameof(InitKeys))] public partial TargetPointer[] Keys { get; }
+    [CustomInit(nameof(InitValues))] public partial TargetPointer[] Values { get; }
 
-    [MemberNotNull(nameof(Keys), nameof(Values))]
-    partial void OnInit(Target target, TargetPointer address)
+    [DataDescriptorDependency(nameof(Keys), "pointer")]
+    private partial TargetPointer[] InitKeys(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.Bucket);
         uint numSlots = target.ReadGlobal<uint>(Constants.Globals.HashMapSlotsPerBucket);
-        Keys = new TargetPointer[numSlots];
-        Values = new TargetPointer[numSlots];
+        var keys = new TargetPointer[numSlots];
         // ... populate
+        return keys;
+    }
+
+    [DataDescriptorDependency(nameof(Values), "pointer")]
+    private partial TargetPointer[] InitValues(Target target, TargetPointer address)
+    {
+        // ... same shape, returns the values array
     }
 }
 ```
@@ -395,8 +450,7 @@ internal sealed partial class Module : IData<Module>
 // Generated (the class captures _target for any type with instance members):
 public void WriteFlags(uint value)
 {
-    LayoutSet layouts = EnsureLayouts();
-    layouts.Select(Address, out var t, out var b, out var n, "Flags");
+    _layouts.Select(Address, out var t, out var b, out var n, "Flags");
     _target.WriteField<uint>(b, t, n, value);
     Flags = value;
 }
@@ -659,7 +713,7 @@ Data.Module module = target.ProcessedData.GetOrAdd<Data.Module>(addr);
 module.WriteFlags(newFlags);
 ```
 
-### Source-generated with `OnInit` custom logic
+### Source-generated with `[CustomInit]` custom logic
 
 ```csharp
 [CdacType(nameof(DataType.RangeSectionFragment))]
@@ -670,12 +724,13 @@ internal sealed partial class RangeSectionFragment : IData<RangeSectionFragment>
     [Field] public partial TargetPointer RangeSection { get; }
 
     // The Next pointer uses the low bit as a collectible flag; strip it.
-    public TargetPointer Next { get; private set; }
+    [CustomInit(nameof(InitNext))] public partial TargetPointer Next { get; }
 
-    partial void OnInit(Target target, TargetPointer address)
+    [DataDescriptorDependency(nameof(Next), "pointer")]
+    private partial TargetPointer InitNext(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.RangeSectionFragment);
-        Next = target.ReadPointerField(address, type, nameof(Next)) & ~1ul;
+        return target.ReadPointerField(address, type, nameof(Next)) & ~1ul;
     }
 }
 ```
@@ -695,39 +750,42 @@ IData properties should not expose mutable collections or types that
 allow external callers to change the snapshot. The only legitimate
 mutation path is through `Write{Name}` methods for write-back fields.
 
-For collection-typed properties populated in `OnInit`, expose them as
-`IReadOnlyList<T>` (or another read-only interface) with
-`{ get; private set; }` and assign a `List<T>` built inside `OnInit`.
-This prevents callers from accidentally mutating the cached snapshot.
+For collection-typed properties that need custom read logic, expose them
+as `IReadOnlyList<T>` (or another read-only interface) with `[CustomInit]`
+and build a `List<T>` inside the initializer. This prevents callers from
+accidentally mutating the cached snapshot.
 
 Bad:
 
 ```csharp
-public List<TargetPointer> Elements { get; } = [];
+[CustomInit(nameof(InitElements))] public partial List<TargetPointer> Elements { get; }
 
-partial void OnInit(Target target, TargetPointer address)
+private partial List<TargetPointer> InitElements(Target target, TargetPointer address)
 {
-    Elements.Add(...);
+    // Exposes a mutable List<T> that callers can change.
+    List<TargetPointer> elements = [];
+    elements.Add(...);
+    return elements;
 }
 ```
 
 Good:
 
 ```csharp
-public IReadOnlyList<TargetPointer> Elements { get; private set; } = [];
+[CustomInit(nameof(InitElements))] public partial IReadOnlyList<TargetPointer> Elements { get; }
 
-[MemberNotNull(nameof(Elements))]
-partial void OnInit(Target target, TargetPointer address)
+private partial IReadOnlyList<TargetPointer> InitElements(Target target, TargetPointer address)
 {
     List<TargetPointer> elements = [];
     elements.Add(...);
-    Elements = elements;
+    return elements;
 }
 ```
 
 ### Avoid algorithm logic in IData classes
 
-The constructor (and `OnInit`) should be limited to reads from the
+The initializers (whether declarative or `[CustomInit]`) should be
+limited to reads from the
 target -- enough to populate the declared properties. Derived
 computations, interpretation, and any contract algorithms belong in
 the consuming contract implementation (`Contracts\*.cs`), not in the
@@ -880,9 +938,9 @@ internal sealed partial class LoaderAllocator : IData<LoaderAllocator>
 Don't read fields from a different `Target.TypeInfo` than the one the
 class is anchored on. If a type's layout genuinely spans two
 descriptors (e.g. `ParamTypeDesc` inheriting `TypeAndFlags` from the
-base `TypeDesc` descriptor), use `OnInit` to do the cross-descriptor
-read explicitly -- don't try to express it through `[CdacType]`
-alone.
+base `TypeDesc` descriptor), use a `[CustomInit]` initializer to do the
+cross-descriptor read explicitly -- don't try to express it through
+`[CdacType]` alone.
 
 ## Migrating types between sources
 
@@ -934,4 +992,3 @@ thread statics are not currently supported.
 > **TODO:** A type forwarding system for native-to-managed migration is
 > planned but not yet implemented. This section will be updated when the
 > forwarding mechanism is available.
-

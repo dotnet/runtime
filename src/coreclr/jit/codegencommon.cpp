@@ -420,7 +420,7 @@ CodeGen::CodeGen(Compiler* theCompiler)
 
 #if HAS_FIXED_REGISTER_SET
     // Shouldn't be used before it is set in genFnProlog()
-    m_compiler->compCalleeRegsPushed = UninitializedWord<unsigned>(m_compiler);
+    m_compiler->compCalleeRegsPushed = UninitializedWord<unsigned>();
 #endif // HAS_FIXED_REGISTER_SET
 
 #if defined(TARGET_XARCH)
@@ -472,7 +472,6 @@ CodeGen::CodeGen(Compiler* theCompiler)
 
 int CodeGenInterface::genTotalFrameSize() const
 {
-    assert(!IsUninitialized(m_compiler->compCalleeRegsPushed));
 
     int totalFrameSize = m_compiler->compCalleeRegsPushed * REGSIZE_BYTES + m_compiler->compLclFrameSize;
 
@@ -783,6 +782,23 @@ void CodeGenInterface::genUpdateLife(GenTree* tree)
 void CodeGenInterface::genUpdateLife(VARSET_VALARG_TP newLife)
 {
     m_compiler->compUpdateLife</*ForCodeGen*/ true>(newLife);
+}
+
+//------------------------------------------------------------------------
+// genUpdateVarReg: Update the current register location for a multi-reg lclVar
+//
+// Arguments:
+//    varDsc   - the LclVarDsc for the lclVar
+//    tree     - the lclVar node
+//    regIndex - the index of the register in the node
+//
+// inline
+void CodeGenInterface::genUpdateVarReg(LclVarDsc* varDsc, GenTree* tree, int regIndex)
+{
+    // This should only be called for multireg lclVars.
+    assert(m_compiler->lvaEnregMultiRegVars);
+    assert(tree->IsMultiRegLclVar() || tree->OperIs(GT_COPY));
+    varDsc->SetRegNum(tree->GetRegByIndex(regIndex));
 }
 
 #ifndef TARGET_WASM
@@ -1334,7 +1350,23 @@ bool CodeGen::genCreateAddrMode(GenTree*  addr,
 // TODO-WASM: Prove whether a given addressing mode obeys the Wasm rules.
 // See https://github.com/dotnet/runtime/pull/122897#issuecomment-3721304477 for more details.
 #if defined(TARGET_WASM)
-    return false;
+    // Wasm only folds "base + constant" into the memarg. See "Lowering::GetFoldableAddrMode" for why a GC-typed
+    // base and a non-negative constant prove the addition does not wrap. A relocatable constant cannot fold
+    // because that would drop the relocation.
+    //
+    if (!addr->OperIs(GT_ADD) || addr->gtOverflow() || !varTypeIsGC(addr->gtGetOp1()) ||
+        !addr->gtGetOp2()->IsCnsIntOrI() || addr->gtGetOp2()->AsIntCon()->ImmedValNeedsReloc(m_compiler) ||
+        (addr->gtGetOp2()->AsIntCon()->IconValue() < 0))
+    {
+        return false;
+    }
+
+    *revPtr = false;
+    *rv1Ptr = addr->gtGetOp1();
+    *rv2Ptr = nullptr;
+    *mulPtr = 0;
+    *cnsPtr = addr->gtGetOp2()->AsIntCon()->IconValue();
+    return true;
 #endif // TARGET_WASM
     /*
         The following indirections are valid address modes on x86/x64:
@@ -1815,6 +1847,14 @@ void CodeGen::genEmitCallWithCurrentGC(EmitCallParams& params)
         }
 #endif
 
+        // We can't provide an accurate location if the local is allocated on the UnknownSizeFrame.
+        // TODO-SVE: Remove this once vector register calling convention is supported, as we shouldn't
+        // be using the return buffer then.
+        if (m_compiler->lvaIsUnknownSizeLocal(lclNum))
+        {
+            return;
+        }
+
         info.returnValueLoc = getSiVarLoc(m_compiler->lvaGetDesc(lclNum), lclOffs, stackLevelBias);
     }
     else if (call->HasMultiRegRetVal())
@@ -2227,7 +2267,7 @@ void CodeGen::genGenerateMachineCode()
         }
 
         printf(" for ");
-        printf(Target::g_tgtCPUName);
+        printf("%s", Target::g_tgtCPUName);
 
 #if defined(TARGET_XARCH)
         // Check ISA directly here instead of using
@@ -2390,8 +2430,10 @@ void CodeGen::genGenerateMachineCode()
     // check to see if any jumps can be removed
     GetEmitter()->emitRemoveJumpToNextInst();
 
+#if !defined(TARGET_WASM)
     /* Bind jump distances */
     GetEmitter()->emitJumpDistBind();
+#endif
 
 #if FEATURE_LOOP_ALIGN
     /* Perform alignment adjustments */
@@ -2550,7 +2592,8 @@ void CodeGen::genEmitMachineCode()
 #else
     if (m_compiler->opts.disAsm)
     {
-        printf("\n; Total bytes of code %d\n\n", codeSize);
+        printf("\n; Total bytes of code %d for method %s (%s)\n\n", codeSize,
+               m_compiler->eeGetMethodFullName(m_compiler->info.compMethodHnd), m_compiler->compGetTieringName(true));
     }
 #endif
 
@@ -2996,7 +3039,7 @@ void CodeGen::genGCWriteBarrier(GenTreeStoreInd* store, GCInfo::WriteBarrierForm
             unclassifiedBarrierSite++;
             printf("unclassifiedBarrierSite = %d:\n", unclassifiedBarrierSite);
             m_compiler->gtDispTree(store);
-            printf(""); // Flush.
+            fflush(jitstdout());
             printf("\n");
         }
 #endif // DEBUG
@@ -3212,7 +3255,7 @@ public:
             printf("  %s", getRegName(regNode->reg));
             for (RegNodeEdge* incoming = regNode->incoming; incoming != nullptr; incoming = incoming->nextIncoming)
             {
-                printf("\n    <- %s", getRegName(incoming->from->reg), varTypeName(incoming->type));
+                printf("\n    <- %s (%s)", getRegName(incoming->from->reg), varTypeName(incoming->type));
 
                 if (incoming->destOffset != 0)
                 {
@@ -6069,6 +6112,7 @@ unsigned CodeGen::genEmitJumpTable(GenTree* treeNode, bool relativeAddr)
     emit->emitDataGenEnd();
     return jmpTabBase;
 }
+#endif // !defined(TARGET_WASM)
 
 //----------------------------------------------------------------------------------
 // genEmitAsyncResumeInfoTable:
@@ -6116,8 +6160,6 @@ CORINFO_FIELD_HANDLE CodeGen::genEmitAsyncResumeInfo(unsigned stateNum)
     UNATIVE_OFFSET        baseOffs = genEmitAsyncResumeInfoTable(&dataSection);
     return m_compiler->eeFindJitDataOffs(baseOffs + stateNum * sizeof(CORINFO_AsyncResumeInfo));
 }
-
-#endif // !TARGET_WASM
 
 //------------------------------------------------------------------------
 // getCallTarget - Get the node that evaluates to the call target
@@ -6953,7 +6995,7 @@ void CodeGen::genReportRichDebugInfoInlineTreeToFile(FILE* file, InlineContext* 
         *first = false;
 
         fprintf(file, "{\"Ordinal\":%u,", context->GetOrdinal());
-        fprintf(file, "\"MethodID\":%lld,", (int64_t)context->GetCallee());
+        fprintf(file, "\"MethodID\":%lld,", (long long)context->GetCallee());
         fprintf(file, "\"ILOffset\":%u,", context->GetLocation().GetOffset());
         fprintf(file, "\"LocationFlags\":%u,", (uint32_t)context->GetLocation().GetSourceTypes());
         fprintf(file, "\"ExactILOffset\":%u,", context->GetActualCallOffset());
@@ -6994,7 +7036,7 @@ void CodeGen::genReportRichDebugInfoToFile()
     }
 
     // MethodID in ETW events are the method handles.
-    fprintf(file, "{\"MethodID\":%lld,", (INT64)m_compiler->info.compMethodHnd);
+    fprintf(file, "{\"MethodID\":%lld,", (long long)m_compiler->info.compMethodHnd);
     // Print inline tree.
     fprintf(file, "\"InlineTree\":");
 
@@ -7457,8 +7499,13 @@ void CodeGen::genReturn(GenTree* treeNode)
 
     if (treeNode->OperIs(GT_RETURN) && m_compiler->compIsAsync())
     {
+#ifdef TARGET_WASM
+        // Wasm returns the continuation in a global.
+        genClearAsyncContinuationGlobal();
+#else
         instGen_Set_Reg_To_Zero(EA_PTRSIZE, REG_ASYNC_CONTINUATION_RET);
         gcInfo.gcMarkRegPtrVal(REG_ASYNC_CONTINUATION_RET, TYP_REF);
+#endif
     }
 
 #if defined(DEBUG) && defined(TARGET_XARCH)
@@ -8507,6 +8554,14 @@ void CodeGen::genPoisonFrame(regMaskTP regLiveIn)
         }
 
         assert(varDsc->lvOnFrame);
+
+#ifdef TARGET_ARM64
+        if (m_compiler->lvaIsUnknownSizeLocal(varNum))
+        {
+            genPoisonUnknownSizeVariable(varNum, (char)poisonVal);
+            continue;
+        }
+#endif
 
         unsigned int size = m_compiler->lvaLclStackHomeSize(varNum);
         if ((size / TARGET_POINTER_SIZE) > 16)

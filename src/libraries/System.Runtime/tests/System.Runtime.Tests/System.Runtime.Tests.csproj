@@ -361,6 +361,7 @@
 
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Collections\IEnumerable.Generic.Serialization.Tests.cs" Link="Common\System\Collections\IEnumerable.Generic.Serialization.Tests.cs" />
+    <Compile Include="GB18030\StringTests.cs" />
     <EmbeddedResource Include="System\Reflection\EmbeddedImage.png">
       <LogicalName>System.Reflection.Tests.EmbeddedImage.png</LogicalName>
     </EmbeddedResource>
@@ -388,4 +389,5 @@
                       Private="true"
                       SetTargetFramework="TargetFramework=$(NetCoreAppMinimum)" />
   </ItemGroup>
+  <Import Project="$(CommonTestPath)ComplianceTests\GB18030\GB18030.Shared.projitems" />
 </Project>

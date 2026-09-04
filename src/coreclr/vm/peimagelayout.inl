@@ -29,7 +29,6 @@ inline ULONG PEImageLayout::Release()
         DESTRUCTOR_CHECK;
         NOTHROW;
         MODE_ANY;
-        FORBID_FAULT;
     }
     CONTRACTL_END;
 

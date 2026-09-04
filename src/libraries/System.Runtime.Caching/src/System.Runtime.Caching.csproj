@@ -72,6 +72,7 @@ System.Runtime.Caching.ObjectCache</PackageDescription>
     <Compile Include="System\Runtime\Caching\Hosting\IFileChangeNotificationSystem.cs" />
     <Compile Include="System\Runtime\Caching\Hosting\IMemoryCacheManager.cs" />
     <Compile Include="System\Runtime\Caching\Resources\RH.cs" />
+    <Compile Include="$(CommonPath)Internal\Padding.cs" Link="Common\Internal\Padding.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">

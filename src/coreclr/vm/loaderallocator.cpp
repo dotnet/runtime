@@ -23,8 +23,6 @@
 
 //#define ENABLE_LOG_LOADER_ALLOCATOR_CLEANUP 1
 
-#define STUBMANAGER_RANGELIST(stubManager) (stubManager::g_pManager->GetRangeList())
-
 UINT64 LoaderAllocator::cLoaderAllocatorsCreated = 1;
 
 LoaderAllocator::LoaderAllocator(bool collectible) :
@@ -40,7 +38,6 @@ LoaderAllocator::LoaderAllocator(bool collectible) :
     m_InitialReservedMemForLoaderHeaps = NULL;
     m_pLowFrequencyHeap = NULL;
     m_pHighFrequencyHeap = NULL;
-    m_pStubHeap = NULL;
     m_pExecutableHeap = NULL;
 #ifdef FEATURE_READYTORUN
 #ifndef FEATURE_STUBPRECODE_DYNAMIC_HELPERS
@@ -661,7 +658,7 @@ void LoaderAllocator::GCLoaderAllocators(LoaderAllocator* pOriginalLoaderAllocat
         if (!IsAtProcessExit())
         {
             // Resume the EE.
-            ThreadSuspend::RestartEE(FALSE, TRUE);
+            ThreadSuspend::RestartEE(true /* SuspendSucceeded */);
         }
 
         // Because RegisterLoaderAllocatorForDeletion is modifying m_pLoaderAllocatorDestroyNext, we are saving it here
@@ -760,7 +757,7 @@ BOOL LoaderAllocator::Destroy(QCall::LoaderAllocatorHandle pLoaderAllocator)
     return FALSE;
 } // LoaderAllocator::Destroy
 
-extern "C" BOOL QCALLTYPE LoaderAllocator_Destroy(QCall::LoaderAllocatorHandle pLoaderAllocator)
+extern "C" BOOL QCALLTYPE LoaderAllocator_Destroy(QCall::LoaderAllocatorHandle pLoaderAllocator, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -1075,7 +1072,6 @@ void LoaderAllocator::ActivateManagedTracking()
     {
         NOTHROW;
         GC_TRIGGERS;
-        FORBID_FAULT;
         MODE_ANY;
     }
     CONTRACTL_END
@@ -1097,8 +1093,7 @@ void LoaderAllocator::ActivateManagedTracking()
 // We don't actually allocate a low frequency heap for collectible types.
 // This is carefully tuned to sum up to 16 pages to reduce waste.
 #define COLLECTIBLE_LOW_FREQUENCY_HEAP_SIZE        0
-#define COLLECTIBLE_HIGH_FREQUENCY_HEAP_SIZE       (3 * minipal_getpagesize())
-#define COLLECTIBLE_STUB_HEAP_SIZE                 minipal_getpagesize()
+#define COLLECTIBLE_HIGH_FREQUENCY_HEAP_SIZE       (4 * minipal_getpagesize())
 #define COLLECTIBLE_CODEHEAP_SIZE                  (10 * minipal_getpagesize())
 #define COLLECTIBLE_VIRTUALSTUBDISPATCH_HEAP_SPACE (2 * minipal_getpagesize())
 
@@ -1122,7 +1117,6 @@ void LoaderAllocator::Init(BYTE *pExecutableHeapMemory)
     DWORD dwLowFrequencyHeapReserveSize;
     DWORD dwHighFrequencyHeapReserveSize;
     DWORD dwStaticsHeapReserveSize;
-    DWORD dwStubHeapReserveSize;
     DWORD dwExecutableHeapReserveSize;
     DWORD dwCodeHeapReserveSize;
     DWORD dwVSDHeapReserveSize;
@@ -1133,7 +1127,6 @@ void LoaderAllocator::Init(BYTE *pExecutableHeapMemory)
     {
         dwLowFrequencyHeapReserveSize  = COLLECTIBLE_LOW_FREQUENCY_HEAP_SIZE;
         dwHighFrequencyHeapReserveSize = COLLECTIBLE_HIGH_FREQUENCY_HEAP_SIZE;
-        dwStubHeapReserveSize          = COLLECTIBLE_STUB_HEAP_SIZE;
         dwCodeHeapReserveSize          = COLLECTIBLE_CODEHEAP_SIZE;
         dwVSDHeapReserveSize           = COLLECTIBLE_VIRTUALSTUBDISPATCH_HEAP_SPACE;
         dwStaticsHeapReserveSize       = 0;
@@ -1142,7 +1135,6 @@ void LoaderAllocator::Init(BYTE *pExecutableHeapMemory)
     {
         dwLowFrequencyHeapReserveSize  = LOW_FREQUENCY_HEAP_RESERVE_SIZE;
         dwHighFrequencyHeapReserveSize = HIGH_FREQUENCY_HEAP_RESERVE_SIZE;
-        dwStubHeapReserveSize          = STUB_HEAP_RESERVE_SIZE;
         dwStaticsHeapReserveSize       = STATIC_FIELD_HEAP_RESERVE_SIZE;
 
         // Non-collectible assemblies do not reserve space for these heaps.
@@ -1163,7 +1155,6 @@ void LoaderAllocator::Init(BYTE *pExecutableHeapMemory)
     DWORD dwTotalReserveMemSize = dwLowFrequencyHeapReserveSize
                                 + dwHighFrequencyHeapReserveSize
                                 + dwStaticsHeapReserveSize
-                                + dwStubHeapReserveSize
                                 + dwCodeHeapReserveSize
                                 + dwVSDHeapReserveSize
                                 + dwExecutableHeapReserveSize;
@@ -1205,8 +1196,8 @@ void LoaderAllocator::Init(BYTE *pExecutableHeapMemory)
     {
         _ASSERTE(!IsCollectible());
 
-        m_pExecutableHeap = new (pExecutableHeapMemory) LoaderHeap(STUB_HEAP_RESERVE_SIZE,
-                                                                      STUB_HEAP_COMMIT_SIZE,
+        m_pExecutableHeap = new (pExecutableHeapMemory) LoaderHeap(EXECUTABLE_HEAP_RESERVE_SIZE,
+                                                                      EXECUTABLE_HEAP_COMMIT_SIZE,
                                                                       initReservedMem,
                                                                       dwExecutableHeapReserveSize,
                                                                       NULL,
@@ -1237,15 +1228,6 @@ void LoaderAllocator::Init(BYTE *pExecutableHeapMemory)
         _ASSERTE(m_pHighFrequencyHeap != NULL);
         m_pStaticsHeap = m_pHighFrequencyHeap;
     }
-
-    m_pStubHeap = new (&m_StubHeapInstance) LoaderHeap(STUB_HEAP_RESERVE_SIZE,
-                                                       STUB_HEAP_COMMIT_SIZE,
-                                                       initReservedMem,
-                                                       dwStubHeapReserveSize,
-                                                       STUBMANAGER_RANGELIST(StubLinkStubManager),
-                                                       LoaderHeapImplementationKind::Executable);
-
-    initReservedMem += dwStubHeapReserveSize;
 
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
     m_pNewStubPrecodeHeap = new (&m_NewStubPrecodeHeapInstance) InterleavedLoaderHeap(
@@ -1452,12 +1434,6 @@ void LoaderAllocator::Terminate()
         m_pHighFrequencyHeap = NULL;
     }
 
-    if (m_pStubHeap != NULL)
-    {
-        m_pStubHeap->~LoaderHeap();
-        m_pStubHeap = NULL;
-    }
-
 #ifdef HAS_FIXUP_PRECODE
     if (m_pFixupPrecodeHeap != NULL)
     {
@@ -1544,10 +1520,6 @@ void LoaderAllocator::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     {
         m_pStaticsHeap->EnumMemoryRegions(flags);
     }
-    if (m_pStubHeap.IsValid())
-    {
-        m_pStubHeap->EnumMemoryRegions(flags);
-    }
     if (m_pExecutableHeap.IsValid())
     {
         m_pExecutableHeap->EnumMemoryRegions(flags);
@@ -1590,8 +1562,6 @@ SIZE_T LoaderAllocator::EstimateSize()
         retval+=m_pStaticsHeap->GetSize();
     if(m_pLowFrequencyHeap)
         retval+=m_pLowFrequencyHeap->GetSize();
-    if(m_pStubHeap)
-        retval+=m_pStubHeap->GetSize();
     if(m_pStringLiteralMap)
         retval+=m_pStringLiteralMap->GetSize();
     if(m_pVirtualCallStubManager)
@@ -1610,7 +1580,6 @@ DispatchToken LoaderAllocator::GetDispatchToken(
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     } CONTRACTL_END;
 
 #ifdef FAT_DISPATCH_TOKENS
@@ -1713,7 +1682,6 @@ EEMarshalingData *LoaderAllocator::GetMarshalingData()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -1791,11 +1759,11 @@ void AssemblyLoaderAllocator::Init()
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
     if (IsCollectible())
     {
-        // TODO: the ShuffleThunkCache should really be using the m_pStubHeap, however the unloadability support
+        // TODO: the ShuffleThunkCache should really be using collectible executable memory, however the unloadability support
         // doesn't track the stubs or the related delegate classes and so we get crashes when a stub is used after
         // the AssemblyLoaderAllocator is gone (the stub memory is unmapped).
         // https://github.com/dotnet/runtime/issues/55697 tracks this issue.
-        m_pShuffleThunkCache = new ShuffleThunkCache(SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap());
+        m_pShuffleThunkCache = new ShuffleThunkCache(SystemDomain::GetGlobalLoaderAllocator());
     }
 #endif // !FEATURE_PORTABLE_ENTRYPOINTS
 }
@@ -1831,7 +1799,6 @@ STRINGREF *LoaderAllocator::GetStringObjRefPtrFromUnicodeString(EEStringData *pS
         THROWS;
         MODE_COOPERATIVE;
         PRECONDITION(CheckPointer(pStringData));
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
     if (m_pStringLiteralMap == NULL)
@@ -1850,7 +1817,6 @@ void LoaderAllocator::LazyInitStringLiteralMap()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -1889,7 +1855,6 @@ STRINGREF *LoaderAllocator::IsStringInterned(STRINGREF *pString)
         THROWS;
         MODE_COOPERATIVE;
         PRECONDITION(CheckPointer(pString));
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
     if (m_pStringLiteralMap == NULL)
@@ -1908,7 +1873,6 @@ STRINGREF *LoaderAllocator::GetOrInternString(STRINGREF *pString)
         THROWS;
         MODE_COOPERATIVE;
         PRECONDITION(CheckPointer(pString));
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
     if (m_pStringLiteralMap == NULL)
@@ -1928,7 +1892,6 @@ void AssemblyLoaderAllocator::RegisterHandleForCleanup(OBJECTHANDLE objHandle)
         MODE_COOPERATIVE;
         CAN_TAKE_LOCK;
         PRECONDITION(CheckPointer(objHandle));
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -1948,7 +1911,6 @@ void AssemblyLoaderAllocator::RegisterHandleForCleanupLocked(OBJECTHANDLE objHan
         MODE_COOPERATIVE;
         CAN_TAKE_LOCK;
         PRECONDITION(CheckPointer(objHandle));
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -2085,7 +2047,6 @@ void LoaderAllocator::RegisterFailedTypeInitForCleanup(ListLockEntry *pListLockE
         MODE_ANY;
         CAN_TAKE_LOCK;
         PRECONDITION(CheckPointer(pListLockEntry));
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -2158,7 +2119,6 @@ ComCallWrapperCache * LoaderAllocator::GetComCallWrapperCache()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -2183,7 +2143,6 @@ UMEntryThunkCache *LoaderAllocator::GetUMEntryThunkCache()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -2296,7 +2255,6 @@ PTR_OnStackReplacementManager LoaderAllocator::GetOnStackReplacementManager()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -2324,7 +2282,6 @@ PTR_AsyncContinuationsManager LoaderAllocator::GetAsyncContinuationsManager()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -2348,7 +2305,6 @@ void LoaderAllocator::AllocateBytesForStaticVariables(DynamicStaticsInfo* pStati
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -2422,7 +2378,6 @@ void LoaderAllocator::AllocateGCHandlesBytesForStaticVariables(DynamicStaticsInf
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -2484,7 +2439,6 @@ bool LoaderAllocator::InsertObjectIntoFieldWithLifetimeOfCollectibleLoaderAlloca
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
         //REENTRANT
     }
     CONTRACTL_END;

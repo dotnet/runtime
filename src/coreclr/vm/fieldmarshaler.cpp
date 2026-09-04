@@ -255,7 +255,6 @@ VOID ParseNativeType(Module*                     pModule,
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pNFD));
     }
     CONTRACTL_END;

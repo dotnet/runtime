@@ -270,7 +270,6 @@ void GetCultureInfoForLCID(LCID lcid, OBJECTREF *pCultureObj)
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pCultureObj));
     }
     CONTRACTL_END;
@@ -433,7 +432,6 @@ BOOL IsManagedObject(IUnknown *pIUnknown)
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pIUnknown));
     }
     CONTRACTL_END;
@@ -731,7 +729,7 @@ ErrExit:
 //--------------------------------------------------------------------------------
 // Release helper, must be called in preemptive mode.  Only use this variant if
 // you already know you're in preemptive mode for other reasons.
-ULONG SafeReleasePreemp(IUnknown * pUnk, RCW * pRCW)
+ULONG SafeReleasePreemp(IUnknown * pUnk)
 {
     CONTRACTL {
         NOTHROW;
@@ -744,14 +742,14 @@ ULONG SafeReleasePreemp(IUnknown * pUnk, RCW * pRCW)
         return 0;
 
     // Message pump could happen, so arbitrary managed code could run.
-    CONTRACT_VIOLATION(ThrowsViolation | FaultViolation);
+    CONTRACT_VIOLATION(ThrowsViolation);
 
     return pUnk->Release();
 }
 
 //--------------------------------------------------------------------------------
 // Release helper, enables and disables GC during call-outs
-ULONG SafeRelease(IUnknown* pUnk, RCW* pRCW)
+ULONG SafeRelease(IUnknown* pUnk)
 {
     CONTRACTL {
         NOTHROW;
@@ -768,7 +766,7 @@ ULONG SafeRelease(IUnknown* pUnk, RCW* pRCW)
     GCX_PREEMP_NO_DTOR_HAVE_THREAD(pThread);
 
     // Message pump could happen, so arbitrary managed code could run.
-    CONTRACT_VIOLATION(ThrowsViolation | FaultViolation);
+    CONTRACT_VIOLATION(ThrowsViolation);
 
     res = pUnk->Release();
 
@@ -1679,18 +1677,14 @@ BOOL IsIClassX(MethodTable *pMT, REFIID riid, ComMethodTable **ppComMT)
     // the IID's of the IClassX's against the specified IID.
     while (pMT != NULL)
     {
-        ComCallWrapperTemplate *pTemplate = ComCallWrapperTemplate::GetTemplate(pMT);
-        if (pTemplate->SupportsIClassX())
-        {
-            ComMethodTable *pComMT =
-                ComCallWrapperTemplate::SetupComMethodTableForClass(pMT, FALSE);
-            _ASSERTE(pComMT);
+        ComMethodTable *pComMT =
+            ComCallWrapperTemplate::SetupComMethodTableForClass(pMT, FALSE);
+        _ASSERTE(pComMT);
 
-            if (IsEqualIID(riid, pComMT->GetIID()))
-            {
-                *ppComMT = pComMT;
-                return TRUE;
-            }
+        if (IsEqualIID(riid, pComMT->GetIID()))
+        {
+            *ppComMT = pComMT;
+            return TRUE;
         }
 
         pMT = pMT->GetComPlusParentMethodTable();
@@ -1699,23 +1693,6 @@ BOOL IsIClassX(MethodTable *pMT, REFIID riid, ComMethodTable **ppComMT)
     return FALSE;
 }
 
-
-
-//---------------------------------------------------------------------------
-// Returns TRUE if we support IClassX (the auto-generated class interface)
-// for the given class.
-BOOL ClassSupportsIClassX(MethodTable *pMT)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    return TRUE;
-}
 
 
 
@@ -1753,7 +1730,6 @@ DefaultInterfaceType GetDefaultInterfaceForClassInternal(TypeHandle hndClass, Ty
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(!hndClass.IsNull());
         PRECONDITION(CheckPointer(pHndDefClass));
         PRECONDITION(!hndClass.GetMethodTable()->IsInterface());
@@ -2033,7 +2009,6 @@ void GetComSourceInterfacesForClass(MethodTable *pMT, CQuickArray<MethodTable *>
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pMT));
     }
     CONTRACTL_END;
@@ -2205,7 +2180,6 @@ ULONG GetStringizedClassItfDef(TypeHandle InterfaceType, CQuickArray<BYTE> &rDef
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(!InterfaceType.IsNull());
     }
     CONTRACTL_END;
@@ -2298,7 +2272,6 @@ void GenerateClassItfGuid(TypeHandle InterfaceType, GUID *pGuid)
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(!InterfaceType.IsNull());
         PRECONDITION(CheckPointer(pGuid));
     }
@@ -3044,9 +3017,9 @@ void IUInvokeDispMethod(
     DISPID              MemberID            = 0;
     ByrefArgumentInfo*  aByrefArgInfos      = NULL;
     BOOL                bSomeArgsAreByref   = FALSE;
-    ComHolderAnyMode<IUnknown> pUnk;
-    ComHolderAnyMode<IDispatch> pDisp;
-    ComHolderAnyMode<IDispatchEx> pDispEx;
+    ReleaseHolderAnyMode<IUnknown> pUnk;
+    ReleaseHolderAnyMode<IDispatch> pDisp;
+    ReleaseHolderAnyMode<IDispatchEx> pDispEx;
     VariantPtrHolder    pVarResult;
     NewArrayHolder<DispParamHolder> params  = NULL;
 
@@ -3142,10 +3115,10 @@ void IUInvokeDispMethod(
         // we will not correctly detect that the user did something wrong and will crash.
         // This is a known issue with no solution.
         // Our check here is best effort to catch the simple case where a user may make a mistake.
-        ComHolderAnyMode<IUnknown> pInvokedMTUnknown{ ComObject::GetComIPFromRCWThrowing(pTarget, pInvokedMT) };
+        ReleaseHolderAnyMode<IUnknown> pInvokedMTUnknown{ ComObject::GetComIPFromRCWThrowing(pTarget, pInvokedMT) };
 
         // QI for IDispatch to catch the simple error case (COM object has no IDispatch but pInvokedMT is specified as a dispatch or dual interface)
-        ComHolderAnyMode<IUnknown> pCanonicalDisp;
+        ReleaseHolderAnyMode<IUnknown> pCanonicalDisp;
         hr = SafeQueryInterface(pInvokedMTUnknown, IID_IDispatch, &pCanonicalDisp);
         if (FAILED(hr))
             COMPlusThrow(kTargetException, W("TargetInvocation_TargetDoesNotImplementIDispatch"));
@@ -3543,7 +3516,6 @@ static void GetComClassHelper(
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(ThrowOutOfMemory());
         PRECONDITION(CheckPointer(pRef));
         PRECONDITION(CheckPointer(pClassFactHash));
         PRECONDITION(CheckPointer(pClassFactInfo));
@@ -3603,7 +3575,6 @@ void GetComClassFromCLSID(REFCLSID clsid, _In_opt_z_ PCWSTR wszServer, OBJECTREF
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(pRef != NULL);
     }
     CONTRACTL_END;
@@ -3647,7 +3618,6 @@ ClassFactoryBase *GetComClassFactory(MethodTable* pClassMT)
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(ThrowOutOfMemory());
         PRECONDITION(CheckPointer(pClassMT));
         PRECONDITION(pClassMT->IsComObjectType());
     }
@@ -3922,7 +3892,7 @@ VOID LogInteropQI(IUnknown* pItf, REFIID iid, HRESULT hrArg, _In_z_ LPCSTR szMsg
 
     LPVOID              pCurrCtx    = NULL;
     HRESULT             hr          = S_OK;
-    ComHolderAnyMode<IUnknown> pUnk;
+    ReleaseHolderAnyMode<IUnknown> pUnk;
     CHAR                szIID[MINIPAL_GUID_BUFFER_LEN];
 
     hr = SafeQueryInterface(pItf, IID_IUnknown, &pUnk);
@@ -3969,7 +3939,7 @@ VOID LogInteropAddRef(IUnknown* pItf, ULONG cbRef, _In_z_ LPCSTR szMsg)
 
     LPVOID              pCurrCtx    = NULL;
     HRESULT             hr          = S_OK;
-    ComHolderAnyMode<IUnknown> pUnk;
+    ReleaseHolderAnyMode<IUnknown> pUnk;
 
     hr = SafeQueryInterface(pItf, IID_IUnknown, &pUnk);
 

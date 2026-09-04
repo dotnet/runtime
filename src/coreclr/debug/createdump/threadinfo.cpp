@@ -299,7 +299,8 @@ ThreadInfo::GatherStackFrames(CONTEXT* pContext, IXCLRDataStackWalk* pStackwalk)
     }
 
     // Add managed stack frame for the crash info notes
-    StackFrame frame(moduleAddress, ip, sp, pMethod.Extract(), nativeOffset, token, ilOffset);
+    StackFrame frame(moduleAddress, ip, sp, pMethod, nativeOffset, token, ilOffset);
+    pMethod.Detach();
     AddStackFrame(frame);
 }
 

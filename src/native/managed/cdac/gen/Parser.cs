@@ -16,6 +16,7 @@ internal static class Parser
     public const string RawOffsetAttributeFqn = AttrNs + ".RawOffsetAttribute";
     public const string FieldAddressAttributeFqn = AttrNs + ".FieldAddressAttribute";
     public const string InstanceDataStartAttributeFqn = AttrNs + ".InstanceDataStartAttribute";
+    public const string CustomInitAttributeFqn = AttrNs + ".CustomInitAttribute";
     public const string StaticAddressAttributeFqn = AttrNs + ".StaticAddressAttribute";
     public const string StaticReferenceAttributeFqn = AttrNs + ".StaticReferenceAttribute";
     public const string ThreadStaticAddressAttributeFqn = AttrNs + ".ThreadStaticAddressAttribute";
@@ -181,6 +182,7 @@ internal static class Parser
         AttributeData? fieldOffsetAttr = null;
         AttributeData? addrAttr = null;
         AttributeData? startAttr = null;
+        AttributeData? customInitAttr = null;
 
         foreach (AttributeData a in prop.GetAttributes())
         {
@@ -201,11 +203,38 @@ internal static class Parser
             {
                 startAttr = a;
             }
+            else if (fqn == CustomInitAttributeFqn)
+            {
+                customInitAttr = a;
+            }
         }
 
-        if (fieldAttr is null && fieldOffsetAttr is null && addrAttr is null && startAttr is null)
+        if (fieldAttr is null && fieldOffsetAttr is null && addrAttr is null && startAttr is null && customInitAttr is null)
         {
             return false;
+        }
+
+        if (customInitAttr is not null)
+        {
+            string customInitializerName =
+                (string)customInitAttr.ConstructorArguments[0].Value!;
+            model = new MemberModel(
+                Name: prop.Name,
+                Kind: MemberKind.CustomInit,
+                DescriptorOrFieldName: prop.Name,
+                DescriptorNativeType: null,
+                PropertyOrReturnTypeFqn: prop.Type.ToDisplayString(s_propertyTypeFormat),
+                ReadKind: FieldReadKind.Primitive,
+                DataTypeArgumentFqn: null,
+                IsOptional: false,
+                IsNullable: false,
+                RawOffset: null,
+                LittleEndian: false,
+                Writable: false,
+                BoolUnderlyingType: null,
+                Names: EquatableArray<string>.FromEnumerable(new[] { prop.Name }),
+                CustomInitializerName: customInitializerName);
+            return true;
         }
 
         if (fieldOffsetAttr is not null)
@@ -227,7 +256,7 @@ internal static class Parser
                 IsNullable: isNullable,
                 RawOffset: offset,
                 LittleEndian: littleEndian,
-                Setter: SetterKind.None,
+                Writable: false,
                 BoolUnderlyingType: null,
                 Names: EquatableArray<string>.FromEnumerable(new[] { prop.Name }));
             return true;
@@ -247,15 +276,9 @@ internal static class Parser
             (FieldReadKind readKind, string? dataTypeArg, bool isNullable) = ClassifyFieldRead(prop, isPointer);
             string fqnType = prop.Type.ToDisplayString(s_propertyTypeFormat);
 
-            // A [Field] property is read-only, privately settable, or writable.
-            // It never exposes a public setter -- mutation goes through the
-            // generated Write{Name} method. The generated setter is always
-            // private, so a public setter in the declaration is a compile error
-            // (accessibility mismatch on the partial property).
+            // A writable [Field] exposes a private setter used by the generated
+            // Write{Name} method to update the memoized value.
             bool writable = GetNamedBool(fieldAttr, "Writable");
-            SetterKind setter = writable
-                ? SetterKind.Writable
-                : prop.SetMethod is not null ? SetterKind.Private : SetterKind.None;
 
             // DescriptorOrFieldName is retained for static-accessor emit paths.
             // For [Field] codegen, only the Names array is used.
@@ -273,7 +296,7 @@ internal static class Parser
                 IsNullable: isNullable,
                 RawOffset: null,
                 LittleEndian: false,
-                Setter: setter,
+                Writable: writable,
                 BoolUnderlyingType: boolUnderlyingType,
                 Names: ComputeFieldNames(prop.Name, rawNames, usePropertyName));
             return true;
@@ -302,7 +325,7 @@ internal static class Parser
                 IsNullable: isNullable,
                 RawOffset: null,
                 LittleEndian: false,
-                Setter: SetterKind.None,
+                Writable: false,
                 BoolUnderlyingType: null,
                 Names: ComputeFieldNames(prop.Name, rawNames, usePropertyName));
             return true;
@@ -322,7 +345,7 @@ internal static class Parser
                 IsNullable: false,
                 RawOffset: null,
                 LittleEndian: false,
-                Setter: SetterKind.None,
+                Writable: false,
                 BoolUnderlyingType: null,
                 Names: EquatableArray<string>.FromEnumerable(new[] { prop.Name }));
             return true;
@@ -366,7 +389,7 @@ internal static class Parser
             IsNullable: false,
             RawOffset: null,
             LittleEndian: false,
-            Setter: SetterKind.None,
+            Writable: false,
             BoolUnderlyingType: null,
             Names: EquatableArray<string>.FromEnumerable(new[] { fieldName }));
         return true;

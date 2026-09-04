@@ -9,7 +9,7 @@
 
 #include "common.h"
 #include "peassembly.h"
-#include "eecontract.h"
+#include <contract.h>
 #include "eeconfig.h"
 #include "eventtrace.h"
 #include "dbginterface.h"
@@ -174,7 +174,6 @@ void PEAssembly::GetPathOrCodeBase(SString &result)
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -284,7 +283,6 @@ void PEAssembly::OpenImporter()
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -309,7 +307,6 @@ void PEAssembly::ConvertMDInternalToReadWrite()
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT(EX_THROW(EEMessageException, (E_OUTOFMEMORY)););
     }
     CONTRACTL_END;
 
@@ -376,7 +373,6 @@ void PEAssembly::OpenMDImport()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -405,7 +401,6 @@ void PEAssembly::OpenEmitter()
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -447,7 +442,6 @@ void PEAssembly::GetEmbeddedResource(DWORD dwOffset, DWORD *cbResource, PBYTE *p
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(ThrowOutOfMemory(););
     }
     CONTRACTL_END;
 
@@ -475,7 +469,6 @@ PEAssembly* PEAssembly::LoadAssembly(mdAssemblyRef kAssemblyRef)
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -505,7 +498,6 @@ BOOL PEAssembly::GetResource(LPCSTR szName, DWORD *cbResource,
         INSTANCE_CHECK;
         THROWS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
         WRAPPER(GC_TRIGGERS);
     }
     CONTRACTL_END;
@@ -639,36 +631,34 @@ ULONG PEAssembly::GetPEImageTimeDateStamp()
 #ifndef DACCESS_COMPILE
 
 PEAssembly::PEAssembly(
-                BINDER_SPACE::Assembly* pBindResultInfo,
+                BINDER_SPACE::Assembly* pBoundAssembly,
                 IMetaDataEmit* pEmit,
-                BOOL isSystem,
-                AssemblyBinder* pFallbackBinder /*= NULL*/,
-                PEImage * pPEImage /*= NULL*/,
-                BINDER_SPACE::Assembly * pHostAssembly /*= NULL*/)
+                AssemblyBinder* pDynamicAssemblyBinder /*= NULL*/)
+    :
+#ifdef LOGGING
+      m_pDebugName{NULL},
+#endif // LOGGING
+      m_PEImage{NULL}
+    , m_MDImportIsRW_Debugger_Use_Only{FALSE}
+    , m_pMDImport{NULL}
+    , m_pImporter{NULL}
+    , m_pEmitter{NULL}
+    , m_refCount{1}
+    , m_pHostAssembly{nullptr}
+    , m_pAssemblyBinder{nullptr}
 {
     CONTRACTL
     {
-        PRECONDITION(CheckPointer(pEmit, NULL_OK));
-        PRECONDITION(pBindResultInfo == NULL || pPEImage == NULL);
+        // A PEAssembly is either bound by an AssemblyBinder or dynamic (reflection emit)
+        PRECONDITION((pBoundAssembly == NULL) != (pEmit == NULL));
+        // A bound assembly takes its binder from the bind result, not from a caller.
+        PRECONDITION(pBoundAssembly == NULL || pDynamicAssemblyBinder == NULL);
         STANDARD_VM_CHECK;
     }
     CONTRACTL_END;
 
-#ifdef LOGGING
-    m_pDebugName = NULL;
-#endif // LOGGING
-    m_PEImage = NULL;
-    m_MDImportIsRW_Debugger_Use_Only = FALSE;
-    m_pMDImport = NULL;
-    m_pImporter = NULL;
-    m_pEmitter = NULL;
-    m_refCount = 1;
-    m_isSystem = isSystem;
-    m_pHostAssembly = nullptr;
-    m_pAssemblyBinder = nullptr;
-
-    pPEImage = pBindResultInfo ? pBindResultInfo->GetPEImage() : pPEImage;
-    if (pPEImage)
+    PEImage* pPEImage = pBoundAssembly ? pBoundAssembly->GetPEImage() : NULL;
+    if (pPEImage != NULL)
     {
         _ASSERTE(pPEImage->CheckUniqueInstance());
         pPEImage->AddRef();
@@ -704,26 +694,14 @@ PEAssembly::PEAssembly(
 
     // Set the host assembly and binding context as the AssemblySpec initialization
     // for CoreCLR will expect to have it set.
-    if (pHostAssembly != nullptr)
+    if (pBoundAssembly != nullptr)
     {
-        m_pHostAssembly = clr::SafeAddRef(pHostAssembly);
-    }
-
-    if(pBindResultInfo != nullptr)
-    {
-        // Cannot have both pHostAssembly and a coreclr based bind
-        _ASSERTE(pHostAssembly == nullptr);
-        pBindResultInfo = clr::SafeAddRef(pBindResultInfo);
-        m_pHostAssembly = pBindResultInfo;
-    }
-
-    if (m_pHostAssembly != nullptr)
-    {
+        m_pHostAssembly = clr::SafeAddRef(pBoundAssembly);
         m_pAssemblyBinder = m_pHostAssembly->GetBinder();
     }
     else
     {
-        m_pAssemblyBinder = pFallbackBinder;
+        m_pAssemblyBinder = pDynamicAssemblyBinder;
     }
 
 #ifdef LOGGING
@@ -732,24 +710,6 @@ PEAssembly::PEAssembly(
 #endif // LOGGING
 }
 #endif // !DACCESS_COMPILE
-
-
-PEAssembly *PEAssembly::Open(
-    PEImage *          pPEImageIL,
-    BINDER_SPACE::Assembly * pHostAssembly)
-{
-    STANDARD_VM_CONTRACT;
-
-    PEAssembly * pPEAssembly = new PEAssembly(
-        nullptr,        // BindResult
-        nullptr,        // IMetaDataEmit
-        FALSE,          // isSystem
-        nullptr,        // FallbackBinder
-        pPEImageIL,
-        pHostAssembly);
-
-    return pPEAssembly;
-}
 
 
 PEAssembly::~PEAssembly()
@@ -828,16 +788,16 @@ PEAssembly *PEAssembly::DoOpenSystem()
     ReleaseHolder<BINDER_SPACE::Assembly> pBoundAssembly;
     IfFailThrow(GetAppDomain()->GetDefaultBinder()->BindToSystem(&pBoundAssembly));
 
-    return new PEAssembly(pBoundAssembly, NULL, TRUE);
+    return new PEAssembly(pBoundAssembly, NULL);
 }
 
-PEAssembly* PEAssembly::Open(BINDER_SPACE::Assembly* pBindResult)
+PEAssembly* PEAssembly::Open(BINDER_SPACE::Assembly* pBoundAssembly)
 {
-    return new PEAssembly(pBindResult,NULL,/*isSystem*/ false);
+    return new PEAssembly(pBoundAssembly, NULL);
 };
 
 /* static */
-PEAssembly *PEAssembly::Create(IMetaDataAssemblyEmit *pAssemblyEmit, AssemblyBinder *pFallbackBinder)
+PEAssembly *PEAssembly::Create(IMetaDataAssemblyEmit *pAssemblyEmit, AssemblyBinder *pDynamicAssemblyBinder)
 {
     CONTRACTL
     {
@@ -848,9 +808,9 @@ PEAssembly *PEAssembly::Create(IMetaDataAssemblyEmit *pAssemblyEmit, AssemblyBin
 
     // Set up the metadata pointers in the PEAssembly. (This is the only identity
     // we have.)
-    ComHolderPreemp<IMetaDataEmit> pEmit;
+    ReleaseHolder<IMetaDataEmit> pEmit;
     pAssemblyEmit->QueryInterface(IID_IMetaDataEmit, (void **)&pEmit);
-    return new PEAssembly(NULL, pEmit, FALSE, pFallbackBinder);
+    return new PEAssembly(NULL, pEmit, pDynamicAssemblyBinder);
 }
 
 #endif // #ifndef DACCESS_COMPILE
@@ -868,7 +828,6 @@ BOOL PEAssembly::GetCodeBase(SString &result)
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -898,7 +857,6 @@ void PEAssembly::PathToUrl(SString &string)
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -929,40 +887,6 @@ void PEAssembly::PathToUrl(SString &string)
     {
         string.Replace(i, W('/'));
     }
-}
-
-void PEAssembly::UrlToPath(SString &string)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    SString::Iterator i = string.Begin();
-
-    SString sss2(SString::Literal, W("file://"));
-#if !defined(TARGET_UNIX)
-    SString sss3(SString::Literal, W("file:///"));
-    if (string.MatchCaseInsensitive(i, sss3))
-        string.Delete(i, 8);
-    else
-#endif
-    if (string.MatchCaseInsensitive(i, sss2))
-        string.Delete(i, 7);
-
-#if !defined(TARGET_UNIX)
-    while (string.Find(i, W('/')))
-    {
-        string.Replace(i, W('\\'));
-    }
-#endif
-}
-
-BOOL PEAssembly::FindLastPathSeparator(const SString &path, SString::Iterator &i)
-{
-    return path.FindBack(i, DIRECTORY_SEPARATOR_CHAR_A);
 }
 
 // ------------------------------------------------------------
@@ -1041,7 +965,6 @@ LPCWSTR PEAssembly::GetPathForErrorMessages()
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         SUPPORTS_DAC_HOST_ONLY;
     }
     CONTRACTL_END

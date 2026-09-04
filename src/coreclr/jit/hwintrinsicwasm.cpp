@@ -76,7 +76,9 @@ CORINFO_InstructionSet Compiler::lookupIsa(const char* className,
 
 GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdType, var_types simdBaseType)
 {
-    NYI_WASM_SIMD("impNonConstFallback");
+    // On Wasm, for non-const immediate only instructions, we either emit a jump table
+    // or re-write to a fallback sequence, so impNonConstFallback should never be used.
+    unreached();
     return nullptr;
 }
 

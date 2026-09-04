@@ -134,6 +134,11 @@
              Link="Common\System\Net\Security\SslKeyLogger.cs" />
   </ItemGroup>
 
+  <!-- Compiled on desktop only: crashes Apple-mobile CoreCLR at startup due to R2R IL-body stripping. -->
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows' or '$(TargetPlatformIdentifier)' == 'unix' or '$(TargetPlatformIdentifier)' == 'osx'">
+    <Compile Include="SslAuthenticationOptionsTests.Desktop.cs" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'osx' or '$(TargetPlatformIdentifier)' == 'ios'">
     <Compile Include="..\..\src\System\Net\Security\SslStreamCertificateContext.OSX.cs" />
     <!-- reuse Unix SafeDeleteSslContext since it has no platform specific code -->

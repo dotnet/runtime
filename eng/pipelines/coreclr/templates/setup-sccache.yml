@@ -11,11 +11,12 @@ parameters:
   shouldContinueOnError: false
   osSubgroup: ''
 
-  # sccache NuGet package version
+  # sccache version. Keep the version in sync across platforms so all jobs
+  # cache against the same compiler-launcher behavior.
   sccacheVersion: '0.15.0'
 
 steps:
-  - ${{ if and(or(eq(parameters.osGroup, 'linux'), eq(parameters.osGroup, 'freebsd'), eq(parameters.osGroup, 'openbsd')), or(eq(parameters.archType, 'x64'), eq(parameters.archType, 'arm64'))) }}:
+  - ${{ if and(or(eq(parameters.osGroup, 'linux'), eq(parameters.osGroup, 'freebsd'), eq(parameters.osGroup, 'openbsd'), eq(parameters.osGroup, 'osx')), or(eq(parameters.archType, 'x64'), eq(parameters.archType, 'arm64'))) }}:
     # Set up the Azure Pipeline Cache for sccache's local cache directory.
     # Use a rolling key so each build can update the cache; restoreKeys
     # falls back to the most recent saved entry.
@@ -26,6 +27,10 @@ steps:
     # flags are controlled by RuntimeConfiguration (-rc), which is
     # constant per leg regardless of buildConfig.  Omitting it lets PR
     # builds warm-start from rolling-build caches saved in the main scope.
+    #
+    # osGroup/osSubgroup/archType keep each platform's cache isolated so
+    # Mac jobs don't poison the Linux entries (different compiler, different
+    # cache contents).
     - task: Cache@2
       displayName: Sccache cache
       continueOnError: true
@@ -35,11 +40,34 @@ steps:
         restoreKeys: |
           sccache | ${{ parameters.osGroup }}${{ parameters.osSubgroup }} | ${{ parameters.archType }} | ${{ parameters.nameSuffix }}
 
-    # Download the sccache NuGet package and configure the environment.
+    # Download sccache and configure the environment.
+    #
+    # The unsuffixed package contains the linux-musl-x64 binary. On macOS,
+    # select the package matching the agent host architecture.
     - script: |
+        set -euo pipefail
         sccacheVersion="${{ parameters.sccacheVersion }}"
-        sccacheDir="$(Build.SourcesDirectory)/.packages/sccache/${sccacheVersion}/tools"
-        "$(Build.SourcesDirectory)/eng/common/dotnet.sh" package download "sccache@${sccacheVersion}" -o "$(Build.SourcesDirectory)/.packages" -v quiet
+        osGroup="${{ parameters.osGroup }}"
+        sccachePackage="sccache"
+
+        if [[ "$osGroup" == "osx" ]]; then
+            case "$(uname -m)" in
+                arm64)
+                    sccachePackage="sccache.osx-arm64"
+                    ;;
+                x86_64)
+                    sccachePackage="sccache.osx-x64"
+                    ;;
+                *)
+                    echo "Unsupported macOS host architecture: $(uname -m)" >&2
+                    exit 1
+                    ;;
+            esac
+        fi
+
+        "$(Build.SourcesDirectory)/eng/common/dotnet.sh" package download "${sccachePackage}@${sccacheVersion}" -o "$(Build.SourcesDirectory)/.packages" -v quiet
+        sccacheDir="$(Build.SourcesDirectory)/.packages/${sccachePackage}/${sccacheVersion}/tools"
+
         chmod +x "$sccacheDir/sccache"
         echo "##vso[task.prependpath]$sccacheDir"
         echo "##vso[task.setvariable variable=SCCACHE_DIR]$(Pipeline.Workspace)/.sccache"

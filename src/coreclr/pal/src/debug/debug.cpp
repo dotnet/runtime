@@ -584,13 +584,7 @@ PAL_ProbeMemory(
         return TRUE;
     }
     return FALSE;
-#elif defined(TARGET_WASI)
-    if ((uintptr_t)((PBYTE)pBuffer + cbBuffer) <= (__builtin_wasm_memory_size(0) * 65536))
-    {
-        return TRUE;
-    }
-    return FALSE;
-#else // TARGET_BROWSER || TARGET_WASI
+#else // TARGET_BROWSER
     int fds[2];
     int flags;
 
@@ -647,7 +641,7 @@ PAL_ProbeMemory(
     close(fds[1]);
 
     return result;
-#endif // TARGET_BROWSER || TARGET_WASI
+#endif // TARGET_BROWSER
 }
 
 } // extern "C"
