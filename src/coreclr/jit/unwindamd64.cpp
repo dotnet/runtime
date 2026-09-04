@@ -71,53 +71,54 @@ short Compiler::mapRegNumToDwarfReg(regNumber reg)
         case REG_R15:
             dwarfReg = 15;
             break;
+        // The x86-64 psABI assigns the APX eGPRs 130-145.
         case REG_R16:
-            dwarfReg = 16;
+            dwarfReg = 130;
             break;
         case REG_R17:
-            dwarfReg = 17;
+            dwarfReg = 131;
             break;
         case REG_R18:
-            dwarfReg = 18;
+            dwarfReg = 132;
             break;
         case REG_R19:
-            dwarfReg = 19;
+            dwarfReg = 133;
             break;
         case REG_R20:
-            dwarfReg = 20;
+            dwarfReg = 134;
             break;
         case REG_R21:
-            dwarfReg = 21;
+            dwarfReg = 135;
             break;
         case REG_R22:
-            dwarfReg = 22;
+            dwarfReg = 136;
             break;
         case REG_R23:
-            dwarfReg = 23;
+            dwarfReg = 137;
             break;
         case REG_R24:
-            dwarfReg = 24;
+            dwarfReg = 138;
             break;
         case REG_R25:
-            dwarfReg = 25;
+            dwarfReg = 139;
             break;
         case REG_R26:
-            dwarfReg = 26;
+            dwarfReg = 140;
             break;
         case REG_R27:
-            dwarfReg = 27;
+            dwarfReg = 141;
             break;
         case REG_R28:
-            dwarfReg = 28;
+            dwarfReg = 142;
             break;
         case REG_R29:
-            dwarfReg = 29;
+            dwarfReg = 143;
             break;
         case REG_R30:
-            dwarfReg = 30;
+            dwarfReg = 144;
             break;
         case REG_R31:
-            dwarfReg = 31;
+            dwarfReg = 145;
             break;
         default:
             noway_assert(!"unexpected REG_NUM");
