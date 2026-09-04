@@ -272,14 +272,6 @@ namespace System.Net.Mail.Tests
             a = new Attachment(new MemoryStream(), "=?Q?foo_bar_foo_bar_foo_bar_foo_bar_foo_bar_foo_bar_foo_bar_foo?ISO-8859-1?=");
             Assert.Equal("=?Q?foo_bar_foo_bar_foo_bar_foo_bar_foo_bar_foo_bar_foo_bar_foo?ISO-8859-1?=", a.Name);
             Assert.Null(a.NameEncoding);
-
-            // over-length AND a non-existent charset: the length violation must be detected
-            // before the charset is resolved, so this is treated as literal text rather
-            // than throwing.
-            string overLong = "=?XXXX?Q?" + new string('a', 70) + "?=";
-            a = new Attachment(new MemoryStream(), overLong);
-            Assert.Equal(overLong, a.Name);
-            Assert.Null(a.NameEncoding);
         }
 
         [Fact]

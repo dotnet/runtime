@@ -129,12 +129,6 @@ namespace System.Net.Mime
                     return (value, null);
                 }
 
-                // An encoded-word may not be more than 75 characters long, including
-                // 'charset', 'encoding', 'encoded-text', and the delimiting '?'s (RFC 2047
-                // section 2). Reject an over-long encoded-word before attempting to resolve
-                // its charset or decode its content, so that an invalid charset name in an
-                // already-non-conforming (over-long) value doesn't surface as an exception
-                // instead of being treated as ordinary literal text.
                 if (dataStart + terminator + 2 > MaxEncodedWordLength)
                 {
                     return (value, null);
