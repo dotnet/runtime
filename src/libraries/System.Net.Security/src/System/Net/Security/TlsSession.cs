@@ -371,6 +371,7 @@ namespace System.Net.Security
                     trust: null,
                     ref alertToken,
                     ref sslPolicyErrors,
+                    out _,
                     out _);
             }
             finally

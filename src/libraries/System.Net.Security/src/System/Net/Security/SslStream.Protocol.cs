@@ -1138,12 +1138,26 @@ namespace System.Net.Security
             int preexistingExtraCertsCount = _sslAuthenticationOptions.CertificateChainPolicy?.ExtraStore?.Count ?? 0;
 
             X509Chain? chain = null;
+            bool certificateValidationSkippedOnResume = false;
 
             try
             {
                 X509Certificate2? certificate = CertificateValidationPal.GetRemoteCertificate(_securityContext, ref chain, _sslAuthenticationOptions.CertificateChainPolicy);
 
-                return VerifyRemoteCertificate(certificate, chain, trust, ref alertToken, ref sslPolicyErrors, out chainStatus);
+                return VerifyRemoteCertificateCore(
+                    this,
+                    !_isRenego,
+                    _sslAuthenticationOptions,
+                    _securityContext,
+                    ref _remoteCertificate,
+                    ref _connectionInfo,
+                    certificate,
+                    chain,
+                    trust,
+                    ref alertToken,
+                    ref sslPolicyErrors,
+                    out chainStatus,
+                    out certificateValidationSkippedOnResume);
             }
             finally
             {
@@ -1155,7 +1169,11 @@ namespace System.Net.Security
                     // Only cleanup certificates if no user callback was provided.
                     // When a callback is provided, users might add their own certificates to ExtraStore
                     // or keep references to certificates from ChainElements.
-                    if (_sslAuthenticationOptions.CertValidationDelegate == null)
+                    // On a resumed handshake we skip the callback entirely (see the resumption shortcut
+                    // in VerifyRemoteCertificateCore), so nothing else adopts the peer-sent intermediates
+                    // GetRemoteCertificate appended; dispose them here even when a callback is configured
+                    // to avoid leaking X509Certificate2 handles across repeated resumptions.
+                    if (_sslAuthenticationOptions.CertValidationDelegate == null || certificateValidationSkippedOnResume)
                     {
                         // Dispose only the certificates that were added by GetRemoteCertificate
                         for (int i = preexistingExtraCertsCount; i < chain.ChainPolicy.ExtraStore.Count; i++)
@@ -1195,7 +1213,8 @@ namespace System.Net.Security
                 trust,
                 ref alertToken,
                 ref sslPolicyErrors,
-                out chainStatus);
+                out chainStatus,
+                out _);
         }
 
         internal static bool VerifyRemoteCertificateCore(
@@ -1214,9 +1233,11 @@ namespace System.Net.Security
             SslCertificateTrust? trust,
             ref ProtocolToken alertToken,
             ref SslPolicyErrors sslPolicyErrors,
-            out X509ChainStatusFlags chainStatus)
+            out X509ChainStatusFlags chainStatus,
+            out bool certificateValidationSkippedOnResume)
         {
             chainStatus = X509ChainStatusFlags.NoError;
+            certificateValidationSkippedOnResume = false;
 
             bool success = false;
 
@@ -1254,6 +1275,7 @@ namespace System.Net.Security
                 // which must always be validated (the identical-certificate case above is handled
                 // separately).
                 remoteCertificateSlot = certificate;
+                certificateValidationSkippedOnResume = true;
                 if (NetEventSource.Log.IsEnabled())
                 {
                     NetEventSource.Info(sender, "Skipping remote certificate validation on resumed TLS session.");
