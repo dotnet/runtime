@@ -3328,18 +3328,18 @@ namespace System.Net.Security.Tests
             {
                 TlsOperationStatus ws = session.Write(data.AsSpan(sent), out int n);
                 sent += n;
-                if (ws == TlsOperationStatus.Complete)
+                switch (ws)
                 {
-                    continue;
-                }
-                if (ws == TlsOperationStatus.DestinationTooSmall)
-                {
-                    await Task.Delay(5);
-                    continue;
-                }
-                if (n == 0)
-                {
-                    throw new InvalidOperationException($"Unexpected write status: {ws}");
+                    case TlsOperationStatus.Complete:
+                        continue;
+                    case TlsOperationStatus.DestinationTooSmall:
+                        await Task.Delay(5);
+                        continue;
+                    default:
+                        // Any other status (Closed, NeedMoreData, NeedsCertificateValidation, ...)
+                        // is unexpected for an application-data write and must fail the test,
+                        // regardless of whether partial progress (n > 0) was reported.
+                        throw new InvalidOperationException($"Unexpected write status: {ws}");
                 }
             }
         }
