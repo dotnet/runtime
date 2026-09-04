@@ -70,7 +70,7 @@ namespace Microsoft.Extensions.Caching.Memory
                     lock (_gate)
                     {
                         State state = _state;
-                        int count = Volatile.Read(ref state._count);
+                        int count = state._count;
                         if ((uint)index >= (uint)count)
                         {
                             throw new ArgumentOutOfRangeException(nameof(index));
@@ -95,7 +95,7 @@ namespace Microsoft.Extensions.Caching.Memory
                 lock (_gate)
                 {
                     State state = _state;
-                    int count = Volatile.Read(ref state._count);
+                    int count = state._count;
                     int updatedCount = count + 1;
                     state = EnsureCapacity(state, count, updatedCount);
                     state._items[count] = item;
@@ -113,7 +113,7 @@ namespace Microsoft.Extensions.Caching.Memory
                 lock (_gate)
                 {
                     State state = _state;
-                    int count = Volatile.Read(ref state._count);
+                    int count = state._count;
                     int updatedCount = checked(count + source.Length);
                     state = EnsureCapacity(state, count, updatedCount);
                     source.CopyTo(new Span<IChangeToken>(state._items, count, source.Length));
@@ -126,13 +126,13 @@ namespace Microsoft.Extensions.Caching.Memory
                 lock (_gate)
                 {
                     State state = _state;
-                    int count = Volatile.Read(ref state._count);
+                    int count = state._count;
                     if ((uint)index > (uint)count)
                     {
                         throw new ArgumentOutOfRangeException(nameof(index));
                     }
 
-                    int updatedCount = checked(count + 1);
+                    int updatedCount = count + 1;
                     if (!_concurrentReadsEnabled)
                     {
                         if (updatedCount > state._items.Length)
@@ -159,7 +159,7 @@ namespace Microsoft.Extensions.Caching.Memory
                 lock (_gate)
                 {
                     State state = _state;
-                    int count = Volatile.Read(ref state._count);
+                    int count = state._count;
                     if ((uint)index >= (uint)count)
                     {
                         throw new ArgumentOutOfRangeException(nameof(index));
@@ -198,7 +198,7 @@ namespace Microsoft.Extensions.Caching.Memory
                 lock (_gate)
                 {
                     State state = _state;
-                    int count = Volatile.Read(ref state._count);
+                    int count = state._count;
                     int index = Array.IndexOf(state._items, item, 0, count);
                     if (index < 0)
                     {
