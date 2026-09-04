@@ -8370,8 +8370,7 @@ bool InterpCompiler::IsBoxIsInstPeep(const uint8_t* ip, OpcodePeepElement* patte
 
         assert(pattern[1].opcode == CEE_ISINST);
         ResolveToken(getU4LittleEndian(ipForIsInst + 1), CORINFO_TOKENKIND_Casting, &isInstResolvedToken);
-        return m_compHnd->compareTypesForCast(boxResolvedToken.hClass, isInstResolvedToken.hClass) ==
-               TypeCompareState::MustNot;
+        return m_compHnd->compareTypesForCast(boxResolvedToken.hClass, isInstResolvedToken.hClass) == TypeCompareState::MustNot;
     }
 
     return false;
@@ -8420,8 +8419,7 @@ bool InterpCompiler::IsBoxIsInstBrTrueFalsePeep(const uint8_t* ip, OpcodePeepEle
 
         assert(pattern[1].opcode == CEE_ISINST);
         ResolveToken(getU4LittleEndian(ipForIsInst + 1), CORINFO_TOKENKIND_Casting, &isInstResolvedToken);
-        TypeCompareState castResult =
-            m_compHnd->compareTypesForCast(boxResolvedToken.hClass, isInstResolvedToken.hClass);
+        TypeCompareState castResult = m_compHnd->compareTypesForCast(boxResolvedToken.hClass, isInstResolvedToken.hClass);
 
         if (castResult != TypeCompareState::May)
         {
@@ -8474,8 +8472,7 @@ bool InterpCompiler::IsBoxIsInstLdNullCgtUnPeep(const uint8_t* ip, OpcodePeepEle
 
         assert(pattern[1].opcode == CEE_ISINST);
         ResolveToken(getU4LittleEndian(ipForIsInst + 1), CORINFO_TOKENKIND_Casting, &isInstResolvedToken);
-        TypeCompareState castResult =
-            m_compHnd->compareTypesForCast(boxResolvedToken.hClass, isInstResolvedToken.hClass);
+        TypeCompareState castResult = m_compHnd->compareTypesForCast(boxResolvedToken.hClass, isInstResolvedToken.hClass);
 
         if (castResult != TypeCompareState::May)
         {

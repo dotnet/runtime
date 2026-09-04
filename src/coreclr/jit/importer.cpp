@@ -5513,7 +5513,8 @@ GenTree* Compiler::impOptimizeCastClassOrIsInst(GenTree* op1, CORINFO_RESOLVED_T
                 eeGetClassName(toClass));
 
         // Perhaps we know if the cast will succeed or fail.
-        TypeCompareState castResult = info.compCompHnd->compareTypesForCast(fromClass, toClass, isExact);
+        // Only isinst folds failed casts, so castclass does not need a proof covering all subtypes.
+        TypeCompareState castResult = info.compCompHnd->compareTypesForCast(fromClass, toClass, isExact || isCastClass);
 
         if (castResult == TypeCompareState::Must)
         {
@@ -5542,7 +5543,7 @@ GenTree* Compiler::impOptimizeCastClassOrIsInst(GenTree* op1, CORINFO_RESOLVED_T
             }
             else
             {
-                JITDUMP("Not optimizing failing castclass (yet)\n");
+                JITDUMP("Not optimizing potentially failing castclass (yet)\n");
             }
         }
         else

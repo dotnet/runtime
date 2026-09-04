@@ -2558,7 +2558,7 @@ bool Compiler::optAssertionVNIsSubtype(ValueNum objVN, ValueNum castToVN, ASSERT
     // Jit_NewObj(MyClass) while we're trying to prove "Jit_NewObj(MyClass) is MyClass".
     CORINFO_CLASS_HANDLE castFromVN = vnStore->GetObjectType(objVN, &isExact, &isNonNull);
     if ((castFromVN != NO_CLASS_HANDLE) &&
-        (info.compCompHnd->compareTypesForCast(castFromVN, castTo, isExact) == TypeCompareState::Must))
+        (info.compCompHnd->compareTypesForCast(castFromVN, castTo) == TypeCompareState::Must))
     {
         return true;
     }
@@ -2593,8 +2593,7 @@ bool Compiler::optAssertionVNIsSubtype(ValueNum objVN, ValueNum castToVN, ASSERT
 
         // Now we have "objVN is (exactly/subtype) cls" assertion.
         // We want to see if this implies "objVN is (exactly/subtype) castTo".
-        if (info.compCompHnd->compareTypesForCast(cls, castTo, curAssertion.GetOp1().KindIs(O1K_EXACT_TYPE)) ==
-            TypeCompareState::Must)
+        if (info.compCompHnd->compareTypesForCast(cls, castTo) == TypeCompareState::Must)
         {
             // The assertion implies the cast is always successful.
             return true;
@@ -2900,7 +2899,7 @@ GenTree* Compiler::optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, G
                     // Constant prop may fail to propagate compile time class handles, so verify we have
                     // a handle before invoking the runtime.
                     if ((castTo != NO_CLASS_HANDLE) &&
-                        info.compCompHnd->compareTypesForCast(castFrom, castTo, isExact) == TypeCompareState::Must)
+                        info.compCompHnd->compareTypesForCast(castFrom, castTo) == TypeCompareState::Must)
                     {
                         // if castObjArg is not simple, we replace the arg with a temp assignment and
                         // continue using that temp - it allows us reliably extract all side effects

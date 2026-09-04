@@ -2777,16 +2777,18 @@ ValueNum ValueNumStore::VNForCast(VNFunc func, ValueNum castToVN, ValueNum objVN
         if ((castFrom != NO_CLASS_HANDLE) &&
             EmbeddedHandleMapLookup(ConstantValue<ssize_t>(castToVN), (ssize_t*)&castTo) && (castTo != NO_CLASS_HANDLE))
         {
-            TypeCompareState castResult = m_compiler->info.compCompHnd->compareTypesForCast(castFrom, castTo, isExact);
+            // Only IsInstanceOf folds failed casts, so CastClass does not need a proof covering all subtypes.
+            TypeCompareState castResult =
+                m_compiler->info.compCompHnd->compareTypesForCast(castFrom, castTo, isExact || (func == VNF_CastClass));
             if (castResult == TypeCompareState::Must)
             {
-                // IsInstanceOf/CastClass is guaranteed to succeed (we don't need to check for isExact here)
+                // IsInstanceOf/CastClass is guaranteed to succeed.
                 return objVN;
             }
 
-            if ((castResult == TypeCompareState::MustNot) && isExact && (func == VNF_IsInstanceOf))
+            if ((castResult == TypeCompareState::MustNot) && (func == VNF_IsInstanceOf))
             {
-                // IsInstanceOf is guaranteed to fail -> return null (we need to check for isExact here)
+                // IsInstanceOf is guaranteed to fail, including for inexact source types.
                 return VNForNull();
             }
         }
