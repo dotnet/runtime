@@ -42,6 +42,11 @@ namespace System.Tests
         internal const double MaxSubnormalDouble = 2.2250738585072009E-308;
         internal const float MaxSubnormalSingle = 1.17549421E-38f;
 
+        private static readonly double PositiveNaNDouble = BitConverter.Int64BitsToDouble(0x7FF8_0000_0000_0001);
+        private static readonly double NegativeNaNDouble = BitConverter.Int64BitsToDouble(unchecked((long)0xFFF8_0000_0000_0001));
+        private static readonly float PositiveNaNSingle = BitConverter.Int32BitsToSingle(0x7FC0_0001);
+        private static readonly float NegativeNaNSingle = BitConverter.Int32BitsToSingle(unchecked((int)0xFFC0_0001));
+
         public static IEnumerable<object[]> ClampDouble
         {
             get
@@ -1315,6 +1320,8 @@ namespace System.Tests
                 yield return new object[] {  double.NegativeInfinity,    double.NaN,                double.NaN };
                 yield return new object[] {  double.NaN,                 double.PositiveInfinity,   double.NaN };
                 yield return new object[] {  double.NaN,                 double.NegativeInfinity,   double.NaN };
+                yield return new object[] {  PositiveNaNDouble,          -0.0,                      PositiveNaNDouble };
+                yield return new object[] { -0.0,                        NegativeNaNDouble,          NegativeNaNDouble };
                 yield return new object[] { -0.0f,                       0.0f,                      0.0f };
                 yield return new object[] {  0.0f,                      -0.0f,                      0.0f };
                 yield return new object[] {  2.0f,                      -3.0f,                      2.0f };
@@ -1339,6 +1346,8 @@ namespace System.Tests
                 yield return new object[] {  float.NegativeInfinity,     float.NaN,                 float.NaN };
                 yield return new object[] {  float.NaN,                  float.PositiveInfinity,    float.NaN };
                 yield return new object[] {  float.NaN,                  float.NegativeInfinity,    float.NaN };
+                yield return new object[] {  PositiveNaNSingle,          -0.0f,                      PositiveNaNSingle };
+                yield return new object[] { -0.0f,                       NegativeNaNSingle,          NegativeNaNSingle };
                 yield return new object[] { -0.0f,                       0.0f,                      0.0f };
                 yield return new object[] {  0.0f,                      -0.0f,                      0.0f };
                 yield return new object[] {  2.0f,                      -3.0f,                      2.0f };
@@ -1459,6 +1468,8 @@ namespace System.Tests
                 yield return new object[] {  double.NegativeInfinity,    double.NaN,                double.NegativeInfinity };
                 yield return new object[] {  double.NaN,                 double.PositiveInfinity,   double.PositiveInfinity };
                 yield return new object[] {  double.NaN,                 double.NegativeInfinity,   double.NegativeInfinity };
+                yield return new object[] {  PositiveNaNDouble,          -0.0,                     -0.0 };
+                yield return new object[] { -0.0,                        NegativeNaNDouble,         -0.0 };
                 yield return new object[] { -0.0f,                       0.0f,                      0.0f };
                 yield return new object[] {  0.0f,                      -0.0f,                      0.0f };
                 yield return new object[] {  2.0f,                      -3.0f,                      2.0f };
@@ -1483,6 +1494,8 @@ namespace System.Tests
                 yield return new object[] {  float.NegativeInfinity,     float.NaN,                 float.NegativeInfinity };
                 yield return new object[] {  float.NaN,                  float.PositiveInfinity,    float.PositiveInfinity };
                 yield return new object[] {  float.NaN,                  float.NegativeInfinity,    float.NegativeInfinity };
+                yield return new object[] {  PositiveNaNSingle,          -0.0f,                     -0.0f };
+                yield return new object[] { -0.0f,                       NegativeNaNSingle,         -0.0f };
                 yield return new object[] { -0.0f,                       0.0f,                      0.0f };
                 yield return new object[] {  0.0f,                      -0.0f,                      0.0f };
                 yield return new object[] {  2.0f,                      -3.0f,                      2.0f };
@@ -1507,6 +1520,8 @@ namespace System.Tests
                 yield return new object[] {  double.NegativeInfinity,    double.NaN,                 double.NaN };
                 yield return new object[] {  double.NaN,                 double.PositiveInfinity,    double.NaN };
                 yield return new object[] {  double.NaN,                 double.NegativeInfinity,    double.NaN };
+                yield return new object[] {  PositiveNaNDouble,          -0.0,                       PositiveNaNDouble };
+                yield return new object[] { -0.0,                        NegativeNaNDouble,           NegativeNaNDouble };
                 yield return new object[] { -0.0f,                       0.0f,                      -0.0f };
                 yield return new object[] {  0.0f,                      -0.0f,                      -0.0f };
                 yield return new object[] {  2.0f,                      -3.0f,                      -3.0f };
@@ -1531,6 +1546,8 @@ namespace System.Tests
                 yield return new object[] {  float.NegativeInfinity,     float.NaN,                  float.NaN };
                 yield return new object[] {  float.NaN,                  float.PositiveInfinity,     float.NaN };
                 yield return new object[] {  float.NaN,                  float.NegativeInfinity,     float.NaN };
+                yield return new object[] {  PositiveNaNSingle,          -0.0f,                       PositiveNaNSingle };
+                yield return new object[] { -0.0f,                       NegativeNaNSingle,           NegativeNaNSingle };
                 yield return new object[] { -0.0f,                       0.0f,                      -0.0f };
                 yield return new object[] {  0.0f,                      -0.0f,                      -0.0f };
                 yield return new object[] {  2.0f,                      -3.0f,                      -3.0f };
@@ -1651,6 +1668,8 @@ namespace System.Tests
                 yield return new object[] {  double.NegativeInfinity,    double.NaN,                 double.NegativeInfinity };
                 yield return new object[] {  double.NaN,                 double.PositiveInfinity,    double.PositiveInfinity };
                 yield return new object[] {  double.NaN,                 double.NegativeInfinity,    double.NegativeInfinity };
+                yield return new object[] {  PositiveNaNDouble,          -0.0,                       -0.0 };
+                yield return new object[] { -0.0,                        NegativeNaNDouble,           -0.0 };
                 yield return new object[] { -0.0f,                       0.0f,                      -0.0f };
                 yield return new object[] {  0.0f,                      -0.0f,                      -0.0f };
                 yield return new object[] {  2.0f,                      -3.0f,                      -3.0f };
@@ -1675,6 +1694,8 @@ namespace System.Tests
                 yield return new object[] {  float.NegativeInfinity,     float.NaN,                  float.NegativeInfinity };
                 yield return new object[] {  float.NaN,                  float.PositiveInfinity,     float.PositiveInfinity };
                 yield return new object[] {  float.NaN,                  float.NegativeInfinity,     float.NegativeInfinity };
+                yield return new object[] {  PositiveNaNSingle,          -0.0f,                       -0.0f };
+                yield return new object[] { -0.0f,                       NegativeNaNSingle,           -0.0f };
                 yield return new object[] { -0.0f,                       0.0f,                      -0.0f };
                 yield return new object[] {  0.0f,                      -0.0f,                      -0.0f };
                 yield return new object[] {  2.0f,                      -3.0f,                      -3.0f };
