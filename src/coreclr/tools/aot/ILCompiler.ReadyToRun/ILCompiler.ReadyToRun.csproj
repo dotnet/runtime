@@ -243,6 +243,7 @@
     <Compile Include="Compiler\Logger.cs" />
     <Compile Include="Compiler\ReadyToRunExternalTypeMapNode.cs" />
     <Compile Include="Compiler\ReadyToRunProxyTypeMapNode.cs" />
+    <Compile Include="Compiler\ReadyToRunTypeMapEncoding.cs" />
     <Compile Include="Compiler\ReadyToRunTypeMapManager.cs" />
     <Compile Include="Compiler\ReadyToRunVisibilityRootProvider.cs" />
     <Compile Include="Compiler\ReadyToRunProfilingRootProvider.cs" />
