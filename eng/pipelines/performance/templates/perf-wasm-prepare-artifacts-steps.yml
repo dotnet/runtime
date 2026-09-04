@@ -6,28 +6,52 @@ parameters:
   includeRefPack: true
   # CoreCLR R2R publishes require the matching host Crossgen2 and ILLink packages.
   includeCoreClrToolchainPacks: false
-  # The Mono (default) build installs the wasm-tools workload, whose manifest now includes the
-  # CoreCLR browser-wasm runtime pack (Microsoft.NETCore.App.Runtime.browser-wasm). A Mono-only
-  # build doesn't produce that pack, so download it from the CoreCLR build job and stage it into
-  # the local package feed before installing the workload.
-  downloadCoreClrRuntimePack: false
-  # The CoreCLR build publishes its runtime pack so the Mono build (above) can consume it.
-  publishCoreClrRuntimePack: false
+  # The Mono (default) build installs the wasm-tools workload, whose manifest includes CoreCLR
+  # packages that a Mono-only build doesn't produce. Download them from the CoreCLR build job and
+  # stage them into the local package feed before installing the workload.
+  downloadCoreClrWorkloadPackages: false
+  # The CoreCLR build publishes its workload packages so the Mono build (above) can consume them.
+  publishCoreClrWorkloadPackages: false
 
 steps:
-  # Stage the CoreCLR browser-wasm runtime pack (built by the wasm_coreclr job) into the local
-  # package feed so the wasm-tools workload install below can resolve it.
-  - ${{ if eq(parameters.downloadCoreClrRuntimePack, true) }}:
+  # Stage the CoreCLR packages built by the wasm_coreclr job into the local package feed so the
+  # wasm-tools workload install below can resolve them.
+  - ${{ if eq(parameters.downloadCoreClrWorkloadPackages, true) }}:
     - task: DownloadPipelineArtifact@2
-      displayName: "Download CoreCLR runtime pack for workload install"
+      displayName: "Download CoreCLR workload packages"
       inputs:
         buildType: current
-        artifactName: BrowserWasmCoreCLRRuntimePack_$(_hostedOs)
-        targetPath: $(Build.SourcesDirectory)/artifacts/coreclr-runtimepack
-    - script: >-
-        mkdir -p $(Build.SourcesDirectory)/artifacts/packages/${{ parameters.configForBuild }}/Shipping &&
-        cp $(Build.SourcesDirectory)/artifacts/coreclr-runtimepack/*.nupkg $(Build.SourcesDirectory)/artifacts/packages/${{ parameters.configForBuild }}/Shipping/
-      displayName: "Stage CoreCLR runtime pack into local feed"
+        artifactName: BrowserWasmCoreCLRWorkloadPackages_$(_hostedOs)
+        targetPath: $(Build.SourcesDirectory)/artifacts/coreclr-workload-packages
+    - script: |
+        set -euo pipefail
+
+        package_dir="$(Build.SourcesDirectory)/artifacts/coreclr-workload-packages"
+        shipping_dir="$(Build.SourcesDirectory)/artifacts/packages/${{ parameters.configForBuild }}/Shipping"
+        wasm_sdk_package_count="$(
+          find "$shipping_dir" -maxdepth 1 -type f \
+            -name 'Microsoft.NET.Sdk.WebAssembly.Pack.*.nupkg' \
+            -not -name '*.symbols.nupkg' -print |
+            wc -l | tr -d '[:space:]'
+        )"
+        if [ "$wasm_sdk_package_count" -ne 1 ]; then
+          echo "Expected exactly one non-symbol Microsoft.NET.Sdk.WebAssembly.Pack package in $shipping_dir; found $wasm_sdk_package_count." >&2
+          exit 1
+        fi
+        wasm_sdk_package="$(
+          find "$shipping_dir" -maxdepth 1 -type f \
+            -name 'Microsoft.NET.Sdk.WebAssembly.Pack.*.nupkg' \
+            -not -name '*.symbols.nupkg' -print -quit
+        )"
+        cohort_version="$(basename "$wasm_sdk_package")"
+        cohort_version="${cohort_version#Microsoft.NET.Sdk.WebAssembly.Pack.}"
+        cohort_version="${cohort_version%.nupkg}"
+
+        bash "$(Build.SourcesDirectory)/eng/pipelines/performance/scripts/stage-nuget-cohort.sh" \
+          "$package_dir" "$shipping_dir" "$cohort_version" \
+          'Microsoft.NETCore.App.Runtime.browser-wasm.*.nupkg' \
+          'Microsoft.NETCore.App.Crossgen2.*.nupkg'
+      displayName: "Stage CoreCLR workload packages into local feed"
 
   - script: >-
       ./dotnet.sh build -p:TargetOS=browser -p:TargetArchitecture=wasm /nr:false /p:TreatWarningsAsErrors=true
@@ -68,62 +92,36 @@ steps:
         $(Build.SourcesDirectory)/src/tools/illink/src/ILLink.Tasks/ILLink.Tasks.csproj
       displayName: "Pack ILLink tasks"
     - script: |
-        set -euo pipefail
-
         shipping_dir="$(Build.SourcesDirectory)/artifacts/packages/${{ parameters.configForBuild }}/Shipping"
         staging_dir="$(Build.SourcesDirectory)/artifacts/staging/built-nugets"
 
-        for package_pattern in \
+        bash "$(Build.SourcesDirectory)/eng/pipelines/performance/scripts/stage-nuget-cohort.sh" \
+          "$shipping_dir" "$staging_dir" '' \
           'Microsoft.NET.Sdk.WebAssembly.Pack.*.nupkg' \
           'Microsoft.NETCore.App.Ref.*.nupkg' \
           'Microsoft.NETCore.App.Crossgen2.*.nupkg' \
           'Microsoft.NET.ILLink.Tasks.*.nupkg'
-        do
-          package_count="$(
-            find "$shipping_dir" -maxdepth 1 -type f \
-              -name "$package_pattern" -not -name '*.symbols.nupkg' -print |
-              wc -l | tr -d '[:space:]'
-          )"
-
-          if [ "$package_count" -ne 1 ]; then
-            echo "Expected exactly one non-symbol $package_pattern in $shipping_dir; found $package_count." >&2
-            find "$shipping_dir" -maxdepth 1 -type f \
-              -name "$package_pattern" -not -name '*.symbols.nupkg' -print >&2
-            exit 1
-          fi
-
-          package="$(
-            find "$shipping_dir" -maxdepth 1 -type f \
-              -name "$package_pattern" -not -name '*.symbols.nupkg' -print -quit
-          )"
-
-          if [ "$package_pattern" = 'Microsoft.NET.Sdk.WebAssembly.Pack.*.nupkg' ]; then
-            cohort_version="$(basename "$package")"
-            cohort_version="${cohort_version#Microsoft.NET.Sdk.WebAssembly.Pack.}"
-            cohort_version="${cohort_version%.nupkg}"
-          elif [[ "$(basename "$package")" != *".$cohort_version.nupkg" ]]; then
-            echo "Expected $(basename "$package") to match local package cohort $cohort_version." >&2
-            exit 1
-          fi
-
-          cp "$package" "$staging_dir/"
-        done
       displayName: "Stage CoreCLR toolchain packs"
 
-  # Publish the CoreCLR browser-wasm runtime pack nuget on its own so the Mono build job can stage
-  # it into its local feed for the wasm-tools workload install.
-  - ${{ if eq(parameters.publishCoreClrRuntimePack, true) }}:
-    - script: >-
-        mkdir -p $(Build.SourcesDirectory)/artifacts/staging-coreclr-runtimepack &&
-        find $(Build.SourcesDirectory)/artifacts/packages/${{ parameters.configForBuild }}/Shipping -maxdepth 1 -name 'Microsoft.NETCore.App.Runtime.browser-wasm.*.nupkg' -not -name '*.symbols.nupkg' -exec cp {} $(Build.SourcesDirectory)/artifacts/staging-coreclr-runtimepack \;
-      displayName: "Stage CoreCLR runtime pack for workload"
+  # Publish the CoreCLR-only wasm-tools packages so the Mono build job can stage them into its
+  # local feed before installing the workload.
+  - ${{ if eq(parameters.publishCoreClrWorkloadPackages, true) }}:
+    - script: |
+        shipping_dir="$(Build.SourcesDirectory)/artifacts/packages/${{ parameters.configForBuild }}/Shipping"
+        staging_dir="$(Build.SourcesDirectory)/artifacts/staging-coreclr-workload-packages"
+
+        bash "$(Build.SourcesDirectory)/eng/pipelines/performance/scripts/stage-nuget-cohort.sh" \
+          "$shipping_dir" "$staging_dir" '' \
+          'Microsoft.NETCore.App.Runtime.browser-wasm.*.nupkg' \
+          'Microsoft.NETCore.App.Crossgen2.*.nupkg'
+      displayName: "Stage CoreCLR workload packages"
     - template: /eng/pipelines/common/templates/publish-pipeline-artifacts.yml
       parameters:
         isOfficialBuild: false
-        displayName: Publish CoreCLR runtime pack for workload
+        displayName: Publish CoreCLR workload packages
         inputs:
-          targetPath: $(Build.SourcesDirectory)/artifacts/staging-coreclr-runtimepack
-          artifactName: BrowserWasmCoreCLRRuntimePack_$(_hostedOs)
+          targetPath: $(Build.SourcesDirectory)/artifacts/staging-coreclr-workload-packages
+          artifactName: BrowserWasmCoreCLRWorkloadPackages_$(_hostedOs)
 
   - template: /eng/pipelines/common/upload-artifact-step.yml
     parameters:
