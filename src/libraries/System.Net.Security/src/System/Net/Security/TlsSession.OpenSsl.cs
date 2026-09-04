@@ -35,6 +35,11 @@ namespace System.Net.Security
         // HelloRequest flight has already been written to the socket.
         private bool _fdPostHandshakeAuthPending;
         private bool _fdPostHandshakeRequestSent;
+        // Set when SSL_do_handshake stalls on SSL_ERROR_WANT_WRITE during the post-handshake
+        // exchange (the socket send buffer filled mid-flight). It forces the next Handshake()
+        // to re-enter OpenSSL to finish the write even when the peer is idle, so a write-blocked
+        // flight cannot deadlock behind the PeerHasPendingData() readable-data gate.
+        private bool _fdPostHandshakeWriteBlocked;
 
         // Bind the socket directly to the SSL object so OpenSSL drives ciphertext
         // I/O itself. AllocateSslHandle inspects options.SocketHandle and skips
@@ -274,17 +279,32 @@ namespace System.Net.Security
         // HandshakeBufferedCore avoids this by refusing to enter the PAL without caller-supplied
         // peer bytes; the fd path has no caller-supplied bytes, so gate re-entry on the socket
         // actually having something to process (the analog of SslStream.RenegotiateAsync, which
-        // always receives a handshake frame before re-testing the status).
+        // always receives a handshake frame before re-testing the status). The gate is bypassed
+        // while our own flight still needs writing so a send that backpressures on
+        // SSL_ERROR_WANT_WRITE resumes instead of waiting on the (still idle) peer.
         private TlsOperationStatus DriveFdPostHandshakeAuth(SafeSslHandle ssl)
         {
             bool flushingRequest = !_fdPostHandshakeRequestSent;
-            if (!flushingRequest && !PeerHasPendingData())
+            if (!flushingRequest && !_fdPostHandshakeWriteBlocked && !PeerHasPendingData())
             {
                 return TlsOperationStatus.NeedMoreData;
             }
 
             int ret = Interop.Ssl.SslDoHandshake(ssl, out Interop.Ssl.SslErrorCode err);
-            _fdPostHandshakeRequestSent = true;
+            bool writeBlocked = err == Interop.Ssl.SslErrorCode.SSL_ERROR_WANT_WRITE;
+            // Track a write-side stall so the next call re-enters to finish the flush even if
+            // the peer sends nothing in the meantime (OpenSSL may still owe handshake bytes
+            // after consuming the peer's flight, e.g. the TLS 1.2 renegotiation Finished).
+            _fdPostHandshakeWriteBlocked = writeBlocked;
+
+            // The request flight is fully on the wire unless the send backpressured
+            // (SSL_ERROR_WANT_WRITE). A partial write keeps flushingRequest sticky so the
+            // resumed call finishes writing instead of waiting for a peer answer that cannot
+            // come; WANT_READ means the request is out and OpenSSL is now awaiting the peer.
+            if (!writeBlocked)
+            {
+                _fdPostHandshakeRequestSent = true;
+            }
 
             if (ret != 1)
             {
@@ -361,6 +381,7 @@ namespace System.Net.Security
             _externalValidationResolved = false;
             _fdPostHandshakeAuthPending = true;
             _fdPostHandshakeRequestSent = false;
+            _fdPostHandshakeWriteBlocked = false;
             result = TlsOperationStatus.Complete;
         }
 
