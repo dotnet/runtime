@@ -3302,12 +3302,16 @@ namespace System.Net.Security.Tests
                 }
             }
         }
-        // sufficient and required. Complete means every request byte was flushed; DestinationTooSmall
-        // means the socket could not accept the whole request yet and the tail is stashed in the
-        // session's pending buffer, which the subsequent Handshake() loop drains before doing any
-        // handshake work. It must NOT be called again before the second handshake completes: the call
-        // already re-armed the handshake (IsHandshakeComplete == false), so re-entering the staging
-        // path would trip the "handshake not complete" guard and throw.
+
+        // Stages a single post-handshake client-certificate request over a non-blocking
+        // socket-bound session. Exactly one call is sufficient and required: the caller then
+        // loops on Handshake() to drive the second handshake to completion. Complete means every
+        // request byte was flushed; DestinationTooSmall means the socket could not accept the
+        // whole request yet and the tail is stashed in the session's pending buffer, which the
+        // subsequent Handshake() loop drains before doing any handshake work. It must NOT be
+        // called again before the second handshake completes: the call already re-armed the
+        // handshake (IsHandshakeComplete == false), so re-entering the staging path would trip
+        // the "handshake not complete" guard and throw.
         private static void StageClientCertRequestOverSocket(TlsSocketSession session)
         {
             TlsOperationStatus s = session.RequestClientCertificate();
