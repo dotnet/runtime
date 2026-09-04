@@ -1439,6 +1439,10 @@ namespace System.Net.Security
         private protected TlsOperationStatus RequestClientCertificateBufferedCore(Span<byte> ciphertext, out int bytesWritten)
         {
             ThrowIfDisposed();
+            // Like Read/Write, post-handshake client authentication is a top-level session
+            // operation: if the previous handshake surfaced NeedsCertificateValidation the
+            // caller must record the result (or observe the recorded fault) before starting it.
+            ThrowIfPendingExternalValidation();
             bytesWritten = 0;
 
 #if TARGET_APPLE
@@ -2124,6 +2128,11 @@ namespace System.Net.Security
         {
             ThrowIfDisposed();
             ThrowIfNotSocketBound();
+            // A prior handshake may have surfaced NeedsCertificateValidation whose result the
+            // caller has not recorded yet. The buffered Read core gates on this, but the socket
+            // core can return NeedMoreData off a non-blocking recv before ever reaching it, so
+            // apply the guard here to stay consistent with the buffered path and socket Write.
+            ThrowIfPendingExternalValidation();
             bytesRead = 0;
 
             if (!_isHandshakeComplete)
@@ -2203,6 +2212,9 @@ namespace System.Net.Security
         {
             ThrowIfDisposed();
             ThrowIfNotSocketBound();
+            // Empty-buffer writes short-circuit before reaching WriteBufferedCore's guard, so
+            // gate on any unrecorded external-validation result here too, matching socket Read.
+            ThrowIfPendingExternalValidation();
             bytesWritten = 0;
 
             if (!_isHandshakeComplete)
@@ -2365,6 +2377,9 @@ namespace System.Net.Security
         {
             ThrowIfDisposed();
             ThrowIfNotSocketBound();
+            // The fd fast path below bypasses the buffered core, so apply the external-validation
+            // guard here as well, matching the other socket-bound operations.
+            ThrowIfPendingExternalValidation();
 
             TlsOperationStatus? fast = null;
             TryFastRequestClientCertificate(ref fast);

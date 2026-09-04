@@ -2863,7 +2863,20 @@ namespace System.Net.Security.Tests
                 Assert.Throws<InvalidOperationException>(() => session.Write(TestHelper.s_ping, out _));
                 Assert.Throws<InvalidOperationException>(() => session.Read(new byte[TestHelper.s_ping.Length], out _));
 
-                await DriveSocketHandshakeToCompletionAsync(session, onSuspend: () => suspensionObserved = true);
+                await DriveSocketHandshakeToCompletionAsync(session, onSuspend: () =>
+                {
+                    suspensionObserved = true;
+
+                    // The second handshake has completed on the wire but its certificate
+                    // validation is still pending, so every top-level session operation --
+                    // including another RequestClientCertificate -- must be rejected until the
+                    // caller records the result. This mirrors the Read/Write guard above and
+                    // covers the RequestClientCertificate external-validation gate on both the
+                    // OpenSSL fd fast path and the SChannel buffered-over-socket path.
+                    Assert.Throws<InvalidOperationException>(() => session.RequestClientCertificate());
+                    Assert.Throws<InvalidOperationException>(() => session.Write(TestHelper.s_ping, out _));
+                    Assert.Throws<InvalidOperationException>(() => session.Read(new byte[TestHelper.s_ping.Length], out _));
+                });
             }).WaitAsync(TimeSpan.FromSeconds(30));
 
             Assert.True(suspensionObserved, "Server never observed NeedsCertificateValidation during the post-handshake exchange.");
