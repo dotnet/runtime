@@ -19,7 +19,7 @@ namespace ILCompiler.DependencyAnalysis
     /// optimization, this node is not skipped and instead emits a jump stub. The purpose of the jump stub is to provide a
     /// unique code address for the address taken method.
     /// </summary>
-    internal sealed class AddressTakenMethodNode : JumpStubNode, IMethodNode, ISymbolNodeWithLinkage
+    internal sealed class AddressTakenMethodNode : JumpStubNode, IMethodCodeNodeWithTypeSignature, ISymbolNodeWithLinkage
     {
         private readonly IMethodNode _methodNode;
 
