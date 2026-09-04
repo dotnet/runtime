@@ -593,6 +593,7 @@ extern bool g_libSslUses32BitTime;
     LIGHTUP_FUNCTION(EVP_PKEY_get_bn_param) \
     LIGHTUP_FUNCTION(EVP_PKEY_get_utf8_string_param) \
     LIGHTUP_FUNCTION(EVP_PKEY_get_octet_string_param) \
+    LIGHTUP_FUNCTION(EVP_PKEY_todata) \
     LIGHTUP_FUNCTION(EVP_rc2_cbc) \
     LIGHTUP_FUNCTION(EVP_rc2_ecb) \
     REQUIRED_FUNCTION(EVP_sha1) \
@@ -680,6 +681,8 @@ extern bool g_libSslUses32BitTime;
     LIGHTUP_FUNCTION(OSSL_PARAM_BLD_push_BN) \
     LIGHTUP_FUNCTION(OSSL_PARAM_BLD_to_param) \
     LIGHTUP_FUNCTION(OSSL_PARAM_free) \
+    LIGHTUP_FUNCTION(OSSL_PARAM_get_octet_string_ptr) \
+    LIGHTUP_FUNCTION(OSSL_PARAM_locate_const) \
     REQUIRED_FUNCTION(PKCS8_PRIV_KEY_INFO_free) \
     REQUIRED_FUNCTION(PEM_read_bio_PKCS7) \
     REQUIRED_FUNCTION(PEM_read_bio_X509) \
@@ -1197,6 +1200,7 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define EVP_PKEY_get_bn_param EVP_PKEY_get_bn_param_ptr
 #define EVP_PKEY_get_utf8_string_param EVP_PKEY_get_utf8_string_param_ptr
 #define EVP_PKEY_get_octet_string_param EVP_PKEY_get_octet_string_param_ptr
+#define EVP_PKEY_todata EVP_PKEY_todata_ptr
 #define EVP_rc2_cbc EVP_rc2_cbc_ptr
 #define EVP_rc2_ecb EVP_rc2_ecb_ptr
 #define EVP_sha1 EVP_sha1_ptr
@@ -1285,6 +1289,8 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define OSSL_PARAM_BLD_push_BN OSSL_PARAM_BLD_push_BN_ptr
 #define OSSL_PARAM_BLD_to_param OSSL_PARAM_BLD_to_param_ptr
 #define OSSL_PARAM_free OSSL_PARAM_free_ptr
+#define OSSL_PARAM_get_octet_string_ptr OSSL_PARAM_get_octet_string_ptr_ptr
+#define OSSL_PARAM_locate_const OSSL_PARAM_locate_const_ptr
 #define PKCS8_PRIV_KEY_INFO_free PKCS8_PRIV_KEY_INFO_free_ptr
 #define PEM_read_bio_PKCS7 PEM_read_bio_PKCS7_ptr
 #define PEM_read_bio_X509 PEM_read_bio_X509_ptr
