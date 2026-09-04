@@ -152,6 +152,17 @@ namespace System.Globalization
 
             Debug.Assert(_sWindowsName != null);
 
+            // ICU normalizes the CLDR "root" locale (and any alias of it) to an empty name, which represents
+            // the invariant/root locale. The invariant culture is already handled by the empty-string and "und"
+            // short-circuits in GetCultureData, so reaching this point with an empty name means the caller passed
+            // a name such as "root" that is not a valid culture name. Reject it rather than producing an incomplete
+            // culture whose Name is "" (which raises NullReferenceException on internals and poisons the invariant
+            // culture's cache slot).
+            if (_sWindowsName.Length == 0)
+            {
+                return false;
+            }
+
             _sRealName = NormalizeCultureName(_sWindowsName, indexOfExtensions > 0 ? _sRealName.AsSpan(indexOfExtensions) : ReadOnlySpan<char>.Empty, _sRealName, out int collationStart);
 
             _iLanguage = LCID;
