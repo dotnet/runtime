@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Reflection;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
@@ -414,87 +415,140 @@ namespace System.Net.Security.Tests
         // By default the peer certificate is not re-validated on a resumed handshake, so the
         // RemoteCertificateValidationCallback is not invoked. Setting the
         // System.Net.Security.RevalidateCertificateOnTlsResume switch restores the previous
-        // behavior of running the callback on every resumption. Toggle the switch via its
-        // environment variable in a child process so the cached switch value is picked up.
+        // behavior of running the callback on every resumption. This applies to both the client
+        // (validating the server certificate) and the server (validating the client certificate).
+        // Toggle the switch via its environment variable in a child process so the cached switch
+        // value is picked up.
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
-        [InlineData(false)]
-        [InlineData(true)]
-        public async Task ResumedHandshake_RevalidateSwitch_ControlsClientCallback(bool revalidateOnResume)
+        [InlineData(false, false)]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        [InlineData(true, true)]
+        public async Task ResumedHandshake_RevalidateSwitch_ControlsCallback(bool revalidateOnResume, bool testServer)
         {
+            // The child process signals via this marker file that the environment could not
+            // establish session resumption, so the parent can treat the run as skipped rather
+            // than a failure (matching the SkipTestException pattern used elsewhere in this file).
+            string skipMarker = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+
             var psi = new ProcessStartInfo();
             psi.Environment["DOTNET_SYSTEM_NET_SECURITY_REVALIDATECERTIFICATEONTLSRESUME"] = revalidateOnResume ? "1" : "0";
+            psi.Environment["SSLSTREAM_RESUME_SKIP_MARKER"] = skipMarker;
 
-            await RemoteExecutor.Invoke(async revalidateStr =>
+            try
             {
-                bool revalidate = bool.Parse(revalidateStr);
-
-                FieldInfo connectionInfoField = typeof(SslStream).GetField("_connectionInfo", BindingFlags.Instance | BindingFlags.NonPublic);
-                PropertyInfo tlsResumedProperty = typeof(SslStream).Assembly
-                    .GetType("System.Net.Security.SslConnectionInfo")
-                    .GetProperty("TlsResumed");
-
-                bool IsResumed(SslStream ssl) => (bool)tlsResumedProperty.GetValue(connectionInfoField.GetValue(ssl));
-
-                int clientCallbackCount = 0;
-                var serverOptions = new SslServerAuthenticationOptions
+                await RemoteExecutor.Invoke(async (revalidateStr, testServerStr) =>
                 {
-                    EnabledSslProtocols = SslProtocols.Tls12,
-                    ServerCertificateContext = SslStreamCertificateContext.Create(Configuration.Certificates.GetServerCertificate(), null, false),
-                };
-                var clientOptions = new SslClientAuthenticationOptions
-                {
-                    TargetHost = Guid.NewGuid().ToString("N"),
-                    EnabledSslProtocols = SslProtocols.Tls12,
-                    CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
-                    RemoteCertificateValidationCallback = (sender, cert, chain, errors) =>
+                    bool revalidate = bool.Parse(revalidateStr);
+                    bool onServer = bool.Parse(testServerStr);
+
+                    FieldInfo connectionInfoField = typeof(SslStream).GetField("_connectionInfo", BindingFlags.Instance | BindingFlags.NonPublic);
+                    PropertyInfo tlsResumedProperty = typeof(SslStream).Assembly
+                        .GetType("System.Net.Security.SslConnectionInfo")
+                        .GetProperty("TlsResumed");
+
+                    bool IsResumed(SslStream ssl) => (bool)tlsResumedProperty.GetValue(connectionInfoField.GetValue(ssl));
+
+                    int clientCallbackCount = 0;
+                    int serverCallbackCount = 0;
+
+                    var serverOptions = new SslServerAuthenticationOptions
                     {
-                        clientCallbackCount++;
-                        return true;
-                    },
-                };
-
-                async Task<bool> ConnectAsync()
-                {
-                    (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
-                    using (client)
-                    using (server)
+                        EnabledSslProtocols = SslProtocols.Tls12,
+                        ServerCertificateContext = SslStreamCertificateContext.Create(Configuration.Certificates.GetServerCertificate(), null, false),
+                        ClientCertificateRequired = onServer,
+                        RemoteCertificateValidationCallback = (sender, cert, chain, errors) =>
+                        {
+                            serverCallbackCount++;
+                            return true;
+                        },
+                    };
+                    var clientOptions = new SslClientAuthenticationOptions
                     {
-                        await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
-                            client.AuthenticateAsClientAsync(clientOptions),
-                            server.AuthenticateAsServerAsync(serverOptions));
+                        TargetHost = Guid.NewGuid().ToString("N"),
+                        EnabledSslProtocols = SslProtocols.Tls12,
+                        CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
+                        RemoteCertificateValidationCallback = (sender, cert, chain, errors) =>
+                        {
+                            clientCallbackCount++;
+                            return true;
+                        },
+                    };
 
-                        bool resumed = IsResumed(client);
-
-                        await client.ShutdownAsync();
-                        await server.ShutdownAsync();
-                        return resumed;
+                    if (onServer)
+                    {
+                        clientOptions.ClientCertificates = new X509CertificateCollection() { Configuration.Certificates.GetClientCertificate() };
                     }
-                }
 
-                // Prime the session cache with a full handshake; the callback always runs here.
-                Assert.False(await ConnectAsync());
-                Assert.True(clientCallbackCount > 0, "Client validation callback was not invoked on the initial full handshake");
+                    // The callback under test is the one that validates the peer certificate on the
+                    // side identified by 'onServer'.
+                    int MeasuredCount() => onServer ? serverCallbackCount : clientCallbackCount;
+                    void ResetMeasuredCount()
+                    {
+                        clientCallbackCount = 0;
+                        serverCallbackCount = 0;
+                    }
 
-                // Establish a resumed session and measure whether the client callback runs on it.
-                bool measuredResume = false;
-                for (int i = 0; i < 5 && !measuredResume; i++)
+                    async Task<bool> ConnectAsync()
+                    {
+                        (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
+                        using (client)
+                        using (server)
+                        {
+                            await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                                client.AuthenticateAsClientAsync(clientOptions),
+                                server.AuthenticateAsServerAsync(serverOptions));
+
+                            bool resumed = IsResumed(client);
+
+                            await client.ShutdownAsync();
+                            await server.ShutdownAsync();
+                            return resumed;
+                        }
+                    }
+
+                    // Prime the session cache with a full handshake; the callback always runs here.
+                    Assert.False(await ConnectAsync());
+                    Assert.True(MeasuredCount() > 0, "Validation callback was not invoked on the initial full handshake");
+
+                    // Establish a resumed session and measure whether the callback runs on it.
+                    bool measuredResume = false;
+                    for (int i = 0; i < 5 && !measuredResume; i++)
+                    {
+                        ResetMeasuredCount();
+                        measuredResume = await ConnectAsync();
+                    }
+
+                    if (!measuredResume)
+                    {
+                        // The environment could not establish resumption; signal a skip to the parent.
+                        File.WriteAllText(Environment.GetEnvironmentVariable("SSLSTREAM_RESUME_SKIP_MARKER"), "skip");
+                        return;
+                    }
+
+                    if (revalidate)
+                    {
+                        Assert.True(MeasuredCount() > 0, "Validation callback should run on resumption when RevalidateCertificateOnTlsResume is set");
+                    }
+                    else
+                    {
+                        Assert.True(MeasuredCount() == 0, "Validation callback should not run on resumption by default");
+                    }
+                }, revalidateOnResume.ToString(), testServer.ToString(), new RemoteInvokeOptions { StartInfo = psi }).DisposeAsync();
+
+                if (File.Exists(skipMarker))
                 {
-                    clientCallbackCount = 0;
-                    measuredResume = await ConnectAsync();
+                    throw new SkipTestException("Unable to establish TLS session resumption");
                 }
-
-                Assert.True(measuredResume, "TLS session did not resume");
-
-                if (revalidate)
+            }
+            finally
+            {
+                if (File.Exists(skipMarker))
                 {
-                    Assert.True(clientCallbackCount > 0, "Client validation callback should run on resumption when RevalidateCertificateOnTlsResume is set");
+                    File.Delete(skipMarker);
                 }
-                else
-                {
-                    Assert.True(clientCallbackCount == 0, "Client validation callback should not run on resumption by default");
-                }
-            }, revalidateOnResume.ToString(), new RemoteInvokeOptions { StartInfo = psi }).DisposeAsync();
+            }
         }
     }
 }
