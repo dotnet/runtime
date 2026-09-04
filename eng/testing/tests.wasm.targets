@@ -27,9 +27,6 @@
     <TrimMode Condition="'$(TrimMode)' == ''">full</TrimMode>
     <JsonSerializerIsReflectionEnabledByDefault Condition="'$(JsonSerializerIsReflectionEnabledByDefault)' == ''">true</JsonSerializerIsReflectionEnabledByDefault>
 
-    <!-- TODO-WASM Remove this after https://github.com/dotnet/runtime/pull/131877 -->
-    <WasmWarnOnUnresolvedPInvokeModules Condition="'$(WasmWarnOnUnresolvedPInvokeModules)' == ''">false</WasmWarnOnUnresolvedPInvokeModules>
-
     <!-- Some tests expect to load satellite assemblies by path, eg. System.Runtime.Loader.Tests,
          so, just setting it true by default -->
     <IncludeSatelliteAssembliesInVFS Condition="'$(IncludeSatelliteAssembliesInVFS)' == ''">true</IncludeSatelliteAssembliesInVFS>

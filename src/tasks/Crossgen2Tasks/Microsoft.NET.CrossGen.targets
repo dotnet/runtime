@@ -491,7 +491,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     -->
   <UsingTask Condition="'$(Crossgen2TasksOverriden)' != 'true'" TaskName="RunReadyToRunCompiler" AssemblyFile="$(MicrosoftNETBuildTasksAssembly)" />
   <Target Name="_CreateR2RImages"
-          Inputs="$(MSBuildAllProjects);@(_ReadyToRunCompileList);@(_ReadyToRunCompositeBuildInput);@(_ReadyToRunPgoFiles)"
+          Inputs="$(MSBuildAllProjects);@(CrossgenTool);@(Crossgen2Tool);@(_ReadyToRunCompilerInputs);@(_ReadyToRunCompileList);@(_ReadyToRunCompositeBuildInput);@(_ReadyToRunPgoFiles)"
           Outputs="%(_ReadyToRunCompileList.OutputR2RImage);%(_ReadyToRunCompileList.OutputPDBImage)">
 
     <RunReadyToRunCompiler CrossgenTool="@(CrossgenTool)"
@@ -499,7 +499,7 @@ Copyright (c) .NET Foundation. All rights reserved.
                            UseCrossgen2="$(PublishReadyToRunUseCrossgen2)"
                            Crossgen2PgoFiles="@(_ReadyToRunPgoFiles)"
                            Crossgen2ContainerFormat="$(PublishReadyToRunContainerFormat)"
-                           Crossgen2ExtraCommandLineArgs="$(PublishReadyToRunCrossgen2ExtraArgs)"
+                           Crossgen2ExtraCommandLineArgs="$(PublishReadyToRunCrossgen2ExtraArgs);$(_PublishReadyToRunCrossgen2ExtraArgs)"
                            ImplementationAssemblyReferences="@(_ReadyToRunAssembliesToReference)"
                            ShowCompilerWarnings="$(PublishReadyToRunShowWarnings)"
                            CompilationEntry="@(_ReadyToRunCompileList)"
@@ -536,7 +536,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     <RunReadyToRunCompiler CrossgenTool="@(CrossgenTool)"
                            Crossgen2Tool="@(Crossgen2Tool)"
                            UseCrossgen2="$(PublishReadyToRunUseCrossgen2)"
-                           Crossgen2ExtraCommandLineArgs="$(PublishReadyToRunCrossgen2ExtraArgs)"
+                           Crossgen2ExtraCommandLineArgs="$(PublishReadyToRunCrossgen2ExtraArgs);$(_PublishReadyToRunCrossgen2ExtraArgs)"
                            ImplementationAssemblyReferences="@(_ReadyToRunAssembliesToReference)"
                            ShowCompilerWarnings="$(PublishReadyToRunShowWarnings)"
                            CompilationEntry="@(_ReadyToRunSymbolsCompileList)"
