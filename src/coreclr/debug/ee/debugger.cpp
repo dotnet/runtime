@@ -310,6 +310,36 @@ HelperCanary * Debugger::GetCanary()
     return g_pRCThread->GetCanary();
 }
 
+void Debugger::ReleaseDebuggerLockAndBlockForShutdownIfNotSpecialThread(Thread *pThread)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        MODE_ANY;
+        GC_NOTRIGGER;
+        PRECONDITION(m_mutex.OwnedByCurrentThread());
+    }
+    CONTRACTL_END;
+
+    if ((t_ThreadType & (ThreadType_Finalizer|ThreadType_DbgHelper|ThreadType_Shutdown|ThreadType_GC)) == 0)
+    {
+        m_mutex.Leave();
+
+        // Debugger event sending acquires the ThreadStore lock before the debugger lock.
+        // Since this thread is about to block forever, release the ThreadStore lock explicitly.
+        if (ThreadStore::HoldingThreadStore(pThread))
+        {
+            ThreadSuspend::UnlockThreadStore();
+        }
+
+        GCX_ASSERT_PREEMP();
+
+        WaitForEndOfShutdown();
+        __SwitchToThread(INFINITE, CALLER_LIMITS_SPINNING);
+        _ASSERTE(!"Can not reach here");
+    }
+}
+
 // IMPORTANT!!!!!
 // Do not call Lock and Unlock directly. Because you might not unlock
 // if exception takes place. Use DebuggerLockHolder instead!!!
@@ -379,7 +409,7 @@ void Debugger::DoNotCallDirectlyPrivateLock(void)
         // We need to be in preemptive to block for shutdown, so we don't do this block in Coop mode.
         // Fortunately, it's safe to take this lock in coop mode because we know the thread can't block
         // on anything interesting because we're in a GC-forbid region (see crst flags).
-        m_mutex.ReleaseAndBlockForShutdownIfNotSpecialThread();
+        ReleaseDebuggerLockAndBlockForShutdownIfNotSpecialThread(pThread);
     }
 
 
@@ -4785,6 +4815,10 @@ HRESULT Debugger::MapAndBindFunctionPatches(DebuggerJitInfo *djiNew,
     // So to avoid a lock violation, we queue any errors we find under the small lock,
     // and then send the whole list when under the big lock.
     PATCH_UNORDERED_ARRAY listUnbindablePatches;
+
+    // Ensure LazyInitBounds() runs before taking the controller lock; it may transition to COOP and
+    // wait for a debugger suspension (e.g. for ReadyToRun), which can deadlock if CrstDebuggerController is held.
+    (void)djiNew->GetSequenceMapCount();
 
     // First lock the patch table so it doesn't move while we're
     //  examining it.

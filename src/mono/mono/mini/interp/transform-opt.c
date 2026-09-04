@@ -3849,9 +3849,12 @@ retry_ins:
 					if (def->opcode != MINT_DEF_ARG && def->opcode != MINT_PHI && def->opcode != MINT_DEF_TIER_VAR &&
 							!(def->flags & INTERP_INST_FLAG_PROTECTED_NEWOBJ)) {
 						int dreg = ins->dreg;
+						if (var_has_indirects (td, dreg)) {
+							// Don't bother with indirect locals
+						}
 						// if var is not ssa or it is a renamed fixed, then we can't replace the dreg
 						// since there can be conflicting liveness, unless the instructions are adjacent
-						if ((var_is_ssa_form (td, dreg) && !td->vars [dreg].renamed_ssa_fixed) ||
+						else if ((var_is_ssa_form (td, dreg) && !td->vars [dreg].renamed_ssa_fixed) ||
 								interp_prev_ins (ins) == def) {
 							def->dreg = dreg;
 

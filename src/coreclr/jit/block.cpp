@@ -523,6 +523,7 @@ void BasicBlock::dspFlags() const
         {BBF_HAS_MDARRAYREF, "mdarr"},
         {BBF_NEEDS_GCPOLL, "gcpoll"},
         {BBF_ASYNC_RESUMPTION, "resume"},
+        {BBF_STALE_PREDICATE, "stale-pred"},
     };
 
     bool first = true;
