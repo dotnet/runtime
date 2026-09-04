@@ -3,6 +3,8 @@
     <CLRTestPriority>1</CLRTestPriority>
     <!-- Test relies on tls support see #2441 -->
     <DisableProjectBuild>true</DisableProjectBuild>
+    <!-- Managed ilasm does not support TLS RVA data declarations. -->
+    <ManagedIlasmRoundTripIncompatible>true</ManagedIlasmRoundTripIncompatible>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>PdbOnly</DebugType>

@@ -3,6 +3,8 @@
     <DebugType>None</DebugType>
     <Optimize>False</Optimize>
     <HasMergedInTests>true</HasMergedInTests>
+    <!-- Managed ilasm exhausts the 32-bit address space while assembling this merged runner. -->
+    <ManagedIlasmRoundTripIncompatible Condition="'$(TargetArchitecture)' == 'x86'">true</ManagedIlasmRoundTripIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <MergedWrapperProjectReference Include="arglist\vararg_TargetWindows.csproj" />

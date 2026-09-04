@@ -2,6 +2,8 @@
   <PropertyGroup>
     <AssemblyName>X86_Avx512F_r</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- Managed ilasm exhausts the 32-bit address space while assembling this test. -->
+    <ManagedIlasmRoundTripIncompatible Condition="'$(TargetArchitecture)' == 'x86'">true</ManagedIlasmRoundTripIncompatible>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>Embedded</DebugType>
