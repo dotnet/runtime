@@ -3377,7 +3377,12 @@ void Compiler::fgDebugCheckFlagsAndTypes(GenTree* tree, BasicBlock* block)
         case GT_STORE_LCL_VAR:
         case GT_STORE_LCL_FLD:
             assert((tree->gtFlags & GTF_VAR_DEF) != 0);
-            assert(((tree->gtFlags & GTF_VAR_USEASG) != 0) == tree->IsPartialLclFld(this));
+            if (!fgImplicitByRefLclFldsStale || !tree->OperIs(GT_STORE_LCL_FLD) ||
+                !lvaGetDesc(tree->AsLclFld())->TypeIs(TYP_BYREF) ||
+                !lvaIsImplicitByRefLocal(tree->AsLclFld()->GetLclNum()))
+            {
+                assert(((tree->gtFlags & GTF_VAR_USEASG) != 0) == tree->IsPartialLclFld(this));
+            }
             break;
 
         case GT_CATCH_ARG:
@@ -4020,7 +4025,7 @@ void Compiler::fgDebugCheckStmtsList(BasicBlock* block)
         }
 
         // For each statement check that the nodes are threaded correctly - m_treeList.
-        if (fgNodeThreading != NodeThreading::None)
+        if ((fgNodeThreading == NodeThreading::AllTrees) || (fgNodeThreading == NodeThreading::LIR))
         {
             fgDebugCheckNodeLinks(block, stmt);
         }

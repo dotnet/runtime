@@ -130,7 +130,7 @@ extends:
           - browser_wasm_win
           jobParameters:
             nameSuffix: CoreCLR
-            buildArgs: -s clr+libs+libs.tests+packs -c Release -rc $(_BuildConfig) /p:TestAssemblies=false /p:TestWasmBuildTests=true /p:ArchiveTests=true /p:InstallWorkloadForTesting=false
+            buildArgs: -s clr+libs+libs.tests+packs -c Release -rc $(_BuildConfig) /p:TestAssemblies=false /p:TestWasmBuildTests=true /p:ArchiveTests=true /p:InstallWorkloadForTesting=false /p:BuildCrossgen2HostPackForWorkloadTesting=true
             timeoutInMinutes: 120
             postBuildSteps:
               - template: /eng/pipelines/common/wasm-post-build-steps.yml
@@ -224,6 +224,15 @@ extends:
                   creator: dotnet-bot
                   testBuildArgs: -os browser /p:HostConfiguration=Release
                   testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
+              - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+                parameters:
+                  creator: dotnet-bot
+                  readyToRun: true
+                  testBuildArgs: generatelayoutonly crossgen2 -os browser /p:HostConfiguration=Release
+                  testRunNamePrefixSuffix: CoreCLR_R2R_CG2_$(_BuildConfig)
+                  timeoutPerTestInMinutes: 30
+                  timeoutPerTestCollectionInMinutes: 90
                   useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml

@@ -28,6 +28,8 @@ parameters:
   continueOnError: false
   displayName: ''
   timeoutInMinutes: ''
+  timeoutPerTestInMinutes: '$(timeoutPerTestInMinutes)'
+  timeoutPerTestCollectionInMinutes: '$(timeoutPerTestCollectionInMinutes)'
   enableMicrobuild: ''
   shouldContinueOnError: false
 
@@ -116,6 +118,8 @@ steps:
 
         helixBuild: $(Build.BuildNumber)
         helixSource: $(_HelixSource)
+        ${{ if eq(parameters.readyToRun, true) }}:
+          helixType: 'test/functional/r2r/cli/'
         ${{ if ne(parameters.readyToRun, true) }}:
           helixType: 'test/functional/cli/'
 
@@ -127,8 +131,8 @@ steps:
         ${{ else }}:
           condition: ${{ parameters.condition }}
         publishTestResults: true
-        timeoutPerTestInMinutes: $(timeoutPerTestInMinutes)
-        timeoutPerTestCollectionInMinutes: $(timeoutPerTestCollectionInMinutes)
+        timeoutPerTestInMinutes: ${{ parameters.timeoutPerTestInMinutes }}
+        timeoutPerTestCollectionInMinutes: ${{ parameters.timeoutPerTestCollectionInMinutes }}
         runCrossGen2: ${{ eq(parameters.readyToRun, true) }}
         compositeBuildMode: ${{ parameters.compositeBuildMode }}
         runInUnloadableContext: ${{ parameters.runInUnloadableContext }}

@@ -20,28 +20,6 @@ using CodeDataLayout = CodeDataLayoutMode.CodeDataLayout;
 
 namespace ILCompiler.ObjectWriter
 {
-    internal class PaddingHelper
-    {
-        private byte[] _padding;
-        public PaddingHelper(int n, byte padByte = 0)
-        {
-            _padding = new byte[n];
-            _padding.AsSpan().Fill(padByte);
-        }
-
-        public void PadStream(Stream s, int n)
-        {
-            ArgumentOutOfRangeException.ThrowIfLessThan(n, 0);
-
-            while (n > 0)
-            {
-                int bytesToWrite = Math.Min(n, _padding.Length);
-                s.Write(_padding, 0, bytesToWrite);
-                n -= bytesToWrite;
-            }
-        }
-    }
-
     /// <summary>
     /// WebCIL object file format writer.
     /// </summary>
@@ -96,7 +74,7 @@ namespace ILCompiler.ObjectWriter
                 return;
             }
 
-            section.MinAlignment = Math.Max(section.MinAlignment, alignment);
+            section.UpdateAlignment(alignment);
         }
 
 #if READYTORUN
@@ -107,34 +85,6 @@ namespace ILCompiler.ObjectWriter
                 I32.Const(offset),
                 I32.Add,
             ]);
-        }
-
-        private class WebcilSegment
-        {
-            public WebcilHeader Header;
-            public WebcilSection[] Sections;
-
-            public WebcilSegment(WebcilHeader header, WebcilSection[] sections)
-            {
-                Header = header;
-                Sections = sections;
-            }
-
-            public int GetFlatMappedSize()
-            {
-                int size = 0;
-                size += WebcilEncoder.HeaderEncodeSize(WebcilVersion.Version1); // include header
-                size += Sections.Length * WebcilEncoder.SectionHeaderEncodeSize(); // include size of all section headers
-                size = AlignmentHelper.AlignUp(size, WebcilSectionAlignment); // account for padding before first section
-
-                foreach (WebcilSection section in Sections)
-                {
-                    size += (int)section.Header.SizeOfRawData; // include raw data size of each section (same as virtual size since Webcil has a flat mapping)
-                }
-
-                return size;
-            }
-
         }
 
         static WasmFunctionBody GetWebcilSize = new WasmFunctionBody(
@@ -197,40 +147,42 @@ namespace ILCompiler.ObjectWriter
         /// </summary>
         private static void AssignWebcilSectionVirtualAddresses(WebcilSection[] webcilSections)
         {
-            uint sizeOfHeaders = (uint)WebcilEncoder.HeaderEncodeSize(WebcilVersion.Version1) + (uint)(webcilSections.Length * WebcilEncoder.SectionHeaderEncodeSize());
-            uint pointerToRawData = (uint)AlignmentHelper.AlignUp((int)sizeOfHeaders, (int)WebcilSectionAlignment);
-            uint virtualAddress = pointerToRawData;
+            int sizeOfHeaders = WebcilEncoder.HeaderEncodeSize(WebcilVersion.Version1) + (webcilSections.Length * WebcilEncoder.SectionHeaderEncodeSize());
+            int firstSectionAlignment = webcilSections.Length == 0
+                ? WebcilSectionAlignment
+                : webcilSections[0].Alignment;
+            int pointerToRawData = AlignmentHelper.AlignUp(sizeOfHeaders, firstSectionAlignment);
 
             for (int i = 0; i < webcilSections.Length; i++)
             {
                 WebcilSection webcilSection = webcilSections[i];
-                Debug.Assert(BitOperations.IsPow2(webcilSection.MinAlignment) && BitOperations.IsPow2(WebcilSectionAlignment) &&
-                    WebcilSectionAlignment >= webcilSection.MinAlignment);
+                Debug.Assert(BitOperations.IsPow2(webcilSection.Alignment));
 
-                uint rawSectionSize = (uint)webcilSection.ContentReadStream.Length;
-                uint alignedSectionSize = (uint)AlignmentHelper.AlignUp((int)rawSectionSize, (int)WebcilSectionAlignment);
+                int nextSectionAlignment = i + 1 == webcilSections.Length
+                    ? WebcilSectionAlignment
+                    : webcilSections[i + 1].Alignment;
+                int sectionEnd = checked(pointerToRawData + (int)webcilSection.ContentReadStream.Length);
+                int alignedSectionEnd = AlignmentHelper.AlignUp(sectionEnd, nextSectionAlignment);
+                int alignedSectionSize = alignedSectionEnd - pointerToRawData;
 
                 // Webcil files are flat-mapped, since (for example) there is no uninitialized data which is expanded on load.
                 // As a result, the virtual size is the same as the aligned raw size (including padding), and
                 // the pointer to raw data for each section is also the same as the virtual address.
-                uint virtualSize = alignedSectionSize;
+                uint virtualSize = (uint)alignedSectionSize;
                 WebcilSectionHeader sectionHeader = new WebcilSectionHeader(
                     virtualSize: virtualSize,
-                    virtualAddress: virtualAddress,
-                    sizeOfRawData: alignedSectionSize,
-                    pointerToRawData: pointerToRawData
+                    virtualAddress: (uint)pointerToRawData,
+                    sizeOfRawData: (uint)alignedSectionSize,
+                    pointerToRawData: (uint)pointerToRawData
                 );
                 webcilSection.Header = sectionHeader;
 
-                pointerToRawData += alignedSectionSize;
-                virtualAddress += virtualSize;
+                pointerToRawData = alignedSectionEnd;
             }
         }
 
-        private WebcilSegment BuildWebcilDataSegment()
+        private WebcilHeader LayoutWebcilPayload(WebcilSection[] webcilSections)
         {
-            WebcilSection[] webcilSections = _sections.Sections.OfType<WebcilSection>().ToArray();
-
             AssignWebcilSectionVirtualAddresses(webcilSections);
 
             // Populate the RVAs for the Cor header/size and debug directory/size, which are required for the runtime
@@ -270,7 +222,7 @@ namespace ILCompiler.ObjectWriter
                 PeDebugSize = peDebugSize
             };
 
-            return new WebcilSegment(header, webcilSections.ToArray());
+            return header;
         }
 #endif
 
@@ -290,7 +242,6 @@ namespace ILCompiler.ObjectWriter
             writer.WriteULEB128(NumDataSegments); // number of data segments
         }
 
-        private WebcilSegment _webcilSegment = null;
         private protected override void EmitSectionsAndLayout()
         {
             int totalMethodCount = MethodCount + 3;
@@ -339,7 +290,30 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private PaddingHelper _paddingHelper = new PaddingHelper(WebcilSectionAlignment);
+        private void ResolveWebcilSectionRelocations(WebcilSection[] webcilSections)
+        {
+            foreach (WebcilSection section in webcilSections)
+            {
+                if (!_resolvableRelocations.TryGetValue(
+                    section.SectionIndex,
+                    out List<SymbolicRelocation> relocations))
+                {
+                    continue;
+                }
+
+                using Stream originalStream = section.ContentReadStream;
+                MemoryStream resolvedStream = new((int)originalStream.Length);
+                originalStream.Position = 0;
+                ResolveRelocations(
+                    section.SectionIndex,
+                    originalStream,
+                    resolvedStream,
+                    relocations,
+                    sectionStart: 0,
+                    shrink: false);
+                section.ContentReadStream = resolvedStream;
+            }
+        }
 
         private protected override void EmitObjectFile(Stream outputFileStream)
         {
@@ -364,12 +338,15 @@ namespace ILCompiler.ObjectWriter
                 EmitRelocSectionData();
             }
 
-            // Build the final webcil segment (re-assigns VAs with reloc section's real size). This must come last,
+            // Build the final webcil layout (re-assigns VAs with reloc section's real size). This must come last,
             // since we must know if we have a reloc section as well as its final size to determine the segment layout.
-            _webcilSegment = BuildWebcilDataSegment();
+            webcilSections = _sections.Sections.OfType<WebcilSection>().ToArray();
+            WebcilHeader webcilHeader = LayoutWebcilPayload(webcilSections);
+            ResolveWebcilSectionRelocations(webcilSections);
+            WebcilPayloadDataSegment webcilPayloadSegment = new(webcilHeader, webcilSections);
 
             // Writing our memory import <- size of the webcil segment (for an accurate minimum size)
-            WriteMemoryImport((ulong)_webcilSegment.GetFlatMappedSize());
+            WriteMemoryImport((ulong)webcilPayloadSegment.ContentSize);
             FinalizeSectionEntryCounts();
 
            /*********************************************************************
@@ -411,63 +388,16 @@ namespace ILCompiler.ObjectWriter
              * Emit Webcil segment at end of file to support ReadyToRun
              ****************************************************************/
 
-
-            MemoryStream webcilStream = new(_webcilSegment.GetFlatMappedSize());
-            WebcilEncoder.EmitHeader(_webcilSegment.Header, webcilStream);
-
-            foreach (WebcilSection section in _webcilSegment.Sections)
-            {
-                WebcilEncoder.EncodeSectionHeader(section.Header, webcilStream);
-            }
-
-            foreach (WebcilSection section in _webcilSegment.Sections)
-            {
-                // Move stream position forward to account for inter-section padding (precalculated in BuildWebcilDataSegment())
-                webcilStream.Position = section.Header.PointerToRawData;
-                section.ContentReadStream.Position = 0;
-
-                if (_resolvableRelocations.TryGetValue(section.SectionIndex, out List<SymbolicRelocation> relocations))
-                {
-                    // We emit all Webcil sections into one stream, and copy data / resolve relocations directly into this combined stream.
-                    // As a result, the real offsets that relocs in our list have need to be calculated based on the section's
-                    // position within the Webcil segment
-                    ResolveRelocations(section.SectionIndex, section.ContentReadStream, webcilStream, relocations, sectionStart: (long)section.Header.PointerToRawData, shrink: false);
-                }
-                else
-                {
-                    section.ContentReadStream.CopyTo(webcilStream);
-                }
-
-                long bytesWritten = (long)webcilStream.Position - (long)section.Header.PointerToRawData;
-                Debug.Assert(section.Header.SizeOfRawData - bytesWritten == section.Padding, $"Unexpected padding: {section.Header.SizeOfRawData - bytesWritten} != {section.Padding}");
-            }
-
-            if (_webcilSegment.Sections.Length > 0)
-            {
-                // Write final padding after last section
-                WebcilSection lastSection = _webcilSegment.Sections[_webcilSegment.Sections.Length - 1];
-                webcilStream.Seek(0, SeekOrigin.End);
-                _paddingHelper.PadStream(webcilStream, (int)lastSection.Padding);
-            }
-            Debug.Assert(webcilStream.Position == _webcilSegment.GetFlatMappedSize(), $"Total Size Mismatch: {webcilStream.Position} != {_webcilSegment.GetFlatMappedSize()}");
-
             // Create passive data segment for encoding the size of the webcil payload (size must fit in 32-bit uint)
             byte[] lengthBuffer = new byte[sizeof(uint) * 2];
-            BinaryPrimitives.WriteUInt32LittleEndian(lengthBuffer, (uint)_webcilSegment.GetFlatMappedSize());
+            BinaryPrimitives.WriteUInt32LittleEndian(lengthBuffer, (uint)webcilPayloadSegment.ContentSize);
             BinaryPrimitives.WriteUInt32LittleEndian(lengthBuffer.AsSpan().Slice(4), (uint)MethodCount);
-            MemoryStream webcilSizeSegmentStream = new MemoryStream(lengthBuffer);
-            WasmDataSegment webcilSizeSegment = new WasmDataSegment(webcilSizeSegmentStream, new Utf8String("webcilCount"),
-                WasmDataSegmentType.Passive, null);
-
-            // Passive data segment for webcil payload contents
-            WasmDataSegment webcilContentsSegment = new WasmDataSegment(webcilStream, new Utf8String("webcilPayload"),
-                WasmDataSegmentType.Passive, null);
+            WasmByteArrayDataSegment webcilSizeSegment = new WasmByteArrayDataSegment(lengthBuffer, new Utf8String("webcilCount"), fileAlignment: 1);
 
             // Create combined data section and emit
-            WasmDataSection dataSection = new WasmDataSection(
-                [webcilSizeSegment, webcilContentsSegment],
-                new Utf8String("data"),
-                contentAlign: WebcilSectionAlignment);
+            WasmDataSection dataSection = new WasmDataSection([webcilSizeSegment, webcilPayloadSegment], new Utf8String("data"));
+            PaddingWasmSection paddingSection = new PaddingWasmSection(dataSection.FileAlignment, outputFileStream.Position);
+            paddingSection.EmitToStream(outputFileStream);
             dataSection.EmitToStream(outputFileStream);
 #endif
 
