@@ -74,11 +74,8 @@ namespace System.Reflection
                 QualifiedMethod qualifiedMethod = customAttribute.Constructor.ToQualifiedMethodHandle(reader).GetQualifiedMethod(reader);
                 MethodHandle methodHandle = qualifiedMethod.Method;
                 NativeFormatRuntimeNamedTypeInfo namedAttributeType = (NativeFormatRuntimeNamedTypeInfo)attributeTypeInfo;
-                ConstructorInfo constructor = RuntimePlainConstructorInfo<NativeFormatMethodCommon>.GetRuntimePlainConstructorInfo(
-                    new NativeFormatMethodCommon(methodHandle, namedAttributeType, attributeTypeInfo));
-
-                // Reuse the member's parameter and invocation caches across attribute instantiations.
-                return (ConstructorInfo)attributeTypeInfo.GetMemberWithSameMetadataDefinitionAs(constructor);
+                NativeFormatMethodCommon methodCommon = new NativeFormatMethodCommon(methodHandle, namedAttributeType, attributeTypeInfo);
+                return attributeTypeInfo.GetConstructorWithSameMetadataDefinitionAs(methodCommon);
             }
 
             MemberReference memberReference = customAttribute.Constructor.ToMemberReferenceHandle(reader).GetMemberReference(reader);
