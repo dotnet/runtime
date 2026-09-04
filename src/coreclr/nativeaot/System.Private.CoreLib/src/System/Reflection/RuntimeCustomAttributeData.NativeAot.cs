@@ -34,34 +34,48 @@ namespace System.Reflection
             return Array.AsReadOnly(customAttributes);
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",
             Justification = "Metadata generation ensures custom attribute constructors are resolvable.")]
         private static ConstructorInfo ResolveAttributeConstructor(MetadataReader reader, CustomAttribute customAttribute)
         {
+            // There is no chance a custom attribute type will be an open type specification so we can safely pass in the empty context here.
+            RuntimeType attributeType = (RuntimeType)customAttribute.GetAttributeTypeHandle(reader)
+                .Resolve(reader, new TypeContext(null, null))
+                .ToType();
+            return ResolveAttributeConstructor(reader, customAttribute, attributeType);
+        }
+
+        internal static ConstructorInfo ResolveAttributeConstructor(
+            MetadataReader reader,
+            CustomAttribute customAttribute,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
+            RuntimeType attributeType)
+        {
+            RuntimeTypeInfo attributeTypeInfo = attributeType.GetRuntimeTypeInfo();
+
             if (customAttribute.Constructor.HandleType == HandleType.QualifiedMethod)
             {
                 QualifiedMethod qualifiedMethod = customAttribute.Constructor.ToQualifiedMethodHandle(reader).GetQualifiedMethod(reader);
-                TypeDefinitionHandle declaringType = qualifiedMethod.EnclosingType;
                 MethodHandle methodHandle = qualifiedMethod.Method;
-                NativeFormatRuntimeNamedTypeInfo namedAttributeType = NativeFormatRuntimeNamedTypeInfo.GetRuntimeNamedTypeInfo(reader, declaringType, default(RuntimeTypeHandle));
-                return RuntimePlainConstructorInfo<NativeFormatMethodCommon>.GetRuntimePlainConstructorInfo(new NativeFormatMethodCommon(methodHandle, namedAttributeType, namedAttributeType));
+                NativeFormatRuntimeNamedTypeInfo namedAttributeType = (NativeFormatRuntimeNamedTypeInfo)attributeTypeInfo;
+                ConstructorInfo constructor = RuntimePlainConstructorInfo<NativeFormatMethodCommon>.GetRuntimePlainConstructorInfo(
+                    new NativeFormatMethodCommon(methodHandle, namedAttributeType, attributeTypeInfo));
+
+                // Reuse the member's parameter and invocation caches across attribute instantiations.
+                return (ConstructorInfo)attributeTypeInfo.GetMemberWithSameMetadataDefinitionAs(constructor);
             }
 
             MemberReference memberReference = customAttribute.Constructor.ToMemberReferenceHandle(reader).GetMemberReference(reader);
-
-            // There is no chance a custom attribute type will be an open type specification so we can safely pass in the empty context here.
-            TypeContext typeContext = new TypeContext(Array.Empty<RuntimeTypeInfo>(), Array.Empty<RuntimeTypeInfo>());
-            RuntimeTypeInfo attributeType = memberReference.Parent.Resolve(reader, typeContext);
             MethodSignature signature = memberReference.Signature.ParseMethodSignature(reader);
             HandleCollection signatureParameters = signature.Parameters;
             Type[] expectedParameterTypes = new Type[signatureParameters.Count];
             int index = 0;
             foreach (Handle parameterHandle in signatureParameters)
             {
-                expectedParameterTypes[index++] = parameterHandle.Resolve(reader, attributeType.TypeContext).ToType();
+                expectedParameterTypes[index++] = parameterHandle.Resolve(reader, attributeTypeInfo.TypeContext).ToType();
             }
 
-            foreach (ConstructorInfo candidate in attributeType.ToType().GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly))
+            foreach (ConstructorInfo candidate in attributeType.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly))
             {
                 ReadOnlySpan<ParameterInfo> candidateParameters = candidate.GetParametersAsSpan();
                 if (expectedParameterTypes.Length != candidateParameters.Length)
