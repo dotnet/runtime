@@ -510,7 +510,7 @@ namespace Microsoft.Extensions.Caching.Memory
             Assert.Null(cache.Get(key4));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task AddingTokensToParentIsSafeWhileChildrenPropagateBeforeCommit()
         {
             const int Workers = 4;
@@ -542,7 +542,13 @@ namespace Microsoft.Extensions.Caching.Memory
                 }))
                 .ToArray();
 
+            Task allWorkers = Task.WhenAll(workers);
+            Task timeoutTask = Task.Delay(Timeout.InfiniteTimeSpan, timeout.Token);
+
             childrenReleased.SetResult(true);
+            Task firstCompleted = await Task.WhenAny(firstChildCommitted.Task, allWorkers, timeoutTask);
+            Assert.NotSame(timeoutTask, firstCompleted);
+            await firstCompleted;
             await firstChildCommitted.Task;
 
             for (int i = 0; i < ParentTokenCount; i++)
@@ -550,8 +556,6 @@ namespace Microsoft.Extensions.Caching.Memory
                 parent.AddExpirationToken(new TestExpirationToken());
             }
 
-            Task allWorkers = Task.WhenAll(workers);
-            Task timeoutTask = Task.Delay(Timeout.InfiniteTimeSpan, timeout.Token);
             Assert.Same(allWorkers, await Task.WhenAny(allWorkers, timeoutTask));
             timeout.Cancel();
             await allWorkers;
