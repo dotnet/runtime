@@ -31,9 +31,14 @@ namespace ILCompiler.ObjectWriter
 
         public void PadStream(Stream s, int n)
         {
-            ArgumentOutOfRangeException.ThrowIfGreaterThan(n, _padding.Length);
             ArgumentOutOfRangeException.ThrowIfLessThan(n, 0);
-            s.Write(_padding, 0, n);
+
+            while (n > 0)
+            {
+                int bytesToWrite = Math.Min(n, _padding.Length);
+                s.Write(_padding, 0, bytesToWrite);
+                n -= bytesToWrite;
+            }
         }
     }
 
@@ -459,7 +464,10 @@ namespace ILCompiler.ObjectWriter
                 WasmDataSegmentType.Passive, null);
 
             // Create combined data section and emit
-            WasmDataSection dataSection = new WasmDataSection([webcilSizeSegment, webcilContentsSegment], new Utf8String("data"), contentAlign: 4);
+            WasmDataSection dataSection = new WasmDataSection(
+                [webcilSizeSegment, webcilContentsSegment],
+                new Utf8String("data"),
+                contentAlign: WebcilSectionAlignment);
             dataSection.EmitToStream(outputFileStream);
 #endif
 

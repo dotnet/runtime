@@ -53,49 +53,31 @@ case "$config_lower" in
         ;;
 esac
 
-# Get the repo root (script is in src/tasks/WasmAppBuilder)
+# Get the repo root (script is in src/coreclr/vm/wasm)
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-repo_root="$(cd "$script_dir/../../.." && pwd)"
+repo_root="$(cd "$script_dir/../../../.." && pwd)"
 
 echo "Configuration: $configuration"
 echo "Repo root: $repo_root"
 
 cd "$repo_root"
 
-# Run the generator for a given target OS.
-# Arguments: <target_os> <scan_path> <output_dir>
-run_generator() {
-    local target_os="$1"
-    local scan_path="$2"
-    local output_dir="$3"
+# The scan paths, the crossgen2 lookup and the P/Invoke module list all live in the project next
+# to this script, so they are not restated here and in the .cmd.
+args=(
+    build "$script_dir/generate-coreclr-helpers.proj"
+    -t:GenerateCallHelpers
+    "-p:Configuration=$configuration"
+)
 
-    if [[ ! -d "$scan_path" ]]; then
-        echo "Error: Scan path for $target_os does not exist: $scan_path"
-        echo "Please build the runtime first using: ./build.sh clr+libs -os $target_os -c $configuration"
-        exit 1
-    fi
-
-    echo "[$target_os] Scan path: $scan_path"
-    echo "[$target_os] Output path: $output_dir"
-    echo "Running generator for $target_os..."
-    echo "./dotnet.sh build /t:RunGenerator /p:RuntimeFlavor=CoreCLR /p:TargetOS=$target_os /p:GeneratorOutputPath=$output_dir /p:AssembliesScanPath=$scan_path src/tasks/WasmAppBuilder/WasmAppBuilder.csproj"
-    ./dotnet.sh build /t:RunGenerator /p:RuntimeFlavor=CoreCLR "/p:TargetOS=$target_os" "/p:GeneratorOutputPath=$output_dir" "/p:AssembliesScanPath=$scan_path" src/tasks/WasmAppBuilder/WasmAppBuilder.csproj
-}
-
-# Resolve scan paths (allow overrides).
 if [[ -n "$browser_scan_path_override" ]]; then
-    browser_scan_path="$browser_scan_path_override"
-else
-    browser_scan_path="$repo_root/artifacts/bin/testhost/net11.0-browser-$configuration-wasm/shared/Microsoft.NETCore.App/11.0.0/"
+    args+=("-p:BrowserScanPath=$browser_scan_path_override")
 fi
 
 if [[ -n "$wasi_scan_path_override" ]]; then
-    wasi_scan_path="$wasi_scan_path_override"
-else
-    wasi_scan_path="$repo_root/artifacts/bin/testhost/net11.0-wasi-$configuration-wasm/shared/Microsoft.NETCore.App/11.0.0/"
+    args+=("-p:WasiScanPath=$wasi_scan_path_override")
 fi
 
-run_generator "browser" "$browser_scan_path" "$repo_root/src/coreclr/vm/wasm/browser/"
-run_generator "wasi" "$wasi_scan_path" "$repo_root/src/coreclr/vm/wasm/wasi/"
+./dotnet.sh "${args[@]}"
 
 echo "Done!"

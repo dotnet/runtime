@@ -31,7 +31,7 @@ jobs:
     platforms:
     - browser_wasm
     jobParameters:
-      buildArgs: -s clr+libs+host+packs -c $(_BuildConfig) /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS) /p:BuildHostTools=true
+      buildArgs: -s clr+libs+host+packs -c $(_BuildConfig) /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS) /p:BuildHostTools=true /p:CrossBuildHostTools=true
       nameSuffix: wasm_coreclr
       isOfficialBuild: false
       postBuildSteps:

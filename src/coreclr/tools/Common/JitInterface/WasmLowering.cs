@@ -389,7 +389,9 @@ namespace Internal.JitInterface
         /// <summary>
         /// Maps a WasmValueType to its single-character signature encoding.
         /// </summary>
-        private static char WasmValueTypeToSigChar(WasmValueType vt) => vt switch
+        // internal rather than private so the call-helper generator can encode a single type with the
+        // same table the signature builder below uses (see ILCompiler.PortableCallHelpers.InteropSignature).
+        internal static char WasmValueTypeToSigChar(WasmValueType vt) => vt switch
         {
             WasmValueType.I32 => 'i',
             WasmValueType.I64 => 'l',
@@ -407,6 +409,22 @@ namespace Internal.JitInterface
             'd' => context.GetWellKnownType(WellKnownType.Double),
             'V' => ((CompilerTypeSystemContext)context).WasmV128Type,
             _ => throw new InvalidOperationException($"Unknown signature char: {c}")
+        };
+
+        internal static string DescribeSigChar(char c) => c switch
+        {
+            'v' => "a void result",
+            'i' => "a 32-bit integer",
+            'l' => "a 64-bit integer",
+            'f' => "a 32-bit float",
+            'd' => "a 64-bit float",
+            'V' => "a 128-bit vector",
+            'S' or 'A' => "a struct passed by reference",
+            'T' => "the 'this' argument",
+            'p' => "the portable entry point argument",
+            'a' => "the async continuation argument",
+            'e' => "an empty struct",
+            _ => $"an unrecognized element '{c}'"
         };
 
         private static int ParseStructSize(string sig, ref int pos)

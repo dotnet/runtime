@@ -66,7 +66,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
         /// <summary>
         /// Initializes a new instance of the <see cref="PhysicalFilesWatcher"/> class that watches files in <paramref name="root"/>.
         /// </summary>
-        /// <param name="root">The root directory for the watcher.</param>
+        /// <param name="root">The root directory for the watcher. The directory isn't required to exist.</param>
         /// <param name="fileSystemWatcher">The wrapped watcher that's watching <paramref name="root"/>.</param>
         /// <param name="pollForChanges">
         /// <see langword="true"/> for the poller to use polling to trigger instances of
@@ -83,7 +83,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
         /// <summary>
         /// Initializes a new instance of the <see cref="PhysicalFilesWatcher"/> class that watches files in <paramref name="root"/>.
         /// </summary>
-        /// <param name="root">The root directory for the watcher.</param>
+        /// <param name="root">The root directory for the watcher. The directory isn't required to exist.</param>
         /// <param name="fileSystemWatcher">The wrapped watcher that is watching <paramref name="root"/>.</param>
         /// <param name="pollForChanges">
         /// <see langword="true"/> for the poller to use polling to trigger instances of
@@ -160,7 +160,9 @@ namespace Microsoft.Extensions.FileProviders.Physical
         /// Creates an instance of <see cref="IChangeToken" /> for all files and directories that match the
         /// <paramref name="filter" />.
         /// </summary>
-        /// <param name="filter">A globbing pattern for files and directories to watch.</param>
+        /// <param name="filter">
+        /// A globbing pattern for files and directories to watch. The files or directories aren't required to exist when this method is called.
+        /// </param>
         /// <returns>A change token for all files and directories that match the filter.</returns>
         /// <remarks>
         /// Globbing patterns are relative to the root directory given in the constructor
