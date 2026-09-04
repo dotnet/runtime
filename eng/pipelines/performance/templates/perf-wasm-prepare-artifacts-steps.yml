@@ -39,22 +39,26 @@ steps:
       $(Build.SourcesDirectory)/src/mono/wasm/Wasm.Build.Tests/Wasm.Build.Tests.csproj
     displayName: "Install workload using artifacts"
 
-  # Stage artifacts: create staging/, copy SDK, runtime pack, and nugets
+  # Stage artifacts: create staging/, copy SDK and runtime pack.
   - script: >-
       mkdir -p $(Build.SourcesDirectory)/artifacts/staging/built-nugets &&
       cp -r $(Build.SourcesDirectory)/artifacts/bin/${{ parameters.sdkDirName }} $(Build.SourcesDirectory)/artifacts/staging &&
-      cp -r $(Build.SourcesDirectory)/artifacts/bin/microsoft.netcore.app.runtime.browser-wasm $(Build.SourcesDirectory)/artifacts/staging &&
-      cp -r $(Build.SourcesDirectory)/artifacts/packages/${{ parameters.configForBuild }}/Shipping/Microsoft.NET.Sdk.WebAssembly.Pack* $(Build.SourcesDirectory)/artifacts/staging/built-nugets &&
-      cp -r $(Build.SourcesDirectory)/artifacts/packages/${{ parameters.configForBuild }}/Shipping/Microsoft.NETCore.App.Ref* $(Build.SourcesDirectory)/artifacts/staging/built-nugets
+      cp -r $(Build.SourcesDirectory)/artifacts/bin/microsoft.netcore.app.runtime.browser-wasm $(Build.SourcesDirectory)/artifacts/staging
     displayName: "Prepare artifacts staging directory"
+
+  - ${{ if ne(parameters.includeCoreClrToolchainPacks, true) }}:
+    - script: >-
+        cp -r $(Build.SourcesDirectory)/artifacts/packages/${{ parameters.configForBuild }}/Shipping/Microsoft.NET.Sdk.WebAssembly.Pack* $(Build.SourcesDirectory)/artifacts/staging/built-nugets &&
+        cp -r $(Build.SourcesDirectory)/artifacts/packages/${{ parameters.configForBuild }}/Shipping/Microsoft.NETCore.App.Ref* $(Build.SourcesDirectory)/artifacts/staging/built-nugets
+      displayName: "Stage WebAssembly SDK and reference packs"
 
   # Mono also needs the ref pack directory (CoreCLR gets it from nugets)
   - ${{ if eq(parameters.includeRefPack, true) }}:
     - script: cp -r $(Build.SourcesDirectory)/artifacts/bin/microsoft.netcore.app.ref $(Build.SourcesDirectory)/artifacts/staging
       displayName: "Stage ref pack directory"
 
-  # The WebAssembly SDK and ref packages above, the runtime pack directory, and these host tool
-  # packages form the complete local product cohort consumed by a trimmed CoreCLR R2R publish.
+  # The WebAssembly SDK, ref, and host tool packages form the complete local product cohort
+  # consumed by a trimmed CoreCLR R2R publish.
   - ${{ if eq(parameters.includeCoreClrToolchainPacks, true) }}:
     - script: >-
         ./dotnet.sh pack --no-build --no-restore
@@ -83,7 +87,8 @@ steps:
 
           if [ "$package_count" -ne 1 ]; then
             echo "Expected exactly one non-symbol $package_pattern in $shipping_dir; found $package_count." >&2
-            find "$shipping_dir" -maxdepth 1 -type f -name "$package_pattern" -print >&2
+            find "$shipping_dir" -maxdepth 1 -type f \
+              -name "$package_pattern" -not -name '*.symbols.nupkg' -print >&2
             exit 1
           fi
 
