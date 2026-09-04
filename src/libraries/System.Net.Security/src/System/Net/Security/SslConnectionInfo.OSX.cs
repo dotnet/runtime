@@ -84,14 +84,11 @@ namespace System.Net.Security
             Protocol = (int)protocol;
             TlsCipherSuite = cipherSuite;
 
-            // SecureTransport reliably reports whether the session was resumed via an
-            // abbreviated handshake. Treat any failure as "not resumed" so that we fall back
-            // to the safe behavior of revalidating the peer certificate.
-            if (Interop.AppleCrypto.SslGetSessionResumed(sslContext, out int sessionResumed) == 0)
-            {
-                TlsResumed = sessionResumed != 0;
-            }
-
+            // SecureTransport does not expose an API to determine whether the session was
+            // resumed that is still present in current Apple SDKs (SSLGetResumableSessionInfo has
+            // been removed), so TlsResumed is left as false here. As with the Network Framework
+            // and Android backends this means the peer certificate is always revalidated on
+            // resumption on this platform, matching the safe fallback.
             if (context.IsServer)
             {
                 if (context.SelectedApplicationProtocol.Protocol.Length > 0)

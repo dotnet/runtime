@@ -1185,6 +1185,7 @@ namespace System.Net.Security
         {
             return VerifyRemoteCertificateCore(
                 this,
+                !_isRenego,
                 _sslAuthenticationOptions,
                 _securityContext,
                 ref _remoteCertificate,
@@ -1199,6 +1200,7 @@ namespace System.Net.Security
 
         internal static bool VerifyRemoteCertificateCore(
             object sender,
+            bool isInitialHandshake,
             SslAuthenticationOptions sslAuthenticationOptions,
 #if TARGET_APPLE
             SafeDeleteContext? securityContext,
@@ -1233,18 +1235,24 @@ namespace System.Net.Security
             }
 
             if (certificate != null &&
+                isInitialHandshake &&
                 connectionInfo.TlsResumed &&
                 !LocalAppContextSwitches.RevalidateCertificateOnTlsResume)
             {
-                // The TLS session was resumed via an abbreviated handshake. The peer did not
-                // send its certificate again; its identity was established and validated during
-                // the original full handshake that produced the session ticket / session id.
-                // Common TLS stacks (e.g. OpenSSL, SChannel) do not re-run certificate
-                // verification on resumption, so by default neither do we: adopt the cached peer
-                // certificate for the RemoteCertificate property but skip rebuilding the chain
-                // and invoking the user validation callback. Set the
+                // The initial TLS handshake was a resumption via an abbreviated handshake. The
+                // peer did not send its certificate again; its identity was established and
+                // validated during the original full handshake that produced the session ticket
+                // / session id. Common TLS stacks (e.g. OpenSSL, SChannel) do not re-run
+                // certificate verification on resumption, so by default neither do we: adopt the
+                // cached peer certificate for the RemoteCertificate property but skip rebuilding
+                // the chain and invoking the user validation callback. Set the
                 // System.Net.Security.RevalidateCertificateOnTlsResume switch to opt back into
                 // re-validating the peer certificate on every resumption.
+                //
+                // This shortcut is gated on the initial handshake: during renegotiation or
+                // TLS 1.3 post-handshake authentication the peer can present a new certificate,
+                // which must always be validated (the identical-certificate case above is handled
+                // separately).
                 remoteCertificateSlot = certificate;
                 if (NetEventSource.Log.IsEnabled())
                 {

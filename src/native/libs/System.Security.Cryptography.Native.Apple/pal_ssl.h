@@ -300,17 +300,6 @@ TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
 PALEXPORT int32_t AppleCryptoNative_SslGetCipherSuite(SSLContextRef sslContext, uint16_t* pCipherSuiteOut);
 
 /*
-Determine whether the current TLS session was resumed via an abbreviated handshake
-(session ticket or session id reuse) rather than negotiated with a full handshake.
-
-Returns the output of SSLGetResumableSessionInfo.
-
-Output:
-pSessionResumed: Receives 1 if the session was resumed, 0 otherwise. Set to 0 on error.
-*/
-PALEXPORT int32_t AppleCryptoNative_SslGetSessionResumed(SSLContextRef sslContext, int32_t* pSessionResumed);
-
-/*
 Sets enabled cipher suites for the current session.
 
 Returns the output of SSLSetEnabledCiphers.

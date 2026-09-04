@@ -561,26 +561,6 @@ int32_t AppleCryptoNative_SslGetCipherSuite(SSLContextRef sslContext, uint16_t* 
     return status;
 }
 
-int32_t AppleCryptoNative_SslGetSessionResumed(SSLContextRef sslContext, int32_t* pSessionResumed)
-{
-    if (pSessionResumed != NULL)
-        *pSessionResumed = 0;
-
-    if (sslContext == NULL || pSessionResumed == NULL)
-        return errSecParam;
-
-    Boolean sessionWasResumed = false;
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-    OSStatus status = SSLGetResumableSessionInfo(sslContext, &sessionWasResumed, NULL, NULL);
-#pragma clang diagnostic pop
-
-    if (status == noErr)
-        *pSessionResumed = sessionWasResumed ? 1 : 0;
-
-    return status;
-}
-
 int32_t AppleCryptoNative_SslSetEnabledCipherSuites(SSLContextRef sslContext, const uint32_t* cipherSuites, int32_t numCipherSuites)
 {
     // Max numCipherSuites is 2^16 (all possible cipher suites)

@@ -165,9 +165,6 @@ internal static partial class Interop
         [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SslGetProtocolVersion")]
         internal static partial int SslGetProtocolVersion(SafeSslHandle sslHandle, out SslProtocols protocol);
 
-        [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SslGetSessionResumed")]
-        internal static partial int SslGetSessionResumed(SafeSslHandle sslHandle, out int sessionResumed);
-
         [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SslSetEnabledCipherSuites")]
         internal static unsafe partial int SslSetEnabledCipherSuites(SafeSslHandle sslHandle, uint* cipherSuites, int numCipherSuites);
 
