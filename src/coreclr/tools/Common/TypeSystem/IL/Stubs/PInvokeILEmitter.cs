@@ -172,6 +172,7 @@ namespace Internal.IL.Stubs
                 MethodSignature managedSignature = new MethodSignature(
                     MethodSignatureFlags.Static, 0, _marshallers[0].ManagedParameterType, parameters);
 
+                fnptrLoadStream.EmitLdArg(delegateMethod.Signature.Length - 1);
                 fnptrLoadStream.Emit(ILOpcode.call, emitter.NewToken(
                     delegateMethod.Context.GetHelperType("InteropHelpers"u8).GetKnownMethod(
                         "GetCurrentCalleeOpenStaticDelegateFunctionPointer"u8, null)));
@@ -190,11 +191,11 @@ namespace Internal.IL.Stubs
                 //     InteropHelpers.GetCurrentCalleeDelegate<Delegate>
                 // which returns the delegate. Do a CallVirt on the invoke method.
                 //
+                fnptrLoadStream.EmitLdArg(delegateMethod.Signature.Length - 1);
+                MethodDesc helper = delegateMethod.Context.GetHelperType("InteropHelpers"u8)
+                    .GetKnownMethod("GetCurrentCalleeDelegate"u8, null);
                 MethodDesc instantiatedHelper = delegateMethod.Context.GetInstantiatedMethod(
-                    delegateMethod.Context.GetHelperType("InteropHelpers"u8)
-                    .GetKnownMethod("GetCurrentCalleeDelegate"u8, null),
-                        new Instantiation((delegateMethod.DelegateType)));
-
+                    helper, new Instantiation((delegateMethod.DelegateType)));
                 fnptrLoadStream.Emit(ILOpcode.call, emitter.NewToken(instantiatedHelper));
 
                 ILLocalVariable vDelegateStub = emitter.NewLocal(delegateMethod.DelegateType);
