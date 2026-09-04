@@ -35,6 +35,55 @@ internal static class R2RAssert
         return methods;
     }
 
+    public static bool HasStringThunkWithPrefix(ReadyToRunReader reader, string prefix, out string diagnostic)
+    {
+        List<string> keys = GetStringThunkKeys(reader);
+        bool found = keys.Any(key => key.StartsWith(prefix, StringComparison.Ordinal) &&
+            (prefix != "U" || (!key.StartsWith("UG", StringComparison.Ordinal) && !key.StartsWith("UM", StringComparison.Ordinal))));
+        diagnostic = found
+            ? $"Found string thunk with prefix '{prefix}'."
+            : $"Expected string thunk with prefix '{prefix}' not found. Found: [{string.Join(", ", keys)}]";
+        return found;
+    }
+
+    public static bool HasStringThunk(ReadyToRunReader reader, string lookupString, out string diagnostic)
+    {
+        List<string> keys = GetStringThunkKeys(reader);
+        bool found = keys.Contains(lookupString, StringComparer.Ordinal);
+        diagnostic = found
+            ? $"Found string thunk '{lookupString}'."
+            : $"Expected string thunk '{lookupString}' not found. Found: [{string.Join(", ", keys)}]";
+        return found;
+    }
+
+    private static List<string> GetStringThunkKeys(ReadyToRunReader reader)
+    {
+        var keys = new List<string>();
+        foreach (ReadyToRunImportSection section in reader.ImportSections)
+        {
+            foreach (ReadyToRunImportSection.ImportSectionEntry entry in section.Entries)
+            {
+                string signature = entry.Signature.ToString(new SignatureFormattingOptions());
+                const string marker = " (INJECT_STRING_THUNKS";
+                if (!signature.Contains(marker, StringComparison.Ordinal))
+                    continue;
+
+                int start = 0;
+                while ((start = signature.IndexOf('"', start)) >= 0)
+                {
+                    int end = signature.IndexOf('"', start + 1);
+                    if (end < 0)
+                        break;
+
+                    keys.Add(signature.Substring(start + 1, end - start - 1));
+                    start = end + 1;
+                }
+            }
+        }
+
+        return keys;
+    }
+
     /// <summary>
     /// Returns true if the R2R image contains a manifest or MSIL assembly reference with the given name.
     /// </summary>

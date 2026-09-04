@@ -11,3 +11,8 @@ class MethodDesc;
 // Look up a pregenerated R2R-to-interpreter thunk for the given MethodDesc.
 // Returns NULL if no thunk is available for the method's signature.
 void* GetPortableEntryPointToInterpreterThunk(MethodDesc *pMD);
+
+// Get a pregenerated unboxing stub for pMD, the MethodDesc used as its generic context,
+// and the portable entrypoint of its target.
+// Returns NULL if no thunk is available for the method's signature.
+void* GetUnboxingStub(MethodDesc* pMD, MethodDesc** ppTargetMethodDesc, PCODE* pTargetEntryPoint);

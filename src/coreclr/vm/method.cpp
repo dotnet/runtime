@@ -2927,10 +2927,31 @@ void MethodDesc::EnsureTemporaryEntryPointCore(AllocMemTracker *pamTracker)
 
         PCODE entryPoint;
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
-        PortableEntryPoint* portableEntryPoint = (PortableEntryPoint*)pamTrackerPrecode->Track(
-            GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T{ sizeof(PortableEntryPoint) }));
+        SIZE_T portableEntryPointSize = sizeof(PortableEntryPoint);
+#ifdef TARGET_WASM
+        if (IsUnboxingStub())
+        {
+            portableEntryPointSize = sizeof(UnboxingStubPortableEntryPoint);
+        }
+#endif
+        void* portableEntryPointAllocation = pamTrackerPrecode->Track(
+            GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T{ portableEntryPointSize }));
+        PortableEntryPoint* portableEntryPoint;
+#ifdef TARGET_WASM
+        if (IsUnboxingStub())
+        {
+            UnboxingStubPortableEntryPoint* unboxingStubEntryPoint =
+                reinterpret_cast<UnboxingStubPortableEntryPoint*>(portableEntryPointAllocation);
+            unboxingStubEntryPoint->Init(this);
+            portableEntryPoint = unboxingStubEntryPoint->GetEntryPoint();
+        }
+        else
+#endif
+        {
+            portableEntryPoint = reinterpret_cast<PortableEntryPoint*>(portableEntryPointAllocation);
+            SetPortableEntrypointInitialStateForMethod(portableEntryPoint);
+        }
 
-        SetPortableEntrypointInitialStateForMethod(portableEntryPoint);
         entryPoint = (PCODE)portableEntryPoint;
 
 #else // !FEATURE_PORTABLE_ENTRYPOINTS
@@ -3025,6 +3046,13 @@ void MethodDesc::SetPortableEntrypointInitialStateForMethod(PortableEntryPoint *
         MODE_ANY;
     } CONTRACTL_END;
 
+#ifdef TARGET_WASM
+    if (IsUnboxingStub())
+    {
+        UnboxingStubPortableEntryPoint::FromEntryPoint((PCODE)portableEntry)->Init(this);
+    }
+    else
+#endif
     if (!IsDynamicMethod() && portableEntry->HasNativeCodeUnchecked())
     {
         void* pPortableEntryPointToInterpreter = GetPortableEntryPointToInterpreterThunk(this);

@@ -1880,6 +1880,34 @@ public class R2RTestSuites
         }
     }
 
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
+    public void WasmVirtualMethodGenericsNonGVM()
+    {
+        var nonGvmLib = new CompiledAssembly
+        {
+            AssemblyName = nameof(WasmVirtualMethodGenericsNonGVM),
+            SourceResourceNames = ["VirtualMethodGenerics/NonGVM.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(WasmVirtualMethodGenericsNonGVM),
+            [
+                new(nameof(WasmVirtualMethodGenericsNonGVM), [new CrossgenAssembly(nonGvmLib)])
+                {
+                    Options = [Crossgen2Option.GenerateUnboxingStubs],
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            Assert.True(R2RAssert.HasStringThunkWithPrefix(reader, "U", out string diag), diag);
+            Assert.True(R2RAssert.HasStringThunkWithPrefix(reader, "UG", out diag), diag);
+            Assert.True(R2RAssert.HasStringThunk(reader, "UGviiii", out diag), diag);
+            Assert.True(R2RAssert.HasStringThunk(reader, "UGvriiii", out diag), diag);
+        }
+    }
+
     [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotWasmTarget))]
     public void VirtualMethodGenericsGVM()
     {
@@ -1932,6 +1960,31 @@ public class R2RTestSuites
                     method.InstanceArgs is ["int"] &&
                     method.SignatureString.Contains("[UNBOX]", StringComparison.Ordinal));
             Assert.NotEmpty(unboxingThunk.RuntimeFunctions);
+        }
+    }
+
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
+    public void WasmVirtualMethodGenericsGVM()
+    {
+        var gvmLib = new CompiledAssembly
+        {
+            AssemblyName = nameof(WasmVirtualMethodGenericsGVM),
+            SourceResourceNames = ["VirtualMethodGenerics/GVM.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(WasmVirtualMethodGenericsGVM),
+            [
+                new(nameof(WasmVirtualMethodGenericsGVM), [new CrossgenAssembly(gvmLib)])
+                {
+                    Options = [Crossgen2Option.GenerateUnboxingStubs],
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            Assert.True(R2RAssert.HasStringThunk(reader, "UMiiii", out string diag), diag);
         }
     }
 
