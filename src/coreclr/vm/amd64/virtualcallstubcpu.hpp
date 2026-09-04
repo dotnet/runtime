@@ -135,9 +135,9 @@ struct DispatchStubShort
     inline BOOL isJmpAbsEncoding() const
     {
         LIMITED_METHOD_CONTRACT;
-        // JMPABS encoding starts with 0x0F 0x85 (jne near)
-        // Legacy encoding starts with 0x48 0xB8 (mov rax, imm64)
-        return _bytes[0] == 0x0F && _bytes[1] == 0x85;
+        const BYTE *bytes = reinterpret_cast<const BYTE *>(this);
+        // APX encoding starts with 0x0F 0x85 (jne near). Legacy starts with 0x48 0xB8 (mov rax, imm64).
+        return bytes[0] == 0x0F && bytes[1] == 0x85;
     }
 
     inline PCODE implTarget() const
@@ -200,7 +200,7 @@ private:
 inline BOOL DispatchStubShort::isShortStub(LPCBYTE pCode)
 {
     LIMITED_METHOD_CONTRACT;
-    // JMPABS encoding: starts with 0x0F 0x85 (jne near) at byte 0
+    // APX encoding: starts with 0x0F 0x85 (jne near) at byte 0
     if (pCode[0] == 0x0F && pCode[1] == 0x85)
         return TRUE;
 

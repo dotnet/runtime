@@ -2261,17 +2261,29 @@ public sealed unsafe partial class SOSDacImpl
         return hr;
     }
 
-    private bool IsJumpRel64(TargetPointer pThunk)
+    private bool IsJumpAbs64(TargetPointer pThunk)
+        => 0xD5 == _target.Read<byte>(pThunk) &&
+           0x00 == _target.Read<byte>(pThunk + 1) &&
+           0xA1 == _target.Read<byte>(pThunk + 2) &&
+           0x90 == _target.Read<byte>(pThunk + 11);
+
+    private bool IsJumpMovRax64(TargetPointer pThunk)
         => 0x48 == _target.Read<byte>(pThunk) &&
            0xB8 == _target.Read<byte>(pThunk + 1) &&
            0xFF == _target.Read<byte>(pThunk + 10) &&
            0xE0 == _target.Read<byte>(pThunk + 11);
 
+    private bool IsJumpRel64(TargetPointer pThunk)
+        => IsJumpAbs64(pThunk) || IsJumpMovRax64(pThunk);
+
     private TargetPointer DecodeJump64(TargetPointer pThunk)
     {
         Debug.Assert(IsJumpRel64(pThunk), "Expected a jump thunk");
 
-        return _target.ReadPointer(pThunk + 2);
+        // The immediate follows the 3-byte JMPABS opcode or the 2-byte mov rax opcode.
+        return IsJumpAbs64(pThunk)
+            ? _target.ReadPointer(pThunk + 3)
+            : _target.ReadPointer(pThunk + 2);
     }
 
     int ISOSDacInterface.GetJumpThunkTarget(void* ctx, ClrDataAddress* targetIP, ClrDataAddress* targetMD)
