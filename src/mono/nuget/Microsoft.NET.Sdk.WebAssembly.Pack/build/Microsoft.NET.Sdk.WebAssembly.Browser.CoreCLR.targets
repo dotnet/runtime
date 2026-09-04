@@ -48,7 +48,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmRuntimePackR2RDir Condition="'$(_WasmRuntimePackR2RDir)' == '' and '$(_RuntimePackNativeDir)' != ''">$([MSBuild]::NormalizeDirectory('$(_RuntimePackNativeDir)', 'r2r'))</_WasmRuntimePackR2RDir>
     </PropertyGroup>
     <PropertyGroup Condition="'$(PublishReadyToRun)' == 'true'">
-      <_WasmPublishR2RDir Condition="'$(_WasmPublishR2RDir)' == ''">$([MSBuild]::NormalizeDirectory('$(IntermediateOutputPath)', 'r2r'))</_WasmPublishR2RDir>
+      <_WasmPublishR2RDir Condition="'$(_WasmPublishR2RDir)' == ''">$([MSBuild]::NormalizeDirectory('$(IntermediateOutputPath)', 'R2R'))</_WasmPublishR2RDir>
       <_WasmBuildPrebuiltR2RDirectory Condition="'$(PublishTrimmed)' == 'true'">$(_WasmPublishR2RDir)</_WasmBuildPrebuiltR2RDirectory>
       <_WasmBuildPrebuiltR2RDirectory Condition="'$(PublishTrimmed)' != 'true'">$(_WasmRuntimePackR2RDir)</_WasmBuildPrebuiltR2RDirectory>
       <_WasmPublishPrebuiltR2RDirectory Condition="'$(PublishTrimmed)' == 'true'">$(_WasmPublishR2RDir)</_WasmPublishPrebuiltR2RDirectory>
