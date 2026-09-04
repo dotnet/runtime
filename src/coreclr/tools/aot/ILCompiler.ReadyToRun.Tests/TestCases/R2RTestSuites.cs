@@ -156,12 +156,9 @@ public class R2RTestSuites
 
             List<ReadyToRunMethod> methods = R2RAssert.GetAllMethods(reader);
 
-            // The over-limit method and the one whose call site needs the same type are both left
-            // to the interpreter.
+            // The over-limit method is left to the interpreter.
             Assert.DoesNotContain(methods, method =>
                 method.SignatureString.Contains("TooManyParameters", StringComparison.Ordinal));
-            Assert.DoesNotContain(methods, method =>
-                method.SignatureString.Contains("CallsTooManyParameters", StringComparison.Ordinal));
 
             // Declining costs only those methods, not the assembly's R2R coverage.
             Assert.Contains(methods, method =>
