@@ -53,8 +53,10 @@ namespace Wasm.Build.Tests
             // comparison is textual, so a numerically equal but differently spelled size counts as
             // a mismatch. That only costs an unnecessary relink, never a mismatched binary.
             { "<EmccStackSize>2097152</EmccStackSize>", true },
-            // a non-registry trigger: setting WasmPerformanceInstrumentation always forces a relink
-            { "<WasmPerformanceInstrumentation>all</WasmPerformanceInstrumentation>", true },
+            // WasmPerformanceInstrumentation would force a relink, but that defaulting is temporarily
+            // disabled in BrowserWasmApp.CoreCLR.targets pending https://github.com/dotnet/runtime/issues/132772,
+            // so it currently does not relink.
+            { "<WasmPerformanceInstrumentation>all</WasmPerformanceInstrumentation>", false },
         };
 
         [Theory]
