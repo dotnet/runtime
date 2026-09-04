@@ -415,6 +415,16 @@ namespace System.Net.Security.Tests
             }
         }
 
+        public static IEnumerable<object[]> RevalidateSwitchData()
+        {
+            foreach (SslProtocols protocol in SslProtocolSupport.EnumerateSupportedProtocols(SslProtocols.Tls12 | SslProtocols.Tls13, true))
+            foreach (bool revalidateOnResume in new[] { true, false })
+            foreach (bool testServer in new[] { true, false })
+            {
+                yield return new object[] { protocol, revalidateOnResume, testServer };
+            }
+        }
+
         // By default the peer certificate is not re-validated on a resumed handshake, so the
         // RemoteCertificateValidationCallback is not invoked. Setting the
         // System.Net.Security.RevalidateCertificateOnTlsResume switch restores the previous
@@ -424,11 +434,8 @@ namespace System.Net.Security.Tests
         // value is picked up.
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
-        [InlineData(false, false)]
-        [InlineData(true, false)]
-        [InlineData(false, true)]
-        [InlineData(true, true)]
-        public async Task ResumedHandshake_RevalidateSwitch_ControlsCallback(bool revalidateOnResume, bool testServer)
+        [MemberData(nameof(RevalidateSwitchData))]
+        public async Task ResumedHandshake_RevalidateSwitch_ControlsCallback(SslProtocols protocol, bool revalidateOnResume, bool testServer)
         {
             // Reserve a unique temp path for the skip marker and remove it up-front, so the
             // marker exists only if the child process explicitly creates it to signal that the
@@ -444,8 +451,9 @@ namespace System.Net.Security.Tests
 
             try
             {
-                await RemoteExecutor.Invoke(async (revalidateStr, testServerStr) =>
+                await RemoteExecutor.Invoke(async (protocolStr, revalidateStr, testServerStr) =>
                 {
+                    SslProtocols protocol = Enum.Parse<SslProtocols>(protocolStr);
                     bool revalidate = bool.Parse(revalidateStr);
                     bool onServer = bool.Parse(testServerStr);
 
@@ -465,7 +473,7 @@ namespace System.Net.Security.Tests
 
                     var serverOptions = new SslServerAuthenticationOptions
                     {
-                        EnabledSslProtocols = SslProtocols.Tls12,
+                        EnabledSslProtocols = protocol,
                         ServerCertificateContext = SslStreamCertificateContext.Create(Configuration.Certificates.GetServerCertificate(), null, false),
                         ClientCertificateRequired = onServer,
                         RemoteCertificateValidationCallback = (sender, cert, chain, errors) =>
@@ -477,7 +485,7 @@ namespace System.Net.Security.Tests
                     var clientOptions = new SslClientAuthenticationOptions
                     {
                         TargetHost = Guid.NewGuid().ToString("N"),
-                        EnabledSslProtocols = SslProtocols.Tls12,
+                        EnabledSslProtocols = protocol,
                         CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
                         RemoteCertificateValidationCallback = (sender, cert, chain, errors) =>
                         {
@@ -511,6 +519,12 @@ namespace System.Net.Security.Tests
                                 server.AuthenticateAsServerAsync(serverOptions));
 
                             bool resumed = IsResumed(client);
+                            Assert.Equal(resumed, IsResumed(server));
+
+                            // Exchange application data so the client consumes any post-handshake
+                            // session ticket (TLS 1.3 delivers tickets as application data after the
+                            // handshake), which primes the next connection for resumption.
+                            await TestHelper.PingPong(client, server);
 
                             await client.ShutdownAsync();
                             await server.ShutdownAsync();
@@ -545,7 +559,7 @@ namespace System.Net.Security.Tests
                     {
                         Assert.True(MeasuredCount() == 0, "Validation callback should not run on resumption by default");
                     }
-                }, revalidateOnResume.ToString(), testServer.ToString(), new RemoteInvokeOptions { StartInfo = psi }).DisposeAsync();
+                }, protocol.ToString(), revalidateOnResume.ToString(), testServer.ToString(), new RemoteInvokeOptions { StartInfo = psi }).DisposeAsync();
 
                 if (File.Exists(skipMarker))
                 {
