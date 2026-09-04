@@ -2224,16 +2224,24 @@ namespace System.Net.Security.Tests
                 Task<int> clientRead = clientSsl.ReadAsync(pingBuf).AsTask();
 
                 // Stage the post-handshake CertificateRequest and flush it. This re-arms the
-                // handshake state machine (IsHandshakeComplete flips back to false).
+                // handshake state machine (IsHandshakeComplete flips back to false). The staged
+                // CertificateRequest flight may not fit the destination in a single call, so drain
+                // until the status is no longer DestinationTooSmall before asserting completion.
                 byte[] netOut = new byte[CipherBufSize];
-                TlsOperationStatus reqStatus = session.RequestClientCertificate(netOut, out int produced);
+                TlsOperationStatus reqStatus;
+                do
+                {
+                    reqStatus = session.RequestClientCertificate(netOut, out int produced);
+                    Assert.NotEqual(TlsOperationStatus.Closed, reqStatus);
+                    if (produced > 0)
+                    {
+                        await serverStream.WriteAsync(netOut.AsMemory(0, produced)).AsTask().WaitAsync(TimeSpan.FromSeconds(30));
+                        await serverStream.FlushAsync().WaitAsync(TimeSpan.FromSeconds(30));
+                    }
+                }
+                while (reqStatus == TlsOperationStatus.DestinationTooSmall);
                 Assert.Equal(TlsOperationStatus.Complete, reqStatus);
                 Assert.False(session.IsHandshakeComplete);
-                if (produced > 0)
-                {
-                    await serverStream.WriteAsync(netOut.AsMemory(0, produced)).AsTask().WaitAsync(TimeSpan.FromSeconds(30));
-                    await serverStream.FlushAsync().WaitAsync(TimeSpan.FromSeconds(30));
-                }
 
                 // While the second handshake is in progress, application Read/Write are rejected.
                 byte[] scratch = new byte[CipherBufSize];
@@ -2689,13 +2697,13 @@ namespace System.Net.Security.Tests
             Assert.True(session.IsHandshakeComplete);
 
             TlsOperationStatus status;
-            DateTime shutdownDeadline = DateTime.UtcNow.AddSeconds(30);
+            long shutdownDeadline = Environment.TickCount64 + 30_000;
             while (true)
             {
                 status = session.Shutdown();
                 if (status == TlsOperationStatus.DestinationTooSmall)
                 {
-                    Assert.True(DateTime.UtcNow < shutdownDeadline, "Shutdown() kept returning DestinationTooSmall and did not complete within the timeout.");
+                    Assert.True(Environment.TickCount64 < shutdownDeadline, "Shutdown() kept returning DestinationTooSmall and did not complete within the timeout.");
                     await Task.Delay(5);
                     continue;
                 }
