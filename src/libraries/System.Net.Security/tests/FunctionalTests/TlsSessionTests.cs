@@ -2077,8 +2077,8 @@ namespace System.Net.Security.Tests
 
                 await DriveClientCertNegotiationAsync(session, serverStream).WaitAsync(TimeSpan.FromSeconds(30));
 
-                // The returned certificate lives as long as the session (it is disposed when
-                // the session is disposed), so the test must not dispose it here.
+                // Do not dispose: GetRemoteCertificate can hand back an instance the session still
+                // references, so the test must not dispose it (clone it if it must outlive the session).
                 X509Certificate2? negotiated = session.GetRemoteCertificate();
                 Assert.NotNull(negotiated);
                 Assert.Equal(clientCert.Thumbprint, negotiated!.Thumbprint);
@@ -2142,8 +2142,8 @@ namespace System.Net.Security.Tests
 
                 await DriveClientCertNegotiationAsync(session, serverStream).WaitAsync(TimeSpan.FromSeconds(30));
 
-                // The returned certificate lives as long as the session (it is disposed when
-                // the session is disposed), so the test must not dispose it here.
+                // Do not dispose: GetRemoteCertificate can hand back an instance the session still
+                // references, so the test must not dispose it (clone it if it must outlive the session).
                 X509Certificate2? negotiated = session.GetRemoteCertificate();
                 Assert.NotNull(negotiated);
                 Assert.Equal(clientCert.Thumbprint, negotiated!.Thumbprint);
@@ -2861,8 +2861,8 @@ namespace System.Net.Security.Tests
 
             Assert.True(suspensionObserved, "Server never observed NeedsCertificateValidation during the post-handshake exchange.");
 
-            // The returned certificate lives as long as the session (it is disposed when
-            // the session is disposed), so the test must not dispose it here.
+            // Do not dispose: GetRemoteCertificate can hand back an instance the session still
+            // references, so the test must not dispose it (clone it if it must outlive the session).
             X509Certificate2? negotiated = session.GetRemoteCertificate();
             Assert.NotNull(negotiated);
             Assert.Equal(clientCert.Thumbprint, negotiated!.Thumbprint);
@@ -2951,7 +2951,7 @@ namespace System.Net.Security.Tests
             Assert.Equal(SslPolicyErrors.None, observedErrors & SslPolicyErrors.RemoteCertificateNotAvailable);
             Assert.Equal(SslPolicyErrors.None, observedErrors & SslPolicyErrors.RemoteCertificateNameMismatch);
 
-            // Do not dispose: GetRemoteCertificate returns the session-owned instance.
+            // Do not dispose: GetRemoteCertificate can hand back an instance the session still references (clone it if it must outlive the session).
             X509Certificate2? remote = session.GetRemoteCertificate();
             Assert.NotNull(remote);
             Assert.Equal(serverCert.Thumbprint, remote!.Thumbprint);
@@ -3017,7 +3017,7 @@ namespace System.Net.Security.Tests
                 onSuspend: () =>
                 {
                     suspensionObserved = true;
-                    // GetRemoteCertificate returns the session-owned instance; capture the thumbprint only.
+                    // GetRemoteCertificate can hand back an instance the session still references; capture the thumbprint only.
                     observedThumbprint = session.GetRemoteCertificate()?.Thumbprint;
                     session.SetRemoteCertificateValidationResult(SslPolicyErrors.None);
                 }));
