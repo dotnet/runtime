@@ -22,7 +22,9 @@ namespace System
 
         // By default the peer certificate is not re-validated on a resumed (abbreviated) TLS
         // handshake, matching the behavior of common TLS stacks (e.g. OpenSSL, SChannel) that
-        // do not re-run certificate verification when a session is resumed. Enabling this
+        // do not re-run certificate verification when a session is resumed. This optimization
+        // only applies on platforms where session resumption can be detected (currently Windows
+        // and Linux); elsewhere the peer certificate is always re-validated. Enabling this
         // switch restores the previous behavior of re-validating the peer certificate (running
         // the chain build and the user validation callback) on every successful resumption.
         private static int s_revalidateCertificateOnTlsResume;
