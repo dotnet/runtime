@@ -521,7 +521,12 @@ int32_t CryptoNative_SslDoHandshake(SSL* ssl, int32_t* errorCode)
     // renegotiation and post-handshake client cert requests (mirrors
     // CryptoNative_SslHandshake; this entry point drives socket-bound sessions
     // where OpenSSL owns the fd)
+    // SSL_peek can perform I/O on the fd and mutate errno; save/restore it so the
+    // last error reported to managed code (SetLastError=true) reflects the
+    // SSL_do_handshake attempt rather than the peek.
+    int peekErrno = errno;
     SSL_peek(ssl, NULL, 0);
+    errno = peekErrno;
 
     int32_t ret = SSL_do_handshake(ssl);
     // See CryptoNative_SslWrite: preserve errno across SSL_get_error.
