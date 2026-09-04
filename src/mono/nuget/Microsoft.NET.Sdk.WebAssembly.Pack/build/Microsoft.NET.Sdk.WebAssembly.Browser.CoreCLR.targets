@@ -31,13 +31,17 @@ Copyright (c) .NET Foundation. All rights reserved.
   </PropertyGroup>
 
   <!-- Prebuilt R2R probe dir for ConvertDllsToWebcil (see dotnet/runtime#121257). Webcil staging is the
-       managed pipeline and is independent of the native relink (which WasmBuildOnlyAfterPublish gates), so
-       both build and publish stage framework webcils and both key on PublishTrimmed the same way:
-       untrimmed -> the untrimmed runtime-pack R2R images; trimmed -> the per-app crossgen output for the
-       WHOLE closure including System.Private.CoreLib. A trimmed app is crossgen'd against the trimmed
-       framework (small download, the point on browser), so every image pins the trimmed CoreLib/BCL MVID;
-       staging the untrimmed pack CoreLib instead trips the runtime R2R MVID check. _WasmRuntimePackR2RDir
-       is set here (target time) because _RuntimePackNativeDir is only set by _ResolveGlobalizationConfiguration. -->
+       managed pipeline and is independent of the native relink (which WasmBuildOnlyAfterPublish gates).
+       Trimming is a PUBLISH concern: ILLink only runs during publish, so a dev-loop `dotnet build`/`dotnet run`
+       always ships the untrimmed framework and its BCL must come from the untrimmed runtime-pack R2R images
+       regardless of the SDK's default PublishTrimmed=true. Only under publish does PublishTrimmed select where
+       the framework R2R comes from: untrimmed -> the runtime-pack R2R images; trimmed -> the per-app crossgen
+       output for the WHOLE closure including System.Private.CoreLib (a trimmed app is crossgen'd against the
+       trimmed framework, so every image pins the trimmed CoreLib/BCL MVID; staging the untrimmed pack CoreLib
+       instead trips the runtime R2R MVID check). We are 'under publish' when _IsPublishing is set (outer
+       `dotnet publish`) OR WasmBuildingForNestedPublish is set (the nested publish that does the crossgen);
+       neither is set for a plain dev-loop build. _WasmRuntimePackR2RDir is set here (target time) because
+       _RuntimePackNativeDir is only set by _ResolveGlobalizationConfiguration. -->
   <Target Name="_WasmCoreClrSelectR2RDirectories"
           DependsOnTargets="_ResolveWasmConfiguration">
     <Error Condition="'$(PublishReadyToRun)' == 'true' and '$(PublishReadyToRunComposite)' == 'true'"
@@ -49,8 +53,13 @@ Copyright (c) .NET Foundation. All rights reserved.
     </PropertyGroup>
     <PropertyGroup Condition="'$(PublishReadyToRun)' == 'true'">
       <_WasmPublishR2RDir Condition="'$(_WasmPublishR2RDir)' == ''">$([MSBuild]::NormalizeDirectory('$(IntermediateOutputPath)', 'r2r'))</_WasmPublishR2RDir>
-      <_WasmBuildPrebuiltR2RDirectory Condition="'$(PublishTrimmed)' == 'true'">$(_WasmPublishR2RDir)</_WasmBuildPrebuiltR2RDirectory>
-      <_WasmBuildPrebuiltR2RDirectory Condition="'$(PublishTrimmed)' != 'true'">$(_WasmRuntimePackR2RDir)</_WasmBuildPrebuiltR2RDirectory>
+      <!-- 'Under publish' = outer publish (_IsPublishing) or the nested publish worker (WasmBuildingForNestedPublish). -->
+      <_WasmR2RUnderPublish Condition="'$(_IsPublishing)' == 'true' or '$(WasmBuildingForNestedPublish)' == 'true'">true</_WasmR2RUnderPublish>
+      <!-- Dev-loop build never trims -> BCL always from the untrimmed pack R2R (ignore PublishTrimmed). -->
+      <_WasmBuildPrebuiltR2RDirectory Condition="'$(_WasmR2RUnderPublish)' != 'true'">$(_WasmRuntimePackR2RDir)</_WasmBuildPrebuiltR2RDirectory>
+      <!-- Under publish the build sub-phase mirrors the publish selection so it is superseded cleanly. -->
+      <_WasmBuildPrebuiltR2RDirectory Condition="'$(_WasmR2RUnderPublish)' == 'true' and '$(PublishTrimmed)' == 'true'">$(_WasmPublishR2RDir)</_WasmBuildPrebuiltR2RDirectory>
+      <_WasmBuildPrebuiltR2RDirectory Condition="'$(_WasmR2RUnderPublish)' == 'true' and '$(PublishTrimmed)' != 'true'">$(_WasmRuntimePackR2RDir)</_WasmBuildPrebuiltR2RDirectory>
       <_WasmPublishPrebuiltR2RDirectory Condition="'$(PublishTrimmed)' == 'true'">$(_WasmPublishR2RDir)</_WasmPublishPrebuiltR2RDirectory>
       <_WasmPublishPrebuiltR2RDirectory Condition="'$(PublishTrimmed)' != 'true'">$(_WasmRuntimePackR2RDir)</_WasmPublishPrebuiltR2RDirectory>
     </PropertyGroup>
@@ -111,5 +120,23 @@ Copyright (c) .NET Foundation. All rights reserved.
           Condition="'$(PublishReadyToRun)' == 'true' and '$(PublishReadyToRunComposite)' != 'true' and '$(WasmBuildingForNestedPublish)' != 'true'"
           DependsOnTargets="CreateReadyToRunImages"
           BeforeTargets="ProcessPublishFilesForWasm" />
+
+  <!-- Per-app crossgen must be conservative: a single assembly (or the crossgen2/JIT) change has to recompile
+       EVERY per-app R2R image, because cross-module inlining (opt-cross-module) lets any image inline from any
+       other and a stale image fail-fasts at startup (the runtime R2R MVID check). _CreateR2RImages batches its
+       Outputs per assembly (%(_ReadyToRunCompileList.OutputR2RImage)) which alone would rebuild only the changed
+       image; adding the whole compile+reference closure and the wasm JIT as non-correlated _ReadyToRunCompilerInputs
+       makes the whole target re-run on any change. Mirrors the framework build's sfxproj _ReadyToRunCompilerInputs
+       (dotnet/runtime#121257). Runs after _PrepareForReadyToRunCompilation (populates the lists) and before
+       _CreateR2RImages evaluates its Inputs. -->
+  <Target Name="_WasmCoreClrConservativeR2RInputs"
+          Condition="'$(PublishReadyToRun)' == 'true' and '$(PublishReadyToRunComposite)' != 'true'"
+          BeforeTargets="_CreateR2RImages">
+    <ItemGroup>
+      <_ReadyToRunCompilerInputs Include="@(_ReadyToRunCompileList);@(_ReadyToRunAssembliesToReference)" />
+      <_ReadyToRunCompilerInputs Include="$(_WasmResolvedCrossgen2Dir)clrjit_universal_wasm_*"
+                                 Condition="'$(_WasmResolvedCrossgen2Dir)' != ''" />
+    </ItemGroup>
+  </Target>
 
 </Project>

@@ -290,6 +290,18 @@
       <HelixCorrelationPayload Include="$(MonoTargetsTasksDir)"                  Destination="build/MonoTargetsTasks" />
     </ItemGroup>
 
+    <!-- CoreCLR ReadyToRun: ship the in-build crossgen2 tool + the wasm-aware Crossgen2Tasks shim so the
+         Wasm.Build.Tests ReadyToRun opt-in (ReadyToRunTests.GetR2RBuildArgs) resolves them under BASE_DIR
+         (= HELIX_CORRELATION_PAYLOAD). Until the wasm crossgen2 support flows through the base SDK
+         (dotnet/sdk#55785), this is how per-app publish R2R gets a wasm crossgen2 on the Helix worker.
+         Inert when crossgen2 isn't built. -->
+    <ItemGroup Condition="'$(NeedsEMSDK)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR' and Exists('$(Crossgen2InBuildDir)')">
+      <HelixCorrelationPayload Include="$(Crossgen2InBuildDir)"                  Destination="coreclr/browser.wasm.$(Configuration)/$(BuildArchitecture)/crossgen2" />
+      <HelixCorrelationPayload Include="$(ArtifactsBinDir)Crossgen2Tasks\$(TasksConfiguration)\"
+                               Condition="Exists('$(ArtifactsBinDir)Crossgen2Tasks\$(TasksConfiguration)\')"
+                               Destination="Crossgen2Tasks/$(Configuration)" />
+    </ItemGroup>
+
     <!-- copy node separately only if EMSDK is not being included -->
     <ItemGroup Condition="'$(IncludeNodePayload)' == 'true'">
       <HelixCorrelationPayload Include="$(EmSdkDirForHelixPayload)node"          Destination="build/emsdk-node" />
