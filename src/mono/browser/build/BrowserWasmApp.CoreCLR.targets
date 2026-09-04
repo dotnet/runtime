@@ -218,7 +218,7 @@
          pack only ships thunks for the framework's own [UnmanagedCallersOnly] methods. -->
     <PropertyGroup Condition="'$(WasmBuildingForNestedPublish)' == 'true'">
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(PublishTrimmed)' != 'true'">false</WasmBuildNative>
-      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(Configuration)' == 'Release' and '$(_WasmInTreeDefaults)' != 'false'">true</WasmBuildNative>
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(Configuration)' == 'Release' and '$(WasmBuildNativeImplicitInReleaseConfiguration)' != 'false'">true</WasmBuildNative>
     </PropertyGroup>
   </Target>
 

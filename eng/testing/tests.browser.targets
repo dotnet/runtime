@@ -16,6 +16,7 @@
     <PublishTrimmed Condition="'$(TestFramework)' == 'GeneratedRunner'">false</PublishTrimmed>
     <PublishTrimmed Condition="'$(RunAOTCompilation)' == 'true' or '$(PublishReadyToRun)' == 'true' or '$(TestTrimming)' == 'true'">true</PublishTrimmed>
     <_WasmInTreeDefaults>false</_WasmInTreeDefaults>
+    <WasmBuildNativeImplicitInReleaseConfiguration>false</WasmBuildNativeImplicitInReleaseConfiguration>
 
     <ResolveWasmOutputsDependsOn>
       $(ResolveWasmOutputsDependsOn);
