@@ -1439,22 +1439,26 @@ namespace System.Net.Security
         private protected TlsOperationStatus RequestClientCertificateBufferedCore(Span<byte> ciphertext, out int bytesWritten)
         {
             ThrowIfDisposed();
+            ThrowIfContextNotSet();
             // Like Read/Write, post-handshake client authentication is a top-level session
             // operation: if the previous handshake surfaced NeedsCertificateValidation the
             // caller must record the result (or observe the recorded fault) before starting it.
             ThrowIfPendingExternalValidation();
             bytesWritten = 0;
 
-#if TARGET_APPLE
-            // SecureTransport does not expose a post-handshake client-authentication
-            // path, and Network.framework does not provide renegotiation primitives.
-            throw new PlatformNotSupportedException(SR.net_ssl_renegotiate_not_supported);
-#else
+            // Post-handshake client authentication is a server-only operation. Enforce the role
+            // guard before the Apple platform check so client-session misuse consistently surfaces
+            // InvalidOperationException on every platform rather than PlatformNotSupportedException.
             if (!_context!.IsServer)
             {
                 throw new InvalidOperationException(SR.net_tlssession_request_client_cert_server_only);
             }
 
+#if TARGET_APPLE
+            // SecureTransport does not expose a post-handshake client-authentication
+            // path, and Network.framework does not provide renegotiation primitives.
+            throw new PlatformNotSupportedException(SR.net_ssl_renegotiate_not_supported);
+#else
             if (!_postHandshakeAuthActive)
             {
                 if (!_isHandshakeComplete || _securityContext == null || _securityContext.IsInvalid)
