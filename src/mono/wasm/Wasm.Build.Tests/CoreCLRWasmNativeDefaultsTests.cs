@@ -19,7 +19,7 @@ namespace Wasm.Build.Tests
     public class CoreCLRWasmNativeDefaultsTests : WasmTemplateTestsBase
     {
         private static readonly Regex s_regex = new("\\*\\* WasmBuildNative:.*");
-        private static readonly Regex s_r2rDirectoryRegex = new("\\*\\* WasmPublishR2RDir: '(.*)'");
+        private static readonly Regex s_r2rDirectoryRegex = new("\\*\\* WasmPublishR2RDir: '([^']*)'");
 
         public CoreCLRWasmNativeDefaultsTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
             : base(output, buildContext)
