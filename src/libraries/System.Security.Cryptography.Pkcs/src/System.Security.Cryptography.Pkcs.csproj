@@ -9,7 +9,6 @@
     <NoWarn>$(NoWarn);CA5384</NoWarn>
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
     <IsPackable>true</IsPackable>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageDescription>Provides support for PKCS and CMS algorithms.
 
 Commonly Used Types:
