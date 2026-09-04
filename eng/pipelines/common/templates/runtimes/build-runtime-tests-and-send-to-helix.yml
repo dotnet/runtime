@@ -40,6 +40,7 @@ steps:
       buildConfig: ${{ parameters.buildConfig }}
       testBuildArgs: ${{ parameters.testBuildArgs }}
       buildAllTestsAsStandalone: ${{ parameters.buildAllTestsAsStandalone }}
+      condition: ${{ parameters.condition }}
   # Build a Mono AOT cross-compiler for non-amd64 targets (in this case, just arm64)
   - ${{ if and(eq(parameters.runtimeFlavor, 'mono'), in(parameters.runtimeVariant, 'llvmaot', 'llvmfullaot', 'minifullaot')) }}:
     - ${{ if eq(parameters.archType, 'arm64') }}:
@@ -52,6 +53,7 @@ steps:
                   /p:BuildMonoAotCrossCompilerOnly=true
                   /p:CrossBuild=true
           displayName: "Build Mono Mini AOT cross compiler"
+          condition: and(succeeded(), ${{ parameters.condition }})
       - ${{ else }}:
         - script: ./build.sh
                   -subset mono
@@ -62,34 +64,36 @@ steps:
                   /p:MonoAOTEnableLLVM=true
                   /p:CrossBuild=true
           displayName: "Build Mono LLVM AOT cross compiler"
+          condition: and(succeeded(), ${{ parameters.condition }})
 
     - ${{ if eq(parameters.archType, 'x64') }}:
       - ${{ if eq(parameters.runtimeVariant, 'llvmaot') }}:
         - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)MonoAot mono_aot ${{ parameters.buildConfig }} -arch ${{ parameters.archType }} /p:RuntimeVariant=${{ parameters.runtimeVariant }}
           displayName: "AOT compile CoreCLR tests"
+          condition: and(succeeded(), ${{ parameters.condition }})
           target: ${{ coalesce(parameters.llvmAotStepContainer, parameters.container) }}
       - ${{ if in(parameters.runtimeVariant, 'llvmfullaot', 'minifullaot') }}:
         - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)MonoAot mono_fullaot ${{ parameters.buildConfig }} -arch ${{ parameters.archType }} /p:RuntimeVariant=${{ parameters.runtimeVariant }} -maxcpucount:1
           displayName: "AOT compile CoreCLR tests"
+          condition: and(succeeded(), ${{ parameters.condition }})
           target: ${{ coalesce(parameters.llvmAotStepContainer, parameters.container) }}
     - ${{ if eq(parameters.archType, 'arm64') }}:
       - ${{ if eq(parameters.runtimeVariant, 'llvmaot') }}:
         - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)MonoAot mono_aot ${{ parameters.buildConfig }} -arch ${{ parameters.archType }} cross /p:RuntimeVariant=${{ parameters.runtimeVariant }} -maxcpucount:2
           displayName: "AOT cross-compile CoreCLR tests"
+          condition: and(succeeded(), ${{ parameters.condition }})
           env:
             __MonoToolPrefix: aarch64-linux-gnu-
       - ${{ if in(parameters.runtimeVariant, 'llvmfullaot', 'minifullaot') }}:
         - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)MonoAot mono_fullaot ${{ parameters.buildConfig }} -arch ${{ parameters.archType }} cross /p:RuntimeVariant=${{ parameters.runtimeVariant }} -maxcpucount:2
           displayName: "AOT cross-compile CoreCLR tests"
+          condition: and(succeeded(), ${{ parameters.condition }})
           env:
             __MonoToolPrefix: aarch64-linux-gnu-
 
-  # Build the runtime tests above, but only send them to Helix when sendToHelix is true.
-  # This is a compile-time exclusion (not a runtime condition): send-to-helix-inner-step.yml
-  # wraps the passed-in condition into a string and compares it with ne(condition, false), so a
-  # runtime 'condition: false' is swallowed and the send runs anyway. Excluding the template keeps
-  # build coverage while reliably skipping execution on engines that can't run the tests yet
-  # (e.g. browser/V8 without exnref support).
+  # Build the runtime tests above, but only include the Helix submission when sendToHelix is true.
+  # Engines that cannot run the tests yet (e.g. browser/V8 without exnref support) still retain
+  # build coverage without instantiating a send step.
   - ${{ if eq(parameters.sendToHelix, true) }}:
     - template: /eng/pipelines/common/templates/runtimes/send-to-helix-step.yml
       parameters:
@@ -120,6 +124,8 @@ steps:
         # This tests whether an array is empty
         ${{ if eq(join('', parameters.helixQueues), '') }}:
           condition: false
+        ${{ else }}:
+          condition: ${{ parameters.condition }}
         publishTestResults: true
         timeoutPerTestInMinutes: $(timeoutPerTestInMinutes)
         timeoutPerTestCollectionInMinutes: $(timeoutPerTestCollectionInMinutes)

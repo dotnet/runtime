@@ -188,17 +188,16 @@ extends:
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          helixQueueGroup: pr
           buildConfig: checked
           platforms:
           - browser_wasm
           jobParameters:
             nameSuffix: CoreCLR_ReleaseLibraries
             buildArgs: -s clr+libs+libs.tests+packs -c Release -rc $(_BuildConfig) /p:TestAssemblies=false /p:ArchiveTests=true /p:InstallWorkloadForTesting=false
-            timeoutInMinutes: 120
+            timeoutInMinutes: 180
             postBuildSteps:
-              - template: /eng/pipelines/coreclr/templates/build-native-test-assets-step.yml
-                parameters:
-                  extraBuildArgs: -os browser
               - template: /eng/pipelines/common/upload-artifact-step.yml
                 parameters:
                   rootFolder: $(Build.SourcesDirectory)/artifacts/bin
@@ -220,14 +219,17 @@ extends:
                 parameters:
                   publishArtifactsForWorkload: true
                   publishWBT: true
+              - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+                parameters:
+                  creator: dotnet-bot
+                  testBuildArgs: -os browser /p:HostConfiguration=Release
+                  testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
                 parameters:
                   testGroup: innerloop
                   liveLibrariesBuildConfig: Release
-              - template: /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
-                parameters:
-                  testGroup: innerloop
             condition: >-
               or(
                 eq(variables['wasmDarcDependenciesChanged'], true),
@@ -433,7 +435,7 @@ extends:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           helixQueueGroup: libraries
-          buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+          buildConfig: checked
           platforms:
           - linux_arm64
           - osx_arm64
@@ -442,26 +444,19 @@ extends:
               value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
             - name: coreclrContainsChange
               value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'] ]
+            - name: runtimeTestsContainsChange
+              value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'] ]
           jobParameters:
             nameSuffix: Libraries_CheckedCoreCLR
-            buildArgs: -s clr+libs+libs.tests -c $(_BuildConfig) -rc Checked /p:ArchiveTests=true
-            timeoutInMinutes: 120
+            buildArgs: -s clr+libs+libs.tests -c ${{ variables.debugOnPrReleaseOnRolling }} -rc $(_BuildConfig) /p:ArchiveTests=true
+            timeoutInMinutes: 180
             preBuildSteps:
               - template: /eng/pipelines/coreclr/templates/setup-sccache.yml
             postBuildSteps:
               - template: /eng/pipelines/coreclr/templates/sccache-stats.yml
-              - template: /eng/pipelines/coreclr/templates/build-native-test-assets-step.yml
-              - template: /eng/pipelines/common/upload-artifact-step.yml
-                parameters:
-                  rootFolder: $(Build.SourcesDirectory)/artifacts/bin
-                  includeRootFolder: false
-                  archiveType: $(archiveType)
-                  archiveExtension: $(archiveExtension)
-                  tarCompression: $(tarCompression)
-                  artifactName: Libraries_CheckedCoreCLR_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
-                  displayName: Build Assets
               - template: /eng/pipelines/libraries/helix.yml
                 parameters:
+                  helixBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: coreclr_checked
                   testScope: innerloop
@@ -473,11 +468,21 @@ extends:
                         eq(variables['osGroup'], 'osx'),
                         eq(variables['librariesContainsChange'], true)),
                       eq(variables['isRollingBuild'], true))
+              - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+                parameters:
+                  creator: dotnet-bot
+                  testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
+                  condition: >-
+                    or(
+                      eq(variables['coreclrContainsChange'], true),
+                      eq(variables['runtimeTestsContainsChange'], true),
+                      eq(variables['isRollingBuild'], true))
             extraVariablesTemplates:
-              - template: /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
+              - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
                 parameters:
                   testGroup: innerloop
-                  configOverride: Checked
+                  liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
@@ -488,33 +493,30 @@ extends:
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          helixQueueGroup: pr
+          buildConfig: checked
           platforms:
           - linux_x64
           - windows_x64
           jobParameters:
             nameSuffix: Libraries_CheckedCoreCLR
-            buildArgs: -s clr+clr.wasmjit+libs -c $(_BuildConfig) -rc Checked
-            timeoutInMinutes: 120
+            buildArgs: -s clr+clr.wasmjit+libs -c ${{ variables.debugOnPrReleaseOnRolling }} -rc $(_BuildConfig)
+            timeoutInMinutes: 180
             preBuildSteps:
               - template: /eng/pipelines/coreclr/templates/setup-sccache.yml
             postBuildSteps:
               - template: /eng/pipelines/coreclr/templates/sccache-stats.yml
-              - template: /eng/pipelines/coreclr/templates/build-native-test-assets-step.yml
-              - template: /eng/pipelines/common/upload-artifact-step.yml
+              - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
                 parameters:
-                  rootFolder: $(Build.SourcesDirectory)/artifacts/bin
-                  includeRootFolder: false
-                  archiveType: $(archiveType)
-                  archiveExtension: $(archiveExtension)
-                  tarCompression: $(tarCompression)
-                  artifactName: Libraries_CheckedCoreCLR_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
-                  displayName: Build Assets
+                  creator: dotnet-bot
+                  testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
             extraVariablesTemplates:
-              - template: /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
+              - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
                 parameters:
                   testGroup: innerloop
-                  configOverride: Checked
+                  liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
@@ -565,32 +567,29 @@ extends:
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          helixQueueGroup: pr
+          buildConfig: checked
           platforms:
           - osx_x64
           jobParameters:
             nameSuffix: Libraries_CheckedCoreCLR
-            buildArgs: -s clr+libs -c $(_BuildConfig) -rc Checked
-            timeoutInMinutes: 120
+            buildArgs: -s clr+libs -c ${{ variables.debugOnPrReleaseOnRolling }} -rc $(_BuildConfig)
+            timeoutInMinutes: 180
             preBuildSteps:
               - template: /eng/pipelines/coreclr/templates/setup-sccache.yml
             postBuildSteps:
               - template: /eng/pipelines/coreclr/templates/sccache-stats.yml
-              - template: /eng/pipelines/coreclr/templates/build-native-test-assets-step.yml
-              - template: /eng/pipelines/common/upload-artifact-step.yml
+              - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
                 parameters:
-                  rootFolder: $(Build.SourcesDirectory)/artifacts/bin
-                  includeRootFolder: false
-                  archiveType: $(archiveType)
-                  archiveExtension: $(archiveExtension)
-                  tarCompression: $(tarCompression)
-                  artifactName: Libraries_CheckedCoreCLR_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
-                  displayName: Build Assets
+                  creator: dotnet-bot
+                  testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
             extraVariablesTemplates:
-              - template: /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
+              - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
                 parameters:
                   testGroup: innerloop
-                  configOverride: Checked
+                  liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
@@ -600,6 +599,8 @@ extends:
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          helixQueueGroup: pr
           buildConfig: checked
           platforms:
           - linux_arm
@@ -608,9 +609,8 @@ extends:
           jobParameters:
             nameSuffix: CoreCLR_ReleaseLibraries
             buildArgs: -s clr+libs -rc $(_BuildConfig) -c Release
-            timeoutInMinutes: 120
+            timeoutInMinutes: 180
             postBuildSteps:
-              - template: /eng/pipelines/coreclr/templates/build-native-test-assets-step.yml
               - template: /eng/pipelines/common/upload-artifact-step.yml
                 parameters:
                   rootFolder: $(Build.SourcesDirectory)/artifacts/bin
@@ -620,10 +620,17 @@ extends:
                   tarCompression: $(tarCompression)
                   artifactName: CoreCLR_ReleaseLibraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
                   displayName: Build Assets
+                  condition: and(succeeded(), eq(variables['osGroup'], 'linux'), eq(variables['archType'], 'arm'))
+              - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+                parameters:
+                  creator: dotnet-bot
+                  testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
             extraVariablesTemplates:
-              - template: /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
+              - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
                 parameters:
                   testGroup: innerloop
+                  liveLibrariesBuildConfig: Release
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
@@ -1888,99 +1895,6 @@ extends:
                   useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
-
-      #
-      # CoreCLR Test builds using live libraries release build
-      # Only when CoreCLR is changed
-      #
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
-          buildConfig: checked
-          platforms:
-          - CoreClrTestBuildHost # Either osx_x64 or linux_x64
-          jobParameters:
-            testGroup: innerloop
-            condition: >-
-              or(
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
-
-      #
-      # CoreCLR Test executions using live libraries
-      # Only when CoreCLR is changed
-      #
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
-          buildConfig: checked
-          platforms:
-          - linux_arm
-          - windows_x86
-          - windows_arm64
-          helixQueueGroup: pr
-          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-          jobParameters:
-            testGroup: innerloop
-            liveLibrariesBuildConfig: Release
-            unifiedArtifactsName: CoreCLR_ReleaseLibraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
-            unifiedBuildNameSuffix: CoreCLR_ReleaseLibraries
-            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
-            condition: >-
-              or(
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
-
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
-          buildConfig: checked
-          platforms:
-          - browser_wasm
-          helixQueueGroup: pr
-          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-          jobParameters:
-            testGroup: innerloop
-            liveLibrariesBuildConfig: Release
-            unifiedArtifactsName: CoreCLR_ReleaseLibraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_hostedOs)_$(_BuildConfig)
-            unifiedBuildNameSuffix: CoreCLR_ReleaseLibraries
-            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
-            extraBuildArgs: -os browser -p:HostConfiguration=Release
-            condition: >-
-              or(
-                eq(variables['wasmDarcDependenciesChanged'], true),
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_wasm_coreclr_runtimetests.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
-
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
-          buildConfig: checked
-          platforms:
-          - osx_arm64
-          - osx_x64
-          - linux_x64
-          - linux_arm64
-          - windows_x64
-          helixQueueGroup: pr
-          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-          jobParameters:
-            testGroup: innerloop
-            liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-            unifiedArtifactsName: Libraries_CheckedCoreCLR_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(debugOnPrReleaseOnRolling)
-            unifiedBuildNameSuffix: Libraries_CheckedCoreCLR
-            unifiedBuildConfigOverride: ${{ variables.debugOnPrReleaseOnRolling }}
-            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
-            condition: >-
-              or(
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
 
       #
       # Build and test Mono Interpreter with the libraries testss
