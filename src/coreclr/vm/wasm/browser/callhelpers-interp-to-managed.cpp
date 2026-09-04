@@ -674,7 +674,7 @@ namespace
     }
 }
 
-const StringToWasmSigThunk g_wasmThunks[] = {
+const StringToPortableSigThunk g_portableCallHelperThunks[] = {
     { "Mddddp", (void*)&CallFunc_F64_F64_F64_RetF64_PE },
     { "Mdddp", (void*)&CallFunc_F64_F64_RetF64_PE },
     { "Mddip", (void*)&CallFunc_F64_I32_RetF64_PE },
@@ -781,4 +781,4 @@ const StringToWasmSigThunk g_wasmThunks[] = {
     { "Mvp", (void*)&CallFunc_Void_RetVoid_PE }
 };
 
-const size_t g_wasmThunksCount = sizeof(g_wasmThunks) / sizeof(g_wasmThunks[0]);
+const size_t g_portableCallHelperThunksCount = sizeof(g_portableCallHelperThunks) / sizeof(g_portableCallHelperThunks[0]);

@@ -209,7 +209,7 @@ jobs:
         - browser_wasm_win
       jobParameters:
         nameSuffix: CoreCLR
-        buildArgs: -s clr+libs+packs -c Release -rc $(_BuildConfig) /p:TestAssemblies=false /p:InstallWorkloadForTesting=false
+        buildArgs: -s clr+libs+packs -c Release -rc $(_BuildConfig) /p:TestAssemblies=false /p:InstallWorkloadForTesting=false /p:BuildCrossgen2HostPackForWorkloadTesting=true
         timeoutInMinutes: 120
         postBuildSteps:
           - template: /eng/pipelines/common/wasm-post-build-steps.yml

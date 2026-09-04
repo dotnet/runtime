@@ -11279,7 +11279,9 @@ void CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,               /* IN
         helperMD = GetMethodDescForILBasedDynamicJitHelper(dynamicFtnNum);
         _ASSERTE(PortableEntryPoint::GetMethodDesc((PCODE)targetAddr) == helperMD);
 #ifdef FEATURE_READYTORUN
-        _ASSERTE(PortableEntryPoint::GetActualCode((PCODE)targetAddr) != NULL);
+        // With R2R disabled the helper runs interpreted and its portable entry point has no native
+        // code; the published-native-code invariant only holds when ReadyToRun is enabled.
+        _ASSERTE(!g_pConfig->ReadyToRun() || PortableEntryPoint::GetActualCode((PCODE)targetAddr) != NULL);
 #endif
     }
 

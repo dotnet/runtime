@@ -450,6 +450,25 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
         }
     }
 
+    internal sealed class WasmPaddedI32ConstExpr : WasmExpr
+    {
+        private readonly int _value;
+
+        public WasmPaddedI32ConstExpr(int value) : base(WasmExprKind.I32Const)
+        {
+            _value = value;
+        }
+
+        public override int EncodeSize() => base.EncodeSize() + Relocation.WASM_PADDED_RELOC_SIZE_32;
+
+        public override int Encode(Span<byte> buffer)
+        {
+            int pos = base.Encode(buffer);
+            DwarfHelper.WritePaddedSLEB128(buffer.Slice(pos, Relocation.WASM_PADDED_RELOC_SIZE_32), _value);
+            return pos + Relocation.WASM_PADDED_RELOC_SIZE_32;
+        }
+    }
+
     internal sealed class WasmIndirectCallInstruction : WasmExpr
     {
         private ISymbolNode _type;
@@ -815,6 +834,10 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
         public static WasmExpr Const(long value)
         {
             return new WasmConstExpr(WasmExprKind.I32Const, value);
+        }
+        public static WasmExpr PaddedConst(int value)
+        {
+            return new WasmPaddedI32ConstExpr(value);
         }
         public static WasmExpr ConstRVA(ISymbolNode symbolNode)
         {
