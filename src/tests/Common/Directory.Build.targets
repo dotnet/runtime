@@ -99,6 +99,12 @@
           TargetDir="build/"/>
     </ItemGroup>
 
+    <ItemGroup Condition="'$(TargetOS)' == 'wasi' and '$(RuntimeFlavor)' == 'coreclr'">
+      <RunTimeDependencyCopyLocal
+        Include="$(RepositoryEngineeringDir)wasi-r2r/pipeline_shim.py"
+        TargetDir="wasi-r2r/" />
+    </ItemGroup>
+
     <ItemGroup>
       <RunTimeDependencyCopyLocal Include="$(CoreDisToolsLibrary)" Condition="$(CopyCoreDisToolsToCoreRoot)" />
     </ItemGroup>

@@ -85,6 +85,29 @@ The activation log alone is not proof that a method executed from the composite.
 check, break on the app method's wasm function from the final component; an interpreted fallback
 cannot hit a breakpoint inside the R2R body.
 
+### Runtime tests
+
+The WASI runtime-test pipeline has separate interpreter and `R2R_CG2` legs. The R2R leg uses
+Checked CoreCLR with Release libraries. Like the browser R2R leg, it compiles each merged runner
+and its test assemblies at execution time. Unlike browser, it compiles them as one composite and
+splices that composite into a private copy of `CORE_ROOT/corerun`.
+
+The generated Bash wrappers enable this path with `RunCrossGen2=1`. They stage the assembly stubs
+under `IL-CG2/wasi-r2r/comp`, run the splice from `CORE_ROOT/wasi-r2r/pipeline_shim.py`, and launch
+`IL-CG2/wasi-r2r/corerun-composite.wasm`. `APP_ASSEMBLIES=EXTERNAL` enables the host's assembly
+probe, `CORE_LIBRARIES` points it at these stubs, and `TEST_READY_TO_RUN_MODE=1` reaches the guest
+for R2R-specific test conditions.
+Without `RunCrossGen2`, the wrapper uses the unmodified interpreter host and does not probe those
+stubs. Composition failures fail the test rather than falling back to interpretation.
+
+Helix receives pinned Binaryen and `wasm-tools` binaries through a separate correlation payload,
+provisioned by `eng/testing/wasi-r2r-provisioning.targets`; it does not need these tools preinstalled
+in the queue image. Local runs need the same tools and Python 3 on `PATH`.
+
+The runtime-test path compiles only the test assemblies, not the framework. It uses the shared
+corerun's reserved image buffer and table slots, whose bounds the splice checks before merging.
+Publish still sizes and relinks its host from the complete app/framework composite.
+
 ### Cost at framework scale
 
 Measured on a 232,673-function framework composite (post-#132906, so 4 exports and a 28.8 MB `name`

@@ -272,7 +272,7 @@ fi
            block below and the matching block in corerun.cpp. wasmtime
            is expected to already be on PATH (provisioned via
            wasi-provisioning.targets or installed manually). -->
-      <CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true' and '$(TargetOS)' == 'wasi'">wasmtime run -W exceptions=y -S http --dir "$PWD::/" --dir "$CORE_ROOT::/core" --env CORE_ROOT=/core --env DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=true --env DOTNET_WASI_PRINT_EXIT_CODE=1 "$CORE_ROOT/corerun" $(CoreRunArgs)  ${__DotEnvArg}</CLRTestRunFile>
+      <CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true' and '$(TargetOS)' == 'wasi'">wasmtime run -W exceptions=y -S http --dir "$PWD::/" --dir "$CORE_ROOT::/core" --env CORE_ROOT=/core --env DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=true --env DOTNET_WASI_PRINT_EXIT_CODE=1 ${__WasiR2RArgs} "$__WasiCorerun" $(CoreRunArgs)  ${__DotEnvArg}</CLRTestRunFile>
       <WatcherRunFile>"$CORE_ROOT/watchdog" $_WatcherTimeoutMins</WatcherRunFile>
       <!-- WASI has no watchdog binary in Core_Root (skipped in
            src/coreclr/CMakeLists.txt for wasm targets); use coreutils
@@ -384,6 +384,19 @@ fi
 # src/mono/wasm/host/wasi/WasiEngineHost.cs). We run under wasmtime, tee
 # stderr to a temp file, and grep the marker back out as the test's
 # effective exit code.
+__WasiCorerun="$CORE_ROOT/corerun"
+__WasiR2RArgs=
+if [ ! -z ${RunCrossGen2+x} ] && [ "$(CrossGenTest)" != "false" ]; then
+  __WasiCorerun="$PWD/IL-CG2/wasi-r2r/corerun-composite.wasm"
+  if [ ! -f "$__WasiCorerun" ]; then
+    echo "The WASI ReadyToRun host was not produced: $__WasiCorerun"
+    exit 1
+  fi
+  # Keep the probe's stubs private to this host, so a subsequent interpreter run
+  # cannot discover a composite that is not spliced into its own corerun.
+  __WasiR2RArgs="--env TEST_READY_TO_RUN_MODE=1 --env APP_ASSEMBLIES=EXTERNAL --env CORE_LIBRARIES=/IL-CG2/wasi-r2r"
+fi
+
 _DebuggerArgsSeparator=
 if [[ "$_DebuggerFullPath" == *lldb* ]];
 then
