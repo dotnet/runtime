@@ -1428,7 +1428,7 @@ namespace System.Net.Security
         /// The generated handshake bytes are staged into the pending-output
         /// buffer (drained into <paramref name="ciphertext"/>). The caller must
         /// send them to the peer and then drive the second handshake to
-        /// completion via <see cref="TlsBufferSession.Handshake(ReadOnlySpan{byte}, Span{byte}, out int, out int)"/>,
+        /// completion via <see cref="TlsBufferSession.Handshake"/>,
         /// exactly like the initial handshake: it re-surfaces
         /// <see cref="TlsOperationStatus.NeedsCertificateValidation"/> (re-running the
         /// remote-certificate validation callback) and finally returns
