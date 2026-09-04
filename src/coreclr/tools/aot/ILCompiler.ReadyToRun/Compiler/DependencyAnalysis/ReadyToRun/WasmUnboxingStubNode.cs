@@ -72,6 +72,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
 
             result = _signature.FuncType.CompareTo(otherNode._signature.FuncType);
+            if (result != 0)
+            {
+                return result;
+            }
+
+            result = comparer.Compare(_targetType, otherNode._targetType);
             return result != 0 ? result : _hasReturnBuffer.CompareTo(otherNode._hasReturnBuffer);
         }
 
