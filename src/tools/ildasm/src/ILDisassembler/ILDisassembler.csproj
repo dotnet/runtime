@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <EnableDefaultCompileItems>true</EnableDefaultCompileItems>
+    <Nullable>enable</Nullable>
+    <IsAotCompatible>true</IsAotCompatible>
+    <IsShipping>false</IsShipping>
+  </PropertyGroup>
+
+  <!-- 
+    This library uses System.Reflection.Metadata and System.Reflection.PortableExecutable 
+    which are inbox in the target framework, no additional packages needed.
+  -->
+
+</Project>
