@@ -17,6 +17,10 @@ include_directories(${CLR_SRC_NATIVE_DIR}/libs/Common)
 add_definitions(-DUNICODE)
 add_definitions(-D_UNICODE)
 
+if(NOT CLR_CMAKE_TARGET_APPLE AND NOT CLR_CMAKE_TARGET_ARCH_WASM AND NOT CLR_CMAKE_TARGET_OPENBSD)
+    add_definitions(-DFEATURE_READONLY_GS_COOKIE)
+endif()
+
 if(CLR_CMAKE_TARGET_ANDROID OR CLR_CMAKE_TARGET_OPENBSD)
     # OpenBSD's ld.so cannot resolve native TLS relocations in shared objects and has no
     # __tls_get_addr, so the runtime must use emulated TLS (like Android).

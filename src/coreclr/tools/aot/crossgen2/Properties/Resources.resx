@@ -282,8 +282,20 @@
   <data name="TargetArchOption" xml:space="preserve">
     <value>Target architecture for cross compilation</value>
   </data>
+  <data name="TargetAllowsRuntimeCodeGenerationOption" xml:space="preserve">
+    <value>Override whether the target supports runtime code generation</value>
+  </data>
   <data name="TargetOSOption" xml:space="preserve">
     <value>Target OS for cross compilation</value>
+  </data>
+  <data name="GeneratePortableCallHelpersOption" xml:space="preserve">
+    <value>Generate the portable entry point call helper sources into the given directory instead of compiling</value>
+  </data>
+  <data name="DirectPInvokeOption" xml:space="preserve">
+    <value>Name of a statically linked native module P/Invokes may resolve against</value>
+  </data>
+  <data name="GeneratePortableCallHelpersRequiresWasmTarget" xml:space="preserve">
+    <value>--generate-portable-callhelpers requires --targetarch wasm together with --targetos browser or --targetos wasi</value>
   </data>
   <data name="TargetOSUnsupported" xml:space="preserve">
     <value>Target OS is not supported</value>
@@ -296,6 +308,9 @@
   </data>
   <data name="TypeNotFound" xml:space="preserve">
     <value>Type '{0}' not found</value>
+  </data>
+  <data name="GenerateUnboxingStubsOption" xml:space="preserve">
+    <value>Override whether to generate unboxing stubs</value>
   </data>
   <data name="VerboseLoggingOption" xml:space="preserve">
     <value>Enable verbose logging</value>

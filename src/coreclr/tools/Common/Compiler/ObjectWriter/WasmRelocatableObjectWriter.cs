@@ -218,7 +218,7 @@ namespace ILCompiler.ObjectWriter
             return null;
         }
 
-        private protected override void EmitDebugFunctionInfo(uint methodTypeIndex, Utf8String methodName, SymbolDefinition methodSymbol, INodeWithDebugInfo debugNode, bool hasSequencePoints)
+        private protected override void EmitDebugFunctionInfo(uint methodTypeIndex, Utf8String methodDisplayName, Utf8String methodName, SymbolDefinition methodSymbol, INodeWithDebugInfo debugNode)
         {
         }
 

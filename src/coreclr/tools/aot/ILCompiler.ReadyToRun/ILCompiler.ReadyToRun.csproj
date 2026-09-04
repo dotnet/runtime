@@ -46,6 +46,7 @@
     <Compile Include="..\..\Common\Pgo\PgoFormat.cs" Link="Common\Pgo\PgoFormat.cs" />
     <Compile Include="..\..\Common\Pgo\TypeSystemEntityOrUnknown.cs" Link="Common\Pgo\TypeSystemEntityOrUnknown.cs" />
     <Compile Include="..\..\Common\System\FormattingHelpers.cs" Link="Common\FormattingHelpers.cs" />
+    <Compile Include="..\..\Common\TypeSystem\CodeGen\INonEmittableType.cs" Link="TypeSystem\CodeGen\INonEmittableType.cs" />
     <Compile Include="..\..\Common\TypeSystem\IL\ILProvider.cs" Link="IL\ILProvider.cs" />
     <Compile Include="..\..\Common\TypeSystem\IL\ILReader.cs" Link="IL\ILReader.cs" />
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\AsyncThunks.cs" Link="IL\Stubs\AsyncThunks.cs" />
@@ -70,6 +71,7 @@
     <Compile Include="..\..\Common\Compiler\CompilationBuilder.cs" Link="Compiler\CompilationBuilder.cs" />
     <Compile Include="..\..\Common\Compiler\CompilationModuleGroup.cs" Link="Compiler\CompilationModuleGroup.cs" />
     <Compile Include="..\..\Common\Compiler\CompilerTypeSystemContext.cs" Link="Compiler\CompilerTypeSystemContext.cs" />
+    <Compile Include="..\..\Common\Compiler\CompilerTypeSystemContext.BoxedTypes.cs" Link="Compiler\CompilerTypeSystemContext.BoxedTypes.cs" />
     <Compile Include="..\..\Common\Compiler\CompilerTypeSystemContext.Validation.cs" Link="Compiler\CompilerTypeSystemContext.Validation.cs" />
     <Compile Include="..\..\Common\Compiler\CompilerTypeSystemContext.Async.cs" Link="Compiler\CompilerTypeSystemContext.Async.cs" />
     <Compile Include="..\..\Common\Compiler\CompilerTypeSystemContext.Wasm.cs" Link="Compiler\CompilerTypeSystemContext.Wasm.cs" />
@@ -198,6 +200,7 @@
     <Compile Include="..\..\Common\Compiler\ObjectWriter\TypeString.cs" Link="Compiler\ObjectWriter\TypeString.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\Wasm\WasmDataSection.cs" Link="Compiler\ObjectWriter\Wasm\WasmDataSection.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\Wasm\WasmDataSegment.cs" Link="Compiler\ObjectWriter\Wasm\WasmDataSegment.cs" />
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\Wasm\WasmNameSection.cs" Link="Compiler\ObjectWriter\Wasm\WasmNameSection.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\Wasm\WasmSection.cs" Link="Compiler\ObjectWriter\Wasm\WasmSection.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\Wasm\WasmSections.cs" Link="Compiler\ObjectWriter\Wasm\WasmSections.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\Wasm\WebcilSection.cs" Link="Compiler\ObjectWriter\Wasm\WebcilSection.cs" />
@@ -376,6 +379,13 @@
     <Compile Include="Compiler\SystemObjectFieldLayoutAlgorithm.cs" />
     <Compile Include="IL\ReadyToRunILProvider.cs" />
     <Compile Include="JitInterface\CorInfoImpl.ReadyToRun.cs" />
+    <Compile Include="PortableCallHelpers\PortableCallHelpersGenerator.cs" />
+    <Compile Include="PortableCallHelpers\InteropSignature.cs" />
+    <Compile Include="PortableCallHelpers\InternalCallSignatureCollector.cs" />
+    <Compile Include="PortableCallHelpers\InterpToNativeGenerator.cs" />
+    <Compile Include="PortableCallHelpers\PInvokeCollector.cs" />
+    <Compile Include="PortableCallHelpers\PInvokeTableGenerator.cs" />
+    <Compile Include="PortableCallHelpers\TypeNames.cs" />
     <Compile Include="JitInterface\WasmLowering.ReadyToRun.cs" />
     <Compile Include="ObjectWriter\TargetExtensions.cs" />
     <Compile Include="TypeSystem\MethodDescExtensions.cs" />
