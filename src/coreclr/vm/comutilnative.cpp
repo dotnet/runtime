@@ -88,7 +88,7 @@ extern "C" void QCALLTYPE ExceptionNative_GetFrozenStackTrace(QCall::ObjectHandl
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     _ASSERTE(exception.Get() != NULL);
 
@@ -365,7 +365,7 @@ extern "C" void QCALLTYPE ExceptionNative_GetMethodFromStackTrace(QCall::ObjectH
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     MethodDesc* pMD = NULL;
     // See ExceptionObject::GetStackTrace() and ExceptionObject::SetStackTrace()
@@ -595,7 +595,7 @@ extern "C" int QCALLTYPE GCInterface_WaitForFullGCApproach(int millisecondsTimeo
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     DWORD dwMilliseconds = ((millisecondsTimeout == -1) ? INFINITE : millisecondsTimeout);
     result = GCHeapUtilities::GetGCHeap()->WaitForFullGCApproach(dwMilliseconds);
@@ -613,7 +613,7 @@ extern "C" int QCALLTYPE GCInterface_WaitForFullGCComplete(int millisecondsTimeo
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     DWORD dwMilliseconds = ((millisecondsTimeout == -1) ? INFINITE : millisecondsTimeout);
     result = GCHeapUtilities::GetGCHeap()->WaitForFullGCComplete(dwMilliseconds);
@@ -680,7 +680,7 @@ extern "C" int QCALLTYPE GCInterface_StartNoGCRegion(INT64 totalSize, BOOL lohSi
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     retVal = GCHeapUtilities::GetGCHeap()->StartNoGCRegion((ULONGLONG)totalSize,
                                                   !!lohSizeKnown,
@@ -737,7 +737,7 @@ extern "C" INT64 QCALLTYPE GCInterface_GetTotalMemory(QCallExceptionStatus* qcal
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
     iRetVal = (INT64) GCHeapUtilities::GetGCHeap()->GetTotalBytesInUse();
 
     END_QCALL;
@@ -762,7 +762,7 @@ extern "C" void QCALLTYPE GCInterface_Collect(INT32 generation, INT32 mode, CLR_
 
     //We don't need to check the top end because the GC will take care of that.
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
     GCHeapUtilities::GetGCHeap()->GarbageCollect(generation, lowMemoryPressure, mode);
 
     END_QCALL;
@@ -778,7 +778,7 @@ extern "C" void* QCALLTYPE GCInterface_GetNextFinalizableObject(QCall::ObjectHan
 
     MethodTable *pTargetMT = NULL;
     {
-        GCX_COOP();
+        GCX_COOP_FROM_PREEMP();
 
         OBJECTREF target = FinalizerThread::GetNextFinalizableObject();
 
@@ -884,7 +884,7 @@ extern "C" void QCALLTYPE GCInterface_AllocateNewArray(void* typeHandlePtr, INT3
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     TypeHandle typeHandle = TypeHandle::FromPtr(typeHandlePtr);
     _ASSERTE(typeHandle.IsArray());
@@ -933,7 +933,7 @@ extern "C" INT64 QCALLTYPE GCInterface_GetTotalAllocatedBytesPrecise(QCallExcept
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     // We need to suspend/restart the EE to get each thread's
     // non-allocated memory from their allocation contexts
@@ -976,7 +976,7 @@ extern "C" void* QCALLTYPE GCInterface_RegisterFrozenSegment(void* pSection, SIZ
     _ASSERTE(pSection != nullptr);
     _ASSERTE(sizeSection > 0);
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     segment_info seginfo;
     seginfo.pvMem           = pSection;
@@ -1006,7 +1006,7 @@ extern "C" void QCALLTYPE GCInterface_UnregisterFrozenSegment(void* segment, QCa
 
     _ASSERTE(segment != nullptr);
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     GCHeapUtilities::GetGCHeap()->UnregisterFrozenSegment((segment_handle)segment);
 
@@ -1040,7 +1040,7 @@ extern "C" void QCALLTYPE GCInterface_ReRegisterForFinalize(QCall::ObjectHandleO
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     // Checked by the caller
     _ASSERTE(pObj.Get() != NULL);
@@ -1508,7 +1508,7 @@ extern "C" void QCALLTYPE Environment_FailFast(QCall::StackCrawlMarkHandle mark,
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     FindFailFastCallerStruct findCallerData;
     findCallerData.pStackMark = mark;
@@ -1585,7 +1585,7 @@ extern "C" INT32 QCALLTYPE ObjectNative_GetHashCodeSlow(QCall::ObjectHandleOnSta
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     _ASSERTE(objHandle.Get() != NULL);
     idx = objHandle.Get()->GetHashCodeEx();
@@ -1634,7 +1634,7 @@ extern "C" void QCALLTYPE ObjectNative_AllocateUninitializedClone(QCall::ObjectH
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     OBJECTREF refClone = objHandle.Get();
     _ASSERTE(refClone != NULL); // Should be handled at managed side
@@ -1895,7 +1895,7 @@ static ValueTypeHashCodeStrategy GetHashCodeStrategy(MethodTable* mt, QCall::Obj
         _ASSERTE(!field->IsRVA());
         if (field->IsObjRef())
         {
-            GCX_COOP();
+            GCX_COOP_FROM_PREEMP();
             // if we get an object reference we get the hash code out of that
             if (*(Object**)((BYTE *)objHandle.Get()->UnBox() + *fieldOffset + field->GetOffsetUnsafe()) != NULL)
             {
@@ -2051,7 +2051,7 @@ extern "C" BOOL QCALLTYPE TypeHandle_CanCastTo_NoCacheLookup(void* fromTypeHnd, 
     // Cache lookup and trivial cases are already handled at managed side. Call the uncached versions directly.
     _ASSERTE(fromTypeHnd != toTypeHnd);
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     TypeHandle fromTH = TypeHandle::FromPtr(fromTypeHnd);
     TypeHandle toTH = TypeHandle::FromPtr(toTypeHnd);

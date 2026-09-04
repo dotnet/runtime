@@ -911,7 +911,7 @@ extern "C" void QCALLTYPE CustomAttribute_CreateCustomAttributeInstance(
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     MethodDesc* pCtorMD = ((REFLECTMETHODREF)pMethod.Get())->GetMethod();
     TypeHandle th = ((REFLECTCLASSBASEREF)pCaType.Get())->GetType();
@@ -1043,7 +1043,7 @@ extern "C" void QCALLTYPE CustomAttribute_CreatePropertyOrFieldData(
 
     BYTE* pBlob = *ppBlobStart;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     Assembly *pCtorAssembly = NULL;
 

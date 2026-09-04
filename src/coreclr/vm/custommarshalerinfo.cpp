@@ -116,7 +116,7 @@ CustomMarshalerInfo* CustomMarshalerInfo::CreateIEnumeratorMarshalerInfo(LoaderH
     CustomMarshalerInfo* pInfo = nullptr;
     OBJECTREF IEnumeratorMarshalerObj = nullptr;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
     GCPROTECT_BEGIN(IEnumeratorMarshalerObj);
 
     UnmanagedCallersOnlyCaller getMarshaler(METHOD__STUBHELPERS__GET_IENUMERATOR_TO_ENUM_VARIANT_MARSHALER);

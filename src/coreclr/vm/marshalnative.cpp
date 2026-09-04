@@ -227,7 +227,7 @@ extern "C" void QCALLTYPE MarshalNative_GetDelegateForFunctionPointerInternal(PV
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     // Retrieve the method table from the RuntimeType. We already verified in managed
     // code that the type was a RuntimeType that represented a delegate.
@@ -246,7 +246,7 @@ extern "C" PVOID QCALLTYPE MarshalNative_GetFunctionPointerForDelegateInternal(Q
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
     pFPtr = COMDelegate::ConvertToCallback(d.Get());
 
     END_QCALL;
@@ -325,7 +325,7 @@ extern "C" OBJECTHANDLE QCALLTYPE GCHandle_InternalAllocWithGCTransition(QCall::
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
     hnd = GetAppDomain()->CreateTypedHandle(obj.Get(), static_cast<HandleType>(type));
 
     END_QCALL;
@@ -356,7 +356,7 @@ extern "C" void QCALLTYPE GCHandle_InternalFreeWithGCTransition(OBJECTHANDLE han
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
     DestroyTypedHandle(handle);
 
     END_QCALL;
@@ -417,7 +417,7 @@ extern "C" void QCALLTYPE GCHandle_InternalGetBridgeWait(OBJECTHANDLE handle, QC
     BEGIN_QCALL;
 
     {
-        GCX_COOP();
+        GCX_COOP_FROM_PREEMP();
 
         Interop::WaitForGCBridgeFinish();
         // No GC can happen between the wait and obtaining of the reference, so the
@@ -484,7 +484,7 @@ extern "C" void QCALLTYPE MarshalNative_GetExceptionForHR(INT32 errorCode, LPVOI
     }
 #endif // FEATURE_COMINTEROP
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     OBJECTREF exceptObj = NULL;
     GCPROTECT_BEGIN(exceptObj);
@@ -513,7 +513,7 @@ extern "C" int32_t QCALLTYPE MarshalNative_GetHRForException(QCall::ObjectHandle
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     hr = SetupErrorInfo(obj.Get());
 
@@ -536,7 +536,7 @@ extern "C" IUnknown* QCALLTYPE MarshalNative_GetIUnknownForObject(QCall::ObjectH
     // Ensure COM is started up.
     EnsureComStarted();
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     OBJECTREF oref = o.Get();
     GCPROTECT_BEGIN(oref);
@@ -561,7 +561,7 @@ extern "C" IDispatch* QCALLTYPE MarshalNative_GetIDispatchForObject(QCall::Objec
     // Ensure COM is started up.
     EnsureComStarted();
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     OBJECTREF oref = o.Get();
     GCPROTECT_BEGIN(oref);
@@ -586,7 +586,7 @@ extern "C" void* QCALLTYPE MarshalNative_GetIUnknownOrIDispatchForObject(QCall::
     // Ensure COM is started up.
     EnsureComStarted();
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     OBJECTREF oref = o.Get();
     GCPROTECT_BEGIN(oref);
@@ -614,7 +614,7 @@ extern "C" IUnknown* QCALLTYPE MarshalNative_GetComInterfaceForObject(QCall::Obj
     // Ensure COM is started up.
     EnsureComStarted();
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     OBJECTREF oref = o.Get();
     GCPROTECT_BEGIN(oref);
@@ -663,7 +663,7 @@ extern "C" void QCALLTYPE MarshalNative_GetObjectForIUnknown(IUnknown* pUnk, QCa
     // Ensure COM is started up.
     EnsureComStarted();
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     OBJECTREF oref = NULL;
     GCPROTECT_BEGIN(oref);
@@ -688,7 +688,7 @@ extern "C" void QCALLTYPE MarshalNative_GetUniqueObjectForIUnknown(IUnknown* pUn
     // Ensure COM is started up.
     EnsureComStarted();
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     OBJECTREF oref = NULL;
     GCPROTECT_BEGIN(oref);
@@ -725,7 +725,7 @@ extern "C" void QCALLTYPE MarshalNative_GetTypedObjectForIUnknown(IUnknown* pUnk
     // Ensure COM is started up.
     EnsureComStarted();
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     OBJECTREF oref = NULL;
     GCPROTECT_BEGIN(oref);
@@ -754,7 +754,7 @@ extern "C" IUnknown* QCALLTYPE MarshalNative_CreateAggregatedObject(IUnknown* pO
     // Ensure COM is started up.
     EnsureComStarted();
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     OBJECTREF oref = o.Get();
     GCPROTECT_BEGIN(oref);
@@ -826,7 +826,7 @@ extern "C" INT32 QCALLTYPE MarshalNative_ReleaseComObject(QCall::ObjectHandleOnS
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     OBJECTREF obj = objUNSAFE.Get();
     GCPROTECT_BEGIN(obj);
@@ -856,7 +856,7 @@ extern "C" void QCALLTYPE MarshalNative_FinalReleaseComObject(QCall::ObjectHandl
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     OBJECTREF obj = objUNSAFE.Get();
     GCPROTECT_BEGIN(obj);
@@ -884,7 +884,7 @@ extern "C" void QCALLTYPE MarshalNative_InternalCreateWrapperOfType(QCall::Objec
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     // Retrieve the class of the COM object.
     MethodTable *pObjMT = o.Get()->GetMethodTable();
@@ -967,7 +967,7 @@ extern "C" void QCALLTYPE MarshalNative_GetNativeVariantForObject(QCall::ObjectH
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     OBJECTREF Obj = ObjUNSAFE.Get();
     GCPROTECT_BEGIN(Obj);
@@ -1001,7 +1001,7 @@ extern "C" void QCALLTYPE MarshalNative_GetObjectForNativeVariant(LPVOID pSrcNat
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     OBJECTREF Obj = NULL;
     GCPROTECT_BEGIN(Obj);
@@ -1024,7 +1024,7 @@ extern "C" void QCALLTYPE MarshalNative_GetObjectsForNativeVariants(VARIANT* aSr
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     struct {
         PTRARRAYREF Array;
@@ -1168,7 +1168,7 @@ extern "C" VOID QCALLTYPE MarshalNative_ChangeWrapperHandleStrength(QCall::Objec
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     if (!otp.Get()->GetMethodTable()->IsComImport())
     {
@@ -1197,7 +1197,7 @@ extern "C" void QCALLTYPE MarshalNative_GetTypeFromCLSID(REFCLSID clsid, PCWSTR 
     // Ensure COM is started up.
     EnsureComStarted();
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     OBJECTREF orType = NULL;
     GCPROTECT_BEGIN(orType);

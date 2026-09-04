@@ -495,7 +495,7 @@ public:
         CONTRACTL_END;
 
         {
-            GCX_COOP();
+            GCX_COOP_FROM_PREEMP();
             longResult.Set(AllocatePrimitiveArray(ELEMENT_TYPE_I4, _length));
             void* p = ((I4Array*)OBJECTREFToObject(longResult.Get()))->GetDirectPointerToNonObjectElements();
             memcpyNoGCRefs(p, _alloc, (size_t)_length * sizeof(INT32));
