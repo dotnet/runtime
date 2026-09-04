@@ -3,10 +3,12 @@
 //
 
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
@@ -269,7 +271,19 @@ namespace TestLibrary
 
         public const string TEST_TARGET_ARCHITECTURE_ENVIRONMENT_VAR = "__TestArchitecture";
 
-        static bool CollectCrashDump(Process process, string crashDumpPath, StreamWriter outputWriter)
+        const int IpcHeaderSize = 20;
+        const int IpcMagicSize = 14;
+        const byte DumpCommandSet = 0x01;
+        const byte GenerateCoreDump3CommandId = 0x03;
+        const byte ServerCommandSet = 0xFF;
+        const byte ServerOkCommandId = 0x00;
+        const uint DumpTypeWithHeap = 2;
+        const uint VerboseLoggingEnabledFlag = 0x02;
+        const uint CrashReportEnabledFlag = 0x04;
+
+        static readonly byte[] s_ipcMagic = Encoding.ASCII.GetBytes("DOTNET_IPC_V1\0");
+
+        static bool CollectCrashDump(Process process, string crashDumpPath, TextWriter outputWriter)
         {
             if (OperatingSystem.IsWindows())
             {
@@ -277,11 +291,11 @@ namespace TestLibrary
             }
             else
             {
-                return CollectCrashDumpWithCreateDump(process, crashDumpPath, outputWriter);
+                return CollectCrashDumpWithDiagnosticIpc(process, crashDumpPath, outputWriter);
             }
         }
 
-        static bool CollectCrashDumpWithMiniDumpWriteDump(Process process, string crashDumpPath, StreamWriter outputWriter)
+        static bool CollectCrashDumpWithMiniDumpWriteDump(Process process, string crashDumpPath, TextWriter outputWriter)
         {
             bool collectedDump = false;
             using (var crashDump = File.OpenWrite(crashDumpPath))
@@ -292,90 +306,191 @@ namespace TestLibrary
             return collectedDump;
         }
 
-        // Kills the given process tree using 'sudo kill -9', which is required when the process runs
-        // as root (e.g. launched via 'sudo') and cannot be killed by a non-root process.
-        // sudo forks and execs the target command, so we must kill children before the sudo parent
-        // to avoid leaving root-owned child processes running as orphans.
-        static void KillWithSudo(Process process)
+        static bool CollectCrashDumpWithDiagnosticIpc(Process process, string crashDumpPath, TextWriter outputWriter)
         {
-            foreach (Process child in process.GetChildren())
+            string? ipcRootPath = Environment.GetEnvironmentVariable("TMPDIR");
+            if (string.IsNullOrEmpty(ipcRootPath))
             {
-                if (child.TryGetProcessId(out int childPid))
+                ipcRootPath = "/tmp";
+            }
+
+            string[] diagnosticSockets;
+            try
+            {
+                diagnosticSockets = Directory.GetFileSystemEntries(
+                    ipcRootPath,
+                    $"dotnet-diagnostic-{process.Id}-*-socket");
+            }
+            catch (Exception ex) when (ex is DirectoryNotFoundException or IOException or UnauthorizedAccessException)
+            {
+                outputWriter.WriteLine($"Failed to find the diagnostic IPC socket for process {process.Id}: {ex.Message}");
+                return false;
+            }
+
+            if (diagnosticSockets.Length == 0)
+            {
+                outputWriter.WriteLine($"Could not find the diagnostic IPC socket for process {process.Id}.");
+                return false;
+            }
+
+            byte[] request;
+            try
+            {
+                request = CreateDiagnosticIpcDumpRequest(crashDumpPath);
+            }
+            catch (ArgumentException ex)
+            {
+                outputWriter.WriteLine($"Failed to create the diagnostic IPC dump request: {ex.Message}");
+                return false;
+            }
+
+            foreach (string diagnosticSocket in diagnosticSockets.OrderByDescending(File.GetLastWriteTimeUtc))
+            {
+                try
                 {
-                    Process.Start("sudo", $"-n kill -9 {childPid}").WaitForExit();
+                    using Socket socket = new(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified)
+                    {
+                        SendTimeout = DEFAULT_TIMEOUT_MS,
+                        ReceiveTimeout = DEFAULT_TIMEOUT_MS
+                    };
+
+                    socket.Connect(new UnixDomainSocketEndPoint(diagnosticSocket));
+                    SendAll(socket, request);
+
+                    byte[] responseHeader = ReceiveAll(socket, IpcHeaderSize);
+                    if (!responseHeader.AsSpan(0, IpcMagicSize).SequenceEqual(s_ipcMagic))
+                    {
+                        outputWriter.WriteLine($"Diagnostic IPC response for process {process.Id} has invalid magic.");
+                        return false;
+                    }
+
+                    int responseSize = BinaryPrimitives.ReadUInt16LittleEndian(responseHeader.AsSpan(IpcMagicSize, sizeof(ushort)));
+                    if (responseSize < IpcHeaderSize + sizeof(int))
+                    {
+                        outputWriter.WriteLine($"Diagnostic IPC response for process {process.Id} has invalid size {responseSize}.");
+                        return false;
+                    }
+
+                    byte[] responsePayload = ReceiveAll(socket, responseSize - IpcHeaderSize);
+                    int hresult = BinaryPrimitives.ReadInt32LittleEndian(responsePayload);
+                    if (responseHeader[16] != ServerCommandSet ||
+                        responseHeader[17] != ServerOkCommandId ||
+                        responseHeader[18] != 0 ||
+                        responseHeader[19] != 0 ||
+                        hresult != 0)
+                    {
+                        outputWriter.WriteLine(
+                            $"Diagnostic IPC dump request for process {process.Id} failed: " +
+                            $"command=0x{responseHeader[16]:X2}{responseHeader[17]:X2}, HRESULT=0x{hresult:X8}.");
+                        string? errorMessage = GetDiagnosticIpcErrorMessage(responsePayload);
+                        if (!string.IsNullOrEmpty(errorMessage))
+                        {
+                            outputWriter.WriteLine(errorMessage);
+                        }
+                        return false;
+                    }
+
+                    if (!File.Exists(crashDumpPath))
+                    {
+                        outputWriter.WriteLine($"Diagnostic IPC reported success but did not create '{crashDumpPath}'.");
+                        return false;
+                    }
+
+                    return true;
+                }
+                catch (Exception ex) when (ex is SocketException or IOException)
+                {
+                    outputWriter.WriteLine(
+                        $"Diagnostic IPC dump request through '{diagnosticSocket}' failed: {ex.Message}");
                 }
             }
-            if (process.TryGetProcessId(out int pid))
+
+            return false;
+        }
+
+        static byte[] CreateDiagnosticIpcDumpRequest(string crashDumpPath)
+        {
+            byte[] dumpPath = Encoding.Unicode.GetBytes(crashDumpPath + '\0');
+            int packetSize = checked(IpcHeaderSize + sizeof(uint) + dumpPath.Length + sizeof(uint) + sizeof(uint));
+            if (packetSize > ushort.MaxValue)
             {
-                Process.Start("sudo", $"-n kill -9 {pid}").WaitForExit();
+                throw new ArgumentException($"Dump path is too long: '{crashDumpPath}'.", nameof(crashDumpPath));
+            }
+
+            byte[] request = new byte[packetSize];
+            s_ipcMagic.CopyTo(request, 0);
+            BinaryPrimitives.WriteUInt16LittleEndian(request.AsSpan(IpcMagicSize, sizeof(ushort)), (ushort)packetSize);
+            request[16] = DumpCommandSet;
+            request[17] = GenerateCoreDump3CommandId;
+
+            int offset = IpcHeaderSize;
+            BinaryPrimitives.WriteUInt32LittleEndian(request.AsSpan(offset, sizeof(uint)), (uint)(dumpPath.Length / sizeof(char)));
+            offset += sizeof(uint);
+            dumpPath.CopyTo(request, offset);
+            offset += dumpPath.Length;
+            BinaryPrimitives.WriteUInt32LittleEndian(request.AsSpan(offset, sizeof(uint)), DumpTypeWithHeap);
+            offset += sizeof(uint);
+            BinaryPrimitives.WriteUInt32LittleEndian(
+                request.AsSpan(offset, sizeof(uint)),
+                VerboseLoggingEnabledFlag | CrashReportEnabledFlag);
+
+            return request;
+        }
+
+        static string? GetDiagnosticIpcErrorMessage(byte[] payload)
+        {
+            const int ErrorMessageOffset = sizeof(int) + sizeof(uint);
+
+            if (payload.Length < ErrorMessageOffset)
+            {
+                return null;
+            }
+
+            uint characterCount = BinaryPrimitives.ReadUInt32LittleEndian(payload.AsSpan(sizeof(int), sizeof(uint)));
+            if (characterCount == 0 || characterCount > (payload.Length - ErrorMessageOffset) / sizeof(char))
+            {
+                return null;
+            }
+
+            int byteCount = checked((int)characterCount * sizeof(char));
+            ReadOnlySpan<byte> message = payload.AsSpan(ErrorMessageOffset, byteCount);
+            if (message.Length >= sizeof(char) &&
+                BinaryPrimitives.ReadUInt16LittleEndian(message.Slice(message.Length - sizeof(char))) == 0)
+            {
+                message = message.Slice(0, message.Length - sizeof(char));
+            }
+
+            return Encoding.Unicode.GetString(message);
+        }
+
+        static void SendAll(Socket socket, byte[] buffer)
+        {
+            int bytesSent = 0;
+            while (bytesSent < buffer.Length)
+            {
+                int sent = socket.Send(buffer, bytesSent, buffer.Length - bytesSent, SocketFlags.None);
+                if (sent == 0)
+                {
+                    throw new IOException("Diagnostic IPC socket closed while sending the request.");
+                }
+                bytesSent += sent;
             }
         }
 
-        static bool CollectCrashDumpWithCreateDump(Process process, string crashDumpPath, StreamWriter outputWriter)
+        static byte[] ReceiveAll(Socket socket, int length)
         {
-            string? coreRoot = Environment.GetEnvironmentVariable("CORE_ROOT");
-            if (coreRoot is null)
+            byte[] buffer = new byte[length];
+            int bytesReceived = 0;
+            while (bytesReceived < buffer.Length)
             {
-                throw new InvalidOperationException("CORE_ROOT environment variable is not set.");
+                int received = socket.Receive(buffer, bytesReceived, buffer.Length - bytesReceived, SocketFlags.None);
+                if (received == 0)
+                {
+                    throw new IOException("Diagnostic IPC socket closed while receiving the response.");
+                }
+                bytesReceived += received;
             }
-            string createdumpPath = Path.Combine(coreRoot, "createdump");
-            string arguments = $"--crashreport --name \"{crashDumpPath}\" {process.Id} --withheap";
-            Process createdump = new Process();
-
-            createdump.StartInfo.FileName = "sudo";
-            createdump.StartInfo.Arguments = $"{createdumpPath} {arguments}";
-
-            createdump.StartInfo.RedirectStandardOutput = true;
-            createdump.StartInfo.RedirectStandardError = true;
-
-            Console.WriteLine($"Invoking: {createdump.StartInfo.FileName} {createdump.StartInfo.Arguments}");
-            createdump.Start();
-
-            Task<string> copyOutput = createdump.StandardOutput.ReadToEndAsync();
-            Task<string> copyError = createdump.StandardError.ReadToEndAsync();
-            bool fSuccess = createdump.WaitForExit(DEFAULT_TIMEOUT_MS);
-
-            if (fSuccess)
-            {
-                Task.WaitAll(copyError, copyOutput);
-                string output = copyOutput.Result;
-                string error = copyError.Result;
-
-                Console.WriteLine("createdump stdout:");
-                Console.WriteLine(output);
-                Console.WriteLine("createdump stderr:");
-                Console.WriteLine(error);
-
-                // Ensure the dump is accessible by current user
-                Process chown = new Process();
-                chown.StartInfo.FileName = "sudo";
-                chown.StartInfo.Arguments = $"chown \"{Environment.UserName}\" \"{crashDumpPath}\"";
-
-                chown.StartInfo.RedirectStandardOutput = true;
-                chown.StartInfo.RedirectStandardError = true;
-
-                Console.WriteLine($"Invoking: {chown.StartInfo.FileName} {chown.StartInfo.Arguments}");
-                chown.Start();
-                copyOutput = chown.StandardOutput.ReadToEndAsync();
-                copyError = chown.StandardError.ReadToEndAsync();
-
-                chown.WaitForExit(DEFAULT_TIMEOUT_MS);
-
-                Task.WaitAll(copyError, copyOutput);
-                Console.WriteLine("chown stdout:");
-                Console.WriteLine(copyOutput.Result);
-                Console.WriteLine("chown stderr:");
-                Console.WriteLine(copyError.Result);
-            }
-            else
-            {
-                // createdump was launched via 'sudo', so the process and its children run as root.
-                // We cannot send SIGKILL to root-owned processes from a non-root process (EPERM).
-                // Use 'sudo kill' to terminate the timed-out process tree.
-                KillWithSudo(createdump);
-            }
-
-            return fSuccess && createdump.ExitCode == 0;
+            return buffer;
         }
 
         // Finds all children processes starting with a process named childName
@@ -492,21 +607,7 @@ namespace TestLibrary
                 {
                     // Timed out.
                     DateTime endTime = DateTime.Now;
-
-                    try
-                    {
-                        cts.Cancel();
-                    }
-                    catch { }
-
-                    outputWriter.WriteLine("\ncmdLine:{0} Timed Out (timeout in milliseconds: {1}{2}{3}, start: {4}, end: {5})",
-                            executable, timeout, (environmentVar != null) ? " from variable " : "", (environmentVar != null) ? TIMEOUT_ENVIRONMENT_VAR : "",
-                            startTime.ToString(), endTime.ToString());
-                    outputWriter.Flush();
-                    errorWriter.WriteLine("\ncmdLine:{0} Timed Out (timeout in milliseconds: {1}{2}{3}, start: {4}, end: {5})",
-                            executable, timeout, (environmentVar != null) ? " from variable " : "", (environmentVar != null) ? TIMEOUT_ENVIRONMENT_VAR : "",
-                            startTime.ToString(), endTime.ToString());
-                    errorWriter.Flush();
+                    using StringWriter diagnosticWriter = new();
 
                     Console.WriteLine("Collecting diagnostic information...");
                     Console.WriteLine("Snapshot of processes currently running:");
@@ -532,7 +633,7 @@ namespace TestLibrary
                             {
                                 string crashDumpPath = Path.Combine(Path.GetFullPath(crashDumpFolder), string.Format("crashdump_{0}.dmp", child.Id));
                                 Console.WriteLine($"Attempting to collect crash dump: {crashDumpPath}");
-                                if (CollectCrashDump(child, crashDumpPath, outputWriter))
+                                if (CollectCrashDump(child, crashDumpPath, diagnosticWriter))
                                 {
                                     Console.WriteLine("Collected crash dump: {0}", crashDumpPath);
                                 }
@@ -546,6 +647,24 @@ namespace TestLibrary
 
                     // kill the timed out processes after we've collected dumps
                     process.Kill(entireProcessTree: true);
+                    Task.WaitAll(copyOutput, copyError);
+
+                    string timeoutMessage = string.Format(
+                        "\ncmdLine:{0} Timed Out (timeout in milliseconds: {1}{2}{3}, start: {4}, end: {5})",
+                        executable,
+                        timeout,
+                        (environmentVar != null) ? " from variable " : "",
+                        (environmentVar != null) ? TIMEOUT_ENVIRONMENT_VAR : "",
+                        startTime.ToString(),
+                        endTime.ToString());
+                    outputWriter.WriteLine(timeoutMessage);
+                    errorWriter.WriteLine(timeoutMessage);
+
+                    string diagnosticOutput = diagnosticWriter.ToString();
+                    if (!string.IsNullOrEmpty(diagnosticOutput))
+                    {
+                        outputWriter.Write(diagnosticOutput);
+                    }
                 }
 
                 outputWriter.WriteLine("Test Harness Exitcode is : " + exitCode.ToString());
