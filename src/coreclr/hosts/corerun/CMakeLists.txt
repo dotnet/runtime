@@ -4,6 +4,16 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(CORERUN_IN_BROWSER 0)
 
+# Link corerun so a composite ReadyToRun image can be spliced into it afterwards (see
+# eng/wasi-r2r/README.md). ON by default because corerun is the host this work is developed and
+# tested against. Turning it OFF drops the table reservation and shrinks the probe's staging buffer
+# to a stub, for a WASI corerun that will never be spliced.
+option(CORERUN_WASI_COMPOSITE_R2R "Reserve table slots and export the globals a spliced R2R composite needs" ON)
+# Table slots 1..N-1 are reserved for the composite's ACTIVE element segment, which the engine installs
+# at instantiation, so the table must already be large enough. Reserve by the composite's FUNCTION
+# count, not its assembly count; eng/wasi-r2r/pipeline_shim.py checks this and names the value needed.
+set(CORERUN_WASI_R2R_TABLE_BASE "65537" CACHE STRING "First table slot for corerun's own address-taken functions")
+
 if(CLR_CMAKE_HOST_WIN32)
     add_definitions(-DFX_VER_INTERNALNAME_STR=corerun.exe)
 else()
@@ -157,7 +167,36 @@ else()
                 -Wl,-z,stack-size=8388608
                 -Wl,--initial-memory=134217728
                 -Wl,--max-memory=4294967296
-                "-Wl,--component-type,${_wasi_http_world_wit}")
+                "-Wl,--component-type,${_wasi_http_world_wit}"
+                # Force-root the cDAC contract descriptor getter: its object has no live
+                # references (the getter is the only one, and DATA symbols aren't auto-exported),
+                # so without an explicit --export root wasm-ld's --gc-sections drops the whole
+                # object and the descriptor never reaches the final module. Mirrors the native
+                # `-Wl,-u,DotNetRuntimeContractDescriptor` used on other non-browser targets.
+                -Wl,--export=GetDotNetRuntimeContractDescriptor
+                # [wasi] Export the runtime-owned async continuation global (#131167, helpers.cpp) so the
+                # offline R2R merge can wire each composite's webcil.asyncContinuation import to this same
+                # global (the interp<->R2R accessors use it), and so --gc-sections doesn't drop it.
+                -Wl,--export=__async_continuation)
+
+            if (CORERUN_WASI_COMPOSITE_R2R)
+                # Supply the rest of a spliced composite's imports at link time. --table-base reserves
+                # the low table slots for the composite's ACTIVE element segment and moves corerun's own
+                # address-taken functions above it; the table stays fixed-size so the engine can still
+                # validate it statically. These must match the flags in
+                # src/mono/wasi/build/WasiApp.CoreCLR.targets, which links the per-app host with the
+                # same probe.
+                target_link_options(corerun PRIVATE
+                    -Wl,--table-base=${CORERUN_WASI_R2R_TABLE_BASE}
+                    -Wl,--export-table
+                    -Wl,--export=__stack_pointer
+                    -Wl,--export=__coreclr_wasm_rtlrestorecontext_tag)
+            else()
+                # No splice for this host: keep the probe compiled (it simply finds no image and
+                # declines) but drop its staging buffer, which is otherwise WASI_R2R_IMAGE_CAP of BSS
+                # taken out of --initial-memory whether or not R2R is ever used.
+                target_compile_definitions(corerun PRIVATE WASI_R2R_IMAGE_CAP=64u)
+            endif()
         endif()
 
         if (CORERUN_IN_BROWSER)

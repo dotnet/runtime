@@ -80,10 +80,41 @@ If data segment 0 is at least 8 bytes in size, and the second 4 bytes has a non-
 little-endian unsigned 32-bit integer, then data segment 0 encodes two little-endian
 u32 values: `payloadSize` (first 4 bytes) and `tableSize` (second 4 bytes). In this case,
 `tableSize` shall be the number of table entries required for the WebAssembly
-module to be loaded, and the module shall import a table, as well as `stackPointer`, `tableBase`, and
-`imageBase` globals. There shall also be a `fillWebcilTable` function which will initialize the table
-with appropriate values. The `getWebcilPayload` API shall be enhanced to fill in the `TableBase` field
-of the `WebcilHeader`.
+module to be loaded, and the module shall import a table, as well as `__stack_pointer`, `__table_base`, and
+`__memory_base` globals. Two module shapes are permitted, distinguished by whether the payload and
+table segments are passive or active.
+
+A **host-installed** module keeps both segments passive. It shall provide a `fillWebcilTable`
+function which initializes the table, and its `getWebcilPayload` API shall copy the payload and fill
+in the `TableBase` field of the `WebcilHeader`. Per-assembly component forwarding stubs use this
+shape, because a stub may be parsed from its file rather than instantiated.
+
+A **self-installing** module emits the payload as an active data segment at `(global.get __memory_base)`
+and the table as an active element segment at `(global.get __table_base)`, so the engine installs both
+at instantiation. Such a module exports neither `getWebcilPayload` nor `fillWebcilTable` - calling
+`memory.init` or `table.init` against an active segment traps, because an active segment is implicitly
+dropped once applied. It shall instead export `patchWebcilHeader`, which fills in the `TableBase` field;
+the host must call it after instantiation, since the runtime reads that field from the mapped image and
+an unwritten field reads as 0, silently shifting every function index by `tableBase`. Composite and
+single-assembly R2R images use this shape.
+
+A self-installing module leaves `__memory_base` and `__table_base` as imports, which a host may satisfy
+in either of two ways, with different consequences:
+
+- **Supply them at instantiation**, as immutable `WebAssembly.Global` values. The segment offsets stay
+  `global.get` of an *imported* global, which is a valid constant expression, so the module needs no
+  further processing. The browser host does this.
+- **Define and export them, then link the module into the host** with a merge tool. Merging internalizes
+  the globals, and `global.get` of a *defined* global is not a constant expression outside the GC
+  proposal - engines disagree here, so the merged module must have its offsets folded to `i32.const`
+  before it is portable. The offline WASI pipeline does this.
+
+Neither approach requires rewriting the segments themselves; only the second requires a fold, and that
+fold is not free, because the pass that performs it also propagates globals into function bodies.
+
+A host that reserves the composite's table slice at link time can treat `__table_base` as a constant:
+reserving the first N slots leaves the composite at base 1 regardless of its size. `__memory_base` is
+the address of the host's payload region and has to be read out of the linked host.
 
 The memory of the WebcilPayload must also be allocated with 16 byte alignment.
 
@@ -94,14 +125,15 @@ reachable. Function names shall instead be carried in the `name` custom section,
 engines, counts towards no limit, and may be stripped when size matters.
 
 ``` wat
+;; Host-installed shape (passive segments).
 (module
   (data "\0f\00\00\00\01\00\00\00") ;; data segment 0: two little-endian u32 values (payloadSize, tableSize). This specifies a Webcil payload of size 15 bytes with 1 required table entry
   (data "webcil Payload\cc")  ;; data segment 1: Webcil payload
   (import "webcil" "memory" (memory (;0;) 1))
-  (import "webcil" "stackPointer" (global (;0;) (mut i32)))
-  (import "webcil" "imageBase" (global (;1;) i32))
-  (import "webcil" "tableBase" (global (;2;) i32))
-  (import "webcil" "table" (table (;0;) 1 funcref))
+  (import "webcil" "__stack_pointer" (global (;0;) (mut i32)))
+  (import "webcil" "__memory_base" (global (;1;) i32))
+  (import "webcil" "__table_base" (global (;2;) i32))
+  (import "webcil" "__indirect_function_table" (table (;0;) 1 funcref))
   (global (export "webcilVersion") i32 (i32.const 1))
   (func (export "getWebcilSize") (param $destPtr i32) (result)
     local.get $destPtr
@@ -132,6 +164,38 @@ engines, counts towards no limit, and may be stripped when size matters.
   (func (param $d i32) (result i32) ;; Example of function to be injected into "table"
     local.get 0)
   (elem (;0;) func 3))
+```
+
+``` wat
+;; Self-installing shape (active segments). The engine applies both segments at
+;; instantiation, so only the header's TableBase field is left for the host to trigger.
+(module
+  (data "\0f\00\00\00\01\00\00\00") ;; data segment 0: payloadSize, tableSize - stays passive, read from the file before instantiation
+  (data (global.get 1) "webcil Payload\cc")  ;; data segment 1: Webcil payload, active at __memory_base
+  (import "webcil" "memory" (memory (;0;) 1))
+  (import "webcil" "__stack_pointer" (global (;0;) (mut i32)))
+  (import "webcil" "__memory_base" (global (;1;) i32))
+  (import "webcil" "__table_base" (global (;2;) i32))
+  (import "webcil" "__indirect_function_table" (table (;0;) 1 funcref))
+  (global (export "webcilVersion") i32 (i32.const 1))
+  (func (export "getWebcilSize") (param $destPtr i32) (result)
+    local.get $destPtr
+    i32.const 0
+    i32.const 4
+    memory.init 0)
+  (func (export "patchWebcilHeader") (param $d i32) (param $n i32) (result)
+    local.get 1
+    i32.const 32
+    i32.ge_s
+    if
+     local.get 0
+     global.get 2
+     i32.store offset=28
+    end
+    )
+  (func (param $d i32) (result i32)
+    local.get 0)
+  (elem (;0;) (global.get 2) func 2)) ;; active at __table_base
 ```
 
 (**Rationale**: With this approach it is possible to identify without loading the webcil module

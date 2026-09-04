@@ -32,6 +32,100 @@
     <WasmSingleFileBundle Condition="'$(WasmSingleFileBundle)' == ''">false</WasmSingleFileBundle>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(PublishReadyToRun)' == 'true'">
+    <PublishReadyToRunContainerFormat Condition="'$(PublishReadyToRunContainerFormat)' == '' or '$(PublishReadyToRunContainerFormat)' == 'pe'">wasm</PublishReadyToRunContainerFormat>
+    <PublishReadyToRunComposite Condition="'$(PublishReadyToRunComposite)' == ''">true</PublishReadyToRunComposite>
+    <PublishReadyToRunCrossgen2ExtraArgs>$(PublishReadyToRunCrossgen2ExtraArgs);--opt-cross-module:*;--codegenopt:JitWasmNyiToR2RUnsupported=1;--codegenopt:JitWasmSimdNyiToR2RUnsupported=1</PublishReadyToRunCrossgen2ExtraArgs>
+    <WasiEnableCompositeR2R Condition="'$(WasiEnableCompositeR2R)' == ''">true</WasiEnableCompositeR2R>
+    <WasiR2RPythonCommand Condition="'$(WasiR2RPythonCommand)' == '' and $([MSBuild]::IsOSPlatform('Windows'))">python</WasiR2RPythonCommand>
+    <WasiR2RPythonCommand Condition="'$(WasiR2RPythonCommand)' == ''">python3</WasiR2RPythonCommand>
+  </PropertyGroup>
+
+  <Target Name="_WasiCoreCLRValidateReadyToRun"
+          BeforeTargets="_WasiGenerateAppBundle"
+          Condition="'$(PublishReadyToRun)' == 'true'">
+    <Error Condition="'$(PublishReadyToRunComposite)' != 'true'"
+           Text="CoreCLR ReadyToRun publishing for wasi-wasm requires PublishReadyToRunComposite=true." />
+    <Error Condition="'$(PublishReadyToRunContainerFormat)' != 'wasm'"
+           Text="PublishReadyToRunContainerFormat '$(PublishReadyToRunContainerFormat)' is not supported for CoreCLR wasi-wasm; only 'wasm' is supported." />
+    <Error Condition="'$(WasmSingleFileBundle)' == 'true'"
+           Text="CoreCLR ReadyToRun publishing for wasi-wasm does not support WasmSingleFileBundle." />
+    <Error Condition="'$(WasiEnableCompositeR2R)' != 'true'"
+           Text="CoreCLR ReadyToRun publishing for wasi-wasm requires WasiEnableCompositeR2R=true." />
+  </Target>
+
+  <Target Name="_WasiCoreCLRSetRuntimePaths"
+          DependsOnTargets="_InitializeCommonProperties">
+    <PropertyGroup>
+      <WasiCoreCLRHostNativeDir Condition="'$(WasiCoreCLRHostNativeDir)' == ''">$(MicrosoftNetCoreAppRuntimePackRidNativeDir)</WasiCoreCLRHostNativeDir>
+      <WasiCoreCLRNativeRuntimeDir Condition="'$(WasiCoreCLRNativeRuntimeDir)' == ''">$(MicrosoftNetCoreAppRuntimePackRidNativeDir)</WasiCoreCLRNativeRuntimeDir>
+      <WasiCoreCLRSystemPrivateCoreLibPath Condition="'$(WasiCoreCLRSystemPrivateCoreLibPath)' == '' and Exists('$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)System.Private.CoreLib.dll')">$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)System.Private.CoreLib.dll</WasiCoreCLRSystemPrivateCoreLibPath>
+      <WasiCoreCLRSystemPrivateCoreLibPath Condition="'$(WasiCoreCLRSystemPrivateCoreLibPath)' == ''">$(MicrosoftNetCoreAppRuntimePackRidNativeDir)System.Private.CoreLib.dll</WasiCoreCLRSystemPrivateCoreLibPath>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="_WasiCoreCLRCleanReadyToRunBundle"
+          BeforeTargets="_WasiGenerateAppBundle"
+          DependsOnTargets="_InitializeCommonProperties"
+          Condition="'$(PublishReadyToRun)' != 'true'">
+    <RemoveDir Directories="$([MSBuild]::NormalizeDirectory('$(WasmAppDir)', 'managed', 'comp'))" />
+  </Target>
+
+  <!-- The SDK does not resolve a CoreCLR wasi-wasm runtime pack, so its normal R2R input list
+       contains only the app closure and crossgen2 cannot resolve System.Private.CoreLib. Add the
+       implementation framework that _WasiCopyFrameworkToManaged deploys later, and compile the
+       whole closure into the composite. -->
+  <Target Name="_WasiCoreCLRFeedReadyToRunCompileList"
+          BeforeTargets="_PrepareForReadyToRunCompilation"
+          DependsOnTargets="_WasiCoreCLRSetRuntimePaths"
+          Condition="'$(PublishReadyToRun)' == 'true'">
+    <ItemGroup>
+      <_WasiReadyToRunFrameworkInput Include="$(WasiCoreCLRSystemPrivateCoreLibPath)" />
+      <_WasiReadyToRunFrameworkInput Include="$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)*.dll"
+                                     Exclude="$(WasiCoreCLRSystemPrivateCoreLibPath)" />
+      <ResolvedFileToPublish Include="@(_WasiReadyToRunFrameworkInput)"
+                             PostprocessAssembly="true"
+                             RelativePath="%(_WasiReadyToRunFrameworkInput.FileName)%(_WasiReadyToRunFrameworkInput.Extension)"
+                             CopyToPublishDirectory="PreserveNewest" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="_WasiCoreCLRInspectReadyToRunComposite"
+          DependsOnTargets="CreateReadyToRunImages"
+          Condition="'$(PublishReadyToRun)' == 'true'">
+    <PropertyGroup>
+      <_WasiR2ROutputDir>$([MSBuild]::NormalizeDirectory('$(_ReadyToRunOutputPath)'))</_WasiR2ROutputDir>
+      <_WasiR2RCompositePath>$(_WasiR2ROutputDir)composite-r2r.wasm</_WasiR2RCompositePath>
+      <_WasiR2RImageBufferSource>$([MSBuild]::NormalizePath('$(_WasmIntermediateOutputPath)', 'corerun-relink', 'r2r-image-buffer.cpp'))</_WasiR2RImageBufferSource>
+    </PropertyGroup>
+    <Error Condition="!Exists('$(_WasiR2RCompositePath)')"
+           Text="The ReadyToRun composite was not found at '$(_WasiR2RCompositePath)'." />
+    <Error Condition="'$(WasiR2RComposeToolPath)' == '' or !Exists('$(WasiR2RComposeToolPath)')"
+           Text="The WASI ReadyToRun composition tool was not found at '$(WasiR2RComposeToolPath)'." />
+    <Exec Command="&quot;$(WasiR2RPythonCommand)&quot; &quot;$(WasiR2RComposeToolPath)&quot; --describe &quot;$(_WasiR2RCompositePath)&quot;"
+          ConsoleToMSBuild="true"
+          IgnoreStandardErrorWarningFormat="true"
+          StandardOutputImportance="Low">
+      <Output TaskParameter="ConsoleOutput" PropertyName="_WasiR2RDescription" />
+    </Exec>
+    <Error Condition="!$([System.Text.RegularExpressions.Regex]::IsMatch('$(_WasiR2RDescription)', '^[0-9]+,[0-9]+$'))"
+           Text="The WASI ReadyToRun composition tool returned invalid requirements '$(_WasiR2RDescription)'." />
+    <PropertyGroup>
+      <_WasiR2RFunctionCount>$([System.String]::Copy('$(_WasiR2RDescription)').Split(',').GetValue(0))</_WasiR2RFunctionCount>
+      <_WasiR2RPayloadSize>$([System.String]::Copy('$(_WasiR2RDescription)').Split(',').GetValue(1))</_WasiR2RPayloadSize>
+      <!-- The composite starts at table slot 1, so the host's functions begin immediately after it. -->
+      <WasiCompositeR2RTableBase>$([MSBuild]::Add($(_WasiR2RFunctionCount), 1))</WasiCompositeR2RTableBase>
+    </PropertyGroup>
+    <WriteLinesToFile File="$(_WasiR2RImageBufferSource)"
+                      Overwrite="true"
+                      WriteOnlyWhenDifferent="true"
+                      Lines="#include &lt;cstdint&gt;&#xD;&#xA;namespace wasi_r2r {&#xD;&#xA;extern &quot;C&quot; {&#xD;&#xA;alignas(16) uint8_t g_wasi_r2r_image[$(_WasiR2RPayloadSize)] = {}%3B&#xD;&#xA;uint32_t g_wasi_r2r_image_cap = sizeof(g_wasi_r2r_image)%3B&#xD;&#xA;}&#xD;&#xA;}&#xD;&#xA;extern &quot;C&quot; __attribute__((export_name(&quot;wasi_r2r_image_cap&quot;))) uint32_t wasi_r2r_image_cap() { return sizeof(wasi_r2r::g_wasi_r2r_image)%3B }" />
+    <ItemGroup>
+      <FileWrites Include="$(_WasiR2RImageBufferSource)" />
+    </ItemGroup>
+    <Message Text="CoreCLR-WASI ReadyToRun composite: $(_WasiR2RFunctionCount) functions, $(_WasiR2RPayloadSize) payload bytes." Importance="High" />
+  </Target>
+
   <!-- Override the same-named target imported above so we do NOT bundle Mono's
        dotnet.wasm. The wasihost corehost (linked into managed/ as 'corerun' below) is placed
        next to the framework; icudt.dat is bundled only when not invariant. -->
@@ -57,15 +151,17 @@
        (linked below), which finds them via CORE_ROOT. See https://github.com/dotnet/runtime/issues/130129. -->
   <Target Name="_WasiCopyFrameworkToManaged"
           AfterTargets="_WasiGenerateAppBundle"
+          DependsOnTargets="_WasiCoreCLRSetRuntimePaths"
           Condition="'$(WasmGenerateAppBundle)' == 'true' and '$(WasmSingleFileBundle)' != 'true'">
-    <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)System.Private.CoreLib.dll')"
-           Text="System.Private.CoreLib.dll not found in the runtime pack native dir: $(MicrosoftNetCoreAppRuntimePackRidNativeDir)" />
+    <Error Condition="!Exists('$(WasiCoreCLRSystemPrivateCoreLibPath)')"
+           Text="CoreCLR System.Private.CoreLib.dll not found at: $(WasiCoreCLRSystemPrivateCoreLibPath)" />
     <ItemGroup>
-      <_WasiCoreCLRCoreLib Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)System.Private.CoreLib.dll" />
+      <_WasiCoreCLRCoreLib Include="$(WasiCoreCLRSystemPrivateCoreLibPath)" />
       <!-- Framework assemblies from the runtime pack (implementation, not ref). Filter out
            any the app already published (its version is authoritative) into a separate list
            so a single Copy runs on the remainder - avoids per-file Copy task batching. -->
-      <_WasiCoreCLRFrameworkFiles Include="$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)\*.dll" />
+      <_WasiCoreCLRFrameworkFiles Include="$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)\*.dll"
+                                  Exclude="$(WasiCoreCLRSystemPrivateCoreLibPath)" />
       <_WasiCoreCLRFrameworkToCopy Include="@(_WasiCoreCLRFrameworkFiles)"
                                    Condition="!Exists('$(WasmAppDir)managed\%(_WasiCoreCLRFrameworkFiles.FileName)%(_WasiCoreCLRFrameworkFiles.Extension)')" />
     </ItemGroup>
@@ -88,7 +184,7 @@
 
   <Target Name="_WasiCoreCLRRelinkCoreRun"
           AfterTargets="_WasiCopyFrameworkToManaged"
-          DependsOnTargets="_SetupWasiSdk"
+          DependsOnTargets="_WasiCoreCLRSetRuntimePaths;_SetupWasiSdk;_WasiCoreCLRInspectReadyToRunComposite"
           Condition="'$(WasmGenerateAppBundle)' == 'true' and '$(WasmSingleFileBundle)' != 'true'">
 
     <Error Condition="'$(_IsToolchainMissing)' == 'true'"
@@ -257,6 +353,9 @@
       <_WasiCallHelperSource Include="$(_WasiPInvokeTablePath)"        ObjectFile="$(_WasiRelinkObjDir)callhelpers-pinvoke.o" />
       <_WasiCallHelperSource Include="$(_WasiReversePInvokeTablePath)" ObjectFile="$(_WasiRelinkObjDir)callhelpers-reverse.o" />
       <_WasiCallHelperSource Include="$(_WasiInterpToNativeTablePath)" ObjectFile="$(_WasiRelinkObjDir)callhelpers-interp-to-managed.o" />
+      <_WasiCallHelperSource Include="$(_WasiR2RImageBufferSource)"
+                             ObjectFile="$(_WasiRelinkObjDir)r2r-image-buffer.o"
+                             Condition="'$(PublishReadyToRun)' == 'true'" />
     </ItemGroup>
 
     <Exec Command="&quot;$(_WasiClangxx)&quot; &quot;@$(_WasiRelinkCompileRsp)&quot; -c &quot;%(_WasiCallHelperSource.Identity)&quot; -o &quot;%(_WasiCallHelperSource.ObjectFile)&quot;"
@@ -270,15 +369,15 @@
       <!-- libWasiHost.a is whole-archive-wrapped below (not here) so main()/_start are
            pulled: wasm-ld only pulls archive members for strong refs, and main is weakly
            referenced by __main_void. -->
-      <_WasiHostLibsPre Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libminipal.a" />
-      <_WasiHostLibsPre Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libcoreclr_static.a" />
+      <_WasiHostLibsPre Include="$(WasiCoreCLRNativeRuntimeDir)libminipal.a" />
+      <_WasiHostLibsPre Include="$(WasiCoreCLRNativeRuntimeDir)libcoreclr_static.a" />
       <_WasiHostLibsPre Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libSystem.IO.Compression.Native.a" />
       <_WasiHostLibsPre Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libSystem.Native.a" />
       <_WasiHostLibsPre Condition="'$(InvariantTimezone)' == 'true'" Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libSystem.Native.TimeZoneData.Invariant.a" />
       <_WasiHostLibsPre Condition="'$(InvariantTimezone)' != 'true'" Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libSystem.Native.TimeZoneData.a" />
       <!-- app callhelper .o goes here, in place of libcoreclr_gen_static.a -->
       <_WasiHostLibsPre Include="%(_WasiCallHelperSource.ObjectFile)" />
-      <_WasiHostLibsPre Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libnativeresourcestring.a" />
+      <_WasiHostLibsPre Include="$(WasiCoreCLRNativeRuntimeDir)libnativeresourcestring.a" />
       <!-- Not linking libgcinfo_unix_wasm.a (browser does): it's the gcinfo ENCODER
            (GcInfoArrayList, JIT/crossgen emit) the interp/R2R host never uses, so its refs
            in libcoreclr_static.a gc-strip. The DECODER for GC stackwalks
@@ -292,15 +391,25 @@
       <_WasiHostLibsPre Condition="'$(InvariantGlobalization)' != 'true'" Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libicudata.a" />
 
       <!-- Linked after -lstdc++ -->
-      <_WasiHostLibsPost Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libcoreclrminipal.a" />
-      <_WasiHostLibsPost Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libcoreclrpal.a" />
-      <_WasiHostLibsPost Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libminipal.a" />
+      <_WasiHostLibsPost Include="$(WasiCoreCLRNativeRuntimeDir)libcoreclrminipal.a" />
+      <_WasiHostLibsPost Include="$(WasiCoreCLRNativeRuntimeDir)libcoreclrpal.a" />
+      <_WasiHostLibsPost Include="$(WasiCoreCLRNativeRuntimeDir)libminipal.a" />
       <_WasiHostLibsPost Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libz.a" />
       <_WasiHostLibsPost Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libzstd.a" Condition="Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libzstd.a')" />
     </ItemGroup>
 
     <PropertyGroup>
-      <_WasiRelinkOutput>$(WasmAppDir)managed\corerun</_WasiRelinkOutput>
+      <_WasiRelinkOutput>$(_WasiRelinkObjDir)corerun</_WasiRelinkOutput>
+      <_WasiPublishedHost>$(WasmAppDir)managed\corerun</_WasiPublishedHost>
+      <!-- Opt-in: link the app host so a composite ReadyToRun image can be spliced into it afterwards
+           (see eng/wasi-r2r/README.md). Off by default because the table reservation below is a fixed
+           cost paid by every app whether or not it is ever spliced. -->
+      <WasiEnableCompositeR2R Condition="'$(WasiEnableCompositeR2R)' == ''">false</WasiEnableCompositeR2R>
+      <!-- Table slots 1..N-1 are reserved for the composite's ACTIVE element segment, which the engine
+           installs at instantiation - so the table must already be large enough. Reserve by the
+           composite's FUNCTION count, not its assembly count. Must be > the composite's function count;
+           eng/wasi-r2r/pipeline_shim.py checks this and names the required value if it is too small. -->
+      <WasiCompositeR2RTableBase Condition="'$(WasiCompositeR2RTableBase)' == ''">65537</WasiCompositeR2RTableBase>
     </PropertyGroup>
 
     <ItemGroup>
@@ -308,6 +417,17 @@
       <_WasiRelinkLinkFlags Include="$(_WasiRelinkOptFlag)" />
       <_WasiRelinkLinkFlags Include="-DNDEBUG" Condition="'$(Configuration)' != 'Debug'" />
       <_WasiRelinkLinkFlags Include="-Wl,--gc-sections" />
+      <!-- Keep the runtime-owned continuation global available so an R2R composite can import
+           webcil.asyncContinuation from the per-app-linked host. -->
+      <_WasiRelinkLinkFlags Include="-Wl,--export=__async_continuation" />
+      <!-- The remaining imports a spliced composite needs from its host. These must match the flags in
+           src/coreclr/hosts/corerun/CMakeLists.txt: the per-app host carries the same probe
+           (wasi_r2r_probe.hpp, via libWasiHost.a), so without them the probe is present but can never
+           be satisfied and the app silently interprets everything. -->
+      <_WasiRelinkLinkFlags Include="-Wl,--table-base=$(WasiCompositeR2RTableBase)" Condition="'$(WasiEnableCompositeR2R)' == 'true'" />
+      <_WasiRelinkLinkFlags Include="-Wl,--export-table" Condition="'$(WasiEnableCompositeR2R)' == 'true'" />
+      <_WasiRelinkLinkFlags Include="-Wl,--export=__stack_pointer" Condition="'$(WasiEnableCompositeR2R)' == 'true'" />
+      <_WasiRelinkLinkFlags Include="-Wl,--export=__coreclr_wasm_rtlrestorecontext_tag" Condition="'$(WasiEnableCompositeR2R)' == 'true'" />
       <_WasiRelinkLinkFlags Include="-fwasm-exceptions" />
       <_WasiRelinkLinkFlags Include="-mllvm" />
       <_WasiRelinkLinkFlags Include="-wasm-use-legacy-eh=false" />
@@ -322,7 +442,7 @@
       <_WasiRelinkLinkFlags Include="-Wl,--component-type,&quot;$(_WasiHttpWorldWit.Replace('\','/'))&quot;" />
       <!-- Host archive first, whole-archive so main()/_start are included. -->
       <_WasiRelinkLinkFlags Include="-Wl,--whole-archive" />
-      <_WasiRelinkLinkFlags Include="&quot;$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libWasiHost.a&quot;" />
+      <_WasiRelinkLinkFlags Include="&quot;$(WasiCoreCLRHostNativeDir)libWasiHost.a&quot;" />
       <_WasiRelinkLinkFlags Include="-Wl,--no-whole-archive" />
       <_WasiRelinkLinkFlags Include="@(_WasiHostLibsPre->'&quot;%(Identity)&quot;')" />
       <_WasiRelinkLinkFlags Include="-lstdc++" />
@@ -334,10 +454,63 @@
     <Message Text="Linking CoreCLR-WASI wasihost host with per-app callhelper thunks ..." Importance="High" />
     <Exec Command="&quot;$(_WasiClangxx)&quot; &quot;@$(_WasiRelinkLinkRsp)&quot;"
           WorkingDirectory="$(_WasiRelinkObjDir)" />
+    <Copy Condition="'$(PublishReadyToRun)' != 'true'"
+          SourceFiles="$(_WasiRelinkOutput)"
+          DestinationFiles="$(_WasiPublishedHost)" />
 
     <ItemGroup>
       <FileWrites Include="$(_WasiRelinkCompileRsp);$(_WasiRelinkLinkRsp)" />
       <FileWrites Include="%(_WasiCallHelperSource.ObjectFile)" />
     </ItemGroup>
+  </Target>
+
+  <Target Name="_WasiCoreCLRComposeReadyToRun"
+          AfterTargets="_WasiCoreCLRRelinkCoreRun"
+          DependsOnTargets="_WasiCoreCLRInspectReadyToRunComposite"
+          Inputs="$(_WasiRelinkOutput);$(_WasiR2RCompositePath);$(WasiR2RComposeToolPath)"
+          Outputs="$(_WasiPublishedHost)"
+          Condition="'$(PublishReadyToRun)' == 'true' and '$(WasmGenerateAppBundle)' == 'true' and '$(WasmSingleFileBundle)' != 'true'">
+    <PropertyGroup>
+      <_WasiR2RComposeOutputDir>$([MSBuild]::NormalizeDirectory('$(_WasmIntermediateOutputPath)', 'r2r-compose'))</_WasiR2RComposeOutputDir>
+      <_WasiR2RComposedHost>$(_WasiR2RComposeOutputDir)corerun-composite.wasm</_WasiR2RComposedHost>
+      <_WasiR2RStubDir>$([MSBuild]::NormalizeDirectory('$(WasmAppDir)', 'managed', 'comp'))</_WasiR2RStubDir>
+    </PropertyGroup>
+    <RemoveDir Directories="$(_WasiR2RStubDir)" />
+    <MakeDir Directories="$(_WasiR2RComposeOutputDir);$(_WasiR2RStubDir)" />
+    <Exec Command="&quot;$(WasiR2RPythonCommand)&quot; &quot;$(WasiR2RComposeToolPath)&quot;"
+          EnvironmentVariables="ROOT=$(RepoRoot);COMP=$(_WasiR2RCompositePath);CORERUN=$(_WasiRelinkOutput);OUTDIR=$(_WasiR2RComposeOutputDir)" />
+    <Copy SourceFiles="$(_WasiR2RComposedHost)"
+          DestinationFiles="$(_WasiPublishedHost)" />
+    <ItemGroup>
+      <_WasiR2RComponentStub Include="@(_ReadyToRunCompositeBuildInput->'$(_WasiR2ROutputDir)%(FileName).wasm')" />
+      <_WasiR2RComponentStub Include="@(_ReadyToRunCompositeUnrootedBuildInput->'$(_WasiR2ROutputDir)%(FileName).wasm')" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_WasiR2RComponentStub)"
+          DestinationFolder="$(_WasiR2RStubDir)"
+          SkipUnchangedFiles="true" />
+    <ItemGroup>
+      <FileWrites Include="$(_WasiR2RComposeOutputDir)**" />
+      <FileWrites Include="$(_WasiPublishedHost)" />
+      <FileWrites Include="@(_WasiR2RComponentStub->'$(_WasiR2RStubDir)%(FileName)%(Extension)')" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="_GenerateRunWasmtimeScript">
+    <PropertyGroup>
+      <WasmRunWasmtimeScriptPath Condition="'$(WasmRunWasmtimeScriptPath)' == ''">$(WasmAppDir)run-wasmtime.sh</WasmRunWasmtimeScriptPath>
+      <_ScriptContent Condition="'$(WasmSingleFileBundle)' == 'true'">wasmtime run $([System.IO.Path]::GetFileNameWithoutExtension($(WasmMainAssemblyFileName))).wasm $*</_ScriptContent>
+      <_ScriptContent Condition="'$(WasmSingleFileBundle)' != 'true'">cd managed &amp;&amp; wasmtime run -W exceptions=y -S http --dir . corerun $(WasmMainAssemblyFileName) $*</_ScriptContent>
+    </PropertyGroup>
+
+    <Error Condition="'$(WasmMainAssemblyFileName)' == ''"
+           Text="%24(WasmMainAssemblyFileName) property needs to be set for generating $(WasmRunWasmtimeScriptPath)." />
+    <WriteLinesToFile File="$(WasmRunWasmtimeScriptPath)"
+                      Lines="$(_ScriptContent)"
+                      Overwrite="true" />
+    <ItemGroup>
+      <FileWrites Include="$(WasmRunWasmtimeScriptPath)" />
+    </ItemGroup>
+    <Exec Condition="'$(OS)' != 'Windows_NT'"
+          Command="chmod a+x &quot;$(WasmRunWasmtimeScriptPath)&quot;" />
   </Target>
 </Project>
