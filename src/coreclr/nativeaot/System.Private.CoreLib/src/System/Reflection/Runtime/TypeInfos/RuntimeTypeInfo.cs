@@ -103,14 +103,6 @@ namespace System.Reflection.Runtime.TypeInfos
 
         public abstract bool ContainsGenericParameters { get; }
 
-        public object[] GetCustomAttributes(bool inherit) => RuntimeCustomAttribute.GetCustomAttributes(ToType(), typeof(object), inherit);
-
-        public object[] GetCustomAttributes(Type attributeType, bool inherit)
-        {
-            ArgumentNullException.ThrowIfNull(attributeType);
-            return RuntimeCustomAttribute.GetCustomAttributes(ToType(), attributeType, inherit);
-        }
-
         internal virtual MetadataReader? GetMetadataReader() => null;
 
         internal virtual CustomAttributeHandleCollection GetCustomAttributeHandles() => default;
