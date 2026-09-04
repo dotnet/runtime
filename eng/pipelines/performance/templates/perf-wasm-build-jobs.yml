@@ -31,7 +31,7 @@ jobs:
     platforms:
     - browser_wasm
     jobParameters:
-      buildArgs: -s clr+libs+host+packs -c $(_BuildConfig) /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+      buildArgs: -s clr+libs+host+packs -c $(_BuildConfig) /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS) /p:BuildHostTools=true
       nameSuffix: wasm_coreclr
       isOfficialBuild: false
       postBuildSteps:
@@ -41,4 +41,5 @@ jobs:
             artifactName: BrowserWasmCoreCLR
             sdkDirName: dotnet-none
             includeRefPack: false
+            includeCrossgen2Pack: true
             publishCoreClrRuntimePack: true

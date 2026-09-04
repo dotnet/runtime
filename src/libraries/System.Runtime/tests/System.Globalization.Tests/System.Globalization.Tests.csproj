@@ -16,6 +16,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
+    <Compile Include="GB18030\CharTests.cs" />
+    <Compile Include="GB18030\CharUnicodeInfoTests.cs" />
     <Compile Include="IcuTests.cs" />
     <Compile Include="CompareInfo\CompareInfoTests.cs" />
     <Compile Include="CompareInfo\CompareInfoTestsBase.cs" />
@@ -127,6 +129,8 @@
     <Compile Include="System\Globalization\TextElementEnumeratorTests.cs" />
     <Compile Include="System\Globalization\UnicodeCategoryTests.cs" />
     <!-- Helpers -->
+    <Compile Include="$(CommonTestPath)ComplianceTests\GB18030\TestHelper.CharUnicodeInfo.cs"
+             Link="Common\ComplianceTests\GB18030\TestHelper.CharUnicodeInfo.cs" />
     <Compile Include="$(CommonTestPath)System\RandomDataGenerator.cs"
              Link="Common\System\RandomDataGenerator.cs" />
   </ItemGroup>
@@ -144,4 +148,5 @@
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)TestUtilities.Unicode\TestUtilities.Unicode.csproj" />
   </ItemGroup>
+  <Import Project="$(CommonTestPath)ComplianceTests\GB18030\GB18030.Shared.projitems" />
 </Project>

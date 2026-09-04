@@ -27,6 +27,7 @@ namespace Microsoft.Diagnostics.DataContractReader;
 /// </remarks>
 public sealed unsafe class ContractDescriptorTarget : Target
 {
+    private const int SupportedDataDescriptorVersion = 2;
     private const int StackAllocByteThreshold = 1024;
 
     private readonly struct Configuration
@@ -162,6 +163,12 @@ public sealed unsafe class ContractDescriptorTarget : Target
 
     private void AddDescriptor(Descriptor descriptor)
     {
+        if (descriptor.ContractDescriptor.Version != SupportedDataDescriptorVersion)
+        {
+            string version = descriptor.ContractDescriptor.Version?.ToString() ?? "<missing>";
+            throw DescriptorMalformed($"Unsupported data descriptor version '{version}'. Expected version {SupportedDataDescriptorVersion}.");
+        }
+
         _descriptors.Add(descriptor);
         foreach ((string name, TargetPointer pSubDescriptor) in GetSubDescriptors(descriptor))
         {

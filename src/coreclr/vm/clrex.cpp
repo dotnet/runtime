@@ -47,7 +47,7 @@ CLRException::~CLRException()
     OBJECTHANDLE throwableHandle = GetThrowableHandle();
     if (throwableHandle != NULL)
     {
-        STRESS_LOG1(LF_EH, LL_INFO100, "CLRException::~CLRException destroying throwable: obj = %x\n", GetThrowableHandle());
+        STRESS_LOG1(LF_EH, LL_INFO100, "CLRException::~CLRException destroying throwable: obj = %p\n", (void*)GetThrowableHandle());
         // clear the handle first, so if we SO on destroying it, we don't have a dangling reference
         SetThrowableHandle(NULL);
         DestroyHandle(throwableHandle);
@@ -61,7 +61,6 @@ OBJECTREF CLRException::GetThrowable()
         GC_TRIGGERS;
         NOTHROW;
         MODE_COOPERATIVE;
-        FORBID_FAULT;
     }
     CONTRACTL_END;
 
@@ -161,7 +160,6 @@ OBJECTREF CLRException::GetThrowable()
 
         EX_TRY
         {
-            FAULT_NOT_FATAL();
             throwable = CreateThrowable();
         }
         EX_CATCH
@@ -224,7 +222,6 @@ OBJECTREF CLRException::GetThrowable()
             if (m_innerException != NULL && !CLRException::IsPreallocatedExceptionObject(throwable))
             {
                 // Only set inner exception if the exception is not preallocated.
-                FAULT_NOT_FATAL();
 
                 // If inner exception is not empty, then set the managed exception's
                 // _innerException field properly
@@ -435,7 +432,6 @@ BOOL CLRException::IsPreallocatedExceptionObject(OBJECTREF o)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
-        FORBID_FAULT;
     }
     CONTRACTL_END;
 
@@ -459,7 +455,6 @@ BOOL CLRException::IsPreallocatedExceptionHandle(OBJECTHANDLE h)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        FORBID_FAULT;
     }
     CONTRACTL_END;
 
@@ -484,7 +479,6 @@ OBJECTHANDLE CLRException::GetPreallocatedHandleForObject(OBJECTREF o)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
-        FORBID_FAULT;
     }
     CONTRACTL_END;
 
@@ -518,7 +512,6 @@ OBJECTREF CLRException::GetBestException(HRESULT hr, PTR_MethodTable mt)
 
     EX_TRY
     {
-        FAULT_NOT_FATAL();
 
         EXCEPTIONREF pOutOfMemory = (EXCEPTIONREF)AllocateObject(mt);
         pOutOfMemory->SetHResult(hr);
@@ -1430,13 +1423,13 @@ OBJECTREF EETypeLoadException::CreateThrowable()
 // error
 // ---------------------------------------------------------------------------
 EEFileLoadException::EEFileLoadException(const SString &name, HRESULT hr, Exception *pInnerException/* = NULL*/)
-  : EEException(GetFileLoadKind(hr)),
-    m_name(name),
-    m_hr(hr)
+    : EEException(GetFileLoadKind(hr))
+    , m_name(name)
+    , m_hr(hr)
 {
     CONTRACTL
     {
-        GC_NOTRIGGER;
+        GC_TRIGGERS;
         THROWS;
         MODE_ANY;
     }
@@ -1451,13 +1444,12 @@ EEFileLoadException::EEFileLoadException(const SString &name, HRESULT hr, Except
         m_name.Set(W("<Unknown>"));
 }
 
-
-EEFileLoadException::EEFileLoadException(const SString &name, HRESULT hr, const SString &diagnosticInfo, Exception *pInnerException/* = NULL*/)
-  : EEFileLoadException(name, hr, pInnerException)
+EEFileLoadException::EEFileLoadException(const SString &name, HRESULT hr, const SString &diagnosticInfo)
+    : EEFileLoadException(name, hr, NULL)
 {
     CONTRACTL
     {
-        GC_NOTRIGGER;
+        GC_TRIGGERS;
         THROWS;
         MODE_ANY;
     }
@@ -1465,15 +1457,6 @@ EEFileLoadException::EEFileLoadException(const SString &name, HRESULT hr, const 
 
     m_diagnosticInfo.Set(diagnosticInfo);
 }
-
-EEFileLoadException::~EEFileLoadException()
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-
-}
-
-
 
 void EEFileLoadException::SetFileName(const SString &fileName, BOOL removePath)
 {
@@ -1661,7 +1644,6 @@ void DECLSPEC_NORETURN EEFileLoadException::Throw(AssemblySpec  *pSpec, HRESULT 
 
     // Extract the requesting assembly chain for diagnostic purposes
     {
-        FAULT_NOT_FATAL();
 
         Exception *inner2 = ExThrowWithInnerHelper(pInnerException);
         EEFileLoadException *pException = new EEFileLoadException(name, hr);
@@ -1721,7 +1703,6 @@ void DECLSPEC_NORETURN EEFileLoadException::Throw(AssemblySpec *pSpec, HRESULT h
 
     // Extract the requesting assembly chain for diagnostic purposes
     {
-        FAULT_NOT_FATAL();
 
         Exception *inner2 = ExThrowWithInnerHelper(pInnerException);
         EEFileLoadException *pException = new EEFileLoadException(name, hr, diagnosticInfo);

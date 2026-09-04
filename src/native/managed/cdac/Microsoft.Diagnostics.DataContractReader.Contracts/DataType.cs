@@ -45,6 +45,8 @@ public enum DataType
     AppDomain,
     Debugger,
     DebuggerRCThread,
+    DebuggerPatchTable,
+    DebuggerControllerPatch,
     MemoryRange,
     SystemDomain,
     Assembly,

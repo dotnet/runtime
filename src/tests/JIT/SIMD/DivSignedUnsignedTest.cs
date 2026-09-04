@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Numerics;
 using Xunit;
 
-namespace VectorMathTests
+namespace SIMDTests.DivSignedUnsignedTestTests
 {
     public class Program
     {

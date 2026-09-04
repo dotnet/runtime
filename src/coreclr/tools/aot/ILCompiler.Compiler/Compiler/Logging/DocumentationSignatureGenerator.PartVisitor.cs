@@ -180,6 +180,12 @@ namespace ILCompiler.Logging
                 string unmangledName = type.GetName();
                 int totalArity = type.Instantiation.Length;
                 int nestedArity = totalArity - containingArity;
+                if (nestedArity == 0)
+                {
+                    builder.Append(unmangledName);
+                    return;
+                }
+
                 string expectedSuffix = $"`{nestedArity}";
                 if (unmangledName.EndsWith(expectedSuffix))
                     unmangledName = unmangledName.Substring(0, unmangledName.Length - expectedSuffix.Length);

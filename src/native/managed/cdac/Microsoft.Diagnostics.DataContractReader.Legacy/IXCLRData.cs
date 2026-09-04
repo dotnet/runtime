@@ -520,7 +520,7 @@ public unsafe partial interface IXCLRDataTask
     int SetDesiredExecutionState(uint state);
 
     [PreserveSig]
-    int CreateStackWalk(uint flags, DacComNullableByRef<IXCLRDataStackWalk> stackWalk);
+    int CreateStackWalk(CLRDataStackWalkFlag flags, DacComNullableByRef<IXCLRDataStackWalk> stackWalk);
 
     [PreserveSig]
     int GetOSThreadID(uint* id);
@@ -994,6 +994,12 @@ public enum CLRDataGeneralRequest : uint
 public enum CLRDataStackWalkRequest : uint
 {
     CLRDATA_STACK_WALK_REQUEST_SET_FIRST_FRAME = 0xe1000000,
+}
+
+[Flags]
+public enum CLRDataStackWalkFlag : uint
+{
+    CLRDATA_SIMPFRAME_RUNTIME_UNMANAGED_CODE = 0x8,
 }
 
 [Flags]

@@ -405,14 +405,14 @@ namespace System.Net.Quic.Tests
             Assert.Equal(QuicDefaults.DefaultServerMaxInboundUnidirectionalStreams, unidiTotal);
 
             // Open # of streams up to the capacity.
-            List<QuicStream> clientStreams = (await Task.WhenAll(Enumerable.Range(0, unidirectional ? QuicDefaults.DefaultServerMaxInboundUnidirectionalStreams : QuicDefaults.DefaultServerMaxInboundBidirectionalStreams)
-                                                                           .Select(i => clientConnection.OpenOutboundStreamAsync(unidirectional ? QuicStreamType.Unidirectional : QuicStreamType.Bidirectional).AsTask())))
-                                                                           .ToList();
+            QuicStream[] clientStreams = (await Task.WhenAll(Enumerable.Range(0, unidirectional ? QuicDefaults.DefaultServerMaxInboundUnidirectionalStreams : QuicDefaults.DefaultServerMaxInboundBidirectionalStreams)
+                                                                       .Select(i => clientConnection.OpenOutboundStreamAsync(unidirectional ? QuicStreamType.Unidirectional : QuicStreamType.Bidirectional).AsTask())))
+                                                                       .ToArray();
             // Open another # of streams up to 2x capacity all together.
             CancellationTokenSource cts = new CancellationTokenSource();
-            List<Task<QuicStream>> pendingClientStreams = Enumerable.Range(0, unidirectional ? QuicDefaults.DefaultServerMaxInboundUnidirectionalStreams : QuicDefaults.DefaultServerMaxInboundBidirectionalStreams)
-                                                                    .Select(i => clientConnection.OpenOutboundStreamAsync(unidirectional ? QuicStreamType.Unidirectional : QuicStreamType.Bidirectional, cts.Token).AsTask())
-                                                                    .ToList();
+            Task<QuicStream>[] pendingClientStreams = Enumerable.Range(0, unidirectional ? QuicDefaults.DefaultServerMaxInboundUnidirectionalStreams : QuicDefaults.DefaultServerMaxInboundBidirectionalStreams)
+                                                                .Select(i => clientConnection.OpenOutboundStreamAsync(unidirectional ? QuicStreamType.Unidirectional : QuicStreamType.Bidirectional, cts.Token).AsTask())
+                                                                .ToArray();
             foreach (var task in pendingClientStreams)
             {
                 Assert.False(task.IsCompleted);
@@ -428,11 +428,11 @@ namespace System.Net.Quic.Tests
                 await clientStream.DisposeAsync();
                 await (await serverConnection.AcceptInboundStreamAsync()).DisposeAsync();
             }
-            clientStreams.Clear();
             Assert.False(streamsAvailableFired.CurrentCount > 0);
 
             // Pending streams should get cancelled and disposing the streams now should lead to stream capacity increments.
             bool first = true; // The stream capacity is cumulatively reported only after the STREAMS_AVAILABLE reached over 0.
+            OperationCanceledException oce = await Assert.ThrowsAsync<OperationCanceledException>(() => Task.WhenAll(pendingClientStreams));
             foreach (var cancelledStream in pendingClientStreams)
             {
                 Assert.True(cancelledStream.IsCanceled);

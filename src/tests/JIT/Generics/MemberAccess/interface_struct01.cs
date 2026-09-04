@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+namespace JitTest_Generics_MemberAccess_interface_struct01;
+
 using System;
 using Xunit;
 
@@ -50,6 +52,7 @@ struct Gen<T> : IGen<T>
 
 public class Test_interface_struct01
 {
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

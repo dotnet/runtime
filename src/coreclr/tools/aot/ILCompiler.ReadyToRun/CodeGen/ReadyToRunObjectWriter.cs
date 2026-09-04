@@ -309,7 +309,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private WasmObjectWriter CreateWasmObjectWriter()
         {
-            return new WasmObjectWriter(_nodeFactory, ObjectWritingOptions.None,  _outputInfoBuilder);
+            return new WebCilObjectWriter(_nodeFactory, ObjectWritingOptions.None, _outputInfoBuilder);
         }
 
         public static void EmitObject(

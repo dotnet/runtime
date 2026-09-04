@@ -56,8 +56,9 @@ namespace System
 #endif
         }
 
+        /// <safety>Stores the pointer as an integer value; the pointed-to memory is never accessed.</safety>
         [NonVersionable]
-        public unsafe UIntPtr(void* value)
+        public UIntPtr(void* value)
         {
             _value = (nuint)value;
         }
@@ -115,11 +116,13 @@ namespace System
         [NonVersionable]
         public static explicit operator nuint(ulong value) => checked((nuint)value);
 
+        /// <safety>Converts between a pointer and an integer of the same width; no memory is accessed.</safety>
         [NonVersionable]
-        public static unsafe explicit operator nuint(void* value) => (nuint)value;
+        public static explicit operator nuint(void* value) => (nuint)value;
 
+        /// <safety>Converts between an integer and a pointer of the same width; no memory is accessed.</safety>
         [NonVersionable]
-        public static unsafe explicit operator void*(nuint value) => (void*)value;
+        public static explicit operator void*(nuint value) => (void*)value;
 
         [NonVersionable]
         public static explicit operator uint(nuint value)
@@ -158,8 +161,9 @@ namespace System
             get => sizeof(nuint_t);
         }
 
+        /// <safety>Returns the stored value reinterpreted as a pointer; no memory is accessed.</safety>
         [NonVersionable]
-        public unsafe void* ToPointer() => (void*)_value;
+        public void* ToPointer() => (void*)_value;
 
         /// <inheritdoc cref="IMinMaxValue{TSelf}.MaxValue" />
         public static nuint MaxValue

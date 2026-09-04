@@ -381,7 +381,6 @@ LPCUTF8 MethodDesc::GetName()
     {
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS; // MethodImpl::FindMethodDesc can throw.
         GC_NOTRIGGER;
-        FORBID_FAULT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
@@ -498,7 +497,6 @@ void MethodDesc::GetSig(PCCOR_SIGNATURE *ppSig, DWORD *pcSig)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END
@@ -551,7 +549,6 @@ void MethodDesc::GetSigFromMetadata(IMDInternalImport * importer,
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END
@@ -765,7 +762,6 @@ DWORD MethodDesc::GetNumGenericMethodArgs()
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         CANNOT_TAKE_LOCK;
         SUPPORTS_DAC;
     }
@@ -810,7 +806,6 @@ Instantiation MethodDesc::GetExactClassInstantiation(TypeHandle possibleObjType)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END
@@ -861,7 +856,6 @@ Instantiation MethodDesc::LoadMethodInstantiation()
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
 
@@ -880,7 +874,6 @@ BOOL MethodDesc::ContainsGenericVariables()
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -1112,6 +1105,31 @@ PCODE MethodDesc::GetNativeCode()
     return GetStableEntryPoint();
 }
 
+#ifndef DACCESS_COMPILE
+PCODE MethodDesc::GetNativeCodeVolatile()
+{
+    WRAPPER_NO_CONTRACT;
+    SUPPORTS_DAC;
+    _ASSERTE(!IsDefaultInterfaceMethod() || HasNativeCodeSlot());
+    if (HasNativeCodeSlot())
+    {
+        PTR_PCODE ppCode = GetAddrOfNativeCodeSlot();
+        PCODE pCode = VolatileLoad(ppCode);
+
+#ifdef TARGET_ARM
+        if (pCode != (PCODE)NULL)
+            pCode |= THUMB_CODE;
+#endif
+        return pCode;
+    }
+
+    if (!HasStableEntryPoint() || HasPrecode())
+        return (PCODE)NULL;
+
+    return VolatileLoad(GetAddrOfSlot());
+}
+#endif
+
 PCODE MethodDesc::GetNativeCodeAnyVersion()
 {
     WRAPPER_NO_CONTRACT;
@@ -1200,7 +1218,6 @@ ULONG MethodDesc::GetRVA()
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         SUPPORTS_DAC;
         PRECONDITION((IsIL() && MayHaveILHeader()) ||
             (IsPInvoke() && ((PInvokeMethodDesc*)this)->IsEarlyBound()));
@@ -1354,7 +1371,6 @@ ReturnKind MethodDesc::GetReturnKind()
     {
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -1471,7 +1487,6 @@ WORD MethodDesc::GetComSlot()
     {
         THROWS;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         PRECONDITION(!IsAsyncMethod());
     }
     CONTRACTL_END
@@ -1596,7 +1611,6 @@ Module *MethodDesc::GetModule() const
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
     SUPPORTS_DAC;
 
     MethodTable* pMT = GetMethodDescChunk()->GetMethodTable();
@@ -1774,7 +1788,6 @@ MethodDesc* MethodDesc::LoadTypicalMethodDefinition()
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
 
@@ -1875,7 +1888,6 @@ MethodDesc* MethodDesc::StripMethodInstantiation()
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -1896,7 +1908,6 @@ MethodDescChunk *MethodDescChunk::CreateChunk(LoaderHeap *pHeap, DWORD methodDes
     {
         THROWS;
         GC_NOTRIGGER;
-        INJECT_FAULT(ThrowOutOfMemory());
 
         PRECONDITION(CheckPointer(pHeap));
         PRECONDITION(CheckPointer(pInitialMT));
@@ -2180,7 +2191,6 @@ PCODE MethodDesc::GetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags /*
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END
 
@@ -2233,7 +2243,6 @@ PCODE MethodDesc::TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END
 
@@ -2424,8 +2433,6 @@ MethodDesc* NonVirtualEntry2MethodDesc(PCODE entryPoint)
             return pMD;
     }
 
-    // We should never get here
-    _ASSERTE(!"NonVirtualEntry2MethodDesc failed");
     return NULL;
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 }
@@ -2643,7 +2650,6 @@ MethodImpl *MethodDesc::GetMethodImpl()
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         PRECONDITION(HasMethodImplSlot());
         SUPPORTS_DAC;
     }
@@ -2655,24 +2661,6 @@ MethodImpl *MethodDesc::GetMethodImpl()
 }
 
 #ifndef DACCESS_COMPILE
-
-//*******************************************************************************
-BOOL MethodDesc::RequiresMDContextArg()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    // Interop marshaling is implemented using shared stubs
-    if (IsCLRToCOMCall())
-        return TRUE;
-
-    // Interop marshalling of varargs needs MethodDesc calling convention
-    // to support ldftn <PInvoke method with varargs>. It is not possible
-    // to smuggle the MethodDesc* via vararg cookie in this case.
-    if (IsPInvoke() && IsVarArg())
-        return TRUE;
-
-    return FALSE;
-}
 
 //*******************************************************************************
 BOOL MethodDesc::RequiresStableEntryPoint()
@@ -2752,8 +2740,8 @@ BOOL MethodDesc::MayHaveNativeCode()
     case mcInstantiated:    // IsIL() case. Handled below.
         break;
 #ifdef FEATURE_COMINTEROP
-    case mcComInterop:      // Generated stub. No native code.
-        return FALSE;
+    case mcComInterop:      // CLR->COM calls are backed by transient IL.
+        return TRUE;
 #endif // FEATURE_COMINTEROP
     case mcDynamic:         // LCG or stub-as-il.
         return TRUE;
@@ -2776,8 +2764,6 @@ void MethodDesc::CheckRestore(ClassLoadLevel level)
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_FAULT;
-
     if (!GetMethodTable()->IsFullyLoaded())
     {
         if (GetClassification() == mcInstantiated)
@@ -3237,7 +3223,10 @@ bool MethodDesc::DetermineAndSetIsEligibleForTieredCompilation()
         (!IsAsyncThunkMethod() || SupportsAsyncVersionCodegen()) &&
 
         // Tiering P/Invoke methods is not supported currently
-        !IsPInvoke()
+        !IsPInvoke() &&
+
+        // Tiering CLR->COM methods is not supported currently
+        !IsCLRToCOMCall()
         )
     {
         InterlockedUpdateFlags3(enum_flag3_IsEligibleForTieredCompilation, TRUE);
@@ -3569,7 +3558,6 @@ BOOL PInvokeMethodDesc::TryGetResolvedPInvokeTarget(_In_ PInvokeMethodDesc* pMD,
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(CheckPointer(pMD));
         PRECONDITION(CheckPointer(ndirectTarget));
     }
@@ -3768,7 +3756,6 @@ void PInvokeMethodDesc::InitEarlyBoundPInvokeTarget()
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
 
@@ -3800,7 +3787,6 @@ BOOL MethodDesc::HasUnmanagedCallersOnlyAttribute()
     {
         THROWS;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     }
     CONTRACTL_END;
 
@@ -3828,7 +3814,6 @@ BOOL MethodDesc::ShouldSuppressGCTransition()
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -3869,7 +3854,6 @@ void CLRToCOMCallMethodDesc::InitComEventCallInfo()
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END
 
@@ -4116,7 +4100,6 @@ REFLECTMETHODREF MethodDesc::AllocateStubMethodInfo()
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
         MODE_COOPERATIVE;
     }
     CONTRACTL_END;
@@ -4210,16 +4193,23 @@ PrecodeType MethodDesc::GetPrecodeType()
     PrecodeType precodeType = PRECODE_INVALID;
 
 #ifdef HAS_FIXUP_PRECODE
-    if (!RequiresMDContextArg())
+    // Interop marshalling of varargs needs the MethodDesc calling convention to
+    // support ldftn <PInvoke method with varargs>. It is not possible to smuggle
+    // the MethodDesc* via the vararg cookie in this case.
+#ifdef FEATURE_VARARGS
+    if (IsPInvoke() && IsVarArg())
+    {
+        precodeType = PRECODE_STUB;
+    }
+    else
+#endif // FEATURE_VARARGS
     {
         // Use the more efficient fixup precode if possible
         precodeType = PRECODE_FIXUP;
     }
-    else
+#else // !HAS_FIXUP_PRECODE
+    precodeType = PRECODE_STUB;
 #endif // HAS_FIXUP_PRECODE
-    {
-        precodeType = PRECODE_STUB;
-    }
 
     return precodeType;
 }

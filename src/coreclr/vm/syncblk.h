@@ -771,7 +771,6 @@ class ObjHeader
             INSTANCE_CHECK;
             NOTHROW;
             GC_NOTRIGGER;
-            FORBID_FAULT;
             MODE_ANY;
             PRECONDITION(GetHeaderSyncBlockIndex() == 0);
             PRECONDITION(m_SyncBlockValue & BIT_SBLK_SPIN_LOCK);

@@ -1182,6 +1182,7 @@ public:
     {
         CONTRACTL {
             THROWS;
+            GC_NOTRIGGER;
         } CONTRACTL_END;
 
         _ASSERTE(!m_fAcquired);
@@ -1199,6 +1200,7 @@ public:
     {
         CONTRACTL {
             THROWS;
+            GC_NOTRIGGER;
         } CONTRACTL_END;
 
         _ASSERTE(!m_fAcquired);
@@ -1215,6 +1217,7 @@ public:
     {
         CONTRACTL {
             THROWS;
+            GC_NOTRIGGER;
         } CONTRACTL_END;
 
         _ASSERTE(!m_fAcquired);
@@ -1230,6 +1233,7 @@ public:
     {
         CONTRACTL {
             THROWS;
+            GC_NOTRIGGER;
         } CONTRACTL_END;
 
         _ASSERTE(!m_fAcquired);

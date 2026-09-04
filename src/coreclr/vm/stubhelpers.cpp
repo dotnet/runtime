@@ -223,24 +223,24 @@ static SOleTlsData* GetOrCreateOleTlsData()
     return pOleTlsData;
 }
 
-FORCEINLINE static void* GetCOMIPFromRCW_GetTarget(IUnknown *pUnk, CLRToCOMCallInfo *pComInfo)
+FORCEINLINE static void* GetCOMIPFromRCW_GetTarget(IUnknown *pUnk, INT32 comSlot)
 {
     LIMITED_METHOD_CONTRACT;
 
     LPVOID* lpVtbl = *(LPVOID **)pUnk;
-    LPVOID tgt = lpVtbl[pComInfo->m_cachedComSlot];
+    LPVOID tgt = lpVtbl[comSlot];
     if (tgt != NULL)
         GetCOMIPFromRCW_ClearFP();
 
     return tgt;
 }
 
-FORCEINLINE static IUnknown* GetCOMIPFromRCW_GetTargetFromRCWCache(SOleTlsData* pOleTlsData, RCW* pRCW, CLRToCOMCallInfo* pComInfo, void** ppTarget)
+FORCEINLINE static IUnknown* GetCOMIPFromRCW_GetTargetFromRCWCache(SOleTlsData* pOleTlsData, RCW* pRCW, MethodTable* pInterfaceMT, INT32 comSlot, void** ppTarget)
 {
     LIMITED_METHOD_CONTRACT;
     _ASSERTE(pOleTlsData != NULL);
     _ASSERTE(pRCW != NULL);
-    _ASSERTE(pComInfo != NULL);
+    _ASSERTE(pInterfaceMT != NULL);
     _ASSERTE(ppTarget != NULL);
 
     // test for free-threaded after testing for context match to optimize for apartment-bound objects
@@ -248,12 +248,12 @@ FORCEINLINE static IUnknown* GetCOMIPFromRCW_GetTargetFromRCWCache(SOleTlsData* 
     {
         for (int i = 0; i < INTERFACE_ENTRY_CACHE_SIZE; i++)
         {
-            if (pRCW->m_aInterfaceEntries[i].m_pMT == pComInfo->m_pInterfaceMT)
+            if (pRCW->m_aInterfaceEntries[i].m_pMT == pInterfaceMT)
             {
                 IUnknown* pUnk = pRCW->m_aInterfaceEntries[i].m_pUnknown;
                 if (pUnk != NULL)
                 {
-                    void* targetMaybe = GetCOMIPFromRCW_GetTarget(pUnk, pComInfo);
+                    void* targetMaybe = GetCOMIPFromRCW_GetTarget(pUnk, comSlot);
                     if (targetMaybe != NULL)
                     {
                         *ppTarget = targetMaybe;
@@ -267,14 +267,6 @@ FORCEINLINE static IUnknown* GetCOMIPFromRCW_GetTargetFromRCWCache(SOleTlsData* 
     return NULL;
 }
 
-FCIMPL1(MethodTable*, StubHelpers::GetComInterfaceFromMethodDesc, MethodDesc* pMD)
-{
-    FCALL_CONTRACT;
-    _ASSERTE(pMD != NULL);
-    return CLRToCOMCallInfo::FromMethodDesc(pMD)->m_pInterfaceMT;
-}
-FCIMPLEND
-
 //==================================================================================================================
 // The GetCOMIPFromRCW helper exists in four specialized versions to optimize CLR->COM perf. Please be careful when
 // changing this code as one of these methods is executed as part of every CLR->COM call so every instruction counts.
@@ -283,13 +275,13 @@ FCIMPLEND
 #include <optsmallperfcritical.h>
 
 // This helper can handle any CLR->COM call.
-FCIMPL3(IUnknown*, StubHelpers::GetCOMIPFromRCW, Object* pSrcUNSAFE, MethodDesc* pMD, void** ppTarget)
+FCIMPL4(IUnknown*, StubHelpers::GetCOMIPFromRCW, Object* pSrcUNSAFE, MethodTable* pInterfaceMT, INT32 comSlot, void** ppTarget)
 {
     CONTRACTL
     {
         FCALL_CHECK;
         PRECONDITION(pSrcUNSAFE != NULL);
-        PRECONDITION(pMD != NULL && (pMD->IsCLRToCOMCall() || pMD->IsEEImpl()));
+        PRECONDITION(pInterfaceMT != NULL);
         PRECONDITION(ppTarget != NULL);
     }
     CONTRACTL_END;
@@ -298,14 +290,13 @@ FCIMPL3(IUnknown*, StubHelpers::GetCOMIPFromRCW, Object* pSrcUNSAFE, MethodDesc*
     // function is identical to this one, but it handles the case where the OLE TLS
     // data hasn't been created yet.
     OBJECTREF pSrc = ObjectToOBJECTREF(pSrcUNSAFE);
-    CLRToCOMCallInfo* pComInfo = CLRToCOMCallInfo::FromMethodDesc(pMD);
     RCW* pRCW = pSrc->PassiveGetSyncBlock()->GetInteropInfoNoCreate()->GetRawRCW();
     if (pRCW != NULL)
     {
         // This is the "fast path" for compiled ML stubs. The idea is to aim for an efficient RCW cache hit.
         SOleTlsData* pOleTlsData = TryGetOleTlsData();
         if (pOleTlsData != NULL)
-            return GetCOMIPFromRCW_GetTargetFromRCWCache(pOleTlsData, pRCW, pComInfo, ppTarget);
+            return GetCOMIPFromRCW_GetTargetFromRCWCache(pOleTlsData, pRCW, pInterfaceMT, comSlot, ppTarget);
     }
     return NULL;
 }
@@ -313,10 +304,10 @@ FCIMPLEND
 
 #include <optdefault.h>
 
-extern "C" IUnknown* QCALLTYPE StubHelpers_GetCOMIPFromRCWSlow(QCall::ObjectHandleOnStack pSrc, MethodDesc* pMD, void** ppTarget, BOOL* pfNeedsRelease)
+extern "C" IUnknown* QCALLTYPE StubHelpers_GetCOMIPFromRCWSlow(QCall::ObjectHandleOnStack pSrc, MethodTable* pInterfaceMT, INT32 comSlot, void** ppTarget, BOOL* pfNeedsRelease)
 {
     QCALL_CONTRACT;
-    _ASSERTE(pMD != NULL);
+    _ASSERTE(pInterfaceMT != NULL);
     _ASSERTE(ppTarget != NULL);
     _ASSERTE(pfNeedsRelease != NULL);
 
@@ -335,18 +326,17 @@ extern "C" IUnknown* QCALLTYPE StubHelpers_GetCOMIPFromRCWSlow(QCall::ObjectHand
     // data on this thread hasn't occurred yet, we will create it. Since this is the slow path, trying the
     // cache again isn't a problem.
     SOleTlsData* pOleTlsData = GetOrCreateOleTlsData(); // Ensure OLE TLS data is created.
-    CLRToCOMCallInfo* pComInfo = CLRToCOMCallInfo::FromMethodDesc(pMD);
     RCW* pRCW = objRef->PassiveGetSyncBlock()->GetInteropInfoNoCreate()->GetRawRCW();
     if (pRCW != NULL)
     {
-        pIntf = GetCOMIPFromRCW_GetTargetFromRCWCache(pOleTlsData, pRCW, pComInfo, ppTarget);
+        pIntf = GetCOMIPFromRCW_GetTargetFromRCWCache(pOleTlsData, pRCW, pInterfaceMT, comSlot, ppTarget);
     }
 
     if (pIntf == NULL)
     {
         // Still not in the cache and we've ensured the OLE TLS data was created.
-        ReleaseHolderAnyMode<IUnknown> pRetUnk{ ComObject::GetComIPFromRCWThrowing(&objRef, pComInfo->m_pInterfaceMT) };
-        *ppTarget = GetCOMIPFromRCW_GetTarget(pRetUnk, pComInfo);
+        ReleaseHolderAnyMode<IUnknown> pRetUnk{ ComObject::GetComIPFromRCWThrowing(&objRef, pInterfaceMT) };
+        *ppTarget = GetCOMIPFromRCW_GetTarget(pRetUnk, comSlot);
         _ASSERTE(*ppTarget != NULL);
 
         pIntf = pRetUnk.Detach();
@@ -502,6 +492,18 @@ extern "C" void QCALLTYPE StubHelpers_ThrowInteropParamException(INT resID, INT 
     END_QCALL;
 }
 
+// Throws an interop failure that was detected while the stub was being generated. Stubs that are
+// created while their caller is being jitted report their failures this way so that a call site
+// that is never executed does not fail the compilation of the method containing it.
+extern "C" void QCALLTYPE StubHelpers_ThrowInteropException(INT exceptionKind, INT resID)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+    COMPlusThrow(static_cast<RuntimeExceptionKind>(exceptionKind), static_cast<UINT>(resID));
+    END_QCALL;
+}
+
 #ifdef PROFILING_SUPPORTED
 extern "C" void* QCALLTYPE StubHelpers_ProfilerBeginTransitionCallback(MethodDesc* pTargetMD)
 {
@@ -532,6 +534,7 @@ extern "C" void QCALLTYPE StubHelpers_ProfilerEndTransitionCallback(MethodDesc* 
 }
 #endif // PROFILING_SUPPORTED
 
+#ifdef FEATURE_VARARGS
 extern "C" void QCALLTYPE StubHelpers_MarshalToManagedVaList(va_list va, VARARGS* pArgIterator)
 {
     QCALL_CONTRACT;
@@ -549,6 +552,7 @@ extern "C" void QCALLTYPE StubHelpers_MarshalToUnmanagedVaList(va_list va, DWORD
     VARARGS::MarshalToUnmanagedVaList(va, cbVaListSize, pArgIterator);
     END_QCALL;
 }
+#endif // FEATURE_VARARGS
 
 extern "C" void QCALLTYPE StubHelpers_ValidateObject(QCall::ObjectHandleOnStack pObj, MethodDesc *pMD)
 {
@@ -652,15 +656,16 @@ FCIMPL2(void, StubHelpers::LogPinnedArgument, MethodDesc *target, Object *pinned
 
     if (target != NULL)
     {
-        STRESS_LOG3(LF_STUBS, LL_INFO100, "Managed object %#X with size '%#X' pinned for interop to Method [%pM]\n", pinnedArg, managedSize, target);
+        STRESS_LOG3(LF_STUBS, LL_INFO100, "Managed object %p with size '%zu' pinned for interop to Method [%pM]\n", (void*)pinnedArg, managedSize, target);
     }
     else
     {
-        STRESS_LOG2(LF_STUBS, LL_INFO100, "Managed object %#X pinned for interop with size '%#X'", pinnedArg, managedSize);
+        STRESS_LOG2(LF_STUBS, LL_INFO100, "Managed object %p pinned for interop with size '%zu'", (void*)pinnedArg, managedSize);
     }
 }
 FCIMPLEND
 
+#ifdef FEATURE_VARARGS
 FCIMPL1(DWORD, StubHelpers::CalcVaListSize, VARARGS *varargs)
 {
     FCALL_CONTRACT;
@@ -668,6 +673,7 @@ FCIMPL1(DWORD, StubHelpers::CalcVaListSize, VARARGS *varargs)
     return VARARGS::CalcVaListSize(varargs);
 }
 FCIMPLEND
+#endif // FEATURE_VARARGS
 
 extern "C" void QCALLTYPE StubHelpers_MulticastDebuggerTraceHelper(QCall::ObjectHandleOnStack element, INT32 count)
 {

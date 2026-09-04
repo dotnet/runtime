@@ -3461,6 +3461,7 @@ MarshalerOverrideStatus ILBlittableValueClassWithCopyCtorMarshaler::ArgumentOver
 }
 #endif // defined(FEATURE_IJW)
 
+#ifdef FEATURE_VARARGS
 LocalDesc ILArgIteratorMarshaler::GetNativeType()
 {
     LIMITED_METHOD_CONTRACT;
@@ -3516,6 +3517,7 @@ void ILArgIteratorMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslILE
     // void MarshalToManagedVaList(va_list va, VARARGS *dataout)
     pslILEmit->EmitCALL(METHOD__STUBHELPERS__MARSHAL_TO_MANAGED_VA_LIST, 2, 0);
 }
+#endif // FEATURE_VARARGS
 
 LocalDesc ILArrayWithOffsetMarshaler::GetNativeType()
 {

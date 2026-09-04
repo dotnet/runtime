@@ -93,18 +93,10 @@ extern "C" void QCALLTYPE AssemblyNative_InternalLoad(NativeAssemblyNameParts* p
         spec.SetParentAssembly(pRefAssembly);
 
     // Have we been passed the reference to the binder against which this load should be triggered?
-    // If so, then use it to set the fallback load context binder.
+    // If so, then bind against it instead of the requesting assembly's load context.
     if (pBinder != NULL)
     {
-        spec.SetFallbackBinderForRequestingAssembly(pBinder);
-        spec.SetPreferFallbackBinder();
-    }
-    else if (pRefAssembly != NULL)
-    {
-        // If the requesting assembly has Fallback LoadContext binder available,
-        // then set it up in the AssemblySpec.
-        PEAssembly *pRefAssemblyManifestFile = pRefAssembly->GetPEAssembly();
-        spec.SetFallbackBinderForRequestingAssembly(pRefAssemblyManifestFile->GetFallbackBinder());
+        spec.SetExplicitBinder(pBinder);
     }
 
     Assembly *pAssembly = spec.LoadAssembly(FILE_LOADED, fThrowOnFileNotFound);
@@ -189,7 +181,7 @@ Assembly* AssemblyNative::LoadFromPEImage(AssemblyBinder* pBinder, PEImage *pIma
         }
     }
 
-    PEAssemblyHolder pPEAssembly(PEAssembly::Open(pAssembly->GetPEImage(), pAssembly));
+    PEAssemblyHolder pPEAssembly(PEAssembly::Open(pAssembly));
     bindOperation.SetResult(pPEAssembly);
 
     return pCurDomain->LoadAssembly(&spec, pPEAssembly, FILE_LOADED);
@@ -1363,7 +1355,7 @@ extern "C" void QCALLTYPE AssemblyNative_TraceAssemblyResolveHandlerInvoked(LPCW
 }
 
 // static
-extern "C" void QCALLTYPE AssemblyNative_TraceAssemblyLoadFromResolveHandlerInvoked(LPCWSTR assemblyName, bool isTrackedAssembly, LPCWSTR requestingAssemblyPath, LPCWSTR requestedAssemblyPath)
+extern "C" void QCALLTYPE AssemblyNative_TraceAssemblyLoadFromResolveHandlerInvoked(LPCWSTR assemblyName, BOOL isTrackedAssembly, LPCWSTR requestingAssemblyPath, LPCWSTR requestedAssemblyPath)
 {
     QCALL_CONTRACT;
 

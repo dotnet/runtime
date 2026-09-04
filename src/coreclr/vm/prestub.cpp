@@ -332,8 +332,8 @@ PCODE MethodDesc::PrepareCode(PrepareCodeConfig* pConfig)
     STANDARD_VM_CONTRACT;
 
     // Only IL-backed methods should come through here.
-    // Other kinds of methods (e.g. FCalls, CLR-to-COM methods, should go down a different path)
-    _ASSERTE(IsIL() || IsNoMetadata() || IsPInvoke());
+    // Other kinds of methods (e.g. FCalls) should go down a different path
+    _ASSERTE(IsIL() || IsNoMetadata() || IsPInvoke() || IsCLRToCOMCall());
     PCODE pCode = (PCODE)NULL;
 
     bool shouldTier = false;
@@ -369,7 +369,7 @@ PCODE MethodDesc::PrepareCode(PrepareCodeConfig* pConfig)
     }
 #endif // FEATURE_CODE_VERSIONING
 
-    if (pConfig->MayUsePrecompiledCode() && (!IsPInvoke() || MayUsePrecompiledILStub()))
+    if (pConfig->MayUsePrecompiledCode() && (!IsPInvoke() || MayUsePrecompiledILStub()) && !IsCLRToCOMCall())
     {
         _ASSERTE(!IsPInvoke() || (!GetModule()->IsReadyToRun() || GetModule()->GetReadyToRunInfo()->HasNonShareablePInvokeStubs()));
         if (pCode == (PCODE)NULL)
@@ -755,7 +755,7 @@ namespace
             return pResolver->GetILHeader();
         }
 
-        _ASSERTE(pMD->IsNoMetadata() || pMD->IsPInvoke());
+        _ASSERTE(pMD->IsNoMetadata() || pMD->IsPInvoke() || pMD->IsCLRToCOMCall());
         return NULL;
     }
 }
@@ -1115,6 +1115,14 @@ bool MethodDesc::TryGenerateTransientILImplementation(DynamicResolver** resolver
         *methodILDecoder = PInvoke::CreatePInvokeMethodIL(static_cast<PInvokeMethodDesc*>(this), resolver);
         return true;
     }
+
+#ifdef FEATURE_COMINTEROP
+    if (IsCLRToCOMCall())
+    {
+        *methodILDecoder = CLRToCOMCall::CreateCLRToCOMCallMethodIL(this, resolver);
+        return true;
+    }
+#endif // FEATURE_COMINTEROP
 
     if (TryGenerateAsyncThunk(resolver, methodILDecoder))
     {
@@ -1517,7 +1525,7 @@ void MethodDesc::CreateDerivedTargetSig(MetaSig& msig, SigBuilder *stubSigBuilde
     }
 }
 
-Stub * CreateUnboxingILStubForValueTypeMethods(MethodDesc* pTargetMD)
+PCODE CreateUnboxingILStubForValueTypeMethods(MethodDesc* pTargetMD)
 {
 
     CONTRACTL
@@ -1603,11 +1611,11 @@ Stub * CreateUnboxingILStubForValueTypeMethods(MethodDesc* pTargetMD)
     pResolver->SetStubTargetMethodSig(pTargetSig, cbTargetSig);
     pResolver->SetStubTargetMethodDesc(pTargetMD);
 
-    return Stub::NewStub(JitILStub(pStubMD));
+    return JitILStub(pStubMD);
 
 }
 
-Stub * CreateInstantiatingILStub(MethodDesc* pTargetMD, void* pHiddenArg)
+PCODE CreateInstantiatingILStub(MethodDesc* pTargetMD, void* pHiddenArg)
 {
 
     CONTRACTL
@@ -1696,19 +1704,17 @@ Stub * CreateInstantiatingILStub(MethodDesc* pTargetMD, void* pHiddenArg)
     pResolver->SetStubTargetMethodSig(pTargetSig, cbTargetSig);
     pResolver->SetStubTargetMethodDesc(pTargetMD);
 
-    return Stub::NewStub(JitILStub(pStubMD));
+    return JitILStub(pStubMD);
 }
 
 /* Make a stub that for a value class method that expects a BOXed this pointer */
-Stub * MakeUnboxingStubWorker(MethodDesc *pMD)
+PCODE MakeUnboxingStubWorker(MethodDesc *pMD)
 {
     CONTRACTL
     {
         STANDARD_VM_CHECK;
     }
     CONTRACTL_END;
-
-    Stub *pstub = NULL;
 
     _ASSERTE (pMD->GetMethodTable()->IsValueType());
     _ASSERTE(!pMD->ContainsGenericVariables());
@@ -1743,13 +1749,13 @@ Stub * MakeUnboxingStubWorker(MethodDesc *pMD)
 
         sl.EmitComputedInstantiatingMethodStub(pUnboxedMD, &portableShuffle[0], NULL);
 
-        return sl.Link(pMD->GetLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_INSTANTIATING_METHOD, "UnboxingStub");
+        return sl.Link(pMD->GetLoaderAllocator(), STUB_CODE_BLOCK_WRAPPER_STUB, "UnboxingStub");
     }
 #elif defined(TARGET_X86)
     CPUSTUBLINKER sl;
     if (sl.EmitUnboxMethodStub(pUnboxedMD))
     {
-        return sl.Link(pMD->GetLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_NONE, "UnboxingStub");
+        return sl.Link(pMD->GetLoaderAllocator(), STUB_CODE_BLOCK_WRAPPER_STUB, "UnboxingStub");
     }
 #endif // FEATURE_PORTABLE_SHUFFLE_THUNKS || TARGET_X86
 
@@ -1757,7 +1763,7 @@ Stub * MakeUnboxingStubWorker(MethodDesc *pMD)
 }
 
 #if defined(FEATURE_SHARE_GENERIC_CODE)
-Stub * MakeInstantiatingStubWorker(MethodDesc *pMD)
+PCODE MakeInstantiatingStubWorker(MethodDesc *pMD)
 {
     CONTRACTL
     {
@@ -1798,13 +1804,13 @@ Stub * MakeInstantiatingStubWorker(MethodDesc *pMD)
         _ASSERTE(pSharedMD != NULL && pSharedMD != pMD);
         sl.EmitComputedInstantiatingMethodStub(pSharedMD, &portableShuffle[0], extraArg);
 
-        return sl.Link(pMD->GetLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_INSTANTIATING_METHOD, "InstantiatingStub");
+        return sl.Link(pMD->GetLoaderAllocator(), STUB_CODE_BLOCK_WRAPPER_STUB, "InstantiatingStub");
     }
 #elif defined(TARGET_X86)
     CPUSTUBLINKER sl;
     if (sl.EmitInstantiatingMethodStub(pSharedMD, extraArg))
     {
-        return sl.Link(pMD->GetLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_NONE, "InstantiatingStub");
+        return sl.Link(pMD->GetLoaderAllocator(), STUB_CODE_BLOCK_WRAPPER_STUB, "InstantiatingStub");
     }
 #endif // FEATURE_PORTABLE_SHUFFLE_THUNKS || TARGET_X86
 
@@ -2362,7 +2368,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
     }
     CONTRACTL_END;
 
-    Stub *pStub = NULL;
+    PCODE pStub = (PCODE)NULL;
     PCODE pCode = (PCODE)NULL;
 
     Thread *pThread = GetThread();
@@ -2423,17 +2429,22 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
 #ifdef FEATURE_COMINTEROP
     /**************************   INTEROP   *************************/
     /*-----------------------------------------------------------------
-    // Some method descriptors are CLR-to-COM call descriptors
-    // they are not your every day method descriptors, for example
-    // they don't have an IL or code.
+    // CLR-to-COM methods are implemented with transient IL generated by
+    // CLRToCOMCall::CreateCLRToCOMCallMethodIL and so go through the
+    // normal code preparation path below. The only exception is when the
+    // user has supplied a predefined IL stub for the method.
     */
     if (IsCLRToCOMCall())
     {
-        pCode = GetStubForInteropMethod(this);
+        MethodDesc* pPredefinedStubMD = CLRToCOMCall::GetPredefinedILStubMethod(this);
+        if (pPredefinedStubMD != NULL)
+        {
+            pCode = JitILStub(pPredefinedStubMD);
 
-        GetOrCreatePrecode()->SetTargetInterlocked(pCode);
+            GetOrCreatePrecode()->SetTargetInterlocked(pCode);
 
-        return GetStableEntryPoint();
+            return GetStableEntryPoint();
+        }
     }
 #endif // FEATURE_COMINTEROP
 
@@ -2483,7 +2494,18 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
     /**************************   CODE CREATION  *************************/
     if (IsUnboxingStub())
     {
-        pStub = MakeUnboxingStubWorker(this);
+#ifdef FEATURE_READYTORUN
+        // Crossgen2 can emit the body of an unboxing stub into the R2R image. Prefer it over
+        // generating one here, which without a JIT means creating and interpreting an IL stub.
+        // Publish it as pCode rather than pStub: it is ordinary precompiled code, whereas the
+        // pStub path assumes an interpreter entry point when FEATURE_PORTABLE_ENTRYPOINTS is on.
+        PrepareCodeConfig config(NativeCodeVersion(this), FALSE, TRUE);
+        pCode = GetPrecompiledR2RCode(&config);
+#endif // FEATURE_READYTORUN
+        if (pCode == (PCODE)NULL)
+        {
+            pStub = MakeUnboxingStubWorker(this);
+        }
     }
 #if defined(FEATURE_SHARE_GENERIC_CODE)
     else if (IsInstantiatingStub())
@@ -2491,7 +2513,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
         pStub = MakeInstantiatingStubWorker(this);
     }
 #endif // defined(FEATURE_SHARE_GENERIC_CODE)
-    else if (IsIL() || IsNoMetadata() || (IsPInvoke() && !IsVarArg()))
+    else if (IsIL() || IsNoMetadata() || (IsPInvoke() && !IsVarArg()) || IsCLRToCOMCall())
     {
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
         if (!IsNativeCodeStableAfterInit())
@@ -2500,11 +2522,11 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
         }
 #endif // !FEATURE_PORTABLE_ENTRYPOINTS
         pCode = PrepareInitialCode(callerGCMode);
-    } // end else if (IsIL() || IsNoMetadata() || (IsPInvoke() && !IsVarArg()))
+    } // end else if (IsIL() || IsNoMetadata() || (IsPInvoke() && !IsVarArg()) || IsCLRToCOMCall())
     else if (IsPInvoke())
     {
+        _ASSERTE(IsVarArg());
         pCode = GetStubForInteropMethod(this);
-        _ASSERTE(static_cast<PInvokeMethodDesc*>(this)->IsVarArgs());
     }
     else if (IsFCall())
     {
@@ -2576,7 +2598,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
 
     // At this point we must have either a pointer to managed code or to a stub. All of the above code
     // should have thrown an exception if it couldn't make a stub.
-    _ASSERTE((pStub != NULL) ^ (pCode != (PCODE)NULL));
+    _ASSERTE((pStub != (PCODE)NULL) ^ (pCode != (PCODE)NULL));
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
     //
@@ -2600,8 +2622,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
     else
     {
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
-        pCode = pStub->GetEntryPoint();
-        pStub->DecRef();
+        pCode = pStub;
 
         void* ilStubInterpData = PortableEntryPoint::GetInterpreterData(pCode);
         _ASSERTE(ilStubInterpData != NULL);
@@ -2613,25 +2634,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
         PortableEntryPoint::SetInterpreterData(pCode, (PCODE)(TADDR)ilStubInterpData);
         SetCodeEntryPoint(pCode);
 #else // !FEATURE_PORTABLE_ENTRYPOINTS
-        if (!GetOrCreatePrecode()->SetTargetInterlocked(pStub->GetEntryPoint()))
-        {
-            if (pStub->HasExternalEntryPoint())
-            {
-                // Stubs with external entry point are allocated from regular heap and so they are always writeable
-                pStub->DecRef();
-            }
-            else
-            {
-                ExecutableWriterHolder<Stub> stubWriterHolder(pStub, sizeof(Stub));
-                stubWriterHolder.GetRW()->DecRef();
-            }
-        }
-        else if (pStub->HasExternalEntryPoint())
-        {
-            // If the Stub wraps code that is outside of the Stub allocation, then we
-            // need to free the Stub allocation now.
-            pStub->DecRef();
-        }
+        GetOrCreatePrecode()->SetTargetInterlocked(pStub);
 #if defined(FEATURE_INTERPRETER) && defined(HAS_FIXUP_PRECODE)
         if (GetOrCreatePrecode()->GetType() == PRECODE_FIXUP)
         {
@@ -2703,11 +2706,12 @@ PCODE TheUMThunkPreStub()
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 }
 
+#ifdef FEATURE_VARARGS
 PCODE TheVarargPInvokeStub(BOOL hasRetBuffArg)
 {
     LIMITED_METHOD_CONTRACT;
 
-#if !defined(TARGET_X86) && !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
+#if !defined(TARGET_X86) && !defined(TARGET_ARM64)
     if (hasRetBuffArg)
     {
         return GetEEFuncEntryPoint(VarargPInvokeStub_RetBuffArg);
@@ -2718,6 +2722,7 @@ PCODE TheVarargPInvokeStub(BOOL hasRetBuffArg)
         return GetEEFuncEntryPoint(VarargPInvokeStub);
     }
 }
+#endif // FEATURE_VARARGS
 
 static PCODE PatchNonVirtualExternalMethod(MethodDesc * pMD, PCODE pCode, PTR_READYTORUN_IMPORT_SECTION pImportSection, TADDR pIndirection)
 {

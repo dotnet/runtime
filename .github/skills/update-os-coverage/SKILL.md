@@ -89,15 +89,17 @@ Use the repo tools that fit the environment. The shell snippets below are refere
 
 ### 1. Verify container image availability
 
-Before making any changes, confirm the **exact target container tag** exists in the [image-info JSON](https://github.com/dotnet/versions/blob/main/build-info/docker/image-info.dotnet-dotnet-buildtools-prereqs-docker-main.json). This file is more authoritative than probing the registry directly and should be the primary source of truth for published `dotnet-buildtools/prereqs` tags:
+Before making any changes, confirm the **exact target container tag** exists by querying the MCR registry directly. The registry is the ground truth for published `dotnet-buildtools/prereqs` tags:
 
 ```bash
 TARGET_TAG="<exact-image-tag>"
-curl -sL https://github.com/dotnet/versions/raw/refs/heads/main/build-info/docker/image-info.dotnet-dotnet-buildtools-prereqs-docker-main.json \
-  | jq -e --arg tag "$TARGET_TAG" 'any(.repos[].images[].platforms[].simpleTags[]; . == $tag)'
+curl -s https://mcr.microsoft.com/v2/dotnet-buildtools/prereqs/tags/list \
+  | jq -e --arg tag "$TARGET_TAG" 'any(.tags[]; . == $tag)'
 ```
 
-If the exact tag is **not found in `image-info`**, stop and inform the user. Treat that as authoritative even if a registry lookup appears to work. The image must be created first at [dotnet/dotnet-buildtools-prereqs-docker](https://github.com/dotnet/dotnet-buildtools-prereqs-docker). Check if an open issue or PR already exists, for example:
+> **⚠️ This is in flux.** Image-info publishing is mid-transition. The [image-info JSON](https://github.com/dotnet/versions/blob/main/build-info/docker/image-info.dotnet-dotnet-buildtools-prereqs-docker-main.json) in `dotnet/versions` was historically the source of truth, but it is published by committing back to `dotnet/versions` and can be **stale or unavailable** when branch protection blocks that automated push. The fix in flight ([dotnet/docker-tools#2142](https://github.com/dotnet/docker-tools/issues/2142)) moves image-info to an **ORAS-based OCI artifact** published to the registry alongside the images. Until that lands, **trust the registry tag list** (above) as the source of truth and treat the image-info JSON only as a possibly-stale cross-check. Revisit this step once the ORAS solution ships.
+
+If the exact tag is **not found in the registry**, stop and inform the user. The image must be created first at [dotnet/dotnet-buildtools-prereqs-docker](https://github.com/dotnet/dotnet-buildtools-prereqs-docker). Check if an open issue or PR already exists, for example:
 
 ```bash
 gh search issues "<distro> <distro-version>" --repo dotnet/dotnet-buildtools-prereqs-docker --state open
@@ -170,13 +172,13 @@ For each reference found in step 3:
 
    Architecture suffixes vary: `Amd64`, `Arm64`, `ArmArch`, `Arm32` for queue names; `amd64`, `arm64v8`, `arm32v7` for image tags.
 
-   When both generic and processor-specific aliases exist in `image-info` (for example, `ubuntu-26.04-helix-webassembly` and `ubuntu-26.04-helix-webassembly-amd64`), **prefer the processor-specific tag** when the queue/environment is processor-specific:
+   When both generic and processor-specific aliases exist in the registry (for example, `ubuntu-26.04-helix-webassembly` and `ubuntu-26.04-helix-webassembly-amd64`), **prefer the processor-specific tag** when the queue/environment is processor-specific:
 
    - `...Amd64...` queue → prefer `*-amd64`
    - `...Arm64...` / `...ArmArch...` queue → prefer `*-arm64v8`
    - `...Arm32...` queue → prefer `*-arm32v7`
 
-   Use the generic alias only when the surrounding environment is intentionally architecture-agnostic or when no processor-specific tag exists in `image-info`.
+   Use the generic alias only when the surrounding environment is intentionally architecture-agnostic or when no processor-specific tag exists in the registry.
 
    For ARM-based queues, host queues are often `Ubuntu.2204.ArmArch.Open`, but some queues (for example `helix_linux_arm64_oldest`) use AzureLinux-based host queues such as `AzureLinux.3.Arm64.Open`. Follow the existing pattern for the specific queue in `eng/pipelines/helix-platforms.yml` when updating versions.
 
@@ -188,7 +190,7 @@ After editing, verify:
 
 2. **All new references are syntactically consistent** — compare with adjacent entries in the same file to verify formatting.
 
-3. **Updated image tags are present in `image-info`** — verify that each new tag you used appears in `image-info.dotnet-dotnet-buildtools-prereqs-docker-main.json`.
+3. **Updated image tags exist in the registry** — verify that each new tag you used appears in the MCR registry tag list (`https://mcr.microsoft.com/v2/dotnet-buildtools/prereqs/tags/list`).
 
 4. **Variable names are unchanged** — only the `value` fields change, never the `name` fields.
 
@@ -262,7 +264,7 @@ Check if the relevant `supported-os.json` in dotnet/core needs corresponding upd
 The PR description should include:
    - Table of changes (old version → new version, which slots)
    - EOL dates for old and new versions
-   - Confirmation that the exact container image tags are available in `image-info.dotnet-dotnet-buildtools-prereqs-docker-main.json`
+   - Confirmation that the exact container image tags are available in the MCR registry (`mcr.microsoft.com/v2/dotnet-buildtools/prereqs/tags/list`)
    - Which CI pipeline(s) need to run (see [step 6](#6-ci-pipeline-coverage))
    - Link to the [os-onboarding guide](https://github.com/dotnet/runtime/blob/main/docs/project/os-onboarding.md)
    - Link to tracking issue if applicable (e.g. [dotnet/core#9638](https://github.com/dotnet/core/issues/9638))
@@ -300,7 +302,8 @@ When asked to audit all OS coverage:
 - [OS onboarding guide](../../../docs/project/os-onboarding.md)
 - [.NET OS Support Tracking](https://github.com/dotnet/core/issues/9638)
 - [Prereq container image lifecycle](https://github.com/dotnet/dotnet-buildtools-prereqs-docker/blob/main/lifecycle.md)
-- [Container image registry (image-info)](https://github.com/dotnet/versions/blob/main/build-info/docker/image-info.dotnet-dotnet-buildtools-prereqs-docker-main.json)
+- [MCR registry tag list](https://mcr.microsoft.com/v2/dotnet-buildtools/prereqs/tags/list) — source of truth for published `dotnet-buildtools/prereqs` tags
+- [image-info JSON](https://github.com/dotnet/versions/blob/main/build-info/docker/image-info.dotnet-dotnet-buildtools-prereqs-docker-main.json) — secondary cross-check; currently in flux and may be stale or unavailable, pending the ORAS/OCI-artifact migration in [dotnet/docker-tools#2142](https://github.com/dotnet/docker-tools/issues/2142)
 - [endoflife.date](https://endoflife.date/) for OS lifecycle data
 - [PR #125991](https://github.com/dotnet/runtime/pull/125991) — example EOL OS version replacement
 - [PR #111768](https://github.com/dotnet/runtime/pull/111768) — example new OS version onboarding

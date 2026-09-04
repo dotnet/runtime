@@ -31,7 +31,6 @@ void PEImage::Startup()
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -134,11 +133,10 @@ ULONG PEImage::Release()
         DESTRUCTOR_CHECK;
         NOTHROW;
         MODE_ANY;
-        FORBID_FAULT;
     }
     CONTRACTL_END;
 
-    CONTRACT_VIOLATION(FaultViolation|ThrowsViolation);
+    CONTRACT_VIOLATION(ThrowsViolation);
     COUNT_T result = 0;
     {
         // Use scoping to hold the hash lock
@@ -304,7 +302,6 @@ void PEImage::OpenMDImport()
         GC_TRIGGERS;
         THROWS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
     if (m_pMDImport==NULL)
@@ -361,7 +358,6 @@ void PEImage::GetMVID(GUID *pMvid)
         GC_TRIGGERS;
         THROWS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -429,7 +425,6 @@ PEImage::IJWFixupData *PEImage::GetIJWData(void *pBase)
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     } CONTRACTL_END
 
     // Take the IJW hash lock
@@ -832,7 +827,6 @@ BOOL PEImage::IsPtrInImage(PTR_CVOID data)
         INSTANCE_CHECK;
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;

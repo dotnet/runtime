@@ -415,19 +415,19 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(aot: true, config: Configuration.Release)]
-        [TestCategory("native-mono")]
+        [TestCategory("native"), TestCategory("mono")]
         public async Task EnsureWasmAbiRulesAreFollowedInAOT(Configuration config, bool aot) =>
             await EnsureWasmAbiRulesAreFollowed(config, aot);
 
         [Theory]
         [BuildAndRun(aot: false)]
-        [TestCategory("native-mono")]
+        [TestCategory("native"), TestCategory("mono")]
         public async Task EnsureWasmAbiRulesAreFollowedInInterpreter(Configuration config, bool aot) =>
             await EnsureWasmAbiRulesAreFollowed(config, aot);
 
         [Theory]
         [BuildAndRun(aot: false)]
-        [TestCategory("native-mono")]
+        [TestCategory("native"), TestCategory("mono")]
         public void UnsupportedOSPlatformPInvokeIsSkipped(Configuration config, bool aot)
         {
             // https://github.com/dotnet/runtime/issues/110870: a Windows-only pinvoke with
@@ -443,8 +443,45 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
+        [BuildAndRun(aot: false)]
+        [TestCategory("native")]
+        public async Task VersionedOSPlatformPInvokeIsIncluded(Configuration config, bool aot)
+        {
+            // Regression coverage for https://github.com/dotnet/runtime/issues/132297:
+            // a versioned platform attribute like [SupportedOSPlatform("browser1.0")] must still
+            // be treated as matching TargetOS=browser, so the pinvoke must be kept (not silently
+            // filtered out), while a versioned attribute for a different OS (e.g. "windows1.0")
+            // must still be filtered out.
+            string extraItems = @"<NativeFileReference Include=""versioned-osplatform.c"" />";
+            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "versioned_osplatform_pinvoke",
+                extraItems: extraItems, extraProperties: "<WasmBuildNative>true</WasmBuildNative>");
+            ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "VersionedOSPlatform.cs"));
+            File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", "versioned-osplatform.c"), Path.Combine(_projectDir, "versioned-osplatform.c"));
+
+            (_, string output) = BuildProject(info, config, new BuildOptions(AssertAppBundle: false, AOT: aot), isNativeBuild: true);
+            Assert.DoesNotContain("WASM0001", output);
+
+            string objDir = Path.Combine(_projectDir, "obj", config.ToString(), DefaultTargetFramework, "wasm", "for-build");
+            string pinvokeTableFileName = IsCoreClrRuntime ? "callhelpers-pinvoke.cpp" : "pinvoke-table.h";
+            string pinvokeTable = File.ReadAllText(Path.Combine(objDir, pinvokeTableFileName));
+
+            string includedPInvokeTableEntry = IsCoreClrRuntime
+                ? "DllImportEntry(versioned_browser_add)"
+                : "\"versioned_browser_add\", versioned_browser_add";
+            Assert.Contains(includedPInvokeTableEntry, pinvokeTable);
+
+            string excludedPInvokeTableEntry = IsCoreClrRuntime
+                ? "DllImportEntry(versioned_windows_add)"
+                : "\"versioned_windows_add\", versioned_windows_add";
+            Assert.DoesNotContain(excludedPInvokeTableEntry, pinvokeTable);
+
+            RunResult result = await RunForBuildWithDotnetRun(new BrowserRunOptions(config, TestScenario: "DotnetRun", ExpectedExitCode: 42));
+            Assert.Contains("sum: 42", result.TestOutput);
+        }
+
+        [Theory]
         [BuildAndRun(aot: true, config: Configuration.Release)]
-        [TestCategory("native-mono")]
+        [TestCategory("native"), TestCategory("mono")]
         public void EnsureComInteropCompilesInAOT(Configuration config, bool aot)
         {
             ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "com");

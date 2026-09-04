@@ -128,14 +128,20 @@ namespace System.Net.Security
         {
         }
 
-        // Called by TlsSocketSession's constructor to bind a socket handle before the
-        // session receives any TlsContext. The socket is taken to ownership and disposed
-        // with the session. Platforms with a native fd-binding fast path (OpenSSL) take
-        // the socket directly; otherwise the socket is wrapped in a managed Socket for
-        // the buffered I/O path.
-        internal void AttachSocket(SafeSocketHandle socket)
+        // Called from TlsSocketSession.OnContextInitialized (right after the base
+        // InitializeFromContext runs) to bind a socket handle for the socket-bound I/O
+        // path. Must be called exactly once per session, and only before any
+        // Handshake / Read / Write / Shutdown call has touched the PAL. The socket is
+        // taken to ownership and disposed with the session. Platforms with a native
+        // fd-binding fast path (OpenSSL) take the socket directly; otherwise the
+        // socket is wrapped in a managed Socket for the buffered I/O path.
+        private protected void AttachSocket(SafeSocketHandle socket)
         {
             Debug.Assert(socket != null);
+            Debug.Assert(!_disposed, "AttachSocket called on a disposed session");
+            Debug.Assert(_socketHandle is null, "AttachSocket called twice on the same session");
+            Debug.Assert(_socket is null, "AttachSocket called after the managed Socket wrapper was already created");
+            Debug.Assert(_securityContext is null, "AttachSocket called after the PAL security context was already allocated");
             _socketHandle = socket;
 
             bool nativeBindingEnabled = false;

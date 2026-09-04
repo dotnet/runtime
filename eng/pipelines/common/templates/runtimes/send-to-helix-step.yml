@@ -13,7 +13,6 @@ parameters:
   helixQueues: ''
   helixType: ''
   useHelixMonitor: false
-  msbuildParallelism: '/maxcpucount'
   scenarios: ''
   timeoutPerTestCollectionInMinutes: ''
   timeoutPerTestInMinutes: ''
@@ -45,7 +44,7 @@ steps:
     osGroup: ${{ parameters.osGroup }}
     sendParams: >
       ${{ parameters.helixProjectArguments }}
-      ${{ parameters.msbuildParallelism }}
+      /m
       /bl:$(Build.SourcesDirectory)/artifacts/log/SendToHelix.binlog
       /p:TargetArchitecture=${{ parameters.archType }}
       /p:TargetOS=${{ parameters.osGroup }}

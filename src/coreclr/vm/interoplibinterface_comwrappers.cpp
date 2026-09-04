@@ -325,22 +325,26 @@ namespace InteropLibImports
         }
 
         // Switch to Cooperative mode since object references
-        // are being manipulated and the catchFrame needs that so that it can push
-        // itself to the explicit frame stack.
+        // are being manipulated.
         GCX_COOP();
-        // Indicate to the debugger and exception handling that managed exceptions are being caught
-        // here.
-        DebuggerU2MCatchHandlerFrame catchFrame(true /* catchesAllExceptions */);
 
         HRESULT hr;
         auto result = TryInvokeICustomQueryInterfaceResult::FailedToInvoke;
+
+        // While ComWrappers.CallICustomQueryInterface itself will not throw,
+        // it's possible that the runtime may throw an exception (such as allocation failure/OOM)
+        // when jitting the method. As we may be called from unmanaged code,
+        // we need to catch such an exception.
         EX_TRY_THREAD(CURRENT_THREAD)
         {
             struct
             {
                 OBJECTREF objRef;
+                EXCEPTIONREF exceptionRef;
             } gc;
             gc.objRef = NULL;
+            gc.exceptionRef = NULL;
+
             GCPROTECT_BEGIN(gc);
 
             // Get the target of the external object's reference.
@@ -348,13 +352,12 @@ namespace InteropLibImports
             gc.objRef = ObjectFromHandle(objectHandle);
 
             UnmanagedCallersOnlyCaller callICustomQueryInterface(METHOD__COMWRAPPERS__CALL_ICUSTOMQUERYINTERFACE);
-            result = (TryInvokeICustomQueryInterfaceResult)callICustomQueryInterface.InvokeThrowing_Ret<INT32>(&gc.objRef, &iid, obj);
+            result = (TryInvokeICustomQueryInterfaceResult)callICustomQueryInterface.InvokeDirect_Ret<INT32>(&gc.objRef, &iid, obj, &gc.exceptionRef);
+            hr = gc.exceptionRef == NULL ? S_OK : gc.exceptionRef->GetHResult();
 
             GCPROTECT_END();
         }
         EX_CATCH_HRESULT(hr);
-
-        catchFrame.Pop();
 
         // Assert valid value.
         _ASSERTE(TryInvokeICustomQueryInterfaceResult::Min <= result

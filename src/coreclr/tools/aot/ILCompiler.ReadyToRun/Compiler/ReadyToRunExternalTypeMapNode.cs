@@ -39,7 +39,7 @@ namespace ILCompiler.ReadyToRun
 
         public Vertex CreateTypeMap(NodeFactory factory, NativeWriter writer, Section section, INativeFormatTypeReferenceProvider externalReferences)
         {
-            Vertex typeMapGroupVertex = externalReferences.EncodeReferenceToType(writer, TypeMapGroup);
+            Vertex typeMapGroupVertex = externalReferences.EncodeReferenceToType(writer, TypeMapGroup, TriggeringModule);
             if (map.ThrowingMethodStub is not null)
             {
                 // We don't write out the throwing method stub for R2R
@@ -56,7 +56,7 @@ namespace ILCompiler.ReadyToRun
             foreach ((string key, (TypeDesc type, _)) in map.TypeMap)
             {
                 Vertex keyVertex = writer.GetStringConstant(key);
-                Vertex valueVertex = externalReferences.EncodeReferenceToType(writer, type);
+                Vertex valueVertex = externalReferences.EncodeReferenceToType(writer, type, TriggeringModule);
                 Vertex entry = writer.GetTuple(keyVertex, valueVertex);
                 typeMapHashTable.Append((uint)VersionResilientHashCode.NameHashCode(Encoding.UTF8.GetBytes(key)), typeMapEntriesSection.Place(entry));
             }
@@ -69,7 +69,7 @@ namespace ILCompiler.ReadyToRun
         public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context) => [];
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
         {
-            yield return new DependencyListEntry(importProvider.GetImportToType(TypeMapGroup), $"Type map '{TypeMapGroup}' key type");
+            yield return new DependencyListEntry(importProvider.GetImportToType(TypeMapGroup, TriggeringModule), $"Type map '{TypeMapGroup}' key type");
 
             if (map.ThrowingMethodStub is not null)
             {
@@ -78,7 +78,7 @@ namespace ILCompiler.ReadyToRun
 
             foreach (var entry in map.TypeMap)
             {
-                yield return new DependencyListEntry(importProvider.GetImportToType(entry.Value.type), $"External type map entry target for key '{entry.Key}'");
+                yield return new DependencyListEntry(importProvider.GetImportToType(entry.Value.type, TriggeringModule), $"External type map entry target for key '{entry.Key}'");
             }
         }
         public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => [];

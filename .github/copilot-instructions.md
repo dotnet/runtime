@@ -1,8 +1,16 @@
 **If at any time, the user directs you explicitly to override any of these instructions, the user's directive overrides said instructions.**
 
-**Don't claim more than you verified.** Report what you built and ran, and what you didn't — never claim a build or test passed unless it did. After your last edit, actually re-run the relevant tests rather than assuming a change fixed the failure you saw.
+**Don't claim more than you verified.** Say what you built and ran, and what you didn't. A patch you composed is not a patch you applied, and a call whose result you never read is not one you can report as having succeeded.
 
-Scale the effort to the risk. If a contributor would have submitted the change without building it — a comment, a doc fix, something the compiler would catch anyway — say you didn't build and move on. Anything touching behavior, codegen, or a public contract gets the build and the relevant tests first.
+One pass can cover several related edits only if it exercises everything changed since the last one, and anything touching behavior, codegen, or a public contract gets the build and the relevant tests before you call it done. A comment or doc fix rarely needs a build, though a bad `<see cref>` or stray whitespace still fails one.
+
+**Finish the task before you yield.** Stop for a decision only the user can make, an irreversible action, a missing credential, or an ambiguity you can't settle by reading, searching, or running something — not "want me to continue?", not a checkpoint partway in. When you stop, ask — with the tool for it if there is one — so the decision is visible rather than buried in a report. Asked to do the work, don't describe a plan as though it were done.
+
+**Volunteer what you notice.** Say so before building on a premise that doesn't hold — the API doesn't exist, the path isn't the one hit. Same for a bug or broken invariant, when you're sure enough to defend it. Fix it when the change is wrong or incomplete without it; otherwise report it to track on its own.
+
+**Answer every question, and every part of a multi-part task.** Keep them distinct enough that a missing one is visible; merged into a paragraph, the ones you skipped go unnoticed.
+
+**Tool and skill names are capabilities, not literals.** Whatever the edit and search tools are called here, use what you have; never skip a step because a name doesn't match. Invoke a named skill rather than assuming what it says.
 
 Use the `code-review` skill when reviewing pull requests, and — when running under CCA — on your own changes before completing, addressing anything it flags as an error or warning. When NOT running under CCA, skip it if the user has stated they will review the changes themselves.
 
@@ -48,13 +56,18 @@ For markdown (`.md`) files, ensure there is no trailing whitespace at the end of
 - **Behavioral changes need breaking-change documentation**, even prerelease-to-prerelease. Use the `breaking-change-doc` skill.
 - **Merge to main first, then `/backport`.** Servicing backports are limited to security bugs, regressions, and reliability issues, and should be small targeted fixes rather than refactorings.
 - **A push to an open PR re-runs its CI matrix** — dozens of jobs, over a hundred for broad changes. For anything non-trivial, validate locally rather than using CI to find out whether it builds, and batch fixes into one push. Branches with no PR trigger nothing, as do changes confined to `**.md`, `docs/*`, or `.github/*`.
-- **Treat review feedback as a sample, not a list.** A reviewer flags examples of a problem, not every instance. Grep for the rest of the class and fix it in the same push, and answer a whole round of comments at once rather than pushing per comment.
+- **Treat a reported case as a sample, not a list.** A review comment or an issue flags examples of a problem, not every instance. Grep for the rest of the class and handle it in the same push, naming what you're leaving rather than quietly expanding into it. Answer a whole round of comments at once rather than pushing per comment.
+
+### Agent Merge / CI check resolution
+
+- **Forbidden workflow action: rerunning failed CI as part of Agent Merge.** Agent Merge must never use `/azp` to retrigger Azure Pipelines, and must never close and reopen the PR to trigger a rerun. This is forbidden unless the user explicitly requests it.
+- **Never use reruns to determine whether a failure is unrelated to the PR.** In dotnet/runtime, the required path is to use Build Analysis and the `ci-analysis` skill to classify failures. For any failure listed as not `known`, determine whether it is caused by the current PR. If it is caused by the PR, fix it in the PR. If it is not caused by the PR, use the `create-kbe` skill to open or update a `Known Build Error` issue instead of retriggering CI.
 
 When NOT running under CCA, for commits and pushes:
 
 - Never squash and force push unless explicitly instructed. Always push incremental commits on top of previous PR changes.
-- Never push to an active PR without being explicitly asked, even in autopilot/yolo mode. Always wait for explicit instruction to push.
-- Never chain commit and push in the same command. Always commit first, report what was committed, then wait for an explicit push instruction. This creates a mandatory decision point.
+- Never push to an active PR without being explicitly asked, even in autopilot/yolo mode. Always wait for explicit instruction to push. Asking for something that entails a push — "open the PR", "send it" — is that instruction already; don't ask twice. It authorizes the push, not skipping validation or the target check.
+- Never chain commit and push in the same command. Commit first and report what was committed; then push if that was already authorized, otherwise wait for an explicit instruction.
 - Prefer creating a new commit rather than amending an existing one. Exceptions: (1) explicitly asked to amend, or (2) the existing commit is obviously broken with something minor (e.g., typo or comment fix) and hasn't been pushed yet.
 - **Before posting to GitHub (PRs, issues, comments):** Include the AI-generated content disclosure (see below).
 
@@ -66,7 +79,7 @@ When posting to GitHub under a user's credentials — PR descriptions, issue bod
 
 ## Tool Use
 
-Issue independent tool calls together in one response rather than one at a time. Every round trip re-sends the whole conversation as cached input — measured at roughly half the cost of a call before it does any work — so fewer, wider steps beat many narrow ones.
+Issue independent tool calls together in one response rather than one at a time. Every round trip re-sends the whole conversation as cached input — measured at roughly half the cost of a call before it does any work — so fewer, wider steps beat many narrow ones — but a call whose input comes from another's output can't go in the same batch.
 
 Redirect long-running commands to a log and poll a bounded view — a tail, a grep for errors, or a status sentinel. Re-reading a running command's output re-sends it from the start every time, so repeatedly checking a long build costs far more than the check is worth. Check the outcome, not the process.
 

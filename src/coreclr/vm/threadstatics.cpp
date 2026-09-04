@@ -332,7 +332,6 @@ void AllocateThreadStaticBoxes(MethodTable *pMT, PTRARRAYREF *ppRef)
         GC_TRIGGERS;
         MODE_COOPERATIVE;
         PRECONDITION(pMT->HasBoxedThreadStatics());
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 

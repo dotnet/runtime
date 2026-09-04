@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Threading;
 using Microsoft.Diagnostics.DataContractReader.Contracts.GCInfoHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
@@ -35,7 +36,6 @@ public static class CoreCLRContracts
         registry.Register<IDebugger>("c1", static t => new Debugger_1(t));
 
         registry.Register<IDebugInfo>("c1", static t => new DebugInfo_1(t));
-        registry.Register<IDebugInfo>("c2", static t => new DebugInfo_2(t));
         registry.Register<IStressLog>("c1", static t => new StressLog_1(t));
         registry.Register<IStressLog>("c2", static t => new StressLog_2(t));
 
@@ -51,8 +51,6 @@ public static class CoreCLRContracts
         registry.Register<IFeatureFlags>("c1", static t => new FeatureFlags_1(t));
 
         registry.Register<IPrecodeStubs>("c1", static t => new PrecodeStubs_1(t));
-        registry.Register<IPrecodeStubs>("c2", static t => new PrecodeStubs_2(t));
-        registry.Register<IPrecodeStubs>("c3", static t => new PrecodeStubs_3(t));
 
         registry.Register<IReJIT>("c1", static t => new ReJIT_1(t));
 
@@ -76,7 +74,6 @@ public static class CoreCLRContracts
         registry.Register<ISyncBlock>("c1", static t => new SyncBlock_1(t));
 
         registry.Register<IExecutionManager>("c1", static t => new ExecutionManager_1(t));
-        registry.Register<IExecutionManager>("c2", static t => new ExecutionManager_2(t));
 
         registry.Register<IRuntimeMutableTypeSystem>("c1", static t => new RuntimeMutableTypeSystem_1(t));
     }
@@ -102,8 +99,9 @@ public static class CoreCLRContracts
     /// <see cref="ContractObsoleteException"/> / <see cref="CdacHResults.CDAC_E_CONTRACT_UNSUPPORTED"/>
     /// if the advertised version is recognized but intentionally unimplemented.
     /// </exception>
-    public static void ValidateForDataAccess(Target target)
+    public static void ValidateForDataAccess(Target target, Lock? apiLock = null)
     {
+        using Lock.Scope scope = apiLock is null ? default : apiLock.EnterScope();
         ContractRegistry registry = target.Contracts;
 
         // In-box (main-descriptor) contract accesses across the ISOSDac* and IXCLRData* surface that

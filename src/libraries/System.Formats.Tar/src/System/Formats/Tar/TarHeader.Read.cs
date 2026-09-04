@@ -94,7 +94,65 @@ namespace System.Formats.Tar
                 return;
             }
 
-            AddExtendedAttributes(extendedAttributes);
+            ExtendedAttributeValues values = default;
+            using IEnumerator<KeyValuePair<string, string>> enumerator = extendedAttributes.GetEnumerator();
+            while (enumerator.MoveNext())
+            {
+                KeyValuePair<string, string> extendedAttribute = enumerator.Current;
+
+                ValidateExtendedAttribute(extendedAttribute);
+                _ea ??= new Dictionary<string, string>();
+                _ea.Add(extendedAttribute.Key, extendedAttribute.Value);
+
+                switch (extendedAttribute.Key)
+                {
+                    case PaxEaName:
+                        values.Name = extendedAttribute.Value;
+                        break;
+                    case PaxEaLinkName:
+                        values.LinkName = extendedAttribute.Value;
+                        break;
+                    case PaxEaMTime:
+                        values.MTime = extendedAttribute.Value;
+                        break;
+                    case PaxEaMode:
+                        values.Mode = extendedAttribute.Value;
+                        break;
+                    case PaxEaSize:
+                        values.Size = extendedAttribute.Value;
+                        break;
+                    case PaxEaGnuSparseName:
+                        values.GnuSparseName = extendedAttribute.Value;
+                        break;
+                    case PaxEaGnuSparseRealSize:
+                        values.GnuSparseRealSize = extendedAttribute.Value;
+                        break;
+                    case PaxEaGnuSparseMajor:
+                        values.GnuSparseMajor = extendedAttribute.Value;
+                        break;
+                    case PaxEaGnuSparseMinor:
+                        values.GnuSparseMinor = extendedAttribute.Value;
+                        break;
+                    case PaxEaUid:
+                        values.Uid = extendedAttribute.Value;
+                        break;
+                    case PaxEaGid:
+                        values.Gid = extendedAttribute.Value;
+                        break;
+                    case PaxEaUName:
+                        values.UName = extendedAttribute.Value;
+                        break;
+                    case PaxEaGName:
+                        values.GName = extendedAttribute.Value;
+                        break;
+                    case PaxEaDevMajor:
+                        values.DevMajor = extendedAttribute.Value;
+                        break;
+                    case PaxEaDevMinor:
+                        values.DevMinor = extendedAttribute.Value;
+                        break;
+                }
+            }
 
             if (_ea == null || _ea.Count == 0)
             {
@@ -107,33 +165,33 @@ namespace System.Formats.Tar
             // as-is to avoid data loss during roundtripping.
 
             // The 'name' header field only fits 100 bytes, so we always store the full name text to the dictionary.
-            if (ExtendedAttributes.TryGetValue(PaxEaName, out string? paxEaName))
+            if (values.Name is not null)
             {
-                _name = paxEaName;
+                _name = values.Name;
             }
 
             // The 'linkName' header field only fits 100 bytes, so we always store the full linkName text to the dictionary.
             // Only apply to link entries to avoid setting _linkName on non-link entry types.
             if (_typeFlag is TarEntryType.HardLink or TarEntryType.SymbolicLink &&
-                ExtendedAttributes.TryGetValue(PaxEaLinkName, out string? paxEaLinkName))
+                values.LinkName is not null)
             {
-                _linkName = paxEaLinkName;
+                _linkName = values.LinkName;
             }
 
             // The 'mtime' header field only fits 12 bytes, so a more precise timestamp goes in the extended attributes
-            if (TarHelpers.TryGetDateTimeOffsetFromTimestampString(ExtendedAttributes, PaxEaMTime, out DateTimeOffset mTime))
+            if (TarHelpers.TryGetDateTimeOffsetFromTimestampString(values.MTime, out DateTimeOffset mTime))
             {
                 _mTime = mTime;
             }
 
             // The user could've stored an override in the extended attributes
-            if (TarHelpers.TryGetStringAsBaseTenInteger(ExtendedAttributes, PaxEaMode, out int mode))
+            if (TarHelpers.TryGetStringAsBaseTenInteger(values.Mode, out int mode))
             {
                 _mode = mode;
             }
 
-            // The 'size' header field only fits 12 bytes, so the data section length that surpases that limit needs to be retrieved
-            if (TarHelpers.TryGetStringAsBaseTenLong(ExtendedAttributes, PaxEaSize, out long size))
+            // The 'size' header field only fits 12 bytes, so the data section length that surpasses that limit needs to be retrieved
+            if (TarHelpers.TryGetStringAsBaseTenLong(values.Size, out long size))
             {
                 if (size < 0)
                 {
@@ -148,14 +206,14 @@ namespace System.Formats.Tar
             if (_typeFlag is TarEntryType.RegularFile or TarEntryType.V7RegularFile)
             {
                 // 'GNU.sparse.name' overrides the placeholder path (e.g. 'GNUSparseFile.0/...') in the header's 'path' field.
-                if (ExtendedAttributes.TryGetValue(PaxEaGnuSparseName, out string? gnuSparseName))
+                if (values.GnuSparseName is not null)
                 {
-                    _name = gnuSparseName;
+                    _name = values.GnuSparseName;
                 }
 
                 // 'GNU.sparse.realsize' is the expanded (virtual) file size; stored separately from _size so that
                 // _size retains the archive data section length needed for correct stream positioning.
-                if (TarHelpers.TryGetStringAsBaseTenLong(ExtendedAttributes, PaxEaGnuSparseRealSize, out long gnuSparseRealSize))
+                if (TarHelpers.TryGetStringAsBaseTenLong(values.GnuSparseRealSize, out long gnuSparseRealSize))
                 {
                     if (gnuSparseRealSize < 0)
                     {
@@ -166,48 +224,66 @@ namespace System.Formats.Tar
 
                 // 'GNU.sparse.major=1' and 'GNU.sparse.minor=0' identify format 1.0, where the data section begins
                 // with an embedded text-format sparse map followed by the packed non-zero data segments.
-                if (ExtendedAttributes.TryGetValue(PaxEaGnuSparseMajor, out string? gnuSparseMajor) && gnuSparseMajor == "1" &&
-                    ExtendedAttributes.TryGetValue(PaxEaGnuSparseMinor, out string? gnuSparseMinor) && gnuSparseMinor == "0")
+                if (values.GnuSparseMajor == "1" && values.GnuSparseMinor == "0")
                 {
                     _isGnuSparse10 = true;
                 }
             }
 
             // The 'uid' header field only fits 8 bytes, or the user could've stored an override in the extended attributes
-            if (TarHelpers.TryGetStringAsBaseTenInteger(ExtendedAttributes, PaxEaUid, out int uid))
+            if (TarHelpers.TryGetStringAsBaseTenInteger(values.Uid, out int uid))
             {
                 _uid = uid;
             }
 
             // The 'gid' header field only fits 8 bytes, or the user could've stored an override in the extended attributes
-            if (TarHelpers.TryGetStringAsBaseTenInteger(ExtendedAttributes, PaxEaGid, out int gid))
+            if (TarHelpers.TryGetStringAsBaseTenInteger(values.Gid, out int gid))
             {
                 _gid = gid;
             }
 
             // The 'uname' header field only fits 32 bytes
-            if (ExtendedAttributes.TryGetValue(PaxEaUName, out string? paxEaUName))
+            if (values.UName is not null)
             {
-                _uName = paxEaUName;
+                _uName = values.UName;
             }
 
             // The 'gname' header field only fits 32 bytes
-            if (ExtendedAttributes.TryGetValue(PaxEaGName, out string? paxEaGName))
+            if (values.GName is not null)
             {
-                _gName = paxEaGName;
+                _gName = values.GName;
             }
 
             // The 'devmajor' header field only fits 8 bytes, or the user could've stored an override in the extended attributes
-            if (TarHelpers.TryGetStringAsBaseTenInteger(ExtendedAttributes, PaxEaDevMajor, out int devMajor))
+            if (TarHelpers.TryGetStringAsBaseTenInteger(values.DevMajor, out int devMajor))
             {
                 _devMajor = devMajor;
             }
 
             // The 'devminor' header field only fits 8 bytes, or the user could've stored an override in the extended attributes
-            if (TarHelpers.TryGetStringAsBaseTenInteger(ExtendedAttributes, PaxEaDevMinor, out int devMinor))
+            if (TarHelpers.TryGetStringAsBaseTenInteger(values.DevMinor, out int devMinor))
             {
                 _devMinor = devMinor;
             }
+        }
+
+        private struct ExtendedAttributeValues
+        {
+            internal string? Name;
+            internal string? LinkName;
+            internal string? MTime;
+            internal string? Mode;
+            internal string? Size;
+            internal string? GnuSparseName;
+            internal string? GnuSparseRealSize;
+            internal string? GnuSparseMajor;
+            internal string? GnuSparseMinor;
+            internal string? Uid;
+            internal string? Gid;
+            internal string? UName;
+            internal string? GName;
+            internal string? DevMajor;
+            internal string? DevMinor;
         }
 
         // Determines what kind of stream needs to be saved for the data section.

@@ -2328,7 +2328,7 @@ void CopyArgsToBuffer(DebuggerEval *pDE,
             "\t: argSigType=0x%x, byrefArgSigType=0x%0x, inType=0x%0x\n",
              pFEArgInfo[currArgIndex].argSigType,
              pFEArgInfo[currArgIndex].byrefArgSigType,
-             pFEAD->argElementType));
+             static_cast<unsigned>(pFEAD->argElementType)));
 
         INT64 *pDest = &(pBufferArray[currArgIndex]);
 
@@ -2748,7 +2748,7 @@ void PackArgumentArray(DebuggerEval *pDE,
                                                                                   : DL_All)
                             );
 
-        LOG((LF_CORDB, LL_EVERYTHING, "this = 0x%08x\n", ArgSlotToPtr(pArguments[currArgSlot])));
+        LOG((LF_CORDB, LL_EVERYTHING, "this = %p\n", ArgSlotToPtr(pArguments[currArgSlot])));
 
         // We need to check 'this' for a null ref ourselves... NOTE: only do this if we put an object reference on
         // the stack. If we put a byref for a value type, then we don't need to do this!
@@ -2843,7 +2843,7 @@ void PackArgumentArray(DebuggerEval *pDE,
             "\t: argSigType=0x%x, byrefArgSigType=0x%0x, inType=0x%0x\n",
              pFEArgInfo[currArgIndex].argSigType,
              pFEArgInfo[currArgIndex].byrefArgSigType,
-             pFEAD->argElementType));
+             static_cast<unsigned>(pFEAD->argElementType)));
 
 
         GetFuncEvalArgValue(pDE,
@@ -3363,7 +3363,7 @@ static void DoNormalFuncEval( DebuggerEval *pDE,
     allocArgCnt++;
 
     LOG((LF_CORDB, LL_EVERYTHING,
-         "Func eval for %s::%s: allocArgCnt=%d\n",
+         "Func eval for %s::%s: allocArgCnt=%zu\n",
          pDE->m_md->m_pszDebugClassName,
          pDE->m_md->m_pszDebugMethodName,
          allocArgCnt));
@@ -3818,7 +3818,7 @@ void * STDCALL FuncEvalHijackWorker(DebuggerEval *pDE)
     {
         GCX_FORBID();
 
-        LOG((LF_CORDB, LL_INFO100000, "D:FEHW for pDE:%08x evalType:%d\n", pDE, pDE->m_evalType));
+        LOG((LF_CORDB, LL_INFO100000, "D:FEHW for pDE:%p evalType:%d\n", pDE, pDE->m_evalType));
 
         pThread = GetThread();
 

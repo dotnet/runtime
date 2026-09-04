@@ -41,7 +41,9 @@
 
 #define CSE_CONSTS               1       // Enable if we want to CSE constants
 #define LOWER_DECOMPOSE_LONGS    1       // Decompose TYP_LONG operations into (typically two) TYP_INT ones
-#define EMIT_TRACK_STACK_DEPTH   1       // This is something of a workaround.  For both ARM and AMD64, the frame size is fixed, so we don't really
+#define TARGET_MASKS_SHIFTS      0       // Shift and rotate instructions do not implicitly mask their count to the operand bit size
+#define TARGET_HAS_MULHI         0       // Does not support GT_MULHI, the high bits of an NxN multiply
+#define EMIT_TRACK_STACK_DEPTH   1         // This is something of a workaround.  For both ARM and AMD64, the frame size is fixed, so we don't really
                                          // need to track stack depth, but this is currently necessary to get GC information reported at call sites.
 #define EMIT_GENERATE_GCINFO     1       // Track GC ref liveness in codegen and emit and generate GCInfo based on that
 
@@ -161,14 +163,6 @@
 
 // Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
 #define RBM_CALLEE_GCTRASH_WRITEBARRIER       RBM_CALLEE_TRASH_WRITEBARRIER
-
-// GenericPInvokeCalliHelper VASigCookie Parameter
-#define REG_PINVOKE_COOKIE_PARAM          REG_R4
-#define RBM_PINVOKE_COOKIE_PARAM          RBM_R4
-
-// GenericPInvokeCalliHelper unmanaged target Parameter
-#define REG_PINVOKE_TARGET_PARAM          REG_R12
-#define RBM_PINVOKE_TARGET_PARAM          RBM_R12
 
 // IL stub's secret MethodDesc parameter (JitFlags::JIT_FLAG_PUBLISH_SECRET_PARAM)
 #define REG_SECRET_STUB_PARAM     REG_R12

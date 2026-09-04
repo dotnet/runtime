@@ -69,7 +69,7 @@ internal sealed class InterpToNativeGenerator
         {
             var toks = SignatureMapper.ParseSignatureTokens(sig);
             if (toks[0][0] == 'S' && toks[0].Length > 1)
-                structReturnSizes.Add(int.Parse(toks[0].Substring(1)));
+                structReturnSizes.Add(SignatureMapper.GetStructSize(toks[0]));
         }
 
         w.Write(
@@ -184,6 +184,11 @@ internal sealed class InterpToNativeGenerator
             int slot = 0;
             foreach (var token in args)
             {
+                if (token[0] == 'A')
+                {
+                    slot = (slot + 1) & ~1;
+                }
+
                 result.Add($"{SignatureMapper.TokenToArgType(token)}({slot})");
                 slot += SignatureMapper.TokenToSlotCount(token);
             }
@@ -195,7 +200,7 @@ internal sealed class InterpToNativeGenerator
         {
             // For struct returns, use the typedef so emcc generates the correct sret ABI
             if (returnToken[0] == 'S' && returnToken.Length > 1)
-                return (false, $"wasm_ret_{returnToken}");
+                return (false, $"wasm_ret_S{SignatureMapper.GetStructSize(returnToken)}");
             return new(returnToken == "v", SignatureMapper.TokenToNativeType(returnToken));
         }
 

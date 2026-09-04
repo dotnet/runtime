@@ -277,7 +277,6 @@ public:
         GUID UNALIGNED **ppGuid)        // Output buffer for Guid.
     {
         STATIC_CONTRACT_NOTHROW;
-        STATIC_CONTRACT_FORBID_FAULT;
 
         HRESULT hr;
         MetaData::DataBlob heapData;
@@ -394,7 +393,6 @@ protected:
     virtual int IsValidOffset(UINT32 nOffset)
     {
         STATIC_CONTRACT_NOTHROW;
-        STATIC_CONTRACT_FORBID_FAULT;
 
         MetaData::DataBlob data;
         return (StgBlobPoolReadOnly::GetBlob(nOffset, &data) == S_OK);
@@ -519,7 +517,6 @@ public:
         UINT32 *pcbSaveSize) const
     {
         STATIC_CONTRACT_NOTHROW;
-        STATIC_CONTRACT_FORBID_FAULT;
 
         _ASSERTE(pcbSaveSize != NULL);
         // Size is offset of last seg + size of last seg.
@@ -542,7 +539,6 @@ public:
         UINT32 *pcbSaveSize) const  // Return save size of this pool.
     {
         STATIC_CONTRACT_NOTHROW;
-        STATIC_CONTRACT_FORBID_FAULT;
 
         _ASSERTE(pcbSaveSize != NULL);
         UINT32 cbSize = 0;
@@ -1029,7 +1025,6 @@ public:
         UINT32 *pcbSaveSize) const
     {
         STATIC_CONTRACT_NOTHROW;
-        STATIC_CONTRACT_FORBID_FAULT;
 
         _ASSERTE(pcbSaveSize != NULL);
 
@@ -1161,7 +1156,6 @@ public:
     virtual int IsEmpty()                    // true if empty.
     {
         STATIC_CONTRACT_NOTHROW;
-        STATIC_CONTRACT_FORBID_FAULT;
 
         return (GetNextOffset() <= 1);
     }
@@ -1176,7 +1170,6 @@ public:
         UINT32 *pcbSaveSize) const
     {
         STATIC_CONTRACT_NOTHROW;
-        STATIC_CONTRACT_FORBID_FAULT;
 
         return StgPool::GetSaveSize(pcbSaveSize);
     }
@@ -1189,7 +1182,6 @@ protected:
     virtual int IsValidOffset(UINT32 nOffset)
     {
         STATIC_CONTRACT_NOTHROW;
-        STATIC_CONTRACT_FORBID_FAULT;
 
         MetaData::DataBlob data;
         return (StgBlobPool::GetBlob(nOffset, &data) == S_OK);

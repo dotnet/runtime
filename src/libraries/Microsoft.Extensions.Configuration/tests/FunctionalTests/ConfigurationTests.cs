@@ -444,7 +444,6 @@ IniKey1=IniValue2");
         }
 
         [Fact]
-        [ActiveIssue("File watching is flaky (particularly on non windows. https://github.com/dotnet/runtime/issues/42036")]
         public void CanSetValuesAndReloadValues()
         {
             WriteTestFiles();
@@ -498,7 +497,10 @@ IniKey1=IniValue2");
             Assert.Equal("JsonValue1", config["JsonKey1"]);
 
             // Introduce an error and make sure the old key is removed
-            _fileSystem.WriteFile("reload.json", @"{""JsonKey1"": ");
+            await WriteFilesForReload(
+                config,
+                () => _fileSystem.WriteFile("reload.json", @"{""JsonKey1"": "),
+                Path.Combine(_fileSystem.RootPath, "reload.json"));
 
             await WaitForChange(
                 () => config["JsonKey1"] == null,
@@ -507,7 +509,10 @@ IniKey1=IniValue2");
             Assert.Null(config["JsonKey1"]);
 
             // Update the file again to make sure the config is updated
-            _fileSystem.WriteFile("reload.json", @"{""JsonKey1"": ""JsonValue2""}");
+            await WriteFilesForReload(
+                config,
+                () => _fileSystem.WriteFile("reload.json", @"{""JsonKey1"": ""JsonValue2""}"),
+                Path.Combine(_fileSystem.RootPath, "reload.json"));
 
             await WaitForChange(
                 () => config["JsonKey1"] == "JsonValue2",
@@ -639,7 +644,6 @@ IniKey1=IniValue2");
         }
 
         [Fact]
-        [ActiveIssue("File watching is flaky (particularly on non windows. https://github.com/dotnet/runtime/issues/42036")]
         public async Task ReloadDataErrorRaisesOnLoadException()
         {
             const string FileName = $"{nameof(ReloadDataErrorRaisesOnLoadException)}.json";
@@ -672,7 +676,10 @@ IniKey1=IniValue2");
             Assert.Equal("JsonValue1", cfgRoot["JsonKey1"]);
             Assert.False(reloadToken.HasChanged);
 
-            _fileSystem.WriteFile(FileName, @"{""JsonKey1"": ");
+            await WriteFilesForReload(
+                cfgRoot,
+                () => _fileSystem.WriteFile(FileName, @"{""JsonKey1"": "),
+                Path.Combine(_fileSystem.RootPath, FileName));
 
             await WaitForChange(() => failingProvider != null, "File change did not raise OnLoadException event in time.");
 
@@ -685,7 +692,6 @@ IniKey1=IniValue2");
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
-        [ActiveIssue("File watching is flaky (particularly on non windows. https://github.com/dotnet/runtime/issues/42036")]
         public async Task ReloadIoErrorRaisesOnLoadException()
         {
             const string FileName = $"{nameof(ReloadIoErrorRaisesOnLoadException)}.json";
@@ -720,8 +726,11 @@ IniKey1=IniValue2");
 
             using (_fileSystem.LockFileReading(FileName))
             {
-                // we need NoWait because Wait reads file under the hood and that is restricted in LockFileReading context
-                _fileSystem.WriteFileNoWait(FileName, @"{""JsonKey1"": ""JsonValue1Updated"" }");
+                await WriteFilesForReload(
+                    cfgRoot,
+                    // we need NoWait because Wait reads file under the hood and that is restricted in LockFileReading context
+                    () => _fileSystem.WriteFileNoWait(FileName, @"{""JsonKey1"": ""JsonValue1Updated"" }"),
+                    Path.Combine(_fileSystem.RootPath, FileName));
 
                 await WaitForChange(() => failingProvider != null, "File change did not raise OnLoadException event in time.");
                 Assert.IsType<IOException>(failureException);
@@ -752,9 +761,17 @@ IniKey1=IniValue2");
             var token = config.GetReloadToken();
 
             // Update files
-            _fileSystem.WriteFile("reload.json", @"{""JsonKey1"": ""JsonValue2""}");
-            _fileSystem.WriteFile("reload.ini", @"IniKey1 = IniValue2");
-            _fileSystem.WriteFile("reload.xml", @"<settings XmlKey1=""XmlValue2""/>");
+            await WriteFilesForReload(
+                config,
+                () =>
+                {
+                    _fileSystem.WriteFile("reload.json", @"{""JsonKey1"": ""JsonValue2""}");
+                    _fileSystem.WriteFile("reload.ini", @"IniKey1 = IniValue2");
+                    _fileSystem.WriteFile("reload.xml", @"<settings XmlKey1=""XmlValue2""/>");
+                },
+                Path.Combine(_fileSystem.RootPath, "reload.json"),
+                Path.Combine(_fileSystem.RootPath, "reload.ini"),
+                Path.Combine(_fileSystem.RootPath, "reload.xml"));
 
             await WaitForChange(
                 () => config["JsonKey1"] == "JsonValue2"
@@ -769,7 +786,6 @@ IniKey1=IniValue2");
         }
 
         [Fact]
-        [ActiveIssue("File watching is flaky (particularly on non windows. https://github.com/dotnet/runtime/issues/42036")]
         public async Task CreatingOptionalFileInNonExistentDirectoryWillReload()
         {
             var directory = Path.GetRandomFileName();
@@ -803,7 +819,6 @@ IniKey1=IniValue2");
         }
 
         [Theory]
-        [ActiveIssue("File watching is flaky (particularly on non windows. https://github.com/dotnet/runtime/issues/42036")]
         [InlineData(false)]
         [InlineData(true)]
         public async Task DeletingFilesThatRedefineKeysWithReload(bool optional)
@@ -884,7 +899,6 @@ IniKey1=IniValue2");
         }
 
         [Theory]
-        [ActiveIssue("File watching is flaky (particularly on non windows. https://github.com/dotnet/runtime/issues/42036")]
         [InlineData(false)]
         [InlineData(true)]
         public async Task DeletingFileWillReload(bool optional)
@@ -923,7 +937,6 @@ IniKey1=IniValue2");
         }
 
         [Fact]
-        [ActiveIssue("File watching is flaky (particularly on non windows. https://github.com/dotnet/runtime/issues/42036")]
         public async Task CreatingWritingDeletingCreatingFileWillReload()
         {
             var config = CreateBuilder()
@@ -955,9 +968,17 @@ IniKey1=IniValue2");
 
             var writeToken = config.GetReloadToken();
 
-            _fileSystem.WriteFile(_jsonFile, @"{""JsonKey1"": ""JsonValue2""}");
-            _fileSystem.WriteFile(_iniFile, @"IniKey1 = IniValue2");
-            _fileSystem.WriteFile(_xmlFile, @"<settings XmlKey1=""XmlValue2""/>");
+            await WriteFilesForReload(
+                config,
+                () =>
+                {
+                    _fileSystem.WriteFile(_jsonFile, @"{""JsonKey1"": ""JsonValue2""}");
+                    _fileSystem.WriteFile(_iniFile, @"IniKey1 = IniValue2");
+                    _fileSystem.WriteFile(_xmlFile, @"<settings XmlKey1=""XmlValue2""/>");
+                },
+                Path.Combine(_fileSystem.RootPath, _jsonFile),
+                Path.Combine(_fileSystem.RootPath, _iniFile),
+                Path.Combine(_fileSystem.RootPath, _xmlFile));
 
             await WaitForChange(
                 () => config["JsonKey1"] == "JsonValue2"
@@ -1128,7 +1149,10 @@ IniKey1=IniValue2");
                 var token = config.GetReloadToken();
 
                 // Update file
-                _fileSystem.WriteFile(userSecretsPath, @"{""UserSecretKey1"": ""UserSecretValue2""}");
+                await WriteFilesForReload(
+                    config,
+                    () => _fileSystem.WriteFile(userSecretsPath, @"{""UserSecretKey1"": ""UserSecretValue2""}"),
+                    userSecretsPath);
 
                 await WaitForChange(
                     () => config["UserSecretKey1"] == "UserSecretValue2",
@@ -1216,6 +1240,40 @@ IniKey1=IniValue2");
                 }
 
                 await Task.Delay(_msDelay);
+            }
+        }
+
+        // UseActivePolling is the reliable post-initialization indicator, not UsePollingFileWatcher,
+        // until https://github.com/dotnet/runtime/issues/131871 is fixed.
+        private static bool UsesPolling(IConfigurationRoot config) =>
+            config.Providers
+                .OfType<FileConfigurationProvider>()
+                .Any(provider => provider.Source.FileProvider is PhysicalFileProvider { UseActivePolling: true });
+
+        private async Task WriteFilesForReload(IConfigurationRoot config, Action writeFiles, params string[] filePaths)
+        {
+            DateTime[] previousWriteTimes = null;
+
+            if (UsesPolling(config))
+            {
+                // Polling detects overwrites by timestamp, so ensure the new write gets a different timestamp.
+                previousWriteTimes = filePaths.Select(File.GetLastWriteTimeUtc).ToArray();
+                DateTime latestWriteTime = previousWriteTimes.Max();
+                TimeSpan delay = latestWriteTime.AddSeconds(1) - DateTime.UtcNow;
+                if (delay > TimeSpan.Zero)
+                {
+                    await Task.Delay(delay);
+                }
+            }
+
+            writeFiles();
+
+            if (previousWriteTimes is not null)
+            {
+                for (int i = 0; i < filePaths.Length; i++)
+                {
+                    Assert.NotEqual(previousWriteTimes[i], File.GetLastWriteTimeUtc(filePaths[i]));
+                }
             }
         }
 

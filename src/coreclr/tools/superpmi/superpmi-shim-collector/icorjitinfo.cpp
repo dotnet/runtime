@@ -1404,6 +1404,20 @@ CORINFO_METHOD_HANDLE interceptor_ICJI::getAwaitReturnCall(CORINFO_METHOD_HANDLE
     return result;
 }
 
+CORINFO_METHOD_HANDLE interceptor_ICJI::getAwaitAwaiterInContinuationCall(
+    CORINFO_METHOD_HANDLE callerHandle,
+    CORINFO_RESOLVED_TOKEN* pResolvedToken,
+    bool isUnsafe,
+    CORINFO_CONTEXT_HANDLE* contextHandle,
+    CORINFO_LOOKUP* instArg)
+{
+    mc->cr->AddCall("getAwaitAwaiterInContinuationCall");
+    CORINFO_METHOD_HANDLE result = original_ICorJitInfo->getAwaitAwaiterInContinuationCall(
+        callerHandle, pResolvedToken, isUnsafe, contextHandle, instArg);
+    mc->recGetAwaitAwaiterInContinuationCall(callerHandle, pResolvedToken, isUnsafe, contextHandle, instArg, result);
+    return result;
+}
+
 /*********************************************************************************/
 //
 // Diagnostic methods
@@ -1619,15 +1633,6 @@ void interceptor_ICJI::getAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method, C
     mc->cr->AddCall("getAddressOfPInvokeTarget");
     original_ICorJitInfo->getAddressOfPInvokeTarget(method, pLookup);
     mc->recGetAddressOfPInvokeTarget(method, pLookup);
-}
-
-// Generate a cookie based on the signature to pass to CORINFO_HELP_PINVOKE_CALLI
-LPVOID interceptor_ICJI::GetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, void** ppIndirection)
-{
-    mc->cr->AddCall("GetCookieForPInvokeCalliSig");
-    LPVOID temp = original_ICorJitInfo->GetCookieForPInvokeCalliSig(szMetaSig, ppIndirection);
-    mc->recGetCookieForPInvokeCalliSig(szMetaSig, ppIndirection, temp);
-    return temp;
 }
 
 // Generate a cookie based on the signature to pass to INTOP_CALLI

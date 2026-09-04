@@ -55,14 +55,6 @@ namespace Microsoft.DotNet.CoreSetup.Test
                     .EnvironmentVariable(Constants.DotnetRoot.WindowsX86EnvironmentVariable, dotNetRoot);
         }
 
-        public static Command MultilevelLookup(this Command command, bool? enable)
-        {
-            if (enable.HasValue)
-                return command.EnvironmentVariable(Constants.MultilevelLookup.EnvironmentVariable, enable.Value ? "1" : "0");
-
-            return command.RemoveEnvironmentVariable(Constants.MultilevelLookup.EnvironmentVariable);
-        }
-
         public static Command RuntimeId(this Command command, string rid)
         {
             return command.EnvironmentVariable(Constants.RuntimeId.EnvironmentVariable, rid);

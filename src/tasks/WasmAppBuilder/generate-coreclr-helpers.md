@@ -20,6 +20,14 @@ Each run emits three files into the output directory:
 - `callhelpers-reverse.cpp`
 - `callhelpers-interp-to-managed.cpp`
 
+## The P/Invoke module list
+
+Only the framework native libraries listed in
+[`eng/wasm/WasmPInvokeModules.props`](../../../eng/wasm/WasmPInvokeModules.props) get an entry in
+the generated P/Invoke table. The runtime tests share that list — `CLRTest.WasmCorerun.targets`
+generates equivalent tables of its own when it links a test-specific corerun. Adding a module there
+means rerunning these scripts and committing the regenerated files in the same change.
+
 ## What needs to be built first
 
 The generator scans the **managed framework assemblies** in the `testhost` folder produced by a

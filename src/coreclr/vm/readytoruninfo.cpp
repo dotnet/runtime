@@ -1095,6 +1095,10 @@ static bool SigMatchesMethodDesc(MethodDesc* pMD, SigPointer &sig, ModuleBase * 
     if (sigIsAsync != pMD->IsAsyncVariantMethod())
         return false;
 
+    bool sigIsUnboxingStub = (methodFlags & ENCODE_METHOD_SIG_UnboxingStub) != 0;
+    if (sigIsUnboxingStub != pMD->IsUnboxingStub())
+        return false;
+
     _ASSERTE((methodFlags & ENCODE_METHOD_SIG_SlotInsteadOfToken) == 0);
     _ASSERTE(((methodFlags & (ENCODE_METHOD_SIG_MemberRefToken | ENCODE_METHOD_SIG_UpdateContext)) == 0) ||
              ((methodFlags & (ENCODE_METHOD_SIG_MemberRefToken | ENCODE_METHOD_SIG_UpdateContext)) == (ENCODE_METHOD_SIG_MemberRefToken | ENCODE_METHOD_SIG_UpdateContext)));
@@ -1331,9 +1335,10 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
     ETW::MethodLog::GetR2RGetEntryPointStart(pMD);
 
     uint offset;
-    // Async variants are stored in the instance methods table
+    // Async variants and unboxing stubs are stored in the instance methods table.
     if (pMD->HasClassOrMethodInstantiation()
-        || pMD->IsAsyncVariantMethod())
+        || pMD->IsAsyncVariantMethod()
+        || pMD->IsUnboxingStub())
     {
         if (m_instMethodEntryPoints.IsNull())
             goto done;
@@ -2217,7 +2222,6 @@ public:
             MODE_ANY;
             PRECONDITION(TypeFromToken(kFile) == mdtFile
                         || TypeFromToken(kFile) == mdtModuleRef);
-            FORBID_FAULT;
             SUPPORTS_DAC;
         }
         CONTRACTL_END;
@@ -2902,30 +2906,35 @@ void ReadyToRunInfo::RegisterVirtualIPRange(Module* pModule)
     if (m_nRuntimeFunctions == 0)
         return;
 
-    TADDR imageBase = dac_cast<TADDR>(m_pComposite->GetLayout()->GetBase());
+    if (!m_pComposite->MinVirtualIPSet())
+    {
+        TADDR imageBase = dac_cast<TADDR>(m_pComposite->GetLayout()->GetBase());
 
-    // The last RUNTIME_FUNCTION entry's BeginAddress is the virtual IP index of that entry.
-    // Total virtual IPs = lastEntry.BeginAddress + virtualIPCount(lastEntry)
-    T_RUNTIME_FUNCTION* pLastEntry = &m_pRuntimeFunctions[m_nRuntimeFunctions - 1];
-    UINT32 lastEntryVirtualIPIndex = RUNTIME_FUNCTION__BeginAddress(pLastEntry);
+        // The last RUNTIME_FUNCTION entry's BeginAddress is the virtual IP index of that entry.
+        // Total virtual IPs = lastEntry.BeginAddress + virtualIPCount(lastEntry)
+        T_RUNTIME_FUNCTION* pLastEntry = &m_pRuntimeFunctions[m_nRuntimeFunctions - 1];
+        UINT32 lastEntryVirtualIPIndex = RUNTIME_FUNCTION__BeginAddress(pLastEntry);
 
-    // Decode the virtual IP count from the last entry's unwind data.
-    // Unwind format: ULEB128(frameSize) ULEB128(virtualIPCount)
-    PTR_BYTE pUnwindData = dac_cast<PTR_BYTE>(imageBase + pLastEntry->UnwindData);
-    DecodeULEB128AsU32(&pUnwindData); // skip frame size
-    UINT32 lastEntryVIPCount = DecodeULEB128AsU32(&pUnwindData) * 2; // Multiply by 2 to force all virtual IPs to be an even number.
+        // Decode the virtual IP count from the last entry's unwind data.
+        // Unwind format: ULEB128(frameSize) ULEB128(virtualIPCount)
+        PTR_BYTE pUnwindData = dac_cast<PTR_BYTE>(imageBase + pLastEntry->UnwindData);
+        DecodeULEB128AsU32(&pUnwindData); // skip frame size
+        UINT32 lastEntryVIPCount = DecodeULEB128AsU32(&pUnwindData) * 2; // Multiply by 2 to force all virtual IPs to be an even number.
 
-    UINT32 totalVirtualIPs = lastEntryVirtualIPIndex + lastEntryVIPCount;
+        UINT32 totalVirtualIPs = lastEntryVirtualIPIndex + lastEntryVIPCount;
 
-    m_minVirtualIP = ExecutionManager::AddVirtualIPRange(
-        totalVirtualIPs,
-        ExecutionManager::GetReadyToRunJitManager(),
-        pModule);
+        m_pComposite->SetMinVirtualIP(ExecutionManager::AddVirtualIPRange(
+            totalVirtualIPs,
+            ExecutionManager::GetReadyToRunJitManager(),
+            pModule));
 
-    ExecutionManager::AddFunctionTableIndexRange(
-        m_minFunctionTableIndex,
-        m_nRuntimeFunctions,
-        pModule);
+        ExecutionManager::AddFunctionTableIndexRange(
+            m_minFunctionTableIndex,
+            m_nRuntimeFunctions,
+            pModule);
+    }
+
+    m_minVirtualIP = m_pComposite->GetMinVirtualIP();
 }
 #endif // TARGET_WASM
 

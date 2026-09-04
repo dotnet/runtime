@@ -320,7 +320,6 @@ protected:
     BYTE *              m_InitialReservedMemForLoaderHeaps;
     BYTE                m_LowFreqHeapInstance[sizeof(LoaderHeap)];
     BYTE                m_HighFreqHeapInstance[sizeof(LoaderHeap)];
-    BYTE                m_StubHeapInstance[sizeof(LoaderHeap)];
 #ifdef HAS_FIXUP_PRECODE
     BYTE                m_FixupPrecodeHeapInstance[sizeof(InterleavedLoaderHeap)];
 #endif // HAS_FIXUP_PRECODE
@@ -336,7 +335,6 @@ protected:
     PTR_LoaderHeap      m_pLowFrequencyHeap;
     PTR_LoaderHeap      m_pHighFrequencyHeap;
     PTR_LoaderHeap      m_pStaticsHeap;
-    PTR_LoaderHeap      m_pStubHeap; // stubs for PInvoke, remoting, etc
     PTR_LoaderHeap      m_pExecutableHeap;
 #ifdef FEATURE_READYTORUN
 #ifdef FEATURE_STUBPRECODE_DYNAMIC_HELPERS
@@ -657,12 +655,6 @@ public:
         return m_pStaticsHeap;
     }
 
-    PTR_LoaderHeap GetStubHeap()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pStubHeap;
-    }
-
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
     PTR_InterleavedLoaderHeap GetNewStubPrecodeHeap()
     {
@@ -950,7 +942,6 @@ struct cdac_data<LoaderAllocator>
     static constexpr size_t HighFrequencyHeap = offsetof(LoaderAllocator, m_pHighFrequencyHeap);
     static constexpr size_t LowFrequencyHeap = offsetof(LoaderAllocator, m_pLowFrequencyHeap);
     static constexpr size_t StaticsHeap = offsetof(LoaderAllocator, m_pStaticsHeap);
-    static constexpr size_t StubHeap = offsetof(LoaderAllocator, m_pStubHeap);
     static constexpr size_t ExecutableHeap = offsetof(LoaderAllocator, m_pExecutableHeap);
 #ifdef HAS_FIXUP_PRECODE
     static constexpr size_t FixupPrecodeHeap = offsetof(LoaderAllocator, m_pFixupPrecodeHeap);
@@ -1115,4 +1106,3 @@ public:
 #include "loaderallocator.inl"
 
 #endif //  __LoaderAllocator_h__
-

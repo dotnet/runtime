@@ -8,8 +8,7 @@
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
 
     <!-- This is an explicit crossgen test -->
-    <AlwaysUseCrossGen2 Condition="'$(RuntimeFlavor)' != 'coreclr' or '$(TargetOS)' != 'browser'">true</AlwaysUseCrossGen2>
-    <CrossGenTest Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">false</CrossGenTest>
+    <AlwaysUseCrossGen2>true</AlwaysUseCrossGen2>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />

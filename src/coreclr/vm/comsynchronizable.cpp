@@ -427,32 +427,6 @@ extern "C" INT32 QCALLTYPE ThreadNative_GetThreadState(QCall::ThreadHandle threa
     return res;
 }
 
-extern "C" void QCALLTYPE ThreadNative_SetWaitSleepJoinState(QCall::ThreadHandle thread)
-{
-    CONTRACTL
-    {
-        QCALL_CHECK_NO_GC_TRANSITION;
-        PRECONDITION(thread != NULL);
-    }
-    CONTRACTL_END;
-
-    // Set the state bits.
-    thread->SetThreadState(Thread::TS_WaitSleepJoin);
-}
-
-extern "C" void QCALLTYPE ThreadNative_ClearWaitSleepJoinState(QCall::ThreadHandle thread)
-{
-    CONTRACTL
-    {
-        QCALL_CHECK_NO_GC_TRANSITION;
-        PRECONDITION(thread != NULL);
-    }
-    CONTRACTL_END;
-
-    // Clear the state bits.
-    thread->ResetThreadState(Thread::TS_WaitSleepJoin);
-}
-
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
 // Return whether the thread hosts an STA, is a member of the MTA or is not
@@ -543,14 +517,17 @@ extern "C" HANDLE QCALLTYPE ThreadNative_GetOSHandle(QCall::ThreadHandle t)
     HANDLE currentHandle = t->GetThreadHandle();
     if (currentHandle != INVALID_HANDLE_VALUE)
     {
-        DuplicateHandle(
+        if (!DuplicateHandle(
             GetCurrentProcess(),
             currentHandle,
             GetCurrentProcess(),
             &retVal,
             0,
             FALSE,
-            DUPLICATE_SAME_ACCESS);
+            DUPLICATE_SAME_ACCESS))
+        {
+            COMPlusThrowWin32();
+        }
     }
 
     END_QCALL;
@@ -766,13 +743,13 @@ extern "C" void QCALLTYPE ThreadNative_Interrupt(QCall::ThreadHandle thread)
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE ThreadNative_CheckForPendingInterrupt(QCall::ThreadHandle thread)
+extern "C" void QCALLTYPE ThreadNative_CheckForPendingInterrupt()
 {
     QCALL_CONTRACT;
 
     BEGIN_QCALL;
 
-    thread->HandleThreadInterrupt();
+    GetThread()->HandleThreadInterrupt();
 
     END_QCALL;
 }

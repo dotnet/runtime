@@ -41,7 +41,6 @@ void *EEClass::operator new(
     {
         THROWS;
         GC_NOTRIGGER;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -60,7 +59,6 @@ void EEClass::Destruct()
     {
         NOTHROW;
         GC_TRIGGERS;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -80,29 +78,6 @@ void EEClass::Destruct()
     }
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
 #endif // FEATURE_COMINTEROP
-
-
-    if (IsDelegate())
-    {
-        DelegateEEClass* pDelegateEEClass = (DelegateEEClass*)this;
-        for (Stub* pThunk : {pDelegateEEClass->m_pStaticCallStub, pDelegateEEClass->m_pInstRetBuffCallStub})
-        {
-            if (pThunk == nullptr)
-                continue;
-
-            _ASSERTE(pThunk->IsShuffleThunk());
-
-            if (pThunk->HasExternalEntryPoint()) // IL thunk
-            {
-                pThunk->DecRef();
-            }
-            else
-            {
-                ExecutableWriterHolder<Stub> stubWriterHolder(pThunk, sizeof(Stub));
-                stubWriterHolder.GetRW()->DecRef();
-            }
-        }
-    }
 
 #ifdef FEATURE_COMINTEROP
     if (GetSparseCOMInteropVTableMap() != NULL)
@@ -137,7 +112,6 @@ MethodTable *MethodTable::LoadEnclosingMethodTable(ClassLoadLevel targetLevel)
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         MODE_ANY;
     }
     CONTRACTL_END
@@ -168,7 +142,6 @@ VOID EEClass::FixupFieldDescForEnC(MethodTable * pMT, EnCFieldDesc *pFD, mdField
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
 
@@ -1709,7 +1682,6 @@ MethodDesc* MethodTable::GetBoxedEntryPointMD(MethodDesc *pMD)
         MODE_PREEMPTIVE;
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(IsValueType());
         PRECONDITION(!pMD->ContainsGenericVariables());
         PRECONDITION(!pMD->IsUnboxingStub());
@@ -1732,7 +1704,6 @@ MethodDesc* MethodTable::GetUnboxedEntryPointMD(MethodDesc *pMD)
         MODE_PREEMPTIVE;
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(IsValueType());
         // reflection needs to call this for methods in non instantiated classes,
         // so move the assert to the caller when needed
@@ -1757,7 +1728,6 @@ MethodDesc* MethodTable::GetExistingUnboxedEntryPointMD(MethodDesc *pMD)
     CONTRACTL {
         THROWS;
         GC_NOTRIGGER;
-        INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(IsValueType());
         // reflection needs to call this for methods in non instantiated classes,
         // so move the assert to the caller when needed
@@ -2121,7 +2091,6 @@ TypeHandle MethodTable::GetCoClassForInterface()
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
 
@@ -2146,7 +2115,6 @@ TypeHandle MethodTable::SetupCoClassForInterface()
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(IsComClassInterface());
 
     }
@@ -2188,7 +2156,6 @@ void MethodTable::GetEventInterfaceInfo(MethodTable **ppSrcItfClass, MethodTable
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
 
@@ -2244,7 +2211,6 @@ TypeHandle MethodTable::GetDefItfForComClassItf()
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
 
@@ -2356,7 +2322,6 @@ SString &MethodTable::_GetFullyQualifiedNameForClassNestedAware(SString &ssBuf)
     CONTRACTL {
         THROWS;
         GC_NOTRIGGER;
-        INJECT_FAULT(COMPlusThrowOM(););
     } CONTRACTL_END;
 
     ssBuf.Clear();
@@ -2417,7 +2382,6 @@ SString &MethodTable::_GetFullyQualifiedNameForClass(SString &ssBuf)
     {
         THROWS;
         GC_NOTRIGGER;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
 
@@ -2461,7 +2425,6 @@ LPCUTF8 MethodTable::GetFullyQualifiedNameInfo(LPCUTF8 *ppszNamespace)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -2493,7 +2456,6 @@ CorIfaceAttr MethodTable::GetComInterfaceType()
     {
         THROWS;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -2796,7 +2758,7 @@ MethodTable::DebugDumpGCDesc(
             {
                 if (fDebug)
                 {
-                    ssBuff.Printf("   offset %5d (%d w/o Object), size %5d (%5d w/o BaseSize subtr)\n",
+                    ssBuff.Printf("   offset %5zu (%zu w/o Object), size %5zu (%5zu w/o BaseSize subtr)\n",
                         pSeries->GetSeriesOffset(),
                         pSeries->GetSeriesOffset() - OBJECT_SIZE,
                         pSeries->GetSeriesSize(),
@@ -2806,7 +2768,7 @@ MethodTable::DebugDumpGCDesc(
                 else
                 {
                     //LF_ALWAYS allowed here because this is controlled by special env var ShouldDumpOnClassLoad
-                    LOG((LF_ALWAYS, LL_ALWAYS, "   offset %5d (%d w/o Object), size %5d (%5d w/o BaseSize subtr)\n",
+                    LOG((LF_ALWAYS, LL_ALWAYS, "   offset %5zu (%zu w/o Object), size %5zu (%5zu w/o BaseSize subtr)\n",
                          pSeries->GetSeriesOffset(),
                          pSeries->GetSeriesOffset() - OBJECT_SIZE,
                          pSeries->GetSeriesSize(),
@@ -2879,7 +2841,6 @@ MethodTable::GetSubstitutionForParent(
     {
         THROWS;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -3027,7 +2988,6 @@ WORD SparseVTableMap::LookupVTSlot(WORD MTSlot)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -3137,7 +3097,6 @@ ApproxFieldDescIterator::ApproxFieldDescIterator()
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -3154,7 +3113,6 @@ void ApproxFieldDescIterator::Init(MethodTable *pMT, int iteratorType)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END
@@ -3185,7 +3143,6 @@ PTR_FieldDesc ApproxFieldDescIterator::Next()
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END

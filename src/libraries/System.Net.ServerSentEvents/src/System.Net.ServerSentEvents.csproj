@@ -20,6 +20,7 @@ System.Net.ServerSentEvents.SseParser</PackageDescription>
     <Compile Include="System\Net\ServerSentEvents\SseItem.cs" />
     <Compile Include="System\Net\ServerSentEvents\SseItemParser.cs" />
     <Compile Include="System\Net\ServerSentEvents\SseParser.cs" />
+    <Compile Include="System\Net\ServerSentEvents\SseParserOptions.cs" />
     <Compile Include="System\Net\ServerSentEvents\ThrowHelper.cs" />
   </ItemGroup>
 

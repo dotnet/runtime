@@ -11,15 +11,12 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
 /// <summary>
 /// Controls whether delegation-only APIs can fall back to the legacy DAC implementation.
-/// When <c>CDAC_NO_FALLBACK=1</c> is set, only explicitly allowlisted methods may delegate.
+/// Only explicitly allowlisted methods may delegate.
 /// All fallback attempts are logged to stderr for capture by the test infrastructure.
 /// </summary>
 internal static class LegacyFallbackHelper
 {
-    private static readonly bool s_noFallback =
-        Environment.GetEnvironmentVariable("CDAC_NO_FALLBACK") == "1";
-
-    // Methods that are allowed to fall back even in no-fallback mode.
+    // Methods that are allowed to fall back.
     // Use the method name as it appears via [CallerMemberName].
     private static readonly HashSet<string> s_allowlist = new(StringComparer.Ordinal)
     {
@@ -36,8 +33,7 @@ internal static class LegacyFallbackHelper
 
     /// <summary>
     /// Returns <c>true</c> if the calling method is allowed to delegate to the legacy DAC.
-    /// In normal mode (no <c>CDAC_NO_FALLBACK</c>), always returns <c>true</c>.
-    /// In no-fallback mode, returns <c>true</c> only for allowlisted methods.
+    /// Returns <c>true</c> only for allowlisted methods.
     /// All fallback attempts (allowed and blocked) are logged to stderr.
     /// </summary>
     internal static bool CanFallback(
@@ -45,9 +41,6 @@ internal static class LegacyFallbackHelper
         [CallerFilePath] string file = "",
         [CallerLineNumber] int line = 0)
     {
-        if (!s_noFallback)
-            return true;
-
         if (s_allowlist.Contains(name) || s_fileAllowlist.Contains(Path.GetFileName(file)))
         {
             Console.Error.WriteLine($"[cDAC] Allowed fallback: {name} at {Path.GetFileName(file)}:{line}");

@@ -19,17 +19,16 @@ internal enum KnownPrecodeType
 }
 
 // Interface used to abstract behavior which may be different between multiple versions of the precode stub implementations
-internal interface IPrecodeStubsContractCommonApi<TStubPrecodeData>
+internal interface IPrecodeStubsContractCommonApi
 {
     public static abstract TargetPointer StubPrecode_GetMethodDesc(TargetPointer instrPointer, Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor);
     public static abstract TargetPointer ThisPtrRetBufPrecode_GetMethodDesc(TargetPointer instrPointer, Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor);
     public static abstract TargetPointer FixupPrecode_GetMethodDesc(TargetPointer instrPointer, Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor);
     public static abstract TargetPointer InterpreterPrecode_GetMethodDesc(TargetPointer instrPointer, Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor);
-    public static abstract byte StubPrecodeData_GetType(TStubPrecodeData stubPrecodeData);
     public static abstract KnownPrecodeType? TryGetKnownPrecodeType(TargetPointer instrPointer, Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor);
 }
 
-internal class PrecodeStubsCommon<TPrecodeStubsImplementation, TStubPrecodeData> : IPrecodeStubs where TPrecodeStubsImplementation : IPrecodeStubsContractCommonApi<TStubPrecodeData> where TStubPrecodeData : IData<TStubPrecodeData>
+internal class PrecodeStubsCommon<TPrecodeStubsImplementation> : IPrecodeStubs where TPrecodeStubsImplementation : IPrecodeStubsContractCommonApi
 {
     private readonly Target _target;
     private readonly CodePointerFlags _codePointerFlags;
@@ -96,12 +95,6 @@ internal class PrecodeStubsCommon<TPrecodeStubsImplementation, TStubPrecodeData>
     }
 
     private bool IsAlignedInstrPointer(TargetPointer instrPointer) => _target.IsAlignedToPointerSize(instrPointer);
-
-    private TStubPrecodeData GetStubPrecodeData(TargetPointer stubInstrPointer)
-    {
-        TargetPointer stubPrecodeDataAddress = stubInstrPointer + MachineDescriptor.StubCodePageSize;
-        return _target.ProcessedData.GetOrAdd<TStubPrecodeData>(stubPrecodeDataAddress);
-    }
 
     private KnownPrecodeType? TryGetKnownPrecodeType(TargetPointer instrAddress)
     {

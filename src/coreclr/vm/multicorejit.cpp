@@ -1168,7 +1168,6 @@ void MulticoreJitManager::StartProfile(AppDomain * pDomain, AssemblyBinder *pBin
     {
         THROWS;
         MODE_PREEMPTIVE;
-        INJECT_FAULT(COMPlusThrowOM(););
         CAN_TAKE_LOCK;
     }
     CONTRACTL_END;
@@ -1325,7 +1324,6 @@ void MulticoreJitManager::AutoStartProfile(AppDomain * pDomain)
         THROWS;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 

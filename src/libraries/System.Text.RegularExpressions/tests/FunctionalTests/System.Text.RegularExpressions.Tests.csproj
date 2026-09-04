@@ -21,6 +21,7 @@
   <ItemGroup>
     <Compile Include="AttRegexTests.cs" />
     <Compile Include="CaptureCollectionTests.cs" />
+    <Compile Include="GB18030\RegexTests.cs" />
     <Compile Include="GroupCollectionTests.cs" />
     <Compile Include="MatchCollectionTests.cs" />
     <Compile Include="MonoRegexTests.cs" />
@@ -105,5 +106,7 @@
   <ItemGroup>
     <HighAotMemoryUsageAssembly Include="Microsoft.CodeAnalysis.CSharp.dll" />
   </ItemGroup>
+
+  <Import Project="$(CommonTestPath)ComplianceTests\GB18030\GB18030.Shared.projitems" />
 
 </Project>

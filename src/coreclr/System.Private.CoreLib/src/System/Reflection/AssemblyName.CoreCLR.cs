@@ -14,9 +14,12 @@ namespace System.Reflection
     //
     internal unsafe struct NativeAssemblyNameParts
     {
+        /// <safety>Holds only a pointer value addressing a character buffer; reading or writing the field never dereferences it, so field access alone cannot read or write that buffer (any dereference requires an unsafe context).</safety>
         public char* _pName;
         public ushort _major, _minor, _build, _revision;
+        /// <safety>Holds only a pointer value addressing a character buffer; reading or writing the field never dereferences it, so field access alone cannot read or write that buffer (any dereference requires an unsafe context).</safety>
         public char* _pCultureName;
+        /// <safety>Holds only a pointer value addressing a public-key-or-token byte buffer; reading or writing the field never dereferences it, so field access alone cannot read or write that buffer (any dereference requires an unsafe context).</safety>
         public byte* _pPublicKeyOrToken;
         public int _cbPublicKeyOrToken;
         public AssemblyNameFlags _flags;

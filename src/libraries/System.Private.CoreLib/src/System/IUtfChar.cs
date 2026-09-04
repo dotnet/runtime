@@ -14,6 +14,9 @@ namespace System
         IBinaryInteger<TSelf>
         where TSelf : unmanaged, IUtfChar<TSelf>
     {
+        /// <summary>Gets whether this type represents UTF-8 code units.</summary>
+        public static abstract bool IsUtf8 { get; }
+
         /// <summary>Casts the specified value to this type.</summary>
         public static abstract TSelf CastFrom(byte value);
 

@@ -3009,6 +3009,7 @@ public:
 };
 #endif // defined(TARGET_WINDOWS)
 
+#ifdef FEATURE_VARARGS
 class ILArgIteratorMarshaler : public ILMarshaler
 {
 public:
@@ -3032,6 +3033,7 @@ protected:
 private:
     DWORD m_dwVaListSizeLocalNum;
 };
+#endif // FEATURE_VARARGS
 
 class ILArrayWithOffsetMarshaler : public ILMarshaler
 {

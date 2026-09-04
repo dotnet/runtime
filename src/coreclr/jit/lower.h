@@ -199,7 +199,6 @@ private:
 #endif // WINDOWS_AMD64_ABI
     GenTree* LowerDelegateInvoke(GenTreeCall* call);
     void     OptimizeCallIndirectTargetEvaluation(GenTreeCall* call);
-    GenTree* LowerIndirectNonvirtCall(GenTreeCall* call);
     GenTree* LowerDirectCall(GenTreeCall* call);
     GenTree* LowerNonvirtPinvokeCall(GenTreeCall* call);
     GenTree* LowerTailCallViaJitHelper(GenTreeCall* callNode, GenTree* callTarget);
@@ -451,10 +450,12 @@ private:
 #endif // TARGET_XARCH
 
 #ifdef TARGET_WASM
-    static void SetMultiplyUsed(GenTree* node DEBUGARG(const char* reason));
-    GenTree*    LowerNeg(GenTreeOp* node);
-    void        LowerIndexAddr(GenTreeIndexAddr* indexAddr);
-    void        LowerCkfinite(GenTreeOp* node);
+    static void      SetMultiplyUsed(GenTree* node DEBUGARG(const char* reason));
+    GenTreeAddrMode* GetFoldableAddrMode(GenTreeIndir* indirNode);
+    void             TryFoldLclAddrOffset(GenTreeIndir* indirNode);
+    GenTree*         LowerNeg(GenTreeOp* node);
+    void             LowerIndexAddr(GenTreeIndexAddr* indexAddr);
+    void             LowerCkfinite(GenTreeOp* node);
 #endif
 
     bool TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* parent);
@@ -485,6 +486,7 @@ private:
     GenTree* LowerStoreLoc(GenTreeLclVarCommon* tree);
     void     LowerRotate(GenTree* tree);
     void     LowerShift(GenTreeOp* shift);
+    void     TryRemoveShiftRotateMask(GenTreeOp* op);
     bool     TryFoldBinop(GenTreeOp* node);
 #ifdef FEATURE_HW_INTRINSICS
     GenTree* LowerHWIntrinsic(GenTreeHWIntrinsic* node);

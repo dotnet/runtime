@@ -63,7 +63,6 @@ enum LoaderAllocatorHeapType
     LowFrequencyHeap,
     HighFrequencyHeap,
     StaticsHeap,
-    StubHeap,
     ExecutableHeap,
     FixupPrecodeHeap,
     NewStubPrecodeHeap,
@@ -112,7 +111,6 @@ TargetPointer GetGlobalLoaderAllocator();
 TargetPointer GetSystemAssembly();
 TargetPointer GetHighFrequencyHeap(TargetPointer loaderAllocatorPointer);
 TargetPointer GetLowFrequencyHeap(TargetPointer loaderAllocatorPointer);
-TargetPointer GetStubHeap(TargetPointer loaderAllocatorPointer);
 TargetPointer GetObjectHandle(TargetPointer loaderAllocatorPointer);
 TargetPointer GetILHeader(ModuleHandle handle, uint token);
 TargetPointer GetDynamicIL(ModuleHandle handle, uint token);
@@ -193,7 +191,6 @@ enum ClrModifiableAssemblies : uint
 | `LoaderAllocator` | `ObjectHandle` | `ObjectHandle` | Handle to the managed loader allocator object |
 | `LoaderAllocator` | `ReferenceCount` | `uint32` | Reference count of the loader allocator |
 | `LoaderAllocator` | `StaticsHeap` | `pointer` | Heap containing statics-related allocations |
-| `LoaderAllocator` | `StubHeap` | `pointer` | Heap containing runtime stubs |
 | `LoaderAllocator` | `VirtualCallStubManager` | `pointer` | Pointer to the virtual-call stub manager |
 | `LoaderHeap` | `FirstBlock` | `pointer` | Pointer to the first loader-heap block |
 | `LoaderHeapBlock` | `Next` | `pointer` | Pointer to the next loader-heap block |
@@ -850,11 +847,6 @@ TargetPointer GetLowFrequencyHeap(TargetPointer loaderAllocatorPointer)
     return target.ReadPointer(loaderAllocatorPointer + /* LoaderAllocator::LowFrequencyHeap offset */);
 }
 
-TargetPointer GetStubHeap(TargetPointer loaderAllocatorPointer)
-{
-    return target.ReadPointer(loaderAllocatorPointer + /* LoaderAllocator::StubHeap offset */);
-}
-
 TargetPointer GetObjectHandle(TargetPointer loaderAllocatorPointer)
 {
     return target.ReadPointer(loaderAllocatorPointer + /* LoaderAllocator::ObjectHandle offset */);
@@ -870,7 +862,6 @@ IReadOnlyDictionary<LoaderAllocatorHeapType, TargetPointer> GetLoaderAllocatorHe
         [LoaderAllocatorHeapType.LowFrequencyHeap] = la.LowFrequencyHeap,
         [LoaderAllocatorHeapType.HighFrequencyHeap] = la.HighFrequencyHeap,
         [LoaderAllocatorHeapType.StaticsHeap] = la.StaticsHeap,
-        [LoaderAllocatorHeapType.StubHeap] = la.StubHeap,
         [LoaderAllocatorHeapType.ExecutableHeap] = la.ExecutableHeap,
     };
 

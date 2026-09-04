@@ -24,7 +24,6 @@ namespace System
         private IntPtr _argPtr;                 // Pointer to remaining args.
         private int _remainingArgs;             // # of remaining args.
 
-#if TARGET_WINDOWS // Native Varargs are not supported on Unix
         // ArgIterator is a ref struct. It does not require pinning, therefore Unsafe.AsPointer is safe.
         // This method null checks the this pointer as a side-effect.
         private ArgIterator* ThisPtr => (ArgIterator*)Unsafe.AsPointer(ref _argCookie);
@@ -155,54 +154,5 @@ namespace System
         {
             throw new NotSupportedException(SR.NotSupported_NYI);
         }
-#else
-        public ArgIterator(RuntimeArgumentHandle arglist)
-        {
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ArgIterator); // https://github.com/dotnet/runtime/issues/7317
-        }
-
-        [CLSCompliant(false)]
-        public unsafe ArgIterator(RuntimeArgumentHandle arglist, void* ptr)
-        {
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ArgIterator); // https://github.com/dotnet/runtime/issues/7317
-        }
-
-        public void End()
-        {
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ArgIterator); // https://github.com/dotnet/runtime/issues/7317
-        }
-
-        public override bool Equals(object? o)
-        {
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ArgIterator); // https://github.com/dotnet/runtime/issues/7317
-        }
-
-        public override int GetHashCode()
-        {
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ArgIterator); // https://github.com/dotnet/runtime/issues/7317
-        }
-
-        [CLSCompliant(false)]
-        public System.TypedReference GetNextArg()
-        {
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ArgIterator); // https://github.com/dotnet/runtime/issues/7317
-        }
-
-        [CLSCompliant(false)]
-        public System.TypedReference GetNextArg(System.RuntimeTypeHandle rth)
-        {
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ArgIterator); // https://github.com/dotnet/runtime/issues/7317
-        }
-
-        public unsafe System.RuntimeTypeHandle GetNextArgType()
-        {
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ArgIterator); // https://github.com/dotnet/runtime/issues/7317
-        }
-
-        public int GetRemainingCount()
-        {
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ArgIterator); // https://github.com/dotnet/runtime/issues/7317
-        }
-#endif // TARGET_WINDOWS
     }
 }

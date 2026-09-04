@@ -270,7 +270,6 @@ void GetCultureInfoForLCID(LCID lcid, OBJECTREF *pCultureObj)
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pCultureObj));
     }
     CONTRACTL_END;
@@ -433,7 +432,6 @@ BOOL IsManagedObject(IUnknown *pIUnknown)
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pIUnknown));
     }
     CONTRACTL_END;
@@ -744,7 +742,7 @@ ULONG SafeReleasePreemp(IUnknown * pUnk)
         return 0;
 
     // Message pump could happen, so arbitrary managed code could run.
-    CONTRACT_VIOLATION(ThrowsViolation | FaultViolation);
+    CONTRACT_VIOLATION(ThrowsViolation);
 
     return pUnk->Release();
 }
@@ -768,7 +766,7 @@ ULONG SafeRelease(IUnknown* pUnk)
     GCX_PREEMP_NO_DTOR_HAVE_THREAD(pThread);
 
     // Message pump could happen, so arbitrary managed code could run.
-    CONTRACT_VIOLATION(ThrowsViolation | FaultViolation);
+    CONTRACT_VIOLATION(ThrowsViolation);
 
     res = pUnk->Release();
 
@@ -1732,7 +1730,6 @@ DefaultInterfaceType GetDefaultInterfaceForClassInternal(TypeHandle hndClass, Ty
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(!hndClass.IsNull());
         PRECONDITION(CheckPointer(pHndDefClass));
         PRECONDITION(!hndClass.GetMethodTable()->IsInterface());
@@ -2012,7 +2009,6 @@ void GetComSourceInterfacesForClass(MethodTable *pMT, CQuickArray<MethodTable *>
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pMT));
     }
     CONTRACTL_END;
@@ -2184,7 +2180,6 @@ ULONG GetStringizedClassItfDef(TypeHandle InterfaceType, CQuickArray<BYTE> &rDef
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(!InterfaceType.IsNull());
     }
     CONTRACTL_END;
@@ -2277,7 +2272,6 @@ void GenerateClassItfGuid(TypeHandle InterfaceType, GUID *pGuid)
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(!InterfaceType.IsNull());
         PRECONDITION(CheckPointer(pGuid));
     }
@@ -3522,7 +3516,6 @@ static void GetComClassHelper(
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(ThrowOutOfMemory());
         PRECONDITION(CheckPointer(pRef));
         PRECONDITION(CheckPointer(pClassFactHash));
         PRECONDITION(CheckPointer(pClassFactInfo));
@@ -3582,7 +3575,6 @@ void GetComClassFromCLSID(REFCLSID clsid, _In_opt_z_ PCWSTR wszServer, OBJECTREF
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(pRef != NULL);
     }
     CONTRACTL_END;
@@ -3626,7 +3618,6 @@ ClassFactoryBase *GetComClassFactory(MethodTable* pClassMT)
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(ThrowOutOfMemory());
         PRECONDITION(CheckPointer(pClassMT));
         PRECONDITION(pClassMT->IsComObjectType());
     }

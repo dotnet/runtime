@@ -459,7 +459,6 @@ void OleVariant::MarshalRecordVariantOleToObject(const VARIANT *pOleVariant,
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pOleVariant));
         PRECONDITION(CheckPointer(pObj));
         PRECONDITION(*pObj == NULL || (IsProtectedByGCFrame (pObj)));
@@ -821,7 +820,6 @@ void OleVariant::MarshalObjectForOleVariant(const VARIANT * pOle, OBJECTREF * co
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pOle));
         PRECONDITION(CheckPointer(pObj));
         PRECONDITION(*pObj == NULL || (IsProtectedByGCFrame (pObj)));
@@ -1735,7 +1733,6 @@ BASEARRAYREF OleVariant::CreateArrayRefForSafeArray(SAFEARRAY *pSafeArray, VARTY
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pSafeArray));
         PRECONDITION(vt != VT_EMPTY);
     }
@@ -2271,7 +2268,6 @@ void OleVariant::TransposeArrayData(BYTE *pDestData, BYTE *pSrcData, SIZE_T dwNu
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pDestData));
         PRECONDITION(CheckPointer(pSrcData));
         PRECONDITION(CheckPointer(pSafeArray));
