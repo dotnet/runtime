@@ -1035,12 +1035,6 @@ bool CanJITOptimizeTLSAccess()
     // Optimization is disabled for OpenBSD, which has no addressable __tls_get_addr.
 #elif !defined(TARGET_APPLE) && defined(TARGET_UNIX) && (defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64))
     bool tlsResolverValid = IsValidTLSResolver();
-#ifdef _DEBUG
-    if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_AssertStaticTlsResolver) != 0)
-    {
-        _ASSERTE(tlsResolverValid && "Static TLS resolver is not available");
-    }
-#endif // _DEBUG
     if (tlsResolverValid)
     {
         optimizeThreadStaticAccess = true;
