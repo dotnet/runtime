@@ -230,7 +230,7 @@ namespace System.Net.Mail.Tests
         [InlineData("=?ISO-8859-1?Q.?foo_bar?=")] // prohibited char in encoding
         [InlineData("=?ISO-8859-1?Q=?foo_bar?=")] // prohibited char in encoding
         [InlineData("=?ISO-8859-1?Q\"?foo_bar?=")] // prohibited char in encoding
-        [InlineData("=?ISO-8859-1?Q\"?foo_bar_foo_bar_foo_bar_foo_bar_foo_bar_foo_bar_foo_barxy?=")] // longer then 75 chars
+        [InlineData("=?ISO-8859-1?Q?foo_bar_foo_bar_foo_bar_foo_bar_foo_bar_foo_bar_foo_bar_foo?=")] // longer then 75 chars
         public void NameParsingAndEncodingDetectionBadInputs(string attachmentName)
         {
             Attachment a = new Attachment(new MemoryStream(), attachmentName);

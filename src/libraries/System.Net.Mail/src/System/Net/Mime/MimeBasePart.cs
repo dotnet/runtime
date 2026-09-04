@@ -67,6 +67,8 @@ namespace System.Net.Mime
         // with a null Encoding.
         internal static (string Value, Encoding? Encoding) DecodeHeaderValue(string? value)
         {
+            const int MaxEncodedWordLength = 75;
+
             if (string.IsNullOrEmpty(value))
             {
                 return (string.Empty, null);
@@ -86,7 +88,7 @@ namespace System.Net.Mime
                 }
 
                 // charset = characters up to the next '?'.
-                int charSetLength = remainder.Slice(2).IndexOf('?');
+                int charSetLength = remainder.Slice(2, MaxEncodedWordLength).IndexOf('?');
                 if (charSetLength <= 0)
                 {
                     return (value, null);
@@ -121,7 +123,7 @@ namespace System.Net.Mime
                 // Encoded text: terminated by "?=", and must not contain whitespace or any
                 // non-printable ASCII (per RFC 2047).
                 int dataStart = encodingPos + 2;
-                int terminator = remainder.Slice(dataStart).IndexOf("?=");
+                int terminator = remainder.Slice(dataStart, MaxEncodedWordLength).IndexOf("?=");
                 if (terminator < 0)
                 {
                     return (value, null);
