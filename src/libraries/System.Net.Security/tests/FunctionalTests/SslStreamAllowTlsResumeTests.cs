@@ -15,7 +15,6 @@ using Microsoft.DotNet.XUnitExtensions;
 
 using System.Net.Test.Common;
 
-#if DEBUG
 namespace System.Net.Security.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
@@ -33,7 +32,8 @@ namespace System.Net.Security.Tests
 
         private bool CheckResumeFlag(SslStream ssl)
         {
-            // This works only on Debug build where SslStream has extra property so we can validate.
+            // SslConnectionInfo.TlsResumed is an internal property we read via reflection to
+            // validate whether the handshake resumed a previous session.
             object info = connectionInfo.GetValue(ssl);
             return (bool)tlsResumed.GetValue(info);
         }
@@ -427,10 +427,13 @@ namespace System.Net.Security.Tests
         [InlineData(true, true)]
         public async Task ResumedHandshake_RevalidateSwitch_ControlsCallback(bool revalidateOnResume, bool testServer)
         {
-            // The child process signals via this marker file that the environment could not
-            // establish session resumption, so the parent can treat the run as skipped rather
-            // than a failure (matching the SkipTestException pattern used elsewhere in this file).
-            string skipMarker = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            // Reserve a unique temp path for the skip marker and remove it up-front, so the
+            // marker exists only if the child process explicitly creates it to signal that the
+            // environment could not establish session resumption. In that case the parent treats
+            // the run as skipped rather than a failure (matching the SkipTestException pattern
+            // used elsewhere in this file).
+            string skipMarker = Path.GetTempFileName();
+            File.Delete(skipMarker);
 
             var psi = new ProcessStartInfo();
             psi.Environment["DOTNET_SYSTEM_NET_SECURITY_REVALIDATECERTIFICATEONTLSRESUME"] = revalidateOnResume ? "1" : "0";
@@ -556,4 +559,3 @@ namespace System.Net.Security.Tests
         }
     }
 }
-#endif
