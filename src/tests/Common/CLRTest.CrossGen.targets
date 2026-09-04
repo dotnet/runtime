@@ -60,6 +60,7 @@ fi
 
 # CrossGen2 Script
 if [ ! -z ${RunCrossGen2+x} ]%3B then
+  export TEST_READY_TO_RUN_MODE=1
   compilationDoneFlagFile="IL-CG2/done"
   if [ -d IL-CG2 ]%3B then
     while [ ! -f $compilationDoneFlagFile ]%3B
@@ -277,6 +278,7 @@ if /i "$(AlwaysUseCrossGen2)" == "true" (
 
 REM CrossGen2 Script
 if defined RunCrossGen2 (
+    set TEST_READY_TO_RUN_MODE=1
     set ExtraCrossGen2Args=!ExtraCrossGen2Args! $(CrossGen2TestExtraArguments)
     set CrossGen2TestCheckPdb=$(CrossGen2TestCheckPdb)
     set __CreatePdb=$(__CreatePdb)

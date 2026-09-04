@@ -1200,6 +1200,30 @@ namespace System.Tests
         }
 
         [Theory]
+        [InlineData(" ", "\u00A0")]
+        [InlineData(" ", "\u202F")]
+        [InlineData("\u00A0", " ")]
+        [InlineData("\u202F", " ")]
+        public static void ParseHexFloat_SpaceReplacingDecimalSeparator(string inputSeparator, string formatSeparator)
+        {
+            NumberFormatInfo nfi = new() { NumberDecimalSeparator = formatSeparator };
+            string value = $"0x1{inputSeparator}8p0";
+
+            Assert.Equal(1.5, double.Parse(value, NumberStyles.HexFloat, nfi));
+            Assert.Equal(1.5, double.Parse(Encoding.UTF8.GetBytes(value), NumberStyles.HexFloat, nfi));
+        }
+
+        [Fact]
+        public static void ParseHexFloat_SupplementaryDecimalSeparator()
+        {
+            NumberFormatInfo nfi = new() { NumberDecimalSeparator = "\U0001F600" };
+            const string Value = "0x1\U0001F6008p0";
+
+            Assert.Equal(1.5, double.Parse(Value, NumberStyles.HexFloat, nfi));
+            Assert.Equal(1.5, double.Parse(Encoding.UTF8.GetBytes(Value), NumberStyles.HexFloat, nfi));
+        }
+
+        [Theory]
         [InlineData(NumberStyles.HexFloat | NumberStyles.AllowThousands)]
         [InlineData(NumberStyles.HexFloat | NumberStyles.AllowCurrencySymbol)]
         [InlineData(NumberStyles.HexFloat | NumberStyles.AllowTrailingSign)]
@@ -1342,6 +1366,21 @@ namespace System.Tests
             CultureInfo ci = CultureInfo.GetCultureInfo("sv-SE");
             string s = string.Format(ci, "{0}", 158.68);
             Assert.Equal(-158.68, double.Parse("-" + s, NumberStyles.Number, ci));
+        }
+
+        [Fact]
+        public static void TestSpecialValueParsingWithHyphen()
+        {
+            NumberFormatInfo format = new() { NegativeSign = "\u2212" };
+
+            Assert.True(double.IsNaN(double.Parse("-NaN", NumberStyles.Float, format)));
+            Assert.True(double.IsNaN(double.Parse("-NaN"u8, NumberStyles.Float, format)));
+
+            format = CultureInfo.GetCultureInfo("sv-SE").NumberFormat;
+            string value = "-" + format.NaNSymbol;
+
+            Assert.True(double.IsNaN(double.Parse(value, NumberStyles.Float, format)));
+            Assert.True(double.IsNaN(double.Parse(Encoding.UTF8.GetBytes(value), NumberStyles.Float, format)));
         }
 
         [Theory]

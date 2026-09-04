@@ -375,11 +375,23 @@ namespace System
         private static int MatchChars<TChar>(ReadOnlySpan<TChar> source, int index, ReadOnlySpan<TChar> value)
             where TChar : unmanaged, IUtfChar<TChar>
         {
-            // An empty pattern never matches, and one longer than the remaining input cannot match, so
-            // the loop only has to bound itself by the pattern.
-            if (value.IsEmpty || (value.Length > (source.Length - index)))
+            if (value.IsEmpty)
             {
                 return -1;
+            }
+
+            if (value.Length > (source.Length - index))
+            {
+                if (!TChar.IsUtf8)
+                {
+                    return -1;
+                }
+
+                ReadOnlySpan<byte> input = Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(source.Slice(index));
+                ReadOnlySpan<byte> utf8Value = Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(value);
+                int matchedLength = MatchUtf8SpaceReplacingChars(input, utf8Value);
+
+                return matchedLength >= 0 ? index + matchedLength : -1;
             }
 
             for (int i = 0; i < value.Length; i++)
@@ -387,18 +399,79 @@ namespace System
                 uint cp = TChar.CastToUInt32(source[index + i]);
                 uint val = TChar.CastToUInt32(value[i]);
 
-                // We only hurt the failure case
-                // This fix is for cultures that use NBSP (U+00A0) or narrow NBSP (U+202F) as group/decimal separators
-                // (e.g., French, Kazakh, Ukrainian). Since a user cannot easily type these characters,
-                // we accept regular space (U+0020) as equivalent.
-                // For UTF-16, we also handle the reverse case where the input has NBSP and the format string has space.
-                if (cp != val && (TChar.IsUtf8 || NormalizeSpaceReplacingChar(cp) != NormalizeSpaceReplacingChar(val)))
+                if (cp != val)
                 {
-                    return -1;
+                    if (TChar.IsUtf8)
+                    {
+                        ReadOnlySpan<byte> input = Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(source.Slice(index));
+                        ReadOnlySpan<byte> utf8Value = Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(value);
+                        int matchedLength = MatchUtf8SpaceReplacingChars(input, utf8Value);
+
+                        return matchedLength >= 0 ? index + matchedLength : -1;
+                    }
+
+                    if (NormalizeSpaceReplacingChar(cp) != NormalizeSpaceReplacingChar(val))
+                    {
+                        return -1;
+                    }
                 }
             }
 
             return index + value.Length;
+        }
+
+        private static int MatchUtf8SpaceReplacingChars(ReadOnlySpan<byte> input, ReadOnlySpan<byte> value)
+        {
+            int inputIndex = 0;
+            int valueIndex = 0;
+
+            while (valueIndex < value.Length)
+            {
+                if (inputIndex >= input.Length)
+                {
+                    return -1;
+                }
+
+                if (input[inputIndex] == value[valueIndex])
+                {
+                    inputIndex++;
+                    valueIndex++;
+                    continue;
+                }
+
+                int inputLength = GetUtf8SpaceCharLength(input.Slice(inputIndex));
+                int valueLength = GetUtf8SpaceCharLength(value.Slice(valueIndex));
+
+                if (inputLength == 0 || valueLength == 0)
+                {
+                    return -1;
+                }
+
+                inputIndex += inputLength;
+                valueIndex += valueLength;
+            }
+
+            return inputIndex;
+        }
+
+        private static int GetUtf8SpaceCharLength(ReadOnlySpan<byte> value)
+        {
+            if (value[0] == ' ')
+            {
+                return 1;
+            }
+
+            if (value.StartsWith("\u00A0"u8))
+            {
+                return 2;
+            }
+
+            if (value.StartsWith("\u202F"u8))
+            {
+                return 3;
+            }
+
+            return 0;
         }
     }
 }

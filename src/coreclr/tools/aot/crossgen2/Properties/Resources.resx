@@ -282,6 +282,9 @@
   <data name="TargetArchOption" xml:space="preserve">
     <value>Target architecture for cross compilation</value>
   </data>
+  <data name="TargetAllowsRuntimeCodeGenerationOption" xml:space="preserve">
+    <value>Override whether the target supports runtime code generation</value>
+  </data>
   <data name="TargetOSOption" xml:space="preserve">
     <value>Target OS for cross compilation</value>
   </data>
@@ -296,6 +299,9 @@
   </data>
   <data name="TypeNotFound" xml:space="preserve">
     <value>Type '{0}' not found</value>
+  </data>
+  <data name="GenerateUnboxingStubsOption" xml:space="preserve">
+    <value>Override whether to generate unboxing stubs</value>
   </data>
   <data name="VerboseLoggingOption" xml:space="preserve">
     <value>Enable verbose logging</value>

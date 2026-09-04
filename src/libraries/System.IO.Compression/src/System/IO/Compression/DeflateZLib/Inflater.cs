@@ -282,14 +282,24 @@ namespace System.IO.Compression
         }
 
         /// <summary>
+        /// Discards any unconsumed input previously set via SetInput, releasing the pinned reference (if any).
+        /// Must be called if an in-progress operation is abandoned (e.g. due to an exception or cancellation) so
+        /// the inflater doesn't retain a dangling reference to a buffer the caller may have since reused or freed.
+        /// </summary>
+        internal void UnsetInput() => DeallocateInputBufferHandle(resetStreamHandle: true);
+
+        /// <summary>
         /// Frees the GCHandle being used to store the input buffer
         /// </summary>
         private void DeallocateInputBufferHandle(bool resetStreamHandle)
         {
-            Debug.Assert(IsInputBufferHandleAllocated);
-
             lock (SyncLock)
             {
+                if (!IsInputBufferHandleAllocated)
+                {
+                    return;
+                }
+
                 if (resetStreamHandle)
                 {
                     _zlibStream.AvailIn = 0;

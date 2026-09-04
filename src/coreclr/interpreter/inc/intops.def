@@ -410,6 +410,7 @@ OPDEF(INTOP_CALLVIRT_TAIL, "callvirt.tail", 5, 1, 1, InterpOpMethodHandle)
 OPDEF(INTOP_CALL_HELPER_P_P, "call.helper.p.p", 4, 1, 0, InterpOpHelperFtn)
 OPDEF(INTOP_CALL_HELPER_P_G, "call.helper.p.g", 5, 1, 1, InterpOpGenericHelperFtn)
 OPDEF(INTOP_CALL_HELPER_P_S, "call.helper.p.s", 4, 1, 1, InterpOpHelperFtnNoArgs)
+OPDEF(INTOP_GET_RUNTIME_TYPE_FROM_HANDLE, "get.runtimetype.from.handle", 3, 1, 1, InterpOpNoArgs)
 
 // Call a helper function with a signature of PointerSizedDest helper(TypeOrGenericArg, SVar))
 OPDEF(INTOP_CALL_HELPER_P_PS, "call.helper.p.ps", 5, 1, 1, InterpOpHelperFtn)

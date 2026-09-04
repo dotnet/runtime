@@ -14,6 +14,7 @@ namespace System.Collections
         public const int MaxPrimeArrayLength = 0x7FFFFFC3;
 
         public const int HashPrime = 101;
+        private const int MinPrime = 3;
 
         // Table of prime numbers to use as hash table sizes.
         // A typical resize algorithm would pick the smallest prime number in this array
@@ -39,40 +40,114 @@ namespace System.Collections
 
         public static bool IsPrime(int candidate)
         {
-            if ((candidate & 1) != 0)
+            // This only tests hash table capacities, whose minimum is MinPrime, so 2 is intentionally excluded.
+            Debug.Assert(candidate >= MinPrime);
+
+            if ((candidate & 1) == 0 || (uint)candidate % MinPrime == 0)
             {
-                int limit = (int)Math.Sqrt(candidate);
-                for (int divisor = 3; divisor <= limit; divisor += 2)
-                {
-                    if ((candidate % divisor) == 0)
-                        return false;
-                }
-                return true;
+                return candidate == MinPrime;
             }
-            return candidate == 2;
+
+            return HasNoPrimeDivisors(candidate, (int)Math.Sqrt(candidate));
+        }
+
+        private static bool HasNoPrimeDivisors(int candidate, int limit)
+        {
+            // Every prime greater than 3 is 6k - 1 or 6k + 1, so test both candidates in each group.
+            for (int divisor = 5; divisor <= limit; divisor += 6)
+            {
+                if (candidate % divisor == 0 || candidate % (divisor + 2) == 0)
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         public static int GetPrime(int min)
         {
             if (min < 0)
+            {
                 throw new ArgumentException(SR.Arg_HTCapacityOverflow);
-
-            foreach (int prime in Primes)
-            {
-                if (prime >= min)
-                    return prime;
             }
 
-            // Outside of our predefined table. Compute the hard way.
-            for (int i = (min | 1); i < int.MaxValue; i += 2)
+            if (min <= MinPrime)
             {
-                if (IsPrime(i) && ((i - 1) % HashPrime != 0))
-                    return i;
+                return MinPrime;
             }
-            return min;
+
+            // A short linear scan is faster for the common small capacities.
+            const int LinearSearchCount = 16;
+
+            ReadOnlySpan<int> primes = Primes;
+            if (min <= primes[LinearSearchCount - 1])
+            {
+                for (int i = 1; i < LinearSearchCount; i++)
+                {
+                    if (primes[i] >= min)
+                    {
+                        return primes[i];
+                    }
+                }
+            }
+            else
+            {
+                int index = primes.Slice(LinearSearchCount).BinarySearch(min);
+                index = index < 0 ? ~index : index;
+                index += LinearSearchCount;
+                if ((uint)index < (uint)primes.Length)
+                {
+                    return primes[index];
+                }
+            }
+
+            return GetPrimeAtLeastCore(min);
         }
 
-        // Returns size of hashtable to grow to.
+        public static int GetPrimeAtLeast(int min)
+        {
+            if (min < 0)
+            {
+                throw new ArgumentException(SR.Arg_HTCapacityOverflow);
+            }
+
+            return min <= MinPrime ? MinPrime : GetPrimeAtLeastCore(min);
+        }
+
+        private static int GetPrimeAtLeastCore(int min)
+        {
+            Debug.Assert(min > MinPrime);
+
+            int candidate = min | 1;
+            uint remainder = (uint)candidate % 6;
+            if (remainder == 3)
+            {
+                candidate += 2;
+            }
+
+            int increment = remainder == 1 ? 4 : 2;
+            int limit = (int)Math.Sqrt(candidate);
+            long nextLimitSquared = (long)(limit + 1) * (limit + 1);
+            while (true)
+            {
+                while (nextLimitSquared <= candidate)
+                {
+                    limit++;
+                    nextLimitSquared = (long)(limit + 1) * (limit + 1);
+                }
+
+                if ((uint)(candidate - 1) % HashPrime != 0 && HasNoPrimeDivisors(candidate, limit))
+                {
+                    return candidate;
+                }
+
+                candidate += increment;
+                increment = 6 - increment;
+            }
+        }
+
+        // Returns the size of the hashtable to grow to.
         public static int ExpandPrime(int oldSize)
         {
             int newSize = 2 * oldSize;
