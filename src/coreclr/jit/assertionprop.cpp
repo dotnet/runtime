@@ -4535,8 +4535,8 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
         CORINFO_CLASS_HANDLE cls2 = gtGetClassHandle(op2, &isExact2, &isNonNull2);
 
         // "exact" is meaningless for shared generics as they are represented by their canonical form.
-        isExact1 &= (cls1 != NO_CLASS_HANDLE) && !eeIsSharedInst(cls1);
-        isExact2 &= (cls2 != NO_CLASS_HANDLE) && !eeIsSharedInst(cls2);
+        isExact1 &= (cls1 != NO_CLASS_HANDLE) && (cls2 != NO_CLASS_HANDLE) && !eeIsSharedInst(cls1);
+        isExact2 &= (cls1 != NO_CLASS_HANDLE) && (cls2 != NO_CLASS_HANDLE) && !eeIsSharedInst(cls2);
 
         if ((cls1 != cls2) && (isExact1 || isExact2) &&
             (isNonNull1 || isNonNull2 || optAssertionIsNonNull(op1, assertions) ||
