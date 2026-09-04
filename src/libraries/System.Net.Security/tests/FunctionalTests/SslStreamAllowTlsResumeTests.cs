@@ -32,6 +32,9 @@ namespace System.Net.Security.Tests
 
         private bool CheckResumeFlag(SslStream ssl)
         {
+            Assert.True(connectionInfo != null, "Could not find the SslStream._connectionInfo field via reflection");
+            Assert.True(tlsResumed != null, "Could not find the SslConnectionInfo.TlsResumed property via reflection");
+
             // SslConnectionInfo.TlsResumed is an internal property we read via reflection to
             // validate whether the handshake resumed a previous session.
             object info = connectionInfo.GetValue(ssl);
