@@ -10961,8 +10961,7 @@ retry_emit:
                         m_pLastNewIns->SetSVar(typedByRefVar);
                         m_pLastNewIns->SetDVar(classHandleVar);
 
-                        AddIns(INTOP_CALL_HELPER_P_S);
-                        m_pLastNewIns->data[0] = GetDataForHelperFtn(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL);
+                        AddIns(INTOP_GET_RUNTIME_TYPE_FROM_HANDLE);
                         m_pLastNewIns->SetSVar(classHandleVar);
                         PushInterpType(InterpTypeVT, m_compHnd->getBuiltinClass(CLASSID_TYPE_HANDLE));
                         m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
@@ -11711,7 +11710,8 @@ retry_emit:
                 m_compHnd->embedGenericHandle(&resolvedToken, false, m_methodInfo->ftn, &embedInfo);
 
                 // see jit/importer.cpp CEE_LDTOKEN
-                CorInfoHelpFunc helper;
+                CORINFO_CLASS_HANDLE clsHnd = m_compHnd->getTokenTypeAsHandle(&resolvedToken);
+                CorInfoHelpFunc       helper = CORINFO_HELP_UNDEF;
                 if (resolvedToken.hField)
                 {
                     helper = CORINFO_HELP_FIELDDESC_TO_STUBRUNTIMEFIELD;
@@ -11724,7 +11724,11 @@ retry_emit:
                 else if (resolvedToken.hClass)
                 {
                     DeclarePointerIsClass(resolvedToken.hClass);
-                    helper = CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE;
+                    int32_t typeVar = EmitGenericHandleAsVar(embedInfo);
+                    PushInterpType(InterpTypeVT, clsHnd);
+                    AddIns(INTOP_GET_RUNTIME_TYPE_FROM_HANDLE);
+                    m_pLastNewIns->SetSVar(typeVar);
+                    m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
                 }
                 else
                 {
@@ -11732,8 +11736,11 @@ retry_emit:
                     assert(!"Token not resolved or resolved to unexpected type");
                 }
 
-                CORINFO_CLASS_HANDLE clsHnd = m_compHnd->getTokenTypeAsHandle(&resolvedToken);
-                EmitPushHelperCall(helper, embedInfo, StackTypeVT, clsHnd);
+                if (helper != CORINFO_HELP_UNDEF)
+                {
+                    EmitPushHelperCall(helper, embedInfo, StackTypeVT, clsHnd);
+                }
+
                 m_ip += 5;
                 break;
             }

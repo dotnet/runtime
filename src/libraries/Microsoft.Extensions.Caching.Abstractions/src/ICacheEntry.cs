@@ -9,7 +9,7 @@ namespace Microsoft.Extensions.Caching.Memory
 {
     /// <summary>
     /// Represents an entry in the <see cref="IMemoryCache"/> implementation.
-    /// When Disposed, is committed to the cache.
+    /// When disposed, the entry is committed to the cache if a <see cref="Value"/> has been set.
     /// </summary>
     public interface ICacheEntry : IDisposable
     {
@@ -58,6 +58,13 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <summary>
         /// Gets or set the size of the cache entry value.
         /// </summary>
+        /// <remarks>
+        /// The size is used by <see cref="IMemoryCache"/> implementations that enforce a size limit, and is
+        /// read both when the entry is added to the cache and when it is removed from it. Implementations
+        /// are therefore free to reject a change made after the entry has been disposed; <c>MemoryCache</c>
+        /// throws an <see cref="InvalidOperationException"/> in that case, whether or not the entry was
+        /// ultimately committed to the cache.
+        /// </remarks>
         long? Size { get; set; }
     }
 }

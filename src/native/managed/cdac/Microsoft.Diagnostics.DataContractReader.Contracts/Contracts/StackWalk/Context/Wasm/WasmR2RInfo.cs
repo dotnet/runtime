@@ -7,7 +7,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers.Wa
 
 /// <summary>
 /// cDAC implementation of <see cref="IWasmR2RInfo"/>, mirroring the native
-/// <c>ExecutionManager::{FindFunctionTableIndexRangeSection, IsFuncletFunctionIndex,
+/// <c>ExecutionManager::{FindFunctionTableIndexRangeSection,
 /// GetWasmVirtualIPFromFunctionTableIndex}</c> in <c>src/coreclr/vm/codeman.cpp</c>. It resolves an
 /// R2R function table entry index against the <c>FunctionTableIndexRangeList</c> to its owning
 /// module's <see cref="Data.ReadyToRunInfo"/>, then reads the corresponding

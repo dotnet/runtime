@@ -318,12 +318,20 @@
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\CompositeMLKem\CompositeMLKemContractTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\CompositeMLKem\CompositeMLKemFactoryTests.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\CompositeMLKem\CompositeMLKemFactoryTests.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\CompositeMLKem\CompositeMLKemImplementationTests.cs"
+             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\CompositeMLKem\CompositeMLKemImplementationTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\CompositeMLKem\CompositeMLKemMockImplementation.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\CompositeMLKem\CompositeMLKemMockImplementation.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\CompositeMLKem\CompositeMLKemTestData.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\CompositeMLKem\CompositeMLKemTestData.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\CompositeMLKem\CompositeMLKemTestData.Raw.cs"
+             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\CompositeMLKem\CompositeMLKemTestData.Raw.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\CompositeMLKem\CompositeMLKemTestVector.cs"
+             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\CompositeMLKem\CompositeMLKemTestVector.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\CompositeMLKem\CompositeMLKemTestHelpers.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\CompositeMLKem\CompositeMLKemTestHelpers.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\CompositeMLKem\CompositeMLKemTestsBase.cs"
+             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\CompositeMLKem\CompositeMLKemTestsBase.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\DES\DESCipherTests.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\DES\DESCipherTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\DES\DESCipherOneShotTests.cs"
@@ -653,6 +661,7 @@
     <Compile Include="TripleDesProvider.cs" />
     <Compile Include="TripleDesTests.cs" />
     <Compile Include="ZeroMemoryTests.cs" />
+    <Compile Include="X509Certificates\AppAndCertPoliciesChainTests.cs" />
     <Compile Include="X509Certificates\Cert.cs" />
     <Compile Include="X509Certificates\CertTests.cs" />
     <Compile Include="X509Certificates\ChainHolder.cs" />
@@ -662,6 +671,7 @@
     <Compile Include="X509Certificates\CollectionImportTests.cs" />
     <Compile Include="X509Certificates\CollectionTests.cs" />
     <Compile Include="X509Certificates\ContentTypeTests.cs" />
+    <Compile Include="X509Certificates\CorruptPoliciesChainTests.cs" />
     <Compile Include="X509Certificates\CrlDistPointBuilderTests.cs" />
     <Compile Include="X509Certificates\CtorTests.cs" />
     <Compile Include="X509Certificates\DSAOther.cs" />

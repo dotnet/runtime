@@ -1137,6 +1137,25 @@ namespace System.Text.Json.Schema.Tests
                     }
                 """);
 
+            yield return new TestData<PocoWithGetOnlyProperties>(
+                Value: new(),
+                ExpectedJsonSchema: """
+                {
+                    "type": ["object", "null"],
+                    "properties": {
+                        "Values": {
+                            "type": "array",
+                            "items": { "type": ["string", "null"] }
+                        },
+                        "SingleValueGetOnly": { "type": "string" },
+                        "NullableGetOnly": { "type": ["string", "null"] },
+                        "SingleValueGetSet": { "type": "string" },
+                        "NonNullableReadonlyField": { "type": "string" },
+                        "NullableReadonlyField": { "type": ["string", "null"] }
+                    }
+                }
+                """);
+
             yield return new TestData<ClassWithComponentModelAttributes>(
                 Value: new("string", -1),
                 ExpectedJsonSchema: """
@@ -1665,6 +1684,21 @@ namespace System.Text.Json.Schema.Tests
             public DiscriminatedUnion DiscriminatedUnion { get; set; } = new DiscriminatedUnion.Left("value");
             public PocoWithPolymorphism.DerivedPocoNoDiscriminator DerivedValue1 { get; set; } = new() { DerivedValue = "derived" };
             public PocoWithPolymorphism.DerivedPocoStringDiscriminator DerivedValue2 { get; set; } = new() { DerivedValue = "derived" };
+        }
+
+        public sealed class PocoWithGetOnlyProperties
+        {
+            public IEnumerable<string> Values => [];
+            public string SingleValueGetOnly { get; } = "value";
+            public string? NullableGetOnly { get; }
+            public string SingleValueGetSet { get; set; } = "value";
+            [JsonInclude]
+            public readonly string NonNullableReadonlyField = "value";
+
+#pragma warning disable CS0649 // field never assigned to
+            [JsonInclude]
+            public readonly string? NullableReadonlyField;
+#pragma warning restore CS0649
         }
 
         public class ClassWithComponentModelAttributes

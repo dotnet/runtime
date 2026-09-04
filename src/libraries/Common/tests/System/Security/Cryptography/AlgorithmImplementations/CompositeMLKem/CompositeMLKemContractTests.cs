@@ -182,7 +182,7 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [MemberData(nameof(CompositeMLKemTestData.AllAlgorithmsTestData), MemberType = typeof(CompositeMLKemTestData))]
-        public static void Encapsulate_CoreCryptographicException_Propagates(CompositeMLKemAlgorithm algorithm)
+        public static void Encapsulate_Array_CryptographicExceptionPropagates(CompositeMLKemAlgorithm algorithm)
         {
             using CompositeMLKemMockImplementation kem = CompositeMLKemMockImplementation.Create(algorithm);
             CryptographicException expected = new();
@@ -190,10 +190,31 @@ namespace System.Security.Cryptography.Tests
             kem.EncapsulateCoreHook = (_, _) => throw expected;
 
             Assert.Same(expected, Assert.Throws<CryptographicException>(() => kem.Encapsulate(out _, out _)));
+            Assert.Equal(1, kem.EncapsulateCoreCallCount);
+        }
+
+        [Theory]
+        [MemberData(nameof(CompositeMLKemTestData.AllAlgorithmsTestData), MemberType = typeof(CompositeMLKemTestData))]
+        public static void Encapsulate_Span_CryptographicExceptionClearsSharedSecret(CompositeMLKemAlgorithm algorithm)
+        {
+            using CompositeMLKemMockImplementation kem = CompositeMLKemMockImplementation.Create(algorithm);
+            CryptographicException expected = new();
+
+            byte[] sharedSecret = new byte[algorithm.SharedSecretSizeInBytes];
+            sharedSecret.AsSpan().Fill(0xA5);
+
+            kem.EncapsulateCoreHook = (_, destination) =>
+            {
+                destination.Fill(0xFE);
+                throw expected;
+            };
+
             Assert.Same(
                 expected,
                 Assert.Throws<CryptographicException>(() =>
-                    kem.Encapsulate(new byte[algorithm.CiphertextSizeInBytes], new byte[algorithm.SharedSecretSizeInBytes])));
+                    kem.Encapsulate(new byte[algorithm.CiphertextSizeInBytes], sharedSecret)));
+            Assert.Equal(1, kem.EncapsulateCoreCallCount);
+            AssertExtensions.FilledWith<byte>(0, sharedSecret);
         }
 
         [Theory]
@@ -240,7 +261,35 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [MemberData(nameof(CompositeMLKemTestData.AllAlgorithmsTestData), MemberType = typeof(CompositeMLKemTestData))]
-        public static void Decapsulate_CoreCryptographicException_Propagates(CompositeMLKemAlgorithm algorithm)
+        public static void Decapsulate_Array_ImplicitRejectionReturnsSharedSecret(CompositeMLKemAlgorithm algorithm)
+        {
+            using CompositeMLKemMockImplementation kem = CompositeMLKemMockImplementation.Create(algorithm);
+            byte[] ciphertext = new byte[algorithm.CiphertextSizeInBytes];
+
+            kem.DecapsulateCoreHook = (_, sharedSecret) => sharedSecret.Fill(0xA5);
+
+            AssertExtensions.FilledWith<byte>(0xA5, kem.Decapsulate(ciphertext));
+            Assert.Equal(1, kem.DecapsulateCoreCallCount);
+        }
+
+        [Theory]
+        [MemberData(nameof(CompositeMLKemTestData.AllAlgorithmsTestData), MemberType = typeof(CompositeMLKemTestData))]
+        public static void Decapsulate_Span_ImplicitRejectionReturnsSharedSecret(CompositeMLKemAlgorithm algorithm)
+        {
+            using CompositeMLKemMockImplementation kem = CompositeMLKemMockImplementation.Create(algorithm);
+            byte[] ciphertext = new byte[algorithm.CiphertextSizeInBytes];
+            byte[] sharedSecret = new byte[algorithm.SharedSecretSizeInBytes];
+
+            kem.DecapsulateCoreHook = (_, destination) => destination.Fill(0xA5);
+            kem.Decapsulate(ciphertext, sharedSecret);
+
+            Assert.Equal(1, kem.DecapsulateCoreCallCount);
+            AssertExtensions.FilledWith<byte>(0xA5, sharedSecret);
+        }
+
+        [Theory]
+        [MemberData(nameof(CompositeMLKemTestData.AllAlgorithmsTestData), MemberType = typeof(CompositeMLKemTestData))]
+        public static void Decapsulate_Array_CryptographicExceptionPropagates(CompositeMLKemAlgorithm algorithm)
         {
             using CompositeMLKemMockImplementation kem = CompositeMLKemMockImplementation.Create(algorithm);
             CryptographicException expected = new();
@@ -249,10 +298,31 @@ namespace System.Security.Cryptography.Tests
             kem.DecapsulateCoreHook = (_, _) => throw expected;
 
             Assert.Same(expected, Assert.Throws<CryptographicException>(() => kem.Decapsulate(ciphertext)));
+            Assert.Equal(1, kem.DecapsulateCoreCallCount);
+        }
+
+        [Theory]
+        [MemberData(nameof(CompositeMLKemTestData.AllAlgorithmsTestData), MemberType = typeof(CompositeMLKemTestData))]
+        public static void Decapsulate_Span_CryptographicExceptionClearsSharedSecret(CompositeMLKemAlgorithm algorithm)
+        {
+            using CompositeMLKemMockImplementation kem = CompositeMLKemMockImplementation.Create(algorithm);
+            CryptographicException expected = new();
+            byte[] ciphertext = new byte[algorithm.CiphertextSizeInBytes];
+
+            byte[] sharedSecret = new byte[algorithm.SharedSecretSizeInBytes];
+            sharedSecret.AsSpan().Fill(0xA5);
+
+            kem.DecapsulateCoreHook = (_, destination) =>
+            {
+                destination.Fill(0xFE);
+                throw expected;
+            };
+
             Assert.Same(
                 expected,
-                Assert.Throws<CryptographicException>(() =>
-                    kem.Decapsulate(ciphertext, new byte[algorithm.SharedSecretSizeInBytes])));
+                Assert.Throws<CryptographicException>(() => kem.Decapsulate(ciphertext, sharedSecret)));
+            Assert.Equal(1, kem.DecapsulateCoreCallCount);
+            AssertExtensions.FilledWith<byte>(0, sharedSecret);
         }
 
         [Theory]

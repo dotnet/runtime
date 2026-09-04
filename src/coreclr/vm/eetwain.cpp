@@ -31,7 +31,9 @@
 #pragma optimize("tg", on)
 #endif
 
+#ifdef FEATURE_VARARGS
 void promoteVarArgs(PTR_BYTE argsStart, PTR_VASigCookie varArgSig, GCCONTEXT* ctx);
+#endif // FEATURE_VARARGS
 
 #include "gc_unwind_x86.inl"
 
@@ -967,6 +969,7 @@ void EECodeManager::UnwindStackFrame(T_CONTEXT  *pContext)
     Thread::VirtualUnwindCallFrame(pContext, NULL, &codeInfo);
 }
 
+#ifdef FEATURE_VARARGS
 /* report args in 'msig' to the GC.
    'argsStart' is start of the stack-based arguments
    'varArgSig' describes the arguments
@@ -1012,6 +1015,7 @@ void promoteVarArgs(PTR_BYTE argsStart, PTR_VASigCookie varArgSig, GCCONTEXT* ct
         }
     }
 }
+#endif // FEATURE_VARARGS
 
 #ifndef DACCESS_COMPILE
 FCIMPL1(void, GCReporting::Register, GCFrame* frame)
@@ -1204,6 +1208,7 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
         return true;
     }
 
+#ifdef FEATURE_VARARGS
     if (gcInfoDecoder.GetIsVarArg())
     {
         MethodDesc* pMD = pCodeInfo->GetMethodDesc();
@@ -1262,6 +1267,9 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
 
         promoteVarArgs(prevSP, varArgSig, pCtx);
     }
+#else // !FEATURE_VARARGS
+    _ASSERTE(!gcInfoDecoder.GetIsVarArg());
+#endif // FEATURE_VARARGS
 
     return true;
 

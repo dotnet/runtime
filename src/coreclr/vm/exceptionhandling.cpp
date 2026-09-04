@@ -3133,13 +3133,13 @@ static TADDR GetSpForDiagnosticReporting(REGDISPLAY *pRD)
 #endif
 }
 
-extern "C" void QCALLTYPE AppendExceptionStackFrame(QCall::ObjectHandleOnStack exceptionObj, SIZE_T ip, SIZE_T sp, int flags, ExInfo *pExInfo)
+extern "C" void QCALLTYPE AppendExceptionStackFrame(QCall::ObjectHandleOnStack exceptionObj, SIZE_T ip, SIZE_T sp, int flags, ExInfo *pExInfo, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
     BEGIN_QCALL;
 
-    Thread* pThread = GET_THREAD();
+    Thread* pThread = GetThread();
 
     {
         GCX_COOP_THREAD_EXISTS(pThread);
@@ -3266,7 +3266,7 @@ void CallCatchFunclet(BYTE* pHandlerIP, REGDISPLAY* pvRegDisplay, ExInfo* exInfo
     }
     CONTRACTL_END;
 
-    Thread* pThread = GET_THREAD();
+    Thread* pThread = GetThread();
     pThread->DecPreventAbort();
 
     exInfo->m_ScannedStackRange.ExtendUpperBound(exInfo->m_frameIter.m_crawl.GetRegisterSet()->SP);
@@ -3456,7 +3456,7 @@ void CallCatchFunclet(BYTE* pHandlerIP, REGDISPLAY* pvRegDisplay, ExInfo* exInfo
 
 void ResumeAtInterceptionLocation(REGDISPLAY* pvRegDisplay)
 {
-    Thread* pThread = GET_THREAD();
+    Thread* pThread = GetThread();
     pThread->DecPreventAbort();
 
     UINT_PTR targetSp = GetSP(pvRegDisplay->pCurrentContext);
@@ -3509,7 +3509,7 @@ void CallFinallyFunclet(BYTE* pHandlerIP, REGDISPLAY* pvRegDisplay, ExInfo* exIn
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_MODE_COOPERATIVE;
 
-    Thread* pThread = GET_THREAD();
+    Thread* pThread = GetThread();
     pThread->DecPreventAbort();
 
     exInfo->m_csfEnclosingClause = CallerStackFrame::FromRegDisplay(exInfo->m_frameIter.m_crawl.GetRegisterSet());
@@ -3530,16 +3530,17 @@ void CallFinallyFunclet(BYTE* pHandlerIP, REGDISPLAY* pvRegDisplay, ExInfo* exIn
     exInfo->MakeCallbacksRelatedToHandler(false, pThread, pMD, &exInfo->m_CurrentClause, (DWORD_PTR)pHandlerIP, spForDebugger);
 }
 
-extern "C" CLR_BOOL QCALLTYPE CallFilterFunclet(QCall::ObjectHandleOnStack exceptionObj, BYTE* pFilterIP, REGDISPLAY* pvRegDisplay)
+extern "C" CLR_BOOL QCALLTYPE CallFilterFunclet(QCall::ObjectHandleOnStack exceptionObj, BYTE* pFilterIP, REGDISPLAY* pvRegDisplay, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
     DWORD_PTR dwResult = 0;
 
     BEGIN_QCALL;
+
     GCX_COOP();
 
-    Thread* pThread = GET_THREAD();
+    Thread* pThread = GetThread();
     Frame* pFrame = pThread->GetFrame();
     MarkInlinedCallFrameAsEHHelperCall(pFrame);
 
@@ -3621,7 +3622,7 @@ CLR_BOOL EHEnumNextWorker(EH_CLAUSE_ENUMERATOR* pEHEnum, RhEHClause* pEHClause, 
         EE_ILEXCEPTION_CLAUSE EHClause;
         memset(&EHClause, 0, sizeof(EE_ILEXCEPTION_CLAUSE));
         PTR_EXCEPTION_CLAUSE_TOKEN pEHClauseToken = pJitMan->GetNextEHClause(pEHEnum, &EHClause);
-        Thread* pThread = GET_THREAD();
+        Thread* pThread = GetThread();
         ExInfo* pExInfo = (ExInfo*)pThread->GetExceptionState()->GetCurrentExceptionTracker();
         pExInfo->m_CurrentClause = EHClause;
 
@@ -3698,7 +3699,7 @@ CLR_BOOL EHEnumNextWorker(EH_CLAUSE_ENUMERATOR* pEHEnum, RhEHClause* pEHClause, 
     return result;
 }
 
-extern "C" CLR_BOOL QCALLTYPE EHEnumNext(EH_CLAUSE_ENUMERATOR* pEHEnum, RhEHClause* pEHClause)
+extern "C" CLR_BOOL QCALLTYPE EHEnumNext(EH_CLAUSE_ENUMERATOR* pEHEnum, RhEHClause* pEHClause, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -3706,7 +3707,7 @@ extern "C" CLR_BOOL QCALLTYPE EHEnumNext(EH_CLAUSE_ENUMERATOR* pEHEnum, RhEHClau
 
     BEGIN_QCALL;
 
-    Thread* pThread = GET_THREAD();
+    Thread* pThread = GetThread();
     Frame* pFrame = pThread->GetFrame();
     MarkInlinedCallFrameAsEHHelperCall(pFrame);
 
@@ -3914,7 +3915,7 @@ CLR_BOOL SfiInitWorker(StackFrameIterator* pThis, CONTEXT* pStackwalkCtx, CLR_BO
     CONTRACTL_END;
 
     CLR_BOOL result = FALSE;
-    Thread* pThread = GET_THREAD();
+    Thread* pThread = GetThread();
     ExInfo* pExInfo = (ExInfo*)pThread->GetExceptionState()->GetCurrentExceptionTracker();
     Frame* pFrame = pThread->GetFrame();
 
@@ -4049,14 +4050,15 @@ CLR_BOOL SfiInitWorker(StackFrameIterator* pThis, CONTEXT* pStackwalkCtx, CLR_BO
     return result;
 }
 
-extern "C" CLR_BOOL QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStackwalkCtx, CLR_BOOL instructionFault, CLR_BOOL* pfIsExceptionIntercepted)
+extern "C" CLR_BOOL QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStackwalkCtx, CLR_BOOL instructionFault, CLR_BOOL* pfIsExceptionIntercepted, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
     CLR_BOOL result = FALSE;
+
     BEGIN_QCALL;
 
-    Thread* pThread = GET_THREAD();
+    Thread* pThread = GetThread();
     Frame* pFrame = pThread->GetFrame();
     MarkInlinedCallFrameAsEHHelperCall(pFrame);
 
@@ -4096,7 +4098,7 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
 
     StackWalkAction retVal = SWA_FAILED;
     CLR_BOOL success = FALSE;
-    Thread* pThread = GET_THREAD();
+    Thread* pThread = GetThread();
     ExInfo* pTopExInfo = (ExInfo*)pThread->GetExceptionState()->GetCurrentExceptionTracker();
 
     Frame* pFrame = pThread->GetFrame();
@@ -4369,7 +4371,7 @@ Exit:;
     return success;
 }
 
-extern "C" CLR_BOOL QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR_BOOL* fUnwoundReversePInvoke, CLR_BOOL* pfIsExceptionIntercepted)
+extern "C" CLR_BOOL QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR_BOOL* fUnwoundReversePInvoke, CLR_BOOL* pfIsExceptionIntercepted, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -4377,7 +4379,7 @@ extern "C" CLR_BOOL QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollid
 
     BEGIN_QCALL;
 
-    Thread* pThread = GET_THREAD();
+    Thread* pThread = GetThread();
     Frame* pFrame = pThread->GetFrame();
     MarkInlinedCallFrameAsEHHelperCall(pFrame);
 
