@@ -22,7 +22,7 @@ namespace ILCompiler.DependencyAnalysis
         public AssemblyRootNode(string assemblyName, AssemblyRootMode mode)
             => (_assemblyName, _mode) = (assemblyName, mode);
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
             // TODO: what is the failure mode of illink here?
             var module = (EcmaModule)factory.TypeSystemContext.ResolveAssembly(AssemblyNameInfo.Parse(_assemblyName));
@@ -35,7 +35,7 @@ namespace ILCompiler.DependencyAnalysis
                 case AssemblyRootMode.EntryPoint:
                     // TODO: what is the failure mode of illink here?
                     MethodDefinitionHandle entrypointToken = (MethodDefinitionHandle)MetadataTokens.Handle(module.PEReader.PEHeaders.CorHeader.EntryPointTokenOrRelativeVirtualAddress);
-                    yield return new DependencyListEntry(factory.MethodDefinition(module, entrypointToken), "Entrypoint");
+                    sink.Add(factory.MethodDefinition(module, entrypointToken), "Entrypoint");
                     break;
                 case AssemblyRootMode.VisibleMembers:
                     // TODO
@@ -50,8 +50,8 @@ namespace ILCompiler.DependencyAnalysis
         public override bool HasDynamicDependencies => false;
         public override bool HasConditionalStaticDependencies => false;
         public override bool StaticDependenciesAreComputed => true;
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context) => null;
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => null;
+        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory context) { }
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink<NodeFactory> sink, NodeFactory context) { }
         protected override string GetName(NodeFactory context) => $"Assembly root: {_assemblyName} ({_mode})";
     }
 }

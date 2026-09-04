@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 
 using Internal.Text;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -91,13 +92,11 @@ namespace ILCompiler.DependencyAnalysis
                 _parentNode.AddEmbeddedObject(this);
             }
 
-            public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+            public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
             {
-                return new[]
-                {
+                sink.AddRange(
                     new DependencyListEntry(Target, "reloc"),
-                    new DependencyListEntry(_parentNode, "Pointer region")
-                };
+                    new DependencyListEntry(_parentNode, "Pointer region"));
             }
 
             public override int ClassCode => -66002498;

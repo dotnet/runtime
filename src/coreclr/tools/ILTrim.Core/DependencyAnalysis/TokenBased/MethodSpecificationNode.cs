@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Reflection.Metadata;
 
 using Internal.TypeSystem.Ecma;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -20,21 +21,19 @@ namespace ILCompiler.DependencyAnalysis
 
         private MethodSpecificationHandle Handle => (MethodSpecificationHandle)_handle;
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
             MethodSpecification methodSpec = _module.MetadataReader.GetMethodSpecification(Handle);
 
-            DependencyList dependencies = new DependencyList();
+            DependencySink<NodeFactory> dependencies = sink;
 
             EcmaSignatureAnalyzer.AnalyzeMethodSpecSignature(
                 _module,
                 _module.MetadataReader.GetBlobReader(methodSpec.Signature),
                 factory,
                 dependencies);
-
+                
             dependencies.Add(factory.GetNodeForMethodToken(_module, methodSpec.Method), "Instantiated method");
-
-            return dependencies;
         }
 
         protected override EntityHandle WriteInternal(ModuleWritingContext writeContext)

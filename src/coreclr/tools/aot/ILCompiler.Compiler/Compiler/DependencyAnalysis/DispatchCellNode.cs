@@ -78,15 +78,17 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool StaticDependenciesAreComputed => true;
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
             if (_targetMethod.HasInstantiation)
             {
-                return GvmDispatchCellInfoSectionNode.GetCellDependencies(factory, _targetMethod);
+                GvmDispatchCellInfoSectionNode.AddCellDependencies(sink, factory, _targetMethod);
+                return;
             }
             else
             {
-                return InterfaceDispatchCellInfoSectionNode.GetCellDependencies(factory, _targetMethod);
+                InterfaceDispatchCellInfoSectionNode.AddCellDependencies(sink, factory, _targetMethod);
+                return;
             }
         }
 
@@ -105,8 +107,8 @@ namespace ILCompiler.DependencyAnalysis
         public override bool HasDynamicDependencies => false;
         public override bool HasConditionalStaticDependencies => false;
 
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory) => null;
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory) => null;
+        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory) { }
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink<NodeFactory> sink, NodeFactory factory) { }
     }
 
     internal sealed class DispatchCellInfoComparer : IComparer<DispatchCellNode>

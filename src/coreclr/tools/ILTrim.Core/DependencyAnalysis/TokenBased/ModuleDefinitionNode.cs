@@ -7,6 +7,7 @@ using System.Reflection.Metadata.Ecma335;
 using Internal.TypeSystem.Ecma;
 
 using Debug = System.Diagnostics.Debug;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -24,23 +25,21 @@ namespace ILCompiler.DependencyAnalysis
         {
         }
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            DependencyList dependencies = new DependencyList();
+            DependencySink<NodeFactory> dependencies = sink;
 
             if (_module.MetadataReader.IsAssembly)
                 dependencies.Add(factory.AssemblyDefinition(_module), "Assembly definition of the module");
 
             dependencies.Add(factory.TypeDefinition(_module, GlobalModuleTypeHandle), "Global module type");
 
-            CustomAttributeNode.AddDependenciesDueToCustomAttributes(ref dependencies, factory, _module, _module.MetadataReader.GetModuleDefinition().GetCustomAttributes());
+            CustomAttributeNode.AddDependenciesDueToCustomAttributes(dependencies, factory, _module, _module.MetadataReader.GetModuleDefinition().GetCustomAttributes());
 
             foreach (var resourceHandle in _module.MetadataReader.ManifestResources)
             {
                 dependencies.Add(factory.ManifestResource(_module, resourceHandle), "Manifest resource of a module");
             }
-
-            return dependencies;
         }
 
         protected override EntityHandle WriteInternal(ModuleWritingContext writeContext)

@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using Internal.TypeSystem.Ecma;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -21,12 +22,12 @@ namespace ILCompiler.DependencyAnalysis
 
         private FieldDefinitionHandle Handle => (FieldDefinitionHandle)_handle;
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
             FieldDefinition fieldDef = _module.MetadataReader.GetFieldDefinition(Handle);
             TypeDefinitionHandle declaringType = fieldDef.GetDeclaringType();
 
-            DependencyList dependencies = new DependencyList();
+            DependencySink<NodeFactory> dependencies = sink;
 
             EcmaSignatureAnalyzer.AnalyzeFieldSignature(
                 _module,
@@ -41,9 +42,7 @@ namespace ILCompiler.DependencyAnalysis
                 dependencies.Add(factory.Constant(_module, fieldDef.GetDefaultValue()), "Constant in field definition");
             }
 
-            CustomAttributeNode.AddDependenciesDueToCustomAttributes(ref dependencies, factory, _module, fieldDef.GetCustomAttributes());
-
-            return dependencies;
+            CustomAttributeNode.AddDependenciesDueToCustomAttributes(dependencies, factory, _module, fieldDef.GetCustomAttributes());
         }
 
         protected override EntityHandle WriteInternal(ModuleWritingContext writeContext)

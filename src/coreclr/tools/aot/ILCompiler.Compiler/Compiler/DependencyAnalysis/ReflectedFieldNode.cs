@@ -30,17 +30,17 @@ namespace ILCompiler.DependencyAnalysis
 
         public FieldDesc Field => _field;
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
             Debug.Assert(!factory.MetadataManager.IsReflectionBlocked(_field.GetTypicalFieldDefinition()));
 
-            DependencyList dependencies = new DependencyList();
-            factory.MetadataManager.GetDependenciesDueToReflectability(ref dependencies, factory, _field);
+            DependencySink<NodeFactory> dependencies = sink;
+            factory.MetadataManager.GetDependenciesDueToReflectability(dependencies, factory, _field);
 
             // No runtime artifacts needed if this is a generic definition or literal field
             if (_field.OwningType.IsGenericDefinition || _field.IsLiteral)
             {
-                return dependencies;
+                return;
             }
 
             // readonly static fields are not reflection settable, the rest are
@@ -97,10 +97,9 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             TypeDesc fieldType = _field.FieldType.NormalizeInstantiation();
-            ReflectionInvokeMapNode.AddSignatureDependency(ref dependencies, factory, _field, fieldType, "Type of the field", isOut: true);
-
-            return dependencies;
+            ReflectionInvokeMapNode.AddSignatureDependency(dependencies, factory, _field, fieldType, "Type of the field", isOut: true);
         }
+
         protected override string GetName(NodeFactory factory)
         {
             return "Reflectable field: " + _field.ToString();
@@ -110,7 +109,7 @@ namespace ILCompiler.DependencyAnalysis
         public override bool HasDynamicDependencies => false;
         public override bool HasConditionalStaticDependencies => false;
         public override bool StaticDependenciesAreComputed => true;
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory) => null;
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory) => null;
+        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory) { }
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink<NodeFactory> sink, NodeFactory factory) { }
     }
 }

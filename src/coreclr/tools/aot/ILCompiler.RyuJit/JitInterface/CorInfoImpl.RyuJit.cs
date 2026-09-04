@@ -1892,7 +1892,7 @@ namespace Internal.JitInterface
             }
 
             if (_compilation.NeedsSlotUseTracking(owningType))
-                (_additionalDependencies ??= new ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<NodeFactory>.DependencyList()).Add(_compilation.NodeFactory.VirtualMethodUse(methodDesc), "Virtual method call");
+                _additionalDependencies.Add(_compilation.NodeFactory.VirtualMethodUse(methodDesc), "Virtual method call");
 
             offsetAfterIndirection = (uint)(EETypeNode.GetVTableOffset(pointerSize) + slot * pointerSize);
         }

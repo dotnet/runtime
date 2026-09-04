@@ -25,7 +25,7 @@ namespace ILCompiler.DependencyAnalysis
             _module = module;
         }
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
             PEMemoryBlock resourceDirectory = _module.PEReader.GetSectionData(_module.PEReader.PEHeaders.CorHeader.ResourcesDirectory.RelativeVirtualAddress);
 
@@ -52,10 +52,13 @@ namespace ILCompiler.DependencyAnalysis
                     }
 
                     var metadataManager = (UsageBasedMetadataManager)factory.MetadataManager;
-                    return DescriptorMarker.GetDependencies(metadataManager.Logger, factory, ms, resource, _module, "resource " + resourceName + " in " + _module.ToString(), metadataManager.FeatureSwitches);
+                    foreach (DependencyListEntry dependency in DescriptorMarker.GetDependencies(metadataManager.Logger, factory, ms, resource, _module, "resource " + resourceName + " in " + _module.ToString(), metadataManager.FeatureSwitches))
+                    {
+                        sink.Add(dependency);
+                    }
+                    return;
                 }
             }
-            return Array.Empty<DependencyListEntry>();
         }
 
         protected override string GetName(NodeFactory factory)
@@ -67,7 +70,7 @@ namespace ILCompiler.DependencyAnalysis
         public override bool HasDynamicDependencies => false;
         public override bool HasConditionalStaticDependencies => false;
         public override bool StaticDependenciesAreComputed => true;
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context) => null;
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => null;
+        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory context) { }
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink<NodeFactory> sink, NodeFactory context) { }
     }
 }

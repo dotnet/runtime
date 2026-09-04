@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Reflection.Metadata;
 
 using Internal.TypeSystem.Ecma;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -20,14 +21,13 @@ namespace ILCompiler.DependencyAnalysis
 
         private ParameterHandle Handle => (ParameterHandle)_handle;
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
+        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory context)
         {
-            DependencyList dependencies = null;
+            DependencySink<NodeFactory> dependencies = sink;
 
             Parameter parameter = _module.MetadataReader.GetParameter(Handle);
-            CustomAttributeNode.AddDependenciesDueToCustomAttributes(ref dependencies, context, _module, parameter.GetCustomAttributes());
+            CustomAttributeNode.AddDependenciesDueToCustomAttributes(dependencies, context, _module, parameter.GetCustomAttributes());
 
-            return dependencies;
         }
 
         public override string ToString()

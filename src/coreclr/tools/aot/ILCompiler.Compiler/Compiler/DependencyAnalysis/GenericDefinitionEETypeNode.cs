@@ -7,6 +7,7 @@ using Internal.Text;
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -19,7 +20,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool HasConditionalStaticDependencies => false;
 
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory) => null;
+        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory) { }
 
         public override ISymbolNode NodeForLinkage(NodeFactory factory)
         {
@@ -72,9 +73,8 @@ namespace ILCompiler.DependencyAnalysis
             return factory.MetadataTypeSymbol(_type).Marked;
         }
 
-        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        protected override void ComputeNonRelocationBasedDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            return new DependencyList();
         }
 
         public override int ClassCode => -287423988;
@@ -98,9 +98,9 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler) + " reflection visible";
 
-        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        protected override void ComputeNonRelocationBasedDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            var dependencyList = new DependencyList();
+            DependencySink<NodeFactory> dependencyList = sink;
 
             if (_type.IsInterface)
                 dependencyList.Add(factory.InterfaceUse(_type.GetTypeDefinition()), "Interface is used");
@@ -108,9 +108,7 @@ namespace ILCompiler.DependencyAnalysis
             dependencyList.Add(factory.NecessaryTypeSymbol(_type), "Reflection invisible type for a visible type");
 
             // Ask the metadata manager if we have any dependencies due to the presence of the EEType.
-            factory.MetadataManager.GetDependenciesDueToEETypePresence(ref dependencyList, factory, _type);
-
-            return dependencyList;
+            factory.MetadataManager.GetDependenciesDueToEETypePresence(dependencyList, factory, _type);
         }
 
         public override int ClassCode => 983279111;

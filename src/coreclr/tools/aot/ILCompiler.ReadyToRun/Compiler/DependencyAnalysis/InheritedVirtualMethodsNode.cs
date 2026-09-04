@@ -40,14 +40,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override bool HasConditionalStaticDependencies => true;
         public override bool StaticDependenciesAreComputed => true;
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context) => null;
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => null;
+        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory context) { }
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink<NodeFactory> sink, NodeFactory context) { }
 
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
+        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
             DefType defType = (DefType)_type;
 
-            List<CombinedDependencyListEntry> result = new List<CombinedDependencyListEntry>();
+            DependencySink<NodeFactory> result = sink;
 
             // Class virtual method path: for each virtual slot, compile the implementation
             // on this type if the slot-defining method is used.
@@ -149,8 +149,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 // TODO: https://github.com/dotnet/runtime/issues/132338 - Gate this recovery on --resilient and report a warning.
             }
-
-            return result;
         }
 
         private static bool TypeHasGVMSlots(TypeDesc type)

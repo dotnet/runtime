@@ -24,19 +24,19 @@ namespace ILCompiler.DependencyAnalysis
             _type = type;
         }
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
             InteropStateManager stateManager = ((CompilerGeneratedInteropStubManager)factory.InteropStubManager)._interopStateManager;
 
-            yield return new DependencyListEntry(factory.NecessaryTypeSymbol(_type), "Struct Marshalling Stub");
+            sink.Add(factory.NecessaryTypeSymbol(_type), "Struct Marshalling Stub");
 
             // Not all StructMarshalingDataNodes require marshalling - some are only present because we want to
             // generate field offset information for Marshal.OffsetOf.
             if (MarshalHelpers.IsStructMarshallingRequired(_type))
             {
-                yield return new DependencyListEntry(factory.MethodEntrypoint(stateManager.GetStructMarshallingManagedToNativeThunk(_type)), "Struct Marshalling stub");
-                yield return new DependencyListEntry(factory.MethodEntrypoint(stateManager.GetStructMarshallingNativeToManagedThunk(_type)), "Struct Marshalling stub");
-                yield return new DependencyListEntry(factory.MethodEntrypoint(stateManager.GetStructMarshallingCleanupThunk(_type)), "Struct Marshalling stub");
+                sink.Add(factory.MethodEntrypoint(stateManager.GetStructMarshallingManagedToNativeThunk(_type)), "Struct Marshalling stub");
+                sink.Add(factory.MethodEntrypoint(stateManager.GetStructMarshallingNativeToManagedThunk(_type)), "Struct Marshalling stub");
+                sink.Add(factory.MethodEntrypoint(stateManager.GetStructMarshallingCleanupThunk(_type)), "Struct Marshalling stub");
             }
         }
 
@@ -49,7 +49,7 @@ namespace ILCompiler.DependencyAnalysis
         public override bool HasDynamicDependencies => false;
         public override bool HasConditionalStaticDependencies => false;
         public override bool StaticDependenciesAreComputed => true;
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context) => null;
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => null;
+        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory context) { }
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink<NodeFactory> sink, NodeFactory context) { }
     }
 }

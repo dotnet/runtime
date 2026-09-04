@@ -41,8 +41,6 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         private readonly TypeDesc _associatedType;
-        private DependencyList _staticDependencies;
-
         public TypeGVMEntriesNode(TypeDesc associatedType)
         {
             Debug.Assert(associatedType.IsTypeDefinition);
@@ -57,23 +55,16 @@ namespace ILCompiler.DependencyAnalysis
         public override bool InterestingForDynamicDependencyAnalysis => false;
         public override bool StaticDependenciesAreComputed => true;
         protected override string GetName(NodeFactory factory) => "__TypeGVMEntriesNode_" + factory.NameMangler.GetMangledTypeName(_associatedType);
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context) => null;
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => null;
+        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory context) { }
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink<NodeFactory> sink, NodeFactory context) { }
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
+        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory context)
         {
-            if (_staticDependencies == null)
-            {
-                _staticDependencies = new DependencyList();
+            foreach (var entry in ScanForGenericVirtualMethodEntries())
+                GenericVirtualMethodTableNode.AddGenericVirtualMethodImplementationDependencies(sink, context, entry.CallingMethod, entry.ImplementationMethod);
 
-                foreach (var entry in ScanForGenericVirtualMethodEntries())
-                    GenericVirtualMethodTableNode.GetGenericVirtualMethodImplementationDependencies(ref _staticDependencies, context, entry.CallingMethod, entry.ImplementationMethod);
-
-                foreach (var entry in ScanForInterfaceGenericVirtualMethodEntries())
-                    InterfaceGenericVirtualMethodTableNode.GetGenericVirtualMethodImplementationDependencies(ref _staticDependencies, context, entry.CallingMethod, entry.ImplementationType, entry.ImplementationMethod);
-            }
-
-            return _staticDependencies;
+            foreach (var entry in ScanForInterfaceGenericVirtualMethodEntries())
+                InterfaceGenericVirtualMethodTableNode.AddGenericVirtualMethodImplementationDependencies(sink, context, entry.CallingMethod, entry.ImplementationType, entry.ImplementationMethod);
         }
 
         public IEnumerable<TypeGVMEntryInfo> ScanForGenericVirtualMethodEntries()

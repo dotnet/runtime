@@ -10,7 +10,8 @@ using Internal.IL;
 using Internal.Text;
 using Internal.TypeSystem;
 
-using CombinedDependencyList = System.Collections.Generic.List<ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.CombinedDependencyListEntry>;
+using CombinedDependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.CombinedDependencyList;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -66,37 +67,74 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool HasConditionalStaticDependencies => CodeBasedDependencyAlgorithm.HasConditionalDependenciesDueToMethodCodePresence(_method);
 
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
+        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            CombinedDependencyList dependencies = null;
-            CodeBasedDependencyAlgorithm.AddConditionalDependenciesDueToMethodCodePresence(ref dependencies, factory, _method);
-            return dependencies ?? (IEnumerable<CombinedDependencyListEntry>)Array.Empty<CombinedDependencyListEntry>();
+            CodeBasedDependencyAlgorithm.AddConditionalDependenciesDueToMethodCodePresence(sink, factory, _method);
         }
 
-        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        public void AddRuntimeDeterminedStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory, MethodDesc concreteMethod)
         {
-            DependencyList dependencies = _nonRelocationDependencies != null ? new DependencyList(_nonRelocationDependencies) : null;
+            if (_nonRelocationDependencies is not null)
+            {
+                foreach (DependencyListEntry dependency in _nonRelocationDependencies)
+                {
+                    AddRuntimeDeterminedDependency(sink, factory, concreteMethod, dependency.Node);
+                }
+            }
+
+            if (_methodCode.Relocs is not null)
+            {
+                foreach (Relocation relocation in _methodCode.Relocs)
+                {
+                    AddRuntimeDeterminedDependency(sink, factory, concreteMethod, relocation.Target);
+                }
+            }
+        }
+
+        public void AddRuntimeDeterminedConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory, MethodDesc concreteMethod)
+        {
+        }
+
+        private static void AddRuntimeDeterminedDependency(DependencySink<NodeFactory> sink, NodeFactory factory, MethodDesc concreteMethod, object dependency)
+        {
+            if (dependency is INodeWithRuntimeDeterminedDependencies runtimeDeterminedDependency)
+            {
+                runtimeDeterminedDependency.AddDependencies(
+                    sink,
+                    factory,
+                    concreteMethod.OwningType.Instantiation,
+                    concreteMethod.Instantiation,
+                    isConcreteInstantiation: !concreteMethod.IsSharedByGenericInstantiations,
+                    otherReasonNode: null);
+            }
+        }
+
+        protected override void ComputeNonRelocationBasedDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        {
+            DependencySink<NodeFactory> dependencies = sink;
+            if (_nonRelocationDependencies is not null)
+            {
+                foreach (DependencyListEntry dependency in _nonRelocationDependencies)
+                {
+                    dependencies.Add(dependency);
+                }
+            }
 
             TypeDesc owningType = _method.OwningType;
             if (factory.PreinitializationManager.HasEagerStaticConstructor(owningType))
             {
-                dependencies ??= new DependencyList();
                 dependencies.Add(factory.EagerCctorIndirection(owningType.GetStaticConstructor()), "Eager .cctor");
             }
 
             if (_ehInfo != null)
             {
-                dependencies ??= new DependencyList();
                 dependencies.Add(_ehInfo, "Exception handling information");
             }
 
             if (MethodAssociatedDataNode.MethodHasAssociatedData(this))
             {
-                dependencies ??= new DependencyList();
                 dependencies.Add(new DependencyListEntry(factory.MethodAssociatedData(this), "Method associated data"));
             }
-
-            return dependencies;
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly)

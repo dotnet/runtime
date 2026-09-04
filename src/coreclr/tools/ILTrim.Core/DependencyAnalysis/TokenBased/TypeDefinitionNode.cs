@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Reflection.Metadata;
 
 using Internal.TypeSystem.Ecma;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -21,9 +22,9 @@ namespace ILCompiler.DependencyAnalysis
 
         private TypeDefinitionHandle Handle => (TypeDefinitionHandle)_handle;
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            DependencyList dependencies = new DependencyList();
+            DependencySink<NodeFactory> dependencies = sink;
 
             dependencies.Add(factory.ModuleDefinition(_module), "Owning module");
 
@@ -38,7 +39,7 @@ namespace ILCompiler.DependencyAnalysis
                 dependencies.Add(factory.GenericParameter(_module, parameter), "Generic parameter of type");
             }
 
-            CustomAttributeNode.AddDependenciesDueToCustomAttributes(ref dependencies, factory, _module, typeDef.GetCustomAttributes());
+            CustomAttributeNode.AddDependenciesDueToCustomAttributes(dependencies, factory, _module, typeDef.GetCustomAttributes());
 
             if (typeDef.IsNested)
             {
@@ -90,8 +91,6 @@ namespace ILCompiler.DependencyAnalysis
                 // for now (it's on par with IL Linker).
                 dependencies.Add(factory.ConstructedType(ecmaType), "Implicitly constructed valuetype");
             }
-
-            return dependencies;
         }
 
         public override bool HasConditionalStaticDependencies
@@ -102,7 +101,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
+        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
             MetadataReader reader = _module.MetadataReader;
             TypeDefinition typeDef = reader.GetTypeDefinition(Handle);
@@ -113,10 +112,10 @@ namespace ILCompiler.DependencyAnalysis
                 EcmaType interfaceType = _module.TryGetType(intfImpl.Interface)?.GetTypeDefinition() as EcmaType;
                 if (interfaceType != null)
                 {
-                    yield return new(
+                    sink.Add(new CombinedDependencyListEntry(
                         factory.GetNodeForTypeToken(_module, intfImpl.Interface),
                         factory.InterfaceUse(interfaceType),
-                        "Implemented interface");
+                        "Implemented interface"));
                 }
             }
         }

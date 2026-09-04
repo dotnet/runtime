@@ -10,6 +10,7 @@ using Internal.TypeSystem;
 using Internal.NativeFormat;
 
 using VirtualInvokeTableEntry = Internal.Runtime.VirtualInvokeTableEntry;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -76,11 +77,10 @@ namespace ILCompiler.DependencyAnalysis
             return declaringMethodForSlot;
         }
 
-        public static void GetVirtualInvokeMapDependencies(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
+        public static void AddVirtualInvokeMapDependencies(IDependencySink<NodeFactory> dependencies, NodeFactory factory, MethodDesc method)
         {
             if (NeedsVirtualInvokeInfo(factory, method))
             {
-                dependencies ??= new DependencyList();
 
                 dependencies.Add(
                     factory.NecessaryTypeSymbol(method.OwningType.ConvertToCanonForm(CanonicalFormKind.Specific)),

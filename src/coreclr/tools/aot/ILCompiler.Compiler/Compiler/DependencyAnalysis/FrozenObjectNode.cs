@@ -7,6 +7,7 @@ using Internal.Text;
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -43,24 +44,19 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(dataBuilder.CountBytes == sizeBefore + ContentSize);
         }
 
-        public sealed override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        public sealed override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
             var builder = new ObjectDataBuilder(factory, relocsOnly: true);
             EncodeData(ref builder, factory, relocsOnly: true);
             Relocation[] relocs = builder.ToObjectData().Relocs;
 
-            DependencyList dependencies = null;
-
             if (relocs != null)
             {
-                dependencies = new DependencyList();
                 foreach (Relocation reloc in relocs)
                 {
-                    dependencies.Add(reloc.Target, "reloc");
+                    sink.Add(reloc.Target, "reloc");
                 }
             }
-
-            return dependencies;
         }
 
         public abstract void EncodeContents(ref ObjectDataBuilder dataBuilder, NodeFactory factory, bool relocsOnly);

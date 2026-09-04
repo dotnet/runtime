@@ -5,6 +5,7 @@ using System.Diagnostics;
 
 using Internal.Runtime;
 using Internal.TypeSystem;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -24,9 +25,10 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override bool IsReflectionVisible => true;
 
-        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        protected override void ComputeNonRelocationBasedDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            DependencyList dependencyList = base.ComputeNonRelocationBasedDependencies(factory);
+            DependencySink<NodeFactory> dependencyList = sink;
+            base.ComputeNonRelocationBasedDependencies(sink, factory);
 
             if (_type.IsIDynamicInterfaceCastable)
             {
@@ -59,10 +61,8 @@ namespace ILCompiler.DependencyAnalysis
 
             if (!_type.IsCanonicalSubtype(CanonicalFormKind.Any))
             {
-                factory.InteropStubManager.AddInterestingInteropConstructedTypeDependencies(ref dependencyList, factory, _type);
+                factory.InteropStubManager.AddInterestingInteropConstructedTypeDependencies(dependencyList, factory, _type);
             }
-
-            return dependencyList;
         }
 
         protected override ISymbolNode GetBaseTypeNode(NodeFactory factory)

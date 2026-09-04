@@ -24,11 +24,10 @@ namespace ILCompiler.DependencyAnalysis
             Type = type;
         }
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            var dependencies = new DependencyList();
-            StaticsInfoHashtableNode.AddStaticsInfoDependencies(ref dependencies, factory, Type);
-            return dependencies;
+            DependencySink<NodeFactory> dependencies = sink;
+            StaticsInfoHashtableNode.AddStaticsInfoDependencies(dependencies, factory, Type);
         }
 
         protected override string GetName(NodeFactory factory)
@@ -40,7 +39,7 @@ namespace ILCompiler.DependencyAnalysis
         public override bool HasDynamicDependencies => false;
         public override bool HasConditionalStaticDependencies => false;
         public override bool StaticDependenciesAreComputed => true;
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory) => null;
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory) => null;
+        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory) { }
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink<NodeFactory> sink, NodeFactory factory) { }
     }
 }

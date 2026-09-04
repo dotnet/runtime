@@ -1,11 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
+
+using System.Diagnostics;
+
 using Internal.TypeSystem;
 
 using ILCompiler.DependencyAnalysis;
 
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler
 {
@@ -127,7 +132,44 @@ namespace ILCompiler
             rootProvider.AddReflectionRoot(field, reason);
         }
 
-        public static bool TryGetDependenciesForReflectedMethod(ref DependencyList dependencies, NodeFactory factory, MethodDesc method, string reason)
+        public static bool TryAddDependenciesForReflectedMethod(
+            IDependencySink<NodeFactory> dependencies,
+            NodeFactory factory,
+            MethodDesc method,
+            string reason)
+        {
+            return TryAddDependenciesForReflectedMethod(
+                dependencies,
+                conditionalDependencies: null,
+                factory,
+                method,
+                reason,
+                otherReasonNode: null);
+        }
+
+        public static bool TryAddDependenciesForReflectedMethod(
+            DependencySink<NodeFactory> dependencies,
+            NodeFactory factory,
+            MethodDesc method,
+            string reason,
+            DependencyNodeCore<NodeFactory> otherReasonNode)
+        {
+            return TryAddDependenciesForReflectedMethod(
+                dependencies,
+                dependencies,
+                factory,
+                method,
+                reason,
+                otherReasonNode);
+        }
+
+        private static bool TryAddDependenciesForReflectedMethod(
+            IDependencySink<NodeFactory> dependencies,
+            DependencySink<NodeFactory>? conditionalDependencies,
+            NodeFactory factory,
+            MethodDesc method,
+            string reason,
+            DependencyNodeCore<NodeFactory>? otherReasonNode)
         {
             MethodDesc typicalMethod = method.GetTypicalMethodDefinition();
             if (factory.MetadataManager.IsReflectionBlocked(typicalMethod))
@@ -140,8 +182,7 @@ namespace ILCompiler
             // for it below.
             if (typicalMethod.IsGenericMethodDefinition || typicalMethod.OwningType.IsGenericDefinition)
             {
-                dependencies ??= new DependencyList();
-                dependencies.Add(factory.ReflectedMethod(typicalMethod), reason);
+                AddDependency(dependencies, conditionalDependencies, factory.ReflectedMethod(typicalMethod), reason, otherReasonNode);
             }
 
             // If there's any genericness involved, try to create a fitting instantiation that would be usable at runtime.
@@ -185,13 +226,17 @@ namespace ILCompiler
                 return false;
             }
 
-            dependencies ??= new DependencyList();
-            dependencies.Add(factory.ReflectedMethod(method.GetCanonMethodTarget(CanonicalFormKind.Specific)), reason);
+            AddDependency(
+                dependencies,
+                conditionalDependencies,
+                factory.ReflectedMethod(method.GetCanonMethodTarget(CanonicalFormKind.Specific)),
+                reason,
+                otherReasonNode);
 
             return true;
         }
 
-        public static bool TryGetDependenciesForReflectedField(ref DependencyList dependencies, NodeFactory factory, FieldDesc field, string reason)
+        public static bool TryAddDependenciesForReflectedField(IDependencySink<NodeFactory> dependencies, NodeFactory factory, FieldDesc field, string reason)
         {
             FieldDesc typicalField = field.GetTypicalFieldDefinition();
             if (factory.MetadataManager.IsReflectionBlocked(typicalField))
@@ -199,7 +244,6 @@ namespace ILCompiler
                 return false;
             }
 
-            dependencies ??= new DependencyList();
 
             // If this is a field on generic type, make sure we at minimum have the metadata
             // for it. This hedges against the risk that we fail to figure out an instantiated base
@@ -242,7 +286,44 @@ namespace ILCompiler
             return true;
         }
 
-        public static bool TryGetDependenciesForReflectedType(ref DependencyList dependencies, NodeFactory factory, TypeDesc type, string reason)
+        public static bool TryAddDependenciesForReflectedType(
+            IDependencySink<NodeFactory> dependencies,
+            NodeFactory factory,
+            TypeDesc type,
+            string reason)
+        {
+            return TryAddDependenciesForReflectedType(
+                dependencies,
+                conditionalDependencies: null,
+                factory,
+                type,
+                reason,
+                otherReasonNode: null);
+        }
+
+        public static bool TryAddDependenciesForReflectedType(
+            DependencySink<NodeFactory> dependencies,
+            NodeFactory factory,
+            TypeDesc type,
+            string reason,
+            DependencyNodeCore<NodeFactory> otherReasonNode)
+        {
+            return TryAddDependenciesForReflectedType(
+                dependencies,
+                dependencies,
+                factory,
+                type,
+                reason,
+                otherReasonNode);
+        }
+
+        private static bool TryAddDependenciesForReflectedType(
+            IDependencySink<NodeFactory> dependencies,
+            DependencySink<NodeFactory>? conditionalDependencies,
+            NodeFactory factory,
+            TypeDesc type,
+            string reason,
+            DependencyNodeCore<NodeFactory>? otherReasonNode)
         {
             try
             {
@@ -257,9 +338,8 @@ namespace ILCompiler
                     return false;
                 }
 
-                dependencies ??= new DependencyList();
 
-                dependencies.Add(factory.ReflectedType(type), reason);
+                AddDependency(dependencies, conditionalDependencies, factory.ReflectedType(type), reason, otherReasonNode);
 
                 // If there's any unknown genericness involved, try to create a fitting instantiation that would be usable at runtime.
                 // This is not a complete solution to the problem.
@@ -270,7 +350,12 @@ namespace ILCompiler
                     Instantiation inst = TypeExtensions.GetInstantiationThatMeetsConstraints(type.Instantiation, allowCanon: true);
                     if (!inst.IsNull)
                     {
-                        dependencies.Add(factory.ReflectedType(((MetadataType)type).MakeInstantiatedType(inst)), reason);
+                        AddDependency(
+                            dependencies,
+                            conditionalDependencies,
+                            factory.ReflectedType(((MetadataType)type).MakeInstantiatedType(inst)),
+                            reason,
+                            otherReasonNode);
                     }
                 }
             }
@@ -280,6 +365,24 @@ namespace ILCompiler
             }
 
             return true;
+        }
+
+        private static void AddDependency(
+            IDependencySink<NodeFactory> dependencies,
+            DependencySink<NodeFactory>? conditionalDependencies,
+            DependencyNodeCore<NodeFactory> dependency,
+            string reason,
+            DependencyNodeCore<NodeFactory>? otherReasonNode)
+        {
+            if (otherReasonNode is null)
+            {
+                dependencies.Add(dependency, reason);
+            }
+            else
+            {
+                Debug.Assert(conditionalDependencies is not null);
+                conditionalDependencies.AddConditional(dependency, otherReasonNode, reason);
+            }
         }
     }
 }

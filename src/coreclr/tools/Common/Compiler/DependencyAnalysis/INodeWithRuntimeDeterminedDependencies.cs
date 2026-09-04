@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
+#nullable enable
 
 using Internal.TypeSystem;
-using DependencyListEntry = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyListEntry;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -15,8 +15,16 @@ namespace ILCompiler.DependencyAnalysis
     public interface INodeWithRuntimeDeterminedDependencies
     {
         /// <summary>
-        /// Instantiates runtime determined dependencies of this node using the supplied generic context.
+        /// Instantiates runtime determined dependencies of this node using the
+        /// supplied generic context. If <paramref name="otherReasonNode"/> is
+        /// not null, the dependencies are considered conditional.
         /// </summary>
-        IEnumerable<DependencyListEntry> InstantiateDependencies(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, bool isConcreteInstantiation);
+        void AddDependencies(
+            DependencySink<NodeFactory> sink,
+            NodeFactory factory,
+            Instantiation typeInstantiation,
+            Instantiation methodInstantiation,
+            bool isConcreteInstantiation,
+            DependencyNodeCore<NodeFactory>? otherReasonNode);
     }
 }

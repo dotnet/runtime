@@ -207,19 +207,22 @@ namespace ILCompiler.DependencyAnalysis
             _conditionalDependencies = result ?? (IReadOnlyCollection<CombinedDependencyListEntry>)Array.Empty<CombinedDependencyListEntry>();
         }
 
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
+        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
             System.Diagnostics.Debug.Assert(_conditionalDependencies != null);
-            return _conditionalDependencies;
+            foreach (CombinedDependencyListEntry dependency in _conditionalDependencies)
+            {
+                sink.Add(dependency);
+            }
         }
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
             // Call GetTypeDefinition in case the base is an instantiated generic type.
             TypeDesc baseType = _type.BaseType?.GetTypeDefinition();
             if (baseType != null)
             {
-                yield return new(factory.ConstructedType((EcmaType)baseType), "Base type");
+                sink.Add(new DependencyListEntry(factory.ConstructedType((EcmaType)baseType), "Base type"));
             }
         }
 
@@ -231,7 +234,7 @@ namespace ILCompiler.DependencyAnalysis
         public override bool InterestingForDynamicDependencyAnalysis => false;
         public override bool HasDynamicDependencies => false;
         public override bool StaticDependenciesAreComputed => _conditionalDependencies != null;
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory) => null;
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink<NodeFactory> sink, NodeFactory factory) { }
 
         private static MethodImplementationHandle TryGetMethodImplementationHandle(EcmaType implementingType, EcmaMethod declMethod)
         {

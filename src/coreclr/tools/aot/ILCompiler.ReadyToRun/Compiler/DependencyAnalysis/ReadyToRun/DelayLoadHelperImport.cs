@@ -7,6 +7,7 @@ using System.Diagnostics;
 using Internal.Text;
 using Internal.TypeSystem;
 using Internal.ReadyToRunConstants;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -97,21 +98,17 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
         }
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
             if (_delayLoadHelper is not null)
             {
-                return new DependencyListEntry[]
-                {
+                sink.AddRange(
                     new DependencyListEntry(_delayLoadHelper, "Delay load helper thunk for ready-to-run fixup import"),
-                    new DependencyListEntry(ImportSignature, "Signature for ready-to-run fixup import"),
-                };
+                    new DependencyListEntry(ImportSignature, "Signature for ready-to-run fixup import"));
+                return;
             }
 
-            return new DependencyListEntry[]
-            {
-                new DependencyListEntry(ImportSignature, "Signature for ready-to-run fixup import"),
-            };
+            sink.Add(ImportSignature, "Signature for ready-to-run fixup import");
         }
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)

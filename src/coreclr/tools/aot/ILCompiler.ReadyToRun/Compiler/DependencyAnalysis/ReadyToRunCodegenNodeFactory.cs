@@ -199,7 +199,7 @@ namespace ILCompiler.DependencyAnalysis
             return _arrayInterfaceMethods.GetOrAdd((ArrayType)arrayType.ConvertToCanonForm(CanonicalFormKind.Specific));
         }
 
-        public void AddVirtualMethodDiscoveryDependencies(ref DependencyList dependencies, TypeDesc type)
+        public void AddVirtualMethodDiscoveryDependencies(DependencySink<NodeFactory> dependencies, TypeDesc type)
         {
             if (CompilationCurrentPhase != 0)
                 return;
@@ -214,14 +214,12 @@ namespace ILCompiler.DependencyAnalysis
                 type.IsDefType &&
                 CompilationModuleGroup.VersionsWithType(type))
             {
-                dependencies ??= new DependencyList();
                 dependencies.Add(InheritedVirtualMethods(type), "Inherited virtual/interface methods on type");
             }
             // Arrays implement the generic collection interfaces through SZArrayHelper. Discover those
             // implementations so that e.g. ((ICollection<int>)intArray).Count gets discovered.
             else if (type.IsSzArray)
             {
-                dependencies ??= new DependencyList();
                 dependencies.Add(ArrayInterfaceMethods((ArrayType)type), "Array generic interface methods");
             }
         }

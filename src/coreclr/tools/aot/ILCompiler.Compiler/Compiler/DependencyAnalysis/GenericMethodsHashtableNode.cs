@@ -8,6 +8,7 @@ using Internal.Text;
 using Internal.TypeSystem;
 using Internal.NativeFormat;
 using Internal.Runtime;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -93,9 +94,8 @@ namespace ILCompiler.DependencyAnalysis
             return new ObjectData(streamBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
         }
 
-        public static void GetGenericMethodsHashtableDependenciesForMethod(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
+        public static void GetGenericMethodsHashtableDependenciesForMethod(DependencySink<NodeFactory> dependencies, NodeFactory factory, MethodDesc method)
         {
-            dependencies ??= new DependencyList();
 
             Debug.Assert(method.HasInstantiation && !method.IsCanonicalMethod(CanonicalFormKind.Any));
 
@@ -110,7 +110,7 @@ namespace ILCompiler.DependencyAnalysis
                 dependencies.Add(new DependencyListEntry(argNode, "GenericMethodsHashtable entry instantiation argument"));
             }
 
-            factory.MetadataManager.GetNativeLayoutMetadataDependencies(ref dependencies, factory, GetMethodForMetadata(method, out _, out _));
+            factory.MetadataManager.AddNativeLayoutMetadataDependencies(dependencies, factory, GetMethodForMetadata(method, out _, out _));
         }
 
         private static MethodDesc GetMethodForMetadata(MethodDesc method, out bool isAsyncVariant, out bool isReturnDroppingAsyncThunk)

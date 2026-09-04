@@ -9,6 +9,7 @@ using Internal.Runtime;
 using Internal.Text;
 using Internal.TypeSystem;
 
+using ILCompiler.DependencyAnalysisFramework;
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
 using DependencyListEntry = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyListEntry;
 
@@ -96,26 +97,22 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool StaticDependenciesAreComputed => true;
 
-        public static IEnumerable<DependencyListEntry> GetCellDependencies(NodeFactory factory, MethodDesc targetMethod)
+        public static void AddCellDependencies(DependencySink<NodeFactory> dependencies, NodeFactory factory, MethodDesc targetMethod)
         {
-            DependencyList result = new DependencyList();
-
             MethodDesc canonMethod = targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
-            result.Add(factory.GVMDependencies(canonMethod), "GVM dependencies");
+            dependencies.Add(factory.GVMDependencies(canonMethod), "GVM dependencies");
 
             // GVM analysis happens on canonical forms, but this is potentially injecting new genericness
             // into the system. Ensure reflection analysis can still see this.
             if (targetMethod.IsAbstract)
-                factory.MetadataManager.GetDependenciesDueToMethodCodePresence(ref result, factory, canonMethod, methodIL: null);
+                factory.MetadataManager.GetDependenciesDueToMethodCodePresence(dependencies, factory, canonMethod, methodIL: null);
 
-            factory.MetadataManager.GetDependenciesDueToVirtualMethodReflectability(ref result, factory, targetMethod);
+            factory.MetadataManager.AddDependenciesDueToVirtualMethodReflectability(dependencies, factory, targetMethod);
 
-            factory.MetadataManager.GetNativeLayoutMetadataDependencies(ref result, factory, GetMethodForMetadata(targetMethod, out _));
+            factory.MetadataManager.AddNativeLayoutMetadataDependencies(dependencies, factory, GetMethodForMetadata(targetMethod, out _));
 
-            result.Add(factory.MaximallyConstructableType(targetMethod.OwningType), "Owning type of GVM decl");
-            result.Add(factory.MetadataEnabledGenericComposition(targetMethod.Instantiation), "GVM instantiation info");
-
-            return result;
+            dependencies.Add(factory.MaximallyConstructableType(targetMethod.OwningType), "Owning type of GVM decl");
+            dependencies.Add(factory.MetadataEnabledGenericComposition(targetMethod.Instantiation), "GVM instantiation info");
         }
 
         public static MethodDesc GetMethodForMetadata(MethodDesc method, out bool isAsyncVariant)

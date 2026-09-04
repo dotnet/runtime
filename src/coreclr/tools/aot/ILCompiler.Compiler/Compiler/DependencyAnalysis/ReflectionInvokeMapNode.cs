@@ -9,6 +9,7 @@ using Internal.NativeFormat;
 
 using Debug = System.Diagnostics.Debug;
 using InvokeTableFlags = Internal.Runtime.InvokeTableFlags;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -37,12 +38,11 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
-        public static void AddDependenciesDueToReflectability(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
+        public static void AddDependenciesDueToReflectability(IDependencySink<NodeFactory> dependencies, NodeFactory factory, MethodDesc method)
         {
             Debug.Assert(factory.MetadataManager.IsReflectionInvokable(method));
             Debug.Assert(method.GetCanonMethodTarget(CanonicalFormKind.Specific) == method);
 
-            dependencies ??= new DependencyList();
 
             dependencies.Add(factory.MaximallyConstructableType(method.OwningType), "Reflection invoke");
 
@@ -52,9 +52,9 @@ namespace ILCompiler.DependencyAnalysis
                 dependencies.Add(factory.MethodEntrypoint(invokeStub), "Reflection invoke");
 
                 var signature = method.Signature;
-                AddSignatureDependency(ref dependencies, factory, method, signature.ReturnType, "Reflection invoke", isOut: true);
+                AddSignatureDependency(dependencies, factory, method, signature.ReturnType, "Reflection invoke", isOut: true);
                 foreach (var parameterType in signature)
-                    AddSignatureDependency(ref dependencies, factory, method, parameterType, "Reflection invoke", isOut: false);
+                    AddSignatureDependency(dependencies, factory, method, parameterType, "Reflection invoke", isOut: false);
             }
 
             if (method.OwningType.IsValueType && !method.Signature.IsStatic)
@@ -77,10 +77,10 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
-            ReflectionVirtualInvokeMapNode.GetVirtualInvokeMapDependencies(ref dependencies, factory, method);
+            ReflectionVirtualInvokeMapNode.AddVirtualInvokeMapDependencies(dependencies, factory, method);
         }
 
-        internal static void AddSignatureDependency(ref DependencyList dependencies, NodeFactory factory, TypeSystemEntity referent, TypeDesc type, string reason, bool isOut)
+        internal static void AddSignatureDependency(IDependencySink<NodeFactory> dependencies, NodeFactory factory, TypeSystemEntity referent, TypeDesc type, string reason, bool isOut)
         {
             if (type.IsByRef)
             {
@@ -104,7 +104,7 @@ namespace ILCompiler.DependencyAnalysis
                 // Non-valuetypes are only needed for the purposes of casting/type checks.
                 // If this is a non-exact type, we need the type loader template to get the type handle.
                 if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
-                    GenericTypesTemplateMap.GetTemplateTypeDependencies(ref dependencies, factory, type.NormalizeInstantiation());
+                    GenericTypesTemplateMap.AddTemplateTypeDependencies(dependencies, factory, type.NormalizeInstantiation());
                 else if (isOut && !type.IsGCPointer)
                     dependencies.Add(factory.MaximallyConstructableType(type.NormalizeInstantiation()), reason);
                 else

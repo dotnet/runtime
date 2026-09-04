@@ -6,6 +6,7 @@ using System;
 using Internal.NativeFormat;
 using Internal.Text;
 using Internal.TypeSystem;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -34,9 +35,8 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
-        public static void GetHashtableDependencies(ref DependencyList dependencies, NodeFactory factory, FunctionPointerType type)
+        public static void AddHashtableDependencies(DependencySink<NodeFactory> dependencies, NodeFactory factory, FunctionPointerType type)
         {
-            dependencies ??= new DependencyList();
             dependencies.Add(factory.NecessaryTypeSymbol(type.Signature.ReturnType), "Function pointer type composition");
             foreach (TypeDesc paramType in type.Signature)
                 dependencies.Add(factory.NecessaryTypeSymbol(paramType), "Function pointer type composition");

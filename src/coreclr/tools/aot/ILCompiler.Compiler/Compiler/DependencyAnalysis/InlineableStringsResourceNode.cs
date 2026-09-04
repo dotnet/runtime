@@ -58,19 +58,18 @@ namespace ILCompiler.DependencyAnalysis
             return srType.GetMethod(ResourceAccessorGetStringMethodName, null) != null;
         }
 
-        public static void AddDependenciesDueToResourceStringUse(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
+        public static void AddDependenciesDueToResourceStringUse(IDependencySink<NodeFactory> dependencies, NodeFactory factory, MethodDesc method)
         {
             if (method.Name == ResourceAccessorGetStringMethodName && method.OwningType is MetadataType mdType
                 && mdType.Name == ResourceAccessorTypeName && mdType.Namespace == ResourceAccessorTypeNamespace)
             {
-                dependencies ??= new DependencyList();
                 dependencies.Add(factory.InlineableStringResource((EcmaModule)mdType.Module), "Using the System.SR class");
             }
         }
 
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context) => null;
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context) => null;
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => null;
+        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory context) { }
+        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory context) { }
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink<NodeFactory> sink, NodeFactory context) { }
         protected override string GetName(NodeFactory context)
             => $"String resources for {_module.Assembly.GetName().Name}";
     }

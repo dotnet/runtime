@@ -8,6 +8,7 @@ using Internal.Text;
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -119,16 +120,16 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool IsShareable => true;
 
-        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        protected override void ComputeNonRelocationBasedDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
             if (_id == ReadyToRunHelperId.ResolveVirtualFunction)
             {
                 var targetMethod = (MethodDesc)_target;
 
-                DependencyList dependencyList = new DependencyList();
+                DependencySink<NodeFactory> dependencyList = sink;
 
 #if !SUPPORT_JIT
-                factory.MetadataManager.GetDependenciesDueToVirtualMethodReflectability(ref dependencyList, factory, targetMethod);
+                factory.MetadataManager.AddDependenciesDueToVirtualMethodReflectability(dependencyList, factory, targetMethod);
 
                 if (!factory.VTable(targetMethod.OwningType).HasKnownVirtualMethodUse)
 
@@ -137,11 +138,11 @@ namespace ILCompiler.DependencyAnalysis
                 }
 #endif
 
-                return dependencyList;
+                return;
             }
             else if (_id == ReadyToRunHelperId.DelegateCtor)
             {
-                DependencyList dependencyList = null;
+                DependencySink<NodeFactory> dependencyList = sink;
 
                 var info = (DelegateCreationInfo)_target;
                 if (info.NeedsVirtualMethodUseTracking)
@@ -149,33 +150,30 @@ namespace ILCompiler.DependencyAnalysis
                     MethodDesc targetMethod = info.TargetMethod;
 
 #if !SUPPORT_JIT
-                    factory.MetadataManager.GetDependenciesDueToVirtualMethodReflectability(ref dependencyList, factory, targetMethod);
+                    factory.MetadataManager.AddDependenciesDueToVirtualMethodReflectability(dependencyList, factory, targetMethod);
 
                     if (!factory.VTable(info.TargetMethod.OwningType).HasKnownVirtualMethodUse)
                     {
-                        dependencyList ??= new DependencyList();
+
                         dependencyList.Add(factory.VirtualMethodUse(info.TargetMethod), "ReadyToRun Delegate to virtual method");
                     }
 #endif
                 }
 
-                factory.MetadataManager.GetDependenciesDueToDelegateCreation(ref dependencyList, factory, info.DelegateType,
+                factory.MetadataManager.GetDependenciesDueToDelegateCreation(dependencyList, factory, info.DelegateType,
                     info.PossiblyUnresolvedTargetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific));
 
-                return dependencyList;
+                return;
             }
-
-            return null;
         }
 
         public override bool HasConditionalStaticDependencies => _id == ReadyToRunHelperId.DelegateCtor;
 
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
+        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            List<CombinedDependencyListEntry> dependencyList = new List<CombinedDependencyListEntry>();
+            DependencySink<NodeFactory> dependencyList = sink;
             var info = (DelegateCreationInfo)_target;
-            factory.MetadataManager.GetDependenciesDueToDelegateCreation(ref dependencyList, factory, info.DelegateType, info.PossiblyUnresolvedTargetMethod);
-            return dependencyList;
+            factory.MetadataManager.GetConditionalDependenciesDueToDelegateCreation(dependencyList, factory, info.DelegateType, info.PossiblyUnresolvedTargetMethod);
         }
 
 #if !SUPPORT_JIT

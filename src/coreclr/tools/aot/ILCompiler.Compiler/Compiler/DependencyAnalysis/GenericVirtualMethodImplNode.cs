@@ -34,11 +34,11 @@ namespace ILCompiler.DependencyAnalysis
         public override bool StaticDependenciesAreComputed => true;
         protected override string GetName(NodeFactory factory) => "__GVMImplNode_" + factory.NameMangler.GetMangledMethodName(_method);
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            DependencyList dependencies = null;
+            DependencySink<NodeFactory> dependencies = sink;
 
-            factory.MetadataManager.GetDependenciesDueToVirtualMethodReflectability(ref dependencies, factory, _method);
+            factory.MetadataManager.AddDependenciesDueToVirtualMethodReflectability(dependencies, factory, _method);
 
             bool validInstantiation =
                 _method.IsSharedByGenericInstantiations || (      // Non-exact methods are always valid instantiations (always pass constraints check)
@@ -49,7 +49,7 @@ namespace ILCompiler.DependencyAnalysis
             if (validInstantiation)
             {
                 bool getUnboxingStub = _method.OwningType.IsValueType && !_method.Signature.IsStatic;
-                dependencies ??= new DependencyList();
+
                 dependencies.Add(factory.MethodEntrypoint(_method, getUnboxingStub), "GVM Dependency - Canon method");
 
                 if (_method.IsSharedByGenericInstantiations)
@@ -64,13 +64,12 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
-            return dependencies;
         }
 
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context) => null;
+        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory context) { }
 
         public override bool HasDynamicDependencies => false;
 
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory) => null;
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink<NodeFactory> sink, NodeFactory factory) { }
     }
 }

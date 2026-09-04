@@ -28,12 +28,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override bool StaticDependenciesAreComputed => true;
 
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context) => null;
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => null;
+        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory context) { }
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink<NodeFactory> sink, NodeFactory context) { }
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
+        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory context)
         {
-            DependencyList dependencies = new DependencyList();
+            DependencySink<NodeFactory> dependencies = sink;
 
             foreach (MethodDesc method in Type.GetAllMethods())
             {
@@ -50,8 +50,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     }
                 }
             }
-
-            return dependencies;
         }
 
         protected override string GetName(NodeFactory factory) => $"All methods on type {Type.ToString()}";

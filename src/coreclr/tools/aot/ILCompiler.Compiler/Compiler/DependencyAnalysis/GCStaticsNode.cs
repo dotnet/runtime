@@ -8,6 +8,7 @@ using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
 using GCStaticRegionConstants = Internal.Runtime.GCStaticRegionConstants;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -51,36 +52,31 @@ namespace ILCompiler.DependencyAnalysis
             return factory.GCStaticEEType(map, requiresAlign8);
         }
 
-        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        protected override void ComputeNonRelocationBasedDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            DependencyList dependencyList = new DependencyList();
+            DependencySink<NodeFactory> dependencyList = sink;
 
             if (factory.PreinitializationManager.HasEagerStaticConstructor(_type))
             {
                 dependencyList.Add(factory.EagerCctorIndirection(_type.GetStaticConstructor()), "Eager .cctor");
             }
 
-            ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(ref dependencyList, factory, _type.Module);
+            ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(dependencyList, factory, _type.Module);
 
             dependencyList.Add(factory.GCStaticsRegion, "GCStatics Region");
-
             dependencyList.Add(factory.GCStaticIndirection(_type), "GC statics indirection");
-
-            return dependencyList;
         }
 
         public override bool HasConditionalStaticDependencies => _type.ConvertToCanonForm(CanonicalFormKind.Specific) != _type;
 
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
+        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
             // If we have a type loader template for this type, we need to keep track of the generated
             // bases in the type info hashtable. The type symbol node does such accounting.
-            return new CombinedDependencyListEntry[]
-            {
+            sink.Add(
                 new CombinedDependencyListEntry(factory.NecessaryTypeSymbol(_type),
                     factory.NativeLayout.TemplateTypeLayout(_type.ConvertToCanonForm(CanonicalFormKind.Specific)),
-                    "Keeping track of template-constructable type static bases"),
-            };
+                    "Keeping track of template-constructable type static bases"));
         }
 
         public override bool StaticDependenciesAreComputed => true;

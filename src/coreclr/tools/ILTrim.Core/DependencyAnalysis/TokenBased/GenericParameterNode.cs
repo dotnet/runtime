@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using Internal.TypeSystem.Ecma;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -25,21 +26,20 @@ namespace ILCompiler.DependencyAnalysis
         private int _ownerCodedIndex = -1;
         private int _index = -1;
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
             GenericParameter genericParam = _module.MetadataReader.GetGenericParameter(Handle);
 
-            DependencyList dependencies = null;
+            DependencySink<NodeFactory> dependencies = sink;
 
             foreach (var genericParamConstrain in genericParam.GetConstraints())
             {
-                dependencies ??= new DependencyList();
+
                 dependencies.Add(factory.GenericParameterConstraint(_module, genericParamConstrain), "Generic Parameter Constraint of Generic Parameter");
             }
 
-            CustomAttributeNode.AddDependenciesDueToCustomAttributes(ref dependencies, factory, _module, genericParam.GetCustomAttributes());
+            CustomAttributeNode.AddDependenciesDueToCustomAttributes(dependencies, factory, _module, genericParam.GetCustomAttributes());
 
-            return dependencies;
         }
 
         protected override EntityHandle WriteInternal(ModuleWritingContext writeContext)

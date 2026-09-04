@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using Internal.Text;
 using Internal.TypeSystem;
 using Internal.NativeFormat;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -43,7 +44,7 @@ namespace ILCompiler.DependencyAnalysis
         /// The dependencies returned from this function will be reported as static dependencies of the TypeGVMEntriesNode,
         /// which we create for each type that has generic virtual methods.
         /// </summary>
-        public static void GetGenericVirtualMethodImplementationDependencies(ref DependencyList dependencies, NodeFactory factory, MethodDesc callingMethod, MethodDesc implementationMethod)
+        public static void AddGenericVirtualMethodImplementationDependencies(DependencySink<NodeFactory> dependencies, NodeFactory factory, MethodDesc callingMethod, MethodDesc implementationMethod)
         {
             Debug.Assert(!callingMethod.OwningType.IsInterface);
 
@@ -51,9 +52,9 @@ namespace ILCompiler.DependencyAnalysis
             MethodDesc openCallingMethod = callingMethod.GetTypicalMethodDefinition();
             MethodDesc openImplementationMethod = implementationMethod.GetTypicalMethodDefinition();
 
-            factory.MetadataManager.GetNativeLayoutMetadataDependencies(ref dependencies, factory, openCallingMethod);
+            factory.MetadataManager.AddNativeLayoutMetadataDependencies(dependencies, factory, openCallingMethod);
             dependencies.Add(factory.NecessaryTypeSymbol(openCallingMethod.OwningType), "Owning type of GVM declaration");
-            factory.MetadataManager.GetNativeLayoutMetadataDependencies(ref dependencies, factory, openImplementationMethod);
+            factory.MetadataManager.AddNativeLayoutMetadataDependencies(dependencies, factory, openImplementationMethod);
             dependencies.Add(factory.NecessaryTypeSymbol(openImplementationMethod.OwningType), "Owning type of GVM implementation");
         }
 

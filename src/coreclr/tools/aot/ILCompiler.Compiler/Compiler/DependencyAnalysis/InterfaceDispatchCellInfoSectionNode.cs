@@ -9,6 +9,7 @@ using Internal.Runtime;
 using Internal.Text;
 using Internal.TypeSystem;
 
+using ILCompiler.DependencyAnalysisFramework;
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
 using DependencyListEntry = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyListEntry;
 
@@ -89,20 +90,16 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool StaticDependenciesAreComputed => true;
 
-        public static IEnumerable<DependencyListEntry> GetCellDependencies(NodeFactory factory, MethodDesc targetMethod)
+        public static void AddCellDependencies(DependencySink<NodeFactory> dependencies, NodeFactory factory, MethodDesc targetMethod)
         {
-            DependencyList result = new DependencyList();
-
             if (!factory.VTable(targetMethod.OwningType).HasKnownVirtualMethodUse)
             {
-                result.Add(factory.VirtualMethodUse(targetMethod), "Interface method use");
+                dependencies.Add(factory.VirtualMethodUse(targetMethod), "Interface method use");
             }
 
-            factory.MetadataManager.GetDependenciesDueToVirtualMethodReflectability(ref result, factory, targetMethod);
+            factory.MetadataManager.AddDependenciesDueToVirtualMethodReflectability(dependencies, factory, targetMethod);
 
-            result.Add(GetInterfaceTypeNode(factory, targetMethod), "Interface type");
-
-            return result;
+            dependencies.Add(GetInterfaceTypeNode(factory, targetMethod), "Interface type");
         }
 
         private static IEETypeNode GetInterfaceTypeNode(NodeFactory factory, MethodDesc targetMethod)

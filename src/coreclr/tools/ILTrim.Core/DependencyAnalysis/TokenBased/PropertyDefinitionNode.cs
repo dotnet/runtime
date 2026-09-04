@@ -7,6 +7,7 @@ using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 
 using Internal.TypeSystem.Ecma;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -22,7 +23,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private PropertyDefinitionHandle Handle => (PropertyDefinitionHandle)_handle;
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
             MetadataReader reader = _module.MetadataReader;
 
@@ -30,7 +31,7 @@ namespace ILCompiler.DependencyAnalysis
 
             TypeDefinitionHandle declaringTypeHandle = property.GetDeclaringType();
 
-            DependencyList dependencies = new DependencyList();
+            DependencySink<NodeFactory> dependencies = sink;
 
             // We intentionally do NOT root accessor methods here. The accessor methods are kept
             // independently when they are called. The property definition is pulled in by the
@@ -43,10 +44,7 @@ namespace ILCompiler.DependencyAnalysis
                 dependencies);
 
             dependencies.Add(factory.TypeDefinition(_module, declaringTypeHandle), "Property owning type");
-
-            CustomAttributeNode.AddDependenciesDueToCustomAttributes(ref dependencies, factory, _module, property.GetCustomAttributes());
-
-            return dependencies;
+            CustomAttributeNode.AddDependenciesDueToCustomAttributes(dependencies, factory, _module, property.GetCustomAttributes());
         }
 
         protected override EntityHandle WriteInternal(ModuleWritingContext writeContext)

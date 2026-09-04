@@ -7,6 +7,7 @@ using System.Diagnostics;
 using Internal.Text;
 using Internal.TypeSystem;
 using Internal.NativeFormat;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -68,14 +69,13 @@ namespace ILCompiler.DependencyAnalysis
             return new ObjectData(streamBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
         }
 
-        public static void GetTemplateTypeDependencies(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
+        public static void AddTemplateTypeDependencies(IDependencySink<NodeFactory> dependencies, NodeFactory factory, TypeDesc type)
         {
             TypeDesc templateType = ConvertArrayOfTToRegularArray(factory, type);
 
             if (!IsEligibleToHaveATemplate(templateType))
                 return;
 
-            dependencies ??= new DependencyList();
             dependencies.Add(new DependencyListEntry(factory.NecessaryTypeSymbol(templateType), "Template type"));
             dependencies.Add(new DependencyListEntry(factory.NativeLayout.TemplateTypeLayout(templateType), "Template Type Layout"));
         }

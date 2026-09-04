@@ -7,6 +7,7 @@ using System.Diagnostics;
 using Internal.Text;
 using Internal.TypeSystem;
 using Internal.NativeFormat;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -72,12 +73,11 @@ namespace ILCompiler.DependencyAnalysis
             return new ObjectData(streamBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
         }
 
-        public static void GetTemplateMethodDependencies(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
+        public static void AddTemplateMethodDependencies(IDependencySink<NodeFactory> dependencies, NodeFactory factory, MethodDesc method)
         {
             if (!IsEligibleToBeATemplate(method))
                 return;
 
-            dependencies ??= new DependencyList();
             dependencies.Add(new DependencyListEntry(factory.NativeLayout.TemplateMethodEntry(method), "Template Method Entry"));
             dependencies.Add(new DependencyListEntry(factory.NativeLayout.TemplateMethodLayout(method), "Template Method Layout"));
         }

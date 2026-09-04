@@ -118,25 +118,25 @@ namespace ILCompiler
                 switch (member)
                 {
                     case MethodDesc m:
-                        RootingHelpers.TryGetDependenciesForReflectedMethod(ref _dependencies, _factory, m, reason);
+                        RootingHelpers.TryAddDependenciesForReflectedMethod(_dependencies, _factory, m, reason);
                         break;
                     case FieldDesc field:
-                        RootingHelpers.TryGetDependenciesForReflectedField(ref _dependencies, _factory, field, reason);
+                        RootingHelpers.TryAddDependenciesForReflectedField(_dependencies, _factory, field, reason);
                         break;
                     case MetadataType nestedType:
-                        RootingHelpers.TryGetDependenciesForReflectedType(ref _dependencies, _factory, nestedType, reason);
+                        RootingHelpers.TryAddDependenciesForReflectedType(_dependencies, _factory, nestedType, reason);
                         break;
                     case PropertyPseudoDesc property:
                         if (property.GetMethod != null)
-                            RootingHelpers.TryGetDependenciesForReflectedMethod(ref _dependencies, _factory, property.GetMethod, reason);
+                            RootingHelpers.TryAddDependenciesForReflectedMethod(_dependencies, _factory, property.GetMethod, reason);
                         if (property.SetMethod != null)
-                            RootingHelpers.TryGetDependenciesForReflectedMethod(ref _dependencies, _factory, property.SetMethod, reason);
+                            RootingHelpers.TryAddDependenciesForReflectedMethod(_dependencies, _factory, property.SetMethod, reason);
                         break;
                     case EventPseudoDesc @event:
                         if (@event.AddMethod != null)
-                            RootingHelpers.TryGetDependenciesForReflectedMethod(ref _dependencies, _factory, @event.AddMethod, reason);
+                            RootingHelpers.TryAddDependenciesForReflectedMethod(_dependencies, _factory, @event.AddMethod, reason);
                         if (@event.RemoveMethod != null)
-                            RootingHelpers.TryGetDependenciesForReflectedMethod(ref _dependencies, _factory, @event.RemoveMethod, reason);
+                            RootingHelpers.TryAddDependenciesForReflectedMethod(_dependencies, _factory, @event.RemoveMethod, reason);
                         break;
                     default:
                         Debug.Fail(member.GetType().ToString());
@@ -205,7 +205,7 @@ namespace ILCompiler
             if (!required)
                 return;
 
-            RootingHelpers.TryGetDependenciesForReflectedType(ref _dependencies, _factory, type, "member marked via descriptor");
+            RootingHelpers.TryAddDependenciesForReflectedType(_dependencies, _factory, type, "member marked via descriptor");
 
 #if false
             // Getting the dependencies of a nested type should mark the rest, this code is not needed

@@ -35,37 +35,34 @@ namespace ILCompiler.DependencyAnalysis
 
         public FieldDesc Field => _field;
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            DependencyList dependencies = new DependencyList();
+            DependencySink<NodeFactory> dependencies = sink;
             dependencies.Add(factory.TypeMetadata(_field.OwningType), "Owning type metadata");
 
             if (_field is EcmaField ecmaField)
             {
-                DynamicDependencyAttributesOnEntityNode.AddDependenciesDueToDynamicDependencyAttribute(ref dependencies, factory, ecmaField);
+                DynamicDependencyAttributesOnEntityNode.AddDependenciesDueToDynamicDependencyAttribute(dependencies, factory, ecmaField);
 
                 // On a reflectable field, perform generic data flow for the field's type
                 // This is a compensation for the DI issue described in https://github.com/dotnet/runtime/issues/81358
-                GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(ref dependencies, factory, new MessageOrigin(_field), ecmaField.FieldType, ecmaField.OwningType);
+                GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(dependencies, factory, new MessageOrigin(_field), ecmaField.FieldType, ecmaField.OwningType);
             }
 
             if (_field.HasEmbeddedSignatureData)
             {
                 foreach (var sigData in _field.GetEmbeddedSignatureData())
                     if (sigData.type != null)
-                        TypeMetadataNode.GetMetadataDependencies(ref dependencies, factory, sigData.type, "Modifier in a field signature");
+                        TypeMetadataNode.AddMetadataDependencies(dependencies, factory, sigData.type, "Modifier in a field signature");
             }
 
-            TypeMetadataNode.GetMetadataDependencies(ref dependencies, factory, _field.FieldType, "Type of the field");
-
-            return dependencies;
+            TypeMetadataNode.AddMetadataDependencies(dependencies, factory, _field.FieldType, "Type of the field");
         }
 
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
+        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            var dependencies = new List<CombinedDependencyListEntry>();
-            CustomAttributeBasedDependencyAlgorithm.AddDependenciesDueToCustomAttributes(ref dependencies, factory, (EcmaField)_field);
-            return dependencies;
+            DependencySink<NodeFactory> dependencies = sink;
+            CustomAttributeBasedDependencyAlgorithm.AddDependenciesDueToCustomAttributes(dependencies, factory, (EcmaField)_field);
         }
 
         protected override string GetName(NodeFactory factory)
@@ -83,6 +80,6 @@ namespace ILCompiler.DependencyAnalysis
         public override bool HasDynamicDependencies => false;
         public override bool HasConditionalStaticDependencies => true;
         public override bool StaticDependenciesAreComputed => true;
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory) => null;
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink<NodeFactory> sink, NodeFactory factory) { }
     }
 }

@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Linq;
 using Internal.Text;
 using Internal.TypeSystem;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -312,7 +313,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return sb.ToString();
         }
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context) => null;
+        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory context) { }
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {

@@ -38,30 +38,30 @@ namespace ILCompiler.DependencyAnalysis
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer) => comparer.Compare(TypeMapGroup, ((ProxyTypeMapNode)other).TypeMapGroup);
 
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context)
+        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory context)
         {
             foreach (var (key, value) in _mapEntries)
             {
-                yield return new CombinedDependencyListEntry(
+                sink.Add(new CombinedDependencyListEntry(
                     context.MetadataTypeSymbol(value),
                     context.MaximallyConstructableType(key),
-                    "Proxy type map entry");
+                    "Proxy type map entry"));
 
                 // If the key type has a canonical form, it could be created at runtime by the type loader.
                 // If there is a type loader template for it, create the generic type instantiation eagerly.
                 TypeDesc canonKey = key.ConvertToCanonForm(CanonicalFormKind.Specific);
                 if (canonKey != key && GenericTypesTemplateMap.IsEligibleToHaveATemplate(canonKey))
                 {
-                    yield return new CombinedDependencyListEntry(
+                    sink.Add(new CombinedDependencyListEntry(
                         context.MaximallyConstructableType(key),
                         context.NativeLayout.TemplateTypeLayout(canonKey),
-                        "Proxy map entry that could be loaded at runtime");
+                        "Proxy map entry that could be loaded at runtime"));
                 }
             }
         }
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context) => Array.Empty<DependencyListEntry>();
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => Array.Empty<CombinedDependencyListEntry>();
+        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory context) { }
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink<NodeFactory> sink, NodeFactory context) { }
         protected override string GetName(NodeFactory context) => $"Proxy type map: {TypeMapGroup}";
 
         private IEnumerable<(IEETypeNode key, IEETypeNode value)> GetMarkedEntries(NodeFactory factory)

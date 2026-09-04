@@ -30,7 +30,7 @@ namespace ILCompiler.DependencyAnalysis
             return $"Object.GetType dependencies for {_type}";
         }
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
 #if ILTRIM
             FlowAnnotations flowAnnotations = factory.FlowAnnotations;
@@ -41,31 +41,29 @@ namespace ILCompiler.DependencyAnalysis
             Logger logger = mdManager.Logger;
 #endif
 
-            DependencyList result = Dataflow.ReflectionMethodBodyScanner.ProcessTypeGetTypeDataflow(factory, flowAnnotations, logger, _type);
+            Dataflow.ReflectionMethodBodyScanner.AddTypeGetTypeDataflowDependencies(sink, factory, flowAnnotations, logger, _type);
 
             MetadataType baseType = _type.BaseType;
             if (baseType != null && flowAnnotations.GetTypeAnnotation(baseType) != default)
             {
-                result.Add(factory.ObjectGetTypeFlowDependencies(baseType), "Apply annotations to bases");
+                sink.Add(factory.ObjectGetTypeFlowDependencies(baseType), "Apply annotations to bases");
             }
 
             foreach (DefType interfaceType in _type.RuntimeInterfaces)
             {
                 if (flowAnnotations.GetTypeAnnotation(interfaceType) != default)
                 {
-                    result.Add(factory.ObjectGetTypeFlowDependencies((MetadataType)interfaceType), "Apply annotations to interfaces");
+                    sink.Add(factory.ObjectGetTypeFlowDependencies((MetadataType)interfaceType), "Apply annotations to interfaces");
                 }
             }
-
-            return result;
         }
 
         public override bool InterestingForDynamicDependencyAnalysis => false;
         public override bool HasDynamicDependencies => false;
         public override bool HasConditionalStaticDependencies => false;
         public override bool StaticDependenciesAreComputed => true;
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory) => null;
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory) => null;
+        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory) { }
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink<NodeFactory> sink, NodeFactory factory) { }
 
     }
 }

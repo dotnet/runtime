@@ -12,6 +12,7 @@ using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
 using Mono.Linker;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -39,13 +40,13 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
             MetadataReader reader = _module.MetadataReader;
             MethodDefinition methodDef = reader.GetMethodDefinition(Handle);
             TypeDefinitionHandle declaringType = methodDef.GetDeclaringType();
 
-            DependencyList dependencies = new DependencyList();
+            DependencySink<NodeFactory> dependencies = sink;
 
             EcmaSignatureAnalyzer.AnalyzeMethodSignature(
                 _module,
@@ -61,7 +62,7 @@ namespace ILCompiler.DependencyAnalysis
                 dependencies.Add(factory.MethodBody(_module, Handle), "Method body");
             }
 
-            CustomAttributeNode.AddDependenciesDueToCustomAttributes(ref dependencies, factory, _module, methodDef.GetCustomAttributes());
+            CustomAttributeNode.AddDependenciesDueToCustomAttributes(dependencies, factory, _module, methodDef.GetCustomAttributes());
 
             foreach (ParameterHandle parameter in methodDef.GetParameters())
             {
@@ -87,7 +88,7 @@ namespace ILCompiler.DependencyAnalysis
                         AddInteropAllocatedType(factory, dependencies, ecmaByRefParam);
                 }
 
-                static void AddInteropAllocatedType(NodeFactory factory, DependencyList dependencies, EcmaType type)
+                static void AddInteropAllocatedType(NodeFactory factory, DependencySink<NodeFactory> dependencies, EcmaType type)
                 {
                     dependencies.Add(factory.ConstructedType(type), "Interop-allocated instance");
                     if (type.GetParameterlessConstructor() is EcmaMethod ctorMethod && factory.IsModuleTrimmed(ctorMethod.Module))
@@ -144,24 +145,22 @@ namespace ILCompiler.DependencyAnalysis
                         dependencies.Add(factory.MethodDefinition(_module, pairMethod.Handle), "Delegate BeginInvoke/EndInvoke pair");
                 }
             }
-
-            return dependencies;
         }
 
         // Instance methods on reference types conditionally depend on their bodies.
         public override bool HasConditionalStaticDependencies => IsInstanceMethodOnReferenceType;
 
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
+        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
             MethodDefinition methodDef = _module.MetadataReader.GetMethodDefinition(Handle);
             TypeDefinitionHandle declaringType = methodDef.GetDeclaringType();
             var ecmaType = (EcmaType)_module.GetObject(declaringType);
 
             // Conditionally depend on the method body if the declaring type was constructed.
-            yield return new(
+            sink.Add(new CombinedDependencyListEntry(
                 factory.MethodBody(_module, Handle),
                 factory.ConstructedType(ecmaType),
-                "Method body on constructed type");
+                "Method body on constructed type"));
         }
 
         protected override EntityHandle WriteInternal(ModuleWritingContext writeContext)

@@ -66,23 +66,23 @@ namespace ILCompiler.ReadyToRun
             return section.Place(tuple);
         }
 
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context) => [];
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
+        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory context) { }
+        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory context)
         {
-            yield return new DependencyListEntry(importProvider.GetImportToType(TypeMapGroup, TriggeringModule), $"Type map '{TypeMapGroup}' key type");
+            sink.Add(importProvider.GetImportToType(TypeMapGroup, TriggeringModule), $"Type map '{TypeMapGroup}' key type");
 
             if (map.ThrowingMethodStub is not null)
             {
-                yield break;
+                return;
             }
 
             foreach (var entry in map.TypeMap)
             {
-                yield return new DependencyListEntry(importProvider.GetImportToType(entry.Key, TriggeringModule), $"Key type of Proxy type map entry");
-                yield return new DependencyListEntry(importProvider.GetImportToType(entry.Value, TriggeringModule), $"Proxy type map entry target for key '{entry.Key}'");
+                sink.Add(importProvider.GetImportToType(entry.Key, TriggeringModule), $"Key type of Proxy type map entry");
+                sink.Add(importProvider.GetImportToType(entry.Value, TriggeringModule), $"Proxy type map entry target for key '{entry.Key}'");
             }
         }
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => [];
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink<NodeFactory> sink, NodeFactory context) { }
         protected override string GetName(NodeFactory context) => $"ProxyTypeMap {TypeMapGroup} entries in assembly {TriggeringModule.GetDisplayName()}";
     }
 }

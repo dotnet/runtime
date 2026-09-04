@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Reflection.Metadata;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -21,12 +22,12 @@ namespace ILCompiler.DependencyAnalysis
 
         private MemberReferenceHandle Handle => (MemberReferenceHandle)_handle;
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
             var methodOrFieldDef = _module.GetObject(Handle);
             MemberReference memberRef = _module.MetadataReader.GetMemberReference(Handle);
 
-            DependencyList dependencies = new DependencyList();
+            DependencySink<NodeFactory> dependencies = sink;
 
             switch (methodOrFieldDef)
             {
@@ -72,8 +73,6 @@ namespace ILCompiler.DependencyAnalysis
                 signatureBlob,
                 factory,
                 dependencies);
-
-            return dependencies;
         }
 
         protected override EntityHandle WriteInternal(ModuleWritingContext writeContext)

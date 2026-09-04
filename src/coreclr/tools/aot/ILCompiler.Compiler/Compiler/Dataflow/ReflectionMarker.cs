@@ -14,6 +14,7 @@ using ILLink.Shared.TrimAnalysis;
 using Internal.TypeSystem;
 
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
+using ILCompiler.DependencyAnalysisFramework;
 
 #nullable enable
 #pragma warning disable IDE0060
@@ -22,7 +23,8 @@ namespace ILCompiler.Dataflow
 {
     public class ReflectionMarker
     {
-        private DependencyList _dependencies = new DependencyList();
+        private readonly IDependencySink<NodeFactory> _dependencies;
+        private readonly DependencyList? _dependencyList;
         private readonly Logger _logger;
         private readonly MetadataType? _typeHierarchyDataFlowOrigin;
         private readonly bool _enabled;
@@ -31,7 +33,14 @@ namespace ILCompiler.Dataflow
 
         public NodeFactory Factory { get; }
         public FlowAnnotations Annotations { get; }
-        public DependencyList Dependencies { get => _dependencies; }
+        public DependencyList Dependencies
+        {
+            get
+            {
+                Debug.Assert(_dependencyList is not null);
+                return _dependencyList;
+            }
+        }
         public List<(MethodDesc OwningMethod, INodeWithRuntimeDeterminedDependencies Dependency)> RuntimeDeterminedDependencies { get; } = new List<(MethodDesc, INodeWithRuntimeDeterminedDependencies)>();
 
         internal enum AccessKind
@@ -48,7 +57,8 @@ namespace ILCompiler.Dataflow
             MetadataType? typeHierarchyDataFlowOrigin,
             bool enabled,
             bool suppressTrimAnalysisWarnings = false,
-            bool suppressAotAnalysisWarnings = false)
+            bool suppressAotAnalysisWarnings = false,
+            IDependencySink<NodeFactory>? dependencySink = null)
         {
             _logger = logger;
             Factory = factory;
@@ -57,6 +67,15 @@ namespace ILCompiler.Dataflow
             _enabled = enabled;
             _suppressTrimAnalysisWarnings = suppressTrimAnalysisWarnings;
             _suppressAotAnalysisWarnings = suppressAotAnalysisWarnings;
+            if (dependencySink is null)
+            {
+                _dependencyList = new DependencyList();
+                _dependencies = _dependencyList;
+            }
+            else
+            {
+                _dependencies = dependencySink;
+            }
         }
 
         internal void MarkTypeForDynamicallyAccessedMembers(in MessageOrigin origin, TypeDesc typeDefinition, DynamicallyAccessedMemberTypes requiredMemberTypes, TypeSystemEntity reason, bool declaredOnly = false)
@@ -175,7 +194,7 @@ namespace ILCompiler.Dataflow
             if (!_enabled)
                 return;
 
-            RootingHelpers.TryGetDependenciesForReflectedType(ref _dependencies, Factory, type, reason);
+            RootingHelpers.TryAddDependenciesForReflectedType(_dependencies, Factory, type, reason);
         }
 
         internal void MarkMethod(in MessageOrigin origin, MethodDesc method, TypeSystemEntity reason, AccessKind accessKind = AccessKind.Unspecified)
@@ -193,7 +212,7 @@ namespace ILCompiler.Dataflow
 
             CheckAndWarnOnReflectionAccess(origin, method, accessKind);
 
-            RootingHelpers.TryGetDependenciesForReflectedMethod(ref _dependencies, Factory, method, reason);
+            RootingHelpers.TryAddDependenciesForReflectedMethod(_dependencies, Factory, method, reason);
         }
 
         internal void MarkField(in MessageOrigin origin, FieldDesc field, string reason, AccessKind accessKind = AccessKind.Unspecified)
@@ -203,7 +222,7 @@ namespace ILCompiler.Dataflow
 
             CheckAndWarnOnReflectionAccess(origin, field, accessKind);
 
-            RootingHelpers.TryGetDependenciesForReflectedField(ref _dependencies, Factory, field, reason);
+            RootingHelpers.TryAddDependenciesForReflectedField(_dependencies, Factory, field, reason);
         }
 
         internal void MarkProperty(in MessageOrigin origin, PropertyPseudoDesc property, TypeSystemEntity reason, AccessKind accessKind = AccessKind.Unspecified)
