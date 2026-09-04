@@ -1131,7 +1131,7 @@ namespace Internal.IL
                 VerificationError(VerifierError.DelegatePattern);
         }
 
-        bool IsDelegateAssignable(MethodDesc targetMethod, TypeDesc delegateType, TypeDesc firstArg)
+        bool IsDelegateAssignable(MethodDesc targetMethod, TypeDesc delegateType, StackValue firstArg)
         {
             var invokeMethod = delegateType.GetMethod("Invoke"u8, null);
             if (invokeMethod == null)
@@ -1177,23 +1177,19 @@ namespace Internal.IL
 
             int consumedArgs = 0;
 
-            TypeDesc firstInvokeArg;
             if (isOpenDelegate)
             {
                 // If we're looking at an open delegate but the caller has provided a target it's not a match.
-                if (firstArg != null)
+                if (firstArg.Type != null)
                     return false;
 
-                firstInvokeArg = invokeSignature[0];
                 consumedArgs++;
             }
             else
             {
                 // If we're looking at a closed delegate but the caller has not provided a target it's not a match.
-                if (firstArg == null)
+                if (firstArg.Type == null)
                     return false;
-
-                firstInvokeArg = firstArg;
             }
 
             TypeDesc firstTargetArg;
@@ -1219,7 +1215,14 @@ namespace Internal.IL
                     firstTargetArg = firstTargetArg.MakeByRefType();
             }
 
-            if (!IsAssignable(firstInvokeArg, firstTargetArg))
+            // For a closed delegate it is the target pushed on the stack, so compare against the stack value itself:
+            // it keeps track of boxed value types, which are object references and assignable to anything they can be cast to
+            // (e.g. a boxed int32 target for ToString()).
+            bool firstArgAssignable = isOpenDelegate
+                ? IsAssignable(invokeSignature[0], firstTargetArg)
+                : IsAssignable(firstArg, StackValue.CreateObjRef(firstTargetArg));
+
+            if (!firstArgAssignable)
                 return false;
 
             // We better have same number of remaining args
@@ -1608,7 +1611,7 @@ namespace Internal.IL
 
                 CheckDelegateCreation(actualFtn, actualObj);
 
-                if (!IsDelegateAssignable(actualFtn.Method, methodType, actualObj.Type))
+                if (!IsDelegateAssignable(actualFtn.Method, methodType, actualObj))
                     VerificationError(VerifierError.DelegateCtor);
             }
             else
