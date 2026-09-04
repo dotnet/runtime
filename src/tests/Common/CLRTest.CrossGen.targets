@@ -36,6 +36,11 @@ WARNING:   When setting properties based on their current state (for example:
     Tests can pass extra crossgen2 arguments only in composite mode by setting this property in their project:
 
       <CompositeCrossGen2TestExtraArguments>...</CompositeCrossGen2TestExtraArguments>
+
+    Tests can still crossgen but skip the host R2RDump validation pass (e.g. wasm, where the host R2RDump
+    tooling cannot yet inspect emitted components) by setting this property in their project:
+
+      <CrossGenTestSkipR2RDump>true</CrossGenTestSkipR2RDump>
   -->
   <Target Name="GetCrossgenBashScript">
 
@@ -176,7 +181,7 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
             __linkExitCode=$?
         fi
 
-        if [ $__cg2ExitCode -eq 0 ]; then
+        if [ $__cg2ExitCode -eq 0 ] && [ "$(CrossGenTestSkipR2RDump)" != "true" ]; then
           if [ "$(CrossGen2OutputFormat)" == "wasm" ] && [ ! -z ${CompositeBuildMode+x} ]; then
             # The composite WASM output is a manifest, so validate each emitted R2R component.
             for dllFile in "${__InputFiles[@]}"; do
@@ -406,6 +411,8 @@ if defined RunCrossGen2 (
     set CrossGen2Status=!ERRORLEVEL!
 
     IF NOT !CrossGen2Status!==0 goto :DoneR2RDumpOperations
+
+    if /i "$(CrossGenTestSkipR2RDump)"=="true" goto :DoneR2RDumpOperations
 
     set __R2RDumpInput=!__OutputFile!
     if "$(CrossGen2OutputFormat)"=="wasm" (
