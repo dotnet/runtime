@@ -444,9 +444,13 @@ namespace System.Net.Security.Tests
                     bool onServer = bool.Parse(testServerStr);
 
                     FieldInfo connectionInfoField = typeof(SslStream).GetField("_connectionInfo", BindingFlags.Instance | BindingFlags.NonPublic);
-                    PropertyInfo tlsResumedProperty = typeof(SslStream).Assembly
-                        .GetType("System.Net.Security.SslConnectionInfo")
-                        .GetProperty("TlsResumed");
+                    Assert.True(connectionInfoField != null, "Could not find the SslStream._connectionInfo field via reflection");
+
+                    Type connectionInfoType = typeof(SslStream).Assembly.GetType("System.Net.Security.SslConnectionInfo");
+                    Assert.True(connectionInfoType != null, "Could not find the System.Net.Security.SslConnectionInfo type via reflection");
+
+                    PropertyInfo tlsResumedProperty = connectionInfoType.GetProperty("TlsResumed");
+                    Assert.True(tlsResumedProperty != null, "Could not find the SslConnectionInfo.TlsResumed property via reflection");
 
                     bool IsResumed(SslStream ssl) => (bool)tlsResumedProperty.GetValue(connectionInfoField.GetValue(ssl));
 
