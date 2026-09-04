@@ -25,7 +25,6 @@ using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.TypeInfos.NativeFormat;
 
 using Internal.Metadata.NativeFormat;
-using Internal.Reflection.Extensions.NonPortable;
 
 using ResolutionScope = Internal.Metadata.NativeFormat.MetadataReader;
 #else
@@ -51,34 +50,48 @@ namespace System.Reflection
             return Array.AsReadOnly(customAttributes);
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",
             Justification = "Metadata generation ensures custom attribute constructors are resolvable.")]
         private static ConstructorInfo ResolveAttributeConstructor(MetadataReader reader, CustomAttribute customAttribute)
         {
+            // There is no chance a custom attribute type will be an open type specification so we can safely pass in the empty context here.
+            RuntimeType attributeType = (RuntimeType)customAttribute.GetAttributeTypeHandle(reader)
+                .Resolve(reader, new TypeContext(null, null))
+                .ToType();
+            return ResolveAttributeConstructor(reader, customAttribute, attributeType);
+        }
+
+        internal static ConstructorInfo ResolveAttributeConstructor(
+            MetadataReader reader,
+            CustomAttribute customAttribute,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
+            RuntimeType attributeType)
+        {
+            RuntimeTypeInfo attributeTypeInfo = attributeType.GetRuntimeTypeInfo();
+
             if (customAttribute.Constructor.HandleType == HandleType.QualifiedMethod)
             {
                 QualifiedMethod qualifiedMethod = customAttribute.Constructor.ToQualifiedMethodHandle(reader).GetQualifiedMethod(reader);
-                TypeDefinitionHandle declaringType = qualifiedMethod.EnclosingType;
                 MethodHandle methodHandle = qualifiedMethod.Method;
-                NativeFormatRuntimeNamedTypeInfo namedAttributeType = NativeFormatRuntimeNamedTypeInfo.GetRuntimeNamedTypeInfo(reader, declaringType, default(RuntimeTypeHandle));
-                return RuntimePlainConstructorInfo<NativeFormatMethodCommon>.GetRuntimePlainConstructorInfo(new NativeFormatMethodCommon(methodHandle, namedAttributeType, namedAttributeType));
+                NativeFormatRuntimeNamedTypeInfo namedAttributeType = (NativeFormatRuntimeNamedTypeInfo)attributeTypeInfo;
+                ConstructorInfo constructor = RuntimePlainConstructorInfo<NativeFormatMethodCommon>.GetRuntimePlainConstructorInfo(
+                    new NativeFormatMethodCommon(methodHandle, namedAttributeType, attributeTypeInfo));
+
+                // Reuse the member's parameter and invocation caches across attribute instantiations.
+                return (ConstructorInfo)attributeTypeInfo.GetMemberWithSameMetadataDefinitionAs(constructor);
             }
 
             MemberReference memberReference = customAttribute.Constructor.ToMemberReferenceHandle(reader).GetMemberReference(reader);
-
-            // There is no chance a custom attribute type will be an open type specification so we can safely pass in the empty context here.
-            TypeContext typeContext = new TypeContext(Array.Empty<RuntimeTypeInfo>(), Array.Empty<RuntimeTypeInfo>());
-            RuntimeTypeInfo attributeType = memberReference.Parent.Resolve(reader, typeContext);
             MethodSignature signature = memberReference.Signature.ParseMethodSignature(reader);
             HandleCollection signatureParameters = signature.Parameters;
             Type[] expectedParameterTypes = new Type[signatureParameters.Count];
             int index = 0;
             foreach (Handle parameterHandle in signatureParameters)
             {
-                expectedParameterTypes[index++] = parameterHandle.Resolve(reader, attributeType.TypeContext).ToType();
+                expectedParameterTypes[index++] = parameterHandle.Resolve(reader, attributeTypeInfo.TypeContext).ToType();
             }
 
-            foreach (ConstructorInfo candidate in attributeType.ToType().GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly))
+            foreach (ConstructorInfo candidate in attributeType.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly))
             {
                 ReadOnlySpan<ParameterInfo> candidateParameters = candidate.GetParametersAsSpan();
                 if (expectedParameterTypes.Length != candidateParameters.Length)
@@ -682,6 +695,53 @@ namespace System.Reflection
                 _ => throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, val.Byte8), nameof(val))
             };
         }
+
+#if NATIVEAOT
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
+            Justification = "The compiler ensures we have array types referenced from custom attribute blobs.")]
+        internal static object? ConvertToRuntimeValue(CustomAttributeEncodedArgument encodedArg)
+        {
+            CustomAttributeEncoding encodedType = encodedArg.CustomAttributeType.EncodedType;
+
+            if (encodedType == CustomAttributeEncoding.Undefined)
+                throw new ArgumentException(null, nameof(encodedArg));
+
+            if (encodedType == CustomAttributeEncoding.Enum)
+            {
+                return Enum.ToObject(
+                    encodedArg.CustomAttributeType.EnumType!,
+                    EncodedValueToRawValue(encodedArg.PrimitiveValue, encodedArg.CustomAttributeType.EncodedEnumType));
+            }
+
+            if (encodedType == CustomAttributeEncoding.String)
+                return encodedArg.StringValue;
+
+            if (encodedType == CustomAttributeEncoding.Type)
+                return encodedArg.TypeValue;
+
+            if (encodedType == CustomAttributeEncoding.Array)
+            {
+                if (encodedArg.ArrayValue is null)
+                    return null;
+
+                CustomAttributeEncoding encodedElementType = encodedArg.CustomAttributeType.EncodedArrayType;
+                Type elementType = encodedElementType == CustomAttributeEncoding.Enum ?
+                    encodedArg.CustomAttributeType.EnumType! :
+                    CustomAttributeEncodingToType(encodedElementType);
+                Array array = Array.CreateInstanceFromArrayType(elementType.MakeArrayType(), encodedArg.ArrayValue.Length);
+
+                for (int i = 0; i < encodedArg.ArrayValue.Length; i++)
+                {
+                    array.SetValue(ConvertToRuntimeValue(encodedArg.ArrayValue[i]), i);
+                }
+
+                return array;
+            }
+
+            return EncodedValueToRawValue(encodedArg.PrimitiveValue, encodedType);
+        }
+#endif
+
 #if !NATIVEAOT
         private static RuntimeType ResolveType(RuntimeModule scope, string typeName)
         {
@@ -866,6 +926,20 @@ namespace System.Reflection
         public string? StringValue { get; set; }
 #if NATIVEAOT
         public Type? TypeValue { get; set; }
+
+        internal static object? ParseValue(MetadataReader reader, Handle value, RuntimeType argumentType)
+        {
+            try
+            {
+                CustomAttributeDataParser parser = new CustomAttributeDataParser(default, reader);
+                CustomAttributeEncodedArgument encodedArgument = parser.ParseValue(value, new CustomAttributeType(argumentType));
+                return CustomAttributeTypedArgument.ConvertToRuntimeValue(encodedArgument);
+            }
+            catch (Exception ex) when (ex is not OutOfMemoryException)
+            {
+                throw new CustomAttributeFormatException(ex.Message, ex);
+            }
+        }
 #endif
 
         private static void ParseCtorArgs(
@@ -1839,12 +1913,14 @@ namespace System.Reflection
             RuntimeType.ListBuilder<object> derivedAttributes = default;
             foreach (CustomAttributeHandle customAttributeHandle in customAttributeHandles)
             {
+                CustomAttribute customAttribute = customAttributeHandle.GetCustomAttribute(reader);
                 if (FilterCustomAttributeRecord(
-                    customAttributeHandle,
+                    customAttribute,
                     reader,
                     attributeFilterType,
                     mustBeInheritable,
-                    ref derivedAttributes))
+                    ref derivedAttributes,
+                    out _))
                 {
                     return true;
                 }
@@ -1854,15 +1930,15 @@ namespace System.Reflection
         }
 
         private static bool FilterCustomAttributeRecord(
-            CustomAttributeHandle customAttributeHandle,
+            CustomAttribute customAttribute,
             MetadataReader reader,
             RuntimeType attributeFilterType,
             bool mustBeInheritable,
-            ref RuntimeType.ListBuilder<object> derivedAttributes)
+            ref RuntimeType.ListBuilder<object> derivedAttributes,
+            out RuntimeType attributeType)
         {
-            CustomAttribute customAttribute = customAttributeHandle.GetCustomAttribute(reader);
             Handle attributeTypeHandle = customAttribute.GetAttributeTypeHandle(reader);
-            RuntimeType attributeType = (RuntimeType)attributeTypeHandle.Resolve(reader, new TypeContext(null, null)).ToType();
+            attributeType = (RuntimeType)attributeTypeHandle.Resolve(reader, new TypeContext(null, null)).ToType();
 
             if (!MatchesTypeFilter(attributeType, attributeFilterType))
                 return false;
@@ -2079,7 +2155,10 @@ namespace System.Reflection
 
 #if NATIVEAOT
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:MethodParameterDoesntMeetThisParameterRequirements",
-            Justification = "Linker guarantees presence of all the constructor parameters, property setters and fields which are accessed by any " +
+            Justification = "Linker guarantees presence of all the property setters and fields which are accessed by any " +
+                            "attribute instantiation which is present in the code linker has analyzed.")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:MethodParameterDoesntMeetThisParameterRequirements",
+            Justification = "Linker guarantees presence of all the constructor parameters which are accessed by any " +
                             "attribute instantiation which is present in the code linker has analyzed.")]
         private static void AddCustomAttributes(
             ref RuntimeType.ListBuilder<object> attributes,
@@ -2094,17 +2173,83 @@ namespace System.Reflection
 
             foreach (CustomAttributeHandle customAttributeHandle in customAttributeHandles)
             {
+                CustomAttribute customAttribute = customAttributeHandle.GetCustomAttribute(reader);
+
                 if (!FilterCustomAttributeRecord(
-                    customAttributeHandle,
+                    customAttribute,
                     reader,
                     attributeFilterType!,
                     mustBeInheritable,
-                    ref derivedAttributes))
+                    ref derivedAttributes,
+                    out RuntimeType attributeType))
                 {
                     continue;
                 }
 
-                attributes.Add(new RuntimeCustomAttributeData(reader, customAttributeHandle).Instantiate());
+                // TODO-NativeAOT: Match CoreCLR's custom attribute constructor visibility checks.
+                ConstructorInfo constructor = RuntimeCustomAttributeData.ResolveAttributeConstructor(reader, customAttribute, attributeType);
+                ReadOnlySpan<ParameterInfo> constructorParameters = constructor.GetParametersAsSpan();
+                int fixedArgumentCount = customAttribute.FixedArguments.Count;
+                if (fixedArgumentCount != constructorParameters.Length)
+                {
+                    throw new CustomAttributeFormatException();
+                }
+
+                object?[]? invokeArguments = null;
+                if (fixedArgumentCount != 0)
+                {
+                    invokeArguments = new object?[fixedArgumentCount];
+                    int index = 0;
+                    foreach (Handle fixedArgument in customAttribute.FixedArguments)
+                    {
+                        invokeArguments[index] = CustomAttributeEncodedArgument.ParseValue(
+                            reader,
+                            fixedArgument,
+                            (RuntimeType)constructorParameters[index].ParameterType);
+                        index++;
+                    }
+                }
+
+                object attribute = constructor.Invoke(BindingFlags.Default, binder: null, invokeArguments, culture: null);
+
+                foreach (NamedArgumentHandle namedArgumentHandle in customAttribute.NamedArguments)
+                {
+                    NamedArgument namedArgument = namedArgumentHandle.GetNamedArgument(reader);
+                    string name = namedArgument.Name.GetString(reader);
+                    bool isProperty = namedArgument.Flags == NamedArgumentMemberKind.Property;
+                    RuntimeType type = (RuntimeType)namedArgument.Type.Resolve(reader, default).ToType();
+                    object? value = CustomAttributeEncodedArgument.ParseValue(reader, namedArgument.Value, type);
+
+                    try
+                    {
+                        if (isProperty)
+                        {
+                            PropertyInfo? property = attributeType.GetProperty(name, type, []) ??
+                                throw new CustomAttributeFormatException(SR.Format(SR.RFLCT_InvalidPropFail, name));
+                            MethodInfo setMethod = property.GetSetMethod(true)!;
+
+                            // Public properties may have non-public setter methods
+                            if (!setMethod.IsPublic)
+                            {
+                                continue;
+                            }
+
+                            property.SetValue(attribute, value, BindingFlags.Default, binder: null, index: null, culture: null);
+                        }
+                        else
+                        {
+                            FieldInfo field = attributeType.GetField(name)!;
+                            field.SetValue(attribute, value, BindingFlags.Default, Type.DefaultBinder, null);
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        throw new CustomAttributeFormatException(
+                            SR.Format(isProperty ? SR.RFLCT_InvalidPropFail : SR.RFLCT_InvalidFieldFail, name), e);
+                    }
+                }
+
+                attributes.Add(attribute);
             }
         }
 #else

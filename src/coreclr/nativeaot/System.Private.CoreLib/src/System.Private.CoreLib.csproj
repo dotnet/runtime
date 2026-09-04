@@ -141,7 +141,6 @@
     <Compile Include="Internal\Runtime\Augments\DynamicDelegateAugments.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Internal\Reflection\Extensions\NonPortable\CustomAttributeInstantiator.cs" />
     <Compile Include="System\Diagnostics\DiagnosticMethodInfo.NativeAot.cs" />
   </ItemGroup>
   <ItemGroup>
