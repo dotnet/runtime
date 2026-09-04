@@ -523,8 +523,8 @@
       <!-- not aot, not trimmed app, no reason to relink -->
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(PublishTrimmed)' != 'true'">false</WasmBuildNative>
 
-      <!-- default to relinking in Release config -->
-      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(Configuration)' == 'Release'">true</WasmBuildNative>
+      <!-- default to relinking in Release config (unless the in-tree defaults are disabled) -->
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(Configuration)' == 'Release' and '$(WasmBuildNativeImplicitInReleaseConfiguration)' != 'false'">true</WasmBuildNative>
     </PropertyGroup>
 
     <PropertyGroup>
