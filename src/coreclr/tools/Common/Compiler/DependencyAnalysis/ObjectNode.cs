@@ -68,19 +68,6 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
-            // A method that is not emitted needs no wasm function type. Declined compilations
-            // publish empty code and are skipped at emission, but marking the type node anyway
-            // would leave an unreferenced signature, which for an over-limit one is enough on its
-            // own to make the module unloadable.
-            if (factory.Target.IsWasm && this is IMethodCodeNodeWithTypeSignature wasmMethodCodeNode
-                && !ShouldSkipEmittingObjectNode(factory))
-            {
-                dependencies ??= new DependencyList();
-
-                WasmTypeNode wasmTypeNode = factory.WasmTypeNode(wasmMethodCodeNode.Method);
-                dependencies.Add(wasmTypeNode, "Wasm Method Code Nodes Require Signature");
-            }
-
             if (dependencies == null)
                 return Array.Empty<DependencyListEntry>();
             else

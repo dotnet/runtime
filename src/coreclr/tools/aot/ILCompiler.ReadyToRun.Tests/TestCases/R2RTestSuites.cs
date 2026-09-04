@@ -172,6 +172,56 @@ public class R2RTestSuites
     }
 
     [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
+    public void WasmCrossAssemblyWideSignatureModule()
+    {
+        var dependency = new CompiledAssembly
+        {
+            AssemblyName = nameof(WasmCrossAssemblyWideSignatureModule) + "Dependency",
+            SourceResourceNames = ["Webcil/WasmWideSignatureModule.cs"],
+        };
+        var input = new CompiledAssembly
+        {
+            AssemblyName = nameof(WasmCrossAssemblyWideSignatureModule),
+            SourceResourceNames = ["Webcil/WasmCrossAssemblyWideSignatureModule.cs"],
+            References = [dependency],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(WasmCrossAssemblyWideSignatureModule),
+            [
+                new(nameof(WasmCrossAssemblyWideSignatureModule),
+                [
+                    new CrossgenAssembly(input),
+                    new CrossgenAssembly(dependency)
+                    {
+                        Kind = Crossgen2InputKind.Reference,
+                        Options = [Crossgen2AssemblyOption.CrossModuleOptimization],
+                    },
+                ])
+                {
+                    OutputFileExtension = ".wasm",
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            var webcilReader = Assert.IsType<WebcilImageReader>(reader.CompositeReader);
+            Assert.True(webcilReader.IsWasmWrapped);
+
+            WasmR2RAssert.GetMaxWasmFunctionTypeArity(webcilReader, out int maxParams, out int maxResults);
+            Assert.InRange(maxParams, 0, WasmLimits.MaxFunctionParams);
+            Assert.InRange(maxResults, 0, WasmLimits.MaxFunctionResults);
+
+            List<ReadyToRunMethod> methods = R2RAssert.GetAllMethods(reader);
+            Assert.DoesNotContain(methods, method =>
+                method.SignatureString.Contains("CallsExternalTooManyParameters", StringComparison.Ordinal));
+            Assert.Contains(methods, method =>
+                method.SignatureString.Contains("AddIntegers", StringComparison.Ordinal));
+        }
+    }
+
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
     public void WasmSimdModule()
     {
         var wasmSimdModule = new CompiledAssembly
