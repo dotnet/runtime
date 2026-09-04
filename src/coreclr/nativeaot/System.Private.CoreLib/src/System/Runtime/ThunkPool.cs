@@ -3,25 +3,16 @@
 
 //
 // This is an implementation of a general purpose thunk pool manager. Each thunk consists of:
-//      1- A thunk stub, typically consisting of a lea + jmp instructions (slightly different
-//         on ARM, but semantically equivalent)
-//      2- A thunk common stub: the implementation of the common stub depends on
-//         the usage scenario of the thunk
-//      3- Thunk data: each thunk has two pointer-sized data values that can be stored.
+//      1- A thunk stub that loads the thunk context and jumps to the thunk target.
+//      2- Thunk data: each thunk has two pointer-sized data values that can be stored.
 //         The first data value is called the thunk's 'context', and the second value is
 //         the thunk's jump target typically.
 //
 // Without FEATURE_RX_THUNKS, thunks are allocated by mapping a thunks template into memory. The template
 // consists of a number of pairs of sections called thunk blocks (typically 8 pairs per mapping). Each pair
 // has 2 page-long sections (4096 bytes):
-//      1- The first section has RX permissions, and contains the thunk stubs (lea's + jmp's),
-//         and the thunk common stubs.
+//      1- The first section has RX permissions and contains the thunk stubs.
 //      2- The second section has RW permissions and contains the thunks data (context + target).
-//         The last pointer-sized block in this section is special: it stores the address of
-//         the common stub that each thunk stub will jump to (the jump instruction in each thunk
-//         jumps to the address stored in that block). Therefore, whenever a new thunks template
-//         gets mapped into memory, the value of that last pointer cell in the data section is updated
-//         to the common stub address passed in by the caller
 //
 // With FEATURE_RX_THUNKS, thunks are created by allocating new virtual memory space, where the first half of
 // that space is filled with thunk stubs, and gets RX permissions, and the second half is for the thunks data,
@@ -58,7 +49,6 @@ namespace System.Runtime
             internal AllocatedBlock _nextBlock;
         }
 
-        private IntPtr _commonStubAddress;
         private IntPtr _nextAvailableThunkPtr;
         private IntPtr _lastThunkPtr;
 
@@ -82,10 +72,8 @@ namespace System.Runtime
             return value;
         }
 
-        private unsafe ThunksHeap(IntPtr commonStubAddress)
+        private unsafe ThunksHeap()
         {
-            _commonStubAddress = commonStubAddress;
-
             _allocatedBlocks = new AllocatedBlock();
 
             IntPtr thunkStubsBlock = ThunkBlocks.GetNewThunksBlock();
@@ -94,10 +82,6 @@ namespace System.Runtime
             // Address of the first thunk data cell should be at the beginning of the thunks data block (page-aligned)
             Debug.Assert(((nuint)(nint)thunkDataBlock % Constants.PageSize) == 0);
 
-            // Update the last pointer value in the thunks data section with the value of the common stub address
-            *(IntPtr*)(thunkDataBlock + (int)(Constants.PageSize - IntPtr.Size)) = commonStubAddress;
-            Debug.Assert(*(IntPtr*)(thunkDataBlock + (int)(Constants.PageSize - IntPtr.Size)) == commonStubAddress);
-
             // Set the head and end of the linked list
             _nextAvailableThunkPtr = thunkDataBlock;
             _lastThunkPtr = _nextAvailableThunkPtr + Constants.ThunkDataSize * (Constants.NumThunksPerBlock - 1);
@@ -105,9 +89,9 @@ namespace System.Runtime
             _allocatedBlocks._blockBaseAddress = thunkStubsBlock;
         }
 
-        public static unsafe ThunksHeap CreateThunksHeap(IntPtr commonStubAddress)
+        public static unsafe ThunksHeap CreateThunksHeap()
         {
-            return new ThunksHeap(commonStubAddress);
+            return new ThunksHeap();
         }
 
         // TODO: Feature
@@ -127,10 +111,6 @@ namespace System.Runtime
 
             // Address of the first thunk data cell should be at the beginning of the thunks data block (page-aligned)
             Debug.Assert(((nuint)(nint)thunkDataBlock % Constants.PageSize) == 0);
-
-            // Update the last pointer value in the thunks data section with the value of the common stub address
-            *(IntPtr*)(thunkDataBlock + (int)(Constants.PageSize - IntPtr.Size)) = _commonStubAddress;
-            Debug.Assert(*(IntPtr*)(thunkDataBlock + (int)(Constants.PageSize - IntPtr.Size)) == _commonStubAddress);
 
             // Link the last entry in the old list to the first entry in the new list
             *((IntPtr*)_lastThunkPtr) = thunkDataBlock;
