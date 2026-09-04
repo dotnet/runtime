@@ -2,8 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 
-// This test verifies that the runtime uses a static TLS resolver by default on Linux Arm64 and properly handles
-// the case where loading additional TLS-using libraries forces it to use a dynamic resolver.
+// This test is verifying that the runtime properly handles the cases where the TLS infra in the runtime is forced
+// to use a dynamic resolver. This is done by means of a private config variable to validate the behavior on Linux Arm64
+// and a set of multithreaded tasks, that has been known to cause the runtime to crash when this is handled incorrectly.
 
 using System;
 using System.Diagnostics;
@@ -21,15 +22,6 @@ namespace TestTLSWithLoadedDlls
     static class TLSWithLoadedDlls
     {
         private const int CountOfLibTlsToLoad = 40;
-
-        [ThreadStatic]
-        private static int t_threadStatic;
-
-        static int AccessThreadStatic()
-        {
-            t_threadStatic = 100;
-            return t_threadStatic;
-        }
 
         static async Task DoLotsOfAsyncWork(int loopCount)
         {
@@ -54,23 +46,6 @@ namespace TestTLSWithLoadedDlls
             {
                 DoLotsOfAsyncWork(100).GetAwaiter().GetResult();
                 return 100;
-            }
-
-            if ((args.Length == 1) && (args[0] == "AccessThreadStatic"))
-            {
-                return AccessThreadStatic();
-            }
-
-            string testAssemblyPath = Assembly.GetExecutingAssembly().Location;
-            if (OperatingSystem.IsLinux() && RuntimeInformation.ProcessArchitecture == Architecture.Arm64)
-            {
-                int exitCode = RunChildProcess(
-                    $"{testAssemblyPath} AccessThreadStatic",
-                    "DOTNET_AssertStaticTlsResolver");
-                if (exitCode != 100)
-                {
-                    return exitCode;
-                }
             }
 
             int CountOfLibTlsToLoad = 60;
@@ -104,19 +79,14 @@ namespace TestTLSWithLoadedDlls
             }
 
             arguments.Append(' ');
-            arguments.Append(testAssemblyPath);
+            arguments.Append(System.Reflection.Assembly.GetExecutingAssembly().Location);
             arguments.Append(" RunLotsOfTasks");
 
-            return RunChildProcess(arguments.ToString(), "DOTNET_AssertNotStaticTlsResolver");
-        }
-
-        private static int RunChildProcess(string arguments, string assertionVariable)
-        {
             Process process = new Process();
             process.StartInfo.FileName = GetCorerunPath();
-            process.StartInfo.Arguments = arguments;
+            process.StartInfo.Arguments = arguments.ToString();
             process.StartInfo.UseShellExecute = false;
-            process.StartInfo.EnvironmentVariables[assertionVariable] = "1";
+            process.StartInfo.EnvironmentVariables["DOTNET_AssertNotStaticTlsResolver"] = "1";
 
             Console.WriteLine($"Launching {process.StartInfo.FileName} {process.StartInfo.Arguments}");
 
