@@ -4527,15 +4527,30 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
         }
     }
 
-    // Two references of provably unrelated class types can never point to the same object
-    // (unless both of them are null, which optAssertionIsNeverSameReference rules out).
-    if (tree->OperIs(GT_EQ, GT_NE) && op1->TypeIs(TYP_REF) && op2->TypeIs(TYP_REF) &&
-        optAssertionIsNeverSameReference(assertions, op1, op2))
+    // Objects of unrelated types can only be equal if both of them are null.
+    if (tree->OperIs(GT_EQ, GT_NE) && op1->TypeIs(TYP_REF) && op2->TypeIs(TYP_REF))
     {
-        JITDUMP("Operands of [%06u] have unrelated types and can never be the same reference.\n", dspTreeID(tree));
-        newTree = tree->OperIs(GT_EQ) ? gtNewFalse() : gtNewTrue();
-        newTree = gtWrapWithSideEffects(newTree, tree, GTF_ALL_EFFECT);
-        return optAssertionProp_Update(newTree, tree, stmt);
+        bool                 isExact1, isNonNull1, isExact2, isNonNull2;
+        CORINFO_CLASS_HANDLE cls1 = gtGetClassHandle(op1, &isExact1, &isNonNull1);
+        CORINFO_CLASS_HANDLE cls2 = gtGetClassHandle(op2, &isExact2, &isNonNull2);
+
+        // "exact" is meaningless for shared generics as they are represented by their canonical form.
+        isExact1 &= (cls1 != NO_CLASS_HANDLE) && !eeIsSharedInst(cls1);
+        isExact2 &= (cls2 != NO_CLASS_HANDLE) && !eeIsSharedInst(cls2);
+
+        if ((cls1 != cls2) && (isExact1 || isExact2) &&
+            (isNonNull1 || isNonNull2 || optAssertionIsNonNull(op1, assertions) ||
+             optAssertionIsNonNull(op2, assertions)))
+        {
+            if ((isExact1 && (info.compCompHnd->compareTypesForCast(cls1, cls2) == TypeCompareState::MustNot)) ||
+                (isExact2 && (info.compCompHnd->compareTypesForCast(cls2, cls1) == TypeCompareState::MustNot)))
+            {
+                JITDUMP("Operands of [%06u] are never the same reference (unrelated types).\n", dspTreeID(tree));
+                newTree = tree->OperIs(GT_EQ) ? gtNewFalse() : gtNewTrue();
+                newTree = gtWrapWithSideEffects(newTree, tree, GTF_ALL_EFFECT);
+                return optAssertionProp_Update(newTree, tree, stmt);
+            }
+        }
     }
 
     // Check if we have an assertion that exactly matches the relop.
@@ -5225,65 +5240,6 @@ bool Compiler::optAssertionIsNonNull(GenTree* op, ASSERT_VALARG_TP assertions)
                 return true;
             }
         }
-    }
-    return false;
-}
-
-//------------------------------------------------------------------------
-// optAssertionIsNeverSameReference: see if we can prove that two object references
-//   can never point to the same object.
-//
-// Arguments:
-//   assertions - set of live assertions
-//   op1        - first object reference
-//   op2        - second object reference
-//
-// Return Value:
-//   true if "op1" and "op2" are guaranteed to never be the same reference.
-//
-// Notes:
-//   We only handle the case where one of the operands has an exact type which is not castable
-//   to the other operand's type - then that operand can never be an instance of the other one's
-//   type. Since both operands being null is the only way unrelated types can compare equal, we
-//   also require at least one of them to be known to be non-null.
-//
-bool Compiler::optAssertionIsNeverSameReference(ASSERT_VALARG_TP assertions, GenTree* op1, GenTree* op2)
-{
-    assert(!optLocalAssertionProp);
-
-    if (!op1->TypeIs(TYP_REF) || !op2->TypeIs(TYP_REF))
-    {
-        return false;
-    }
-
-    // Both being null is the only case where unrelated types can compare equal,
-    // so we need at least one of the operands to be known to be non-null.
-    if (!optAssertionIsNonNull(op1, assertions) && !optAssertionIsNonNull(op2, assertions))
-    {
-        return false;
-    }
-
-    bool                 isExact1, isNonNull1;
-    bool                 isExact2, isNonNull2;
-    CORINFO_CLASS_HANDLE cls1 = gtGetClassHandle(op1, &isExact1, &isNonNull1);
-    CORINFO_CLASS_HANDLE cls2 = gtGetClassHandle(op2, &isExact2, &isNonNull2);
-    if ((cls1 == NO_CLASS_HANDLE) || (cls2 == NO_CLASS_HANDLE) || (cls1 == cls2))
-    {
-        return false;
-    }
-
-    // Object of an exact type "cls1" is never an instance of "cls2" if it's not castable to it
-    // (and vice versa). Shared generics are represented by their canonical form, so "exact" is
-    // meaningless for them.
-    if (isExact1 && !eeIsSharedInst(cls1) &&
-        (info.compCompHnd->compareTypesForCast(cls1, cls2) == TypeCompareState::MustNot))
-    {
-        return true;
-    }
-    if (isExact2 && !eeIsSharedInst(cls2) &&
-        (info.compCompHnd->compareTypesForCast(cls2, cls1) == TypeCompareState::MustNot))
-    {
-        return true;
     }
     return false;
 }
