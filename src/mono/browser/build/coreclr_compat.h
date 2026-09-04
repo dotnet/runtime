@@ -3,8 +3,8 @@
 
 // Auto-included CoreCLR compat header for app native build.
 //
-// This header is pre-included via -include when compiling pinvoke-table.cpp
-// and wasm_m2n_invoke.g.cpp produced by ManagedToNativeGenerator. It provides
+// This header is pre-included via -include when compiling the callhelpers-*.cpp
+// produced by crossgen2's portable call-helpers generator. It provides
 // only the prerequisite types/macros that the real CoreCLR headers
 // (<callhelpers.hpp>, <minipal/entrypoints.h>) assume are already in scope from
 // the in-tree CoreCLR PCH (vm/common.h). The generated .cpp files still
@@ -18,9 +18,9 @@
 //   * INTERP_STACK_SLOT_SIZE -- defined in interpretershared.h in-tree; the
 //     interp-to-managed file uses it but does not include that header.
 //   * LF_INTEROP/LL_INFO1000/LOG/PORTABILITY_ASSERT -- CoreCLR logging
-//     primitives used by pinvoke-table.cpp.
+//     primitives used by callhelpers-pinvoke.cpp.
 //
-// Definitions for symbols declared by <callhelpers.hpp> (g_wasmThunks,
+// Definitions for symbols declared by <callhelpers.hpp> (g_portableCallHelperThunks,
 // g_ReverseThunks, ...) live in libcoreclr_static.a or in the same generated
 // .cpp (the generator emits the table bodies).
 

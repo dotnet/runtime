@@ -1065,15 +1065,15 @@ namespace
         return pos;
     }
 
-    typedef StringToThunkHash StringToWasmSigThunkHash;
-    static StringToWasmSigThunkHash* thunkCache = nullptr;
+    typedef StringToThunkHash StringToPortableSigThunkHash;
+    static StringToPortableSigThunkHash* thunkCache = nullptr;
 
-    // The fixed set of interpreter->native thunks compiled into libcoreclr (g_wasmThunks). It covers the
+    // The fixed set of interpreter->native thunks compiled into libcoreclr (g_portableCallHelperThunks). It covers the
     // runtime's own interp->native calls - FCall/QCall/pinvoke and other runtime-native managed methods,
     // plus unmanaged calli. crossgen2 does not emit these.
     static InterpreterCalliCookie LookupThunkInLibcoreclr(const char* key)
     {
-        StringToWasmSigThunkHash* table = thunkCache;
+        StringToPortableSigThunkHash* table = thunkCache;
         _ASSERTE(table != nullptr && "Wasm thunk cache not initialized. Call InitializeWasmThunkCaches() at EEStartup.");
         void* thunk;
         if (table->Lookup(key, &thunk))
@@ -1084,7 +1084,7 @@ namespace
 
     // For a managed method the interp->R2R thunk is emitted into the R2R image by crossgen2
     // (WasmInterpreterToR2RThunkNode, keyed "M"+signature) for every R2R-compiled method body. Prefer that
-    // image (the common case with R2R), then fall back to g_wasmThunks, which is the only source for managed
+    // image (the common case with R2R), then fall back to g_portableCallHelperThunks, which is the only source for managed
     // methods whose native code is not R2R (FCall/QCall/pinvoke/runtime stubs).
     static InterpreterCalliCookie LookupManagedThunk(const char* key)
     {
@@ -1137,8 +1137,8 @@ namespace
                 return NULL;
         }
 
-        // Managed methods (default calling convention) prefer the R2R image and fall back to g_wasmThunks;
-        // unmanaged calli are only ever in g_wasmThunks.
+        // Managed methods (default calling convention) prefer the R2R image and fall back to g_portableCallHelperThunks;
+        // unmanaged calli are only ever in g_portableCallHelperThunks.
         InterpreterCalliCookie thunk = (callConv == IMAGE_CEE_CS_CALLCONV_DEFAULT)
             ? LookupManagedThunk(keyBuffer)
             : LookupThunkInLibcoreclr(keyBuffer);
@@ -1292,11 +1292,11 @@ namespace
 void InitializeWasmThunkCaches()
 {
     {
-        StringToWasmSigThunkHash* newTable = new StringToWasmSigThunkHash();
-        newTable->Reallocate(g_wasmThunksCount * StringToWasmSigThunkHash::s_density_factor_denominator / StringToWasmSigThunkHash::s_density_factor_numerator + 1);
-        for (size_t i = 0; i < g_wasmThunksCount; i++)
+        StringToPortableSigThunkHash* newTable = new StringToPortableSigThunkHash();
+        newTable->Reallocate(g_portableCallHelperThunksCount * StringToPortableSigThunkHash::s_density_factor_denominator / StringToPortableSigThunkHash::s_density_factor_numerator + 1);
+        for (size_t i = 0; i < g_portableCallHelperThunksCount; i++)
         {
-            newTable->Add(g_wasmThunks[i].key, g_wasmThunks[i].value);
+            newTable->Add(g_portableCallHelperThunks[i].key, g_portableCallHelperThunks[i].value);
         }
         thunkCache = newTable;
     }
