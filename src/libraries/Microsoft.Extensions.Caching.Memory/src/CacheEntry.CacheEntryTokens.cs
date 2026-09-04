@@ -45,11 +45,8 @@ namespace Microsoft.Extensions.Caching.Memory
                 {
                     lock (this)
                     {
-                        ReadOnlySpan<IChangeToken> snapshot = expirationTokens.Snapshot;
-                        int count = snapshot.Length;
-                        for (int i = 0; i < count; i++)
+                        foreach (IChangeToken expirationToken in expirationTokens.Snapshot)
                         {
-                            IChangeToken expirationToken = snapshot[i];
                             if (expirationToken.ActiveChangeCallbacks)
                             {
                                 _expirationTokenRegistrations ??= new List<IDisposable>(1);
@@ -66,11 +63,8 @@ namespace Microsoft.Extensions.Caching.Memory
                 ExpirationTokensList? expirationTokens = _expirationTokens;
                 if (expirationTokens is not null)
                 {
-                    ReadOnlySpan<IChangeToken> snapshot = expirationTokens.Snapshot;
-                    int count = snapshot.Length;
-                    for (int i = 0; i < count; i++)
+                    foreach (IChangeToken expiredToken in expirationTokens.Snapshot)
                     {
-                        IChangeToken expiredToken = snapshot[i];
                         if (expiredToken.HasChanged)
                         {
                             cacheEntry.SetExpired(EvictionReason.TokenExpired);

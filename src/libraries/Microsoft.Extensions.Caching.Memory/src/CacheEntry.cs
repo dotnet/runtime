@@ -189,6 +189,7 @@ namespace Microsoft.Extensions.Caching.Memory
                 if (trackLinkedCacheEntries)
                 {
                     Volatile.Write(ref _isDisposed, true);
+                    // Ensure either this thread sees the token list or its creator sees the disposed state.
                     Thread.MemoryBarrier();
                     _tokens?.PublishTokens();
                     CommitWithTracking();
