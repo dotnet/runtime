@@ -1,8 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <CLRTestPriority>1</CLRTestPriority>
-    <!-- Needed for GC.WaitForPendingFinalizers -->
-    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
     <!-- Collectible ALCs are not supported -->
     <NativeAotIncompatible>true</NativeAotIncompatible>

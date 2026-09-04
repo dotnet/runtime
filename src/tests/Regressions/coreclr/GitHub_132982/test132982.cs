@@ -124,7 +124,6 @@ public static class Dispatcher
 
 public class Test132982
 {
-    [SkipOnCoreClr("Depends on the collectible VSD cache entry heap growing past its first page, which GC stress perturbs.", RuntimeTestModes.AnyGCStress)]
     [Fact]
     public static void UnloadingCollectibleContextDoesNotViolateLockOrder()
     {
