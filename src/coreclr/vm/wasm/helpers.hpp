@@ -14,5 +14,5 @@ void* GetPortableEntryPointToInterpreterThunk(MethodDesc *pMD);
 
 // Get a pregenerated unboxing stub for pMD, the MethodDesc used as its generic context,
 // and the portable entrypoint of its target.
-// Returns NULL if no thunk is available for the method's signature.
+// Returns NULL if no stub is available for the method's signature.
 void* GetUnboxingStub(MethodDesc* pMD, MethodDesc** ppTargetMethodDesc, PCODE* pTargetEntryPoint);

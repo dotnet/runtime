@@ -163,7 +163,7 @@ public:
         PCODE targetEntryPoint,
         PCODE actualCode)
     {
-        LIMITED_METHOD_CONTRACT;
+        WRAPPER_NO_CONTRACT;
         UnboxingStubPortableEntryPoint* entryPoint = FromEntryPoint(addr);
         entryPoint->_targetMethodDesc = targetMethodDesc;
         entryPoint->_targetEntryPoint = reinterpret_cast<void*>(PCODEToPINSTR(targetEntryPoint));
@@ -171,6 +171,7 @@ public:
     }
 };
 
+// Generated unboxing stubs access these fields at fixed negative offsets from the embedded entrypoint.
 static_assert(offsetof(UnboxingStubPortableEntryPoint, _targetEntryPoint) == TARGET_POINTER_SIZE);
 static_assert(offsetof(UnboxingStubPortableEntryPoint, _entryPoint) == 2 * TARGET_POINTER_SIZE);
 
