@@ -266,6 +266,9 @@ namespace TestLibrary
         // Default timeout set to 10 minutes
         public const int DEFAULT_TIMEOUT_MS = 1000 * 60 * 10;
 
+        const int DiagnosticIpcTimeoutMs = 60_000;
+        const int OutputCopyTimeoutMs = 10_000;
+
         public const string COLLECT_DUMPS_ENVIRONMENT_VAR = "__CollectDumps";
         public const string CRASH_DUMP_FOLDER_ENVIRONMENT_VAR = "__CrashDumpFolder";
 
@@ -350,11 +353,15 @@ namespace TestLibrary
                 {
                     using Socket socket = new(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified)
                     {
-                        SendTimeout = DEFAULT_TIMEOUT_MS,
-                        ReceiveTimeout = DEFAULT_TIMEOUT_MS
+                        SendTimeout = DiagnosticIpcTimeoutMs,
+                        ReceiveTimeout = DiagnosticIpcTimeoutMs
                     };
 
-                    socket.Connect(new UnixDomainSocketEndPoint(diagnosticSocket));
+                    using CancellationTokenSource connectTimeout = new(DiagnosticIpcTimeoutMs);
+                    socket.ConnectAsync(new UnixDomainSocketEndPoint(diagnosticSocket), connectTimeout.Token)
+                        .AsTask()
+                        .GetAwaiter()
+                        .GetResult();
                     SendAll(socket, request);
 
                     byte[] responseHeader = ReceiveAll(socket, IpcHeaderSize);
@@ -398,7 +405,7 @@ namespace TestLibrary
 
                     return true;
                 }
-                catch (Exception ex) when (ex is SocketException or IOException)
+                catch (Exception ex) when (ex is SocketException or IOException or OperationCanceledException)
                 {
                     outputWriter.WriteLine(
                         $"Diagnostic IPC dump request through '{diagnosticSocket}' failed: {ex.Message}");
@@ -491,6 +498,47 @@ namespace TestLibrary
                 bytesReceived += received;
             }
             return buffer;
+        }
+
+        static void CompleteOutputCopies(
+            Process process,
+            CancellationTokenSource cancellation,
+            Task copyOutput,
+            Task copyError,
+            TextWriter diagnosticWriter)
+        {
+            Task[] copyTasks = [copyOutput, copyError];
+            if (WaitForOutputCopies(copyTasks, diagnosticWriter))
+            {
+                return;
+            }
+
+            diagnosticWriter.WriteLine("Timed out waiting for redirected test output to complete.");
+            cancellation.Cancel();
+            process.StandardOutput.Dispose();
+            process.StandardError.Dispose();
+
+            if (!WaitForOutputCopies(copyTasks, diagnosticWriter))
+            {
+                diagnosticWriter.WriteLine("Redirected test output did not complete after cancellation.");
+            }
+        }
+
+        static bool WaitForOutputCopies(Task[] copyTasks, TextWriter diagnosticWriter)
+        {
+            try
+            {
+                return Task.WaitAll(copyTasks, OutputCopyTimeoutMs);
+            }
+            catch (AggregateException ex) when (ex.Flatten().InnerExceptions.All(
+                static ex => ex is IOException or ObjectDisposedException or OperationCanceledException))
+            {
+                foreach (Exception copyException in ex.Flatten().InnerExceptions)
+                {
+                    diagnosticWriter.WriteLine($"Redirected test output ended with: {copyException.Message}");
+                }
+                return true;
+            }
         }
 
         // Finds all children processes starting with a process named childName
@@ -647,7 +695,7 @@ namespace TestLibrary
 
                     // kill the timed out processes after we've collected dumps
                     process.Kill(entireProcessTree: true);
-                    Task.WaitAll(copyOutput, copyError);
+                    CompleteOutputCopies(process, cts, copyOutput, copyError, diagnosticWriter);
 
                     string timeoutMessage = string.Format(
                         "\ncmdLine:{0} Timed Out (timeout in milliseconds: {1}{2}{3}, start: {4}, end: {5})",
