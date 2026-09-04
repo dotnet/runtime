@@ -567,7 +567,12 @@ int32_t CryptoNative_SslHandshake(
 
     // this peek ensures that the SSL handshake state machine starts processing
     // renegotiation and post-handshake client cert requests
+    // Guard errno the same way CryptoNative_SslDoHandshake does: this shim is also
+    // P/Invoked with SetLastError=true, so save/restore errno around SSL_peek so the
+    // last error reflects the SSL_do_handshake attempt rather than the peek.
+    int peekErrno = errno;
     SSL_peek(ssl, NULL, 0);
+    errno = peekErrno;
 
     int32_t result = SSL_do_handshake(ssl);
     *errorCode = (result == 1) ? SSL_ERROR_NONE : CryptoNative_SslGetError(ssl, result);
