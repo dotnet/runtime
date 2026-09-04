@@ -417,11 +417,13 @@ public:
     bool MayHaveCustomAttribute(WellKnownAttribute attribute, mdToken token);
     void DisableCustomAttributeFilter();
 
+    bool TryGetPrecachedExternalTypeMap(MethodTable* pGroupType, NativeFormat::NativeHashtable* pTypeMap, NativeFormat::NativeParser* pNamedEntries);
     bool HasPrecachedExternalTypeMap(MethodTable* pGroupType);
     TypeHandle FindPrecachedExternalTypeMapEntry(MethodTable* pGroupType, LPCUTF8 pKey);
 
     bool CheckForUniqueExternalTypeMapKeys(MethodTable* pGroupType, ExternalTypeNameHash *pHash);
 
+    bool TryGetPrecachedProxyTypeMap(MethodTable* pGroupType, NativeFormat::NativeHashtable* pTypeMap, NativeFormat::NativeParser* pNamedEntries);
     bool HasPrecachedProxyTypeMap(MethodTable* pGroupType);
     TypeHandle FindPrecachedProxyTypeMapEntry(MethodTable* pGroupType, TypeHandle key);
 
