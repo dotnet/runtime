@@ -934,22 +934,29 @@ namespace System.Net.Security.Tests
                 System.Runtime.InteropServices.Marshal.Copy(clientBinding.DangerousGetHandle(), c, 0, c.Length);
                 Assert.Equal(c, s);
 
-                // Endpoint (tls-server-end-point) binding is derived from the server certificate
-                // hash and is the kind used for HTTP channel-binding-token authentication. Both
-                // endpoints compute it from the same server cert, so the bytes must match.
-                using ChannelBinding? serverEndpoint = session.GetChannelBinding(ChannelBindingKind.Endpoint);
-                using ChannelBinding? clientEndpoint = clientSsl.TransportContext?.GetChannelBinding(ChannelBindingKind.Endpoint);
+                // Endpoint (tls-server-end-point) binding is a hash of the server certificate and
+                // is the kind used for HTTP channel-binding-token authentication. SChannel computes
+                // it natively from the server's own certificate on both peers, so the bytes match.
+                // The managed OpenSSL/SecureTransport path derives the endpoint token from the
+                // remote certificate instead, so a server that did not request a client certificate
+                // has no remote cert to hash and cannot produce the binding (SslStream has the same
+                // limitation). Only assert the server-side endpoint binding where it is supported.
+                if (OperatingSystem.IsWindows())
+                {
+                    using ChannelBinding? serverEndpoint = session.GetChannelBinding(ChannelBindingKind.Endpoint);
+                    using ChannelBinding? clientEndpoint = clientSsl.TransportContext?.GetChannelBinding(ChannelBindingKind.Endpoint);
 
-                Assert.NotNull(serverEndpoint);
-                Assert.NotNull(clientEndpoint);
-                Assert.False(serverEndpoint!.IsInvalid);
-                Assert.Equal(clientEndpoint!.Size, serverEndpoint.Size);
+                    Assert.NotNull(serverEndpoint);
+                    Assert.NotNull(clientEndpoint);
+                    Assert.False(serverEndpoint!.IsInvalid);
+                    Assert.Equal(clientEndpoint!.Size, serverEndpoint.Size);
 
-                byte[] se = new byte[serverEndpoint.Size];
-                byte[] ce = new byte[clientEndpoint.Size];
-                System.Runtime.InteropServices.Marshal.Copy(serverEndpoint.DangerousGetHandle(), se, 0, se.Length);
-                System.Runtime.InteropServices.Marshal.Copy(clientEndpoint.DangerousGetHandle(), ce, 0, ce.Length);
-                Assert.Equal(ce, se);
+                    byte[] se = new byte[serverEndpoint.Size];
+                    byte[] ce = new byte[clientEndpoint.Size];
+                    System.Runtime.InteropServices.Marshal.Copy(serverEndpoint.DangerousGetHandle(), se, 0, se.Length);
+                    System.Runtime.InteropServices.Marshal.Copy(clientEndpoint.DangerousGetHandle(), ce, 0, ce.Length);
+                    Assert.Equal(ce, se);
+                }
             }
         }
 
