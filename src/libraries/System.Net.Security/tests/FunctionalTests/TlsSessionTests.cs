@@ -2689,11 +2689,13 @@ namespace System.Net.Security.Tests
             Assert.True(session.IsHandshakeComplete);
 
             TlsOperationStatus status;
+            DateTime shutdownDeadline = DateTime.UtcNow.AddSeconds(30);
             while (true)
             {
                 status = session.Shutdown();
                 if (status == TlsOperationStatus.DestinationTooSmall)
                 {
+                    Assert.True(DateTime.UtcNow < shutdownDeadline, "Shutdown() kept returning DestinationTooSmall and did not complete within the timeout.");
                     await Task.Delay(5);
                     continue;
                 }
