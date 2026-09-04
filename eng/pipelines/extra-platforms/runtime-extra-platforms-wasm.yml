@@ -6,7 +6,6 @@
 parameters:
   isExtraPlatformsBuild: false
   isWasmOnlyBuild: false
-  isRollingBuild: false
   useHelixMonitor: false
   excludeLibTests: false
   excludeNonLibTests: false
@@ -20,7 +19,7 @@ jobs:
 # - only run eat and aot tests
 # - rest are covered by runtime
 #
-- ${{ if eq(parameters.isRollingBuild, true) }}:
+- ${{ if eq(variables.isRollingBuild, true) }}:
   # AOT Library tests - browser_wasm
   - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
     parameters:
@@ -66,7 +65,7 @@ jobs:
 # - run everything, if relevant paths changed
 # - For runtime-wasm, force run all the jobs
 #
-- ${{ if and(ne(parameters.isRollingBuild, true), ne(parameters.excludeLibTests, true), ne(parameters.debuggerTestsOnly, true)) }}:
+- ${{ if and(ne(variables.isRollingBuild, true), ne(parameters.excludeLibTests, true), ne(parameters.debuggerTestsOnly, true)) }}:
   # Library tests
   # these run on runtime also
   - template: /eng/pipelines/common/templates/wasm-library-tests.yml
@@ -175,7 +174,7 @@ jobs:
       scenarios:
         - WasmTestOnWasmtime
 
-- ${{ if and(ne(parameters.isRollingBuild, true), ne(parameters.excludeNonLibTests, true), ne(parameters.debuggerTestsOnly, true)) }}:
+- ${{ if and(ne(variables.isRollingBuild, true), ne(parameters.excludeNonLibTests, true), ne(parameters.debuggerTestsOnly, true)) }}:
   # Builds only
   - template: /eng/pipelines/common/templates/wasm-build-only.yml
     parameters:
@@ -254,7 +253,7 @@ jobs:
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
       useHelixMonitor: ${{ parameters.useHelixMonitor }}
 
-- ${{ if and(ne(parameters.isRollingBuild, true), ne(parameters.excludeOptional, true)) }}:
+- ${{ if and(ne(variables.isRollingBuild, true), ne(parameters.excludeOptional, true)) }}:
   - template: /eng/pipelines/common/templates/wasm-library-tests.yml
     parameters:
       platforms:
