@@ -41,6 +41,8 @@ Crossgen2 writes a component copy of each input assembly into the output tree. E
 
 The following limitations exist for Composite R2R images at runtime:
 
+Cross-module inlining into a composite image from any module other than System.Private.CoreLib is explicitly blocked at runtime. 
+
 When specifying `--non-local-generics-module`, the selected "home" module will not be marked as containing unrelated generic code. Instead, the composite module itself will be marked as such. The code will be emitted into the composite image.
 
 All assemblies in a composite image should be loaded into the same AssemblyLoadContext. If this rule is ignored and an assembly in the bubble was loaded into a different context than the rest of the component modules initially, the copy that is loaded into the same ALC will be jitted and the other copy will use the R2R code.
