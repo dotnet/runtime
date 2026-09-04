@@ -7,9 +7,8 @@
 // obtain the composite R2R webcil image and the per-assembly stubs. Keeping it here (rather than in a
 // single host) means both hosts serve R2R identically instead of one silently falling back to interp.
 //
-// The splice that populates it is hand-driven (eng/wasi-r2r/pipeline_shim.py); there is no SDK path
-// for WASI R2R yet, so this serves the runtime tests and the development loop rather than shipping
-// apps. Both hosts must be linked with the flags that supply a composite's imports -- see
+// src/mono/wasi/build/compose-r2r.py populates the image for in-tree publishing and runtime tests.
+// Both hosts must be linked with the flags that supply a composite's imports -- see
 // CORERUN_WASI_COMPOSITE_R2R in corerun/CMakeLists.txt and WasiEnableCompositeR2R in
 // WasiApp.CoreCLR.targets. Without them this probe compiles but can never be satisfied.
 //
@@ -53,7 +52,7 @@ static constexpr uint32_t g_wasi_r2r_image_cap = WASI_R2R_IMAGE_CAP;
 // The table index at which the composite's functions are installed. Under the reservation model the
 // host is linked with `-Wl,--table-base=<N+1>`, which moves corerun's own address-taken functions up
 // to start at N+1 and leaves slots 1..N free, so the composite always sits at base 1 regardless of
-// its size. This MUST match the `__table_base` global supplied to the merge (see eng/wasi-r2r/README.md);
+// its size. This MUST match the `__table_base` global supplied to the merge (see docs/design/mono/webcil.md);
 // the two are a coupled constant and a mismatch is silent -- see the patch in WasiStaticR2RProbe.
 #ifndef WASI_R2R_TABLE_BASE
 #define WASI_R2R_TABLE_BASE (1u)
@@ -250,7 +249,7 @@ static bool WasiStaticR2RProbe(const char* name, const char* const* dirs, size_t
         //
         // NOTE: the cap test above cannot protect this buffer -- the engine installs the segment before any
         // host code runs, so an over-cap payload has already overwritten whatever follows by the time we look.
-        // The enforceable check is at build time; pipeline_shim.py compares the payload size against the cap.
+        // The enforceable check is at build time; compose-r2r.py compares the payload size against the cap.
         uint8_t* hdr = &g_wasi_r2r_image[0];
         if (WasiWebcilHeaderSize(hdr, (size_t)payloadSize) >= WEBCIL_HEADER_V1_SIZE)
         {
@@ -305,7 +304,7 @@ extern "C" __attribute__((export_name("wasi_r2r_image_base"))) uint32_t wasi_r2r
 
 // The staging buffer's capacity and the table slot the composite installs at, exported for the same
 // reason as the base: the splice must not carry its own copy of either. The host owns these values;
-// eng/wasi-r2r/pipeline_shim.py reads them out of the linked binary and validates the composite
+// compose-r2r.py reads them out of the linked binary and validates the composite
 // against them, so a mismatch is a build-time error instead of a wrong-function dispatch at runtime.
 #ifdef WASI_R2R_EXTERNAL_IMAGE_BUFFER
 #define WASI_R2R_IMAGE_CAP_WEAK __attribute__((weak))

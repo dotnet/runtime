@@ -11,7 +11,7 @@
     <WasiCoreCLRHostNativeDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'wasi-wasm.$(Configuration)', 'sharedFramework'))</WasiCoreCLRHostNativeDir>
     <WasiCoreCLRNativeRuntimeDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'coreclr', 'wasi.wasm.$(Configuration)', 'sharedFramework'))</WasiCoreCLRNativeRuntimeDir>
     <WasiCoreCLRSystemPrivateCoreLibPath>$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'coreclr', 'wasi.wasm.$(Configuration)', 'IL', 'System.Private.CoreLib.dll'))</WasiCoreCLRSystemPrivateCoreLibPath>
-    <WasiR2RComposeToolPath>$([MSBuild]::NormalizePath('$(RepoRoot)', 'eng', 'wasi-r2r', 'pipeline_shim.py'))</WasiR2RComposeToolPath>
+    <WasiR2RComposeToolPath>$(MSBuildThisFileDirectory)compose-r2r.py</WasiR2RComposeToolPath>
     <!-- Full ICU globalization: the wasihost corehost preloads icudt.dat (see
          src/native/corehost/wasihost / WasiApp.CoreCLR.targets), so the leg no longer needs
          invariant mode. -->

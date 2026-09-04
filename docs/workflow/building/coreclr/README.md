@@ -96,6 +96,7 @@ Detailed instructions on how to do cross-compilation can be found in the cross-b
 For specialized platforms, detailed instructions are available in the following guides:
 
 - **WebAssembly:** [Building CoreCLR for WebAssembly](/docs/workflow/building/coreclr/wasm.md) - Experimental support for building, running, and debugging CoreCLR on WebAssembly.
+- **WASI ReadyToRun:** [Publishing and testing composite R2R images](wasi-r2r.md) - Experimental CoreCLR-WASI composition workflow.
 
 ## Other Features
 

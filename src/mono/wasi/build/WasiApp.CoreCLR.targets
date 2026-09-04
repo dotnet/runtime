@@ -402,13 +402,13 @@
       <_WasiRelinkOutput>$(_WasiRelinkObjDir)corerun</_WasiRelinkOutput>
       <_WasiPublishedHost>$(WasmAppDir)managed\corerun</_WasiPublishedHost>
       <!-- Opt-in: link the app host so a composite ReadyToRun image can be spliced into it afterwards
-           (see eng/wasi-r2r/README.md). Off by default because the table reservation below is a fixed
+           (see docs/workflow/building/coreclr/wasi-r2r.md). Off by default because the table reservation below is a fixed
            cost paid by every app whether or not it is ever spliced. -->
       <WasiEnableCompositeR2R Condition="'$(WasiEnableCompositeR2R)' == ''">false</WasiEnableCompositeR2R>
       <!-- Table slots 1..N-1 are reserved for the composite's ACTIVE element segment, which the engine
            installs at instantiation - so the table must already be large enough. Reserve by the
            composite's FUNCTION count, not its assembly count. Must be > the composite's function count;
-           eng/wasi-r2r/pipeline_shim.py checks this and names the required value if it is too small. -->
+           compose-r2r.py checks this and names the required value if it is too small. -->
       <WasiCompositeR2RTableBase Condition="'$(WasiCompositeR2RTableBase)' == ''">65537</WasiCompositeR2RTableBase>
     </PropertyGroup>
 
@@ -478,7 +478,7 @@
     <RemoveDir Directories="$(_WasiR2RStubDir)" />
     <MakeDir Directories="$(_WasiR2RComposeOutputDir);$(_WasiR2RStubDir)" />
     <Exec Command="&quot;$(WasiR2RPythonCommand)&quot; &quot;$(WasiR2RComposeToolPath)&quot;"
-          EnvironmentVariables="ROOT=$(RepoRoot);COMP=$(_WasiR2RCompositePath);CORERUN=$(_WasiRelinkOutput);OUTDIR=$(_WasiR2RComposeOutputDir)" />
+          EnvironmentVariables="COMP=$(_WasiR2RCompositePath);CORERUN=$(_WasiRelinkOutput);OUTDIR=$(_WasiR2RComposeOutputDir)" />
     <Copy SourceFiles="$(_WasiR2RComposedHost)"
           DestinationFiles="$(_WasiPublishedHost)" />
     <ItemGroup>
