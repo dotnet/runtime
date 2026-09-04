@@ -299,10 +299,10 @@ namespace System.Net.Security.Tests
 
         // RequestClientCertificate drives the post-handshake CertificateRequest and is a
         // server-only operation. Calling it on a client session must throw
-        // InvalidOperationException. The server-only guard is checked before the
-        // handshake-complete guard, so the throw is observable without any handshake.
+        // InvalidOperationException. The server-only guard is checked before both the
+        // handshake-complete guard and the Apple PlatformNotSupportedException path, so the
+        // throw is observable without any handshake and is consistent across every platform.
         [Fact]
-        [SkipOnPlatform(TestPlatforms.OSX, "SecureTransport does not support post-handshake client authentication.")]
         public void ClientSession_RequestClientCertificate_ThrowsInvalidOperation()
         {
             using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
