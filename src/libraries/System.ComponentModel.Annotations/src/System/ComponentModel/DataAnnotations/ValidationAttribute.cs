@@ -216,6 +216,17 @@ namespace System.ComponentModel.DataAnnotations
             }
         }
 
+        /// <summary>
+        ///     Gets or sets a message that describes the validation rule, suitable for display before validation runs.
+        /// </summary>
+        /// <value>
+        ///     Unlike <see cref="ErrorMessage" />, this message is independent of the
+        ///     <see cref="ErrorMessageResourceName" />/<see cref="ErrorMessageResourceType" /> pair. Supply a localized
+        ///     template from any source; <see cref="FormatDescriptionMessage" /> treats it as a composite format string
+        ///     and routes it through <see cref="FormatMessage" /> so the attribute can apply its arguments.
+        /// </value>
+        public string? DescriptionMessage { get; set; }
+
         #endregion
 
         #region Private Methods
@@ -371,6 +382,22 @@ namespace System.ComponentModel.DataAnnotations
         {
             return string.Format(CultureInfo.CurrentCulture, format, name);
         }
+
+        /// <summary>
+        ///     Formats the <see cref="DescriptionMessage" /> for display.
+        /// </summary>
+        /// <remarks>
+        ///     The base implementation routes <see cref="DescriptionMessage" /> through <see cref="FormatMessage" />, so
+        ///     derived attributes that override <see cref="FormatMessage" /> to supply additional arguments format their
+        ///     description consistently with their error message. Derived attributes can override this method to provide a
+        ///     default description when <see cref="DescriptionMessage" /> is not set.
+        /// </remarks>
+        /// <param name="name">The user-visible name to include in the formatted message.</param>
+        /// <returns>
+        ///     The formatted description, or <see langword="null" /> when no <see cref="DescriptionMessage" /> is configured.
+        /// </returns>
+        public virtual string? FormatDescriptionMessage(string name) =>
+            string.IsNullOrEmpty(DescriptionMessage) ? null : FormatMessage(DescriptionMessage, name);
 
         /// <summary>
         ///     Gets the value indicating whether or not the specified <paramref name="value" /> is valid

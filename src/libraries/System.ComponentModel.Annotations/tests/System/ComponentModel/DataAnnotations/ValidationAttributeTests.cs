@@ -190,6 +190,72 @@ namespace System.ComponentModel.DataAnnotations.Tests
                 attribute.FormatErrorMessage("name"));
         }
 
+        [Fact]
+        public static void Can_get_and_set_DescriptionMessage()
+        {
+            var attribute = new ValidationAttributeNoOverrides();
+            Assert.Null(attribute.DescriptionMessage);
+            attribute.DescriptionMessage = "Usernames must be unique.";
+            Assert.Equal("Usernames must be unique.", attribute.DescriptionMessage);
+        }
+
+        [Theory]
+        [InlineData(null, null)]
+        [InlineData("", null)]
+        [InlineData("Usernames must be unique.", "Usernames must be unique.")]
+        [InlineData("Must include <{0}>", "Must include <name>")]
+        public static void FormatDescriptionMessage_ReturnsExpected(string? descriptionMessage, string? expected)
+        {
+            var attribute = new ValidationAttributeNoOverrides { DescriptionMessage = descriptionMessage };
+            Assert.Equal(expected, attribute.FormatDescriptionMessage("name"));
+        }
+
+        [Fact]
+        public static void FormatDescriptionMessage_DelegatesToFormatMessage()
+        {
+            var attribute = new ValidationAttributeOverrideFormatMessage
+            {
+                DescriptionMessage = "Description with name <{0}>"
+            };
+
+            Assert.Equal(
+                "Description with name <{0}>|name",
+                attribute.FormatDescriptionMessage("name"));
+        }
+
+        [Fact]
+        public static void Can_get_and_set_AsyncStatusMessage()
+        {
+            var attribute = new TestAsyncAlwaysSucceedsAttribute();
+            Assert.Null(attribute.AsyncStatusMessage);
+            attribute.AsyncStatusMessage = "Checking availability...";
+            Assert.Equal("Checking availability...", attribute.AsyncStatusMessage);
+        }
+
+        [Theory]
+        [InlineData(null, null)]
+        [InlineData("", null)]
+        [InlineData("Checking availability...", "Checking availability...")]
+        [InlineData("Checking <{0}>...", "Checking <name>...")]
+        public static void FormatAsyncStatusMessage_ReturnsExpected(string? asyncStatusMessage, string? expected)
+        {
+            var attribute = new TestAsyncAlwaysSucceedsAttribute { AsyncStatusMessage = asyncStatusMessage };
+            Assert.Equal(expected, attribute.FormatAsyncStatusMessage("name"));
+        }
+
+        [Fact]
+        public static void FormatAsyncStatusMessage_DelegatesToFormatMessage()
+        {
+            var attribute = new TestAsyncOverrideFormatMessageAttribute
+            {
+                AsyncStatusMessage = "Checking with name <{0}>"
+            };
+
+            Assert.Equal(
+                "Checking with name <{0}>|name",
+                attribute.FormatAsyncStatusMessage("name"));
+        }
+
         [Theory]
         [InlineData(nameof(ValidationAttributeOverrideBothIsValids.PublicErrorMessageTestProperty), typeof(ValidationAttributeOverrideBothIsValids), "Error Message from PublicErrorMessageTestProperty")]
         [InlineData(nameof(ValidationAttributeOverrideBothIsValids.PublicErrorMessageTestPropertyWithName), typeof(ValidationAttributeOverrideBothIsValids), "Error Message from PublicErrorMessageTestProperty With Name <name>")]
@@ -649,6 +715,18 @@ namespace System.ComponentModel.DataAnnotations.Tests
             {
                 return Task.FromResult<ValidationResult?>(null);
             }
+        }
+
+        private sealed class TestAsyncOverrideFormatMessageAttribute : AsyncValidationAttribute
+        {
+            protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
+                => throw new InvalidOperationException("Use async validation");
+
+            protected override Task<ValidationResult?> IsValidAsync(
+                object? value, ValidationContext validationContext, CancellationToken cancellationToken)
+                => Task.FromResult<ValidationResult?>(ValidationResult.Success);
+
+            public override string FormatMessage(string format, string name) => $"{format}|{name}";
         }
 
         [Fact]

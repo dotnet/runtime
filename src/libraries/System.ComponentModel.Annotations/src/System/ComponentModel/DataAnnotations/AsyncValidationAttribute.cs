@@ -137,5 +137,26 @@ namespace System.ComponentModel.DataAnnotations
             return EnsureValidationResultErrorMessage(result, validationContext);
         }
 
+        /// <summary>
+        ///     Gets or sets a message a UI can show while this attribute's asynchronous validation is in progress.
+        /// </summary>
+        /// <value>
+        ///     Like <see cref="ValidationAttribute.DescriptionMessage" />, this message is independent of the
+        ///     <see cref="ValidationAttribute.ErrorMessageResourceName" />/<see cref="ValidationAttribute.ErrorMessageResourceType" />
+        ///     pair. Supply a localized template from any source; <see cref="FormatAsyncStatusMessage" /> treats it as a
+        ///     composite format string and routes it through <see cref="ValidationAttribute.FormatMessage" />.
+        /// </value>
+        public string? AsyncStatusMessage { get; set; }
+
+        /// <summary>
+        ///     Formats the <see cref="AsyncStatusMessage" /> for display.
+        /// </summary>
+        /// <param name="name">The user-visible name to include in the formatted message.</param>
+        /// <returns>
+        ///     The formatted status message, or <see langword="null" /> when no <see cref="AsyncStatusMessage" /> is configured.
+        /// </returns>
+        public virtual string? FormatAsyncStatusMessage(string name) =>
+            string.IsNullOrEmpty(AsyncStatusMessage) ? null : FormatMessage(AsyncStatusMessage, name);
+
     }
 }
