@@ -785,7 +785,9 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
     //
     if (JitConfig.EnableExtraSuperPmiQueries() && IsReadyToRun())
     {
-        info.compCompHnd->getWasmLowering(clsHnd);
+        eeRunExtraSuperPmiQueries([&]() {
+            info.compCompHnd->getWasmLowering(clsHnd);
+        });
     }
 #endif // DEBUG
 #endif // defined(TARGET_WASM)
@@ -4299,6 +4301,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Import: convert the instrs in each basic block to a tree based intermediate representation
     //
+    activePhaseChecks |= PhaseChecks::CHECK_IR | PhaseChecks::CHECK_IR_RELAXED;
     DoPhase(this, PHASE_IMPORTATION, &Compiler::fgImport);
 
     // If this is a failed inline attempt, we're done.
@@ -4502,6 +4505,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Apply the type update to implicit byref parameters; also choose (based on address-exposed
     // analysis) which implicit byref promotions to keep (requires copy to initialize) or discard.
     //
+    INDEBUG(fgImplicitByRefLclFldsStale = true);
     DoPhase(this, PHASE_MORPH_IMPBYREF, &Compiler::fgRetypeImplicitByRefArgs);
 
 #ifdef DEBUG
@@ -4512,8 +4516,12 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Morph the trees in all the blocks of the method
     //
+    INDEBUG(fgImplicitByRefLclFldsStale = false);
     unsigned const preMorphBBCount = fgBBcount;
     DoPhase(this, PHASE_MORPH_GLOBAL, &Compiler::fgMorphBlocks);
+
+    // Global morph restores the strict IR flag invariants.
+    activePhaseChecks &= ~PhaseChecks::CHECK_IR_RELAXED;
 
     auto postMorphPhase = [this]() {
         // Fix any LclVar annotations on discarded struct promotion temps for implicit by-ref args
@@ -6223,31 +6231,33 @@ int Compiler::compCompileAfterInit(CORINFO_MODULE_HANDLE classPtr,
 #ifdef DEBUG
     if (JitConfig.EnableExtraSuperPmiQueries())
     {
-        // Get the assembly name, to aid finding any particular SuperPMI method context function
-        (void)eeGetClassAssemblyName(info.compClassHnd);
+        eeRunExtraSuperPmiQueries([&]() {
+            // Get the assembly name, to aid finding any particular SuperPMI method context function
+            (void)eeGetClassAssemblyName(info.compClassHnd);
 
-        // Fetch class names for the method's generic parameters.
-        //
-        CORINFO_SIG_INFO sig;
-        info.compCompHnd->getMethodSig(info.compMethodHnd, &sig, nullptr);
+            // Fetch class names for the method's generic parameters.
+            //
+            CORINFO_SIG_INFO sig;
+            info.compCompHnd->getMethodSig(info.compMethodHnd, &sig, nullptr);
 
-        const unsigned classInst = sig.sigInst.classInstCount;
-        if (classInst > 0)
-        {
-            for (unsigned i = 0; i < classInst; i++)
+            const unsigned classInst = sig.sigInst.classInstCount;
+            if (classInst > 0)
             {
-                eeGetClassName(sig.sigInst.classInst[i]);
+                for (unsigned i = 0; i < classInst; i++)
+                {
+                    eeGetClassName(sig.sigInst.classInst[i]);
+                }
             }
-        }
 
-        const unsigned methodInst = sig.sigInst.methInstCount;
-        if (methodInst > 0)
-        {
-            for (unsigned i = 0; i < methodInst; i++)
+            const unsigned methodInst = sig.sigInst.methInstCount;
+            if (methodInst > 0)
             {
-                eeGetClassName(sig.sigInst.methInst[i]);
+                for (unsigned i = 0; i < methodInst; i++)
+                {
+                    eeGetClassName(sig.sigInst.methInst[i]);
+                }
             }
-        }
+        });
     }
 #endif // DEBUG
 

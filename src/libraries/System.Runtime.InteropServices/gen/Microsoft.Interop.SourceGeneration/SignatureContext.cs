@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -39,8 +40,7 @@ namespace Microsoft.Interop
             {
                 foreach (TypePositionInfo typeInfo in ElementTypeInformation)
                 {
-                    if (typeInfo.ManagedIndex != TypePositionInfo.UnsetIndex
-                        && typeInfo.ManagedIndex != TypePositionInfo.ReturnIndex)
+                    if (!TypePositionInfo.IsSpecialIndex(typeInfo.ManagedIndex))
                     {
                         yield return Parameter(Identifier(typeInfo.InstanceIdentifier))
                             .WithType(typeInfo.ManagedType.Syntax)
@@ -59,7 +59,18 @@ namespace Microsoft.Interop
             CodeEmitOptions options,
             Assembly generatorInfoAssembly)
         {
-            ImmutableArray<TypePositionInfo> typeInfos = GenerateTypeInformation(method, marshallingInfoParser, env);
+            return Create(method, marshallingInfoParser, env, options, generatorInfoAssembly, errorHandlingInfo: null);
+        }
+
+        public static SignatureContext Create(
+            IMethodSymbol method,
+            MarshallingInfoParser marshallingInfoParser,
+            StubEnvironment env,
+            CodeEmitOptions options,
+            Assembly generatorInfoAssembly,
+            ErrorHandlingInfo? errorHandlingInfo)
+        {
+            ImmutableArray<TypePositionInfo> typeInfos = GenerateTypeInformation(method, marshallingInfoParser, env, errorHandlingInfo);
 
             ImmutableArray<AttributeListSyntax>.Builder additionalAttrs = ImmutableArray.CreateBuilder<AttributeListSyntax>();
 
@@ -101,7 +112,8 @@ namespace Microsoft.Interop
         private static ImmutableArray<TypePositionInfo> GenerateTypeInformation(
             IMethodSymbol method,
             MarshallingInfoParser marshallingInfoParser,
-            StubEnvironment env)
+            StubEnvironment env,
+            ErrorHandlingInfo? errorHandlingInfo)
         {
             // When the underlying method is a property accessor, bare attributes on the property declaration
             // (e.g. `[MarshalUsing(typeof(X))] string Prop { get; set; }`) land on the property symbol and
@@ -151,7 +163,95 @@ namespace Microsoft.Interop
 
             typeInfos.Add(retTypeInfo);
 
+            if (errorHandlingInfo is not null)
+            {
+                ApplyErrorHandlingInfo(typeInfos, errorHandlingInfo);
+            }
+
             return typeInfos.ToImmutable();
+
+            void ApplyErrorHandlingInfo(ImmutableArray<TypePositionInfo>.Builder infos, ErrorHandlingInfo errorInfo)
+            {
+                TypePositionInfo CreateErrorInfo(
+                    int nativeIndex)
+                {
+                    return new TypePositionInfo(errorInfo.ManagedType, errorInfo.MarshallingInfo)
+                    {
+                        InstanceIdentifier = "__error",
+                        RefKind = nativeIndex == TypePositionInfo.ReturnIndex ? RefKind.None : RefKind.Out,
+                        ManagedIndex = TypePositionInfo.ErrorIndex,
+                        NativeIndex = nativeIndex,
+                        IsErrorHandlingPosition = true,
+                    };
+                }
+
+                bool MatchesManagedType(TypePositionInfo info) => info.ManagedType == errorInfo.ManagedType;
+
+                switch (errorInfo.Location)
+                {
+                    case ErrorHandlingLocation.ReturnValue:
+                        int returnIndex = infos.Count - 1;
+                        TypePositionInfo returnInfo = infos[returnIndex];
+                        if (MatchesManagedType(returnInfo))
+                        {
+                            infos.Add(CreateErrorInfo(TypePositionInfo.ReturnIndex));
+                        }
+                        else if (returnInfo.ManagedType == SpecialTypeInfo.Void)
+                        {
+                            infos[returnIndex] = returnInfo with { NativeIndex = TypePositionInfo.UnsetIndex };
+                            infos.Add(CreateErrorInfo(TypePositionInfo.ReturnIndex));
+                        }
+                        break;
+
+                    case ErrorHandlingLocation.HiddenReturnValue:
+                        int hiddenReturnIndex = infos.Count - 1;
+                        TypePositionInfo hiddenReturnInfo = infos[hiddenReturnIndex];
+                        if (hiddenReturnInfo.ManagedType == SpecialTypeInfo.Void)
+                        {
+                            infos[hiddenReturnIndex] = hiddenReturnInfo with { NativeIndex = TypePositionInfo.UnsetIndex };
+                        }
+                        else
+                        {
+                            // Match the COM ABI transformation: keep the value in the managed return
+                            // position while moving it to a final out parameter in the native signature.
+                            infos[hiddenReturnIndex] = hiddenReturnInfo with
+                            {
+                                RefKind = RefKind.Out,
+                                NativeIndex = method.Parameters.Length,
+                            };
+                        }
+
+                        infos.Add(CreateErrorInfo(TypePositionInfo.ReturnIndex));
+                        break;
+
+                    case ErrorHandlingLocation.LastParameter:
+                        TypePositionInfo lastParameter = GetLastManagedParameter(infos);
+                        Debug.Assert(lastParameter is { RefKind: RefKind.Out or RefKind.Ref }
+                            && MatchesManagedType(lastParameter));
+                        infos.Add(CreateErrorInfo(lastParameter.NativeIndex));
+                        break;
+
+                    case ErrorHandlingLocation.HiddenLastParameter:
+                        infos.Add(CreateErrorInfo(method.Parameters.Length));
+                        break;
+
+                }
+
+                static TypePositionInfo GetLastManagedParameter(ImmutableArray<TypePositionInfo>.Builder infos)
+                {
+                    TypePositionInfo? lastParameter = null;
+                    foreach (TypePositionInfo info in infos)
+                    {
+                        if (!TypePositionInfo.IsSpecialIndex(info.ManagedIndex)
+                            && (lastParameter is null || info.ManagedIndex > lastParameter.ManagedIndex))
+                        {
+                            lastParameter = info;
+                        }
+                    }
+
+                    return lastParameter ?? throw new UnreachableException();
+                }
+            }
         }
 
         private static ImmutableArray<AttributeData> MergeAccessorAndPropertyAttributes(

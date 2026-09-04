@@ -169,9 +169,14 @@ void Phase::PostPhase(PhaseStatus status)
             m_compiler->fgDebugCheckInitBB();
         }
 
+        assert(!hasFlag(checks, PhaseChecks::CHECK_IR_RELAXED) || hasFlag(checks, PhaseChecks::CHECK_IR));
+
         if (hasFlag(checks, PhaseChecks::CHECK_IR))
         {
+            int const extraFlagsBefore = m_compiler->Metrics.IRExtraFlags;
             m_compiler->fgDebugCheckLinks();
+            int const extraFlags = m_compiler->Metrics.IRExtraFlags - extraFlagsBefore;
+            JITDUMP("IR flag check found %d extra flags after %s\n", extraFlags, m_name);
         }
 
         if (hasFlag(checks, PhaseChecks::CHECK_EH))

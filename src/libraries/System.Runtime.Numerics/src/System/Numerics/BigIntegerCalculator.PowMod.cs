@@ -36,6 +36,178 @@ namespace System.Numerics
             valueCopyBuffer.Dispose();
         }
 
+        /// <summary>
+        /// Combines the low exponent bits into one native-word power, then multiplies cached
+        /// <c>value^(2^i)</c> entries selected by the remaining bits, continuing by squaring the
+        /// last entry when the exponent exceeds the table.
+        /// </summary>
+        public static void Pow(
+            nuint value,
+            int powerTableStartIndex,
+            ReadOnlySpan<int> powerIndices,
+            ReadOnlySpan<nuint> powers,
+            nuint power,
+            Span<nuint> bits)
+        {
+            Debug.Assert(power != 0);
+
+            nuint smallPower = PowSmall(value, power & (((nuint)1 << powerTableStartIndex) - 1));
+            power >>= powerTableStartIndex;
+
+            if (power == 0)
+            {
+                bits[0] = smallPower;
+                bits[1..].Clear();
+                return;
+            }
+
+            Span<nuint> temp = BigInteger.RentedBuffer.Create(bits.Length, out BigInteger.RentedBuffer tempBuffer);
+
+            if ((uint)BitOperations.Log2(power) < (uint)powerIndices.Length)
+            {
+                Span<nuint> result = PowCore(powerIndices, powers, temp, power, smallPower, bits);
+                result.CopyTo(bits);
+                bits.Slice(result.Length).Clear();
+            }
+            else
+            {
+                Span<nuint> continuationPower = BigInteger.RentedBuffer.Create(
+                    bits.Length, out BigInteger.RentedBuffer continuationPowerBuffer);
+                Span<nuint> result = PowCore(
+                    powerIndices, powers, continuationPower, temp, power, smallPower, bits);
+                result.CopyTo(bits);
+                bits.Slice(result.Length).Clear();
+                continuationPowerBuffer.Dispose();
+            }
+
+            tempBuffer.Dispose();
+        }
+
+        private static Span<nuint> PowCore(
+            ReadOnlySpan<int> powerIndices,
+            ReadOnlySpan<nuint> powers,
+            Span<nuint> temp,
+            nuint power,
+            nuint smallPower,
+            Span<nuint> result)
+        {
+            int resultLength = smallPower == 1 ? 0 : 1;
+            int index = 0;
+
+            result[0] = smallPower;
+
+            while (power != 0)
+            {
+                if ((power & 1) != 0)
+                {
+                    ReadOnlySpan<nuint> selectedPower = GetPower(powerIndices, powers, index);
+
+                    if (resultLength == 0)
+                    {
+                        selectedPower.CopyTo(result);
+                        resultLength = selectedPower.Length;
+                    }
+                    else
+                    {
+                        resultLength = MultiplySelf(ref result, resultLength, selectedPower, ref temp);
+                    }
+                }
+
+                power >>= 1;
+                index++;
+            }
+
+            return result.Slice(0, resultLength);
+        }
+
+        private static Span<nuint> PowCore(
+            ReadOnlySpan<int> powerIndices,
+            ReadOnlySpan<nuint> powers,
+            Span<nuint> value,
+            Span<nuint> temp,
+            nuint power,
+            nuint smallPower,
+            Span<nuint> result)
+        {
+            int resultLength = smallPower == 1 ? 0 : 1;
+
+            result[0] = smallPower;
+
+            for (int index = 0; index < powerIndices.Length; index++)
+            {
+                if ((power & 1) != 0)
+                {
+                    ReadOnlySpan<nuint> selectedPower = GetPower(powerIndices, powers, index);
+
+                    if (resultLength == 0)
+                    {
+                        selectedPower.CopyTo(result);
+                        resultLength = selectedPower.Length;
+                    }
+                    else
+                    {
+                        resultLength = MultiplySelf(ref result, resultLength, selectedPower, ref temp);
+                    }
+                }
+
+                power >>= 1;
+            }
+
+            Debug.Assert(power != 0);
+
+            ReadOnlySpan<nuint> lastPower = GetPower(powerIndices, powers, powerIndices.Length - 1);
+            int valueLength = lastPower.Length * 2;
+            Square(lastPower, value[..valueLength]);
+            valueLength = ActualLength(value[..valueLength]);
+
+            while (power != 0)
+            {
+                if ((power & 1) != 0)
+                {
+                    if (resultLength == 0)
+                    {
+                        value[..valueLength].CopyTo(result);
+                        resultLength = valueLength;
+                    }
+                    else
+                    {
+                        resultLength = MultiplySelf(ref result, resultLength, value[..valueLength], ref temp);
+                    }
+                }
+
+                if (power != 1)
+                {
+                    valueLength = SquareSelf(ref value, valueLength, ref temp);
+                }
+
+                power >>= 1;
+            }
+
+            return result[..resultLength];
+        }
+
+        private static nuint PowSmall(nuint value, nuint power)
+        {
+            nuint result = 1;
+
+            while (power != 0)
+            {
+                if ((power & 1) != 0)
+                {
+                    result *= value;
+                }
+
+                if (power != 1)
+                {
+                    value *= value;
+                }
+
+                power >>= 1;
+            }
+
+            return result;
+        }
+
         private static Span<nuint> PowCore(Span<nuint> value, int valueLength, Span<nuint> temp, nuint power, Span<nuint> result)
         {
             Debug.Assert(value.Length >= valueLength);
@@ -64,7 +236,7 @@ namespace System.Numerics
             return result.Slice(0, resultLength);
         }
 
-        private static int MultiplySelf(ref Span<nuint> left, int leftLength, ReadOnlySpan<nuint> right, ref Span<nuint> temp)
+        private static int MultiplySelf(ref Span<nuint> left, int leftLength, scoped ReadOnlySpan<nuint> right, ref Span<nuint> temp)
         {
             Debug.Assert(leftLength <= left.Length);
 

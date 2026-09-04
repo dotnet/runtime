@@ -81,6 +81,17 @@ namespace System.ComponentModel.DataAnnotations.Tests
             Assert.Equal(maximumLength, attr.MaximumLength);
         }
 
+        [Fact]
+        public static void FormatMessage_UsesSuppliedFormatAndLengths()
+        {
+            const string ExternalFormat = "external {0}:{1}:{2}";
+            const string ErrorMessageFormat = "internal {0}:{1}:{2}";
+            var attribute = new LengthAttribute(10, 20) { ErrorMessage = ErrorMessageFormat };
+
+            Assert.Equal("external name:10:20", attribute.FormatMessage(ExternalFormat, "name"));
+            Assert.Equal("internal name:10:20", attribute.FormatErrorMessage("name"));
+        }
+
         [Theory]
         [MemberData(nameof(ValidValues_ICollection))]
         public void Validate_ICollection_Valid(LengthAttribute attribute, object value)
