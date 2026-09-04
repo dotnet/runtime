@@ -223,6 +223,10 @@ HRESULT EEStartup();
 
 static void InitializeGarbageCollector();
 
+#if defined(TARGET_UNIX) && !defined(TARGET_WASM)
+static void InitThreadStateKey();
+#endif
+
 #ifdef DEBUGGING_SUPPORTED
 static void InitializeDebugger(void);
 static void TerminateDebugger(void);
@@ -708,6 +712,10 @@ void EEStartupHelper()
 
         InitThreadManager();
         STRESS_LOG0(LF_STARTUP, LL_ALWAYS, "Returned successfully from InitThreadManager");
+
+#if defined(TARGET_UNIX) && !defined(TARGET_WASM)
+        InitThreadStateKey();
+#endif
 
 #ifdef FEATURE_PERFTRACING
         // Initialize the event pipe.
@@ -1700,6 +1708,11 @@ static uint32_t g_flsIndex = FLS_OUT_OF_INDEXES;
 
 static PLATFORM_THREAD_LOCAL byte t_flsState;
 
+static bool HasThreadStateBeenDestroyed()
+{
+    return t_flsState == FLS_STATE_INVOKED;
+}
+
 // This is called when each *fiber* is destroyed. When the home fiber of a thread is destroyed,
 // it means that the thread itself is destroyed.
 // Since we receive that notification outside of the Loader Lock, it allows us to safely acquire
@@ -1736,20 +1749,7 @@ static void OsAttachThread(void* thread)
 {
     _ASSERTE(g_flsIndex != FLS_OUT_OF_INDEXES);
 
-    if (t_flsState == FLS_STATE_INVOKED)
-    {
-        // Managed C++ may run managed code in DllMain (e.g. during DLL_PROCESS_DETACH to run global destructors). This is
-        // not supported and unreliable. Historically, it happened to work most of the time. For backward compatibility,
-        // suppress this assert in release builds if we have encountered any mixed mode binaries.
-        if (Module::HasAnyIJWBeenLoaded())
-        {
-            _ASSERTE(!"Attempt to execute managed code after the .NET runtime thread state has been destroyed.");
-        }
-        else
-        {
-            _ASSERTE_ALL_BUILDS(!"Attempt to execute managed code after the .NET runtime thread state has been destroyed.");
-        }
-    }
+    CheckThreadStateNotDestroyed();
 
     t_flsState = FLS_STATE_ARMED;
 
@@ -1794,6 +1794,49 @@ void EnsureTlsDestructionMonitor()
 }
 
 #else
+#if defined(TARGET_UNIX) && !defined(TARGET_WASM)
+static pthread_key_t g_threadStateKey;
+static byte g_threadStateDestroyedMarker;
+
+static void SetThreadStateDestroyed()
+{
+    if (pthread_setspecific(g_threadStateKey, &g_threadStateDestroyedMarker) != 0)
+    {
+        EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
+    }
+}
+
+// POSIX clears a key before invoking its destructor, and key destructor order is unspecified.
+// Restore the marker so managed re-entry from later destructors can observe the destroyed state.
+static void ThreadStateKeyDestructor(void* state)
+{
+    if (state == &g_threadStateDestroyedMarker)
+    {
+        SetThreadStateDestroyed();
+    }
+}
+
+static void InitThreadStateKey()
+{
+    if (pthread_key_create(&g_threadStateKey, ThreadStateKeyDestructor) != 0)
+    {
+        COMPlusThrowOM();
+    }
+}
+
+static bool HasThreadStateBeenDestroyed()
+{
+    return pthread_getspecific(g_threadStateKey) == &g_threadStateDestroyedMarker;
+}
+#else
+static PLATFORM_THREAD_LOCAL bool t_threadStateDestroyed;
+
+static bool HasThreadStateBeenDestroyed()
+{
+    return t_threadStateDestroyed;
+}
+#endif
+
 struct TlsDestructionMonitor
 {
     bool m_activated = false;
@@ -1809,6 +1852,12 @@ struct TlsDestructionMonitor
         {
             RuntimeThreadShutdown(GetThreadNULLOk());
         }
+
+#if defined(TARGET_UNIX) && !defined(TARGET_WASM)
+        SetThreadStateDestroyed();
+#else
+        t_threadStateDestroyed = true;
+#endif
     }
 };
 
@@ -1822,6 +1871,31 @@ void EnsureTlsDestructionMonitor()
 }
 
 #endif
+
+void CheckThreadStateNotDestroyed()
+{
+    if (!HasThreadStateBeenDestroyed())
+    {
+        return;
+    }
+
+#if defined(TARGET_UNIX) && !defined(TARGET_WASM)
+    minipal_log_write_error("Attempt to execute managed code after the .NET runtime thread state has been destroyed.\n");
+    PAL_Abort();
+#else
+    // Managed C++ may run managed code in DllMain (e.g. during DLL_PROCESS_DETACH to run global destructors). This is
+    // not supported and unreliable. Historically, it happened to work most of the time. For backward compatibility,
+    // suppress this assert in release builds if we have encountered any mixed mode binaries.
+    if (Module::HasAnyIJWBeenLoaded())
+    {
+        _ASSERTE(!"Attempt to execute managed code after the .NET runtime thread state has been destroyed.");
+    }
+    else
+    {
+        _ASSERTE_ALL_BUILDS(!"Attempt to execute managed code after the .NET runtime thread state has been destroyed.");
+    }
+#endif
+}
 
 #ifdef DEBUGGING_SUPPORTED
 //
