@@ -32,6 +32,9 @@ namespace System.Security.Cryptography.Xml.Tests
 
     public class XmlDecryptionTransformTest
     {
+        private const string DangerousMaxDecryptionCountAppContextSwitch = "System.Security.Cryptography.Xml.DangerousMaxDecryptionCount";
+        private const string MaxEncryptedDataElementsExceededMessage = "The number of EncryptedData elements processed during decryption has exceeded the maximum allowed for a single operation.";
+
         private UnprotectedXmlDecryptionTransform transform;
 
         public XmlDecryptionTransformTest()
@@ -225,6 +228,65 @@ namespace System.Security.Cryptography.Xml.Tests
 
 #if NET
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void GetOutput_ExcludedEncryptedDataCandidates_ZeroDisablesLimit()
+        {
+            RemoteExecutor.Invoke(static () =>
+            {
+                AppContext.SetData(DangerousMaxDecryptionCountAppContextSwitch, 0);
+
+                XmlDecryptionTransform transform = CreateTransformWithExcludedCandidates(257);
+                Assert.NotNull(transform.GetOutput(typeof(XmlDocument)));
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void GetOutput_ExcludedEncryptedDataCandidates_ResetAfterException()
+        {
+            RemoteExecutor.Invoke(static () =>
+            {
+                const int MaxCandidateCount = 2;
+                AppContext.SetData(DangerousMaxDecryptionCountAppContextSwitch, MaxCandidateCount);
+
+                CryptographicException exception = Assert.Throws<CryptographicException>(
+                    () => CreateTransformWithExcludedCandidates(MaxCandidateCount + 1).GetOutput());
+                Assert.Equal(MaxEncryptedDataElementsExceededMessage, exception.Message);
+
+                Assert.NotNull(CreateTransformWithExcludedCandidates(MaxCandidateCount).GetOutput());
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void GetOutput_RecursivelyRevealedEncryptedDataCandidate_CountsTowardLimit()
+        {
+            RemoteExecutor.Invoke(static () =>
+            {
+                AppContext.SetData(DangerousMaxDecryptionCountAppContextSwitch, 2);
+
+                using Aes aes = Aes.Create();
+                XmlDocument document = new XmlDocument();
+                document.LoadXml(
+                    $"<root><secret><EncryptedData xmlns=\"{EncryptedXml.XmlEncNamespaceUrl}\" Id=\"nested\" /></secret>" +
+                    $"<EncryptedData xmlns=\"{EncryptedXml.XmlEncNamespaceUrl}\" Id=\"excluded\" /></root>");
+                EncryptedXml encryptedXml = new EncryptedXml(document);
+                encryptedXml.AddKeyNameMapping("aes", aes);
+
+                XmlElement secret = (XmlElement)document.GetElementsByTagName("secret")[0];
+                EncryptedData encryptedData = encryptedXml.Encrypt(secret, "aes");
+                EncryptedXml.ReplaceElement(secret, encryptedData, content: false);
+
+                XmlDecryptionTransform transform = new XmlDecryptionTransform
+                {
+                    EncryptedXml = encryptedXml,
+                };
+                transform.AddExceptUri("excluded");
+                transform.LoadInput(document);
+
+                CryptographicException exception = Assert.Throws<CryptographicException>(transform.GetOutput);
+                Assert.Equal(MaxEncryptedDataElementsExceededMessage, exception.Message);
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void GetOutput_EncryptedDataCountExceeded()
         {
             RemoteExecutor.Invoke(static () =>
@@ -251,9 +313,30 @@ namespace System.Security.Cryptography.Xml.Tests
                 transform.LoadInput(document);
 
                 CryptographicException exception = Assert.Throws<CryptographicException>(transform.GetOutput);
-                Assert.Equal("The XML document has exceeded the maximum number of elements allowed for decryption.", exception.Message);
+                Assert.Equal(MaxEncryptedDataElementsExceededMessage, exception.Message);
             }).Dispose();
         }
+
+        private static XmlDecryptionTransform CreateTransformWithExcludedCandidates(int candidateCount)
+        {
+            XmlDocument document = new XmlDocument();
+            XmlElement root = document.CreateElement("root");
+            document.AppendChild(root);
+
+            XmlDecryptionTransform transform = new XmlDecryptionTransform();
+            for (int i = 0; i < candidateCount; i++)
+            {
+                string id = $"candidate-{i}";
+                XmlElement candidate = document.CreateElement("EncryptedData", EncryptedXml.XmlEncNamespaceUrl);
+                candidate.SetAttribute("Id", id);
+                root.AppendChild(candidate);
+                transform.AddExceptUri(id);
+            }
+
+            transform.LoadInput(document);
+            return transform;
+        }
+
 #endif
 
         private XmlDocument GetTransformedOutput(XmlDocument doc, string nodeToEncrypt)

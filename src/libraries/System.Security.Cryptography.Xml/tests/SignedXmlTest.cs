@@ -2280,6 +2280,44 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void ComputeSignature_MultipleDecryptionReferences_ExcludedCandidateCountExceeded()
+        {
+            RemoteExecutor.Invoke(static () =>
+            {
+                AppContext.SetData(DangerousMaxDecryptionCountAppContextSwitch, 1);
+
+                using RSA rsa = RSA.Create();
+                XmlDocument document = new();
+                document.LoadXml(
+                    $"<Root><Container Id=\"first\"><EncryptedData xmlns=\"{EncryptedXml.XmlEncNamespaceUrl}\" Id=\"first-candidate\" /></Container>" +
+                    $"<Container Id=\"second\"><EncryptedData xmlns=\"{EncryptedXml.XmlEncNamespaceUrl}\" Id=\"second-candidate\" /></Container></Root>");
+
+                SignedXml signer = new(document)
+                {
+                    SigningKey = rsa,
+                };
+
+                foreach ((string referenceId, string candidateId) in new[]
+                {
+                    ("first", "first-candidate"),
+                    ("second", "second-candidate"),
+                })
+                {
+                    XmlDecryptionTransform transform = new();
+                    transform.AddExceptUri(candidateId);
+                    Reference reference = new($"#{referenceId}");
+                    reference.AddTransform(transform);
+                    signer.AddReference(reference);
+                }
+
+                CryptographicException exception = Assert.Throws<CryptographicException>(signer.ComputeSignature);
+                Assert.Equal(
+                    "The number of EncryptedData elements processed during decryption has exceeded the maximum allowed for a single operation.",
+                    exception.Message);
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void CheckSignatureReturningKey_MultipleKeys_CountExceeded()
         {
             RemoteExecutor.Invoke(static () =>
