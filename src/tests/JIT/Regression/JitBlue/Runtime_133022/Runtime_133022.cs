@@ -62,6 +62,18 @@ public static class Runtime_133022
         AssertEqual(Vector128.Create(-0.0f, +0.0f, -2.0f, +0.0f),
                     Vector128.MaxNumber(zeroSingle128, otherZeroSingle128));
 
+        float positiveNaN = BitConverter.Int32BitsToSingle(0x7FC0_0001);
+        float negativeNaN = BitConverter.Int32BitsToSingle(unchecked((int)0xFFC0_0001));
+        Vector128<float> mixedSingle128 = Vector128.Create(-1.0f, -2.0f, -0.0f, +0.0f);
+        Vector128<float> otherMixedSingle128 = Opaque(Vector128.Create(positiveNaN, negativeNaN, +0.0f, -0.0f));
+        Vector128<float> minMixedSingle128 = Vector128.Create(float.NaN, float.NaN, -0.0f, -0.0f);
+        Vector128<float> maxMixedSingle128 = Vector128.Create(float.NaN, float.NaN, +0.0f, +0.0f);
+
+        AssertEqualIgnoringNaNBits(minMixedSingle128, Vector128.Min(mixedSingle128, otherMixedSingle128));
+        AssertEqualIgnoringNaNBits(minMixedSingle128, Vector128.Min(otherMixedSingle128, mixedSingle128));
+        AssertEqualIgnoringNaNBits(maxMixedSingle128, Vector128.Max(mixedSingle128, otherMixedSingle128));
+        AssertEqualIgnoringNaNBits(maxMixedSingle128, Vector128.Max(otherMixedSingle128, mixedSingle128));
+
         Vector256<double> nan256 = Vector256.Create(double.NaN, double.PositiveInfinity, 1.0, 2.0);
         Vector256<double> otherNan256 = Opaque(Vector256.Create(double.PositiveInfinity, double.NaN, 2.0, 1.0));
         Vector256<double> propagatedNaN256 = Vector256.Create(double.NaN, double.NaN, 1.0, 1.0);
@@ -110,6 +122,25 @@ public static class Runtime_133022
 
     private static void AssertEqual(Vector128<float> expected, Vector128<float> actual)
         => Assert.Equal(expected.AsUInt32(), actual.AsUInt32());
+
+    private static void AssertEqualIgnoringNaNBits(Vector128<float> expected, Vector128<float> actual)
+    {
+        for (int index = 0; index < Vector128<float>.Count; index++)
+        {
+            float expectedElement = expected.GetElement(index);
+            float actualElement = actual.GetElement(index);
+
+            if (float.IsNaN(expectedElement))
+            {
+                Assert.True(float.IsNaN(actualElement));
+            }
+            else
+            {
+                Assert.Equal(BitConverter.SingleToInt32Bits(expectedElement),
+                             BitConverter.SingleToInt32Bits(actualElement));
+            }
+        }
+    }
 
     private static void AssertEqual(Vector256<double> expected, Vector256<double> actual)
         => Assert.Equal(expected.AsUInt64(), actual.AsUInt64());
