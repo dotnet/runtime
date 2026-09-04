@@ -129,8 +129,7 @@ namespace System.Reflection.Runtime.PropertyInfos.NativeFormat
 
         protected sealed override bool GetDefaultValueIfAny(bool raw, out object? defaultValue)
         {
-            return DefaultValueParser.GetDefaultValueFromConstantIfAny(_reader, _property.DefaultValue, PropertyType, raw, out defaultValue)
-                || DefaultValueParser.GetDefaultValueFromAttributeIfAny(GetCustomAttributesData(), raw, out defaultValue);
+            return DefaultValueParser.GetDefaultValueFromConstantIfAny(_reader, _property.DefaultValue, PropertyType, raw, out defaultValue);
         }
 
         protected sealed override RuntimeNamedMethodInfo GetPropertyMethod(PropertyMethodSemantics whichMethod)
