@@ -3021,6 +3021,15 @@ void MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(PCODE entryPoint)
     }
 
     MethodDesc* pMD = PortableEntryPoint::GetMethodDesc(entryPoint);
+
+#ifdef FEATURE_READYTORUN
+    // R2R disabled: no R2R code can call this method, so no R2R->interpreter thunk is needed.
+    if (!g_pConfig->ReadyToRun())
+    {
+        return;
+    }
+#endif
+
     void* pPortableEntryPointToInterpreter = GetPortableEntryPointToInterpreterThunk(pMD);
     if (pPortableEntryPointToInterpreter != nullptr)
     {
@@ -3045,9 +3054,15 @@ void MethodDesc::SetPortableEntrypointInitialStateForMethod(PortableEntryPoint *
     if (IsUnboxingStub())
     {
         UnboxingStubPortableEntryPoint::FromEntryPoint((PCODE)portableEntry)->Init(this);
+        return;
     }
-    else
-    if (!IsDynamicMethod() && portableEntry->HasNativeCodeUnchecked())
+
+    bool installInterpreterThunk = !IsDynamicMethod() && portableEntry->HasNativeCodeUnchecked();
+#ifdef FEATURE_READYTORUN
+    // With R2R disabled no R2R code exists to call this method, so don't install an R2R->interpreter thunk.
+    installInterpreterThunk = installInterpreterThunk && g_pConfig->ReadyToRun();
+#endif
+    if (installInterpreterThunk)
     {
         void* pPortableEntryPointToInterpreter = GetPortableEntryPointToInterpreterThunk(this);
         _ASSERTE(pPortableEntryPointToInterpreter != nullptr);

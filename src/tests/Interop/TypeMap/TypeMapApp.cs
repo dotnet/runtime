@@ -323,11 +323,17 @@ public class TypeMap
         Assert.Equal(typeof(C1), externalMap["blob_only_c1"]);
         Assert.Equal(typeof(S1), externalMap["blob_only_s1"]);
         Assert.Equal(typeof(Lib5Type1), externalMap["lib5_type1"]);
+        Assert.True(externalMap.TryGetValue("lib5_type1", out Type? cachedExternalType));
+        Assert.Equal(typeof(Lib5Type1), cachedExternalType);
 
         IReadOnlyDictionary<Type, Type> proxyMap = TypeMapping.GetOrCreateProxyTypeMapping<BlobOnlyAttributeTypeNames>();
         Assert.Equal(typeof(S1), proxyMap[typeof(C1)]);
         Assert.Equal(typeof(C1), proxyMap[typeof(S1)]);
         Assert.Equal(typeof(Lib5Proxy1), proxyMap[new Lib5Type1().GetType()]);
+        Assert.Equal(typeof(C1), proxyMap[new DupType_MapObject().GetType()]);
+        Assert.Equal(typeof(S1), proxyMap[new DupType_MapString().GetType()]);
+        Assert.True(proxyMap.TryGetValue(typeof(Lib5Type1), out Type? cachedProxyType));
+        Assert.Equal(typeof(Lib5Proxy1), cachedProxyType);
     }
 
     [Fact]

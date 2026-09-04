@@ -6119,6 +6119,12 @@ public:
 
     bool fgGlobalMorphDone = false;
 
+#ifdef DEBUG
+    // Retyping implicit byref parameters temporarily leaves existing local field
+    // accesses described using their pre-retyping struct types.
+    bool fgImplicitByRefLclFldsStale = false;
+#endif
+
     bool     impBoxTempInUse; // the temp below is valid and available
     unsigned impBoxTemp;      // a temporary that is used for boxing
 

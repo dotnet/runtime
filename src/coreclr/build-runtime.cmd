@@ -281,6 +281,9 @@ if "%__TargetOS%"=="android" (
 if "%__TargetOS%"=="browser" (
     set __CrossTarget=1
 )
+if "%__TargetOS%"=="wasi" (
+    set __CrossTarget=1
+)
 
 if %__CrossTarget% EQU 0 (
     call "%__RepoRootDir%\eng\native\version\copy_version_files.cmd"
