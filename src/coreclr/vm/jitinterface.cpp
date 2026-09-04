@@ -11205,7 +11205,10 @@ static CORJIT_FLAGS GetCompileFlags(PrepareCodeConfig* prepareConfig, MethodDesc
 #endif
 
     // The HostCodeHeap used by dynamic methods does not support separate cold code allocations.
-    if (flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_BBOPT) && !ftn->IsDynamicMethod())
+    // Runtime async methods do not yet support discontiguous code.
+    if (flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_BBOPT) &&
+        !flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_ASYNC) &&
+        !ftn->IsDynamicMethod())
     {
         flags.Set(CORJIT_FLAGS::CORJIT_FLAG_PROCSPLIT);
     }
