@@ -921,7 +921,7 @@ namespace ComWrappersTests
             {
                 Interlocked.Increment(ref CreateObjectCount);
 
-                _barrier.SignalAndWait(TimeSpan.FromMinutes(1));
+Assert.True(_barrier.SignalAndWait(TimeSpan.FromMinutes(1)), "Timed out waiting for the barrier.");
 
                 lock (_lock)
                 {
