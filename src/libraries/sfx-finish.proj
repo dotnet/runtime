@@ -11,6 +11,9 @@
 
     <PackageOverridesInputPath>$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\PackageOverrides.txt</PackageOverridesInputPath>
     <PackageOverridesOutputPath>$(MicrosoftNetCoreAppRefPackDataDir)PackageOverrides.txt</PackageOverridesOutputPath>
+
+    <!-- On WebAssembly, validate that the trimmed framework assemblies P/Invoke only statically-linked modules. -->
+    <_ValidateWasmFrameworkPInvokes Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi'">true</_ValidateWasmFrameworkPInvokes>
   </PropertyGroup>
 
   <ItemGroup>
@@ -19,6 +22,15 @@
 
     <PackageReference Include="Microsoft.DotNet.Build.Tasks.Templating" Version="$(MicrosoftDotNetBuildTasksTemplatingVersion)" />
   </ItemGroup>
+
+  <!-- The module allow-list is shared with the runtime tests' corerun relink and the checked-in call tables. -->
+  <Import Project="$(RepositoryEngineeringDir)wasm\WasmPInvokeModules.props"
+          Condition="'$(_ValidateWasmFrameworkPInvokes)' == 'true'" />
+
+  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.CoreClr.PInvokeModuleValidator"
+             AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)"
+             TaskFactory="TaskHostFactory"
+             Condition="'$(_ValidateWasmFrameworkPInvokes)' == 'true'" />
 
   <Target Name="GetGenerateFrameworkListFileInputs">
     <Error Text="Shared framework assemblies must be built before the framework list can be generated."
@@ -142,6 +154,19 @@
         ExtraArgs="$(SharedFrameworkILLinkArgs)"
         ToolExe="$(_DotNetHostFileName)"
         ToolPath="$(_DotNetHostDirectory)" />
+
+    <!-- Fail the build if any trimmed WebAssembly framework assembly still P/Invokes a module that isn't
+         statically linked (allow-listed or lib-prefix fallback), imported via [WasmImportLinkage], "*" or QCall. -->
+    <ItemGroup Condition="'$(_ValidateWasmFrameworkPInvokes)' == 'true'">
+      <_TrimmedSharedFrameworkAssembly Include="@(SharedFrameworkAssembly->'$(SharedFrameworkAssembliesTrimDir)%(Filename)%(Extension)')" />
+      <_WasmValidatorIgnoredPInvokeModule Include="libSystem.Globalization.Native" Condition="'$(InvariantGlobalization)' == 'true'" />
+    </ItemGroup>
+
+    <PInvokeModuleValidator Condition="'$(_ValidateWasmFrameworkPInvokes)' == 'true'"
+        Assemblies="@(_TrimmedSharedFrameworkAssembly)"
+        PInvokeModules="@(WasmCoreClrFrameworkPInvokeModule)"
+        IgnoredPInvokeModules="@(_WasmValidatorIgnoredPInvokeModule)"
+        TargetOS="$(TargetOS)" />
 
     <!-- Create a marker file which serves as the target's output to enable incremental builds. -->  
     <Touch Files="$(SharedFrameworkAssembliesTrimMarkerFile)"

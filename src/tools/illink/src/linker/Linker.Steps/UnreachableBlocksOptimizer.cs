@@ -898,6 +898,83 @@ namespace Mono.Linker.Steps
                 return true;
             }
 
+            // Recognizes the OS platform-guard idiom and evaluates it to a constant. Unlike the
+            // OperatingSystem.IsX() predicates (per-target literals the generic analyzer already folds),
+            // IsOSPlatform routes through an instance String.Equals and, for the RuntimeInformation
+            // overload, an opaque OSPlatform struct, so it needs direct handling. The recognized platform
+            // token is mapped to its OperatingSystem.IsX() predicate, which is then folded normally -- that
+            // predicate also encodes the OSX/MacCatalyst aliasing, so no manual replication is needed.
+            bool TryEvaluateOSPlatformGuard(in UnreachableBlocksOptimizer optimizer, MethodDefinition md, Collection<Instruction> instructions, int callIndex, [NotNullWhen(true)] out Instruction? result)
+            {
+                result = null;
+
+                if (md.Name != "IsOSPlatform" || !md.IsStatic || md.GetMetadataParametersCount() != 1 || callIndex < 1)
+                    return false;
+
+                string declaringType = md.DeclaringType.FullName;
+                bool isRuntimeInformation = declaringType == "System.Runtime.InteropServices.RuntimeInformation";
+                bool isOperatingSystem = declaringType == "System.OperatingSystem";
+                if (!isRuntimeInformation && !isOperatingSystem)
+                    return false;
+
+                Instruction argProducer = instructions[callIndex - 1];
+                string? token;
+
+                if (isOperatingSystem)
+                {
+                    // OperatingSystem.IsOSPlatform(string) with a literal platform name.
+                    token = argProducer.OpCode.Code == Code.Ldstr ? (string)argProducer.Operand : null;
+                }
+                else
+                {
+                    // RuntimeInformation.IsOSPlatform(OSPlatform) built from a well-known OSPlatform value.
+                    if (argProducer.OpCode.Code != Code.Call)
+                        return false;
+
+                    MethodDefinition? producer = context.TryResolve((MethodReference)argProducer.Operand);
+                    if (producer == null || producer.DeclaringType.FullName != "System.Runtime.InteropServices.OSPlatform")
+                        return false;
+
+                    token = producer.Name switch
+                    {
+                        "get_Windows" => "WINDOWS",
+                        "get_Linux" => "LINUX",
+                        "get_OSX" => "OSX",
+                        "get_FreeBSD" => "FREEBSD",
+                        "Create" when callIndex >= 2 && instructions[callIndex - 2].OpCode.Code == Code.Ldstr
+                            => (string)instructions[callIndex - 2].Operand,
+                        _ => null,
+                    };
+                }
+
+                string? predicate = token?.ToUpperInvariant() switch
+                {
+                    "WINDOWS" => "IsWindows",
+                    "LINUX" => "IsLinux",
+                    "OSX" or "MACOS" => "IsMacOS",
+                    "BROWSER" => "IsBrowser",
+                    "WASI" => "IsWasi",
+                    "ANDROID" => "IsAndroid",
+                    "IOS" => "IsIOS",
+                    "MACCATALYST" => "IsMacCatalyst",
+                    "TVOS" => "IsTvOS",
+                    "FREEBSD" => "IsFreeBSD",
+                    _ => null, // unknown/custom platform: leave the guard untouched
+                };
+                if (predicate == null)
+                    return false;
+
+                TypeDefinition? operatingSystem = md.DeclaringType.Module.GetType("System.OperatingSystem");
+                MethodDefinition? isPlatform = operatingSystem?.Methods.FirstOrDefault(
+                    m => m.Name == predicate && m.IsStatic && m.HasBody && m.GetMetadataParametersCount() == 0);
+                if (isPlatform == null)
+                    return false;
+
+                // The predicate body is a per-target 'return true/false', which the constant analyzer folds.
+                result = optimizer.TryGetMethodCallResult(new CalleePayload(isPlatform, Array.Empty<Instruction>()))?.Instruction;
+                return result != null;
+            }
+
             public bool ApplyTemporaryInlining(in UnreachableBlocksOptimizer optimizer)
             {
                 bool changed = false;
@@ -919,6 +996,19 @@ namespace Mono.Linker.Steps
                             // Not supported
                             if (md.IsVirtual || md.CallingConvention == MethodCallingConvention.VarArg)
                                 break;
+
+                            // RuntimeInformation.IsOSPlatform(OSPlatform.X) / OperatingSystem.IsOSPlatform("X")
+                            // don't fold through the generic constant analyzer (the argument flows through an
+                            // opaque OSPlatform struct or an instance String.Equals). Recognize the guard idiom
+                            // directly so its dead branch (and any foreign P/Invoke it protects) can be trimmed.
+                            if (context.IsOptimizationEnabled(CodeOptimizations.IPConstantPropagation, Body.Method)
+                                && TryEvaluateOSPlatformGuard(optimizer, md, instructions, i, out Instruction? osGuardResult))
+                            {
+                                RewriteToNop(i - 1, 1);
+                                Rewrite(i, osGuardResult);
+                                changed = true;
+                                break;
+                            }
 
                             Instruction[]? args = GetArgumentsOnStack(md, FoldedInstructions ?? instructions, i);
                             targetResult = args?.Length > 0 && md.IsStatic ? EvaluateIntrinsicCall(md, args) : null;
