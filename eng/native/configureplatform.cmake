@@ -221,10 +221,10 @@ if(CLR_CMAKE_HOST_OS STREQUAL emscripten)
     set(CLR_CMAKE_HOST_BROWSER 1)
 endif(CLR_CMAKE_HOST_OS STREQUAL emscripten)
 
-if(CLR_CMAKE_HOST_OS STREQUAL wasi)
+if(CLR_CMAKE_TARGET_OS STREQUAL wasi)
     set(CLR_CMAKE_HOST_WASI 1)
     set(CLR_CMAKE_HOST_UNIX 1)
-endif(CLR_CMAKE_HOST_OS STREQUAL wasi)
+endif(CLR_CMAKE_TARGET_OS STREQUAL wasi)
 
 #--------------------------------------------
 # This repo builds two set of binaries
