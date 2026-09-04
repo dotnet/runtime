@@ -559,7 +559,7 @@ namespace ComWrappersTests
         // create the RCW for, which is the shape that hits it: handing such an entry out fails in the low
         // tens out of these several thousand attempts, and skipping it, never.
         [ActiveIssue("Not supported on Mono", TestRuntimes.Mono)]
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void ValidateCreateObjectRaceResolvesImmediately()
         {
             Console.WriteLine($"Running {nameof(ValidateCreateObjectRaceResolvesImmediately)}...");
@@ -646,7 +646,7 @@ namespace ComWrappersTests
         // all of those paths together, with collections and finalizers running underneath, to catch an
         // entry ever being read after the handle behind it was freed.
         [ActiveIssue("Not supported on Mono", TestRuntimes.Mono)]
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void ValidateCreateObjectConcurrentCacheAccess()
         {
             Console.WriteLine($"Running {nameof(ValidateCreateObjectConcurrentCacheAccess)}...");
@@ -750,7 +750,7 @@ namespace ComWrappersTests
         // of them can win. Whichever does, every caller has to come back with it, and the objects that
         // lost have to be left exactly as they were rather than half registered.
         [ActiveIssue("Not supported on Mono", TestRuntimes.Mono)]
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void ValidateRegisterAndCreateRaceForSameComInstance()
         {
             Console.WriteLine($"Running {nameof(ValidateRegisterAndCreateRaceForSameComInstance)}...");
@@ -936,7 +936,7 @@ namespace ComWrappersTests
         // wrapper up, and then checks what that registration is for: the wrapper has to be walked, or
         // the managed objects the native object is holding are not kept alive through a collection.
         [ActiveIssue("Not supported on Mono", TestRuntimes.Mono)]
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void ValidateCreateObjectConcurrentTrackerRegistration()
         {
             Console.WriteLine($"Running {nameof(ValidateCreateObjectConcurrentTrackerRegistration)}...");
@@ -1066,7 +1066,7 @@ namespace ComWrappersTests
         // it and the rest release the wrapper they built, so this checks that losing that race leaves the
         // object usable and still mapped to the COM instance it was created for.
         [ActiveIssue("Not supported on Mono", TestRuntimes.Mono)]
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void ValidateCreateObjectRaceReturningSameObject()
         {
             Console.WriteLine($"Running {nameof(ValidateCreateObjectRaceReturningSameObject)}...");
@@ -1172,7 +1172,7 @@ namespace ComWrappersTests
         // implementation is free to keep hold of everything it returned, and the ones that lost have to
         // behave exactly like objects that were never handed to ComWrappers at all.
         [ActiveIssue("Not supported on Mono", TestRuntimes.Mono)]
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void ValidateCreateObjectRaceLeavesNothingBehindForLosers()
         {
             Console.WriteLine($"Running {nameof(ValidateCreateObjectRaceLeavesNothingBehindForLosers)}...");
