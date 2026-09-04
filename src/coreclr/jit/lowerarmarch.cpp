@@ -2429,7 +2429,7 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
     assert(simdSize != 0);
     assert(varTypeIsSIMD(node));
 
-    // Morph 'fgOptimizeHWIntrinsic' transforms 'Create(ToScalar(Dot('->'Dot(',
+    // Morph 'fgOptimizeHWIntrinsic' transforms 'Create(ToScalar(Dot(...' into 'Dot('...,
     // so a DotProduct not consumed as a scalar value needs an explicit broadcast
     LIR::Use use;
     bool     needsBroadcast = BlockRange().TryGetUse(node, &use) && !use.User()->OperIsHWIntrinsic(NI_Vector_ToScalar);
