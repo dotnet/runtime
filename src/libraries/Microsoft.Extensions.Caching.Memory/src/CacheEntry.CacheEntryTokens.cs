@@ -77,7 +77,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
             internal bool CanPropagateTokens() => _expirationTokens != null;
 
-            internal void PublishTokens() => _expirationTokens?.Publish();
+            internal void EnableConcurrentReads() => _expirationTokens?.EnableConcurrentReads();
 
             internal void PropagateTokens(CacheEntry parentEntry)
             {

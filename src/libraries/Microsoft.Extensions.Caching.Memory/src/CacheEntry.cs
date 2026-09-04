@@ -191,7 +191,7 @@ namespace Microsoft.Extensions.Caching.Memory
                     Volatile.Write(ref _isDisposed, true);
                     // Ensure either this thread sees the token list or its creator sees the disposed state.
                     Thread.MemoryBarrier();
-                    _tokens?.PublishTokens();
+                    _tokens?.EnableConcurrentReads();
                     CommitWithTracking();
                 }
                 else
@@ -331,7 +331,7 @@ namespace Microsoft.Extensions.Caching.Memory
             ExpirationTokensList expirationTokens = GetOrCreateTokens().ExpirationTokens;
             if (_cache.TrackLinkedCacheEntries && Volatile.Read(ref _isDisposed))
             {
-                expirationTokens.Publish();
+                expirationTokens.EnableConcurrentReads();
             }
             return expirationTokens;
         }

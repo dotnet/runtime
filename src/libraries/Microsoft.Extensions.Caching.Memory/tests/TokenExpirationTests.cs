@@ -264,13 +264,13 @@ namespace Microsoft.Extensions.Caching.Memory
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        public void ExpirationTokensBehaveLikeAList(bool published)
+        public void ExpirationTokensBehaveLikeAList(bool concurrentReadsEnabled)
         {
-            var cache = CreateCache(trackLinkedCacheEntries: published);
+            var cache = CreateCache(trackLinkedCacheEntries: concurrentReadsEnabled);
             using ICacheEntry entry = cache.CreateEntry("myKey");
             IList<IChangeToken> tokens = entry.ExpirationTokens;
             entry.SetValue(new object());
-            if (published)
+            if (concurrentReadsEnabled)
             {
                 entry.Dispose();
             }
@@ -321,11 +321,11 @@ namespace Microsoft.Extensions.Caching.Memory
         [Theory]
         [InlineData(1, false)] // append into spare capacity while building
         [InlineData(4, false)] // grow while building
-        [InlineData(1, true)] // publish into spare capacity
-        [InlineData(4, true)] // grow after publication
-        public void ExpirationTokensEnumeratorUsesSnapshotWhileAdding(int initialCount, bool published)
+        [InlineData(1, true)] // append into spare capacity with concurrent reads
+        [InlineData(4, true)] // grow with concurrent reads
+        public void ExpirationTokensEnumeratorUsesSnapshotWhileAdding(int initialCount, bool concurrentReadsEnabled)
         {
-            var cache = CreateCache(trackLinkedCacheEntries: published);
+            var cache = CreateCache(trackLinkedCacheEntries: concurrentReadsEnabled);
             using ICacheEntry entry = cache.CreateEntry("myKey");
             var expected = new List<IChangeToken>(initialCount);
 
@@ -337,7 +337,7 @@ namespace Microsoft.Extensions.Caching.Memory
             }
 
             entry.SetValue(new object());
-            if (published)
+            if (concurrentReadsEnabled)
             {
                 entry.Dispose();
             }

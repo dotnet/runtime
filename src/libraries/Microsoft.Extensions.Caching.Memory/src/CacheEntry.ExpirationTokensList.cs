@@ -13,19 +13,19 @@ namespace Microsoft.Extensions.Caching.Memory
     {
         /// <summary>
         /// The list behind <see cref="ICacheEntry.ExpirationTokens"/>. Its state is mutated directly while
-        /// the entry is being built. After publication, writers serialize on the owning
+        /// the entry is being built. After concurrent reads are enabled, writers serialize on the owning
         /// <see cref="CacheEntryTokens"/> while readers walk a lock-free snapshot.
         /// </summary>
         private sealed class ExpirationTokensList : IList<IChangeToken>
         {
             private const int DefaultCapacity = 4;
 
-            // This shared state is never mutated: every append must grow and publish a new state.
+            // This shared state is never mutated: every append must grow and replace it.
             private static readonly State s_empty = new State(Array.Empty<IChangeToken>(), 0);
 
             private readonly object _gate;
             private volatile State _state = new State(Array.Empty<IChangeToken>(), 0);
-            private bool _isPublished;
+            private bool _concurrentReadsEnabled;
 
             internal ExpirationTokensList(object gate)
             {
@@ -33,7 +33,7 @@ namespace Microsoft.Extensions.Caching.Memory
             }
 
             /// <summary>
-            /// Gets the current contents, which are safe to walk without synchronizing after publication.
+            /// Gets the current contents, which are safe to walk without synchronizing after concurrent reads are enabled.
             /// </summary>
             internal ReadOnlySpan<IChangeToken> Snapshot
             {
@@ -75,7 +75,7 @@ namespace Microsoft.Extensions.Caching.Memory
                             throw new ArgumentOutOfRangeException(nameof(index));
                         }
 
-                        if (!_isPublished)
+                        if (!_concurrentReadsEnabled)
                         {
                             state._items[index] = value;
                             return;
@@ -132,7 +132,7 @@ namespace Microsoft.Extensions.Caching.Memory
                     }
 
                     int updatedCount = checked(count + 1);
-                    if (!_isPublished)
+                    if (!_concurrentReadsEnabled)
                     {
                         if (updatedCount > state._items.Length)
                         {
@@ -164,13 +164,13 @@ namespace Microsoft.Extensions.Caching.Memory
                         throw new ArgumentOutOfRangeException(nameof(index));
                     }
 
-                    if (!_isPublished)
+                    if (!_concurrentReadsEnabled)
                     {
                         RemoveAtBuilder(state, index);
                     }
                     else
                     {
-                        RemoveAtPublished(state, count, index);
+                        RemoveAtConcurrent(state, count, index);
                     }
                 }
             }
@@ -180,7 +180,7 @@ namespace Microsoft.Extensions.Caching.Memory
                 lock (_gate)
                 {
                     State state = _state;
-                    if (!_isPublished)
+                    if (!_concurrentReadsEnabled)
                     {
                         Array.Clear(state._items, 0, state._count);
                         state._count = 0;
@@ -204,13 +204,13 @@ namespace Microsoft.Extensions.Caching.Memory
                         return false;
                     }
 
-                    if (!_isPublished)
+                    if (!_concurrentReadsEnabled)
                     {
                         RemoveAtBuilder(state, index);
                     }
                     else
                     {
-                        RemoveAtPublished(state, count, index);
+                        RemoveAtConcurrent(state, count, index);
                     }
                     return true;
                 }
@@ -243,16 +243,16 @@ namespace Microsoft.Extensions.Caching.Memory
 
             IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-            internal void Publish()
+            internal void EnableConcurrentReads()
             {
-                if (_isPublished)
+                if (_concurrentReadsEnabled)
                 {
                     return;
                 }
 
                 lock (_gate)
                 {
-                    _isPublished = true;
+                    _concurrentReadsEnabled = true;
                 }
             }
 
@@ -265,7 +265,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
                 var items = new IChangeToken[GetCapacity(state._items.Length, requiredCapacity)];
                 Array.Copy(state._items, items, count);
-                if (_isPublished)
+                if (_concurrentReadsEnabled)
                 {
                     state = new State(items, count);
                     _state = state;
@@ -279,7 +279,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
             private void SetCount(State state, int count)
             {
-                if (_isPublished)
+                if (_concurrentReadsEnabled)
                 {
                     Volatile.Write(ref state._count, count);
                 }
@@ -315,7 +315,7 @@ namespace Microsoft.Extensions.Caching.Memory
                 state._items[updatedCount] = null!;
             }
 
-            private void RemoveAtPublished(State state, int count, int index)
+            private void RemoveAtConcurrent(State state, int count, int index)
             {
                 int updatedCount = count - 1;
                 if (updatedCount == 0)
