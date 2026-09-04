@@ -120,7 +120,7 @@ namespace System.Net.Test.Common
                 return extensions;
             }
 
-            public static (X509Certificate2 certificate, X509Certificate2Collection) GenerateCertificates(string targetName, [CallerMemberName] string? testName = null, bool longChain = false, bool serverCertificate = true)
+            public static (X509Certificate2 certificate, X509Certificate2Collection) GenerateCertificates(string targetName, [CallerMemberName] string? testName = null, bool longChain = false, bool serverCertificate = true, bool ephemeralKey = false)
             {
                 const int keySize = 2048;
                 if (PlatformDetection.IsWindows && testName != null)
@@ -161,10 +161,10 @@ namespace System.Net.Test.Common
                 responder.Dispose();
                 root.Dispose();
 
-                if (PlatformDetection.IsWindows)
+                if (!ephemeralKey && PlatformDetection.IsWindows)
                 {
                     X509Certificate2 ephemeral = endEntity;
-                    endEntity = new X509Certificate2(endEntity.Export(X509ContentType.Pfx));
+                    endEntity = new X509Certificate2(endEntity.Export(X509ContentType.Pfx), (string?)null, X509KeyStorageFlags.Exportable);
                     ephemeral.Dispose();
                 }
 
