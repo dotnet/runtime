@@ -187,6 +187,9 @@ The following section types are defined and described later in this document:
 | MethodIsGenericMap        |   121 | Assembly (Added in V9.0)
 | EnclosingTypeMap          |   122 | Assembly (Added in V9.0)
 | TypeGenericInfoMap        |   123 | Assembly (Added in V9.0)
+| ExternalTypeMaps          |   124 | Assembly (added in V18.3, extended in V28)
+| ProxyTypeMaps             |   125 | Assembly (added in V18.3, extended in V28)
+| TypeMapAssemblyTargets    |   126 | Assembly (added in V18.3)
 
 ## ReadyToRunSectionType.CompilerIdentifier
 
@@ -761,6 +764,82 @@ TypeGenericInfoMap entries have 4 bits representing 3 different sets of informat
 1. What is the count of generic parameters (0, 1, 2, MoreThanTwo) (This is represented in the least significant 2 bits of the TypeGenericInfoMap entry)
 2. Are there any constraints on the generic parameters? (This is the 3rd bit of the entry)
 3. Do any of the generic parameters have co or contra variance? (This is the 4th bit of the entry)
+
+## ReadyToRunSectionType.ExternalTypeMaps (v18.3+)
+
+This optional section contains precomputed external type maps. It is a native hashtable keyed by the version-resilient hash code of the type map group. Each value has the following layout:
+
+```text
+GroupTypeFixup
+State
+[ExternalTypeMapHashtable]
+[NamedEntries]
+```
+
+`GroupTypeFixup` is a fixup reference encoded as the import section index followed by the fixup row index. `State` is a compressed unsigned integer with one of these values:
+
+| State | Name | Remaining layout |
+|------:|:-----|:-----------------|
+| 0 | Runtime attribute fallback | No precomputed map data. The runtime processes the type map attributes instead. |
+| 1 | Precomputed fixups | `ExternalTypeMapHashtable` only. |
+| 2 | Precomputed fixups and type names | `ExternalTypeMapHashtable` followed immediately by `NamedEntries`. Added in V28. |
+
+`ExternalTypeMapHashtable` is a native hashtable keyed by the name hash code of the external type map key. Each value contains:
+
+```text
+KeyString
+TargetTypeFixup
+```
+
+`TargetTypeFixup` has the same import-section-index and fixup-row-index encoding as `GroupTypeFixup`.
+
+In state 2, `NamedEntries` is a native sequence: a compressed unsigned count followed by that many inline pairs. Each pair contains:
+
+```text
+KeyString
+SerializedTargetTypeName
+```
+
+These entries represent target types that cannot be encoded as ReadyToRun fixups. The endpoint stored in the final bucket-offset cell of `ExternalTypeMapHashtable` identifies the start of `NamedEntries`; a hashtable lookup therefore does not enumerate the string sequence.
+
+## ReadyToRunSectionType.ProxyTypeMaps (v18.3+)
+
+This optional section contains precomputed proxy type maps. Its outer native hashtable and per-group `GroupTypeFixup` and `State` fields use the same layout as `ExternalTypeMaps`:
+
+```text
+GroupTypeFixup
+State
+[ProxyTypeMapHashtable]
+[NamedEntries]
+```
+
+`ProxyTypeMapHashtable` is keyed by the version-resilient hash code of the source type. Each value contains:
+
+```text
+SourceTypeFixup
+ProxyTypeFixup
+```
+
+In state 2, `NamedEntries` begins immediately after `ProxyTypeMapHashtable` and contains a compressed unsigned count followed by that many inline pairs:
+
+```text
+SerializedSourceTypeName
+SerializedProxyTypeName
+```
+
+If either type in a proxy mapping cannot be encoded as a ReadyToRun fixup, both types are represented by their serialized names in `NamedEntries`.
+
+## ReadyToRunSectionType.TypeMapAssemblyTargets (v18.3+)
+
+This optional section is a native hashtable keyed by the version-resilient hash code of the type map group. Each value contains the group type fixup followed by a native sequence of module fixups:
+
+```text
+GroupTypeFixup
+TargetModuleCount
+TargetModuleFixup[TargetModuleCount]
+```
+
+Each type or module fixup is encoded as an import section index followed by a fixup row index.
 
 # Native Format
 
