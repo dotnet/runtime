@@ -63,6 +63,38 @@ public class R2RTestSuites
     }
 
     [Fact]
+    public void GenericTypeConstraintsAllowVariantParameters()
+    {
+        var genericTypeConstraints = new CompiledAssembly
+        {
+            AssemblyName = nameof(GenericTypeConstraintsAllowVariantParameters),
+            SourceResourceNames = ["TypeValidation/GenericTypeConstraints.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(GenericTypeConstraintsAllowVariantParameters),
+            [
+                new(nameof(GenericTypeConstraintsAllowVariantParameters), [new CrossgenAssembly(genericTypeConstraints)])
+                {
+                    AdditionalArgs =
+                    {
+                        "--compile-no-methods",
+                        "--type-validation",
+                        "AutomaticWithLogging",
+                    },
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            Assert.True(
+                (reader.ReadyToRunHeader.Flags & (uint)ReadyToRunFlags.READYTORUN_FLAG_SkipTypeValidation) != 0,
+                "Expected the ReadyToRun image to skip runtime type validation.");
+        }
+    }
+
+    [Fact]
     public void WasmWebcilModule()
     {
         var wasmWebcilModule = new CompiledAssembly
