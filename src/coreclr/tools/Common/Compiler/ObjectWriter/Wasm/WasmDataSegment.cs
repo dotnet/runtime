@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using ILCompiler.DependencyAnalysis;
@@ -10,7 +11,7 @@ using Internal.Text;
 
 namespace ILCompiler.ObjectWriter
 {
-    internal enum WasmDataSectionType : byte
+    internal enum WasmDataSegmentType : byte
     {
         Active = 0,  // (data list(byte) (active offset-expr))
         Passive = 1, // (data list(byte) passive)
@@ -21,11 +22,11 @@ namespace ILCompiler.ObjectWriter
     {
         // The segments are not sections per se, but they represent data segments within the data section.
         Stream _stream;
-        WasmDataSectionType _type;
+        WasmDataSegmentType _type;
         WasmInstructionGroup _initExpr;
         private PaddingHelper _paddingHelper;
 
-        public WasmDataSegment(Stream contents, Utf8String name, WasmDataSectionType type, WasmInstructionGroup initExpr)
+        public WasmDataSegment(Stream contents, Utf8String name, WasmDataSegmentType type, WasmInstructionGroup initExpr)
         {
             _stream = contents;
             _type = type;
@@ -39,11 +40,11 @@ namespace ILCompiler.ObjectWriter
             {
                 return _type switch
                 {
-                    WasmDataSectionType.Active =>
+                    WasmDataSegmentType.Active =>
                         (int)DwarfHelper.SizeOfULEB128((ulong)_type) + // type indicator
                         _initExpr.EncodeSize() + // init expr encodeSize
                         Relocation.WASM_PADDED_RELOC_SIZE_32, // encode size of data length
-                    WasmDataSectionType.Passive =>
+                    WasmDataSegmentType.Passive =>
                         (int)DwarfHelper.SizeOfULEB128((ulong)_type) +
                         Relocation.WASM_PADDED_RELOC_SIZE_32, // encode size of data length
                     _ =>
@@ -80,7 +81,7 @@ namespace ILCompiler.ObjectWriter
         {
             switch (_type)
             {
-                case WasmDataSectionType.Active:
+                case WasmDataSegmentType.Active:
                 {
                     int len = 0;
                     len = DwarfHelper.WriteULEB128(headerBuffer, (ulong)_type);
@@ -90,7 +91,7 @@ namespace ILCompiler.ObjectWriter
                     len += headerBuffer.Slice(len).Length;
                     return len;
                 }
-                case WasmDataSectionType.Passive:
+                case WasmDataSegmentType.Passive:
                 {
                     int len = 0;
                     len = DwarfHelper.WriteULEB128(headerBuffer, (ulong)_type);

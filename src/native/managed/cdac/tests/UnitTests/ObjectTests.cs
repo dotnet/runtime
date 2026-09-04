@@ -21,7 +21,7 @@ public unsafe class ObjectTests
         MockTarget.Architecture arch,
         Action<MockDescriptors.MockObjectBuilder> configure,
         Action<TestPlaceholderTarget.Builder>? configureMocks = null)
-        => new SOSDacImpl(CreateObjectTarget(arch, configure, configureMocks), legacyObj: null);
+        => new SOSDacImpl(CreateObjectTarget(arch, configure, configureMocks), legacyObj: null, new());
 
     private static TestPlaceholderTarget CreateObjectTarget(
         MockTarget.Architecture arch,

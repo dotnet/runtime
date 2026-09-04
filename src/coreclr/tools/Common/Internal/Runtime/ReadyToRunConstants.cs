@@ -124,6 +124,9 @@ namespace Internal.ReadyToRunConstants
         DispatchStubAddrSlot = 5,
         FieldDescSlot = 6,
         DeclaringTypeHandleSlot = 7,
+        // Only used by ReadyToRun signatures (ReadyToRunFixupKind.DeclaringTypeHandle). The signature encodes a
+        // method and the slot is populated with the type which declares that method.
+        DeclaringTypeHandleFromMethodSlot = 8,
     }
 
     public enum ReadyToRunFixupKind
@@ -174,7 +177,7 @@ namespace Internal.ReadyToRunConstants
         Check_FieldOffset = 0x2B,
 
         DelegateCtor = 0x2C,                // optimized delegate ctor
-        DeclaringTypeHandle = 0x2D,
+        DeclaringTypeHandle = 0x2D,         // Type which declares the method described by the (method) signature
 
         IndirectPInvokeTarget = 0x2E,       // Target (indirect) of an inlined pinvoke
         PInvokeTarget = 0x2F,               // Target of an inlined pinvoke

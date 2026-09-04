@@ -1332,29 +1332,79 @@ namespace System.Numerics.Tests
             Assert.Equal(expected, actual);
         }
 
-        [Fact]
-        public static void ParseWithNBSPAsGroupSeparator()
+        [Theory]
+        [InlineData("\u00A0", " ")]
+        [InlineData("\u202F", " ")]
+        [InlineData(" ", "\u00A0")]
+        [InlineData(" ", "\u202F")]
+        [InlineData("\u00A0", "\u202F")]
+        [InlineData("\u202F", "\u00A0")]
+        public static void ParseWithSpaceReplacingGroupSeparator(string groupSeparator, string inputSeparator)
         {
-            // Culture has NBSP as group separator; input has regular spaces.
-            // Exercises MatchChars path: cp=='\u0020' && IsSpaceReplacingChar(val=='\u00A0')
-            CultureInfo nbspCulture = new CultureInfo("en-US");
-            nbspCulture.NumberFormat.NumberGroupSeparator = "\u00A0";
+            CultureInfo culture = new("en-US");
+            culture.NumberFormat.NumberGroupSeparator = groupSeparator;
+            string value = $"1{inputSeparator}234";
+            byte[] utf8Value = Encoding.UTF8.GetBytes(value);
 
-            BigInteger result = BigInteger.Parse("1 234 567", NumberStyles.AllowThousands, nbspCulture);
-            Assert.Equal((BigInteger)1234567, result);
+            Assert.Equal((BigInteger)1234, BigInteger.Parse(value, NumberStyles.AllowThousands, culture));
+            Assert.Equal((BigInteger)1234, BigInteger.Parse(utf8Value, NumberStyles.AllowThousands, culture));
 
-            // Culture has regular space as group separator; input has NBSP.
-            // Exercises MatchChars path: val=='\u0020' && IsSpaceReplacingChar(cp=='\u00A0')
-            CultureInfo spaceCulture = new CultureInfo("en-US");
-            spaceCulture.NumberFormat.NumberGroupSeparator = " ";
+            Assert.True(NumberBaseHelper<BigInteger>.TryParsePartial(value + "x", NumberStyles.AllowThousands, culture, out BigInteger result, out int charsConsumed));
+            Assert.Equal((BigInteger)1234, result);
+            Assert.Equal(value.Length, charsConsumed);
 
-            result = BigInteger.Parse("1\u00A0234\u00A0567", NumberStyles.AllowThousands, spaceCulture);
-            Assert.Equal((BigInteger)1234567, result);
+            Assert.True(NumberBaseHelper<BigInteger>.TryParsePartial([.. utf8Value, (byte)'x'], NumberStyles.AllowThousands, culture, out result, out int bytesConsumed));
+            Assert.Equal((BigInteger)1234, result);
+            Assert.Equal(utf8Value.Length, bytesConsumed);
 
-            // Culture has regular space as group separator; input has narrow NBSP (U+202F).
-            // Exercises IsSpaceReplacingChar matching U+202F against U+0020
-            result = BigInteger.Parse("1\u202F234\u202F567", NumberStyles.AllowThousands, spaceCulture);
-            Assert.Equal((BigInteger)1234567, result);
+            string trailingSeparatorValue = $"1{inputSeparator}";
+            Assert.Equal(BigInteger.One, BigInteger.Parse(Encoding.UTF8.GetBytes(trailingSeparatorValue), NumberStyles.AllowThousands, culture));
+        }
+
+        [Fact]
+        public static void ParseUtf8WithInvalidGroupSeparator()
+        {
+            NumberFormatInfo format = new() { NumberGroupSeparator = " " };
+
+            Assert.False(BigInteger.TryParse([(byte)'1', 0xA0, (byte)'2'], NumberStyles.AllowThousands, format, out _));
+        }
+
+        [Theory]
+        [InlineData("99 +", NumberStyles.AllowTrailingSign, 99)]
+        [InlineData("99 -", NumberStyles.AllowTrailingSign, -99)]
+        [InlineData("99 $", NumberStyles.AllowCurrencySymbol, 99)]
+        public static void ParseWithWhitespacePrefixedTrailingToken(string value, NumberStyles style, int expected)
+        {
+            NumberFormatInfo format = new()
+            {
+                CurrencySymbol = " $",
+                PositiveSign = " +",
+                NegativeSign = " -"
+            };
+
+            Assert.True(BigInteger.TryParse(value, style, format, out BigInteger result));
+            Assert.Equal(expected, result);
+
+            Assert.True(BigInteger.TryParse(Encoding.UTF8.GetBytes(value), style, format, out result));
+            Assert.Equal(expected, result);
+        }
+
+        [Theory]
+        [InlineData("99 +,", NumberStyles.AllowTrailingSign)]
+        [InlineData("99 -+", NumberStyles.AllowTrailingSign)]
+        [InlineData("99 +k", NumberStyles.AllowTrailingSign)]
+        [InlineData("99 $,", NumberStyles.AllowCurrencySymbol)]
+        public static void ParseWithWhitespacePrefixedTrailingToken_Invalid(string value, NumberStyles style)
+        {
+            NumberFormatInfo format = new()
+            {
+                CurrencySymbol = " $",
+                PositiveSign = " +",
+                NegativeSign = " -"
+            };
+
+            Assert.False(BigInteger.TryParse(value, style, format, out _));
+            Assert.False(BigInteger.TryParse(Encoding.UTF8.GetBytes(value), style, format, out _));
         }
     }
 
@@ -1482,6 +1532,11 @@ namespace System.Numerics.Tests
             // Only invalid characters (no valid number)
             yield return new object[] { "abc", NumberStyles.Integer, null };
             yield return new object[] { "xyz", NumberStyles.Integer, null };
+
+            // Values that scan successfully but aren't representable as a BigInteger
+            yield return new object[] { "1.5", NumberStyles.Float, CultureInfo.InvariantCulture };
+            yield return new object[] { "3.14159abc", NumberStyles.Float, CultureInfo.InvariantCulture };
+            yield return new object[] { "1E1000000000", NumberStyles.Float, CultureInfo.InvariantCulture };
         }
 
         [Theory]

@@ -6,7 +6,6 @@
 #include <cstddef>
 #include <cstdio>
 #include <cassert>
-#define __STDC_FORMAT_MACROS
 #include <cinttypes>
 #include <memory>
 #include <pthread.h>
@@ -1276,31 +1275,6 @@ void GCToOSInterface::GetMemoryStatus(uint64_t restricted_limit, uint32_t* memor
 
     if (available_page_file != nullptr)
         *available_page_file = GetAvailablePageFile();
-}
-
-// Get a high precision performance counter
-// Return:
-//  The counter value
-int64_t GCToOSInterface::QueryPerformanceCounter()
-{
-    return minipal_hires_ticks();
-}
-
-// Get a frequency of the high precision performance counter
-// Return:
-//  The counter frequency
-int64_t GCToOSInterface::QueryPerformanceFrequency()
-{
-    // The counter frequency of gettimeofday is in microseconds.
-    return minipal_hires_tick_frequency();
-}
-
-// Get a time stamp with a low precision
-// Return:
-//  Time stamp in milliseconds
-uint64_t GCToOSInterface::GetLowPrecisionTimeStamp()
-{
-    return (uint64_t)minipal_lowres_ticks();
 }
 
 // Gets the total number of processors on the machine, not taking

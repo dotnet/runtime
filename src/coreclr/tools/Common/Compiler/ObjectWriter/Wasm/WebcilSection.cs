@@ -7,38 +7,37 @@ using Microsoft.NET.WebAssembly.Webcil;
 
 namespace ILCompiler.ObjectWriter
 {
-    internal class WebcilSection : WasmSection
+    /// <summary>
+    /// A WebCIL section is a subsection of the "webcilPayload" data segment in the WebAssembly module.
+    /// </summary>
+    internal class WebcilSection : SectionDataEmitter
     {
-        public readonly int Index;
         public WebcilSectionHeader Header;
-        public readonly Stream _stream;
         private PaddingHelper _paddingHelper;
         public int MinAlignment = 1;
 
-        public uint Padding => Header.SizeOfRawData - (uint)_stream.Length;
+        public uint Padding => Header.SizeOfRawData - (uint)ContentReadStream.Length;
 
-        public WebcilSection(Utf8String name, WebcilSectionHeader header, Stream stream, int index)
-            : base(WasmSectionType.Data, stream, name)
+        public WebcilSection(Utf8String name, WebcilSectionHeader header, Stream stream, int sectionIndex)
+            : base(stream, name, sectionIndex)
         {
             Header = header;
-            _stream = stream;
-            Index = index;
-            _paddingHelper = new PaddingHelper(WasmObjectWriter.WebcilSectionAlignment);
+            _paddingHelper = new PaddingHelper(WebCilObjectWriter.WebcilSectionAlignment);
         }
 
         public override int EncodeSize()
         {
-            return (int)_stream.Length;
+            return (int)ContentReadStream.Length;
         }
 
-        public override int Emit(Stream outputFileStream)
+        public override int EmitToStream(Stream outputFileStream)
         {
             // Emit the raw contents of this Webcil section followed by any required padding.
-            _stream.Position = 0;
-            _stream.CopyTo(outputFileStream);
+            ContentReadStream.Position = 0;
+            ContentReadStream.CopyTo(outputFileStream);
             _paddingHelper.PadStream(outputFileStream, (int)Padding);
 
-            return (int)_stream.Length + (int)Padding;
+            return (int)ContentReadStream.Length + (int)Padding;
         }
     }
 }

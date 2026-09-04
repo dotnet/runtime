@@ -237,6 +237,10 @@ struct Agnostic_CORINFO_ASYNC_INFO
     DWORDLONG captureContextsMethHnd;
     DWORDLONG restoreContextsMethHnd;
     DWORDLONG restoreContextsOnSuspensionMethHnd;
+    DWORDLONG restoreInlinedFrameContextsMethHnd;
+    DWORDLONG captureInlinedFrameTransitionWithContinuationContextMethHnd;
+    DWORDLONG captureInlinedFrameTransitionNoContinuationContextMethHnd;
+    DWORDLONG captureInlinedFrameTransitionContinueOnThreadPoolMethHnd;
     DWORDLONG finishSuspensionNoContinuationContextMethHnd;
     DWORDLONG finishSuspensionWithContinuationContextMethHnd;
 };
@@ -733,14 +737,6 @@ struct GetVarArgsHandleValue
     DWORDLONG scope;
     DWORD     token;
     DWORDLONG methHnd;
-};
-
-struct GetCookieForPInvokeCalliSigValue
-{
-    DWORD     cbSig;
-    DWORD     pSig_Index;
-    DWORDLONG scope;
-    DWORD     token;
 };
 
 struct GetCookieForInterpreterCalliSigValue

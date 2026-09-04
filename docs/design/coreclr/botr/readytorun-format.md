@@ -276,7 +276,7 @@ fixup kind, the rest of the signature varies based on the fixup kind.
 | READYTORUN_FIXUP_Check_TypeLayout               |  0x2A | Verification of type layout, followed by typespec and expected type layout descriptor
 | READYTORUN_FIXUP_Check_FieldOffset              |  0x2B | Verification of field offset, followed by field signature and expected field layout descriptor
 | READYTORUN_FIXUP_DelegateCtor                   |  0x2C | Delegate constructor, followed by method signature
-| READYTORUN_FIXUP_DeclaringTypeHandle            |  0x2D | Dictionary lookup for method declaring type. Followed by the type signature.
+| READYTORUN_FIXUP_DeclaringTypeHandle            |  0x2D | Type which declares the method described by the signature. Followed by the method signature.
 | READYTORUN_FIXUP_IndirectPInvokeTarget          |  0x2E | Target (indirect) of an inlined PInvoke. Followed by method signature.
 | READYTORUN_FIXUP_PInvokeTarget                  |  0x2F | Target of an inlined PInvoke. Followed by method signature.
 | READYTORUN_FIXUP_Check_InstructionSetSupport    |  0x30 | Specify the instruction sets that must be supported/unsupported to use the R2R code associated with the fixup.
@@ -1078,6 +1078,9 @@ The string format is:
 | `V` | returns `v128` (a `Vector128<T>`, or a 16-byte `Vector<T>`) |
 | `S<N>` | struct return via hidden buffer, `N` is the struct size in bytes |
 
+Struct returns always use `S<N>` regardless of alignment. The aligned form is valid only
+for parameters because their placement in the transition block depends on it.
+
 **This pointer** (if the method has a `this` parameter):
 
 | Encoding | Meaning |
@@ -1103,7 +1106,8 @@ it knows a hidden retbuf pointer argument is present in the Wasm parameter list.
 | `f` | `f32` parameter |
 | `d` | `f64` parameter |
 | `V` | `v128` parameter (a `Vector128<T>`, or a 16-byte `Vector<T>`, passed by value) |
-| `S<N>` | struct parameter passed by reference, `<N>` is the struct size in bytes |
+| `S<N>` | struct parameter passed by reference, `<N>` is the struct size in bytes and its alignment is at most 8 |
+| `A<N>` | struct parameter passed by reference, `<N>` is the struct size in bytes and its alignment exceeds 8 |
 | `e` | empty struct parameter — elided from Wasm args but present in the string |
 | `<slot><E>` | multi-slot parameter passed by value, see below |
 
@@ -1124,8 +1128,8 @@ matching the treatment of a struct wrapping a `v128`.
 The digit is required. A repeated slot character without one — `ll`, `VV` — is not an
 aggregate: it is two independent scalar parameters, which is how every implementation
 reads it. So `ll2VV4` is `i64`, `Int128`, `Vector128<T>`, `Vector512<T>`. The grammar stays
-unambiguous because no other token places a digit after a slot character; `S<N>` consumes
-its own digits.
+unambiguous because no other token places a digit after a slot character; struct tokens
+consume their own size.
 
 These types are still *returned* through a hidden buffer, encoded as `S<N>` like any other
 aggregate. Limitation: a single digit carries both the slot count and the elevation factor,
@@ -1135,6 +1139,10 @@ elevation 1. No such type exists in the Wasm ABI today.
 
 WasmAppBuilder does not emit or consume multi-slot tokens: they do not appear in
 `InternalCall` or `PInvoke` signatures.
+
+A struct argument is placed at its own alignment clamped to `[8, 16]` in the transition
+block. Therefore `A<N>` covers every struct whose declared alignment exceeds 8: alignments
+of 16 or higher all require the same 16-byte transition-block placement.
 
 **Suffix**:
 
@@ -1162,14 +1170,15 @@ prefix to distinguish thunk categories:
 | `void F(int x)` (instance) | `vTip` |
 | `static MyStruct F()` where `MyStruct` is 16 bytes | `S16p` |
 | `static void F(MyStruct s)` where `MyStruct` is 8 bytes | `vS8p` |
+| `static void F(long tag, MyStruct s, int t)` where `MyStruct` is 32 bytes and at least 16-byte aligned | `vlA32ip` |
 | `static int F(float x, double y)` | `ifdp` |
 | `static long F(long tag, Int128 v, int t)` | `lll2ip` |
 | `static int F(long tag, Vector512<int> v, int t)` | `ilV4ip` |
 | `[UnmanagedCallersOnly] static int F(int x)` | `ii` |
 
 **Slot sizing for structs**: When computing interpreter stack layout, struct parameters
-(`S<N>`) consume `max(N / 8, 1)` interpreter stack slots, while all other parameter types
-consume exactly 1 slot.
+(`S<N>` and `A<N>`) consume `max((N + 7) / 8, 1)` interpreter stack slots, while all
+other parameter types consume exactly 1 slot.
 
 # References
 

@@ -46,6 +46,52 @@ namespace SerializationTypes
         public int PropI { get; set; }
     }
 
+    [XmlRoot("PrimitiveCollections")]
+    public sealed class PrimitiveCollections
+    {
+        public char[] Chars { get; set; }
+
+        [XmlArrayItem(DataType = "date")]
+        public DateTime[] Dates { get; set; }
+
+        [XmlArrayItem(DataType = "time")]
+        public DateTime[] Times { get; set; }
+
+        public DateOnly[] DateOnlyValues { get; set; }
+
+        public TimeOnly[] TimeOnlyValues { get; set; }
+
+        public List<int> Integers { get; set; }
+
+        public IntEnumerableCollection EnumerableIntegers { get; set; }
+
+        public int[] EmptyIntegers { get; set; }
+
+        public PrimitiveCollectionEnum[] Enums { get; set; }
+
+        public int?[] NullableIntegers { get; set; }
+
+        [XmlArrayItem(typeof(int))]
+        public ArrayList BoxedIntegers { get; set; }
+    }
+
+    public sealed class IntEnumerableCollection : IEnumerable<int>
+    {
+        private readonly List<int> _items = new();
+
+        public void Add(int value) => _items.Add(value);
+
+        public IEnumerator<int> GetEnumerator() => _items.GetEnumerator();
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+    }
+
+    public enum PrimitiveCollectionEnum
+    {
+        One,
+        Two,
+    }
+
     public class TypeWithDictionaryGenericMembers
     {
         public Dictionary<string, int> F1;

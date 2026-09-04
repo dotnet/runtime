@@ -81,9 +81,6 @@ namespace System.Net.Http
 
         private const int MaxStreamId = int.MaxValue;
 
-        // Temporary workaround for request burst handling on connection start.
-        internal const int InitialMaxConcurrentStreams = 100;
-
         private static ReadOnlySpan<byte> Http2ConnectionPreface => "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n"u8;
 
 #if DEBUG
@@ -870,7 +867,14 @@ namespace System.Net.Http
                     switch ((SettingId)settingId)
                     {
                         case SettingId.MaxConcurrentStreams:
-                            _pool._lastSeenHttp2MaxConcurrentStreams = settingValue;
+                            // Only memorize the value for future connections if it's lower than what we're
+                            // configured to start with. SocketsHttpHandler.InitialHttp2MaxConcurrentStreams
+                            // acts as the upper bound for what every new connection starts with.
+                            if (settingValue < _pool.Settings._initialHttp2MaxConcurrentStreams)
+                            {
+                                _pool._lastSeenHttp2MaxConcurrentStreams = settingValue;
+                            }
+
                             ChangeMaxConcurrentStreams(settingValue);
                             maxConcurrentStreamsReceived = true;
                             break;

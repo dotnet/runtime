@@ -123,9 +123,12 @@ namespace System.Text.Json.Serialization.Metadata
 
             if (inferClosedTypePolymorphism &&
                 options is null or { DerivedTypes.Count: 0 } &&
-                closedDerivedTypes is { Length: > 0 } inferredDerivedTypes)
+                closedDerivedTypes is { Length: > 0 } declaredDerivedTypes)
             {
                 options ??= new();
+
+                List<Type> inferredDerivedTypes = new(declaredDerivedTypes.Length);
+                GetClosedDerivedTypes(declaredDerivedTypes, inferredDerivedTypes);
 
                 foreach (Type derivedType in inferredDerivedTypes)
                 {
@@ -271,6 +274,28 @@ namespace System.Text.Json.Serialization.Metadata
             }
 
             return false;
+        }
+
+        private static void GetClosedDerivedTypes(Type[] declaredDerivedTypes, List<Type> derivedTypes)
+        {
+            foreach (Type derivedType in declaredDerivedTypes)
+            {
+                Type derivedTypeDefinition = derivedType.IsGenericType
+                    ? derivedType.GetGenericTypeDefinition()
+                    : derivedType;
+
+                if (IsClosedType(derivedTypeDefinition, out Type[]? nestedDerivedTypes))
+                {
+                    if (nestedDerivedTypes is not null)
+                    {
+                        GetClosedDerivedTypes(nestedDerivedTypes, derivedTypes);
+                    }
+                }
+                else
+                {
+                    derivedTypes.Add(derivedType);
+                }
+            }
         }
 
         /// <summary>
@@ -975,85 +1000,7 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 return NullabilityState.NotNull;
             }
-#if NET8_0
-            // Workaround for https://github.com/dotnet/runtime/issues/92487
-            // The fix has been incorporated into .NET 9 (and the polyfilled implementations in netfx).
-            // Should be removed once .NET 8 support is dropped.
-            if (parameterInfo.GetGenericParameterDefinition() is { ParameterType: { IsGenericParameter: true } typeParam })
-            {
-                // Step 1. Look for nullable annotations on the type parameter.
-                if (GetNullableFlags(typeParam) is byte[] flags)
-                {
-                    return TranslateByte(flags[0]);
-                }
 
-                // Step 2. Look for nullable annotations on the generic method declaration.
-                if (typeParam.DeclaringMethod != null && GetNullableContextFlag(typeParam.DeclaringMethod) is byte flag)
-                {
-                    return TranslateByte(flag);
-                }
-
-                // Step 3. Look for nullable annotations on the generic type declaration.
-                if (GetNullableContextFlag(typeParam.DeclaringType!) is byte flag2)
-                {
-                    return TranslateByte(flag2);
-                }
-
-                // Default to nullable.
-                return NullabilityState.Nullable;
-
-                static byte[]? GetNullableFlags(MemberInfo member)
-                {
-                    foreach (CustomAttributeData attr in member.GetCustomAttributesData())
-                    {
-                        Type attrType = attr.AttributeType;
-                        if (attrType.Name == "NullableAttribute" && attrType.Namespace == "System.Runtime.CompilerServices")
-                        {
-                            foreach (CustomAttributeTypedArgument ctorArg in attr.ConstructorArguments)
-                            {
-                                switch (ctorArg.Value)
-                                {
-                                    case byte flag:
-                                        return [flag];
-                                    case byte[] flags:
-                                        return flags;
-                                }
-                            }
-                        }
-                    }
-
-                    return null;
-                }
-
-                static byte? GetNullableContextFlag(MemberInfo member)
-                {
-                    foreach (CustomAttributeData attr in member.GetCustomAttributesData())
-                    {
-                        Type attrType = attr.AttributeType;
-                        if (attrType.Name == "NullableContextAttribute" && attrType.Namespace == "System.Runtime.CompilerServices")
-                        {
-                            foreach (CustomAttributeTypedArgument ctorArg in attr.ConstructorArguments)
-                            {
-                                if (ctorArg.Value is byte flag)
-                                {
-                                    return flag;
-                                }
-                            }
-                        }
-                    }
-
-                    return null;
-                }
-
-                static NullabilityState TranslateByte(byte b) =>
-                    b switch
-                    {
-                        1 => NullabilityState.NotNull,
-                        2 => NullabilityState.Nullable,
-                        _ => NullabilityState.Unknown
-                    };
-            }
-#endif
             NullabilityInfo nullability = nullabilityCtx.Create(parameterInfo);
             return nullability.WriteState;
         }

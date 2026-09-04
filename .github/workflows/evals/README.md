@@ -68,10 +68,12 @@ is failing at eval time.
 
 ## Run locally
 
-You need Node 22, Docker, a Copilot token for the agent and judges, and a
-GitHub token for the agent's `gh` calls and the GitHub MCP server.
+You need Node 22.12 or newer, Docker, a Copilot token for the agent and judges,
+and a GitHub token for the agent's `gh` calls and the GitHub MCP server.
 
 ```bash
+npm ci --prefix .github/workflows/evals
+export PATH="$PWD/.github/workflows/evals/node_modules/.bin:$PATH"
 export COPILOT_GITHUB_TOKEN="$(gh auth token)"
 export GH_TOKEN="$(gh auth token)"
 export GITHUB_PERSONAL_ACCESS_TOKEN="$(gh auth token)"

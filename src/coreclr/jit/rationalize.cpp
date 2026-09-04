@@ -2471,8 +2471,6 @@ PhaseStatus Rationalizer::DoPhase()
         }
 
         block->SetFirstStmt(nullptr);
-
-        assert(BlockRange().CheckLIR(m_compiler, true));
     }
 
     m_compiler->compRationalIRForm = true;

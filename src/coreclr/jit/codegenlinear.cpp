@@ -198,7 +198,7 @@ void CodeGen::genCodeForBBlist()
     if (m_compiler->verbose)
     {
         printf("\n# ");
-        printf("compCycleEstimate = %6d, compSizeEstimate = %5d ", m_compiler->compCycleEstimate,
+        printf("compCycleEstimate = %6zu, compSizeEstimate = %5zu ", m_compiler->compCycleEstimate,
                m_compiler->compSizeEstimate);
         printf("%s\n", m_compiler->info.compFullName);
     }
@@ -246,8 +246,6 @@ void CodeGen::genCodeForBlock(BasicBlock* block)
     JITDUMP("\n=============== Generating ");
     JITDUMPEXEC(block->dspBlockHeader(true, true));
     JITDUMPEXEC(m_compiler->fgDispBBLiveness(block));
-
-    assert(LIR::AsRange(block).CheckLIR(m_compiler));
 
     // Figure out which registers hold variables on entry to this block
 

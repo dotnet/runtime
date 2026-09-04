@@ -83,6 +83,12 @@ The stub code generator itself will handle some initial setup and variable decla
 1. `NotifyForSuccessfulInvoke`: Notify a marshaller that all stages through the "Invoke" stage were successful.
     - Used to keep alive any objects who's native representation won't keep them alive across the call.
     - Call `Generate` on the marshalling generator for every parameter.
+1. `ErrorUnmarshal`: capture and convert native error values before ordinary output values.
+    - Call `Generate` for the `UnmarshalCapture` and `Unmarshal` stages only on marshallers marked as error-handling positions.
+    - For a managed-to-unmanaged stub, run after `NotifyForSuccessfulInvoke` and before ordinary unmarshalling so an error marshaller can throw without reading potentially invalid outputs.
+    - For an unmanaged-to-managed stub, run before ordinary input unmarshalling and before invoking the managed target.
+    - After the error value is captured, cleanup for callee-allocated resources owned by the error marshaller runs even if error conversion throws. `CleanupCallerAllocated` also runs from the surrounding `finally`.
+    - If error conversion throws, the invocation is not marked successful, so cleanup for ordinary callee-allocated return and `out` values is skipped rather than freeing potentially uninitialized outputs.
 1. `UnmarshalCapture`: capture any native out parameters to avoid memory leaks if exceptions are thrown during `Unmarshal`.
     - If the method has a non-void return, call `Generate` on the marshalling generator for the return
     - Call `Generate` on the marshalling generator for every parameter
@@ -94,7 +100,7 @@ The stub code generator itself will handle some initial setup and variable decla
     - If this stage has any statements, put them in an if statement where the condition represents whether the call succeeded
 1. `CleanupCallerAllocated`: free any resources allocated by the caller
     - Call `Generate` on the marshalling generator for every parameter
-1. `CleanupCalleeAllocated`: if the native method succeeded, free any resources allocated by the callee (`out` parameters and return values)
+1. `CleanupCalleeAllocated`: if the native invocation and error unmarshalling succeeded, free any resources allocated by the callee (`out` parameters and return values)
     - Call `Generate` on the marshalling generator for every parameter
     - If this stage has any statements, put them in an if statement where the condition represents whether the call succeeded
 
@@ -111,6 +117,7 @@ try
         << Invoke >>
     }
     << Notify For Successful Invoke >>
+    << Error Unmarshal >>
     << Unmarshal Capture >>
     << Unmarshal >>
 }
@@ -154,18 +161,23 @@ To help enable developers to use the full model described in the [Struct Marshal
 
 ### `SetLastError=true`
 
-The stub code generation also handles [`SetLastError=true`][SetLastError] behaviour. This configuration indicates that system error code ([`errno`](https://en.wikipedia.org/wiki/Errno.h) on Unix, [`GetLastError`](https://learn.microsoft.com/windows/win32/api/errhandlingapi/nf-errhandlingapi-getlasterror) on Windows) should be stored after the native invocation, such that it can be retrieved using [`Marshal.GetLastWin32Error`](https://learn.microsoft.com/dotnet/api/system.runtime.interopservices.marshal.getlastwin32error).
+The stub code generation also handles [`SetLastError=true`][SetLastError] behaviour. This configuration indicates that the system error code ([`errno`](https://en.wikipedia.org/wiki/Errno.h) on Unix, [`GetLastError`](https://learn.microsoft.com/windows/win32/api/errhandlingapi/nf-errhandlingapi-getlasterror) on Windows) should be captured after the native invocation and published through [`Marshal.GetLastPInvokeError`](https://learn.microsoft.com/dotnet/api/system.runtime.interopservices.marshal.getlastpinvokeerror).
 
 This means that, rather than simply invoke the native method, the generated stub will:
 
-1. Clear the system error by setting it to 0
-2. Invoke the native method
-3. Get the system error
-4. Set the stored error for the P/Invoke (accessible via `Marshal.GetLastWin32Error`)
+1. Clear the system error by setting it to 0.
+2. Invoke the native method.
+3. Capture the system error immediately after the invocation.
+4. If an error marshaller emits either `UnmarshalCapture` or `Unmarshal` statements, publish the captured value once through `Marshal.SetLastPInvokeError` before the error-unmarshal sequence begins. Error capture and conversion can therefore observe the native call's error through `Marshal.GetLastPInvokeError`. Either stage can also overwrite that stored value, in which case later error-marshalling stages and error-owned cleanup observe the changed value.
+5. If the stub completes successfully, publish the captured value again after unmarshalling and cleanup so the caller observes the native call's error instead of changes made by marshalling code.
+
+If error conversion, ordinary unmarshalling, or cleanup throws, the final publication in step 5
+does not run. The stub therefore does not guarantee the value of `Marshal.GetLastPInvokeError`
+after an exception escapes.
 
 A core requirement of this functionality is that the P/Invoke called in (2) is blittable (the purpose of the P/Invoke source generator), such that there will be no additional operations (e.g unmarshalling) after the invocation that could change the system error that is retrieved in (3). Similarly, (3) must not involve any operations before getting the system error that could change the system error. This also relies on the runtime itself handling preserving the last error (see `BEGIN/END_PRESERVE_LAST_ERROR` macros) during JIT and P/Invoke resolution.
 
-Clearing the system error (1) is necessary because the native method may not set the error at all on success and the system error would retain its value from a previous operation. The developer should be able to check `Marshal.GetLastWin32Error` after a P/Inovke to determine success or failure, so the stub explicitly clears the error before the native invocation, such that the last error will indicate success if the native call does not change it.
+Clearing the system error in step 1 is necessary because the native method may not set the error at all on success and the system error would retain its value from a previous operation. The developer should be able to check `Marshal.GetLastPInvokeError` after a successful P/Invoke to determine success or failure, so the stub explicitly clears the error before the native invocation. The last error therefore indicates success if the native call does not change it.
 
 ## P/Invoke
 

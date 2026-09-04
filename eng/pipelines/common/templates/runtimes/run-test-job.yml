@@ -243,6 +243,16 @@ jobs:
         artifactName: '$(nativeTestArtifactName)'
         displayName: 'native test artifacts'
 
+    # Browser tests that carry their own native library are linked into a test-specific corerun
+    # during copynativeonly. That needs two things this job would otherwise lack: em++, since
+    # nothing here builds natively and so nothing has populated the shared wasm tool cache that
+    # eng/native/gen-buildsys.sh resolves; and WasmAppBuilder built at $(TasksConfiguration),
+    # which follows the test build's Checked configuration while the downloaded artifacts only
+    # carry the product build's Release tasks.
+    - ${{ if eq(parameters.osGroup, 'browser') }}:
+      - script: $(Build.SourcesDirectory)/build$(scriptExt) -subset provision.emsdk+tasks -os browser -arch $(archType) -c $(buildConfigUpper) -ci
+        displayName: Provision Emscripten SDK and build tasks
+
     # Publish native test components to test output folder. Sadly we cannot do this
     # during product build (so that we could zip up the files in their final test location
     # and directly unzip them there after download). Unfortunately the logic to copy

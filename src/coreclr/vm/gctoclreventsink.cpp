@@ -213,7 +213,6 @@ void GCToCLREventSink::FirePinObjectAtGCTime(void* object, uint8_t** ppObject)
 
     EX_TRY
     {
-        FAULT_NOT_FATAL();
 
         TypeHandle th = obj->GetGCSafeTypeHandleIfPossible();
         if(th != NULL)

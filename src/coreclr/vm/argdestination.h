@@ -221,7 +221,6 @@ public:
     {
         STATIC_CONTRACT_NOTHROW;
         STATIC_CONTRACT_GC_NOTRIGGER;
-        STATIC_CONTRACT_FORBID_FAULT;
         STATIC_CONTRACT_MODE_COOPERATIVE;
 
         // To zero the struct, we create a zero filled array of large enough size and
@@ -245,7 +244,6 @@ public:
     {
         STATIC_CONTRACT_NOTHROW;
         STATIC_CONTRACT_GC_NOTRIGGER;
-        STATIC_CONTRACT_FORBID_FAULT;
         STATIC_CONTRACT_MODE_COOPERATIVE;
 
         _ASSERTE(IsStructPassedInRegs());

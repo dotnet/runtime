@@ -4,8 +4,9 @@
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <DebugType>None</DebugType>
     <Optimize>True</Optimize>
-    <!-- These platforms do not support native test assets: https://github.com/dotnet/runtime/issues/123946 -->
-    <CLRTestTargetUnsupported Condition="'$(TargetsWasm)' == 'true' or '$(TargetsMobile)' == 'true'">true</CLRTestTargetUnsupported>
+    <!-- These platforms do not support native test assets: https://github.com/dotnet/runtime/issues/123946
+         Browser wasm on CoreCLR links the native asset into a test-specific corerun, so it is supported there. -->
+    <CLRTestTargetUnsupported Condition="('$(TargetsWasm)' == 'true' or '$(TargetsMobile)' == 'true') and ('$(TargetsBrowser)' != 'true' or '$(RuntimeFlavor)' != 'coreclr')">true</CLRTestTargetUnsupported>
     <!-- Excluded on x64 Unix due to LLVM non-standard ABI handling for small integer upper bits:
          https://github.com/llvm/llvm-project/issues/43573 -->
     <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' == 'x64' and '$(TargetsUnix)' == 'true'">true</CLRTestTargetUnsupported>

@@ -83,8 +83,8 @@
         <note />
       </trans-unit>
       <trans-unit id="BidirectionalMissingRequiredMarshaller">
-        <source>The specified parameter needs to be marshalled from managed to unmanaged and unmanaged to managed, but the marshaller type '{0}' does not support it.</source>
-        <target state="translated">指定的參數必須從受控封送處理到非受控，以及從非受控封送處理到受控，但封送處理程式類型 '{0}' 不支援。</target>
+        <source>The specified parameter needs to be marshalled from managed to unmanaged and unmanaged to managed, but the marshaller type '{0}' does not support it.{1}</source>
+        <target state="new">The specified parameter needs to be marshalled from managed to unmanaged and unmanaged to managed, but the marshaller type '{0}' does not support it.{1}</target>
         <note />
       </trans-unit>
       <trans-unit id="CallerAllocFromManagedMustHaveBufferSizeDescription">
@@ -175,6 +175,11 @@
       <trans-unit id="ComMethodReturningIntWillBeOutParameterTitle">
         <source>The return value in the managed definition will be converted to an additional 'out' parameter at the end of the parameter list when calling the unmanaged COM method.</source>
         <target state="translated">呼叫未受控 COM 方法時，受控定義中的傳回值將在參數清單尾端轉換為額外的 'out' 參數。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ComObjectWrapperNotSpecifiedReason">
+        <source> The interface '{0}' does not specify 'ComInterfaceOptions.ComObjectWrapper' so no COM object wrapper (RCW) is generated. Marshalling this interface from unmanaged code to managed code will not work.</source>
+        <target state="new"> The interface '{0}' does not specify 'ComInterfaceOptions.ComObjectWrapper' so no COM object wrapper (RCW) is generated. Marshalling this interface from unmanaged code to managed code will not work.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedDescriptionCom">
@@ -802,9 +807,14 @@
         <target state="translated">類型 '{0}' 指定它支援 '{1}' 封送處理模式，但未提供接受 'int' 和傳回 'Span&lt;&gt;' 的 'GetManagedValuesDestination'，和接受 'int' 和傳回 'ReadOnlySpan&lt;&gt;' 的 'GetNativeValuesSource' 方法</target>
         <note />
       </trans-unit>
+      <trans-unit id="ManagedObjectWrapperNotSpecifiedReason">
+        <source> The interface '{0}' does not specify 'ComInterfaceOptions.ManagedObjectWrapper' so no COM object wrapper (CCW) is generated. Marshalling this interface from managed code to unmanaged code will not work.</source>
+        <target state="new"> The interface '{0}' does not specify 'ComInterfaceOptions.ManagedObjectWrapper' so no COM object wrapper (CCW) is generated. Marshalling this interface from managed code to unmanaged code will not work.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ManagedToUnmanagedMissingRequiredMarshaller">
-        <source>The specified parameter needs to be marshalled from managed to unmanaged, but the marshaller type '{0}' does not support it.</source>
-        <target state="translated">指定的參數必須從受控封送處理到非受控，但封送處理程式類型 '{0}' 不支援。</target>
+        <source>The specified parameter needs to be marshalled from managed to unmanaged, but the marshaller type '{0}' does not support it.{1}</source>
+        <target state="new">The specified parameter needs to be marshalled from managed to unmanaged, but the marshaller type '{0}' does not support it.{1}</target>
         <note />
       </trans-unit>
       <trans-unit id="ManagedTypeMustBeClosedOrMatchArityDescription">
@@ -1350,8 +1360,8 @@
         <note />
       </trans-unit>
       <trans-unit id="UnmanagedToManagedMissingRequiredMarshaller">
-        <source>The specified parameter needs to be marshalled from unmanaged to managed, but the marshaller type '{0}' does not support it.</source>
-        <target state="translated">指定的參數必須從非受控封送處理到受控，但封送處理程式類型 '{0}' 不支援。</target>
+        <source>The specified parameter needs to be marshalled from unmanaged to managed, but the marshaller type '{0}' does not support it.{1}</source>
+        <target state="new">The specified parameter needs to be marshalled from unmanaged to managed, but the marshaller type '{0}' does not support it.{1}</target>
         <note />
       </trans-unit>
       <trans-unit id="UnnecessaryMarshallingInfoDescription">

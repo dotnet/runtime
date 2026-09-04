@@ -481,7 +481,6 @@ enum CorInfoHelpFunc
 
     /* Miscellaneous */
 
-    CORINFO_HELP_PINVOKE_CALLI,         // Indirect pinvoke call
     CORINFO_HELP_TAILCALL,              // Perform a tail call
 
     CORINFO_HELP_GETCURRENTMANAGEDTHREADID,
@@ -498,11 +497,9 @@ enum CorInfoHelpFunc
     CORINFO_HELP_RUNTIMEHANDLE_CLASS,           // determine a type/field/method handle at run-time
 
     CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE, // Convert from a TypeHandle (native structure pointer) to RuntimeType at run-time
-    CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE_MAYBENULL, // Convert from a TypeHandle (native structure pointer) to RuntimeType at run-time, the type may be null
     CORINFO_HELP_METHODDESC_TO_STUBRUNTIMEMETHOD, // Convert from a MethodDesc (native structure pointer) to RuntimeMethodHandle at run-time
     CORINFO_HELP_FIELDDESC_TO_STUBRUNTIMEFIELD, // Convert from a FieldDesc (native structure pointer) to RuntimeFieldHandle at run-time
     CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE, // Convert from a TypeHandle (native structure pointer) to RuntimeTypeHandle at run-time
-    CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL, // Convert from a TypeHandle (native structure pointer) to RuntimeTypeHandle at run-time, handle might point to a null type
 
     CORINFO_HELP_VIRTUAL_FUNC_PTR,      // look up a virtual method at run-time
 
@@ -633,9 +630,10 @@ enum CorInfoWasmType
 
 enum CorInfoTypeWithMod
 {
-    CORINFO_TYPE_MASK            = 0x3F,        // lower 6 bits are type mask
-    CORINFO_TYPE_MOD_PINNED      = 0x40,        // can be applied to CLASS, or BYREF to indicate pinned
-    CORINFO_TYPE_MOD_COPY_WITH_HELPER = 0x80    // can be applied to VALUECLASS to indicate 'needs helper to copy'
+    CORINFO_TYPE_MASK                     = 0x3F,  // lower 6 bits are type mask
+    CORINFO_TYPE_MOD_PINNED               = 0x40,  // can be applied to CLASS, or BYREF to indicate pinned
+    CORINFO_TYPE_MOD_COPY_WITH_HELPER     = 0x80,  // can be applied to VALUECLASS to indicate 'needs helper to copy'
+    CORINFO_TYPE_MOD_SECRET_STUB_ARGUMENT = 0x100, // can be applied to NATIVEINT to indicate the secret stub argument
 };
 
 inline CorInfoType strip(CorInfoTypeWithMod val) {
@@ -938,6 +936,7 @@ enum CorInfoClassId
     CLASSID_STRING,
     CLASSID_ARGUMENT_HANDLE,
     CLASSID_RUNTIME_TYPE,
+    CLASSID_NUMERICS_VECTORT,
 };
 
 enum CorInfoInline
@@ -1836,6 +1835,14 @@ struct CORINFO_ASYNC_INFO
     CORINFO_METHOD_HANDLE restoreContextsMethHnd;
     // Method handle for AsyncHelpers.RestoreContextsOnSuspension, used before suspending in async methods
     CORINFO_METHOD_HANDLE restoreContextsOnSuspensionMethHnd;
+    // Method handle for AsyncHelpers.RestoreInlinedFrameContexts, used when an inlined
+    // async callee logically returns to its caller after having been resumed
+    CORINFO_METHOD_HANDLE restoreInlinedFrameContextsMethHnd;
+    // Method handles for AsyncHelpers.CaptureInlinedFrameTransition*, used on suspension to capture
+    // the contexts each inlined async frame hands to its caller
+    CORINFO_METHOD_HANDLE captureInlinedFrameTransitionWithContinuationContextMethHnd;
+    CORINFO_METHOD_HANDLE captureInlinedFrameTransitionNoContinuationContextMethHnd;
+    CORINFO_METHOD_HANDLE captureInlinedFrameTransitionContinueOnThreadPoolMethHnd;
     // Finish suspension without saving continuation context (i.e. custom awaiter or ConfigureAwait(false))
     CORINFO_METHOD_HANDLE finishSuspensionNoContinuationContextMethHnd;
     // Finish suspension with saving continuation context (i.e. normal task await)
@@ -3384,12 +3391,6 @@ public:
             CORINFO_CONST_LOOKUP *  pLookup
             ) = 0;
 
-    // Generate a cookie based on the signature to pass to CORINFO_HELP_PINVOKE_CALLI
-    virtual void* GetCookieForPInvokeCalliSig(
-            CORINFO_SIG_INFO*   szMetaSig,
-            void**              ppIndirection = NULL
-            ) = 0;
-
     // Generate a cookie based on the signature to pass to INTOP_CALLI in the interpreter.
     virtual void* GetCookieForInterpreterCalliSig(
             CORINFO_SIG_INFO*   szMetaSig) = 0;
@@ -3533,6 +3534,8 @@ public:
         ) = 0;
 
     // Optionally, convert calli to regular method call. This is for PInvoke argument marshalling.
+    // On success, pResolvedToken->hMethod and pResolvedToken->hClass are set to the method
+    // and class that should be called instead.
     virtual bool convertPInvokeCalliToCall(
             CORINFO_RESOLVED_TOKEN *    pResolvedToken,
             bool                        fMustConvert

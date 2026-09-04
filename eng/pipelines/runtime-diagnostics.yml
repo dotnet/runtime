@@ -3,8 +3,8 @@
 # Pipeline overview:
 #
 #   SOSTests           windows_x64 Release. One shared coreclr+libs build (-c Debug
-#                      -rc release -lc release -clrinterpreter) consumed by 4 SOS
-#                      legs that run on top of it: cDAC, cDAC_fallback, cDAC_verify, DAC.
+#                      -rc release -lc release -clrinterpreter) consumed by 3 SOS
+#                      legs that run on top of it: cDAC, cDAC_verify, DAC.
 #                      Each leg sets testInterpreter: true so interpreter coverage
 #                      is exercised inline (no separate Interpreter leg).
 #
@@ -177,13 +177,8 @@ extends:
           name: cDAC
           dacMode: cdac
 
-      # cDAC_fallback / cDAC_verify: the in-box DAC hosts the cDAC contract reader, with per-API fallback
-      # to the legacy DAC (fallback) or no fallback but still verifying against it (verify).
-      - template: /eng/pipelines/diagnostics/sos-test-leg.yml
-        parameters:
-          name: cDAC_fallback
-          dacMode: cdacfallback
-
+      # cDAC_verify: the in-box DAC hosts the cDAC contract reader without fallback,
+      # while still verifying against the legacy DAC.
       - template: /eng/pipelines/diagnostics/sos-test-leg.yml
         parameters:
           name: cDAC_verify

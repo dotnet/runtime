@@ -14,6 +14,7 @@ namespace ILCompiler
     {
         private readonly object _structCacheLock = new object();
         private readonly Dictionary<int, TypeDesc> _structsBySize = new Dictionary<int, TypeDesc>();
+        private readonly Dictionary<int, TypeDesc> _alignedStructsBySize = new Dictionary<int, TypeDesc>();
         private readonly Dictionary<int, TypeDesc> _returnStructsBySize = new Dictionary<int, TypeDesc>();
         private volatile TypeDesc _cachedEmptyStruct;
         private volatile TypeDesc _wasmV128Type;
@@ -90,10 +91,12 @@ namespace ILCompiler
         }
 
         /// <summary>
-        /// Caches a struct type by its element size, so RaiseSignature can retrieve a real
-        /// type of that size. Only the first struct encountered for a given size is retained.
+        /// Caches a struct type by the layout represented in its signature encoding, so
+        /// RaiseSignature can retrieve a real type with the same argument layout. Structs whose
+        /// effective argument alignment exceeds 8 use a separate cache because their
+        /// transition-block slots are 16-byte aligned.
         /// </summary>
-        public void CacheStructBySize(TypeDesc type)
+        public void CacheStruct(TypeDesc type, bool requiresAlignedSlot)
         {
             int size = type.GetElementSize().AsInt;
             if (size <= 0)
@@ -101,7 +104,14 @@ namespace ILCompiler
 
             lock (_structCacheLock)
             {
-                _structsBySize.TryAdd(size, type);
+                if (requiresAlignedSlot)
+                {
+                    _alignedStructsBySize.TryAdd(size, type);
+                }
+                else
+                {
+                    _structsBySize.TryAdd(size, type);
+                }
             }
         }
 
@@ -145,6 +155,17 @@ namespace ILCompiler
             lock (_structCacheLock)
             {
                 if (_structsBySize.TryGetValue(size, out TypeDesc result))
+                    return result;
+            }
+
+            return null;
+        }
+
+        public TypeDesc GetCachedAlignedStructOfSize(int size)
+        {
+            lock (_structCacheLock)
+            {
+                if (_alignedStructsBySize.TryGetValue(size, out TypeDesc result))
                     return result;
             }
 

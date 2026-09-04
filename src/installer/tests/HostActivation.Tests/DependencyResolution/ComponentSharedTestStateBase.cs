@@ -62,8 +62,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             };
 
             Command command = Command.Create(NativeHostPath, args)
-                .EnableTracingAndCaptureOutputs()
-                .MultilevelLookup(false);
+                .EnableTracingAndCaptureOutputs();
             commandCustomizer?.Invoke(command);
 
             return command.Execute(caller)
@@ -89,7 +88,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
 
             return Command.Create(NativeHostPath, args)
                 .EnableTracingAndCaptureOutputs()
-                .MultilevelLookup(false)
                 .Execute(caller);
         }
 

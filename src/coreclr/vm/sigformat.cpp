@@ -9,7 +9,7 @@
 
 SigFormat::SigFormat()
 {
-    WRAPPER_NO_CONTRACT; // THROWS;GC_TRIGGERS;INJECT_FAULT(ThrowOM)
+    WRAPPER_NO_CONTRACT; // THROWS;GC_TRIGGERS;
     _size = SIG_INC;
     _pos = 0;
     _fmtSig = new char[_size];
@@ -31,7 +31,6 @@ SigFormat::SigFormat(MethodDesc* pMeth, TypeHandle owner, BOOL fIgnoreMethodName
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END
 
@@ -81,7 +80,6 @@ void SigFormat::AddString(LPCUTF8 s)
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END
 
@@ -120,7 +118,6 @@ void SigFormat::AddTypeString(Module* pModule, SigPointer sig, const SigTypeCont
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END
 
@@ -351,7 +348,6 @@ void SigFormat::FormatSig(MetaSig &sig, LPCUTF8 szMemberName, LPCUTF8 szClassNam
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END
 
@@ -409,7 +405,6 @@ void SigFormat::AddType(TypeHandle th)
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END
 

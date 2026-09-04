@@ -420,7 +420,7 @@ CodeGen::CodeGen(Compiler* theCompiler)
 
 #if HAS_FIXED_REGISTER_SET
     // Shouldn't be used before it is set in genFnProlog()
-    m_compiler->compCalleeRegsPushed = UninitializedWord<unsigned>(m_compiler);
+    m_compiler->compCalleeRegsPushed = UninitializedWord<unsigned>();
 #endif // HAS_FIXED_REGISTER_SET
 
 #if defined(TARGET_XARCH)
@@ -472,7 +472,6 @@ CodeGen::CodeGen(Compiler* theCompiler)
 
 int CodeGenInterface::genTotalFrameSize() const
 {
-    assert(!IsUninitialized(m_compiler->compCalleeRegsPushed));
 
     int totalFrameSize = m_compiler->compCalleeRegsPushed * REGSIZE_BYTES + m_compiler->compLclFrameSize;
 
@@ -1848,6 +1847,14 @@ void CodeGen::genEmitCallWithCurrentGC(EmitCallParams& params)
         }
 #endif
 
+        // We can't provide an accurate location if the local is allocated on the UnknownSizeFrame.
+        // TODO-SVE: Remove this once vector register calling convention is supported, as we shouldn't
+        // be using the return buffer then.
+        if (m_compiler->lvaIsUnknownSizeLocal(lclNum))
+        {
+            return;
+        }
+
         info.returnValueLoc = getSiVarLoc(m_compiler->lvaGetDesc(lclNum), lclOffs, stackLevelBias);
     }
     else if (call->HasMultiRegRetVal())
@@ -2260,7 +2267,7 @@ void CodeGen::genGenerateMachineCode()
         }
 
         printf(" for ");
-        printf(Target::g_tgtCPUName);
+        printf("%s", Target::g_tgtCPUName);
 
 #if defined(TARGET_XARCH)
         // Check ISA directly here instead of using
@@ -2585,7 +2592,8 @@ void CodeGen::genEmitMachineCode()
 #else
     if (m_compiler->opts.disAsm)
     {
-        printf("\n; Total bytes of code %d\n\n", codeSize);
+        printf("\n; Total bytes of code %d for method %s (%s)\n\n", codeSize,
+               m_compiler->eeGetMethodFullName(m_compiler->info.compMethodHnd), m_compiler->compGetTieringName(true));
     }
 #endif
 
@@ -3031,7 +3039,7 @@ void CodeGen::genGCWriteBarrier(GenTreeStoreInd* store, GCInfo::WriteBarrierForm
             unclassifiedBarrierSite++;
             printf("unclassifiedBarrierSite = %d:\n", unclassifiedBarrierSite);
             m_compiler->gtDispTree(store);
-            printf(""); // Flush.
+            fflush(jitstdout());
             printf("\n");
         }
 #endif // DEBUG
@@ -3247,7 +3255,7 @@ public:
             printf("  %s", getRegName(regNode->reg));
             for (RegNodeEdge* incoming = regNode->incoming; incoming != nullptr; incoming = incoming->nextIncoming)
             {
-                printf("\n    <- %s", getRegName(incoming->from->reg), varTypeName(incoming->type));
+                printf("\n    <- %s (%s)", getRegName(incoming->from->reg), varTypeName(incoming->type));
 
                 if (incoming->destOffset != 0)
                 {
@@ -6987,7 +6995,7 @@ void CodeGen::genReportRichDebugInfoInlineTreeToFile(FILE* file, InlineContext* 
         *first = false;
 
         fprintf(file, "{\"Ordinal\":%u,", context->GetOrdinal());
-        fprintf(file, "\"MethodID\":%lld,", (int64_t)context->GetCallee());
+        fprintf(file, "\"MethodID\":%lld,", (long long)context->GetCallee());
         fprintf(file, "\"ILOffset\":%u,", context->GetLocation().GetOffset());
         fprintf(file, "\"LocationFlags\":%u,", (uint32_t)context->GetLocation().GetSourceTypes());
         fprintf(file, "\"ExactILOffset\":%u,", context->GetActualCallOffset());
@@ -7028,7 +7036,7 @@ void CodeGen::genReportRichDebugInfoToFile()
     }
 
     // MethodID in ETW events are the method handles.
-    fprintf(file, "{\"MethodID\":%lld,", (INT64)m_compiler->info.compMethodHnd);
+    fprintf(file, "{\"MethodID\":%lld,", (long long)m_compiler->info.compMethodHnd);
     // Print inline tree.
     fprintf(file, "\"InlineTree\":");
 

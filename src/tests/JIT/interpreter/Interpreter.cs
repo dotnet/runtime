@@ -2396,7 +2396,7 @@ public class InterpreterTest
     [DllImport("pinvoke", CallingConvention = CallingConvention.Cdecl)]
     public static extern double sumTwoDoubles(double x, double y);
     [DllImport("pinvoke", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-    public static extern int writeToStdout(string s);
+    public static extern void writeToStdout(string s);
     [DllImport("missingLibrary", CallingConvention = CallingConvention.Cdecl)]
     public static extern void missingPInvoke();
     [DllImport("missingLibrary", CallingConvention = CallingConvention.Cdecl)]
@@ -2404,19 +2404,15 @@ public class InterpreterTest
 
     public static bool TestPInvoke()
     {
-        // WASM-TODO enable once we have generated pinvoke and in-tree native re-link
-        if (RuntimeInformation.ProcessArchitecture != Architecture.Wasm)
-        {
-            if (sumTwoInts(1, 2) != 3)
-                return false;
+        if (sumTwoInts(1, 2) != 3)
+            return false;
 
-            double summed = sumTwoDoubles(1, 2);
-            if (summed != 3)
-                return false;
+        double summed = sumTwoDoubles(1, 2);
+        if (summed != 3)
+            return false;
 
-            // Test marshaling wrappers
-            writeToStdout("Hello world from pinvoke.dll!writeToStdout\n");
-        }
+        // Test marshaling wrappers
+        writeToStdout("Hello world from pinvoke.dll!writeToStdout\n");
 
         bool caught = false;
         try {

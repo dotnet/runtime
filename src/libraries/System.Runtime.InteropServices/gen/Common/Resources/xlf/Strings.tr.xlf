@@ -83,8 +83,8 @@
         <note />
       </trans-unit>
       <trans-unit id="BidirectionalMissingRequiredMarshaller">
-        <source>The specified parameter needs to be marshalled from managed to unmanaged and unmanaged to managed, but the marshaller type '{0}' does not support it.</source>
-        <target state="translated">Belirtilen parametrenin yönetilenden yönetilmeyene ve yönetilmeyenden yönetilene doğru hazırlanması gerekiyor, ancak '{0}' hazırlayıcı türü bunu desteklemiyor.</target>
+        <source>The specified parameter needs to be marshalled from managed to unmanaged and unmanaged to managed, but the marshaller type '{0}' does not support it.{1}</source>
+        <target state="new">The specified parameter needs to be marshalled from managed to unmanaged and unmanaged to managed, but the marshaller type '{0}' does not support it.{1}</target>
         <note />
       </trans-unit>
       <trans-unit id="CallerAllocFromManagedMustHaveBufferSizeDescription">
@@ -175,6 +175,11 @@
       <trans-unit id="ComMethodReturningIntWillBeOutParameterTitle">
         <source>The return value in the managed definition will be converted to an additional 'out' parameter at the end of the parameter list when calling the unmanaged COM method.</source>
         <target state="translated">Yönetilen tanımdaki dönüş değeri, yönetilmeyen COM yöntemi çağrılırken parametre listesinin sonunda ek bir 'out' parametresine dönüştürülür.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ComObjectWrapperNotSpecifiedReason">
+        <source> The interface '{0}' does not specify 'ComInterfaceOptions.ComObjectWrapper' so no COM object wrapper (RCW) is generated. Marshalling this interface from unmanaged code to managed code will not work.</source>
+        <target state="new"> The interface '{0}' does not specify 'ComInterfaceOptions.ComObjectWrapper' so no COM object wrapper (RCW) is generated. Marshalling this interface from unmanaged code to managed code will not work.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedDescriptionCom">
@@ -802,9 +807,14 @@
         <target state="translated">'{0}' türü, '{1}' sıralama modunu desteklediğini belirtiyor, ancak 'int' alan ve 'Span&lt;&gt;' döndüren bir 'GetManagedValuesDestination' ile 'int' alan ve 'ReadOnlySpan&lt;&gt;' döndüren bir 'GetUnmanagedValuesSource' metodu sağlamıyor.</target>
         <note />
       </trans-unit>
+      <trans-unit id="ManagedObjectWrapperNotSpecifiedReason">
+        <source> The interface '{0}' does not specify 'ComInterfaceOptions.ManagedObjectWrapper' so no COM object wrapper (CCW) is generated. Marshalling this interface from managed code to unmanaged code will not work.</source>
+        <target state="new"> The interface '{0}' does not specify 'ComInterfaceOptions.ManagedObjectWrapper' so no COM object wrapper (CCW) is generated. Marshalling this interface from managed code to unmanaged code will not work.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ManagedToUnmanagedMissingRequiredMarshaller">
-        <source>The specified parameter needs to be marshalled from managed to unmanaged, but the marshaller type '{0}' does not support it.</source>
-        <target state="translated">Belirtilen parametrenin yönetilenden yönetilmeyene doğru hazırlanması gerekiyor, ancak '{0}' hazırlayıcı türü bunu desteklemiyor.</target>
+        <source>The specified parameter needs to be marshalled from managed to unmanaged, but the marshaller type '{0}' does not support it.{1}</source>
+        <target state="new">The specified parameter needs to be marshalled from managed to unmanaged, but the marshaller type '{0}' does not support it.{1}</target>
         <note />
       </trans-unit>
       <trans-unit id="ManagedTypeMustBeClosedOrMatchArityDescription">
@@ -1350,8 +1360,8 @@
         <note />
       </trans-unit>
       <trans-unit id="UnmanagedToManagedMissingRequiredMarshaller">
-        <source>The specified parameter needs to be marshalled from unmanaged to managed, but the marshaller type '{0}' does not support it.</source>
-        <target state="translated">Belirtilen parametrenin yönetilmeyenden yönetilene doğru hazırlanması gerekiyor, ancak '{0}' hazırlayıcı türü bunu desteklemiyor.</target>
+        <source>The specified parameter needs to be marshalled from unmanaged to managed, but the marshaller type '{0}' does not support it.{1}</source>
+        <target state="new">The specified parameter needs to be marshalled from unmanaged to managed, but the marshaller type '{0}' does not support it.{1}</target>
         <note />
       </trans-unit>
       <trans-unit id="UnnecessaryMarshallingInfoDescription">

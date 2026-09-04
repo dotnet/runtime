@@ -43,7 +43,7 @@ public:
     static std::vector<pal::string_t> get_disabled_versions();
 
 private:
-    fx_resolver_t(bool disable_multilevel_lookup, const runtime_config_t::settings_t& override_settings);
+    fx_resolver_t(const runtime_config_t::settings_t& override_settings);
 
     void update_newest_references(
         const runtime_config_t& config);
@@ -63,8 +63,7 @@ private:
     static void display_missing_framework_error(
         const pal::string_t& fx_name,
         const pal::string_t& fx_version,
-        const pal::string_t& dotnet_root,
-        bool disable_multilevel_lookup);
+        const pal::string_t& dotnet_root);
     static void display_incompatible_framework_error(
         const pal::string_t& higher,
         const fx_reference_t& lower);
@@ -94,7 +93,6 @@ private:
     // of the algorithm.
     fx_name_to_fx_reference_map_t m_oldest_fx_references;
 
-    bool m_disable_multilevel_lookup;
     const runtime_config_t::settings_t& m_override_settings;
 
     // Disabled runtime versions

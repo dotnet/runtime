@@ -415,7 +415,18 @@ internal static partial class Interop
                     dupCertHandle.Dispose(); // we still own the safe handle; clean it up
                     return false;
                 }
-                dupCertHandle.SetHandleAsInvalid(); // ownership has been transferred to sslHandle; do not free via this safe handle
+
+                // CryptoNative_SslAddExtraChainCert is SSL_ctrl(ssl, SSL_CTRL_CHAIN_CERT, 1, ...) --
+                // SSL_add1_chain_cert -- so OpenSSL has taken a reference of its own. The up-ref above
+                // exists only to close the SafeHandle GC hole for the duration of the call, so we still
+                // own that reference and must release it here. Transferring it instead
+                // (SetHandleAsInvalid) leaves two references taken and one never returned; because that
+                // also disarms the SafeHandle nothing finalizes it either, so the X509, its X509_PUBKEY
+                // and the EVP_PKEY cached inside it survive until process exit, invisible to the GC.
+                //
+                // The SSL_CTX path in Interop.SslCtx is deliberately different: SSL_CTX_add_extra_chain_cert
+                // is add0 and does consume the caller's reference, so SetHandleAsInvalid is correct there.
+                dupCertHandle.Dispose();
             }
 
             return true;

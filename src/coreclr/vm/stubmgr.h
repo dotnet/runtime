@@ -639,9 +639,66 @@ class PInvokeStubManager : public StubManager
 #endif
 };
 
+#ifdef FEATURE_COMINTEROP
+//
+// This is the stub manager for CLR->COM calls.
+// It handles addresses that map to a CLRToCOMCallMethodDesc.
+//
+typedef VPTR(class CLRToCOMStubManager) PTR_CLRToCOMStubManager;
+
+class CLRToCOMStubManager : public StubManager
+{
+    VPTR_VTABLE_CLASS(CLRToCOMStubManager, StubManager)
+
+  public:
+    static void Init();
+
+#ifndef DACCESS_COMPILE
+    CLRToCOMStubManager() : StubManager() {WRAPPER_NO_CONTRACT;}
+    ~CLRToCOMStubManager()
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_NOTRIGGER;
+            CAN_TAKE_LOCK;     // StubManager::UnlinkStubManager uses a crst
+        }
+        CONTRACTL_END;
+    }
+#endif
+
+   public:
+
+#ifdef _DEBUG
+    virtual const char * DbgGetName() { LIMITED_METHOD_CONTRACT; return "CLRToCOMStubManager"; }
+#endif
+
+    virtual BOOL CheckIsStub_Internal(PCODE stubStartAddress);
+
+  private:
+
+    virtual BOOL DoTraceStub(PCODE stubStartAddress, TraceDestination *trace);
+
+#ifndef DACCESS_COMPILE
+    virtual BOOL TraceManager(Thread *thread,
+                              TraceDestination *trace,
+                              T_CONTEXT *pContext,
+                              BYTE **pRetAddr);
+#endif
+
+#ifdef DACCESS_COMPILE
+    virtual void DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags);
+
+  protected:
+    virtual LPCWSTR GetStubManagerName(PCODE addr)
+        { LIMITED_METHOD_CONTRACT; return W("CLRToCOMStub"); }
+#endif
+};
+#endif // FEATURE_COMINTEROP
+
+#ifdef FEATURE_VARARGS
 // This is used to recognize
 //   VarargPInvokeStub()
-//   GenericPInvokeCalliHelper()
 typedef VPTR(class InteropDispatchStubManager) PTR_InteropDispatchStubManager;
 
 class InteropDispatchStubManager : public StubManager
@@ -681,6 +738,7 @@ class InteropDispatchStubManager : public StubManager
         { LIMITED_METHOD_CONTRACT; return W("InteropDispatchStub"); }
 #endif
 };
+#endif // FEATURE_VARARGS
 
 #if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
 //---------------------------------------------------------------------------------------
@@ -806,6 +864,8 @@ public:
         return pContext->Lr;
 #elif defined(TARGET_ARM64)
         return pContext->Lr;
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+        return pContext->Ra;
 #else
         PORTABILITY_ASSERT("StubManagerHelpers::GetReturnAddress");
         return (TADDR)NULL;
@@ -826,6 +886,8 @@ public:
         return (TADDR)pContext->R0;
 #elif defined(TARGET_ARM64)
         return (TADDR)pContext->X0;
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+        return (TADDR)pContext->A0;
 #else
         PORTABILITY_ASSERT("StubManagerHelpers::GetFirstArg");
         return (TADDR)0;
@@ -863,6 +925,8 @@ public:
         return pContext->R12;
 #elif defined(TARGET_ARM64)
         return pContext->X12;
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+        return pContext->T2;
 #else
         PORTABILITY_ASSERT("StubManagerHelpers::GetHiddenArg");
         return (TADDR)NULL;

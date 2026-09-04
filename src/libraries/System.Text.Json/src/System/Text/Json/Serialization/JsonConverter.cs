@@ -231,9 +231,8 @@ namespace System.Text.Json.Serialization
 
         /// <summary>
         /// Gets the set of leading JSON value shapes that this converter can read
-        /// for the given <paramref name="numberHandling"/>. Returning <see cref="JsonValueType.None"/> means
-        /// the converter does not advertise its supported values; internal converter callers may
-        /// fall back to a default based on <see cref="ConverterStrategy"/>. Used by union-type dispatch to build a
+        /// for the given <paramref name="numberHandling"/>. The base implementation returns
+        /// <see cref="JsonValueType.Any"/>. Used by union-type dispatch to build a
         /// value-shape-to-case map without re-walking type metadata. Mirrors <see cref="GetSchema"/>.
         /// </summary>
         /// <remarks>
@@ -243,7 +242,7 @@ namespace System.Text.Json.Serialization
         /// generator's union ambiguity diagnostic (SYSLIB1227) agrees with the runtime
         /// union value-shape map.
         /// </remarks>
-        internal virtual JsonValueType GetSupportedJsonValueTypes(JsonNumberHandling numberHandling) => JsonValueType.None;
+        internal virtual JsonValueType GetSupportedJsonValueTypes(JsonNumberHandling numberHandling) => JsonValueType.Any;
 
         // Whether a type (ConverterStrategy.Object) is deserialized using a parameterized constructor.
         internal virtual bool ConstructorIsParameterized { get; }

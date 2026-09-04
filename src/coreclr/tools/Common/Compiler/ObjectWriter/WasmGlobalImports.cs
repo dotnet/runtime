@@ -7,7 +7,7 @@ namespace ILCompiler.ObjectWriter
     /// Indices of the Wasm globals imported from the <c>webcil</c> host module into every R2R Wasm module.
     /// </summary>
     /// <remarks>
-    /// Must stay in sync with <c>WasmObjectWriter.CreateDefaultGlobalImports()</c>, <c>_globalSymbolNameToGlobalIndex</c>,
+    /// Must stay in sync with <c>WebCilObjectWriter.CreateDefaultGlobalImports()</c>, <c>_globalSymbolNameToGlobalIndex</c>,
     /// and the host loader (<c>libCorerun.js</c>). The JIT references these via relocatable well-known-global
     /// handles (<c>CORINFO_WASM_WELLKNOWN_GLOBALS</c>), not the indices below.
     /// </remarks>

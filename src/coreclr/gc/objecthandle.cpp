@@ -278,8 +278,8 @@ void CALLBACK ClearDependentHandle(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t *pEx
 
     if (!g_theGCHeap->IsPromoted(*pPrimaryRef))
     {
-        LOG((LF_GC, LL_INFO1000, "\tunreachable ", LOG_OBJECT_CLASS(*pPrimaryRef)));
-        LOG((LF_GC, LL_INFO1000, "\tunreachable ", LOG_OBJECT_CLASS(*pSecondaryRef)));
+        LOG((LF_GC, LL_INFO1000, "\tunreachable " LOG_OBJECT_CLASS(*pPrimaryRef)));
+        LOG((LF_GC, LL_INFO1000, "\tunreachable " LOG_OBJECT_CLASS(*pSecondaryRef)));
         *pPrimaryRef = NULL;
         *pSecondaryRef = NULL;
     }
@@ -641,7 +641,6 @@ bool Ref_Initialize()
     {
         NOTHROW;
         WRAPPER(GC_NOTRIGGER);
-        INJECT_FAULT(return false);
     }
     CONTRACTL_END;
 

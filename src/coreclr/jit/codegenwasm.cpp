@@ -1197,7 +1197,8 @@ void CodeGen::genCodeForAsyncContinuation(GenTree* tree)
 // genReturnSuspend: Emit code for a GT_RETURN_SUSPEND node.
 //
 // Stores the continuation into the async global, then pushes a zero of the native return type
-// so the epilog's `return` is well-typed.
+// so the epilog's `return` is well-typed. Methods that return through a buffer lower to a wasm
+// function with no result, so there is nothing to push for those.
 //
 // Arguments:
 //    treeNode - The GT_RETURN_SUSPEND node.
@@ -1213,7 +1214,7 @@ void CodeGen::genReturnSuspend(GenTreeUnOp* treeNode)
     genStoreAsyncContinuationGlobal();
 
     var_types retNativeType = m_compiler->info.compRetNativeType;
-    if (retNativeType != TYP_VOID)
+    if ((retNativeType != TYP_VOID) && (m_compiler->info.compRetBuffArg == BAD_VAR_NUM))
     {
         emitter* emit = GetEmitter();
         switch (genActualType(retNativeType))
@@ -1232,6 +1233,16 @@ void CodeGen::genReturnSuspend(GenTreeUnOp* treeNode)
             case TYP_DOUBLE:
                 emit->emitIns_I(INS_f64_const, EA_8BYTE, 0);
                 break;
+#ifdef FEATURE_SIMD
+            case TYP_SIMD16:
+            {
+                // Vector128<T> is a wasm v128 returned by value.
+                //
+                uint8_t zero[16] = {};
+                emit->emitIns_V128Imm(INS_v128_const, zero);
+                break;
+            }
+#endif // FEATURE_SIMD
             default:
                 unreached();
         }
@@ -3314,6 +3325,16 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
                    CORINFO_WASM_TYPE_I /* sp */, CORINFO_WASM_TYPE_I /* pep */);
         HELPER_SIG(CORINFO_HELP_THROWNULLREF, MANAGED, CORINFO_WASM_TYPE_VOID /* retval */,
                    CORINFO_WASM_TYPE_I /* sp */, CORINFO_WASM_TYPE_I /* pep */);
+        HELPER_SIG(CORINFO_HELP_THROW_ARGUMENTEXCEPTION, MANAGED, CORINFO_WASM_TYPE_VOID /* retval */,
+                   CORINFO_WASM_TYPE_I /* sp */, CORINFO_WASM_TYPE_I /* pep */);
+        HELPER_SIG(CORINFO_HELP_THROW_ARGUMENTOUTOFRANGEEXCEPTION, MANAGED, CORINFO_WASM_TYPE_VOID /* retval */,
+                   CORINFO_WASM_TYPE_I /* sp */, CORINFO_WASM_TYPE_I /* pep */);
+        HELPER_SIG(CORINFO_HELP_THROW_NOT_IMPLEMENTED, MANAGED, CORINFO_WASM_TYPE_VOID /* retval */,
+                   CORINFO_WASM_TYPE_I /* sp */, CORINFO_WASM_TYPE_I /* pep */);
+        HELPER_SIG(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, MANAGED, CORINFO_WASM_TYPE_VOID /* retval */,
+                   CORINFO_WASM_TYPE_I /* sp */, CORINFO_WASM_TYPE_I /* pep */);
+        HELPER_SIG(CORINFO_HELP_THROW_TYPE_NOT_SUPPORTED, MANAGED, CORINFO_WASM_TYPE_VOID /* retval */,
+                   CORINFO_WASM_TYPE_I /* sp */, CORINFO_WASM_TYPE_I /* pep */);
         // RhpAssignRef
         HELPER_SIG(CORINFO_HELP_ASSIGN_REF, UNMANAGED, CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I,
                    CORINFO_WASM_TYPE_I);
@@ -4466,39 +4487,33 @@ int CodeGenInterface::genTotalFrameSize() const
 }
 
 //---------------------------------------------------------------------
-// genSPtoFPdelta - return the offset from SP to the frame pointer.
-// This number is going to be positive, since SP must be at the lowest
-// address.
+// genSPtoFPdelta - return the offset from the initial SP to the frame pointer in linear memory.
+// This number should be zero on wasm, since Initial SP = FP.
 //
 // There must be a frame pointer to call this function!
 int CodeGenInterface::genSPtoFPdelta() const
 {
-    assert(isFramePointerUsed());
-    NYI_WASM("genSPtoFPdelta");
-    return 0;
+    unreached();
 }
 
 //---------------------------------------------------------------------
-// genCallerSPtoFPdelta - return the offset from Caller-SP to the frame pointer.
+// genCallerSPtoFPdelta - return the offset from Caller-SP to the frame pointer in linear memory.
 // This number is going to be negative, since the Caller-SP is at a higher
 // address than the frame pointer.
 //
 // There must be a frame pointer to call this function!
 int CodeGenInterface::genCallerSPtoFPdelta() const
 {
-    assert(isFramePointerUsed());
-    NYI_WASM("genCallerSPtoFPdelta");
-    return 0;
+    unreached();
 }
 
 //---------------------------------------------------------------------
-// genCallerSPtoInitialSPdelta - return the offset from Caller-SP to Initial SP.
+// genCallerSPtoInitialSPdelta - return the offset from Caller-SP to Initial SP in linear memory.
 //
 // This number will be negative.
 int CodeGenInterface::genCallerSPtoInitialSPdelta() const
 {
-    NYI_WASM("genCallerSPtoInitialSPdelta");
-    return 0;
+    unreached();
 }
 
 void RegSet::verifyRegUsed(regNumber reg)

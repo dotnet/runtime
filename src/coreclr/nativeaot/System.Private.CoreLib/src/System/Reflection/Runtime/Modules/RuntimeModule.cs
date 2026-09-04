@@ -6,6 +6,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Runtime.Assemblies;
+using System.Reflection.Runtime.General;
 using System.Runtime.Serialization;
 
 namespace System.Reflection.Runtime.Modules
@@ -25,6 +26,22 @@ namespace System.Reflection.Runtime.Modules
         public abstract override Assembly Assembly { get; }
 
         public abstract override IEnumerable<CustomAttributeData> CustomAttributes { get; }
+
+        public sealed override object[] GetCustomAttributes(bool inherit) => RuntimeCustomAttribute.GetCustomAttributes(this, typeof(object));
+
+        public sealed override object[] GetCustomAttributes(Type attributeType, bool inherit)
+        {
+            ArgumentNullException.ThrowIfNull(attributeType);
+            return RuntimeCustomAttribute.GetCustomAttributes(this, attributeType);
+        }
+
+        public sealed override IList<CustomAttributeData> GetCustomAttributesData() => CustomAttributes.ToReadOnlyCollection();
+
+        public sealed override bool IsDefined(Type attributeType, bool inherit)
+        {
+            ArgumentNullException.ThrowIfNull(attributeType);
+            return RuntimeCustomAttribute.IsDefined(this, attributeType);
+        }
 
         [RequiresAssemblyFiles(UnknownStringMessageInRAF)]
         public sealed override string FullyQualifiedName

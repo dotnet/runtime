@@ -355,6 +355,31 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        public static void RunCustomFormatSupplementaryLiteral()
+        {
+            VerifyToString("123", "'\U0001F600'0", "\U0001F600123");
+            VerifyToString("123", "\\\U0001F6000", "\U0001F600123");
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static void RunCustomFormatUnpairedSurrogate(bool highSurrogate)
+        {
+            BigInteger value = 123;
+            string literal = new(highSurrogate ? '\uD83D' : '\uDE00', 1);
+            string format = $"'{literal}'0";
+
+            Span<char> chars = new char[literal.Length + 3];
+            Assert.True(value.TryFormat(chars, out int charsWritten, format));
+            Assert.Equal($"{literal}123", new string(chars[..charsWritten]));
+
+            Span<byte> bytes = stackalloc byte[6];
+            Assert.True(value.TryFormat(bytes, out int bytesWritten, format));
+            Assert.Equal("\uFFFD123", Encoding.UTF8.GetString(bytes[..bytesWritten]));
+        }
+
+        [Fact]
         public static void RunCustomFormatDigitPlaceholder()
         {
             // Digit Placeholder

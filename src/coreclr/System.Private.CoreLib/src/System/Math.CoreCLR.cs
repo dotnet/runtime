@@ -20,97 +20,97 @@ namespace System
         /// <safety>Implemented by the runtime as an FCall that computes a result from the argument values alone; it dereferences no caller-supplied memory.</safety>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static safe extern double Acos(double d);
+        public static extern safe double Acos(double d);
 
         /// <safety>Implemented by the runtime as an FCall that computes a result from the argument values alone; it dereferences no caller-supplied memory.</safety>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static safe extern double Acosh(double d);
+        public static extern safe double Acosh(double d);
 
         /// <safety>Implemented by the runtime as an FCall that computes a result from the argument values alone; it dereferences no caller-supplied memory.</safety>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static safe extern double Asin(double d);
+        public static extern safe double Asin(double d);
 
         /// <safety>Implemented by the runtime as an FCall that computes a result from the argument values alone; it dereferences no caller-supplied memory.</safety>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static safe extern double Asinh(double d);
+        public static extern safe double Asinh(double d);
 
         /// <safety>Implemented by the runtime as an FCall that computes a result from the argument values alone; it dereferences no caller-supplied memory.</safety>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static safe extern double Atan(double d);
+        public static extern safe double Atan(double d);
 
         /// <safety>Implemented by the runtime as an FCall that computes a result from the argument values alone; it dereferences no caller-supplied memory.</safety>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static safe extern double Atanh(double d);
+        public static extern safe double Atanh(double d);
 
         /// <safety>Implemented by the runtime as an FCall that computes a result from the argument values alone; it dereferences no caller-supplied memory.</safety>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static safe extern double Atan2(double y, double x);
+        public static extern safe double Atan2(double y, double x);
 
         /// <safety>Implemented by the runtime as an FCall that computes a result from the argument values alone; it dereferences no caller-supplied memory.</safety>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static safe extern double Cbrt(double d);
+        public static extern safe double Cbrt(double d);
 
         /// <safety>Implemented by the runtime as an FCall that computes a result from the argument values alone; it dereferences no caller-supplied memory.</safety>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static safe extern double Ceiling(double a);
+        public static extern safe double Ceiling(double a);
 
         /// <safety>Implemented by the runtime as an FCall that computes a result from the argument values alone; it dereferences no caller-supplied memory.</safety>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static safe extern double Cos(double d);
+        public static extern safe double Cos(double d);
 
         /// <safety>Implemented by the runtime as an FCall that computes a result from the argument values alone; it dereferences no caller-supplied memory.</safety>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static safe extern double Cosh(double value);
+        public static extern safe double Cosh(double value);
 
         /// <safety>Implemented by the runtime as an FCall that computes a result from the argument values alone; it dereferences no caller-supplied memory.</safety>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static safe extern double Exp(double d);
+        public static extern safe double Exp(double d);
 
         /// <safety>Implemented by the runtime as an FCall that computes a result from the argument values alone; it dereferences no caller-supplied memory.</safety>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static safe extern double Floor(double d);
+        public static extern safe double Floor(double d);
 
         /// <safety>Implemented by the runtime as an FCall that computes a result from the argument values alone; it dereferences no caller-supplied memory.</safety>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static safe extern double FusedMultiplyAdd(double x, double y, double z);
+        public static extern safe double FusedMultiplyAdd(double x, double y, double z);
 
         /// <safety>Implemented by the runtime as an FCall that computes a result from the argument values alone; it dereferences no caller-supplied memory.</safety>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static safe extern double Log(double d);
+        public static extern safe double Log(double d);
 
         /// <safety>Implemented by the runtime as an FCall that computes a result from the argument values alone; it dereferences no caller-supplied memory.</safety>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static safe extern double Log2(double x);
+        public static extern safe double Log2(double x);
 
         /// <safety>Implemented by the runtime as an FCall that computes a result from the argument values alone; it dereferences no caller-supplied memory.</safety>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static safe extern double Log10(double d);
+        public static extern safe double Log10(double d);
 
         /// <safety>Implemented by the runtime as an FCall that computes a result from the argument values alone; it dereferences no caller-supplied memory.</safety>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static safe extern double Pow(double x, double y);
+        public static extern safe double Pow(double x, double y);
 
         /// <safety>Implemented by the runtime as an FCall that computes a result from the argument values alone; it dereferences no caller-supplied memory.</safety>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static safe extern double Sin(double a);
+        public static extern safe double Sin(double a);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe (double Sin, double Cos) SinCos(double x)
@@ -128,22 +128,22 @@ namespace System
         /// <safety>Implemented by the runtime as an FCall that computes a result from the argument values alone; it dereferences no caller-supplied memory.</safety>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static safe extern double Sinh(double value);
+        public static extern safe double Sinh(double value);
 
         /// <safety>Implemented by the runtime as an FCall that computes a result from the argument values alone; it dereferences no caller-supplied memory.</safety>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static safe extern double Sqrt(double d);
+        public static extern safe double Sqrt(double d);
 
         /// <safety>Implemented by the runtime as an FCall that computes a result from the argument values alone; it dereferences no caller-supplied memory.</safety>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static safe extern double Tan(double a);
+        public static extern safe double Tan(double a);
 
         /// <safety>Implemented by the runtime as an FCall that computes a result from the argument values alone; it dereferences no caller-supplied memory.</safety>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static safe extern double Tanh(double value);
+        public static extern safe double Tanh(double value);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe double ModF(double x, double* intptr);

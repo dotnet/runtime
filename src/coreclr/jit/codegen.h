@@ -1011,6 +1011,7 @@ protected:
     void genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
     void genX86BaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
     void genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
+    void ClearUnusedMaskBits(regNumber maskReg, uint32_t count);
     void genFmaIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
     void genPermuteVar2x(GenTreeHWIntrinsic* node, insOpts instOptions);
     void genXCNTIntrinsic(GenTreeHWIntrinsic* node, instruction ins);

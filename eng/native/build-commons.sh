@@ -60,6 +60,18 @@ build_native()
     cmakeArgs="$6"
     message="$7"
 
+    # When sccache is enabled, use it as the compiler launcher.
+    # On macOS, CMake wraps PCH includes with -Xarch_<arch> which sccache
+    # cannot parse.  Use a thin wrapper that strips -Xarch_<arch> flags
+    # (safe in single-architecture builds) before forwarding to sccache.
+    if [[ "${USE_SCCACHE:-}" == "true" ]]; then
+        local __sccacheLauncher="sccache"
+        if [[ "$targetOS" == osx || "$targetOS" == maccatalyst ]]; then
+            __sccacheLauncher="$__RepoRootDir/eng/native/sccache-xarch-wrapper.sh"
+        fi
+        cmakeArgs="-DCMAKE_C_COMPILER_LAUNCHER=$__sccacheLauncher -DCMAKE_CXX_COMPILER_LAUNCHER=$__sccacheLauncher $cmakeArgs"
+    fi
+
     # All set to commence the build
     echo "Commencing build of \"$target\" target in \"$message\" for $__TargetOS.$__TargetArch.$__BuildType in $intermediatesDir"
 

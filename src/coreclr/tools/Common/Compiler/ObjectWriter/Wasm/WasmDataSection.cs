@@ -11,19 +11,20 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.ObjectWriter
 {
-    internal class WasmDataSection : WasmSection
+    internal class WasmDataSection : IWasmEmittable, IWasmSection
     {
         private List<WasmDataSegment> _segments;
         public List<WasmDataSegment> Segments => _segments;
         private int _contentAlign = 1;
         public WasmDataSection(List<WasmDataSegment> segments, Utf8String name, int contentAlign = 1)
-            : base(WasmSectionType.Data, null, name)
         {
             _segments = segments;
             _contentAlign = contentAlign;
         }
 
-        public override int ContentSize
+        public WasmSectionType Type => WasmSectionType.Data;
+
+        public int ContentSize
         {
             get
             {
@@ -38,7 +39,9 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        public override int EncodeHeader(Span<byte> headerBuffer)
+        public int HeaderSize => 1 + Relocation.WASM_PADDED_RELOC_SIZE_32;
+
+        private int EncodeHeader(Span<byte> headerBuffer)
         {
             uint encodeLength = Relocation.WASM_PADDED_RELOC_SIZE_32;
 
@@ -51,9 +54,12 @@ namespace ILCompiler.ObjectWriter
             return 1 + (int)encodeLength;
         }
 
-        public override int HeaderSize => 1 + Relocation.WASM_PADDED_RELOC_SIZE_32;
+        public int EncodeSize()
+        {
+            return HeaderSize + ContentSize;
+        }
 
-        public override int Emit(Stream outputFileStream)
+        public int EmitToStream(Stream outputFileStream)
         {
             int size = 0;
             int headerPosition = (int)outputFileStream.Position;

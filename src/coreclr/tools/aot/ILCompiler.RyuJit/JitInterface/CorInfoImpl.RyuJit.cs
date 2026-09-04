@@ -802,14 +802,8 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT:
                     return _compilation.NodeFactory.ExternFunctionSymbol(new Utf8String("RhpResolveInterfaceMethodFast"u8));
 
-                case CorInfoHelpFunc.CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE_MAYBENULL:
-                    id = ReadyToRunHelper.TypeHandleToRuntimeType;
-                    break;
                 case CorInfoHelpFunc.CORINFO_HELP_GETREFANY:
                     id = ReadyToRunHelper.GetRefAny;
-                    break;
-                case CorInfoHelpFunc.CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL:
-                    id = ReadyToRunHelper.TypeHandleToRuntimeTypeHandle;
                     break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_GETCURRENTMANAGEDTHREADID:
@@ -2020,8 +2014,8 @@ namespace Internal.JitInterface
             if (!mustConvert && !IsPInvokeStubRequired(stub))
                 return false;
 
-            pResolvedToken.hMethod = ObjectToHandle(stub);
             pResolvedToken.hClass = ObjectToHandle(stub.OwningType);
+            pResolvedToken.hMethod = ObjectToHandle(stub);
             return true;
         }
 
@@ -2224,7 +2218,7 @@ namespace Internal.JitInterface
                         pResult->helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_THREADSTATIC_BASE;
                         helperId = ReadyToRunHelperId.GetThreadStaticBase;
                     }
-                    else if (!_compilation.HasLazyStaticConstructor(field.OwningType))
+                    else
                     {
                         fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_RELOCATABLE;
                         ISymbolNode baseAddr;
@@ -2239,18 +2233,10 @@ namespace Internal.JitInterface
                             baseAddr = _compilation.NodeFactory.TypeNonGCStaticsSymbol(field.OwningType);
                         }
                         pResult->fieldLookup.addr = (void*)ObjectToHandle(baseAddr);
-                    }
-                    else
-                    {
-                        if (field.HasGCStaticBase)
+
+                        if (_compilation.HasLazyStaticConstructor(field.OwningType))
                         {
-                            pResult->helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GCSTATIC_BASE;
-                            helperId = ReadyToRunHelperId.GetGCStaticBase;
-                        }
-                        else
-                        {
-                            pResult->helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE;
-                            helperId = ReadyToRunHelperId.GetNonGCStaticBase;
+                            fieldFlags |= CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_INITCLASS;
                         }
                     }
 
