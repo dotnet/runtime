@@ -39,7 +39,7 @@ namespace ILCompiler.DependencyAnalysis
                 expressions.Add(Local.Get(i));
             }
 
-            expressions.Add(ControlFlow.Call(_target));
+            expressions.Add(ControlFlow.ReturnCall(_target));
             encoder.FunctionBody = new WasmFunctionBody(signature, expressions.ToArray());
         }
     }

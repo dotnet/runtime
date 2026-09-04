@@ -122,6 +122,7 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
         End = 0x0B,
         Call = 0x10,
         CallIndirect = 0x11,
+        ReturnCall = 0x12,
         LocalGet = 0x20,
         LocalSet = 0x21,
         LocalTee = 0x22,
@@ -878,6 +879,7 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
     {
         public static WasmExpr Unreachable => new WasmUnaryExpr(WasmExprKind.Unreachable);
         public static WasmExpr Call(ISymbolNode target) => new WasmLEBConstantReloc(WasmExprKind.Call, target, RelocType.WASM_FUNCTION_INDEX_LEB);
+        public static WasmExpr ReturnCall(ISymbolNode target) => new WasmLEBConstantReloc(WasmExprKind.ReturnCall, target, RelocType.WASM_FUNCTION_INDEX_LEB);
         public static WasmExpr CallIndirect(ISymbolNode funcType, uint tableIndex) => new WasmIndirectCallInstruction(WasmExprKind.CallIndirect, funcType, tableIndex);
     }
     internal static class Table
