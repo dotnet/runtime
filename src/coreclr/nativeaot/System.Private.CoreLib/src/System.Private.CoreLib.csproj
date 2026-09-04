@@ -165,7 +165,6 @@
     <Compile Include="System\Reflection\Metadata\MetadataUpdater.cs" />
     <Compile Include="System\Reflection\MethodInvoker.cs" />
     <Compile Include="System\Reflection\ModifiedType.NativeAot.cs" />
-    <Compile Include="System\Reflection\RuntimeCustomAttribute.NativeAot.cs" />
     <Compile Include="System\Reflection\RuntimeMethodInfo.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeFunctionPointerTypeInfo.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeFunctionPointerTypeInfo.UnificationKey.cs" />
