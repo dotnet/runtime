@@ -384,7 +384,9 @@ DEFINE_METASIG(IM(RefInt_RefInt_RefInt_RetArrByte, r(i) r(i) r(i), a(b)))
 DEFINE_METASIG_T(IM(RefInt_RetRuntimeType, r(i) , C(CLASS)))
 DEFINE_METASIG_T(SM(IntPtr_RetRuntimeType, I , C(CLASS)))
 
+#ifdef FEATURE_VARARGS
 DEFINE_METASIG_T(IM(RuntimeArgumentHandle_PtrVoid_RetVoid, g(ARGUMENT_HANDLE) P(v), v))
+#endif // FEATURE_VARARGS
 
 // Exception
 #ifdef FEATURE_COMINTEROP

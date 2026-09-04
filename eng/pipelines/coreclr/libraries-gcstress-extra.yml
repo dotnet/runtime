@@ -12,7 +12,7 @@ trigger: none
 variables:
   - template: /eng/pipelines/common/variables.yml
   - name: enableHelixJobMonitor
-    value: false
+    value: true
   - template: /eng/pipelines/helix-platforms.yml
 
 extends:
@@ -21,11 +21,12 @@ extends:
     stages:
     - stage: Build
       jobs:
-      - template: /eng/common/core-templates/job/helix-job-monitor.yml
-        parameters:
-          helixAccessToken: $(HelixApiAccessToken)
-          timeoutInMinutes: 720
-          allowNoHelixJobs: true
+      - ${{ if eq(variables['enableHelixJobMonitor'], true) }}:
+        - template: /eng/common/core-templates/job/helix-job-monitor.yml
+          parameters:
+            helixAccessToken: $(HelixApiAccessToken)
+            timeoutInMinutes: 720
+            allowNoHelixJobs: true
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:

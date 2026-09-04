@@ -12,19 +12,33 @@ namespace Microsoft.Interop
         private readonly string _returnIdentifier;
         private readonly string _nativeReturnIdentifier;
         private readonly MarshalDirection _direction;
+        private readonly TypePositionInfo? _errorHandlingOverlappedPosition;
 
         public DefaultIdentifierContext(
             string returnIdentifier,
             string nativeReturnIdentifier,
-            MarshalDirection direction)
+            MarshalDirection direction,
+            TypePositionInfo? errorHandlingOverlappedPosition = null)
         {
             _returnIdentifier = returnIdentifier;
             _nativeReturnIdentifier = nativeReturnIdentifier;
             _direction = direction;
+            _errorHandlingOverlappedPosition = errorHandlingOverlappedPosition;
         }
 
         public override (string managed, string native) GetIdentifiers(TypePositionInfo info)
         {
+            if (info is
+                {
+                    IsErrorHandlingPosition: true,
+                    ManagedIndex: TypePositionInfo.ErrorIndex,
+                }
+                && _direction == MarshalDirection.ManagedToUnmanaged
+                && _errorHandlingOverlappedPosition is not null)
+            {
+                return (info.InstanceIdentifier, GetIdentifiers(_errorHandlingOverlappedPosition).native);
+            }
+
             // If the info is in the stub return position, then we need to generate a name to use
             // for both the managed and native values since there is no name in the signature for the return value.
             if (MarshallerHelpers.IsInStubReturnPosition(info, _direction))
@@ -33,7 +47,8 @@ namespace Microsoft.Interop
                 // then we're going to return using name of the native return identifier.
                 // We use the provided instance identifier as that represents
                 // the name of the exception variable specified in the catch clause.
-                if (info.IsManagedExceptionPosition)
+                if (info.IsErrorHandlingPosition
+                    && _direction == MarshalDirection.UnmanagedToManaged)
                 {
                     return (info.InstanceIdentifier, _nativeReturnIdentifier);
                 }
@@ -53,6 +68,14 @@ namespace Microsoft.Interop
                 // in the original metadata.
                 return base.GetIdentifiers(info);
             }
+        }
+
+        public override string GetAdditionalIdentifier(TypePositionInfo info, string name)
+        {
+            return info.IsErrorHandlingPosition
+                && _direction == MarshalDirection.ManagedToUnmanaged
+                ? $"__errorHandler{GeneratedNativeIdentifierSuffix}__{name}"
+                : base.GetAdditionalIdentifier(info, name);
         }
     }
 }

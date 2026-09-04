@@ -15,9 +15,9 @@ namespace ILCompiler.DependencyAnalysis
 {
     internal sealed class ProxyTypeMapNode : SortableDependencyNode, IProxyTypeMapNode
     {
-        private readonly IEnumerable<KeyValuePair<TypeDesc, TypeDesc>> _mapEntries;
+        private readonly IEnumerable<KeyValuePair<TypeDesc, TypeMapMetadata.ProxyTypeMapEntry>> _mapEntries;
 
-        public ProxyTypeMapNode(TypeDesc typeMapGroup, IEnumerable<KeyValuePair<TypeDesc, TypeDesc>> mapEntries)
+        public ProxyTypeMapNode(TypeDesc typeMapGroup, IEnumerable<KeyValuePair<TypeDesc, TypeMapMetadata.ProxyTypeMapEntry>> mapEntries)
         {
             _mapEntries = mapEntries;
             TypeMapGroup = typeMapGroup;
@@ -25,7 +25,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public TypeDesc TypeMapGroup { get; }
 
-        public IEnumerable<KeyValuePair<TypeDesc, TypeDesc>> MapEntries => _mapEntries;
+        public IEnumerable<KeyValuePair<TypeDesc, TypeMapMetadata.ProxyTypeMapEntry>> MapEntries => _mapEntries;
         public override bool InterestingForDynamicDependencyAnalysis => false;
 
         public override bool HasDynamicDependencies => false;
@@ -40,10 +40,10 @@ namespace ILCompiler.DependencyAnalysis
 
         public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context)
         {
-            foreach (var (key, value) in _mapEntries)
+            foreach (var (key, entry) in _mapEntries)
             {
                 yield return new CombinedDependencyListEntry(
-                    context.MetadataTypeSymbol(value),
+                    context.MetadataTypeSymbol(entry.Type),
                     context.MaximallyConstructableType(key),
                     "Proxy type map entry");
 
@@ -66,12 +66,12 @@ namespace ILCompiler.DependencyAnalysis
 
         private IEnumerable<(IEETypeNode key, IEETypeNode value)> GetMarkedEntries(NodeFactory factory)
         {
-            foreach (var (key, value) in MapEntries)
+            foreach (var (key, entry) in MapEntries)
             {
                 IEETypeNode keyNode = factory.MaximallyConstructableType(key);
                 if (keyNode.Marked)
                 {
-                    IEETypeNode valueNode = factory.MetadataTypeSymbol(value);
+                    IEETypeNode valueNode = factory.MetadataTypeSymbol(entry.Type);
                     Debug.Assert(valueNode.Marked);
                     yield return (keyNode, valueNode);
                 }

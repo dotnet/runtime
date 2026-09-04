@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using Xunit;
 
@@ -909,6 +910,44 @@ namespace System.Tests
         }
 
         [Theory]
+        [InlineData("\u00A0", " ")]
+        [InlineData("\u202F", " ")]
+        [InlineData(" ", "\u00A0")]
+        [InlineData(" ", "\u202F")]
+        [InlineData("\u00A0", "\u202F")]
+        [InlineData("\u202F", "\u00A0")]
+        public static void Parse_SpaceReplacingGroupSeparator(string groupSeparator, string inputSeparator)
+        {
+            NumberFormatInfo format = new() { NumberGroupSeparator = groupSeparator };
+            string value = $"1{inputSeparator}234";
+            byte[] utf8Value = Encoding.UTF8.GetBytes(value);
+
+            Assert.Equal(1234, int.Parse(value, NumberStyles.AllowThousands, format));
+            Assert.Equal(1234, int.Parse(utf8Value, NumberStyles.AllowThousands, format));
+
+            Assert.True(NumberBaseHelper<int>.TryParsePartial(value + "x", NumberStyles.AllowThousands, format, out int result, out int charsConsumed));
+            Assert.Equal(1234, result);
+            Assert.Equal(value.Length, charsConsumed);
+
+            Assert.True(NumberBaseHelper<int>.TryParsePartial([.. utf8Value, (byte)'x'], NumberStyles.AllowThousands, format, out result, out int bytesConsumed));
+            Assert.Equal(1234, result);
+            Assert.Equal(utf8Value.Length, bytesConsumed);
+
+            string trailingSeparatorValue = $"1{inputSeparator}";
+            Assert.Equal(1, int.Parse(Encoding.UTF8.GetBytes(trailingSeparatorValue), NumberStyles.AllowThousands, format));
+        }
+
+        [Fact]
+        public static void Parse_SupplementaryGroupSeparator()
+        {
+            NumberFormatInfo format = new() { NumberGroupSeparator = "\U0001F600" };
+            const string Value = "1\U0001F600234";
+
+            Assert.Equal(1234, int.Parse(Value, NumberStyles.AllowThousands, format));
+            Assert.Equal(1234, int.Parse(Encoding.UTF8.GetBytes(Value), NumberStyles.AllowThousands, format));
+        }
+
+        [Theory]
         [MemberData(nameof(Parse_Invalid_TestData))]
         public static void Parse_Utf8Span_Invalid(string value, NumberStyles style, IFormatProvider provider, Type exceptionType)
         {
@@ -985,6 +1024,48 @@ namespace System.Tests
         [MemberData(nameof(ToString_TestData))]
         public static void TryFormat(int i, string format, IFormatProvider provider, string expected) =>
             NumberFormatTestHelper.TryFormatNumberTest(i, format, provider, expected);
+
+        [Theory]
+        [InlineData("'\U0001F600'0", "\U0001F600123")]
+        [InlineData("\\\U0001F6000", "\U0001F600123")]
+        public static void TryFormat_CustomFormatWithSupplementaryLiteral(string format, string expected)
+        {
+            NumberFormatTestHelper.TryFormatNumberTest(123, format, null, expected);
+        }
+
+        [Fact]
+        public static void TryFormat_CustomFormatWithSupplementaryLiteral_AllCoreNumericImplementations()
+        {
+            const string Format = "'\U0001F600'0";
+            const string Expected = "\U0001F600123";
+
+            NumberFormatTestHelper.TryFormatNumberTest(123L, Format, null, Expected);
+            NumberFormatTestHelper.TryFormatNumberTest((Int128)123, Format, null, Expected);
+            NumberFormatTestHelper.TryFormatNumberTest((Half)123, Format, null, Expected);
+            NumberFormatTestHelper.TryFormatNumberTest(123.0, Format, null, Expected);
+            NumberFormatTestHelper.TryFormatNumberTest(123m, Format, null, Expected);
+            NumberFormatTestHelper.TryFormatNumberTest((BFloat16)123, Format, null, Expected);
+            NumberFormatTestHelper.TryFormatNumberTest((Decimal32)123, Format, null, Expected);
+            NumberFormatTestHelper.TryFormatNumberTest((Decimal64)123, Format, null, Expected);
+            NumberFormatTestHelper.TryFormatNumberTest((Decimal128)123, Format, null, Expected);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static void TryFormat_CustomFormatWithUnpairedSurrogate(bool highSurrogate)
+        {
+            string literal = new(highSurrogate ? '\uD83D' : '\uDE00', 1);
+            string format = $"'{literal}'0";
+
+            Span<char> chars = new char[literal.Length + 3];
+            Assert.True(123.TryFormat(chars, out int charsWritten, format));
+            Assert.Equal($"{literal}123", new string(chars[..charsWritten]));
+
+            Span<byte> bytes = stackalloc byte[6];
+            Assert.True(123.TryFormat(bytes, out int bytesWritten, format));
+            Assert.Equal("\uFFFD123", Encoding.UTF8.GetString(bytes[..bytesWritten]));
+        }
 
         [Fact]
         public static void TestNegativeNumberParsingWithHyphen()

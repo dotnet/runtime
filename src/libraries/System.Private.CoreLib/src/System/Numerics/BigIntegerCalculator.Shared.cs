@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 
 namespace System.Numerics
@@ -15,11 +16,20 @@ namespace System.Numerics
     // into System.Runtime.Numerics.
     internal static partial class BigIntegerCalculator
     {
+        /// <summary>Maximum length of a shifted single-limb divisor after complete zero limbs are removed.</summary>
+        private const int ShiftedDivisorMaxReducedLength = 2;
+
         /// <summary>Number of bits per native-width limb: 32 on 32-bit, 64 on 64-bit.</summary>
         internal static int BitsPerLimb
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => nint.Size * 8;
+        }
+
+        [Conditional("DEBUG")]
+        public static void InitializeForDebug(Span<nuint> bits)
+        {
+            bits.Fill(0xCD);
         }
 
         public static int Compare(ReadOnlySpan<nuint> left, ReadOnlySpan<nuint> right)
@@ -76,6 +86,100 @@ namespace System.Numerics
             // of a given value may be less than the array's length
 
             return value.LastIndexOfAnyExcept((nuint)0) + 1;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int GetLimbOffset(ReadOnlySpan<nuint> value)
+        {
+            Debug.Assert(!value.IsEmpty);
+
+            int offset = value[0] == 0 ? value.IndexOfAnyExcept((nuint)0) : 0;
+            Debug.Assert(offset >= 0);
+            return offset;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int GetCommonLimbOffset(ReadOnlySpan<nuint> left, ReadOnlySpan<nuint> right)
+        {
+            return !left.IsEmpty && !right.IsEmpty && left[0] == 0 && right[0] == 0
+                ? Math.Min(GetLimbOffset(left), GetLimbOffset(right))
+                : 0;
+        }
+
+        public static void RightShiftSelf(Span<nuint> bits, int shift, out nuint carry)
+        {
+            Debug.Assert((uint)shift < BitsPerLimb);
+
+            carry = 0;
+            if (shift == 0 || bits.IsEmpty)
+            {
+                return;
+            }
+
+            int back = BitsPerLimb - shift;
+
+            carry = bits[0] << back;
+
+            Span<nuint> remaining = bits;
+
+            while (Vector512.IsHardwareAccelerated && remaining.Length >= Vector512<nuint>.Count + 1)
+            {
+                Vector512<nuint> current = Vector512.Create(remaining) >> shift;
+                Vector512<nuint> carries = Vector512.Create(remaining.Slice(1)) << back;
+
+                Vector512<nuint> newValue = current | carries;
+
+                newValue.CopyTo(remaining);
+                remaining = remaining.Slice(Vector512<nuint>.Count);
+            }
+
+            while (Vector256.IsHardwareAccelerated && remaining.Length >= Vector256<nuint>.Count + 1)
+            {
+                Vector256<nuint> current = Vector256.Create(remaining) >> shift;
+                Vector256<nuint> carries = Vector256.Create(remaining.Slice(1)) << back;
+
+                Vector256<nuint> newValue = current | carries;
+
+                newValue.CopyTo(remaining);
+                remaining = remaining.Slice(Vector256<nuint>.Count);
+            }
+
+            while (Vector128.IsHardwareAccelerated && remaining.Length >= Vector128<nuint>.Count + 1)
+            {
+                Vector128<nuint> current = Vector128.Create(remaining) >> shift;
+                Vector128<nuint> carries = Vector128.Create(remaining.Slice(1)) << back;
+
+                Vector128<nuint> newValue = current | carries;
+
+                newValue.CopyTo(remaining);
+                remaining = remaining.Slice(Vector128<nuint>.Count);
+            }
+
+            for (int i = 0; i < remaining.Length - 1; i++)
+            {
+                remaining[i] = (remaining[i] >> shift) | (remaining[i + 1] << back);
+            }
+            remaining[remaining.Length - 1] >>= shift;
+        }
+
+        internal static void DivideByPowerOfTwo(ReadOnlySpan<nuint> left, int exponent, Span<nuint> quotient)
+        {
+            int limbShift = Math.DivRem(exponent, BitsPerLimb, out int smallShift);
+            ReadOnlySpan<nuint> source = left[limbShift..];
+
+            if (smallShift == 0)
+            {
+                source[..quotient.Length].CopyTo(quotient);
+                return;
+            }
+
+            int backShift = BitsPerLimb - smallShift;
+
+            for (int i = 0; i < quotient.Length; i++)
+            {
+                nuint upper = (i + 1 < source.Length) ? source[i + 1] : 0;
+                quotient[i] = (source[i] >> smallShift) | (upper << backShift);
+            }
         }
 
         /// <summary>
@@ -392,6 +496,25 @@ namespace System.Numerics
             Debug.Assert(left.Length >= right.Length);
             Debug.Assert(bits.Length == left.Length + 1);
 
+            if (left[0] == 0 || right[0] == 0)
+            {
+                int leftOffset = left.IndexOfAnyExcept((nuint)0);
+                int rightOffset = right.IndexOfAnyExcept((nuint)0);
+
+                if (leftOffset < 0 || rightOffset < 0)
+                {
+                    bits.Clear();
+                    (leftOffset < 0 ? right : left).CopyTo(bits);
+                    return;
+                }
+
+                if (Math.Max(leftOffset, rightOffset) >= 32)
+                {
+                    AddWithLimbOffsets(left, leftOffset, right, rightOffset, bits);
+                    return;
+                }
+            }
+
             // Establish cross-span length relationships so the JIT can
             // elide bounds checks for left[i] and bits[i] in the loop.
             _ = left[right.Length - 1];
@@ -405,6 +528,55 @@ namespace System.Numerics
             }
 
             Add(left, bits, startIndex: right.Length, initialCarry: carry);
+        }
+
+        private static void AddWithLimbOffsets(
+            ReadOnlySpan<nuint> left,
+            int leftOffset,
+            ReadOnlySpan<nuint> right,
+            int rightOffset,
+            Span<nuint> bits)
+        {
+            Debug.Assert(leftOffset > 0 || rightOffset > 0);
+            Debug.Assert(leftOffset == GetLimbOffset(left));
+            Debug.Assert(rightOffset == GetLimbOffset(right));
+            Debug.Assert(bits.Length == Math.Max(left.Length, right.Length) + 1);
+
+            ReadOnlySpan<nuint> low = left;
+            int lowOffset = leftOffset;
+            ReadOnlySpan<nuint> high = right;
+            int highOffset = rightOffset;
+
+            if (lowOffset > highOffset)
+            {
+                low = right;
+                lowOffset = rightOffset;
+                high = left;
+                highOffset = leftOffset;
+            }
+
+            bits.Clear();
+            low.Slice(lowOffset, Math.Min(highOffset, low.Length) - lowOffset).CopyTo(bits[lowOffset..]);
+
+            if (low.Length <= highOffset)
+            {
+                high[highOffset..].CopyTo(bits[highOffset..]);
+                return;
+            }
+
+            ReadOnlySpan<nuint> lowOverlap = low[highOffset..];
+            ReadOnlySpan<nuint> highMagnitude = high[highOffset..];
+            Span<nuint> resultMagnitude = bits.Slice(
+                highOffset, Math.Max(lowOverlap.Length, highMagnitude.Length) + 1);
+
+            if (lowOverlap.Length < highMagnitude.Length)
+            {
+                Add(highMagnitude, lowOverlap, resultMagnitude);
+            }
+            else
+            {
+                Add(lowOverlap, highMagnitude, resultMagnitude);
+            }
         }
 
         public static void AddSelf(Span<nuint> left, ReadOnlySpan<nuint> right)
@@ -449,6 +621,14 @@ namespace System.Numerics
             Debug.Assert(left.Length >= right.Length);
             Debug.Assert(CompareActual(left, right) >= 0);
             Debug.Assert(bits.Length == left.Length);
+
+            int commonOffset = GetCommonLimbOffset(left, right);
+            if (commonOffset != 0)
+            {
+                bits[..commonOffset].Clear();
+                Subtract(left[commonOffset..], right[commonOffset..], bits[commonOffset..]);
+                return;
+            }
 
             _ = left[right.Length - 1];
             _ = bits[right.Length - 1];
@@ -585,10 +765,6 @@ namespace System.Numerics
             }
         }
 
-        /// <summary>
-        /// Multiply using the "grammar-school" method: bits += left * right[i] per limb of right.
-        /// Callers guarantee left.Length >= right.Length and bits large enough for the product.
-        /// </summary>
         public static void MultiplyNaive(ReadOnlySpan<nuint> left, ReadOnlySpan<nuint> right, Span<nuint> bits)
         {
             Debug.Assert(left.Length >= right.Length);
@@ -606,6 +782,867 @@ namespace System.Numerics
                 nuint carry = MulAdd1(bits.Slice(i), left, right[i]);
                 bits[i + left.Length] = carry;
             }
+        }
+
+        internal static void MultiplyNaiveSparse(ReadOnlySpan<nuint> left, ReadOnlySpan<nuint> right, Span<nuint> bits)
+        {
+            Debug.Assert(left.Length >= right.Length);
+            Debug.Assert(right.IsEmpty || bits.Length >= left.Length + right.Length);
+
+            for (int i = 0; i < right.Length; i++)
+            {
+                nuint multiplier = right[i];
+
+                if (multiplier == 0)
+                {
+                    continue;
+                }
+
+                if (multiplier == 1)
+                {
+                    AddSelf(bits[i..], left);
+                    continue;
+                }
+
+                nuint carry = MulAdd1(bits.Slice(i), left, multiplier);
+                bits[i + left.Length] = carry;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool IsRepeatedLimbCandidate(ReadOnlySpan<nuint> value)
+        {
+            return value.Length >= 4
+                && value[0] != 0
+                && value[0] == value[1];
+        }
+
+        internal static bool TryMultiplyRepeatedLimb(
+            ReadOnlySpan<nuint> left,
+            ReadOnlySpan<nuint> right,
+            Span<nuint> bits)
+        {
+            if (left.IsEmpty
+                || right.Length < 4)
+            {
+                return false;
+            }
+
+            nuint repeatedLimb = right[0];
+
+            if (right.ContainsAnyExcept(repeatedLimb))
+            {
+                return false;
+            }
+
+            int repeatedLength = right.Length;
+
+            if (repeatedLimb == nuint.MaxValue)
+            {
+                left.CopyTo(bits[repeatedLength..]);
+                SubtractSelf(bits, left);
+                return true;
+            }
+
+            int productLength = left.Length + repeatedLength;
+            uint convolutionLength = (uint)Math.Min(left.Length, repeatedLength);
+
+            if (nint.Size == 8)
+            {
+                if (((UInt128)(ulong)repeatedLimb * convolutionLength) > ulong.MaxValue)
+                {
+                    return false;
+                }
+
+                UInt128 window = 0;
+                UInt128 carry = 0;
+
+                for (int i = 0; i < productLength - 1; i++)
+                {
+                    if (i < left.Length)
+                    {
+                        window += (ulong)left[i];
+                    }
+
+                    if (i >= repeatedLength)
+                    {
+                        window -= (ulong)left[i - repeatedLength];
+                    }
+
+                    UInt128 total = (window * (ulong)repeatedLimb) + carry;
+                    bits[i] = (nuint)(ulong)total;
+                    carry = total >> 64;
+                }
+
+                bits[productLength - 1] = (nuint)(ulong)carry;
+            }
+            else
+            {
+                if (((ulong)(uint)repeatedLimb * convolutionLength) > uint.MaxValue)
+                {
+                    return false;
+                }
+
+                ulong window = 0;
+                ulong carry = 0;
+
+                for (int i = 0; i < productLength - 1; i++)
+                {
+                    if (i < left.Length)
+                    {
+                        window += (uint)left[i];
+                    }
+
+                    if (i >= repeatedLength)
+                    {
+                        window -= (uint)left[i - repeatedLength];
+                    }
+
+                    ulong total = (window * (uint)repeatedLimb) + carry;
+                    bits[i] = (nuint)(uint)total;
+                    carry = total >> 32;
+                }
+
+                bits[productLength - 1] = (nuint)(uint)carry;
+            }
+
+            return true;
+        }
+
+        internal static bool TryMultiplyShiftedRepeatedLimbOperands(
+            ReadOnlySpan<nuint> left,
+            ReadOnlySpan<nuint> right,
+            Span<nuint> bits)
+        {
+            return (IsShiftedRepeatedLimbCandidate(right)
+                    && TryMultiplyShiftedRepeatedLimb(left, right, bits))
+                || (IsShiftedRepeatedLimbCandidate(left)
+                    && TryMultiplyShiftedRepeatedLimb(right, left, bits));
+
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool IsShiftedRepeatedLimbCandidate(ReadOnlySpan<nuint> value)
+        {
+            return value.Length >= 4
+                && value[0] != 0
+                && value[0] != value[1]
+                && value[1] == value[2];
+        }
+
+        internal static bool TryMultiplyShiftedRepeatedLimb(
+            ReadOnlySpan<nuint> left,
+            ReadOnlySpan<nuint> right,
+            Span<nuint> bits)
+        {
+            if (left.IsEmpty
+                || right.Length < 4
+                || !TryGetShiftedRepeatedLimb(right, out nuint repeatedLimb, out int repeatedLength, out int shift))
+            {
+                return false;
+            }
+
+            int productLength = left.Length + repeatedLength;
+
+            if (repeatedLimb == nuint.MaxValue)
+            {
+                left.CopyTo(bits[repeatedLength..]);
+                SubtractSelf(bits, left);
+                ShiftProduct(bits, productLength, shift);
+                return true;
+            }
+
+            uint convolutionLength = (uint)Math.Min(left.Length, repeatedLength);
+            nuint shiftCarry = 0;
+            int backShift = BitsPerLimb - shift;
+
+            if (nint.Size == 8)
+            {
+                if (((UInt128)(ulong)repeatedLimb * convolutionLength) > ulong.MaxValue)
+                {
+                    return false;
+                }
+
+                UInt128 window = 0;
+                UInt128 carry = 0;
+
+                for (int i = 0; i < productLength - 1; i++)
+                {
+                    if (i < left.Length)
+                    {
+                        window += (ulong)left[i];
+                    }
+
+                    if (i >= repeatedLength)
+                    {
+                        window -= (ulong)left[i - repeatedLength];
+                    }
+
+                    UInt128 total = (window * (ulong)repeatedLimb) + carry;
+                    nuint digit = (nuint)(ulong)total;
+                    bits[i] = (digit << shift) | shiftCarry;
+                    shiftCarry = digit >> backShift;
+                    carry = total >> 64;
+                }
+
+                nuint finalDigit = (nuint)(ulong)carry;
+                bits[productLength - 1] = (finalDigit << shift) | shiftCarry;
+                shiftCarry = finalDigit >> backShift;
+            }
+            else
+            {
+                if (((ulong)(uint)repeatedLimb * convolutionLength) > uint.MaxValue)
+                {
+                    return false;
+                }
+
+                ulong window = 0;
+                ulong carry = 0;
+
+                for (int i = 0; i < productLength - 1; i++)
+                {
+                    if (i < left.Length)
+                    {
+                        window += (uint)left[i];
+                    }
+
+                    if (i >= repeatedLength)
+                    {
+                        window -= (uint)left[i - repeatedLength];
+                    }
+
+                    ulong total = (window * (uint)repeatedLimb) + carry;
+                    nuint digit = (nuint)(uint)total;
+                    bits[i] = (digit << shift) | shiftCarry;
+                    shiftCarry = digit >> backShift;
+                    carry = total >> 32;
+                }
+
+                nuint finalDigit = (nuint)(uint)carry;
+                bits[productLength - 1] = (finalDigit << shift) | shiftCarry;
+                shiftCarry = finalDigit >> backShift;
+            }
+
+            if (productLength < bits.Length)
+            {
+                bits[productLength] = shiftCarry;
+            }
+            else
+            {
+                Debug.Assert(shiftCarry == 0);
+            }
+
+            return true;
+
+            static bool TryGetShiftedRepeatedLimb(
+                ReadOnlySpan<nuint> value,
+                out nuint repeatedLimb,
+                out int repeatedLength,
+                out int shift)
+            {
+                repeatedLength = value.Length;
+                repeatedLimb = 0;
+                shift = BitOperations.TrailingZeroCount(value[0]);
+
+                if (shift == 0)
+                {
+                    return false;
+                }
+
+                int backShift = BitsPerLimb - shift;
+
+                if ((value[^1] >> shift) == 0)
+                {
+                    repeatedLength--;
+                }
+
+                if (repeatedLength < 4)
+                {
+                    return false;
+                }
+
+                repeatedLimb = (value[0] >> shift) | (value[1] << backShift);
+
+                for (int i = 1; i < repeatedLength; i++)
+                {
+                    nuint upper = (i + 1 < value.Length) ? value[i + 1] : 0;
+                    nuint limb = (value[i] >> shift) | (upper << backShift);
+
+                    if (limb != repeatedLimb)
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
+            static void ShiftProduct(Span<nuint> bits, int length, int shift)
+            {
+                int backShift = BitsPerLimb - shift;
+                nuint carry = 0;
+
+                for (int i = 0; i < length; i++)
+                {
+                    nuint digit = bits[i];
+                    bits[i] = (digit << shift) | carry;
+                    carry = digit >> backShift;
+                }
+
+                if (length < bits.Length)
+                {
+                    bits[length] = carry;
+                }
+                else
+                {
+                    Debug.Assert(carry == 0);
+                }
+            }
+        }
+
+        public static void Multiply(ReadOnlySpan<nuint> left, nuint right, Span<nuint> bits)
+        {
+            Debug.Assert(bits.Length == left.Length + 1);
+
+            if (right == 0)
+            {
+                bits.Clear();
+                return;
+            }
+
+            if (!left.IsEmpty && left[0] == 0)
+            {
+                int offset = left.IndexOfAnyExcept((nuint)0);
+                if (offset < 0)
+                {
+                    bits.Clear();
+                    return;
+                }
+
+                bits[..offset].Clear();
+                Multiply(left[offset..], right, bits[offset..]);
+                return;
+            }
+
+            if (BitOperations.IsPow2(right))
+            {
+                MultiplyByPowerOfTwo(left, BitOperations.TrailingZeroCount(right), bits);
+                return;
+            }
+
+            nuint carry = Mul1(bits, left, right);
+            bits[left.Length] = carry;
+        }
+
+        private static void MultiplyByPowerOfTwo(ReadOnlySpan<nuint> value, int exponent, Span<nuint> bits)
+        {
+            int limbShift = Math.DivRem(exponent, BitsPerLimb, out int smallShift);
+            Span<nuint> shifted = bits.Slice(limbShift, value.Length);
+            value.CopyTo(shifted);
+
+            if (smallShift == 0)
+            {
+                bits[limbShift + value.Length] = 0;
+                return;
+            }
+
+            int backShift = BitsPerLimb - smallShift;
+            nuint carry = 0;
+
+            for (int i = 0; i < shifted.Length; i++)
+            {
+                nuint current = shifted[i];
+                shifted[i] = (current << smallShift) | carry;
+                carry = current >> backShift;
+            }
+
+            bits[limbShift + value.Length] = carry;
+        }
+
+        public static void Divide(ReadOnlySpan<nuint> left, nuint right, Span<nuint> quotient, out nuint remainder)
+        {
+            InitializeForDebug(quotient);
+
+            if (BitOperations.IsPow2(right))
+            {
+                DivideByPowerOfTwo(left, BitOperations.TrailingZeroCount(right), quotient);
+                remainder = left[0] & (right - 1);
+                return;
+            }
+
+            nuint carry = 0;
+
+            if (!ShouldUseSpecializedScalarDivision(left.Length, right))
+            {
+                DivideDirect(left, right, quotient, ref carry);
+                remainder = carry;
+                return;
+            }
+
+            DivideCore(left, right, quotient, ref carry);
+            remainder = carry;
+        }
+
+        public static void Divide(ReadOnlySpan<nuint> left, nuint right, Span<nuint> quotient)
+        {
+            InitializeForDebug(quotient);
+
+            if (BitOperations.IsPow2(right))
+            {
+                DivideByPowerOfTwo(left, BitOperations.TrailingZeroCount(right), quotient);
+                return;
+            }
+
+            nuint carry = 0;
+
+            if (!ShouldUseSpecializedScalarDivision(left.Length, right))
+            {
+                DivideDirect(left, right, quotient, ref carry);
+                return;
+            }
+
+            DivideCore(left, right, quotient, ref carry);
+        }
+
+        private static bool ShouldUseSpecializedScalarDivision(int length, nuint divisor)
+        {
+            if (length < 8)
+            {
+                return false;
+            }
+
+            int shift = BitOperations.TrailingZeroCount(divisor);
+            nuint oddDivisor = divisor >> shift;
+            return oddDivisor is 3 or 5 or 7
+                || ShouldUseInvariantDivisor(length, oddDivisor, shift);
+        }
+
+        private static void DivideDirect(
+            ReadOnlySpan<nuint> left,
+            nuint right,
+            Span<nuint> quotient,
+            ref nuint carry)
+        {
+            for (int i = left.Length - 1; i >= 0; i--)
+            {
+                quotient[i] = DivRem(carry, left[i], right, out carry);
+            }
+        }
+
+        private static void RemainderDirect(ReadOnlySpan<nuint> left, nuint right, ref nuint carry)
+        {
+            for (int i = left.Length - 1; i >= 0; i--)
+            {
+                DivRem(carry, left[i], right, out carry);
+            }
+        }
+
+        private static void DivideCore(ReadOnlySpan<nuint> left, nuint right, Span<nuint> quotient, ref nuint carry)
+        {
+            Debug.Assert(left.Length >= 1);
+            Debug.Assert(quotient.Length == left.Length);
+
+            InitializeForDebug(quotient);
+
+            int shift = BitOperations.TrailingZeroCount(right);
+            nuint oddDivisor = right >> shift;
+
+            if (left.Length >= 4)
+            {
+                switch (oddDivisor)
+                {
+                    case 3:
+                        DivideSmallPrime<Divisor3>(left, shift, quotient, ref carry);
+                        return;
+
+                    case 5:
+                        DivideSmallPrime<Divisor5>(left, shift, quotient, ref carry);
+                        return;
+
+                    case 7:
+                        DivideSmallPrime<Divisor7>(left, shift, quotient, ref carry);
+                        return;
+                }
+            }
+
+            if (ShouldUseInvariantDivisor(left.Length, oddDivisor, shift))
+            {
+                var divisor = new InvariantDivisor(oddDivisor);
+                DivideInvariant(left, divisor, shift, quotient, ref carry);
+                return;
+            }
+
+            for (int i = left.Length - 1; i >= 0; i--)
+            {
+                quotient[i] = DivRem(carry, left[i], right, out nuint rem);
+                carry = rem;
+            }
+        }
+
+        private interface ISmallPrimeDivisor
+        {
+            static abstract uint Value { get; }
+
+            static abstract nuint GetAdjustment(nuint value);
+        }
+
+        private readonly struct Divisor3 : ISmallPrimeDivisor
+        {
+            public static uint Value => 3;
+
+            public static nuint GetAdjustment(nuint value) => value >= 3 ? (nuint)1 : 0;
+        }
+
+        private readonly struct Divisor5 : ISmallPrimeDivisor
+        {
+            public static uint Value => 5;
+
+            public static nuint GetAdjustment(nuint value) => value >= 5 ? (nuint)1 : 0;
+        }
+
+        private readonly struct Divisor7 : ISmallPrimeDivisor
+        {
+            public static uint Value => 7;
+
+            public static nuint GetAdjustment(nuint value)
+            {
+                if (nint.Size == 8)
+                {
+                    return value >= 14 ? (nuint)2 : value >= 7 ? (nuint)1 : 0;
+                }
+
+                return value >= 28 ? (nuint)4
+                    : value >= 21 ? (nuint)3
+                    : value >= 14 ? (nuint)2
+                    : value >= 7 ? (nuint)1
+                    : 0;
+            }
+        }
+
+        private static void DivideSmallPrime<TDivisor>(
+            ReadOnlySpan<nuint> left,
+            int shift,
+            Span<nuint> quotient,
+            ref nuint carry)
+            where TDivisor : struct, ISmallPrimeDivisor
+        {
+            if (shift == 0)
+            {
+                DivideSmallPrime<TDivisor>(left, quotient, ref carry);
+                return;
+            }
+
+            Debug.Assert(quotient.IsEmpty || quotient.Length == left.Length);
+
+            nuint quotientScale = nuint.MaxValue / TDivisor.Value;
+            nuint remainderScale = (nuint.MaxValue % TDivisor.Value) + 1;
+            bool writeQuotient = !quotient.IsEmpty;
+            nuint leading = carry;
+            carry >>= shift;
+
+            for (int i = left.Length - 1; i >= 0; i--)
+            {
+                nuint digit = GetShiftedDigit(left, i, shift, leading);
+                nuint currentCarry = carry;
+                nuint result = digit / TDivisor.Value;
+                nuint remainder = digit - (result * TDivisor.Value);
+                nuint adjustedRemainder = remainder + (currentCarry * remainderScale);
+                nuint adjustment = TDivisor.GetAdjustment(adjustedRemainder);
+
+                if (writeQuotient)
+                {
+                    quotient[i] = (currentCarry * quotientScale) + result + adjustment;
+                }
+
+                carry = adjustedRemainder - (adjustment * TDivisor.Value);
+            }
+
+            carry = RestoreShiftedRemainder(left, carry, shift);
+        }
+
+        private static void DivideSmallPrime<TDivisor>(
+            ReadOnlySpan<nuint> left,
+            Span<nuint> quotient,
+            ref nuint carry)
+            where TDivisor : struct, ISmallPrimeDivisor
+        {
+            Debug.Assert(quotient.IsEmpty || quotient.Length == left.Length);
+
+            nuint quotientScale = nuint.MaxValue / TDivisor.Value;
+            nuint remainderScale = (nuint.MaxValue % TDivisor.Value) + 1;
+            bool writeQuotient = !quotient.IsEmpty;
+
+            for (int i = left.Length - 1; i >= 0; i--)
+            {
+                nuint digit = left[i];
+                nuint currentCarry = carry;
+                nuint result = digit / TDivisor.Value;
+                nuint remainder = digit - (result * TDivisor.Value);
+                nuint adjustedRemainder = remainder + (currentCarry * remainderScale);
+                nuint adjustment = TDivisor.GetAdjustment(adjustedRemainder);
+
+                if (writeQuotient)
+                {
+                    quotient[i] = (currentCarry * quotientScale) + result + adjustment;
+                }
+
+                carry = adjustedRemainder - (adjustment * TDivisor.Value);
+            }
+        }
+
+        private readonly struct InvariantDivisor
+        {
+            private const byte AddMarker = 0x80;
+
+            private readonly nuint _divisor;
+            private readonly nuint _magic;
+            private readonly byte _more;
+
+            public InvariantDivisor(nuint divisor)
+            {
+                Debug.Assert(divisor >= 3);
+                Debug.Assert(!BitOperations.IsPow2(divisor));
+
+                _divisor = divisor;
+
+                int floorLog2 = BitsPerLimb - 1 - (int)nuint.LeadingZeroCount(divisor);
+                nuint proposedMagic;
+                nuint remainder;
+
+                if (nint.Size == 8)
+                {
+                    UInt128 numerator = UInt128.One << (64 + floorLog2);
+                    proposedMagic = (nuint)(ulong)(numerator / divisor);
+                    remainder = (nuint)(ulong)(numerator - ((UInt128)(ulong)proposedMagic * divisor));
+                }
+                else
+                {
+                    ulong numerator = 1UL << (32 + floorLog2);
+                    proposedMagic = (nuint)(uint)(numerator / divisor);
+                    remainder = (nuint)(uint)(numerator - ((ulong)proposedMagic * divisor));
+                }
+
+                nuint distance = divisor - remainder;
+
+                if (distance < ((nuint)1 << floorLog2))
+                {
+                    _more = (byte)floorLog2;
+                }
+                else
+                {
+                    proposedMagic += proposedMagic;
+                    nuint twiceRemainder = remainder + remainder;
+
+                    if (twiceRemainder >= divisor || twiceRemainder < remainder)
+                    {
+                        proposedMagic++;
+                    }
+
+                    _more = (byte)(floorLog2 | AddMarker);
+                }
+
+                _magic = proposedMagic + 1;
+            }
+
+            public nuint DivRem(nuint value, out nuint remainder)
+            {
+                nuint quotient;
+
+                if (nint.Size == 8)
+                {
+                    quotient = (nuint)Math.BigMul((ulong)_magic, (ulong)value, out _);
+                }
+                else
+                {
+                    quotient = (nuint)(uint)(((ulong)_magic * value) >> 32);
+                }
+
+                if ((_more & AddMarker) != 0)
+                {
+                    quotient = ((value - quotient) >> 1) + quotient;
+                }
+
+                quotient >>= _more & ~AddMarker;
+                remainder = value - (quotient * _divisor);
+
+                return quotient;
+            }
+        }
+
+        private static bool CanUseInvariantDivisor(nuint divisor) =>
+            divisor >= 3 && (nint.Size == 8 ? divisor <= uint.MaxValue : divisor <= ushort.MaxValue);
+
+        private static bool ShouldUseInvariantDivisor(int length, nuint divisor, int shift)
+        {
+            if (!CanUseInvariantDivisor(divisor))
+            {
+                return false;
+            }
+
+            int threshold = shift != 0 ? 8
+                : divisor >= 343 ? 16
+                : divisor >= 27 ? 32
+                : 128;
+            return length >= threshold;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static nuint GetShiftedDigit(ReadOnlySpan<nuint> value, int index, int shift, nuint leading)
+        {
+            nuint digit = value[index];
+
+            if (shift != 0)
+            {
+                digit >>= shift;
+                nuint upper = index + 1 < value.Length ? value[index + 1] : leading;
+                digit |= upper << (BitsPerLimb - shift);
+            }
+
+            return digit;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static nuint RestoreShiftedRemainder(ReadOnlySpan<nuint> value, nuint remainder, int shift) =>
+            shift == 0 ? remainder : (remainder << shift) | (value[0] & (((nuint)1 << shift) - 1));
+
+        private static void DivideInvariant(
+            ReadOnlySpan<nuint> left,
+            InvariantDivisor divisor,
+            int shift,
+            Span<nuint> quotient,
+            ref nuint carry)
+        {
+            Debug.Assert(quotient.IsEmpty || quotient.Length == left.Length);
+
+            bool writeQuotient = !quotient.IsEmpty;
+            nuint leading = carry;
+            carry >>= shift;
+
+            for (int i = left.Length - 1; i >= 0; i--)
+            {
+                nuint digit = GetShiftedDigit(left, i, shift, leading);
+
+                if (nint.Size == 8)
+                {
+                    nuint value = (carry << 32) | (digit >> 32);
+                    nuint upper = divisor.DivRem(value, out carry);
+
+                    value = (carry << 32) | (uint)digit;
+                    nuint lower = divisor.DivRem(value, out carry);
+                    if (writeQuotient)
+                    {
+                        quotient[i] = (upper << 32) | lower;
+                    }
+                }
+                else
+                {
+                    nuint value = (carry << 16) | (digit >> 16);
+                    nuint upper = divisor.DivRem(value, out carry);
+
+                    value = (carry << 16) | (ushort)digit;
+                    nuint lower = divisor.DivRem(value, out carry);
+                    if (writeQuotient)
+                    {
+                        quotient[i] = (upper << 16) | lower;
+                    }
+                }
+            }
+
+            carry = RestoreShiftedRemainder(left, carry, shift);
+        }
+
+        public static nuint Remainder(ReadOnlySpan<nuint> left, nuint right)
+        {
+            Debug.Assert(left.Length >= 1);
+
+            if (BitOperations.IsPow2(right))
+            {
+                return left[0] & (right - 1);
+            }
+
+            nuint remainder = 0;
+
+            if (!ShouldUseSpecializedScalarDivision(left.Length, right))
+            {
+                RemainderDirect(left, right, ref remainder);
+                return remainder;
+            }
+
+            int shift = BitOperations.TrailingZeroCount(right);
+            nuint oddDivisor = right >> shift;
+
+            nuint invariantRemainder = 0;
+
+            if (left.Length >= 4)
+            {
+                switch (oddDivisor)
+                {
+                    case 3:
+                        DivideSmallPrime<Divisor3>(left, shift, default, ref invariantRemainder);
+                        return invariantRemainder;
+
+                    case 5:
+                        DivideSmallPrime<Divisor5>(left, shift, default, ref invariantRemainder);
+                        return invariantRemainder;
+
+                    case 7:
+                        DivideSmallPrime<Divisor7>(left, shift, default, ref invariantRemainder);
+                        return invariantRemainder;
+                }
+            }
+
+            if (ShouldUseInvariantDivisor(left.Length, oddDivisor, shift))
+            {
+                var divisor = new InvariantDivisor(oddDivisor);
+                DivideInvariant(left, divisor, shift, default, ref invariantRemainder);
+                return invariantRemainder;
+            }
+
+            nuint carry = 0;
+            for (int i = left.Length - 1; i >= 0; i--)
+            {
+                DivRem(carry, left[i], right, out carry);
+            }
+
+            return carry;
+        }
+
+        internal static void DivideGrammarSchoolSpecial(Span<nuint> left, ReadOnlySpan<nuint> right, Span<nuint> quotient)
+        {
+            Debug.Assert(left.Length >= 1);
+            Debug.Assert(right.Length >= 1);
+            Debug.Assert(left.Length >= right.Length);
+            Debug.Assert(right[0] == 0);
+            Debug.Assert(
+                quotient.Length == 0
+                || quotient.Length == left.Length - right.Length + 1
+                || (CompareActual(left.Slice(left.Length - right.Length), right) < 0 && quotient.Length == left.Length - right.Length));
+
+            int commonOffset = left[0] == 0 ? GetCommonLimbOffset(left, right) : 0;
+            if (commonOffset != 0)
+            {
+                Span<nuint> reducedLeft = left[commonOffset..];
+                ReadOnlySpan<nuint> reducedRight = right[commonOffset..];
+
+                if (reducedRight[0] == 0)
+                {
+                    DivideGrammarSchoolSpecial(reducedLeft, reducedRight, quotient);
+                }
+                else
+                {
+                    DivideGrammarSchool(reducedLeft, reducedRight, quotient);
+                }
+                return;
+            }
+
+            int rightOffset = GetLimbOffset(right);
+            if (right.Length - rightOffset <= ShiftedDivisorMaxReducedLength)
+            {
+                DivideGrammarSchool(left[rightOffset..], right[rightOffset..], quotient);
+                return;
+            }
+
+            DivideGrammarSchool(left, right, quotient);
         }
 
         internal static void DivideGrammarSchool(Span<nuint> left, ReadOnlySpan<nuint> right, Span<nuint> quotient)
@@ -743,5 +1780,6 @@ namespace System.Numerics
             return (chkHiHi > valHi1)
                 || ((chkHiHi == valHi1) && ((chkHiLo > valHi0) || ((chkHiLo == valHi0) && (chkLoLo > valLo))));
         }
+
     }
 }
