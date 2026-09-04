@@ -88,7 +88,7 @@ namespace System.Net.Mime
                 }
 
                 // charset = characters up to the next '?'.
-                int charSetLength = remainder.Slice(2, MaxEncodedWordLength).IndexOf('?');
+                int charSetLength = remainder.Slice(2, Math.Min(remainder.Length - 2, MaxEncodedWordLength)).IndexOf('?');
                 if (charSetLength <= 0)
                 {
                     return (value, null);
@@ -123,7 +123,7 @@ namespace System.Net.Mime
                 // Encoded text: terminated by "?=", and must not contain whitespace or any
                 // non-printable ASCII (per RFC 2047).
                 int dataStart = encodingPos + 2;
-                int terminator = remainder.Slice(dataStart, MaxEncodedWordLength).IndexOf("?=");
+                int terminator = remainder.Slice(dataStart, Math.Min(remainder.Length - dataStart, MaxEncodedWordLength)).IndexOf("?=");
                 if (terminator < 0)
                 {
                     return (value, null);
@@ -157,6 +157,11 @@ namespace System.Net.Mime
                 IEncodableStream s = EncodedStreamFactory.GetEncoderForHeader(wordEncoding, base64Encoding, 0);
                 int newLength = s.DecodeBytes(buffer);
                 (decodedValue ??= new StringBuilder()).Append(wordEncoding.GetString(buffer, 0, newLength));
+
+                if (dataStart + terminator + 2 > MaxEncodedWordLength)
+                {
+                    return (value, null);
+                }
 
                 remainder = remainder.Slice(dataStart + terminator + 2);
                 if (remainder.IsEmpty)
