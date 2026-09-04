@@ -898,6 +898,10 @@ gchar  *g_path_get_basename    (const char *filename);
 gchar  *g_get_current_dir      (void);
 gboolean g_path_is_absolute    (const char *filename);
 
+#ifdef G_OS_WIN32
+gchar  *g_path_make_long_compatible (const gchar *path);
+#endif
+
 const gchar *g_get_tmp_dir     (void);
 
 gboolean g_ensure_directory_exists (const gchar *filename);
