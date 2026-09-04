@@ -49,8 +49,9 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     // operand is contained, so no v128.const was materialized). i8x16.shuffle
                     // selects from two vectors, so push the source a second time and encode the
                     // mask as the 16-byte shuffle immediate.
-                    GenTree* src = node->Op(1);
-                    genEmitMultiUseOperandGet(src);
+                    GenTree*  src    = node->Op(1);
+                    regNumber srcReg = GetMultiUseOperandReg(src);
+                    GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(src), WasmRegToIndex(srcReg));
                     GetEmitter()->emitIns_V128Imm(INS_i8x16_shuffle, node->Op(2)->AsVecCon()->gtSimdVal.u8);
                 }
                 else
@@ -79,7 +80,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 bool     isMem    = node->OperIsMemoryLoad(&addr) || node->OperIsMemoryStore(&addr);
                 assert(isMem && addr != nullptr);
 
-                genEmitNullCheck(addr);
+                regNumber addrReg = GetMultiUseOperandReg(addr);
+                genEmitNullCheck(addrReg);
 
                 if (info.needsJumpTableFallback())
                 {
@@ -174,7 +176,8 @@ void CodeGen::genHWIntrinsicJumpTableFallback(GenTreeHWIntrinsic* node, HWIntrin
         resultType = ActualTypeToWasmValueType(genActualType(node->TypeGet()));
     }
 
-    GenTree* immOp = node->GetImmOp();
+    GenTree*  immOp  = node->GetImmOp();
+    regNumber immReg = GetMultiUseOperandReg(immOp);
 
     // Drop all incoming operands to actually consume them, they
     // will be unusable in the jump table and we will need to re-materialize them
@@ -193,7 +196,8 @@ void CodeGen::genHWIntrinsicJumpTableFallback(GenTreeHWIntrinsic* node, HWIntrin
                 // All of the operands should have been marked MultiplyUsed in lower,
                 // and so RA should have assigned them locals which prior codegen should
                 // have local.tee'd them into.
-                genEmitMultiUseOperandGet(op);
+                regNumber reg = GetMultiUseOperandReg(op);
+                GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(op), WasmRegToIndex(reg));
             }
         }
     };
@@ -210,7 +214,7 @@ void CodeGen::genHWIntrinsicJumpTableFallback(GenTreeHWIntrinsic* node, HWIntrin
         }
 
         // In the innermost block, load the immediate value to branch to the appropriate case block
-        genEmitMultiUseOperandGet(immOp);
+        GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(immOp), WasmRegToIndex(immReg));
 
         // cases are 0 ... immUpperBound, default, where the last case is the default which branches to the unreachable
         // inner block. Case 0 -> imm = 0, Case 1 -> imm = 1, and so on.

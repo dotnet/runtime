@@ -913,9 +913,12 @@ void WasmRegAlloc::RequestTemporaryRegisterForMultiplyUsedNode(GenTree* node)
         return;
     }
 
-    if (node->OperIs(GT_LCL_VAR) && m_compiler->lvaGetDesc(node->AsLclVar())->lvIsRegCandidate())
+    if (node->OperIs(GT_LCL_VAR) && m_compiler->lvaGetDesc(node->AsLclVar())->lvIsRegCandidate() &&
+        !m_compiler->lvaLclNeedsWasmNarrowing(node->AsLclVar()))
     {
-        // Will be allocated into its own register, no need for a temporary.
+        // Will be allocated into its own register, no need for a temporary. A narrowed local is
+        // excluded: its value has to be converted on the way out of the variable's register, so it
+        // does not live there and needs a temporary like any other node.
         node->gtLIRFlags &= ~LIR::Flags::MultiplyUsed;
         return;
     }
@@ -1240,7 +1243,12 @@ void WasmRegAlloc::ResolveReferences()
                 }
                 else if (genIsValidReg(node->GetRegNum()))
                 {
-                    assert(!node->OperIsLocal() || !m_compiler->lvaGetDesc(node->AsLclVarCommon())->lvIsRegCandidate());
+                    // A narrowed local is the one case where a register candidate carries a
+                    // temporary of its own: its value has to be converted on the way out of the
+                    // variable's register, so it does not live there. See "genCodeForLclVar".
+                    assert(!node->OperIsLocal() ||
+                           !m_compiler->lvaGetDesc(node->AsLclVarCommon())->lvIsRegCandidate() ||
+                           m_compiler->lvaLclNeedsWasmNarrowing(node->AsLclVarCommon()));
                     WasmValueType type;
                     unsigned      index = UnpackWasmReg(node->GetRegNum(), &type);
                     physReg             = temporaryRegMap[static_cast<unsigned>(type)].Regs[index];
