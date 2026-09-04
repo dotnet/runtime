@@ -85,7 +85,7 @@ namespace System.Net.Security
                                     securityContext,
                                     Interop.SspiCli.ContextAttribute.SECPKG_ATTR_SESSION_INFO,
                                     ref info) &&
-               ((SecPkgContext_SessionInfo.Flags)info.dwFlags).HasFlag(SecPkgContext_SessionInfo.Flags.SSL_SESSION_RECONNECT);
+               (info.dwFlags & (uint)SecPkgContext_SessionInfo.Flags.SSL_SESSION_RECONNECT) != 0;
         }
     }
 }
