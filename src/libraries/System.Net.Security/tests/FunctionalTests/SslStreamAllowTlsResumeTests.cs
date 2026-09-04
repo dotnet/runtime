@@ -28,7 +28,7 @@ namespace System.Net.Security.Tests
 
         private static PropertyInfo tlsResumed =
                                     typeof(SslStream).Assembly.GetType("System.Net.Security.SslConnectionInfo")
-                                    .GetProperty("TlsResumed");
+                                    ?.GetProperty("TlsResumed");
 
         private bool CheckResumeFlag(SslStream ssl)
         {
