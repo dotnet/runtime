@@ -231,18 +231,6 @@ PALAPI
 PAL_TerminateEx(
     int exitCode);
 
-/// <summary>
-/// This function aborts the process without running PAL shutdown or crash reporting.
-/// On signal-based platforms, it restores the pre-PAL SIGABRT disposition and
-/// unblocks SIGABRT on the current thread before aborting.
-/// </summary>
-PALIMPORT
-PAL_NORETURN
-void
-PALAPI
-PAL_Abort(
-    void);
-
 typedef VOID (*PSHUTDOWN_CALLBACK)(bool isExecutingOnAltStack);
 
 PALIMPORT
