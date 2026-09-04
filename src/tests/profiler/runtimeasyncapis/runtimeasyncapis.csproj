@@ -4,6 +4,7 @@
     <OutputType>exe</OutputType>
     <Optimize>true</Optimize>
     <Features>$(Features);runtime-async=on</Features>
+    <R2RIncompatible>true</R2RIncompatible>
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
   </PropertyGroup>
   <ItemGroup>
