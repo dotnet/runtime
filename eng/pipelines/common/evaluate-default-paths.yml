@@ -295,6 +295,8 @@ jobs:
     - subset: wasm_coreclr_runtimetests
       combined: true
       include:
+      - eng/wasi-r2r/*
+      - eng/testing/wasi-r2r-provisioning.targets
       - src/tests/*
       - src/coreclr/*
       - ${{ parameters._const_paths._wasm_src_native }}
