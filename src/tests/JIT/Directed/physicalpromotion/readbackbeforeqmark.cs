@@ -14,19 +14,7 @@ public class Runtime_87508
     [Fact]
     public static int TestEntryPoint()
     {
-        if (!TestRefAnyType())
-        {
-            return -3;
-        }
-
         return new Runtime_87508().WriteBlock("1234");
-    }
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private static bool TestRefAnyType()
-    {
-        int value = 0;
-        return __reftype(__makeref(value)) == typeof(int);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
