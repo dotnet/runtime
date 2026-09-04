@@ -128,6 +128,18 @@ namespace System.Net.Mime
                 {
                     return (value, null);
                 }
+
+                // An encoded-word may not be more than 75 characters long, including
+                // 'charset', 'encoding', 'encoded-text', and the delimiting '?'s (RFC 2047
+                // section 2). Reject an over-long encoded-word before attempting to resolve
+                // its charset or decode its content, so that an invalid charset name in an
+                // already-non-conforming (over-long) value doesn't surface as an exception
+                // instead of being treated as ordinary literal text.
+                if (dataStart + terminator + 2 > MaxEncodedWordLength)
+                {
+                    return (value, null);
+                }
+
                 ReadOnlySpan<char> data = remainder.Slice(dataStart, terminator);
                 if (data.ContainsAnyExcept(s_encodedWordDataChars))
                 {
@@ -157,11 +169,6 @@ namespace System.Net.Mime
                 IEncodableStream s = EncodedStreamFactory.GetEncoderForHeader(wordEncoding, base64Encoding, 0);
                 int newLength = s.DecodeBytes(buffer);
                 (decodedValue ??= new StringBuilder()).Append(wordEncoding.GetString(buffer, 0, newLength));
-
-                if (dataStart + terminator + 2 > MaxEncodedWordLength)
-                {
-                    return (value, null);
-                }
 
                 remainder = remainder.Slice(dataStart + terminator + 2);
                 if (remainder.IsEmpty)
