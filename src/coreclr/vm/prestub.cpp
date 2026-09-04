@@ -31,6 +31,8 @@
 
 #ifdef TARGET_WASM
 #include "wasmasynccontinuation.h"
+#endif
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
 #include "wasm/helpers.hpp"
 #endif
 
@@ -2495,7 +2497,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
     /**************************   CODE CREATION  *************************/
     if (IsUnboxingStub())
     {
-#ifdef TARGET_WASM
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
         MethodDesc* targetMethodDesc;
         PCODE targetEntryPoint;
         PCODE unboxingStub = (PCODE)GetUnboxingStub(this, &targetMethodDesc, &targetEntryPoint);
@@ -2509,7 +2511,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
         {
             pStub = MakeUnboxingStubWorker(this);
         }
-#else // !TARGET_WASM
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
 #ifdef FEATURE_READYTORUN
         // Crossgen2 can emit the body of an unboxing stub into the R2R image. Prefer it over
         // generating one here, which without a JIT means creating and interpreting an IL stub.
@@ -2522,7 +2524,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
         {
             pStub = MakeUnboxingStubWorker(this);
         }
-#endif // !TARGET_WASM
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
     }
 #if defined(FEATURE_SHARE_GENERIC_CODE)
     else if (IsInstantiatingStub())

@@ -129,7 +129,6 @@ public:
     friend struct ::cdac_data<PortableEntryPoint>;
 };
 
-#ifdef TARGET_WASM
 class UnboxingStubPortableEntryPoint final
 {
 public:
@@ -174,7 +173,6 @@ public:
 
 static_assert(offsetof(UnboxingStubPortableEntryPoint, _targetEntryPoint) == TARGET_POINTER_SIZE);
 static_assert(offsetof(UnboxingStubPortableEntryPoint, _entryPoint) == 2 * TARGET_POINTER_SIZE);
-#endif // TARGET_WASM
 
 template<>
 struct cdac_data<PortableEntryPoint>
