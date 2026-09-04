@@ -152,7 +152,7 @@ EXTERN_C HRESULT QCALLTYPE RhAllocateThunksMapping(void** ppThunksSection)
             *pCurrentThunkAddress++ = 0x8b;
             *pCurrentThunkAddress++ = 0x15;
             *((int32_t*)pCurrentThunkAddress) =
-                (int32_t)(CurrentDataAddress - (pCurrentThunkAddress + 4));
+                (int32_t)(pCurrentDataAddress - (pCurrentThunkAddress + 4));
             pCurrentThunkAddress += 4;
 
             *pCurrentThunkAddress++ = 0xff;
