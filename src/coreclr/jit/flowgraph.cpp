@@ -3350,7 +3350,7 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
                 // We have a candidate for first cold block
 
                 // Is this a hot block?
-                if (!block->isBBWeightCold(this))
+                if (!block->isRunRarely())
                 {
                     // We have to restart the search for the first cold block
                     firstColdBlock       = nullptr;
