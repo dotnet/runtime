@@ -1337,7 +1337,7 @@ namespace
             case ConvertType::ToF64:  c = 'd'; break;
             case ConvertType::ToV128: c = 'V'; break;
             default:
-                PORTABILITY_ASSERT("Unknown Wasm value type");
+                _ASSERTE(!"Unknown Wasm value type");
                 c = '?';
                 break;
         }

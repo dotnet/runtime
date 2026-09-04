@@ -2340,9 +2340,7 @@ namespace Internal.JitInterface
             // function pointer
             else if (targetMethod.HasInstantiation ||
                 (_compilation.NodeFactory.Target.IsWasm &&
-                    (!targetMethod.IsVirtual ||
-                     targetMethod.OwningType.IsInterface ||
-                     targetMethod.OwningType.IsArray)))
+                    targetMethod.OwningType.IsInterface))
             {
                 pResult->kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_LDVIRTFTN;  // stub dispatch can't handle generic method calls yet
                 pResult->nullInstanceCheck = true;
@@ -2352,19 +2350,6 @@ namespace Internal.JitInterface
             {
                 pResult->kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_STUB;
                 pResult->nullInstanceCheck = true;
-
-                // We'll special virtual calls to target methods in the corelib assembly when compiling in R2R mode, and generate fragile-NI-like callsites for improved performance. We
-                // can do that because today we'll always service the corelib assembly and the runtime in one bundle. Any caller in the corelib version bubble can benefit from this
-                // performance optimization.
-                /* TODO-PERF, GitHub issue# 7168: uncommenting the conditional statement below enables
-                ** VTABLE-based calls for Corelib (and maybe a larger framework version bubble in the
-                ** future). Making it work requires construction of the method table in managed code
-                ** matching the CoreCLR algorithm (MethodTableBuilder).
-                if (MethodInSystemVersionBubble(callerMethod) && MethodInSystemVersionBubble(targetMethod))
-                {
-                    pResult->kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_VTABLE;
-                }
-                */
             }
             else
             {

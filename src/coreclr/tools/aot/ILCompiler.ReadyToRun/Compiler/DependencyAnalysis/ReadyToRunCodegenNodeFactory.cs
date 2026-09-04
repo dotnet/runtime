@@ -1215,7 +1215,7 @@ namespace ILCompiler.DependencyAnalysis
                 "DispatchImports",
                 ReadyToRunImportSectionType.StubDispatch,
                 ReadyToRunImportSectionFlags.PCode,
-                (this.OptimizationFlags.EnableCachedInterfaceDispatchSupport || Target.IsWasm) ? (byte)(2 * Target.PointerSize) : (byte)Target.PointerSize,
+                this.OptimizationFlags.EnableCachedInterfaceDispatchSupport ? (byte)(2 * Target.PointerSize) : (byte)Target.PointerSize,
                 emitPrecode: false,
                 emitGCRefMap: true);
             ImportSectionsTable.AddEmbeddedObject(DispatchImports);

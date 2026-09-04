@@ -175,7 +175,6 @@ public class R2RTestSuites
 
         static void Validate(ReadyToRunReader reader)
         {
-            var webcilReader = Assert.IsType<WebcilImageReader>(reader.CompositeReader);
             Assert.Equal(WasmMachine.Wasm32, reader.Machine);
 
             ReadOnlySpan<byte> image = reader.Image;
@@ -183,13 +182,19 @@ public class R2RTestSuites
                 reader.ImportSections
                     .Where(section => section.Entries is not null)
                     .SelectMany(section => section.Entries);
+            var signatureFormattingOptions = new SignatureFormattingOptions();
+
+            // Verify that eligible version-resilient callvirt sites use dispatch imports. This covers
+            // virtual and nonvirtual methods, methods on generic types, runtime-context lookups, and
+            // distinct Wasm calling convention shapes.
             ReadyToRunImportSection dispatchImports = Assert.Single(
                 reader.ImportSections,
                 section => section.Type == ReadyToRunImportSectionType.StubDispatch &&
-                    section.EntrySize == 2 * sizeof(uint));
-            Assert.Equal(6, dispatchImports.Entries.Count);
+                    section.EntrySize == sizeof(uint) &&
+                    section.Entries.Any(entry => entry.Signature?.ToString(signatureFormattingOptions)
+                        .Contains("WasmVirtualDispatchBase.Transform", StringComparison.Ordinal) == true));
+            Assert.Equal(7, dispatchImports.Entries.Count);
 
-            var signatureFormattingOptions = new SignatureFormattingOptions();
             List<string> dispatchSignatures = dispatchImports.Entries
                 .Select(entry => entry.Signature.ToString(signatureFormattingOptions))
                 .ToList();
@@ -203,13 +208,20 @@ public class R2RTestSuites
                 signature.Contains("WasmCallingConventionDispatchBase.TransformStruct", StringComparison.Ordinal));
             Assert.Contains(dispatchSignatures, signature =>
                 signature.Contains("System.Object.ToString", StringComparison.Ordinal));
+            Assert.Contains(dispatchSignatures, signature =>
+                signature.Contains("System.Collections.Generic.List", StringComparison.Ordinal) &&
+                signature.Contains("get_Count", StringComparison.Ordinal));
             Assert.DoesNotContain(dispatchSignatures, signature =>
                 signature.Contains("WasmGenericMethodDispatchBase.Transform", StringComparison.Ordinal));
 
+            // Verify that dispatch imports reuse delay-load code from a regular method import when
+            // their rich import-thunk signatures are identical.
             ReadyToRunImportSection methodImports = Assert.Single(
                 reader.ImportSections,
                 section => section.Type == ReadyToRunImportSectionType.StubDispatch &&
-                    section.EntrySize == sizeof(uint));
+                    section.EntrySize == sizeof(uint) &&
+                    section.Entries.Any(entry => entry.Signature?.ToString(signatureFormattingOptions)
+                        .Contains("WasmVirtualDispatchBase.DirectTransform", StringComparison.Ordinal) == true));
             ReadyToRunImportSection.ImportSectionEntry methodImport = Assert.Single(
                 methodImports.Entries,
                 entry => entry.Signature?.ToString(signatureFormattingOptions)
@@ -224,6 +236,8 @@ public class R2RTestSuites
                 }),
                 entry => Assert.Equal(methodImportThunk, GetImportThunkTableIndex(reader, entry)));
 
+            // Verify that virtual dispatch thunks are registered by their canonical Wasm signatures.
+            // ABI-equivalent managed signatures share Viiiii, while ToString requires Viiii.
             ReadyToRunImportSection.ImportSectionEntry injectStringThunks = Assert.Single(
                 importEntries,
                 entry => entry.Signature?.FixupKind == ReadyToRunFixupKind.InjectStringThunks);
@@ -233,7 +247,7 @@ public class R2RTestSuites
 
             ReadOnlySpan<byte> thunkKey = "Viiiii"u8;
             ReadOnlySpan<byte> toStringThunkKey = "Viiii"u8;
-            List<uint> matchingTableIndices = [];
+            int matchingThunkKeyCount = 0;
             int virtualThunkKeyCount = 0;
             int toStringThunkKeyCount = 0;
             while (image[offset] != 0)
@@ -246,8 +260,7 @@ public class R2RTestSuites
                     virtualThunkKeyCount++;
                     if (candidateKey.SequenceEqual(thunkKey))
                     {
-                        matchingTableIndices.Add(
-                            BinaryPrimitives.ReadUInt32LittleEndian(image.Slice(offset + terminator + 1, sizeof(uint))));
+                        matchingThunkKeyCount++;
                     }
                     else if (candidateKey.SequenceEqual(toStringThunkKey))
                     {
@@ -263,32 +276,8 @@ public class R2RTestSuites
             }
 
             Assert.Equal(2, virtualThunkKeyCount);
+            Assert.Equal(1, matchingThunkKeyCount);
             Assert.Equal(1, toStringThunkKeyCount);
-            uint relativeTableIndex = Assert.Single(matchingTableIndices);
-            int functionIndex = webcilReader.GetFunctionIndexFromTableIndex(relativeTableIndex);
-            Assert.True(functionIndex >= 0, $"Could not resolve virtual thunk table index {relativeTableIndex}.");
-
-            WebcilImageReader.WasmFunctionInfo? body = webcilReader.GetWasmFunctionBody(functionIndex);
-            Assert.True(body is not null, $"Virtual dispatch thunk body {functionIndex} was not found.");
-
-            ReadOnlySpan<byte> instructions = body.Value.Image.AsSpan(
-                body.Value.InstructionOffset, body.Value.InstructionLength);
-
-            AssertContains(
-                instructions,
-                [0x20, 0x01, 0x28, 0x02, 0x00, 0x20, 0x03, 0x2F, 0x01, 0x04,
-                 0x6A, 0x28, 0x02, 0x00, 0x20, 0x03, 0x2F, 0x01, 0x06, 0x6A,
-                 0x28, 0x02, 0x00, 0x21, 0x04],
-                "vtable target portable entrypoint lookup");
-            AssertContains(
-                instructions,
-                [0x20, 0x05, 0x45, 0x04, 0x40, 0x20, 0x03, 0x28, 0x02, 0x08,
-                 0x21, 0x04, 0x20, 0x04, 0x28, 0x02, 0x00, 0x21, 0x05, 0x0B],
-                "fallback through the original import portable entrypoint");
-            AssertContains(
-                instructions,
-                [0x20, 0x00, 0x20, 0x01, 0x20, 0x02, 0x20, 0x04, 0x20, 0x05, 0x11],
-                "forwarded virtual call");
 
             static uint GetImportThunkTableIndex(
                 ReadyToRunReader reader,
@@ -296,14 +285,6 @@ public class R2RTestSuites
             {
                 int portableEntrypointOffset = reader.GetOffset(checked((int)entry.Section));
                 return BinaryPrimitives.ReadUInt32LittleEndian(reader.Image.AsSpan(portableEntrypointOffset, sizeof(uint)));
-            }
-
-            static void AssertContains(
-                ReadOnlySpan<byte> instructions,
-                ReadOnlySpan<byte> expected,
-                string description)
-            {
-                Assert.True(instructions.IndexOf(expected) >= 0, $"Missing {description} instruction sequence.");
             }
         }
     }

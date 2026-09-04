@@ -3078,7 +3078,7 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(
                 virtualDispatchTarget = GetVirtualDispatchThunk(pMD);
                 if (virtualDispatchTarget == nullptr)
                 {
-                    PORTABILITY_ASSERT("ExternalMethodFixupWorker: missing Wasm virtual dispatch thunk");
+                    _ASSERTE(!"ExternalMethodFixupWorker: missing Wasm virtual dispatch thunk");
                 }
 
                 DWORD offsetOfIndirection =
