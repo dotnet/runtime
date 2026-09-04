@@ -3208,10 +3208,10 @@ namespace Internal.JitInterface
 
         private static bool IsArrayInterfaceDispatchType(TypeDesc type)
         {
-            // Array`1 is NativeAOT's intrinsic Array<T> dispatch type, not System.Array.
             if (type.IsIntrinsic && type is MetadataType mdType)
             {
                 Utf8Span name = mdType.Name;
+                // Array`1 is NativeAOT's intrinsic Array<T> dispatch type.
                 return (name == "SZArrayHelper"u8 || name == "Array`1"u8) &&
                     mdType.Namespace == "System"u8;
             }
