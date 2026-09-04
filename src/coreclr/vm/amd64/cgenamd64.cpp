@@ -432,6 +432,7 @@ void emitBackToBackJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
         MODE_ANY;
 
         PRECONDITION(CheckPointer(pBufferRX));
+        PRECONDITION(CheckPointer(pBufferRW));
     }
     CONTRACTL_END;
 
@@ -465,6 +466,7 @@ void emitJmpAbsJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
         MODE_ANY;
 
         PRECONDITION(CheckPointer(pBufferRX));
+        PRECONDITION(CheckPointer(pBufferRW));
         PRECONDITION(IsJmpAbsAvailable());  // Caller must check APX availability
     }
     CONTRACTL_END;
