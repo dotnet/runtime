@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -12,6 +13,12 @@ namespace System.ComponentModel.DataAnnotations
     /// </summary>
     public abstract class AsyncValidationAttribute : ValidationAttribute
     {
+        private string? _asyncStatusMessage;
+        private Func<string?>? _asyncStatusMessageResourceAccessor;
+        private string? _asyncStatusMessageResourceName;
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
+        private Type? _asyncStatusMessageResourceType;
+
         /// <summary>
         ///     Default constructor for any async validation attribute.
         /// </summary>
@@ -36,6 +43,95 @@ namespace System.ComponentModel.DataAnnotations
         protected AsyncValidationAttribute(Func<string> errorMessageAccessor)
             : base(errorMessageAccessor)
         {
+        }
+
+        /// <summary>
+        ///     Gets the localized status message string that describes an asynchronous validation operation in progress.
+        /// </summary>
+        /// <value>
+        ///     The localized status message, or <see langword="null" /> when no asynchronous status message is configured.
+        /// </value>
+        /// <exception cref="InvalidOperationException">The asynchronous status message resource configuration is invalid.</exception>
+        protected string? AsyncStatusMessageString
+        {
+            get
+            {
+                SetupAsyncStatusMessageResourceAccessor();
+                return _asyncStatusMessageResourceAccessor?.Invoke();
+            }
+        }
+
+        /// <summary>
+        ///     Gets or sets the explicit message that a user interface may show while asynchronous validation is in progress.
+        /// </summary>
+        /// <value>
+        ///     A non-localized asynchronous status message template, or <see langword="null" /> if no status message is configured.
+        ///     Use <see cref="AsyncStatusMessageResourceType" /> and <see cref="AsyncStatusMessageResourceName" /> for
+        ///     localizable status messages.
+        /// </value>
+        [StringSyntax(StringSyntaxAttribute.CompositeFormat)]
+        public string? AsyncStatusMessage
+        {
+            get => _asyncStatusMessage;
+            set
+            {
+                _asyncStatusMessage = value;
+                _asyncStatusMessageResourceAccessor = null;
+            }
+        }
+
+        /// <summary>
+        ///     Gets or sets the resource name to use as the key for asynchronous status message lookups on the resource type.
+        /// </summary>
+        /// <value>
+        ///     The name of the property within <see cref="AsyncStatusMessageResourceType" /> that provides a localized
+        ///     asynchronous status message.
+        /// </value>
+        public string? AsyncStatusMessageResourceName
+        {
+            get => _asyncStatusMessageResourceName;
+            set
+            {
+                _asyncStatusMessageResourceName = value;
+                _asyncStatusMessageResourceAccessor = null;
+            }
+        }
+
+        /// <summary>
+        ///     Gets or sets the resource type to use for asynchronous status message lookups.
+        /// </summary>
+        /// <value>
+        ///     The type containing the static string property named by <see cref="AsyncStatusMessageResourceName" />.
+        /// </value>
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
+        public Type? AsyncStatusMessageResourceType
+        {
+            get => _asyncStatusMessageResourceType;
+            set
+            {
+                _asyncStatusMessageResourceType = value;
+                _asyncStatusMessageResourceAccessor = null;
+            }
+        }
+
+        /// <summary>
+        ///     Formats the message that a user interface may show while asynchronous validation is in progress.
+        /// </summary>
+        /// <remarks>
+        ///     This method only formats metadata and does not start validation or represent validation state.
+        ///     The status message is re-evaluated every time this method is called and the resolved template is passed to
+        ///     <see cref="ValidationAttribute.FormatMessage" />.
+        /// </remarks>
+        /// <param name="name">The user-visible name to include in the formatted message.</param>
+        /// <returns>
+        ///     The formatted asynchronous status message, or <see langword="null" /> when no status message is configured.
+        /// </returns>
+        /// <exception cref="InvalidOperationException">The asynchronous status message resource configuration is invalid.</exception>
+        /// <exception cref="FormatException">The asynchronous status message is not a valid composite format string.</exception>
+        public virtual string? FormatAsyncStatusMessage(string name)
+        {
+            string? asyncStatusMessage = AsyncStatusMessageString;
+            return asyncStatusMessage is null ? null : FormatMessage(asyncStatusMessage, name);
         }
 
         /// <summary>
@@ -137,5 +233,26 @@ namespace System.ComponentModel.DataAnnotations
             return EnsureValidationResultErrorMessage(result, validationContext);
         }
 
+        private void SetupAsyncStatusMessageResourceAccessor()
+        {
+            if (_asyncStatusMessageResourceAccessor is not null)
+            {
+                return;
+            }
+
+            if (string.IsNullOrEmpty(_asyncStatusMessage) &&
+                string.IsNullOrEmpty(_asyncStatusMessageResourceName) &&
+                _asyncStatusMessageResourceType is null)
+            {
+                return;
+            }
+
+            _asyncStatusMessageResourceAccessor = CreateMessageResourceAccessor(
+                _asyncStatusMessage,
+                _asyncStatusMessageResourceName,
+                _asyncStatusMessageResourceType,
+                SR.AsyncValidationAttribute_Cannot_Set_AsyncStatusMessage_And_Resource,
+                SR.AsyncValidationAttribute_NeedBothAsyncStatusResourceTypeAndResourceName);
+        }
     }
 }

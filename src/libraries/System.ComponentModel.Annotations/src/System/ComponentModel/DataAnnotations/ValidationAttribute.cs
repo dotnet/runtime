@@ -302,37 +302,19 @@ namespace System.ComponentModel.DataAnnotations
                 return;
             }
 
-            bool resourceNameSet = !string.IsNullOrEmpty(_descriptionMessageResourceName);
-            bool descriptionMessageSet = !string.IsNullOrEmpty(_descriptionMessage);
-            bool resourceTypeSet = _descriptionMessageResourceType is not null;
-
-            if (!(resourceNameSet || descriptionMessageSet || resourceTypeSet))
+            if (string.IsNullOrEmpty(_descriptionMessage) &&
+                string.IsNullOrEmpty(_descriptionMessageResourceName) &&
+                _descriptionMessageResourceType is null)
             {
                 return;
             }
 
-            if (resourceNameSet && descriptionMessageSet)
-            {
-                throw new InvalidOperationException(
-                    SR.ValidationAttribute_Cannot_Set_DescriptionMessage_And_Resource);
-            }
-
-            if (resourceTypeSet != resourceNameSet)
-            {
-                throw new InvalidOperationException(
-                    SR.ValidationAttribute_NeedBothDescriptionResourceTypeAndResourceName);
-            }
-
-            if (resourceNameSet)
-            {
-                PropertyInfo property = GetResourceProperty(_descriptionMessageResourceType!, _descriptionMessageResourceName!);
-                _descriptionMessageResourceAccessor = () => (string?)property.GetValue(null, null);
-            }
-            else
-            {
-                string descriptionMessage = _descriptionMessage!;
-                _descriptionMessageResourceAccessor = () => descriptionMessage;
-            }
+            _descriptionMessageResourceAccessor = CreateMessageResourceAccessor(
+                _descriptionMessage,
+                _descriptionMessageResourceName,
+                _descriptionMessageResourceType,
+                SR.ValidationAttribute_Cannot_Set_DescriptionMessage_And_Resource,
+                SR.ValidationAttribute_NeedBothDescriptionResourceTypeAndResourceName);
         }
 
         /// <summary>
@@ -380,6 +362,38 @@ namespace System.ComponentModel.DataAnnotations
                     _errorMessageResourceAccessor = () => localErrorMessage!;
                 }
             }
+        }
+
+        private protected static Func<string?>? CreateMessageResourceAccessor(
+            string? message,
+            string? resourceName,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
+            Type? resourceType,
+            string cannotSetMessageAndResource,
+            string needBothResourceTypeAndResourceName)
+        {
+            bool resourceNameSet = !string.IsNullOrEmpty(resourceName);
+            bool messageSet = !string.IsNullOrEmpty(message);
+            bool resourceTypeSet = resourceType is not null;
+
+            if (resourceNameSet && messageSet)
+            {
+                throw new InvalidOperationException(cannotSetMessageAndResource);
+            }
+
+            if (resourceTypeSet != resourceNameSet)
+            {
+                throw new InvalidOperationException(needBothResourceTypeAndResourceName);
+            }
+
+            if (resourceNameSet)
+            {
+                PropertyInfo property = GetResourceProperty(resourceType!, resourceName!);
+                return () => (string?)property.GetValue(null, null);
+            }
+
+            string localMessage = message!;
+            return () => localMessage;
         }
 
         private static PropertyInfo GetResourceProperty(

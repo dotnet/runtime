@@ -37,6 +37,13 @@ namespace System.ComponentModel.DataAnnotations
         protected AsyncValidationAttribute() { }
         protected AsyncValidationAttribute(System.Func<string> errorMessageAccessor) { }
         protected AsyncValidationAttribute(string errorMessage) { }
+        [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")]
+        public string? AsyncStatusMessage { get { throw null; } set { } }
+        public string? AsyncStatusMessageResourceName { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)]
+        public System.Type? AsyncStatusMessageResourceType { get { throw null; } set { } }
+        protected string? AsyncStatusMessageString { get { throw null; } }
+        public virtual string? FormatAsyncStatusMessage(string name) { throw null; }
         public System.Threading.Tasks.Task<System.ComponentModel.DataAnnotations.ValidationResult?> GetValidationResultAsync(object? value, System.ComponentModel.DataAnnotations.ValidationContext validationContext, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public sealed override bool IsValid(object? value) { throw null; }
         protected abstract override System.ComponentModel.DataAnnotations.ValidationResult? IsValid(object? value, System.ComponentModel.DataAnnotations.ValidationContext validationContext);

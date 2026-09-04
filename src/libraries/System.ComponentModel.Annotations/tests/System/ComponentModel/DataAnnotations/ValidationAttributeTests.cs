@@ -197,7 +197,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
         }
 
         [Fact]
-        public static async Task FormatDescriptionMessage_AsyncAttributeMetadataAvailableBeforeValidation()
+        public static async Task AsyncValidationAttribute_MetadataMessagesAvailableBeforeValidation()
         {
             PropertyInfo emailProperty = typeof(RegistrationModel).GetProperty(nameof(RegistrationModel.Email));
             ValidationAttribute[] attributes = emailProperty.GetCustomAttributes<ValidationAttribute>().ToArray();
@@ -208,6 +208,9 @@ namespace System.ComponentModel.DataAnnotations.Tests
             Assert.Equal(
                 "We will verify that Email is not already registered.",
                 uniqueEmailAttribute.FormatDescriptionMessage("Email"));
+            Assert.Equal(
+                "Checking whether Email is already registered...",
+                uniqueEmailAttribute.FormatAsyncStatusMessage("Email"));
 
             var model = new RegistrationModel { Email = "taken@example.com" };
             var validationContext = new ValidationContext(model)
@@ -216,7 +219,14 @@ namespace System.ComponentModel.DataAnnotations.Tests
                 MemberName = nameof(RegistrationModel.Email)
             };
 
-            ValidationResult result = await uniqueEmailAttribute.GetValidationResultAsync(model.Email, validationContext);
+            Task<ValidationResult?> validationTask =
+                uniqueEmailAttribute.GetValidationResultAsync(model.Email, validationContext);
+
+            Assert.Equal(
+                "Checking whether Email is already registered...",
+                uniqueEmailAttribute.FormatAsyncStatusMessage("Email"));
+
+            ValidationResult result = await validationTask;
 
             Assert.Equal("Email is already registered.", result.ErrorMessage);
         }
@@ -574,6 +584,173 @@ namespace System.ComponentModel.DataAnnotations.Tests
             Assert.NotEmpty(validationResult.ErrorMessage);
         }
 
+        [Fact]
+        public static void AsyncStatusMessageProperties_GetAndSet()
+        {
+            var attribute = new TestAsyncAlwaysFailsAttribute();
+
+            Assert.Null(attribute.AsyncStatusMessage);
+            Assert.Null(attribute.AsyncStatusMessageResourceName);
+            Assert.Null(attribute.AsyncStatusMessageResourceType);
+
+            attribute.AsyncStatusMessage = "Checking";
+            attribute.AsyncStatusMessageResourceName = "ResourceName";
+            attribute.AsyncStatusMessageResourceType = typeof(AsyncStatusMessageResources);
+
+            Assert.Equal("Checking", attribute.AsyncStatusMessage);
+            Assert.Equal("ResourceName", attribute.AsyncStatusMessageResourceName);
+            Assert.Equal(typeof(AsyncStatusMessageResources), attribute.AsyncStatusMessageResourceType);
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        public static void FormatAsyncStatusMessage_NoStatusConfigured_ReturnsNull(string asyncStatusMessage)
+        {
+            var attribute = new TestAsyncAlwaysFailsAttribute { AsyncStatusMessage = asyncStatusMessage };
+
+            Assert.Null(attribute.GetAsyncStatusMessageString());
+            Assert.Null(attribute.FormatAsyncStatusMessage("name"));
+        }
+
+        [Theory]
+        [InlineData("Checking {0}", "name", "Checking name")]
+        [InlineData("Checking {0}", null, "Checking ")]
+        public static void FormatAsyncStatusMessage_Literal_ReturnsExpected(
+            string asyncStatusMessage,
+            string name,
+            string expected)
+        {
+            var attribute = new TestAsyncAlwaysFailsAttribute { AsyncStatusMessage = asyncStatusMessage };
+
+            Assert.Equal(asyncStatusMessage, attribute.GetAsyncStatusMessageString());
+            Assert.Equal(expected, attribute.FormatAsyncStatusMessage(name));
+        }
+
+        [Fact]
+        public static void FormatAsyncStatusMessage_ResourceProperty_ReevaluatesValue()
+        {
+            AsyncStatusMessageResources.LookupCount = 0;
+            var attribute = new TestAsyncAlwaysFailsAttribute
+            {
+                AsyncStatusMessageResourceName = nameof(AsyncStatusMessageResources.DynamicStatus),
+                AsyncStatusMessageResourceType = typeof(AsyncStatusMessageResources)
+            };
+
+            Assert.Equal("Status 1 for name", attribute.FormatAsyncStatusMessage("name"));
+            Assert.Equal("Status 2 for name", attribute.FormatAsyncStatusMessage("name"));
+            Assert.Equal("Status 3 for {0}", attribute.GetAsyncStatusMessageString());
+        }
+
+        [Fact]
+        public static void FormatAsyncStatusMessage_ResourcePropertyReturningNull_ReturnsNull()
+        {
+            var attribute = new TestAsyncAlwaysFailsAttribute
+            {
+                AsyncStatusMessageResourceName = nameof(AsyncStatusMessageResources.NullStatus),
+                AsyncStatusMessageResourceType = typeof(AsyncStatusMessageResources)
+            };
+
+            Assert.Null(attribute.GetAsyncStatusMessageString());
+            Assert.Null(attribute.FormatAsyncStatusMessage("name"));
+        }
+
+        [Fact]
+        public static void AsyncStatusMessageSetters_InvalidateCachedAccessor()
+        {
+            var attribute = new TestAsyncAlwaysFailsAttribute { AsyncStatusMessage = "First {0}" };
+            Assert.Equal("First name", attribute.FormatAsyncStatusMessage("name"));
+
+            attribute.AsyncStatusMessage = "Second {0}";
+            Assert.Equal("Second name", attribute.FormatAsyncStatusMessage("name"));
+
+            attribute.AsyncStatusMessage = null;
+            attribute.AsyncStatusMessageResourceName = nameof(AsyncStatusMessageResources.FirstStatus);
+            attribute.AsyncStatusMessageResourceType = typeof(AsyncStatusMessageResources);
+            Assert.Equal("First resource name", attribute.FormatAsyncStatusMessage("name"));
+
+            attribute.AsyncStatusMessageResourceName = nameof(AsyncStatusMessageResources.SecondStatus);
+            Assert.Equal("Second resource name", attribute.FormatAsyncStatusMessage("name"));
+
+            attribute.AsyncStatusMessageResourceType = typeof(AlternateAsyncStatusMessageResources);
+            Assert.Equal("Alternate resource name", attribute.FormatAsyncStatusMessage("name"));
+        }
+
+        [Theory]
+        [InlineData(AsyncStatusResourceConfiguration.NameOnly, "Both AsyncStatusMessageResourceType and AsyncStatusMessageResourceName need to be set on this attribute.")]
+        [InlineData(AsyncStatusResourceConfiguration.TypeOnly, "Both AsyncStatusMessageResourceType and AsyncStatusMessageResourceName need to be set on this attribute.")]
+        [InlineData(AsyncStatusResourceConfiguration.LiteralAndResource, "Either AsyncStatusMessage or AsyncStatusMessageResourceName must be set, but not both.")]
+        [InlineData(AsyncStatusResourceConfiguration.MissingMember, "named 'MissingMember'")]
+        [InlineData(AsyncStatusResourceConfiguration.InstanceMember, "named 'InstanceStatus'")]
+        [InlineData(AsyncStatusResourceConfiguration.NonStringMember, "property 'NonStringStatus'")]
+        [InlineData(AsyncStatusResourceConfiguration.InaccessibleMember, "named 'PrivateStatus'")]
+        public static void FormatAsyncStatusMessage_InvalidConfiguration_ThrowsExpected(
+            AsyncStatusResourceConfiguration configuration,
+            string expectedMessage)
+        {
+            var attribute = new TestAsyncAlwaysFailsAttribute();
+            ConfigureAsyncStatusMessage(attribute, configuration);
+
+            InvalidOperationException exception =
+                Assert.Throws<InvalidOperationException>(() => attribute.FormatAsyncStatusMessage("name"));
+
+            Assert.Contains(expectedMessage, exception.Message);
+            Assert.DoesNotContain("ErrorMessage", exception.Message);
+            Assert.DoesNotContain("DescriptionMessage", exception.Message);
+        }
+
+        [Fact]
+        public static void FormatAsyncStatusMessage_DelegatesToFormatMessage()
+        {
+            var attribute = new TestAsyncWithFormatArgumentsAttribute
+            {
+                AsyncStatusMessage = "Checking {0} using {1}"
+            };
+
+            Assert.Equal("Checking name using directory", attribute.FormatAsyncStatusMessage("name"));
+        }
+
+        [Fact]
+        public static async Task AsyncStatusMessage_IsIndependentFromDescriptionAndErrorMessages()
+        {
+            var attribute = new TestAsyncAlwaysFailsAttribute
+            {
+                AsyncStatusMessage = "Checking {0}",
+                DescriptionMessage = "Description for {0}",
+                ErrorMessage = "Error for {0}"
+            };
+            var context = new ValidationContext(new object()) { DisplayName = "name" };
+
+            Assert.Equal("Checking name", attribute.FormatAsyncStatusMessage("name"));
+            Assert.Equal("Description for name", attribute.FormatDescriptionMessage("name"));
+
+            ValidationResult result = await attribute.GetValidationResultAsync("value", context);
+
+            Assert.Equal("Error for name", result.ErrorMessage);
+            Assert.Equal("Checking name", attribute.FormatAsyncStatusMessage("name"));
+            Assert.Equal("Description for name", attribute.FormatDescriptionMessage("name"));
+        }
+
+        private static void ConfigureAsyncStatusMessage(
+            AsyncValidationAttribute attribute,
+            AsyncStatusResourceConfiguration configuration)
+        {
+            attribute.AsyncStatusMessage =
+                configuration == AsyncStatusResourceConfiguration.LiteralAndResource ? "Literal" : null;
+            attribute.AsyncStatusMessageResourceName = configuration switch
+            {
+                AsyncStatusResourceConfiguration.NameOnly => nameof(AsyncStatusMessageResources.DynamicStatus),
+                AsyncStatusResourceConfiguration.LiteralAndResource => nameof(AsyncStatusMessageResources.DynamicStatus),
+                AsyncStatusResourceConfiguration.MissingMember => "MissingMember",
+                AsyncStatusResourceConfiguration.InstanceMember => nameof(AsyncStatusMessageResources.InstanceStatus),
+                AsyncStatusResourceConfiguration.NonStringMember => nameof(AsyncStatusMessageResources.NonStringStatus),
+                AsyncStatusResourceConfiguration.InaccessibleMember => "PrivateStatus",
+                _ => null
+            };
+            attribute.AsyncStatusMessageResourceType =
+                configuration == AsyncStatusResourceConfiguration.NameOnly ? null : typeof(AsyncStatusMessageResources);
+        }
+
         public class ValidationAttributeNoOverrides : ValidationAttribute
         {
             public string GetDescriptionMessageString() => DescriptionMessageString;
@@ -749,6 +926,8 @@ namespace System.ComponentModel.DataAnnotations.Tests
 
         public class TestAsyncAlwaysFailsAttribute : AsyncValidationAttribute
         {
+            public string GetAsyncStatusMessageString() => AsyncStatusMessageString;
+
             protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
                 => throw new InvalidOperationException("Use async validation");
 
@@ -756,6 +935,12 @@ namespace System.ComponentModel.DataAnnotations.Tests
             {
                 return Task.FromResult<ValidationResult?>(new ValidationResult(null));
             }
+        }
+
+        public class TestAsyncWithFormatArgumentsAttribute : TestAsyncAlwaysFailsAttribute
+        {
+            public override string FormatMessage(string format, string name) =>
+                string.Format(format, name, "directory");
         }
 
         public class TestAsyncAlwaysSucceedsAttribute : AsyncValidationAttribute
@@ -827,6 +1012,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
             [Required]
             [EmailAddress]
             [UniqueEmail(
+                AsyncStatusMessage = "Checking whether {0} is already registered...",
                 DescriptionMessage = "We will verify that {0} is not already registered.",
                 ErrorMessage = "{0} is already registered.")]
             public string Email { get; set; }
@@ -852,6 +1038,17 @@ namespace System.ComponentModel.DataAnnotations.Tests
         }
 
         public enum DescriptionResourceConfiguration
+        {
+            NameOnly,
+            TypeOnly,
+            LiteralAndResource,
+            MissingMember,
+            InstanceMember,
+            NonStringMember,
+            InaccessibleMember
+        }
+
+        public enum AsyncStatusResourceConfiguration
         {
             NameOnly,
             TypeOnly,
@@ -913,11 +1110,16 @@ namespace System.ComponentModel.DataAnnotations.Tests
         [Fact]
         public static async Task AsyncValidationAttribute_CancellationToken_Propagated()
         {
-            var attribute = new TestAsyncCancellable();
+            var attribute = new TestAsyncCancellable { AsyncStatusMessage = "Checking {0}" };
             var cts = new CancellationTokenSource();
+
+            Assert.Equal("Checking value", attribute.FormatAsyncStatusMessage("value"));
+
             cts.Cancel();
             await Assert.ThrowsAsync<OperationCanceledException>(
                 async () => await attribute.GetValidationResultAsync("value", s_testValidationContext, cts.Token));
+
+            Assert.Equal("Checking value", attribute.FormatAsyncStatusMessage("value"));
         }
 
         [Fact]
@@ -966,5 +1168,22 @@ namespace System.ComponentModel.DataAnnotations.Tests
     internal class AlternateDescriptionMessageResources
     {
         internal static string SecondDescription => "Alternate resource {0}";
+    }
+
+    internal class AsyncStatusMessageResources
+    {
+        internal static int LookupCount { get; set; }
+        internal static string DynamicStatus => $"Status {++LookupCount} for {{0}}";
+        internal static string FirstStatus => "First resource {0}";
+        internal string InstanceStatus => "";
+        internal static bool NonStringStatus => false;
+        internal static string NullStatus => null;
+        private static string PrivateStatus => "";
+        internal static string SecondStatus => "Second resource {0}";
+    }
+
+    internal class AlternateAsyncStatusMessageResources
+    {
+        internal static string SecondStatus => "Alternate resource {0}";
     }
 }
