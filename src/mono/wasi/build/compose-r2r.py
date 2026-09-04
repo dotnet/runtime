@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
-"""Splice a wasm R2R composite into corerun using only stock tooling.
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
 
-Replaces pipeline-shim.sh. Same pipeline, but it parses wasm sections directly instead of
-scraping `wasm-objdump` output, which makes it run on Windows and lets every lookup select
-by meaning rather than by position.
+"""Compose a wasm R2R image into a WASI host component.
 
 The composite crossgen2 emits is SELF-INSTALLING: the webcil payload is an ACTIVE data
 segment at (global.get __memory_base) and the R2R function table is an ACTIVE element
@@ -14,10 +13,10 @@ __indirect_function_table, __coreclr_wasm_rtlrestorecontext_tag, __async_continu
 The remaining two are the base globals, which wasm-ld only creates in PIC mode -- so a
 generated shim module supplies them instead.
 
-Requires: wasm-tools, binaryen (wasm-merge, wasm-opt). wabt is NOT required; the shim is
-assembled here and every value that used to come from wasm-objdump is parsed directly.
+Requires: wasm-tools and binaryen (wasm-merge, wasm-opt). The shim is assembled here
+and the host's reservation parameters are read directly from its module.
 
-  COMP=<composite.wasm> CORERUN=<corerun component> python3 pipeline_shim.py
+  COMP=<composite.wasm> CORERUN=<host component> OUTDIR=<output directory> python3 compose-r2r.py
 """
 
 import os
@@ -360,7 +359,7 @@ def tool(name):
     found = shutil.which(name)
     if found is None:
         raise WasmError(f"required tool '{name}' is not on PATH. "
-                        "Install wasm-tools and binaryen; see eng/wasi-r2r/README.md.")
+                        "Install wasm-tools and binaryen; see docs/workflow/building/coreclr/wasi-r2r.md.")
     return found
 
 
@@ -404,14 +403,15 @@ def main():
 
     if len(sys.argv) != 1:
         raise WasmError(
-            "usage: pipeline_shim.py [--describe|--function-count|--payload-size] "
+            "usage: compose-r2r.py [--describe|--function-count|--payload-size] "
             "<composite.wasm>")
 
-    root = Path(os.environ.get("ROOT") or Path(__file__).resolve().parents[2])
-    comp = Path(os.environ.get("COMP") or root / "r2rtest/out2/composite-r2r.wasm")
-    corerun = Path(os.environ.get("CORERUN")
-                   or root / "artifacts/obj/coreclr/wasi.wasm.Release/hosts/corerun/corerun")
-    outdir = Path(os.environ.get("OUTDIR") or root / "r2rtest/shimout")
+    missing = [name for name in ("COMP", "CORERUN", "OUTDIR") if not os.environ.get(name)]
+    if missing:
+        raise WasmError(f"set the required environment variables: {', '.join(missing)}")
+    comp = Path(os.environ["COMP"])
+    corerun = Path(os.environ["CORERUN"])
+    outdir = Path(os.environ["OUTDIR"])
 
     for label, path in (("composite", comp), ("corerun", corerun)):
         if not path.is_file():

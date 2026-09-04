@@ -5,13 +5,13 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CORERUN_IN_BROWSER 0)
 
 # Link corerun so a composite ReadyToRun image can be spliced into it afterwards (see
-# eng/wasi-r2r/README.md). ON by default because corerun is the host this work is developed and
+# docs/workflow/building/coreclr/wasi-r2r.md). ON by default because corerun is the host this work is developed and
 # tested against. Turning it OFF drops the table reservation and shrinks the probe's staging buffer
 # to a stub, for a WASI corerun that will never be spliced.
 option(CORERUN_WASI_COMPOSITE_R2R "Reserve table slots and export the globals a spliced R2R composite needs" ON)
 # Table slots 1..N-1 are reserved for the composite's ACTIVE element segment, which the engine installs
 # at instantiation, so the table must already be large enough. Reserve by the composite's FUNCTION
-# count, not its assembly count; eng/wasi-r2r/pipeline_shim.py checks this and names the value needed.
+# count, not its assembly count; compose-r2r.py checks this and names the value needed.
 set(CORERUN_WASI_R2R_TABLE_BASE "65537" CACHE STRING "First table slot for corerun's own address-taken functions")
 
 if(CLR_CMAKE_HOST_WIN32)
