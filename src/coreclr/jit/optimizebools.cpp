@@ -653,6 +653,110 @@ bool FoldNeverNegativeRangeTest(
 }
 
 //------------------------------------------------------------------------------
+// FoldOffsetRangeTest: Given two compare nodes (cmp1 && cmp2) of the form
+//    "X >= C1 && (X - C1) >= C2", fold them into the single compare "X >= C1 + C2".
+//
+//    The first comparison guarantees that "X - C1" cannot wrap, so the second one is
+//    exactly "X >= C1 + C2", which in turn subsumes the first because C2 is non-negative.
+//
+//    This is the shape of Span<T>.Slice(start, length) and of the (array, start, length)
+//    constructors when both arguments are constants, as in a binary header parser doing
+//    "source.Slice(4, 4)": the two length checks collapse into a single compare against 8.
+//
+// Arguments:
+//    comp           - compiler instance
+//    cmp1           - first compare node
+//    cmp1IsReversed - true if cmp1 is in fact reversed
+//    cmp2           - second compare node
+//    cmp2IsReversed - true if cmp2 is in fact reversed
+//
+// Returns:
+//    true if cmp1 now represents the folded range check and cmp2 can be removed.
+//
+bool FoldOffsetRangeTest(Compiler* comp, GenTreeOp* cmp1, bool cmp1IsReversed, GenTreeOp* cmp2, bool cmp2IsReversed)
+{
+    // cmp2 is dropped entirely, so it must not have side effects.
+    if (((cmp2->gtFlags & GTF_SIDE_EFFECT) != 0) || !cmp2->OperIs(GT_LT, GT_LE, GT_GE, GT_GT))
+    {
+        return false;
+    }
+
+    // cmp1 has to be "X >= C1" once normalized.
+    GenTree*       var1Node;
+    GenTreeIntCon* cns1Node;
+    genTreeOps     cmp1Op;
+    if (!IsConstantRangeTest(cmp1, &var1Node, &cns1Node, &cmp1Op))
+    {
+        return false;
+    }
+
+    cmp1Op = cmp1IsReversed ? GenTree::ReverseRelop(cmp1Op) : cmp1Op;
+
+    const ssize_t cns1 = cns1Node->IconValue();
+
+    if ((cmp1Op != GT_GE) || (cns1 < 0) || !var1Node->TypeIs(TYP_INT))
+    {
+        return false;
+    }
+
+    // cmp2 has to be "(X - C1) >= C2" once normalized.
+    genTreeOps cmp2Op   = cmp2IsReversed ? GenTree::ReverseRelop(cmp2->OperGet()) : cmp2->OperGet();
+    GenTree*   diff     = cmp2->gtGetOp1();
+    GenTree*   cns2Node = cmp2->gtGetOp2();
+
+    if (!cns2Node->IsCnsIntOrI())
+    {
+        diff     = cmp2->gtGetOp2();
+        cns2Node = cmp2->gtGetOp1();
+        cmp2Op   = GenTree::SwapRelop(cmp2Op);
+    }
+
+    if (!cns2Node->IsCnsIntOrI() || (cmp2Op != GT_GE) || !diff->OperIs(GT_SUB, GT_ADD) || diff->gtOverflow() ||
+        !diff->TypeIs(TYP_INT) || !diff->gtGetOp2()->IsCnsIntOrI())
+    {
+        return false;
+    }
+
+    const ssize_t cns2 = cns2Node->AsIntCon()->IconValue();
+
+    // Morph rewrites "X - CNS" into "X + (-CNS)".
+    const ssize_t offset =
+        diff->OperIs(GT_SUB) ? diff->gtGetOp2()->AsIntCon()->IconValue() : -diff->gtGetOp2()->AsIntCon()->IconValue();
+
+    if ((cns2 < 0) || (offset != cns1) || !GenTree::Compare(diff->gtGetOp1(), var1Node->gtEffectiveVal()))
+    {
+        return false;
+    }
+
+    const int64_t newCns = static_cast<int64_t>(cns1) + static_cast<int64_t>(cns2);
+
+    if (!FitsIn<int32_t>(newCns))
+    {
+        return false;
+    }
+
+    // Dropping cmp2 removes one evaluation of X, so anything that must not be reordered has to
+    // come from a non-faulting array length, which is idempotent.
+    if (((cmp2->gtFlags & GTF_ORDER_SIDEEFF) != 0) && !diff->gtGetOp1()->OperIs(GT_ARR_LENGTH, GT_MDARR_LENGTH))
+    {
+        return false;
+    }
+
+    const bool isUnsigned = cmp1->IsUnsigned();
+
+    cmp1->gtOp1 = var1Node;
+    cmp1->gtOp2 = comp->gtNewIconNode(static_cast<ssize_t>(newCns), TYP_INT);
+    cmp1->SetOper(cmp2IsReversed ? GT_LT : GT_GE);
+
+    if (isUnsigned)
+    {
+        cmp1->SetUnsigned();
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------------
 // FoldRangeTests: Given two compare nodes (cmp1 && cmp2) that represent a range check,
 //    fold them into a single compare node if possible, e.g.:
 //      1) "X >= 10 && X <= 100" -> "(X - 10) u<= 90"
@@ -836,7 +940,8 @@ bool OptBoolsDsc::optOptimizeRangeTests()
     // cmp2 can be either reversed or not
     const bool cmp2IsReversed = m_b2->TrueTargetIs(notInRangeBb);
 
-    if (!FoldRangeTests(m_compiler, cmp1, cmp1IsReversed, cmp2, cmp2IsReversed))
+    if (!FoldRangeTests(m_compiler, cmp1, cmp1IsReversed, cmp2, cmp2IsReversed) &&
+        !FoldOffsetRangeTest(m_compiler, cmp1, cmp1IsReversed, cmp2, cmp2IsReversed))
     {
         return false;
     }
