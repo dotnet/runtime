@@ -193,7 +193,7 @@ extern "C" NTSTATUS OutOfProcessFunctionTableCallbackEx(IN  ReadMemoryFunction  
             // walk the header map and count functions with unwind info
             //
             nEntries  = 0;
-            hdrOffset = Hp.endAddress - Hp.mapBase;
+            hdrOffset = Hp.bottomEndAddress - Hp.mapBase;
             lSmallestOffset = (LONG64)(Hp.startAddress - Hp.mapBase);
 
             // Save the initial offset at which we start our enumeration (from the end to the beginning).

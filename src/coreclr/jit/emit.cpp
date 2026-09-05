@@ -7676,6 +7676,16 @@ unsigned emitter::emitEndCodeGen(Compiler*             comp,
                 }
 #endif // DEBUG_EMIT
 
+                if ((adr >= codeChunk.block) && (adr <= (codeChunk.block + emitTotalHotCodeSize)))
+                {
+                    writeableOffset = (codeChunk.blockRW - codeChunk.block);
+                }
+                else
+                {
+                    assert(coldCodeChunk.size > 0);
+                    writeableOffset = (coldCodeChunk.blockRW - coldCodeChunk.block);
+                }
+
                 if (jmp->idjShort)
                 {
                     // Patch Forward Short Jump
@@ -7743,6 +7753,11 @@ unsigned emitter::emitEndCodeGen(Compiler*             comp,
 
     JITDUMP("\n\nAllocated method code size = %4u , actual size = %4u, unused size = %4u\n", emitTotalCodeSize,
             actualCodeSize, unusedSize);
+
+    if (coldCodeChunk.size > 0)
+    {
+        writeableOffset = (coldCodeChunk.blockRW - coldCodeChunk.block);
+    }
 
     BYTE* cpRW = cp + writeableOffset;
     for (unsigned i = 0; i < unusedSize; ++i)

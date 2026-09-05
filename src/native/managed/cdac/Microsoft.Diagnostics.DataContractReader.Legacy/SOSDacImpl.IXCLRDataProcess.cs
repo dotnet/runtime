@@ -294,7 +294,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
             {
                 if (displacement is not null)
                 {
-                    *displacement = managedCodeAddr.ToAddress(_target).Value - eman.GetStartAddress(codeBlock).Value;
+                    *displacement = eman.GetRelativeOffset(codeBlock).Value;
                 }
                 resultName = GetMethodName(eman.GetMethodDesc(codeBlock));
             }
