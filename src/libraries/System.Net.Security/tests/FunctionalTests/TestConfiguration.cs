@@ -30,6 +30,8 @@ namespace System.Net.Security.Tests
         public static bool SupportsHandshakeAlerts { get { return OperatingSystem.IsLinux() || OperatingSystem.IsWindows() || OperatingSystem.IsFreeBSD() || RuntimeInformation.IsOSPlatform(OSPlatform.Create("OPENBSD")); } }
         public static bool SupportsRenegotiation { get { return OperatingSystem.IsWindows() || ((OperatingSystem.IsLinux() || OperatingSystem.IsFreeBSD() || RuntimeInformation.IsOSPlatform(OSPlatform.Create("OPENBSD"))) && PlatformDetection.OpenSslVersion >= new Version(1, 1, 1)); } }
 
+        public static bool SupportsUniqueChannelBinding => PlatformDetection.IsNotMobile && !PlatformDetection.IsApplePlatform;
+
         public static readonly X509Certificate2 ServerCertificate = System.Net.Test.Common.Configuration.Certificates.GetServerCertificate();
 
         public static Task WhenAllOrAnyFailedWithTimeout(params Task[] tasks)

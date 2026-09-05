@@ -47,7 +47,7 @@ namespace System.Net.Security
         }
 
         public static ProtocolToken AcceptSecurityContext(
-            ref SafeFreeCredentials credential,
+            ref SafeFreeCredentials? credential,
             ref SafeDeleteSslContext? context,
             ReadOnlySpan<byte> inputBuffer,
             out int consumed,
@@ -57,7 +57,7 @@ namespace System.Net.Security
         }
 
         public static ProtocolToken InitializeSecurityContext(
-            ref SafeFreeCredentials credential,
+            ref SafeFreeCredentials? credential,
             ref SafeDeleteSslContext? context,
             string? targetName,
             ReadOnlySpan<byte> inputBuffer,
@@ -211,7 +211,7 @@ namespace System.Net.Security
         }
 
         private static ProtocolToken HandshakeInternal(
-            SafeFreeCredentials credential,
+            SafeFreeCredentials? credential,
             ref SafeDeleteSslContext? context,
             ReadOnlySpan<byte> inputBuffer,
             out int consumed,
