@@ -37,13 +37,13 @@ exist and scores workflow output against them, is deferred.
 
 - **`ci-failure-scan`** has the agent query the anonymous dnceng-public AzDO REST
   API for a currently-failing outer-loop build on `main`, extract a real error
-  signature, check for an existing KBE, and emit the create-issue safe-output at
-  `out/kbe.md`. Graders check the static Known Build Error format, meaning the
-  title, exactly `Known Build Error` plus one blocking label, the three sections,
-  collapsed authoring guidance, a single json signature, the collapsed
-  workflow-owned positive match-count metadata, and no test-muting. They also check
-  `tool-calls` evidence that it actually fetched a real build and searched existing
-  KBEs.
+  signature, check for an existing KBE through the GitHub MCP, and emit the
+  create-issue safe-output at `out/kbe.md`. Graders check the static Known Build
+  Error format, meaning the title, exactly `Known Build Error` plus one blocking
+  label, the three sections, collapsed authoring guidance, a single json
+  signature, the collapsed workflow-owned positive match-count metadata, and no
+  test-muting. They also check `tool-calls` evidence that it actually fetched a
+  real build and searched existing KBEs through the MCP.
 
 - **`ci-failure-fix`** has the agent find a real open `[ci-scan]` Known Build
   Error issue via `gh`, reason about it, and emit one safe-output at
@@ -77,7 +77,12 @@ export PATH="$PWD/.github/workflows/evals/node_modules/.bin:$PATH"
 export COPILOT_GITHUB_TOKEN="$(gh auth token)"
 export GH_TOKEN="$(gh auth token)"
 export GITHUB_PERSONAL_ACCESS_TOKEN="$(gh auth token)"
-vally lint --eval-spec .github/workflows/evals/ci-failure-scan.eval.yaml --strict
+mcp_env="$(mktemp)"
+trap 'rm -f -- "$mcp_env"' EXIT
+(umask 077; printf 'GITHUB_PERSONAL_ACCESS_TOKEN=%s\n' "$GITHUB_PERSONAL_ACCESS_TOKEN" > "$mcp_env")
+vally lint --eval-spec .github/workflows/evals/ci-failure-scan.eval.yaml --strict \
+  --param "GITHUB_MCP_ENV_FILE=lint-only"
 vally eval --eval-spec .github/workflows/evals/ci-failure-scan.eval.yaml \
-  --skill-dir .github/workflows --workspace /tmp/ws --output-dir /tmp/out
+  --skill-dir .github/workflows --workspace /tmp/ws --output-dir /tmp/out \
+  --param "GITHUB_MCP_ENV_FILE=$mcp_env"
 ```

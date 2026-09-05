@@ -19,8 +19,8 @@ environment:
         - run
         - --interactive
         - --rm
-        - --env
-        - GITHUB_PERSONAL_ACCESS_TOKEN
+        - --env-file
+        - "${GITHUB_MCP_ENV_FILE}"
         - --env
         - GITHUB_READ_ONLY=1
         - --env
@@ -45,16 +45,25 @@ stimuli:
 
       This is a live run — discover a real, currently-failing outer-loop build yourself. Do not invent a failure.
 
-      1. Find a recent failed build on `main` of an outer-loop pipeline via the dnceng-public AzDO REST API. It is anonymous and needs no auth, so stay on `_apis/build/...`. Start with `runtime-extra-platforms`, which is definition 154, and fall back to other outer-loop defs if needed.
-         `curl -fsSL "https://dev.azure.com/dnceng-public/public/_apis/build/builds?definitions=154&branchName=refs/heads/main&statusFilter=completed&resultFilter=failed&\$top=5&api-version=7.1"`
-      2. Open that build's timeline at `/_apis/build/builds/{id}/timeline?api-version=7.1`, pick a failed leg, and read its log at `/_apis/build/builds/{id}/logs/{logId}?api-version=7.1` to extract a concrete error or assertion signature. Save the leg log you extract from as `failure.log` under /tmp and grep it for your signature to get the hit count.
-      3. Before filing, check whether an equivalent KBE already exists so you would not duplicate it. Run `gh search issues 'in:title [ci-scan]' --repo dotnet/runtime --state open` and also search by your signature text. Assume you would file only if none matches.
+      1. Find a recent failed build on `main` of an outer-loop pipeline via the dnceng-public AzDO REST API. It is anonymous and needs no auth, so stay on `_apis/build/...`. Start with `runtime-extra-platforms`, which is definition 154, and fall back to other outer-loop defs if needed. Pre-bind each URL before fetching it, as required by the workflow:
+         ```bash
+         url='https://dev.azure.com/dnceng-public/public/_apis/build/builds?definitions=154&branchName=refs/heads/main&statusFilter=completed&resultFilter=failed&%24top=5&api-version=7.1'
+         set -o pipefail
+         curl -fsS "$url"
+         ```
+         Define the complete URL as a literal and invoke `curl` in the same shell call. Never persist a URL for a later shell call or load one through a file, standard input, command substitution, backticks, `xargs`, a client config file, or a persisted shell script.
+      2. Open that build's timeline at `/_apis/build/builds/{id}/timeline?api-version=7.1`, pick a failed leg, and read its log at `/_apis/build/builds/{id}/logs/{logId}?api-version=7.1` to extract a concrete error or assertion signature. Save the leg log you extract from as `failure.log` under /tmp and grep it for your signature to get the hit count. Select assertion text, an exception message, or a diagnostic that distinguishes the failure. A `Failed test:` or `[FAIL]` line whose variable content is only a test path/name is forbidden even when it is stable; if the log contains no better signature, continue to another real failure.
+      3. Before filing, follow the shared KBE lookup instructions to check whether an equivalent open KBE or in-flight fix already exists. Use the GitHub MCP `search_issues` tool for every issue search and `search_pull_requests` for every PR search, always passing `owner: dotnet` and `repo: runtime` as tool arguments. Run separate searches whose queries start with:
+         - `is:open label:"Known Build Error" "<signature-text>"` for the extracted assertion or exception text;
+         - `is:open in:title "[ci-scan]" "<signature-or-test-stem>"` for scanner-filed siblings; and
+         - `is:open "<signature-or-test-source-term>"` with `search_pull_requests` for an existing fix.
+         If a search returns a candidate, read it with `issue_read` or `pull_request_read` before deciding whether it matches. When an equivalent KBE or PR already handles the failure, keep scanning real failed outer-loop builds until you find a concrete unmatched signature; do not emit a KBE for a known failure and do not fabricate one.
 
       Then **emit the create-issue safe-output you would file, as a single markdown document at `./out/kbe.md`**, in exactly this shape.
 
       - First line is `Title: [ci-scan] <one stable failure shape>`, an assertion string or test family with no build numbers, dates, queue or machine names, or run IDs.
       - Second line is `Labels: Known Build Error, <blocking-clean-ci|blocking-clean-ci-optional>`. Pick exactly one blocking label. The JIT, GC, and PGO stress pipelines are `optional-ci` and use `blocking-clean-ci-optional`, and the required gate uses `blocking-clean-ci`.
-      - Then a blank line and the KBE issue body from the shared template. It has a `## Build Information` section citing the real build id and leg you found, a collapsed `KBE authoring guidance (ci-failure-scan)` block, a `## Error Details` section with the fenced log excerpt, and a `## Error Message` section containing exactly one ` ```json ` block with the four keys `ErrorMessage`, `ErrorPattern`, `BuildRetry`, and `ExcludeConsoleLog`. Exactly one of `ErrorMessage` or `ErrorPattern` is non-empty, a specific substring copied verbatim from the real log, never a bare test name.
+      - Then a blank line and the KBE issue body from the shared template. It has a `## Build Information` section citing the real build id and leg you found, a collapsed `KBE authoring guidance (ci-failure-scan)` block, a `## Error Details` section with the fenced log excerpt, and a `## Error Message` section containing exactly one ` ```json ` block with the four keys `ErrorMessage`, `ErrorPattern`, `BuildRetry`, and `ExcludeConsoleLog`. Exactly one of `ErrorMessage` or `ErrorPattern` is non-empty, a specific substring copied verbatim from the real log, never a bare test name. Prefer exact assertion text or an exception message; do not use a `[FAIL]` line when it contains only the test name.
       - Immediately after the fenced JSON block, add the collapsed `Agentic workflow metadata (ci-failure-scan)` block. It contains `Workflow artifact: ci-failure-scan`, `Artifact kind: kbe-verification`, and `Verified match count: <N> hits in failure.log` with the real positive grep count from step 2.
 
       Outer-loop pipelines have failing `main` builds essentially all the time, so search across defs, starting with 154 and then other outer-loop defs, until you find a real one. Do not give up and do not fabricate. Keep all scratch state under /tmp.
@@ -110,8 +119,35 @@ stimuli:
         name: searched-existing-kbe
         config:
           required:
+            - name: '^github-search_issues$'
+              args:
+                owner: '^dotnet$'
+                repo: '^runtime$'
+                query: '(?i)^is:open\s+label:"Known Build Error"\s+".+'
+            - name: '^github-search_issues$'
+              args:
+                owner: '^dotnet$'
+                repo: '^runtime$'
+                query: '(?i)^is:open\s+in:title\s+"\[ci-scan\]"\s+".+'
+            - name: '^github-search_pull_requests$'
+              args:
+                owner: '^dotnet$'
+                repo: '^runtime$'
+                query: '(?i)^is:open\s+".+'
+          disallowed:
             - name: '^(bash|powershell)$'
-              command: 'gh (search|issue)'
+              command: '(?is)(\bgh\s+(search|issue|pr|api)\b|\b(?:curl|wget|Invoke-WebRequest|Invoke-RestMethod|iwr|irm)\b.*(?:[a-z0-9-]+\.)*(?:github\.com|githubusercontent\.com)\b|(?:[a-z0-9-]+\.)*(?:github\.com|githubusercontent\.com)\b.*\b(?:curl|wget|Invoke-WebRequest|Invoke-RestMethod|iwr|irm)\b)'
+
+      - type: tool-calls
+        name: no-indirect-network-fetches
+        config:
+          disallowed:
+            - name: '^(bash|powershell)$'
+              command: '(?s)^(?!.*\b(?:curl|wget|Invoke-WebRequest|Invoke-RestMethod|iwr|irm)\b[^|;&\r\n]*https?://)(?!.*\b([a-z_][a-z0-9_]*)\s*=\s*["'']?https?://[^\s"'']+["'']?[\s\S]*\b(?:curl|wget|Invoke-WebRequest|Invoke-RestMethod|iwr|irm)\b[^|;&\r\n]*(?:\$\{\1\}|\$\1\b))[\s\S]*\b(?:curl|wget|Invoke-WebRequest|Invoke-RestMethod|iwr|irm)\b'
+            - name: '^(bash|powershell)$'
+              command: '(?s)(\b(?:curl|wget|Invoke-WebRequest|Invoke-RestMethod|iwr|irm)\b[^|;&\r\n]*(?:\$\(|`)|\bcurl\b[^|;&\r\n]*(?:--config(?:[=\s]|$)|-K(?:\S+|\s|$))|\bwget\b[^|;&\r\n]*(?:--input-file(?:[=\s]|$)|-i(?:\s|$))|\bxargs\b[^|;&\r\n]*\b(?:curl|wget)\b)'
+            - name: '^(bash|powershell)$'
+              command: '(?im)(\b(?:bash|sh)\b(?:\s+(?:--|-[a-zA-Z]+))*\s+(?:/tmp/|\./|\.\./)\S+|(?:\bsource|(?:^|[\s"'';&])\.)\s+(?:/tmp/|\./|\.\./)\S+|\b(?:bash|sh)\b[^;\r\n]*\s-c\s+["'']\s*(?:/tmp/|\./|\.\./)\S+)'
 
       - type: prompt
         name: kbe-format-conformant

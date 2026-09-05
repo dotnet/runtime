@@ -44,7 +44,7 @@ tools:
     toolsets: [pull_requests, repos, issues, search]
     min-integrity: approved
   edit:
-  bash: ["dotnet", "git", "find", "ls", "cat", "grep", "head", "tail", "wc", "curl", "jq", "tee", "sed", "awk", "tr", "cut", "sort", "uniq", "xargs", "echo", "date", "mkdir", "test", "env", "basename", "dirname", "bash", "sh", "chmod"]
+  bash: ["dotnet", "git", "find", "ls", "cat", "grep", "head", "tail", "wc", "curl", "jq", "tee", "sed", "awk", "tr", "cut", "sort", "uniq", "xargs", "echo", "date", "mkdir", "test", "env", "basename", "dirname", "bash", "sh", "chmod", "set"]
 
 checkout:
   fetch-depth: 50
@@ -90,6 +90,8 @@ The agent runs read-only. All writes go through `safe-outputs`.
 10. **All intermediate state under `/tmp/gh-aw/agent/`.** Each bash invocation is a fresh subshell; persist anything you want to keep.
 11. **AzDO API: anonymous only.** Stay on `_apis/build/...`. Never call `_apis/test/...` or `vstmr.dev.azure.com` (both redirect to sign-in).
 12. **Don't add `area-*` references to issue titles.** Multi-area titles produce multi-label assignments from the labeler bot.
+13. **A failed command or tool call is not an empty result.** For shell pipelines, enable `pipefail`, use failure-reporting flags such as `curl -fsS`, and never suppress stderr. Distinguish an explicit error from a successful zero-result response; an expected `grep` no-match used as a predicate is not a retrieval failure. If a required fetch, search, or parse fails, correct the command and retry; if it still cannot produce a verified result, stop processing that signature and record `skipped: data retrieval failed: <source>`. If the failure happens before a signature exists (for example, while fetching the build list or timeline), stop processing that pipeline and record the same reason as a pipeline-level skip. Never conclude that no matching data exists from empty, missing, malformed, or truncated output.
+14. **All GitHub issue and pull-request searches and reads use the GitHub MCP.** Use `search_issues`, `search_pull_requests`, `issue_read`, and `pull_request_read`. Pass `owner: dotnet` and `repo: runtime` as tool arguments rather than adding a `repo:` qualifier to the query; put state, label, date, and text filters in the query. Do not reimplement these operations with `curl`, `gh`, or another shell command.
 
 ## What this run must accomplish
 
@@ -128,7 +130,7 @@ Read once at start:
 
 For each row in the pipeline table below:
 
-1. Pre-bind the build-list URL to a shell variable, then `curl -s "$url" | tee /tmp/gh-aw/agent/builds_<id>.json`. Fetch at least 25 builds.
+1. Pre-bind the build-list URL to a shell variable, then `set -o pipefail; curl -fsS "$url" | tee /tmp/gh-aw/agent/builds_<id>.json`. Fetch at least 25 builds.
 2. Pick `source` = most recent build with `result in {failed, partiallySucceeded}` that has at least one COMPLETED build with a strictly later `finishTime`. That later build is the `follow_up` anchor for Step 3.5; without it, a freshly-fixed regression cannot be distinguished from a still-failing one. (The dnceng-public build-list is sorted DESC by `queueTime`, so `source` will appear AFTER its `follow_up` in the JSON array; "later in time" refers to wall-clock, not array position.)
 3. Skip reasons: `source.finishTime > 14d` -> `pipeline-skipped: stale build window (>14d)`. No `follow_up` (source is the absolute latest) -> `pipeline-skipped: no follow-up build yet — defer to next run`. No qualifying build in 7 days -> `pipeline-skipped: stale`. The 14-day window accommodates JIT-stress family pipelines (defs 109–160, 230, 235) that run on a weekly-or-longer cadence; tightening to 72h blanket-suppresses their actionable failures.
 4. Otherwise pass `source`'s failed timeline records to Step 3.
@@ -201,7 +203,8 @@ Save the canonical failure log to `/tmp/gh-aw/agent/failure.log` per signature b
 
 ```bash
 log_url="<console URL from Helix work item or AzDO task log>"
-curl -s "$log_url" | tee /tmp/gh-aw/agent/failure.log | tail -5
+set -o pipefail
+curl -fsS "$log_url" | tee /tmp/gh-aw/agent/failure.log | tail -5
 ```
 
 1. **Build break.** Failed task is `Build product` / `Build native components` / `Configure CMake` / any pre-test compile step, AND `Send to Helix` is `skipped`. Read the signature from the failing compile task log (CSxxxx / linker error / cmake error line).
@@ -237,7 +240,7 @@ For each signature from `source`, check `follow_up`:
 - `canceled` -> walk one build further back; if none, fall through and file.
 - Contains the signature -> proceed.
 
-For build breaks, additionally search merged PRs touching the failing source file (or the cited error code) with `merged:>=<source.finishTime>`. If anything matches, record `skipped: fix already merged after source build`.
+For build breaks, additionally use the GitHub MCP `search_pull_requests` tool to search merged PRs touching the failing source file (or the cited error code) with `merged:>=<source.finishTime>`. If anything matches, record `skipped: fix already merged after source build`.
 
 ### Step 4 — Per-signature walk
 
@@ -354,7 +357,9 @@ Per signature, append one outcome line to `/tmp/gh-aw/agent/coverage/<pipeline>.
 
 `<outcome>` is one of: `filed-issue #aw_<id>`, `existing-kbe #<n>`, `existing-PR #<n>`, `skipped: <reason>`.
 
-A skipped signature MUST have a reason. Recognized values: `build canceled`, `< 2 occurrences and not blocking`, `cap reached`, `infra noise — no stable signature`, `signature absent from follow-up build #<id>`, `stale build window (>14d)`, `no follow-up build yet — defer to next run`, `fix already merged after source build`, `fix recently merged in #<n>`, `dup of filed-issue #aw_<id> earlier in this run`, `cross-def dup of filed-issue #aw_<id> earlier in this run`, `representative KBE filed as #aw_<id>`, `leg-level failure filed as #aw_<id>`, `ambiguous dup #<a>/#<b>, needs human review`, `integrity-filtered candidate, needs human review`, `suspected infra outage`, `weak signature`, `signature did not match failure.log (N=<count>)`, `native assert not in xunit log`. The list is non-exhaustive but additions SHOULD reuse one of these phrasings to keep the feedback workflow's tally aggregation stable.
+A skipped signature MUST have a reason. Recognized values: `build canceled`, `< 2 occurrences and not blocking`, `cap reached`, `infra noise — no stable signature`, `signature absent from follow-up build #<id>`, `stale build window (>14d)`, `no follow-up build yet — defer to next run`, `data retrieval failed: <source>`, `fix already merged after source build`, `fix recently merged in #<n>`, `dup of filed-issue #aw_<id> earlier in this run`, `cross-def dup of filed-issue #aw_<id> earlier in this run`, `representative KBE filed as #aw_<id>`, `leg-level failure filed as #aw_<id>`, `ambiguous dup #<a>/#<b>, needs human review`, `integrity-filtered candidate, needs human review`, `suspected infra outage`, `weak signature`, `signature did not match failure.log (N=<count>)`, `native assert not in xunit log`. The list is non-exhaustive but additions SHOULD reuse one of these phrasings to keep the feedback workflow's tally aggregation stable.
+
+If required retrieval fails before any signature can be extracted, append the pipeline-level row `pipeline-retrieval  skipped: data retrieval failed: <source>`. Include that pipeline in the final summary with `total-signatures` = 0, `issues-filed` = 0, `reused-existing` = 0, and `skipped-with-reason` = 1 so the retrieval failure remains visible.
 
 At end of run, print this table to the agent log:
 
@@ -391,19 +396,21 @@ Sanitize every log excerpt in KBE issue bodies using
 
 These look like permission errors but are physical.
 
-- **Pre-bind every URL to a shell variable on its own line, then `curl -s "$url"`.** Inline URLs with `?` or `&` are rejected as "Permission denied" even single-quoted (the tool-approver treats query strings as interactive prompts). Working pattern:
+- **Pre-bind every non-GitHub URL to a shell variable on its own line, then use `curl -fsS "$url"`.** Inline URLs with `?` or `&` are rejected as "Permission denied" even single-quoted (the tool-approver treats query strings as interactive prompts). Working pattern:
 
   ```bash
   url='https://dev.azure.com/dnceng-public/public/_apis/build/builds?definitions=154&branchName=refs/heads/main&statusFilter=completed&resultFilter=succeeded,failed,partiallySucceeded&%24top=25&api-version=7.1'
-  curl -s "$url" | jq '.' | tee /tmp/gh-aw/agent/builds.json | jq -r '.value[0] | "\(.id) \(.result)"'
+  set -o pipefail
+  curl -fsS "$url" | jq '.' | tee /tmp/gh-aw/agent/builds.json | jq -r '.value[0] | "\(.id) \(.result)"'
   ```
 
-  Do NOT retry an inline URL hoping the rejection clears. Switch to the variable pattern immediately.
+  Do NOT retry an inline URL hoping the rejection clears. Switch to the variable pattern immediately. Define the complete URL as a literal and invoke `curl` in the same shell call; never load a URL from a file, standard input, command substitution, backticks, `xargs`, a client config file, or a persisted shell script.
 
+- **Every piped shell command starts with `set -o pipefail`.** Do not redirect or suppress stderr. Verify the expected output shape before treating an empty result as valid.
 - **No `>` or `-o` redirection.** Use `| tee /path/to/file`.
-- **No `$(...)` or `${var@P}`.** Compose via `xargs -I{}` or by reading files inline.
+- **No `$(...)` or `${var@P}`.** Read persisted values in a separate shell call, then copy their literal values into later commands.
 - **OData `$top` must be encoded as `%24top` in URLs.**
-- **Bash allowlist** (per the frontmatter `tools.bash`): `dotnet`, `git`, `find`, `ls`, `cat`, `grep`, `head`, `tail`, `wc`, `curl`, `jq`, `tee`, `sed`, `awk`, `tr`, `cut`, `sort`, `uniq`, `xargs`, `echo`, `date`, `mkdir`, `test`, `env`, `basename`, `dirname`, `bash`, `sh`, `chmod`. No `gh`, no `pwsh`, no `python`.
+- **Bash allowlist** (per the frontmatter `tools.bash`): `dotnet`, `git`, `find`, `ls`, `cat`, `grep`, `head`, `tail`, `wc`, `curl`, `jq`, `tee`, `sed`, `awk`, `tr`, `cut`, `sort`, `uniq`, `xargs`, `echo`, `date`, `mkdir`, `test`, `env`, `basename`, `dirname`, `bash`, `sh`, `chmod`, `set`. No `gh`, no `pwsh`, no `python`.
 - **Each bash call runs in a fresh subshell.** Persist state to `/tmp/gh-aw/agent/<file>`.
 
 ## Output discipline

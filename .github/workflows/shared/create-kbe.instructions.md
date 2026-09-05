@@ -41,7 +41,9 @@ responsible for:
 
 Search open `dotnet/runtime` issues with the `Known Build Error` label. Try
 these variations in order, scanning the first ~10 results of each. GitHub
-best-match ranking can place noisier hits above the correct one.
+best-match ranking can place noisier hits above the correct one. For the
+open-KBE variations below, include `is:open label:"Known Build Error"` unless
+the variation explicitly says to omit the KBE filter.
 
 For every `search_issues` call in this flow, include `user` in the requested
 `fields`, even when the author is not otherwise needed. The integrity gateway
@@ -50,8 +52,7 @@ uses `user.login` to recognize trusted bots before filtering search results.
 1. Full `[FAIL]` line.
 2. Assertion text.
 3. Exception class + test name.
-4. Test class name + `label:"Known Build Error"`, for example
-   `SocketBlockingModeTransitionTests label:"Known Build Error"`.
+4. Test class name, for example `SocketBlockingModeTransitionTests`.
 5. Test class name + area label, no KBE filter, for example
    `SocketBlockingModeTransitionTests label:area-System.Net.Sockets`.
 6. Stripped test-family stem. Strip platform/arch suffixes (`_linux_arm`,
@@ -79,10 +80,10 @@ underscore-delimited identifiers; GitHub search does not reliably prefix-match
 them. Only strip the specific platform, architecture, type-width,
 script-runner, and exit-code/signal suffixes described in variation 6.
 
-Variations 4 and 5 catch sibling failures filed for the same test class on a
-different platform or runtime variant, plus pre-existing area-team trackers
-that lack the `Known Build Error` label. Variation 6 catches siblings at
-different bit widths, instantiations, script runners, or exit/signal
+Variation 4 catches sibling KBEs filed for the same test class on a different
+platform or runtime variant. Variation 5 catches pre-existing area-team
+trackers that lack the `Known Build Error` label. Variation 6 catches siblings
+at different bit widths, instantiations, script runners, or exit/signal
 descriptors. Variation 7 catches an open human report with no label at all.
 
 If two candidate KBEs share more than 70% of their `ErrorMessage` /
