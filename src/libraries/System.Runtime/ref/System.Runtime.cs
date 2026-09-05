@@ -574,6 +574,7 @@ namespace System
         public static int IndexOf<T>(T[] array, T value) { throw null; }
         public static int IndexOf<T>(T[] array, T value, int startIndex) { throw null; }
         public static int IndexOf<T>(T[] array, T value, int startIndex, int count) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The default constructor of the array's element type might be removed")]
         public void Initialize() { }
         public static int LastIndexOf(System.Array array, object? value) { throw null; }
         public static int LastIndexOf(System.Array array, object? value, int startIndex) { throw null; }
