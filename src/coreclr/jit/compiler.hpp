@@ -2723,8 +2723,9 @@ inline bool Compiler::lvaReportParamTypeArg()
 inline int Compiler::lvaCachedGenericContextArgOffset()
 {
     assert(lvaDoneFrameLayout == FINAL_FRAME_LAYOUT);
+    assert(lvaCachedGenericContextArg != BAD_VAR_NUM);
 
-    return lvaCachedGenericContextArgOffs;
+    return lvaGetDesc(lvaCachedGenericContextArg)->GetStackOffset();
 }
 
 //------------------------------------------------------------------------
@@ -4184,7 +4185,7 @@ bool Compiler::fgVarIsNeverZeroInitializedInProlog(unsigned varNum)
     LclVarDsc* varDsc = lvaGetDesc(varNum);
     bool       result = varDsc->lvIsParam || varDsc->lvIsParamRegTarget || lvaIsOSRLocal(varNum) ||
                   (varNum == lvaGSSecurityCookie) || (varNum == lvaInlinedPInvokeFrameVar) ||
-                  (varNum == lvaStubArgumentVar) || (varNum == lvaRetAddrVar);
+                  (varNum == lvaStubArgumentVar) || (varNum == lvaRetAddrVar) || (varNum == lvaCachedGenericContextArg);
 
 #ifdef TARGET_ARM64
     result = result || (varNum == lvaFfrRegister);

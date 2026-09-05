@@ -4487,7 +4487,7 @@ public:
 //-------------------------------------------------------------------------
 // All these frame offsets are inter-related and must be kept in sync
 
-    int lvaCachedGenericContextArgOffs;
+    unsigned lvaCachedGenericContextArg = BAD_VAR_NUM;
     int lvaCachedGenericContextArgOffset(); // For CORINFO_CALLCONV_PARAMTYPE and if generic context is passed as
                                             // THIS pointer
 
