@@ -681,7 +681,8 @@ public:
     //
     // Notes:
     //    This calls ClearAndMarkDontNeuter(). This holder is Empty after this.
-    T* TransferOwnershipToHash(CordbSafeHashTable<T> * pHashtable)
+    template <class THashTable>
+    T* TransferOwnershipToHash(THashTable * pHashtable)
     {
         T* pObject = m_pObject;
         pHashtable->AddBaseOrThrow(m_pObject);
@@ -1838,6 +1839,141 @@ public:
 
     void CopyToArray(RSPtrArray<T> * pArray);
     void TransferToArray(RSPtrArray<T> * pArray);
+};
+
+template <class T>
+class EMPTY_BASES CordbSHashTraits : public NonDacAwareSHashTraits<DefaultSHashTraits<T *>>
+{
+public:
+    typedef ULONG_PTR key_t;
+    typedef typename DefaultSHashTraits<T *>::count_t count_t;
+
+    static key_t GetKey(T * const &element)
+    {
+        return element->m_id;
+    }
+
+    static BOOL Equals(key_t left, key_t right)
+    {
+        return left == right;
+    }
+
+    static count_t Hash(key_t key)
+    {
+        count_t hash = static_cast<count_t>(key);
+#ifdef HOST_64BIT
+        hash = HashCOUNT_T(hash, static_cast<count_t>(key >> 32));
+#endif
+        return hash;
+    }
+};
+
+template <class T>
+class CordbSHashTable
+{
+public:
+    CordbSHashTable()
+    {
+#ifdef _DEBUG
+        m_pDbgLock = nullptr;
+#endif
+    }
+
+    ~CordbSHashTable()
+    {
+        for (typename Table::Iterator iterator = m_table.Begin(), end = m_table.End(); iterator != end; iterator++)
+        {
+            (*iterator)->InternalRelease();
+        }
+    }
+
+    HRESULT AddBase(T *pBase)
+    {
+        AssertIsProtected();
+        if (m_table.Lookup(pBase->m_id) != nullptr)
+        {
+            _ASSERTE(!"An object with this ID is already in the table.");
+            return E_FAIL;
+        }
+
+        if (!m_table.AddNoThrow(pBase))
+        {
+            return E_OUTOFMEMORY;
+        }
+
+        pBase->InternalAddRef();
+        return S_OK;
+    }
+
+    void AddBaseOrThrow(T *pBase)
+    {
+        IfFailThrow(AddBase(pBase));
+    }
+
+    HRESULT SwapBase(T *pOldBase, T *pNewBase)
+    {
+        AssertIsProtected();
+
+        if (pOldBase->m_id != pNewBase->m_id)
+        {
+            _ASSERTE(!"The replacement object must have the same ID.");
+            return E_INVALIDARG;
+        }
+
+        T * const *entry = m_table.LookupPtr(pOldBase->m_id);
+        if (entry == nullptr)
+        {
+            return E_FAIL;
+        }
+
+        _ASSERTE(*entry == pOldBase);
+        m_table.ReplacePtr(entry, pNewBase, false);
+        pOldBase->InternalRelease();
+        pNewBase->InternalAddRef();
+        return S_OK;
+    }
+
+    T *GetBase(ULONG_PTR id, BOOL = TRUE)
+    {
+        AssertIsProtected();
+        return m_table.Lookup(id);
+    }
+
+    void NeuterAndClear(RSLock *pLock)
+    {
+        _ASSERTE(pLock->HasLock());
+        AssertIsProtected();
+
+        for (typename Table::Iterator iterator = m_table.Begin(), end = m_table.End(); iterator != end; iterator++)
+        {
+            T *pBase = *iterator;
+            pBase->Neuter();
+            m_table.Remove(iterator);
+            pBase->InternalRelease();
+        }
+    }
+
+#ifdef _DEBUG
+    void DebugSetRSLock(RSLock *pLock)
+    {
+        m_pDbgLock = pLock;
+    }
+#endif
+
+private:
+    typedef SHash<CordbSHashTraits<T>> Table;
+
+    void AssertIsProtected()
+    {
+#ifdef _DEBUG
+        _ASSERTE((m_pDbgLock == nullptr) || m_pDbgLock->HasLock());
+#endif
+    }
+
+    Table m_table;
+#ifdef _DEBUG
+    RSLock *m_pDbgLock;
+#endif
 };
 
 
@@ -4376,11 +4512,11 @@ public:
 public:
     CordbAssembly*   m_pAssembly;
     CordbAppDomain*  m_pAppDomain;
-    CordbSafeHashTable<CordbClass>    m_classes;
+    CordbSHashTable<CordbClass> m_classes;
 
     // A collection, indexed by methodDef, of the latest version of functions in this module
     // The collection is filled lazily by LookupOrCreateFunction
-    CordbSafeHashTable<CordbFunction> m_functions;
+    CordbSHashTable<CordbFunction> m_functions;
 
     // The real handle into the VM for a module's assembly.
     // This is the primary VM counterpart for the CordbModule.
@@ -4433,7 +4569,7 @@ private:
     // This is a table of all NativeCode objects in the module indexed
     // by start address
     // The collection is filled lazily by LookupOrCreateNativeCode
-    CordbSafeHashTable<CordbNativeCode> m_nativeCodeTable;
+    CordbSHashTable<CordbNativeCode> m_nativeCodeTable;
 };
 
 
