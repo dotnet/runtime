@@ -48,3 +48,26 @@ extends:
                   useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
                   scenarios:
                   - interpmode1
+
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: Release
+          platforms:
+          - osx_arm64
+          helixQueueGroup: libraries
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          jobParameters:
+            nameSuffix: NoDynamicCodeCompiled
+            runInterpreter: true
+            timeoutInMinutes: 300
+            buildArgs: -s clr+libs+libs.tests -rc Checked -c $(_BuildConfig) -dynamiccodecompiled false /p:ArchiveTests=true
+            postBuildSteps:
+              - template: /eng/pipelines/libraries/helix.yml
+                parameters:
+                  creator: dotnet-bot
+                  extraHelixArguments: /maxcpucount:10
+                  testRunNamePrefixSuffix: NoDynamicCodeCompiled
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
+                  scenarios:
+                  - interpmode1
