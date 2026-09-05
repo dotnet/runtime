@@ -616,34 +616,6 @@ void Liveness<TLiveness>::PerBlockLocalVarLiveness()
             }
         }
 
-        // Mark the FrameListRoot as used, if applicable.
-
-        if (block->KindIs(BBJ_RETURN) && m_compiler->compMethodRequiresPInvokeFrame())
-        {
-            assert(!m_compiler->opts.ShouldUsePInvokeHelpers() ||
-                   (m_compiler->info.compLvFrameListRoot == BAD_VAR_NUM));
-            if (!m_compiler->opts.ShouldUsePInvokeHelpers())
-            {
-                // 32-bit targets always pop the frame in the epilog.
-                // For 64-bit targets, we only do this in the epilog for IL stubs;
-                // for non-IL stubs the frame is popped after every PInvoke call.
-#ifdef TARGET_64BIT
-                if (m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB))
-#endif
-                {
-                    LclVarDsc* varDsc = m_compiler->lvaGetDesc(m_compiler->info.compLvFrameListRoot);
-
-                    if (varDsc->lvTracked)
-                    {
-                        if (!VarSetOps::IsMember(m_compiler, m_curDefSet, varDsc->lvVarIndex))
-                        {
-                            VarSetOps::AddElemD(m_compiler, m_curUseSet, varDsc->lvVarIndex);
-                        }
-                    }
-                }
-            }
-        }
-
         VarSetOps::Assign(m_compiler, block->bbVarUse, m_curUseSet);
         VarSetOps::Assign(m_compiler, block->bbVarDef, m_curDefSet);
 
@@ -828,33 +800,6 @@ void Liveness<TLiveness>::PerNodeLocalVarLiveness(GenTree* tree)
                     m_curMemoryUse |= memoryKindSet(GcHeap, ByrefExposed);
                     m_curMemoryDef |= memoryKindSet(GcHeap, ByrefExposed);
                     m_curMemoryHavoc |= memoryKindSet(GcHeap, ByrefExposed);
-                }
-            }
-
-            // If this is a p/invoke unmanaged call or if this is a tail-call via helper,
-            // and we have an unmanaged p/invoke call in the method,
-            // then we're going to run the p/invoke epilog.
-            // So we mark the FrameRoot as used by this instruction.
-            // This ensures that the block->bbVarUse will contain
-            // the FrameRoot local var if is it a tracked variable.
-
-            if ((call->IsUnmanaged() || call->IsTailCallViaJitHelper()) && m_compiler->compMethodRequiresPInvokeFrame())
-            {
-                assert(!m_compiler->opts.ShouldUsePInvokeHelpers() ||
-                       (m_compiler->info.compLvFrameListRoot == BAD_VAR_NUM));
-                if (!m_compiler->opts.ShouldUsePInvokeHelpers() && !call->IsSuppressGCTransition())
-                {
-                    // Get the FrameRoot local and mark it as used.
-
-                    LclVarDsc* varDsc = m_compiler->lvaGetDesc(m_compiler->info.compLvFrameListRoot);
-
-                    if (varDsc->lvTracked)
-                    {
-                        if (!VarSetOps::IsMember(m_compiler, m_curDefSet, varDsc->lvVarIndex))
-                        {
-                            VarSetOps::AddElemD(m_compiler, m_curUseSet, varDsc->lvVarIndex);
-                        }
-                    }
                 }
             }
 
@@ -1677,67 +1622,8 @@ GenTreeLclVarCommon* Liveness<TLiveness>::ComputeLifeCall(VARSET_TP&       life,
                                                           GenTreeCall*     call)
 {
     assert(call != nullptr);
-    // If this is a tail-call via helper, and we have any unmanaged p/invoke calls in
-    // the method, then we're going to run the p/invoke epilog
-    // So we mark the FrameRoot as used by this instruction.
-    // This ensure that this variable is kept alive at the tail-call
-    if (call->IsTailCallViaJitHelper() && m_compiler->compMethodRequiresPInvokeFrame())
-    {
-        assert(!m_compiler->opts.ShouldUsePInvokeHelpers() || (m_compiler->info.compLvFrameListRoot == BAD_VAR_NUM));
-        if (!m_compiler->opts.ShouldUsePInvokeHelpers())
-        {
-            // Get the FrameListRoot local and make it live.
-
-            LclVarDsc* frameVarDsc = m_compiler->lvaGetDesc(m_compiler->info.compLvFrameListRoot);
-
-            if (frameVarDsc->lvTracked)
-            {
-                VarSetOps::AddElemD(m_compiler, life, frameVarDsc->lvVarIndex);
-            }
-        }
-    }
-
-    // TODO: we should generate the code for saving to/restoring
-    //       from the inlined PInvoke frame instead.
-
-    /* Is this call to unmanaged code? */
-    if (call->IsUnmanaged() && m_compiler->compMethodRequiresPInvokeFrame())
-    {
-        // Get the FrameListRoot local and make it live.
-        assert(!m_compiler->opts.ShouldUsePInvokeHelpers() || (m_compiler->info.compLvFrameListRoot == BAD_VAR_NUM));
-        if (!m_compiler->opts.ShouldUsePInvokeHelpers() && !call->IsSuppressGCTransition())
-        {
-            LclVarDsc* frameVarDsc = m_compiler->lvaGetDesc(m_compiler->info.compLvFrameListRoot);
-
-            if (frameVarDsc->lvTracked)
-            {
-                unsigned varIndex = frameVarDsc->lvVarIndex;
-                noway_assert(varIndex < m_compiler->lvaTrackedCount);
-
-                // Is the variable already known to be alive?
-                //
-                if (VarSetOps::IsMember(m_compiler, life, varIndex))
-                {
-                    // Since we may call this multiple times, clear the GTF_CALL_M_FRAME_VAR_DEATH if set.
-                    //
-                    call->gtCallMoreFlags &= ~GTF_CALL_M_FRAME_VAR_DEATH;
-                }
-                else
-                {
-                    // The variable is just coming to life
-                    // Since this is a backwards walk of the trees
-                    // that makes this change in liveness a 'last-use'
-                    //
-                    VarSetOps::AddElemD(m_compiler, life, varIndex);
-                    call->gtCallMoreFlags |= GTF_CALL_M_FRAME_VAR_DEATH;
-                }
-            }
-        }
-    }
-
     GenTreeLclVarCommon* partialDef = nullptr;
-
-    auto visitDef = [&](const LocalDef& def) {
+    auto                 visitDef   = [&](const LocalDef& def) {
         if (!def.IsEntire)
         {
             assert(partialDef == nullptr);
@@ -2281,16 +2167,6 @@ void Liveness<TLiveness>::ComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VAR
                     });
 
                     blockRange.Remove(node);
-
-                    // Removing a call does not affect liveness unless it is a tail call in a method with P/Invokes or
-                    // is itself a P/Invoke, in which case it may affect the liveness of the frame root variable.
-                    if (!m_compiler->opts.ShouldUsePInvokeHelpers() &&
-                        ((call->IsTailCall() && m_compiler->compMethodRequiresPInvokeFrame()) ||
-                         (call->IsUnmanaged() && !call->IsSuppressGCTransition())) &&
-                        m_compiler->lvaTable[m_compiler->info.compLvFrameListRoot].lvTracked)
-                    {
-                        m_compiler->fgStmtRemoved = true;
-                    }
                 }
                 else
                 {
