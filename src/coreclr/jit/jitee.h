@@ -46,6 +46,8 @@ public:
 
         JIT_FLAG_USE_DISPATCH_HELPERS    = 31, // The JIT should use helpers for interface dispatch instead of virtual stub dispatch
 
+        JIT_FLAG_INTERP                  = 32, // The JIT should generate CoreCLR interpreter IR instead of native machine code
+
         // Note: the mcs tool uses the currently unused upper flags bits when outputting SuperPMI MC file flags.
         // See EXTRA_JIT_FLAGS and spmidumphelper.cpp. Currently, these are bits 56 through 63. If they overlap,
         // something needs to change.
@@ -146,6 +148,7 @@ public:
 #endif // TARGET_ARM
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_ASYNC, JIT_FLAG_ASYNC);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_USE_DISPATCH_HELPERS, JIT_FLAG_USE_DISPATCH_HELPERS);
+        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_INTERP, JIT_FLAG_INTERP);
 
 #undef FLAGS_EQUAL
     }
