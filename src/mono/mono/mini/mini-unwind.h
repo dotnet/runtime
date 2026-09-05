@@ -180,7 +180,7 @@ mono_unwind_ops_encode (GSList *unwind_ops, guint32 *out_len);
 gboolean
 mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len,
 				   guint8 *start_ip, guint8 *end_ip, guint8 *ip, guint8 **mark_locations,
-				   mono_unwind_reg_t *regs, int nregs,
+				   mono_unwind_reg_t *regs, int nregs, gboolean readonly_regs,
 				   host_mgreg_t **save_locations, int save_locations_len,
 				   guint8 **out_cfa);
 
