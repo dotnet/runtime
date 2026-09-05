@@ -90,6 +90,7 @@ public class Runtime_133209
     }
 
     [Theory]
+    [SkipOnMono("https://github.com/dotnet/runtime/issues/100368")]
     [InlineData(0x1_0000_007FL, (byte)0x7F, (sbyte)0x7F)]
     [InlineData(0x1_0000_0001L, (byte)1, (sbyte)1)]
     public static void CheckedNarrowingCast_WithNarrowedOperand(long b, byte expectedByte, sbyte expectedSByte)
