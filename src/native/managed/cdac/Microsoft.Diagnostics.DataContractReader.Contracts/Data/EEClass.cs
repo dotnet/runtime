@@ -26,4 +26,10 @@ internal sealed partial class EEClass : IData<EEClass>
     [Field] public partial ushort NumNonVirtualSlots { get; }
     [Field] public partial byte BaseSizePadding { get; }
     [Field] public partial TargetPointer OptionalFields { get; }
+
+    private const uint HasLayoutFlag = 0x00000040;
+
+    [Field] public partial uint? VMFlags { get; }
+
+    public bool HasLayout => VMFlags.HasValue && (VMFlags.Value & HasLayoutFlag) != 0;
 }
