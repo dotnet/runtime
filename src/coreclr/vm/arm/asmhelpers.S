@@ -343,6 +343,79 @@ GenerateProfileHelper ProfileTailcall, PROFILE_TAILCALL
 
 #endif
 
+#if 0
+// ------------------------------------------------------------------
+// Macro to generate Redirection Stubs
+//
+// $reason : reason for redirection
+//                     Eg. GCThreadControl
+// NOTE: If you edit this macro, make sure you update GetCONTEXTFromRedirectedStubStackFrame.
+// This function is used by both the personality routine and the debugger to retrieve the original CONTEXT.
+        .macro GenerateRedirectedHandledJITCaseStub reason
+
+        NESTED_ENTRY RedirectedHandledJITCaseFor\reason\()_Stub, _TEXT, NoHandler
+
+        PROLOG_PUSH "{r7,lr}"   // return address
+        PROLOG_STACK_SAVE r7
+        alloc_stack 4           // stack slot to save the CONTEXT *
+
+        //REDIRECTSTUB_SP_OFFSET_CONTEXT is defined in asmconstants.h
+        //If CONTEXT is not saved at 0 offset from SP it must be changed as well.
+        //ASSERT REDIRECTSTUB_SP_OFFSET_CONTEXT == 0
+
+        // Runtime check for 8-byte alignment. This check is necessary as this function can be
+        // entered before complete execution of the prolog of another function.
+        and r0, r7, #4
+        sub sp, sp, r0
+
+        // stack must be 8 byte aligned
+        CHECK_STACK_ALIGNMENT
+
+        //
+        // Save a copy of the redirect CONTEXT*.
+        // This is needed for the debugger to unwind the stack.
+        //
+        bl GetCurrentSavedRedirectContext
+        str r0, [r7]
+
+        //
+        // Fetch the interrupted pc and save it as our return address.
+        //
+        ldr r1, [r0, #CONTEXT_Pc]
+        str r1, [r7, #8]
+
+        //
+        // Call target, which will do whatever we needed to do in the context
+        // of the target thread, and will RtlRestoreContext when it is done.
+        //
+        bl _RedirectedHandledJITCaseFor\reason\()_Stub@Thread@@CAXXZ
+
+        EMIT_BREAKPOINT // Unreachable
+
+// Put a label here to tell the debugger where the end of this function is.
+RedirectedHandledJITCaseFor\reason\()_StubEnd:
+        .global RedirectedHandledJITCaseFor\reason\()_StubEnd
+
+        NESTED_END RedirectedHandledJITCaseFor\reason\()_Stub, _TEXT
+
+        .endm
+
+// ------------------------------------------------------------------
+// Redirection Stub for GC in fully interruptible method
+        GenerateRedirectedHandledJITCaseStub GCThreadControl
+// ------------------------------------------------------------------
+        GenerateRedirectedHandledJITCaseStub DbgThreadControl
+// ------------------------------------------------------------------
+        GenerateRedirectedHandledJITCaseStub UserSuspend
+
+#ifdef _DEBUG
+// ------------------------------------------------------------------
+// Redirection Stub for GC Stress
+        GenerateRedirectedHandledJITCaseStub GCStress
+#endif
+
+#endif
+
 //------------------------------------------------
 // JIT_RareDisableHelper
 //
