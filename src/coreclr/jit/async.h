@@ -443,6 +443,7 @@ class AsyncTransformation
                                     const jitstd::vector<GenTree*>& defs,
                                     AsyncAnalysis&                  analyses,
                                     ContinuationLayoutBuilder*      layoutBuilder);
+    bool IsCallDefLiveInEHSucc(BasicBlock* block, unsigned lclNum);
 
     void LiftLIREdges(BasicBlock*                     block,
                       const jitstd::vector<GenTree*>& defs,
