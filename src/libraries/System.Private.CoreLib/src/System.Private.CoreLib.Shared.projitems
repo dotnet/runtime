@@ -2410,9 +2410,11 @@
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureComWrappers)' != 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ComWrappers.PlatformNotSupported.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ComWrappersObject.PlatformNotSupported.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureComWrappers)' == 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ComWrappers.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ComWrappersObject.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\IReferenceTracker.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ReferenceTrackerHost.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\TrackerObjectManager.cs" />

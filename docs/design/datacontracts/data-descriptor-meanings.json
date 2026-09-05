@@ -609,6 +609,7 @@
     "System.Runtime.CompilerServices.ConditionalWeakTable`2+Entry.depHnd": "Dependent handle that weakly references the key and conditionally keeps the value alive",
     "System.Runtime.CompilerServices.ConditionalWeakTable`2+Entry.HashCode": "Cached nonnegative identity hash code of the entry's key; -1 denotes a removed entry",
     "System.Runtime.CompilerServices.ConditionalWeakTable`2+Entry.Next": "Index of the next entry in the hash bucket chain, or -1 for the end",
+    "System.Runtime.InteropServices.ComWrappersObject._nativeObjectWrapper": "NativeObjectWrapper associated directly with an RCW deriving from ComWrappersObject",
     "System.Runtime.InteropServices.ObjectiveC.ObjectiveCMarshal+ObjcTrackingInformation._memory": "Pointer to the tagged memory block associated with the tracked Objective-C object",
     "System.Threading.Lock._owningThreadId": "Managed thread ID of the thread that currently owns the lock",
     "System.Threading.Lock._recursionCount": "Number of recursive acquisitions beyond the initial lock acquisition",
