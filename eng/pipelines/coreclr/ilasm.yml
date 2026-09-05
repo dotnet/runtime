@@ -54,4 +54,6 @@ extends:
                 nameSuffix: ILAsm
                 buildArgs: -s tools.ilasm -c $(_BuildConfig) -test
                 timeoutInMinutes: 120
+                enablePublishTestResults: true
+                testResultsFormat: 'xunit'
         condition: and(succeeded(), ne(variables['Build.Reason'], 'Schedule'))
