@@ -571,6 +571,7 @@ internal static class WasmR2RAssert
 
     private enum WasmSectionKind : byte
     {
+        Type = 1,
         Import = 2,
         Function = 3,
         Table = 4,
@@ -579,6 +580,40 @@ internal static class WasmR2RAssert
         Export = 7,
         Element = 9,
         Tag = 13,
+    }
+
+    /// <summary>
+    /// Returns the largest parameter and result counts declared by any function type in the
+    /// image's type section, whether or not a function references it. An over-limit type makes the
+    /// module unloadable simply by being declared, so it is invisible to a per-function check.
+    /// </summary>
+    public static void GetMaxWasmFunctionTypeArity(WebcilImageReader reader, out int maxParams, out int maxResults)
+    {
+        maxParams = 0;
+        maxResults = 0;
+
+        ReadOnlySpan<byte> image = reader.GetEntireImage().AsSpan();
+        if (!TryGetWasmSectionBounds(image, WasmSectionKind.Type, out int offset, out int sectionEnd))
+            return;
+
+        uint count = ReadWasmUleb32(image, ref offset, sectionEnd);
+        for (uint i = 0; i < count; i++)
+        {
+            byte form = ReadWasmByte(image, ref offset, sectionEnd);
+            if (form != 0x60)
+                throw new BadImageFormatException($"Unexpected WASM type form 0x{form:X2}; only function types are supported.");
+
+            uint paramCount = ReadWasmUleb32(image, ref offset, sectionEnd);
+            for (uint j = 0; j < paramCount; j++)
+                SkipWasmValueType(image, ref offset, sectionEnd);
+
+            uint resultCount = ReadWasmUleb32(image, ref offset, sectionEnd);
+            for (uint j = 0; j < resultCount; j++)
+                SkipWasmValueType(image, ref offset, sectionEnd);
+
+            maxParams = Math.Max(maxParams, (int)paramCount);
+            maxResults = Math.Max(maxResults, (int)resultCount);
+        }
     }
 
     private enum WasmImportKind : byte

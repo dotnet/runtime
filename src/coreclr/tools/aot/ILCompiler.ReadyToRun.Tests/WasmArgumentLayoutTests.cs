@@ -833,6 +833,94 @@ public class WasmArgumentLayoutTests
             _ => InstantiateVector(context, typeName, WellKnownType.Int32),
         };
 
+    /// <summary>
+    /// Lowering adds hidden ABI parameters, so the managed parameter count at which the 1000-param
+    /// wasm limit trips is below 1000. The lowered count is what has to be measured.
+    /// </summary>
+    [Theory]
+    [InlineData(900, false)]
+    [InlineData(997, false)]
+    [InlineData(998, false)] // lowers to exactly the limit, which is still legal
+    [InlineData(999, true)]
+    [InlineData(1000, true)]
+    public void StaticSignatureCrossesWasmParameterLimitAtTheBoundary(int managedParameterCount, bool expectedToExceed)
+    {
+        ReadyToRunCompilerContext context = CreateWasmContext();
+        TypeDesc intType = context.GetWellKnownType(WellKnownType.Int32);
+
+        MethodSignature signature = MakeStaticVoidSignature(
+            context, Enumerable.Repeat(intType, managedParameterCount).ToArray());
+
+        WasmFuncType funcType = WasmLowering.GetSignature(signature, WasmLowering.LoweringFlags.None).FuncType;
+
+        // A static managed signature adds the shadow stack pointer and the portable entrypoint.
+        Assert.Equal(managedParameterCount + 2, funcType.Params.Types.Length);
+        Assert.Equal(expectedToExceed, WasmLimits.ExceedsLimits(funcType));
+    }
+
+    /// <summary>
+    /// Unmanaged signatures get neither the shadow stack pointer nor the portable entrypoint, so
+    /// they trip the limit at a different managed parameter count than managed ones do.
+    /// </summary>
+    [Theory]
+    [InlineData(999, false)]
+    [InlineData(1000, false)] // exactly the limit, which is still legal
+    [InlineData(1001, true)]
+    public void UnmanagedSignatureCrossesWasmParameterLimitAtTheBoundary(int managedParameterCount, bool expectedToExceed)
+    {
+        ReadyToRunCompilerContext context = CreateWasmContext();
+        TypeDesc intType = context.GetWellKnownType(WellKnownType.Int32);
+
+        MethodSignature signature = MakeStaticVoidSignature(
+            context, Enumerable.Repeat(intType, managedParameterCount).ToArray());
+
+        WasmFuncType funcType = WasmLowering.GetSignature(
+            signature, WasmLowering.LoweringFlags.IsUnmanagedCallersOnly).FuncType;
+
+        Assert.Equal(managedParameterCount, funcType.Params.Types.Length);
+        Assert.Equal(expectedToExceed, WasmLimits.ExceedsLimits(funcType));
+    }
+
+    /// <summary>
+    /// An instance method with 1000 parameters lowers to 1003 once the shadow stack pointer,
+    /// 'this', and the portable entrypoint are added.
+    /// </summary>
+    [Fact]
+    public void ThousandParameterInstanceSignatureExceedsWasmParameterLimit()
+    {
+        ReadyToRunCompilerContext context = CreateWasmContext();
+        TypeDesc intType = context.GetWellKnownType(WellKnownType.Int32);
+
+        MethodSignature signature = new MethodSignature(
+            MethodSignatureFlags.None,
+            genericParameterCount: 0,
+            returnType: context.GetWellKnownType(WellKnownType.Void),
+            parameters: Enumerable.Repeat(intType, 1000).ToArray());
+
+        WasmFuncType funcType = WasmLowering.GetSignature(signature, WasmLowering.LoweringFlags.None).FuncType;
+
+        Assert.Equal(1003, funcType.Params.Types.Length);
+        Assert.True(WasmLimits.ExceedsLimits(funcType));
+    }
+
+    /// <summary>
+    /// Results are structurally capped at one, so an ordinary signature must never be reported as
+    /// exceeding a limit on account of its return type.
+    /// </summary>
+    [Fact]
+    public void OrdinarySignatureIsWithinWasmLimits()
+    {
+        ReadyToRunCompilerContext context = CreateWasmContext();
+        TypeDesc intType = context.GetWellKnownType(WellKnownType.Int32);
+
+        MethodSignature signature = MakeStaticVoidSignature(context, intType, intType);
+
+        WasmFuncType funcType = WasmLowering.GetSignature(signature, WasmLowering.LoweringFlags.None).FuncType;
+
+        Assert.True(funcType.Returns.Types.Length <= WasmLimits.MaxFunctionResults);
+        Assert.False(WasmLimits.ExceedsLimits(funcType));
+    }
+
     private static MethodSignature MakeStaticVoidSignature(TypeSystemContext context, params TypeDesc[] parameters)
     {
         return new MethodSignature(

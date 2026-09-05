@@ -96,6 +96,12 @@ namespace ILCompiler.DependencyAnalysis
                 dependencies.Add(new DependencyListEntry(factory.MethodAssociatedData(this), "Method associated data"));
             }
 
+            if (factory.Target.IsWasm)
+            {
+                dependencies ??= new DependencyList();
+                dependencies.Add(factory.WasmTypeNode(_method), "Wasm method code node requires signature");
+            }
+
             return dependencies;
         }
 

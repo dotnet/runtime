@@ -46,6 +46,17 @@ namespace ILCompiler.DependencyAnalysis
                        definedSymbols: new ISymbolDefinitionNode[] { this });
             }
 
+            // Compilation declines methods needing an over-limit type, so reaching this point means
+            // a producer was missed. Fail the build rather than emit an unloadable module.
+            if (WasmLimits.ExceedsLimits(_type))
+            {
+                throw new InvalidOperationException(
+                    $"Cannot emit wasm function type '{_type}': it declares {_type.Params.Types.Length} parameters " +
+                    $"and {_type.Returns.Types.Length} results, exceeding the wasm implementation limit of " +
+                    $"{WasmLimits.MaxFunctionParams} parameters / {WasmLimits.MaxFunctionResults} results. " +
+                    $"A module containing it cannot be instantiated by any engine.");
+            }
+
             byte[] data = new byte[_type.EncodeSize()];
             _type.Encode(data);
 
