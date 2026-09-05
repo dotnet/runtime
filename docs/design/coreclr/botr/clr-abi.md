@@ -130,11 +130,16 @@ call(["this" pointer] [return buffer pointer] [userargs] [continuation] [generic
 
 ## By-value value types passed by reference
 
-Just like native, Windows AMD64 has implicit-byrefs. Any structure (value type in IL parlance) that is not 1, 2, 4, or 8 bytes in size (i.e., 3, 5, 6, 7, or >= 9 bytes in size) that is declared to be passed by value, is instead passed by reference. For JIT generated code, it follows the native ABI where the passed-in reference is a pointer to a compiler generated temp local on the stack.
+Structures (value types in IL parlance) that are declared to be passed by value are, above a certain size, passed by reference to a caller-allocated shadow copy instead. Just like native, the exact rule is architecture specific:
+
+| Architecture | Structures passed by implicit reference |
+| --- | --- |
+| Windows AMD64 | Not 1, 2, 4, or 8 bytes in size (i.e., 3, 5, 6, 7, or >= 9 bytes) |
+| ARM64, LoongArch64, RISC-V | Larger than 16 bytes |
+
+System V AMD64, x86 and ARM32 do not use this convention. For JIT generated code, it follows the native ABI where the passed-in reference is a pointer to a compiler generated temp local on the stack.
 
 Since .NET 11, implicit-byref argument storage must be outside the GC heap on all architectures that use this convention. Runtime callers may use explicitly GC-protected native memory instead of the stack. The caller is responsible for making a writable copy as required by by-value semantics and for reporting any GC references in that copy. Callees may omit write barriers when modifying the argument. This does not apply to explicit byref parameters or the `this` pointer of a value type, and does not remove aliasing caused by taking the argument's address within the callee. Implicit-byref argument pointers are still represented and reported as GC byrefs.
-
-The AMD64 native calling conventions (Windows 64 and System V) require return buffer address to be returned by callee in RAX. JIT also follows this rule.
 
 ## RISC-V only: structs passed/returned according to hardware floating-point calling convention
 
@@ -143,6 +148,8 @@ Passing/returning structs according to hardware floating-point calling conventio
 ## Return buffers
 
 Since .NET 10, return buffers must always be allocated on the stack by the caller. After the call, the caller is responsible for copying the return buffer to the final destination using write barriers if necessary. The JIT can assume that the return buffer is always on the stack and may optimize accordingly, such as by omitting write barriers when writing GC pointers to the return buffer. In addition, the buffer is allowed to be used for temporary storage within the method since its content must not be aliased or cross-thread visible.
+
+AMD64-only: The AMD64 native calling conventions (Windows 64 and System V) require the return buffer address to be returned by the callee in RAX. The JIT also follows this rule.
 
 ARM64-only: When a method returns a structure that is larger than 16 bytes the caller reserves a return buffer of sufficient size and alignment to hold the result. The address of the buffer is passed as an argument to the method in `R8` (defined in the JIT as `REG_ARG_RET_BUFF`). The callee isn't required to preserve the value stored in `R8`.
 
