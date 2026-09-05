@@ -66,6 +66,7 @@
     <Compile Include="JitBlue\Runtime_61359\Runtime_61359.cs" />
     <Compile Include="JitBlue\Runtime_620\Runtime_620.cs" />
     <Compile Include="JitBlue\Runtime_62597\Runtime_62597.cs" />
+    <Compile Include="JitBlue\Runtime_133267\Runtime_133267.cs" />
     <Compile Include="JitBlue\Runtime_65937\Runtime_65937.cs" />
     <Compile Include="JitBlue\Runtime_66578\Runtime_66578.cs" />
     <Compile Include="JitBlue\Runtime_75832\Runtime_75832.cs" />
