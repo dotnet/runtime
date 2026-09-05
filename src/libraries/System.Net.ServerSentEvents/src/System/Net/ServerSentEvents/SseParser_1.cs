@@ -1,11 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -56,15 +54,11 @@ namespace System.Net.ServerSentEvents
         /// <summary>Indicates whether the enumerable has already been used for enumeration.</summary>
         private int _used;
 
-        /// <summary>Buffer, either empty or rented, containing the data being read from the stream while looking for the next line.</summary>
-        private byte[] _lineBuffer = [];
-        /// <summary>The starting offset of valid data in <see cref="_lineBuffer"/>.</summary>
-        private int _lineOffset;
-        /// <summary>The length of valid data in <see cref="_lineBuffer"/>, starting from <see cref="_lineOffset"/>.</summary>
-        private int _lineLength;
-        /// <summary>The index in <see cref="_lineBuffer"/> where a newline ('\r', '\n', or "\r\n") was found.</summary>
+        /// <summary>Buffer containing the data being read from the stream while looking for the next line.</summary>
+        private ArrayBuffer _lineBuffer = new(initialSize: 0, usePool: true);
+        /// <summary>The index relative to the start of the line buffer's active region where a newline ('\r', '\n', or "\r\n") was found.</summary>
         private int _newlineIndex;
-        /// <summary>The index in <see cref="_lineBuffer"/> of characters already checked for newlines.</summary>
+        /// <summary>The index relative to the start of the line buffer's active region of characters already checked for newlines.</summary>
         /// <remarks>
         /// This is to avoid O(LineLength^2) behavior in the rare case where we have long lines that are built-up over multiple reads.
         /// We want to avoid re-checking the same characters we've already checked over and over again.
@@ -73,12 +67,10 @@ namespace System.Net.ServerSentEvents
         /// <summary>Set when eof has been reached in the stream.</summary>
         private bool _eof;
 
-        /// <summary>Rented buffer containing buffered data for the next event.</summary>
-        private byte[]? _dataBuffer;
-        /// <summary>The length of valid data in <see cref="_dataBuffer"/>, starting from index 0.</summary>
-        private int _dataLength;
+        /// <summary>Buffer containing buffered data for the next event.</summary>
+        private ArrayBuffer _dataBuffer = new(initialSize: 0, usePool: true);
         /// <summary>Whether data has been appended to <see cref="_dataBuffer"/>.</summary>
-        /// <remarks>This can be different than <see cref="_dataLength"/> != 0 if empty data was appended.</remarks>
+        /// <remarks>This can be different than <see cref="ArrayBuffer.ActiveLength"/> != 0 if empty data was appended.</remarks>
         private bool _dataAppended;
 
         private readonly int _maxBufferSize;
@@ -115,53 +107,24 @@ namespace System.Net.ServerSentEvents
             // Validate that the parser is only used for one enumeration.
             ThrowIfNotFirstEnumeration();
 
-            // Rent a line buffer. This will grow as needed. The line buffer is what's passed to the stream,
-            // so we want it to be large enough to reduce the number of reads we need to do when data is
-            // arriving quickly. (In debug, we use a smaller buffer to stress the growth and shifting logic.)
-            _lineBuffer = ArrayPool<byte>.Shared.Rent(DefaultArrayPoolRentSize);
             try
             {
                 // Spec: "Event streams in this format must always be encoded as UTF-8".
                 // Skip a UTF8 BOM if it exists at the beginning of the stream. (The BOM is defined as optional in the SSE grammar.)
-                while (FillLineBuffer() != 0 && _lineLength < Utf8Bom.Length) ;
+                while (FillLineBuffer() != 0 && _lineBuffer.ActiveLength < Utf8Bom.Length) ;
                 SkipBomIfPresent();
 
                 // Process all events in the stream.
                 while (true)
                 {
-                    // See if there's a complete line in data already read from the stream. Lines are permitted to
-                    // end with CR, LF, or CRLF. Look for all of them and if we find one, process the line. However,
-                    // if we only find a CR and it's at the end of the read data, don't process it now, as we want
-                    // to process it together with an LF that might immediately follow, rather than treating them
-                    // as two separate characters, in which case we'd incorrectly process the CR as a line by itself.
-                    GetNextSearchOffsetAndLength(out int searchOffset, out int searchLength);
-                    _newlineIndex = _lineBuffer.AsSpan(searchOffset, searchLength).IndexOfAny(CR, LF);
-                    if (_newlineIndex >= 0)
+                    if (TryProcessLine(out SseItem<T>? sseItem))
                     {
-                        _lastSearchedForNewline = -1;
-                        _newlineIndex += searchOffset;
-                        if (_lineBuffer[_newlineIndex] is LF || // the newline is LF
-                            _newlineIndex - _lineOffset + 1 < _lineLength || // we must have CR and we have whatever comes after it
-                            _eof) // if we get here, we know we have a CR at the end of the buffer, so it's definitely the whole newline if we've hit EOF
+                        if (sseItem.HasValue)
                         {
-                            // Process the line.
-                            if (ProcessLine(out SseItem<T> sseItem, out int advance))
-                            {
-                                yield return sseItem;
-                            }
-
-                            // Move past the line.
-                            _lineOffset += advance;
-                            _lineLength -= advance;
-                            continue;
+                            yield return sseItem.GetValueOrDefault();
                         }
-                    }
-                    else
-                    {
-                        // Record the last position searched for a newline. The next time we search,
-                        // we'll search from here rather than from _lineOffset, in order to avoid searching
-                        // the same characters again.
-                        _lastSearchedForNewline = _lineOffset + _lineLength;
+
+                        continue;
                     }
 
                     // We've processed everything in the buffer we currently can, so if we've already read EOF, we're done.
@@ -178,11 +141,8 @@ namespace System.Net.ServerSentEvents
             }
             finally
             {
-                ArrayPool<byte>.Shared.Return(_lineBuffer);
-                if (_dataBuffer is not null)
-                {
-                    ArrayPool<byte>.Shared.Return(_dataBuffer);
-                }
+                _lineBuffer.Dispose();
+                _dataBuffer.Dispose();
             }
         }
 
@@ -195,53 +155,24 @@ namespace System.Net.ServerSentEvents
             // Validate that the parser is only used for one enumeration.
             ThrowIfNotFirstEnumeration();
 
-            // Rent a line buffer. This will grow as needed. The line buffer is what's passed to the stream,
-            // so we want it to be large enough to reduce the number of reads we need to do when data is
-            // arriving quickly. (In debug, we use a smaller buffer to stress the growth and shifting logic.)
-            _lineBuffer = ArrayPool<byte>.Shared.Rent(DefaultArrayPoolRentSize);
             try
             {
                 // Spec: "Event streams in this format must always be encoded as UTF-8".
                 // Skip a UTF8 BOM if it exists at the beginning of the stream. (The BOM is defined as optional in the SSE grammar.)
-                while (await FillLineBufferAsync(cancellationToken).ConfigureAwait(false) != 0 && _lineLength < Utf8Bom.Length) ;
+                while (await FillLineBufferAsync(cancellationToken).ConfigureAwait(false) != 0 && _lineBuffer.ActiveLength < Utf8Bom.Length) ;
                 SkipBomIfPresent();
 
                 // Process all events in the stream.
                 while (true)
                 {
-                    // See if there's a complete line in data already read from the stream. Lines are permitted to
-                    // end with CR, LF, or CRLF. Look for all of them and if we find one, process the line. However,
-                    // if we only find a CR and it's at the end of the read data, don't process it now, as we want
-                    // to process it together with an LF that might immediately follow, rather than treating them
-                    // as two separate characters, in which case we'd incorrectly process the CR as a line by itself.
-                    GetNextSearchOffsetAndLength(out int searchOffset, out int searchLength);
-                    _newlineIndex = _lineBuffer.AsSpan(searchOffset, searchLength).IndexOfAny(CR, LF);
-                    if (_newlineIndex >= 0)
+                    if (TryProcessLine(out SseItem<T>? sseItem))
                     {
-                        _lastSearchedForNewline = -1;
-                        _newlineIndex += searchOffset;
-                        if (_lineBuffer[_newlineIndex] is LF || // newline is LF
-                            _newlineIndex - _lineOffset + 1 < _lineLength || // newline is CR, and we have whatever comes after it
-                            _eof) // if we get here, we know we have a CR at the end of the buffer, so it's definitely the whole newline if we've hit EOF
+                        if (sseItem.HasValue)
                         {
-                            // Process the line.
-                            if (ProcessLine(out SseItem<T> sseItem, out int advance))
-                            {
-                                yield return sseItem;
-                            }
-
-                            // Move past the line.
-                            _lineOffset += advance;
-                            _lineLength -= advance;
-                            continue;
+                            yield return sseItem.GetValueOrDefault();
                         }
-                    }
-                    else
-                    {
-                        // Record the last position searched for a newline. The next time we search,
-                        // we'll search from here rather than from _lineOffset, in order to avoid searching
-                        // the same characters again.
-                        _lastSearchedForNewline = searchOffset + searchLength;
+
+                        continue;
                     }
 
                     // We've processed everything in the buffer we currently can, so if we've already read EOF, we're done.
@@ -258,101 +189,83 @@ namespace System.Net.ServerSentEvents
             }
             finally
             {
-                ArrayPool<byte>.Shared.Return(_lineBuffer);
-                if (_dataBuffer is not null)
-                {
-                    ArrayPool<byte>.Shared.Return(_dataBuffer);
-                }
+                _lineBuffer.Dispose();
+                _dataBuffer.Dispose();
             }
         }
 
-        /// <summary>Gets the next index and length with which to perform a newline search.</summary>
-        private void GetNextSearchOffsetAndLength(out int searchOffset, out int searchLength)
+        /// <summary>Tries to process a complete line from data already read from the stream.</summary>
+        /// <param name="sseItem">The parsed item if processing the line dispatched an event; otherwise, <see langword="null"/>.</param>
+        /// <returns><see langword="true"/> if a complete line was processed; otherwise, <see langword="false"/>.</returns>
+        private bool TryProcessLine(out SseItem<T>? sseItem)
         {
-            if (_lastSearchedForNewline > _lineOffset)
+            // See if there's a complete line in data already read from the stream. Lines are permitted to
+            // end with CR, LF, or CRLF. Look for all of them and if we find one, process the line. However,
+            // if we only find a CR and it's at the end of the read data, don't process it now, as we want
+            // to process it together with an LF that might immediately follow, rather than treating them
+            // as two separate characters, in which case we'd incorrectly process the CR as a line by itself.
+            ReadOnlySpan<byte> lineBuffer = _lineBuffer.ActiveReadOnlySpan;
+            int searchOffset = Math.Max(_lastSearchedForNewline, 0);
+            _newlineIndex = lineBuffer.Slice(searchOffset).IndexOfAny(CR, LF);
+            if (_newlineIndex >= 0)
             {
-                searchOffset = _lastSearchedForNewline;
-                searchLength = _lineLength - (_lastSearchedForNewline - _lineOffset);
+                _lastSearchedForNewline = -1;
+                _newlineIndex += searchOffset;
+                if (lineBuffer[_newlineIndex] is LF || // the newline is LF
+                    _newlineIndex + 1 < lineBuffer.Length || // we must have CR and we have whatever comes after it
+                    _eof) // if we get here, we know we have a CR at the end of the buffer, so it's definitely the whole newline if we've hit EOF
+                {
+                    // Process the line.
+                    sseItem = ProcessLine(out SseItem<T> item) ? item : null;
+                    return true;
+                }
             }
             else
             {
-                searchOffset = _lineOffset;
-                searchLength = _lineLength;
+                // Record the last position searched for a newline. The next time we search,
+                // we'll search from here rather than from the beginning, in order to avoid searching
+                // the same characters again.
+                _lastSearchedForNewline = lineBuffer.Length;
             }
 
-            Debug.Assert(searchOffset >= _lineOffset, $"{searchOffset}, {_lineLength}");
-            Debug.Assert(searchOffset <= _lineOffset + _lineLength, $"{searchOffset}, {_lineOffset}, {_lineLength}");
-            Debug.Assert(searchOffset <= _lineBuffer.Length, $"{searchOffset}, {_lineBuffer.Length}");
-
-            Debug.Assert(searchLength >= 0, $"{searchLength}");
-            Debug.Assert(searchLength <= _lineLength, $"{searchLength}, {_lineLength}");
+            sseItem = null;
+            return false;
         }
 
-        private int GetNewLineLength()
+        private int GetNewLineLength(ReadOnlySpan<byte> lineBuffer)
         {
-            Debug.Assert(_newlineIndex - _lineOffset < _lineLength, "Expected to be positioned at a non-empty newline");
-            return _lineBuffer.AsSpan(_newlineIndex, _lineLength - (_newlineIndex - _lineOffset)).StartsWith(CRLF) ? 2 : 1;
-        }
-
-        /// <summary>
-        /// If there's no room remaining in the line buffer, either shifts the contents
-        /// left or grows the buffer in order to make room for the next read.
-        /// </summary>
-        private void ShiftOrGrowLineBufferIfNecessary()
-        {
-            // If data we've read is butting up against the end of the buffer and
-            // it's not taking up the entire buffer, slide what's there down to
-            // the beginning, making room to read more data into the buffer (since
-            // there's no newline in the data that's there). Otherwise, if the whole
-            // buffer is full, grow the buffer to accommodate more data, since, again,
-            // what's there doesn't contain a newline and thus a line is longer than
-            // the current buffer accommodates.
-            if (_lineOffset + _lineLength == _lineBuffer.Length)
-            {
-                if (_lineOffset != 0)
-                {
-                    _lineBuffer.AsSpan(_lineOffset, _lineLength).CopyTo(_lineBuffer);
-                    if (_lastSearchedForNewline >= 0)
-                    {
-                        _lastSearchedForNewline -= _lineOffset;
-                    }
-                    _lineOffset = 0;
-                }
-                else if (_lineLength == _lineBuffer.Length)
-                {
-                    GrowBuffer(ref _lineBuffer, (uint)_lineBuffer.Length + 1);
-                }
-            }
-
-            // Storage available for at least one byte
-            Debug.Assert(_lineOffset + _lineLength < _lineBuffer.Length);
+            Debug.Assert(_newlineIndex < lineBuffer.Length, "Expected to be positioned at a non-empty newline");
+            return lineBuffer.Slice(_newlineIndex).StartsWith(CRLF) ? 2 : 1;
         }
 
         /// <summary>Processes a complete line from the SSE stream.</summary>
         /// <param name="sseItem">The parsed item if the method returns true.</param>
-        /// <param name="advance">How many characters to advance in the line buffer.</param>
         /// <returns>true if an SSE item was successfully parsed; otherwise, false.</returns>
-        private bool ProcessLine(out SseItem<T> sseItem, out int advance)
+        private bool ProcessLine(out SseItem<T> sseItem)
         {
-            ReadOnlySpan<byte> line = _lineBuffer.AsSpan(_lineOffset, _newlineIndex - _lineOffset);
+            ReadOnlySpan<byte> lineBuffer = _lineBuffer.ActiveReadOnlySpan;
+            ReadOnlySpan<byte> line = lineBuffer.Slice(0, _newlineIndex);
 
             // Spec: "If the line is empty (a blank line) Dispatch the event"
             if (line.IsEmpty)
             {
-                advance = GetNewLineLength();
+                int advance = GetNewLineLength(lineBuffer);
 
                 if (_dataAppended)
                 {
-                    T data = _itemParser(_eventType ?? SseParser.EventTypeDefault, _dataBuffer.AsSpan(0, _dataLength));
+                    T data = _itemParser(_eventType ?? SseParser.EventTypeDefault, _dataBuffer.ActiveReadOnlySpan);
                     sseItem = new SseItem<T>(data, _eventType) { EventId = _eventId, ReconnectionInterval = _nextReconnectionInterval };
                     _eventType = null;
                     _eventId = null;
                     _nextReconnectionInterval = null;
-                    _dataLength = 0;
+                    _dataBuffer.DiscardAll();
                     _dataAppended = false;
+
+                    _lineBuffer.Discard(advance);
                     return true;
                 }
 
+                _lineBuffer.Discard(advance);
                 sseItem = default;
                 return false;
             }
@@ -391,32 +304,45 @@ namespace System.Net.ServerSentEvents
                 // into the data buffer and dispatching from there.
                 if (!_dataAppended)
                 {
-                    int newlineLength = GetNewLineLength();
-                    ReadOnlySpan<byte> remainder = _lineBuffer.AsSpan(_newlineIndex + newlineLength, _lineLength - line.Length - newlineLength);
+                    int newlineLength = GetNewLineLength(lineBuffer);
+                    ReadOnlySpan<byte> remainder = lineBuffer.Slice(_newlineIndex + newlineLength);
                     if (!remainder.IsEmpty &&
                         (remainder[0] is LF || (remainder[0] is CR && remainder.Length > 1)))
                     {
-                        advance = line.Length + newlineLength + (remainder.StartsWith(CRLF) ? 2 : 1);
                         T data = _itemParser(_eventType ?? SseParser.EventTypeDefault, fieldValue);
                         sseItem = new SseItem<T>(data, _eventType) { EventId = _eventId, ReconnectionInterval = _nextReconnectionInterval };
                         _eventType = null;
                         _eventId = null;
                         _nextReconnectionInterval = null;
+
+                        _lineBuffer.Discard(line.Length + newlineLength + (remainder.StartsWith(CRLF) ? 2 : 1));
                         return true;
                     }
                 }
 
                 // We need to copy the data from the line buffer to the data buffer. Make sure there's enough room.
-                GrowBuffer(ref _dataBuffer, (uint)_dataLength + (uint)_lineLength + 1);
+                int requiredAvailableSpace = lineBuffer.Length + 1;
+                if (_dataBuffer.AvailableLength < requiredAvailableSpace)
+                {
+                    if (requiredAvailableSpace > _maxBufferSize - _dataBuffer.ActiveLength)
+                    {
+                        throw new InvalidDataException(SR.InvalidDataException_SseExceededMaxLength);
+                    }
+
+                    _dataBuffer.EnsureAvailableSpace(
+                        _dataBuffer.Capacity == 0 ? Math.Max(requiredAvailableSpace, DefaultArrayPoolRentSize) : requiredAvailableSpace);
+                }
 
                 // Append a newline if there's already content in the buffer.
                 // Then copy the field value to the data buffer
+                Span<byte> destination = _dataBuffer.AvailableSpan;
+                int bytesWritten = 0;
                 if (_dataAppended)
                 {
-                    _dataBuffer[_dataLength++] = LF;
+                    destination[bytesWritten++] = LF;
                 }
-                fieldValue.CopyTo(_dataBuffer.AsSpan(_dataLength));
-                _dataLength += fieldValue.Length;
+                fieldValue.CopyTo(destination.Slice(bytesWritten));
+                _dataBuffer.Commit(bytesWritten + fieldValue.Length);
                 _dataAppended = true;
             }
             else if (fieldName.SequenceEqual("event"u8))
@@ -458,7 +384,7 @@ namespace System.Net.ServerSentEvents
                 // Spec: "Otherwise, The field is ignored"
             }
 
-            advance = line.Length + GetNewLineLength();
+            _lineBuffer.Discard(line.Length + GetNewLineLength(lineBuffer));
             sseItem = default;
             return false;
         }
@@ -488,19 +414,19 @@ namespace System.Net.ServerSentEvents
         /// <summary>Reads data from the stream into the line buffer.</summary>
         private int FillLineBuffer()
         {
-            ShiftOrGrowLineBufferIfNecessary();
-
-            int offset = _lineOffset + _lineLength;
+            EnsureLineBufferAvailableSpace();
             int bytesRead = _stream.Read(
 #if NET
-                _lineBuffer.AsSpan(offset));
+                _lineBuffer.AvailableSpan);
 #else
-                _lineBuffer, offset, _lineBuffer.Length - offset);
+                _lineBuffer.DangerousGetUnderlyingBuffer(),
+                _lineBuffer.ActiveStartOffset + _lineBuffer.ActiveLength,
+                _lineBuffer.AvailableLength);
 #endif
 
             if (bytesRead > 0)
             {
-                _lineLength += bytesRead;
+                _lineBuffer.Commit(bytesRead);
             }
             else
             {
@@ -514,14 +440,12 @@ namespace System.Net.ServerSentEvents
         /// <summary>Reads data asynchronously from the stream into the line buffer.</summary>
         private async ValueTask<int> FillLineBufferAsync(CancellationToken cancellationToken)
         {
-            ShiftOrGrowLineBufferIfNecessary();
-
-            int offset = _lineOffset + _lineLength;
-            int bytesRead = await _stream.ReadAsync(_lineBuffer.AsMemory(offset), cancellationToken).ConfigureAwait(false);
+            EnsureLineBufferAvailableSpace();
+            int bytesRead = await _stream.ReadAsync(_lineBuffer.AvailableMemory, cancellationToken).ConfigureAwait(false);
 
             if (bytesRead > 0)
             {
-                _lineLength += bytesRead;
+                _lineBuffer.Commit(bytesRead);
             }
             else
             {
@@ -532,50 +456,28 @@ namespace System.Net.ServerSentEvents
             return bytesRead;
         }
 
+        private void EnsureLineBufferAvailableSpace()
+        {
+            if (_lineBuffer.AvailableLength == 0)
+            {
+                if (_lineBuffer.ActiveLength >= _maxBufferSize)
+                {
+                    throw new InvalidDataException(SR.InvalidDataException_SseExceededMaxLength);
+                }
+
+                _lineBuffer.EnsureAvailableSpace(_lineBuffer.Capacity == 0 ? DefaultArrayPoolRentSize : 1);
+            }
+        }
+
         /// <summary>Gets the UTF8 BOM.</summary>
         private static ReadOnlySpan<byte> Utf8Bom => [0xEF, 0xBB, 0xBF];
 
         /// <summary>Called at the beginning of processing to skip over an optional UTF8 byte order mark.</summary>
         private void SkipBomIfPresent()
         {
-            Debug.Assert(_lineOffset == 0, $"Expected _lineOffset == 0, got {_lineOffset}");
-
-            if (_lineBuffer.AsSpan(0, _lineLength).StartsWith(Utf8Bom))
+            if (_lineBuffer.ActiveReadOnlySpan.StartsWith(Utf8Bom))
             {
-                _lineOffset += 3;
-                _lineLength -= 3;
-            }
-        }
-
-        /// <summary>Grows the buffer, returning the existing one to the ArrayPool and renting an ArrayPool replacement.</summary>
-        private void GrowBuffer([NotNull] ref byte[]? buffer, uint minimumSize)
-        {
-            int currentSize = buffer?.Length ?? 0;
-
-            uint preferredSize = (uint)currentSize * 2;
-            preferredSize = Math.Min(preferredSize, (uint)_maxBufferSize);
-            preferredSize = Math.Max(preferredSize, DefaultArrayPoolRentSize);
-            Debug.Assert(preferredSize <= int.MaxValue);
-
-            if (minimumSize > _maxBufferSize)
-            {
-                throw new InvalidDataException(SR.InvalidDataException_SseExceededMaxLength);
-            }
-            Debug.Assert(minimumSize <= int.MaxValue);
-
-            if (buffer is not null && currentSize >= minimumSize)
-            {
-                return;
-            }
-
-            int rentedSize = Math.Max((int)preferredSize, (int)minimumSize);
-
-            byte[]? toReturn = buffer;
-            buffer = ArrayPool<byte>.Shared.Rent(rentedSize);
-            if (toReturn is not null)
-            {
-                Array.Copy(toReturn, buffer, toReturn.Length);
-                ArrayPool<byte>.Shared.Return(toReturn);
+                _lineBuffer.Discard(Utf8Bom.Length);
             }
         }
     }
