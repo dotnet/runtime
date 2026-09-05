@@ -54,6 +54,16 @@ class TestCollection<T> {{}}
                 public static Element ConvertToManaged(Native n) => throw null;
             }
             """;
+        public const string ElementInWithFree = """
+            [CustomMarshaller(typeof(Element), MarshalMode.ElementIn, typeof(ElementMarshaller))]
+            static class ElementMarshaller
+            {
+                public struct Native { }
+                public static Native ConvertToUnmanaged(Element e) => throw null;
+                public static Element ConvertToManaged(Native n) => throw null;
+                public static void Free(Native unmanaged) { }
+            }
+            """;
         public const string ElementOut = """
             [CustomMarshaller(typeof(Element), MarshalMode.ElementOut, typeof(ElementMarshaller))]
             static class ElementMarshaller
@@ -251,6 +261,10 @@ class TestCollection<T> {{}}
             public string NonBlittableElementByValue => ByValue("Element")
                 + NonBlittableElement
                 + ElementIn;
+
+            public string NonBlittableElementWithFreeByValue => ByValue("Element")
+                + NonBlittableElement
+                + ElementInWithFree;
 
             public string NonBlittableElementNativeToManagedOnlyOutParameter => NativeToManagedOnlyOutParameter("Element")
                 + NonBlittableElement
@@ -507,6 +521,10 @@ class TestCollection<T> {{}}
             public string NonBlittableElementByValue => ByValue("Element")
                 + NonBlittableElement
                 + ElementIn;
+
+            public string NonBlittableElementWithFreeByValue => ByValue("Element")
+                + NonBlittableElement
+                + ElementInWithFree;
 
             public string NonBlittableElementNativeToManagedOnlyOutParameter => NativeToManagedOnlyOutParameter("Element")
                 + NonBlittableElement
