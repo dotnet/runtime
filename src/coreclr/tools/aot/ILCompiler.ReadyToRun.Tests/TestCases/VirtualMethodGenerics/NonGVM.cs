@@ -170,6 +170,24 @@ struct Test9<T> : ITest9
     public override string ToString() => "Test9";
 }
 
+struct Test10Result
+{
+    public long A;
+    public long B;
+}
+
+interface ITest10
+{
+    Test10Result GetValue();
+    void SetValue(nint value);
+}
+
+struct Test10<T> : ITest10
+{
+    public Test10Result GetValue() => new Test10Result();
+    public void SetValue(nint value) { }
+}
+
 // Entry points that drive dependency analysis
 static class NonGVMTests
 {
@@ -202,6 +220,12 @@ static class NonGVMTests
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static string CallToString(object value) => value.ToString();
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Test10Result CallGetValue(ITest10 value) => value.GetValue();
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void CallSetValue(ITest10 value) => value.SetValue(0);
 
     static void Run()
     {
@@ -237,5 +261,11 @@ static class NonGVMTests
         // Test9: generic value type, shared instantiation over a reference type
         Console.WriteLine(CallTest9(new Test9<object>(new object())));
         Console.WriteLine(CallToString(new Test9<object>(new object())));
+
+        // Test10: shared generic unboxing stubs whose structural Wasm signatures differ only
+        // by whether the first argument after 'this' is a return buffer.
+        ITest10 t10 = new Test10<object>();
+        Console.WriteLine(CallGetValue(t10).A);
+        CallSetValue(t10);
     }
 }
