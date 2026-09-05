@@ -2925,25 +2925,70 @@ CorInfoHelpFunc CodeGenInterface::genWriteBarrierHelperForWriteBarrierForm(GCInf
 
 #if !defined(TARGET_WASM)
 
+#ifdef DEBUG
+// -----------------------------------------------------------------------------
+// genCheckTailCallEpilogRegisters:
+//   Check that the tailcall arguments do not use registers trashed by the epilog.
+//
+// Parameters:
+//   call - The tailcall node
+//
+void CodeGen::genCheckTailCallEpilogRegisters(GenTreeCall* call)
+{
+    if (!call->IsFastTailCall())
+    {
+        return;
+    }
+
+    regMaskTP trashedByEpilog = RBM_CALLEE_SAVED;
+    if (m_compiler->getNeedsGSSecurityCookie())
+    {
+        trashedByEpilog |= genGetGSCookieTempRegs(/* tailCall */ true, call);
+    }
+
+    for (CallArg& arg : call->gtArgs.Args())
+    {
+        for (const ABIPassingSegment& seg : arg.AbiInfo.Segments())
+        {
+            if (seg.IsPassedInRegister() && ((trashedByEpilog & seg.GetRegisterMask()) != 0))
+            {
+                JITDUMP("Tail call node:\n");
+                DISPTREE(call);
+                JITDUMP("Register used: %s\n", getRegName(seg.GetRegister()));
+                assert(!"Argument to tailcall may be trashed by epilog");
+            }
+        }
+    }
+}
+#endif // DEBUG
+
 // -----------------------------------------------------------------------------
 // genGetGSCookieTempRegs:
 //   Get a mask of registers to use for the GS cookie check generated in a
 //   block.
 //
 // Parameters:
-//   tailCall - Whether the block is a tailcall
+//   tailCall     - Whether the block is a tailcall
+//   tailCallNode - The tailcall node, if available
 //
 // Returns:
 //   Mask of all the registers that can be used. Some targets may need more
 //   than one register.
 //
-regMaskTP CodeGenInterface::genGetGSCookieTempRegs(bool tailCall)
+regMaskTP CodeGenInterface::genGetGSCookieTempRegs(bool tailCall, GenTreeCall* tailCallNode)
 {
 #ifdef TARGET_AMD64
     if (tailCall)
     {
+        if ((tailCallNode != nullptr) &&
+            (tailCallNode->gtArgs.FindWellKnownArg(WellKnownArg::SecretStubParam) != nullptr))
+        {
+            return RBM_RAX;
+        }
+
         // If we are tailcalling then arg regs cannot be used. For both SysV and winx64 that
-        // leaves rax, r10, r11. rax and r11 are used for indirection cells, so we pick r10.
+        // leaves rax, r10, r11. RAX and r11 are used for indirection cells, so we pick r10
+        // unless it is used for the secret stub argument.
         return RBM_R10;
     }
     // Otherwise on x64 (win-x64, SysV and Swift) r9 is never used for return values

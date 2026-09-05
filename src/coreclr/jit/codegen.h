@@ -1178,6 +1178,9 @@ protected:
 #if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
     void genConsumeMultiOpOperands(GenTreeMultiOp* tree);
 #endif
+#ifdef DEBUG
+    void genCheckTailCallEpilogRegisters(GenTreeCall* call);
+#endif
     void genEmitGSCookieCheck(bool tailCall);
     void genCodeForShift(GenTree* tree);
 

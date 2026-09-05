@@ -1309,7 +1309,8 @@ int LinearScan::BuildCall(GenTreeCall* call)
             ctrlExprCandidates = RBM_INT_CALLEE_TRASH.GetIntRegSet();
             if (m_compiler->getNeedsGSSecurityCookie())
             {
-                ctrlExprCandidates &= ~m_compiler->codeGen->genGetGSCookieTempRegs(/* tailCall */ true).GetIntRegSet();
+                ctrlExprCandidates &=
+                    ~m_compiler->codeGen->genGetGSCookieTempRegs(/* tailCall */ true, call).GetIntRegSet();
             }
         }
 #ifdef TARGET_X86
