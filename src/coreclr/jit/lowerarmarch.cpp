@@ -1445,6 +1445,159 @@ void Lowering::LowerHWIntrinsicFusedMultiplyAddScalar(GenTreeHWIntrinsic* node)
     }
 }
 
+#if defined(TARGET_ARM64) && defined(FEATURE_HW_INTRINSICS) && defined(FEATURE_MASKED_HW_INTRINSICS)
+//------------------------------------------------------------------------
+// ConvertSveMaskOperandToMask:
+//   Convert a mask-shaped vector operand to its SVE predicate representation.
+//
+static GenTree* ConvertSveMaskOperandToMask(LIR::Range&         blockRange,
+                                            Compiler*           compiler,
+                                            GenTreeHWIntrinsic* insertionPoint,
+                                            GenTree*            op)
+{
+    if (varTypeIsMask(op))
+    {
+        return op;
+    }
+
+    if (op->OperIsConvertMaskToVector())
+    {
+        GenTree* mask = op->AsHWIntrinsic()->Op(1);
+        blockRange.Remove(op);
+        return mask;
+    }
+
+    if (op->IsVectorZero())
+    {
+        GenTree* mask = compiler->gtNewSimdFalseMaskByteNode();
+        blockRange.InsertBefore(insertionPoint, mask);
+        blockRange.Remove(op);
+        return mask;
+    }
+
+    unreached();
+}
+
+#endif // TARGET_ARM64 && FEATURE_HW_INTRINSICS && FEATURE_MASKED_HW_INTRINSICS
+
+#if defined(TARGET_ARM64) && defined(FEATURE_HW_INTRINSICS) && defined(FEATURE_MASKED_HW_INTRINSICS)
+//----------------------------------------------------------------------------------------------
+// Lowering::TryLowerSveConvertVectorToMask: Removes redundant vector-to-mask conversions.
+//
+//  Arguments:
+//     node - The hardware intrinsic node.
+//
+//  Returns:
+//     Next node to lower if the conversion was removed; nullptr otherwise.
+//
+GenTree* Lowering::TryLowerSveConvertVectorToMask(GenTreeHWIntrinsic* node)
+{
+    assert(node->OperIsHWIntrinsic(NI_Sve_ConvertVectorToMask));
+    assert(node->GetOperandCount() == 2);
+
+    GenTree* op2 = node->Op(2);
+    if (!varTypeIsMask(op2))
+    {
+        return nullptr;
+    }
+
+    LIR::Use use;
+    GenTree* next = node->gtNext;
+
+    if (BlockRange().TryGetUse(node, &use))
+    {
+        use.ReplaceWith(op2);
+    }
+    else
+    {
+        op2->SetUnusedValue();
+    }
+
+    BlockRange().Remove(node->Op(1));
+    BlockRange().Remove(node);
+    return next;
+}
+
+//----------------------------------------------------------------------------------------------
+// Lowering::TryLowerSvePredicateBitwiseClear: Lower SVE mask-shaped vector ANDs to predicate BIC.
+//
+//  Arguments:
+//     node        - The hardware intrinsic node.
+//     intrinsicId - The current intrinsic id, updated if the node is transformed.
+//     oper        - The current intrinsic operation, updated if the node is transformed.
+//
+//  Returns:
+//     True if SVE predicate lowering handled the node.
+//
+bool Lowering::TryLowerSvePredicateBitwiseClear(GenTreeHWIntrinsic* node, NamedIntrinsic* intrinsicId, genTreeOps* oper)
+{
+    assert(*oper == GT_AND);
+
+    GenTree* op1 = node->Op(1);
+    GenTree* op2 = node->Op(2);
+
+    GenTreeHWIntrinsic* notNode  = nullptr;
+    var_types           nodeType = node->TypeGet();
+    unsigned            simdSize = node->GetSimdSize();
+
+    auto convertResultToVectorIfNeeded = [this, node, nodeType, simdSize]() {
+        LIR::Use use;
+        if (BlockRange().TryGetUse(node, &use) && !use.User()->OperIsHWIntrinsic(NI_Sve_ConvertVectorToMask))
+        {
+            GenTree* convert =
+                m_compiler->gtNewSimdCvtMaskToVectorNode(nodeType, node, node->GetSimdBaseType(), simdSize);
+            BlockRange().InsertAfter(node, convert);
+            use.ReplaceWith(convert);
+        }
+    };
+
+    if (op2->OperIsHWIntrinsic())
+    {
+        GenTreeHWIntrinsic* op2Intrin = op2->AsHWIntrinsic();
+
+        bool       op2IsScalar = false;
+        genTreeOps op2Oper     = op2Intrin->GetOperForHWIntrinsicId(&op2IsScalar);
+
+        if ((op2Oper == GT_NOT) && !op2IsScalar)
+        {
+            notNode = op2Intrin;
+            op2     = op2Intrin->Op(1);
+        }
+    }
+
+    if ((notNode == nullptr) && op1->OperIsHWIntrinsic())
+    {
+        GenTreeHWIntrinsic* op1Intrin = op1->AsHWIntrinsic();
+
+        bool       op1IsScalar = false;
+        genTreeOps op1Oper     = op1Intrin->GetOperForHWIntrinsicId(&op1IsScalar);
+
+        if ((op1Oper == GT_NOT) && !op1IsScalar)
+        {
+            notNode = op1Intrin;
+            op1     = op1Intrin->Op(1);
+            std::swap(op1, op2);
+        }
+    }
+
+    if ((notNode != nullptr) && op1->IsSveMaskOperand() && op2->IsSveMaskOperand())
+    {
+        op1 = ConvertSveMaskOperandToMask(BlockRange(), m_compiler, node, op1);
+        op2 = ConvertSveMaskOperandToMask(BlockRange(), m_compiler, node, op2);
+        BlockRange().Remove(notNode);
+
+        node->ResetHWIntrinsicId(NI_Sve_BitwiseClear_Predicates, op1, op2);
+        node->gtType = TYP_MASK;
+        *intrinsicId = NI_Sve_BitwiseClear_Predicates;
+        *oper        = GT_AND_NOT;
+        convertResultToVectorIfNeeded();
+        return true;
+    }
+
+    return false;
+}
+#endif // TARGET_ARM64 && FEATURE_HW_INTRINSICS && FEATURE_MASKED_HW_INTRINSICS
+
 //----------------------------------------------------------------------------------------------
 // Lowering::LowerHWIntrinsic: Perform containment analysis for a hardware intrinsic node.
 //
@@ -1487,13 +1640,20 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             //
             // We want to similarly handle (~op1 | op2) and (op1 | ~op2)
 
-            // TODO-SVE: Add scalable length support
-            assert(node->gtType == TYP_SIMD16 || node->gtType == TYP_SIMD8);
-
             bool transform = false;
+
+#if defined(TARGET_ARM64) && defined(FEATURE_MASKED_HW_INTRINSICS)
+            if ((oper == GT_AND) && TryLowerSvePredicateBitwiseClear(node, &intrinsicId, &oper))
+            {
+                break;
+            }
+#endif // TARGET_ARM64 && FEATURE_MASKED_HW_INTRINSICS
 
             GenTree* op1 = node->Op(1);
             GenTree* op2 = node->Op(2);
+
+            // TODO-SVE: Add scalable length support for vector AND_NOT/OR_NOT.
+            assert(node->gtType == TYP_SIMD16 || node->gtType == TYP_SIMD8);
 
             if (op2->OperIsHWIntrinsic())
             {
@@ -1556,6 +1716,18 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 
     switch (intrinsicId)
     {
+#if defined(TARGET_ARM64) && defined(FEATURE_MASKED_HW_INTRINSICS)
+        case NI_Sve_ConvertVectorToMask:
+        {
+            GenTree* next = TryLowerSveConvertVectorToMask(node);
+            if (next != nullptr)
+            {
+                return next;
+            }
+            break;
+        }
+#endif // TARGET_ARM64 && FEATURE_MASKED_HW_INTRINSICS
+
         case NI_Vector_Create:
         case NI_Vector_CreateScalar:
         {
@@ -1981,13 +2153,25 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             return node->gtNext;
         }
 
+        // Predicate AND/BIC can use their first operand as the governing predicate:
+        //
+        //   and Pd.b, Pn/z, Pn.b, Pm.b == Pn & Pm
+        //   bic Pd.b, Pn/z, Pn.b, Pm.b == Pn & ~Pm
+        //
+        // so they do not need an extra all-true mask.
+        if ((intrinsicId == NI_Sve_And_Predicates) || (intrinsicId == NI_Sve_BitwiseClear_Predicates))
+        {
+            ContainCheckHWIntrinsic(node);
+            return node->gtNext;
+        }
+
         // Get the existing use of the node before modifying the graph.
         bool foundUse = BlockRange().TryGetUse(node, &use);
 
         if (foundUse)
         {
-            // For Vector operations: ConditionalSelect<T>(CreateTrueMask<T>(), Op<T>(...), Vector<T>.Zero)
-            // For Mask operations: ConditionalSelect<T>(CreateTrueMask<T>(), Op<T>(...), CreateFalseMask<T>())
+            // For vector operations: ConditionalSelect<T>(CreateTrueMask<T>(), Op<T>(...), Vector<T>.Zero)
+            // For mask operations: ConditionalSelect<T>(CreateTrueMask<T>(), Op<T>(...), CreateFalseMask<T>())
             bool isMaskOp = HWIntrinsicInfo::ReturnsPerElementMask(node->GetHWIntrinsicId());
 
             var_types      selectType   = isMaskOp ? TYP_MASK : Compiler::getSIMDTypeForSize(node->GetSimdSize());
@@ -4012,15 +4196,6 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 GenTree* op2 = intrin.op2;
                 GenTree* op3 = intrin.op3;
 
-                // Handle op1
-                if (op1->IsMaskZero())
-                {
-                    // When we are merging with zero, we can specialize
-                    // and avoid instantiating the vector constant.
-                    MakeSrcContained(node, op1);
-                    LABELEDDISPTREERANGE("Contained false mask op1 in ConditionalSelect", BlockRange(), op1);
-                }
-
                 // Handle op2
                 if (op2->OperIsHWIntrinsic() && !op2->IsEmbMaskOp())
                 {
@@ -4235,10 +4410,11 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
 
             // If the nested op uses Pg/Z, then inactive lanes will result in zeros, so can only transform if
             // op3 is all zeros. Such a Csel operation is absorbed into the instruction when emitted. Skip this
-            // optimisation when the nestedOp is a reduce operation.
+            // optimisation when the nestedOp is a reduce operation or CreateBreakPropagateMask, whose governing
+            // predicate affects its propagation semantics.
 
             if (nestedOp1->IsTrueMask(cndSelNode->GetSimdBaseType()) &&
-                !HWIntrinsicInfo::IsReduceOperation(nestedOp2Id) &&
+                !HWIntrinsicInfo::IsReduceOperation(nestedOp2Id) && (nestedOp2Id != NI_Sve_CreateBreakPropagateMask) &&
                 (!HWIntrinsicInfo::IsZeroingMaskedOperation(nestedOp2Id) || op3->IsZeroForSelect()))
             {
                 GenTree* nestedOp2 = nestedCndSel->Op(2);
