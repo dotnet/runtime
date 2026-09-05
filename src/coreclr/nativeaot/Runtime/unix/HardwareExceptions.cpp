@@ -4,6 +4,7 @@
 #include "common.h"
 #include "CommonTypes.h"
 #include "Pal.h"
+#include "volatile.h"
 #include "PalLimitedContext.h"
 #include "CommonMacros.h"
 #include "config.h"
@@ -541,6 +542,30 @@ bool HardwareExceptionHandler(int code, siginfo_t *siginfo, void *context, void*
     return false;
 }
 
+// Defined in EHHelpers.cpp. Invokes the user callback directly from native code and
+// forwards the live signal structures through the native property getter.
+extern void RhpInvokeFatalErrorHandlerForNativeException(
+    int32_t errorCode,
+    void* faultAddress,
+    void* platformData0,
+    void* platformData1);
+
+// For a genuinely-unmanaged fatal fault (one that HardwareExceptionHandler did not translate
+// to a managed exception), forward the live siginfo_t/ucontext_t to a user-installed fatal
+// error handler, if one is registered.
+static void InvokeFatalErrorHandlerForNativeException(siginfo_t *siginfo, void *context)
+{
+    // The fault address surfaced to the handler is the faulting instruction pointer,
+    // matching the managed fatal path. The accessed memory address (for a memory fault)
+    // remains available to the handler through the forwarded siginfo_t (si_addr).
+    PAL_LIMITED_CONTEXT palContext;
+    NativeContextToPalContext(context, &palContext);
+    void* faultAddress = (void*)palContext.IP;
+    uint32_t faultCode = GetExceptionCodeForSignal(siginfo, context);
+    RhpInvokeFatalErrorHandlerForNativeException(
+        static_cast<int32_t>(faultCode), faultAddress, siginfo, context);
+}
+
 // Handler for the SIGSEGV signal
 void SIGSEGVHandler(int code, siginfo_t *siginfo, void *context)
 {
@@ -549,6 +574,8 @@ void SIGSEGVHandler(int code, siginfo_t *siginfo, void *context)
     {
         return;
     }
+
+    InvokeFatalErrorHandlerForNativeException(siginfo, context);
 
     if (g_previousSIGSEGV.sa_sigaction != NULL)
     {
@@ -571,6 +598,8 @@ void SIGFPEHandler(int code, siginfo_t *siginfo, void *context)
     {
         return;
     }
+
+    InvokeFatalErrorHandlerForNativeException(siginfo, context);
 
     if (g_previousSIGFPE.sa_sigaction != NULL)
     {

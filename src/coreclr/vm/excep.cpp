@@ -3945,6 +3945,16 @@ LONG InternalUnhandledExceptionFilter_Worker(
             }
         }
 
+#ifdef TARGET_WINDOWS
+        if (tore.GetType() == TypeOfReportedError::NativeThreadUnhandledException)
+        {
+            // The normal vectored-exception path requires a managed Thread object.
+            // Invoke the fatal handler here for genuinely-unhandled native faults so
+            // utility threads such as server GC threads are covered as well.
+            EEPolicy::HandleFatalErrorForNativeException(pParam->pExceptionInfo);
+        }
+#endif // TARGET_WINDOWS
+
         // If there is no throwable on the thread, go ahead and update from the last thrown exception if possible.
         // Note: don't do this for exceptions that we're going to ignore below anyway...
         BOOL useLastThrownObject = FALSE;

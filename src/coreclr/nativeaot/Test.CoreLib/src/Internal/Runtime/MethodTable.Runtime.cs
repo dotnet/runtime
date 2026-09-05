@@ -16,7 +16,7 @@ namespace Internal.Runtime
 
         internal Exception GetClasslibException(ExceptionIDs id)
         {
-            return RuntimeExceptionHelpers.GetRuntimeException(id);
+            return RuntimeExceptionHelpers.GetRuntimeException(id, IntPtr.Zero);
         }
     }
 }

@@ -24,6 +24,7 @@ SET_DEFAULT_DEBUG_CHANNEL(EXCEPT); // some headers have code with asserts, so do
 #include "pal/palinternal.h"
 
 #include <clrconfignocache.h>
+#include <public/fatal_error_handling.h>
 
 #include <errno.h>
 #include <signal.h>
@@ -88,6 +89,66 @@ static bool common_signal_handler(int code, siginfo_t *siginfo, void *sigcontext
 static void handle_signal(int signal_id, SIGFUNC sigfunc, struct sigaction *previousAction, int additionalFlags = 0, bool skipIgnored = false);
 static void restore_signal(int signal_id, struct sigaction *previousAction);
 static void restore_signal_and_resend(int code, struct sigaction* action);
+
+struct PosixFatalErrorContext
+{
+    siginfo_t* SigInfo;
+    void* UContext;
+};
+
+static int32_t GetPosixFatalErrorProperty(void* context, int32_t property, const void** value)
+{
+    PosixFatalErrorContext* fatalErrorContext = static_cast<PosixFatalErrorContext*>(context);
+
+    switch (static_cast<FatalErrorProperty>(property))
+    {
+        case FEP_PosixSigInfo:
+            *value = fatalErrorContext->SigInfo;
+            return 1;
+
+        case FEP_UContext:
+            *value = fatalErrorContext->UContext;
+            return 1;
+
+        default:
+            return 0;
+    }
+}
+
+static void InvokeFatalErrorHandlerForNativeException(siginfo_t* siginfo, void* context)
+{
+#if !HAVE_MACH_EXCEPTIONS
+    native_context_t* nativeContext = static_cast<native_context_t*>(context);
+    DWORD exceptionCode = CONTEXTGetExceptionCodeForSignal(siginfo, nativeContext);
+    LPVOID faultAddress = GetNativeContextPC(nativeContext);
+    PosixFatalErrorContext fatalErrorContext = { siginfo, context };
+    PROCInvokeFatalErrorHandlerForNativeException(
+        exceptionCode,
+        faultAddress,
+        nullptr,
+        GetPosixFatalErrorProperty,
+        &fatalErrorContext);
+#else
+    (void)siginfo;
+    (void)context;
+#endif // !HAVE_MACH_EXCEPTIONS
+}
+
+static void InvokeFatalErrorHandlerForAbort(siginfo_t* siginfo, void* context)
+{
+    native_context_t* nativeContext = static_cast<native_context_t*>(context);
+    CONTEXT signalContext = {};
+    CONTEXTFromNativeContext(nativeContext, &signalContext, CONTEXT_CONTROL);
+    LPVOID faultAddress = reinterpret_cast<LPVOID>(CONTEXTGetPC(&signalContext));
+    PosixFatalErrorContext fatalErrorContext = { siginfo, context };
+    const DWORD errorCode = 0x80004005; // E_FAIL
+    PROCInvokeFatalErrorHandlerForNativeException(
+        errorCode,
+        faultAddress,
+        nullptr,
+        GetPosixFatalErrorProperty,
+        &fatalErrorContext);
+}
 
 /* internal data declarations *********************************************/
 
@@ -521,6 +582,8 @@ static void sigill_handler(int code, siginfo_t *siginfo, void *context)
         }
     }
 
+    InvokeFatalErrorHandlerForNativeException(siginfo, context);
+
     invoke_previous_action(&g_previous_sigill, code, siginfo, context);
 }
 
@@ -544,6 +607,8 @@ static void sigfpe_handler(int code, siginfo_t *siginfo, void *context)
             return;
         }
     }
+
+    InvokeFatalErrorHandlerForNativeException(siginfo, context);
 
     invoke_previous_action(&g_previous_sigfpe, code, siginfo, context);
 }
@@ -676,6 +741,8 @@ Parameters :
 static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
 {
 #if !HAVE_MACH_EXCEPTIONS
+    bool isStackOverflow = false;
+
     if (PALIsInitialized())
     {
         // First check if we have a stack overflow
@@ -686,6 +753,8 @@ static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
         // we have a stack overflow.
         if ((failureAddress - (sp - GetVirtualPageSize())) < 2 * GetVirtualPageSize())
         {
+            isStackOverflow = true;
+
             if (GetCurrentPalThread())
             {
 #if defined(TARGET_TVOS)
@@ -758,6 +827,11 @@ static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
             }
         }
     }
+
+    if (!isStackOverflow)
+    {
+        InvokeFatalErrorHandlerForNativeException(siginfo, context);
+    }
 #endif // !HAVE_MACH_EXCEPTIONS
 
     invoke_previous_action(&g_previous_sigsegv, code, siginfo, context);
@@ -812,6 +886,8 @@ static void sigbus_handler(int code, siginfo_t *siginfo, void *context)
         }
     }
 
+    InvokeFatalErrorHandlerForNativeException(siginfo, context);
+
     invoke_previous_action(&g_previous_sigbus, code, siginfo, context);
 }
 
@@ -828,6 +904,7 @@ Parameters :
 --*/
 static void sigabrt_handler(int code, siginfo_t *siginfo, void *context)
 {
+    InvokeFatalErrorHandlerForAbort(siginfo, context);
     invoke_previous_action(&g_previous_sigabrt, code, siginfo, context);
 }
 
