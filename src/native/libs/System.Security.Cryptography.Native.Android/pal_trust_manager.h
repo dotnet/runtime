@@ -6,7 +6,7 @@
 
 typedef bool (*RemoteCertificateValidationCallback)(intptr_t, jstring);
 
-PALEXPORT void AndroidCryptoNative_RegisterRemoteCertificateValidationCallback(RemoteCertificateValidationCallback callback);
+void SetRemoteCertificateValidationCallback(RemoteCertificateValidationCallback callback);
 
 PALEXPORT int32_t AndroidCryptoNative_GetPlatformValidationError(jstring platformValidationError, const uint16_t** out, int32_t* outLen) ARGS_NON_NULL(2, 3);
 PALEXPORT void AndroidCryptoNative_ReleasePlatformValidationError(jstring platformValidationError, const uint16_t* chars);

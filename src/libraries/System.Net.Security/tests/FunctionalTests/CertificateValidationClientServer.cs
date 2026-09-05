@@ -45,11 +45,6 @@ namespace System.Net.Security.Tests
         [InlineData(false, false)]
         public async Task CertificateSelectionCallback_DelayedCertificate_OK(bool delayCertificate, bool sendClientCertificate)
         {
-            if (delayCertificate && OperatingSystem.IsAndroid())
-            {
-                throw new SkipTestException("Android does not support delayed certificate selection.");
-            }
-
             X509Certificate? remoteCertificate = null;
 
             (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
@@ -109,6 +104,102 @@ namespace System.Net.Security.Tests
                     // LocalCertificateSelectionCallback should be called with real remote certificate.
                     Assert.NotNull(remoteCertificate);
                 }
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAndroid))]
+        public Task CertificateSelectionCallback_DelayedCertificate_ExceptionPropagates() =>
+            CertificateSelectionCallback_DelayedCertificate_ExceptionPropagates_Core(SslProtocols.Tls12);
+
+        [ConditionalFact(
+            typeof(PlatformDetection),
+            nameof(PlatformDetection.IsAndroid),
+            nameof(PlatformDetection.SupportsTls13))]
+        public Task CertificateSelectionCallback_DelayedCertificate_Tls13ExceptionPropagates() =>
+            CertificateSelectionCallback_DelayedCertificate_ExceptionPropagates_Core(SslProtocols.Tls13);
+
+        private async Task CertificateSelectionCallback_DelayedCertificate_ExceptionPropagates_Core(SslProtocols protocol)
+        {
+            const string ErrorMessage = "Certificate selection failed.";
+
+            (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
+            using (client)
+            using (server)
+            {
+                int callbackCount = 0;
+                var clientOptions = new SslClientAuthenticationOptions
+                {
+                    TargetHost = "localhost",
+                    EnabledSslProtocols = protocol,
+                    RemoteCertificateValidationCallback = delegate { return true; },
+                    LocalCertificateSelectionCallback = (sender, targetHost, localCertificates, certificate, acceptableIssuers) =>
+                    {
+                        if (++callbackCount == 1)
+                        {
+                            return null;
+                        }
+
+                        throw new InvalidOperationException(ErrorMessage);
+                    },
+                };
+                var serverOptions = new SslServerAuthenticationOptions
+                {
+                    ServerCertificate = _serverCertificate,
+                    ClientCertificateRequired = true,
+                    EnabledSslProtocols = protocol,
+                    RemoteCertificateValidationCallback = delegate { return true; },
+                };
+
+                Task clientAuthentication = client.AuthenticateAsClientAsync(clientOptions);
+                Task serverAuthentication = server.AuthenticateAsServerAsync(serverOptions);
+
+                await Assert.ThrowsAnyAsync<Exception>(() =>
+                    TestConfiguration.WhenAllOrAnyFailedWithTimeout(clientAuthentication, serverAuthentication));
+
+                Assert.True(clientAuthentication.IsFaulted);
+                AuthenticationException exception = Assert.IsType<AuthenticationException>(
+                    clientAuthentication.Exception!.GetBaseException());
+                InvalidOperationException innerException = Assert.IsType<InvalidOperationException>(exception.InnerException);
+                Assert.Equal(ErrorMessage, innerException.Message);
+            }
+        }
+
+        [ConditionalTheory(
+            typeof(PlatformDetection),
+            nameof(PlatformDetection.IsAndroid),
+            nameof(PlatformDetection.SupportsTls13))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task CertificateSelectionCallback_DelayedCertificate_Tls13_OK(bool sendClientCertificate)
+        {
+            (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
+            using (client)
+            using (server)
+            {
+                int callbackCount = 0;
+                var clientOptions = new SslClientAuthenticationOptions
+                {
+                    TargetHost = "localhost",
+                    EnabledSslProtocols = SslProtocols.Tls13,
+                    RemoteCertificateValidationCallback = delegate { return true; },
+                    LocalCertificateSelectionCallback = (sender, targetHost, localCertificates, certificate, acceptableIssuers) =>
+                        ++callbackCount == 1 || !sendClientCertificate ? null : _clientCertificate,
+                };
+                var serverOptions = new SslServerAuthenticationOptions
+                {
+                    ServerCertificate = _serverCertificate,
+                    ClientCertificateRequired = true,
+                    EnabledSslProtocols = SslProtocols.Tls13,
+                    RemoteCertificateValidationCallback = delegate { return true; },
+                };
+
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                    client.AuthenticateAsClientAsync(clientOptions),
+                    server.AuthenticateAsServerAsync(serverOptions));
+
+                Assert.Equal(2, callbackCount);
+                Assert.Equal(sendClientCertificate, client.IsMutuallyAuthenticated);
+                Assert.Equal(sendClientCertificate, server.IsMutuallyAuthenticated);
             }
         }
 
