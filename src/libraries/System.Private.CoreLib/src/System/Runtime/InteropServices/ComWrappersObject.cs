@@ -19,8 +19,9 @@ namespace System.Runtime.InteropServices
     /// This type has no members other than its constructor, and it imposes no requirements on derived types beyond the
     /// ones that already apply to any object returned from <see cref="ComWrappers.CreateObject(IntPtr, CreateObjectFlags)"/>,
     /// with one exception: the state lives in a field, so <see cref="object.MemberwiseClone"/> copies it. A shallow copy of
-    /// a wrapper is reported as being one itself, and refers to the same native object the original does. Deriving types
-    /// that support cloning should produce their copies some other way.
+    /// a wrapper refers to the same native object as the original and also copies its cached COM representation.
+    /// That COM representation refers back to the original managed object, not the copy. Derived types that support
+    /// cloning should construct a new instance instead of using <see cref="object.MemberwiseClone"/>.
     /// </para>
     /// </remarks>
     [UnsupportedOSPlatform("android")]
@@ -42,12 +43,13 @@ namespace System.Runtime.InteropServices
         internal ComWrappers.NativeObjectWrapper? _nativeObjectWrapper;
 
         /// <summary>
-        /// The COM representation of this instance, for whichever <see cref="ComWrappers"/> instance got here first.
+        /// A cached COM representation of this instance, owned by one <see cref="ComWrappers"/> instance.
         /// </summary>
         /// <remarks>
         /// Unlike <see cref="_nativeObjectWrapper"/> this is only a cache, not the record itself. The table it
         /// shortcuts belongs to a single <see cref="ComWrappers"/> instance rather than being global, so an object
-        /// can have one of these per instance, and only the first is kept here. The rest are found the usual way.
+        /// can have one of these per instance. Concurrent initial writers may cache either owner's representation;
+        /// every reader checks the owner and finds other representations in the table.
         /// </remarks>
         internal ComWrappers.ManagedObjectWrapperHolder? _managedObjectWrapper;
 
