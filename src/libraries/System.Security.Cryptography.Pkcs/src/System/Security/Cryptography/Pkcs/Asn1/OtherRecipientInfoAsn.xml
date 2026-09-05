@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<asn:Sequence
+  xmlns:asn="http://schemas.dot.net/asnxml/201808/"
+  name="OtherRecipientInfoAsn"
+  namespace="System.Security.Cryptography.Pkcs.Asn1">
+
+  <!--
+    https://www.rfc-editor.org/rfc/rfc5652.html#section-6.2.5
+
+    OtherRecipientInfo ::= SEQUENCE {
+        oriType OBJECT IDENTIFIER,
+        oriValue ANY DEFINED BY oriType
+    }
+  -->
+  <asn:ObjectIdentifier name="OriType" />
+  <asn:AnyValue name="OriValue" />
+</asn:Sequence>

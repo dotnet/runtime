@@ -68,6 +68,7 @@ System.Security.Cryptography.Pkcs.EnvelopedCms</PackageDescription>
 
      <!-- Internal types (platform independent) -->
     <Compile Include="Internal\Cryptography\DecryptorPal.cs" />
+    <Compile Include="Internal\Cryptography\EnvelopedCmsKey.cs" />
     <Compile Include="Internal\Cryptography\KeyAgreeRecipientInfoPal.cs" />
     <Compile Include="Internal\Cryptography\KeyLengths.cs" />
     <Compile Include="Internal\Cryptography\KeyTransRecipientInfoPal.cs" />
@@ -179,6 +180,10 @@ System.Security.Cryptography.Pkcs.EnvelopedCms</PackageDescription>
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\OtherKeyAttributeAsn.xml.cs">
       <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\OtherKeyAttributeAsn.xml</DependentUpon>
     </Compile>
+    <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\OtherRecipientInfoAsn.xml" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\OtherRecipientInfoAsn.xml.cs">
+      <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\OtherRecipientInfoAsn.xml</DependentUpon>
+    </Compile>
     <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\RecipientEncryptedKeyAsn.xml" />
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\RecipientEncryptedKeyAsn.xml.cs">
       <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\RecipientEncryptedKeyAsn.xml</DependentUpon>
@@ -195,6 +200,26 @@ System.Security.Cryptography.Pkcs.EnvelopedCms</PackageDescription>
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\RecipientKeyIdentifier.xml.cs">
       <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\RecipientKeyIdentifier.xml</DependentUpon>
     </Compile>
+  </ItemGroup>
+
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net11.0'))">
+    <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\CmsOriForKemOtherInfoAsn.xml" />
+    <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\KemRecipientInfoAsn.xml" />
+    <Compile Include="Internal\Cryptography\KemRecipientInfoPal.cs" />
+    <Compile Include="Internal\Cryptography\Pal\AnyOS\ManagedPal.Kem.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\CmsOriForKemOtherInfoAsn.xml.cs">
+      <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\CmsOriForKemOtherInfoAsn.xml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\KemRecipientInfoAsn.xml.cs">
+      <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\KemRecipientInfoAsn.xml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Security\Cryptography\Pkcs\EnvelopedCms.Kem.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\KemRecipientInfo.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net11.0'))">
+    <Compile Include="System\Runtime\CompilerServices\IUnion.cs" />
+    <Compile Include="System\Runtime\CompilerServices\UnionAttribute.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">

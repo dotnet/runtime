@@ -33,7 +33,7 @@ namespace Internal.Cryptography
         public abstract ContentInfo? TryDecrypt(
             RecipientInfo recipientInfo,
             X509Certificate2? cert,
-            AsymmetricAlgorithm? privateKey,
+            EnvelopedCmsKey privateKey,
             X509Certificate2Collection originatorCerts,
             X509Certificate2Collection extraStore,
             out Exception? exception);
