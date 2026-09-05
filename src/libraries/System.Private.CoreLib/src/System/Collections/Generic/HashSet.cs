@@ -1105,6 +1105,20 @@ namespace System.Collections.Generic
                 return true;
             }
 
+            // Fast path for Overlaps when other is HashSet with same equality comparer and has more items
+            if (other is HashSet<T> otherAsSet && EqualityComparersAreEqual(this, otherAsSet) && otherAsSet.Count > Count)
+            {
+                foreach (T element in this)
+                {
+                    if (otherAsSet.Contains(element))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+
             foreach (T element in other)
             {
                 if (Contains(element))
