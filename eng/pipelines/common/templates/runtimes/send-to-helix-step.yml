@@ -52,7 +52,7 @@ steps:
       /p:Configuration=${{ parameters.buildConfig }}
       /p:EnableHelixJobMonitor=${{ parameters.useHelixMonitor }}
       ${{ parameters.extraHelixArguments }}
-    condition: and(succeeded(), ${{ parameters.condition }})
+    condition: ${{ parameters.condition }}
     shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
     displayName: ${{ parameters.displayName }}
     environment:
