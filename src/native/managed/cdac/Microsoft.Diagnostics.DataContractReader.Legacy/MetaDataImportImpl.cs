@@ -121,10 +121,6 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
             GCHandle handle = GCHandle.FromIntPtr(hEnum);
             handle.Free();
         }
-        else
-        {
-            _legacyImport?.CloseEnum(hEnum);
-        }
     }
 
     int IMetaDataImport.CountEnum(nint hEnum, uint* pulCount)
@@ -145,7 +141,9 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
             return HResults.S_OK;
         }
 
-        return _legacyImport is not null ? _legacyImport.CountEnum(hEnum, pulCount) : HResults.E_NOTIMPL;
+        if (pulCount is not null)
+            *pulCount = 0;
+        return HResults.E_INVALIDARG;
     }
 
     int IMetaDataImport.ResetEnum(nint hEnum, uint ulPos)
@@ -161,7 +159,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
             return HResults.S_OK;
         }
 
-        return _legacyImport is not null ? _legacyImport.ResetEnum(hEnum, ulPos) : HResults.E_NOTIMPL;
+        return HResults.E_INVALIDARG;
     }
 
     int IMetaDataImport.EnumTypeDefs(nint* phEnum, uint* rTypeDefs, uint cMax, uint* pcTypeDefs)
@@ -264,14 +262,14 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return _legacyImport is not null ? _legacyImport.EnumTypeRefs(phEnum, rTypeRefs, cMax, pcTypeRefs) : HResults.E_NOTIMPL;
+        return HResults.E_NOTIMPL;
     }
 
     int IMetaDataImport.EnumMembers(nint* phEnum, uint cl, uint* rMembers, uint cMax, uint* pcTokens)
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return _legacyImport is not null ? _legacyImport.EnumMembers(phEnum, cl, rMembers, cMax, pcTokens) : HResults.E_NOTIMPL;
+        return HResults.E_NOTIMPL;
     }
 
     int IMetaDataImport.EnumMethods(nint* phEnum, uint cl, uint* rMethods, uint cMax, uint* pcTokens)
@@ -376,7 +374,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return _legacyImport is not null ? _legacyImport.EnumCustomAttributes(phEnum, tk, tkType, rCustomAttributes, cMax, pcCustomAttributes) : HResults.E_NOTIMPL;
+        return HResults.E_NOTIMPL;
     }
 
     int IMetaDataImport2.EnumGenericParams(nint* phEnum, uint tk, uint* rGenericParams, uint cMax, uint* pcGenericParams)
@@ -1149,98 +1147,98 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return _legacyImport is not null ? _legacyImport.GetScopeProps(szName, cchName, pchName, pmvid) : HResults.E_NOTIMPL;
+        return HResults.E_NOTIMPL;
     }
 
     int IMetaDataImport.GetModuleFromScope(uint* pmd)
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return _legacyImport is not null ? _legacyImport.GetModuleFromScope(pmd) : HResults.E_NOTIMPL;
+        return HResults.E_NOTIMPL;
     }
 
     int IMetaDataImport.ResolveTypeRef(uint tr, Guid* riid, void** ppIScope, uint* ptd)
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return _legacyImport is not null ? _legacyImport.ResolveTypeRef(tr, riid, ppIScope, ptd) : HResults.E_NOTIMPL;
+        return HResults.E_NOTIMPL;
     }
 
     int IMetaDataImport.EnumMembersWithName(nint* phEnum, uint cl, char* szName, uint* rMembers, uint cMax, uint* pcTokens)
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return _legacyImport is not null ? _legacyImport.EnumMembersWithName(phEnum, cl, szName, rMembers, cMax, pcTokens) : HResults.E_NOTIMPL;
+        return HResults.E_NOTIMPL;
     }
 
     int IMetaDataImport.EnumMethodsWithName(nint* phEnum, uint cl, char* szName, uint* rMethods, uint cMax, uint* pcTokens)
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return _legacyImport is not null ? _legacyImport.EnumMethodsWithName(phEnum, cl, szName, rMethods, cMax, pcTokens) : HResults.E_NOTIMPL;
+        return HResults.E_NOTIMPL;
     }
 
     int IMetaDataImport.EnumFieldsWithName(nint* phEnum, uint cl, char* szName, uint* rFields, uint cMax, uint* pcTokens)
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return _legacyImport is not null ? _legacyImport.EnumFieldsWithName(phEnum, cl, szName, rFields, cMax, pcTokens) : HResults.E_NOTIMPL;
+        return HResults.E_NOTIMPL;
     }
 
     int IMetaDataImport.EnumParams(nint* phEnum, uint mb, uint* rParams, uint cMax, uint* pcTokens)
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return _legacyImport is not null ? _legacyImport.EnumParams(phEnum, mb, rParams, cMax, pcTokens) : HResults.E_NOTIMPL;
+        return HResults.E_NOTIMPL;
     }
 
     int IMetaDataImport.EnumMemberRefs(nint* phEnum, uint tkParent, uint* rMemberRefs, uint cMax, uint* pcTokens)
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return _legacyImport is not null ? _legacyImport.EnumMemberRefs(phEnum, tkParent, rMemberRefs, cMax, pcTokens) : HResults.E_NOTIMPL;
+        return HResults.E_NOTIMPL;
     }
 
     int IMetaDataImport.EnumMethodImpls(nint* phEnum, uint td, uint* rMethodBody, uint* rMethodDecl, uint cMax, uint* pcTokens)
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return _legacyImport is not null ? _legacyImport.EnumMethodImpls(phEnum, td, rMethodBody, rMethodDecl, cMax, pcTokens) : HResults.E_NOTIMPL;
+        return HResults.E_NOTIMPL;
     }
 
     int IMetaDataImport.EnumPermissionSets(nint* phEnum, uint tk, uint dwActions, uint* rPermission, uint cMax, uint* pcTokens)
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return _legacyImport is not null ? _legacyImport.EnumPermissionSets(phEnum, tk, dwActions, rPermission, cMax, pcTokens) : HResults.E_NOTIMPL;
+        return HResults.E_NOTIMPL;
     }
 
     int IMetaDataImport.FindMember(uint td, char* szName, byte* pvSigBlob, uint cbSigBlob, uint* pmb)
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return _legacyImport is not null ? _legacyImport.FindMember(td, szName, pvSigBlob, cbSigBlob, pmb) : HResults.E_NOTIMPL;
+        return HResults.E_NOTIMPL;
     }
 
     int IMetaDataImport.FindMethod(uint td, char* szName, byte* pvSigBlob, uint cbSigBlob, uint* pmb)
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return _legacyImport is not null ? _legacyImport.FindMethod(td, szName, pvSigBlob, cbSigBlob, pmb) : HResults.E_NOTIMPL;
+        return HResults.E_NOTIMPL;
     }
 
     int IMetaDataImport.FindField(uint td, char* szName, byte* pvSigBlob, uint cbSigBlob, uint* pmb)
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return _legacyImport is not null ? _legacyImport.FindField(td, szName, pvSigBlob, cbSigBlob, pmb) : HResults.E_NOTIMPL;
+        return HResults.E_NOTIMPL;
     }
 
     int IMetaDataImport.FindMemberRef(uint td, char* szName, byte* pvSigBlob, uint cbSigBlob, uint* pmr)
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return _legacyImport is not null ? _legacyImport.FindMemberRef(td, szName, pvSigBlob, cbSigBlob, pmr) : HResults.E_NOTIMPL;
+        return HResults.E_NOTIMPL;
     }
 
     int IMetaDataImport.GetMemberRefProps(uint mr, uint* ptk, char* szMember, uint cchMember, uint* pchMember,
@@ -1309,14 +1307,14 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return _legacyImport is not null ? _legacyImport.EnumProperties(phEnum, td, rProperties, cMax, pcProperties) : HResults.E_NOTIMPL;
+        return HResults.E_NOTIMPL;
     }
 
     int IMetaDataImport.EnumEvents(nint* phEnum, uint td, uint* rEvents, uint cMax, uint* pcEvents)
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return _legacyImport is not null ? _legacyImport.EnumEvents(phEnum, td, rEvents, cMax, pcEvents) : HResults.E_NOTIMPL;
+        return HResults.E_NOTIMPL;
     }
 
     int IMetaDataImport.GetEventProps(uint ev, uint* pClass, char* szEvent, uint cchEvent, uint* pchEvent,
@@ -1325,21 +1323,21 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return _legacyImport is not null ? _legacyImport.GetEventProps(ev, pClass, szEvent, cchEvent, pchEvent, pdwEventFlags, ptkEventType, pmdAddOn, pmdRemoveOn, pmdFire, rmdOtherMethod, cMax, pcOtherMethod) : HResults.E_NOTIMPL;
+        return HResults.E_NOTIMPL;
     }
 
     int IMetaDataImport.EnumMethodSemantics(nint* phEnum, uint mb, uint* rEventProp, uint cMax, uint* pcEventProp)
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return _legacyImport is not null ? _legacyImport.EnumMethodSemantics(phEnum, mb, rEventProp, cMax, pcEventProp) : HResults.E_NOTIMPL;
+        return HResults.E_NOTIMPL;
     }
 
     int IMetaDataImport.GetMethodSemantics(uint mb, uint tkEventProp, uint* pdwSemanticsFlags)
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return _legacyImport is not null ? _legacyImport.GetMethodSemantics(mb, tkEventProp, pdwSemanticsFlags) : HResults.E_NOTIMPL;
+        return HResults.E_NOTIMPL;
     }
 
     int IMetaDataImport.GetClassLayout(uint td, uint* pdwPackSize, void* rFieldOffset, uint cMax, uint* pcFieldOffset, uint* pulClassSize)
@@ -1415,14 +1413,14 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return _legacyImport is not null ? _legacyImport.GetFieldMarshal(tk, ppvNativeType, pcbNativeType) : HResults.E_NOTIMPL;
+        return HResults.E_NOTIMPL;
     }
 
     int IMetaDataImport.GetPermissionSetProps(uint pm, uint* pdwAction, void** ppvPermission, uint* pcbPermission)
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return _legacyImport is not null ? _legacyImport.GetPermissionSetProps(pm, pdwAction, ppvPermission, pcbPermission) : HResults.E_NOTIMPL;
+        return HResults.E_NOTIMPL;
     }
 
     int IMetaDataImport.GetModuleRefProps(uint mur, char* szName, uint cchName, uint* pchName)
@@ -1471,7 +1469,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return _legacyImport is not null ? _legacyImport.EnumModuleRefs(phEnum, rModuleRefs, cmax, pcModuleRefs) : HResults.E_NOTIMPL;
+        return HResults.E_NOTIMPL;
     }
 
     int IMetaDataImport.GetTypeSpecFromToken(uint typespec, byte** ppvSig, uint* pcbSig)
@@ -1519,14 +1517,14 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return _legacyImport is not null ? _legacyImport.GetNameFromToken(tk, pszUtf8NamePtr) : HResults.E_NOTIMPL;
+        return HResults.E_NOTIMPL;
     }
 
     int IMetaDataImport.EnumUnresolvedMethods(nint* phEnum, uint* rMethods, uint cMax, uint* pcTokens)
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return _legacyImport is not null ? _legacyImport.EnumUnresolvedMethods(phEnum, rMethods, cMax, pcTokens) : HResults.E_NOTIMPL;
+        return HResults.E_NOTIMPL;
     }
 
     int IMetaDataImport.GetUserString(uint stk, char* szString, uint cchString, uint* pchString)
@@ -1612,28 +1610,28 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return _legacyImport is not null ? _legacyImport.GetPinvokeMap(tk, pdwMappingFlags, szImportName, cchImportName, pchImportName, pmrImportDLL) : HResults.E_NOTIMPL;
+        return HResults.E_NOTIMPL;
     }
 
     int IMetaDataImport.EnumSignatures(nint* phEnum, uint* rSignatures, uint cmax, uint* pcSignatures)
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return _legacyImport is not null ? _legacyImport.EnumSignatures(phEnum, rSignatures, cmax, pcSignatures) : HResults.E_NOTIMPL;
+        return HResults.E_NOTIMPL;
     }
 
     int IMetaDataImport.EnumTypeSpecs(nint* phEnum, uint* rTypeSpecs, uint cmax, uint* pcTypeSpecs)
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return _legacyImport is not null ? _legacyImport.EnumTypeSpecs(phEnum, rTypeSpecs, cmax, pcTypeSpecs) : HResults.E_NOTIMPL;
+        return HResults.E_NOTIMPL;
     }
 
     int IMetaDataImport.EnumUserStrings(nint* phEnum, uint* rStrings, uint cmax, uint* pcStrings)
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return _legacyImport is not null ? _legacyImport.EnumUserStrings(phEnum, rStrings, cmax, pcStrings) : HResults.E_NOTIMPL;
+        return HResults.E_NOTIMPL;
     }
 
     int IMetaDataImport.GetParamForMethodIndex(uint md, uint ulParamSeq, uint* ppd)
@@ -1686,14 +1684,14 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return _legacyImport is not null ? _legacyImport.GetCustomAttributeProps(cv, ptkObj, ptkType, ppBlob, pcbSize) : HResults.E_NOTIMPL;
+        return HResults.E_NOTIMPL;
     }
 
     int IMetaDataImport.FindTypeRef(uint tkResolutionScope, char* szName, uint* ptr)
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return _legacyImport is not null ? _legacyImport.FindTypeRef(tkResolutionScope, szName, ptr) : HResults.E_NOTIMPL;
+        return HResults.E_NOTIMPL;
     }
 
     int IMetaDataImport.GetPropertyProps(uint prop, uint* pClass, char* szProperty, uint cchProperty, uint* pchProperty,
@@ -1703,7 +1701,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return _legacyImport is not null ? _legacyImport.GetPropertyProps(prop, pClass, szProperty, cchProperty, pchProperty, pdwPropFlags, ppvSig, pbSig, pdwCPlusTypeFlag, ppDefaultValue, pcchDefaultValue, pmdSetter, pmdGetter, rmdOtherMethod, cMax, pcOtherMethod) : HResults.E_NOTIMPL;
+        return HResults.E_NOTIMPL;
     }
 
     int IMetaDataImport.GetParamProps(uint tk, uint* pmd, uint* pulSequence, char* szName, uint cchName, uint* pchName,
@@ -1794,57 +1792,57 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return _legacyImport is not null ? _legacyImport.GetNativeCallConvFromSig(pvSig, cbSig, pCallConv) : HResults.E_NOTIMPL;
+        return HResults.E_NOTIMPL;
     }
 
     int IMetaDataImport.IsGlobal(uint pd, int* pbGlobal)
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return _legacyImport is not null ? _legacyImport.IsGlobal(pd, pbGlobal) : HResults.E_NOTIMPL;
+        return HResults.E_NOTIMPL;
     }
 
-    // IMetaDataImport2 methods — delegate to legacy via _legacyImport2
+    // IMetaDataImport2 methods
     int IMetaDataImport2.GetMethodSpecProps(uint mi, uint* tkParent, byte** ppvSigBlob, uint* pcbSigBlob)
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return _legacyImport2 is not null ? _legacyImport2.GetMethodSpecProps(mi, tkParent, ppvSigBlob, pcbSigBlob) : HResults.E_NOTIMPL;
+        return HResults.E_NOTIMPL;
     }
 
     int IMetaDataImport2.EnumGenericParamConstraints(nint* phEnum, uint tk, uint* rGenericParamConstraints, uint cMax, uint* pcGenericParamConstraints)
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return _legacyImport2 is not null ? _legacyImport2.EnumGenericParamConstraints(phEnum, tk, rGenericParamConstraints, cMax, pcGenericParamConstraints) : HResults.E_NOTIMPL;
+        return HResults.E_NOTIMPL;
     }
 
     int IMetaDataImport2.GetGenericParamConstraintProps(uint gpc, uint* ptGenericParam, uint* ptkConstraintType)
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return _legacyImport2 is not null ? _legacyImport2.GetGenericParamConstraintProps(gpc, ptGenericParam, ptkConstraintType) : HResults.E_NOTIMPL;
+        return HResults.E_NOTIMPL;
     }
 
     int IMetaDataImport2.GetPEKind(uint* pdwPEKind, uint* pdwMachine)
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return _legacyImport2 is not null ? _legacyImport2.GetPEKind(pdwPEKind, pdwMachine) : HResults.E_NOTIMPL;
+        return HResults.E_NOTIMPL;
     }
 
     int IMetaDataImport2.GetVersionString(char* pwzBuf, uint ccBufSize, uint* pccBufSize)
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return _legacyImport2 is not null ? _legacyImport2.GetVersionString(pwzBuf, ccBufSize, pccBufSize) : HResults.E_NOTIMPL;
+        return HResults.E_NOTIMPL;
     }
 
     int IMetaDataImport2.EnumMethodSpecs(nint* phEnum, uint tk, uint* rMethodSpecs, uint cMax, uint* pcMethodSpecs)
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return _legacyImport2 is not null ? _legacyImport2.EnumMethodSpecs(phEnum, tk, rMethodSpecs, cMax, pcMethodSpecs) : HResults.E_NOTIMPL;
+        return HResults.E_NOTIMPL;
     }
 
     // =============================================
@@ -2077,7 +2075,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return _legacyAssemblyImport is not null ? _legacyAssemblyImport.GetFileProps(mdf, szName, cchName, pchName, ppbHashValue, pcbHashValue, pdwFileFlags) : HResults.E_NOTIMPL;
+        return HResults.E_NOTIMPL;
     }
 
     int IMetaDataAssemblyImport.GetExportedTypeProps(uint mdct, char* szName, uint cchName, uint* pchName,
@@ -2152,35 +2150,35 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return _legacyAssemblyImport is not null ? _legacyAssemblyImport.GetManifestResourceProps(mdmr, szName, cchName, pchName, ptkImplementation, pdwOffset, pdwResourceFlags) : HResults.E_NOTIMPL;
+        return HResults.E_NOTIMPL;
     }
 
     int IMetaDataAssemblyImport.EnumAssemblyRefs(nint* phEnum, uint* rAssemblyRefs, uint cMax, uint* pcTokens)
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return _legacyAssemblyImport is not null ? _legacyAssemblyImport.EnumAssemblyRefs(phEnum, rAssemblyRefs, cMax, pcTokens) : HResults.E_NOTIMPL;
+        return HResults.E_NOTIMPL;
     }
 
     int IMetaDataAssemblyImport.EnumFiles(nint* phEnum, uint* rFiles, uint cMax, uint* pcTokens)
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return _legacyAssemblyImport is not null ? _legacyAssemblyImport.EnumFiles(phEnum, rFiles, cMax, pcTokens) : HResults.E_NOTIMPL;
+        return HResults.E_NOTIMPL;
     }
 
     int IMetaDataAssemblyImport.EnumExportedTypes(nint* phEnum, uint* rExportedTypes, uint cMax, uint* pcTokens)
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return _legacyAssemblyImport is not null ? _legacyAssemblyImport.EnumExportedTypes(phEnum, rExportedTypes, cMax, pcTokens) : HResults.E_NOTIMPL;
+        return HResults.E_NOTIMPL;
     }
 
     int IMetaDataAssemblyImport.EnumManifestResources(nint* phEnum, uint* rManifestResources, uint cMax, uint* pcTokens)
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return _legacyAssemblyImport is not null ? _legacyAssemblyImport.EnumManifestResources(phEnum, rManifestResources, cMax, pcTokens) : HResults.E_NOTIMPL;
+        return HResults.E_NOTIMPL;
     }
 
     int IMetaDataAssemblyImport.GetAssemblyFromScope(uint* ptkAssembly)
@@ -2264,7 +2262,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return _legacyAssemblyImport is not null ? _legacyAssemblyImport.FindManifestResourceByName(szName, ptkManifestResource) : HResults.E_NOTIMPL;
+        return HResults.E_NOTIMPL;
     }
 
     void IMetaDataAssemblyImport.CloseEnum(nint hEnum)
@@ -2279,7 +2277,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return _legacyAssemblyImport is not null ? _legacyAssemblyImport.FindAssembliesByName(szAppBase, szPrivateBin, szAssemblyName, ppIUnk, cMax, pcAssemblies) : HResults.E_NOTIMPL;
+        return HResults.E_NOTIMPL;
     }
 
     // Helpers and lookup builders

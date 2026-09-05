@@ -87,9 +87,11 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         using Lock.Scope scope = _apiLock.EnterScope();
         _target.Flush(FlushScope.All);
 
-        // Flush is always propagated — it's cache management, not data retrieval.
         if (_legacyProcess is not null)
-            return _legacyProcess.Flush();
+        {
+            int hrLocal = _legacyProcess.Flush();
+            Debug.ValidateHResult(HResults.S_OK, hrLocal);
+        }
 
         return HResults.S_OK;
     }
@@ -97,6 +99,9 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
     int IXCLRDataProcess.StartEnumTasks(ulong* handle)
     {
         using Lock.Scope scope = _apiLock.EnterScope();
+
+        if (handle is not null)
+            *handle = 0;
 
         return HResults.E_NOTIMPL;
     }
@@ -138,16 +143,20 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
             return HResults.E_INVALIDARG;
 
         IXCLRDataTask? legacyTask = null;
+        int hrLocal = HResults.S_OK;
         if (_legacyProcess is not null)
         {
             DacComNullableByRef<IXCLRDataTask> legacyTaskOut = new(isNullRef: false);
-            int hr = _legacyProcess.GetTaskByOSThreadID(osThreadID, legacyTaskOut);
-            if (hr < 0)
-                return hr;
-            legacyTask = legacyTaskOut.Interface;
+            hrLocal = _legacyProcess.GetTaskByOSThreadID(osThreadID, legacyTaskOut);
+            if (hrLocal >= 0)
+                legacyTask = legacyTaskOut.Interface;
         }
 
         task.Interface = new ClrDataTask(matchingThread, _target, legacyTask, _apiLock);
+
+        if (_legacyProcess is not null)
+            Debug.ValidateHResult(HResults.S_OK, hrLocal);
+
         return HResults.S_OK;
     }
 
@@ -543,7 +552,8 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
 
         if (_legacyProcess is not null && domains.LegacyHandle != 0)
         {
-            hr = _legacyProcess.EndEnumAppDomains((ulong)domains.LegacyHandle);
+            int hrLocal = _legacyProcess.EndEnumAppDomains((ulong)domains.LegacyHandle);
+            Debug.ValidateHResult(hr, hrLocal);
         }
 
         return hr;
@@ -589,6 +599,9 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
     int IXCLRDataProcess.StartEnumAssemblies(ulong* handle)
     {
         using Lock.Scope scope = _apiLock.EnterScope();
+
+        if (handle is not null)
+            *handle = 0;
 
         return HResults.E_NOTIMPL;
     }
@@ -731,7 +744,8 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
 
         if (_legacyProcess is not null && modules.LegacyHandle != 0)
         {
-            hr = _legacyProcess.EndEnumModules((ulong)modules.LegacyHandle);
+            int hrLocal = _legacyProcess.EndEnumModules((ulong)modules.LegacyHandle);
+            Debug.ValidateHResult(hr, hrLocal);
         }
 
         return hr;
@@ -987,9 +1001,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         int hr = HResults.S_FALSE;
         *handle = 0;
 
-        // Start the legacy enumeration to keep it in sync with the cDAC enumeration.
-        // EnumMethodInstanceByAddress passes the legacy method instance to ClrDataMethodInstance,
-        // which delegates some operations to it.
+        // Start the legacy enumeration to keep it in sync for validation.
         ulong handleLocal = default;
         int hrLocal = default;
         IXCLRDataAppDomain? legacyAppDomain = appDomain;
@@ -1063,8 +1075,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         GCHandle gcHandle = GCHandle.FromIntPtr((IntPtr)(*handle));
         if (gcHandle.Target is not EnumMethodInstances emi) return HResults.E_INVALIDARG;
 
-        // Advance the legacy enumeration to keep it in sync with the cDAC enumeration.
-        // The legacy method instance is passed to ClrDataMethodInstance for delegation.
+        // Advance the legacy enumeration to keep it in sync for validation.
         IXCLRDataMethodInstance? legacyMethod = null;
         int hrLocal = default;
         if (_legacyProcess is not null)
@@ -1115,8 +1126,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         if (_legacyProcess != null && emi.LegacyHandle != 0)
         {
             int hrLocal = _legacyProcess.EndEnumMethodInstancesByAddress(emi.LegacyHandle);
-            if (hrLocal < 0)
-                return hrLocal;
+            Debug.ValidateHResult(hr, hrLocal);
         }
 
         return hr;
@@ -1334,7 +1344,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         }
         else
         {
-            return LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.Request(reqCode, inBufferSize, inBuffer, outBufferSize, outBuffer) : HResults.E_NOTIMPL;
+            return HResults.E_NOTIMPL;
         }
 #if DEBUG
         // Private DACSTRESSPRIV_REQUEST_* opcodes are cDAC-only and must NOT be
@@ -1784,8 +1794,6 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
 #if DEBUG
             Debug.ValidateHResult(hr, hrLocal);
 #endif
-            if (hrLocal < 0)
-                hr = hrLocal;
         }
 
         return hr;
@@ -1827,7 +1835,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.FollowStub(inFlags, inAddr, inBuffer, outAddr, outBuffer, outFlags) : HResults.E_NOTIMPL;
+        return HResults.E_NOTIMPL;
     }
 
     int IXCLRDataProcess.FollowStub2(
@@ -1841,7 +1849,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.FollowStub2(task, inFlags, inAddr, inBuffer, outAddr, outBuffer, outFlags) : HResults.E_NOTIMPL;
+        return HResults.E_NOTIMPL;
     }
 
     int IXCLRDataProcess.DumpNativeImage(

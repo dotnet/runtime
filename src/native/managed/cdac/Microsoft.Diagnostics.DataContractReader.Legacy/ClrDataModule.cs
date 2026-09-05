@@ -245,6 +245,9 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
+        if (handle is not null)
+            *handle = 0;
+
         return HResults.E_NOTIMPL;
     }
     int IXCLRDataModule.EnumAssembly(ulong* handle, DacComNullableByRef<IXCLRDataAssembly> assembly)
@@ -264,43 +267,52 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return LegacyFallbackHelper.CanFallback() && _legacyModule is not null ? _legacyModule.StartEnumTypeDefinitions(handle) : HResults.E_NOTIMPL;
+        if (handle is not null)
+            *handle = 0;
+
+        return HResults.E_NOTIMPL;
     }
     int IXCLRDataModule.EnumTypeDefinition(ulong* handle, DacComNullableByRef<IXCLRDataTypeDefinition> typeDefinition)
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return LegacyFallbackHelper.CanFallback() && _legacyModule is not null ? _legacyModule.EnumTypeDefinition(handle, typeDefinition) : HResults.E_NOTIMPL;
+        return HResults.E_NOTIMPL;
     }
     int IXCLRDataModule.EndEnumTypeDefinitions(ulong handle)
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return LegacyFallbackHelper.CanFallback() && _legacyModule is not null ? _legacyModule.EndEnumTypeDefinitions(handle) : HResults.E_NOTIMPL;
+        return HResults.E_NOTIMPL;
     }
 
     int IXCLRDataModule.StartEnumTypeInstances(IXCLRDataAppDomain? appDomain, ulong* handle)
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return LegacyFallbackHelper.CanFallback() && _legacyModule is not null ? _legacyModule.StartEnumTypeInstances(appDomain, handle) : HResults.E_NOTIMPL;
+        if (handle is not null)
+            *handle = 0;
+
+        return HResults.E_NOTIMPL;
     }
     int IXCLRDataModule.EnumTypeInstance(ulong* handle, DacComNullableByRef<IXCLRDataTypeInstance> typeInstance)
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return LegacyFallbackHelper.CanFallback() && _legacyModule is not null ? _legacyModule.EnumTypeInstance(handle, typeInstance) : HResults.E_NOTIMPL;
+        return HResults.E_NOTIMPL;
     }
     int IXCLRDataModule.EndEnumTypeInstances(ulong handle)
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return LegacyFallbackHelper.CanFallback() && _legacyModule is not null ? _legacyModule.EndEnumTypeInstances(handle) : HResults.E_NOTIMPL;
+        return HResults.E_NOTIMPL;
     }
 
     int IXCLRDataModule.StartEnumTypeDefinitionsByName(char* name, uint flags, ulong* handle)
     {
         using Lock.Scope scope = _apiLock.EnterScope();
+
+        if (handle is not null)
+            *handle = 0;
 
         return HResults.E_NOTIMPL;
     }
@@ -320,6 +332,9 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
     int IXCLRDataModule.StartEnumTypeInstancesByName(char* name, uint flags, IXCLRDataAppDomain? appDomain, ulong* handle)
     {
         using Lock.Scope scope = _apiLock.EnterScope();
+
+        if (handle is not null)
+            *handle = 0;
 
         return HResults.E_NOTIMPL;
     }
@@ -467,8 +482,9 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
         if (_legacyModule != null && emd.LegacyHandle != 0)
         {
             int hrLocal = _legacyModule.EndEnumMethodDefinitionsByName(emd.LegacyHandle);
-            if (hrLocal < 0)
-                return hrLocal;
+#if DEBUG
+            Debug.ValidateHResult(hr, hrLocal);
+#endif
         }
 
         return hr;
@@ -477,19 +493,22 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return LegacyFallbackHelper.CanFallback() && _legacyModule is not null ? _legacyModule.StartEnumMethodInstancesByName(name, flags, appDomain, handle) : HResults.E_NOTIMPL;
+        if (handle is not null)
+            *handle = 0;
+
+        return HResults.E_NOTIMPL;
     }
     int IXCLRDataModule.EnumMethodInstanceByName(ulong* handle, DacComNullableByRef<IXCLRDataMethodInstance> method)
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return LegacyFallbackHelper.CanFallback() && _legacyModule is not null ? _legacyModule.EnumMethodInstanceByName(handle, method) : HResults.E_NOTIMPL;
+        return HResults.E_NOTIMPL;
     }
     int IXCLRDataModule.EndEnumMethodInstancesByName(ulong handle)
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return LegacyFallbackHelper.CanFallback() && _legacyModule is not null ? _legacyModule.EndEnumMethodInstancesByName(handle) : HResults.E_NOTIMPL;
+        return HResults.E_NOTIMPL;
     }
 
     int IXCLRDataModule.GetMethodDefinitionByToken(/*mdMethodDef*/ uint token, DacComNullableByRef<IXCLRDataMethodDefinition> methodDefinition)
@@ -531,19 +550,22 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return LegacyFallbackHelper.CanFallback() && _legacyModule is not null ? _legacyModule.StartEnumDataByName(name, flags, appDomain, tlsTask, handle) : HResults.E_NOTIMPL;
+        if (handle is not null)
+            *handle = 0;
+
+        return HResults.E_NOTIMPL;
     }
     int IXCLRDataModule.EnumDataByName(ulong* handle, DacComNullableByRef<IXCLRDataValue> value)
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return LegacyFallbackHelper.CanFallback() && _legacyModule is not null ? _legacyModule.EnumDataByName(handle, value) : HResults.E_NOTIMPL;
+        return HResults.E_NOTIMPL;
     }
     int IXCLRDataModule.EndEnumDataByName(ulong handle)
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return LegacyFallbackHelper.CanFallback() && _legacyModule is not null ? _legacyModule.EndEnumDataByName(handle) : HResults.E_NOTIMPL;
+        return HResults.E_NOTIMPL;
     }
 
     int IXCLRDataModule.GetName(uint bufLen, uint* nameLen, char* name)
@@ -683,7 +705,7 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return LegacyFallbackHelper.CanFallback() && _legacyModule is not null ? _legacyModule.IsSameObject(mod) : HResults.E_NOTIMPL;
+        return HResults.E_NOTIMPL;
     }
 
     int IXCLRDataModule.StartEnumExtents(ulong* handle)
@@ -902,26 +924,29 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return LegacyFallbackHelper.CanFallback() && _legacyModule is not null ? _legacyModule.StartEnumAppDomains(handle) : HResults.E_NOTIMPL;
+        if (handle is not null)
+            *handle = 0;
+
+        return HResults.E_NOTIMPL;
     }
     int IXCLRDataModule.EnumAppDomain(ulong* handle, /*IXCLRDataAppDomain*/ void** appDomain)
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return LegacyFallbackHelper.CanFallback() && _legacyModule is not null ? _legacyModule.EnumAppDomain(handle, appDomain) : HResults.E_NOTIMPL;
+        return HResults.E_NOTIMPL;
     }
     int IXCLRDataModule.EndEnumAppDomains(ulong handle)
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return LegacyFallbackHelper.CanFallback() && _legacyModule is not null ? _legacyModule.EndEnumAppDomains(handle) : HResults.E_NOTIMPL;
+        return HResults.E_NOTIMPL;
     }
 
     int IXCLRDataModule.GetVersionId(Guid* vid)
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return LegacyFallbackHelper.CanFallback() && _legacyModule is not null ? _legacyModule.GetVersionId(vid) : HResults.E_NOTIMPL;
+        return HResults.E_NOTIMPL;
     }
 
     int IXCLRDataModule2.SetJITCompilerFlags(uint flags)
